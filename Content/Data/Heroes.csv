@@ -1,0 +1,6 @@
+---,HeroID,DisplayName,Description,PlaceholderColor,HeroClass,Portrait,MapTheme,bUnlockedByDefault
+Hero_Crimson,Hero_Crimson,"Crimson Blade","A fierce warrior wielding the power of fire.","(R=1.0,G=0.2,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Fire,true
+Hero_Azure,Hero_Azure,"Azure Mage","A powerful mage who commands ice and water.","(R=0.2,G=0.4,B=1.0,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Ice,true
+Hero_Emerald,Hero_Emerald,"Emerald Guardian","A stalwart defender of nature and life.","(R=0.2,G=0.8,B=0.3,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Forest,true
+Hero_Golden,Hero_Golden,"Golden Paladin","A holy warrior blessed by divine light.","(R=1.0,G=0.8,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Light,true
+Hero_Shadow,Hero_Shadow,"Shadow Stalker","An assassin who strikes from the darkness.","(R=0.3,G=0.2,B=0.4,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Dark,true

@@ -11,5 +11,6 @@ public class T66EditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V6;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 		ExtraModuleNames.Add("T66");
+		ExtraModuleNames.Add("T66Editor");
 	}
 }

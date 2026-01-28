@@ -1,0 +1,30 @@
+// Copyright Tribulation 66. All Rights Reserved.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "T66UITypes.generated.h"
+
+/**
+ * Enum for all screen types in the game's UI flow
+ */
+UENUM(BlueprintType)
+enum class ET66ScreenType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	MainMenu UMETA(DisplayName = "Main Menu"),
+	PartySizePicker UMETA(DisplayName = "Party Size Picker"),
+	SaveSlots UMETA(DisplayName = "Save Slots"),
+	HeroSelection UMETA(DisplayName = "Hero Selection"),
+	CompanionSelection UMETA(DisplayName = "Companion Selection"),
+	Settings UMETA(DisplayName = "Settings"),
+	// Modals (overlays on top of other screens)
+	HeroGrid UMETA(DisplayName = "Hero Grid Modal"),
+	HeroLore UMETA(DisplayName = "Hero Lore Modal"),
+	CompanionGrid UMETA(DisplayName = "Companion Grid Modal"),
+	CompanionLore UMETA(DisplayName = "Companion Lore Modal"),
+	LanguageSelect UMETA(DisplayName = "Language Select Modal"),
+	QuitConfirmation UMETA(DisplayName = "Quit Confirmation Modal"),
+	AccountStatus UMETA(DisplayName = "Account Status Panel"),
+	PlayerSummaryPicker UMETA(DisplayName = "Player Summary Picker")
+};

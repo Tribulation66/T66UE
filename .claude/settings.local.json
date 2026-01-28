@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd.exe /c \"\"\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\"\" T66Editor Win64 Development \"\"C:\\\\UE\\\\T66\\\\T66.uproject\"\" -waitmutex 2>&1\")",
+      "Bash(cmd.exe /c \"\"\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\RunUAT.bat\"\" BuildEditor -project=\"\"C:\\\\UE\\\\T66\\\\T66.uproject\"\" -notools 2>&1\")",
+      "Bash(powershell -Command:*)",
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Build\\\\BatchFiles\\\\Build.bat\" T66Editor Win64 Development -Project=\"C:\\\\UE\\\\T66\\\\T66.uproject\" -WaitMutex -FromMsBuild)",
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Binaries\\\\Win64\\\\UnrealEditor-Cmd.exe\" \"C:\\\\UE\\\\T66\\\\T66.uproject\" -run=pythonscript -script=\"C:\\\\UE\\\\T66\\\\Scripts\\\\FullSetup.py\")",
+      "Bash(\"C:\\\\Program Files\\\\Epic Games\\\\UE_5.7\\\\Engine\\\\Binaries\\\\Win64\\\\UnrealEditor-Cmd.exe\" \"C:\\\\UE\\\\T66\\\\T66.uproject\" -run=pythonscript -script=\"C:\\\\UE\\\\T66\\\\Scripts\\\\VerifySetup.py\")",
+      "Bash(dir /b \"C:\\\\UE\\\\T66\\\\Content\\\\Blueprints\\\\Core\")",
+      "Bash(dir /b \"C:\\\\UE\\\\T66\\\\Content\\\\Blueprints\\\\UI\")",
+      "Bash(dir /b \"C:\\\\UE\\\\T66\\\\Content\\\\Blueprints\\\\GameModes\")",
+      "Bash(dir /b \"C:\\\\UE\\\\T66\\\\Content\\\\Data\")",
+      "Bash(dir /b \"C:\\\\UE\\\\T66\\\\Content\\\\Maps\")"
+    ]
+  }
+}
