@@ -13,8 +13,8 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Repo path:** C:\UE\T66 (Windows) / c:\UE\T66
 - **Engine version:** Unreal Engine 5.7
 - **Active branch:** main
-- **Last known-good commit:** 7b612fc (Data-driven stages + boss encounter + boss-gated stage exit)
-- **Current milestone:** Phase 3 in progress — Data-driven stages + boss encounter + boss-gated stage exit
+- **Last known-good commit:** 5758aa0 (Gameplay progression, Coliseum fallback, and map layout)
+- **Current milestone:** Phase 3+ — Stage progression + bosses + miasma + NPCs + debt + Coliseum + map layout
 - **Build status:** ✅ C++ compiles successfully
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 - **Full project setup (from project root):**
@@ -50,10 +50,46 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Save Slots** — C++ fallback exists; optional WBP_SaveSlots at `/Game/Blueprints/UI/WBP_SaveSlots` for visual customization.
 - **Hearts/Inventory** — Use Slate `BorderImage(WhiteBrush)` for filled squares; dynamic delegates use `AddDynamic`/`RemoveDynamic` (not AddUObject).
 - **Localization** — New HUD strings added recently (stage number, stage timer, boss HP bar) are currently hardcoded in C++ Slate; must be moved to `UT66LocalizationSubsystem` per guardrails/Bible.
+- **Coliseum map asset** — `Content/Maps/ColiseumLevel.umap` may be missing in this repo state; code has a safe fallback that reuses `GameplayLevel` for Coliseum-only behavior when needed.
 
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-01-29 — Gameplay progression, Coliseum fallback, and map layout
+
+- **Commit:** 5758aa0
+- **Goal:** Stabilize stage flow + bosses + miasma + debt systems, add difficulty totems + gambling cheating boss, implement Start/Main/Boss area layout with gates, and make Coliseum robust even if the Coliseum map asset is missing.
+
+**Map layout**
+- Gameplay map is now treated as three zones:
+  - **Start Area** centered at \(X=-10000\)
+  - **Main Area** centered at \(X=0\)
+  - **Boss Area** centered at \(X=+10000\)
+  - Connector floors at \(X=-6000\) and \(X=+6000\)
+- **Start Gate pillars** are placed at \(X=-6000\). Walking through starts the stage timer (timer stays frozen before this).
+- **Boss Gate pillars** are placed at \(X=+6000\). Walking through awakens the stage boss (forces awaken).
+- **Trickster + Cowardice Gate** spawn right before the Boss Gate pillars (main-side).
+- **Spawning guarantees**
+  - Gameplay hero spawn is forced into the Start Area even if a PlayerStart exists elsewhere.
+  - Stage boss spawns are forced into the Boss Area (fixes Stage 1 spawning at old/center locations).
+
+**Coliseum behavior**
+- Coliseum countdown begins immediately on spawn and still has miasma.
+- When `ColiseumLevel` map asset is missing, the game falls back to using `GameplayLevel` in a forced Coliseum mode:
+  - **Only** owed bosses + player + timer/miasma (no houses, no waves/NPCs, no gates).
+- A Stage Gate spawns after the final owed boss dies and returns to Gameplay checkpoint stage **without incrementing** stage.
+
+**Enemy spawning rule**
+- Regular enemy waves only spawn after the stage timer starts (i.e., after Start Gate). Implemented by gating `AT66EnemyDirector::SpawnWave()` behind `RunState->GetStageTimerActive()`.
+
+**Difficulty**
+- Difficulty tier is tracked in `UT66RunStateSubsystem` and shown on HUD as placeholder squares.
+- Enemy HP/touch-damage scale from tier and updates on difficulty changes.
+
+**Gambler cheating boss**
+- Added anger meter + cheat prompt in gambler overlay.
+- If anger reaches 100%, Gambler NPC is replaced by a Gambler Boss (1000 HP, shoots pellets).
 
 ### 2026-01-29 — Data-driven stages + boss encounter + boss-gated stage exit
 
