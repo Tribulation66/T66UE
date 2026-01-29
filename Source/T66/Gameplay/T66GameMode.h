@@ -8,6 +8,8 @@
 
 class AT66HeroBase;
 class AT66CompanionBase;
+class AT66StartGate;
+class AT66StageGate;
 class UT66GameInstance;
 class ADirectionalLight;
 class ASkyLight;
@@ -42,6 +44,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	float DefaultSpawnHeight = 200.f;
 
+	/** Offset from world origin for Stage Gate (far side of map). Start Gate is spawned near player. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
+	FVector StageGateSpawnOffset = FVector(2500.f, 0.f, 200.f);
+
 	/**
 	 * Spawn the hero based on current Game Instance selections
 	 * Called automatically or can be called manually for testing
@@ -51,6 +57,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void RestartPlayer(AController* NewPlayer) override;
 	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot) override;
 	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
@@ -75,6 +82,12 @@ protected:
 
 	/** Spawn vendor NPC near the hero (big cylinder) */
 	void SpawnVendorForPlayer(AController* Player);
+
+	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
+	void SpawnStartGateForPlayer(AController* Player);
+
+	/** Spawn Stage Gate (interact F to next stage) at far side of map. */
+	void SpawnStageGate();
 
 private:
 	/** Track spawned setup actors for cleanup */

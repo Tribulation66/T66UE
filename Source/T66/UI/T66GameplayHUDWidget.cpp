@@ -33,6 +33,9 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->GoldChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->InventoryChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->PanelVisibilityChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->ScoreChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->StageChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->StageTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RefreshHUD();
 }
 
@@ -45,6 +48,9 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->GoldChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->InventoryChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->PanelVisibilityChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->ScoreChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->StageChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->StageTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	}
 	Super::NativeDestruct();
 }
@@ -58,6 +64,26 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	if (GoldText.IsValid())
 	{
 		GoldText->SetText(FText::AsNumber(RunState->GetCurrentGold()));
+	}
+	// Bounty (Score)
+	if (ScoreText.IsValid())
+	{
+		ScoreText->SetText(FText::AsNumber(RunState->GetCurrentScore()));
+	}
+
+	// Stage number: x
+	if (StageText.IsValid())
+	{
+		StageText->SetText(FText::FromString(FString::Printf(TEXT("Stage number: %d"), RunState->GetCurrentStage())));
+	}
+
+	// Stage timer: frozen at 60 until start gate, then countdown (e.g. 1:00, 0:45)
+	if (TimerText.IsValid())
+	{
+		const float Secs = RunState->GetStageTimerSecondsRemaining();
+		const int32 M = FMath::FloorToInt(Secs / 60.f);
+		const int32 S = FMath::FloorToInt(FMath::Fmod(Secs, 60.f));
+		TimerText->SetText(FText::FromString(FString::Printf(TEXT("%d:%02d"), M, S)));
 	}
 
 	// Hearts: 5 icons, red = full, grey = lost
@@ -153,6 +179,46 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.Text(FText::AsNumber(0))
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
 			.ColorAndOpacity(FLinearColor::White)
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(24.f, 64.f)
+		[
+			SAssignNew(StageText, STextBlock)
+			.Text(FText::FromString(TEXT("Stage number: 1")))
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+			.ColorAndOpacity(FLinearColor::White)
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(24.f, 88.f)
+		[
+			SAssignNew(TimerText, STextBlock)
+			.Text(FText::FromString(TEXT("1:00")))
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
+			.ColorAndOpacity(FLinearColor(0.2f, 0.9f, 0.3f, 1.f))
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(24.f, 132.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(TEXT("Bounty:")))
+			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+			.ColorAndOpacity(FLinearColor(0.85f, 0.75f, 0.2f, 1.f))
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(90.f, 128.f)
+		[
+			SAssignNew(ScoreText, STextBlock)
+			.Text(FText::AsNumber(0))
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
+			.ColorAndOpacity(FLinearColor(0.95f, 0.85f, 0.3f, 1.f))
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)

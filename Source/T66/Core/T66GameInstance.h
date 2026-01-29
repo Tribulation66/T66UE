@@ -90,6 +90,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsNewGameFlow = true;
 
+	/** True when advancing to next stage (reload level, keep progress). GameMode skips ResetForNewRun. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bIsStageTransition = false;
+
 	// ============================================
 	// DataTable Access Helpers
 	// ============================================

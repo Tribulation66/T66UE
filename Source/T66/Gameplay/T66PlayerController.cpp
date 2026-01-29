@@ -16,6 +16,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66ItemPickup.h"
+#include "Gameplay/T66StageGate.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Engine/OverlapResult.h"
@@ -168,8 +169,10 @@ void AT66PlayerController::HandleInteractPressed()
 	Params.AddIgnoredActor(ControlledPawn);
 	World->OverlapMultiByChannel(Overlaps, Loc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(InteractRadius), Params);
 
+	AT66StageGate* ClosestStageGate = nullptr;
 	AT66VendorNPC* ClosestVendor = nullptr;
 	AT66ItemPickup* ClosestPickup = nullptr;
+	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestVendorDistSq = InteractRadius * InteractRadius;
 	float ClosestPickupDistSq = InteractRadius * InteractRadius;
 
@@ -178,7 +181,11 @@ void AT66PlayerController::HandleInteractPressed()
 		AActor* A = R.GetActor();
 		if (!A) continue;
 		float DistSq = FVector::DistSquared(Loc, A->GetActorLocation());
-		if (AT66VendorNPC* V = Cast<AT66VendorNPC>(A))
+		if (AT66StageGate* G = Cast<AT66StageGate>(A))
+		{
+			if (DistSq < ClosestStageGateDistSq) { ClosestStageGateDistSq = DistSq; ClosestStageGate = G; }
+		}
+		else if (AT66VendorNPC* V = Cast<AT66VendorNPC>(A))
 		{
 			if (DistSq < ClosestVendorDistSq) { ClosestVendorDistSq = DistSq; ClosestVendor = V; }
 		}
@@ -188,6 +195,11 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 	}
 
+	// Interact with Stage Gate (F) advances to next stage and reloads level
+	if (ClosestStageGate && ClosestStageGate->AdvanceToNextStage())
+	{
+		return;
+	}
 	// Prefer vendor over pickup
 	if (ClosestVendor && ClosestVendor->TrySellFirstItem())
 	{

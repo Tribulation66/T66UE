@@ -13,6 +13,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLogAdded);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPanelVisibilityChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDied);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnScoreChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageTimerChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageChanged);
 
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
@@ -45,6 +48,15 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnPlayerDied OnPlayerDied;
 
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnScoreChanged ScoreChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnStageTimerChanged StageTimerChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnStageChanged StageChanged;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentHearts() const { return CurrentHearts; }
 
@@ -62,6 +74,47 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	bool GetHUDPanelsVisible() const { return bHUDPanelsVisible; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetCurrentStage() const { return CurrentStage; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	bool GetStageTimerActive() const { return bStageTimerActive; }
+
+	/** Stage timer duration in seconds (countdown from this; frozen until start gate). */
+	static constexpr float StageTimerDurationSeconds = 60.f;
+
+	/** Seconds remaining on stage timer. When inactive, stays at 60 (frozen). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetStageTimerSecondsRemaining() const { return StageTimerSecondsRemaining; }
+
+	/** Call every frame from GameMode Tick to count down when timer is active. */
+	void TickStageTimer(float DeltaTime);
+
+	/** Reset timer to 60 and freeze (e.g. when entering next stage so start gate starts it again). */
+	void ResetStageTimerToFull();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetCurrentScore() const { return CurrentScore; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	const TArray<FRunEvent>& GetStructuredEventLog() const { return StructuredEventLog; }
+
+	/** Set current stage (1–66). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void SetCurrentStage(int32 Stage);
+
+	/** Start/stop stage timer (e.g. when crossing gate). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void SetStageTimerActive(bool bActive);
+
+	/** Add to Bounty score (e.g. on enemy kill). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddScore(int32 Points);
+
+	/** Add structured event for provenance (also appends string to EventLog for UI). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddStructuredEvent(ET66RunEventType EventType, const FString& Payload);
 
 	/** Apply damage (1 heart). Returns true if damage was applied (not blocked by i-frames). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -98,6 +151,24 @@ private:
 
 	UPROPERTY()
 	TArray<FString> EventLog;
+
+	UPROPERTY()
+	TArray<FRunEvent> StructuredEventLog;
+
+	UPROPERTY()
+	int32 CurrentStage = 1;
+
+	UPROPERTY()
+	bool bStageTimerActive = false;
+
+	UPROPERTY()
+	float StageTimerSecondsRemaining = StageTimerDurationSeconds;
+
+	/** Last integer second we broadcasted (throttle StageTimerChanged to once per second). */
+	int32 LastBroadcastStageTimerSecond = 60;
+
+	UPROPERTY()
+	int32 CurrentScore = 0;
 
 	UPROPERTY()
 	bool bHUDPanelsVisible = true;

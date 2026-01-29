@@ -10,14 +10,18 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 ## 0) Current state (update whenever it changes)
 
 - **Project:** T66 (Tribulation 66)
-- **Repo path:** C:\UE\T66
+- **Repo path:** C:\UE\T66 (Windows) / c:\UE\T66
 - **Engine version:** Unreal Engine 5.7
 - **Active branch:** main
-- **Last known-good commit:** 8786fc2 (Add complete UI framework with Slate-based programmatic screens)
-- **Current milestone:** Phase 1 - UI Flow + Localization (Bible sections 1.1-1.17)
-- **Build status:** ✅ C++ COMPILES SUCCESSFULLY
+- **Last known-good commit:** ec2d4e6 (Start/Stage gates, 60s timer, visible gates, memory + guidelines)
+- **Current milestone:** Phase 2 complete — Gameplay loop + Start/Stage gates, 60s countdown timer, visible gates (two poles / big rectangle)
+- **Build status:** ✅ C++ compiles successfully
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
-- **ValidateFull command:** Open in Editor and PIE test
+- **Full project setup (from project root):**
+  - **Batch:** `Scripts\RunFullSetup.bat`
+  - **Bash:** `./Scripts/RunFullSetup.sh` (chmod +x if needed)
+  - **Editor:** Py Execute Script → `Scripts/CreateAssets.py` then `Scripts/FullSetup.py` (or run `T66Setup` after DT_Items exists)
+- **Items-only setup:** `Scripts\RunItemsSetup.bat` or Py → `Scripts/SetupItemsDataTable.py`
 
 ---
 
@@ -28,341 +32,233 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - Keep commits small and descriptive.
 - If a change is risky (mass asset changes), write a plan first and checkpoint the repo.
 - UI must remain **event-driven** (no per-frame UI thinking).
-- **ALL UI text MUST be localized** — Use `UT66LocalizationSubsystem::GetText_*()` functions for every user-visible string. Never hardcode display text in C++ or Blueprints.
+- **ALL UI text MUST be localized** — Use `UT66LocalizationSubsystem::GetText_*()` for every user-visible string. Never hardcode display text in C++ or Blueprints.
 
 ---
 
 ## 2) Open questions / blockers
 
-- Q: WBP_LanguageSelect and WBP_Achievements Blueprints need creation
-  - Context: New screens added but Blueprint assets may not exist yet
-  - Proposed resolution: Create in editor (parent: T66LanguageSelectScreen, T66AchievementsScreen)
-  - Owner: User (create in editor)
-  - Status: PENDING - Run T66Setup command after creating
-
-- Q: Leaderboard data is placeholder only
-  - Context: Leaderboard panel shows fake data, not connected to any backend
-  - Proposed resolution: Will be connected when Steam integration begins
-  - Owner: Future phase
-  - Status: EXPECTED (placeholder is intentional)
+- **WBP_LanguageSelect / WBP_Achievements** — Optional. C++ screens work without them; create in editor if you want Blueprint overrides (parent: T66LanguageSelectScreen, T66AchievementsScreen). Re-run `T66Setup` after creating.
+- **Leaderboard data** — Placeholder only; will connect when Steam integration begins. Expected.
+- **Nav Mesh** — Enemies move toward player in **Tick** (no nav required). If you add nav later, place Nav Mesh Bounds Volume in GameplayLevel for pathfinding.
 
 ---
 
 ## 3) Known issues / tech debt
 
-(None yet - fresh codebase)
+- **Enemy health bar** — WidgetComponent has no Widget Class set; health bar is placeholder. Optional: create WBP_EnemyHealthBar and assign to HealthBarWidget.
+- **Save Slots** — C++ fallback exists; optional WBP_SaveSlots at `/Game/Blueprints/UI/WBP_SaveSlots` for visual customization.
+- **Hearts/Inventory** — Use Slate `BorderImage(WhiteBrush)` for filled squares; dynamic delegates use `AddDynamic`/`RemoveDynamic` (not AddUObject).
 
 ---
 
 ## 4) Change log (append-only)
 
+### 2026-01-30 — Start/Stage gates, 60s countdown timer, visible gates, UE 5.7 in guidelines
+
+- **Goal:** Two distinct gates (Start Gate = walk-through two poles, starts timer; Stage Gate = big 3D rectangle, interact F to next stage). Timer frozen at 60s until start gate; countdown from 60; timer always visible on HUD. Stage transition keeps bounty, gold, progress; timer resets to 60 for new stage. Document UE 5.7 install path in Cursor guidelines.
+- **Commit:** ec2d4e6
+
+**Cursor guidelines**
+- **T66_Cursor_Guidelines.md:** Section 7 — Added explicit note: Unreal Engine 5.7, install location `C:\Program Files\Epic Games\UE_5.7\` (UE_ROOT env var already pointed there).
+
+**Run state (timer)**
+- **UT66RunStateSubsystem:** `StageTimerDurationSeconds = 60.f`, `StageTimerSecondsRemaining` (frozen at 60 until start gate). `GetStageTimerSecondsRemaining()`, `TickStageTimer(DeltaTime)` (called from GameMode Tick; counts down when active; broadcasts `StageTimerChanged` at most once per second). `ResetStageTimerToFull()` — sets timer to 60 and freezes (used when entering next stage). `ResetForNewRun()` and `ResetStageTimerToFull()` both set `StageTimerSecondsRemaining = 60`, `bStageTimerActive = false`.
+
+**GameMode**
+- **AT66GameMode:** `PrimaryActorTick.bCanEverTick = true`. `Tick(DeltaTime)` calls `RunState->TickStageTimer(DeltaTime)`. On level load: if `bIsStageTransition` → clear flag and `RunState->ResetStageTimerToFull()` (keep progress, reset timer for new stage); else `RunState->ResetForNewRun()`. `SpawnStartGateForPlayer()` after RestartPlayer (near hero). `SpawnStageGate()` in BeginPlay at `StageGateSpawnOffset` (default 2500, 0, 200).
+
+**Gates**
+- **AT66StartGate:** Two pole meshes (Engine cylinder, left/right, ~100 uu apart), thin trigger between them (extent 60×80×180). Walk through (overlap) → `SetStageTimerActive(true)`, timer unfreezes and counts down from 60. No F interaction. Spawned by GameMode in RestartPlayer at hero + (150, 0, 0).
+- **AT66StageGate:** Big 3D rectangle (cube mesh scaled 2×4×3 = 200×400×300). Overlap + F → `AdvanceToNextStage()`: increment stage, `bIsStageTransition = true`, reload current level. Progress (gold, bounty, items, hearts) kept; timer reset to 60 for new stage. Spawned in GameMode BeginPlay at `StageGateSpawnOffset`.
+
+**HUD**
+- **UT66GameplayHUDWidget:** Timer text always visible (e.g. 1:00), green, below stage number. Subscribes to `StageTimerChanged`; `RefreshHUD()` formats `GetStageTimerSecondsRemaining()` as M:SS. Frozen at 60 until start gate crossed; then countdown.
+
+**Verification**
+- C++ compiles; no new linter errors. Gates and timer driven by existing spawn/event flow.
+
+---
+
+### 2026-01-29 — Gameplay loop: HUD, combat, enemies, items, run summary, setup scripts
+
+- **Goal:** In-run HUD, hero auto-attack projectile, enemy spawn/chase/touch damage, items (red ball), vendor, run summary on death, save/load, pause menu, full setup automation.
+- **Commit:** 7a2d3de
+
+**Core**
+- **Run state:** `UT66RunStateSubsystem` — CurrentHearts (5), MaxHearts, CurrentGold, Inventory, EventLog, bHUDPanelsVisible; ApplyDamage (i-frames 0.75s), AddItem, SellFirstItem, ResetForNewRun, ToggleHUDPanels; delegates HeartsChanged, GoldChanged, InventoryChanged, LogAdded, PanelVisibilityChanged, OnPlayerDied.
+- **Save system:** `UT66RunSaveGame` (run data), `UT66SaveIndex` (slot metadata), `UT66SaveSubsystem` (save/load). GameInstance: CurrentSaveSlotIndex, PendingLoadedTransform, bApplyLoadedTransform, bIsNewGameFlow.
+- **Items:** `FItemData` (ItemID, PlaceholderColor, SellValueGold). GameInstance: ItemsDataTable, GetItemsDataTable(), GetItemData().
+- **Data:** DT_Items, Content/Data/Items.csv. FullSetup.py and T66UISetupSubsystem set ItemsDataTable on BP_T66GameInstance.
+
+**Gameplay**
+- **Hero:** `UT66CombatComponent` on AT66HeroBase — AttackRange 4000, FireIntervalSeconds 10, DamagePerShot 999 (insta kill). Spawns `AT66HeroProjectile` toward closest enemy; projectile overlaps enemy capsule, TakeDamageFromHero(Damage), Destroy.
+- **Projectile:** `AT66HeroProjectile` — SphereComponent (overlap), ProjectileMovementComponent (1200 u/s), red mesh. SetTargetLocation() sets velocity; OnSphereOverlap → enemy TakeDamageFromHero, ignore owner (hero).
+- **Enemies:** `AT66EnemyBase` — Character with VisualMesh (red cylinder), HealthBarWidget. Tick: AddMovementInput toward player (no nav mesh). Capsule: ECR_Overlap for Pawn (touch hero) and WorldDynamic (projectile hit). OnCapsuleBeginOverlap(AT66HeroBase) → RunState->ApplyDamage(1) with cooldown. OnDeath → NotifyEnemyDied, spawn AT66ItemPickup (random ItemID), Destroy.
+- **Enemy Director:** `AT66EnemyDirector` — SpawnIntervalSeconds 10, EnemiesPerWave 3, MaxAliveEnemies 12; SpawnMinDistance 400, SpawnMaxDistance 1000. First wave delay 2s. SpawnWave() traces ground, spawns AT66EnemyBase, sets OwningDirector.
+- **Vendor:** `AT66VendorNPC` — Big blue cylinder (BasicShapes/Cylinder, scale 2,2,3). SphereComponent 150 radius. TrySellFirstItem() → RunState->SellFirstItem(). **Spawned by GameMode** in RestartPlayer (SpawnVendorForPlayer) near hero at hero+300,0,0.
+- **Item pickup:** `AT66ItemPickup` — Red sphere mesh, SetItemID sets red material. F interact: PlayerController finds closest vendor or pickup, vendor→SellFirstItem, pickup→RunState->AddItem + Destroy pickup.
+- **GameMode:** BeginPlay: RunState->ResetForNewRun(), Spawn AT66EnemyDirector. RestartPlayer: SpawnCompanionForPlayer, SpawnVendorForPlayer. SpawnDefaultPawnFor: apply PendingLoadedTransform if bApplyLoadedTransform.
+
+**UI**
+- **Gameplay HUD:** `UT66GameplayHUDWidget` — Hearts (5 filled red squares, grey when damaged; WhiteBrush), gold text, inventory slots (red when item, grey empty), minimap panel, inventory panel. T key toggles panel visibility via RunState->ToggleHUDPanels(). Delegates: AddDynamic(RefreshHUD) on Hearts/Gold/Inventory/PanelVisibility; RemoveDynamic in NativeDestruct.
+- **Run Summary:** `UT66RunSummaryScreen` — Modal on death. Shows event log, RESTART (ResetForNewRun, unpause, open GameplayLevel), MAIN MENU (reset, open FrontendLevel). PlayerController subscribes to RunState->OnPlayerDied → pause, ShowModal(RunSummary), UI input mode.
+- **Pause menu:** `UT66PauseMenuScreen` — Resume, Save and Quit, Restart, Settings, Report Bug. Esc closes sub-modals then pause. T66ReportBugScreen for bug text.
+- **Save slots:** `UT66SaveSlotsScreen` — 3x3 grid, load from UT66SaveSubsystem; New Game sets bIsNewGameFlow, Load Game → PartySizePicker routes to SaveSlots.
+- **Slate fixes:** SOverlay include `Widgets/SOverlay.h`; SScrollBox `Widgets/Layout/SScrollBox.h`. SBorder: no WidthOverride (use SBox wrapper). Dynamic delegates: AddDynamic + UFUNCTION for bound function; RemoveDynamic for unbind.
+
+**Input**
+- T = Toggle HUD panels
+- F = Interact (vendor sell or pickup)
+- Escape = Pause / back from modals
+- P = Pause
+
+**Scripts**
+- `Scripts/RunFullSetup.bat` — Runs CreateAssets.py then FullSetup.py via UnrealEditor-Cmd (set UE_ROOT if needed).
+- `Scripts/RunFullSetup.sh` — Same for bash; defaults UE_ROOT by OS (macOS/Linux/Git Bash).
+- `Scripts/SetupItemsDataTable.py` — Creates DT_Items if missing, fills from Items.csv, runs T66Setup. Run from editor Py or RunItemsSetup.bat.
+- `Scripts/FullSetup.py` — Now includes ItemsDataTable in configure_game_instance(), Items CSV import, DT_Items in verify_all_assets().
+
+**Build**
+- T66.Build.cs: PublicDependencyModuleNames include Slate, SlateCore, UMG, AIModule, NavigationSystem.
+- New: T66RunStateSubsystem, T66SaveSubsystem, T66RunSaveGame, T66SaveIndex, T66CombatComponent, T66EnemyBase, T66EnemyAIController, T66EnemyDirector, T66HeroProjectile, T66ItemPickup, T66VendorNPC, T66GameplayHUDWidget, T66PauseMenuScreen, T66ReportBugScreen, T66RunSummaryScreen, T66CompanionGridScreen, T66HeroGridScreen, etc.
+
+---
+
 ### 2025-01-28 — Localization System + Bible-Compliant UI Restructure
 
-- **Goal:** Add localization support (EN, PT-BR, 繁體中文) + restructure UI per Bible spec
-- **Bible refs:** 1.2 (Main Menu), 1.7 (Language Select), 1.10 (Hero Selection), 1.13 (Companion Selection)
-- **Risk tier:** Green (extending existing systems)
-
-**Part 1: Localization System**
-- `Source/T66/Core/T66LocalizationSubsystem.h/.cpp` — GameInstance subsystem:
-  - `ET66Language` enum (English, BrazilianPortuguese, ChineseTraditional)
-  - `SetLanguage()` / `GetCurrentLanguage()` — Language switching
-  - `OnLanguageChanged` delegate — Broadcasts when language changes
-  - 50+ `GetText_*()` functions for all UI strings in all languages
-  - Extensible design: add new languages by adding enum value + switch cases
-
-**Part 2: Main Menu Restructure (Bible 1.2)**
-- Two-panel layout: Left (buttons) + Right (leaderboard)
-- Left panel: Title + vertical button stack (New Game, Load Game, Settings, Achievements)
-- Right panel: `ST66LeaderboardPanel` Slate widget with:
-  - Filter toggles (Global / Friends / Streamers)
-  - Dropdown buttons (Party Size, Difficulty) - cycle on click
-  - 10 leaderboard rows with rank, name, score, time
-  - Placeholder data with fake player names
-- Language icon button (bottom-left)
-- Quit button (top-right)
-
-**Part 3: Leaderboard Panel Component**
-- `Source/T66/UI/Components/T66LeaderboardPanel.h/.cpp`:
-  - Pure Slate widget (SCompoundWidget)
-  - Generates 10 placeholder entries with fake names/scores
-  - Highlights local player row (entry 8)
-  - Filter/dropdown clicking regenerates data
-
-**Part 4: Language Select Modal (Bible 1.7)**
-- `Source/T66/UI/Screens/T66LanguageSelectScreen.h/.cpp`:
-  - Modal overlay with dark background
-  - Vertical list of language buttons
-  - Preview on select, Confirm/Back buttons
-  - Instantly updates UI when language changes
-
-**Part 5: Hero Selection Restructure (Bible 1.10)**
-- Top bar: HERO GRID button + hero belt (nav arrows + current hero name)
-- Left panel: Skins list with BUY/EQUIP buttons (4 placeholder skins)
-- Center: Preview area + CHOOSE COMPANION button + Body Type toggle
-- Right panel: HERO INFO + video placeholder + description + 4 medal slots + LORE button
-- Bottom: 7 difficulty buttons (Easy→Final) + THE LAB button + ENTER THE TRIBULATION button
-- Back button (bottom-left overlay)
-
-**Part 6: Companion Selection Restructure (Bible 1.13)**
-- Mirrors Hero Selection layout
-- Top bar: COMPANION GRID button + nav belt + NO COMPANION button
-- Left panel: Skins list (3 placeholder skins)
-- Center: Preview area + Body Type toggle (disabled when no companion)
-- Right panel: COMPANION INFO + lore + passive effect + 3 medal slots + LORE button
-- Bottom: CONFIRM COMPANION button
-- Back button (bottom-left overlay)
-
-**Part 7: Data Types Added**
-- `FLeaderboardEntry` struct — Rank, PlayerName, Score, TimeSeconds, HeroID, PartySize, Difficulty, StageReached, bIsLocalPlayer
-- `FSkinData` struct — SkinID, DisplayName, OwnerID, CoinCost, bIsOwned, bIsEquipped, bIsDefault
-- `ET66LeaderboardFilter` enum — Global, Friends, Streamers
-
-**Part 8: Localized Text Updates**
-- All screens now use `UT66LocalizationSubsystem::GetText_*()` methods
-- Text updates automatically when language changes
-- Main Menu subscribes to `OnLanguageChanged` and rebuilds UI
-
-- **Commands run (proof):**
-  - Build.bat T66Editor Win64 Development → Result: Succeeded (12.37 seconds)
-- **Result:** All C++ compiles, UI restructured per Bible, localization functional
-- **Commit:** (pending)
+*(Previous entry — see original content in history. Summary: LocalizationSubsystem, Main Menu two-panel + leaderboard, Language Select, Hero/Companion selection restructure, FLeaderboardEntry, FSkinData, ET66LeaderboardFilter.)*
 
 ---
 
 ### 2025-01-28 — Programmatic UI Construction + Editor Subsystem
 
-- **Goal:** Create Editor subsystem to auto-configure Blueprints + add programmatic UI construction to screens
-- **Bible refs:** 1.1-1.15 (Boot Intro through Hero Selection Co-op)
-- **Risk tier:** Green (new code extending existing systems)
-
-**Part 1: T66Editor Module Created**
-- `Source/T66Editor/T66Editor.Build.cs` — Editor module dependencies (UnrealEd, UMGEditor, etc.)
-- `Source/T66Editor/T66Editor.h/.cpp` — Module entry point
-- `Source/T66Editor/T66UISetupSubsystem.h/.cpp` — Editor subsystem with auto-configuration:
-  - `RunFullSetup()` — Runs all configuration in one call
-  - `ConfigureFrontendLevel()` — Sets GameMode override on FrontendLevel
-  - `ConfigureGameplayLevel()` — Sets GameMode override on GameplayLevel
-  - `ConfigureFrontendGameMode()` — Sets PlayerController class, no pawn
-  - `ConfigureGameplayGameMode()` — Sets PlayerController class, HeroBase pawn
-  - `ConfigurePlayerController()` — Registers all screen classes in ScreenClasses TMap
-  - `ConfigureGameInstance()` — Sets DataTable references
-
-**Part 2: Programmatic UI Construction**
-- `T66ScreenBase.h/.cpp` — Added helper functions for building UI in code:
-  - `CreateRootCanvas()`, `CreateButton()`, `CreateText()`, `CreateTitle()`
-  - `CreateVerticalBox()`, `CreateHorizontalBox()`, `CreateSizeBox()`, `CreateBorder()`
-  - `AddToCanvas()`, `AddToCenterOfCanvas()` — Canvas positioning helpers
-- All screen classes now build their UI programmatically via `BuildUI()`:
-  - `T66MainMenuScreen` — Title, New Game/Load Game/Settings/Achievements buttons, Quit/Language buttons
-  - `T66PartySizePickerScreen` — Solo/Duo/Trio selection with descriptions, Back button
-  - `T66QuitConfirmationModal` — Dark overlay, modal box with Stay/Quit buttons
-  - `T66SettingsScreen` — Modal with tabs (placeholder), Close button
-  - `T66HeroSelectionScreen` — Hero nav (</>), Choose Companion, Enter Tribulation buttons
-  - `T66CompanionSelectionScreen` — Companion nav, No Companion option, Confirm button
-  - `T66SaveSlotsScreen` — Placeholder for 3x3 grid, Back button
-
-**Part 3: Configuration Updates**
-- `T66.uproject` — Added T66Editor module (Type: Editor)
-- `T66Editor.Target.cs` — Added T66Editor to ExtraModuleNames
-
-- **Commands run (proof):**
-  - UnrealHeaderTool → Result: Succeeded (processed 21 files)
-  - Full build blocked by Live Coding (editor open)
-- **Result:** UHT validates all headers. Full compile requires editor restart or Live Coding.
-- **Commit:** (not yet committed)
-
-### TO RUN SETUP:
-1. Close Unreal Editor
-2. Rebuild project (or open editor and Live Compile)
-3. In Editor, open Output Log and run: `T66.Setup.RunFullSetup` (console command)
-   OR use the subsystem from Blueprint/C++: `GetEditorSubsystem<UT66UISetupSubsystem>()->RunFullSetup()`
+*(Previous entry — T66Editor, T66UISetupSubsystem, RunFullSetup/Configure*, BuildUI() on all screens, T66Setup console command.)*
 
 ---
 
 ### 2025-01-28 — Initial UI Framework + Asset Creation
 
-- **Goal:** Create complete C++ foundation + all Blueprint/DataTable/Level assets via automation
-- **Bible refs:** 1.1-1.15 (Boot Intro through Hero Selection Co-op)
-- **Risk tier:** Green (new code, no existing systems affected)
-
-**Part 1: C++ Code**
-- `Source/T66/T66.Build.cs` — Added Slate, SlateCore, UMG + include paths
-- `Source/T66/T66.h/.cpp` — Module header with log category
-- `Source/T66/Data/T66DataTypes.h` — FHeroData, FCompanionData, enums
-- `Source/T66/Core/T66GameInstance.h/.cpp` — Game Instance with DataTable management
-- `Source/T66/UI/T66UITypes.h` — ET66ScreenType enum
-- `Source/T66/UI/T66UIManager.h/.cpp` — Screen navigation manager
-- `Source/T66/UI/T66ScreenBase.h/.cpp` — Base widget class
-- `Source/T66/UI/Screens/*.h/.cpp` — All screen classes (MainMenu, PartySizePicker, etc.)
-- `Source/T66/Gameplay/T66HeroBase.h/.cpp` — Placeholder hero (colored cylinder)
-- `Source/T66/Gameplay/T66GameMode.h/.cpp` — Gameplay GameMode
-- `Source/T66/Gameplay/T66FrontendGameMode.h/.cpp` — Frontend GameMode
-- `Source/T66/Gameplay/T66PlayerController.h/.cpp` — Player Controller with UI Manager
-
-**Part 2: Assets Created (via Python commandlet)**
-- `Content/Blueprints/Core/BP_T66GameInstance.uasset`
-- `Content/Blueprints/Core/BP_T66PlayerController.uasset`
-- `Content/Blueprints/Core/BP_HeroBase.uasset`
-- `Content/Blueprints/GameModes/BP_FrontendGameMode.uasset`
-- `Content/Blueprints/GameModes/BP_GameplayGameMode.uasset`
-- `Content/Blueprints/UI/WBP_MainMenu.uasset`
-- `Content/Blueprints/UI/WBP_PartySizePicker.uasset`
-- `Content/Blueprints/UI/WBP_HeroSelection.uasset`
-- `Content/Blueprints/UI/WBP_CompanionSelection.uasset`
-- `Content/Blueprints/UI/WBP_SaveSlots.uasset`
-- `Content/Blueprints/UI/WBP_Settings.uasset`
-- `Content/Blueprints/UI/WBP_QuitConfirmation.uasset`
-- `Content/Data/DT_Heroes.uasset`
-- `Content/Data/DT_Companions.uasset`
-- `Content/Maps/FrontendLevel.umap`
-- `Content/Maps/GameplayLevel.umap`
-
-**Part 3: Configuration**
-- `Config/DefaultEngine.ini` — Updated GameDefaultMap, GameInstanceClass
-
-**Part 4: CSV Data Files**
-- `Content/Data/Heroes.csv` — 5 heroes with colors
-- `Content/Data/Companions.csv` — 3 companions
-
-- **Commands run (proof):**
-  - UnrealBuildTool → Result: Succeeded (3.39 seconds)
-  - Python CreateAssets.py → Result: Success - 0 error(s), 1 warning(s)
-  - Python ImportData.py → Result: Success - 0 error(s), 0 warning(s)
-- **Result:** All C++ compiles, all assets created. Manual Blueprint configuration required.
-- **Commit:** (not yet committed)
+*(Previous entry — T66.Build.cs, T66DataTypes, T66GameInstance, T66UIManager, T66ScreenBase, all screens, T66HeroBase, T66GameMode, T66FrontendGameMode, T66PlayerController, CreateAssets.py, DT_Heroes/DT_Companions, Blueprints, levels.)*
 
 ---
 
 ## 5) Working queue (short, prioritized)
 
-### AUTOMATED SETUP (NEW - use T66UISetupSubsystem):
+### Full project setup (recommended)
 
-The T66Editor module now includes an Editor Subsystem that automates most configuration:
+1. **Build:** Compile T66Editor in Visual Studio (or Build.bat).
+2. **Data + config:** From project root run:
+   - **Windows:** `Scripts\RunFullSetup.bat`
+   - **Bash:** `./Scripts/RunFullSetup.sh`
+   - This runs CreateAssets.py (DataTables, levels) then FullSetup.py (Game Instance, PlayerController, GameModes, CSV import, verify). Items (DT_Items, Items.csv) are included in FullSetup.
+3. **Editor:** Open project, optionally add Nav Mesh Bounds Volume in GameplayLevel (enemies move without it; useful for future). Vendor **does not** need to be placed — it spawns when the hero spawns.
 
-**To Run Auto-Setup:**
-1. Close Unreal Editor if open
-2. Rebuild the project (or use Live Coding Ctrl+Alt+F11 in editor)
-3. Open Unreal Editor
-4. In the Output Log, run: `T66Setup` (console command)
-   - Or in Blueprint/C++: `GEditor->GetEditorSubsystem<UT66UISetupSubsystem>()->RunFullSetup()`
+### Optional manual steps
 
-**What Auto-Setup Configures:**
-- ✅ BP_T66GameInstance — DataTable references
-- ✅ BP_T66PlayerController — Screen class mappings (TMap)
-- ✅ BP_FrontendGameMode — PlayerController class, no pawn
-- ✅ BP_GameplayGameMode — PlayerController class, HeroBase pawn
-- ✅ FrontendLevel — GameMode override
-- ✅ GameplayLevel — GameMode override
+- Create WBP_LanguageSelect / WBP_Achievements if you want Blueprint overrides; re-run T66Setup.
+- Create WBP_EnemyHealthBar and assign to enemy HealthBarWidget for health bar visuals.
+- Create WBP_SaveSlots at `/Game/Blueprints/UI/WBP_SaveSlots` for Save Slots screen customization.
 
-**What UI Screens Now Have (Programmatic UI):**
-- ✅ All screens build their UI in C++ via BuildUI() — no manual Widget Designer work needed
-- ✅ Buttons are created and click events bound automatically
-- ✅ Main Menu shows first on PIE (when FrontendLevel is default map)
+### T66Setup (editor)
 
-### REMAINING MANUAL STEPS (minimal):
-
-1. **Create WBP_LanguageSelect** - New Widget Blueprint needed:
-   - In Content Browser, navigate to `Content/Blueprints/UI/`
-   - Right-click → User Interface → Widget Blueprint
-   - Name it `WBP_LanguageSelect`
-   - In Class Settings, set Parent Class to `T66LanguageSelectScreen`
-   - Save and re-run `T66Setup`
-
-2. **GameplayLevel** - Add environment:
-   - Add a `PlayerStart` actor to the level
-   - Add floor/lighting as needed
-
-3. **DT_Heroes** - Verify data (should auto-import):
-   - Open DataTable, should have 5 rows
-   - If empty, right-click → Reimport from `Content/Data/Heroes.csv`
-
-4. **DT_Companions** - Verify data (should auto-import):
-   - Open DataTable, should have 3 rows
-   - If empty, right-click → Reimport from `Content/Data/Companions.csv`
+- In Output Log: `T66Setup` — Configures BP_T66GameInstance (DataTables including DT_Items), BP_T66PlayerController (ScreenClasses), GameModes, level overrides. Run after creating new assets that need wiring.
 
 ---
 
-## 6) Architecture Summary
+## 6) Architecture summary
 
-### File Structure
+### File structure (current)
+
 ```
 Source/T66/
-├── T66.h / T66.cpp                    # Module entry, log category
-├── T66.Build.cs                       # Module dependencies + include paths
+├── T66.h / T66.cpp
+├── T66.Build.cs                    # Core, Slate, SlateCore, UMG, AIModule, NavigationSystem
 ├── Data/
-│   └── T66DataTypes.h                 # FHeroData, FCompanionData, FLeaderboardEntry, FSkinData, enums
+│   └── T66DataTypes.h               # FHeroData, FCompanionData, FItemData, FLeaderboardEntry, FSkinData, enums
 ├── Core/
-│   ├── T66GameInstance.h/.cpp         # Persistent state, DataTable access
-│   └── T66LocalizationSubsystem.h/.cpp # Language management, all UI strings
+│   ├── T66GameInstance.h/.cpp       # DataTables (Heroes, Companions, Items), save slot/transform, bIsNewGameFlow
+│   ├── T66LocalizationSubsystem.h/.cpp
+│   ├── T66RunStateSubsystem.h/.cpp  # Hearts, gold, inventory, event log, HUD visibility, i-frames, OnPlayerDied
+│   ├── T66SaveSubsystem.h/.cpp      # Save/load run data
+│   ├── T66RunSaveGame.h             # Run snapshot (hero, companion, map, transform, etc.)
+│   └── T66SaveIndex.h               # Slot metadata
 ├── UI/
-│   ├── T66UITypes.h                   # ET66ScreenType enum
-│   ├── T66UIManager.h/.cpp            # Screen management, navigation
-│   ├── T66ScreenBase.h/.cpp           # Base widget class
+│   ├── T66UITypes.h                 # ET66ScreenType (includes RunSummary, PauseMenu, ReportBug)
+│   ├── T66UIManager.h/.cpp          # Screen stack, ShowModal, GetCurrentModalType
+│   ├── T66ScreenBase.h/.cpp
+│   ├── T66GameplayHUDWidget.h/.cpp  # In-run HUD: hearts, gold, inventory, minimap; T toggle
 │   ├── Screens/
-│   │   ├── T66MainMenuScreen.h/.cpp   # Two-panel: buttons + leaderboard
-│   │   ├── T66PartySizePickerScreen.h/.cpp
-│   │   ├── T66HeroSelectionScreen.h/.cpp  # Bible 1.10 layout
-│   │   ├── T66CompanionSelectionScreen.h/.cpp  # Bible 1.13 layout
-│   │   ├── T66SaveSlotsScreen.h/.cpp
-│   │   ├── T66SettingsScreen.h/.cpp
-│   │   ├── T66QuitConfirmationModal.h/.cpp
-│   │   └── T66LanguageSelectScreen.h/.cpp  # Language selection modal
+│   │   ├── T66MainMenuScreen, T66PartySizePickerScreen, T66HeroSelectionScreen, T66CompanionSelectionScreen
+│   │   ├── T66HeroGridScreen, T66CompanionGridScreen, T66SaveSlotsScreen
+│   │   ├── T66SettingsScreen, T66QuitConfirmationModal, T66LanguageSelectScreen, T66AchievementsScreen
+│   │   ├── T66PauseMenuScreen, T66ReportBugScreen, T66RunSummaryScreen
 │   └── Components/
-│       ├── T66Button.h/.cpp           # Reusable button component
-│       └── T66LeaderboardPanel.h/.cpp # Slate leaderboard widget
+│       ├── T66Button.h/.cpp
+│       └── T66LeaderboardPanel.h/.cpp
 └── Gameplay/
-    ├── T66HeroBase.h/.cpp             # Placeholder hero (colored cylinder)
-    ├── T66GameMode.h/.cpp             # Spawns selected hero
-    ├── T66FrontendGameMode.h/.cpp     # Menu level (no pawn)
-    └── T66PlayerController.h/.cpp     # Owns UIManager
+    ├── T66HeroBase.h/.cpp           # Character, UT66CombatComponent
+    ├── T66CombatComponent.h/.cpp    # Timer: TryFire every 10s, spawn AT66HeroProjectile toward closest enemy
+    ├── T66HeroProjectile.h/.cpp      # Overlap enemy → TakeDamageFromHero(999), Destroy
+    ├── T66EnemyBase.h/.cpp          # Character, red cylinder, Tick move toward player, touch damage, OnDeath spawn pickup
+    ├── T66EnemyAIController.h/.cpp  # Optional SimpleMoveToActor (nav); movement also in enemy Tick
+    ├── T66EnemyDirector.h/.cpp      # Timer: SpawnWave 3 enemies every 10s (first wave 2s), 400–1000 uu from player
+    ├── T66ItemPickup.h/.cpp         # Red sphere, SetItemID(red), F to collect
+    ├── T66VendorNPC.h/.cpp          # Big blue cylinder, F to sell first item, spawned by GameMode
+    ├── T66CompanionBase.h/.cpp      # Companion pawn, follow hero
+    ├── T66CompanionPreviewStage.h/.cpp
+    ├── T66HeroPreviewStage.h/.cpp
+    ├── T66StartGate.h/.cpp          # Two poles + trigger; walk-through starts timer (SetStageTimerActive)
+    ├── T66StageGate.h/.cpp          # Big 3D rectangle; F to AdvanceToNextStage (reload level, keep progress)
+    ├── T66GameMode.h/.cpp           # Tick→TickStageTimer; RestartPlayer: SpawnCompanion, SpawnVendor, SpawnStartGate; BeginPlay: spawn StageGate, RunState reset or ResetStageTimerToFull
+    ├── T66FrontendGameMode.h/.cpp
+    └── T66PlayerController.h/.cpp   # Frontend vs Gameplay init, HUD, Interact (F), Pause (Esc), OnPlayerDied → RunSummary
+
+Source/T66Editor/
+├── T66Editor.Build.cs, T66Editor.h/.cpp
+└── T66UISetupSubsystem.h/.cpp       # RunFullSetup, Configure* (GameInstance with DT_Items, PlayerController, GameModes, levels)
+
+Scripts/
+├── CreateAssets.py                  # DataTables (DT_Heroes, DT_Companions, DT_Items), levels
+├── FullSetup.py                     # Button widget, Game Instance (Heroes, Companions, Items), PlayerController, GameModes, CSV import, verify
+├── SetupItemsDataTable.py           # Create DT_Items, fill from Items.csv, run T66Setup
+├── ImportData.py                    # Fill DataTables from CSV (Heroes, Companions, Items)
+├── RunFullSetup.bat / RunFullSetup.sh
+└── RunItemsSetup.bat
 
 Content/
-├── Blueprints/
-│   ├── Core/
-│   │   ├── BP_T66GameInstance.uasset
-│   │   ├── BP_T66PlayerController.uasset
-│   │   └── BP_HeroBase.uasset
-│   ├── GameModes/
-│   │   ├── BP_FrontendGameMode.uasset
-│   │   └── BP_GameplayGameMode.uasset
-│   └── UI/
-│       ├── WBP_MainMenu.uasset
-│       ├── WBP_PartySizePicker.uasset
-│       ├── WBP_HeroSelection.uasset
-│       ├── WBP_CompanionSelection.uasset
-│       ├── WBP_SaveSlots.uasset
-│       ├── WBP_Settings.uasset
-│       └── WBP_QuitConfirmation.uasset
-├── Data/
-│   ├── DT_Heroes.uasset
-│   ├── DT_Companions.uasset
-│   ├── Heroes.csv
-│   └── Companions.csv
-└── Maps/
-    ├── FrontendLevel.umap
-    └── GameplayLevel.umap
+├── Blueprints/Core/                 # BP_T66GameInstance, BP_T66PlayerController, BP_HeroBase
+├── Blueprints/GameModes/            # BP_FrontendGameMode, BP_GameplayGameMode
+├── Blueprints/UI/                   # WBP_*, WBP_T66Button in Components
+├── Data/                            # DT_Heroes, DT_Companions, DT_Items, *.csv
+└── Maps/                            # FrontendLevel, GameplayLevel
 ```
 
-### Data Flow
-1. User selects hero in UI → stored in `UT66GameInstance::SelectedHeroID`
-2. User clicks "Enter the Tribulation" → loads GameplayLevel
-3. `AT66GameMode::SpawnDefaultPawnFor` reads SelectedHeroID from GameInstance
-4. GameMode looks up FHeroData from DataTable
-5. GameMode spawns `AT66HeroBase`, calls `InitializeHero(HeroData)`
-6. Hero sets its cylinder color from `HeroData.PlaceholderColor`
+### Data flow (gameplay)
 
-### Screen Navigation
+1. **Frontend:** Main Menu → New Game / Load Game → PartySizePicker → HeroSelection → CompanionSelection → (Enter Tribulation or pick save slot) → GameplayLevel.
+2. **Gameplay start:** GameMode BeginPlay → RunState->ResetForNewRun() or (if bIsStageTransition) ResetStageTimerToFull(); spawn EnemyDirector, SpawnStageGate(). RestartPlayer → spawn hero, SpawnCompanionForPlayer, SpawnVendorForPlayer, SpawnStartGateForPlayer().
+3. **In run:** RunState holds hearts, gold, inventory, log, stage number, stage timer (60s frozen until start gate). Walk through Start Gate (two poles) → timer starts counting down. HUD shows "Stage number: x" and timer (1:00 → 0:59…). HUD subscribes to RunState delegates; T toggles panels. F at Stage Gate (big rectangle) → next stage (reload level, keep progress, timer reset to 60). Hero CombatComponent fires projectile every 10s at closest enemy (insta kill). Enemies spawn 3 every 10s, chase in Tick, touch = 1 heart damage (i-frames). Enemy death → red ball pickup; F to collect (inventory slot red) or F at vendor to sell.
+4. **Death:** RunState->ApplyDamage leads to CurrentHearts 0 → OnPlayerDied → PlayerController shows RunSummary modal, pause. Restart or Main Menu resets RunState and loads level.
+
+### Screen navigation (current)
+
 ```
-MainMenu (two-panel: buttons left, leaderboard right)
-  ├── NewGame → PartySizePicker → HeroSelection → CompanionSelection → HeroSelection → [Enter] → GameplayLevel
-  ├── LoadGame → PartySizePicker → SaveSlots → HeroSelection → ...
+MainMenu
+  ├── New Game → PartySizePicker → HeroSelection → CompanionSelection → [Enter] → GameplayLevel
+  ├── Load Game → PartySizePicker → SaveSlots → (load) → GameplayLevel
   ├── Settings (modal)
-  ├── Language (modal) → LanguageSelect
-  └── Quit (modal) → QuitConfirmation → Exit
+  ├── Achievements (modal)
+  ├── Language → LanguageSelect (modal)
+  └── Quit → QuitConfirmation (modal)
+
+Gameplay: T = HUD toggle, F = Interact, Esc = Pause
+  └── PauseMenu → Resume / Save and Quit / Restart / Settings / Report Bug
+  └── On death → RunSummary (Restart / Main Menu)
 ```
 
 ### Localization
+
 - **Languages:** English, Português (Brasil), 繁體中文
-- **Subsystem:** `UT66LocalizationSubsystem` (GameInstance subsystem)
-- **Usage:** `GetLocSubsystem()->GetText_NewGame()` etc.
-- **Extending:** Add new `ET66Language` value, add cases to all `GetText_*()` methods
+- **Subsystem:** `UT66LocalizationSubsystem`
+- **Usage:** `GetText_*()` for all UI strings; screens subscribe to OnLanguageChanged where needed.

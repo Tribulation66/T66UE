@@ -36,6 +36,9 @@ protected:
 
 	/** Cached Slate widgets for updates (set in BuildSlateUI via SAssignNew) */
 	TSharedPtr<STextBlock> GoldText;
+	TSharedPtr<STextBlock> ScoreText;
+	TSharedPtr<STextBlock> StageText;
+	TSharedPtr<STextBlock> TimerText;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TSharedPtr<SBox> InventoryPanelBox;

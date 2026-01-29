@@ -5,6 +5,8 @@
 #include "Gameplay/T66CompanionBase.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66VendorNPC.h"
+#include "Gameplay/T66StartGate.h"
+#include "Gameplay/T66StageGate.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -21,6 +23,7 @@
 
 AT66GameMode::AT66GameMode()
 {
+	PrimaryActorTick.bCanEverTick = true;
 	// Default to our hero base class
 	DefaultPawnClass = AT66HeroBase::StaticClass();
 	DefaultHeroClass = AT66HeroBase::StaticClass();
@@ -30,13 +33,22 @@ void AT66GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Reset run state when entering gameplay level (hearts, gold, inventory, log)
+	// Reset run state when entering gameplay level unless this is a stage transition (keep progress)
 	UGameInstance* GI = GetGameInstance();
-	if (GI)
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (GI && T66GI)
 	{
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
-			RunState->ResetForNewRun();
+			if (T66GI->bIsStageTransition)
+			{
+				T66GI->bIsStageTransition = false;
+				RunState->ResetStageTimerToFull(); // New stage: timer frozen at 60 until start gate
+			}
+			else
+			{
+				RunState->ResetForNewRun();
+			}
 		}
 	}
 
@@ -50,7 +62,22 @@ void AT66GameMode::BeginPlay()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	GetWorld()->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
+	// Spawn Stage Gate (interact F to next stage) at far side of map
+	SpawnStageGate();
+
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup complete, hero spawning handled by SpawnDefaultPawnFor"));
+}
+
+void AT66GameMode::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->TickStageTimer(DeltaTime);
+		}
+	}
 }
 
 void AT66GameMode::RestartPlayer(AController* NewPlayer)
@@ -58,6 +85,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 	Super::RestartPlayer(NewPlayer);
 	SpawnCompanionForPlayer(NewPlayer);
 	SpawnVendorForPlayer(NewPlayer);
+	SpawnStartGateForPlayer(NewPlayer);
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	APawn* Pawn = NewPlayer ? NewPlayer->GetPawn() : nullptr;
@@ -119,6 +147,42 @@ void AT66GameMode::SpawnVendorForPlayer(AController* Player)
 	if (Vendor)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Spawned vendor NPC near hero"));
+	}
+}
+
+void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
+{
+	APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
+	if (!HeroPawn) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Start Gate just in front of spawn so player walks through it to start the timer
+	FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(150.f, 0.f, 0.f);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AT66StartGate* StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (StartGate)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate near hero"));
+	}
+}
+
+void AT66GameMode::SpawnStageGate()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	FVector SpawnLoc = StageGateSpawnOffset;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AT66StageGate* StageGate = World->SpawnActor<AT66StageGate>(AT66StageGate::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (StageGate)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Spawned Stage Gate at far side"));
 	}
 }
 

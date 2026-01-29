@@ -239,7 +239,8 @@ in `memory.md`.
 # Project path (adjust to your machine)
 export UPROJECT="/c/UE/T66/T66.uproject"
 
-# Unreal install root (adjust to your machine)
+# Unreal Engine 5.7 — install location (reference for builds and CLI)
+# Windows: C:\Program Files\Epic Games\UE_5.7\
 export UE_ROOT="/c/Program Files/Epic Games/UE_5.7"
 
 # Build scripts
