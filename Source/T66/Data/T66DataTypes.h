@@ -6,6 +6,8 @@
 #include "Engine/DataTable.h"
 #include "T66DataTypes.generated.h"
 
+class AActor;
+
 /**
  * Hero data row for the Hero DataTable
  * Each row represents one selectable hero in the game
@@ -122,6 +124,120 @@ struct T66_API FItemData : public FTableRowBase
 		, PlaceholderColor(FLinearColor::White)
 		, SellValueGold(0)
 	{}
+};
+
+/**
+ * Boss data row for the Bosses DataTable (v0: single placeholder boss)
+ */
+USTRUCT(BlueprintType)
+struct T66_API FBossData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Unique identifier for this boss */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName BossID;
+
+	/** Optional override class to spawn (defaults to AT66BossBase if unset) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
+	TSoftClassPtr<AActor> BossClass;
+
+	/** Placeholder color for boss sphere */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FLinearColor PlaceholderColor = FLinearColor(0.8f, 0.1f, 0.1f, 1.f);
+
+	/** Max HP (v0: 100) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	int32 MaxHP = 100;
+
+	/** Proximity required to awaken from dormant state */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float AwakenDistance = 900.f;
+
+	/** Chase speed once awakened */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float MoveSpeed = 350.f;
+
+	/** Fire interval once awakened (seconds) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float FireIntervalSeconds = 2.0f;
+
+	/** Projectile speed (uu/s) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float ProjectileSpeed = 900.f;
+
+	/** Damage to hero per projectile hit (hearts) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	int32 ProjectileDamageHearts = 1;
+
+	FBossData()
+		: BossID(NAME_None)
+	{}
+};
+
+/**
+ * Stage data row for the Stages DataTable (v0: stages are the same, but data-driven)
+ *
+ * Row name convention recommended: Stage_01, Stage_02, ...
+ */
+USTRUCT(BlueprintType)
+struct T66_API FStageData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Stage number (1..66) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	int32 StageNumber = 1;
+
+	/** Boss to spawn for this stage (Bosses DT row name) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	FName BossID;
+
+	/** Boss spawn location for this stage */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
+	FVector BossSpawnLocation = FVector(2500.f, 0.f, 200.f);
+
+	FStageData()
+		: StageNumber(1)
+		, BossID(NAME_None)
+	{}
+};
+
+/**
+ * Run event type for structured provenance (integrity / Run Summary)
+ */
+UENUM(BlueprintType)
+enum class ET66RunEventType : uint8
+{
+	StageEntered   UMETA(DisplayName = "Stage Entered"),
+	StageExited    UMETA(DisplayName = "Stage Exited"),
+	ItemAcquired   UMETA(DisplayName = "Item Acquired"),
+	GoldGained     UMETA(DisplayName = "Gold Gained"),
+	EnemyKilled    UMETA(DisplayName = "Enemy Killed"),
+	DamageDealt    UMETA(DisplayName = "Damage Dealt")
+};
+
+/**
+ * Single structured run event (timestamp + payload for provenance)
+ */
+USTRUCT(BlueprintType)
+struct T66_API FRunEvent
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RunEvent")
+	ET66RunEventType EventType = ET66RunEventType::StageEntered;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RunEvent")
+	float Timestamp = 0.f;
+
+	/** Machine- and human-readable payload (e.g. "ItemID=X,Source=LootBag" or "PointValue=10") */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RunEvent")
+	FString Payload;
+
+	FRunEvent() = default;
+	FRunEvent(ET66RunEventType InType, float InTime, const FString& InPayload)
+		: EventType(InType), Timestamp(InTime), Payload(InPayload) {}
 };
 
 /**

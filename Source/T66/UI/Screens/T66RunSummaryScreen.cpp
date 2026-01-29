@@ -23,6 +23,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 {
 	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const TArray<FString>& Log = RunState ? RunState->GetEventLog() : TArray<FString>();
+	const int32 StageReached = RunState ? RunState->GetCurrentStage() : 1;
+	const int32 Bounty = RunState ? RunState->GetCurrentScore() : 0;
 
 	TSharedRef<SScrollBox> LogScroll = SNew(SScrollBox);
 	for (const FString& Entry : Log)
@@ -58,6 +60,16 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(FText::FromString(TEXT("RUN SUMMARY")))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 32))
+						.ColorAndOpacity(FLinearColor::White)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Center)
+					.Padding(0.f, 0.f, 0.f, 8.f)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Bounty: %d"), StageReached, Bounty)))
+						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SVerticalBox::Slot()

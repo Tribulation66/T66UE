@@ -65,6 +65,8 @@ def configure_game_instance():
             hero_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Heroes")
             companion_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Companions")
             items_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Items")
+            bosses_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Bosses")
+            stages_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Stages")
 
             if hero_dt:
                 cdo.set_editor_property("HeroDataTable", hero_dt)
@@ -75,6 +77,12 @@ def configure_game_instance():
             if items_dt:
                 cdo.set_editor_property("ItemsDataTable", items_dt)
                 unreal.log("Set ItemsDataTable on BP_T66GameInstance")
+            if bosses_dt:
+                cdo.set_editor_property("BossesDataTable", bosses_dt)
+                unreal.log("Set BossesDataTable on BP_T66GameInstance")
+            if stages_dt:
+                cdo.set_editor_property("StagesDataTable", stages_dt)
+                unreal.log("Set StagesDataTable on BP_T66GameInstance")
 
             unreal.EditorAssetLibrary.save_asset(bp_path)
             return True
@@ -208,6 +216,40 @@ def import_datatable_csv():
     else:
         unreal.log("DT_Items not found; create via CreateAssets.py or run SetupItemsDataTable.py")
 
+    # Import Bosses
+    dt_bosses = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Bosses")
+    if dt_bosses:
+        csv_path = get_content_path("Data/Bosses.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_bosses, csv_path)
+            if success:
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_Bosses")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_bosses)
+                unreal.log(f"Imported Bosses CSV - {len(row_names)} rows")
+            else:
+                unreal.log_warning("Failed to import Bosses CSV (may already have data)")
+        else:
+            unreal.log_warning("Bosses CSV not found: " + csv_path)
+    else:
+        unreal.log("DT_Bosses not found; create via CreateAssets.py")
+
+    # Import Stages
+    dt_stages = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Stages")
+    if dt_stages:
+        csv_path = get_content_path("Data/Stages.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_stages, csv_path)
+            if success:
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_Stages")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_stages)
+                unreal.log(f"Imported Stages CSV - {len(row_names)} rows")
+            else:
+                unreal.log_warning("Failed to import Stages CSV (may already have data)")
+        else:
+            unreal.log_warning("Stages CSV not found: " + csv_path)
+    else:
+        unreal.log("DT_Stages not found; create via CreateAssets.py")
+
 def verify_all_assets():
     """Verify all required assets exist"""
     unreal.log("")
@@ -230,6 +272,8 @@ def verify_all_assets():
         "/Game/Data/DT_Heroes",
         "/Game/Data/DT_Companions",
         "/Game/Data/DT_Items",
+        "/Game/Data/DT_Bosses",
+        "/Game/Data/DT_Stages",
         "/Game/Maps/FrontendLevel",
         "/Game/Maps/GameplayLevel",
     ]
@@ -257,6 +301,16 @@ def verify_all_assets():
     if dt_items:
         row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_items)
         unreal.log(f"  DT_Items has {len(row_names)} rows")
+
+    dt_bosses = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Bosses")
+    if dt_bosses:
+        row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_bosses)
+        unreal.log(f"  DT_Bosses has {len(row_names)} rows")
+
+    dt_stages = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Stages")
+    if dt_stages:
+        row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_stages)
+        unreal.log(f"  DT_Stages has {len(row_names)} rows")
 
     return all_ok
 

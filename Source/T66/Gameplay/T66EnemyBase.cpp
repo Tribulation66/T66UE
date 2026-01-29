@@ -136,15 +136,23 @@ void AT66EnemyBase::UpdateHealthBar()
 
 void AT66EnemyBase::OnDeath()
 {
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (RunState)
+	{
+		RunState->AddScore(PointValue);
+		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d"), PointValue));
+	}
+
 	if (OwningDirector)
 	{
 		OwningDirector->NotifyEnemyDied(this);
 	}
 
-	UWorld* World = GetWorld();
-	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
-	if (World && T66GI)
+	if (!World) return;
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
+	if (T66GI)
 	{
 		// Spawn one random item pickup
 		TArray<FName> ItemIDs;

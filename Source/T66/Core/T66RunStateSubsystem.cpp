@@ -77,12 +77,14 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
 	bHUDPanelsVisible = true;
+	ResetBossState();
 	HeartsChanged.Broadcast();
 	GoldChanged.Broadcast();
 	InventoryChanged.Broadcast();
 	PanelVisibilityChanged.Broadcast();
 	ScoreChanged.Broadcast();
 	StageTimerChanged.Broadcast();
+	BossChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
@@ -118,6 +120,37 @@ void UT66RunStateSubsystem::ResetStageTimerToFull()
 	StageTimerSecondsRemaining = StageTimerDurationSeconds;
 	LastBroadcastStageTimerSecond = static_cast<int32>(StageTimerDurationSeconds);
 	StageTimerChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::SetBossActive(int32 InMaxHP)
+{
+	bBossActive = true;
+	BossMaxHP = FMath::Max(1, InMaxHP);
+	BossCurrentHP = BossMaxHP;
+	BossChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::SetBossInactive()
+{
+	bBossActive = false;
+	BossCurrentHP = 0;
+	BossChanged.Broadcast();
+}
+
+bool UT66RunStateSubsystem::ApplyBossDamage(int32 Damage)
+{
+	if (!bBossActive || Damage <= 0 || BossCurrentHP <= 0) return false;
+	BossCurrentHP = FMath::Max(0, BossCurrentHP - Damage);
+	BossChanged.Broadcast();
+	return BossCurrentHP <= 0;
+}
+
+void UT66RunStateSubsystem::ResetBossState()
+{
+	bBossActive = false;
+	BossMaxHP = 100;
+	BossCurrentHP = 0;
+	BossChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::AddScore(int32 Points)

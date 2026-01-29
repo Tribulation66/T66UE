@@ -25,6 +25,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	int32 CurrentHP = 50;
 
+	/** Point value for wave budget and Bounty score (Bible 2.9) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	int32 PointValue = 10;
+
 	/** Visible mesh (cylinder) so enemy is seen */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;

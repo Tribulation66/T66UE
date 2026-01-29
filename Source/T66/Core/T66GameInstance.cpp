@@ -22,6 +22,8 @@ void UT66GameInstance::Init()
 	GetHeroDataTable();
 	GetCompanionDataTable();
 	GetItemsDataTable();
+	GetBossesDataTable();
+	GetStagesDataTable();
 }
 
 UDataTable* UT66GameInstance::GetHeroDataTable()
@@ -86,6 +88,24 @@ UDataTable* UT66GameInstance::GetItemsDataTable()
 	return CachedItemsDataTable;
 }
 
+UDataTable* UT66GameInstance::GetBossesDataTable()
+{
+	if (!CachedBossesDataTable && !BossesDataTable.IsNull())
+	{
+		CachedBossesDataTable = BossesDataTable.LoadSynchronous();
+	}
+	return CachedBossesDataTable;
+}
+
+UDataTable* UT66GameInstance::GetStagesDataTable()
+{
+	if (!CachedStagesDataTable && !StagesDataTable.IsNull())
+	{
+		CachedStagesDataTable = StagesDataTable.LoadSynchronous();
+	}
+	return CachedStagesDataTable;
+}
+
 bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 {
 	UDataTable* DataTable = GetItemsDataTable();
@@ -97,6 +117,39 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 	if (FoundRow)
 	{
 		OutItemData = *FoundRow;
+		return true;
+	}
+	return false;
+}
+
+bool UT66GameInstance::GetBossData(FName BossID, FBossData& OutBossData)
+{
+	UDataTable* DataTable = GetBossesDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+	FBossData* FoundRow = DataTable->FindRow<FBossData>(BossID, TEXT("GetBossData"));
+	if (FoundRow)
+	{
+		OutBossData = *FoundRow;
+		return true;
+	}
+	return false;
+}
+
+bool UT66GameInstance::GetStageData(int32 StageNumber, FStageData& OutStageData)
+{
+	UDataTable* DataTable = GetStagesDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+	const FName RowName(*FString::Printf(TEXT("Stage_%02d"), StageNumber));
+	FStageData* FoundRow = DataTable->FindRow<FStageData>(RowName, TEXT("GetStageData"));
+	if (FoundRow)
+	{
+		OutStageData = *FoundRow;
 		return true;
 	}
 	return false;

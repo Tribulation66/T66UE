@@ -22,7 +22,7 @@ public:
 
 	/** Spawn interval in seconds */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float SpawnIntervalSeconds = 10.f;
+	float SpawnIntervalSeconds = 20.f;
 
 	/** Enemies per spawn wave */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")

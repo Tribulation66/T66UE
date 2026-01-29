@@ -13,8 +13,8 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Repo path:** C:\UE\T66 (Windows) / c:\UE\T66
 - **Engine version:** Unreal Engine 5.7
 - **Active branch:** main
-- **Last known-good commit:** cb31d26 (Start/Stage gates, 60s timer, visible gates, memory + guidelines)
-- **Current milestone:** Phase 2 complete — Gameplay loop + Start/Stage gates, 60s countdown timer, visible gates (two poles / big rectangle)
+- **Last known-good commit:** _(pending: boss + data-driven stages commit)_ 
+- **Current milestone:** Phase 3 in progress — Data-driven stages + boss encounter + boss-gated stage exit
 - **Build status:** ✅ C++ compiles successfully
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 - **Full project setup (from project root):**
@@ -49,10 +49,57 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Enemy health bar** — WidgetComponent has no Widget Class set; health bar is placeholder. Optional: create WBP_EnemyHealthBar and assign to HealthBarWidget.
 - **Save Slots** — C++ fallback exists; optional WBP_SaveSlots at `/Game/Blueprints/UI/WBP_SaveSlots` for visual customization.
 - **Hearts/Inventory** — Use Slate `BorderImage(WhiteBrush)` for filled squares; dynamic delegates use `AddDynamic`/`RemoveDynamic` (not AddUObject).
+- **Localization** — New HUD strings added recently (stage number, stage timer, boss HP bar) are currently hardcoded in C++ Slate; must be moved to `UT66LocalizationSubsystem` per guardrails/Bible.
 
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-01-29 — Data-driven stages + boss encounter + boss-gated stage exit
+
+- **Goal:** Make stages data-driven; add a stage boss that is dormant until proximity, then awakens (chase + ranged projectiles). Show boss HP bar on awaken. Spawn Stage Gate only after boss dies, at boss death location. Reduce regular enemy spawn rate and increase hero auto-attack speed.
+- **Commit:** _(pending)_
+
+**Data (DT-backed)**
+- Added `FBossData` and `FStageData` to `Source/T66/Data/T66DataTypes.h`.
+- `UT66GameInstance` now supports `BossesDataTable` + `StagesDataTable` and helpers `GetBossData()` / `GetStageData()`.
+- New CSV stubs:
+  - `Content/Data/Bosses.csv`
+  - `Content/Data/Stages.csv`
+- Setup scripts updated to create/import/wire DTs:
+  - `Scripts/CreateAssets.py` creates `/Game/Data/DT_Bosses` and `/Game/Data/DT_Stages`
+  - `Scripts/ImportData.py` imports Bosses/Stages CSV into those DTs
+  - `Scripts/FullSetup.py` wires `BossesDataTable` + `StagesDataTable` onto `BP_T66GameInstance`
+  - `T66Editor/T66UISetupSubsystem.cpp` (`T66Setup`) also wires both DTs
+
+**Boss gameplay**
+- New boss actor: `AT66BossBase` (very large sphere) in `Source/T66/Gameplay/T66BossBase.*`
+  - Dormant until within `AwakenDistance`
+  - On awaken: sets boss UI state, starts firing ranged projectiles, chases player
+  - On death: hides boss UI state, spawns Stage Gate at death location
+- New projectile: `AT66BossProjectile` in `Source/T66/Gameplay/T66BossProjectile.*`
+  - Overlap hero → `RunState->ApplyDamage(1)` then destroy
+
+**HUD**
+- `UT66RunStateSubsystem` now tracks boss UI state (active + HP) and broadcasts `BossChanged`.
+- `UT66GameplayHUDWidget` now shows a top-center red boss HP bar (hidden until awaken), updates to `HP/MaxHP`.
+
+**Stage flow**
+- `AT66GameMode` no longer spawns Stage Gate at BeginPlay. It spawns a boss for the current stage instead.
+- Stage Gate is spawned only after boss death via `SpawnStageGateAtLocation()`.
+- On stage transition, timer is reset to full and boss UI state is reset/hidden.
+
+**Combat + tuning**
+- Hero projectiles deal **20 damage** per hit to an awakened boss (5 hits to kill at 100 HP).
+- Hero auto-attack now prefers an awakened boss target.
+- EnemyDirector spawn interval reduced (slower spawns): `10s → 20s` default.
+- Hero auto-attack interval increased (faster shots): `10s → 1s` default.
+- Boss chase fix: boss is AI-possessed so `AddMovementInput` applies (`AIControllerClass` + `AutoPossessAI`).
+
+**Verification / proof**
+- Built successfully with UE 5.7:
+  - `Build.bat T66Editor Win64 Development -Project=c:\UE\T66\T66.uproject ...` ✅
+  - `Build.bat T66 Win64 Development -Project=c:\UE\T66\T66.uproject ...` ✅
 
 ### 2026-01-30 — Start/Stage gates, 60s countdown timer, visible gates, UE 5.7 in guidelines
 

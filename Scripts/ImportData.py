@@ -66,6 +66,42 @@ def main():
     else:
         unreal.log_error("Could not load DT_Items (create it first via CreateAssets.py)")
 
+    # Import Bosses
+    dt_bosses = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Bosses")
+    if dt_bosses:
+        csv_path = get_content_path("Data/Bosses.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_bosses, csv_path)
+            if success:
+                unreal.log("Successfully imported Bosses from CSV")
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_Bosses")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_bosses)
+                unreal.log("DT_Bosses now has {} rows".format(len(row_names)))
+            else:
+                unreal.log_error("Failed to import Bosses from CSV")
+        else:
+            unreal.log_error("Bosses CSV not found: " + csv_path)
+    else:
+        unreal.log_error("Could not load DT_Bosses (create it first via CreateAssets.py)")
+
+    # Import Stages
+    dt_stages = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Stages")
+    if dt_stages:
+        csv_path = get_content_path("Data/Stages.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_stages, csv_path)
+            if success:
+                unreal.log("Successfully imported Stages from CSV")
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_Stages")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_stages)
+                unreal.log("DT_Stages now has {} rows".format(len(row_names)))
+            else:
+                unreal.log_error("Failed to import Stages from CSV")
+        else:
+            unreal.log_error("Stages CSV not found: " + csv_path)
+    else:
+        unreal.log_error("Could not load DT_Stages (create it first via CreateAssets.py)")
+
     unreal.log("=== Data Import Complete ===")
 
 if __name__ == "__main__":

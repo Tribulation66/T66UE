@@ -399,10 +399,14 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString HeroesTablePath = TEXT("/Game/Data/DT_Heroes.DT_Heroes");
 	const FString CompanionsTablePath = TEXT("/Game/Data/DT_Companions.DT_Companions");
 	const FString ItemsTablePath = TEXT("/Game/Data/DT_Items.DT_Items");
+	const FString BossesTablePath = TEXT("/Game/Data/DT_Bosses.DT_Bosses");
+	const FString StagesTablePath = TEXT("/Game/Data/DT_Stages.DT_Stages");
 
 	UDataTable* HeroesTable = LoadObject<UDataTable>(nullptr, *HeroesTablePath);
 	UDataTable* CompanionsTable = LoadObject<UDataTable>(nullptr, *CompanionsTablePath);
 	UDataTable* ItemsTable = LoadObject<UDataTable>(nullptr, *ItemsTablePath);
+	UDataTable* BossesTable = LoadObject<UDataTable>(nullptr, *BossesTablePath);
+	UDataTable* StagesTable = LoadObject<UDataTable>(nullptr, *StagesTablePath);
 
 	if (HeroesTable)
 	{
@@ -432,6 +436,26 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Items (create via CreateAssets.py then ImportData.py)"));
+	}
+
+	if (BossesTable)
+	{
+		GameInstanceCDO->BossesDataTable = BossesTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set BossesDataTable to DT_Bosses"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Bosses (create via CreateAssets.py then ImportData.py)"));
+	}
+
+	if (StagesTable)
+	{
+		GameInstanceCDO->StagesDataTable = StagesTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set StagesDataTable to DT_Stages"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Stages (create via CreateAssets.py then ImportData.py)"));
 	}
 
 	return SaveBlueprint(Blueprint);

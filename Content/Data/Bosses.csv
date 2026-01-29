@@ -1,0 +1,2 @@
+---,BossID,BossClass,PlaceholderColor,MaxHP,AwakenDistance,MoveSpeed,FireIntervalSeconds,ProjectileSpeed,ProjectileDamageHearts
+Boss_01,Boss_01,,"(R=0.9,G=0.05,B=0.05,A=1.0)",100,900.0,350.0,2.0,900.0,1

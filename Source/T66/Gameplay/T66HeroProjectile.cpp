@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66HeroProjectile.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66BossBase.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -59,6 +60,16 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	if (Enemy && Enemy->CurrentHP > 0)
 	{
 		Enemy->TakeDamageFromHero(Damage);
+		Destroy();
+		return;
+	}
+
+	// Boss takes fixed 20 damage per hero projectile hit (only after awakening)
+	AT66BossBase* Boss = Cast<AT66BossBase>(OtherActor);
+	if (Boss && Boss->IsAwakened() && Boss->IsAlive())
+	{
+		static constexpr int32 BossDamagePerHit = 20;
+		Boss->TakeDamageFromHeroHit(BossDamagePerHit);
 		Destroy();
 	}
 }

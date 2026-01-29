@@ -10,6 +10,7 @@ class AT66HeroBase;
 class AT66CompanionBase;
 class AT66StartGate;
 class AT66StageGate;
+class AT66BossBase;
 class UT66GameInstance;
 class ADirectionalLight;
 class ASkyLight;
@@ -55,6 +56,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawning")
 	AT66HeroBase* SpawnSelectedHero(AController* Controller);
 
+	/** Spawn Stage Gate (interact F to next stage) at a specific location (typically boss death). */
+	void SpawnStageGateAtLocation(const FVector& Location);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -86,8 +90,8 @@ protected:
 	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
 	void SpawnStartGateForPlayer(AController* Player);
 
-	/** Spawn Stage Gate (interact F to next stage) at far side of map. */
-	void SpawnStageGate();
+	/** Spawn boss for current stage (dormant until player approaches). */
+	void SpawnBossForCurrentStage();
 
 private:
 	/** Track spawned setup actors for cleanup */

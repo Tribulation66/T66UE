@@ -20,7 +20,7 @@ public:
 	float AttackRange = 4000.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-	float FireIntervalSeconds = 10.f;
+	float FireIntervalSeconds = 1.f;
 
 	/** Damage per shot (use high value for insta kill) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")

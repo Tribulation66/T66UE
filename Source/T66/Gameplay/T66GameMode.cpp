@@ -7,6 +7,7 @@
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66StartGate.h"
 #include "Gameplay/T66StageGate.h"
+#include "Gameplay/T66BossBase.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -44,6 +45,7 @@ void AT66GameMode::BeginPlay()
 			{
 				T66GI->bIsStageTransition = false;
 				RunState->ResetStageTimerToFull(); // New stage: timer frozen at 60 until start gate
+				RunState->ResetBossState(); // New stage: boss is dormant again; hide boss UI
 			}
 			else
 			{
@@ -62,8 +64,8 @@ void AT66GameMode::BeginPlay()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	GetWorld()->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
-	// Spawn Stage Gate (interact F to next stage) at far side of map
-	SpawnStageGate();
+	// Spawn the boss for the current stage (Stage Gate appears only after boss is killed)
+	SpawnBossForCurrentStage();
 
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup complete, hero spawning handled by SpawnDefaultPawnFor"));
 }
@@ -170,19 +172,82 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 	}
 }
 
-void AT66GameMode::SpawnStageGate()
+void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	FVector SpawnLoc = StageGateSpawnOffset;
+	// Nudge upward slightly so the rectangle is above ground.
+	FVector SpawnLoc = Location + FVector(0.f, 0.f, 10.f);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	AT66StageGate* StageGate = World->SpawnActor<AT66StageGate>(AT66StageGate::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 	if (StageGate)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Spawned Stage Gate at far side"));
+		UE_LOG(LogTemp, Log, TEXT("Spawned Stage Gate at boss death location"));
+	}
+}
+
+void AT66GameMode::SpawnBossForCurrentStage()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!T66GI || !RunState) return;
+
+	const int32 StageNum = RunState->GetCurrentStage();
+
+	// Default/fallback stage config (if DT_Stages is not wired yet)
+	FStageData StageData;
+	StageData.StageNumber = StageNum;
+	StageData.BossID = FName(TEXT("Boss_01"));
+	StageData.BossSpawnLocation = StageGateSpawnOffset; // far side by default
+
+	FStageData FromDT;
+	if (T66GI->GetStageData(StageNum, FromDT))
+	{
+		StageData = FromDT;
+	}
+
+	// Default/fallback boss data (if DT_Bosses is not wired yet)
+	FBossData BossData;
+	BossData.BossID = StageData.BossID;
+	BossData.MaxHP = 100;
+	BossData.AwakenDistance = 900.f;
+	BossData.MoveSpeed = 350.f;
+	BossData.FireIntervalSeconds = 2.0f;
+	BossData.ProjectileSpeed = 900.f;
+	BossData.ProjectileDamageHearts = 1;
+
+	FBossData FromBossDT;
+	if (!StageData.BossID.IsNone() && T66GI->GetBossData(StageData.BossID, FromBossDT))
+	{
+		BossData = FromBossDT;
+	}
+
+	UClass* BossClass = AT66BossBase::StaticClass();
+	if (!BossData.BossClass.IsNull())
+	{
+		if (UClass* Loaded = BossData.BossClass.LoadSynchronous())
+		{
+			if (Loaded->IsChildOf(AT66BossBase::StaticClass()))
+			{
+				BossClass = Loaded;
+			}
+		}
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AActor* Spawned = World->SpawnActor<AActor>(BossClass, StageData.BossSpawnLocation, FRotator::ZeroRotator, SpawnParams);
+	if (AT66BossBase* Boss = Cast<AT66BossBase>(Spawned))
+	{
+		Boss->InitializeBoss(BossData);
+		UE_LOG(LogTemp, Log, TEXT("Spawned boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
 	}
 }
 
@@ -246,7 +311,9 @@ void AT66GameMode::SpawnFloorIfNeeded()
 				}
 			}
 
+			#if WITH_EDITOR
 			Floor->SetActorLabel(TEXT("DEV_Floor"));
+			#endif
 			SpawnedSetupActors.Add(Floor);
 			UE_LOG(LogTemp, Log, TEXT("Spawned development floor at (0, 0, -50)"));
 		}
@@ -296,7 +363,9 @@ void AT66GameMode::SpawnLightingIfNeeded()
 				LightComp->SetIntensity(3.f);
 				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
 			}
+			#if WITH_EDITOR
 			Sun->SetActorLabel(TEXT("DEV_Sun"));
+			#endif
 			SpawnedSetupActors.Add(Sun);
 			UE_LOG(LogTemp, Log, TEXT("Spawned development directional light"));
 		}
@@ -322,7 +391,9 @@ void AT66GameMode::SpawnLightingIfNeeded()
 				SkyComp->SetLightColor(FLinearColor(0.5f, 0.6f, 0.8f)); // Bluish ambient
 				SkyComp->RecaptureSky();
 			}
+			#if WITH_EDITOR
 			Sky->SetActorLabel(TEXT("DEV_SkyLight"));
+			#endif
 			SpawnedSetupActors.Add(Sky);
 			UE_LOG(LogTemp, Log, TEXT("Spawned development sky light"));
 		}
@@ -358,7 +429,9 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 
 		if (Start)
 		{
+			#if WITH_EDITOR
 			Start->SetActorLabel(TEXT("DEV_PlayerStart"));
+			#endif
 			SpawnedSetupActors.Add(Start);
 			UE_LOG(LogTemp, Log, TEXT("Spawned development PlayerStart at (0, 0, %.1f)"), DefaultSpawnHeight);
 		}

@@ -42,6 +42,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> ItemsDataTable;
 
+	/** Reference to the Bosses DataTable (v0: placeholder boss) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> BossesDataTable;
+
+	/** Reference to the Stages DataTable (v0: placeholder stages) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> StagesDataTable;
+
 	// ============================================
 	// Player Selections (for current run setup)
 	// ============================================
@@ -110,9 +118,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetItemsDataTable();
 
+	/** Get the loaded Bosses DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetBossesDataTable();
+
+	/** Get the loaded Stages DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetStagesDataTable();
+
 	/** Get item data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetItemData(FName ItemID, FItemData& OutItemData);
+
+	/** Get boss data by ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetBossData(FName BossID, FBossData& OutBossData);
+
+	/** Get stage data by stage number. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetStageData(int32 StageNumber, FStageData& OutStageData);
 
 	/** Get hero data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -166,4 +190,12 @@ private:
 	/** Cached loaded Items DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedItemsDataTable;
+
+	/** Cached loaded Bosses DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedBossesDataTable;
+
+	/** Cached loaded Stages DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedStagesDataTable;
 };

@@ -16,6 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDied);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnScoreChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageTimerChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossChanged);
 
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
@@ -56,6 +57,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnStageChanged StageChanged;
+
+	/** Boss UI state: active + HP changed (boss health bar). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnBossChanged BossChanged;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentHearts() const { return CurrentHearts; }
@@ -98,11 +103,32 @@ public:
 	int32 GetCurrentScore() const { return CurrentScore; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	bool GetBossActive() const { return bBossActive; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetBossCurrentHP() const { return BossCurrentHP; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetBossMaxHP() const { return BossMaxHP; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FRunEvent>& GetStructuredEventLog() const { return StructuredEventLog; }
 
 	/** Set current stage (1–66). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void SetCurrentStage(int32 Stage);
+
+	/** Called when a boss awakens. Sets boss UI visible and initializes HP. */
+	void SetBossActive(int32 InMaxHP);
+
+	/** Hide boss UI / clear boss HP (e.g. on boss death or stage transition). */
+	void SetBossInactive();
+
+	/** Apply damage to boss; returns true if boss died (HP reached 0). */
+	bool ApplyBossDamage(int32 Damage);
+
+	/** Reset boss state for new stage (frozen timer still applies separately). */
+	void ResetBossState();
 
 	/** Start/stop stage timer (e.g. when crossing gate). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -172,6 +198,15 @@ private:
 
 	UPROPERTY()
 	bool bHUDPanelsVisible = true;
+
+	UPROPERTY()
+	bool bBossActive = false;
+
+	UPROPERTY()
+	int32 BossMaxHP = 100;
+
+	UPROPERTY()
+	int32 BossCurrentHP = 0;
 
 	float LastDamageTime = -9999.f;
 	float InvulnDurationSeconds = DefaultInvulnDurationSeconds;

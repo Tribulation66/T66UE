@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66HeroProjectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -27,8 +28,23 @@ void UT66CombatComponent::TryFire()
 
 	FVector MyLoc = OwnerActor->GetActorLocation();
 	AT66EnemyBase* ClosestEnemy = nullptr;
+	AT66BossBase* ClosestBoss = nullptr;
 	float ClosestDistSq = AttackRange * AttackRange;
 
+	// Prefer awakened boss if present
+	for (TActorIterator<AT66BossBase> It(World); It; ++It)
+	{
+		AT66BossBase* Boss = *It;
+		if (!Boss || !Boss->IsAwakened() || !Boss->IsAlive()) continue;
+		float DistSq = FVector::DistSquared(MyLoc, Boss->GetActorLocation());
+		if (DistSq < ClosestDistSq)
+		{
+			ClosestDistSq = DistSq;
+			ClosestBoss = Boss;
+		}
+	}
+
+	// Otherwise target nearest enemy
 	for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
 	{
 		AT66EnemyBase* Enemy = *It;
@@ -41,7 +57,8 @@ void UT66CombatComponent::TryFire()
 		}
 	}
 
-	if (ClosestEnemy)
+	AActor* Target = ClosestBoss ? Cast<AActor>(ClosestBoss) : Cast<AActor>(ClosestEnemy);
+	if (Target)
 	{
 		FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
 		FActorSpawnParameters SpawnParams;
@@ -51,7 +68,7 @@ void UT66CombatComponent::TryFire()
 		if (Proj)
 		{
 			Proj->Damage = DamagePerShot; // 999 = insta kill
-			Proj->SetTargetLocation(ClosestEnemy->GetActorLocation());
+			Proj->SetTargetLocation(Target->GetActorLocation());
 		}
 	}
 }

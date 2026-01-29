@@ -177,6 +177,18 @@ def main():
     else:
         unreal.log_error("Could not find ItemData struct")
 
+    boss_struct = unreal.find_object(None, "/Script/T66.BossData")
+    if boss_struct:
+        create_data_table("/Game/Data/DT_Bosses", boss_struct)
+    else:
+        unreal.log_error("Could not find BossData struct")
+
+    stage_struct = unreal.find_object(None, "/Script/T66.StageData")
+    if stage_struct:
+        create_data_table("/Game/Data/DT_Stages", stage_struct)
+    else:
+        unreal.log_error("Could not find StageData struct")
+
     # === Create Levels ===
     unreal.log("--- Creating Levels ---")
     create_level("/Game/Maps/FrontendLevel")

@@ -39,6 +39,9 @@ protected:
 	TSharedPtr<STextBlock> ScoreText;
 	TSharedPtr<STextBlock> StageText;
 	TSharedPtr<STextBlock> TimerText;
+	TSharedPtr<SBox> BossBarContainerBox;
+	TSharedPtr<SBox> BossBarFillBox;
+	TSharedPtr<STextBlock> BossBarText;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TSharedPtr<SBox> InventoryPanelBox;

@@ -36,6 +36,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->ScoreChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->StageChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->StageTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RefreshHUD();
 }
 
@@ -51,6 +52,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->StageChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	}
 	Super::NativeDestruct();
 }
@@ -84,6 +86,28 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		const int32 M = FMath::FloorToInt(Secs / 60.f);
 		const int32 S = FMath::FloorToInt(FMath::Fmod(Secs, 60.f));
 		TimerText->SetText(FText::FromString(FString::Printf(TEXT("%d:%02d"), M, S)));
+	}
+
+	// Boss health bar: visible only when boss awakened
+	const bool bBossActive = RunState->GetBossActive();
+	if (BossBarContainerBox.IsValid())
+	{
+		BossBarContainerBox->SetVisibility(bBossActive ? EVisibility::Visible : EVisibility::Collapsed);
+	}
+	if (bBossActive)
+	{
+		const int32 BossHP = RunState->GetBossCurrentHP();
+		const int32 BossMax = FMath::Max(1, RunState->GetBossMaxHP());
+		const float Pct = static_cast<float>(BossHP) / static_cast<float>(BossMax);
+		const float BarWidth = 600.f;
+		if (BossBarFillBox.IsValid())
+		{
+			BossBarFillBox->SetWidthOverride(FMath::Clamp(BarWidth * Pct, 0.f, BarWidth));
+		}
+		if (BossBarText.IsValid())
+		{
+			BossBarText->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), BossHP, BossMax)));
+		}
 	}
 
 	// Hearts: 5 icons, red = full, grey = lost
@@ -121,6 +145,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
 	InventorySlotBorders.SetNum(5);
+	static constexpr float BossBarWidth = 600.f;
 
 	// Build hearts row first (5 icons)
 	TSharedRef<SHorizontalBox> HeartsRowRef = SNew(SHorizontalBox);
@@ -165,6 +190,46 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	}
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Top)
+		.Padding(0.f, 12.f)
+		[
+			SAssignNew(BossBarContainerBox, SBox)
+			.WidthOverride(BossBarWidth)
+			.HeightOverride(28.f)
+			.Visibility(EVisibility::Collapsed)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.08f, 0.9f))
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Fill)
+				[
+					SAssignNew(BossBarFillBox, SBox)
+					.WidthOverride(BossBarWidth)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.9f, 0.1f, 0.1f, 0.95f))
+					]
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SAssignNew(BossBarText, STextBlock)
+					.Text(FText::FromString(TEXT("100/100")))
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+					.ColorAndOpacity(FLinearColor::White)
+				]
+			]
+		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Top)
