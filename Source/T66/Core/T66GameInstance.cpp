@@ -21,6 +21,7 @@ void UT66GameInstance::Init()
 	// Pre-load DataTables on init if paths are set
 	GetHeroDataTable();
 	GetCompanionDataTable();
+	GetItemsDataTable();
 }
 
 UDataTable* UT66GameInstance::GetHeroDataTable()
@@ -71,6 +72,31 @@ bool UT66GameInstance::GetCompanionData(FName CompanionID, FCompanionData& OutCo
 	if (FoundRow)
 	{
 		OutCompanionData = *FoundRow;
+		return true;
+	}
+	return false;
+}
+
+UDataTable* UT66GameInstance::GetItemsDataTable()
+{
+	if (!CachedItemsDataTable && !ItemsDataTable.IsNull())
+	{
+		CachedItemsDataTable = ItemsDataTable.LoadSynchronous();
+	}
+	return CachedItemsDataTable;
+}
+
+bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
+{
+	UDataTable* DataTable = GetItemsDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+	FItemData* FoundRow = DataTable->FindRow<FItemData>(ItemID, TEXT("GetItemData"));
+	if (FoundRow)
+	{
+		OutItemData = *FoundRow;
 		return true;
 	}
 	return false;

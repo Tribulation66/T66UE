@@ -4,6 +4,7 @@
 #include "UI/T66UIManager.h"
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
@@ -245,11 +246,19 @@ FReply UT66MainMenuScreen::HandleQuitClicked()
 // UFUNCTION handlers (call navigation)
 void UT66MainMenuScreen::OnNewGameClicked()
 {
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		GI->bIsNewGameFlow = true;
+	}
 	NavigateTo(ET66ScreenType::PartySizePicker);
 }
 
 void UT66MainMenuScreen::OnLoadGameClicked()
 {
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		GI->bIsNewGameFlow = false;
+	}
 	NavigateTo(ET66ScreenType::PartySizePicker);
 }
 

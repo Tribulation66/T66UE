@@ -4,7 +4,9 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Gameplay/T66HeroPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -13,6 +15,8 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Input/SComboBox.h"
+#include "Widgets/Images/SImage.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 UT66HeroSelectionScreen::UT66HeroSelectionScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -66,6 +70,70 @@ void UT66HeroSelectionScreen::GeneratePlaceholderSkins()
 	InfernalSkin.bIsEquipped = false;
 	InfernalSkin.CoinCost = 10000;
 	PlaceholderSkins.Add(InfernalSkin);
+
+	FSkinData FrostSkin;
+	FrostSkin.SkinID = FName(TEXT("Frost"));
+	FrostSkin.bIsDefault = false;
+	FrostSkin.bIsOwned = false;
+	FrostSkin.bIsEquipped = false;
+	FrostSkin.CoinCost = 8000;
+	PlaceholderSkins.Add(FrostSkin);
+
+	FSkinData VoidSkin;
+	VoidSkin.SkinID = FName(TEXT("Void"));
+	VoidSkin.bIsDefault = false;
+	VoidSkin.bIsOwned = false;
+	VoidSkin.bIsEquipped = false;
+	VoidSkin.CoinCost = 9000;
+	PlaceholderSkins.Add(VoidSkin);
+
+	FSkinData PhoenixSkin;
+	PhoenixSkin.SkinID = FName(TEXT("Phoenix"));
+	PhoenixSkin.bIsDefault = false;
+	PhoenixSkin.bIsOwned = true;
+	PhoenixSkin.bIsEquipped = false;
+	PhoenixSkin.CoinCost = 12000;
+	PlaceholderSkins.Add(PhoenixSkin);
+
+	FSkinData CosmicSkin;
+	CosmicSkin.SkinID = FName(TEXT("Cosmic"));
+	CosmicSkin.bIsDefault = false;
+	CosmicSkin.bIsOwned = false;
+	CosmicSkin.bIsEquipped = false;
+	CosmicSkin.CoinCost = 15000;
+	PlaceholderSkins.Add(CosmicSkin);
+
+	FSkinData NeonSkin;
+	NeonSkin.SkinID = FName(TEXT("Neon"));
+	NeonSkin.bIsDefault = false;
+	NeonSkin.bIsOwned = false;
+	NeonSkin.bIsEquipped = false;
+	NeonSkin.CoinCost = 6000;
+	PlaceholderSkins.Add(NeonSkin);
+
+	FSkinData PrimalSkin;
+	PrimalSkin.SkinID = FName(TEXT("Primal"));
+	PrimalSkin.bIsDefault = false;
+	PrimalSkin.bIsOwned = false;
+	PrimalSkin.bIsEquipped = false;
+	PrimalSkin.CoinCost = 11000;
+	PlaceholderSkins.Add(PrimalSkin);
+
+	FSkinData CelestialSkin;
+	CelestialSkin.SkinID = FName(TEXT("Celestial"));
+	CelestialSkin.bIsDefault = false;
+	CelestialSkin.bIsOwned = false;
+	CelestialSkin.bIsEquipped = false;
+	CelestialSkin.CoinCost = 20000;
+	PlaceholderSkins.Add(CelestialSkin);
+
+	FSkinData ObsidianSkin;
+	ObsidianSkin.SkinID = FName(TEXT("Obsidian"));
+	ObsidianSkin.bIsDefault = false;
+	ObsidianSkin.bIsOwned = false;
+	ObsidianSkin.bIsEquipped = false;
+	ObsidianSkin.CoinCost = 18000;
+	PlaceholderSkins.Add(ObsidianSkin);
 }
 
 void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo)
@@ -169,7 +237,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.VAlign(VAlign_Center)
 				.Padding(5.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(60.0f).HeightOverride(28.0f)
+					SNew(SBox).WidthOverride(78.0f).HeightOverride(28.0f)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -308,19 +376,20 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 						]
 					]
 				]
-				// === MAIN CONTENT: Left Panel | Center Preview | Right Panel ===
+				// === MAIN CONTENT: Left Panel | Center Preview | Right Panel (equal side panels, center centered) ===
 				+ SVerticalBox::Slot()
 				.FillHeight(1.0f)
 				.Padding(20.0f, 10.0f, 20.0f, 10.0f)
 				[
 					SNew(SHorizontalBox)
-					// LEFT PANEL: Skins + Hero Name at bottom
+					// LEFT PANEL: Skins (same width as right)
 					+ SHorizontalBox::Slot()
-					.FillWidth(0.24f)
+					.FillWidth(0.28f)
 					.Padding(0.0f, 0.0f, 10.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.0f))
+						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 						.Padding(FMargin(10.0f))
 						[
 							SNew(SVerticalBox)
@@ -344,32 +413,15 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									SkinsListBox
 								]
 							]
-							// Hero Name at bottom of left panel
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.HAlign(HAlign_Center)
-							.Padding(0.0f, 15.0f, 0.0f, 5.0f)
-							[
-								SNew(SBorder)
-								.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
-								.Padding(FMargin(15.0f, 10.0f))
-								[
-									SAssignNew(HeroNameWidget, STextBlock)
-									.Text(FText::FromString(TEXT("Select a Hero")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-									.ColorAndOpacity(FLinearColor::White)
-									.Justification(ETextJustify::Center)
-								]
-							]
 						]
 					]
-					// CENTER: Hero Preview (Colored box based on hero) + Choose Companion
+					// CENTER: Hero Preview (3D render target or colored box fallback)
 					+ SHorizontalBox::Slot()
-					.FillWidth(0.42f)
+					.FillWidth(0.44f)
 					.Padding(10.0f, 0.0f)
 					[
 						SNew(SVerticalBox)
-						// Hero Preview Area - colored box
+						// Hero Preview Area - 3D preview image or colored box
 						+ SVerticalBox::Slot()
 						.FillHeight(1.0f)
 						.HAlign(HAlign_Center)
@@ -381,22 +433,15 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.HAlign(HAlign_Center)
 							.VAlign(VAlign_Center)
 							[
-								SAssignNew(HeroPreviewColorBox, SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(HeroPreviewColor)
-								[
-									SNew(SBox)
-									.WidthOverride(250.0f)
-									.HeightOverride(350.0f)
-								]
+								CreateHeroPreviewWidget(HeroPreviewColor)
 							]
-							// Choose Companion button below preview
+							// Choose Companion button below preview (wide enough for full text)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
 							.HAlign(HAlign_Center)
 							.Padding(0.0f, 20.0f, 0.0f, 0.0f)
 							[
-								SNew(SBox).WidthOverride(200.0f).HeightOverride(45.0f)
+								SNew(SBox).WidthOverride(280.0f).HeightOverride(45.0f)
 								[
 									SNew(SButton)
 									.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -410,50 +455,123 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								]
 							]
 						]
-						// Body Type Toggle
+						// Body Type: TYPE A and TYPE B buttons (only one selected)
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						.HAlign(HAlign_Center)
 						.Padding(0.0f, 10.0f, 0.0f, 0.0f)
 						[
-							SNew(SBox).WidthOverride(150.0f).HeightOverride(40.0f)
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.Padding(4.0f, 0.0f)
 							[
-								SNew(SButton)
-								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+								SNew(SBox).WidthOverride(100.0f).HeightOverride(40.0f)
 								[
-									SAssignNew(BodyTypeWidget, STextBlock)
-									.Text(Loc ? Loc->GetText_BodyTypeA() : FText::FromString(TEXT("TYPE A")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-									.ColorAndOpacity(FLinearColor::White)
+									SNew(SButton)
+									.HAlign(HAlign_Center).VAlign(VAlign_Center)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeAClicked))
+									.ButtonColorAndOpacity_Lambda([this]() -> FSlateColor {
+										return SelectedBodyType == ET66BodyType::TypeA
+											? FLinearColor(0.4f, 0.5f, 0.7f, 1.0f)
+											: FLinearColor(0.15f, 0.15f, 0.2f, 1.0f);
+									})
+									[
+										SNew(STextBlock)
+										.Text(Loc ? Loc->GetText_BodyTypeA() : FText::FromString(TEXT("TYPE A")))
+										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+										.ColorAndOpacity(FLinearColor::White)
+									]
+								]
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.Padding(4.0f, 0.0f)
+							[
+								SNew(SBox).WidthOverride(100.0f).HeightOverride(40.0f)
+								[
+									SNew(SButton)
+									.HAlign(HAlign_Center).VAlign(VAlign_Center)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeBClicked))
+									.ButtonColorAndOpacity_Lambda([this]() -> FSlateColor {
+										return SelectedBodyType == ET66BodyType::TypeB
+											? FLinearColor(0.4f, 0.5f, 0.7f, 1.0f)
+											: FLinearColor(0.15f, 0.15f, 0.2f, 1.0f);
+									})
+									[
+										SNew(STextBlock)
+										.Text(Loc ? Loc->GetText_BodyTypeB() : FText::FromString(TEXT("TYPE B")))
+										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+										.ColorAndOpacity(FLinearColor::White)
+									]
 								]
 							]
 						]
 					]
-					// RIGHT PANEL: Hero Info
+					// RIGHT PANEL: Hero Info (same width as left)
 					+ SHorizontalBox::Slot()
-					.FillWidth(0.34f)
+					.FillWidth(0.28f)
 					.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.0f))
+						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 						.Padding(FMargin(15.0f))
 						[
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
 							.HAlign(HAlign_Center)
-							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 							[
 								SNew(STextBlock).Text(HeroInfoText)
 								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 								.ColorAndOpacity(FLinearColor::White)
 							]
+							// Hero name + Lore button on same row
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0.0f, 0.0f, 0.0f, 12.0f)
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot()
+								.FillWidth(1.0f)
+								.VAlign(VAlign_Center)
+								[
+									SNew(SBorder)
+									.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+									.Padding(FMargin(12.0f, 8.0f))
+									[
+										SAssignNew(HeroNameWidget, STextBlock)
+										.Text(FText::FromString(TEXT("Select a Hero")))
+										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+										.ColorAndOpacity(FLinearColor::White)
+										.Justification(ETextJustify::Center)
+									]
+								]
+								+ SHorizontalBox::Slot()
+								.AutoWidth()
+								.VAlign(VAlign_Center)
+								.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+								[
+									SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+									[
+										SNew(SButton)
+										.HAlign(HAlign_Center).VAlign(VAlign_Center)
+										.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked))
+										.ButtonColorAndOpacity(FLinearColor(0.2f, 0.15f, 0.1f, 1.0f))
+										[
+											SNew(STextBlock).Text(LoreText)
+											.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+								]
+							]
 							// Video placeholder
 							+ SVerticalBox::Slot()
 							.AutoHeight()
-							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 12.0f)
 							[
 								SNew(SBorder)
 								.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.0f))
@@ -469,73 +587,55 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									]
 								]
 							]
-							// Description
-							+ SVerticalBox::Slot()
-							.FillHeight(1.0f)
-							.Padding(0.0f, 0.0f, 0.0f, 15.0f)
-							[
-								SNew(SScrollBox)
-								+ SScrollBox::Slot()
-								[
-									SAssignNew(HeroDescWidget, STextBlock)
-									.Text(FText::FromString(TEXT("Select a hero to view their description and abilities.")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-									.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f))
-									.AutoWrapText(true)
-								]
-							]
-							// Medals placeholder
+							// Medals placeholder (bigger, right below video)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
 							.HAlign(HAlign_Center)
-							.Padding(0.0f, 0.0f, 0.0f, 15.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 12.0f)
 							[
 								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().Padding(5.0f, 0.0f)
+								+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(30.0f).HeightOverride(30.0f)
+									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
 									[
 										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.1f, 1.0f))
 									]
 								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(5.0f, 0.0f)
+								+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(30.0f).HeightOverride(30.0f)
+									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
 									[
 										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.3f, 0.1f, 0.1f, 1.0f))
 									]
 								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(5.0f, 0.0f)
+								+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(30.0f).HeightOverride(30.0f)
+									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
 									[
 										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.4f, 0.35f, 0.1f, 1.0f))
 									]
 								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(5.0f, 0.0f)
+								+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(30.0f).HeightOverride(30.0f)
+									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
 									[
 										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.9f, 0.9f, 0.9f, 1.0f))
 									]
 								]
 							]
-							// Lore button
+							// Hero Description (localized blurb below medals)
 							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.HAlign(HAlign_Center)
+							.FillHeight(1.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 							[
-								SNew(SBox).WidthOverride(100.0f).HeightOverride(35.0f)
+								SNew(SScrollBox)
+								+ SScrollBox::Slot()
 								[
-									SNew(SButton)
-									.HAlign(HAlign_Center).VAlign(VAlign_Center)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked))
-									.ButtonColorAndOpacity(FLinearColor(0.2f, 0.15f, 0.1f, 1.0f))
-									[
-										SNew(STextBlock).Text(LoreText)
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-										.ColorAndOpacity(FLinearColor::White)
-									]
+									SAssignNew(HeroDescWidget, STextBlock)
+									.Text(FText::FromString(TEXT("Select a hero to view their description.")))
+									.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+									.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f))
+									.AutoWrapText(true)
 								]
 							]
 						]
@@ -596,12 +696,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							]
 						]
 					]
-					// Enter the Tribulation button
+					// Enter the Tribulation button (wide enough for full text)
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					.Padding(10.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(250.0f).HeightOverride(50.0f)
+						SNew(SBox).WidthOverride(340.0f).HeightOverride(50.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -638,8 +738,20 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		];
 }
 
-FReply UT66HeroSelectionScreen::HandlePrevClicked() { PreviewPreviousHero(); TakeWidget(); return FReply::Handled(); }
-FReply UT66HeroSelectionScreen::HandleNextClicked() { PreviewNextHero(); TakeWidget(); return FReply::Handled(); }
+FReply UT66HeroSelectionScreen::HandlePrevClicked()
+{
+	PreviewPreviousHero();
+	ReleaseSlateResources(true);
+	TakeWidget();
+	return FReply::Handled();
+}
+FReply UT66HeroSelectionScreen::HandleNextClicked()
+{
+	PreviewNextHero();
+	ReleaseSlateResources(true);
+	TakeWidget();
+	return FReply::Handled();
+}
 FReply UT66HeroSelectionScreen::HandleHeroGridClicked() { OnHeroGridClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleCompanionClicked() { OnChooseCompanionClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleLoreClicked() { OnHeroLoreClicked(); return FReply::Handled(); }
@@ -647,35 +759,40 @@ FReply UT66HeroSelectionScreen::HandleTheLabClicked() { OnTheLabClicked(); retur
 FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
 
-FReply UT66HeroSelectionScreen::HandleBodyTypeClicked()
+FReply UT66HeroSelectionScreen::HandleBodyTypeAClicked()
 {
-	ToggleBodyType();
-	if (BodyTypeWidget.IsValid())
-	{
-		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-		FText TypeText = (SelectedBodyType == ET66BodyType::TypeA)
-			? (Loc ? Loc->GetText_BodyTypeA() : FText::FromString(TEXT("TYPE A")))
-			: (Loc ? Loc->GetText_BodyTypeB() : FText::FromString(TEXT("TYPE B")));
-		BodyTypeWidget->SetText(TypeText);
-	}
+	SelectedBodyType = ET66BodyType::TypeA;
+	TakeWidget(); // Refresh so TYPE A button highlights
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleBodyTypeBClicked()
+{
+	SelectedBodyType = ET66BodyType::TypeB;
+	TakeWidget(); // Refresh so TYPE B button highlights
 	return FReply::Handled();
 }
 
 void UT66HeroSelectionScreen::UpdateHeroDisplay()
 {
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	FHeroData HeroData;
 	if (GetPreviewedHeroData(HeroData))
 	{
-		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 		if (HeroNameWidget.IsValid())
 		{
 			HeroNameWidget->SetText(Loc ? Loc->GetHeroDisplayName(HeroData) : HeroData.DisplayName);
 		}
 		if (HeroDescWidget.IsValid())
 		{
-			HeroDescWidget->SetText(HeroData.Description);
+			HeroDescWidget->SetText(Loc ? Loc->GetText_HeroDescription(PreviewedHeroID) : HeroData.Description);
 		}
-		if (HeroPreviewColorBox.IsValid())
+		// Update 3D preview stage or fallback colored box
+		if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
+		{
+			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType);
+		}
+		else if (HeroPreviewColorBox.IsValid())
 		{
 			HeroPreviewColorBox->SetBorderBackgroundColor(HeroData.PlaceholderColor);
 		}
@@ -688,9 +805,13 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		}
 		if (HeroDescWidget.IsValid())
 		{
-			HeroDescWidget->SetText(FText::FromString(TEXT("Select a hero to view their description and abilities.")));
+			HeroDescWidget->SetText(FText::FromString(TEXT("Select a hero to view their description.")));
 		}
-		if (HeroPreviewColorBox.IsValid())
+		if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
+		{
+			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType);
+		}
+		else if (HeroPreviewColorBox.IsValid())
 		{
 			HeroPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.4f, 1.0f));
 		}
@@ -822,6 +943,52 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
 }
 void UT66HeroSelectionScreen::OnBackClicked() { NavigateBack(); }
+
+AT66HeroPreviewStage* UT66HeroSelectionScreen::GetHeroPreviewStage() const
+{
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+
+	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+	{
+		return *It;
+	}
+	return nullptr;
+}
+
+TSharedRef<SWidget> UT66HeroSelectionScreen::CreateHeroPreviewWidget(const FLinearColor& FallbackColor)
+{
+	AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage();
+	UTextureRenderTarget2D* RenderTarget = PreviewStage ? PreviewStage->GetRenderTarget() : nullptr;
+
+	if (RenderTarget)
+	{
+		// 3D preview: use render target as image
+		HeroPreviewBrush = MakeShared<FSlateBrush>();
+		HeroPreviewBrush->SetResourceObject(RenderTarget);
+		HeroPreviewBrush->ImageSize = FVector2D(250.f, 350.f);
+		HeroPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
+		HeroPreviewBrush->Tiling = ESlateBrushTileType::NoTile;
+
+		return SNew(SBox)
+			.WidthOverride(250.0f)
+			.HeightOverride(350.0f)
+			[
+				SNew(SImage)
+				.Image(HeroPreviewBrush.Get())
+			];
+	}
+
+	// Fallback: colored box when no preview stage in level
+	return SAssignNew(HeroPreviewColorBox, SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FallbackColor)
+		[
+			SNew(SBox)
+			.WidthOverride(250.0f)
+			.HeightOverride(350.0f)
+		];
+}
 
 void UT66HeroSelectionScreen::OnLanguageChanged(ET66Language NewLanguage)
 {

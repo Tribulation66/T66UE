@@ -126,6 +126,11 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 	}
 }
 
+ET66ScreenType UT66UIManager::GetCurrentModalType() const
+{
+	return CurrentModal ? CurrentModal->ScreenType : ET66ScreenType::None;
+}
+
 void UT66UIManager::CloseModal()
 {
 	if (CurrentModal)

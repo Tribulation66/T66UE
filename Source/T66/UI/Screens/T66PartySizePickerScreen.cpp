@@ -162,6 +162,15 @@ FReply UT66PartySizePickerScreen::HandleDuoClicked() { OnDuoClicked(); return FR
 FReply UT66PartySizePickerScreen::HandleTrioClicked() { OnTrioClicked(); return FReply::Handled(); }
 FReply UT66PartySizePickerScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
 
+void UT66PartySizePickerScreen::OnScreenActivated_Implementation()
+{
+	Super::OnScreenActivated_Implementation();
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		bIsNewGame = GI->bIsNewGameFlow;
+	}
+}
+
 void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
@@ -169,7 +178,7 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 		GI->SelectedPartySize = PartySize;
 	}
 
-	if (bIsNewGame)
+	if (bIsNewGame) // set from GI->bIsNewGameFlow in OnScreenActivated
 	{
 		NavigateTo(ET66ScreenType::HeroSelection);
 	}

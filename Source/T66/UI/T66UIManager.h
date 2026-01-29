@@ -80,6 +80,12 @@ public:
 	bool IsModalActive() const { return CurrentModal != nullptr; }
 
 	/**
+	 * Get the type of the currently displayed modal (None if no modal)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	ET66ScreenType GetCurrentModalType() const;
+
+	/**
 	 * Hide all UI (for transitioning to gameplay)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "UI")

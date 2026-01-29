@@ -303,6 +303,47 @@ FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 	return FText::FromName(HeroID);
 }
 
+// ========== Hero Descriptions ==========
+
+FText UT66LocalizationSubsystem::GetText_HeroDescription(FName HeroID) const
+{
+	auto Ret = [this](const TCHAR* EN, const TCHAR* PT, const TCHAR* ZH) -> FText {
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(PT);
+		case ET66Language::ChineseTraditional: return FText::FromString(ZH);
+		default: return FText::FromString(EN);
+		}
+	};
+	if (HeroID == FName(TEXT("Hero_AliceInWonderlandRabbit"))) return Ret(TEXT("A swift trickster who bends reality. Favors evasion and misdirection."), TEXT("Um trapaceiro ágil que distorce a realidade. Prefere evasão e desorientação."), TEXT("扭曲現實的敏捷騙徒，擅長閃避與誤導。"));
+	if (HeroID == FName(TEXT("Hero_LuBu"))) return Ret(TEXT("Unmatched warrior of the Three Kingdoms. Overwhelming strength and ferocity."), TEXT("Guerreiro incomparável dos Três Reinos. Força e ferocidade avassaladoras."), TEXT("三國無雙猛將，壓倒性的力量與兇猛。"));
+	if (HeroID == FName(TEXT("Hero_LeonardoDaVinci"))) return Ret(TEXT("Renaissance genius who turns invention into combat. Ingenious and versatile."), TEXT("Gênio renascentista que transforma invenção em combate. Engenhoso e versátil."), TEXT("將發明化為戰鬥的文藝復興天才，機智多才。"));
+	if (HeroID == FName(TEXT("Hero_Yakub"))) return Ret(TEXT("A figure of myth and controversy. Cunning and resilient in equal measure."), TEXT("Uma figura de mito e controvérsia. Astuto e resiliente na mesma medida."), TEXT("神話與爭議交織的人物，狡黠而堅韌。"));
+	if (HeroID == FName(TEXT("Hero_KingArthur"))) return Ret(TEXT("The once and future king. Leads with honor and strikes with Excalibur."), TEXT("O rei do passado e do futuro. Lidera com honra e golpeia com Excalibur."), TEXT("昔在與將來的王者，以榮譽統御，以石中劍斬敵。"));
+	if (HeroID == FName(TEXT("Hero_MiyamotoMusashi"))) return Ret(TEXT("Dual-blade master of the way of the sword. Discipline and precision."), TEXT("Mestre das duas lâminas do caminho da espada. Disciplina e precisão."), TEXT("二刀流劍道宗師，紀律與精準並重。"));
+	if (HeroID == FName(TEXT("Hero_CaptainJackSparrow"))) return Ret(TEXT("Pirate legend who fights with flair and luck. Unpredictable and daring."), TEXT("Lenda pirata que luta com estilo e sorte. Imprevisível e ousado."), TEXT("以風采與運氣作戰的海盜傳說，難以捉摸且大膽。"));
+	if (HeroID == FName(TEXT("Hero_SoloLeveler"))) return Ret(TEXT("Rises alone through trials. Growth through combat and sheer determination."), TEXT("Sobe sozinho pelas provações. Crescimento pelo combate e pura determinação."), TEXT("獨自穿越試煉而崛起，以戰鬥與意志成長。"));
+	if (HeroID == FName(TEXT("Hero_Saitama"))) return Ret(TEXT("One punch is enough. Overwhelming power hidden behind a casual demeanor."), TEXT("Um soco basta. Poder avassalador escondido atrás de uma atitude casual."), TEXT("一拳足矣。輕鬆外表下藏著壓倒性的力量。"));
+	if (HeroID == FName(TEXT("Hero_RoboGoon"))) return Ret(TEXT("Mechanical enforcer. Reliable, durable, and brutally efficient."), TEXT("Executor mecânico. Confiável, durável e brutalmente eficiente."), TEXT("機械執法者，可靠、耐打、冷酷高效。"));
+	if (HeroID == FName(TEXT("Hero_GeorgeWashington"))) return Ret(TEXT("Founding commander. Strategic mind and unyielding resolve."), TEXT("Comandante fundador. Mente estratégica e resolução inquebrantável."), TEXT("開國統帥，戰略頭腦與堅定決心。"));
+	if (HeroID == FName(TEXT("Hero_Cain"))) return Ret(TEXT("Marked by fate. Cursed to wander but gifted with survival."), TEXT("Marcado pelo destino. Amaldiçoado a vagar mas dotado de sobrevivência."), TEXT("被命運標記，詛咒漂泊卻賦予生存之能。"));
+	if (HeroID == FName(TEXT("Hero_BillyTheKid"))) return Ret(TEXT("Young gunslinger of the frontier. Fast draw and quicker wit."), TEXT("Jovem pistoleiro da fronteira. Gato rápido e astúcia mais rápida."), TEXT("邊疆少年槍手，快槍與更快的機智。"));
+	if (HeroID == FName(TEXT("Hero_RoachKing"))) return Ret(TEXT("Lord of the underbelly. Thrives where others dare not go."), TEXT("Senhor do submundo. Prospera onde outros não ousam ir."), TEXT("地下王者，在他人不敢涉足之處興盛。"));
+	if (HeroID == FName(TEXT("Hero_Goblino"))) return Ret(TEXT("Cunning and scrappy. Uses wit and numbers to overcome."), TEXT("Astuto e brigão. Usa astúcia e números para superar."), TEXT("狡詐好鬥，以機智與數量取勝。"));
+	if (HeroID == FName(TEXT("Hero_BulkBite"))) return Ret(TEXT("Raw power and appetite. Devastating when unleashed."), TEXT("Poder e apetite brutos. Devastador quando desencadeado."), TEXT("蠻力與貪婪，一旦釋放即毀滅一切。"));
+	if (HeroID == FName(TEXT("Hero_HoboWanderer"))) return Ret(TEXT("Wanderer of the margins. Survives by wit and resilience."), TEXT("Andarilho das margens. Sobrevive por astúcia e resiliência."), TEXT("邊緣的流浪者，以機智與韌性求生。"));
+	if (HeroID == FName(TEXT("Hero_DryHumor"))) return Ret(TEXT("Deadpan and deadly. Strikes when least expected."), TEXT("Cara de pau e mortal. Golpeia quando menos se espera."), TEXT("冷面而致命，在最不經意時出手。"));
+	if (HeroID == FName(TEXT("Hero_LyricVoi"))) return Ret(TEXT("Voice and verse as weapons. Charms and cuts in equal measure."), TEXT("Voz e verso como armas. Encanta e corta na mesma medida."), TEXT("以聲與詩為刃，魅惑與斬擊並重。"));
+	if (HeroID == FName(TEXT("Hero_Jesterma"))) return Ret(TEXT("Court jester with a lethal edge. Laughs last."), TEXT("Bobo da corte com um toque letal. Quem ri por último."), TEXT("帶殺機的宮廷小丑，笑到最後。"));
+	if (HeroID == FName(TEXT("Hero_NorthKing"))) return Ret(TEXT("Sovereign of the frozen realm. Cold and commanding."), TEXT("Soberano do reino congelado. Frio e comandante."), TEXT("冰封國度的君主，冷酷而威嚴。"));
+	if (HeroID == FName(TEXT("Hero_Peakwarden"))) return Ret(TEXT("Guardian of the summit. Unshakeable and vigilant."), TEXT("Guardião do cume. Inabalável e vigilante."), TEXT("巔峰守護者，堅定而警覺。"));
+	if (HeroID == FName(TEXT("Hero_QuinnHex"))) return Ret(TEXT("Weaver of curses. Where she points, fate follows."), TEXT("Tecelã de maldições. Para onde aponta, o destino segue."), TEXT("詛咒編織者，所指之處命運相隨。"));
+	if (HeroID == FName(TEXT("Hero_SandSultan"))) return Ret(TEXT("Ruler of the dunes. Shifting sands and shifting fortunes."), TEXT("Governante das dunas. Areias movediças e fortunas movediças."), TEXT("沙丘之主，流沙與命運皆可操弄。"));
+	if (HeroID == FName(TEXT("Hero_CharNut"))) return Ret(TEXT("Burned but unbroken. Turns ruin into resolve."), TEXT("Queimado mas não quebrado. Transforma ruína em resolução."), TEXT("燒灼卻未碎，將毀滅化為決心。"));
+	if (HeroID == FName(TEXT("Hero_Wraithveil"))) return Ret(TEXT("Between worlds. Strikes from the veil and fades back."), TEXT("Entre mundos. Golpeia do véu e desaparece."), TEXT("遊走兩界，自帷幕中出手再隱沒。"));
+	return FText::FromString(TEXT("Select a hero to view their description."));
+}
+
 // ========== Companion Names ==========
 
 FText UT66LocalizationSubsystem::GetText_CompanionName(FName CompanionID) const
@@ -693,6 +734,78 @@ FText UT66LocalizationSubsystem::GetText_SkinName(FName SkinID) const
 		default: return FText::FromString(TEXT("Infernal Wrath"));
 		}
 	}
+	if (SkinID == FName(TEXT("Frost")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Gelo Eterno"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("永霜"));
+		default: return FText::FromString(TEXT("Eternal Frost"));
+		}
+	}
+	if (SkinID == FName(TEXT("Void")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Abismo"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("虛空"));
+		default: return FText::FromString(TEXT("Void Walker"));
+		}
+	}
+	if (SkinID == FName(TEXT("Phoenix")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Fênix"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("鳳凰"));
+		default: return FText::FromString(TEXT("Phoenix Rising"));
+		}
+	}
+	if (SkinID == FName(TEXT("Cosmic")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Cósmico"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("宇宙"));
+		default: return FText::FromString(TEXT("Cosmic"));
+		}
+	}
+	if (SkinID == FName(TEXT("Neon")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Neon"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("霓虹"));
+		default: return FText::FromString(TEXT("Neon"));
+		}
+	}
+	if (SkinID == FName(TEXT("Primal")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Primal"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("原始"));
+		default: return FText::FromString(TEXT("Primal"));
+		}
+	}
+	if (SkinID == FName(TEXT("Celestial")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Celestial"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("天界"));
+		default: return FText::FromString(TEXT("Celestial"));
+		}
+	}
+	if (SkinID == FName(TEXT("Obsidian")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Obsidiana"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("黑曜石"));
+		default: return FText::FromString(TEXT("Obsidian"));
+		}
+	}
 	// Fallback
 	return FText::FromName(SkinID);
 }
@@ -991,6 +1104,70 @@ FText UT66LocalizationSubsystem::GetText_Stage() const
 	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("FASE"));
 	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("關卡"));
 	default: return FText::FromString(TEXT("STAGE"));
+	}
+}
+
+// ========== Pause Menu ==========
+
+FText UT66LocalizationSubsystem::GetText_Resume() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("CONTINUAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("繼續遊戲"));
+	default: return FText::FromString(TEXT("RESUME GAME"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SaveAndQuit() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("SALVAR E SAIR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("儲存並離開"));
+	default: return FText::FromString(TEXT("SAVE AND QUIT GAME"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Restart() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("REINICIAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("重新開始"));
+	default: return FText::FromString(TEXT("RESTART"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ReportBug() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("REPORTAR BUG"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("回報問題"));
+	default: return FText::FromString(TEXT("REPORT BUG"));
+	}
+}
+
+// ========== Report Bug ==========
+
+FText UT66LocalizationSubsystem::GetText_ReportBugTitle() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("REPORTAR BUG"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("回報問題"));
+	default: return FText::FromString(TEXT("REPORT BUG"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ReportBugSubmit() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("ENVIAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("送出"));
+	default: return FText::FromString(TEXT("SUBMIT"));
 	}
 }
 

@@ -19,6 +19,12 @@
 #include "Gameplay/T66GameMode.h"
 #include "Core/T66GameInstance.h"
 #include "HAL/IConsoleManager.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
+#include "Materials/MaterialExpressionConstant.h"
+#include "Factories/MaterialFactoryNew.h"
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
 
 // Console command for running setup
 static FAutoConsoleCommand T66SetupCommand(
@@ -57,6 +63,16 @@ void UT66UISetupSubsystem::RunFullSetup()
 	UE_LOG(LogT66Editor, Log, TEXT("=== T66 Full Setup Starting ==="));
 	
 	bool bAllSuccess = true;
+
+	// Create placeholder material first (needed for hero visuals)
+	if (CreatePlaceholderMaterial())
+	{
+		UE_LOG(LogT66Editor, Log, TEXT("[OK] PlaceholderMaterial created"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("[SKIP] PlaceholderMaterial (may already exist)"));
+	}
 
 	// Configure GameInstance
 	if (ConfigureGameInstance())
@@ -334,6 +350,8 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 		{ ET66ScreenType::Achievements, TEXT("/Game/Blueprints/UI/WBP_Achievements.WBP_Achievements_C") },
 		{ ET66ScreenType::QuitConfirmation, TEXT("/Game/Blueprints/UI/WBP_QuitConfirmation.WBP_QuitConfirmation_C") },
 		{ ET66ScreenType::LanguageSelect, TEXT("/Game/Blueprints/UI/WBP_LanguageSelect.WBP_LanguageSelect_C") },
+		{ ET66ScreenType::HeroGrid, TEXT("/Game/Blueprints/UI/WBP_HeroGrid.WBP_HeroGrid_C") },
+		{ ET66ScreenType::CompanionGrid, TEXT("/Game/Blueprints/UI/WBP_CompanionGrid.WBP_CompanionGrid_C") },
 	};
 
 	for (const auto& Mapping : Mappings)
@@ -380,9 +398,11 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	// Load DataTables
 	const FString HeroesTablePath = TEXT("/Game/Data/DT_Heroes.DT_Heroes");
 	const FString CompanionsTablePath = TEXT("/Game/Data/DT_Companions.DT_Companions");
+	const FString ItemsTablePath = TEXT("/Game/Data/DT_Items.DT_Items");
 
 	UDataTable* HeroesTable = LoadObject<UDataTable>(nullptr, *HeroesTablePath);
 	UDataTable* CompanionsTable = LoadObject<UDataTable>(nullptr, *CompanionsTablePath);
+	UDataTable* ItemsTable = LoadObject<UDataTable>(nullptr, *ItemsTablePath);
 
 	if (HeroesTable)
 	{
@@ -404,7 +424,96 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Companions"));
 	}
 
+	if (ItemsTable)
+	{
+		GameInstanceCDO->ItemsDataTable = ItemsTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set ItemsDataTable to DT_Items"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Items (create via CreateAssets.py then ImportData.py)"));
+	}
+
 	return SaveBlueprint(Blueprint);
+}
+
+bool UT66UISetupSubsystem::CreatePlaceholderMaterial()
+{
+	// Check if material already exists
+	const FString MaterialPath = TEXT("/Game/Materials/M_PlaceholderColor");
+	UMaterial* ExistingMaterial = LoadObject<UMaterial>(nullptr, *(MaterialPath + TEXT(".M_PlaceholderColor")));
+	
+	if (ExistingMaterial)
+	{
+		UE_LOG(LogT66Editor, Log, TEXT("PlaceholderMaterial already exists at %s"), *MaterialPath);
+		return true;
+	}
+
+	// Ensure the Materials folder exists
+	const FString MaterialsFolder = TEXT("/Game/Materials");
+	
+	// Create the material using AssetTools
+	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	
+	UMaterialFactoryNew* MaterialFactory = NewObject<UMaterialFactoryNew>();
+	UObject* NewAsset = AssetTools.CreateAsset(TEXT("M_PlaceholderColor"), MaterialsFolder, UMaterial::StaticClass(), MaterialFactory);
+	
+	UMaterial* NewMaterial = Cast<UMaterial>(NewAsset);
+	if (!NewMaterial)
+	{
+		UE_LOG(LogT66Editor, Error, TEXT("Failed to create PlaceholderMaterial"));
+		return false;
+	}
+
+	// Create a Color vector parameter
+	UMaterialExpressionVectorParameter* ColorParam = NewObject<UMaterialExpressionVectorParameter>(NewMaterial);
+	ColorParam->ParameterName = FName("Color");
+	ColorParam->DefaultValue = FLinearColor::White;
+	ColorParam->MaterialExpressionEditorX = -300;
+	ColorParam->MaterialExpressionEditorY = 0;
+	NewMaterial->GetEditorOnlyData()->ExpressionCollection.Expressions.Add(ColorParam);
+
+	// Connect the color parameter to Base Color
+	NewMaterial->GetEditorOnlyData()->BaseColor.Expression = ColorParam;
+	
+	// Create roughness constant (0.5)
+	UMaterialExpressionConstant* RoughnessConst = NewObject<UMaterialExpressionConstant>(NewMaterial);
+	RoughnessConst->R = 0.5f;
+	RoughnessConst->MaterialExpressionEditorX = -300;
+	RoughnessConst->MaterialExpressionEditorY = 150;
+	NewMaterial->GetEditorOnlyData()->ExpressionCollection.Expressions.Add(RoughnessConst);
+	NewMaterial->GetEditorOnlyData()->Roughness.Expression = RoughnessConst;
+
+	// Create metallic constant (0.0)
+	UMaterialExpressionConstant* MetallicConst = NewObject<UMaterialExpressionConstant>(NewMaterial);
+	MetallicConst->R = 0.0f;
+	MetallicConst->MaterialExpressionEditorX = -300;
+	MetallicConst->MaterialExpressionEditorY = 250;
+	NewMaterial->GetEditorOnlyData()->ExpressionCollection.Expressions.Add(MetallicConst);
+	NewMaterial->GetEditorOnlyData()->Metallic.Expression = MetallicConst;
+
+	// Compile and save the material
+	NewMaterial->PreEditChange(nullptr);
+	NewMaterial->PostEditChange();
+	NewMaterial->MarkPackageDirty();
+
+	// Save the package
+	UPackage* Package = NewMaterial->GetOutermost();
+	if (Package)
+	{
+		FSavePackageArgs SaveArgs;
+		SaveArgs.TopLevelFlags = RF_Standalone;
+		FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
+		
+		if (UPackage::SavePackage(Package, NewMaterial, *PackageFileName, SaveArgs))
+		{
+			UE_LOG(LogT66Editor, Log, TEXT("Created and saved PlaceholderMaterial at %s"), *MaterialPath);
+			return true;
+		}
+	}
+
+	UE_LOG(LogT66Editor, Warning, TEXT("Failed to save PlaceholderMaterial"));
+	return false;
 }
 
 void UT66UISetupSubsystem::PrintSetupStatus()

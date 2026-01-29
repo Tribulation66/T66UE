@@ -9,12 +9,12 @@
 #include "T66CompanionSelectionScreen.generated.h"
 
 class UT66LocalizationSubsystem;
+class AT66CompanionPreviewStage;
 
 /**
- * Companion Selection Screen - Bible 1.13 Layout
- * Mirrors Hero Selection: Top belt, Left skins, Center preview, Right info
- * Must include NO COMPANION option
- * CONFIRM COMPANION button at bottom
+ * Companion Selection Screen - Mirrors Hero Selection layout
+ * Top: Companion grid button + carousel (colored tiles). Center: 3D preview or colored box.
+ * Left: Skins. Right: Companion info (name + LORE, passive, medals). No body type.
  */
 UCLASS(Blueprintable)
 class T66_API UT66CompanionSelectionScreen : public UT66ScreenBase
@@ -26,9 +26,6 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Companion Selection")
 	FName PreviewedCompanionID;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Companion Selection")
-	ET66BodyType SelectedBodyType = ET66BodyType::TypeA;
 
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
 	TArray<FCompanionData> GetAllCompanions();
@@ -50,9 +47,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
 	void PreviewPreviousCompanion();
-
-	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
-	void ToggleBodyType();
 
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
 	void OnCompanionGridClicked();
@@ -79,10 +73,14 @@ private:
 	int32 CurrentCompanionIndex = -1;
 	TSharedPtr<STextBlock> CompanionNameWidget;
 	TSharedPtr<STextBlock> CompanionLoreWidget;
-	TSharedPtr<STextBlock> BodyTypeWidget;
+	TSharedPtr<SBorder> CompanionPreviewColorBox;
+	TSharedPtr<struct FSlateBrush> CompanionPreviewBrush;
 
 	// Placeholder skins list
 	TArray<FSkinData> PlaceholderSkins;
+
+	AT66CompanionPreviewStage* GetCompanionPreviewStage() const;
+	TSharedRef<SWidget> CreateCompanionPreviewWidget(const FLinearColor& FallbackColor);
 
 	void RefreshCompanionList();
 	void UpdateCompanionDisplay();
@@ -100,7 +98,6 @@ private:
 	FReply HandleCompanionGridClicked();
 	FReply HandleNoCompanionClicked();
 	FReply HandleLoreClicked();
-	FReply HandleBodyTypeClicked();
 	FReply HandleConfirmClicked();
 	FReply HandleBackClicked();
 };

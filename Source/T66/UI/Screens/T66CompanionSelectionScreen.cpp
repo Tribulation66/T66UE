@@ -4,7 +4,9 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Gameplay/T66CompanionPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -12,6 +14,8 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
+#include "Widgets/Images/SImage.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 UT66CompanionSelectionScreen::UT66CompanionSelectionScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -108,7 +112,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 				.VAlign(VAlign_Center)
 				.Padding(5.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(60.0f).HeightOverride(28.0f)
+					SNew(SBox).WidthOverride(78.0f).HeightOverride(28.0f)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -125,7 +129,43 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		];
 	}
 
-	// Determine current display name
+	// Carousel list: [NO COMPANION] + companions
+	UT66GameInstance* GICheck = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	TArray<FName> CarouselIDs;
+	CarouselIDs.Add(NAME_None);
+	CarouselIDs.Append(AllCompanionIDs);
+	const int32 NumCarousel = CarouselIDs.Num();
+	const int32 CarouselIndex = FMath::Clamp(CurrentCompanionIndex + 1, 0, NumCarousel > 0 ? NumCarousel - 1 : 0);
+
+	// Build carousel (5 colored tiles: prev2, prev1, current, next1, next2)
+	TSharedRef<SHorizontalBox> CompanionCarousel = SNew(SHorizontalBox);
+	for (int32 Offset = -2; Offset <= 2; Offset++)
+	{
+		int32 Idx = NumCarousel > 0 ? (CarouselIndex + Offset + NumCarousel * 2) % NumCarousel : 0;
+		FName CompanionID = NumCarousel > 0 ? CarouselIDs[Idx] : NAME_None;
+		FCompanionData Data;
+		FLinearColor SpriteColor = FLinearColor(0.35f, 0.25f, 0.25f, 1.0f);
+		if (!CompanionID.IsNone() && GICheck && GICheck->GetCompanionData(CompanionID, Data))
+		{
+			SpriteColor = Data.PlaceholderColor;
+		}
+		float BoxSize = (Offset == 0) ? 60.0f : 45.0f;
+		float Opacity = (Offset == 0) ? 1.0f : 0.6f;
+		CompanionCarousel->AddSlot()
+			.AutoWidth()
+			.Padding(4.0f, 0.0f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SBox).WidthOverride(BoxSize).HeightOverride(BoxSize)
+				[
+					SNew(SBorder)
+					.BorderBackgroundColor(SpriteColor * Opacity)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				]
+			];
+	}
+
+	// Current display name/lore for right panel
 	FText CurrentCompanionName = NoCompanionText;
 	FText CurrentCompanionLore = FText::FromString(TEXT("Selecting no companion means you face the tribulation alone."));
 	if (!PreviewedCompanionID.IsNone())
@@ -138,6 +178,15 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		}
 	}
 
+	// Preview color for center (fallback when no 3D stage)
+	FLinearColor PreviewColor = FLinearColor(0.3f, 0.3f, 0.4f, 1.0f);
+	if (!PreviewedCompanionID.IsNone())
+	{
+		FCompanionData Data;
+		if (GetPreviewedCompanionData(Data))
+			PreviewColor = Data.PlaceholderColor;
+	}
+
 	return SNew(SBorder)
 		.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.0f))
 		[
@@ -145,19 +194,18 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			[
 				SNew(SVerticalBox)
-				// === TOP BAR: Companion Belt + Companion Grid Button ===
+				// === TOP BAR: Companion Grid Button + Carousel (colored tiles) ===
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				.Padding(20.0f, 15.0f, 20.0f, 10.0f)
 				[
 					SNew(SHorizontalBox)
-					// Companion Grid Button
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					.VAlign(VAlign_Center)
 					.Padding(0.0f, 0.0f, 20.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(160.0f).HeightOverride(40.0f)
+						SNew(SBox).WidthOverride(130.0f).HeightOverride(40.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -170,7 +218,6 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							]
 						]
 					]
-					// Companion Belt (navigation arrows + current companion)
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.0f)
 					.HAlign(HAlign_Center)
@@ -179,7 +226,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
 						[
-							SNew(SBox).WidthOverride(50.0f).HeightOverride(50.0f)
+							SNew(SBox).WidthOverride(40.0f).HeightOverride(40.0f)
 							[
 								SNew(SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -187,26 +234,18 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
 								[
 									SNew(STextBlock).Text(FText::FromString(TEXT("<")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
+									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
 									.ColorAndOpacity(FLinearColor::White)
 								]
 							]
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							SNew(SBorder)
-							.BorderBackgroundColor(FLinearColor(0.2f, 0.2f, 0.25f, 1.0f))
-							.Padding(FMargin(20.0f, 10.0f))
-							[
-								SAssignNew(CompanionNameWidget, STextBlock)
-								.Text(CurrentCompanionName)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
-								.ColorAndOpacity(FLinearColor::White)
-							]
+							CompanionCarousel
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
 						[
-							SNew(SBox).WidthOverride(50.0f).HeightOverride(50.0f)
+							SNew(SBox).WidthOverride(40.0f).HeightOverride(40.0f)
 							[
 								SNew(SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -214,19 +253,15 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
 								[
 									SNew(STextBlock).Text(FText::FromString(TEXT(">")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
+									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
 									.ColorAndOpacity(FLinearColor::White)
 								]
 							]
 						]
 					]
-					// No Companion Button
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					.Padding(20.0f, 0.0f, 0.0f, 0.0f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(20.0f, 0.0f, 0.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(150.0f).HeightOverride(40.0f)
+						SNew(SBox).WidthOverride(140.0f).HeightOverride(40.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -240,19 +275,20 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						]
 					]
 				]
-				// === MAIN CONTENT: Left Panel | Center Preview | Right Panel ===
+				// === MAIN CONTENT: Left 0.28 | Center 0.44 | Right 0.28 (bigger panels, different colors) ===
 				+ SVerticalBox::Slot()
 				.FillHeight(1.0f)
 				.Padding(20.0f, 10.0f)
 				[
 					SNew(SHorizontalBox)
-					// LEFT PANEL: Skins
+					// LEFT PANEL: Skins (greenish)
 					+ SHorizontalBox::Slot()
-					.FillWidth(0.22f)
+					.FillWidth(0.28f)
 					.Padding(0.0f, 0.0f, 10.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.0f))
+						.BorderBackgroundColor(FLinearColor(0.08f, 0.18f, 0.12f, 1.0f))
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 						.Padding(FMargin(10.0f))
 						[
 							SNew(SVerticalBox)
@@ -276,76 +312,79 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							]
 						]
 					]
-					// CENTER: Companion Preview
+					// CENTER: Companion Preview (3D or colored box)
 					+ SHorizontalBox::Slot()
-					.FillWidth(0.46f)
+					.FillWidth(0.44f)
 					.Padding(10.0f, 0.0f)
 					[
 						SNew(SVerticalBox)
-						// Preview Area (placeholder)
 						+ SVerticalBox::Slot()
 						.FillHeight(1.0f)
 						.HAlign(HAlign_Center)
 						.VAlign(VAlign_Center)
 						[
-							SNew(SBorder)
-							.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.1f, 1.0f))
-							.Padding(FMargin(40.0f))
-							[
-								SNew(STextBlock)
-								.Text(PreviewedCompanionID.IsNone() 
-									? FText::FromString(TEXT("[NO COMPANION SELECTED]"))
-									: FText::FromString(TEXT("[3D COMPANION PREVIEW]")))
-								.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
-								.ColorAndOpacity(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
-							]
-						]
-						// Body Type Toggle
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.HAlign(HAlign_Center)
-						.Padding(0.0f, 10.0f, 0.0f, 0.0f)
-						[
-							SNew(SBox).WidthOverride(150.0f).HeightOverride(40.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleBodyTypeClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
-								.IsEnabled(!PreviewedCompanionID.IsNone())
-								[
-									SAssignNew(BodyTypeWidget, STextBlock)
-									.Text(Loc ? Loc->GetText_BodyTypeA() : FText::FromString(TEXT("TYPE A")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
+							CreateCompanionPreviewWidget(PreviewColor)
 						]
 					]
-					// RIGHT PANEL: Companion Info
+					// RIGHT PANEL: Companion Info (blueish, name + LORE same row, bigger medals)
 					+ SHorizontalBox::Slot()
-					.FillWidth(0.32f)
+					.FillWidth(0.28f)
 					.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.0f))
+						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.22f, 1.0f))
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 						.Padding(FMargin(15.0f))
 						[
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
 							.HAlign(HAlign_Center)
-							.Padding(0.0f, 0.0f, 0.0f, 15.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 							[
 								SNew(STextBlock)
 								.Text(FText::FromString(TEXT("COMPANION INFO")))
 								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 								.ColorAndOpacity(FLinearColor::White)
 							]
-							// Lore/Description
+							// Name + LORE button same row
 							+ SVerticalBox::Slot()
 							.AutoHeight()
-							.Padding(0.0f, 0.0f, 0.0f, 15.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot()
+								.FillWidth(1.0f)
+								.VAlign(VAlign_Center)
+								[
+									SAssignNew(CompanionNameWidget, STextBlock)
+									.Text(CurrentCompanionName)
+									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+									.ColorAndOpacity(FLinearColor::White)
+									.AutoWrapText(true)
+								]
+								+ SHorizontalBox::Slot()
+								.AutoWidth()
+								.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+								[
+									SNew(SBox).WidthOverride(80.0f).HeightOverride(32.0f)
+									[
+										SNew(SButton)
+										.HAlign(HAlign_Center).VAlign(VAlign_Center)
+										.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked))
+										.ButtonColorAndOpacity(FLinearColor(0.25f, 0.2f, 0.15f, 1.0f))
+										.IsEnabled(!PreviewedCompanionID.IsNone())
+										[
+											SNew(STextBlock).Text(LoreText)
+											.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+								]
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
 								SAssignNew(CompanionLoreWidget, STextBlock)
 								.Text(CurrentCompanionLore)
@@ -353,10 +392,9 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f))
 								.AutoWrapText(true)
 							]
-							// Passive effect info
 							+ SVerticalBox::Slot()
 							.AutoHeight()
-							.Padding(0.0f, 0.0f, 0.0f, 15.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
 								SNew(SBorder)
 								.BorderBackgroundColor(FLinearColor(0.1f, 0.15f, 0.1f, 1.0f))
@@ -369,51 +407,31 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 									.AutoWrapText(true)
 								]
 							]
-							// Medals placeholder (3 medals for companions)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
 							.HAlign(HAlign_Center)
-							.Padding(0.0f, 0.0f, 0.0f, 15.0f)
+							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(35.0f).HeightOverride(35.0f)
+									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
 									[
-										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.2f, 0.5f, 0.2f, 1.0f)) // Easy
+										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.2f, 0.5f, 0.2f, 1.0f))
 									]
 								]
 								+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(35.0f).HeightOverride(35.0f)
+									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
 									[
-										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.5f, 0.4f, 0.1f, 1.0f)) // Medium
+										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.5f, 0.4f, 0.1f, 1.0f))
 									]
 								]
 								+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(35.0f).HeightOverride(35.0f)
+									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
 									[
-										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.5f, 0.15f, 0.15f, 1.0f)) // Hard
-									]
-								]
-							]
-							// Lore button
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.HAlign(HAlign_Center)
-							[
-								SNew(SBox).WidthOverride(100.0f).HeightOverride(35.0f)
-								[
-									SNew(SButton)
-									.HAlign(HAlign_Center).VAlign(VAlign_Center)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked))
-									.ButtonColorAndOpacity(FLinearColor(0.2f, 0.15f, 0.1f, 1.0f))
-									.IsEnabled(!PreviewedCompanionID.IsNone())
-									[
-										SNew(STextBlock).Text(LoreText)
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-										.ColorAndOpacity(FLinearColor::White)
+										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.5f, 0.15f, 0.15f, 1.0f))
 									]
 								]
 							]
@@ -421,13 +439,13 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						]
 					]
 				]
-				// === BOTTOM BAR: Confirm Button ===
+				// === BOTTOM BAR: Confirm (wider so text not cut off) ===
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				.HAlign(HAlign_Center)
 				.Padding(20.0f, 10.0f, 20.0f, 20.0f)
 				[
-					SNew(SBox).WidthOverride(250.0f).HeightOverride(55.0f)
+					SNew(SBox).WidthOverride(320.0f).HeightOverride(55.0f)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -471,22 +489,56 @@ FReply UT66CompanionSelectionScreen::HandleLoreClicked() { OnCompanionLoreClicke
 FReply UT66CompanionSelectionScreen::HandleConfirmClicked() { OnConfirmCompanionClicked(); return FReply::Handled(); }
 FReply UT66CompanionSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
 
-FReply UT66CompanionSelectionScreen::HandleBodyTypeClicked()
+AT66CompanionPreviewStage* UT66CompanionSelectionScreen::GetCompanionPreviewStage() const
 {
-	ToggleBodyType();
-	if (BodyTypeWidget.IsValid())
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+		return *It;
+	return nullptr;
+}
+
+TSharedRef<SWidget> UT66CompanionSelectionScreen::CreateCompanionPreviewWidget(const FLinearColor& FallbackColor)
+{
+	AT66CompanionPreviewStage* Stage = GetCompanionPreviewStage();
+	UTextureRenderTarget2D* RenderTarget = Stage ? Stage->GetRenderTarget() : nullptr;
+	if (RenderTarget)
 	{
-		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-		FText TypeText = (SelectedBodyType == ET66BodyType::TypeA)
-			? (Loc ? Loc->GetText_BodyTypeA() : FText::FromString(TEXT("TYPE A")))
-			: (Loc ? Loc->GetText_BodyTypeB() : FText::FromString(TEXT("TYPE B")));
-		BodyTypeWidget->SetText(TypeText);
+		CompanionPreviewBrush = MakeShared<FSlateBrush>();
+		CompanionPreviewBrush->SetResourceObject(RenderTarget);
+		CompanionPreviewBrush->ImageSize = FVector2D(250.f, 350.f);
+		CompanionPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
+		CompanionPreviewBrush->Tiling = ESlateBrushTileType::NoTile;
+		return SNew(SBox)
+			.WidthOverride(250.0f)
+			.HeightOverride(350.0f)
+			[
+				SNew(SImage).Image(CompanionPreviewBrush.Get())
+			];
 	}
-	return FReply::Handled();
+	return SAssignNew(CompanionPreviewColorBox, SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FallbackColor)
+		[
+			SNew(SBox).WidthOverride(250.0f).HeightOverride(350.0f)
+		];
 }
 
 void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 {
+	if (AT66CompanionPreviewStage* Stage = GetCompanionPreviewStage())
+	{
+		Stage->SetPreviewCompanion(PreviewedCompanionID);
+	}
+	else if (CompanionPreviewColorBox.IsValid())
+	{
+		FCompanionData Data;
+		if (GetPreviewedCompanionData(Data))
+			CompanionPreviewColorBox->SetBorderBackgroundColor(Data.PlaceholderColor);
+		else
+			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.4f, 1.0f));
+	}
+
 	if (CompanionNameWidget.IsValid())
 	{
 		if (PreviewedCompanionID.IsNone())
@@ -534,7 +586,6 @@ void UT66CompanionSelectionScreen::OnScreenActivated_Implementation()
 			PreviewCompanion(GI->SelectedCompanionID);
 		else
 			SelectNoCompanion();
-		SelectedBodyType = GI->SelectedCompanionBodyType;
 	}
 }
 
@@ -616,7 +667,6 @@ void UT66CompanionSelectionScreen::PreviewPreviousCompanion()
 		PreviewCompanion(AllCompanionIDs[CurrentCompanionIndex]);
 }
 
-void UT66CompanionSelectionScreen::ToggleBodyType() { SelectedBodyType = (SelectedBodyType == ET66BodyType::TypeA) ? ET66BodyType::TypeB : ET66BodyType::TypeA; }
 void UT66CompanionSelectionScreen::OnCompanionGridClicked() { ShowModal(ET66ScreenType::CompanionGrid); }
 void UT66CompanionSelectionScreen::OnCompanionLoreClicked() { if (!PreviewedCompanionID.IsNone()) ShowModal(ET66ScreenType::CompanionLore); }
 void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
@@ -624,7 +674,6 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->SelectedCompanionID = PreviewedCompanionID;
-		GI->SelectedCompanionBodyType = SelectedBodyType;
 	}
 	NavigateBack();
 }

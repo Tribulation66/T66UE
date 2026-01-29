@@ -8,9 +8,18 @@ Complete T66 Setup Script
 """
 
 import unreal
+import os
 
 # Get asset tools
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+
+def get_content_path(relative_path):
+    """Resolve path under Content/ (works when run from project root or editor)"""
+    try:
+        proj = unreal.SystemLibrary.get_project_directory()
+        return os.path.normpath(os.path.join(proj, "Content", relative_path))
+    except Exception:
+        return os.path.normpath(os.path.join("Content", relative_path))
 
 def create_button_widget():
     """Create WBP_T66Button widget blueprint"""
@@ -51,13 +60,11 @@ def configure_game_instance():
     cdo = unreal.get_default_object(bp_gc)
     if cdo:
         # Set DataTable references using soft object paths
-        hero_dt_path = "/Game/Data/DT_Heroes.DT_Heroes"
-        companion_dt_path = "/Game/Data/DT_Companions.DT_Companions"
-
         # Try setting via soft object ptr (this may not work for all UE versions)
         try:
             hero_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Heroes")
             companion_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Companions")
+            items_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Items")
 
             if hero_dt:
                 cdo.set_editor_property("HeroDataTable", hero_dt)
@@ -65,6 +72,9 @@ def configure_game_instance():
             if companion_dt:
                 cdo.set_editor_property("CompanionDataTable", companion_dt)
                 unreal.log("Set CompanionDataTable on BP_T66GameInstance")
+            if items_dt:
+                cdo.set_editor_property("ItemsDataTable", items_dt)
+                unreal.log("Set ItemsDataTable on BP_T66GameInstance")
 
             unreal.EditorAssetLibrary.save_asset(bp_path)
             return True
@@ -181,6 +191,23 @@ def import_datatable_csv():
         else:
             unreal.log_warning("Failed to import Companions CSV (may already have data)")
 
+    # Import Items
+    dt_items = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Items")
+    if dt_items:
+        csv_path = get_content_path("Data/Items.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_items, csv_path)
+            if success:
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_Items")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_items)
+                unreal.log(f"Imported Items CSV - {len(row_names)} rows")
+            else:
+                unreal.log_warning("Failed to import Items CSV (may already have data)")
+        else:
+            unreal.log_warning("Items CSV not found: " + csv_path)
+    else:
+        unreal.log("DT_Items not found; create via CreateAssets.py or run SetupItemsDataTable.py")
+
 def verify_all_assets():
     """Verify all required assets exist"""
     unreal.log("")
@@ -202,6 +229,7 @@ def verify_all_assets():
         "/Game/Blueprints/UI/Components/WBP_T66Button",
         "/Game/Data/DT_Heroes",
         "/Game/Data/DT_Companions",
+        "/Game/Data/DT_Items",
         "/Game/Maps/FrontendLevel",
         "/Game/Maps/GameplayLevel",
     ]
@@ -224,6 +252,11 @@ def verify_all_assets():
     if dt_companions:
         row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_companions)
         unreal.log(f"  DT_Companions has {len(row_names)} rows")
+
+    dt_items = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Items")
+    if dt_items:
+        row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_items)
+        unreal.log(f"  DT_Items has {len(row_names)} rows")
 
     return all_ok
 

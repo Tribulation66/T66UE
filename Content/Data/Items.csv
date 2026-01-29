@@ -1,0 +1,4 @@
+---,ItemID,PlaceholderColor,SellValueGold
+Item_01,Item_01,"(R=0.9,G=0.3,B=0.2,A=1.0)",1
+Item_02,Item_02,"(R=0.2,G=0.7,B=0.3,A=1.0)",10
+Item_03,Item_03,"(R=0.2,G=0.4,B=0.9,A=1.0)",100

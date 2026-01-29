@@ -38,6 +38,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> CompanionDataTable;
 
+	/** Reference to the Items DataTable (v0: 3 placeholder items) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> ItemsDataTable;
+
 	// ============================================
 	// Player Selections (for current run setup)
 	// ============================================
@@ -67,6 +71,26 @@ public:
 	ET66BodyType SelectedCompanionBodyType = ET66BodyType::TypeA;
 
 	// ============================================
+	// Save / Load flow
+	// ============================================
+
+	/** Current run save slot index (0..N-1), or -1 if none */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	int32 CurrentSaveSlotIndex = -1;
+
+	/** When loading a game, transform to apply to player after spawn; cleared after use */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	FTransform PendingLoadedTransform;
+
+	/** True when PendingLoadedTransform should be applied on next spawn (set by load, cleared after apply) */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	bool bApplyLoadedTransform = false;
+
+	/** True if Main Menu chose New Game, false if Load Game (used by Party Size Picker) */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bIsNewGameFlow = true;
+
+	// ============================================
 	// DataTable Access Helpers
 	// ============================================
 
@@ -77,6 +101,14 @@ public:
 	/** Get the loaded Companion DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetCompanionDataTable();
+
+	/** Get the loaded Items DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetItemsDataTable();
+
+	/** Get item data by ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetItemData(FName ItemID, FItemData& OutItemData);
 
 	/** Get hero data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -126,4 +158,8 @@ private:
 	/** Cached loaded Companion DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedCompanionDataTable;
+
+	/** Cached loaded Items DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedItemsDataTable;
 };

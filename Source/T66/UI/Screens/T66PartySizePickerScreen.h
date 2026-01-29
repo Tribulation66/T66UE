@@ -35,6 +35,7 @@ public:
 	void OnBackClicked();
 
 protected:
+	virtual void OnScreenActivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 	void SelectPartySize(ET66PartySize PartySize);
 

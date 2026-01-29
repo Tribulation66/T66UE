@@ -101,6 +101,30 @@ struct T66_API FCompanionData : public FTableRowBase
 };
 
 /**
+ * Item data row for the Items DataTable (v0: 3 placeholder items)
+ */
+USTRUCT(BlueprintType)
+struct T66_API FItemData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName ItemID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FLinearColor PlaceholderColor = FLinearColor::White;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
+	int32 SellValueGold = 0;
+
+	FItemData()
+		: ItemID(NAME_None)
+		, PlaceholderColor(FLinearColor::White)
+		, SellValueGold(0)
+	{}
+};
+
+/**
  * Party size enumeration
  */
 UENUM(BlueprintType)

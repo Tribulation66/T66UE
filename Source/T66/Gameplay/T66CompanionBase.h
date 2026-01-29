@@ -1,0 +1,61 @@
+// Copyright Tribulation 66. All Rights Reserved.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Pawn.h"
+#include "Data/T66DataTypes.h"
+#include "T66CompanionBase.generated.h"
+
+class UStaticMeshComponent;
+
+/**
+ * Base class for companions. Uses a sphere mesh (placeholder).
+ * In gameplay, companions follow the hero; in UI, used for 3D preview.
+ */
+UCLASS(Blueprintable)
+class T66_API AT66CompanionBase : public APawn
+{
+	GENERATED_BODY()
+
+public:
+	AT66CompanionBase();
+
+	UPROPERTY(BlueprintReadWrite, Category = "Companion")
+	FName CompanionID;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Companion")
+	FCompanionData CompanionData;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<UStaticMeshComponent> PlaceholderMesh;
+
+	UFUNCTION(BlueprintCallable, Category = "Companion")
+	void InitializeCompanion(const FCompanionData& InData);
+
+	UFUNCTION(BlueprintCallable, Category = "Visuals")
+	void SetPlaceholderColor(FLinearColor Color);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Companion")
+	bool IsPreviewMode() const { return bIsPreviewMode; }
+
+	UFUNCTION(BlueprintCallable, Category = "Companion")
+	void SetPreviewMode(bool bPreview);
+
+	/** Offset from hero when following (e.g. behind and to the side) */
+	UPROPERTY(EditDefaultsOnly, Category = "Follow")
+	FVector FollowOffset = FVector(-120.f, 80.f, 0.f);
+
+	/** How fast the companion moves toward the follow target */
+	UPROPERTY(EditDefaultsOnly, Category = "Follow")
+	float FollowSpeed = 8.f;
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> PlaceholderMaterial;
+
+	bool bIsPreviewMode = false;
+};

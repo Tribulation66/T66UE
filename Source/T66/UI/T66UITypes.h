@@ -19,6 +19,9 @@ enum class ET66ScreenType : uint8
 	CompanionSelection UMETA(DisplayName = "Companion Selection"),
 	Settings UMETA(DisplayName = "Settings"),
 	Achievements UMETA(DisplayName = "Achievements"),
+	PauseMenu UMETA(DisplayName = "Pause Menu Modal"),
+	ReportBug UMETA(DisplayName = "Report Bug Modal"),
+	RunSummary UMETA(DisplayName = "Run Summary Modal"),
 	// Modals (overlays on top of other screens)
 	HeroGrid UMETA(DisplayName = "Hero Grid Modal"),
 	HeroLore UMETA(DisplayName = "Hero Lore Modal"),

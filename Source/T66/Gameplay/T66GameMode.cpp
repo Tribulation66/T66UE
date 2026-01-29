@@ -2,9 +2,22 @@
 
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66CompanionBase.h"
+#include "Gameplay/T66EnemyDirector.h"
+#include "Gameplay/T66VendorNPC.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/SkyLight.h"
+#include "Components/LightComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMeshActor.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "EngineUtils.h"
 
 AT66GameMode::AT66GameMode()
 {
@@ -17,7 +30,275 @@ void AT66GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Hero spawning handled by SpawnDefaultPawnFor"));
+	// Reset run state when entering gameplay level (hearts, gold, inventory, log)
+	UGameInstance* GI = GetGameInstance();
+	if (GI)
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->ResetForNewRun();
+		}
+	}
+
+	if (bAutoSetupLevel)
+	{
+		EnsureLevelSetup();
+	}
+
+	// Spawn enemy director so waves spawn (3 every 15s, max 12)
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	GetWorld()->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup complete, hero spawning handled by SpawnDefaultPawnFor"));
+}
+
+void AT66GameMode::RestartPlayer(AController* NewPlayer)
+{
+	Super::RestartPlayer(NewPlayer);
+	SpawnCompanionForPlayer(NewPlayer);
+	SpawnVendorForPlayer(NewPlayer);
+
+	UT66GameInstance* GI = GetT66GameInstance();
+	APawn* Pawn = NewPlayer ? NewPlayer->GetPawn() : nullptr;
+	if (GI && Pawn && GI->bApplyLoadedTransform)
+	{
+		Pawn->SetActorTransform(GI->PendingLoadedTransform);
+		GI->bApplyLoadedTransform = false;
+		GI->PendingLoadedTransform = FTransform();
+	}
+}
+
+void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
+{
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!GI || GI->SelectedCompanionID.IsNone()) return;
+
+	FCompanionData CompanionData;
+	if (!GI->GetCompanionData(GI->SelectedCompanionID, CompanionData)) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
+	if (!HeroPawn) return;
+
+	UClass* CompanionClass = AT66CompanionBase::StaticClass();
+	if (!CompanionData.CompanionClass.IsNull())
+	{
+		UClass* Loaded = CompanionData.CompanionClass.LoadSynchronous();
+		if (Loaded) CompanionClass = Loaded;
+	}
+
+	FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(-150.f, 100.f, 0.f);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AT66CompanionBase* Companion = World->SpawnActor<AT66CompanionBase>(CompanionClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (Companion)
+	{
+		Companion->InitializeCompanion(CompanionData);
+		Companion->SetPreviewMode(false); // gameplay: follow hero
+		UE_LOG(LogTemp, Log, TEXT("Spawned companion: %s"), *CompanionData.DisplayName.ToString());
+	}
+}
+
+void AT66GameMode::SpawnVendorForPlayer(AController* Player)
+{
+	APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
+	if (!HeroPawn) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(300.f, 0.f, 0.f);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AT66VendorNPC* Vendor = World->SpawnActor<AT66VendorNPC>(AT66VendorNPC::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (Vendor)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Spawned vendor NPC near hero"));
+	}
+}
+
+void AT66GameMode::EnsureLevelSetup()
+{
+	UE_LOG(LogTemp, Log, TEXT("Checking level setup..."));
+	
+	SpawnFloorIfNeeded();
+	SpawnLightingIfNeeded();
+	SpawnPlayerStartIfNeeded();
+}
+
+void AT66GameMode::SpawnFloorIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Check if there's already a floor-like actor (large static mesh at ground level)
+	bool bHasFloor = false;
+	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+	{
+		FVector Location = It->GetActorLocation();
+		FVector Scale = It->GetActorScale3D();
+		// Consider it a floor if it's near ground level and scaled large
+		if (FMath::Abs(Location.Z) < 100.f && (Scale.X > 5.f || Scale.Y > 5.f))
+		{
+			bHasFloor = true;
+			break;
+		}
+	}
+
+	if (!bHasFloor)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No floor found - spawning development floor"));
+
+		// Spawn a large cube as floor
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(
+			AStaticMeshActor::StaticClass(),
+			FVector(0.f, 0.f, -50.f), // Slightly below ground level
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+		if (Floor)
+		{
+			// Set the mesh to a cube
+			UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+			if (CubeMesh && Floor->GetStaticMeshComponent())
+			{
+				Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+				Floor->SetActorScale3D(FVector(100.f, 100.f, 1.f)); // Large flat floor
+				
+				// Create a simple gray material
+				UMaterialInstanceDynamic* FloorMat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0);
+				if (FloorMat)
+				{
+					FloorMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.3f, 0.3f, 0.35f, 1.f));
+				}
+			}
+
+			Floor->SetActorLabel(TEXT("DEV_Floor"));
+			SpawnedSetupActors.Add(Floor);
+			UE_LOG(LogTemp, Log, TEXT("Spawned development floor at (0, 0, -50)"));
+		}
+	}
+}
+
+void AT66GameMode::SpawnLightingIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Check for existing directional light
+	bool bHasDirectionalLight = false;
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	{
+		bHasDirectionalLight = true;
+		break;
+	}
+
+	// Check for existing sky light
+	bool bHasSkyLight = false;
+	for (TActorIterator<ASkyLight> It(World); It; ++It)
+	{
+		bHasSkyLight = true;
+		break;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// Spawn directional light (sun) if needed
+	if (!bHasDirectionalLight)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No directional light found - spawning development sun"));
+
+		ADirectionalLight* Sun = World->SpawnActor<ADirectionalLight>(
+			ADirectionalLight::StaticClass(),
+			FVector(0.f, 0.f, 1000.f),
+			FRotator(-50.f, -45.f, 0.f), // Angled down
+			SpawnParams
+		);
+
+		if (Sun)
+		{
+			if (ULightComponent* LightComp = Sun->GetLightComponent())
+			{
+				LightComp->SetIntensity(3.f);
+				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
+			}
+			Sun->SetActorLabel(TEXT("DEV_Sun"));
+			SpawnedSetupActors.Add(Sun);
+			UE_LOG(LogTemp, Log, TEXT("Spawned development directional light"));
+		}
+	}
+
+	// Spawn sky light (ambient) if needed
+	if (!bHasSkyLight)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No sky light found - spawning development ambient light"));
+
+		ASkyLight* Sky = World->SpawnActor<ASkyLight>(
+			ASkyLight::StaticClass(),
+			FVector(0.f, 0.f, 500.f),
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+		if (Sky)
+		{
+			if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
+			{
+				SkyComp->SetIntensity(1.0f);
+				SkyComp->SetLightColor(FLinearColor(0.5f, 0.6f, 0.8f)); // Bluish ambient
+				SkyComp->RecaptureSky();
+			}
+			Sky->SetActorLabel(TEXT("DEV_SkyLight"));
+			SpawnedSetupActors.Add(Sky);
+			UE_LOG(LogTemp, Log, TEXT("Spawned development sky light"));
+		}
+	}
+}
+
+void AT66GameMode::SpawnPlayerStartIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Check for existing player start
+	bool bHasPlayerStart = false;
+	for (TActorIterator<APlayerStart> It(World); It; ++It)
+	{
+		bHasPlayerStart = true;
+		break;
+	}
+
+	if (!bHasPlayerStart)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No PlayerStart found - spawning development PlayerStart"));
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		APlayerStart* Start = World->SpawnActor<APlayerStart>(
+			APlayerStart::StaticClass(),
+			FVector(0.f, 0.f, DefaultSpawnHeight),
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+		if (Start)
+		{
+			Start->SetActorLabel(TEXT("DEV_PlayerStart"));
+			SpawnedSetupActors.Add(Start);
+			UE_LOG(LogTemp, Log, TEXT("Spawned development PlayerStart at (0, 0, %.1f)"), DefaultSpawnHeight);
+		}
+	}
 }
 
 UT66GameInstance* AT66GameMode::GetT66GameInstance() const
@@ -59,9 +340,24 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		return nullptr;
 	}
 
-	// Get spawn transform
-	FVector SpawnLocation = StartSpot ? StartSpot->GetActorLocation() : FVector::ZeroVector;
-	FRotator SpawnRotation = StartSpot ? StartSpot->GetActorRotation() : FRotator::ZeroRotator;
+	// Get spawn transform - use a safe default height if no PlayerStart exists
+	FVector SpawnLocation;
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+	
+	if (StartSpot)
+	{
+		SpawnLocation = StartSpot->GetActorLocation();
+		SpawnRotation = StartSpot->GetActorRotation();
+		UE_LOG(LogTemp, Log, TEXT("Spawning at PlayerStart: (%.1f, %.1f, %.1f)"), 
+			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
+	}
+	else
+	{
+		// No PlayerStart found - spawn at a safe default location above origin
+		// This ensures the player doesn't fall through the void
+		SpawnLocation = FVector(0.f, 0.f, 200.f);
+		UE_LOG(LogTemp, Warning, TEXT("No PlayerStart found! Spawning at default location (0, 0, 200). Add a PlayerStart actor to GameplayLevel."));
+	}
 
 	// Spawn parameters
 	FActorSpawnParameters SpawnParams;
@@ -71,7 +367,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// Spawn the pawn
 	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(PawnClass, SpawnLocation, SpawnRotation, SpawnParams);
 
-	// If it's our hero class, initialize it with hero data
+	// If it's our hero class, initialize it with hero data and body type
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(SpawnedPawn))
 	{
 		if (UT66GameInstance* GI = GetT66GameInstance())
@@ -79,9 +375,13 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			FHeroData HeroData;
 			if (GI->GetSelectedHeroData(HeroData))
 			{
-				Hero->InitializeHero(HeroData);
-				UE_LOG(LogTemp, Log, TEXT("Spawned hero: %s with color (%f, %f, %f)"),
+				// Pass both hero data AND body type from Game Instance
+				ET66BodyType SelectedBodyType = GI->SelectedHeroBodyType;
+				Hero->InitializeHero(HeroData, SelectedBodyType);
+				
+				UE_LOG(LogTemp, Log, TEXT("Spawned hero: %s, BodyType: %s, Color: (%.2f, %.2f, %.2f)"),
 					*HeroData.DisplayName.ToString(),
+					SelectedBodyType == ET66BodyType::TypeA ? TEXT("TypeA") : TEXT("TypeB"),
 					HeroData.PlaceholderColor.R,
 					HeroData.PlaceholderColor.G,
 					HeroData.PlaceholderColor.B);

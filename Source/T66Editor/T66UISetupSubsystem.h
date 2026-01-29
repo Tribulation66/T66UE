@@ -72,6 +72,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
 	void PrintSetupStatus();
 
+	/**
+	 * Create the placeholder color material for hero visuals
+	 */
+	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
+	bool CreatePlaceholderMaterial();
+
 private:
 	/** Helper to load and modify a Blueprint */
 	UBlueprint* LoadBlueprint(const FString& AssetPath);

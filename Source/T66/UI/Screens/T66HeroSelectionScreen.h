@@ -9,6 +9,7 @@
 #include "T66HeroSelectionScreen.generated.h"
 
 class UT66LocalizationSubsystem;
+class AT66HeroPreviewStage;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
@@ -90,11 +91,19 @@ private:
 	int32 CurrentHeroIndex = 0;
 	
 	// Widgets that need updating
-	TSharedPtr<STextBlock> HeroNameWidget;        // Hero name in left panel
+	TSharedPtr<STextBlock> HeroNameWidget;        // Hero name in right panel below Hero Info
 	TSharedPtr<STextBlock> HeroDescWidget;        // Description in right panel
-	TSharedPtr<STextBlock> BodyTypeWidget;        // Body type toggle text
-	TSharedPtr<SBorder> HeroPreviewColorBox;      // Colored box for hero preview
+	TSharedPtr<SBorder> HeroPreviewColorBox;      // Fallback colored box when no 3D preview
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
+
+	/** Brush for 3D preview image (render target); kept alive for SImage */
+	TSharedPtr<struct FSlateBrush> HeroPreviewBrush;
+
+	/** Find the hero preview stage in the world (FrontendLevel) */
+	AT66HeroPreviewStage* GetHeroPreviewStage() const;
+
+	/** Build center preview widget: 3D image (render target) or colored box fallback */
+	TSharedRef<SWidget> CreateHeroPreviewWidget(const FLinearColor& FallbackColor);
 
 	// Placeholder skins list
 	TArray<FSkinData> PlaceholderSkins;
@@ -119,7 +128,8 @@ private:
 	FReply HandleHeroGridClicked();
 	FReply HandleCompanionClicked();
 	FReply HandleLoreClicked();
-	FReply HandleBodyTypeClicked();
+	FReply HandleBodyTypeAClicked();
+	FReply HandleBodyTypeBClicked();
 	FReply HandleTheLabClicked();
 	FReply HandleEnterClicked();
 	FReply HandleBackClicked();

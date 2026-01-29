@@ -170,6 +170,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
 	FText GetText_HeroName(FName HeroID) const;
 	
+	/** Localized hero description blurb (placeholder text per hero) */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
+	FText GetText_HeroDescription(FName HeroID) const;
+	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
 	FText GetText_CompanionName(FName CompanionID) const;
 	
@@ -257,6 +261,26 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|SaveSlots")
 	FText GetText_Stage() const;
+	
+	// Pause Menu
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PauseMenu")
+	FText GetText_Resume() const;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PauseMenu")
+	FText GetText_SaveAndQuit() const;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PauseMenu")
+	FText GetText_Restart() const;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PauseMenu")
+	FText GetText_ReportBug() const;
+	
+	// Report Bug modal
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|ReportBug")
+	FText GetText_ReportBugTitle() const;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|ReportBug")
+	FText GetText_ReportBugSubmit() const;
 	
 	// Account Status
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")

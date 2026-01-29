@@ -171,6 +171,12 @@ def main():
     else:
         unreal.log_error("Could not find CompanionData struct")
 
+    item_struct = unreal.find_object(None, "/Script/T66.ItemData")
+    if item_struct:
+        create_data_table("/Game/Data/DT_Items", item_struct)
+    else:
+        unreal.log_error("Could not find ItemData struct")
+
     # === Create Levels ===
     unreal.log("--- Creating Levels ---")
     create_level("/Game/Maps/FrontendLevel")
