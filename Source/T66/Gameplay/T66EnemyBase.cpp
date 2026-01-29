@@ -5,6 +5,7 @@
 #include "Gameplay/T66EnemyAIController.h"
 #include "Gameplay/T66ItemPickup.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66HouseNPCBase.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Components/CapsuleComponent.h"
@@ -15,6 +16,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 
 AT66EnemyBase::AT66EnemyBase()
 {
@@ -61,6 +63,14 @@ AT66EnemyBase::AT66EnemyBase()
 void AT66EnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+	if (!bBaseTuningInitialized)
+	{
+		BaseMaxHP = MaxHP;
+		BaseTouchDamageHearts = TouchDamageHearts;
+		bBaseTuningInitialized = true;
+	}
+	// Ensure HP is valid on spawn (in case difficulty scaled before BeginPlay).
+	CurrentHP = FMath::Clamp(CurrentHP, 1, MaxHP);
 	UpdateHealthBar();
 
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
@@ -68,6 +78,22 @@ void AT66EnemyBase::BeginPlay()
 	{
 		Capsule->OnComponentBeginOverlap.AddDynamic(this, &AT66EnemyBase::OnCapsuleBeginOverlap);
 	}
+}
+
+void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
+{
+	if (!bBaseTuningInitialized)
+	{
+		BaseMaxHP = MaxHP;
+		BaseTouchDamageHearts = TouchDamageHearts;
+		bBaseTuningInitialized = true;
+	}
+	const int32 ClampedTier = FMath::Max(0, Tier);
+	const float Mult = 1.f + static_cast<float>(ClampedTier);
+	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * Mult));
+	CurrentHP = MaxHP;
+	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseTouchDamageHearts) * Mult));
+	UpdateHealthBar();
 }
 
 void AT66EnemyBase::Tick(float DeltaSeconds)
@@ -80,6 +106,26 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	if (!Move) return;
+
+	// Safe zone rule: enemies cannot enter NPC safe bubbles. If inside, run away.
+	for (TActorIterator<AT66HouseNPCBase> It(GetWorld()); It; ++It)
+	{
+		AT66HouseNPCBase* NPC = *It;
+		if (!NPC) continue;
+		const FVector N = NPC->GetActorLocation();
+		FVector ToEnemy = GetActorLocation() - N;
+		ToEnemy.Z = 0.f;
+		const float Dist = ToEnemy.Size();
+		if (Dist < NPC->GetSafeZoneRadius())
+		{
+			if (Dist > 1.f)
+			{
+				ToEnemy /= Dist;
+				AddMovementInput(ToEnemy, 1.f);
+			}
+			return;
+		}
+	}
 
 	FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
 	ToPlayer.Z = 0.f;
@@ -97,6 +143,7 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (!OtherActor) return;
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor);
 	if (!Hero) return;
+	if (Hero->IsInSafeZone()) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -109,7 +156,7 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (Now - LastTouchDamageTime < TouchDamageCooldown) return;
 
 	LastTouchDamageTime = Now;
-	RunState->ApplyDamage(1);
+	RunState->ApplyDamage(TouchDamageHearts);
 }
 
 bool AT66EnemyBase::TakeDamageFromHero(int32 Damage)

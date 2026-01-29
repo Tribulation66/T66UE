@@ -3,6 +3,8 @@
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HeroProjectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -23,13 +25,36 @@ void UT66CombatComponent::TryFire()
 	AActor* OwnerActor = GetOwner();
 	if (!OwnerActor) return;
 
+	// Safe zone rule: if hero is inside any NPC safe bubble, do not fire.
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OwnerActor))
+	{
+		if (Hero->IsInSafeZone())
+		{
+			return;
+		}
+	}
+
 	UWorld* World = GetWorld();
 	if (!World) return;
 
 	FVector MyLoc = OwnerActor->GetActorLocation();
 	AT66EnemyBase* ClosestEnemy = nullptr;
 	AT66BossBase* ClosestBoss = nullptr;
+	AT66GamblerBoss* ClosestGamblerBoss = nullptr;
 	float ClosestDistSq = AttackRange * AttackRange;
+
+	// Prefer Gambler Boss if present
+	for (TActorIterator<AT66GamblerBoss> It(World); It; ++It)
+	{
+		AT66GamblerBoss* Boss = *It;
+		if (!Boss || Boss->CurrentHP <= 0) continue;
+		const float DistSq = FVector::DistSquared(MyLoc, Boss->GetActorLocation());
+		if (DistSq < ClosestDistSq)
+		{
+			ClosestDistSq = DistSq;
+			ClosestGamblerBoss = Boss;
+		}
+	}
 
 	// Prefer awakened boss if present
 	for (TActorIterator<AT66BossBase> It(World); It; ++It)
@@ -57,7 +82,8 @@ void UT66CombatComponent::TryFire()
 		}
 	}
 
-	AActor* Target = ClosestBoss ? Cast<AActor>(ClosestBoss) : Cast<AActor>(ClosestEnemy);
+	AActor* Target = ClosestGamblerBoss ? Cast<AActor>(ClosestGamblerBoss)
+		: (ClosestBoss ? Cast<AActor>(ClosestBoss) : Cast<AActor>(ClosestEnemy));
 	if (Target)
 	{
 		FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);

@@ -25,6 +25,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
 	int32 CurrentHP = 50;
 
+	/** Touch damage to player in hearts (scaled by difficulty). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	int32 TouchDamageHearts = 1;
+
 	/** Point value for wave budget and Bounty score (Bible 2.9) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
@@ -49,6 +53,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void UpdateHealthBar();
 
+	/** Apply difficulty tier (Tier 0 = base; Tier 1 doubles, etc). */
+	void ApplyDifficultyTier(int32 Tier);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -63,4 +70,9 @@ protected:
 	/** Touch damage: last time we dealt damage to player (cooldown) */
 	float LastTouchDamageTime = -9999.f;
 	static constexpr float TouchDamageCooldown = 0.5f;
+
+private:
+	bool bBaseTuningInitialized = false;
+	int32 BaseMaxHP = 0;
+	int32 BaseTouchDamageHearts = 0;
 };

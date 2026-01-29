@@ -40,7 +40,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	}
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.9f))
+		// Full-screen, opaque (no transparency)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)

@@ -140,6 +140,17 @@ void UT66UISetupSubsystem::RunFullSetup()
 		bAllSuccess = false;
 	}
 
+	// Configure ColiseumLevel
+	if (ConfigureColiseumLevel())
+	{
+		UE_LOG(LogT66Editor, Log, TEXT("[OK] ColiseumLevel configured"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("[FAIL] ColiseumLevel configuration failed"));
+		bAllSuccess = false;
+	}
+
 	if (bAllSuccess)
 	{
 		UE_LOG(LogT66Editor, Log, TEXT("=== T66 Full Setup Complete - All Success ==="));
@@ -229,6 +240,46 @@ bool UT66UISetupSubsystem::ConfigureGameplayLevel()
 			FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetMapPackageExtension());
 			UPackage::SavePackage(Package, World, *PackageFileName, SaveArgs);
 			UE_LOG(LogT66Editor, Log, TEXT("Saved GameplayLevel with GameMode override"));
+		}
+		return true;
+	}
+
+	return false;
+}
+
+bool UT66UISetupSubsystem::ConfigureColiseumLevel()
+{
+	const FString LevelPath = TEXT("/Game/Maps/ColiseumLevel");
+	UWorld* World = LoadObject<UWorld>(nullptr, *LevelPath);
+
+	if (!World)
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load ColiseumLevel at %s"), *LevelPath);
+		return false;
+	}
+
+	const FString GameModePath = TEXT("/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode_C");
+	UClass* GameModeClass = LoadClass<AGameModeBase>(nullptr, *GameModePath);
+
+	if (!GameModeClass)
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load BP_GameplayGameMode at %s"), *GameModePath);
+		return false;
+	}
+
+	if (World->GetWorldSettings())
+	{
+		World->GetWorldSettings()->DefaultGameMode = GameModeClass;
+		World->GetWorldSettings()->MarkPackageDirty();
+
+		UPackage* Package = World->GetOutermost();
+		if (Package)
+		{
+			FSavePackageArgs SaveArgs;
+			SaveArgs.TopLevelFlags = RF_Standalone;
+			FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetMapPackageExtension());
+			UPackage::SavePackage(Package, World, *PackageFileName, SaveArgs);
+			UE_LOG(LogT66Editor, Log, TEXT("Saved ColiseumLevel with GameMode override"));
 		}
 		return true;
 	}
@@ -401,12 +452,14 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString ItemsTablePath = TEXT("/Game/Data/DT_Items.DT_Items");
 	const FString BossesTablePath = TEXT("/Game/Data/DT_Bosses.DT_Bosses");
 	const FString StagesTablePath = TEXT("/Game/Data/DT_Stages.DT_Stages");
+	const FString HouseNPCsTablePath = TEXT("/Game/Data/DT_HouseNPCs.DT_HouseNPCs");
 
 	UDataTable* HeroesTable = LoadObject<UDataTable>(nullptr, *HeroesTablePath);
 	UDataTable* CompanionsTable = LoadObject<UDataTable>(nullptr, *CompanionsTablePath);
 	UDataTable* ItemsTable = LoadObject<UDataTable>(nullptr, *ItemsTablePath);
 	UDataTable* BossesTable = LoadObject<UDataTable>(nullptr, *BossesTablePath);
 	UDataTable* StagesTable = LoadObject<UDataTable>(nullptr, *StagesTablePath);
+	UDataTable* HouseNPCsTable = LoadObject<UDataTable>(nullptr, *HouseNPCsTablePath);
 
 	if (HeroesTable)
 	{
@@ -456,6 +509,16 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_Stages (create via CreateAssets.py then ImportData.py)"));
+	}
+
+	if (HouseNPCsTable)
+	{
+		GameInstanceCDO->HouseNPCsDataTable = HouseNPCsTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set HouseNPCsDataTable to DT_HouseNPCs"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_HouseNPCs (create via CreateAssets.py then ImportData.py)"));
 	}
 
 	return SaveBlueprint(Blueprint);
@@ -553,6 +616,18 @@ void UT66UISetupSubsystem::PrintSetupStatus()
 		{
 			UClass* GameModeClass = World->GetWorldSettings()->DefaultGameMode;
 			UE_LOG(LogT66Editor, Log, TEXT("FrontendLevel GameMode: %s"), 
+				GameModeClass ? *GameModeClass->GetName() : TEXT("(none)"));
+		}
+	}
+
+	// Check ColiseumLevel
+	{
+		const FString LevelPath = TEXT("/Game/Maps/ColiseumLevel");
+		UWorld* World = LoadObject<UWorld>(nullptr, *LevelPath);
+		if (World && World->GetWorldSettings())
+		{
+			UClass* GameModeClass = World->GetWorldSettings()->DefaultGameMode;
+			UE_LOG(LogT66Editor, Log, TEXT("ColiseumLevel GameMode: %s"),
 				GameModeClass ? *GameModeClass->GetName() : TEXT("(none)"));
 		}
 	}

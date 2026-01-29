@@ -4,6 +4,33 @@
 #include "Core/T66GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 
+float UT66RunStateSubsystem::GetDifficultyMultiplier() const
+{
+	// Linear scaling: Tier 0 => 1x, Tier 1 => 2x, Tier 2 => 3x, ...
+	return 1.f + static_cast<float>(FMath::Max(0, DifficultyTier));
+}
+
+void UT66RunStateSubsystem::IncreaseDifficultyTier()
+{
+	DifficultyTier = FMath::Clamp(DifficultyTier + 1, 0, 999);
+	DifficultyChanged.Broadcast();
+}
+
+float UT66RunStateSubsystem::AddGamblerAngerFromBet(int32 BetGold)
+{
+	const float Delta = FMath::Clamp(static_cast<float>(FMath::Max(0, BetGold)) / 100.f, 0.f, 1.f);
+	GamblerAnger01 = FMath::Clamp(GamblerAnger01 + Delta, 0.f, 1.f);
+	GamblerAngerChanged.Broadcast();
+	return GamblerAnger01;
+}
+
+void UT66RunStateSubsystem::ResetGamblerAnger()
+{
+	if (FMath::IsNearlyZero(GamblerAnger01)) return;
+	GamblerAnger01 = 0.f;
+	GamblerAngerChanged.Broadcast();
+}
+
 bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
 {
 	if (Hearts <= 0) return false;
@@ -27,6 +54,74 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
 	return true;
 }
 
+void UT66RunStateSubsystem::AddGold(int32 Amount)
+{
+	if (Amount == 0) return;
+	CurrentGold = FMath::Max(0, CurrentGold + Amount);
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Gambler"), Amount));
+	GoldChanged.Broadcast();
+	LogAdded.Broadcast();
+}
+
+bool UT66RunStateSubsystem::TrySpendGold(int32 Amount)
+{
+	if (Amount <= 0) return true;
+	if (CurrentGold < Amount) return false;
+
+	CurrentGold = FMath::Max(0, CurrentGold - Amount);
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=-%d,Source=Gambler"), Amount));
+	GoldChanged.Broadcast();
+	LogAdded.Broadcast();
+	return true;
+}
+
+void UT66RunStateSubsystem::AddOwedBoss(FName BossID)
+{
+	if (BossID.IsNone()) return;
+	OwedBossIDs.Add(BossID);
+	AddStructuredEvent(ET66RunEventType::StageExited, FString::Printf(TEXT("OwedBoss=%s"), *BossID.ToString()));
+	LogAdded.Broadcast();
+}
+
+void UT66RunStateSubsystem::RemoveFirstOwedBoss()
+{
+	if (OwedBossIDs.Num() <= 0) return;
+	OwedBossIDs.RemoveAt(0);
+	LogAdded.Broadcast();
+}
+
+void UT66RunStateSubsystem::BorrowGold(int32 Amount)
+{
+	if (Amount <= 0) return;
+	CurrentGold = FMath::Max(0, CurrentGold + Amount);
+	CurrentDebt = FMath::Max(0, CurrentDebt + Amount);
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Borrow"), Amount));
+	GoldChanged.Broadcast();
+	DebtChanged.Broadcast();
+	LogAdded.Broadcast();
+}
+
+int32 UT66RunStateSubsystem::PayDebt(int32 Amount)
+{
+	if (Amount <= 0 || CurrentDebt <= 0 || CurrentGold <= 0) return 0;
+	const int32 Pay = FMath::Clamp(Amount, 0, FMath::Min(CurrentDebt, CurrentGold));
+	if (Pay <= 0) return 0;
+
+	CurrentGold = FMath::Max(0, CurrentGold - Pay);
+	CurrentDebt = FMath::Max(0, CurrentDebt - Pay);
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=-%d,Source=PayDebt"), Pay));
+	GoldChanged.Broadcast();
+	DebtChanged.Broadcast();
+	LogAdded.Broadcast();
+
+	// If debt is cleared, make sure a pending loan shark won't spawn.
+	if (CurrentDebt <= 0)
+	{
+		bLoanSharkPending = false;
+	}
+	return Pay;
+}
+
 void UT66RunStateSubsystem::AddItem(FName ItemID)
 {
 	if (ItemID.IsNone()) return;
@@ -34,6 +129,20 @@ void UT66RunStateSubsystem::AddItem(FName ItemID)
 	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=LootBag"), *ItemID.ToString()));
 	InventoryChanged.Broadcast();
 	LogAdded.Broadcast();
+}
+
+void UT66RunStateSubsystem::HealToFull()
+{
+	CurrentHearts = MaxHearts;
+	HeartsChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::KillPlayer()
+{
+	CurrentHearts = 0;
+	LastDamageTime = -9999.f;
+	HeartsChanged.Broadcast();
+	OnPlayerDied.Broadcast();
 }
 
 bool UT66RunStateSubsystem::SellFirstItem()
@@ -66,7 +175,12 @@ bool UT66RunStateSubsystem::SellFirstItem()
 void UT66RunStateSubsystem::ResetForNewRun()
 {
 	CurrentHearts = MaxHearts;
-	CurrentGold = 0;
+	CurrentGold = DefaultStartGold;
+	CurrentDebt = 0;
+	bLoanSharkPending = false;
+	DifficultyTier = 0;
+	GamblerAnger01 = 0.f;
+	OwedBossIDs.Empty();
 	Inventory.Empty();
 	EventLog.Empty();
 	StructuredEventLog.Empty();
@@ -80,6 +194,9 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	ResetBossState();
 	HeartsChanged.Broadcast();
 	GoldChanged.Broadcast();
+	DebtChanged.Broadcast();
+	DifficultyChanged.Broadcast();
+	GamblerAngerChanged.Broadcast();
 	InventoryChanged.Broadcast();
 	PanelVisibilityChanged.Broadcast();
 	ScoreChanged.Broadcast();
@@ -92,6 +209,8 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 	const int32 NewStage = FMath::Clamp(Stage, 1, 66);
 	if (CurrentStage == NewStage) return;
 	CurrentStage = NewStage;
+	// Bible: gambler anger resets at end of every stage.
+	ResetGamblerAnger();
 	StageChanged.Broadcast();
 }
 

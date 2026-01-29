@@ -61,6 +61,9 @@ public:
 	bool IsAwakened() const { return bAwakened; }
 	bool IsAlive() const { return CurrentHP > 0; }
 
+	/** Coliseum: start the fight immediately (bypasses proximity). */
+	void ForceAwaken() { Awaken(); }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

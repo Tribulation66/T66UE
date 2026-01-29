@@ -31,12 +31,14 @@ void UT66GameplayHUDWidget::NativeConstruct()
 
 	RunState->HeartsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->GoldChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->DebtChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->InventoryChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->PanelVisibilityChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->ScoreChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->StageChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->StageTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->DifficultyChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RefreshHUD();
 }
 
@@ -47,12 +49,14 @@ void UT66GameplayHUDWidget::NativeDestruct()
 	{
 		RunState->HeartsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->GoldChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->DebtChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->InventoryChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->PanelVisibilityChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->StageChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->DifficultyChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	}
 	Super::NativeDestruct();
 }
@@ -65,7 +69,12 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	// Gold
 	if (GoldText.IsValid())
 	{
-		GoldText->SetText(FText::AsNumber(RunState->GetCurrentGold()));
+		GoldText->SetText(FText::FromString(FString::Printf(TEXT("Gold: %d"), RunState->GetCurrentGold())));
+	}
+	// Owe (Debt) in red
+	if (DebtText.IsValid())
+	{
+		DebtText->SetText(FText::FromString(FString::Printf(TEXT("Owe: %d"), RunState->GetCurrentDebt())));
 	}
 	// Bounty (Score)
 	if (ScoreText.IsValid())
@@ -79,12 +88,13 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		StageText->SetText(FText::FromString(FString::Printf(TEXT("Stage number: %d"), RunState->GetCurrentStage())));
 	}
 
-	// Stage timer: frozen at 60 until start gate, then countdown (e.g. 1:00, 0:45)
+	// Stage timer: frozen at full until start gate, then countdown (e.g. 6:00, 0:45)
 	if (TimerText.IsValid())
 	{
 		const float Secs = RunState->GetStageTimerSecondsRemaining();
-		const int32 M = FMath::FloorToInt(Secs / 60.f);
-		const int32 S = FMath::FloorToInt(FMath::Fmod(Secs, 60.f));
+		const int32 Total = FMath::CeilToInt(FMath::Max(0.f, Secs));
+		const int32 M = FMath::FloorToInt(Total / 60.f);
+		const int32 S = FMath::FloorToInt(FMath::Fmod(static_cast<float>(Total), 60.f));
 		TimerText->SetText(FText::FromString(FString::Printf(TEXT("%d:%02d"), M, S)));
 	}
 
@@ -122,6 +132,16 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
+	// Difficulty squares (placeholder for skulls): bright when active
+	const int32 DifficultyTier = RunState->GetDifficultyTier();
+	for (int32 i = 0; i < DifficultyBorders.Num(); ++i)
+	{
+		if (!DifficultyBorders[i].IsValid()) continue;
+		const bool bActive = i < DifficultyTier;
+		const FLinearColor C = bActive ? FLinearColor(0.95f, 0.15f, 0.15f, 1.f) : FLinearColor(0.18f, 0.18f, 0.22f, 1.f);
+		DifficultyBorders[i]->SetBorderBackgroundColor(C);
+	}
+
 	// Inventory slots: red when item picked up, grey when empty
 	const TArray<FName>& Inv = RunState->GetInventory();
 	for (int32 i = 0; i < InventorySlotBorders.Num(); ++i)
@@ -144,8 +164,30 @@ void UT66GameplayHUDWidget::RefreshHUD()
 TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
+	DifficultyBorders.SetNum(5);
 	InventorySlotBorders.SetNum(5);
 	static constexpr float BossBarWidth = 600.f;
+
+	// Difficulty row (placeholder squares)
+	TSharedRef<SHorizontalBox> DifficultyRowRef = SNew(SHorizontalBox);
+	for (int32 i = 0; i < DifficultyBorders.Num(); ++i)
+	{
+		TSharedPtr<SBorder> DiffBorder;
+		DifficultyRowRef->AddSlot()
+			.AutoWidth()
+			.Padding(3.f, 0.f)
+			[
+				SNew(SBox)
+				.WidthOverride(18.f)
+				.HeightOverride(18.f)
+				[
+					SAssignNew(DiffBorder, SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.18f, 0.18f, 0.22f, 1.f))
+				]
+			];
+		DifficultyBorders[i] = DiffBorder;
+	}
 
 	// Build hearts row first (5 icons)
 	TSharedRef<SHorizontalBox> HeartsRowRef = SNew(SHorizontalBox);
@@ -230,60 +272,94 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 		]
+		// Top-left stats (no overlap with bottom-left portrait stack)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Top)
 		.Padding(24.f, 24.f)
-		[ HeartsRowRef ]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Left)
-		.VAlign(VAlign_Top)
-		.Padding(24.f, 100.f)
 		[
-			SAssignNew(GoldText, STextBlock)
-			.Text(FText::AsNumber(0))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
-			.ColorAndOpacity(FLinearColor::White)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SAssignNew(StageText, STextBlock)
+				.Text(FText::FromString(TEXT("Stage number: 1")))
+				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+				.ColorAndOpacity(FLinearColor::White)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SAssignNew(TimerText, STextBlock)
+				.Text(FText::FromString(TEXT("6:00")))
+				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
+				.ColorAndOpacity(FLinearColor(0.2f, 0.9f, 0.3f, 1.f))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SAssignNew(GoldText, STextBlock)
+					.Text(FText::FromString(TEXT("Gold: 0")))
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
+					.ColorAndOpacity(FLinearColor::White)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
+				[
+					SAssignNew(DebtText, STextBlock)
+					.Text(FText::FromString(TEXT("Owe: 0")))
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+					.ColorAndOpacity(FLinearColor(0.95f, 0.15f, 0.15f, 1.f))
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(TEXT("Bounty: ")))
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+					.ColorAndOpacity(FLinearColor(0.85f, 0.75f, 0.2f, 1.f))
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SAssignNew(ScoreText, STextBlock)
+					.Text(FText::AsNumber(0))
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+					.ColorAndOpacity(FLinearColor(0.95f, 0.85f, 0.3f, 1.f))
+				]
+			]
 		]
+
+		// Bottom-left portrait stack: difficulty squares (placeholder skulls) -> hearts -> portrait
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
-		.VAlign(VAlign_Top)
-		.Padding(24.f, 64.f)
+		.VAlign(VAlign_Bottom)
+		.Padding(24.f, 0.f, 0.f, 24.f)
 		[
-			SAssignNew(StageText, STextBlock)
-			.Text(FText::FromString(TEXT("Stage number: 1")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-			.ColorAndOpacity(FLinearColor::White)
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Left)
-		.VAlign(VAlign_Top)
-		.Padding(24.f, 88.f)
-		[
-			SAssignNew(TimerText, STextBlock)
-			.Text(FText::FromString(TEXT("1:00")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-			.ColorAndOpacity(FLinearColor(0.2f, 0.9f, 0.3f, 1.f))
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Left)
-		.VAlign(VAlign_Top)
-		.Padding(24.f, 132.f)
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString(TEXT("Bounty:")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
-			.ColorAndOpacity(FLinearColor(0.85f, 0.75f, 0.2f, 1.f))
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Left)
-		.VAlign(VAlign_Top)
-		.Padding(90.f, 128.f)
-		[
-			SAssignNew(ScoreText, STextBlock)
-			.Text(FText::AsNumber(0))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-			.ColorAndOpacity(FLinearColor(0.95f, 0.85f, 0.3f, 1.f))
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+			[ DifficultyRowRef ]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[ HeartsRowRef ]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SBox)
+				.WidthOverride(84.f)
+				.HeightOverride(84.f)
+				[
+					SAssignNew(PortraitBorder, SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.14f, 1.f))
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(TEXT("PORTRAIT")))
+						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+						.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.f))
+						.Justification(ETextJustify::Center)
+					]
+				]
+			]
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)

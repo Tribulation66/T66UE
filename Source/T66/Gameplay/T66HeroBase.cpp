@@ -61,7 +61,7 @@ AT66HeroBase::AT66HeroBase()
 	
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
-		Movement->MaxWalkSpeed = 600.f;
+		Movement->MaxWalkSpeed = 700.f;
 		Movement->BrakingDecelerationWalking = 2048.f;
 		Movement->JumpZVelocity = 500.f;
 		Movement->AirControl = 0.35f;
@@ -72,12 +72,20 @@ AT66HeroBase::AT66HeroBase()
 		Movement->RotationRate = FRotator(0.f, 540.f, 0.f);
 	}
 
+	// Double jump
+	JumpMaxCount = 2;
+
 	// Don't rotate pawn with controller (controller only rotates camera)
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
 	CombatComponent = CreateDefaultSubobject<UT66CombatComponent>(TEXT("CombatComponent"));
+}
+
+void AT66HeroBase::AddSafeZoneOverlap(int32 Delta)
+{
+	SafeZoneOverlapCount = FMath::Max(0, SafeZoneOverlapCount + Delta);
 }
 
 void AT66HeroBase::CacheMeshAssets()

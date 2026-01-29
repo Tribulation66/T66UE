@@ -204,6 +204,66 @@ struct T66_API FStageData : public FTableRowBase
 };
 
 /**
+ * House NPC data row (Vendor/Gambler/Saint/Ouroboros).
+ */
+USTRUCT(BlueprintType)
+struct T66_API FHouseNPCData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName NPCID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FLinearColor NPCColor = FLinearColor::White;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SafeZone")
+	float SafeZoneRadius = 650.f;
+
+	/** Only used by Gambler: payout on correct guess. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gambler")
+	int32 GamblerWinGold = 10;
+
+	FHouseNPCData()
+		: NPCID(NAME_None)
+	{}
+};
+
+/**
+ * Loan Shark data (tuning for debt collector NPC).
+ */
+USTRUCT(BlueprintType)
+struct T66_API FLoanSharkData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Row ID (typically "LoanShark"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LoanShark")
+	FName LoanSharkID = FName(TEXT("LoanShark"));
+
+	/** Base move speed when debt is 0 (should still not spawn at 0). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LoanShark")
+	float BaseMoveSpeed = 650.f;
+
+	/** Additional move speed per 100 gold of debt (e.g. 50 means +50 speed per 100 debt). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LoanShark")
+	float MoveSpeedPer100Debt = 50.f;
+
+	/** Base touch damage in hearts. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LoanShark")
+	int32 BaseDamageHearts = 1;
+
+	/** Extra hearts of damage per this many debt (e.g. 200 means +1 heart per 200 debt). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LoanShark")
+	int32 DebtPerExtraHeart = 200;
+
+	FLoanSharkData() = default;
+};
+
+/**
  * Run event type for structured provenance (integrity / Run Summary)
  */
 UENUM(BlueprintType)

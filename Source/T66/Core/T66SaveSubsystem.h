@@ -22,6 +22,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	int32 FindFirstEmptySlot() const;
 
+	/** If all slots are full, pick the oldest occupied slot (by LastPlayedUtc). */
+	UFUNCTION(BlueprintCallable, Category = "Save")
+	int32 FindOldestOccupiedSlot() const;
+
 	UFUNCTION(BlueprintCallable, Category = "Save")
 	bool DoesSlotExist(int32 SlotIndex) const;
 

@@ -24,6 +24,8 @@ void UT66GameInstance::Init()
 	GetItemsDataTable();
 	GetBossesDataTable();
 	GetStagesDataTable();
+	GetHouseNPCsDataTable();
+	GetLoanSharkDataTable();
 }
 
 UDataTable* UT66GameInstance::GetHeroDataTable()
@@ -106,6 +108,24 @@ UDataTable* UT66GameInstance::GetStagesDataTable()
 	return CachedStagesDataTable;
 }
 
+UDataTable* UT66GameInstance::GetHouseNPCsDataTable()
+{
+	if (!CachedHouseNPCsDataTable && !HouseNPCsDataTable.IsNull())
+	{
+		CachedHouseNPCsDataTable = HouseNPCsDataTable.LoadSynchronous();
+	}
+	return CachedHouseNPCsDataTable;
+}
+
+UDataTable* UT66GameInstance::GetLoanSharkDataTable()
+{
+	if (!CachedLoanSharkDataTable && !LoanSharkDataTable.IsNull())
+	{
+		CachedLoanSharkDataTable = LoanSharkDataTable.LoadSynchronous();
+	}
+	return CachedLoanSharkDataTable;
+}
+
 bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 {
 	UDataTable* DataTable = GetItemsDataTable();
@@ -150,6 +170,40 @@ bool UT66GameInstance::GetStageData(int32 StageNumber, FStageData& OutStageData)
 	if (FoundRow)
 	{
 		OutStageData = *FoundRow;
+		return true;
+	}
+	return false;
+}
+
+bool UT66GameInstance::GetHouseNPCData(FName NPCID, FHouseNPCData& OutNPCData)
+{
+	if (NPCID.IsNone()) return false;
+	UDataTable* DataTable = GetHouseNPCsDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+	FHouseNPCData* FoundRow = DataTable->FindRow<FHouseNPCData>(NPCID, TEXT("GetHouseNPCData"));
+	if (FoundRow)
+	{
+		OutNPCData = *FoundRow;
+		return true;
+	}
+	return false;
+}
+
+bool UT66GameInstance::GetLoanSharkData(FName LoanSharkID, FLoanSharkData& OutData)
+{
+	if (LoanSharkID.IsNone()) return false;
+	UDataTable* DataTable = GetLoanSharkDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+	FLoanSharkData* FoundRow = DataTable->FindRow<FLoanSharkData>(LoanSharkID, TEXT("GetLoanSharkData"));
+	if (FoundRow)
+	{
+		OutData = *FoundRow;
 		return true;
 	}
 	return false;

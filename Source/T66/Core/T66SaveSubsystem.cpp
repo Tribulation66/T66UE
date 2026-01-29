@@ -32,6 +32,52 @@ int32 UT66SaveSubsystem::FindFirstEmptySlot() const
 	return INDEX_NONE;
 }
 
+int32 UT66SaveSubsystem::FindOldestOccupiedSlot() const
+{
+	UT66SaveIndex* Index = LoadOrCreateIndex();
+	if (!Index) return INDEX_NONE;
+
+	int32 BestSlot = INDEX_NONE;
+	FDateTime BestTime = FDateTime::MaxValue();
+
+	for (int32 i = 0; i < MaxSlots; ++i)
+	{
+		if (!UGameplayStatics::DoesSaveGameExist(GetSlotName(i), 0))
+		{
+			continue;
+		}
+
+		FDateTime Parsed = FDateTime::MinValue();
+		if (Index->SlotMeta.Num() > i)
+		{
+			const FString& Utc = Index->SlotMeta[i].LastPlayedUtc;
+			if (!Utc.IsEmpty())
+			{
+				FDateTime::ParseIso8601(*Utc, Parsed);
+			}
+		}
+
+		if (BestSlot == INDEX_NONE || Parsed < BestTime)
+		{
+			BestSlot = i;
+			BestTime = Parsed;
+		}
+	}
+
+	// If index metadata was empty, just fall back to slot 0 if it exists.
+	if (BestSlot == INDEX_NONE)
+	{
+		for (int32 i = 0; i < MaxSlots; ++i)
+		{
+			if (UGameplayStatics::DoesSaveGameExist(GetSlotName(i), 0))
+			{
+				return i;
+			}
+		}
+	}
+	return BestSlot;
+}
+
 bool UT66SaveSubsystem::DoesSlotExist(int32 SlotIndex) const
 {
 	if (SlotIndex < 0 || SlotIndex >= MaxSlots) return false;

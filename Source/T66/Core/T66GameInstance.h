@@ -50,6 +50,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> StagesDataTable;
 
+	/** Reference to the House NPCs DataTable (Vendor/Gambler/Saint/Ouroboros) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> HouseNPCsDataTable;
+
+	/** Reference to the Loan Shark DataTable (debt collector NPC tuning) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> LoanSharkDataTable;
+
 	// ============================================
 	// Player Selections (for current run setup)
 	// ============================================
@@ -102,6 +110,13 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsStageTransition = false;
 
+	/**
+	 * If true, treat the current map as Coliseum behavior (used as a fallback when ColiseumLevel is missing
+	 * or when using GameplayLevel as a temporary Coliseum map).
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bForceColiseumMode = false;
+
 	// ============================================
 	// DataTable Access Helpers
 	// ============================================
@@ -126,6 +141,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetStagesDataTable();
 
+	/** Get the loaded House NPCs DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetHouseNPCsDataTable();
+
+	/** Get the loaded Loan Shark DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetLoanSharkDataTable();
+
 	/** Get item data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetItemData(FName ItemID, FItemData& OutItemData);
@@ -137,6 +160,14 @@ public:
 	/** Get stage data by stage number. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetStageData(int32 StageNumber, FStageData& OutStageData);
+
+	/** Get house NPC data by ID (row name). Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetHouseNPCData(FName NPCID, FHouseNPCData& OutNPCData);
+
+	/** Get loan shark tuning data. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetLoanSharkData(FName LoanSharkID, FLoanSharkData& OutData);
 
 	/** Get hero data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -198,4 +229,12 @@ private:
 	/** Cached loaded Stages DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedStagesDataTable;
+
+	/** Cached loaded House NPCs DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedHouseNPCsDataTable;
+
+	/** Cached loaded Loan Shark DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedLoanSharkDataTable;
 };

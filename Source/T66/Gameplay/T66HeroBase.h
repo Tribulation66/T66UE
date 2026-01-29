@@ -62,6 +62,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UT66CombatComponent> CombatComponent;
 
+	/** Safe-zone overlap count (NPC safe bubbles). */
+	void AddSafeZoneOverlap(int32 Delta);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "SafeZone")
+	bool IsInSafeZone() const { return SafeZoneOverlapCount > 0; }
+
 	// ========== Placeholder Visuals (for prototyping) ==========
 	
 	/** The placeholder static mesh (Cylinder for TypeA, Cube for TypeB) */
@@ -138,6 +144,8 @@ private:
 
 	/** Is this hero in preview mode (for UI display)? */
 	bool bIsPreviewMode = false;
+
+	int32 SafeZoneOverlapCount = 0;
 
 private:
 	/** Load and cache the static mesh assets */

@@ -2,6 +2,8 @@
 
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66HouseNPCBase.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "EngineUtils.h"
@@ -32,6 +34,14 @@ void AT66EnemyDirector::SpawnWave()
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!PlayerPawn || !EnemyClass) return;
 
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	// Only start spawning once the stage timer is active (i.e. after start gate / start pillars).
+	if (!RunState || !RunState->GetStageTimerActive())
+	{
+		return;
+	}
+
 	int32 ToSpawn = FMath::Min(EnemiesPerWave, MaxAliveEnemies - AliveCount);
 	if (ToSpawn <= 0) return;
 
@@ -39,10 +49,32 @@ void AT66EnemyDirector::SpawnWave()
 	for (int32 i = 0; i < ToSpawn; ++i)
 	{
 		FVector PlayerLoc = PlayerPawn->GetActorLocation();
-		float Angle = FMath::RandRange(0.f, 2.f * PI);
-		float Dist = FMath::RandRange(SpawnMinDistance, SpawnMaxDistance);
-		FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
-		FVector SpawnLoc = PlayerLoc + Offset;
+		FVector SpawnLoc = PlayerLoc;
+		// Try a few times to avoid spawning inside safe zones
+		for (int32 Try = 0; Try < 6; ++Try)
+		{
+			float Angle = FMath::RandRange(0.f, 2.f * PI);
+			float Dist = FMath::RandRange(SpawnMinDistance, SpawnMaxDistance);
+			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
+			SpawnLoc = PlayerLoc + Offset;
+
+			bool bInSafe = false;
+			for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+			{
+				AT66HouseNPCBase* NPC = *It;
+				if (!NPC) continue;
+				const float R = NPC->GetSafeZoneRadius();
+				if (FVector::DistSquared2D(SpawnLoc, NPC->GetActorLocation()) < (R * R))
+				{
+					bInSafe = true;
+					break;
+				}
+			}
+			if (!bInSafe)
+			{
+				break;
+			}
+		}
 
 		// Trace down for ground
 		FHitResult Hit;
@@ -63,6 +95,10 @@ void AT66EnemyDirector::SpawnWave()
 		if (Enemy)
 		{
 			Enemy->OwningDirector = this;
+			if (RunState)
+			{
+				Enemy->ApplyDifficultyTier(RunState->GetDifficultyTier());
+			}
 			AliveCount++;
 			UE_LOG(LogTemp, Log, TEXT("EnemyDirector: spawned enemy %d at (%.0f, %.0f, %.0f)"), AliveCount, SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
 		}

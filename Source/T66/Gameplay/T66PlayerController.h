@@ -11,6 +11,12 @@ class UT66UIManager;
 class UT66ScreenBase;
 class UT66GameplayHUDWidget;
 class UT66RunStateSubsystem;
+class UT66GamblerOverlayWidget;
+class UT66CowardicePromptWidget;
+class AT66CowardiceGate;
+class AT66ColiseumExitGate;
+class UT66CowardicePromptWidget;
+class AT66CowardiceGate;
 
 /**
  * Player Controller for Tribulation 66
@@ -69,6 +75,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game")
 	void RestoreGameplayInputMode();
 
+	/** Open the Gambler overlay (non-pausing). */
+	void OpenGamblerOverlay(int32 WinGoldAmount);
+
+	/** Open the Cowardice prompt (non-pausing). */
+	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -107,6 +119,12 @@ private:
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
 	UPROPERTY()
 	TObjectPtr<UT66GameplayHUDWidget> GameplayHUDWidget;
+
+	UPROPERTY()
+	TObjectPtr<UT66GamblerOverlayWidget> GamblerOverlayWidget;
+
+	UPROPERTY()
+	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
 
 	FDelegateHandle OnPlayerDiedHandle;
 

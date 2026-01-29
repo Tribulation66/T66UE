@@ -13,10 +13,16 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
+#include "UI/T66GamblerOverlayWidget.h"
+#include "UI/T66CowardicePromptWidget.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Gameplay/T66VendorNPC.h"
+#include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66ItemPickup.h"
 #include "Gameplay/T66StageGate.h"
+#include "Gameplay/T66CowardiceGate.h"
+#include "Gameplay/T66ColiseumExitGate.h"
+#include "Gameplay/T66DifficultyTotem.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Engine/OverlapResult.h"
@@ -170,10 +176,16 @@ void AT66PlayerController::HandleInteractPressed()
 	World->OverlapMultiByChannel(Overlaps, Loc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(InteractRadius), Params);
 
 	AT66StageGate* ClosestStageGate = nullptr;
-	AT66VendorNPC* ClosestVendor = nullptr;
+	AT66CowardiceGate* ClosestCowardiceGate = nullptr;
+	AT66ColiseumExitGate* ClosestExitGate = nullptr;
+	AT66DifficultyTotem* ClosestTotem = nullptr;
+	AT66HouseNPCBase* ClosestNPC = nullptr;
 	AT66ItemPickup* ClosestPickup = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
-	float ClosestVendorDistSq = InteractRadius * InteractRadius;
+	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
+	float ClosestExitGateDistSq = InteractRadius * InteractRadius;
+	float ClosestTotemDistSq = InteractRadius * InteractRadius;
+	float ClosestNPCDistSq = InteractRadius * InteractRadius;
 	float ClosestPickupDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
@@ -185,9 +197,21 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestStageGateDistSq) { ClosestStageGateDistSq = DistSq; ClosestStageGate = G; }
 		}
-		else if (AT66VendorNPC* V = Cast<AT66VendorNPC>(A))
+		else if (AT66CowardiceGate* CG = Cast<AT66CowardiceGate>(A))
 		{
-			if (DistSq < ClosestVendorDistSq) { ClosestVendorDistSq = DistSq; ClosestVendor = V; }
+			if (DistSq < ClosestCowardiceGateDistSq) { ClosestCowardiceGateDistSq = DistSq; ClosestCowardiceGate = CG; }
+		}
+		else if (AT66ColiseumExitGate* EG = Cast<AT66ColiseumExitGate>(A))
+		{
+			if (DistSq < ClosestExitGateDistSq) { ClosestExitGateDistSq = DistSq; ClosestExitGate = EG; }
+		}
+		else if (AT66DifficultyTotem* DT = Cast<AT66DifficultyTotem>(A))
+		{
+			if (DistSq < ClosestTotemDistSq) { ClosestTotemDistSq = DistSq; ClosestTotem = DT; }
+		}
+		else if (AT66HouseNPCBase* N = Cast<AT66HouseNPCBase>(A))
+		{
+			if (DistSq < ClosestNPCDistSq) { ClosestNPCDistSq = DistSq; ClosestNPC = N; }
 		}
 		else if (AT66ItemPickup* P = Cast<AT66ItemPickup>(A))
 		{
@@ -200,8 +224,28 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		return;
 	}
-	// Prefer vendor over pickup
-	if (ClosestVendor && ClosestVendor->TrySellFirstItem())
+
+	// Coliseum exit gate (F) returns to GameplayLevel without stage increment
+	if (ClosestExitGate && ClosestExitGate->Interact(this))
+	{
+		return;
+	}
+
+	// Difficulty totem (F) increases difficulty tier
+	if (ClosestTotem && ClosestTotem->Interact(this))
+	{
+		return;
+	}
+
+	// Coliseum exit gate (same actor type as cowardice/others is handled below by cast)
+	// Cowardice Gate (F) opens yes/no prompt
+	if (ClosestCowardiceGate && ClosestCowardiceGate->Interact(this))
+	{
+		return;
+	}
+
+	// NPCs (Vendor/Gambler/Saint/Ouroboros)
+	if (ClosestNPC && ClosestNPC->Interact(this))
 	{
 		return;
 	}
@@ -213,6 +257,46 @@ void AT66PlayerController::HandleInteractPressed()
 			RunState->AddItem(ClosestPickup->GetItemID());
 			ClosestPickup->Destroy();
 		}
+	}
+}
+
+void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
+{
+	if (!IsGameplayLevel()) return;
+
+	if (!GamblerOverlayWidget)
+	{
+		GamblerOverlayWidget = CreateWidget<UT66GamblerOverlayWidget>(this, UT66GamblerOverlayWidget::StaticClass());
+	}
+
+	if (GamblerOverlayWidget && !GamblerOverlayWidget->IsInViewport())
+	{
+		GamblerOverlayWidget->SetWinGoldAmount(WinGoldAmount);
+		GamblerOverlayWidget->AddToViewport(100); // above HUD
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+	}
+}
+
+void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
+{
+	if (!IsGameplayLevel() || !Gate) return;
+
+	if (!CowardicePromptWidget)
+	{
+		CowardicePromptWidget = CreateWidget<UT66CowardicePromptWidget>(this, UT66CowardicePromptWidget::StaticClass());
+	}
+
+	if (CowardicePromptWidget && !CowardicePromptWidget->IsInViewport())
+	{
+		CowardicePromptWidget->SetGate(Gate);
+		CowardicePromptWidget->AddToViewport(200); // above gambler overlay
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
 	}
 }
 

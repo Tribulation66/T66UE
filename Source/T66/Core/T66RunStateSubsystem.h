@@ -17,6 +17,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnScoreChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageTimerChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDebtChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGamblerAngerChanged);
 
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
@@ -30,12 +33,17 @@ class T66_API UT66RunStateSubsystem : public UGameInstanceSubsystem
 public:
 	static constexpr int32 DefaultMaxHearts = 5;
 	static constexpr float DefaultInvulnDurationSeconds = 0.75f;
+	static constexpr int32 DefaultStartGold = 100;
 
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnHeartsChanged HeartsChanged;
 
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnGoldChanged GoldChanged;
+
+	/** Debt changed (used for HUD "Owe" display and loan shark logic). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnDebtChanged DebtChanged;
 
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnInventoryChanged InventoryChanged;
@@ -62,6 +70,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnBossChanged BossChanged;
 
+	/** Difficulty changed (for HUD + enemy scaling). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnDifficultyChanged DifficultyChanged;
+
+	/** Gambler anger meter changed (0..1). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnGamblerAngerChanged GamblerAngerChanged;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentHearts() const { return CurrentHearts; }
 
@@ -70,6 +86,58 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentGold() const { return CurrentGold; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetCurrentDebt() const { return CurrentDebt; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetDifficultyTier() const { return DifficultyTier; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetDifficultyMultiplier() const;
+
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void IncreaseDifficultyTier();
+
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	float GetGamblerAnger01() const { return GamblerAnger01; }
+
+	/** Add anger based on bet size: +min(1, Bet/100). Returns new anger. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	float AddGamblerAngerFromBet(int32 BetGold);
+
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void ResetGamblerAnger();
+
+	/** Bosses skipped via Cowardice Gate (must be cleared in Coliseum before checkpoint stages). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	const TArray<FName>& GetOwedBossIDs() const { return OwedBossIDs; }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddOwedBoss(FName BossID);
+
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void RemoveFirstOwedBoss();
+
+	/** Add gold (e.g. gambler win). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddGold(int32 Amount);
+
+	/** Spend gold if possible (used by in-run gambling/shop costs). Returns true if spent. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	bool TrySpendGold(int32 Amount);
+
+	/** Borrow gold: increases gold AND debt by Amount (no limit for now). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void BorrowGold(int32 Amount);
+
+	/** Pay down debt using current gold. Pays up to Amount (clamped by gold and debt). Returns amount actually paid. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	int32 PayDebt(int32 Amount);
+
+	/** Mark whether a LoanShark should spawn this stage once the timer starts (set when leaving previous stage with debt). */
+	void SetLoanSharkPending(bool bPending) { bLoanSharkPending = bPending; }
+	bool GetLoanSharkPending() const { return bLoanSharkPending; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetInventory() const { return Inventory; }
@@ -87,16 +155,16 @@ public:
 	bool GetStageTimerActive() const { return bStageTimerActive; }
 
 	/** Stage timer duration in seconds (countdown from this; frozen until start gate). */
-	static constexpr float StageTimerDurationSeconds = 60.f;
+	static constexpr float StageTimerDurationSeconds = 360.f; // 6:00
 
-	/** Seconds remaining on stage timer. When inactive, stays at 60 (frozen). */
+	/** Seconds remaining on stage timer. When inactive, stays at full duration (frozen). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetStageTimerSecondsRemaining() const { return StageTimerSecondsRemaining; }
 
 	/** Call every frame from GameMode Tick to count down when timer is active. */
 	void TickStageTimer(float DeltaTime);
 
-	/** Reset timer to 60 and freeze (e.g. when entering next stage so start gate starts it again). */
+	/** Reset timer to full duration and freeze (e.g. when entering next stage so start gate starts it again). */
 	void ResetStageTimerToFull();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -146,6 +214,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool ApplyDamage(int32 Hearts = 1);
 
+	/** Heal to full hearts. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void HealToFull();
+
+	/** Instantly kill the player (bypasses i-frames). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void KillPlayer();
+
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItem(FName ItemID);
 
@@ -173,6 +249,18 @@ private:
 	int32 CurrentGold = 0;
 
 	UPROPERTY()
+	int32 CurrentDebt = 0;
+
+	UPROPERTY()
+	int32 DifficultyTier = 0;
+
+	UPROPERTY()
+	float GamblerAnger01 = 0.f;
+
+	UPROPERTY()
+	TArray<FName> OwedBossIDs;
+
+	UPROPERTY()
 	TArray<FName> Inventory;
 
 	UPROPERTY()
@@ -191,7 +279,7 @@ private:
 	float StageTimerSecondsRemaining = StageTimerDurationSeconds;
 
 	/** Last integer second we broadcasted (throttle StageTimerChanged to once per second). */
-	int32 LastBroadcastStageTimerSecond = 60;
+	int32 LastBroadcastStageTimerSecond = static_cast<int32>(StageTimerDurationSeconds);
 
 	UPROPERTY()
 	int32 CurrentScore = 0;
@@ -207,6 +295,9 @@ private:
 
 	UPROPERTY()
 	int32 BossCurrentHP = 0;
+
+	/** If true, spawn LoanShark when the timer starts in this stage (only when debt was carried from previous stage). */
+	bool bLoanSharkPending = false;
 
 	float LastDamageTime = -9999.f;
 	float InvulnDurationSeconds = DefaultInvulnDurationSeconds;

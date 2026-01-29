@@ -3,6 +3,7 @@
 #include "Gameplay/T66HeroProjectile.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66GamblerBoss.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -71,5 +72,15 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 		static constexpr int32 BossDamagePerHit = 20;
 		Boss->TakeDamageFromHeroHit(BossDamagePerHit);
 		Destroy();
+		return;
+	}
+
+	// Gambler boss takes fixed 20 damage per hit
+	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(OtherActor))
+	{
+		static constexpr int32 BossDamagePerHit = 20;
+		GB->TakeDamageFromHeroHit(BossDamagePerHit);
+		Destroy();
+		return;
 	}
 }

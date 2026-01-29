@@ -65,7 +65,8 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	};
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.75f))
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f))
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -128,7 +129,12 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 	if (SlotIndex < 0 || SlotIndex >= UT66SaveSubsystem::MaxSlots)
 	{
 		SlotIndex = SaveSub->FindFirstEmptySlot();
-		if (SlotIndex == INDEX_NONE) return;
+		if (SlotIndex == INDEX_NONE)
+		{
+			// All slots full: overwrite oldest
+			SlotIndex = SaveSub->FindOldestOccupiedSlot();
+			if (SlotIndex == INDEX_NONE) return;
+		}
 		GI->CurrentSaveSlotIndex = SlotIndex;
 	}
 

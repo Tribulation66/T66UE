@@ -67,6 +67,8 @@ def configure_game_instance():
             items_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Items")
             bosses_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Bosses")
             stages_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Stages")
+            house_npcs_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_HouseNPCs")
+            loan_shark_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_LoanShark")
 
             if hero_dt:
                 cdo.set_editor_property("HeroDataTable", hero_dt)
@@ -83,6 +85,12 @@ def configure_game_instance():
             if stages_dt:
                 cdo.set_editor_property("StagesDataTable", stages_dt)
                 unreal.log("Set StagesDataTable on BP_T66GameInstance")
+            if house_npcs_dt:
+                cdo.set_editor_property("HouseNPCsDataTable", house_npcs_dt)
+                unreal.log("Set HouseNPCsDataTable on BP_T66GameInstance")
+            if loan_shark_dt:
+                cdo.set_editor_property("LoanSharkDataTable", loan_shark_dt)
+                unreal.log("Set LoanSharkDataTable on BP_T66GameInstance")
 
             unreal.EditorAssetLibrary.save_asset(bp_path)
             return True
@@ -250,6 +258,40 @@ def import_datatable_csv():
     else:
         unreal.log("DT_Stages not found; create via CreateAssets.py")
 
+    # Import House NPCs
+    dt_house_npcs = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_HouseNPCs")
+    if dt_house_npcs:
+        csv_path = get_content_path("Data/HouseNPCs.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_house_npcs, csv_path)
+            if success:
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_HouseNPCs")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_house_npcs)
+                unreal.log(f"Imported HouseNPCs CSV - {len(row_names)} rows")
+            else:
+                unreal.log_warning("Failed to import HouseNPCs CSV (may already have data)")
+        else:
+            unreal.log_warning("HouseNPCs CSV not found: " + csv_path)
+    else:
+        unreal.log("DT_HouseNPCs not found; create via CreateAssets.py")
+
+    # Import Loan Shark
+    dt_loan_shark = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_LoanShark")
+    if dt_loan_shark:
+        csv_path = get_content_path("Data/LoanShark.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_loan_shark, csv_path)
+            if success:
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_LoanShark")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_loan_shark)
+                unreal.log(f"Imported LoanShark CSV - {len(row_names)} rows")
+            else:
+                unreal.log_warning("Failed to import LoanShark CSV (may already have data)")
+        else:
+            unreal.log_warning("LoanShark CSV not found: " + csv_path)
+    else:
+        unreal.log("DT_LoanShark not found; create via CreateAssets.py")
+
 def verify_all_assets():
     """Verify all required assets exist"""
     unreal.log("")
@@ -274,8 +316,11 @@ def verify_all_assets():
         "/Game/Data/DT_Items",
         "/Game/Data/DT_Bosses",
         "/Game/Data/DT_Stages",
+        "/Game/Data/DT_HouseNPCs",
+        "/Game/Data/DT_LoanShark",
         "/Game/Maps/FrontendLevel",
         "/Game/Maps/GameplayLevel",
+        "/Game/Maps/ColiseumLevel",
     ]
 
     all_ok = True
@@ -345,7 +390,20 @@ def main():
     unreal.log("--- Importing DataTable Data ---")
     import_datatable_csv()
 
-    # 6. Verify
+    # 6. Configure map GameMode overrides (Frontend/Gameplay/Coliseum)
+    unreal.log("")
+    unreal.log("--- Configuring Map GameModes ---")
+    try:
+        setup_sub = unreal.get_editor_subsystem(unreal.T66UISetupSubsystem)
+        if setup_sub:
+            setup_sub.configure_frontend_level()
+            setup_sub.configure_gameplay_level()
+            setup_sub.configure_coliseum_level()
+            unreal.log("Configured FrontendLevel/GameplayLevel/ColiseumLevel GameMode overrides")
+    except Exception as e:
+        unreal.log_warning(f"Could not run T66UISetupSubsystem map configuration: {e}")
+
+    # 7. Verify
     verify_all_assets()
 
     unreal.log("")

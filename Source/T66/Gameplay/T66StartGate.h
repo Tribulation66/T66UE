@@ -32,10 +32,18 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 	void OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	bool bTriggered = false;
+
+	/** Extra safety: if overlaps fail, trigger when hero gets very close. */
+	UPROPERTY(EditAnywhere, Category = "StartGate")
+	float TriggerDistance2D = 90.f;
+
+private:
+	void TryTriggerForActor(AActor* OtherActor);
 };

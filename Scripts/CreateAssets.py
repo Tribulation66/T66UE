@@ -189,10 +189,23 @@ def main():
     else:
         unreal.log_error("Could not find StageData struct")
 
+    house_npc_struct = unreal.find_object(None, "/Script/T66.HouseNPCData")
+    if house_npc_struct:
+        create_data_table("/Game/Data/DT_HouseNPCs", house_npc_struct)
+    else:
+        unreal.log_error("Could not find HouseNPCData struct")
+
+    loan_shark_struct = unreal.find_object(None, "/Script/T66.LoanSharkData")
+    if loan_shark_struct:
+        create_data_table("/Game/Data/DT_LoanShark", loan_shark_struct)
+    else:
+        unreal.log_error("Could not find LoanSharkData struct")
+
     # === Create Levels ===
     unreal.log("--- Creating Levels ---")
     create_level("/Game/Maps/FrontendLevel")
     create_level("/Game/Maps/GameplayLevel")
+    create_level("/Game/Maps/ColiseumLevel")
 
     unreal.log("=== Asset Creation Complete ===")
 

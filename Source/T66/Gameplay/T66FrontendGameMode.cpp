@@ -3,6 +3,8 @@
 #include "Gameplay/T66FrontendGameMode.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
+#include "Core/T66GameInstance.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "EngineUtils.h"
 
 AT66FrontendGameMode::AT66FrontendGameMode()
@@ -14,6 +16,23 @@ AT66FrontendGameMode::AT66FrontendGameMode()
 void AT66FrontendGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Returning to frontend should reset run state (fresh menu flow).
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RunState->ResetForNewRun();
+			}
+			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+			{
+				T66GI->bIsStageTransition = false;
+				T66GI->bForceColiseumMode = false;
+			}
+		}
+	}
 
 	// Spawn hero preview stage if not already in level (for 3D hero preview in Hero Selection)
 	UWorld* World = GetWorld();

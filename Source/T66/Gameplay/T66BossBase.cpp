@@ -178,16 +178,10 @@ void AT66BossBase::Die()
 		World->GetTimerManager().ClearTimer(FireTimerHandle);
 	}
 
-	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
-	{
-		RunState->SetBossInactive();
-	}
-
-	// Spawn Stage Gate at boss death location (interactable to go next stage)
+	// Delegate death handling to GameMode (normal vs Coliseum).
 	if (AT66GameMode* GM = World ? World->GetAuthGameMode<AT66GameMode>() : nullptr)
 	{
-		GM->SpawnStageGateAtLocation(GetActorLocation());
+		GM->HandleBossDefeatedAtLocation(GetActorLocation());
 	}
 
 	Destroy();

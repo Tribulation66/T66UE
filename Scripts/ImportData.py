@@ -102,6 +102,42 @@ def main():
     else:
         unreal.log_error("Could not load DT_Stages (create it first via CreateAssets.py)")
 
+    # Import House NPCs
+    dt_house_npcs = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_HouseNPCs")
+    if dt_house_npcs:
+        csv_path = get_content_path("Data/HouseNPCs.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_house_npcs, csv_path)
+            if success:
+                unreal.log("Successfully imported HouseNPCs from CSV")
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_HouseNPCs")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_house_npcs)
+                unreal.log("DT_HouseNPCs now has {} rows".format(len(row_names)))
+            else:
+                unreal.log_error("Failed to import HouseNPCs from CSV")
+        else:
+            unreal.log_error("HouseNPCs CSV not found: " + csv_path)
+    else:
+        unreal.log_error("Could not load DT_HouseNPCs (create it first via CreateAssets.py)")
+
+    # Import Loan Shark
+    dt_loan_shark = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_LoanShark")
+    if dt_loan_shark:
+        csv_path = get_content_path("Data/LoanShark.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_loan_shark, csv_path)
+            if success:
+                unreal.log("Successfully imported LoanShark from CSV")
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_LoanShark")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_loan_shark)
+                unreal.log("DT_LoanShark now has {} rows".format(len(row_names)))
+            else:
+                unreal.log_error("Failed to import LoanShark from CSV")
+        else:
+            unreal.log_error("LoanShark CSV not found: " + csv_path)
+    else:
+        unreal.log_error("Could not load DT_LoanShark (create it first via CreateAssets.py)")
+
     unreal.log("=== Data Import Complete ===")
 
 if __name__ == "__main__":

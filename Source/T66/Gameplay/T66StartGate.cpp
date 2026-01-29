@@ -10,12 +10,13 @@
 
 AT66StartGate::AT66StartGate()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	// Thin trigger between the poles: player must get really close / walk through to start timer
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
 	TriggerBox->SetBoxExtent(FVector(60.f, 80.f, 180.f)); // narrow passage between poles
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	TriggerBox->SetGenerateOverlapEvents(true);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	RootComponent = TriggerBox;
@@ -46,8 +47,32 @@ void AT66StartGate::BeginPlay()
 	TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AT66StartGate::OnBoxBeginOverlap);
 }
 
+void AT66StartGate::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// Robust proximity trigger (covers cases where the player starts inside overlap or overlap events don't fire).
+	if (bTriggered) return;
+
+	APawn* Pawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (!Pawn) return;
+
+	const FVector HeroLoc = Pawn->GetActorLocation();
+	const FVector GateLoc = GetActorLocation();
+	const float Dist2D = FVector::Dist2D(HeroLoc, GateLoc);
+	if (Dist2D <= TriggerDistance2D)
+	{
+		TryTriggerForActor(Pawn);
+	}
+}
+
 void AT66StartGate::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	TryTriggerForActor(OtherActor);
+}
+
+void AT66StartGate::TryTriggerForActor(AActor* OtherActor)
 {
 	if (bTriggered || !OtherActor) return;
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor);
