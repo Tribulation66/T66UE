@@ -13,7 +13,7 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Repo path:** C:\UE\T66 (Windows) / c:\UE\T66
 - **Engine version:** Unreal Engine 5.7
 - **Active branch:** main
-- **Last known-good commit:** ec2d4e6 (Start/Stage gates, 60s timer, visible gates, memory + guidelines)
+- **Last known-good commit:** cb31d26 (Start/Stage gates, 60s timer, visible gates, memory + guidelines)
 - **Current milestone:** Phase 2 complete — Gameplay loop + Start/Stage gates, 60s countdown timer, visible gates (two poles / big rectangle)
 - **Build status:** ✅ C++ compiles successfully
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
@@ -57,7 +57,7 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 ### 2026-01-30 — Start/Stage gates, 60s countdown timer, visible gates, UE 5.7 in guidelines
 
 - **Goal:** Two distinct gates (Start Gate = walk-through two poles, starts timer; Stage Gate = big 3D rectangle, interact F to next stage). Timer frozen at 60s until start gate; countdown from 60; timer always visible on HUD. Stage transition keeps bounty, gold, progress; timer resets to 60 for new stage. Document UE 5.7 install path in Cursor guidelines.
-- **Commit:** ec2d4e6
+- **Commit:** cb31d26
 
 **Cursor guidelines**
 - **T66_Cursor_Guidelines.md:** Section 7 — Added explicit note: Unreal Engine 5.7, install location `C:\Program Files\Epic Games\UE_5.7\` (UE_ROOT env var already pointed there).
