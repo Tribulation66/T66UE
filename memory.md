@@ -13,7 +13,7 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Repo path:** C:\UE\T66 (Windows) / c:\UE\T66
 - **Engine version:** Unreal Engine 5.7
 - **Active branch:** main
-- **Last known-good commit:** _(pending: boss + data-driven stages commit)_ 
+- **Last known-good commit:** 7b612fc (Data-driven stages + boss encounter + boss-gated stage exit)
 - **Current milestone:** Phase 3 in progress — Data-driven stages + boss encounter + boss-gated stage exit
 - **Build status:** ✅ C++ compiles successfully
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
@@ -58,7 +58,7 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 ### 2026-01-29 — Data-driven stages + boss encounter + boss-gated stage exit
 
 - **Goal:** Make stages data-driven; add a stage boss that is dormant until proximity, then awakens (chase + ranged projectiles). Show boss HP bar on awaken. Spawn Stage Gate only after boss dies, at boss death location. Reduce regular enemy spawn rate and increase hero auto-attack speed.
-- **Commit:** _(pending)_
+- **Commit:** 7b612fc
 
 **Data (DT-backed)**
 - Added `FBossData` and `FStageData` to `Source/T66/Data/T66DataTypes.h`.
