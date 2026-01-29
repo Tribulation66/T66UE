@@ -3,6 +3,7 @@
 #include "UI/Screens/T66PartySizePickerScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -21,6 +22,19 @@ UT66PartySizePickerScreen::UT66PartySizePickerScreen(const FObjectInitializer& O
 
 TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 {
+	// Get localization subsystem
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+	}
+
+	FText TitleText = Loc ? Loc->GetText_SelectPartySize() : FText::FromString(TEXT("SELECT PARTY SIZE"));
+	FText SoloText = Loc ? Loc->GetText_Solo() : FText::FromString(TEXT("SOLO"));
+	FText DuoText = Loc ? Loc->GetText_Duo() : FText::FromString(TEXT("DUO"));
+	FText TrioText = Loc ? Loc->GetText_Trio() : FText::FromString(TEXT("TRIO"));
+	FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+
 	auto MakePartySizeCard = [this](const FText& Title, const FText& Description, FReply (UT66PartySizePickerScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
@@ -77,7 +91,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 				.Padding(0.0f, 80.0f, 0.0f, 60.0f)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("SELECT PARTY SIZE")))
+					.Text(TitleText)
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 56))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -91,8 +105,8 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						MakePartySizeCard(
-							FText::FromString(TEXT("SOLO")),
-							FText::FromString(TEXT("Play alone")),
+							SoloText,
+							FText::FromString(TEXT("1")),
 							&UT66PartySizePickerScreen::HandleSoloClicked,
 							FLinearColor(0.3f, 0.5f, 0.3f, 1.0f)
 						)
@@ -100,8 +114,8 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						MakePartySizeCard(
-							FText::FromString(TEXT("DUO")),
-							FText::FromString(TEXT("Play with 1 friend")),
+							DuoText,
+							FText::FromString(TEXT("2")),
 							&UT66PartySizePickerScreen::HandleDuoClicked,
 							FLinearColor(0.3f, 0.3f, 0.5f, 1.0f)
 						)
@@ -109,8 +123,8 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						MakePartySizeCard(
-							FText::FromString(TEXT("TRIO")),
-							FText::FromString(TEXT("Play with 2 friends")),
+							TrioText,
+							FText::FromString(TEXT("3")),
 							&UT66PartySizePickerScreen::HandleTrioClicked,
 							FLinearColor(0.5f, 0.3f, 0.3f, 1.0f)
 						)
@@ -134,7 +148,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("BACK")))
+						.Text(BackText)
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 						.ColorAndOpacity(FLinearColor::White)
 					]

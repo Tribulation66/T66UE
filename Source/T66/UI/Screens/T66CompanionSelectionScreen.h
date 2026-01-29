@@ -5,8 +5,17 @@
 #include "CoreMinimal.h"
 #include "UI/T66ScreenBase.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "T66CompanionSelectionScreen.generated.h"
 
+class UT66LocalizationSubsystem;
+
+/**
+ * Companion Selection Screen - Bible 1.13 Layout
+ * Mirrors Hero Selection: Top belt, Left skins, Center preview, Right info
+ * Must include NO COMPANION option
+ * CONFIRM COMPANION button at bottom
+ */
 UCLASS(Blueprintable)
 class T66_API UT66CompanionSelectionScreen : public UT66ScreenBase
 {
@@ -69,13 +78,29 @@ private:
 	TArray<FName> AllCompanionIDs;
 	int32 CurrentCompanionIndex = -1;
 	TSharedPtr<STextBlock> CompanionNameWidget;
+	TSharedPtr<STextBlock> CompanionLoreWidget;
+	TSharedPtr<STextBlock> BodyTypeWidget;
+
+	// Placeholder skins list
+	TArray<FSkinData> PlaceholderSkins;
 
 	void RefreshCompanionList();
 	void UpdateCompanionDisplay();
+	void GeneratePlaceholderSkins();
 
+	UT66LocalizationSubsystem* GetLocSubsystem() const;
+
+	// Handle language change to rebuild UI
+	UFUNCTION()
+	void OnLanguageChanged(ET66Language NewLanguage);
+
+	// Click handlers
 	FReply HandlePrevClicked();
 	FReply HandleNextClicked();
+	FReply HandleCompanionGridClicked();
 	FReply HandleNoCompanionClicked();
+	FReply HandleLoreClicked();
+	FReply HandleBodyTypeClicked();
 	FReply HandleConfirmClicked();
 	FReply HandleBackClicked();
 };

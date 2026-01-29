@@ -133,6 +133,12 @@ void UT66UIManager::CloseModal()
 		CurrentModal->OnScreenDeactivated();
 		CurrentModal->RemoveFromParent();
 		CurrentModal = nullptr;
+
+		// Refresh the underlying screen in case state changed while modal was open
+		if (CurrentScreen)
+		{
+			CurrentScreen->RefreshScreen();
+		}
 	}
 }
 

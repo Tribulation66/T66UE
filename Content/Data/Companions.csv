@@ -1,4 +1,4 @@
 ---,CompanionID,DisplayName,LoreText,PlaceholderColor,CompanionClass,Portrait,bUnlockedByDefault
-Companion_Luna,Companion_Luna,"Luna","She tells me... of the moonlit nights where she danced among the stars before her fall.","(R=0.8,G=0.8,B=1.0,A=1.0)",,true
-Companion_Ember,Companion_Ember,"Ember","She tells me... of the flames that once consumed entire kingdoms before she was bound.","(R=1.0,G=0.5,B=0.3,A=1.0)",,true
-Companion_Shade,Companion_Shade,"Shade","She tells me... of the void between worlds where she waited for millennia.","(R=0.4,G=0.3,B=0.5,A=1.0)",,true
+Companion_Luna,Companion_Luna,"Luna","She tells me... of the moonlit nights where she danced among the stars before her fall.","(R=0.8,G=0.8,B=1.0,A=1.0)",,,true
+Companion_Ember,Companion_Ember,"Ember","She tells me... of the flames that once consumed entire kingdoms before she was bound.","(R=1.0,G=0.5,B=0.3,A=1.0)",,,true
+Companion_Shade,Companion_Shade,"Shade","She tells me... of the void between worlds where she waited for millennia.","(R=0.4,G=0.3,B=0.5,A=1.0)",,,true

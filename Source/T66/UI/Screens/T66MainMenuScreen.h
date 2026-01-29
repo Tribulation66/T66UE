@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "UI/T66ScreenBase.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "T66MainMenuScreen.generated.h"
+
+class ST66LeaderboardPanel;
 
 /**
  * Main Menu Screen
@@ -48,9 +51,15 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void RefreshScreen_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
+	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
+
+	// Get localization subsystem
+	UT66LocalizationSubsystem* GetLocSubsystem() const;
+
 	// Button click handlers for Slate (return FReply)
 	FReply HandleNewGameClicked();
 	FReply HandleLoadGameClicked();
@@ -58,4 +67,8 @@ private:
 	FReply HandleAchievementsClicked();
 	FReply HandleLanguageClicked();
 	FReply HandleQuitClicked();
+
+	// Handle language change to rebuild UI
+	UFUNCTION()
+	void OnLanguageChanged(ET66Language NewLanguage);
 };

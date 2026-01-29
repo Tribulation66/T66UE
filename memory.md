@@ -12,11 +12,11 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Project:** T66 (Tribulation 66)
 - **Repo path:** C:\UE\T66
 - **Engine version:** Unreal Engine 5.7
-- **Active branch:** (not yet in git)
-- **Last known-good commit:** (not yet committed)
-- **Current milestone:** Phase 1 - UI Flow Vertical Slice (Bible sections 1.1-1.15)
+- **Active branch:** main
+- **Last known-good commit:** 8786fc2 (Add complete UI framework with Slate-based programmatic screens)
+- **Current milestone:** Phase 1 - UI Flow + Localization (Bible sections 1.1-1.17)
 - **Build status:** ✅ C++ COMPILES SUCCESSFULLY
-- **ValidateFast command:** `powershell -Command "& 'C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe' T66Editor Win64 Development 'C:\UE\T66\T66.uproject' -waitmutex"`
+- **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 - **ValidateFull command:** Open in Editor and PIE test
 
 ---
@@ -28,22 +28,23 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - Keep commits small and descriptive.
 - If a change is risky (mass asset changes), write a plan first and checkpoint the repo.
 - UI must remain **event-driven** (no per-frame UI thinking).
+- **ALL UI text MUST be localized** — Use `UT66LocalizationSubsystem::GetText_*()` functions for every user-visible string. Never hardcode display text in C++ or Blueprints.
 
 ---
 
 ## 2) Open questions / blockers
 
-- Q: Blueprint configuration needs manual setup in Editor
-  - Context: TMap properties (ScreenClasses) and soft object references (DataTable refs) can't easily be set via Python
-  - Proposed resolution: User opens each Blueprint and sets properties in Class Defaults
-  - Owner: User (manual in editor)
-  - Status: PENDING - See "Remaining Manual Steps" below
+- Q: WBP_LanguageSelect and WBP_Achievements Blueprints need creation
+  - Context: New screens added but Blueprint assets may not exist yet
+  - Proposed resolution: Create in editor (parent: T66LanguageSelectScreen, T66AchievementsScreen)
+  - Owner: User (create in editor)
+  - Status: PENDING - Run T66Setup command after creating
 
-- Q: Widget Blueprint layouts need design
-  - Context: Widget BPs created with correct parent classes, but no UI elements added yet
-  - Proposed resolution: User adds buttons/text in UMG Designer and wires to C++ functions
-  - Owner: User (manual in editor)
-  - Status: PENDING
+- Q: Leaderboard data is placeholder only
+  - Context: Leaderboard panel shows fake data, not connected to any backend
+  - Proposed resolution: Will be connected when Steam integration begins
+  - Owner: Future phase
+  - Status: EXPECTED (placeholder is intentional)
 
 ---
 
@@ -54,6 +55,79 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 ---
 
 ## 4) Change log (append-only)
+
+### 2025-01-28 — Localization System + Bible-Compliant UI Restructure
+
+- **Goal:** Add localization support (EN, PT-BR, 繁體中文) + restructure UI per Bible spec
+- **Bible refs:** 1.2 (Main Menu), 1.7 (Language Select), 1.10 (Hero Selection), 1.13 (Companion Selection)
+- **Risk tier:** Green (extending existing systems)
+
+**Part 1: Localization System**
+- `Source/T66/Core/T66LocalizationSubsystem.h/.cpp` — GameInstance subsystem:
+  - `ET66Language` enum (English, BrazilianPortuguese, ChineseTraditional)
+  - `SetLanguage()` / `GetCurrentLanguage()` — Language switching
+  - `OnLanguageChanged` delegate — Broadcasts when language changes
+  - 50+ `GetText_*()` functions for all UI strings in all languages
+  - Extensible design: add new languages by adding enum value + switch cases
+
+**Part 2: Main Menu Restructure (Bible 1.2)**
+- Two-panel layout: Left (buttons) + Right (leaderboard)
+- Left panel: Title + vertical button stack (New Game, Load Game, Settings, Achievements)
+- Right panel: `ST66LeaderboardPanel` Slate widget with:
+  - Filter toggles (Global / Friends / Streamers)
+  - Dropdown buttons (Party Size, Difficulty) - cycle on click
+  - 10 leaderboard rows with rank, name, score, time
+  - Placeholder data with fake player names
+- Language icon button (bottom-left)
+- Quit button (top-right)
+
+**Part 3: Leaderboard Panel Component**
+- `Source/T66/UI/Components/T66LeaderboardPanel.h/.cpp`:
+  - Pure Slate widget (SCompoundWidget)
+  - Generates 10 placeholder entries with fake names/scores
+  - Highlights local player row (entry 8)
+  - Filter/dropdown clicking regenerates data
+
+**Part 4: Language Select Modal (Bible 1.7)**
+- `Source/T66/UI/Screens/T66LanguageSelectScreen.h/.cpp`:
+  - Modal overlay with dark background
+  - Vertical list of language buttons
+  - Preview on select, Confirm/Back buttons
+  - Instantly updates UI when language changes
+
+**Part 5: Hero Selection Restructure (Bible 1.10)**
+- Top bar: HERO GRID button + hero belt (nav arrows + current hero name)
+- Left panel: Skins list with BUY/EQUIP buttons (4 placeholder skins)
+- Center: Preview area + CHOOSE COMPANION button + Body Type toggle
+- Right panel: HERO INFO + video placeholder + description + 4 medal slots + LORE button
+- Bottom: 7 difficulty buttons (Easy→Final) + THE LAB button + ENTER THE TRIBULATION button
+- Back button (bottom-left overlay)
+
+**Part 6: Companion Selection Restructure (Bible 1.13)**
+- Mirrors Hero Selection layout
+- Top bar: COMPANION GRID button + nav belt + NO COMPANION button
+- Left panel: Skins list (3 placeholder skins)
+- Center: Preview area + Body Type toggle (disabled when no companion)
+- Right panel: COMPANION INFO + lore + passive effect + 3 medal slots + LORE button
+- Bottom: CONFIRM COMPANION button
+- Back button (bottom-left overlay)
+
+**Part 7: Data Types Added**
+- `FLeaderboardEntry` struct — Rank, PlayerName, Score, TimeSeconds, HeroID, PartySize, Difficulty, StageReached, bIsLocalPlayer
+- `FSkinData` struct — SkinID, DisplayName, OwnerID, CoinCost, bIsOwned, bIsEquipped, bIsDefault
+- `ET66LeaderboardFilter` enum — Global, Friends, Streamers
+
+**Part 8: Localized Text Updates**
+- All screens now use `UT66LocalizationSubsystem::GetText_*()` methods
+- Text updates automatically when language changes
+- Main Menu subscribes to `OnLanguageChanged` and rebuilds UI
+
+- **Commands run (proof):**
+  - Build.bat T66Editor Win64 Development → Result: Succeeded (12.37 seconds)
+- **Result:** All C++ compiles, UI restructured per Bible, localization functional
+- **Commit:** (pending)
+
+---
 
 ### 2025-01-28 — Programmatic UI Construction + Editor Subsystem
 
@@ -187,15 +261,22 @@ The T66Editor module now includes an Editor Subsystem that automates most config
 
 ### REMAINING MANUAL STEPS (minimal):
 
-1. **GameplayLevel** - Add environment:
+1. **Create WBP_LanguageSelect** - New Widget Blueprint needed:
+   - In Content Browser, navigate to `Content/Blueprints/UI/`
+   - Right-click → User Interface → Widget Blueprint
+   - Name it `WBP_LanguageSelect`
+   - In Class Settings, set Parent Class to `T66LanguageSelectScreen`
+   - Save and re-run `T66Setup`
+
+2. **GameplayLevel** - Add environment:
    - Add a `PlayerStart` actor to the level
    - Add floor/lighting as needed
 
-2. **DT_Heroes** - Verify data (should auto-import):
+3. **DT_Heroes** - Verify data (should auto-import):
    - Open DataTable, should have 5 rows
    - If empty, right-click → Reimport from `Content/Data/Heroes.csv`
 
-3. **DT_Companions** - Verify data (should auto-import):
+4. **DT_Companions** - Verify data (should auto-import):
    - Open DataTable, should have 3 rows
    - If empty, right-click → Reimport from `Content/Data/Companions.csv`
 
@@ -209,21 +290,26 @@ Source/T66/
 ├── T66.h / T66.cpp                    # Module entry, log category
 ├── T66.Build.cs                       # Module dependencies + include paths
 ├── Data/
-│   └── T66DataTypes.h                 # FHeroData, FCompanionData, enums
+│   └── T66DataTypes.h                 # FHeroData, FCompanionData, FLeaderboardEntry, FSkinData, enums
 ├── Core/
-│   └── T66GameInstance.h/.cpp         # Persistent state, DataTable access
+│   ├── T66GameInstance.h/.cpp         # Persistent state, DataTable access
+│   └── T66LocalizationSubsystem.h/.cpp # Language management, all UI strings
 ├── UI/
 │   ├── T66UITypes.h                   # ET66ScreenType enum
 │   ├── T66UIManager.h/.cpp            # Screen management, navigation
 │   ├── T66ScreenBase.h/.cpp           # Base widget class
-│   └── Screens/
-│       ├── T66MainMenuScreen.h/.cpp
-│       ├── T66PartySizePickerScreen.h/.cpp
-│       ├── T66HeroSelectionScreen.h/.cpp
-│       ├── T66CompanionSelectionScreen.h/.cpp
-│       ├── T66SaveSlotsScreen.h/.cpp
-│       ├── T66SettingsScreen.h/.cpp
-│       └── T66QuitConfirmationModal.h/.cpp
+│   ├── Screens/
+│   │   ├── T66MainMenuScreen.h/.cpp   # Two-panel: buttons + leaderboard
+│   │   ├── T66PartySizePickerScreen.h/.cpp
+│   │   ├── T66HeroSelectionScreen.h/.cpp  # Bible 1.10 layout
+│   │   ├── T66CompanionSelectionScreen.h/.cpp  # Bible 1.13 layout
+│   │   ├── T66SaveSlotsScreen.h/.cpp
+│   │   ├── T66SettingsScreen.h/.cpp
+│   │   ├── T66QuitConfirmationModal.h/.cpp
+│   │   └── T66LanguageSelectScreen.h/.cpp  # Language selection modal
+│   └── Components/
+│       ├── T66Button.h/.cpp           # Reusable button component
+│       └── T66LeaderboardPanel.h/.cpp # Slate leaderboard widget
 └── Gameplay/
     ├── T66HeroBase.h/.cpp             # Placeholder hero (colored cylinder)
     ├── T66GameMode.h/.cpp             # Spawns selected hero
@@ -267,10 +353,16 @@ Content/
 
 ### Screen Navigation
 ```
-MainMenu
+MainMenu (two-panel: buttons left, leaderboard right)
   ├── NewGame → PartySizePicker → HeroSelection → CompanionSelection → HeroSelection → [Enter] → GameplayLevel
   ├── LoadGame → PartySizePicker → SaveSlots → HeroSelection → ...
   ├── Settings (modal)
-  ├── Language (modal)
-  └── Quit (modal) → Exit
+  ├── Language (modal) → LanguageSelect
+  └── Quit (modal) → QuitConfirmation → Exit
 ```
+
+### Localization
+- **Languages:** English, Português (Brasil), 繁體中文
+- **Subsystem:** `UT66LocalizationSubsystem` (GameInstance subsystem)
+- **Usage:** `GetLocSubsystem()->GetText_NewGame()` etc.
+- **Extending:** Add new `ET66Language` value, add cases to all `GetText_*()` methods

@@ -5,8 +5,19 @@
 #include "CoreMinimal.h"
 #include "UI/T66ScreenBase.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "T66HeroSelectionScreen.generated.h"
 
+class UT66LocalizationSubsystem;
+
+/**
+ * Hero Selection Screen - Bible 1.10 Layout
+ * Top: Hero belt carousel with HERO GRID button
+ * Center: 3D preview area with CHOOSE COMPANION button
+ * Left: Skins panel
+ * Right: Hero info panel (name, video, description, medals, lore button)
+ * Bottom: Difficulty selector, THE LAB button, ENTER THE TRIBULATION button
+ */
 UCLASS(Blueprintable)
 class T66_API UT66HeroSelectionScreen : public UT66ScreenBase
 {
@@ -77,14 +88,43 @@ protected:
 private:
 	TArray<FName> AllHeroIDs;
 	int32 CurrentHeroIndex = 0;
-	TSharedPtr<STextBlock> HeroNameWidget;
+	
+	// Widgets that need updating
+	TSharedPtr<STextBlock> HeroNameWidget;        // Hero name in left panel
+	TSharedPtr<STextBlock> HeroDescWidget;        // Description in right panel
+	TSharedPtr<STextBlock> BodyTypeWidget;        // Body type toggle text
+	TSharedPtr<SBorder> HeroPreviewColorBox;      // Colored box for hero preview
+	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
+
+	// Placeholder skins list
+	TArray<FSkinData> PlaceholderSkins;
+	
+	// Difficulty dropdown options
+	TArray<TSharedPtr<FString>> DifficultyOptions;
+	TSharedPtr<FString> CurrentDifficultyOption;
 
 	void RefreshHeroList();
 	void UpdateHeroDisplay();
+	void GeneratePlaceholderSkins();
 
+	UT66LocalizationSubsystem* GetLocSubsystem() const;
+
+	// Handle language change to rebuild UI
+	UFUNCTION()
+	void OnLanguageChanged(ET66Language NewLanguage);
+
+	// Click handlers
 	FReply HandlePrevClicked();
 	FReply HandleNextClicked();
+	FReply HandleHeroGridClicked();
 	FReply HandleCompanionClicked();
+	FReply HandleLoreClicked();
+	FReply HandleBodyTypeClicked();
+	FReply HandleTheLabClicked();
 	FReply HandleEnterClicked();
 	FReply HandleBackClicked();
+	
+	// Difficulty dropdown
+	void OnDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
+	TSharedRef<SWidget> GenerateDifficultyItem(TSharedPtr<FString> InItem);
 };
