@@ -2,6 +2,7 @@
 
 #include "UI/T66CowardicePromptWidget.h"
 #include "Gameplay/T66CowardiceGate.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -109,11 +110,9 @@ FReply UT66CowardicePromptWidget::OnNo()
 void UT66CowardicePromptWidget::ClosePrompt()
 {
 	RemoveFromParent();
-	if (APlayerController* PC = GetOwningPlayer())
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->bShowMouseCursor = false;
+		PC->RestoreGameplayInputMode();
 	}
 }
 

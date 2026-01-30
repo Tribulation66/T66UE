@@ -20,6 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDebtChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGamblerAngerChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnIdolsChanged);
 
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
@@ -34,6 +35,11 @@ public:
 	static constexpr int32 DefaultMaxHearts = 5;
 	static constexpr float DefaultInvulnDurationSeconds = 0.75f;
 	static constexpr int32 DefaultStartGold = 100;
+	static constexpr int32 MaxInventorySlots = 5;
+	static constexpr int32 MaxEquippedIdolSlots = 3;
+	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
+	static constexpr int32 MaxEventLogEntries = 400;
+	static constexpr int32 MaxStructuredEventLogEntries = 800;
 
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnHeartsChanged HeartsChanged;
@@ -78,6 +84,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnGamblerAngerChanged GamblerAngerChanged;
 
+	/** Equipped idols changed (slot 0..2). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnIdolsChanged IdolsChanged;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentHearts() const { return CurrentHearts; }
 
@@ -93,11 +103,31 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetDifficultyTier() const { return DifficultyTier; }
 
+	/** Difficulty as "Skulls" (can be fractional, e.g. 0.5). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetDifficultySkulls() const { return DifficultySkulls; }
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetDifficultyMultiplier() const;
 
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void IncreaseDifficultyTier();
+
+	/** Add skulls directly (can be fractional). Updates DifficultyTier cache for enemy scaling. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddDifficultySkulls(float DeltaSkulls);
+
+	/** Increase max hearts and also grant the new hearts immediately (clamped). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddMaxHearts(int32 DeltaHearts);
+
+	/** World Interactables: difficulty totems activated this run (for visual stack growth). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetTotemsActivatedCount() const { return TotemsActivatedCount; }
+
+	/** Register an activated difficulty totem. Returns the new activation index (1-based). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	int32 RegisterTotemActivated();
 
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	float GetGamblerAnger01() const { return GamblerAnger01; }
@@ -141,6 +171,28 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetInventory() const { return Inventory; }
+
+	/** Equipped idol slots (size=3). NAME_None means empty slot. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	const TArray<FName>& GetEquippedIdols() const { return EquippedIdolIDs; }
+
+	/** Equip an idol into a specific slot (0..2). Returns true if changed. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	bool EquipIdolInSlot(int32 SlotIndex, FName IdolID);
+
+	/** Equip an idol into the first empty slot. Returns true if equipped. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	bool EquipIdolFirstEmpty(FName IdolID);
+
+	/** Clear all equipped idols. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void ClearEquippedIdols();
+
+	/** List of all idol IDs (authoritative roster for the altar UI). */
+	static const TArray<FName>& GetAllIdolIDs();
+
+	/** Default tint color for an idol (used for UI + enemy status visuals). */
+	static FLinearColor GetIdolColor(FName IdolID);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FString>& GetEventLog() const { return EventLog; }
@@ -218,6 +270,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void HealToFull();
 
+	/** Heal a number of hearts (clamped by MaxHearts). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void HealHearts(int32 Hearts);
+
 	/** Instantly kill the player (bypasses i-frames). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void KillPlayer();
@@ -229,6 +285,34 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellFirstItem();
 
+	/** True if there is space in the inventory (max 5 for v0 HUD). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	bool HasInventorySpace() const { return Inventory.Num() < MaxInventorySlots; }
+
+	// ============================================
+	// Items -> Derived combat tuning (event-driven)
+	// ============================================
+
+	/** Sum of item "PowerGivenPercent" across inventory. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	float GetItemPowerGivenPercent() const { return ItemPowerGivenPercent; }
+
+	/** Multiplier applied to hero auto-attack damage. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	float GetItemDamageMultiplier() const { return ItemDamageMultiplier; }
+
+	/** Multiplier applied to hero auto-attack rate (higher = faster). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	float GetItemAttackSpeedMultiplier() const { return ItemAttackSpeedMultiplier; }
+
+	/** Multiplier applied to dash cooldown (lower = more frequent dash). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	float GetDashCooldownMultiplier() const { return DashCooldownMultiplier; }
+
+	/** Multiplier applied to projectile visual scale (cosmetic). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	float GetItemScaleMultiplier() const { return ItemScaleMultiplier; }
+
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ResetForNewRun();
 
@@ -239,6 +323,9 @@ public:
 	void AddLogEntry(const FString& Entry);
 
 private:
+	void TrimLogsIfNeeded();
+	void RecomputeItemDerivedStats();
+
 	UPROPERTY()
 	int32 CurrentHearts = DefaultMaxHearts;
 
@@ -254,6 +341,13 @@ private:
 	UPROPERTY()
 	int32 DifficultyTier = 0;
 
+	/** Difficulty in skulls (can be fractional). */
+	UPROPERTY()
+	float DifficultySkulls = 0.f;
+
+	UPROPERTY()
+	int32 TotemsActivatedCount = 0;
+
 	UPROPERTY()
 	float GamblerAnger01 = 0.f;
 
@@ -262,6 +356,9 @@ private:
 
 	UPROPERTY()
 	TArray<FName> Inventory;
+
+	UPROPERTY()
+	TArray<FName> EquippedIdolIDs;
 
 	UPROPERTY()
 	TArray<FString> EventLog;
@@ -300,5 +397,19 @@ private:
 	bool bLoanSharkPending = false;
 
 	float LastDamageTime = -9999.f;
+
+	// ============================================
+	// Derived combat tuning from Inventory (recomputed on InventoryChanged)
+	// ============================================
+
+	float ItemPowerGivenPercent = 0.f;
+	float BonusDamagePercent = 0.f;
+	float BonusAttackSpeedPercent = 0.f;
+	float DashCooldownReductionPercent = 0.f;
+
+	float ItemDamageMultiplier = 1.f;
+	float ItemAttackSpeedMultiplier = 1.f;
+	float DashCooldownMultiplier = 1.f;
+	float ItemScaleMultiplier = 1.f;
 	float InvulnDurationSeconds = DefaultInvulnDurationSeconds;
 };

@@ -286,6 +286,183 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
 	FText GetText_AccountStatus() const;
 
+	// Gameplay HUD (in-run)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
+	FText GetText_GoldFormat() const; // "Gold: {0}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
+	FText GetText_OweFormat() const; // "Owe: {0}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
+	FText GetText_StageNumberFormat() const; // "Stage number: {0}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
+	FText GetText_BountyLabel() const; // "Bounty:"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
+	FText GetText_PortraitPlaceholder() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
+	FText GetText_MinimapPlaceholder() const;
+
+	// Run Summary
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
+	FText GetText_RunSummaryTitle() const;
+
+	/** "Stage Reached: {0}  |  Bounty: {1}" */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
+	FText GetText_RunSummaryStageReachedBountyFormat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
+	FText GetText_RunSummaryPreviewPlaceholder() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
+	FText GetText_MainMenu() const;
+
+	// Run Log (Run Summary scrolling log)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunLog")
+	FText GetText_RunLog_StageFormat() const; // "Stage {0}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunLog")
+	FText GetText_RunLog_PickedUpFormat() const; // "Picked up {0}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunLog")
+	FText GetText_RunLog_GoldFormat() const; // "Gold: {0}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunLog")
+	FText GetText_RunLog_KillFormat() const; // "Kill +{0}"
+
+	// Gambler overlay
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Gambler() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Casino() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Bank() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Games() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Anger() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_GamblerDialoguePrompt() const; // "What do you want?"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_LetMeGamble() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_TeleportMeToYourBrother() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_TeleportDisabledBossActive() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Bet() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Borrow() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Payback() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Max() const;
+
+	// Games
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_CoinFlip() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_RockPaperScissors() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_FindTheBall() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_ChooseHeadsOrTails() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Heads() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Tails() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_PickOne() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Rock() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Paper() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Scissors() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_PickACup() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Cup(int32 CupIndex1Based) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_ResultDash() const; // "Result: -"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Rolling() const;
+
+	// Cheat prompt
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_CheatPromptTitle() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_CheatPromptBody() const;
+
+	// Status / errors
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_GambleAmountMustBePositive() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_BorrowAmountMustBePositive() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_PaybackAmountMustBePositive() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_NotEnoughGold() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_NotEnoughGoldOrNoDebt() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_BorrowedAmountFormat() const; // "Borrowed {0}."
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_PaidBackAmountFormat() const; // "Paid back {0}."
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_WinPlusAmountFormat() const; // "WIN (+{0})"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Win() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Lose() const;
+
+	// Game result formats
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_CoinFlipResultFormat() const; // "Result: {0} — {1}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_RpsResultFormat() const; // "You: {0}  |  Gambler: {1}  —  {2}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_FindBallResultFormat() const; // "Ball was under {0} — {1}"
+
 private:
 	ET66Language CurrentLanguage = ET66Language::English;
 	

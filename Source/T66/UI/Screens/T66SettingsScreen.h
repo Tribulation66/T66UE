@@ -3,11 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputCoreTypes.h"
 #include "UI/T66ScreenBase.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "T66SettingsScreen.generated.h"
 
 class UT66LocalizationSubsystem;
+struct FKeyEvent;
+struct FPointerEvent;
 
 UENUM(BlueprintType)
 enum class ET66SettingsTab : uint8
@@ -49,6 +52,8 @@ public:
 protected:
 	virtual void OnScreenActivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
@@ -70,4 +75,27 @@ private:
 	FReply HandleRestoreDefaultsClicked();
 	FReply HandleReportBugClicked();
 	FReply HandleSafeModeClicked();
+
+	// ===== Keybinding capture =====
+	struct FPendingRebind
+	{
+		bool bIsAxis = false;
+		FName Name = NAME_None;   // ActionName or AxisName
+		float Scale = 1.f;        // Axis only
+		FKey OldKey;
+		TSharedPtr<class STextBlock> KeyText;
+	};
+
+	bool bWaitingForRebind = false;
+	FPendingRebind Pending;
+	TSharedPtr<class STextBlock> RebindStatusText;
+
+	FReply BeginRebindAction(FName ActionName, const FKey& OldKey, TSharedPtr<class STextBlock> KeyText);
+	FReply BeginRebindAxis(FName AxisName, float Scale, const FKey& OldKey, TSharedPtr<class STextBlock> KeyText);
+	void ApplyRebindToInputSettings(const FKey& NewKey);
+	void ClearBindingInInputSettings();
+	static FText KeyToText(const FKey& K);
+	static bool IsKeyboardMouseKey(const FKey& K);
+	static FKey FindActionKey(FName ActionName, const FKey& PreferredOldKey);
+	static FKey FindAxisKey(FName AxisName, float Scale, const FKey& PreferredOldKey);
 };

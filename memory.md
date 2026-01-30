@@ -46,10 +46,9 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 
 ## 3) Known issues / tech debt
 
-- **Enemy health bar** — WidgetComponent has no Widget Class set; health bar is placeholder. Optional: create WBP_EnemyHealthBar and assign to HealthBarWidget.
+- **Localization guardrail debt** — Some newer gameplay/UI strings are still hardcoded in Slate/UMG and must be moved into `UT66LocalizationSubsystem::GetText_*()` per guardrails/Bible (examples include some HUD labels/prompts).
 - **Save Slots** — C++ fallback exists; optional WBP_SaveSlots at `/Game/Blueprints/UI/WBP_SaveSlots` for visual customization.
 - **Hearts/Inventory** — Use Slate `BorderImage(WhiteBrush)` for filled squares; dynamic delegates use `AddDynamic`/`RemoveDynamic` (not AddUObject).
-- **Localization** — New HUD strings added recently (stage number, stage timer, boss HP bar) are currently hardcoded in C++ Slate; must be moved to `UT66LocalizationSubsystem` per guardrails/Bible.
 - **Coliseum map asset** — `Content/Maps/ColiseumLevel.umap` may be missing in this repo state; code has a safe fallback that reuses `GameplayLevel` for Coliseum-only behavior when needed.
 
 ---
@@ -162,6 +161,131 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - C++ compiles; no new linter errors. Gates and timer driven by existing spawn/event flow.
 
 ---
+
+### 2026-01-30 — World Interactables v0 (Tree/Truck/Wheel/Totem) + tiered Hearts/Skulls UI
+
+- **Goal:** Add core world interactables with a shared 4-rarity system and simple, readable placeholder 3D shapes. Support “5-slot compression” color tiers for Hearts and Difficulty (Skulls) when values exceed 5.
+- **Commit:** *(not yet committed)*
+
+**Shared rarity + tier utilities**
+- Added `ET66Rarity` + helper functions in:
+  - `Source/T66/Core/T66Rarity.h`
+  - `Source/T66/Core/T66Rarity.cpp`
+- **Default rarity probabilities** (tunable later): Black 70%, Red 20%, Yellow 9%, White 1%.
+- **Tier color order** (for 5-slot compression): **Red → Blue → Green → Purple → Gold → Cyan(5+)**.
+
+**Run state**
+- `UT66RunStateSubsystem`:
+  - Added `DifficultySkulls` (float) + `GetDifficultySkulls()` + `AddDifficultySkulls(float)`
+  - `DifficultyTier` is now a cached int = `floor(DifficultySkulls)` for existing enemy scaling.
+  - Added `AddMaxHearts(int32)` (increases MaxHearts and also grants the new hearts immediately).
+  - `ResetForNewRun()` now resets `MaxHearts` back to 5 and `DifficultySkulls` back to 0.
+
+**HUD**
+- `UT66GameplayHUDWidget` now renders:
+  - **Hearts** using the tier-color + 5-slot compression based on current hearts.
+  - **Difficulty** using tier-color + 5-slot compression based on `DifficultySkulls`, with half-skulls shown as a half-bright square.
+
+**World Interactables**
+- Added base class: `AT66WorldInteractableBase` (`Source/T66/Gameplay/T66WorldInteractableBase.*`)
+  - Has `TriggerBox`, `VisualMesh`, `ET66Rarity Rarity`, and `bConsumed`.
+- Added interactables:
+  - `AT66TreeOfLifeInteractable` — cylinder trunk + sphere crown; **adds MaxHearts** by rarity:
+    - Black +1, Red +3, Yellow +5, White +10
+  - `AT66CashTruckInteractable` — cube body + 4 wheels; **either grants gold** (Black 50, Red 150, Yellow 300, White 600) or **spawns a mimic** (20% chance) and is consumed.
+  - `AT66WheelSpinInteractable` — wheel on a sphere; opens a non-pausing popup and awards rarity-scaled gold.
+  - `AT66DifficultyTotem` upgraded to inherit `AT66WorldInteractableBase` and now adds skulls by rarity (Bible locked):
+    - Black +0.5, Red +1, Yellow +3, White +5
+- Mimic enemy:
+  - `AT66CashTruckMimicEnemy` — spawns on truck mimic interact, chases the player for **5 seconds** (`InitialLifeSpan=5`), deals heavy touch damage, drops nothing.
+
+**Spawning**
+- `AT66GameMode::SpawnWorldInteractablesForStage()` spawns **1 Tree, 1 Truck, 1 Wheel, 1 Totem** per normal stage:
+  - Placed in the **Main map square** around \(X=0, Y=0\) within ±4200 uu.
+  - Avoids NPC safe bubbles + avoids clustering with other interactables.
+
+**Verification**
+- Built successfully with UE 5.7:
+  - `Build.bat T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex` ✅
+  - `Build.bat T66 Win64 Development "C:\UE\T66\T66.uproject" -waitmutex` ✅
+
+### 2026-01-30 — Bigger main map, 3x interactables, boundary walls, totem growth
+
+- **Goal:** Make the **Main Area** larger (Start/Boss unchanged), spawn **3 of each** world interactable, add **boundary walls** to prevent falling off the map, and make difficulty totems **one-use but visually grow taller** by activation order.
+- **Commit:** *(not yet committed)*
+
+**Map**
+- `AT66GameMode::SpawnFloorIfNeeded()`:
+  - Main floor scale increased **100×100 → 140×140** (Main is now 14,000×14,000).
+  - Start/Boss floors remain **60×60** (6,000×6,000).
+- Corner houses moved outward to match bigger main: `Corner = 6000` (was 4200).
+- Added `AT66GameMode::SpawnBoundaryWallsIfNeeded()` called from `EnsureLevelSetup()`:
+  - Spawns 4 collision walls around the whole playable footprint (covers Start+Main+Boss).
+
+**World Interactables**
+- `AT66GameMode::SpawnWorldInteractablesForStage()` now spawns **3 Trees, 3 Trucks, 3 Wheels, 3 Totems**.
+- Placement bounds updated to match larger main area (±6200) and spacing increased.
+
+**Totems**
+- `UT66RunStateSubsystem` now tracks `TotemsActivatedCount` + `RegisterTotemActivated()`.
+- `AT66DifficultyTotem` no longer destroys on interact:
+  - it becomes non-interactable (collision disabled) and grows taller:
+    - activation #1: base height
+    - activation #2: taller
+    - activation #3: taller again (etc.)
+
+**Miasma**
+- `AT66MiasmaManager::CoverageHalfExtent` increased **4500 → 6500** to better cover the larger main area.
+
+**Verification**
+- Built successfully with UE 5.7:
+  - `Build.bat T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex` ✅
+  - `Build.bat T66 Win64 Development "C:\UE\T66\T66.uproject" -waitmutex` ✅
+
+### 2026-01-30 — Items v1: loot bag rarities, item effects, non-blocking loot prompt, pause modal fix
+
+- **Goal:** Make items actually affect gameplay, add rarity-based loot bags (Black/Red/Yellow/White), ensure loot UI does **not** pause/blackout the screen, and fix the “game freezes after rebinding + leaving pause menu” issue.
+- **Commit:** *(pending)*
+
+**Items data + effects framework**
+- `FItemData` expanded in `Source/T66/Data/T66DataTypes.h`:
+  - Added `ET66ItemRarity`, `ET66ItemEffectType`
+  - Added `ItemRarity`, `BuyValueGold`, `PowerGivenPercent`, `EffectType`, `EffectMagnitude`, `EffectLine1-3`
+- `Content/Data/Items.csv` updated to include new columns and now includes a **White** item (`Item_04`) so White loot bags can drop something.
+- `Scripts/RunItemsSetup.bat` / `Scripts/SetupItemsDataTable.py` should be run after editing `Items.csv` to re-import `DT_Items`.
+
+**RunState: derived tuning from inventory**
+- `UT66RunStateSubsystem` now computes derived multipliers from inventory:
+  - `GetItemDamageMultiplier()`, `GetItemAttackSpeedMultiplier()`, `GetDashCooldownMultiplier()`, `GetItemScaleMultiplier()`
+  - Recomputed on inventory changes (event-driven, no tick).
+- Inventory is capped at **5** slots to match HUD (guards against unbounded growth).
+
+**Combat hooks**
+- `UT66CombatComponent` reads RunState multipliers and applies:
+  - auto-attack **damage**
+  - auto-attack **fire interval** (attack speed)
+  - projectile **scale**
+- `AT66HeroBase::DashForward()` applies RunState dash cooldown multiplier.
+- `AT66HeroProjectile` supports a scale multiplier and bosses now take the projectile’s `Damage` value (not a hardcoded 20).
+
+**Loot bags**
+- Enemy deaths spawn `AT66LootBagPickup` (instead of direct pickup grants).
+- Loot bags have a fixed rarity: **Black / Red / Yellow / White** (`ET66Rarity`) and are colored in-world by rarity tint.
+- Item selection matches the bag rarity:
+  - `UT66GameInstance::GetRandomItemIDForLootRarity(ET66Rarity)` selects from cached item pools filtered by `FItemData.ItemRarity`.
+
+**Loot UI: no blackout, keep moving**
+- Removed the blocking/full-screen “loot popup” flow.
+- Loot is shown as a **top-of-HUD prompt** while in proximity (non-blocking):
+  - **Accept:** `F` (Interact)
+  - **Reject:** `Right Mouse Button` (only rejects if a loot bag is nearby; otherwise it performs attack unlock as usual)
+- HUD prompt is built into `UT66GameplayHUDWidget` and reads `AT66PlayerController::GetNearbyLootBag()`.
+
+**Pause menu / settings freeze fix**
+- UIManager uses a single active modal. Opening `Settings` or `Report Bug` from Pause replaces the Pause Menu modal.
+- Closing `Settings`/`Report Bug` while paused now reopens the Pause Menu automatically:
+  - `UT66SettingsScreen::OnCloseClicked()`
+  - `UT66ReportBugScreen::OnCancelClicked()` / `OnSubmitClicked()`
 
 ### 2026-01-29 — Gameplay loop: HUD, combat, enemies, items, run summary, setup scripts
 

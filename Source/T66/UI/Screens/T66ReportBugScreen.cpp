@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/T66UIManager.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
@@ -129,9 +130,27 @@ void UT66ReportBugScreen::OnSubmitClicked()
 {
 	UE_LOG(LogTemp, Log, TEXT("Report Bug: %s"), *BugReportText);
 	CloseModal();
+
+	// In gameplay, Report Bug is opened from Pause Menu. Our UIManager is single-modal, so opening this
+	// replaces Pause Menu. When closing, re-open Pause Menu so the player can resume/unpause.
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (PC->IsGameplayLevel() && PC->IsPaused())
+		{
+			ShowModal(ET66ScreenType::PauseMenu);
+		}
+	}
 }
 
 void UT66ReportBugScreen::OnCancelClicked()
 {
 	CloseModal();
+
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (PC->IsGameplayLevel() && PC->IsPaused())
+		{
+			ShowModal(ET66ScreenType::PauseMenu);
+		}
+	}
 }

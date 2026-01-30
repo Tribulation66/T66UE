@@ -34,5 +34,11 @@ private:
 	FReply HandleMainMenuClicked();
 	FReply HandleViewLogClicked();
 
+	void RebuildLogItems();
+	TSharedRef<ITableRow> GenerateLogRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable);
+
 	bool bLogVisible = true;
+
+	// Virtualized log list (prevents building a widget per entry).
+	TArray<TSharedPtr<FString>> LogItems;
 };

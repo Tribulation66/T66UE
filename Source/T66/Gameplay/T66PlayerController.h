@@ -17,6 +17,9 @@ class AT66CowardiceGate;
 class AT66ColiseumExitGate;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
+class AT66EnemyBase;
+class UT66IdolAltarOverlayWidget;
+class AT66LootBagPickup;
 
 /**
  * Player Controller for Tribulation 66
@@ -81,6 +84,11 @@ public:
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
 
+	/** Loot proximity: HUD prompt + accept/reject input. */
+	void SetNearbyLootBag(AT66LootBagPickup* LootBag);
+	void ClearNearbyLootBag(AT66LootBagPickup* LootBag);
+	AT66LootBagPickup* GetNearbyLootBag() const { return NearbyLootBag.Get(); }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -99,6 +107,9 @@ protected:
 	/** Handle scroll wheel zoom (game world only) */
 	void HandleZoom(float Value);
 
+	/** Handle dash (CapsLock) */
+	void HandleDashPressed();
+
 	/** Handle jump */
 	void HandleJumpPressed();
 	void HandleJumpReleased();
@@ -111,6 +122,10 @@ protected:
 
 	/** Interact (F): vendor sell or pickup collect */
 	void HandleInteractPressed();
+
+	/** Manual attack lock (LMB) / unlock (RMB) */
+	void HandleAttackLockPressed();
+	void HandleAttackUnlockPressed();
 
 	UFUNCTION()
 	void OnPlayerDied();
@@ -125,6 +140,8 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
+
+	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
 
 	FDelegateHandle OnPlayerDiedHandle;
 
@@ -142,4 +159,11 @@ private:
 
 	/** Load screen classes from expected paths */
 	void AutoLoadScreenClasses();
+
+	bool CanUseCombatMouseInput() const;
+
+	TWeakObjectPtr<AT66EnemyBase> LockedEnemy;
+
+	UPROPERTY()
+	TObjectPtr<UT66IdolAltarOverlayWidget> IdolAltarOverlayWidget;
 };

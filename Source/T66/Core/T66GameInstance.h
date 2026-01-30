@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66Rarity.h"
 #include "T66GameInstance.generated.h"
 
 class UDataTable;
@@ -133,6 +134,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetItemsDataTable();
 
+	/** Get a random item ID from the Items DataTable (cached; never returns NAME_None). */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	FName GetRandomItemID();
+
+	/** Get a random item ID from the Items DataTable filtered by Loot Bag rarity. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	FName GetRandomItemIDForLootRarity(ET66Rarity LootRarity);
+
 	/** Get the loaded Bosses DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetBossesDataTable();
@@ -210,6 +219,9 @@ public:
 	bool HasCompanionSelected() const { return !SelectedCompanionID.IsNone(); }
 
 private:
+	void EnsureCachedItemIDs();
+	void EnsureCachedItemIDsByRarity();
+
 	/** Cached loaded Hero DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedHeroDataTable;
@@ -221,6 +233,27 @@ private:
 	/** Cached loaded Items DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedItemsDataTable;
+
+	/** Cached item row names (built once per runtime session). */
+	UPROPERTY(Transient)
+	TArray<FName> CachedItemIDs;
+
+	bool bCachedItemIDsInitialized = false;
+
+	/** Cached item IDs per rarity (built once per runtime session). */
+	UPROPERTY(Transient)
+	TArray<FName> CachedItemIDs_Black;
+
+	UPROPERTY(Transient)
+	TArray<FName> CachedItemIDs_Red;
+
+	UPROPERTY(Transient)
+	TArray<FName> CachedItemIDs_Yellow;
+
+	UPROPERTY(Transient)
+	TArray<FName> CachedItemIDs_White;
+
+	bool bCachedItemIDsByRarityInitialized = false;
 
 	/** Cached loaded Bosses DataTable */
 	UPROPERTY(Transient)

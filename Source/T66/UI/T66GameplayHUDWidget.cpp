@@ -3,7 +3,11 @@
 #include "UI/T66GameplayHUDWidget.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66Rarity.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66PlayerController.h"
+#include "Gameplay/T66LootBagPickup.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -39,6 +43,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->StageTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->DifficultyChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->IdolsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RefreshHUD();
 }
 
@@ -57,6 +62,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->DifficultyChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->IdolsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	}
 	Super::NativeDestruct();
 }
@@ -65,16 +71,19 @@ void UT66GameplayHUDWidget::RefreshHUD()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
+	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
 	// Gold
 	if (GoldText.IsValid())
 	{
-		GoldText->SetText(FText::FromString(FString::Printf(TEXT("Gold: %d"), RunState->GetCurrentGold())));
+		const FText Fmt = Loc ? Loc->GetText_GoldFormat() : FText::FromString(TEXT("Gold: {0}"));
+		GoldText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentGold())));
 	}
 	// Owe (Debt) in red
 	if (DebtText.IsValid())
 	{
-		DebtText->SetText(FText::FromString(FString::Printf(TEXT("Owe: %d"), RunState->GetCurrentDebt())));
+		const FText Fmt = Loc ? Loc->GetText_OweFormat() : FText::FromString(TEXT("Owe: {0}"));
+		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
 	}
 	// Bounty (Score)
 	if (ScoreText.IsValid())
@@ -85,7 +94,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	// Stage number: x
 	if (StageText.IsValid())
 	{
-		StageText->SetText(FText::FromString(FString::Printf(TEXT("Stage number: %d"), RunState->GetCurrentStage())));
+		const FText Fmt = Loc ? Loc->GetText_StageNumberFormat() : FText::FromString(TEXT("Stage number: {0}"));
+		StageText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentStage())));
 	}
 
 	// Stage timer: frozen at full until start gate, then countdown (e.g. 6:00, 0:45)
@@ -120,39 +130,139 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
-	// Hearts: 5 icons, red = full, grey = lost
-	const int32 CurrentHearts = RunState->GetCurrentHearts();
-	const int32 MaxHearts = RunState->GetMaxHearts();
-	for (int32 i = 0; i < HeartBorders.Num() && i < MaxHearts; ++i)
+	// Loot prompt: top-of-HUD, non-blocking. Accept with F, Reject with RMB.
+	if (LootPromptBox.IsValid())
 	{
-		if (HeartBorders[i].IsValid())
+		AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer());
+		AT66LootBagPickup* Bag = PC ? PC->GetNearbyLootBag() : nullptr;
+		if (Bag)
 		{
-			FLinearColor Color = (i < CurrentHearts) ? FLinearColor(0.9f, 0.2f, 0.2f, 1.f) : FLinearColor(0.35f, 0.35f, 0.35f, 1.f);
-			HeartBorders[i]->SetBorderBackgroundColor(Color);
+			FItemData D;
+			UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+			const bool bHasData = T66GI && T66GI->GetItemData(Bag->GetItemID(), D);
+			const FString ItemName = bHasData ? D.ItemID.ToString() : Bag->GetItemID().ToString();
+
+			const TCHAR* RarityStr =
+				(Bag->GetLootRarity() == ET66Rarity::Black) ? TEXT("BLACK") :
+				(Bag->GetLootRarity() == ET66Rarity::Red) ? TEXT("RED") :
+				(Bag->GetLootRarity() == ET66Rarity::Yellow) ? TEXT("YELLOW") : TEXT("WHITE");
+
+			if (LootPromptText.IsValid())
+			{
+				LootPromptText->SetText(FText::FromString(FString::Printf(TEXT("LOOT BAG (%s): %s   [F] Accept   [RMB] Reject"), RarityStr, *ItemName)));
+			}
+			if (LootPromptBorder.IsValid())
+			{
+				LootPromptBorder->SetBorderBackgroundColor(FT66RarityUtil::GetRarityColor(Bag->GetLootRarity()) * 0.35f + FLinearColor(0.02f, 0.02f, 0.03f, 0.65f));
+			}
+			LootPromptBox->SetVisibility(EVisibility::Visible);
+		}
+		else
+		{
+			LootPromptBox->SetVisibility(EVisibility::Collapsed);
 		}
 	}
 
-	// Difficulty squares (placeholder for skulls): bright when active
-	const int32 DifficultyTier = RunState->GetDifficultyTier();
-	for (int32 i = 0; i < DifficultyBorders.Num(); ++i)
+	// Hearts: 5-slot compression with tier colors (red -> blue -> green -> ...)
 	{
-		if (!DifficultyBorders[i].IsValid()) continue;
-		const bool bActive = i < DifficultyTier;
-		const FLinearColor C = bActive ? FLinearColor(0.95f, 0.15f, 0.15f, 1.f) : FLinearColor(0.18f, 0.18f, 0.22f, 1.f);
-		DifficultyBorders[i]->SetBorderBackgroundColor(C);
+		const int32 HeartsNow = RunState->GetCurrentHearts();
+		int32 Tier = 0;
+		int32 Count = 0;
+		FT66RarityUtil::ComputeTierAndCount5(HeartsNow, Tier, Count);
+		const FLinearColor TierC = FT66RarityUtil::GetTierColor(Tier);
+		const FLinearColor EmptyC(0.25f, 0.25f, 0.28f, 1.f);
+		for (int32 i = 0; i < HeartBorders.Num(); ++i)
+		{
+			if (!HeartBorders[i].IsValid()) continue;
+			const bool bFilled = (i < Count);
+			HeartBorders[i]->SetBorderBackgroundColor(bFilled ? TierC : EmptyC);
+		}
 	}
 
-	// Inventory slots: red when item picked up, grey when empty
+	// Portrait: tier color based on MAX heart quantity (not current health).
+	if (PortraitBorder.IsValid())
+	{
+		int32 Tier = 0;
+		int32 Count = 0;
+		FT66RarityUtil::ComputeTierAndCount5(RunState->GetMaxHearts(), Tier, Count);
+		PortraitBorder->SetBorderBackgroundColor(Count > 0 ? FT66RarityUtil::GetTierColor(Tier) : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
+	}
+
+	// Difficulty (Skulls): 5-slot compression with tier colors + half-step support
+	{
+		const float Skulls = RunState->GetDifficultySkulls();
+		const int32 Tier = FMath::Max(0, FMath::FloorToInt(Skulls / 5.f));
+		const float Within = FMath::Clamp(Skulls - (static_cast<float>(Tier) * 5.f), 0.f, 5.f);
+		const FLinearColor TierC = FT66RarityUtil::GetTierColor(Tier);
+		const FLinearColor EmptyC(0.18f, 0.18f, 0.22f, 1.f);
+		for (int32 i = 0; i < DifficultyBorders.Num(); ++i)
+		{
+			if (!DifficultyBorders[i].IsValid()) continue;
+			const float NeedFull = static_cast<float>(i + 1);
+			const float NeedHalf = static_cast<float>(i) + 0.5f;
+			if (Within >= NeedFull)
+			{
+				DifficultyBorders[i]->SetBorderBackgroundColor(TierC);
+			}
+			else if (Within >= NeedHalf)
+			{
+				DifficultyBorders[i]->SetBorderBackgroundColor(TierC * 0.55f);
+			}
+			else
+			{
+				DifficultyBorders[i]->SetBorderBackgroundColor(EmptyC);
+			}
+		}
+	}
+
+	// Idol slots (3): colored if equipped, grey if empty
+	const TArray<FName>& Idols = RunState->GetEquippedIdols();
+	for (int32 i = 0; i < IdolSlotBorders.Num(); ++i)
+	{
+		if (!IdolSlotBorders[i].IsValid()) continue;
+		FLinearColor C = FLinearColor(0.18f, 0.18f, 0.22f, 1.f);
+		if (i < Idols.Num() && !Idols[i].IsNone())
+		{
+			C = UT66RunStateSubsystem::GetIdolColor(Idols[i]);
+		}
+		IdolSlotBorders[i]->SetBorderBackgroundColor(C);
+	}
+
+	// Inventory slots: item color + hover tooltip, grey when empty
 	const TArray<FName>& Inv = RunState->GetInventory();
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	for (int32 i = 0; i < InventorySlotBorders.Num(); ++i)
 	{
 		if (!InventorySlotBorders[i].IsValid()) continue;
+
 		FLinearColor SlotColor = FLinearColor(0.2f, 0.2f, 0.22f, 1.f);
-		if (i < Inv.Num())
+		FText Tooltip = FText::GetEmpty();
+		if (i < Inv.Num() && !Inv[i].IsNone())
 		{
-			SlotColor = FLinearColor(1.f, 0.f, 0.f, 1.f); // red when item picked up
+			const FName ItemID = Inv[i];
+			FItemData D;
+			if (T66GI && T66GI->GetItemData(ItemID, D))
+			{
+				SlotColor = D.PlaceholderColor;
+				FString Tip = FString::Printf(TEXT("%s"), *ItemID.ToString());
+				if (D.PowerGivenPercent != 0.f)
+				{
+					Tip += FString::Printf(TEXT("\nPower: +%.1f%%"), D.PowerGivenPercent);
+				}
+				if (!D.EffectLine1.IsEmpty()) Tip += FString::Printf(TEXT("\n%s"), *D.EffectLine1.ToString());
+				if (!D.EffectLine2.IsEmpty()) Tip += FString::Printf(TEXT("\n%s"), *D.EffectLine2.ToString());
+				if (!D.EffectLine3.IsEmpty()) Tip += FString::Printf(TEXT("\n%s"), *D.EffectLine3.ToString());
+				if (D.SellValueGold > 0) Tip += FString::Printf(TEXT("\nSell: %d gold"), D.SellValueGold);
+				Tooltip = FText::FromString(Tip);
+			}
+			else
+			{
+				SlotColor = FLinearColor(0.95f, 0.15f, 0.15f, 1.f);
+				Tooltip = FText::FromString(ItemID.ToString());
+			}
 		}
 		InventorySlotBorders[i]->SetBorderBackgroundColor(SlotColor);
+		InventorySlotBorders[i]->SetToolTipText(Tooltip);
 	}
 
 	// Panel visibility
@@ -163,8 +273,17 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
+	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	const FText StageInit = Loc ? FText::Format(Loc->GetText_StageNumberFormat(), FText::AsNumber(1)) : FText::FromString(TEXT("Stage number: 1"));
+	const FText GoldInit = Loc ? FText::Format(Loc->GetText_GoldFormat(), FText::AsNumber(0)) : FText::FromString(TEXT("Gold: 0"));
+	const FText OweInit = Loc ? FText::Format(Loc->GetText_OweFormat(), FText::AsNumber(0)) : FText::FromString(TEXT("Owe: 0"));
+	const FText BountyLabel = Loc ? Loc->GetText_BountyLabel() : FText::FromString(TEXT("Bounty:"));
+	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : FText::FromString(TEXT("PORTRAIT"));
+	const FText MinimapLabel = Loc ? Loc->GetText_MinimapPlaceholder() : FText::FromString(TEXT("MINIMAP"));
+
 	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
 	DifficultyBorders.SetNum(5);
+	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	InventorySlotBorders.SetNum(5);
 	static constexpr float BossBarWidth = 600.f;
 
@@ -208,6 +327,27 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			];
 		HeartBorders[i] = HeartBorder;
+	}
+
+	// Idol slots: 3 stacked squares (placeholder for idols)
+	TSharedRef<SVerticalBox> IdolSlotsRef = SNew(SVerticalBox);
+	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
+	{
+		TSharedPtr<SBorder> IdolBorder;
+		IdolSlotsRef->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 4.f)
+			[
+				SNew(SBox)
+				.WidthOverride(22.f)
+				.HeightOverride(22.f)
+				[
+					SAssignNew(IdolBorder, SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.18f, 0.18f, 0.22f, 1.f))
+				]
+			];
+		IdolSlotBorders[i] = IdolBorder;
 	}
 
 	// Build inventory row (5 slots)
@@ -272,6 +412,29 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 		]
+		// Top-center loot prompt (non-blocking)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Top)
+		.Padding(0.f, 48.f, 0.f, 0.f)
+		[
+			SAssignNew(LootPromptBox, SBox)
+			.WidthOverride(760.f)
+			.HeightOverride(40.f)
+			.Visibility(EVisibility::Collapsed)
+			[
+				SAssignNew(LootPromptBorder, SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.65f))
+				.Padding(10.f, 6.f)
+				[
+					SAssignNew(LootPromptText, STextBlock)
+					.Text(FText::GetEmpty())
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+					.ColorAndOpacity(FLinearColor::White)
+				]
+			]
+		]
 		// Top-left stats (no overlap with bottom-left portrait stack)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
@@ -282,7 +445,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
 				SAssignNew(StageText, STextBlock)
-				.Text(FText::FromString(TEXT("Stage number: 1")))
+				.Text(StageInit)
 				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 				.ColorAndOpacity(FLinearColor::White)
 			]
@@ -299,14 +462,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SAssignNew(GoldText, STextBlock)
-					.Text(FText::FromString(TEXT("Gold: 0")))
+					.Text(GoldInit)
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 				[
 					SAssignNew(DebtText, STextBlock)
-					.Text(FText::FromString(TEXT("Owe: 0")))
+					.Text(OweInit)
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 					.ColorAndOpacity(FLinearColor(0.95f, 0.15f, 0.15f, 1.f))
 				]
@@ -317,7 +480,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Bounty: ")))
+					.Text(BountyLabel)
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 					.ColorAndOpacity(FLinearColor(0.85f, 0.75f, 0.2f, 1.f))
 				]
@@ -337,28 +500,36 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.VAlign(VAlign_Bottom)
 		.Padding(24.f, 0.f, 0.f, 24.f)
 		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-			[ DifficultyRowRef ]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-			[ HeartsRowRef ]
-			+ SVerticalBox::Slot().AutoHeight()
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth()
 			[
-				SNew(SBox)
-				.WidthOverride(84.f)
-				.HeightOverride(84.f)
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+				[ DifficultyRowRef ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+				[ HeartsRowRef ]
+				+ SVerticalBox::Slot().AutoHeight()
 				[
-					SAssignNew(PortraitBorder, SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.14f, 1.f))
+					SNew(SBox)
+					.WidthOverride(84.f)
+					.HeightOverride(84.f)
 					[
-						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("PORTRAIT")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
-						.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.f))
-						.Justification(ETextJustify::Center)
+						SAssignNew(PortraitBorder, SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.14f, 1.f))
+						[
+							SNew(STextBlock)
+							.Text(PortraitLabel)
+							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+							.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.f))
+							.Justification(ETextJustify::Center)
+						]
 					]
 				]
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(14.f, 0.f, 0.f, 0.f)
+			[
+				IdolSlotsRef
 			]
 		]
 		+ SOverlay::Slot()
@@ -375,7 +546,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.Padding(8.f)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("MINIMAP")))
+					.Text(MinimapLabel)
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
 					.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.f))
 				]

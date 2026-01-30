@@ -12,6 +12,8 @@
 AT66BossProjectile::AT66BossProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	// Safety: prevent unbounded projectile buildup if a projectile never overlaps anything.
+	InitialLifeSpan = 6.0f;
 
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	CollisionSphere->SetSphereRadius(25.f);

@@ -34,7 +34,7 @@ public:
 
 	/** Max HP (v0: 100). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss")
-	int32 MaxHP = 100;
+	int32 MaxHP = 1000;
 
 	/** Distance required to awaken. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss")

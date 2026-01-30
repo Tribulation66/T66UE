@@ -4,6 +4,7 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -11,6 +12,8 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Views/SListView.h"
+#include "Widgets/Views/STableRow.h"
 
 UT66RunSummaryScreen::UT66RunSummaryScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -19,25 +22,47 @@ UT66RunSummaryScreen::UT66RunSummaryScreen(const FObjectInitializer& ObjectIniti
 	bIsModal = true;
 }
 
+void UT66RunSummaryScreen::RebuildLogItems()
+{
+	LogItems.Reset();
+
+	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const TArray<FString>& Log = RunState ? RunState->GetEventLog() : TArray<FString>();
+
+	LogItems.Reserve(Log.Num());
+	for (const FString& Entry : Log)
+	{
+		LogItems.Add(MakeShared<FString>(Entry));
+	}
+}
+
+TSharedRef<ITableRow> UT66RunSummaryScreen::GenerateLogRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable)
+{
+	const FString Line = (Item.IsValid()) ? *Item : FString();
+
+	return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
+		.Padding(FMargin(4.f, 2.f))
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(Line))
+			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
+		];
+}
+
 TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 {
 	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	const TArray<FString>& Log = RunState ? RunState->GetEventLog() : TArray<FString>();
 	const int32 StageReached = RunState ? RunState->GetCurrentStage() : 1;
 	const int32 Bounty = RunState ? RunState->GetCurrentScore() : 0;
+	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
-	TSharedRef<SScrollBox> LogScroll = SNew(SScrollBox);
-	for (const FString& Entry : Log)
-	{
-		LogScroll->AddSlot()
-			.Padding(4.f, 2.f)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(Entry))
-				.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-				.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
-			];
-	}
+	RebuildLogItems();
+	TSharedRef<SListView<TSharedPtr<FString>>> LogList =
+		SNew(SListView<TSharedPtr<FString>>)
+		.ListItemsSource(&LogItems)
+		.OnGenerateRow(SListView<TSharedPtr<FString>>::FOnGenerateRow::CreateUObject(this, &UT66RunSummaryScreen::GenerateLogRow))
+		.SelectionMode(ESelectionMode::None);
 
 	return SNew(SBorder)
 		// Full-screen, opaque (no transparency)
@@ -60,7 +85,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.Padding(0.f, 0.f, 0.f, 20.f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("RUN SUMMARY")))
+						.Text(Loc ? Loc->GetText_RunSummaryTitle() : FText::FromString(TEXT("RUN SUMMARY")))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 32))
 						.ColorAndOpacity(FLinearColor::White)
 					]
@@ -70,7 +95,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.Padding(0.f, 0.f, 0.f, 8.f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Bounty: %d"), StageReached, Bounty)))
+						.Text(Loc ? FText::Format(Loc->GetText_RunSummaryStageReachedBountyFormat(), FText::AsNumber(StageReached), FText::AsNumber(Bounty))
+							: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Bounty: %d"), StageReached, Bounty)))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 						.ColorAndOpacity(FLinearColor::White)
 					]
@@ -87,7 +113,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.2f, 1.f))
 							[
 								SNew(STextBlock)
-								.Text(FText::FromString(TEXT("3D Preview")))
+								.Text(Loc ? Loc->GetText_RunSummaryPreviewPlaceholder() : FText::FromString(TEXT("3D Preview")))
 								.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 								.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.f))
 								.Justification(ETextJustify::Center)
@@ -98,7 +124,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.MaxHeight(200.f)
 					.Padding(0.f, 0.f, 0.f, 20.f)
 					[
-						LogScroll
+						SNew(SBox)
+						.Visibility(bLogVisible ? EVisibility::Visible : EVisibility::Collapsed)
+						[
+							LogList
+						]
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -120,7 +150,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								.ButtonColorAndOpacity(FLinearColor(0.2f, 0.5f, 0.2f, 1.f))
 								[
 									SNew(STextBlock)
-									.Text(FText::FromString(TEXT("RESTART")))
+									.Text(Loc ? Loc->GetText_Restart() : FText::FromString(TEXT("RESTART")))
 									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 									.ColorAndOpacity(FLinearColor::White)
 								]
@@ -141,7 +171,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
 								[
 									SNew(STextBlock)
-									.Text(FText::FromString(TEXT("MAIN MENU")))
+									.Text(Loc ? Loc->GetText_MainMenu() : FText::FromString(TEXT("MAIN MENU")))
 									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 									.ColorAndOpacity(FLinearColor::White)
 								]

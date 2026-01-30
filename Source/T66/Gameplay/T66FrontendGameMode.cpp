@@ -47,9 +47,11 @@ void AT66FrontendGameMode::BeginPlay()
 		if (!bHasPreviewStage)
 		{
 			FActorSpawnParameters SpawnParams;
+			// Keep preview stages far from the menu camera so the player never sees them in the world.
+			const FVector PreviewOrigin(1000000.f, 0.f, 200.f);
 			World->SpawnActor<AT66HeroPreviewStage>(
 				AT66HeroPreviewStage::StaticClass(),
-				FVector(0.f, 0.f, 200.f),
+				PreviewOrigin,
 				FRotator(0.f, 0.f, 0.f),
 				SpawnParams
 			);
@@ -63,7 +65,7 @@ void AT66FrontendGameMode::BeginPlay()
 			FActorSpawnParameters SpawnParams;
 			World->SpawnActor<AT66CompanionPreviewStage>(
 				AT66CompanionPreviewStage::StaticClass(),
-				FVector(200.f, 0.f, 200.f),
+				FVector(1000000.f, 1000.f, 200.f),
 				FRotator(0.f, 0.f, 0.f),
 				SpawnParams
 			);

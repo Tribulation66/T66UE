@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66CombatComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
@@ -15,14 +16,21 @@
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
+#include "UI/T66IdolAltarOverlayWidget.h"
+#include "Gameplay/T66TreeOfLifeInteractable.h"
+#include "Gameplay/T66CashTruckInteractable.h"
+#include "Gameplay/T66WheelSpinInteractable.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66ItemPickup.h"
+#include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66ColiseumExitGate.h"
 #include "Gameplay/T66DifficultyTotem.h"
+#include "Gameplay/T66EnemyBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Engine/OverlapResult.h"
@@ -44,6 +52,7 @@ void AT66PlayerController::BeginPlay()
 	{
 		SetupGameplayMode();
 		SetupGameplayHUD();
+
 		UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		if (RunState)
 		{
@@ -99,9 +108,12 @@ void AT66PlayerController::SetupGameplayMode()
 
 void AT66PlayerController::RestoreGameplayInputMode()
 {
+	// Classic gameplay: mouse rotates camera, cursor hidden.
 	FInputModeGameOnly InputMode;
 	SetInputMode(InputMode);
 	bShowMouseCursor = false;
+	bEnableClickEvents = false;
+	bEnableMouseOverEvents = false;
 }
 
 void AT66PlayerController::SetupInputComponent()
@@ -121,6 +133,9 @@ void AT66PlayerController::SetupInputComponent()
 		
 		// Zoom (scroll wheel, game world only)
 		InputComponent->BindAxis(TEXT("Zoom"), this, &AT66PlayerController::HandleZoom);
+
+		// Dash (CapsLock)
+		InputComponent->BindAction(TEXT("Dash"), IE_Pressed, this, &AT66PlayerController::HandleDashPressed);
 		
 		// Jump (Space)
 		InputComponent->BindAction(TEXT("Jump"), IE_Pressed, this, &AT66PlayerController::HandleJumpPressed);
@@ -133,6 +148,106 @@ void AT66PlayerController::SetupInputComponent()
 		// T = toggle HUD panels (inventory + minimap), F = interact (vendor / pickup)
 		InputComponent->BindAction(TEXT("ToggleHUD"), IE_Pressed, this, &AT66PlayerController::HandleToggleHUDPressed);
 		InputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AT66PlayerController::HandleInteractPressed);
+
+		// Manual attack lock/unlock (mouse only)
+		InputComponent->BindAction(TEXT("AttackLock"), IE_Pressed, this, &AT66PlayerController::HandleAttackLockPressed);
+		InputComponent->BindAction(TEXT("AttackUnlock"), IE_Pressed, this, &AT66PlayerController::HandleAttackUnlockPressed);
+	}
+}
+
+bool AT66PlayerController::CanUseCombatMouseInput() const
+{
+	// Suppress combat mouse inputs if a modal overlay is active (cursor is visible for UI).
+	return IsGameplayLevel()
+		&& !(GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
+		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
+		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport());
+}
+
+void AT66PlayerController::HandleAttackLockPressed()
+{
+	if (!CanUseCombatMouseInput()) return;
+
+	APawn* P = GetPawn();
+	if (!P) return;
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(P);
+	if (!Hero || !Hero->CombatComponent) return;
+
+	int32 SizeX = 0, SizeY = 0;
+	GetViewportSize(SizeX, SizeY);
+	if (SizeX <= 0 || SizeY <= 0) return;
+
+	const FVector2D Center(static_cast<float>(SizeX) * 0.5f, static_cast<float>(SizeY) * 0.5f);
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(AimLock), false);
+	Params.AddIgnoredActor(Hero);
+	const bool bHit = GetHitResultAtScreenPosition(Center, ECC_Visibility, Params, Hit);
+
+	AT66EnemyBase* Enemy = bHit ? Cast<AT66EnemyBase>(Hit.GetActor()) : nullptr;
+	if (!Enemy || Enemy->CurrentHP <= 0)
+	{
+		// Clicking empty space does nothing.
+		return;
+	}
+
+	// Toggle if clicking the same enemy.
+	if (LockedEnemy.IsValid() && LockedEnemy.Get() == Enemy)
+	{
+		HandleAttackUnlockPressed();
+		return;
+	}
+
+	// Clear previous indicator.
+	if (LockedEnemy.IsValid())
+	{
+		LockedEnemy->SetLockedIndicator(false);
+	}
+
+	LockedEnemy = Enemy;
+	Enemy->SetLockedIndicator(true);
+	Hero->CombatComponent->SetLockedTarget(Enemy);
+}
+
+void AT66PlayerController::HandleAttackUnlockPressed()
+{
+	// If we're standing on a loot bag, RMB discards it (so loot accept/reject works without showing cursor).
+	if (AT66LootBagPickup* Bag = NearbyLootBag.Get())
+	{
+		if (APawn* P = GetPawn())
+		{
+			const float DistSq = FVector::DistSquared(P->GetActorLocation(), Bag->GetActorLocation());
+			if (DistSq <= (250.f * 250.f))
+			{
+				Bag->ConsumeAndDestroy();
+				NearbyLootBag.Reset();
+				return;
+			}
+		}
+	}
+
+	APawn* P = GetPawn();
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(P);
+	if (Hero && Hero->CombatComponent)
+	{
+		Hero->CombatComponent->ClearLockedTarget();
+	}
+
+	if (LockedEnemy.IsValid())
+	{
+		LockedEnemy->SetLockedIndicator(false);
+	}
+	LockedEnemy.Reset();
+}
+
+void AT66PlayerController::HandleDashPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (AActor* A = GetPawn())
+	{
+		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(A))
+		{
+			Hero->DashForward();
+		}
 	}
 }
 
@@ -181,12 +296,22 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66DifficultyTotem* ClosestTotem = nullptr;
 	AT66HouseNPCBase* ClosestNPC = nullptr;
 	AT66ItemPickup* ClosestPickup = nullptr;
+	AT66LootBagPickup* ClosestLootBag = nullptr;
+	AT66IdolAltar* ClosestIdolAltar = nullptr;
+	AT66TreeOfLifeInteractable* ClosestTree = nullptr;
+	AT66CashTruckInteractable* ClosestTruck = nullptr;
+	AT66WheelSpinInteractable* ClosestWheel = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
 	float ClosestExitGateDistSq = InteractRadius * InteractRadius;
 	float ClosestTotemDistSq = InteractRadius * InteractRadius;
 	float ClosestNPCDistSq = InteractRadius * InteractRadius;
 	float ClosestPickupDistSq = InteractRadius * InteractRadius;
+	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
+	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
+	float ClosestTreeDistSq = InteractRadius * InteractRadius;
+	float ClosestTruckDistSq = InteractRadius * InteractRadius;
+	float ClosestWheelDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
 	{
@@ -216,6 +341,26 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66ItemPickup* P = Cast<AT66ItemPickup>(A))
 		{
 			if (DistSq < ClosestPickupDistSq) { ClosestPickupDistSq = DistSq; ClosestPickup = P; }
+		}
+		else if (AT66LootBagPickup* Bag = Cast<AT66LootBagPickup>(A))
+		{
+			if (DistSq < ClosestLootBagDistSq) { ClosestLootBagDistSq = DistSq; ClosestLootBag = Bag; }
+		}
+		else if (AT66IdolAltar* Altar = Cast<AT66IdolAltar>(A))
+		{
+			if (DistSq < ClosestIdolAltarDistSq) { ClosestIdolAltarDistSq = DistSq; ClosestIdolAltar = Altar; }
+		}
+		else if (AT66TreeOfLifeInteractable* Tree = Cast<AT66TreeOfLifeInteractable>(A))
+		{
+			if (DistSq < ClosestTreeDistSq) { ClosestTreeDistSq = DistSq; ClosestTree = Tree; }
+		}
+		else if (AT66CashTruckInteractable* Truck = Cast<AT66CashTruckInteractable>(A))
+		{
+			if (DistSq < ClosestTruckDistSq) { ClosestTruckDistSq = DistSq; ClosestTruck = Truck; }
+		}
+		else if (AT66WheelSpinInteractable* W = Cast<AT66WheelSpinInteractable>(A))
+		{
+			if (DistSq < ClosestWheelDistSq) { ClosestWheelDistSq = DistSq; ClosestWheel = W; }
 		}
 	}
 
@@ -249,13 +394,56 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		return;
 	}
-	if (ClosestPickup)
+	// Idol Altar (Stage 1)
+	if (ClosestIdolAltar)
+	{
+		UT66IdolAltarOverlayWidget* W = CreateWidget<UT66IdolAltarOverlayWidget>(this, UT66IdolAltarOverlayWidget::StaticClass());
+		if (W)
+		{
+			IdolAltarOverlayWidget = W;
+			W->AddToViewport(150); // above gambler overlay
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		return;
+	}
+	// World interactables (Tree/Truck/Wheel)
+	if (ClosestTree && ClosestTree->Interact(this))
+	{
+		return;
+	}
+	if (ClosestTruck && ClosestTruck->Interact(this))
+	{
+		return;
+	}
+	if (ClosestWheel && ClosestWheel->Interact(this))
+	{
+		return;
+	}
+	if (ClosestLootBag)
 	{
 		UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-		if (RunState)
+		if (RunState && RunState->HasInventorySpace())
 		{
-			RunState->AddItem(ClosestPickup->GetItemID());
-			ClosestPickup->Destroy();
+			RunState->AddItem(ClosestLootBag->GetItemID());
+			ClosestLootBag->ConsumeAndDestroy();
+			ClearNearbyLootBag(ClosestLootBag);
+		}
+		return;
+	}
+	// Backward-compat: if any old pickups exist, collect instantly (no popup).
+	if (ClosestPickup)
+	{
+		if (UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+		{
+			if (RunState->HasInventorySpace())
+			{
+				RunState->AddItem(ClosestPickup->GetItemID());
+				ClosestPickup->Destroy();
+			}
+			return;
 		}
 	}
 }
@@ -297,6 +485,19 @@ void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
+	}
+}
+
+void AT66PlayerController::SetNearbyLootBag(AT66LootBagPickup* LootBag)
+{
+	NearbyLootBag = LootBag;
+}
+
+void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
+{
+	if (NearbyLootBag.Get() == LootBag)
+	{
+		NearbyLootBag.Reset();
 	}
 }
 
@@ -416,16 +617,16 @@ void AT66PlayerController::HandleMoveRight(float Value)
 void AT66PlayerController::HandleLookUp(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
-	
-	// Add pitch input (positive = look up, negative = look down)
+	// When the gameplay cursor is visible, mouse movement should not rotate the camera.
+	if (bShowMouseCursor) return;
 	AddPitchInput(Value);
 }
 
 void AT66PlayerController::HandleTurn(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
-	
-	// Add yaw input
+	// When the gameplay cursor is visible, mouse movement should not rotate the camera.
+	if (bShowMouseCursor) return;
 	AddYawInput(Value);
 }
 

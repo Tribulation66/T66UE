@@ -7,6 +7,7 @@
 #include "T66EnemyDirector.generated.h"
 
 class AT66EnemyBase;
+class UT66RunStateSubsystem;
 
 UCLASS(Blueprintable)
 class T66_API AT66EnemyDirector : public AActor
@@ -19,6 +20,22 @@ public:
 	/** Enemy class to spawn */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	TSubclassOf<AT66EnemyBase> EnemyClass;
+
+	/** Special: Leprechaun (runs away, grants gold on hit) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	TSubclassOf<AT66EnemyBase> LeprechaunClass;
+
+	/** Special: Goblin Thief (steals gold on touch) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	TSubclassOf<AT66EnemyBase> GoblinThiefClass;
+
+	/** Chance per spawned enemy to be a Leprechaun */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float LeprechaunChance = 0.05f;
+
+	/** Chance per spawned enemy to be a Goblin Thief */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float GoblinThiefChance = 0.05f;
 
 	/** Spawn interval in seconds */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
@@ -49,6 +66,10 @@ protected:
 
 	void SpawnWave();
 
+	UFUNCTION()
+	void HandleStageTimerChanged();
+
 	FTimerHandle SpawnTimerHandle;
 	int32 AliveCount = 0;
+	bool bSpawningArmed = false;
 };

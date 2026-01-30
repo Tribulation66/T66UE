@@ -58,4 +58,13 @@ protected:
 	TObjectPtr<UMaterialInstanceDynamic> PlaceholderMaterial;
 
 	bool bIsPreviewMode = false;
+
+	// Healing (gameplay only)
+	float HealAccumSeconds = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Healing")
+	float HealIntervalSeconds = 2.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Healing")
+	int32 HealAmountHearts = 1;
 };

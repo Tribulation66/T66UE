@@ -17,6 +17,7 @@ class AT66CowardiceGate;
 class AT66TricksterNPC;
 class AT66ColiseumExitGate;
 class AT66BossGate;
+class AT66IdolAltar;
 class UT66GameInstance;
 class ADirectionalLight;
 class ASkyLight;
@@ -91,6 +92,9 @@ protected:
 	/** Spawn a floor plane if none exists */
 	void SpawnFloorIfNeeded();
 
+	/** Spawn boundary walls so the player can't fall off. */
+	void SpawnBoundaryWallsIfNeeded();
+
 	/** Spawn lighting if none exists */
 	void SpawnLightingIfNeeded();
 
@@ -105,9 +109,11 @@ protected:
 
 	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
 	void SpawnStartGateForPlayer(AController* Player);
+	void SpawnIdolAltarForPlayer(AController* Player);
 
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
+	void SpawnWorldInteractablesForStage();
 
 	/** Spawn boss for current stage (dormant until player approaches). */
 	void SpawnBossForCurrentStage();
@@ -154,4 +160,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AT66BossGate> BossGate;
+
+	UPROPERTY()
+	TObjectPtr<AT66IdolAltar> IdolAltar;
 };

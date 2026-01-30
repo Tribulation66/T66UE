@@ -23,6 +23,23 @@ void AT66EnemyAIController::UpdateMoveToPlayer()
 	APawn* MyPawn = GetPawn();
 	if (PlayerPawn && MyPawn)
 	{
+		// Support "flee" enemies (e.g. Leprechaun) by moving away from the player.
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(MyPawn))
+		{
+			if (Enemy->bRunAwayFromPlayer)
+			{
+				FVector Away = MyPawn->GetActorLocation() - PlayerPawn->GetActorLocation();
+				Away.Z = 0.f;
+				if (!Away.Normalize())
+				{
+					Away = FVector(1.f, 0.f, 0.f);
+				}
+				const FVector TargetLoc = MyPawn->GetActorLocation() + Away * 1600.f;
+				UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, TargetLoc);
+				return;
+			}
+		}
+
 		UAIBlueprintHelperLibrary::SimpleMoveToActor(this, PlayerPawn);
 	}
 }

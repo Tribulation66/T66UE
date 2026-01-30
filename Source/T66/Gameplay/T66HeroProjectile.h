@@ -28,9 +28,10 @@ public:
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-	int32 Damage = 10;
+	int32 Damage = 20;
 
 	void SetTargetLocation(const FVector& TargetLoc);
+	void SetScaleMultiplier(float InScaleMultiplier);
 
 protected:
 	virtual void BeginPlay() override;
@@ -38,4 +39,7 @@ protected:
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	float ScaleMultiplier = 1.f;
+	float BaseVisualScale = 0.15f;
 };

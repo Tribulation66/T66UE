@@ -2,7 +2,10 @@
 
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66LeprechaunEnemy.h"
+#include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Core/T66Rarity.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
@@ -12,13 +15,23 @@ AT66EnemyDirector::AT66EnemyDirector()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	EnemyClass = AT66EnemyBase::StaticClass();
+	LeprechaunClass = AT66LeprechaunEnemy::StaticClass();
+	GoblinThiefClass = AT66GoblinThiefEnemy::StaticClass();
 }
 
 void AT66EnemyDirector::BeginPlay()
 {
 	Super::BeginPlay();
-	// First wave after 2s, then every SpawnIntervalSeconds
-	GetWorld()->GetTimerManager().SetTimer(SpawnTimerHandle, this, &AT66EnemyDirector::SpawnWave, SpawnIntervalSeconds, true, 2.f);
+
+	// Only begin spawning once the Stage Timer becomes active (after Start Gate).
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->StageTimerChanged.AddDynamic(this, &AT66EnemyDirector::HandleStageTimerChanged);
+			HandleStageTimerChanged(); // initial state
+		}
+	}
 }
 
 void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
@@ -26,6 +39,34 @@ void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
 	if (Enemy && AliveCount > 0)
 	{
 		AliveCount--;
+	}
+}
+
+void AT66EnemyDirector::HandleStageTimerChanged()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState) return;
+
+	if (RunState->GetStageTimerActive())
+	{
+		if (!bSpawningArmed)
+		{
+			bSpawningArmed = true;
+			// Spawn immediately so players don't think spawns are broken, then continue on interval.
+			SpawnWave();
+			World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+			World->GetTimerManager().SetTimer(SpawnTimerHandle, this, &AT66EnemyDirector::SpawnWave, SpawnIntervalSeconds, true, 2.f);
+		}
+	}
+	else
+	{
+		// Timer frozen: don't spawn waves.
+		bSpawningArmed = false;
+		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
 	}
 }
 
@@ -46,6 +87,7 @@ void AT66EnemyDirector::SpawnWave()
 	if (ToSpawn <= 0) return;
 
 	UWorld* World = GetWorld();
+	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 	for (int32 i = 0; i < ToSpawn; ++i)
 	{
 		FVector PlayerLoc = PlayerPawn->GetActorLocation();
@@ -82,7 +124,9 @@ void AT66EnemyDirector::SpawnWave()
 		FVector End = SpawnLoc - FVector(0.f, 0.f, 1000.f);
 		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 		{
-			SpawnLoc = Hit.ImpactPoint + FVector(0.f, 0.f, 90.f);
+			// Spawn at ground + capsule half-height (so actor is grounded).
+			static constexpr float EnemyCapsuleHalfHeight = 88.f;
+			SpawnLoc = Hit.ImpactPoint + FVector(0.f, 0.f, EnemyCapsuleHalfHeight);
 		}
 		else
 		{
@@ -91,9 +135,33 @@ void AT66EnemyDirector::SpawnWave()
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		AT66EnemyBase* Enemy = World->SpawnActor<AT66EnemyBase>(EnemyClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+
+		// Pick which enemy type to spawn.
+		TSubclassOf<AT66EnemyBase> ClassToSpawn = EnemyClass;
+		const float Roll = Rng.FRand();
+		if (LeprechaunClass && Roll < LeprechaunChance)
+		{
+			ClassToSpawn = LeprechaunClass;
+		}
+		else if (GoblinThiefClass && Roll < (LeprechaunChance + GoblinThiefChance))
+		{
+			ClassToSpawn = GoblinThiefClass;
+		}
+
+		AT66EnemyBase* Enemy = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 		if (Enemy)
 		{
+			// Special enemies roll rarity and apply visuals/effects.
+			const ET66Rarity R = FT66RarityUtil::RollDefaultRarity(Rng);
+			if (AT66LeprechaunEnemy* Lep = Cast<AT66LeprechaunEnemy>(Enemy))
+			{
+				Lep->SetRarity(R);
+			}
+			else if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
+			{
+				Gob->SetRarity(R);
+			}
+
 			Enemy->OwningDirector = this;
 			if (RunState)
 			{

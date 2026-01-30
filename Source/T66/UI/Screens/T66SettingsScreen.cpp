@@ -3,7 +3,11 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/InputSettings.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerInput.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -20,6 +24,7 @@ UT66SettingsScreen::UT66SettingsScreen(const FObjectInitializer& ObjectInitializ
 {
 	ScreenType = ET66ScreenType::Settings;
 	bIsModal = true;
+	SetIsFocusable(true);
 }
 
 UT66LocalizationSubsystem* UT66SettingsScreen::GetLocSubsystem() const
@@ -152,6 +157,198 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 				]
 			]
 		];
+}
+
+FReply UT66SettingsScreen::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (bWaitingForRebind)
+	{
+		const FKey K = InKeyEvent.GetKey();
+		if (K == EKeys::Escape)
+		{
+			bWaitingForRebind = false;
+			if (RebindStatusText.IsValid())
+			{
+				RebindStatusText->SetText(FText::FromString(TEXT("Rebind cancelled.")));
+			}
+			return FReply::Handled();
+		}
+		ApplyRebindToInputSettings(K);
+		return FReply::Handled();
+	}
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+FReply UT66SettingsScreen::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (bWaitingForRebind)
+	{
+		ApplyRebindToInputSettings(InMouseEvent.GetEffectingButton());
+		return FReply::Handled();
+	}
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+FText UT66SettingsScreen::KeyToText(const FKey& K)
+{
+	return K.IsValid() ? K.GetDisplayName() : FText::FromString(TEXT("-"));
+}
+
+bool UT66SettingsScreen::IsKeyboardMouseKey(const FKey& K)
+{
+	if (!K.IsValid()) return false;
+	if (K.IsMouseButton()) return true;
+	// Treat any non-gamepad, non-touch key as "keyboard/mouse" for our purposes.
+	return !K.IsGamepadKey() && !K.IsTouch();
+}
+
+FKey UT66SettingsScreen::FindActionKey(FName ActionName, const FKey& PreferredOldKey)
+{
+	if (PreferredOldKey.IsValid()) return PreferredOldKey;
+	if (const UInputSettings* Settings = UInputSettings::GetInputSettings())
+	{
+		const TArray<FInputActionKeyMapping>& M = Settings->GetActionMappings();
+		for (const FInputActionKeyMapping& A : M)
+		{
+			if (A.ActionName == ActionName && IsKeyboardMouseKey(A.Key))
+			{
+				return A.Key;
+			}
+		}
+	}
+	return FKey();
+}
+
+FKey UT66SettingsScreen::FindAxisKey(FName AxisName, float Scale, const FKey& PreferredOldKey)
+{
+	if (PreferredOldKey.IsValid()) return PreferredOldKey;
+	if (const UInputSettings* Settings = UInputSettings::GetInputSettings())
+	{
+		const TArray<FInputAxisKeyMapping>& M = Settings->GetAxisMappings();
+		for (const FInputAxisKeyMapping& A : M)
+		{
+			if (A.AxisName == AxisName && FMath::IsNearlyEqual(A.Scale, Scale) && IsKeyboardMouseKey(A.Key))
+			{
+				return A.Key;
+			}
+		}
+	}
+	return FKey();
+}
+
+FReply UT66SettingsScreen::BeginRebindAction(FName ActionName, const FKey& OldKey, TSharedPtr<STextBlock> KeyText)
+{
+	bWaitingForRebind = true;
+	Pending = {};
+	Pending.bIsAxis = false;
+	Pending.Name = ActionName;
+	Pending.Scale = 1.f;
+	Pending.OldKey = OldKey;
+	Pending.KeyText = KeyText;
+	if (RebindStatusText.IsValid())
+	{
+		RebindStatusText->SetText(FText::FromString(FString::Printf(TEXT("Press a key for %s (Esc cancels)"), *ActionName.ToString())));
+	}
+	return FReply::Handled();
+}
+
+FReply UT66SettingsScreen::BeginRebindAxis(FName AxisName, float Scale, const FKey& OldKey, TSharedPtr<STextBlock> KeyText)
+{
+	bWaitingForRebind = true;
+	Pending = {};
+	Pending.bIsAxis = true;
+	Pending.Name = AxisName;
+	Pending.Scale = Scale;
+	Pending.OldKey = OldKey;
+	Pending.KeyText = KeyText;
+	if (RebindStatusText.IsValid())
+	{
+		RebindStatusText->SetText(FText::FromString(FString::Printf(TEXT("Press a key for %s (Esc cancels)"), *AxisName.ToString())));
+	}
+	return FReply::Handled();
+}
+
+void UT66SettingsScreen::ApplyRebindToInputSettings(const FKey& NewKey)
+{
+	if (!bWaitingForRebind) return;
+	bWaitingForRebind = false;
+	if (!NewKey.IsValid()) return;
+
+	UInputSettings* Settings = UInputSettings::GetInputSettings();
+	if (!Settings) return;
+
+	if (Pending.bIsAxis)
+	{
+		if (Pending.OldKey.IsValid())
+		{
+			Settings->RemoveAxisMapping(FInputAxisKeyMapping(Pending.Name, Pending.OldKey, Pending.Scale));
+		}
+		Settings->AddAxisMapping(FInputAxisKeyMapping(Pending.Name, NewKey, Pending.Scale));
+	}
+	else
+	{
+		if (Pending.OldKey.IsValid())
+		{
+			Settings->RemoveActionMapping(FInputActionKeyMapping(Pending.Name, Pending.OldKey));
+		}
+		Settings->AddActionMapping(FInputActionKeyMapping(Pending.Name, NewKey));
+	}
+
+	Settings->SaveKeyMappings();
+	Settings->SaveConfig();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (PC->PlayerInput) PC->PlayerInput->ForceRebuildingKeyMaps(true);
+		}
+	}
+
+	if (Pending.KeyText.IsValid())
+	{
+		Pending.KeyText->SetText(KeyToText(NewKey));
+	}
+	if (RebindStatusText.IsValid())
+	{
+		RebindStatusText->SetText(FText::FromString(TEXT("Rebind saved.")));
+	}
+}
+
+void UT66SettingsScreen::ClearBindingInInputSettings()
+{
+	UInputSettings* Settings = UInputSettings::GetInputSettings();
+	if (!Settings) return;
+
+	if (Pending.bIsAxis)
+	{
+		if (Pending.OldKey.IsValid())
+		{
+			Settings->RemoveAxisMapping(FInputAxisKeyMapping(Pending.Name, Pending.OldKey, Pending.Scale));
+		}
+	}
+	else
+	{
+		if (Pending.OldKey.IsValid())
+		{
+			Settings->RemoveActionMapping(FInputActionKeyMapping(Pending.Name, Pending.OldKey));
+		}
+	}
+
+	Settings->SaveKeyMappings();
+	Settings->SaveConfig();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (PC->PlayerInput) PC->PlayerInput->ForceRebuildingKeyMaps(true);
+		}
+	}
+	if (Pending.KeyText.IsValid())
+	{
+		Pending.KeyText->SetText(FText::FromString(TEXT("-")));
+	}
 }
 
 TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
@@ -343,44 +540,48 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 
 TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 {
-	auto MakeBindingRow = [](const FText& Action, const FText& Primary, const FText& Secondary) -> TSharedRef<SWidget>
+	auto MakeRow = [this](const FText& Label, bool bAxis, FName Name, float Scale = 1.f) -> TSharedRef<SWidget>
 	{
+		const FKey OldKey = bAxis ? FindAxisKey(Name, Scale, FKey()) : FindActionKey(Name, FKey());
+		TSharedPtr<STextBlock> KeyText;
+
 		return SNew(SBorder)
 			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
 			.Padding(FMargin(15.0f, 10.0f))
 			[
 				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().FillWidth(0.35f).VAlign(VAlign_Center)
+				+ SHorizontalBox::Slot().FillWidth(0.45f).VAlign(VAlign_Center)
 				[
-					SNew(STextBlock).Text(Action)
+					SNew(STextBlock).Text(Label)
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
 					.ColorAndOpacity(FLinearColor::White)
 				]
-				+ SHorizontalBox::Slot().FillWidth(0.25f).Padding(5.0f, 0.0f)
+				+ SHorizontalBox::Slot().FillWidth(0.20f).Padding(5.0f, 0.0f).VAlign(VAlign_Center)
 				[
-					SNew(SBox).HeightOverride(30.0f)
+					SNew(SBorder)
+					.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+					.Padding(FMargin(8.f, 4.f))
 					[
-						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
-						.HAlign(HAlign_Center).VAlign(VAlign_Center)
-						[
-							SNew(STextBlock).Text(Primary)
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-							.ColorAndOpacity(FLinearColor::White)
-						]
+						SAssignNew(KeyText, STextBlock)
+						.Text(KeyToText(OldKey))
+						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+						.ColorAndOpacity(FLinearColor::White)
 					]
 				]
-				+ SHorizontalBox::Slot().FillWidth(0.25f).Padding(5.0f, 0.0f)
+				+ SHorizontalBox::Slot().FillWidth(0.20f).Padding(5.0f, 0.0f)
 				[
 					SNew(SBox).HeightOverride(30.0f)
 					[
-						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
-						.HAlign(HAlign_Center).VAlign(VAlign_Center)
+						SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
+						.OnClicked_Lambda([this, bAxis, Name, Scale, OldKey, KeyText]()
+						{
+							return bAxis ? BeginRebindAxis(Name, Scale, OldKey, KeyText) : BeginRebindAction(Name, OldKey, KeyText);
+						})
+						.ButtonColorAndOpacity(FLinearColor(0.25f, 0.4f, 0.7f, 1.0f))
 						[
-							SNew(STextBlock).Text(Secondary)
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
+							SNew(STextBlock).Text(FText::FromString(TEXT("Rebind")))
+							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
+							.ColorAndOpacity(FLinearColor::White)
 						]
 					]
 				]
@@ -389,6 +590,17 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					SNew(SBox).HeightOverride(30.0f)
 					[
 						SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
+						.OnClicked_Lambda([this, bAxis, Name, Scale, OldKey, KeyText]()
+						{
+							Pending = {};
+							Pending.bIsAxis = bAxis;
+							Pending.Name = Name;
+							Pending.Scale = Scale;
+							Pending.OldKey = OldKey;
+							Pending.KeyText = KeyText;
+							ClearBindingInInputSettings();
+							return FReply::Handled();
+						})
 						.ButtonColorAndOpacity(FLinearColor(0.3f, 0.2f, 0.2f, 1.0f))
 						[
 							SNew(STextBlock).Text(FText::FromString(TEXT("Clear")))
@@ -401,87 +613,45 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 	};
 
 	return SNew(SVerticalBox)
-		// Sub-tabs for K&M vs Controller
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 15.0f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth()
-			[
-				SNew(SBox).WidthOverride(160.0f).HeightOverride(35.0f)
-				[
-					SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-					.ButtonColorAndOpacity(FLinearColor(0.25f, 0.4f, 0.7f, 1.0f))
-					[
-						SNew(STextBlock).Text(FText::FromString(TEXT("Keyboard & Mouse")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
-						.ColorAndOpacity(FLinearColor::White)
-					]
-				]
-			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f, 0.0f, 0.0f)
-			[
-				SNew(SBox).WidthOverride(100.0f).HeightOverride(35.0f)
-				[
-					SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-					.ButtonColorAndOpacity(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
-					[
-						SNew(STextBlock).Text(FText::FromString(TEXT("Controller")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
-						.ColorAndOpacity(FLinearColor::White)
-					]
-				]
-			]
+			SAssignNew(RebindStatusText, STextBlock)
+			.Text(FText::FromString(TEXT("Click Rebind, then press a key (Esc cancels).")))
+			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+			.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
 		]
-		// Bindings list
 		+ SVerticalBox::Slot().FillHeight(1.0f)
 		[
 			SNew(SScrollBox)
 			+ SScrollBox::Slot()
 			[
 				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Move Forward")), FText::FromString(TEXT("W")), FText::FromString(TEXT("-")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Move Back")), FText::FromString(TEXT("S")), FText::FromString(TEXT("-")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Move Left")), FText::FromString(TEXT("A")), FText::FromString(TEXT("-")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Move Right")), FText::FromString(TEXT("D")), FText::FromString(TEXT("-")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Dash / Evade")), FText::FromString(TEXT("Space")), FText::FromString(TEXT("Shift")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Ultimate")), FText::FromString(TEXT("RMB")), FText::FromString(TEXT("Q")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Interact")), FText::FromString(TEXT("E")), FText::FromString(TEXT("-")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Open Map")), FText::FromString(TEXT("M")), FText::FromString(TEXT("-")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Toggle HUD")), FText::FromString(TEXT("Tab")), FText::FromString(TEXT("-")))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 4.0f)
-				[
-					MakeBindingRow(FText::FromString(TEXT("Pause Menu")), FText::FromString(TEXT("Esc")), FText::FromString(TEXT("-")))
-				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Move Forward")), true, FName(TEXT("MoveForward")), 1.f) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Move Back")), true, FName(TEXT("MoveForward")), -1.f) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Move Left")), true, FName(TEXT("MoveRight")), -1.f) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Move Right")), true, FName(TEXT("MoveRight")), 1.f) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Jump")), false, FName(TEXT("Jump"))) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Interact")), false, FName(TEXT("Interact"))) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Pause Menu (primary)")), false, FName(TEXT("Escape"))) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Pause Menu (secondary)")), false, FName(TEXT("Pause"))) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Toggle HUD")), false, FName(TEXT("ToggleHUD"))) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Dash")), false, FName(TEXT("Dash"))) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Attack Lock")), false, FName(TEXT("AttackLock"))) ]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[ MakeRow(FText::FromString(TEXT("Attack Unlock")), false, FName(TEXT("AttackUnlock"))) ]
 			]
 		]
-		// Restore Defaults button
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.0f, 15.0f, 0.0f, 0.0f)
 		[
 			SNew(SBox).WidthOverride(160.0f).HeightOverride(40.0f)
@@ -699,6 +869,7 @@ void UT66SettingsScreen::OnScreenActivated_Implementation()
 	Super::OnScreenActivated_Implementation();
 	CurrentTab = ET66SettingsTab::Gameplay;
 	OnTabChanged(CurrentTab);
+	SetKeyboardFocus();
 }
 
 void UT66SettingsScreen::SwitchToTab(ET66SettingsTab Tab)
@@ -720,4 +891,14 @@ void UT66SettingsScreen::OnApplyGraphicsClicked()
 void UT66SettingsScreen::OnCloseClicked()
 {
 	CloseModal();
+
+	// In gameplay, Settings is opened from Pause Menu. Our UIManager is single-modal, so showing Settings
+	// replaces Pause Menu. When Settings closes, re-open Pause Menu so the player can resume/unpause.
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (PC->IsGameplayLevel() && PC->IsPaused())
+		{
+			ShowModal(ET66ScreenType::PauseMenu);
+		}
+	}
 }

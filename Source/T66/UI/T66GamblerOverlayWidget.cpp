@@ -2,6 +2,7 @@
 
 #include "UI/T66GamblerOverlayWidget.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -17,6 +18,7 @@
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66PlayerController.h"
 
 void UT66GamblerOverlayWidget::SetWinGoldAmount(int32 InAmount)
 {
@@ -37,15 +39,24 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	BorrowAmount = FMath::Max(0, BorrowAmount);
 	PaybackAmount = FMath::Max(0, PaybackAmount);
 
-	auto MakeTitle = [](const FString& Text) -> TSharedRef<SWidget>
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+		}
+	}
+
+	auto MakeTitle = [](const FText& Text) -> TSharedRef<SWidget>
 	{
 		return SNew(STextBlock)
-			.Text(FText::FromString(Text))
+			.Text(Text)
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 36))
 			.ColorAndOpacity(FLinearColor::White);
 	};
 
-	auto MakeButton = [](const FString& Text, const FOnClicked& OnClicked, const FLinearColor& Bg = FLinearColor(0.2f, 0.2f, 0.28f, 1.f)) -> TSharedRef<SWidget>
+	auto MakeButton = [](const FText& Text, const FOnClicked& OnClicked, const FLinearColor& Bg = FLinearColor(0.2f, 0.2f, 0.28f, 1.f)) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
 			.WidthOverride(420.f)
@@ -59,7 +70,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(Text))
+					.Text(Text)
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -69,16 +80,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> DialoguePage =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 20.f)
-		[ MakeTitle(TEXT("GAMBLER")) ]
+		[ MakeTitle(Loc ? Loc->GetText_Gambler() : FText::FromString(TEXT("GAMBLER"))) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f)
 		[
 			SNew(STextBlock)
-			.Text(FText::FromString(TEXT("What do you want?")))
+			.Text(Loc ? Loc->GetText_GamblerDialoguePrompt() : FText::FromString(TEXT("What do you want?")))
 			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
 			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-		[ MakeButton(TEXT("LET ME GAMBLE"), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueGamble), FLinearColor(0.7f, 0.55f, 0.1f, 1.f)) ]
+		[ MakeButton(Loc ? Loc->GetText_LetMeGamble() : FText::FromString(TEXT("LET ME GAMBLE")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueGamble), FLinearColor(0.7f, 0.55f, 0.1f, 1.f)) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
 			SNew(SBox)
@@ -94,7 +105,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("TELEPORT ME TO YOUR BROTHER")))
+					.Text(Loc ? Loc->GetText_TeleportMeToYourBrother() : FText::FromString(TEXT("TELEPORT ME TO YOUR BROTHER")))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -104,7 +115,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> CasinoPage =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 18.f, 0.f, 14.f)
-		[ MakeTitle(TEXT("CASINO")) ]
+		[ MakeTitle(Loc ? Loc->GetText_Casino() : FText::FromString(TEXT("CASINO"))) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
 			SNew(SHorizontalBox)
@@ -120,7 +131,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("BANK")))
+						.Text(Loc ? Loc->GetText_Bank() : FText::FromString(TEXT("BANK")))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 						.ColorAndOpacity(FLinearColor::White)
 					]
@@ -128,7 +139,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-						[ SNew(STextBlock).Text(FText::FromString(TEXT("Bet"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Bet() : FText::FromString(TEXT("Bet"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SAssignNew(GambleAmountSpin, SSpinBox<int32>)
@@ -140,14 +151,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						[
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGambleMax))
-							[ SNew(STextBlock).Text(FText::FromString(TEXT("MAX"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Max() : FText::FromString(TEXT("MAX"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-						[ SNew(STextBlock).Text(FText::FromString(TEXT("Borrow"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("Borrow"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
@@ -160,14 +171,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBorrowClicked))
 							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
-							[ SNew(STextBlock).Text(FText::FromString(TEXT("BORROW"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("BORROW"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-						[ SNew(STextBlock).Text(FText::FromString(TEXT("Payback"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("Payback"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
@@ -179,14 +190,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						[
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackMax))
-							[ SNew(STextBlock).Text(FText::FromString(TEXT("MAX"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Max() : FText::FromString(TEXT("MAX"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackClicked))
 							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
-							[ SNew(STextBlock).Text(FText::FromString(TEXT("PAYBACK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("PAYBACK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
 						]
 					]
 				]
@@ -203,16 +214,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("GAMES")))
+						.Text(Loc ? Loc->GetText_Games() : FText::FromString(TEXT("GAMES")))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SVerticalBox::Slot().AutoHeight()
-					[ MakeButton(TEXT("COIN FLIP"), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
+					[ MakeButton(Loc ? Loc->GetText_CoinFlip() : FText::FromString(TEXT("COIN FLIP")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
 					+ SVerticalBox::Slot().AutoHeight()
-					[ MakeButton(TEXT("ROCK PAPER SCISSORS"), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
+					[ MakeButton(Loc ? Loc->GetText_RockPaperScissors() : FText::FromString(TEXT("ROCK PAPER SCISSORS")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
 					+ SVerticalBox::Slot().AutoHeight()
-					[ MakeButton(TEXT("FIND THE BALL"), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
+					[ MakeButton(Loc ? Loc->GetText_FindTheBall() : FText::FromString(TEXT("FIND THE BALL")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
 				]
 			]
 		];
@@ -220,18 +231,18 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> CoinFlipPage =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 18.f)
-		[ MakeTitle(TEXT("COIN FLIP")) ]
+		[ MakeTitle(Loc ? Loc->GetText_CoinFlip() : FText::FromString(TEXT("COIN FLIP"))) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 		[
 			SNew(STextBlock)
-			.Text(FText::FromString(TEXT("Choose Heads or Tails.")))
+			.Text(Loc ? Loc->GetText_ChooseHeadsOrTails() : FText::FromString(TEXT("Choose Heads or Tails.")))
 			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
 			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SAssignNew(CoinFlipResultText, STextBlock)
-			.Text(FText::FromString(TEXT("Result: -")))
+			.Text(Loc ? Loc->GetText_ResultDash() : FText::FromString(TEXT("Result: -")))
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 			.ColorAndOpacity(FLinearColor::White)
 		]
@@ -244,7 +255,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipHeads))
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("HEADS")))
+					.Text(Loc ? Loc->GetText_Heads() : FText::FromString(TEXT("HEADS")))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -255,7 +266,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipTails))
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("TAILS")))
+					.Text(Loc ? Loc->GetText_Tails() : FText::FromString(TEXT("TAILS")))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -265,11 +276,11 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> RpsPage =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 18.f)
-		[ MakeTitle(TEXT("ROCK PAPER SCISSORS")) ]
+		[ MakeTitle(Loc ? Loc->GetText_RockPaperScissors() : FText::FromString(TEXT("ROCK PAPER SCISSORS"))) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SAssignNew(RpsResultText, STextBlock)
-			.Text(FText::FromString(TEXT("Pick one.")))
+			.Text(Loc ? Loc->GetText_PickOne() : FText::FromString(TEXT("Pick one.")))
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 			.ColorAndOpacity(FLinearColor::White)
 		]
@@ -280,37 +291,37 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(RpsRockButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsRock))
-				[ SNew(STextBlock).Text(FText::FromString(TEXT("ROCK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Rock() : FText::FromString(TEXT("ROCK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(RpsPaperButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsPaper))
-				[ SNew(STextBlock).Text(FText::FromString(TEXT("PAPER"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Paper() : FText::FromString(TEXT("PAPER"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(RpsScissorsButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsScissors))
-				[ SNew(STextBlock).Text(FText::FromString(TEXT("SCISSORS"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Scissors() : FText::FromString(TEXT("SCISSORS"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
 			]
 		];
 
 	TSharedRef<SWidget> FindBallPage =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 18.f)
-		[ MakeTitle(TEXT("FIND THE BALL")) ]
+		[ MakeTitle(Loc ? Loc->GetText_FindTheBall() : FText::FromString(TEXT("FIND THE BALL"))) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 		[
 			SNew(STextBlock)
-			.Text(FText::FromString(TEXT("Pick a cup.")))
+			.Text(Loc ? Loc->GetText_PickACup() : FText::FromString(TEXT("Pick a cup.")))
 			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
 			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SAssignNew(BallResultText, STextBlock)
-			.Text(FText::FromString(TEXT("Result: -")))
+			.Text(Loc ? Loc->GetText_ResultDash() : FText::FromString(TEXT("Result: -")))
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 			.ColorAndOpacity(FLinearColor::White)
 		]
@@ -321,19 +332,19 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(BallCup1Button, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBallCup1))
-				[ SNew(STextBlock).Text(FText::FromString(TEXT("CUP 1"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Cup(1) : FText::FromString(TEXT("CUP 1"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(BallCup2Button, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBallCup2))
-				[ SNew(STextBlock).Text(FText::FromString(TEXT("CUP 2"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Cup(2) : FText::FromString(TEXT("CUP 2"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(BallCup3Button, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBallCup3))
-				[ SNew(STextBlock).Text(FText::FromString(TEXT("CUP 3"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Cup(3) : FText::FromString(TEXT("CUP 3"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
 			]
 		];
 
@@ -354,7 +365,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					[
 						SNew(SButton)
 						.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBack))
-						[ SNew(STextBlock).Text(FText::FromString(TEXT("BACK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+					[ SNew(STextBlock).Text(Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 					[
@@ -366,14 +377,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
 						SAssignNew(GoldText, STextBlock)
-						.Text(FText::FromString(TEXT("Gold: 0")))
+					.Text(FText::GetEmpty())
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(14.f, 0.f, 0.f, 0.f)
 					[
 						SAssignNew(DebtText, STextBlock)
-						.Text(FText::FromString(TEXT("Owe: 0")))
+					.Text(FText::GetEmpty())
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 						.ColorAndOpacity(FLinearColor(0.95f, 0.15f, 0.15f, 1.f))
 					]
@@ -384,7 +395,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("ANGER")))
+					.Text(Loc ? Loc->GetText_Anger() : FText::FromString(TEXT("ANGER")))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 						.ColorAndOpacity(FLinearColor(1.f, 0.4f, 0.35f, 1.f))
 					]
@@ -452,14 +463,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(TEXT("Cheat?")))
+					.Text(Loc ? Loc->GetText_CheatPromptTitle() : FText::FromString(TEXT("Cheat?")))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(TEXT("Cheating increases Anger.")))
+					.Text(Loc ? Loc->GetText_CheatPromptBody() : FText::FromString(TEXT("Cheating increases Anger.")))
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 						]
@@ -476,7 +487,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatYes))
 									.ButtonColorAndOpacity(FLinearColor(0.85f, 0.2f, 0.15f, 1.f))
 									.HAlign(HAlign_Center).VAlign(VAlign_Center)
-									[ SNew(STextBlock).Text(FText::FromString(TEXT("YES"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+									[ SNew(STextBlock).Text(Loc ? Loc->GetText_Yes() : FText::FromString(TEXT("YES"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
 								]
 							]
 							+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
@@ -489,7 +500,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatNo))
 									.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
 									.HAlign(HAlign_Center).VAlign(VAlign_Center)
-									[ SNew(STextBlock).Text(FText::FromString(TEXT("NO"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+									[ SNew(STextBlock).Text(Loc ? Loc->GetText_No() : FText::FromString(TEXT("NO"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
 								]
 							]
 						]
@@ -539,7 +550,15 @@ FReply UT66GamblerOverlayWidget::OnDialogueTeleport()
 {
 	if (IsBossActive())
 	{
-		SetStatus(TEXT("Teleport disabled (boss encounter started)."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		UT66LocalizationSubsystem* Loc2 = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+			}
+		}
+		SetStatus(Loc2 ? Loc2->GetText_TeleportDisabledBossActive() : FText::FromString(TEXT("Teleport disabled (boss encounter started).")), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 		return FReply::Handled();
 	}
 	TeleportToVendor();
@@ -560,7 +579,7 @@ FReply UT66GamblerOverlayWidget::OnGambleMax()
 				{
 					GambleAmountSpin->SetValue(GambleAmount);
 				}
-				SetStatus(TEXT(""));
+				SetStatus(FText::GetEmpty());
 				RefreshTopBar();
 			}
 		}
@@ -572,7 +591,15 @@ FReply UT66GamblerOverlayWidget::OnBorrowClicked()
 {
 	if (BorrowAmount <= 0)
 	{
-		SetStatus(TEXT("Borrow amount must be > 0."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		UT66LocalizationSubsystem* Loc2 = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+			}
+		}
+		SetStatus(Loc2 ? Loc2->GetText_BorrowAmountMustBePositive() : FText::FromString(TEXT("Borrow amount must be > 0.")), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 		return FReply::Handled();
 	}
 	if (UWorld* World = GetWorld())
@@ -582,7 +609,9 @@ FReply UT66GamblerOverlayWidget::OnBorrowClicked()
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
 				RunState->BorrowGold(BorrowAmount);
-				SetStatus(FString::Printf(TEXT("Borrowed %d."), BorrowAmount), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
+				UT66LocalizationSubsystem* Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+				const FText Fmt = Loc2 ? Loc2->GetText_BorrowedAmountFormat() : FText::FromString(TEXT("Borrowed {0}."));
+				SetStatus(FText::Format(Fmt, FText::AsNumber(BorrowAmount)), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
 				RefreshTopBar();
 			}
 		}
@@ -603,7 +632,7 @@ FReply UT66GamblerOverlayWidget::OnPaybackMax()
 				{
 					PaybackAmountSpin->SetValue(PaybackAmount);
 				}
-				SetStatus(TEXT(""));
+				SetStatus(FText::GetEmpty());
 				RefreshTopBar();
 			}
 		}
@@ -615,7 +644,15 @@ FReply UT66GamblerOverlayWidget::OnPaybackClicked()
 {
 	if (PaybackAmount <= 0)
 	{
-		SetStatus(TEXT("Payback amount must be > 0."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		UT66LocalizationSubsystem* Loc2 = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+			}
+		}
+		SetStatus(Loc2 ? Loc2->GetText_PaybackAmountMustBePositive() : FText::FromString(TEXT("Payback amount must be > 0.")), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 		return FReply::Handled();
 	}
 	if (UWorld* World = GetWorld())
@@ -627,11 +664,14 @@ FReply UT66GamblerOverlayWidget::OnPaybackClicked()
 				const int32 Paid = RunState->PayDebt(PaybackAmount);
 				if (Paid <= 0)
 				{
-					SetStatus(TEXT("Not enough gold (or no debt)."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+					UT66LocalizationSubsystem* Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+					SetStatus(Loc2 ? Loc2->GetText_NotEnoughGoldOrNoDebt() : FText::FromString(TEXT("Not enough gold (or no debt).")), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 				}
 				else
 				{
-					SetStatus(FString::Printf(TEXT("Paid back %d."), Paid), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
+					UT66LocalizationSubsystem* Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+					const FText Fmt = Loc2 ? Loc2->GetText_PaidBackAmountFormat() : FText::FromString(TEXT("Paid back {0}."));
+					SetStatus(FText::Format(Fmt, FText::AsNumber(Paid)), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
 				}
 				RefreshTopBar();
 			}
@@ -672,13 +712,21 @@ void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 	if (!PageSwitcher.IsValid()) return;
 	PageSwitcher->SetActiveWidgetIndex(static_cast<int32>(Page));
 	bInputLocked = false;
-	SetStatus(TEXT(""));
+	SetStatus(FText::GetEmpty());
 	RefreshTopBar();
 
 	// Clear per-game result text when opening pages
-	if (Page == EGamblerPage::CoinFlip && CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(FText::FromString(TEXT("Result: -")));
-	if (Page == EGamblerPage::RockPaperScissors && RpsResultText.IsValid()) RpsResultText->SetText(FText::FromString(TEXT("Pick one.")));
-	if (Page == EGamblerPage::FindTheBall && BallResultText.IsValid()) BallResultText->SetText(FText::FromString(TEXT("Result: -")));
+	UT66LocalizationSubsystem* Loc2 = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+		}
+	}
+	if (Page == EGamblerPage::CoinFlip && CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(Loc2 ? Loc2->GetText_ResultDash() : FText::FromString(TEXT("Result: -")));
+	if (Page == EGamblerPage::RockPaperScissors && RpsResultText.IsValid()) RpsResultText->SetText(Loc2 ? Loc2->GetText_PickOne() : FText::FromString(TEXT("Pick one.")));
+	if (Page == EGamblerPage::FindTheBall && BallResultText.IsValid()) BallResultText->SetText(Loc2 ? Loc2->GetText_ResultDash() : FText::FromString(TEXT("Result: -")));
 }
 
 void UT66GamblerOverlayWidget::RefreshTopBar()
@@ -687,10 +735,12 @@ void UT66GamblerOverlayWidget::RefreshTopBar()
 	int32 Gold = 0;
 	int32 Debt = 0;
 	float Anger01 = 0.f;
+	UT66LocalizationSubsystem* Loc2 = nullptr;
 	if (UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GI = World->GetGameInstance())
 		{
+			Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
 				Gold = RunState->GetCurrentGold();
@@ -699,10 +749,12 @@ void UT66GamblerOverlayWidget::RefreshTopBar()
 			}
 		}
 	}
-	GoldText->SetText(FText::FromString(FString::Printf(TEXT("Gold: %d"), Gold)));
+	const FText GoldFmt = Loc2 ? Loc2->GetText_GoldFormat() : FText::FromString(TEXT("Gold: {0}"));
+	const FText OweFmt = Loc2 ? Loc2->GetText_OweFormat() : FText::FromString(TEXT("Owe: {0}"));
+	GoldText->SetText(FText::Format(GoldFmt, FText::AsNumber(Gold)));
 	if (DebtText.IsValid())
 	{
-		DebtText->SetText(FText::FromString(FString::Printf(TEXT("Owe: %d"), Debt)));
+		DebtText->SetText(FText::Format(OweFmt, FText::AsNumber(Debt)));
 	}
 	if (AngerFillBox.IsValid())
 	{
@@ -799,7 +851,15 @@ bool UT66GamblerOverlayWidget::TryPayToPlay()
 	if (bInputLocked) return false;
 	if (GambleAmount <= 0)
 	{
-		SetStatus(TEXT("Gamble amount must be > 0."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		UT66LocalizationSubsystem* Loc2 = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+			}
+		}
+		SetStatus(Loc2 ? Loc2->GetText_GambleAmountMustBePositive() : FText::FromString(TEXT("Gamble amount must be > 0.")), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 		return false;
 	}
 	if (UWorld* World = GetWorld())
@@ -810,7 +870,8 @@ bool UT66GamblerOverlayWidget::TryPayToPlay()
 			{
 				if (!RunState->TrySpendGold(GambleAmount))
 				{
-					SetStatus(TEXT("Not enough gold."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+					UT66LocalizationSubsystem* Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+					SetStatus(Loc2 ? Loc2->GetText_NotEnoughGold() : FText::FromString(TEXT("Not enough gold.")), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 					RefreshTopBar();
 					return false;
 				}
@@ -836,15 +897,6 @@ void UT66GamblerOverlayWidget::AwardWin()
 				RefreshTopBar();
 			}
 		}
-	}
-}
-
-void UT66GamblerOverlayWidget::SetStatus(const FString& Msg, const FLinearColor& Color)
-{
-	if (StatusText.IsValid())
-	{
-		StatusText->SetText(FText::FromString(Msg));
-		StatusText->SetColorAndOpacity(FSlateColor(Color));
 	}
 }
 
@@ -904,21 +956,23 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 	bPendingWin = true;
 	bPendingDraw = false;
 
+	UT66LocalizationSubsystem* Loc2 = RunState ? RunState->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+
 	// Force a win by forcing the "result" to match the player's choice.
 	switch (PendingRevealType)
 	{
 		case ERevealType::CoinFlip:
 			bPendingCoinFlipResultHeads = bPendingCoinFlipChoseHeads;
-			if (CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(FText::FromString(TEXT("Rolling...")));
+			if (CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : FText::FromString(TEXT("Rolling...")));
 			break;
 		case ERevealType::RockPaperScissors:
 			// Opponent choice that loses to player
 			PendingRpsOppChoice = (PendingRpsPlayerChoice + 2) % 3;
-			if (RpsResultText.IsValid()) RpsResultText->SetText(FText::FromString(TEXT("Rolling...")));
+			if (RpsResultText.IsValid()) RpsResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : FText::FromString(TEXT("Rolling...")));
 			break;
 		case ERevealType::FindTheBall:
 			PendingFindBallCorrectCup = PendingFindBallChosenCup;
-			if (BallResultText.IsValid()) BallResultText->SetText(FText::FromString(TEXT("Rolling...")));
+			if (BallResultText.IsValid()) BallResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : FText::FromString(TEXT("Rolling...")));
 			break;
 		default:
 			break;
@@ -939,6 +993,11 @@ FReply UT66GamblerOverlayWidget::OnCheatNo()
 	bPendingCheat = false;
 
 	UWorld* World = GetWorld();
+	UT66LocalizationSubsystem* Loc2 = nullptr;
+	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
+	{
+		Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+	}
 	bPendingDraw = false;
 
 	switch (PendingRevealType)
@@ -947,7 +1006,7 @@ FReply UT66GamblerOverlayWidget::OnCheatNo()
 		{
 			bPendingCoinFlipResultHeads = FMath::RandBool();
 			bPendingWin = (bPendingCoinFlipChoseHeads == bPendingCoinFlipResultHeads);
-			if (CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(FText::FromString(TEXT("Rolling...")));
+			if (CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : FText::FromString(TEXT("Rolling...")));
 			break;
 		}
 		case ERevealType::RockPaperScissors:
@@ -959,14 +1018,14 @@ FReply UT66GamblerOverlayWidget::OnCheatNo()
 			bPendingWin = (PendingRpsPlayerChoice == 0 && PendingRpsOppChoice == 2)
 				|| (PendingRpsPlayerChoice == 1 && PendingRpsOppChoice == 0)
 				|| (PendingRpsPlayerChoice == 2 && PendingRpsOppChoice == 1);
-			if (RpsResultText.IsValid()) RpsResultText->SetText(FText::FromString(TEXT("Rolling...")));
+			if (RpsResultText.IsValid()) RpsResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : FText::FromString(TEXT("Rolling...")));
 			break;
 		}
 		case ERevealType::FindTheBall:
 		{
 			PendingFindBallCorrectCup = FMath::RandRange(0, 2);
 			bPendingWin = (PendingFindBallChosenCup == PendingFindBallCorrectCup);
-			if (BallResultText.IsValid()) BallResultText->SetText(FText::FromString(TEXT("Rolling...")));
+			if (BallResultText.IsValid()) BallResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : FText::FromString(TEXT("Rolling...")));
 			break;
 		}
 		default:
@@ -984,27 +1043,32 @@ FReply UT66GamblerOverlayWidget::OnCheatNo()
 
 void UT66GamblerOverlayWidget::RevealPendingOutcome()
 {
-	const auto ChoiceStr = [](int32 C) -> const TCHAR*
+	UT66LocalizationSubsystem* Loc2 = nullptr;
+	if (UWorld* World = GetWorld())
 	{
-		switch (C)
+		if (UGameInstance* GI = World->GetGameInstance())
 		{
-			case 0: return TEXT("Rock");
-			case 1: return TEXT("Paper");
-			default: return TEXT("Scissors");
+			Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
 		}
-	};
+	}
 
 	switch (PendingRevealType)
 	{
 		case ERevealType::CoinFlip:
 		{
-			const FString ResultStr = bPendingCoinFlipResultHeads ? TEXT("Heads") : TEXT("Tails");
+			const FText ResultStr = bPendingCoinFlipResultHeads
+				? (Loc2 ? Loc2->GetText_Heads() : FText::FromString(TEXT("Heads")))
+				: (Loc2 ? Loc2->GetText_Tails() : FText::FromString(TEXT("Tails")));
 			if (bPendingWin) AwardWin();
 			if (CoinFlipResultText.IsValid())
 			{
-				CoinFlipResultText->SetText(FText::FromString(FString::Printf(TEXT("Result: %s — %s"), *ResultStr, bPendingWin ? TEXT("WIN") : TEXT("LOSE"))));
+				const FText Outcome = bPendingWin ? (Loc2 ? Loc2->GetText_Win() : FText::FromString(TEXT("WIN"))) : (Loc2 ? Loc2->GetText_Lose() : FText::FromString(TEXT("LOSE")));
+				const FText Fmt = Loc2 ? Loc2->GetText_CoinFlipResultFormat() : FText::FromString(TEXT("Result: {0} — {1}"));
+				CoinFlipResultText->SetText(FText::Format(Fmt, ResultStr, Outcome));
 			}
-			SetStatus(bPendingWin ? FString::Printf(TEXT("WIN (+%d)"), GambleAmount) : TEXT("LOSE"),
+			const FText WinFmt = Loc2 ? Loc2->GetText_WinPlusAmountFormat() : FText::FromString(TEXT("WIN (+{0})"));
+			const FText Status = bPendingWin ? FText::Format(WinFmt, FText::AsNumber(GambleAmount)) : (Loc2 ? Loc2->GetText_Lose() : FText::FromString(TEXT("LOSE")));
+			SetStatus(Status,
 				bPendingWin ? FLinearColor(0.3f, 1.f, 0.4f, 1.f) : FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 			break;
 		}
@@ -1013,10 +1077,19 @@ void UT66GamblerOverlayWidget::RevealPendingOutcome()
 			if (bPendingWin) AwardWin();
 			if (RpsResultText.IsValid())
 			{
-				const TCHAR* Outcome = bPendingWin ? TEXT("WIN") : TEXT("LOSE");
-				RpsResultText->SetText(FText::FromString(FString::Printf(TEXT("You: %s  |  Gambler: %s  —  %s"), ChoiceStr(PendingRpsPlayerChoice), ChoiceStr(PendingRpsOppChoice), Outcome)));
+				const FText YouChoice = (PendingRpsPlayerChoice == 0) ? (Loc2 ? Loc2->GetText_Rock() : FText::FromString(TEXT("Rock")))
+					: (PendingRpsPlayerChoice == 1) ? (Loc2 ? Loc2->GetText_Paper() : FText::FromString(TEXT("Paper")))
+					: (Loc2 ? Loc2->GetText_Scissors() : FText::FromString(TEXT("Scissors")));
+				const FText OppChoice = (PendingRpsOppChoice == 0) ? (Loc2 ? Loc2->GetText_Rock() : FText::FromString(TEXT("Rock")))
+					: (PendingRpsOppChoice == 1) ? (Loc2 ? Loc2->GetText_Paper() : FText::FromString(TEXT("Paper")))
+					: (Loc2 ? Loc2->GetText_Scissors() : FText::FromString(TEXT("Scissors")));
+				const FText Outcome = bPendingWin ? (Loc2 ? Loc2->GetText_Win() : FText::FromString(TEXT("WIN"))) : (Loc2 ? Loc2->GetText_Lose() : FText::FromString(TEXT("LOSE")));
+				const FText Fmt = Loc2 ? Loc2->GetText_RpsResultFormat() : FText::FromString(TEXT("You: {0}  |  Gambler: {1}  —  {2}"));
+				RpsResultText->SetText(FText::Format(Fmt, YouChoice, OppChoice, Outcome));
 			}
-			SetStatus(bPendingWin ? FString::Printf(TEXT("WIN (+%d)"), GambleAmount) : TEXT("LOSE"),
+			const FText WinFmt = Loc2 ? Loc2->GetText_WinPlusAmountFormat() : FText::FromString(TEXT("WIN (+{0})"));
+			const FText Status = bPendingWin ? FText::Format(WinFmt, FText::AsNumber(GambleAmount)) : (Loc2 ? Loc2->GetText_Lose() : FText::FromString(TEXT("LOSE")));
+			SetStatus(Status,
 				bPendingWin ? FLinearColor(0.3f, 1.f, 0.4f, 1.f) : FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 			break;
 		}
@@ -1025,9 +1098,14 @@ void UT66GamblerOverlayWidget::RevealPendingOutcome()
 			if (bPendingWin) AwardWin();
 			if (BallResultText.IsValid())
 			{
-				BallResultText->SetText(FText::FromString(FString::Printf(TEXT("Ball was under CUP %d — %s"), PendingFindBallCorrectCup + 1, bPendingWin ? TEXT("WIN") : TEXT("LOSE"))));
+				const FText Cup = Loc2 ? Loc2->GetText_Cup(PendingFindBallCorrectCup + 1) : FText::FromString(FString::Printf(TEXT("CUP %d"), PendingFindBallCorrectCup + 1));
+				const FText Outcome = bPendingWin ? (Loc2 ? Loc2->GetText_Win() : FText::FromString(TEXT("WIN"))) : (Loc2 ? Loc2->GetText_Lose() : FText::FromString(TEXT("LOSE")));
+				const FText Fmt = Loc2 ? Loc2->GetText_FindBallResultFormat() : FText::FromString(TEXT("Ball was under {0} — {1}"));
+				BallResultText->SetText(FText::Format(Fmt, Cup, Outcome));
 			}
-			SetStatus(bPendingWin ? FString::Printf(TEXT("WIN (+%d)"), GambleAmount) : TEXT("LOSE"),
+			const FText WinFmt = Loc2 ? Loc2->GetText_WinPlusAmountFormat() : FText::FromString(TEXT("WIN (+{0})"));
+			const FText Status = bPendingWin ? FText::Format(WinFmt, FText::AsNumber(GambleAmount)) : (Loc2 ? Loc2->GetText_Lose() : FText::FromString(TEXT("LOSE")));
+			SetStatus(Status,
 				bPendingWin ? FLinearColor(0.3f, 1.f, 0.4f, 1.f) : FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 			break;
 		}
@@ -1070,11 +1148,18 @@ void UT66GamblerOverlayWidget::CloseOverlay()
 	HideCheatPrompt();
 
 	RemoveFromParent();
-	if (APlayerController* PC = GetOwningPlayer())
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->bShowMouseCursor = false;
+		PC->RestoreGameplayInputMode();
+	}
+}
+
+void UT66GamblerOverlayWidget::SetStatus(const FText& Msg, const FLinearColor& Color)
+{
+	if (StatusText.IsValid())
+	{
+		StatusText->SetText(Msg);
+		StatusText->SetColorAndOpacity(FSlateColor(Color));
 	}
 }
 

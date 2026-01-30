@@ -10,6 +10,7 @@ class UT66RunStateSubsystem;
 class STextBlock;
 class SBorder;
 class SBox;
+class AT66LootBagPickup;
 
 /**
  * In-run HUD: hearts (5 icons), gold, toggleable inventory bar (1x5) and minimap placeholder.
@@ -43,8 +44,12 @@ protected:
 	TSharedPtr<SBox> BossBarContainerBox;
 	TSharedPtr<SBox> BossBarFillBox;
 	TSharedPtr<STextBlock> BossBarText;
+	TSharedPtr<SBox> LootPromptBox;
+	TSharedPtr<SBorder> LootPromptBorder;
+	TSharedPtr<STextBlock> LootPromptText;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
+	TArray<TSharedPtr<SBorder>> IdolSlotBorders;
 	TSharedPtr<SBorder> PortraitBorder;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TSharedPtr<SBox> InventoryPanelBox;

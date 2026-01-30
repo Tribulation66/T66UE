@@ -43,7 +43,9 @@ AT66HeroBase::AT66HeroBase()
 	
 	PlaceholderMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderMesh"));
 	PlaceholderMesh->SetupAttachment(RootComponent);
-	PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	// Align primitive mesh to ground when capsule is grounded:
+	// capsule half-height=88, cube/cylinder half-height=50 => relative Z = 50 - 88 = -38.
+	PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, -38.f));
 	PlaceholderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // Capsule handles collision
 
 	// Cache mesh assets in constructor
@@ -61,7 +63,7 @@ AT66HeroBase::AT66HeroBase()
 	
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
-		Movement->MaxWalkSpeed = 700.f;
+		Movement->MaxWalkSpeed = 1200.f;
 		Movement->BrakingDecelerationWalking = 2048.f;
 		Movement->JumpZVelocity = 500.f;
 		Movement->AirControl = 0.35f;
@@ -301,4 +303,31 @@ void AT66HeroBase::SetPreviewMode(bool bPreview)
 			Movement->SetMovementMode(MOVE_Walking);
 		}
 	}
+}
+
+void AT66HeroBase::DashForward()
+{
+	if (bIsPreviewMode) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	const float Now = static_cast<float>(World->GetTimeSeconds());
+	float Cooldown = DashCooldownSeconds;
+	if (UT66RunStateSubsystem* RunState = World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>())
+	{
+		Cooldown *= RunState->GetDashCooldownMultiplier();
+	}
+	Cooldown = FMath::Clamp(Cooldown, 0.05f, 10.f);
+	if (Now - LastDashTime < Cooldown) return;
+	LastDashTime = Now;
+
+	// Dash in facing direction.
+	FVector Dir = GetActorForwardVector();
+	Dir.Z = 0.f;
+	if (!Dir.Normalize())
+	{
+		Dir = FVector(1.f, 0.f, 0.f);
+	}
+
+	LaunchCharacter(Dir * DashStrength, true, true);
 }

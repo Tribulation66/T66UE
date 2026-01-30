@@ -20,10 +20,10 @@ public:
 	AT66EnemyBase();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-	int32 MaxHP = 50;
+	int32 MaxHP = 100;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Combat")
-	int32 CurrentHP = 50;
+	int32 CurrentHP = 100;
 
 	/** Touch damage to player in hearts (scaled by difficulty). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
@@ -47,11 +47,18 @@ public:
 
 	/** Apply damage from hero. Returns true if enemy died. */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	bool TakeDamageFromHero(int32 Damage);
+	virtual bool TakeDamageFromHero(int32 Damage);
+
+	/** If true, this enemy prefers to flee from the hero (used by Leprechaun). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
+	bool bRunAwayFromPlayer = false;
 
 	/** Refresh health bar display (call when HP changes) */
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void UpdateHealthBar();
+
+	/** Show/hide the lock indicator on this enemy's health bar. */
+	void SetLockedIndicator(bool bLocked);
 
 	/** Apply difficulty tier (Tier 0 = base; Tier 1 doubles, etc). */
 	void ApplyDifficultyTier(int32 Tier);
@@ -61,7 +68,7 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Called when HP reaches 0: notify director, spawn pickup, destroy */
-	void OnDeath();
+	virtual void OnDeath();
 
 	UFUNCTION()
 	void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -72,6 +79,12 @@ protected:
 	static constexpr float TouchDamageCooldown = 0.5f;
 
 private:
+	// Safety/perf: avoid per-enemy per-frame scans for safe zones.
+	float SafeZoneCheckAccumSeconds = 0.f;
+	float SafeZoneCheckIntervalSeconds = 0.25f;
+	bool bCachedInsideSafeZone = false;
+	FVector CachedSafeZoneEscapeDir = FVector::ZeroVector;
+
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseTouchDamageHearts = 0;

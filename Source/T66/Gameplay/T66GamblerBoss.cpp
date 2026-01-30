@@ -21,7 +21,9 @@ AT66GamblerBoss::AT66GamblerBoss()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -40.f));
+	// Align primitive mesh to ground when capsule is grounded:
+	// capsule half-height~88, sphere half-height=50*4=200 => relative Z = 200 - 88 = 112.
+	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 112.f));
 
 	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
 	{

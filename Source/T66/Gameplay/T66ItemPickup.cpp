@@ -12,6 +12,9 @@
 AT66ItemPickup::AT66ItemPickup()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	// Safety: pickups should not live forever (prevents unbounded actor accumulation).
+	// Kept intentionally generous so normal play is unaffected.
+	InitialLifeSpan = 300.0f;
 
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	SphereComponent->SetSphereRadius(80.f);

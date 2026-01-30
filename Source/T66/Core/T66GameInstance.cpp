@@ -90,6 +90,109 @@ UDataTable* UT66GameInstance::GetItemsDataTable()
 	return CachedItemsDataTable;
 }
 
+void UT66GameInstance::EnsureCachedItemIDs()
+{
+	if (bCachedItemIDsInitialized)
+	{
+		return;
+	}
+
+	bCachedItemIDsInitialized = true;
+	CachedItemIDs.Reset();
+
+	if (UDataTable* ItemsDT = GetItemsDataTable())
+	{
+		CachedItemIDs = ItemsDT->GetRowNames();
+	}
+
+	// Fallback (keeps game functional even if DT isn't wired yet).
+	if (CachedItemIDs.Num() == 0)
+	{
+		CachedItemIDs.Add(FName(TEXT("Item_01")));
+		CachedItemIDs.Add(FName(TEXT("Item_02")));
+		CachedItemIDs.Add(FName(TEXT("Item_03")));
+		CachedItemIDs.Add(FName(TEXT("Item_04")));
+	}
+}
+
+void UT66GameInstance::EnsureCachedItemIDsByRarity()
+{
+	if (bCachedItemIDsByRarityInitialized)
+	{
+		return;
+	}
+	bCachedItemIDsByRarityInitialized = true;
+
+	CachedItemIDs_Black.Reset();
+	CachedItemIDs_Red.Reset();
+	CachedItemIDs_Yellow.Reset();
+	CachedItemIDs_White.Reset();
+
+	EnsureCachedItemIDs();
+
+	for (const FName& ItemID : CachedItemIDs)
+	{
+		if (ItemID.IsNone()) continue;
+
+		FItemData D;
+		if (GetItemData(ItemID, D))
+		{
+			switch (D.ItemRarity)
+			{
+				case ET66ItemRarity::Black: CachedItemIDs_Black.Add(ItemID); break;
+				case ET66ItemRarity::Red: CachedItemIDs_Red.Add(ItemID); break;
+				case ET66ItemRarity::Yellow: CachedItemIDs_Yellow.Add(ItemID); break;
+				case ET66ItemRarity::White: CachedItemIDs_White.Add(ItemID); break;
+				default: break;
+			}
+		}
+		else
+		{
+			// Safe fallback mapping for early project bootstraps.
+			if (ItemID == TEXT("Item_01")) CachedItemIDs_Black.Add(ItemID);
+			else if (ItemID == TEXT("Item_02")) CachedItemIDs_Red.Add(ItemID);
+			else if (ItemID == TEXT("Item_03")) CachedItemIDs_Yellow.Add(ItemID);
+			else if (ItemID == TEXT("Item_04")) CachedItemIDs_White.Add(ItemID);
+		}
+	}
+
+	// If any pool is empty, fall back to "all items" so the game never stalls.
+	if (CachedItemIDs_Black.Num() == 0) CachedItemIDs_Black = CachedItemIDs;
+	if (CachedItemIDs_Red.Num() == 0) CachedItemIDs_Red = CachedItemIDs;
+	if (CachedItemIDs_Yellow.Num() == 0) CachedItemIDs_Yellow = CachedItemIDs;
+	if (CachedItemIDs_White.Num() == 0) CachedItemIDs_White = CachedItemIDs;
+}
+
+FName UT66GameInstance::GetRandomItemID()
+{
+	EnsureCachedItemIDs();
+	if (CachedItemIDs.Num() <= 0)
+	{
+		return FName(TEXT("Item_01"));
+	}
+	return CachedItemIDs[FMath::RandRange(0, CachedItemIDs.Num() - 1)];
+}
+
+FName UT66GameInstance::GetRandomItemIDForLootRarity(ET66Rarity LootRarity)
+{
+	EnsureCachedItemIDsByRarity();
+	const TArray<FName>* Pool = &CachedItemIDs;
+	switch (LootRarity)
+	{
+		case ET66Rarity::Black: Pool = &CachedItemIDs_Black; break;
+		case ET66Rarity::Red: Pool = &CachedItemIDs_Red; break;
+		case ET66Rarity::Yellow: Pool = &CachedItemIDs_Yellow; break;
+		case ET66Rarity::White: Pool = &CachedItemIDs_White; break;
+		default: break;
+	}
+
+	if (!Pool || Pool->Num() <= 0)
+	{
+		return GetRandomItemID();
+	}
+	return (*Pool)[FMath::RandRange(0, Pool->Num() - 1)];
+}
+
 UDataTable* UT66GameInstance::GetBossesDataTable()
 {
 	if (!CachedBossesDataTable && !BossesDataTable.IsNull())

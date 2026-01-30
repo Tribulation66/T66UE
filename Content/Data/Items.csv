@@ -1,4 +1,5 @@
----,ItemID,PlaceholderColor,SellValueGold
-Item_01,Item_01,"(R=0.9,G=0.3,B=0.2,A=1.0)",1
-Item_02,Item_02,"(R=0.2,G=0.7,B=0.3,A=1.0)",10
-Item_03,Item_03,"(R=0.2,G=0.4,B=0.9,A=1.0)",100
+---,ItemID,ItemRarity,PlaceholderColor,BuyValueGold,SellValueGold,PowerGivenPercent,EffectType,EffectMagnitude,EffectLine1,EffectLine2,EffectLine3
+Item_01,Item_01,Black,"(R=0.9,G=0.3,B=0.2,A=1.0)",25,10,5,BonusDamagePct,10,"Damage Increase (Basic)","+10% auto-attack damage.",""
+Item_02,Item_02,Red,"(R=0.2,G=0.7,B=0.3,A=1.0)",60,25,7.5,BonusAttackSpeedPct,15,"Attack Speed Increase (Great)","+15% attack speed.",""
+Item_03,Item_03,Yellow,"(R=0.2,G=0.4,B=0.9,A=1.0)",120,50,10,DashCooldownReductionPct,25,"Dash Cooldown Reduction (Hyper)","-25% dash cooldown.",""
+Item_04,Item_04,White,"(R=0.95,G=0.95,B=0.98,A=1.0)",0,0,20,BonusDamagePct,50,"WHITE ITEM (Prototype)","+50% damage (v0).","Loot Bag only."

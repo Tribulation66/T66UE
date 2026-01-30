@@ -3,11 +3,13 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
-#include "Gameplay/T66ItemPickup.h"
+#include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66Rarity.h"
+#include "UI/T66EnemyHealthBarWidget.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -40,7 +42,9 @@ AT66EnemyBase::AT66EnemyBase()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
+	// Align primitive mesh to ground when capsule is grounded:
+	// capsule half-height~88, cylinder half-height=50 => relative Z = 50 - 88 = -38.
+	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -38.f));
 	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	if (Cylinder)
 	{
@@ -55,8 +59,9 @@ AT66EnemyBase::AT66EnemyBase()
 
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
 	HealthBarWidget->SetupAttachment(RootComponent);
-	HealthBarWidget->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	HealthBarWidget->SetRelativeLocation(FVector(0.f, 0.f, 155.f));
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	HealthBarWidget->SetDrawAtDesiredSize(true);
 	HealthBarWidget->SetDrawSize(FVector2D(120.f, 12.f));
 }
 
@@ -71,6 +76,13 @@ void AT66EnemyBase::BeginPlay()
 	}
 	// Ensure HP is valid on spawn (in case difficulty scaled before BeginPlay).
 	CurrentHP = FMath::Clamp(CurrentHP, 1, MaxHP);
+
+	// Ensure the widget exists and is the correct class.
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetWidgetClass(UT66EnemyHealthBarWidget::StaticClass());
+		HealthBarWidget->InitWidget();
+	}
 	UpdateHealthBar();
 
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
@@ -107,24 +119,44 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	if (!Move) return;
 
-	// Safe zone rule: enemies cannot enter NPC safe bubbles. If inside, run away.
-	for (TActorIterator<AT66HouseNPCBase> It(GetWorld()); It; ++It)
+	// Safe zone rule: enemies cannot enter NPC safe bubbles.
+	// Perf: evaluate bubble membership at a low frequency (not every Tick).
+	SafeZoneCheckAccumSeconds += DeltaSeconds;
+	if (SafeZoneCheckAccumSeconds >= SafeZoneCheckIntervalSeconds)
 	{
-		AT66HouseNPCBase* NPC = *It;
-		if (!NPC) continue;
-		const FVector N = NPC->GetActorLocation();
-		FVector ToEnemy = GetActorLocation() - N;
-		ToEnemy.Z = 0.f;
-		const float Dist = ToEnemy.Size();
-		if (Dist < NPC->GetSafeZoneRadius())
+		SafeZoneCheckAccumSeconds = 0.f;
+		bCachedInsideSafeZone = false;
+		CachedSafeZoneEscapeDir = FVector::ZeroVector;
+
+		for (TActorIterator<AT66HouseNPCBase> It(GetWorld()); It; ++It)
 		{
-			if (Dist > 1.f)
+			AT66HouseNPCBase* NPC = *It;
+			if (!NPC) continue;
+
+			const FVector N = NPC->GetActorLocation();
+			FVector ToEnemy = GetActorLocation() - N;
+			ToEnemy.Z = 0.f;
+			const float Dist = ToEnemy.Size();
+			if (Dist < NPC->GetSafeZoneRadius())
 			{
-				ToEnemy /= Dist;
-				AddMovementInput(ToEnemy, 1.f);
+				bCachedInsideSafeZone = true;
+				if (Dist > 1.f)
+				{
+					ToEnemy /= Dist;
+					CachedSafeZoneEscapeDir = ToEnemy;
+				}
+				break;
 			}
-			return;
 		}
+	}
+
+	if (bCachedInsideSafeZone)
+	{
+		if (!CachedSafeZoneEscapeDir.IsNearlyZero())
+		{
+			AddMovementInput(CachedSafeZoneEscapeDir, 1.f);
+		}
+		return;
 	}
 
 	FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
@@ -133,7 +165,14 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	if (Len > 10.f)
 	{
 		ToPlayer /= Len;
-		AddMovementInput(ToPlayer, 1.f);
+		if (bRunAwayFromPlayer)
+		{
+			AddMovementInput(-ToPlayer, 1.f);
+		}
+		else
+		{
+			AddMovementInput(ToPlayer, 1.f);
+		}
 	}
 }
 
@@ -174,11 +213,19 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage)
 
 void AT66EnemyBase::UpdateHealthBar()
 {
-	// Health bar is updated via a simple progress bar in the widget.
-	// For v0 we use a UserWidget that reads CurrentHP/MaxHP; we'll set the percent on the widget.
-	// If no widget class set, we skip. For C++ we can create a simple widget or leave placeholder.
-	// The WidgetComponent needs a WidgetClass - we can set it in Blueprint or create a minimal one in C++.
-	// For v0 we just ensure the component exists; visual can be a Blueprint widget that binds to GetCurrentHP/GetMaxHP.
+	if (!HealthBarWidget) return;
+	UT66EnemyHealthBarWidget* W = Cast<UT66EnemyHealthBarWidget>(HealthBarWidget->GetUserWidgetObject());
+	if (!W) return;
+	const float Pct = (MaxHP <= 0) ? 0.f : (static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP)) / static_cast<float>(MaxHP));
+	W->SetHealthPercent(Pct);
+}
+
+void AT66EnemyBase::SetLockedIndicator(bool bLocked)
+{
+	if (!HealthBarWidget) return;
+	UT66EnemyHealthBarWidget* W = Cast<UT66EnemyHealthBarWidget>(HealthBarWidget->GetUserWidgetObject());
+	if (!W) return;
+	W->SetLocked(bLocked);
 }
 
 void AT66EnemyBase::OnDeath()
@@ -201,25 +248,17 @@ void AT66EnemyBase::OnDeath()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
 	if (T66GI)
 	{
-		// Spawn one random item pickup
-		TArray<FName> ItemIDs;
-		if (UDataTable* ItemsDT = T66GI->GetItemsDataTable())
-		{
-			ItemIDs = ItemsDT->GetRowNames();
-		}
-		if (ItemIDs.Num() == 0)
-		{
-			ItemIDs.Add(FName(TEXT("Item_01")));
-			ItemIDs.Add(FName(TEXT("Item_02")));
-			ItemIDs.Add(FName(TEXT("Item_03")));
-		}
-		FName ItemID = ItemIDs[FMath::RandRange(0, ItemIDs.Num() - 1)];
+		// Spawn one loot bag with rarity, and roll an item from that rarity pool.
+		FRandomStream Rng(FPlatformTime::Cycles());
+		const ET66Rarity BagRarity = FT66RarityUtil::RollDefaultRarity(Rng);
+		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AT66ItemPickup* Pickup = World->SpawnActor<AT66ItemPickup>(AT66ItemPickup::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
-		if (Pickup)
+		AT66LootBagPickup* Loot = World->SpawnActor<AT66LootBagPickup>(AT66LootBagPickup::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
+		if (Loot)
 		{
-			Pickup->SetItemID(ItemID);
+			Loot->SetLootRarity(BagRarity);
+			Loot->SetItemID(ItemID);
 		}
 	}
 

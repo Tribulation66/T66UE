@@ -6,6 +6,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "Core/T66RunStateSubsystem.h"
 
 AT66CompanionBase::AT66CompanionBase()
 {
@@ -58,6 +60,11 @@ void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
 void AT66CompanionBase::SetPreviewMode(bool bPreview)
 {
 	bIsPreviewMode = bPreview;
+	// Make preview easier to see in UI.
+	if (PlaceholderMesh)
+	{
+		PlaceholderMesh->SetRelativeScale3D(bIsPreviewMode ? FVector(0.85f) : FVector(0.4f));
+	}
 }
 
 void AT66CompanionBase::Tick(float DeltaTime)
@@ -79,7 +86,19 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	FVector TargetLoc = Hero->GetActorLocation() + OffsetWorld;
 
 	FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, FollowSpeed);
-	SetActorLocation(NewLoc);
+	// Keep companion grounded (sphere bottom on ground).
+	{
+		FHitResult Hit;
+		const FVector Start = NewLoc + FVector(0.f, 0.f, 2000.f);
+		const FVector End = NewLoc - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		{
+			// Sphere base radius: 50 * 0.4 = 20
+			static constexpr float CompanionRadius = 20.f;
+			NewLoc.Z = Hit.ImpactPoint.Z + CompanionRadius;
+		}
+	}
+	SetActorLocation(NewLoc, false, nullptr, ETeleportType::TeleportPhysics);
 
 	// Face the hero
 	FVector ToHero = Hero->GetActorLocation() - GetActorLocation();
@@ -90,5 +109,22 @@ void AT66CompanionBase::Tick(float DeltaTime)
 		NewRot.Pitch = 0.f;
 		NewRot.Roll = 0.f;
 		SetActorRotation(NewRot);
+	}
+
+	// Heal the hero over time (up to max hearts).
+	HealAccumSeconds += DeltaTime;
+	if (HealAccumSeconds >= HealIntervalSeconds)
+	{
+		HealAccumSeconds = 0.f;
+		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				if (RunState->GetCurrentHearts() < RunState->GetMaxHearts())
+				{
+					RunState->HealHearts(HealAmountHearts);
+				}
+			}
+		}
 	}
 }

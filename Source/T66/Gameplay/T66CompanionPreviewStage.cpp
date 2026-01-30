@@ -7,7 +7,9 @@
 #include "Components/SceneComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/PointLightComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/StaticMesh.h"
 
 AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 {
@@ -16,11 +18,24 @@ AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
+	// Simple floor plane for grounding reference.
+	PreviewFloor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewFloor"));
+	PreviewFloor->SetupAttachment(RootComponent);
+	PreviewFloor->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	{
+		PreviewFloor->SetStaticMesh(Cube);
+		PreviewFloor->SetRelativeLocation(FVector(150.f, 0.f, -50.f));
+		PreviewFloor->SetRelativeScale3D(FVector(2.2f, 2.2f, 1.0f));
+	}
+
 	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCapture"));
 	SceneCapture->SetupAttachment(RootComponent);
+	SceneCapture->SetRelativeLocation(FVector(-120.f, 0.f, 60.f));
 	SceneCapture->bCaptureEveryFrame = false;
 	SceneCapture->bCaptureOnMovement = false;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+	SceneCapture->FOVAngle = 30.f;
 
 	PreviewLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PreviewLight"));
 	PreviewLight->SetupAttachment(RootComponent);
@@ -100,6 +115,9 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID)
 		PreviewPawn->SetActorHiddenInGame(false);
 		PreviewPawn->InitializeCompanion(CompanionData);
 		FVector PawnLoc = GetActorLocation() + GetActorRotation().RotateVector(PreviewPawnOffset);
+		// Ground the preview pawn on top of the preview floor.
+		static constexpr float CompanionRadius = 20.f; // sphere radius at scale 0.4
+		PawnLoc.Z = GetActorLocation().Z + CompanionRadius;
 		PreviewPawn->SetActorLocation(PawnLoc);
 		PreviewPawn->SetActorRotation(FRotator(0.f, 180.f, 0.f));
 		if (SceneCapture)

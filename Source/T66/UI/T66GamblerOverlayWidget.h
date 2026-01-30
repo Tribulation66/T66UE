@@ -130,7 +130,7 @@ private:
 	bool IsBossActive() const;
 	bool TryPayToPlay();
 	void AwardWin();
-	void SetStatus(const FString& Msg, const FLinearColor& Color = FLinearColor::White);
+	void SetStatus(const FText& Msg, const FLinearColor& Color = FLinearColor::White);
 
 	void ShowCheatPrompt();
 	void HideCheatPrompt();

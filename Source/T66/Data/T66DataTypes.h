@@ -102,6 +102,25 @@ struct T66_API FCompanionData : public FTableRowBase
 	{}
 };
 
+UENUM(BlueprintType)
+enum class ET66ItemRarity : uint8
+{
+	Black UMETA(DisplayName = "Black"),
+	Red UMETA(DisplayName = "Red"),
+	Yellow UMETA(DisplayName = "Yellow"),
+	White UMETA(DisplayName = "White"),
+	Cursed UMETA(DisplayName = "Cursed"),
+};
+
+UENUM(BlueprintType)
+enum class ET66ItemEffectType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	BonusDamagePct UMETA(DisplayName = "BonusDamagePct"),
+	BonusAttackSpeedPct UMETA(DisplayName = "BonusAttackSpeedPct"),
+	DashCooldownReductionPct UMETA(DisplayName = "DashCooldownReductionPct"),
+};
+
 /**
  * Item data row for the Items DataTable (v0: 3 placeholder items)
  */
@@ -113,16 +132,48 @@ struct T66_API FItemData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName ItemID;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rarity")
+	ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FLinearColor PlaceholderColor = FLinearColor::White;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
+	int32 BuyValueGold = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
 	int32 SellValueGold = 0;
+
+	/** Single additive % that increases Damage + Attack Speed + Scale equally. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float PowerGivenPercent = 0.f;
+
+	/** Optional single extra effect (v0 framework). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	ET66ItemEffectType EffectType = ET66ItemEffectType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	float EffectMagnitude = 0.f;
+
+	/** Tooltip lines (shown under Power). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FText EffectLine1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FText EffectLine2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FText EffectLine3;
 
 	FItemData()
 		: ItemID(NAME_None)
+		, ItemRarity(ET66ItemRarity::Black)
 		, PlaceholderColor(FLinearColor::White)
+		, BuyValueGold(0)
 		, SellValueGold(0)
+		, PowerGivenPercent(0.f)
+		, EffectType(ET66ItemEffectType::None)
+		, EffectMagnitude(0.f)
 	{}
 };
 

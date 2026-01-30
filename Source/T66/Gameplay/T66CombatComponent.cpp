@@ -6,6 +6,7 @@
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HeroProjectile.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 
@@ -14,10 +15,67 @@ UT66CombatComponent::UT66CombatComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UT66CombatComponent::SetLockedTarget(AActor* InTarget)
+{
+	LockedTarget = InTarget;
+}
+
+void UT66CombatComponent::ClearLockedTarget()
+{
+	LockedTarget.Reset();
+}
+
 void UT66CombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, FireIntervalSeconds, true, FireIntervalSeconds);
+
+	BaseAttackRange = AttackRange;
+	BaseFireIntervalSeconds = FireIntervalSeconds;
+	BaseDamagePerShot = DamagePerShot;
+
+	CachedRunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (CachedRunState)
+	{
+		CachedRunState->InventoryChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+	}
+
+	RecomputeFromRunState();
+	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, EffectiveFireIntervalSeconds, true, EffectiveFireIntervalSeconds);
+}
+
+void UT66CombatComponent::HandleInventoryChanged()
+{
+	const float OldInterval = EffectiveFireIntervalSeconds;
+	RecomputeFromRunState();
+	if (!FMath::IsNearlyEqual(OldInterval, EffectiveFireIntervalSeconds, 0.001f))
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(FireTimerHandle);
+			World->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, EffectiveFireIntervalSeconds, true, EffectiveFireIntervalSeconds);
+		}
+	}
+}
+
+void UT66CombatComponent::RecomputeFromRunState()
+{
+	AttackRange = BaseAttackRange;
+	EffectiveFireIntervalSeconds = BaseFireIntervalSeconds;
+	EffectiveDamagePerShot = BaseDamagePerShot;
+	ProjectileScaleMultiplier = 1.f;
+
+	if (!CachedRunState)
+	{
+		return;
+	}
+
+	const float AttackSpeedMult = CachedRunState->GetItemAttackSpeedMultiplier();
+	const float DamageMult = CachedRunState->GetItemDamageMultiplier();
+	const float ScaleMult = CachedRunState->GetItemScaleMultiplier();
+
+	EffectiveFireIntervalSeconds = FMath::Clamp(BaseFireIntervalSeconds / FMath::Max(0.01f, AttackSpeedMult), 0.05f, 10.f);
+	EffectiveDamagePerShot = FMath::Clamp(FMath::RoundToInt(static_cast<float>(BaseDamagePerShot) * DamageMult), 1, 999999);
+	ProjectileScaleMultiplier = FMath::Clamp(ScaleMult, 0.1f, 10.f);
 }
 
 void UT66CombatComponent::TryFire()
@@ -38,10 +96,80 @@ void UT66CombatComponent::TryFire()
 	if (!World) return;
 
 	FVector MyLoc = OwnerActor->GetActorLocation();
+	const float RangeSq = AttackRange * AttackRange;
+
+	// If we have a valid locked target in range and alive, prefer it.
+	if (AActor* Locked = LockedTarget.Get())
+	{
+		const float DistSq = FVector::DistSquared(MyLoc, Locked->GetActorLocation());
+		if (DistSq <= RangeSq)
+		{
+			// Accept enemies/bosses only if alive.
+			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Locked))
+			{
+				if (E->CurrentHP > 0)
+				{
+					FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.Owner = OwnerActor;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+					AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+					if (Proj)
+					{
+						Proj->Damage = EffectiveDamagePerShot;
+						Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
+						Proj->SetTargetLocation(Locked->GetActorLocation());
+					}
+					return;
+				}
+				// Dead: clear lock.
+				ClearLockedTarget();
+			}
+			else if (AT66BossBase* B = Cast<AT66BossBase>(Locked))
+			{
+				if (B->IsAwakened() && B->IsAlive())
+				{
+					FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.Owner = OwnerActor;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+					AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+					if (Proj)
+					{
+						Proj->Damage = EffectiveDamagePerShot;
+						Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
+						Proj->SetTargetLocation(Locked->GetActorLocation());
+					}
+					return;
+				}
+				ClearLockedTarget();
+			}
+			else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Locked))
+			{
+				if (GB->CurrentHP > 0)
+				{
+					FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.Owner = OwnerActor;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+					AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+					if (Proj)
+					{
+						Proj->Damage = EffectiveDamagePerShot;
+						Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
+						Proj->SetTargetLocation(Locked->GetActorLocation());
+					}
+					return;
+				}
+				ClearLockedTarget();
+			}
+		}
+	}
+
 	AT66EnemyBase* ClosestEnemy = nullptr;
 	AT66BossBase* ClosestBoss = nullptr;
 	AT66GamblerBoss* ClosestGamblerBoss = nullptr;
-	float ClosestDistSq = AttackRange * AttackRange;
+	float ClosestDistSq = RangeSq;
 
 	// Prefer Gambler Boss if present
 	for (TActorIterator<AT66GamblerBoss> It(World); It; ++It)
@@ -93,7 +221,8 @@ void UT66CombatComponent::TryFire()
 		AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 		if (Proj)
 		{
-			Proj->Damage = DamagePerShot; // 999 = insta kill
+			Proj->Damage = EffectiveDamagePerShot;
+			Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
 			Proj->SetTargetLocation(Target->GetActorLocation());
 		}
 	}

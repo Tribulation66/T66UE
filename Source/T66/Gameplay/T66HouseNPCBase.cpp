@@ -9,6 +9,7 @@
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Engine/World.h"
 
 AT66HouseNPCBase::AT66HouseNPCBase()
 {
@@ -65,6 +66,23 @@ void AT66HouseNPCBase::BeginPlay()
 
 	LoadFromDataTable();
 	ApplyVisuals();
+
+	// Snap NPC cylinder to the ground so it doesn't float/sink.
+	// NOTE: We purposely use VisualMesh bounds (not full actor bounds) because SafeZoneVisual is pinned to Z=5.
+	if (UWorld* World = GetWorld())
+	{
+		FHitResult Hit;
+		const FVector Here = GetActorLocation();
+		const FVector Start = Here + FVector(0.f, 0.f, 2000.f);
+		const FVector End = Here - FVector(0.f, 0.f, 6000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		{
+			const float HalfHeight = (VisualMesh ? VisualMesh->Bounds.BoxExtent.Z : 52.5f);
+			SetActorLocation(Hit.ImpactPoint + FVector(0.f, 0.f, HalfHeight), false, nullptr, ETeleportType::TeleportPhysics);
+			// Re-apply so SafeZoneVisual's world Z=5 is updated after the move.
+			ApplyVisuals();
+		}
+	}
 
 	SafeZoneSphere->OnComponentBeginOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneBeginOverlap);
 	SafeZoneSphere->OnComponentEndOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneEndOverlap);

@@ -114,6 +114,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	void SetPreviewMode(bool bPreview);
 
+	/** Dash forward in the direction the hero is facing. */
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void DashForward();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -146,6 +150,15 @@ private:
 	bool bIsPreviewMode = false;
 
 	int32 SafeZoneOverlapCount = 0;
+
+	// Dash tuning
+	float LastDashTime = -9999.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|Dash")
+	float DashCooldownSeconds = 0.7f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|Dash")
+	float DashStrength = 1600.f;
 
 private:
 	/** Load and cache the static mesh assets */

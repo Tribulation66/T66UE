@@ -1182,3 +1182,571 @@ FText UT66LocalizationSubsystem::GetText_AccountStatus() const
 	default: return FText::FromString(TEXT("ACCOUNT STATUS"));
 	}
 }
+
+// ========== Gameplay HUD ==========
+
+FText UT66LocalizationSubsystem::GetText_GoldFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Ouro: {0}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("金幣：{0}"));
+	default: return FText::FromString(TEXT("Gold: {0}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_OweFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Deve: {0}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("欠款：{0}"));
+	default: return FText::FromString(TEXT("Owe: {0}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_StageNumberFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Fase número: {0}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("關卡：{0}"));
+	default: return FText::FromString(TEXT("Stage number: {0}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_BountyLabel() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Recompensa:"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("懸賞："));
+	default: return FText::FromString(TEXT("Bounty:"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PortraitPlaceholder() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("RETRATO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("肖像"));
+	default: return FText::FromString(TEXT("PORTRAIT"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_MinimapPlaceholder() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("MINIMAPA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("小地圖"));
+	default: return FText::FromString(TEXT("MINIMAP"));
+	}
+}
+
+// ========== Run Summary ==========
+
+FText UT66LocalizationSubsystem::GetText_RunSummaryTitle() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("RESUMO DA RUN"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("回合總結"));
+	default: return FText::FromString(TEXT("RUN SUMMARY"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RunSummaryStageReachedBountyFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Fase alcançada: {0}  |  Recompensa: {1}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("到達關卡：{0}  |  懸賞：{1}"));
+	default: return FText::FromString(TEXT("Stage Reached: {0}  |  Bounty: {1}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RunSummaryPreviewPlaceholder() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Pré-visualização 3D"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("3D 預覽"));
+	default: return FText::FromString(TEXT("3D Preview"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_MainMenu() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("MENU PRINCIPAL"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("主選單"));
+	default: return FText::FromString(TEXT("MAIN MENU"));
+	}
+}
+
+// ========== Run Log ==========
+
+FText UT66LocalizationSubsystem::GetText_RunLog_StageFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Fase {0}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("關卡 {0}"));
+	default: return FText::FromString(TEXT("Stage {0}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RunLog_PickedUpFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Pegou {0}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("拾取 {0}"));
+	default: return FText::FromString(TEXT("Picked up {0}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RunLog_GoldFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Ouro: {0}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("金幣：{0}"));
+	default: return FText::FromString(TEXT("Gold: {0}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RunLog_KillFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Abate +{0}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("擊殺 +{0}"));
+	default: return FText::FromString(TEXT("Kill +{0}"));
+	}
+}
+
+// ========== Gambler ==========
+
+FText UT66LocalizationSubsystem::GetText_Gambler() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("APOSTADOR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("賭徒"));
+	default: return FText::FromString(TEXT("GAMBLER"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Casino() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("CASSINO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("賭場"));
+	default: return FText::FromString(TEXT("CASINO"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Bank() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("BANCO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("銀行"));
+	default: return FText::FromString(TEXT("BANK"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Games() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("JOGOS"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("遊戲"));
+	default: return FText::FromString(TEXT("GAMES"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Anger() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("RAIVA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("怒氣"));
+	default: return FText::FromString(TEXT("ANGER"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_GamblerDialoguePrompt() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("O que você quer?"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("你想要什麼？"));
+	default: return FText::FromString(TEXT("What do you want?"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_LetMeGamble() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("DEIXA EU APOSTAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("讓我賭一把"));
+	default: return FText::FromString(TEXT("LET ME GAMBLE"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_TeleportMeToYourBrother() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("TELEPORTE-ME ATÉ SEU IRMÃO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("傳送我去你兄弟那裡"));
+	default: return FText::FromString(TEXT("TELEPORT ME TO YOUR BROTHER"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_TeleportDisabledBossActive() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Teleporte desativado (encontro com chefe iniciado)."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("無法傳送（首領戰已開始）。"));
+	default: return FText::FromString(TEXT("Teleport disabled (boss encounter started)."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Bet() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Aposta"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("下注"));
+	default: return FText::FromString(TEXT("Bet"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Borrow() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Emprestar"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("借款"));
+	default: return FText::FromString(TEXT("Borrow"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Payback() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Pagar"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("還款"));
+	default: return FText::FromString(TEXT("Payback"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Max() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("MÁX"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("最大"));
+	default: return FText::FromString(TEXT("MAX"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_CoinFlip() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("CARA OU COROA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("掷硬幣"));
+	default: return FText::FromString(TEXT("COIN FLIP"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RockPaperScissors() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("PEDRA PAPEL TESOURA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("剪刀石頭布"));
+	default: return FText::FromString(TEXT("ROCK PAPER SCISSORS"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_FindTheBall() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("ACHE A BOLA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("找球"));
+	default: return FText::FromString(TEXT("FIND THE BALL"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ChooseHeadsOrTails() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Escolha Cara ou Coroa."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("選擇正面或反面。"));
+	default: return FText::FromString(TEXT("Choose Heads or Tails."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Heads() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("CARA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("正面"));
+	default: return FText::FromString(TEXT("HEADS"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Tails() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("COROA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("反面"));
+	default: return FText::FromString(TEXT("TAILS"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PickOne() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Escolha um."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("選一個。"));
+	default: return FText::FromString(TEXT("Pick one."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Rock() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Pedra"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("石頭"));
+	default: return FText::FromString(TEXT("Rock"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Paper() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Papel"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("布"));
+	default: return FText::FromString(TEXT("Paper"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Scissors() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Tesoura"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("剪刀"));
+	default: return FText::FromString(TEXT("Scissors"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PickACup() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Escolha um copo."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("選一個杯子。"));
+	default: return FText::FromString(TEXT("Pick a cup."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Cup(int32 CupIndex1Based) const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(FString::Printf(TEXT("COPO %d"), CupIndex1Based));
+	case ET66Language::ChineseTraditional: return FText::FromString(FString::Printf(TEXT("杯 %d"), CupIndex1Based));
+	default: return FText::FromString(FString::Printf(TEXT("CUP %d"), CupIndex1Based));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ResultDash() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Resultado: -"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("結果：-"));
+	default: return FText::FromString(TEXT("Result: -"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Rolling() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Girando..."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("進行中…"));
+	default: return FText::FromString(TEXT("Rolling..."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_CheatPromptTitle() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Trapacear?"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("作弊？"));
+	default: return FText::FromString(TEXT("Cheat?"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_CheatPromptBody() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Trapacear aumenta a Raiva."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("作弊會增加怒氣。"));
+	default: return FText::FromString(TEXT("Cheating increases Anger."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_GambleAmountMustBePositive() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("A aposta deve ser > 0."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("下注金額必須大於 0。"));
+	default: return FText::FromString(TEXT("Gamble amount must be > 0."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_BorrowAmountMustBePositive() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("O empréstimo deve ser > 0."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("借款金額必須大於 0。"));
+	default: return FText::FromString(TEXT("Borrow amount must be > 0."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PaybackAmountMustBePositive() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("O pagamento deve ser > 0."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("還款金額必須大於 0。"));
+	default: return FText::FromString(TEXT("Payback amount must be > 0."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_NotEnoughGold() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Ouro insuficiente."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("金幣不足。"));
+	default: return FText::FromString(TEXT("Not enough gold."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_NotEnoughGoldOrNoDebt() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Ouro insuficiente (ou sem dívida)."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("金幣不足（或沒有欠款）。"));
+	default: return FText::FromString(TEXT("Not enough gold (or no debt)."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_BorrowedAmountFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Emprestou {0}."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("已借款 {0}。"));
+	default: return FText::FromString(TEXT("Borrowed {0}."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PaidBackAmountFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Pagou {0}."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("已還款 {0}。"));
+	default: return FText::FromString(TEXT("Paid back {0}."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_WinPlusAmountFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("VITÓRIA (+{0})"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("勝利（+{0}）"));
+	default: return FText::FromString(TEXT("WIN (+{0})"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Win() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("VITÓRIA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("勝利"));
+	default: return FText::FromString(TEXT("WIN"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Lose() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("DERROTA"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("失敗"));
+	default: return FText::FromString(TEXT("LOSE"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_CoinFlipResultFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Resultado: {0} — {1}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("結果：{0} — {1}"));
+	default: return FText::FromString(TEXT("Result: {0} — {1}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RpsResultFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Você: {0}  |  Apostador: {1}  —  {2}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("你：{0}  |  賭徒：{1}  —  {2}"));
+	default: return FText::FromString(TEXT("You: {0}  |  Gambler: {1}  —  {2}"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_FindBallResultFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("A bola estava em {0} — {1}"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("球在 {0} — {1}"));
+	default: return FText::FromString(TEXT("Ball was under {0} — {1}"));
+	}
+}

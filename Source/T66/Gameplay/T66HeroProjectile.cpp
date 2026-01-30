@@ -13,6 +13,8 @@
 AT66HeroProjectile::AT66HeroProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	// Safety: prevent unbounded projectile buildup if a projectile never overlaps anything.
+	InitialLifeSpan = 5.0f;
 
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	CollisionSphere->SetSphereRadius(30.f);
@@ -27,7 +29,7 @@ AT66HeroProjectile::AT66HeroProjectile()
 	if (Sphere)
 	{
 		VisualMesh->SetStaticMesh(Sphere);
-		VisualMesh->SetRelativeScale3D(FVector(0.15f, 0.15f, 0.15f));
+		VisualMesh->SetRelativeScale3D(FVector(BaseVisualScale, BaseVisualScale, BaseVisualScale));
 	}
 	if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
 	{
@@ -53,6 +55,21 @@ void AT66HeroProjectile::SetTargetLocation(const FVector& TargetLoc)
 	ProjectileMovement->Velocity = Dir * ProjectileMovement->InitialSpeed;
 }
 
+void AT66HeroProjectile::SetScaleMultiplier(float InScaleMultiplier)
+{
+	ScaleMultiplier = FMath::Clamp(InScaleMultiplier, 0.1f, 10.f);
+	if (VisualMesh)
+	{
+		const float S = BaseVisualScale * ScaleMultiplier;
+		VisualMesh->SetRelativeScale3D(FVector(S, S, S));
+	}
+	// Keep collision roughly in sync with visuals for fairness.
+	if (CollisionSphere)
+	{
+		CollisionSphere->SetSphereRadius(30.f * ScaleMultiplier);
+	}
+}
+
 void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -69,17 +86,15 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	AT66BossBase* Boss = Cast<AT66BossBase>(OtherActor);
 	if (Boss && Boss->IsAwakened() && Boss->IsAlive())
 	{
-		static constexpr int32 BossDamagePerHit = 20;
-		Boss->TakeDamageFromHeroHit(BossDamagePerHit);
+		Boss->TakeDamageFromHeroHit(Damage);
 		Destroy();
 		return;
 	}
 
-	// Gambler boss takes fixed 20 damage per hit
+	// Gambler boss damage per hit
 	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(OtherActor))
 	{
-		static constexpr int32 BossDamagePerHit = 20;
-		GB->TakeDamageFromHeroHit(BossDamagePerHit);
+		GB->TakeDamageFromHeroHit(Damage);
 		Destroy();
 		return;
 	}

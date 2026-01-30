@@ -12,6 +12,7 @@ class UTextureRenderTarget2D;
 class AT66CompanionBase;
 class USceneComponent;
 class UPointLightComponent;
+class UStaticMeshComponent;
 
 /**
  * Preview stage for Companion Selection screen.
@@ -44,6 +45,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UPointLightComponent> PreviewLight;
+
+	/** Simple floor so "ground level" is visible in preview. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
+	TObjectPtr<UStaticMeshComponent> PreviewFloor;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UTextureRenderTarget2D> RenderTarget;

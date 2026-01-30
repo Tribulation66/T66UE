@@ -27,7 +27,9 @@ AT66BossBase::AT66BossBase()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -60.f));
+	// Align primitive mesh to ground when capsule is grounded:
+	// capsule half-height~88, sphere half-height=50*6=300 => relative Z = 300 - 88 = 212.
+	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 212.f));
 
 	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
 	{
@@ -43,7 +45,8 @@ AT66BossBase::AT66BossBase()
 void AT66BossBase::InitializeBoss(const FBossData& BossData)
 {
 	BossID = BossData.BossID;
-	MaxHP = BossData.MaxHP;
+	// Standardized HP baseline: bosses are 1000+ HP.
+	MaxHP = FMath::Max(1000, BossData.MaxHP);
 	AwakenDistance = BossData.AwakenDistance;
 	FireIntervalSeconds = BossData.FireIntervalSeconds;
 	ProjectileSpeed = BossData.ProjectileSpeed;
