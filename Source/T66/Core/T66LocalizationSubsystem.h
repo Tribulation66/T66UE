@@ -209,6 +209,50 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
 	FText GetText_Equip() const;
+
+	// Gameplay overlays / prompts
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_WheelSpinTitle() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_Spin() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_PressSpinToRollGold() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_Spinning() const;
+
+	/** Format string: "You won {0} gold." */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_YouWonGoldFormat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarTitle() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarHoverHint() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarDropHere() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarDropAnIdolHere() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarAlreadySelectedStage1() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarAlreadyEquipped() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarDragFirst() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarEquipped() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolTooltip(FName IdolID) const;
 	
 	// Language Select
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|LanguageSelect")

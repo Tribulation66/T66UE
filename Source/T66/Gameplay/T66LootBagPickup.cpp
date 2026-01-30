@@ -1,36 +1,12 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66LootBagPickup.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
 
 #include "Gameplay/T66PlayerController.h"
-
-static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
-{
-	if (!Mesh) return;
-
-	// Prefer our placeholder material so the color parameter name is stable ("Color").
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
-	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
-		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
-			Mesh->SetMaterial(0, Mat);
-			return;
-		}
-	}
-
-	// Fallback to whatever material is on the mesh.
-	if (UMaterialInstanceDynamic* Mat = Mesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(FName("Color"), Color);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	}
-}
 
 AT66LootBagPickup::AT66LootBagPickup()
 {
@@ -49,13 +25,13 @@ AT66LootBagPickup::AT66LootBagPickup()
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
 		VisualMesh->SetStaticMesh(Cube);
 		VisualMesh->SetRelativeScale3D(FVector(0.35f, 0.25f, 0.20f));
 		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 20.f));
 	}
-	ApplyT66Color(VisualMesh, this, FLinearColor(0.9f, 0.8f, 0.25f, 1.f));
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FLinearColor(0.9f, 0.8f, 0.25f, 1.f));
 }
 
 void AT66LootBagPickup::BeginPlay()
@@ -86,7 +62,7 @@ void AT66LootBagPickup::ConsumeAndDestroy()
 void AT66LootBagPickup::UpdateVisualsFromRarity()
 {
 	if (!VisualMesh) return;
-	ApplyT66Color(VisualMesh, this, FT66RarityUtil::GetRarityColor(LootRarity));
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FT66RarityUtil::GetRarityColor(LootRarity));
 }
 
 void AT66LootBagPickup::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

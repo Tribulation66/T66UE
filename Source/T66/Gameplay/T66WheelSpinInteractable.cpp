@@ -3,29 +3,9 @@
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "UI/T66WheelOverlayWidget.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
-
-static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
-{
-	if (!Mesh) return;
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
-	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
-		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
-			Mesh->SetMaterial(0, Mat);
-			return;
-		}
-	}
-	if (UMaterialInstanceDynamic* Mat = Mesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(FName("Color"), Color);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	}
-}
 
 AT66WheelSpinInteractable::AT66WheelSpinInteractable()
 {
@@ -43,14 +23,14 @@ AT66WheelSpinInteractable::AT66WheelSpinInteractable()
 	WheelMesh->SetupAttachment(RootComponent);
 	WheelMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		SphereBase->SetStaticMesh(Sphere);
 		SphereBase->SetRelativeScale3D(FVector(0.85f, 0.85f, 0.85f));
 		// Grounded: sphere radius ~42.5 => center at 42.5.
 		SphereBase->SetRelativeLocation(FVector(0.f, 0.f, 42.5f));
 	}
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		WheelMesh->SetStaticMesh(Cylinder);
 		WheelMesh->SetRelativeScale3D(FVector(0.65f, 0.65f, 0.15f));
@@ -64,8 +44,8 @@ AT66WheelSpinInteractable::AT66WheelSpinInteractable()
 void AT66WheelSpinInteractable::ApplyRarityVisuals()
 {
 	const FLinearColor R = FT66RarityUtil::GetRarityColor(Rarity);
-	ApplyT66Color(SphereBase, this, FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
-	ApplyT66Color(WheelMesh, this, R);
+	FT66VisualUtil::ApplyT66Color(SphereBase, this, FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
+	FT66VisualUtil::ApplyT66Color(WheelMesh, this, R);
 }
 
 bool AT66WheelSpinInteractable::Interact(APlayerController* PC)

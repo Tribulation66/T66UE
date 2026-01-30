@@ -3,30 +3,10 @@
 #include "Gameplay/T66CashTruckInteractable.h"
 #include "Gameplay/T66CashTruckMimicEnemy.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
-
-static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
-{
-	if (!Mesh) return;
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
-	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
-		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
-			Mesh->SetMaterial(0, Mat);
-			return;
-		}
-	}
-	if (UMaterialInstanceDynamic* Mat = Mesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(FName("Color"), Color);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	}
-}
 
 AT66CashTruckInteractable::AT66CashTruckInteractable()
 {
@@ -47,7 +27,7 @@ AT66CashTruckInteractable::AT66CashTruckInteractable()
 		WheelMeshes[i]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		for (UStaticMeshComponent* W : WheelMeshes)
 		{
@@ -82,12 +62,12 @@ void AT66CashTruckInteractable::ApplyRarityVisuals()
 {
 	// Make rarity obvious: tint the truck body.
 	const FLinearColor BodyC = bIsMimic ? FLinearColor(0.35f, 0.10f, 0.55f, 1.f) : FT66RarityUtil::GetRarityColor(Rarity);
-	ApplyT66Color(VisualMesh, this, BodyC);
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, BodyC);
 
 	const FLinearColor WheelC = bIsMimic ? FLinearColor(0.05f, 0.05f, 0.05f, 1.f) : FLinearColor(0.15f, 0.15f, 0.18f, 1.f);
 	for (UStaticMeshComponent* W : WheelMeshes)
 	{
-		ApplyT66Color(W, this, WheelC);
+		FT66VisualUtil::ApplyT66Color(W, this, WheelC);
 	}
 }
 

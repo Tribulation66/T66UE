@@ -934,6 +934,209 @@ FText UT66LocalizationSubsystem::GetText_Equip() const
 	}
 }
 
+// ========== Gameplay Overlays ==========
+
+FText UT66LocalizationSubsystem::GetText_WheelSpinTitle() const
+{
+	static const FText En = FText::FromString(TEXT("WHEEL SPIN"));
+	static const FText Pt = FText::FromString(TEXT("RODA DA SORTE"));
+	static const FText Zh = FText::FromString(TEXT("轉盤"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Spin() const
+{
+	static const FText En = FText::FromString(TEXT("SPIN"));
+	static const FText Pt = FText::FromString(TEXT("GIRAR"));
+	static const FText Zh = FText::FromString(TEXT("旋轉"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PressSpinToRollGold() const
+{
+	static const FText En = FText::FromString(TEXT("Press SPIN to roll gold."));
+	static const FText Pt = FText::FromString(TEXT("Pressione GIRAR para ganhar ouro."));
+	static const FText Zh = FText::FromString(TEXT("按下旋轉來獲得金幣。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Spinning() const
+{
+	static const FText En = FText::FromString(TEXT("Spinning..."));
+	static const FText Pt = FText::FromString(TEXT("Girando..."));
+	static const FText Zh = FText::FromString(TEXT("旋轉中..."));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_YouWonGoldFormat() const
+{
+	static const FText En = FText::FromString(TEXT("You won {0} gold."));
+	static const FText Pt = FText::FromString(TEXT("Você ganhou {0} ouro."));
+	static const FText Zh = FText::FromString(TEXT("你獲得了 {0} 金幣。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarTitle() const
+{
+	static const FText En = FText::FromString(TEXT("IDOL ALTAR"));
+	static const FText Pt = FText::FromString(TEXT("ALTAR DE ÍDOLOS"));
+	static const FText Zh = FText::FromString(TEXT("偶像祭壇"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarHoverHint() const
+{
+	static const FText En = FText::FromString(TEXT("Hover an idol to see its effect."));
+	static const FText Pt = FText::FromString(TEXT("Passe o mouse sobre um ídolo para ver o efeito."));
+	static const FText Zh = FText::FromString(TEXT("將滑鼠移到偶像上查看效果。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarDropHere() const
+{
+	static const FText En = FText::FromString(TEXT("DROP\nHERE"));
+	static const FText Pt = FText::FromString(TEXT("SOLTE\nAQUI"));
+	static const FText Zh = FText::FromString(TEXT("放到\n這裡"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarDropAnIdolHere() const
+{
+	static const FText En = FText::FromString(TEXT("Drop an Idol here."));
+	static const FText Pt = FText::FromString(TEXT("Solte um Ídolo aqui."));
+	static const FText Zh = FText::FromString(TEXT("將偶像放到這裡。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarAlreadySelectedStage1() const
+{
+	static const FText En = FText::FromString(TEXT("Idol already selected for Stage 1."));
+	static const FText Pt = FText::FromString(TEXT("Ídolo já selecionado para a Fase 1."));
+	static const FText Zh = FText::FromString(TEXT("第 1 關已選擇偶像。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarAlreadyEquipped() const
+{
+	static const FText En = FText::FromString(TEXT("Already equipped."));
+	static const FText Pt = FText::FromString(TEXT("Já equipado."));
+	static const FText Zh = FText::FromString(TEXT("已裝備。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarDragFirst() const
+{
+	static const FText En = FText::FromString(TEXT("Drag an idol into the center slot first."));
+	static const FText Pt = FText::FromString(TEXT("Arraste um ídolo para o slot central primeiro."));
+	static const FText Zh = FText::FromString(TEXT("先把偶像拖到中央插槽。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarEquipped() const
+{
+	static const FText En = FText::FromString(TEXT("Equipped."));
+	static const FText Pt = FText::FromString(TEXT("Equipado."));
+	static const FText Zh = FText::FromString(TEXT("已裝備。"));
+	switch (CurrentLanguage)
+	{
+		case ET66Language::BrazilianPortuguese: return Pt;
+		case ET66Language::ChineseTraditional: return Zh;
+		default: return En;
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolTooltip(FName IdolID) const
+{
+	// v0: use identical text across languages (can be translated later).
+	static const FText Unknown = FText::FromString(TEXT("IDOL\nUnknown."));
+	static const FText Frost = FText::FromString(TEXT("FROST\nAuto attacks freeze enemies for 0.5s."));
+	static const FText Shock = FText::FromString(TEXT("SHOCK\nAuto attacks chain to 1 nearby enemy."));
+	static const FText Glue = FText::FromString(TEXT("GLUE\nAuto attacks slow enemies briefly."));
+	static const FText Silence = FText::FromString(TEXT("SILENCE\nAuto attacks prevent enemy attacks briefly."));
+	static const FText Mark = FText::FromString(TEXT("MARK\nAuto attacks mark enemies (take extra auto-attack damage)."));
+	static const FText Pierce = FText::FromString(TEXT("PIERCE\nAuto attacks pierce +1 enemy."));
+	static const FText Split = FText::FromString(TEXT("SPLIT\nAuto attacks split into 2 weaker projectiles on hit."));
+	static const FText Knock = FText::FromString(TEXT("KNOCKBACK\nAuto attacks knock enemies back."));
+	static const FText Rico = FText::FromString(TEXT("RICOCHET\nAuto attacks bounce once to another enemy."));
+	static const FText Hex = FText::FromString(TEXT("HEX\nAuto attacks briefly stun enemies."));
+	static const FText Fire = FText::FromString(TEXT("FIRE\nAuto attacks apply a burn: 10 damage per second."));
+	static const FText Life = FText::FromString(TEXT("LIFESTEAL\nAuto attacks heal you by 1 heart per hit."));
+
+	if (IdolID == FName(TEXT("Idol_Frost"))) return Frost;
+	if (IdolID == FName(TEXT("Idol_Shock"))) return Shock;
+	if (IdolID == FName(TEXT("Idol_Glue"))) return Glue;
+	if (IdolID == FName(TEXT("Idol_Silence"))) return Silence;
+	if (IdolID == FName(TEXT("Idol_Mark"))) return Mark;
+	if (IdolID == FName(TEXT("Idol_Pierce"))) return Pierce;
+	if (IdolID == FName(TEXT("Idol_Split"))) return Split;
+	if (IdolID == FName(TEXT("Idol_Knockback"))) return Knock;
+	if (IdolID == FName(TEXT("Idol_Ricochet"))) return Rico;
+	if (IdolID == FName(TEXT("Idol_Hex"))) return Hex;
+	if (IdolID == FName(TEXT("Idol_Fire"))) return Fire;
+	if (IdolID == FName(TEXT("Idol_Lifesteal"))) return Life;
+	return Unknown;
+}
+
 // ========== Language Select ==========
 
 FText UT66LocalizationSubsystem::GetText_SelectLanguage() const

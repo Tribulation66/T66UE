@@ -2,35 +2,15 @@
 
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
-
-static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
-{
-	if (!Mesh) return;
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
-	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
-		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
-			Mesh->SetMaterial(0, Mat);
-			return;
-		}
-	}
-	if (UMaterialInstanceDynamic* Mat = Mesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(FName("Color"), Color);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	}
-}
 
 AT66TreeOfLifeInteractable::AT66TreeOfLifeInteractable()
 {
 	// Trunk: cylinder
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		VisualMesh->SetStaticMesh(Cylinder);
 		VisualMesh->SetRelativeScale3D(FVector(0.45f, 0.45f, 2.0f));
@@ -41,7 +21,7 @@ AT66TreeOfLifeInteractable::AT66TreeOfLifeInteractable()
 	CrownMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CrownMesh"));
 	CrownMesh->SetupAttachment(RootComponent);
 	CrownMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		CrownMesh->SetStaticMesh(Sphere);
 		CrownMesh->SetRelativeScale3D(FVector(1.2f, 1.2f, 1.2f));
@@ -53,8 +33,8 @@ AT66TreeOfLifeInteractable::AT66TreeOfLifeInteractable()
 void AT66TreeOfLifeInteractable::ApplyRarityVisuals()
 {
 	const FLinearColor R = FT66RarityUtil::GetRarityColor(Rarity);
-	ApplyT66Color(VisualMesh, this, R);
-	ApplyT66Color(CrownMesh, this, R);
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, R);
+	FT66VisualUtil::ApplyT66Color(CrownMesh, this, R);
 }
 
 bool AT66TreeOfLifeInteractable::Interact(APlayerController* PC)

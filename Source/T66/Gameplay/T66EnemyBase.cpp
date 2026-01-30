@@ -246,7 +246,7 @@ void AT66EnemyBase::OnDeath()
 
 	if (!World) return;
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
-	if (T66GI)
+	if (bDropsLoot && T66GI)
 	{
 		// Spawn one loot bag with rarity, and roll an item from that rarity pool.
 		FRandomStream Rng(FPlatformTime::Cycles());

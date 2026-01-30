@@ -56,6 +56,16 @@ void UT66WheelOverlayWidget::NativeDestruct()
 		World->GetTimerManager().ClearTimer(ResolveHandle);
 		World->GetTimerManager().ClearTimer(CloseHandle);
 	}
+
+	// Safety: overlays can be destroyed outside "Back" path (level change, etc).
+	// If we leave the player in UI input mode, gameplay can feel frozen.
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (PC->IsGameplayLevel() && !PC->IsPaused())
+		{
+			PC->RestoreGameplayInputMode();
+		}
+	}
 	Super::NativeDestruct();
 }
 
@@ -63,8 +73,8 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 {
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
-	const FText Title = FText::FromString(TEXT("WHEEL SPIN"));
-	const FText SpinTxt = FText::FromString(TEXT("SPIN"));
+	const FText Title = Loc ? Loc->GetText_WheelSpinTitle() : FText::FromString(TEXT("WHEEL SPIN"));
+	const FText SpinTxt = Loc ? Loc->GetText_Spin() : FText::FromString(TEXT("SPIN"));
 	const FText BackTxt = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
 
 	// Visual: a wheel disk that we rotate while spinning.
@@ -95,7 +105,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SAssignNew(StatusText, STextBlock)
-						.Text(FText::FromString(TEXT("Press SPIN to roll gold.")))
+						.Text(Loc ? Loc->GetText_PressSpinToRollGold() : FText::FromString(TEXT("Press SPIN to roll gold.")))
 						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 						.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 					]
@@ -232,7 +242,12 @@ void UT66WheelOverlayWidget::TickSpin()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	SpinElapsed += 0.016f;
+	const float Now = static_cast<float>(World->GetTimeSeconds());
+	float Delta = Now - LastSpinTickTimeSeconds;
+	LastSpinTickTimeSeconds = Now;
+	// Clamp so a hitch doesn't jump straight to resolve.
+	Delta = FMath::Clamp(Delta, 0.f, 0.05f);
+	SpinElapsed += Delta;
 	const float Alpha = FMath::Clamp(SpinElapsed / FMath::Max(0.01f, SpinDuration), 0.f, 1.f);
 	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f);
 	const float Angle = StartAngleDeg + (TotalAngleDeg * Ease);
@@ -264,7 +279,9 @@ void UT66WheelOverlayWidget::ResolveSpin()
 
 	if (StatusText.IsValid())
 	{
-		StatusText->SetText(FText::FromString(FString::Printf(TEXT("You won %d gold."), PendingGold)));
+		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		const FText Fmt = Loc ? Loc->GetText_YouWonGoldFormat() : FText::FromString(TEXT("You won {0} gold."));
+		StatusText->SetText(FText::Format(Fmt, FText::AsNumber(PendingGold)));
 	}
 	if (SpinButton.IsValid()) SpinButton->SetEnabled(true);
 	if (BackButton.IsValid()) BackButton->SetEnabled(true);
@@ -296,12 +313,14 @@ FReply UT66WheelOverlayWidget::OnSpin()
 
 	if (StatusText.IsValid())
 	{
-		StatusText->SetText(FText::FromString(TEXT("Spinning...")));
+		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		StatusText->SetText(Loc ? Loc->GetText_Spinning() : FText::FromString(TEXT("Spinning...")));
 	}
 
 	// Start spin animation.
 	bSpinning = true;
 	SpinElapsed = 0.f;
+	LastSpinTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
 	StartAngleDeg = 0.f;
 	TotalAngleDeg = static_cast<float>(Rng.RandRange(5, 9)) * 360.f + static_cast<float>(Rng.RandRange(0, 359));
 

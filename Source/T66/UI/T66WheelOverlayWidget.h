@@ -40,6 +40,7 @@ private:
 	float SpinDuration = 2.0f;
 	float StartAngleDeg = 0.f;
 	float TotalAngleDeg = 0.f;
+	float LastSpinTickTimeSeconds = 0.f;
 	int32 PendingGold = 0;
 
 	void TickSpin();

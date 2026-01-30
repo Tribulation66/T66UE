@@ -1,34 +1,10 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66WorldInteractableBase.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
-
-static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
-{
-	if (!Mesh) return;
-
-	// Prefer our placeholder material so the color parameter name is stable ("Color").
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
-	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
-		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
-			Mesh->SetMaterial(0, Mat);
-			return;
-		}
-	}
-
-	// Fallback to whatever material is on the mesh.
-	if (UMaterialInstanceDynamic* Mat = Mesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(FName("Color"), Color);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	}
-}
 
 AT66WorldInteractableBase::AT66WorldInteractableBase()
 {
@@ -45,7 +21,7 @@ AT66WorldInteractableBase::AT66WorldInteractableBase()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
 		VisualMesh->SetStaticMesh(Cube);
 	}
@@ -61,6 +37,6 @@ void AT66WorldInteractableBase::SetRarity(ET66Rarity InRarity)
 void AT66WorldInteractableBase::ApplyRarityVisuals()
 {
 	if (!VisualMesh) return;
-	ApplyT66Color(VisualMesh, this, FT66RarityUtil::GetRarityColor(Rarity));
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FT66RarityUtil::GetRarityColor(Rarity));
 }
 

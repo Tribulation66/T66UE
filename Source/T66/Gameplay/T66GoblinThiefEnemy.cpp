@@ -4,42 +4,19 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66Rarity.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
-static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
-{
-	if (!Mesh) return;
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
-	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
-		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
-			Mesh->SetMaterial(0, Mat);
-			return;
-		}
-	}
-	if (UMaterialInstanceDynamic* Mat = Mesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(FName("Color"), Color);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	}
-}
 
 AT66GoblinThiefEnemy::AT66GoblinThiefEnemy()
 {
 	// Distinct look: pyramid (cone) shape.
 	if (VisualMesh)
 	{
-		UStaticMesh* Cone = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cone.Cone"));
-		if (!Cone)
-		{
-			// Fallback if cone isn't available in this engine build.
-			Cone = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-		}
+		UStaticMesh* Cone = FT66VisualUtil::GetBasicShapeCone();
+		if (!Cone) Cone = FT66VisualUtil::GetBasicShapeCylinder();
 		if (Cone)
 		{
 			VisualMesh->SetStaticMesh(Cone);
@@ -69,7 +46,7 @@ void AT66GoblinThiefEnemy::SetRarity(ET66Rarity InRarity)
 void AT66GoblinThiefEnemy::ApplyRarityVisuals()
 {
 	const FLinearColor C = FT66RarityUtil::GetRarityColor(Rarity);
-	ApplyT66Color(VisualMesh, this, C);
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
 }
 
 void AT66GoblinThiefEnemy::RecomputeGoldFromRarity()

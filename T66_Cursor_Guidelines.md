@@ -201,6 +201,15 @@ When you need to change direction later, do it without detonating the project:
 
 A good rule: **a feature can be turned off without crashes** (even if the gameplay is disabled).
 
+## 6.1.1 Repo hygiene (prevent “zombie” features)
+
+When removing or replacing a feature, do not leave behind unused code paths that can be accidentally re-enabled later:
+
+- Remove call sites first (compile-time safety), then remove the old classes/files.
+- Delete unused C++ files that are no longer referenced (don’t keep “maybe later” actors/widgets around).
+- If a UI flow is replaced (e.g., full-screen modal → HUD prompt), remove the old widget + controller hooks.
+- If you intentionally keep a deprecated stub, clearly mark it as deprecated and record it in `memory.md`.
+
 ## 6.2 Schema versioning (for LLM safety)
 
 If you introduce a breaking data shape change:
@@ -212,6 +221,19 @@ If you introduce a breaking data shape change:
   - how existing rows/assets are migrated
   - how you verified success
 in `memory.md`.
+
+## 6.3 Input-mode + modal safety (prevents “game frozen” regressions)
+
+Gameplay input bugs are some of the easiest regressions to introduce and the hardest for players to diagnose.
+Follow these rules:
+
+- **Always restore gameplay input** after closing gameplay overlays:
+  - Prefer using a single helper (e.g., `AT66PlayerController::RestoreGameplayInputMode()`).
+- **Assume `UT66UIManager` is single-modal**:
+  - Opening a modal from the Pause Menu replaces it (not stacked).
+  - If Settings/ReportBug/etc. is opened from Pause, then closing it must return to **Pause Menu** (or explicitly unpause and restore input).
+- Only use `FInputModeGameAndUI` / mouse cursor capture when the player truly needs pointer interaction.
+  - If you enable cursor/click events, you must disable them on exit.
 
 
 ### Avoid runtime spikes
@@ -291,6 +313,24 @@ When editing UI Blueprints:
 - Enforce “event-driven UI” (no per-frame logic).
 - Prefer show/hide over rebuild for frequently used widgets.
 - Avoid heavy effects by default.
+
+### Non-blocking micro-interactions (loot, proximity prompts, etc.)
+
+For small, frequent interactions (loot bags, proximity actions, “press key” prompts):
+
+- Prefer a **HUD prompt/banner** over a full-screen blackout/modal.
+- Do not pause the game or switch input mode unless necessary.
+- Keep the interaction cheap: no per-frame UI rebuild; update only on proximity changes / state changes.
+- If the interaction has rarities (Black/Red/Yellow/White), make the rarity **visibly readable** in-world/UI.
+
+### Rarity-locked pools (content consistency)
+
+If a drop has a rarity tier, the contents must come from the matching tier:
+
+- Black drop → Black items pool; Red → Red; Yellow → Yellow; White → White.
+- Pools must be safe:
+  - If a pool is empty/missing, fall back gracefully (e.g., “all items”) and log clearly (do not crash, do not return NAME_None).
+  - Record the fallback behavior in `memory.md`.
 
 ---
 

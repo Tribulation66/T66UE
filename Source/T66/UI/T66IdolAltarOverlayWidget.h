@@ -23,6 +23,7 @@ class T66_API UT66IdolAltarOverlayWidget : public UUserWidget
 
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeDestruct() override;
 
 private:
 	FName PendingSelectedIdolID = NAME_None;

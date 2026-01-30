@@ -14,6 +14,8 @@ AT66CashTruckMimicEnemy::AT66CashTruckMimicEnemy()
 
 	// Heavy touch damage (tunable).
 	TouchDamageHearts = 3;
+	PointValue = 0;
+	bDropsLoot = false;
 	// TouchDamageCooldown is a static constexpr on the base class (0.5s) for now.
 
 	// Beefier move speed so it feels like a threat.
@@ -79,7 +81,7 @@ AT66CashTruckMimicEnemy::AT66CashTruckMimicEnemy()
 
 void AT66CashTruckMimicEnemy::OnDeath()
 {
-	// Mimics do not drop items / score in v0. They simply vanish.
-	Destroy();
+	// Run base death pipeline (director notification, etc) but we don't drop loot.
+	Super::OnDeath();
 }
 

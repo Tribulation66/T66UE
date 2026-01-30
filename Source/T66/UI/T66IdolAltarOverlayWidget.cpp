@@ -15,6 +15,19 @@
 #include "Styling/CoreStyle.h"
 #include "Input/DragAndDrop.h"
 
+void UT66IdolAltarOverlayWidget::NativeDestruct()
+{
+	// Safety: this overlay can be removed outside Back/Confirm (level change, pause flow, etc).
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (PC->IsGameplayLevel() && !PC->IsPaused())
+		{
+			PC->RestoreGameplayInputMode();
+		}
+	}
+	Super::NativeDestruct();
+}
+
 class FIdolDragDropOp : public FDragDropOperation
 {
 public:
@@ -99,6 +112,7 @@ public:
 		SLATE_ARGUMENT(bool, bLocked)
 		SLATE_ARGUMENT(FLinearColor, Color)
 		SLATE_ARGUMENT(FText, ToolTipText)
+		SLATE_ARGUMENT(FText, CenterText)
 		SLATE_EVENT(FOnIdolDropped, OnIdolDropped)
 	SLATE_END_ARGS()
 
@@ -114,7 +128,7 @@ public:
 			.ToolTipText(InArgs._ToolTipText)
 			[
 				SNew(STextBlock)
-				.Text(FText::FromString(TEXT("DROP\nHERE")))
+				.Text(InArgs._CenterText)
 				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 				.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
 				.Justification(ETextJustify::Center)
@@ -141,21 +155,11 @@ private:
 
 static FText GetIdolTooltipText(UT66LocalizationSubsystem* Loc, FName IdolID)
 {
-	// Minimal English tooltips for now (localized plumbing exists, but tooltip text can be expanded later).
-	const auto Txt = [&](const TCHAR* S) { return FText::FromString(S); };
-	if (IdolID == FName(TEXT("Idol_Frost"))) return Txt(TEXT("FROST\nAuto attacks freeze enemies for 0.5s."));
-	if (IdolID == FName(TEXT("Idol_Shock"))) return Txt(TEXT("SHOCK\nAuto attacks chain to 1 nearby enemy."));
-	if (IdolID == FName(TEXT("Idol_Glue"))) return Txt(TEXT("GLUE\nAuto attacks slow enemies briefly."));
-	if (IdolID == FName(TEXT("Idol_Silence"))) return Txt(TEXT("SILENCE\nAuto attacks prevent enemy attacks briefly."));
-	if (IdolID == FName(TEXT("Idol_Mark"))) return Txt(TEXT("MARK\nAuto attacks mark enemies (take extra auto-attack damage)."));
-	if (IdolID == FName(TEXT("Idol_Pierce"))) return Txt(TEXT("PIERCE\nAuto attacks pierce +1 enemy."));
-	if (IdolID == FName(TEXT("Idol_Split"))) return Txt(TEXT("SPLIT\nAuto attacks split into 2 weaker projectiles on hit."));
-	if (IdolID == FName(TEXT("Idol_Knockback"))) return Txt(TEXT("KNOCKBACK\nAuto attacks knock enemies back."));
-	if (IdolID == FName(TEXT("Idol_Ricochet"))) return Txt(TEXT("RICOCHET\nAuto attacks bounce once to another enemy."));
-	if (IdolID == FName(TEXT("Idol_Hex"))) return Txt(TEXT("HEX\nAuto attacks briefly stun enemies."));
-	if (IdolID == FName(TEXT("Idol_Fire"))) return Txt(TEXT("FIRE\nAuto attacks apply a burn: 10 damage per second."));
-	if (IdolID == FName(TEXT("Idol_Lifesteal"))) return Txt(TEXT("LIFESTEAL\nAuto attacks heal you by 1 heart per hit."));
-	return Txt(TEXT("IDOL\nUnknown."));
+	if (Loc)
+	{
+		return Loc->GetText_IdolTooltip(IdolID);
+	}
+	return FText::FromString(TEXT("IDOL\nUnknown."));
 }
 
 TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
@@ -180,7 +184,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				if (!HoverTooltipText.IsValid()) return;
 				if (Hovered.IsNone())
 				{
-					HoverTooltipText->SetText(FText::FromString(TEXT("Hover an idol to see its effect.")));
+					HoverTooltipText->SetText(Loc ? Loc->GetText_IdolAltarHoverHint() : FText::FromString(TEXT("Hover an idol to see its effect.")));
 				}
 				else
 				{
@@ -281,7 +285,10 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				SAssignNew(CenterPadBorder, ST66IdolDropTarget)
 				.bLocked(bLocked)
 				.Color(CenterC)
-				.ToolTipText(PendingSelectedIdolID.IsNone() ? FText::FromString(TEXT("Drop an Idol here.")) : GetIdolTooltipText(Loc, PendingSelectedIdolID))
+				.ToolTipText(PendingSelectedIdolID.IsNone()
+					? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : FText::FromString(TEXT("Drop an Idol here.")))
+					: GetIdolTooltipText(Loc, PendingSelectedIdolID))
+				.CenterText(Loc ? Loc->GetText_IdolAltarDropHere() : FText::FromString(TEXT("DROP\nHERE")))
 				.OnIdolDropped(ST66IdolDropTarget::FOnIdolDropped::CreateLambda([this](FName IdolID)
 				{
 					PendingSelectedIdolID = IdolID;
@@ -308,7 +315,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("IDOL ALTAR")))
+						.Text(Loc ? Loc->GetText_IdolAltarTitle() : FText::FromString(TEXT("IDOL ALTAR")))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
 						.ColorAndOpacity(FLinearColor::White)
 					]
@@ -319,7 +326,9 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						.HeightOverride(28.f)
 						[
 							SAssignNew(StatusText, STextBlock)
-							.Text(bLocked ? FText::FromString(TEXT("Idol already selected for Stage 1.")) : FText::GetEmpty())
+							.Text(bLocked
+								? (Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : FText::FromString(TEXT("Idol already selected for Stage 1.")))
+								: FText::GetEmpty())
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 							.Justification(ETextJustify::Center)
@@ -333,7 +342,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						.HeightOverride(72.f) // fixed height prevents overlay resizing when text changes
 						[
 							SAssignNew(HoverTooltipText, STextBlock)
-							.Text(FText::FromString(TEXT("Hover an idol to see its effect.")))
+							.Text(Loc ? Loc->GetText_IdolAltarHoverHint() : FText::FromString(TEXT("Hover an idol to see its effect.")))
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 							.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.9f, 1.f))
 							.Justification(ETextJustify::Center)
@@ -395,7 +404,7 @@ void UT66IdolAltarOverlayWidget::RefreshCenterPad()
 
 	CenterPadBorder->SetBorderBackgroundColor(C);
 	CenterPadBorder->SetToolTipText(PendingSelectedIdolID.IsNone()
-		? FText::FromString(TEXT("Drop an Idol here."))
+		? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : FText::FromString(TEXT("Drop an Idol here.")))
 		: GetIdolTooltipText(Loc, PendingSelectedIdolID));
 }
 
@@ -412,7 +421,8 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 	{
 		if (StatusText.IsValid())
 		{
-			StatusText->SetText(FText::FromString(TEXT("Already equipped.")));
+			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadyEquipped() : FText::FromString(TEXT("Already equipped.")));
 		}
 		return FReply::Handled();
 	}
@@ -421,7 +431,8 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 	{
 		if (StatusText.IsValid())
 		{
-			StatusText->SetText(FText::FromString(TEXT("Drag an idol into the center slot first.")));
+			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarDragFirst() : FText::FromString(TEXT("Drag an idol into the center slot first.")));
 		}
 		return FReply::Handled();
 	}
@@ -429,7 +440,8 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 	RunState->EquipIdolInSlot(0, PendingSelectedIdolID);
 	if (StatusText.IsValid())
 	{
-		StatusText->SetText(FText::FromString(TEXT("Equipped.")));
+		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		StatusText->SetText(Loc ? Loc->GetText_IdolAltarEquipped() : FText::FromString(TEXT("Equipped.")));
 	}
 
 	// Close immediately to restore gameplay input.

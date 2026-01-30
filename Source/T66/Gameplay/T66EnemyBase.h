@@ -33,6 +33,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
 
+	/** If false, this enemy will not spawn a loot bag on death (used by mimics/special cases). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loot")
+	bool bDropsLoot = true;
+
 	/** Visible mesh (cylinder) so enemy is seen */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;

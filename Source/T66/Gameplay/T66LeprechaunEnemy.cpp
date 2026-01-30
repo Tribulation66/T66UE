@@ -3,37 +3,18 @@
 #include "Gameplay/T66LeprechaunEnemy.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66Rarity.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
-static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
-{
-	if (!Mesh) return;
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
-	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
-		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
-			Mesh->SetMaterial(0, Mat);
-			return;
-		}
-	}
-	if (UMaterialInstanceDynamic* Mat = Mesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(FName("Color"), Color);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	}
-}
 
 AT66LeprechaunEnemy::AT66LeprechaunEnemy()
 {
 	// Distinct look: sphere above a cube.
 	if (VisualMesh)
 	{
-		if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+		if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 		{
 			VisualMesh->SetStaticMesh(Cube);
 		}
@@ -43,7 +24,7 @@ AT66LeprechaunEnemy::AT66LeprechaunEnemy()
 	HeadSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadSphere"));
 	HeadSphere->SetupAttachment(RootComponent);
 	HeadSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		HeadSphere->SetStaticMesh(Sphere);
 	}
@@ -72,8 +53,8 @@ void AT66LeprechaunEnemy::SetRarity(ET66Rarity InRarity)
 void AT66LeprechaunEnemy::ApplyRarityVisuals()
 {
 	const FLinearColor C = FT66RarityUtil::GetRarityColor(Rarity);
-	ApplyT66Color(VisualMesh, this, C);
-	ApplyT66Color(HeadSphere, this, C);
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
+	FT66VisualUtil::ApplyT66Color(HeadSphere, this, C);
 }
 
 void AT66LeprechaunEnemy::RecomputeGoldFromRarity()
@@ -90,18 +71,26 @@ void AT66LeprechaunEnemy::RecomputeGoldFromRarity()
 
 bool AT66LeprechaunEnemy::TakeDamageFromHero(int32 Damage)
 {
-	// Give gold on hit (even if this hit kills it).
+	// Only award gold if this hit actually applied damage to a living target.
+	if (Damage <= 0 || CurrentHP <= 0)
+	{
+		return false;
+	}
+
+	UT66RunStateSubsystem* RunState = nullptr;
 	if (UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GI = World->GetGameInstance())
 		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				RunState->AddGold(GoldPerHit);
-			}
+			RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 		}
 	}
 
-	return Super::TakeDamageFromHero(Damage);
+	const bool bApplied = Super::TakeDamageFromHero(Damage);
+	if (bApplied && RunState && GoldPerHit > 0)
+	{
+		RunState->AddGold(GoldPerHit);
+	}
+	return bApplied;
 }
 
