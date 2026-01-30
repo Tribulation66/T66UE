@@ -4,7 +4,13 @@
 #include "UI/T66UIManager.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/DateTime.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "HAL/FileManager.h"
+#include "HAL/PlatformMisc.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
@@ -31,6 +37,7 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 	FText TitleText = Loc ? Loc->GetText_ReportBugTitle() : FText::FromString(TEXT("REPORT BUG"));
 	FText SubmitText = Loc ? Loc->GetText_ReportBugSubmit() : FText::FromString(TEXT("SUBMIT"));
 	FText CancelText = Loc ? Loc->GetText_Cancel() : FText::FromString(TEXT("CANCEL"));
+	FText HintText = Loc ? Loc->GetText_DescribeTheBugHint() : FText::FromString(TEXT("Describe the bug..."));
 
 	BugReportText.Empty();
 
@@ -67,7 +74,7 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 							SNew(SMultiLineEditableTextBox)
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
 							.OnTextChanged_Lambda([this](const FText& T) { BugReportText = T.ToString(); })
-							.HintText(FText::FromString(TEXT("Describe the bug...")))
+							.HintText(HintText)
 						]
 					]
 					+ SVerticalBox::Slot()
@@ -128,7 +135,52 @@ FReply UT66ReportBugScreen::HandleCancelClicked() { OnCancelClicked(); return FR
 
 void UT66ReportBugScreen::OnSubmitClicked()
 {
-	UE_LOG(LogTemp, Log, TEXT("Report Bug: %s"), *BugReportText);
+	// Save a local bug report file (text-only) with lightweight context.
+	const FString Timestamp = FDateTime::UtcNow().ToIso8601().Replace(TEXT(":"), TEXT("-"));
+	const FString MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString(TEXT("UnknownMap"));
+
+	int32 Hearts = -1, MaxHearts = -1, Gold = -1, Debt = -1, Stage = -1, Score = -1;
+	float TimerSeconds = -1.f;
+	bool bTimerActive = false;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			Hearts = RunState->GetCurrentHearts();
+			MaxHearts = RunState->GetMaxHearts();
+			Gold = RunState->GetCurrentGold();
+			Debt = RunState->GetCurrentDebt();
+			Stage = RunState->GetCurrentStage();
+			Score = RunState->GetCurrentScore();
+			bTimerActive = RunState->GetStageTimerActive();
+			TimerSeconds = RunState->GetStageTimerSecondsRemaining();
+		}
+	}
+
+	FString Report;
+	Report += TEXT("TRIBULATION 66 — BUG REPORT\n");
+	Report += FString::Printf(TEXT("UTC: %s\n"), *Timestamp);
+	Report += FString::Printf(TEXT("Map: %s\n"), *MapName);
+	Report += FString::Printf(TEXT("OS: %s\n"), *FPlatformMisc::GetOSVersion());
+	Report += FString::Printf(TEXT("CPU: %s\n"), *FPlatformMisc::GetCPUBrand());
+	Report += TEXT("\n-- Run Context (best effort) --\n");
+	Report += FString::Printf(TEXT("Stage: %d\n"), Stage);
+	Report += FString::Printf(TEXT("Hearts: %d / %d\n"), Hearts, MaxHearts);
+	Report += FString::Printf(TEXT("Gold: %d\n"), Gold);
+	Report += FString::Printf(TEXT("Debt: %d\n"), Debt);
+	Report += FString::Printf(TEXT("Score: %d\n"), Score);
+	Report += FString::Printf(TEXT("StageTimerActive: %s\n"), bTimerActive ? TEXT("true") : TEXT("false"));
+	Report += FString::Printf(TEXT("StageTimerSecondsRemaining: %.2f\n"), TimerSeconds);
+	Report += TEXT("\n-- Player Text --\n");
+	Report += BugReportText;
+	Report += TEXT("\n");
+
+	const FString Dir = FPaths::ProjectSavedDir() / TEXT("BugReports");
+	IFileManager::Get().MakeDirectory(*Dir, true);
+	const FString FilePath = Dir / FString::Printf(TEXT("BugReport_%s.txt"), *Timestamp);
+	FFileHelper::SaveStringToFile(Report, *FilePath);
+
+	UE_LOG(LogTemp, Log, TEXT("Report Bug saved: %s"), *FilePath);
 	CloseModal();
 
 	// In gameplay, Report Bug is opened from Pause Menu. Our UIManager is single-modal, so opening this

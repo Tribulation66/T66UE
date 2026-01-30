@@ -79,6 +79,222 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|MainMenu")
 	FText GetText_Quit() const;
+
+	// Settings (modal)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsTabGameplay() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsTabGraphics() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsTabControls() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsTabAudio() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsTabCrashing() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_On() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_Off() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_Apply() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_RestoreDefaults() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_Rebind() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_Clear() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_Primary() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_Secondary() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_KeyboardAndMouse() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_Controller() const;
+
+	// Controls tab helper text
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_RebindInstructions() const;
+
+	/** Format string: "Press a key for {0} (Esc cancels)." */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_RebindPressKeyFormat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_RebindCancelled() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_RebindSaved() const;
+
+	// Controls labels
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlMoveForward() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlMoveBack() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlMoveLeft() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlMoveRight() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlJump() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlInteract() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlPauseMenuPrimary() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlPauseMenuSecondary() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlToggleHUD() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlDash() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlUltimate() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlAttackLock() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlAttackUnlock() const;
+
+	// Graphics helper
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_PrimaryMonitor() const;
+
+	// Gameplay settings labels
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
+	FText GetText_IntenseVisuals() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
+	FText GetText_AutoSprint() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
+	FText GetText_SubmitScoresToLeaderboard() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
+	FText GetText_ScreenShake() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
+	FText GetText_CameraSmoothing() const;
+
+	// Graphics settings labels/options
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Monitor() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Resolution() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_WindowMode() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Windowed() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Fullscreen() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_BorderlessWindowed() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_DisplayMode() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_DisplayModeStandard() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_DisplayModeWidescreen() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Quality() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_BestPerformance() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_BestQuality() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_FpsCap() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Unlimited() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_KeepTheseSettingsTitle() const;
+
+	/** Format string: "Keep these settings? Reverting in {0}s" */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_KeepTheseSettingsBodyFormat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Keep() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
+	FText GetText_Revert() const;
+
+	// Audio settings labels
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Audio")
+	FText GetText_MasterVolume() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Audio")
+	FText GetText_MusicVolume() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Audio")
+	FText GetText_SfxVolume() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Audio")
+	FText GetText_MuteWhenUnfocused() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Audio")
+	FText GetText_OutputDevice() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Audio")
+	FText GetText_SubtitlesAlwaysOn() const;
+
+	// Crashing tab text
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Crashing")
+	FText GetText_CrashingChecklistHeader() const;
+
+	/** Multi-line checklist body for the Crashing tab. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Crashing")
+	FText GetText_CrashingChecklistBody() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Crashing")
+	FText GetText_ApplySafeModeSettings() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Crashing")
+	FText GetText_StillHavingIssues() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Crashing")
+	FText GetText_ReportBugDescription() const;
+
+	// Report Bug
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|ReportBug")
+	FText GetText_DescribeTheBugHint() const;
 	
 	// Leaderboard
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Leaderboard")

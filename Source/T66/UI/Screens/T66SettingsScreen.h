@@ -9,6 +9,7 @@
 #include "T66SettingsScreen.generated.h"
 
 class UT66LocalizationSubsystem;
+class UT66PlayerSettingsSubsystem;
 struct FKeyEvent;
 struct FPointerEvent;
 
@@ -20,6 +21,20 @@ enum class ET66SettingsTab : uint8
 	Controls,
 	Audio,
 	Crashing
+};
+
+UENUM()
+enum class ET66DisplayMode : uint8
+{
+	Standard,
+	Widescreen
+};
+
+UENUM()
+enum class ET66ControlsDeviceTab : uint8
+{
+	KeyboardMouse,
+	Controller
 };
 
 /**
@@ -57,9 +72,11 @@ protected:
 
 private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
+	UT66PlayerSettingsSubsystem* GetPlayerSettings() const;
 
 	// Widget switcher for tab content
 	TSharedPtr<SWidgetSwitcher> ContentSwitcher;
+	TSharedPtr<SWidgetSwitcher> ControlsDeviceSwitcher;
 
 	// Tab content builders
 	TSharedRef<SWidget> BuildGameplayTab();
@@ -82,6 +99,8 @@ private:
 		bool bIsAxis = false;
 		FName Name = NAME_None;   // ActionName or AxisName
 		float Scale = 1.f;        // Axis only
+		bool bIsController = false;
+		int32 SlotIndex = 0;      // 0=Primary, 1=Secondary
 		FKey OldKey;
 		TSharedPtr<class STextBlock> KeyText;
 	};
@@ -90,12 +109,76 @@ private:
 	FPendingRebind Pending;
 	TSharedPtr<class STextBlock> RebindStatusText;
 
-	FReply BeginRebindAction(FName ActionName, const FKey& OldKey, TSharedPtr<class STextBlock> KeyText);
-	FReply BeginRebindAxis(FName AxisName, float Scale, const FKey& OldKey, TSharedPtr<class STextBlock> KeyText);
+	FReply BeginRebindAction(FName ActionName, bool bIsController, int32 SlotIndex, const FKey& OldKey, TSharedPtr<class STextBlock> KeyText);
+	FReply BeginRebindAxis(FName AxisName, float Scale, bool bIsController, int32 SlotIndex, const FKey& OldKey, TSharedPtr<class STextBlock> KeyText);
 	void ApplyRebindToInputSettings(const FKey& NewKey);
 	void ClearBindingInInputSettings();
 	static FText KeyToText(const FKey& K);
 	static bool IsKeyboardMouseKey(const FKey& K);
+	static bool IsControllerKey(const FKey& K);
 	static FKey FindActionKey(FName ActionName, const FKey& PreferredOldKey);
 	static FKey FindAxisKey(FName AxisName, float Scale, const FKey& PreferredOldKey);
+
+	// Primary/secondary lookup helpers (device-filtered).
+	static void FindActionKeysForDevice(FName ActionName, bool bIsController, TArray<FKey>& OutKeys);
+	static void FindAxisKeysForDevice(FName AxisName, float Scale, bool bIsController, TArray<FKey>& OutKeys);
+
+	// ===== Controls UI state =====
+	ET66ControlsDeviceTab CurrentControlsDeviceTab = ET66ControlsDeviceTab::KeyboardMouse;
+
+	struct FControlRowKey
+	{
+		bool bIsAxis = false;
+		FName Name = NAME_None;
+		float Scale = 1.f;
+		bool bIsController = false;
+		int32 SlotIndex = 0;
+
+		friend bool operator==(const FControlRowKey& A, const FControlRowKey& B)
+		{
+			return A.bIsAxis == B.bIsAxis
+				&& A.Name == B.Name
+				&& FMath::IsNearlyEqual(A.Scale, B.Scale)
+				&& A.bIsController == B.bIsController
+				&& A.SlotIndex == B.SlotIndex;
+		}
+	};
+
+	friend uint32 GetTypeHash(const FControlRowKey& K)
+	{
+		uint32 H = HashCombine(GetTypeHash(K.bIsAxis), GetTypeHash(K.Name));
+		H = HashCombine(H, GetTypeHash(static_cast<uint32>(K.bIsController)));
+		H = HashCombine(H, GetTypeHash(static_cast<uint32>(K.SlotIndex)));
+		H = HashCombine(H, GetTypeHash(static_cast<int32>(K.Scale * 1000.f)));
+		return H;
+	}
+
+	TMap<FControlRowKey, TSharedPtr<class STextBlock>> ControlKeyTextMap;
+
+	void RefreshControlsKeyTexts();
+
+	// ===== Graphics staging + confirm =====
+	struct FPendingGraphics
+	{
+		FIntPoint Resolution = FIntPoint(1920, 1080);
+		EWindowMode::Type WindowMode = EWindowMode::Fullscreen;
+		ET66DisplayMode DisplayMode = ET66DisplayMode::Standard;
+		int32 QualityNotch = 3;         // 0..3
+		int32 FpsCapIndex = 1;          // 0=30,1=60,2=90,3=120,4=Unlimited
+		bool bDirty = false;
+	};
+
+	FPendingGraphics PendingGraphics;
+	bool bGraphicsInitialized = false;
+
+	bool bVideoModeConfirmActive = false;
+	int32 VideoModeConfirmSecondsRemaining = 0;
+	FTimerHandle VideoModeConfirmTimerHandle;
+
+	TSharedPtr<class STextBlock> VideoModeConfirmCountdownText;
+
+	void InitializeGraphicsFromUserSettingsIfNeeded();
+	void ApplyPendingGraphics(bool bForceConfirmPrompt);
+	void StartVideoModeConfirmPrompt();
+	void EndVideoModeConfirmPrompt(bool bKeepNewSettings);
 };

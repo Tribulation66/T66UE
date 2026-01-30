@@ -478,6 +478,691 @@ FText UT66LocalizationSubsystem::GetText_Quit() const
 	}
 }
 
+// ========== Settings ==========
+
+FText UT66LocalizationSubsystem::GetText_SettingsTabGameplay() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("JOGABILIDADE"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("遊戲"));
+	default: return FText::FromString(TEXT("GAMEPLAY"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsTabGraphics() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("GRÁFICOS"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("圖形"));
+	default: return FText::FromString(TEXT("GRAPHICS"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsTabControls() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("CONTROLES"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("控制"));
+	default: return FText::FromString(TEXT("CONTROLS"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsTabAudio() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("ÁUDIO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("音訊"));
+	default: return FText::FromString(TEXT("AUDIO"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsTabCrashing() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("TRAVANDO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("當機"));
+	default: return FText::FromString(TEXT("CRASHING"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_On() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("LIGADO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("開"));
+	default: return FText::FromString(TEXT("ON"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Off() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("DESLIGADO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("關"));
+	default: return FText::FromString(TEXT("OFF"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Apply() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("APLICAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("套用"));
+	default: return FText::FromString(TEXT("APPLY"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RestoreDefaults() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("RESTAURAR PADRÕES"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("還原預設"));
+	default: return FText::FromString(TEXT("RESTORE DEFAULTS"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Rebind() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("REMAPEAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("重新綁定"));
+	default: return FText::FromString(TEXT("REBIND"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Clear() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("LIMPAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("清除"));
+	default: return FText::FromString(TEXT("CLEAR"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Primary() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("PRIMÁRIO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("主要"));
+	default: return FText::FromString(TEXT("PRIMARY"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Secondary() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("SECUNDÁRIO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("次要"));
+	default: return FText::FromString(TEXT("SECONDARY"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_KeyboardAndMouse() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("TECLADO E MOUSE"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("鍵盤與滑鼠"));
+	default: return FText::FromString(TEXT("KEYBOARD & MOUSE"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Controller() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("CONTROLE"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("控制器"));
+	default: return FText::FromString(TEXT("CONTROLLER"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RebindInstructions() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Clique em REMAPEAR e pressione uma tecla/botão (Esc cancela)."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("點擊重新綁定，然後按下按鍵/按鈕（Esc 取消）。"));
+	default: return FText::FromString(TEXT("Click REBIND, then press a key/button (Esc cancels)."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RebindPressKeyFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Pressione uma tecla para {0} (Esc cancela)."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("為 {0} 按下按鍵（Esc 取消）。"));
+	default: return FText::FromString(TEXT("Press a key for {0} (Esc cancels)."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RebindCancelled() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Remapeamento cancelado."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("已取消重新綁定。"));
+	default: return FText::FromString(TEXT("Rebind cancelled."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_RebindSaved() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Remapeamento salvo."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("已儲存綁定。"));
+	default: return FText::FromString(TEXT("Rebind saved."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlMoveForward() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Mover para frente"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("前進"));
+	default: return FText::FromString(TEXT("Move Forward"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlMoveBack() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Mover para trás"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("後退"));
+	default: return FText::FromString(TEXT("Move Back"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlMoveLeft() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Mover para a esquerda"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("向左移動"));
+	default: return FText::FromString(TEXT("Move Left"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlMoveRight() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Mover para a direita"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("向右移動"));
+	default: return FText::FromString(TEXT("Move Right"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlJump() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Pular"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("跳躍"));
+	default: return FText::FromString(TEXT("Jump"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlInteract() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Interagir"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("互動"));
+	default: return FText::FromString(TEXT("Interact"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlPauseMenuPrimary() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Menu de pausa (primário)"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("暫停選單（主要）"));
+	default: return FText::FromString(TEXT("Pause Menu (primary)"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlPauseMenuSecondary() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Menu de pausa (secundário)"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("暫停選單（次要）"));
+	default: return FText::FromString(TEXT("Pause Menu (secondary)"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlToggleHUD() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Alternar HUD"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("切換 HUD"));
+	default: return FText::FromString(TEXT("Toggle HUD"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlDash() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Dash"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("衝刺"));
+	default: return FText::FromString(TEXT("Dash"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlUltimate() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Ultimate"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("終極技能"));
+	default: return FText::FromString(TEXT("Ultimate"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlAttackLock() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Travar alvo"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("鎖定目標"));
+	default: return FText::FromString(TEXT("Attack Lock"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlAttackUnlock() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Destravar alvo"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("解除鎖定"));
+	default: return FText::FromString(TEXT("Attack Unlock"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_IntenseVisuals() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Visuais Intensos"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("強烈特效"));
+	default: return FText::FromString(TEXT("Intense Visuals"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_AutoSprint() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Auto Corrida"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("自動衝刺"));
+	default: return FText::FromString(TEXT("Auto Sprint"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SubmitScoresToLeaderboard() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Enviar Pontuações ao Ranking"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("提交分數到排行榜"));
+	default: return FText::FromString(TEXT("Submit Scores to Leaderboard"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ScreenShake() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Tremor de Tela"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("畫面震動"));
+	default: return FText::FromString(TEXT("Screen Shake"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_CameraSmoothing() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Suavização da Câmera"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("相機平滑"));
+	default: return FText::FromString(TEXT("Camera Smoothing"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Monitor() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Monitor"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("螢幕"));
+	default: return FText::FromString(TEXT("Monitor"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PrimaryMonitor() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Monitor principal"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("主要螢幕"));
+	default: return FText::FromString(TEXT("Primary Monitor"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Resolution() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Resolução"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("解析度"));
+	default: return FText::FromString(TEXT("Resolution"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_WindowMode() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Modo de Janela"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("視窗模式"));
+	default: return FText::FromString(TEXT("Window Mode"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Windowed() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Janela"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("視窗"));
+	default: return FText::FromString(TEXT("Windowed"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Fullscreen() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Tela Cheia"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("全螢幕"));
+	default: return FText::FromString(TEXT("Fullscreen"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_BorderlessWindowed() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Janela sem Bordas"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("無邊框視窗"));
+	default: return FText::FromString(TEXT("Borderless Windowed"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_DisplayMode() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Modo de Exibição"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("顯示模式"));
+	default: return FText::FromString(TEXT("Display Mode"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_DisplayModeStandard() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Padrão"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("標準"));
+	default: return FText::FromString(TEXT("Standard"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_DisplayModeWidescreen() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Widescreen"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("寬螢幕"));
+	default: return FText::FromString(TEXT("Widescreen"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Quality() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Qualidade"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("品質"));
+	default: return FText::FromString(TEXT("Quality"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_BestPerformance() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Melhor Desempenho"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("最佳效能"));
+	default: return FText::FromString(TEXT("Best Performance"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_BestQuality() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Melhor Qualidade"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("最佳品質"));
+	default: return FText::FromString(TEXT("Best Quality"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_FpsCap() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Limite de FPS"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("FPS 上限"));
+	default: return FText::FromString(TEXT("FPS Cap"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Unlimited() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Ilimitado"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("無上限"));
+	default: return FText::FromString(TEXT("Unlimited"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_KeepTheseSettingsTitle() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Manter estas configurações?"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("保留這些設定？"));
+	default: return FText::FromString(TEXT("Keep these settings?"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_KeepTheseSettingsBodyFormat() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Revertendo em {0}s."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("{0} 秒後自動還原。"));
+	default: return FText::FromString(TEXT("Reverting in {0}s."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Keep() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("MANTER"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("保留"));
+	default: return FText::FromString(TEXT("KEEP"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Revert() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("REVERTER"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("還原"));
+	default: return FText::FromString(TEXT("REVERT"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_MasterVolume() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Volume Mestre"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("主音量"));
+	default: return FText::FromString(TEXT("Master Volume"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_MusicVolume() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Volume da Música"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("音樂音量"));
+	default: return FText::FromString(TEXT("Music Volume"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SfxVolume() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Volume de Efeitos"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("音效音量"));
+	default: return FText::FromString(TEXT("SFX Volume"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_MuteWhenUnfocused() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Silenciar ao Desfocar"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("失去焦點時靜音"));
+	default: return FText::FromString(TEXT("Mute when unfocused"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_OutputDevice() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Dispositivo de Saída"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("輸出裝置"));
+	default: return FText::FromString(TEXT("Output Device"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SubtitlesAlwaysOn() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Legendas: sempre ativadas"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("字幕：永遠開啟"));
+	default: return FText::FromString(TEXT("Subtitles: always on"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_CrashingChecklistHeader() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Se o jogo estiver travando, tente:"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("如果遊戲當機，請嘗試："));
+	default: return FText::FromString(TEXT("If your game is crashing, try these steps:"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_CrashingChecklistBody() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese:
+		return FText::FromString(TEXT("1. Abaixe a Qualidade para \"Melhor Desempenho\" na aba Gráficos.\n2. Desative \"Visuais Intensos\" na aba Jogabilidade.\n3. Reduza o Limite de FPS para 60 na aba Gráficos.\n4. Experimente o modo Janela em vez de Tela Cheia."));
+	case ET66Language::ChineseTraditional:
+		return FText::FromString(TEXT("1. 在「圖形」把品質調到「最佳效能」。\n2. 在「遊戲」關閉「強烈特效」。\n3. 在「圖形」把 FPS 上限調到 60。\n4. 嘗試使用視窗模式而不是全螢幕。"));
+	default:
+		return FText::FromString(TEXT("1. Lower Quality to \"Best Performance\" in the Graphics tab.\n2. Disable \"Intense Visuals\" in the Gameplay tab.\n3. Reduce FPS Cap to 60 in the Graphics tab.\n4. Try Windowed mode instead of Fullscreen."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ApplySafeModeSettings() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Aplicar Modo Seguro"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("套用安全模式"));
+	default: return FText::FromString(TEXT("Apply Safe Mode Settings"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_StillHavingIssues() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Ainda com problemas?"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("還有問題？"));
+	default: return FText::FromString(TEXT("Still having issues?"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ReportBugDescription() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Reporte um bug para nos ajudar. Seu relatório incluirá informações básicas do sistema."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("回報問題以協助我們修復。你的回報會包含基本系統資訊。"));
+	default: return FText::FromString(TEXT("Report a bug to help us fix it. Your report will include basic system info."));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_DescribeTheBugHint() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Descreva o bug..."));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("描述問題..."));
+	default: return FText::FromString(TEXT("Describe the bug..."));
+	}
+}
+
 // ========== Leaderboard ==========
 
 FText UT66LocalizationSubsystem::GetText_Leaderboard() const
