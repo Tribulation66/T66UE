@@ -1,5 +1,55 @@
 # T66 Cursor Guidelines (Build BibleV1 into the Unreal Project)
 
+## HARD RULE (Non‑Negotiable) — Localize *every* new player-facing string at implementation time
+
+**Any time you add or change player-facing text, you must complete the full localization pipeline as part of that same change-set (no “we’ll translate it later”).**
+
+- **Author**: Use **`LOCTEXT` / `NSLOCTEXT`** and/or **String Tables** (`FText::FromStringTable`).  
+  - **Never** add per-language translation logic (eg `switch(CurrentLanguage)` returning strings).  
+  - **Never** ship new UI text via `FText::FromString(TEXT("..."))`.
+- **Gather**: Run GatherText so new keys land in `Content/Localization/T66/T66.manifest` and `.archive` files.
+- **Translate (all supported cultures)**: Ensure translations exist for all 22 supported cultures.  
+  - Allowed: edit `.po` / `.archive` by hand (human translation), or run the offline batch translator `Scripts/AutoTranslateLocalizationArchives.py` as a baseline.
+- **Compile**: Run `Config/Localization/T66_Compile.ini` to regenerate `Content/Localization/T66/<culture>/T66.locres`.
+- **Verify**: Verify the new/changed text visibly updates when switching culture (event-driven; no tick polling).
+
+**Agent acknowledgement requirement:** After reading `memory.md` and this file, the agent must explicitly acknowledge this rule in its next message before making changes (e.g., “Acknowledged: any new player-facing text will be localized end-to-end: author → gather → translate → compile `.locres` → verify.”).
+
+### Required “delta localization” workflow (agent must run this automatically)
+
+When a change-set adds/changes player-facing text, the agent must do the following **as part of the same change-set**. The agent must **run these commands itself** (do not ask the user to copy/paste commands).
+
+- **If you changed C++ (`Source/**`) and/or config (`Config/**`) text**
+  - Run source gather:
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Source.log"
+```
+
+- **If you changed assets with text (UMG/Blueprints/Maps/DataTables/etc.)**
+  - Run the narrow assets gather:
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Assets.log"
+```
+
+- **Translations (must cover all 22 cultures)**
+  - If human translations are not provided yet, run the offline baseline translator to populate `.archive` entries:
+
+```powershell
+python -u "C:\UE\T66\Scripts\AutoTranslateLocalizationArchives.py"
+```
+
+- **Compile `.locres` (always after updating translations)**
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Compile.log"
+```
+
+- **Fast verification (agent must do at least one)**
+  - **Artifact check**: ensure `Content/Localization/T66/<culture>/T66.locres` exists for all cultures.
+  - **Runtime check**: launch editor/game, switch to a non-English language and confirm the new/changed text updates.
+
 This document is the operating manual for an AI agent (Cursor or any CLI-capable agent) working inside the **T66** Unreal project. It defines **how** to make changes safely, deterministically, and in a way that stays performant on low-end PCs—while remaining easy for LLMs to extend without breaking the game.
 
 **Required companion file:** `memory.md` (living progress ledger).  
