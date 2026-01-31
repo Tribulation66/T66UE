@@ -159,7 +159,7 @@ static FText GetIdolTooltipText(UT66LocalizationSubsystem* Loc, FName IdolID)
 	{
 		return Loc->GetText_IdolTooltip(IdolID);
 	}
-	return FText::FromString(TEXT("IDOL\nUnknown."));
+	return NSLOCTEXT("T66.IdolAltar", "IdolTooltipUnknown", "IDOL\nUnknown.");
 }
 
 TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
@@ -192,7 +192,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				if (!HoverTooltipText.IsValid()) return;
 				if (Hovered.IsNone())
 				{
-					HoverTooltipText->SetText(Loc ? Loc->GetText_IdolAltarHoverHint() : FText::FromString(TEXT("Hover an idol to see its effect.")));
+					HoverTooltipText->SetText(Loc ? Loc->GetText_IdolAltarHoverHint() : NSLOCTEXT("T66.IdolAltar", "HoverHint", "Hover an idol to see its effect."));
 				}
 				else
 				{
@@ -294,9 +294,9 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				.bLocked(bLocked)
 				.Color(CenterC)
 				.ToolTipText(PendingSelectedIdolID.IsNone()
-					? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : FText::FromString(TEXT("Drop an Idol here.")))
+					? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : NSLOCTEXT("T66.IdolAltar", "DropAnIdolHere", "Drop an Idol here."))
 					: GetIdolTooltipText(Loc, PendingSelectedIdolID))
-				.CenterText(Loc ? Loc->GetText_IdolAltarDropHere() : FText::FromString(TEXT("DROP\nHERE")))
+				.CenterText(Loc ? Loc->GetText_IdolAltarDropHere() : NSLOCTEXT("T66.IdolAltar", "DropHere", "DROP\nHERE"))
 				.OnIdolDropped(ST66IdolDropTarget::FOnIdolDropped::CreateLambda([this](FName IdolID)
 				{
 					PendingSelectedIdolID = IdolID;
@@ -323,7 +323,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_IdolAltarTitle() : FText::FromString(TEXT("IDOL ALTAR")))
+						.Text(Loc ? Loc->GetText_IdolAltarTitle() : NSLOCTEXT("T66.IdolAltar", "Title", "IDOL ALTAR"))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
 						.ColorAndOpacity(FLinearColor::White)
 					]
@@ -335,7 +335,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						[
 							SAssignNew(StatusText, STextBlock)
 							.Text(bLocked
-							? (Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : FText::FromString(TEXT("All idol slots are full.")))
+							? (Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : NSLOCTEXT("T66.IdolAltar", "AllSlotsFull", "All idol slots are full."))
 								: FText::GetEmpty())
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
@@ -350,7 +350,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						.HeightOverride(72.f) // fixed height prevents overlay resizing when text changes
 						[
 							SAssignNew(HoverTooltipText, STextBlock)
-							.Text(Loc ? Loc->GetText_IdolAltarHoverHint() : FText::FromString(TEXT("Hover an idol to see its effect.")))
+							.Text(Loc ? Loc->GetText_IdolAltarHoverHint() : NSLOCTEXT("T66.IdolAltar", "HoverHint", "Hover an idol to see its effect."))
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 							.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.9f, 1.f))
 							.Justification(ETextJustify::Center)
@@ -374,7 +374,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.55f, 0.25f, 1.f))
 								[
 									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_Confirm() : FText::FromString(TEXT("CONFIRM")))
+									.Text(Loc ? Loc->GetText_Confirm() : NSLOCTEXT("T66.Common", "Confirm", "CONFIRM"))
 									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 									.ColorAndOpacity(FLinearColor::White)
 								]
@@ -389,7 +389,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
 								[
 									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK")))
+									.Text(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"))
 									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 									.ColorAndOpacity(FLinearColor::White)
 								]
@@ -412,7 +412,7 @@ void UT66IdolAltarOverlayWidget::RefreshCenterPad()
 
 	CenterPadBorder->SetBorderBackgroundColor(C);
 	CenterPadBorder->SetToolTipText(PendingSelectedIdolID.IsNone()
-		? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : FText::FromString(TEXT("Drop an Idol here.")))
+		? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : NSLOCTEXT("T66.IdolAltar", "DropAnIdolHere", "Drop an Idol here."))
 		: GetIdolTooltipText(Loc, PendingSelectedIdolID));
 }
 
@@ -440,7 +440,7 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 		if (StatusText.IsValid())
 		{
 			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : FText::FromString(TEXT("All idol slots are full.")));
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : NSLOCTEXT("T66.IdolAltar", "AllSlotsFull", "All idol slots are full."));
 		}
 		return FReply::Handled();
 	}
@@ -450,7 +450,7 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 		if (StatusText.IsValid())
 		{
 			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-			StatusText->SetText(Loc ? Loc->GetText_IdolAltarDragFirst() : FText::FromString(TEXT("Drag an idol into the center slot first.")));
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarDragFirst() : NSLOCTEXT("T66.IdolAltar", "DragFirst", "Drag an idol into the center slot first."));
 		}
 		return FReply::Handled();
 	}
@@ -459,7 +459,7 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 	if (StatusText.IsValid())
 	{
 		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-		StatusText->SetText(Loc ? Loc->GetText_IdolAltarEquipped() : FText::FromString(TEXT("Equipped.")));
+		StatusText->SetText(Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped."));
 	}
 
 	// Close immediately to restore gameplay input.

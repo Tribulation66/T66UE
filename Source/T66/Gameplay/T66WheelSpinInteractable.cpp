@@ -1,7 +1,6 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66WheelSpinInteractable.h"
-#include "UI/T66WheelOverlayWidget.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
@@ -52,17 +51,10 @@ bool AT66WheelSpinInteractable::Interact(APlayerController* PC)
 {
 	if (!PC || bConsumed) return false;
 
-	UT66WheelOverlayWidget* W = CreateWidget<UT66WheelOverlayWidget>(PC, UT66WheelOverlayWidget::StaticClass());
-	if (!W) return false;
-
-	W->SetWheelRarity(Rarity);
-	W->AddToViewport(120);
-
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	InputMode.SetHideCursorDuringCapture(false);
-	PC->SetInputMode(InputMode);
-	PC->bShowMouseCursor = true;
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC))
+	{
+		T66PC->StartWheelSpinHUD(Rarity);
+	}
 
 	bConsumed = true;
 	Destroy();

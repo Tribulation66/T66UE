@@ -7,6 +7,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -15,7 +16,9 @@
 #include "Camera/CameraComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
+#include "TimerManager.h"
 
 AT66HeroBase::AT66HeroBase()
 {
@@ -61,6 +64,41 @@ AT66HeroBase::AT66HeroBase()
 		// Scale to reasonable character size (cylinder is 100 units tall by default)
 		PlaceholderMesh->SetRelativeScale3D(FVector(0.5f, 0.5f, 1.0f));
 	}
+
+	// ========== Combat range ring (visual) ==========
+	AttackRangeRingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("AttackRangeRingISM"));
+	AttackRangeRingISM->SetupAttachment(RootComponent);
+	AttackRangeRingISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackRangeRingISM->SetGenerateOverlapEvents(false);
+	AttackRangeRingISM->CastShadow = false;
+	AttackRangeRingISM->bReceivesDecals = false;
+	AttackRangeRingISM->SetHiddenInGame(true, true);
+	AttackRangeRingISM->SetVisibility(false, true);
+
+	// Use simple cube segments to avoid a filled disk that "whites out" the floor.
+	if (CubeMesh)
+	{
+		AttackRangeRingISM->SetStaticMesh(CubeMesh);
+	}
+	else if (CylinderMesh)
+	{
+		AttackRangeRingISM->SetStaticMesh(CylinderMesh);
+	}
+
+	// Wireframe reads best for a "range ring" and won't white-out the floor now that it's segmented.
+	UMaterialInterface* RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineDebugMaterials/M_Wireframe.M_Wireframe"));
+	if (!RingMat)
+	{
+		RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
+	}
+	if (RingMat)
+	{
+		AttackRangeRingISM->SetMaterial(0, RingMat);
+	}
+
+	// Sit on the ground plane under the capsule.
+	AttackRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 2.f));
+	AttackRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 
 	// ========== Character Movement Setup ==========
 	
@@ -175,6 +213,7 @@ void AT66HeroBase::BeginPlay()
 		CachedRunState->HeroProgressChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 		CachedRunState->SurvivalChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 		CachedRunState->InventoryChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+		CachedRunState->PanelVisibilityChanged.AddDynamic(this, &AT66HeroBase::HandleHUDPanelVisibilityChanged);
 	}
 
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -182,6 +221,14 @@ void AT66HeroBase::BeginPlay()
 		BaseMaxWalkSpeed = Movement->MaxWalkSpeed;
 	}
 	HandleHeroDerivedStatsChanged();
+	HandleHUDPanelVisibilityChanged();
+
+	// Ensure ring updates after components (CombatComponent) finish BeginPlay.
+	if (UWorld* World = GetWorld())
+	{
+		FTimerHandle Tmp;
+		World->GetTimerManager().SetTimer(Tmp, this, &AT66HeroBase::UpdateAttackRangeRing, 0.15f, false);
+	}
 }
 
 void AT66HeroBase::HandleHeroDerivedStatsChanged()
@@ -196,6 +243,18 @@ void AT66HeroBase::HandleHeroDerivedStatsChanged()
 		* CachedRunState->GetStageMoveSpeedMultiplier()
 		* CachedRunState->GetStatusMoveSpeedMultiplier();
 	Movement->MaxWalkSpeed = FMath::Clamp(BaseMaxWalkSpeed * Mult, 200.f, 10000.f);
+
+	UpdateAttackRangeRing();
+}
+
+void AT66HeroBase::HandleHUDPanelVisibilityChanged()
+{
+	UpdateAttackRangeRing();
+}
+
+void AT66HeroBase::RefreshAttackRangeRing()
+{
+	UpdateAttackRangeRing();
 }
 
 void AT66HeroBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -230,6 +289,83 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 			}
 		}
 	}
+}
+
+void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (CachedRunState)
+	{
+		CachedRunState->HeroProgressChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+		CachedRunState->SurvivalChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+		CachedRunState->InventoryChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+		CachedRunState->PanelVisibilityChanged.RemoveDynamic(this, &AT66HeroBase::HandleHUDPanelVisibilityChanged);
+	}
+
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->OnComponentBeginOverlap.RemoveDynamic(this, &AT66HeroBase::OnCapsuleBeginOverlap);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void AT66HeroBase::UpdateAttackRangeRing()
+{
+	if (!AttackRangeRingISM)
+	{
+		return;
+	}
+
+	// Hide in preview mode.
+	if (bIsPreviewMode)
+	{
+		AttackRangeRingISM->SetHiddenInGame(true, true);
+		AttackRangeRingISM->SetVisibility(false, true);
+		return;
+	}
+
+	const bool bPanelsVisible = CachedRunState ? CachedRunState->GetHUDPanelsVisible() : true;
+	if (!bPanelsVisible)
+	{
+		AttackRangeRingISM->SetHiddenInGame(true, true);
+		AttackRangeRingISM->SetVisibility(false, true);
+		return;
+	}
+
+	const float Range = (CombatComponent ? CombatComponent->AttackRange : 0.f);
+	const float ClampedRange = FMath::Clamp(Range, 200.f, 50000.f);
+
+	// Build/update a segmented ring once per range change (instanced segments, not a filled disc).
+	AttackRangeRingISM->ClearInstances();
+
+	// Make this read like a thin circle (not blocky chunks).
+	static constexpr int32 NumSeg = 192;
+	const float Circ = 2.f * PI * ClampedRange;
+	const float SegLen = FMath::Clamp((Circ / static_cast<float>(NumSeg)) * 1.10f, 8.f, 80.f); // slight overlap
+	const float SegThick = 8.f;   // thin line thickness
+	const float SegHeight = 2.5f; // thin line height
+
+	for (int32 i = 0; i < NumSeg; ++i)
+	{
+		const float T = static_cast<float>(i) / static_cast<float>(NumSeg);
+		const float A = 2.f * PI * T;
+		const float X = FMath::Cos(A) * ClampedRange;
+		const float Y = FMath::Sin(A) * ClampedRange;
+
+		// Tangent-aligned segment so it reads like a continuous ring.
+		const float YawDeg = FMath::RadiansToDegrees(A) + 90.f;
+		const FVector Loc(X, Y, 3.f);
+		const FRotator Rot(0.f, YawDeg, 0.f);
+
+		// /Engine/BasicShapes/Cube: 100uu. Scale to desired world size.
+		const FVector Scale(SegLen / 100.f, SegThick / 100.f, SegHeight / 100.f);
+		const FTransform Xf(Rot, Loc, Scale);
+		AttackRangeRingISM->AddInstance(Xf, false);
+	}
+	AttackRangeRingISM->MarkRenderStateDirty();
+
+	AttackRangeRingISM->SetHiddenInGame(false, true);
+	AttackRangeRingISM->SetVisibility(true, true);
 }
 
 void AT66HeroBase::ApplyStageSlide(float DurationSeconds)

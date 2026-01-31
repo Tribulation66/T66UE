@@ -15,7 +15,27 @@ enum class ET66Language : uint8
 {
 	English UMETA(DisplayName = "English"),
 	BrazilianPortuguese UMETA(DisplayName = "Português (Brasil)"),
+	PortuguesePortugal UMETA(DisplayName = "Português (Portugal)"),
+	ChineseSimplified UMETA(DisplayName = "简体中文"),
 	ChineseTraditional UMETA(DisplayName = "繁體中文"),
+	Japanese UMETA(DisplayName = "日本語"),
+	Korean UMETA(DisplayName = "한국어"),
+	Russian UMETA(DisplayName = "Русский"),
+	Polish UMETA(DisplayName = "Polski"),
+	German UMETA(DisplayName = "Deutsch"),
+	French UMETA(DisplayName = "Français"),
+	SpanishSpain UMETA(DisplayName = "Español (España)"),
+	SpanishLatAm UMETA(DisplayName = "Español (Latinoamérica)"),
+	Italian UMETA(DisplayName = "Italiano"),
+	Turkish UMETA(DisplayName = "Türkçe"),
+	Ukrainian UMETA(DisplayName = "Українська"),
+	Czech UMETA(DisplayName = "Čeština"),
+	Hungarian UMETA(DisplayName = "Magyar"),
+	Thai UMETA(DisplayName = "ไทย"),
+	Vietnamese UMETA(DisplayName = "Tiếng Việt"),
+	Indonesian UMETA(DisplayName = "Bahasa Indonesia"),
+	Arabic UMETA(DisplayName = "العربية"),
+
 	// Add new languages above this line
 	MAX UMETA(Hidden)
 };
@@ -196,6 +216,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
 	FText GetText_ControlToggleHUD() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlToggleTikTok() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
 	FText GetText_ControlDash() const;
@@ -463,6 +486,22 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
 	FText GetText_Equip() const;
+
+	// Vendor
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_Vendor() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_Shop() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_YourItems() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_Upgrade() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_Steal() const;
 
 	// Gameplay overlays / prompts
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")

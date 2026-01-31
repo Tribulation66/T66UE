@@ -5,6 +5,12 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 
 **Rule:** This is not a brainstorm file. It is an engineering log + state tracker.
 
+**Hard Rule (Localization / Culture-based):** Every **player-facing** string must be localized using Unreal’s **culture-based localization pipeline** (gather → translations → `.locres` at runtime). This includes Slate/UMG text, prompts, tooltips, NPC names, achievement text, and button labels.  
+**Do not** add new per-language translation switch statements (eg `switch(CurrentLanguage) { ... }`) for shipping text.  
+Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) so `FInternationalization::Get().SetCurrentCulture(...)` drives all translations.  
+`UT66LocalizationSubsystem` may still exist as a convenience layer (eg formatting helpers, ID→key indirection), but **it must return culture-localized `FText`** (not manual per-language strings).  
+**Never** ship new hardcoded UI strings like `FText::FromString(TEXT("..."))`.
+
 ---
 
 ## 0) Current state (update whenever it changes)
@@ -52,7 +58,8 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 
 ## 3) Known issues / tech debt
 
-- **Localization guardrail debt** — Some newer gameplay/UI strings are still hardcoded in Slate/UMG and must be moved into `UT66LocalizationSubsystem::GetText_*()` per guardrails/Bible (examples include some HUD labels/prompts).
+- **Localization guardrail debt** — Resolved. Player-facing strings are culture-based via UE localization gather/translate/compile (`.locres`) using `NSLOCTEXT` (and optional future String Tables). No per-language `switch(CurrentLanguage)` translation tables remain in `Source/T66/`.
+- **Optional next improvement**: Migrate ID-keyed content (eg achievements/hero/companion names) to **String Tables** for designer-editable translations.
 - **Save Slots** — C++ fallback exists; optional WBP_SaveSlots at `/Game/Blueprints/UI/WBP_SaveSlots` for visual customization.
 - **Hearts/Inventory** — Use Slate `BorderImage(WhiteBrush)` for filled squares; dynamic delegates use `AddDynamic`/`RemoveDynamic` (not AddUObject).
 - **Coliseum map asset** — `Content/Maps/ColiseumLevel.umap` may be missing in this repo state; code has a safe fallback that reuses `GameplayLevel` for Coliseum-only behavior when needed.
@@ -60,6 +67,88 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-01-31 — In-run HUD overhaul (map/minimap) + lock-on/crosshair + range ring + wheel HUD spin + TikTok placeholder
+
+**HUD layout + map/minimap**
+- Rebuilt `UT66GameplayHUDWidget` layout to match updated spec:
+  - Full-screen map overlay toggle via **OpenFullMap** (default **M**) and minimap in top-right.
+  - Difficulty squares moved beneath minimap and sized to minimap width.
+  - Stage timer moved above stage number.
+  - Portrait resized so width matches the hearts row; hearts enlarged.
+  - Survival “bar” visuals removed (system retained).
+  - Added 2×3 idol slots left of portrait.
+  - Level ring moved above stats; ring thickness increased.
+  - Stats order updated (SPD moved below LCK); Ultimate block positioned to the right of stats and shifts when stats panel is hidden.
+  - Inventory expanded to **2×10 = 20 slots** and moved to bottom-right; Gold/Owe moved above items with matched font size.
+- Added `ST66WorldMapWidget` (Slate leaf widget) for world→map projection:
+  - Full map draws areas + NPC markers with labels; minimap draws markers without labels.
+  - Map/minimap centered on hero; hero/minimap icon clamped to bounds.
+  - ESC closes full-map first before pause.
+
+**Combat targeting UX**
+- Added centered crosshair (screen-space) and click-to-lock targeting:
+  - Clicking an enemy locks them; auto-attacks prioritize locked target if in range.
+  - Enemy health bars restored via `UWidgetComponent` and show a red lock indicator above the bar when locked.
+
+**Attack range indicator**
+- Added a toggleable (HUD-panels-linked) hero attack range ring:
+  - Range scales with Scale stat (same multiplier family).
+  - Display ring built as a thin segmented circle to avoid “white floor” artifacts from a filled disk.
+  - Base attack range tuned to **1000**.
+
+**Auto-attack behavior**
+- Auto-attacks are now “sure fire”: projectiles home to the intended target and ignore other overlaps so they can’t hit the wrong enemy.
+- Hero projectile tint is driven by equipped idol color (`UT66RunStateSubsystem::GetIdolColor`), using material param **Color** (with BaseColor fallback).
+
+**Wheel + TikTok HUD additions**
+- Wheel interact no longer opens `UT66WheelOverlayWidget`; instead it plays a HUD-side spin animation panel and awards gold on resolve.
+- Added TikTok placeholder panel (portrait/phone aspect) under the speedrun block; toggleable via new **ToggleTikTok** action (default **O**) and exposed in Settings rebind list.
+
+**Verification**
+- `T66Editor` builds successfully after changes.
+
+### 2026-01-31 — Localization foundations + UI text migration
+
+- Finalized the supported language list in `ET66Language` and ensured the Language Select UI enumerates `GetAvailableLanguages()`.
+- Migrated player-facing hardcoded `FText::FromString(TEXT("..."))` fallbacks across UI and a few gameplay-facing prompts (NPC names/tutorial prompts) to `NSLOCTEXT` (and/or `UT66LocalizationSubsystem::GetText_*()` where applicable).
+- Added a hard rule to `T66_Cursor_Guidelines.md` and the top of this `memory.md`: all future player-facing strings must be localized.
+- Fixed a build warning in `T66Style.cpp` by switching to a composite-font based `FSlateFontInfo` path (non-deprecated).
+
+**Verification**
+- `Build.bat T66Editor Win64 Development ...` ✅
+- `Build.bat T66 Win64 Development ...` ✅
+- `Scripts\\RunFullSetup.bat` ✅ (0 errors, 0 warnings)
+
+### 2026-01-31 — Localization pipeline verification (GatherText → archives → `.locres`)
+
+**What changed**
+- Added `NativeCulture=en` to the localization configs (UE 5.7 GatherText requires a native culture).
+- Resolved `NSLOCTEXT` key conflicts (same namespace+key with different English source) so GatherText runs cleanly.
+- Ensured runtime loads the target by adding `Config/DefaultGame.ini`:
+  - `[Internationalization]`
+  - `LocalizationPaths=%GAMEDIR%Content/Localization/T66`
+
+**How to run (PowerShell)**
+- **Source-only gather + compile:**
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Source.log"`
+- **Narrow assets gather + compile:**
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Assets.log"`
+- **Compile-only (optional):**
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Compile.log"`
+  - Note: UE may still write to `Saved/Logs/T66.log` (and `T66-backup-*.log`) depending on how it resolves `-log`.
+
+**Artifacts**
+- `Content/Localization/T66/T66.manifest`
+- `Content/Localization/T66/<culture>/T66.archive`
+- `Content/Localization/T66/<culture>/T66.locres`
+
+**Proof**
+- GatherText completion is visible in the command output (example: `GatherText completed with exit code 0`).
+- Verified `.locres` outputs exist for **exactly 22 cultures**:
+  - `Get-ChildItem -Path "C:\UE\T66\Content\Localization\T66" -Recurse -Filter *.locres | % FullName`
+- Verified runtime culture override does **not** fall back due to missing localization paths:
+  - `T66.exe -culture=fr ...` logs `Overriding language with command-line option (fr).` and does **not** print `No localization for 'fr' exists...`.
 
 ### 2026-01-31 — Character visuals pipeline + 3D previews overhaul + stage tiles visibility + boundary/wall fixes
 
@@ -683,6 +772,28 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
 
 ### Localization
 
-- **Languages:** English, Português (Brasil), 繁體中文
+- **Languages (UI selector list):**
+  - English
+  - Simplified Chinese
+  - Traditional Chinese
+  - Japanese
+  - Korean
+  - Russian
+  - Polish
+  - German
+  - French
+  - Spanish (Spain)
+  - Spanish (Latin America)
+  - Portuguese (Brazil)
+  - Portuguese (Portugal)
+  - Italian
+  - Turkish
+  - Ukrainian
+  - Czech
+  - Hungarian
+  - Thai
+  - Vietnamese
+  - Indonesian
+  - Arabic
 - **Subsystem:** `UT66LocalizationSubsystem`
 - **Usage:** `GetText_*()` for all UI strings; screens subscribe to OnLanguageChanged where needed.

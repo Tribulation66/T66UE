@@ -56,8 +56,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UT66AchievementsSubsystem* Ach = GetAchievementsSubsystem();
 
-	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : FText::FromString(TEXT("ACHIEVEMENTS"));
-	const FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
+	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	RefreshAchievements();
 
@@ -148,7 +148,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 						{
 							return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Balance));
 						}
-						return FText::Format(FText::FromString(TEXT("{0} AC")), FText::AsNumber(Balance));
+						return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Balance));
 					})
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
 					.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
@@ -164,19 +164,19 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierBlack() : FText::FromString(TEXT("BLACK")), ET66AchievementTier::Black)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierBlack() : NSLOCTEXT("T66.Achievements", "TierBlack", "BLACK"), ET66AchievementTier::Black)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierRed() : FText::FromString(TEXT("RED")), ET66AchievementTier::Red)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierRed() : NSLOCTEXT("T66.Achievements", "TierRed", "RED"), ET66AchievementTier::Red)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierYellow() : FText::FromString(TEXT("YELLOW")), ET66AchievementTier::Yellow)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierYellow() : NSLOCTEXT("T66.Achievements", "TierYellow", "YELLOW"), ET66AchievementTier::Yellow)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierWhite() : FText::FromString(TEXT("WHITE")), ET66AchievementTier::White)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierWhite() : NSLOCTEXT("T66.Achievements", "TierWhite", "WHITE"), ET66AchievementTier::White)
 				]
 			]
 			// Achievement list
@@ -300,13 +300,13 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						{
 							if (bClaimed)
 							{
-								return Loc ? Loc->GetText_Claimed() : FText::FromString(TEXT("CLAIMED"));
+								return Loc ? Loc->GetText_Claimed() : NSLOCTEXT("T66.Achievements", "Claimed", "CLAIMED");
 							}
 							if (Loc)
 							{
 								return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Achievement.RewardCoins));
 							}
-							return FText::Format(FText::FromString(TEXT("{0} AC")), FText::AsNumber(Achievement.RewardCoins));
+							return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Achievement.RewardCoins));
 						})
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 						.ColorAndOpacity(bClaimed ? FLinearColor(0.6f, 0.8f, 0.6f, 1.0f) : FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
@@ -323,7 +323,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
 						[
 							SNew(STextBlock)
-							.Text(Loc ? Loc->GetText_Claim() : FText::FromString(TEXT("CLAIM")))
+							.Text(Loc ? Loc->GetText_Claim() : NSLOCTEXT("T66.Achievements", "Claim", "CLAIM"))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
 							.ColorAndOpacity(FLinearColor::White)
 						]

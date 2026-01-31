@@ -38,6 +38,25 @@ void AT66EnemyDirector::BeginPlay()
 	}
 }
 
+void AT66EnemyDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Unbind from long-lived RunState delegates and stop timers.
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->StageTimerChanged.RemoveDynamic(this, &AT66EnemyDirector::HandleStageTimerChanged);
+		}
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
 {
 	if (Enemy && AliveCount > 0)
@@ -242,11 +261,19 @@ void AT66EnemyDirector::SpawnWave()
 				ActiveMiniBoss = Enemy;
 			}
 			AliveCount++;
-			UE_LOG(LogTemp, Log, TEXT("EnemyDirector: spawned enemy %d Mob=%s MiniBoss=%d at (%.0f, %.0f, %.0f)"),
-				AliveCount,
-				*MobID.ToString(),
-				bIsMiniBoss ? 1 : 0,
-				SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
+#if !UE_BUILD_SHIPPING
+			// Avoid log spam in wave loops (especially with many spawns).
+			static int32 SpawnLogsRemaining = 12;
+			if (SpawnLogsRemaining > 0)
+			{
+				--SpawnLogsRemaining;
+				UE_LOG(LogTemp, Log, TEXT("EnemyDirector: spawned enemy %d Mob=%s MiniBoss=%d at (%.0f, %.0f, %.0f)"),
+					AliveCount,
+					*MobID.ToString(),
+					bIsMiniBoss ? 1 : 0,
+					SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
+			}
+#endif
 		}
 	}
 

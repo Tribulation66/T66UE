@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "TimerManager.h"
 #include "T66GameplayHUDWidget.generated.h"
 
 class UT66RunStateSubsystem;
@@ -13,7 +14,10 @@ class SBorder;
 class SBox;
 class ST66RingWidget;
 class ST66DotWidget;
+class ST66WorldMapWidget;
 class AT66LootBagPickup;
+struct FSlateBrush;
+enum class ET66Rarity : uint8;
 
 /**
  * In-run HUD: hearts (5 icons), gold, toggleable inventory bar (1x5) and minimap placeholder.
@@ -32,11 +36,32 @@ public:
 	UFUNCTION()
 	void RefreshHUD();
 
+	/** Full-screen map overlay (M / OpenFullMap). */
+	void SetFullMapOpen(bool bOpen);
+	bool IsFullMapOpen() const { return bFullMapOpen; }
+	void ToggleFullMap();
+
+	/** TikTok placeholder toggle (O / ToggleTikTok). */
+	void ToggleTikTokPlaceholder();
+	bool IsTikTokPlaceholderVisible() const { return bTikTokPlaceholderVisible; }
+
+	/** Wheel spin: show HUD animation + award gold (no overlay). */
+	void StartWheelSpin(ET66Rarity WheelRarity);
+
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual TSharedRef<SWidget> BuildSlateUI();
 
 	UT66RunStateSubsystem* GetRunState() const;
+
+	void RefreshMapData();
+	void BuildOrUpdateTikTokBrush();
+	void UpdateTikTokVisibility();
+
+	// Wheel spin animation (HUD-side; no overlay)
+	void TickWheelSpin();
+	void ResolveWheelSpin();
+	void CloseWheelSpin();
 
 	/** Cached Slate widgets for updates (set in BuildSlateUI via SAssignNew) */
 	TSharedPtr<STextBlock> GoldText;
@@ -52,15 +77,15 @@ protected:
 	TSharedPtr<SBox> LootPromptBox;
 	TSharedPtr<SBorder> LootPromptBorder;
 	TSharedPtr<STextBlock> LootPromptText;
-	TSharedPtr<SBox> SurvivalBarFillBox;
-	TSharedPtr<SBorder> SurvivalBarFillBorder;
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
 	TSharedPtr<SBorder> UltimateBorder;
 	TSharedPtr<STextBlock> UltimateText;
+	TSharedPtr<SBox> StatsPanelBox;
 	TArray<TSharedPtr<ST66DotWidget>> StatusEffectDots;
 	TArray<TSharedPtr<SBox>> StatusEffectDotBoxes;
 	TSharedPtr<SBorder> CurseOverlayBorder;
+	TSharedPtr<SBorder> FullMapOverlayBorder;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
 	TArray<TSharedPtr<SBorder>> IdolSlotBorders;
@@ -69,4 +94,29 @@ protected:
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TSharedPtr<SBox> InventoryPanelBox;
 	TSharedPtr<SBox> MinimapPanelBox;
+	TSharedPtr<SBox> TikTokPlaceholderBox;
+	TSharedPtr<SBox> WheelSpinBox;
+	TSharedPtr<SBorder> WheelSpinDisk;
+	TSharedPtr<STextBlock> WheelSpinText;
+	TSharedPtr<ST66WorldMapWidget> MinimapWidget;
+	TSharedPtr<ST66WorldMapWidget> FullMapWidget;
+	TSharedPtr<FSlateBrush> TikTokBrush;
+
+	bool bFullMapOpen = false;
+	bool bTikTokPlaceholderVisible = true;
+	FTimerHandle MapRefreshTimerHandle;
+
+	// Wheel spin state
+	bool bWheelPanelOpen = false;
+	bool bWheelSpinning = false;
+	float WheelSpinElapsed = 0.f;
+	float WheelSpinDuration = 2.0f;
+	float WheelStartAngleDeg = 0.f;
+	float WheelTotalAngleDeg = 0.f;
+	float WheelLastTickTimeSeconds = 0.f;
+	int32 WheelPendingGold = 0;
+	ET66Rarity ActiveWheelRarity = static_cast<ET66Rarity>(0);
+	FTimerHandle WheelSpinTickHandle;
+	FTimerHandle WheelResolveHandle;
+	FTimerHandle WheelCloseHandle;
 };

@@ -29,13 +29,13 @@ void AT66TutorialManager::BeginPlay()
 
 	if (PromptMove)
 	{
-		PromptMove->PromptText = FText::FromString(TEXT("WASD to move"));
+		PromptMove->PromptText = NSLOCTEXT("T66.Tutorial", "MovePrompt", "WASD to move");
 		PromptMove->SetActive(true);
 		PromptMove->OnPassed.AddDynamic(this, &AT66TutorialManager::HandleMovePassed);
 	}
 	if (PromptJump)
 	{
-		PromptJump->PromptText = FText::FromString(TEXT("Space bar to jump"));
+		PromptJump->PromptText = NSLOCTEXT("T66.Tutorial", "JumpPrompt", "Space bar to jump");
 		PromptJump->SetActive(false);
 	}
 }

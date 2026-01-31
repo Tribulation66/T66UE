@@ -15,7 +15,6 @@ class AT66MiasmaManager;
 class AT66LoanShark;
 class AT66CowardiceGate;
 class AT66TricksterNPC;
-class AT66ColiseumExitGate;
 class AT66BossGate;
 class AT66IdolAltar;
 class AT66StageBoostGate;
@@ -83,6 +82,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void RestartPlayer(AController* NewPlayer) override;
 	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot) override;
@@ -164,9 +164,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AT66TricksterNPC> TricksterNPC;
-
-	UPROPERTY()
-	TObjectPtr<AT66ColiseumExitGate> ColiseumExitGate;
 
 	UPROPERTY()
 	TObjectPtr<AT66StartGate> StartGate;

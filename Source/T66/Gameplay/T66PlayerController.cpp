@@ -33,7 +33,6 @@
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66CowardiceGate.h"
-#include "Gameplay/T66ColiseumExitGate.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Kismet/GameplayStatics.h"
@@ -80,6 +79,17 @@ void AT66PlayerController::BeginPlay()
 		}
 		UE_LOG(LogTemp, Log, TEXT("PlayerController: Frontend mode initialized"));
 	}
+}
+
+void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Unbind from long-lived RunState delegates.
+	if (UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+	{
+		RunState->OnPlayerDied.RemoveDynamic(this, &AT66PlayerController::OnPlayerDied);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 bool AT66PlayerController::IsFrontendLevel() const
@@ -152,6 +162,7 @@ void AT66PlayerController::SetupInputComponent()
 
 		// T = toggle HUD panels (inventory + minimap), F = interact (vendor / pickup)
 		InputComponent->BindAction(TEXT("ToggleHUD"), IE_Pressed, this, &AT66PlayerController::HandleToggleHUDPressed);
+		InputComponent->BindAction(TEXT("ToggleTikTok"), IE_Pressed, this, &AT66PlayerController::HandleToggleTikTokPressed);
 		InputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AT66PlayerController::HandleInteractPressed);
 		InputComponent->BindAction(TEXT("Ultimate"), IE_Pressed, this, &AT66PlayerController::HandleUltimatePressed);
 		InputComponent->BindAction(TEXT("ToggleMediaViewer"), IE_Pressed, this, &AT66PlayerController::HandleToggleMediaViewerPressed);
@@ -208,8 +219,32 @@ void AT66PlayerController::HandleOpenFullMapPressed()
 {
 	if (!IsGameplayLevel()) return;
 	if (IsPaused()) return;
-	// TODO: Replace with a dedicated full-screen map overlay screen.
-	UE_LOG(LogTemp, Log, TEXT("OpenFullMap pressed (not implemented yet)."));
+	// Full map is a HUD overlay (non-pausing). Toggle with the OpenFullMap binding (default: M).
+	if (!GameplayHUDWidget) return;
+
+	// Allow closing even though CanUseCombatMouseInput() is false while the map is open.
+	if (GameplayHUDWidget->IsFullMapOpen())
+	{
+		GameplayHUDWidget->SetFullMapOpen(false);
+		RestoreGameplayInputMode();
+		return;
+	}
+
+	// If another gameplay overlay is active, ignore to avoid cursor/input-mode fights.
+	if (!CanUseCombatMouseInput()) return;
+
+	GameplayHUDWidget->ToggleFullMap();
+	if (GameplayHUDWidget->IsFullMapOpen())
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+	}
+	else
+	{
+		RestoreGameplayInputMode();
+	}
 }
 
 void AT66PlayerController::HandleToggleGamerModePressed()
@@ -232,6 +267,7 @@ bool AT66PlayerController::CanUseCombatMouseInput() const
 {
 	// Suppress combat mouse inputs if a modal overlay is active (cursor is visible for UI).
 	return IsGameplayLevel()
+		&& !(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 		&& !(GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
 		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport())
@@ -251,7 +287,9 @@ void AT66PlayerController::HandleAttackLockPressed()
 	GetViewportSize(SizeX, SizeY);
 	if (SizeX <= 0 || SizeY <= 0) return;
 
-	const FVector2D Center(static_cast<float>(SizeX) * 0.5f, static_cast<float>(SizeY) * 0.5f);
+	// Crosshair is slightly above screen-center (matches HUD crosshair placement).
+	static constexpr float CrosshairYOffset = -140.f;
+	const FVector2D Center(static_cast<float>(SizeX) * 0.5f, (static_cast<float>(SizeY) * 0.5f) + CrosshairYOffset);
 	FHitResult Hit;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(AimLock), false);
 	Params.AddIgnoredActor(Hero);
@@ -347,6 +385,16 @@ void AT66PlayerController::HandleToggleHUDPressed()
 	}
 }
 
+void AT66PlayerController::HandleToggleTikTokPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->ToggleTikTokPlaceholder();
+	}
+}
+
 void AT66PlayerController::HandleInteractPressed()
 {
 	if (!IsGameplayLevel()) return;
@@ -366,7 +414,6 @@ void AT66PlayerController::HandleInteractPressed()
 
 	AT66StageGate* ClosestStageGate = nullptr;
 	AT66CowardiceGate* ClosestCowardiceGate = nullptr;
-	AT66ColiseumExitGate* ClosestExitGate = nullptr;
 	AT66DifficultyTotem* ClosestTotem = nullptr;
 	AT66HouseNPCBase* ClosestNPC = nullptr;
 	AT66ItemPickup* ClosestPickup = nullptr;
@@ -380,7 +427,6 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66StageBoostLootInteractable* ClosestBoostLoot = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
-	float ClosestExitGateDistSq = InteractRadius * InteractRadius;
 	float ClosestTotemDistSq = InteractRadius * InteractRadius;
 	float ClosestNPCDistSq = InteractRadius * InteractRadius;
 	float ClosestPickupDistSq = InteractRadius * InteractRadius;
@@ -405,10 +451,6 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66CowardiceGate* CG = Cast<AT66CowardiceGate>(A))
 		{
 			if (DistSq < ClosestCowardiceGateDistSq) { ClosestCowardiceGateDistSq = DistSq; ClosestCowardiceGate = CG; }
-		}
-		else if (AT66ColiseumExitGate* EG = Cast<AT66ColiseumExitGate>(A))
-		{
-			if (DistSq < ClosestExitGateDistSq) { ClosestExitGateDistSq = DistSq; ClosestExitGate = EG; }
 		}
 		else if (AT66DifficultyTotem* DT = Cast<AT66DifficultyTotem>(A))
 		{
@@ -468,19 +510,12 @@ void AT66PlayerController::HandleInteractPressed()
 		return;
 	}
 
-	// Coliseum exit gate (F) returns to GameplayLevel without stage increment
-	if (ClosestExitGate && ClosestExitGate->Interact(this))
-	{
-		return;
-	}
-
 	// Difficulty totem (F) increases difficulty tier
 	if (ClosestTotem && ClosestTotem->Interact(this))
 	{
 		return;
 	}
 
-	// Coliseum exit gate (same actor type as cowardice/others is handled below by cast)
 	// Cowardice Gate (F) opens yes/no prompt
 	if (ClosestCowardiceGate && ClosestCowardiceGate->Interact(this))
 	{
@@ -615,6 +650,16 @@ void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 	}
 }
 
+void AT66PlayerController::StartWheelSpinHUD(ET66Rarity Rarity)
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->StartWheelSpin(Rarity);
+	}
+}
+
 void AT66PlayerController::SetNearbyLootBag(AT66LootBagPickup* LootBag)
 {
 	NearbyLootBag = LootBag;
@@ -659,6 +704,14 @@ void AT66PlayerController::EnsureGameplayUIManager()
 void AT66PlayerController::HandleEscapePressed()
 {
 	if (!IsGameplayLevel()) return;
+
+	// Esc as back: close the full map before opening pause menu.
+	if (GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
+	{
+		GameplayHUDWidget->SetFullMapOpen(false);
+		RestoreGameplayInputMode();
+		return;
+	}
 
 	// Debounce to avoid key repeat / rapid presses freezing or flickering
 	const float Now = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;

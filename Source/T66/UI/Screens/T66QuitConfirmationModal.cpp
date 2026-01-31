@@ -29,10 +29,10 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 
-	FText TitleText = Loc ? Loc->GetText_QuitConfirmTitle() : FText::FromString(TEXT("QUIT GAME?"));
-	FText MessageText = Loc ? Loc->GetText_QuitConfirmMessage() : FText::FromString(TEXT("Are you sure you want to quit?"));
-	FText StayText = Loc ? Loc->GetText_NoStay() : FText::FromString(TEXT("NO, I WANT TO STAY"));
-	FText QuitText = Loc ? Loc->GetText_YesQuit() : FText::FromString(TEXT("YES, I WANT TO QUIT"));
+	FText TitleText = Loc ? Loc->GetText_QuitConfirmTitle() : NSLOCTEXT("T66.QuitConfirm", "Title", "QUIT GAME?");
+	FText MessageText = Loc ? Loc->GetText_QuitConfirmMessage() : NSLOCTEXT("T66.QuitConfirm", "Message", "Are you sure you want to quit?");
+	FText StayText = Loc ? Loc->GetText_NoStay() : NSLOCTEXT("T66.QuitConfirm", "Stay", "NO, I WANT TO STAY");
+	FText QuitText = Loc ? Loc->GetText_YesQuit() : NSLOCTEXT("T66.QuitConfirm", "Quit", "YES, I WANT TO QUIT");
 
 	return SNew(SBorder)
 		// Opaque background (no transparency).

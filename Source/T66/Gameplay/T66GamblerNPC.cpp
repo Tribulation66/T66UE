@@ -7,7 +7,7 @@
 AT66GamblerNPC::AT66GamblerNPC()
 {
 	NPCID = FName(TEXT("Gambler"));
-	NPCName = FText::FromString(TEXT("Gambler"));
+	NPCName = NSLOCTEXT("T66.NPC", "Gambler", "Gambler");
 	NPCColor = FLinearColor(0.8f, 0.1f, 0.1f, 1.f);
 }
 

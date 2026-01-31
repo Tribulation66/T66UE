@@ -21,6 +21,14 @@ void FT66VisualUtil::ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, c
 {
 	if (!Mesh) return;
 
+	// Reuse an existing MID if one is already assigned.
+	if (UMaterialInstanceDynamic* Existing = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0)))
+	{
+		Existing->SetVectorParameterValue(FName("Color"), Color);
+		Existing->SetVectorParameterValue(TEXT("BaseColor"), Color);
+		return;
+	}
+
 	// Prefer our placeholder material so the color parameter name is stable ("Color").
 	if (UMaterialInterface* ColorMat = GetPlaceholderColorMaterial())
 	{

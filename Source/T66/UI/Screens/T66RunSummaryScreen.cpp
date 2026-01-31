@@ -185,7 +185,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		.OnGenerateRow(SListView<TSharedPtr<FString>>::FOnGenerateRow::CreateUObject(this, &UT66RunSummaryScreen::GenerateLogRow))
 		.SelectionMode(ESelectionMode::None);
 
-	const FText TitleText = Loc ? Loc->GetText_RunSummaryTitle() : FText::FromString(TEXT("RUN SUMMARY"));
+	const FText TitleText = Loc ? Loc->GetText_RunSummaryTitle() : NSLOCTEXT("T66.RunSummary", "Title", "RUN SUMMARY");
 	const FText StageBountyText = Loc
 		? FText::Format(Loc->GetText_RunSummaryStageReachedBountyFormat(), FText::AsNumber(StageReached), FText::AsNumber(Bounty))
 		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Bounty: %d"), StageReached, Bounty));
@@ -232,7 +232,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.HeightOverride(460.f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("No Preview")))
+						.Text(NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"))
 						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 						.Justification(ETextJustify::Center)
 					]
@@ -296,7 +296,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			InvBox->AddSlot().AutoHeight()
 			[
 				SNew(STextBlock)
-				.Text(FText::FromString(TEXT("No items.")))
+				.Text(NSLOCTEXT("T66.RunSummary", "NoItems", "No items."))
 				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 			];
 		}
@@ -332,7 +332,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.Padding(FT66Style::Tokens::Space6)
 			[
 				MakePanel(
-					FText::FromString(TEXT("RUN LOG")),
+					NSLOCTEXT("T66.RunSummary", "RunLogTitle", "RUN LOG"),
 					SNew(SBorder)
 					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 					.Padding(FMargin(FT66Style::Tokens::Space2))
@@ -372,11 +372,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(0.5f).Padding(0.f, 0.f, 10.f, 0.f)
 						[
-							MakePreview(FText::FromString(TEXT("HERO")), HeroPreviewBrush)
+							MakePreview(NSLOCTEXT("T66.RunSummary", "HeroPreview", "HERO"), HeroPreviewBrush)
 						]
 						+ SHorizontalBox::Slot().FillWidth(0.5f).Padding(10.f, 0.f, 0.f, 0.f)
 						[
-							MakePreview(FText::FromString(TEXT("COMPANION")), CompanionPreviewBrush)
+							MakePreview(NSLOCTEXT("T66.RunSummary", "CompanionPreview", "COMPANION"), CompanionPreviewBrush)
 						]
 					]
 
@@ -386,11 +386,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(0.4f).Padding(0.f, 0.f, 10.f, 0.f)
 						[
-							MakePanel(FText::FromString(TEXT("IDOLS")), SNew(SScrollBox) + SScrollBox::Slot()[IdolsBox])
+							MakePanel(NSLOCTEXT("T66.RunSummary", "IdolsPanel", "IDOLS"), SNew(SScrollBox) + SScrollBox::Slot()[IdolsBox])
 						]
 						+ SHorizontalBox::Slot().FillWidth(0.6f).Padding(10.f, 0.f, 0.f, 0.f)
 						[
-							MakePanel(FText::FromString(TEXT("INVENTORY")), SNew(SScrollBox) + SScrollBox::Slot()[InvBox])
+							MakePanel(NSLOCTEXT("T66.RunSummary", "InventoryPanel", "INVENTORY"), SNew(SScrollBox) + SScrollBox::Slot()[InvBox])
 						]
 					]
 
@@ -409,7 +409,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								.ContentPadding(FMargin(18.f, 10.f))
 								[
 									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_Restart() : FText::FromString(TEXT("RESTART")))
+									.Text(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"))
 									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 								]
 							]
@@ -425,7 +425,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								.ContentPadding(FMargin(18.f, 10.f))
 								[
 									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_MainMenu() : FText::FromString(TEXT("MAIN MENU")))
+									.Text(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"))
 									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 								]
 							]

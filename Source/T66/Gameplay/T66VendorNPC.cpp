@@ -9,7 +9,7 @@ AT66VendorNPC::AT66VendorNPC()
 	PrimaryActorTick.bCanEverTick = false;
 
 	NPCID = FName(TEXT("Vendor"));
-	NPCName = FText::FromString(TEXT("Vendor"));
+	NPCName = NSLOCTEXT("T66.NPC", "Vendor", "Vendor");
 	NPCColor = FLinearColor(0.05f, 0.05f, 0.05f, 1.f);
 }
 

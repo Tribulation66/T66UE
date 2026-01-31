@@ -26,9 +26,9 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	FText TitleText = Loc ? Loc->GetText_SaveSlots() : FText::FromString(TEXT("SAVE SLOTS"));
-	FText EmptyText = Loc ? Loc->GetText_EmptySlot() : FText::FromString(TEXT("EMPTY SLOT"));
-	FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+	FText TitleText = Loc ? Loc->GetText_SaveSlots() : NSLOCTEXT("T66.SaveSlots", "Title", "SAVE SLOTS");
+	FText EmptyText = Loc ? Loc->GetText_EmptySlot() : NSLOCTEXT("T66.SaveSlots", "EmptySlot", "EMPTY SLOT");
+	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	auto MakeSlotButton = [this, SaveSub, EmptyText](int32 SlotIndex) -> TSharedRef<SWidget>
 	{

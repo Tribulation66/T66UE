@@ -36,7 +36,7 @@ TSharedRef<SWidget> UT66ScreenBase::BuildSlateUI()
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(FText::FromString(TEXT("Screen Not Implemented")))
+				.Text(NSLOCTEXT("T66.UI", "ScreenNotImplemented", "Screen Not Implemented"))
 				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
 			]
 		];
@@ -87,6 +87,18 @@ void UT66ScreenBase::CloseModal()
 	{
 		UIManager->CloseModal();
 	}
+}
+
+void UT66ScreenBase::ForceRebuildSlate()
+{
+	// Tear down any existing Slate resources so the next TakeWidget() rebuilds the tree.
+	ReleaseSlateResources(true);
+
+	// Ensure layout/paint invalidation (helps the new tree apply immediately).
+	InvalidateLayoutAndVolatility();
+
+	// Rebuild now (or at least ensure the new tree exists).
+	TakeWidget();
 }
 
 // ========== Slate UI Building Helpers ==========

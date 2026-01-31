@@ -81,6 +81,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Navigation")
 	void CloseModal();
 
+	/**
+	 * Force the underlying Slate widget tree to be rebuilt.
+	 * Use this when you need new localized text or layout changes to take effect
+	 * (calling TakeWidget() alone usually returns the already-built widget).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Screen")
+	void ForceRebuildSlate();
+
 protected:
 	virtual void NativeConstruct() override;
 

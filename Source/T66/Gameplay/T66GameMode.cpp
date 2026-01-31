@@ -18,7 +18,6 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66TricksterNPC.h"
-#include "Gameplay/T66ColiseumExitGate.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66EnemyBase.h"
@@ -146,6 +145,21 @@ void AT66GameMode::BeginPlay()
 	SpawnBossGateIfNeeded();
 
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup complete, hero spawning handled by SpawnDefaultPawnFor"));
+}
+
+void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Unbind from long-lived RunState delegates (RunState is a GameInstanceSubsystem).
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->StageTimerChanged.RemoveDynamic(this, &AT66GameMode::HandleStageTimerChanged);
+			RunState->DifficultyChanged.RemoveDynamic(this, &AT66GameMode::HandleDifficultyChanged);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66GameMode::SpawnTutorialIfNeeded()
@@ -737,10 +751,10 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 
 	// Placeholder colors: Vendor=Black, Gambler=Red, Ouroboros=Green, Saint=White
 	const TArray<FCornerDef> Corners = {
-		{ FVector( Corner,  Corner, HouseZ), AT66VendorNPC::StaticClass(),    FText::FromString(TEXT("Vendor")),     FLinearColor(0.05f,0.05f,0.05f,1.f) },
-		{ FVector( Corner, -Corner, HouseZ), AT66GamblerNPC::StaticClass(),   FText::FromString(TEXT("Gambler")),    FLinearColor(0.8f,0.1f,0.1f,1.f) },
-		{ FVector(-Corner,  Corner, HouseZ), AT66OuroborosNPC::StaticClass(), FText::FromString(TEXT("Ouroboros")),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
-		{ FVector(-Corner, -Corner, HouseZ), AT66SaintNPC::StaticClass(),     FText::FromString(TEXT("Saint")),      FLinearColor(0.9f,0.9f,0.9f,1.f) },
+		{ FVector( Corner,  Corner, HouseZ), AT66VendorNPC::StaticClass(),    NSLOCTEXT("T66.NPC", "Vendor", "Vendor"),        FLinearColor(0.05f,0.05f,0.05f,1.f) },
+		{ FVector( Corner, -Corner, HouseZ), AT66GamblerNPC::StaticClass(),   NSLOCTEXT("T66.NPC", "Gambler", "Gambler"),      FLinearColor(0.8f,0.1f,0.1f,1.f) },
+		{ FVector(-Corner,  Corner, HouseZ), AT66OuroborosNPC::StaticClass(), NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros"),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
+		{ FVector(-Corner, -Corner, HouseZ), AT66SaintNPC::StaticClass(),     NSLOCTEXT("T66.NPC", "Saint", "Saint"),          FLinearColor(0.9f,0.9f,0.9f,1.f) },
 	};
 
 	FActorSpawnParameters SpawnParams;

@@ -40,11 +40,24 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 		for (ET66Language Lang : Languages)
 		{
 			FText LangName = Loc->GetLanguageDisplayName(Lang);
-			bool bIsSelected = (Lang == PreviewedLanguage);
-			FLinearColor BgColor = bIsSelected ? FLinearColor(0.3f, 0.5f, 0.8f, 1.0f) : FLinearColor(0.15f, 0.15f, 0.2f, 1.0f);
+			// Make selection highlight persistent by binding the row color to PreviewedLanguage.
+			// This avoids having to rebuild the whole Slate tree each click (and keeps scroll position).
+			const auto GetRowBgColor = [this, Lang]()
+			{
+				const bool bIsSelected = (Lang == PreviewedLanguage);
+				return bIsSelected ? FLinearColor(0.22f, 0.48f, 0.90f, 1.0f) : FLinearColor(0.12f, 0.12f, 0.18f, 1.0f);
+			};
+
+			const auto GetRowTextColor = [this, Lang]()
+			{
+				const bool bIsSelected = (Lang == PreviewedLanguage);
+				return bIsSelected ? FLinearColor::White : FLinearColor(0.92f, 0.92f, 0.95f, 1.0f);
+			};
 
 			LanguageButtons->AddSlot()
 			.AutoHeight()
+			// Revert list spacing closer to the original.
+			.HAlign(HAlign_Center)
 			.Padding(10.0f, 5.0f)
 			[
 				SNew(SBox)
@@ -52,34 +65,44 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 				.HeightOverride(60.0f)
 				[
 					SNew(SButton)
-					.HAlign(HAlign_Center)
+					.ButtonStyle(FCoreStyle::Get(), "NoBorder")
+					.HAlign(HAlign_Fill)
 					.VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(const_cast<UT66LanguageSelectScreen*>(this), &UT66LanguageSelectScreen::HandleLanguageClicked, Lang))
-					.ButtonColorAndOpacity(BgColor)
+					.OnClicked(FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleLanguageClicked, Lang))
 					[
-						SNew(STextBlock)
-						.Text(LangName)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
-						.ColorAndOpacity(FLinearColor::White)
-						.Justification(ETextJustify::Center)
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor_Lambda(GetRowBgColor)
+						.Padding(FMargin(0.0f))
+						[
+							SNew(STextBlock)
+							.Text(LangName)
+							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+							.ColorAndOpacity_Lambda(GetRowTextColor)
+							.Justification(ETextJustify::Center)
+						]
 					]
 				]
 			];
 		}
 	}
 
-	FText TitleText = Loc ? Loc->GetText_SelectLanguage() : FText::FromString(TEXT("SELECT LANGUAGE"));
-	FText ConfirmText = Loc ? Loc->GetText_Confirm() : FText::FromString(TEXT("CONFIRM"));
-	FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+	FText TitleText = Loc ? Loc->GetText_SelectLanguage() : NSLOCTEXT("T66.LanguageSelect", "Title", "Select Language");
+	FText ConfirmText = Loc ? Loc->GetText_Confirm() : NSLOCTEXT("T66.LanguageSelect", "Confirm", "Confirm");
+	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.LanguageSelect", "Back", "Back");
+
+	const float ScreenPadding = 60.0f;
 
 	// Create a solid color brush for full opacity background
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f))
 		[
-			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.Padding(FMargin(ScreenPadding))
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -100,10 +123,18 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 					]
 					// Language List
 					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
+					.FillHeight(1.0f)
+					.HAlign(HAlign_Fill)
 					[
-						LanguageButtons
+						SNew(SScrollBox)
+						.Orientation(Orient_Vertical)
+						.ScrollBarVisibility(EVisibility::Visible)
+						.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
+						+ SScrollBox::Slot()
+						.Padding(FMargin(0.0f, 0.0f, 10.0f, 0.0f))
+						[
+							LanguageButtons
+						]
 					]
 					// Buttons
 					+ SVerticalBox::Slot()
@@ -177,7 +208,7 @@ void UT66LanguageSelectScreen::SelectLanguage(ET66Language Language)
 	
 	// Just update visual selection, don't apply yet
 	// Language will be applied on Confirm
-	TakeWidget();
+	InvalidateLayoutAndVolatility();
 }
 
 FReply UT66LanguageSelectScreen::HandleLanguageClicked(ET66Language Language)
@@ -200,23 +231,23 @@ FReply UT66LanguageSelectScreen::HandleBackClicked()
 
 void UT66LanguageSelectScreen::OnConfirmClicked()
 {
-	// Apply the selected language now
-	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
-	{
-		Loc->SetLanguage(PreviewedLanguage);
-	}
-	
 	// Get reference to underlying screen before closing modal
 	UT66ScreenBase* UnderlyingScreen = UIManager ? UIManager->GetCurrentScreen() : nullptr;
 	
 	// Close the modal
 	CloseModal();
+
+	// Apply the selected language now (after closing) so the selector's own text doesn't visibly switch.
+	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+	{
+		Loc->SetLanguage(PreviewedLanguage);
+	}
 	
 	// Force a full Slate widget rebuild on the underlying screen to apply new language
 	// TakeWidget() triggers RebuildWidget() which calls BuildSlateUI() with the new language
 	if (UnderlyingScreen)
 	{
-		UnderlyingScreen->TakeWidget();
+		UnderlyingScreen->ForceRebuildSlate();
 	}
 }
 
@@ -229,5 +260,5 @@ void UT66LanguageSelectScreen::OnBackClicked()
 void UT66LanguageSelectScreen::RebuildLanguageList()
 {
 	// Force widget rebuild
-	TakeWidget();
+	ForceRebuildSlate();
 }

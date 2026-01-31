@@ -48,7 +48,28 @@ void UT66CombatComponent::BeginPlay()
 	}
 
 	RecomputeFromRunState();
+
+	// Preload optional shot SFX once (avoid sync loads in combat loop).
+	CachedShotSfx = ShotSfx.LoadSynchronous();
+
 	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, EffectiveFireIntervalSeconds, true, EffectiveFireIntervalSeconds);
+}
+
+void UT66CombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FireTimerHandle);
+	}
+
+	if (CachedRunState)
+	{
+		CachedRunState->InventoryChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+		CachedRunState->HeroProgressChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+		CachedRunState->SurvivalChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UT66CombatComponent::HandleInventoryChanged()
@@ -62,6 +83,12 @@ void UT66CombatComponent::HandleInventoryChanged()
 			World->GetTimerManager().ClearTimer(FireTimerHandle);
 			World->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, EffectiveFireIntervalSeconds, true, EffectiveFireIntervalSeconds);
 		}
+	}
+
+	// Keep the hero's range ring in sync (attack range changes with Scale).
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetOwner()))
+	{
+		Hero->RefreshAttackRangeRing();
 	}
 }
 
@@ -89,6 +116,9 @@ void UT66CombatComponent::RecomputeFromRunState()
 	const float TotalDamage = DamageMult * HeroDamageMult;
 	const float TotalScale = ScaleMult * HeroScaleMult;
 
+	// Per HUD/combat spec: Scale stat affects attack range (larger scale = larger range).
+	AttackRange = FMath::Clamp(BaseAttackRange * FMath::Max(0.1f, TotalScale), 200.f, 50000.f);
+
 	EffectiveFireIntervalSeconds = FMath::Clamp(BaseFireIntervalSeconds / FMath::Max(0.01f, TotalAttackSpeed), 0.05f, 10.f);
 	EffectiveDamagePerShot = FMath::Clamp(FMath::RoundToInt(static_cast<float>(BaseDamagePerShot) * TotalDamage), 1, 999999);
 	ProjectileScaleMultiplier = FMath::Clamp(TotalScale, 0.1f, 10.f);
@@ -110,7 +140,7 @@ void UT66CombatComponent::PlayShotSfx()
 		return;
 	}
 
-	USoundBase* Sound = ShotSfx.LoadSynchronous();
+	USoundBase* Sound = CachedShotSfx;
 	if (!Sound)
 	{
 		if (!bShotSfxWarnedMissing)
@@ -145,8 +175,30 @@ void UT66CombatComponent::TryFire()
 	FVector MyLoc = OwnerActor->GetActorLocation();
 	const float RangeSq = AttackRange * AttackRange;
 
-	auto SpawnProjectile = [&](const FVector& TargetLoc) -> bool
+	auto ComputeProjectileTint = [&]() -> FLinearColor
 	{
+		// Default: red.
+		FLinearColor C(1.f, 0.2f, 0.2f, 1.f);
+		if (!CachedRunState)
+		{
+			return C;
+		}
+		// Use first equipped idol as the shot tint.
+		for (const FName& IdolID : CachedRunState->GetEquippedIdols())
+		{
+			if (!IdolID.IsNone())
+			{
+				C = UT66RunStateSubsystem::GetIdolColor(IdolID);
+				C.A = 1.f;
+				return C;
+			}
+		}
+		return C;
+	};
+
+	auto SpawnProjectile = [&](AActor* Target) -> bool
+	{
+		if (!Target) return false;
 		FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = OwnerActor;
@@ -158,7 +210,8 @@ void UT66CombatComponent::TryFire()
 		}
 		Proj->Damage = EffectiveDamagePerShot;
 		Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
-		Proj->SetTargetLocation(TargetLoc);
+		Proj->SetTintColor(ComputeProjectileTint());
+		Proj->SetTargetActor(Target);
 		PlayShotSfx();
 		return true;
 	};
@@ -174,7 +227,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (E->CurrentHP > 0)
 				{
-					(void)SpawnProjectile(Locked->GetActorLocation());
+					(void)SpawnProjectile(Locked);
 					return;
 				}
 				// Dead: clear lock.
@@ -184,7 +237,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (B->IsAwakened() && B->IsAlive())
 				{
-					(void)SpawnProjectile(Locked->GetActorLocation());
+					(void)SpawnProjectile(Locked);
 					return;
 				}
 				ClearLockedTarget();
@@ -193,7 +246,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (GB->CurrentHP > 0)
 				{
-					(void)SpawnProjectile(Locked->GetActorLocation());
+					(void)SpawnProjectile(Locked);
 					return;
 				}
 				ClearLockedTarget();
@@ -249,6 +302,6 @@ void UT66CombatComponent::TryFire()
 		: (ClosestBoss ? Cast<AActor>(ClosestBoss) : Cast<AActor>(ClosestEnemy));
 	if (Target)
 	{
-		(void)SpawnProjectile(Target->GetActorLocation());
+		(void)SpawnProjectile(Target);
 	}
 }

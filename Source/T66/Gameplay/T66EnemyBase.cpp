@@ -41,6 +41,8 @@ AT66EnemyBase::AT66EnemyBase()
 	{
 		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 		Capsule->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap); // so projectile overlaps and hits
+		// Allow click-to-lock trace (screen-space hit test) to hit enemies.
+		Capsule->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	}
 
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
@@ -61,7 +63,8 @@ AT66EnemyBase::AT66EnemyBase()
 	HealthBarWidget->SetRelativeLocation(FVector(0.f, 0.f, 155.f));
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
 	HealthBarWidget->SetDrawAtDesiredSize(true);
-	HealthBarWidget->SetDrawSize(FVector2D(120.f, 12.f));
+	// Height includes space for lock indicator above the bar.
+	HealthBarWidget->SetDrawSize(FVector2D(120.f, 28.f));
 
 	// Prepare built-in SkeletalMeshComponent for imported models.
 	if (USkeletalMeshComponent* Skel = GetMesh())
@@ -147,6 +150,8 @@ void AT66EnemyBase::BeginPlay()
 	{
 		HealthBarWidget->SetWidgetClass(UT66EnemyHealthBarWidget::StaticClass());
 		HealthBarWidget->InitWidget();
+		HealthBarWidget->SetHiddenInGame(false, true);
+		HealthBarWidget->SetVisibility(true, true);
 	}
 	UpdateHealthBar();
 
@@ -269,9 +274,35 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		bCachedInsideSafeZone = false;
 		CachedSafeZoneEscapeDir = FVector::ZeroVector;
 
-		for (TActorIterator<AT66HouseNPCBase> It(GetWorld()); It; ++It)
+		// Cache safe-zone NPCs per-world so we don't do a full actor iterator per enemy.
+		struct FSafeNPCache
 		{
-			AT66HouseNPCBase* NPC = *It;
+			TWeakObjectPtr<UWorld> World;
+			double LastRefreshSeconds = -1.0;
+			TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
+		};
+		static FSafeNPCache Cache;
+
+		const double NowSeconds = FPlatformTime::Seconds();
+		const bool bWorldChanged = (Cache.World.Get() != GetWorld());
+		const bool bNeedsRefresh = bWorldChanged || (Cache.LastRefreshSeconds < 0.0) || ((NowSeconds - Cache.LastRefreshSeconds) > 2.0);
+		if (bNeedsRefresh)
+		{
+			Cache.World = GetWorld();
+			Cache.LastRefreshSeconds = NowSeconds;
+			Cache.NPCs.Reset();
+			for (TActorIterator<AT66HouseNPCBase> It(GetWorld()); It; ++It)
+			{
+				if (AT66HouseNPCBase* NPC = *It)
+				{
+					Cache.NPCs.Add(NPC);
+				}
+			}
+		}
+
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Cache.NPCs)
+		{
+			AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
 
 			const FVector N = NPC->GetActorLocation();

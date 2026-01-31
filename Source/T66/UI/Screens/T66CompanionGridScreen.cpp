@@ -51,9 +51,9 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	}
 
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	FText TitleText = Loc ? Loc->GetText_CompanionGrid() : FText::FromString(TEXT("COMPANION GRID"));
-	FText CloseText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
-	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : FText::FromString(TEXT("NO COMPANION"));
+	FText TitleText = Loc ? Loc->GetText_CompanionGrid() : NSLOCTEXT("T66.CompanionGrid", "Title", "COMPANION GRID");
+	FText CloseText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
+	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionGrid", "NoCompanion", "NO COMPANION");
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 

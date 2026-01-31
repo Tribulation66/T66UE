@@ -46,10 +46,10 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 	RefreshLeaderboard();
 
-	FText TitleText = LocSubsystem ? LocSubsystem->GetText_Leaderboard() : FText::FromString(TEXT("LEADERBOARD"));
-	FText GlobalText = LocSubsystem ? LocSubsystem->GetText_Global() : FText::FromString(TEXT("GLOBAL"));
-	FText FriendsText = LocSubsystem ? LocSubsystem->GetText_Friends() : FText::FromString(TEXT("FRIENDS"));
-	FText StreamersText = LocSubsystem ? LocSubsystem->GetText_Streamers() : FText::FromString(TEXT("STREAMERS"));
+	FText TitleText = LocSubsystem ? LocSubsystem->GetText_Leaderboard() : NSLOCTEXT("T66.Leaderboard", "Title", "LEADERBOARD");
+	FText GlobalText = LocSubsystem ? LocSubsystem->GetText_Global() : NSLOCTEXT("T66.Leaderboard", "Global", "GLOBAL");
+	FText FriendsText = LocSubsystem ? LocSubsystem->GetText_Friends() : NSLOCTEXT("T66.Leaderboard", "Friends", "FRIENDS");
+	FText StreamersText = LocSubsystem ? LocSubsystem->GetText_Streamers() : NSLOCTEXT("T66.Leaderboard", "Streamers", "STREAMERS");
 
 	// Use lambdas that capture 'this' and evaluate state dynamically
 	auto MakeFilterButton = [this](const FText& Text, ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
@@ -146,11 +146,11 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					MakeTimeButton(FText::FromString(TEXT("CURRENT")), ET66LeaderboardTime::Current, &ST66LeaderboardPanel::HandleCurrentClicked)
+					MakeTimeButton(NSLOCTEXT("T66.Leaderboard", "Current", "CURRENT"), ET66LeaderboardTime::Current, &ST66LeaderboardPanel::HandleCurrentClicked)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					MakeTimeButton(FText::FromString(TEXT("ALL TIME")), ET66LeaderboardTime::AllTime, &ST66LeaderboardPanel::HandleAllTimeClicked)
+					MakeTimeButton(NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME"), ET66LeaderboardTime::AllTime, &ST66LeaderboardPanel::HandleAllTimeClicked)
 				]
 			]
 			// Dropdowns row (Party Size | Difficulty | Type)
@@ -229,7 +229,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						.InitiallySelectedItem(SelectedStageOption)
 						[
 							SNew(STextBlock)
-							.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::FromString(TEXT("1")); })
+							.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::AsNumber(1); })
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
 							.ColorAndOpacity(FLinearColor::White)
 						]
@@ -255,7 +255,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						SNew(SBox).WidthOverride(40.0f)
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(TEXT("RANK")))
+							.Text(NSLOCTEXT("T66.Leaderboard", "Rank", "RANK"))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 						]
@@ -266,7 +266,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					.VAlign(VAlign_Center)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("NAME")))
+						.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 					]
@@ -280,7 +280,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::HighScore ? EVisibility::Visible : EVisibility::Collapsed; })
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(TEXT("BOUNTY")))
+							.Text(NSLOCTEXT("T66.Leaderboard", "Bounty", "BOUNTY"))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 							.Justification(ETextJustify::Right)
@@ -295,7 +295,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::SpeedRun ? EVisibility::Visible : EVisibility::Collapsed; })
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(TEXT("TIME")))
+							.Text(NSLOCTEXT("T66.Leaderboard", "Time", "TIME"))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 							.Justification(ETextJustify::Right)
@@ -403,7 +403,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					SNew(SBox).WidthOverride(40.0f)
 					[
 						SNew(STextBlock)
-						.Text(FText::Format(FText::FromString(TEXT("#{0}")), FText::AsNumber(Entry.Rank)))
+						.Text(FText::Format(NSLOCTEXT("T66.Leaderboard", "RankFormat", "#{0}"), FText::AsNumber(Entry.Rank)))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
 						.ColorAndOpacity(Entry.Rank <= 3 ? FLinearColor(1.0f, 0.85f, 0.0f, 1.0f) : FLinearColor::White)
 					]
@@ -624,10 +624,10 @@ FText ST66LeaderboardPanel::GetFilterText(ET66LeaderboardFilter Filter) const
 	{
 		switch (Filter)
 		{
-		case ET66LeaderboardFilter::Global: return FText::FromString(TEXT("GLOBAL"));
-		case ET66LeaderboardFilter::Friends: return FText::FromString(TEXT("FRIENDS"));
-		case ET66LeaderboardFilter::Streamers: return FText::FromString(TEXT("STREAMERS"));
-		default: return FText::FromString(TEXT("UNKNOWN"));
+		case ET66LeaderboardFilter::Global: return NSLOCTEXT("T66.Leaderboard", "Global", "GLOBAL");
+		case ET66LeaderboardFilter::Friends: return NSLOCTEXT("T66.Leaderboard", "Friends", "FRIENDS");
+		case ET66LeaderboardFilter::Streamers: return NSLOCTEXT("T66.Leaderboard", "Streamers", "STREAMERS");
+		default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 		}
 	}
 
@@ -636,7 +636,7 @@ FText ST66LeaderboardPanel::GetFilterText(ET66LeaderboardFilter Filter) const
 	case ET66LeaderboardFilter::Global: return LocSubsystem->GetText_Global();
 	case ET66LeaderboardFilter::Friends: return LocSubsystem->GetText_Friends();
 	case ET66LeaderboardFilter::Streamers: return LocSubsystem->GetText_Streamers();
-	default: return FText::FromString(TEXT("UNKNOWN"));
+	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
 }
 
@@ -646,10 +646,10 @@ FText ST66LeaderboardPanel::GetPartySizeText(ET66PartySize Size) const
 	{
 		switch (Size)
 		{
-		case ET66PartySize::Solo: return FText::FromString(TEXT("SOLO"));
-		case ET66PartySize::Duo: return FText::FromString(TEXT("DUO"));
-		case ET66PartySize::Trio: return FText::FromString(TEXT("TRIO"));
-		default: return FText::FromString(TEXT("UNKNOWN"));
+		case ET66PartySize::Solo: return NSLOCTEXT("T66.PartySize", "Solo", "SOLO");
+		case ET66PartySize::Duo: return NSLOCTEXT("T66.PartySize", "Duo", "DUO");
+		case ET66PartySize::Trio: return NSLOCTEXT("T66.PartySize", "Trio", "TRIO");
+		default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 		}
 	}
 
@@ -658,7 +658,7 @@ FText ST66LeaderboardPanel::GetPartySizeText(ET66PartySize Size) const
 	case ET66PartySize::Solo: return LocSubsystem->GetText_Solo();
 	case ET66PartySize::Duo: return LocSubsystem->GetText_Duo();
 	case ET66PartySize::Trio: return LocSubsystem->GetText_Trio();
-	default: return FText::FromString(TEXT("UNKNOWN"));
+	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
 }
 
@@ -668,14 +668,14 @@ FText ST66LeaderboardPanel::GetDifficultyText(ET66Difficulty Diff) const
 	{
 		switch (Diff)
 		{
-		case ET66Difficulty::Easy: return FText::FromString(TEXT("EASY"));
-		case ET66Difficulty::Medium: return FText::FromString(TEXT("MEDIUM"));
-		case ET66Difficulty::Hard: return FText::FromString(TEXT("HARD"));
-		case ET66Difficulty::VeryHard: return FText::FromString(TEXT("VERY HARD"));
-		case ET66Difficulty::Impossible: return FText::FromString(TEXT("IMPOSSIBLE"));
-		case ET66Difficulty::Perdition: return FText::FromString(TEXT("PERDITION"));
-		case ET66Difficulty::Final: return FText::FromString(TEXT("FINAL"));
-		default: return FText::FromString(TEXT("UNKNOWN"));
+		case ET66Difficulty::Easy: return NSLOCTEXT("T66.Difficulty", "Easy", "Easy");
+		case ET66Difficulty::Medium: return NSLOCTEXT("T66.Difficulty", "Medium", "Medium");
+		case ET66Difficulty::Hard: return NSLOCTEXT("T66.Difficulty", "Hard", "Hard");
+		case ET66Difficulty::VeryHard: return NSLOCTEXT("T66.Difficulty", "VeryHard", "Very Hard");
+		case ET66Difficulty::Impossible: return NSLOCTEXT("T66.Difficulty", "Impossible", "Impossible");
+		case ET66Difficulty::Perdition: return NSLOCTEXT("T66.Difficulty", "Perdition", "Perdition");
+		case ET66Difficulty::Final: return NSLOCTEXT("T66.Difficulty", "Final", "Final");
+		default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 		}
 	}
 
@@ -686,9 +686,9 @@ FText ST66LeaderboardPanel::GetTimeText(ET66LeaderboardTime Time) const
 {
 	switch (Time)
 	{
-	case ET66LeaderboardTime::Current: return FText::FromString(TEXT("CURRENT"));
-	case ET66LeaderboardTime::AllTime: return FText::FromString(TEXT("ALL TIME"));
-	default: return FText::FromString(TEXT("UNKNOWN"));
+	case ET66LeaderboardTime::Current: return NSLOCTEXT("T66.Leaderboard", "Current", "CURRENT");
+	case ET66LeaderboardTime::AllTime: return NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME");
+	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
 }
 
@@ -696,8 +696,8 @@ FText ST66LeaderboardPanel::GetTypeText(ET66LeaderboardType Type) const
 {
 	switch (Type)
 	{
-	case ET66LeaderboardType::HighScore: return FText::FromString(TEXT("HIGH SCORE"));
-	case ET66LeaderboardType::SpeedRun: return FText::FromString(TEXT("SPEED RUN"));
-	default: return FText::FromString(TEXT("UNKNOWN"));
+	case ET66LeaderboardType::HighScore: return NSLOCTEXT("T66.Leaderboard", "HighScore", "HIGH SCORE");
+	case ET66LeaderboardType::SpeedRun: return NSLOCTEXT("T66.Leaderboard", "SpeedRun", "SPEED RUN");
+	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
 }

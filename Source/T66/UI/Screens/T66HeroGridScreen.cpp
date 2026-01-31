@@ -53,8 +53,8 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	}
 
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	FText TitleText = Loc ? Loc->GetText_HeroGrid() : FText::FromString(TEXT("HERO GRID"));
-	FText CloseText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+	FText TitleText = Loc ? Loc->GetText_HeroGrid() : NSLOCTEXT("T66.HeroGrid", "Title", "HERO GRID");
+	FText CloseText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 

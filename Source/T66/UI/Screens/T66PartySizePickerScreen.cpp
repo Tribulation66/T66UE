@@ -29,11 +29,11 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 
-	FText TitleText = Loc ? Loc->GetText_SelectPartySize() : FText::FromString(TEXT("SELECT PARTY SIZE"));
-	FText SoloText = Loc ? Loc->GetText_Solo() : FText::FromString(TEXT("SOLO"));
-	FText DuoText = Loc ? Loc->GetText_Duo() : FText::FromString(TEXT("DUO"));
-	FText TrioText = Loc ? Loc->GetText_Trio() : FText::FromString(TEXT("TRIO"));
-	FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+	FText TitleText = Loc ? Loc->GetText_SelectPartySize() : NSLOCTEXT("T66.PartySize", "Title", "SELECT PARTY SIZE");
+	FText SoloText = Loc ? Loc->GetText_Solo() : NSLOCTEXT("T66.PartySize", "Solo", "SOLO");
+	FText DuoText = Loc ? Loc->GetText_Duo() : NSLOCTEXT("T66.PartySize", "Duo", "DUO");
+	FText TrioText = Loc ? Loc->GetText_Trio() : NSLOCTEXT("T66.PartySize", "Trio", "TRIO");
+	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	auto MakePartySizeCard = [this](const FText& Title, const FText& Description, FReply (UT66PartySizePickerScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
 	{
@@ -106,7 +106,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					[
 						MakePartySizeCard(
 							SoloText,
-							FText::FromString(TEXT("1")),
+							FText::AsNumber(1),
 							&UT66PartySizePickerScreen::HandleSoloClicked,
 							FLinearColor(0.3f, 0.5f, 0.3f, 1.0f)
 						)
@@ -115,7 +115,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					[
 						MakePartySizeCard(
 							DuoText,
-							FText::FromString(TEXT("2")),
+							FText::AsNumber(2),
 							&UT66PartySizePickerScreen::HandleDuoClicked,
 							FLinearColor(0.3f, 0.3f, 0.5f, 1.0f)
 						)
@@ -124,7 +124,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					[
 						MakePartySizeCard(
 							TrioText,
-							FText::FromString(TEXT("3")),
+							FText::AsNumber(3),
 							&UT66PartySizePickerScreen::HandleTrioClicked,
 							FLinearColor(0.5f, 0.3f, 0.3f, 1.0f)
 						)

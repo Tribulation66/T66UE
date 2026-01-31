@@ -36,10 +36,10 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 
-	FText TitleText = Loc ? Loc->GetText_ReportBugTitle() : FText::FromString(TEXT("REPORT BUG"));
-	FText SubmitText = Loc ? Loc->GetText_ReportBugSubmit() : FText::FromString(TEXT("SUBMIT"));
-	FText CancelText = Loc ? Loc->GetText_Cancel() : FText::FromString(TEXT("CANCEL"));
-	FText HintText = Loc ? Loc->GetText_DescribeTheBugHint() : FText::FromString(TEXT("Describe the bug..."));
+	FText TitleText = Loc ? Loc->GetText_ReportBugTitle() : NSLOCTEXT("T66.ReportBug", "Title", "REPORT BUG");
+	FText SubmitText = Loc ? Loc->GetText_ReportBugSubmit() : NSLOCTEXT("T66.ReportBug", "Submit", "SUBMIT");
+	FText CancelText = Loc ? Loc->GetText_Cancel() : NSLOCTEXT("T66.Common", "Cancel", "CANCEL");
+	FText HintText = Loc ? Loc->GetText_DescribeTheBugHint() : NSLOCTEXT("T66.ReportBug", "Hint", "Describe the bug...");
 
 	BugReportText.Empty();
 

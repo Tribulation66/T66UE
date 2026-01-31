@@ -14,13 +14,13 @@ class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
-class AT66ColiseumExitGate;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class AT66EnemyBase;
 class UT66IdolAltarOverlayWidget;
 class UT66VendorOverlayWidget;
 class AT66LootBagPickup;
+enum class ET66Rarity : uint8;
 
 /**
  * Player Controller for Tribulation 66
@@ -88,6 +88,9 @@ public:
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
 
+	/** Wheel spin: play HUD animation + award gold (no overlay). */
+	void StartWheelSpinHUD(ET66Rarity Rarity);
+
 	/** Loot proximity: HUD prompt + accept/reject input. */
 	void SetNearbyLootBag(AT66LootBagPickup* LootBag);
 	void ClearNearbyLootBag(AT66LootBagPickup* LootBag);
@@ -95,6 +98,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupInputComponent() override;
 
 	/** Called when in gameplay mode to set up game input */
@@ -123,6 +127,9 @@ protected:
 
 	/** Toggle HUD panels (inventory + minimap), gameplay only, T key */
 	void HandleToggleHUDPressed();
+
+	/** Toggle TikTok placeholder panel (gameplay only, O key). */
+	void HandleToggleTikTokPressed();
 
 	/** Interact (F): vendor sell or pickup collect */
 	void HandleInteractPressed();

@@ -102,23 +102,23 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
-						MakeTabButton(Loc ? Loc->GetText_SettingsTabGameplay() : FText::FromString(TEXT("GAMEPLAY")), ET66SettingsTab::Gameplay)
+						MakeTabButton(Loc ? Loc->GetText_SettingsTabGameplay() : NSLOCTEXT("T66.Settings", "TabGameplay", "GAMEPLAY"), ET66SettingsTab::Gameplay)
 							]
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
-						MakeTabButton(Loc ? Loc->GetText_SettingsTabGraphics() : FText::FromString(TEXT("GRAPHICS")), ET66SettingsTab::Graphics)
+						MakeTabButton(Loc ? Loc->GetText_SettingsTabGraphics() : NSLOCTEXT("T66.Settings", "TabGraphics", "GRAPHICS"), ET66SettingsTab::Graphics)
 							]
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
-						MakeTabButton(Loc ? Loc->GetText_SettingsTabControls() : FText::FromString(TEXT("CONTROLS")), ET66SettingsTab::Controls)
+						MakeTabButton(Loc ? Loc->GetText_SettingsTabControls() : NSLOCTEXT("T66.Settings", "TabControls", "CONTROLS"), ET66SettingsTab::Controls)
 							]
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
-						MakeTabButton(Loc ? Loc->GetText_SettingsTabAudio() : FText::FromString(TEXT("AUDIO")), ET66SettingsTab::Audio)
+						MakeTabButton(Loc ? Loc->GetText_SettingsTabAudio() : NSLOCTEXT("T66.Settings", "TabAudio", "AUDIO"), ET66SettingsTab::Audio)
 							]
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
-						MakeTabButton(Loc ? Loc->GetText_SettingsTabCrashing() : FText::FromString(TEXT("CRASHING")), ET66SettingsTab::Crashing)
+						MakeTabButton(Loc ? Loc->GetText_SettingsTabCrashing() : NSLOCTEXT("T66.Settings", "TabCrashing", "CRASHING"), ET66SettingsTab::Crashing)
 							]
 							+ SHorizontalBox::Slot().FillWidth(1.0f)
 							+ SHorizontalBox::Slot().AutoWidth()
@@ -130,7 +130,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleCloseClicked))
 									.ButtonColorAndOpacity(FLinearColor(0.5f, 0.2f, 0.2f, 1.0f))
 									[
-										SNew(STextBlock).Text(FText::FromString(TEXT("X")))
+										SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "CloseX", "X"))
 										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 										.ColorAndOpacity(FLinearColor::White)
 									]
@@ -216,7 +216,7 @@ FReply UT66SettingsScreen::NativeOnMouseButtonDown(const FGeometry& InGeometry, 
 
 FText UT66SettingsScreen::KeyToText(const FKey& K)
 {
-	return K.IsValid() ? K.GetDisplayName() : FText::FromString(TEXT("-"));
+	return K.IsValid() ? K.GetDisplayName() : NSLOCTEXT("T66.Common", "Dash", "-");
 }
 
 bool UT66SettingsScreen::IsKeyboardMouseKey(const FKey& K)
@@ -438,7 +438,7 @@ void UT66SettingsScreen::ClearBindingInInputSettings()
 	}
 	if (Pending.KeyText.IsValid())
 	{
-		Pending.KeyText->SetText(FText::FromString(TEXT("-")));
+		Pending.KeyText->SetText(NSLOCTEXT("T66.Common", "Dash", "-"));
 	}
 }
 
@@ -449,8 +449,8 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 
 	auto MakeToggleRow = [this, Loc](const FText& Label, TFunction<bool()> GetValue, TFunction<void(bool)> SetValue) -> TSharedRef<SWidget>
 	{
-		const FText OnText = Loc ? Loc->GetText_On() : FText::FromString(TEXT("ON"));
-		const FText OffText = Loc ? Loc->GetText_Off() : FText::FromString(TEXT("OFF"));
+		const FText OnText = Loc ? Loc->GetText_On() : NSLOCTEXT("T66.Settings", "On", "ON");
+		const FText OffText = Loc ? Loc->GetText_Off() : NSLOCTEXT("T66.Settings", "Off", "OFF");
 
 		return SNew(SBorder)
 			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
@@ -505,7 +505,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_PracticeMode() : FText::FromString(TEXT("Practice Mode")),
+					Loc ? Loc->GetText_PracticeMode() : NSLOCTEXT("T66.Settings.Fallback", "Practice Mode", "Practice Mode"),
 					[PS]() { return PS ? PS->GetPracticeMode() : false; },
 					[PS](bool b) { if (PS) PS->SetPracticeMode(b); }
 				)
@@ -513,7 +513,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_SubmitLeaderboardAnonymous() : FText::FromString(TEXT("Submit Leaderboard as Anonymous")),
+					Loc ? Loc->GetText_SubmitLeaderboardAnonymous() : NSLOCTEXT("T66.Settings.Fallback", "Submit Leaderboard as Anonymous", "Submit Leaderboard as Anonymous"),
 					[PS]() { return PS ? PS->GetSubmitLeaderboardAnonymous() : false; },
 					[PS](bool b) { if (PS) PS->SetSubmitLeaderboardAnonymous(b); }
 				)
@@ -521,7 +521,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_SpeedRunMode() : FText::FromString(TEXT("Speed Run Mode")),
+					Loc ? Loc->GetText_SpeedRunMode() : NSLOCTEXT("T66.Settings.Fallback", "Speed Run Mode", "Speed Run Mode"),
 					[PS]() { return PS ? PS->GetSpeedRunMode() : false; },
 					[PS](bool b) { if (PS) PS->SetSpeedRunMode(b); }
 				)
@@ -529,7 +529,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_GoonerMode() : FText::FromString(TEXT("Gooner Mode")),
+					Loc ? Loc->GetText_GoonerMode() : NSLOCTEXT("T66.Settings.Fallback", "Gooner Mode", "Gooner Mode"),
 					[PS]() { return PS ? PS->GetGoonerMode() : false; },
 					[PS](bool b) { if (PS) PS->SetGoonerMode(b); }
 				)
@@ -577,7 +577,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 							]
 							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 							[
-								SNew(STextBlock).Text(FText::FromString(TEXT("\u25BC")))
+								SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
 								.Font(FCoreStyle::GetDefaultFontStyle("Regular", 10))
 								.ColorAndOpacity(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
 							]
@@ -591,11 +591,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 	{
 		switch (Index)
 		{
-		case 0: return FText::FromString(TEXT("30"));
-		case 1: return FText::FromString(TEXT("60"));
-		case 2: return FText::FromString(TEXT("90"));
-		case 3: return FText::FromString(TEXT("120"));
-		default: return Loc ? Loc->GetText_Unlimited() : FText::FromString(TEXT("Unlimited"));
+		case 0: return FText::AsNumber(30);
+		case 1: return FText::AsNumber(60);
+		case 2: return FText::AsNumber(90);
+		case 3: return FText::AsNumber(120);
+		default: return Loc ? Loc->GetText_Unlimited() : NSLOCTEXT("T66.Settings", "Unlimited", "Unlimited");
 		}
 	};
 
@@ -605,9 +605,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		{
 			switch (Mode)
 			{
-			case EWindowMode::Windowed: return FText::FromString(TEXT("Windowed"));
-			case EWindowMode::WindowedFullscreen: return FText::FromString(TEXT("Borderless Windowed"));
-			default: return FText::FromString(TEXT("Fullscreen"));
+			case EWindowMode::Windowed: return NSLOCTEXT("T66.Settings", "Windowed", "Windowed");
+			case EWindowMode::WindowedFullscreen: return NSLOCTEXT("T66.Settings", "BorderlessWindowed", "Borderless Windowed");
+			default: return NSLOCTEXT("T66.Settings", "Fullscreen", "Fullscreen");
 			}
 		}
 		switch (Mode)
@@ -622,14 +622,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 	{
 		if (!Loc)
 		{
-			return Mode == ET66DisplayMode::Widescreen ? FText::FromString(TEXT("Widescreen")) : FText::FromString(TEXT("Standard"));
+			return Mode == ET66DisplayMode::Widescreen ? NSLOCTEXT("T66.Settings", "Widescreen", "Widescreen") : NSLOCTEXT("T66.Settings", "Standard", "Standard");
 		}
 		return Mode == ET66DisplayMode::Widescreen ? Loc->GetText_DisplayModeWidescreen() : Loc->GetText_DisplayModeStandard();
 	};
 
 	auto ResToText = [](FIntPoint R) -> FText
 	{
-		return FText::FromString(FString::Printf(TEXT("%d x %d"), R.X, R.Y));
+		return FText::Format(NSLOCTEXT("T66.Settings", "ResolutionFormat", "{0} x {1}"), FText::AsNumber(R.X), FText::AsNumber(R.Y));
 	};
 
 	TSharedRef<SOverlay> Root =
@@ -640,15 +640,15 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeDropdownRow(
-				Loc ? Loc->GetText_Monitor() : FText::FromString(TEXT("Monitor")),
-				[Loc]() { return Loc ? Loc->GetText_PrimaryMonitor() : FText::FromString(TEXT("Primary Monitor")); },
-				[Loc]() { return SNew(STextBlock).Text(Loc ? Loc->GetText_PrimaryMonitor() : FText::FromString(TEXT("Primary Monitor"))); }
+				Loc ? Loc->GetText_Monitor() : NSLOCTEXT("T66.Settings", "Monitor", "Monitor"),
+				[Loc]() { return Loc ? Loc->GetText_PrimaryMonitor() : NSLOCTEXT("T66.Settings", "PrimaryMonitor", "Primary Monitor"); },
+				[Loc]() { return SNew(STextBlock).Text(Loc ? Loc->GetText_PrimaryMonitor() : NSLOCTEXT("T66.Settings", "PrimaryMonitor", "Primary Monitor")); }
 			)
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeDropdownRow(
-				Loc ? Loc->GetText_Resolution() : FText::FromString(TEXT("Resolution")),
+				Loc ? Loc->GetText_Resolution() : NSLOCTEXT("T66.Settings.Fallback", "Resolution", "Resolution"),
 				[this, ResToText]() { return ResToText(PendingGraphics.Resolution); },
 				[this, ResToText]()
 				{
@@ -678,7 +678,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeDropdownRow(
-				Loc ? Loc->GetText_WindowMode() : FText::FromString(TEXT("Window Mode")),
+				Loc ? Loc->GetText_WindowMode() : NSLOCTEXT("T66.Settings.Fallback", "Window Mode", "Window Mode"),
 				[this, WindowModeToText]() { return WindowModeToText(PendingGraphics.WindowMode); },
 				[this, WindowModeToText]()
 				{
@@ -704,7 +704,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeDropdownRow(
-				Loc ? Loc->GetText_DisplayMode() : FText::FromString(TEXT("Display Mode")),
+				Loc ? Loc->GetText_DisplayMode() : NSLOCTEXT("T66.Settings.Fallback", "Display Mode", "Display Mode"),
 				[this, DisplayModeToText]() { return DisplayModeToText(PendingGraphics.DisplayMode); },
 				[this, DisplayModeToText]()
 				{
@@ -739,13 +739,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.0f)
 					[
-						SNew(STextBlock).Text(Loc ? Loc->GetText_BestPerformance() : FText::FromString(TEXT("Best Performance")))
+						SNew(STextBlock).Text(Loc ? Loc->GetText_BestPerformance() : NSLOCTEXT("T66.Settings.Fallback", "Best Performance", "Best Performance"))
 						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
 						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Right)
 					[
-						SNew(STextBlock).Text(Loc ? Loc->GetText_BestQuality() : FText::FromString(TEXT("Best Quality")))
+						SNew(STextBlock).Text(Loc ? Loc->GetText_BestQuality() : NSLOCTEXT("T66.Settings.Fallback", "Best Quality", "Best Quality"))
 						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
 						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 					]
@@ -766,7 +766,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeDropdownRow(
-				Loc ? Loc->GetText_FpsCap() : FText::FromString(TEXT("FPS Cap")),
+				Loc ? Loc->GetText_FpsCap() : NSLOCTEXT("T66.Settings.Fallback", "FPS Cap", "FPS Cap"),
 				[this, FpsCapToText]() { return FpsCapToText(PendingGraphics.FpsCapIndex); },
 				[this, FpsCapToText]()
 				{
@@ -795,7 +795,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleApplyGraphicsClicked))
 				.ButtonColorAndOpacity(FLinearColor(0.2f, 0.5f, 0.3f, 1.0f))
 				[
-					SNew(STextBlock).Text(Loc ? Loc->GetText_Apply() : FText::FromString(TEXT("APPLY")))
+					SNew(STextBlock).Text(Loc ? Loc->GetText_Apply() : NSLOCTEXT("T66.Settings.Fallback", "APPLY", "APPLY"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -821,7 +821,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(STextBlock)
-					.Text(Loc ? Loc->GetText_KeepTheseSettingsTitle() : FText::FromString(TEXT("Keep these settings?")))
+					.Text(Loc ? Loc->GetText_KeepTheseSettingsTitle() : NSLOCTEXT("T66.Settings.Fallback", "Keep these settings?", "Keep these settings?"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -842,7 +842,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 						.ButtonColorAndOpacity(FLinearColor(0.2f, 0.45f, 0.2f, 1.0f))
 						[
 							SNew(STextBlock)
-							.Text(Loc ? Loc->GetText_Keep() : FText::FromString(TEXT("KEEP")))
+							.Text(Loc ? Loc->GetText_Keep() : NSLOCTEXT("T66.Settings.Fallback", "KEEP", "KEEP"))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
 							.ColorAndOpacity(FLinearColor::White)
 						]
@@ -854,7 +854,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 						.ButtonColorAndOpacity(FLinearColor(0.45f, 0.2f, 0.2f, 1.0f))
 						[
 							SNew(STextBlock)
-							.Text(Loc ? Loc->GetText_Revert() : FText::FromString(TEXT("REVERT")))
+							.Text(Loc ? Loc->GetText_Revert() : NSLOCTEXT("T66.Settings.Fallback", "REVERT", "REVERT"))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
 							.ColorAndOpacity(FLinearColor::White)
 						]
@@ -874,8 +874,8 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 	auto MakeDeviceTabButton = [this, Loc](ET66ControlsDeviceTab Tab) -> TSharedRef<SWidget>
 	{
 		const FText Text = (Tab == ET66ControlsDeviceTab::Controller)
-			? (Loc ? Loc->GetText_Controller() : FText::FromString(TEXT("CONTROLLER")))
-			: (Loc ? Loc->GetText_KeyboardAndMouse() : FText::FromString(TEXT("KEYBOARD & MOUSE")));
+			? (Loc ? Loc->GetText_Controller() : NSLOCTEXT("T66.Settings.Fallback", "CONTROLLER", "CONTROLLER"))
+			: (Loc ? Loc->GetText_KeyboardAndMouse() : NSLOCTEXT("T66.Settings.Fallback", "KEYBOARD & MOUSE", "KEYBOARD & MOUSE"));
 		return SNew(SBox).HeightOverride(34.0f).Padding(FMargin(2.0f, 0.0f))
 		[
 			SNew(SButton)
@@ -918,8 +918,8 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		RowKey.bIsController = bIsController;
 		RowKey.SlotIndex = SlotIndex;
 
-		const FText RebindText = Loc ? Loc->GetText_Rebind() : FText::FromString(TEXT("REBIND"));
-		const FText ClearText = Loc ? Loc->GetText_Clear() : FText::FromString(TEXT("CLEAR"));
+		const FText RebindText = Loc ? Loc->GetText_Rebind() : NSLOCTEXT("T66.Settings.Fallback", "REBIND", "REBIND");
+		const FText ClearText = Loc ? Loc->GetText_Clear() : NSLOCTEXT("T66.Settings.Fallback", "CLEAR", "CLEAR");
 
 		TSharedRef<SHorizontalBox> Row =
 		SNew(SHorizontalBox)
@@ -986,8 +986,8 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 
 	auto MakeRow = [this, Loc, MakeBindingCell](const FText& Label, bool bAxis, FName Name, bool bIsController, float Scale = 1.f) -> TSharedRef<SWidget>
 	{
-		const FText PrimaryText = Loc ? Loc->GetText_Primary() : FText::FromString(TEXT("PRIMARY"));
-		const FText SecondaryText = Loc ? Loc->GetText_Secondary() : FText::FromString(TEXT("SECONDARY"));
+		const FText PrimaryText = Loc ? Loc->GetText_Primary() : NSLOCTEXT("T66.Settings.Fallback", "PRIMARY", "PRIMARY");
+		const FText SecondaryText = Loc ? Loc->GetText_Secondary() : NSLOCTEXT("T66.Settings.Fallback", "SECONDARY", "SECONDARY");
 
 		return SNew(SBorder)
 			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
@@ -1039,7 +1039,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 		[
 			SAssignNew(RebindStatusText, STextBlock)
-			.Text(Loc ? Loc->GetText_RebindInstructions() : FText::FromString(TEXT("Click REBIND, then press a key/button (Esc cancels).")))
+			.Text(Loc ? Loc->GetText_RebindInstructions() : NSLOCTEXT("T66.Settings.Fallback", "RebindInstructions", "Click REBIND, then press a key/button (Esc cancels)."))
 			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
 			.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
 		]
@@ -1054,39 +1054,41 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveForward() : FText::FromString(TEXT("Move Forward")), true, FName(TEXT("MoveForward")), false, 1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveForward() : NSLOCTEXT("T66.Settings.Fallback", "Move Forward", "Move Forward"), true, FName(TEXT("MoveForward")), false, 1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveBack() : FText::FromString(TEXT("Move Back")), true, FName(TEXT("MoveForward")), false, -1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveBack() : NSLOCTEXT("T66.Settings.Fallback", "Move Back", "Move Back"), true, FName(TEXT("MoveForward")), false, -1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveLeft() : FText::FromString(TEXT("Move Left")), true, FName(TEXT("MoveRight")), false, -1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveLeft() : NSLOCTEXT("T66.Settings.Fallback", "Move Left", "Move Left"), true, FName(TEXT("MoveRight")), false, -1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveRight() : FText::FromString(TEXT("Move Right")), true, FName(TEXT("MoveRight")), false, 1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveRight() : NSLOCTEXT("T66.Settings.Fallback", "Move Right", "Move Right"), true, FName(TEXT("MoveRight")), false, 1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlJump() : FText::FromString(TEXT("Jump")), false, FName(TEXT("Jump")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlJump() : NSLOCTEXT("T66.Settings.Fallback", "Jump", "Jump"), false, FName(TEXT("Jump")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlInteract() : FText::FromString(TEXT("Interact")), false, FName(TEXT("Interact")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlInteract() : NSLOCTEXT("T66.Settings.Fallback", "Interact", "Interact"), false, FName(TEXT("Interact")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuPrimary() : FText::FromString(TEXT("Pause Menu (primary)")), false, FName(TEXT("Escape")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuPrimary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu (primary)", "Pause Menu (primary)"), false, FName(TEXT("Escape")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuSecondary() : FText::FromString(TEXT("Pause Menu (secondary)")), false, FName(TEXT("Pause")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuSecondary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu (secondary)", "Pause Menu (secondary)"), false, FName(TEXT("Pause")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlToggleHUD() : FText::FromString(TEXT("Toggle HUD")), false, FName(TEXT("ToggleHUD")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleHUD() : NSLOCTEXT("T66.Settings.Fallback", "Toggle HUD", "Toggle HUD"), false, FName(TEXT("ToggleHUD")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlOpenFullMap() : FText::FromString(TEXT("Open Full Map")), false, FName(TEXT("OpenFullMap")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleTikTok() : NSLOCTEXT("T66.Settings.Fallback", "Toggle TikTok", "Toggle TikTok"), false, FName(TEXT("ToggleTikTok")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlToggleMediaViewer() : FText::FromString(TEXT("Toggle Media Viewer")), false, FName(TEXT("ToggleMediaViewer")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlOpenFullMap() : NSLOCTEXT("T66.Settings.Fallback", "Open Full Map", "Open Full Map"), false, FName(TEXT("OpenFullMap")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlToggleGamerMode() : FText::FromString(TEXT("Toggle Gamer Mode (Hitboxes)")), false, FName(TEXT("ToggleGamerMode")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleMediaViewer() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Media Viewer", "Toggle Media Viewer"), false, FName(TEXT("ToggleMediaViewer")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlRestartRun() : FText::FromString(TEXT("Restart Run")), false, FName(TEXT("RestartRun")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode (Hitboxes)", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlDash() : FText::FromString(TEXT("Dash")), false, FName(TEXT("Dash")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run", "Restart Run"), false, FName(TEXT("RestartRun")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlUltimate() : FText::FromString(TEXT("Ultimate")), false, FName(TEXT("Ultimate")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlDash() : NSLOCTEXT("T66.Settings.Fallback", "Dash", "Dash"), false, FName(TEXT("Dash")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlAttackLock() : FText::FromString(TEXT("Attack Lock")), false, FName(TEXT("AttackLock")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate", "Ultimate"), false, FName(TEXT("Ultimate")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlAttackUnlock() : FText::FromString(TEXT("Attack Unlock")), false, FName(TEXT("AttackUnlock")), false) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock", "Attack Lock"), false, FName(TEXT("AttackLock")), false) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), false) ]
 				]
 			]
 			+ SWidgetSwitcher::Slot()
@@ -1096,39 +1098,41 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveForward() : FText::FromString(TEXT("Move Forward")), true, FName(TEXT("MoveForward")), true, 1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveForward() : NSLOCTEXT("T66.Settings.Fallback", "Move Forward", "Move Forward"), true, FName(TEXT("MoveForward")), true, 1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveBack() : FText::FromString(TEXT("Move Back")), true, FName(TEXT("MoveForward")), true, -1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveBack() : NSLOCTEXT("T66.Settings.Fallback", "Move Back", "Move Back"), true, FName(TEXT("MoveForward")), true, -1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveLeft() : FText::FromString(TEXT("Move Left")), true, FName(TEXT("MoveRight")), true, -1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveLeft() : NSLOCTEXT("T66.Settings.Fallback", "Move Left", "Move Left"), true, FName(TEXT("MoveRight")), true, -1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlMoveRight() : FText::FromString(TEXT("Move Right")), true, FName(TEXT("MoveRight")), true, 1.f) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlMoveRight() : NSLOCTEXT("T66.Settings.Fallback", "Move Right", "Move Right"), true, FName(TEXT("MoveRight")), true, 1.f) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlJump() : FText::FromString(TEXT("Jump")), false, FName(TEXT("Jump")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlJump() : NSLOCTEXT("T66.Settings.Fallback", "Jump", "Jump"), false, FName(TEXT("Jump")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlInteract() : FText::FromString(TEXT("Interact")), false, FName(TEXT("Interact")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlInteract() : NSLOCTEXT("T66.Settings.Fallback", "Interact", "Interact"), false, FName(TEXT("Interact")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuPrimary() : FText::FromString(TEXT("Pause Menu (primary)")), false, FName(TEXT("Escape")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuPrimary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu (primary)", "Pause Menu (primary)"), false, FName(TEXT("Escape")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuSecondary() : FText::FromString(TEXT("Pause Menu (secondary)")), false, FName(TEXT("Pause")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuSecondary() : NSLOCTEXT("T66.Settings.Fallback", "Pause Menu (secondary)", "Pause Menu (secondary)"), false, FName(TEXT("Pause")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlToggleHUD() : FText::FromString(TEXT("Toggle HUD")), false, FName(TEXT("ToggleHUD")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleHUD() : NSLOCTEXT("T66.Settings.Fallback", "Toggle HUD", "Toggle HUD"), false, FName(TEXT("ToggleHUD")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlOpenFullMap() : FText::FromString(TEXT("Open Full Map")), false, FName(TEXT("OpenFullMap")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleTikTok() : NSLOCTEXT("T66.Settings.Fallback", "Toggle TikTok", "Toggle TikTok"), false, FName(TEXT("ToggleTikTok")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlToggleMediaViewer() : FText::FromString(TEXT("Toggle Media Viewer")), false, FName(TEXT("ToggleMediaViewer")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlOpenFullMap() : NSLOCTEXT("T66.Settings.Fallback", "Open Full Map", "Open Full Map"), false, FName(TEXT("OpenFullMap")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlToggleGamerMode() : FText::FromString(TEXT("Toggle Gamer Mode (Hitboxes)")), false, FName(TEXT("ToggleGamerMode")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleMediaViewer() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Media Viewer", "Toggle Media Viewer"), false, FName(TEXT("ToggleMediaViewer")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlRestartRun() : FText::FromString(TEXT("Restart Run")), false, FName(TEXT("RestartRun")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode (Hitboxes)", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlDash() : FText::FromString(TEXT("Dash")), false, FName(TEXT("Dash")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run", "Restart Run"), false, FName(TEXT("RestartRun")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlUltimate() : FText::FromString(TEXT("Ultimate")), false, FName(TEXT("Ultimate")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlDash() : NSLOCTEXT("T66.Settings.Fallback", "Dash", "Dash"), false, FName(TEXT("Dash")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlAttackLock() : FText::FromString(TEXT("Attack Lock")), false, FName(TEXT("AttackLock")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate", "Ultimate"), false, FName(TEXT("Ultimate")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[ MakeRow(Loc ? Loc->GetText_ControlAttackUnlock() : FText::FromString(TEXT("Attack Unlock")), false, FName(TEXT("AttackUnlock")), true) ]
+					[ MakeRow(Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock", "Attack Lock"), false, FName(TEXT("AttackLock")), true) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), true) ]
 				]
 			]
 		]
@@ -1140,7 +1144,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleRestoreDefaultsClicked))
 				.ButtonColorAndOpacity(FLinearColor(0.4f, 0.3f, 0.2f, 1.0f))
 				[
-					SNew(STextBlock).Text(Loc ? Loc->GetText_RestoreDefaults() : FText::FromString(TEXT("Restore Defaults")))
+					SNew(STextBlock).Text(Loc ? Loc->GetText_RestoreDefaults() : NSLOCTEXT("T66.Settings.Fallback", "Restore Defaults", "RESTORE DEFAULTS"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -1191,7 +1195,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeSliderRow(
-				Loc ? Loc->GetText_MasterVolume() : FText::FromString(TEXT("Master Volume")),
+				Loc ? Loc->GetText_MasterVolume() : NSLOCTEXT("T66.Settings.Fallback", "Master Volume", "Master Volume"),
 				[PS]() { return PS ? PS->GetMasterVolume() : 0.8f; },
 				[PS](float V) { if (PS) PS->SetMasterVolume(V); }
 			)
@@ -1199,7 +1203,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeSliderRow(
-				Loc ? Loc->GetText_MusicVolume() : FText::FromString(TEXT("Music Volume")),
+				Loc ? Loc->GetText_MusicVolume() : NSLOCTEXT("T66.Settings.Fallback", "Music Volume", "Music Volume"),
 				[PS]() { return PS ? PS->GetMusicVolume() : 0.6f; },
 				[PS](float V) { if (PS) PS->SetMusicVolume(V); }
 			)
@@ -1207,7 +1211,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			MakeSliderRow(
-				Loc ? Loc->GetText_SfxVolume() : FText::FromString(TEXT("SFX Volume")),
+				Loc ? Loc->GetText_SfxVolume() : NSLOCTEXT("T66.Settings.Fallback", "SFX Volume", "SFX Volume"),
 				[PS]() { return PS ? PS->GetSfxVolume() : 0.8f; },
 				[PS](float V) { if (PS) PS->SetSfxVolume(V); }
 			)
@@ -1222,7 +1226,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(Loc ? Loc->GetText_MuteWhenUnfocused() : FText::FromString(TEXT("Mute when unfocused")))
+					.Text(Loc ? Loc->GetText_MuteWhenUnfocused() : NSLOCTEXT("T66.Settings.Fallback", "Mute when unfocused", "Mute when unfocused"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -1233,14 +1237,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 					.ButtonColorAndOpacity_Lambda([PS]()
 					{
 						const bool bOn = PS ? PS->GetMuteWhenUnfocused() : false;
-						return bOn ? FLinearColor(0.2f, 0.5f, 0.3f, 1.0f) : FLinearColor(0.3f, 0.2f, 0.2f, 1.0f);
+						return FSlateColor(bOn ? FLinearColor(0.2f, 0.5f, 0.3f, 1.0f) : FLinearColor(0.3f, 0.2f, 0.2f, 1.0f));
 					})
 					[
 						SNew(STextBlock)
 						.Text_Lambda([Loc, PS]()
 						{
 							const bool bOn = PS ? PS->GetMuteWhenUnfocused() : false;
-							return bOn ? (Loc ? Loc->GetText_On() : FText::FromString(TEXT("ON"))) : (Loc ? Loc->GetText_Off() : FText::FromString(TEXT("OFF")));
+							return bOn ? (Loc ? Loc->GetText_On() : NSLOCTEXT("T66.Settings", "On", "ON")) : (Loc ? Loc->GetText_Off() : NSLOCTEXT("T66.Settings", "Off", "OFF"));
 						})
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
 						.ColorAndOpacity(FLinearColor::White)
@@ -1258,7 +1262,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				+ SHorizontalBox::Slot().FillWidth(0.4f).VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(Loc ? Loc->GetText_OutputDevice() : FText::FromString(TEXT("Output Device")))
+					.Text(Loc ? Loc->GetText_OutputDevice() : NSLOCTEXT("T66.Settings.Fallback", "Output Device", "Output Device"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -1269,7 +1273,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 					.Padding(FMargin(10.f, 6.f))
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("Default")))
+						.Text(NSLOCTEXT("T66.Settings.Fallback", "Default", "Default"))
 						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
 						.ColorAndOpacity(FLinearColor(0.75f, 0.75f, 0.8f, 1.0f))
 					]
@@ -1279,7 +1283,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(STextBlock)
-			.Text(Loc ? Loc->GetText_SubtitlesAlwaysOn() : FText::FromString(TEXT("Subtitles: always on")))
+			.Text(Loc ? Loc->GetText_SubtitlesAlwaysOn() : NSLOCTEXT("T66.Settings.Fallback", "Subtitles: always on", "Subtitles: always on"))
 			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
 			.ColorAndOpacity(FLinearColor(0.75f, 0.75f, 0.8f, 1.0f))
 			.AutoWrapText(true)
@@ -1295,7 +1299,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 20.0f)
 		[
 			SNew(STextBlock)
-			.Text(Loc ? Loc->GetText_CrashingChecklistHeader() : FText::FromString(TEXT("If your game is crashing, try these steps:")))
+			.Text(Loc ? Loc->GetText_CrashingChecklistHeader() : NSLOCTEXT("T66.Settings.Fallback", "CrashingChecklistHeader", "If your game is crashing, try these steps:"))
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 			.ColorAndOpacity(FLinearColor::White)
 		]
@@ -1310,7 +1314,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 				+ SVerticalBox::Slot().AutoHeight()
 				[
 					SNew(STextBlock)
-					.Text(Loc ? Loc->GetText_CrashingChecklistBody() : FText::FromString(TEXT("")))
+					.Text(Loc ? Loc->GetText_CrashingChecklistBody() : FText::GetEmpty())
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
 					.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.0f))
 					.AutoWrapText(true)
@@ -1326,7 +1330,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleSafeModeClicked))
 				.ButtonColorAndOpacity(FLinearColor(0.5f, 0.4f, 0.1f, 1.0f))
 				[
-					SNew(STextBlock).Text(Loc ? Loc->GetText_ApplySafeModeSettings() : FText::FromString(TEXT("Apply Safe Mode Settings")))
+					SNew(STextBlock).Text(Loc ? Loc->GetText_ApplySafeModeSettings() : NSLOCTEXT("T66.Settings.Fallback", "Apply Safe Mode Settings", "Apply Safe Mode Settings"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -1345,14 +1349,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 10.0f)
 		[
 			SNew(STextBlock)
-			.Text(Loc ? Loc->GetText_StillHavingIssues() : FText::FromString(TEXT("Still having issues?")))
+			.Text(Loc ? Loc->GetText_StillHavingIssues() : NSLOCTEXT("T66.Settings.Fallback", "Still having issues?", "Still having issues?"))
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
 			.ColorAndOpacity(FLinearColor::White)
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 10.0f)
 		[
 			SNew(STextBlock)
-			.Text(Loc ? Loc->GetText_ReportBugDescription() : FText::FromString(TEXT("Report a bug to help us fix it.")))
+			.Text(Loc ? Loc->GetText_ReportBugDescription() : NSLOCTEXT("T66.Settings.Fallback", "ReportBugDescription", "Report a bug to help us fix it. Your report will include basic system info."))
 			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
 			.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f))
 			.AutoWrapText(true)
@@ -1365,7 +1369,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleReportBugClicked))
 				.ButtonColorAndOpacity(FLinearColor(0.3f, 0.4f, 0.6f, 1.0f))
 				[
-					SNew(STextBlock).Text(Loc ? Loc->GetText_ReportBug() : FText::FromString(TEXT("Report Bug")))
+					SNew(STextBlock).Text(Loc ? Loc->GetText_ReportBug() : NSLOCTEXT("T66.ReportBug", "Title", "REPORT BUG"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
 					.ColorAndOpacity(FLinearColor::White)
 				]
@@ -1403,7 +1407,7 @@ FReply UT66SettingsScreen::HandleRestoreDefaultsClicked()
 		bRestoreDefaultsArmedForController = bRestoreController;
 		if (RebindStatusText.IsValid())
 		{
-			RebindStatusText->SetText(FText::FromString(TEXT("Press Restore Defaults again to confirm.")));
+			RebindStatusText->SetText(NSLOCTEXT("T66.Settings", "PressRestoreDefaultsAgain", "Press Restore Defaults again to confirm."));
 		}
 		if (UWorld* World = GetWorld())
 		{
@@ -1488,7 +1492,7 @@ FReply UT66SettingsScreen::HandleRestoreDefaultsClicked()
 	RefreshControlsKeyTexts();
 	if (RebindStatusText.IsValid())
 	{
-		RebindStatusText->SetText(FText::FromString(TEXT("Defaults restored.")));
+		RebindStatusText->SetText(NSLOCTEXT("T66.Settings", "DefaultsRestored", "Defaults restored."));
 	}
 	return FReply::Handled();
 }

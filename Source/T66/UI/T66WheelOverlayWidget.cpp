@@ -73,9 +73,9 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 {
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
-	const FText Title = Loc ? Loc->GetText_WheelSpinTitle() : FText::FromString(TEXT("WHEEL SPIN"));
-	const FText SpinTxt = Loc ? Loc->GetText_Spin() : FText::FromString(TEXT("SPIN"));
-	const FText BackTxt = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+	const FText Title = Loc ? Loc->GetText_WheelSpinTitle() : NSLOCTEXT("T66.Wheel", "Title", "WHEEL SPIN");
+	const FText SpinTxt = Loc ? Loc->GetText_Spin() : NSLOCTEXT("T66.Wheel", "Spin", "SPIN");
+	const FText BackTxt = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	// Visual: a wheel disk that we rotate while spinning.
 	const FLinearColor WheelC = FT66RarityUtil::GetRarityColor(WheelRarity);
@@ -105,7 +105,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SAssignNew(StatusText, STextBlock)
-						.Text(Loc ? Loc->GetText_PressSpinToRollGold() : FText::FromString(TEXT("Press SPIN to roll gold.")))
+						.Text(Loc ? Loc->GetText_PressSpinToRollGold() : NSLOCTEXT("T66.Wheel", "PressSpinToRollGold", "Press SPIN to roll gold."))
 						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 						.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 					]
@@ -280,7 +280,7 @@ void UT66WheelOverlayWidget::ResolveSpin()
 	if (StatusText.IsValid())
 	{
 		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-		const FText Fmt = Loc ? Loc->GetText_YouWonGoldFormat() : FText::FromString(TEXT("You won {0} gold."));
+		const FText Fmt = Loc ? Loc->GetText_YouWonGoldFormat() : NSLOCTEXT("T66.Wheel", "YouWonGoldFormat", "You won {0} gold.");
 		StatusText->SetText(FText::Format(Fmt, FText::AsNumber(PendingGold)));
 	}
 	if (SpinButton.IsValid()) SpinButton->SetEnabled(true);
@@ -314,7 +314,7 @@ FReply UT66WheelOverlayWidget::OnSpin()
 	if (StatusText.IsValid())
 	{
 		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-		StatusText->SetText(Loc ? Loc->GetText_Spinning() : FText::FromString(TEXT("Spinning...")));
+		StatusText->SetText(Loc ? Loc->GetText_Spinning() : NSLOCTEXT("T66.Wheel", "Spinning", "Spinning..."));
 	}
 
 	// Start spin animation.

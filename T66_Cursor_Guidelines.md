@@ -32,6 +32,39 @@ When there is a conflict, the agent must:
 ### Build the final structure first (no throwaway systems)
 Do not create “temporary now, real later” systems. Favor scalable, stable foundations.
 
+### Localization is mandatory (hard rule, culture-based)
+All **player-facing** strings must be localized using Unreal’s **culture-based** localization system (gather → translate → compile `.locres`).
+
+- **Preferred**: `LOCTEXT` / `NSLOCTEXT` + **String Tables** (`FText::FromStringTable`) so `SetCurrentCulture` drives translations.
+- **Allowed**: `UT66LocalizationSubsystem::GetText_*()` only if it returns culture-localized `FText` (eg `NSLOCTEXT`/StringTable-backed), not manual per-language translations.
+- **Never**:
+  - ship new UI strings via `FText::FromString(TEXT("..."))`
+  - add/extend per-language translation tables in code (eg `switch(CurrentLanguage)` returning `FText::FromString` translations). Those must be replaced by `.locres` translations.
+
+**Supported languages (UI selector list):**
+- English
+- Simplified Chinese
+- Traditional Chinese
+- Japanese
+- Korean
+- Russian
+- Polish
+- German
+- French
+- Spanish (Spain)
+- Spanish (Latin America)
+- Portuguese (Brazil)
+- Portuguese (Portugal)
+- Italian
+- Turkish
+- Ukrainian
+- Czech
+- Hungarian
+- Thai
+- Vietnamese
+- Indonesian
+- Arabic
+
 ### Ship-minded stability
 Assume decisions made in-service of BibleV1 are “final-at-launch” unless SSOT explicitly says otherwise. Avoid choices that require rewriting core systems later.
 
@@ -269,6 +302,7 @@ export UE_ROOT="/c/Program Files/Epic Games/UE_5.7"
 export UE_BUILD_BAT="$UE_ROOT/Engine/Build/BatchFiles/Build.bat"
 export UE_UAT_BAT="$UE_ROOT/Engine/Build/BatchFiles/RunUAT.bat"
 export UE_EDITOR_EXE="$UE_ROOT/Engine/Binaries/Win64/UnrealEditor.exe"
+export UE_EDITOR_CMD_EXE="$UE_ROOT/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
 ```
 
 ### Always start with repo sanity
@@ -285,6 +319,45 @@ Run after every atomic change-set:
 
 # 2) Build the game target
 "$UE_BUILD_BAT" T66 Win64 Development -Project="$(cygpath -w "$UPROJECT")" -WaitMutex -FromMsBuild -architecture=x64
+```
+
+### Localization pipeline (culture-based; GatherText → translations → `.locres`)
+
+**Configs (source-controlled):**
+- `Config/Localization/T66_Gather_Source.ini` (fast/safe)
+- `Config/Localization/T66_Gather_Assets.ini` (narrow assets-only)
+- `Config/Localization/T66_Compile.ini` (compile-only)
+
+**Runtime load (required):**
+- Ensure `Config/DefaultGame.ini` contains:
+  - `[Internationalization]`
+  - `LocalizationPaths=%GAMEDIR%Content/Localization/T66`
+
+**Supported cultures (must be exactly 22):**
+- `en`, `zh-Hans`, `zh-Hant`, `ja`, `ko`, `ru`, `pl`, `de`, `fr`, `es-ES`, `es-419`, `pt-BR`, `pt-PT`, `it`, `tr`, `uk`, `cs`, `hu`, `th`, `vi`, `id`, `ar`
+
+**Run (Git Bash):**
+```bash
+"$UE_EDITOR_CMD_EXE" "$(cygpath -w "$UPROJECT")" -run=GatherText -config="$(cygpath -w "$PWD")\\Config\\Localization\\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi
+"$UE_EDITOR_CMD_EXE" "$(cygpath -w "$UPROJECT")" -run=GatherText -config="$(cygpath -w "$PWD")\\Config\\Localization\\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi
+"$UE_EDITOR_CMD_EXE" "$(cygpath -w "$UPROJECT")" -run=GatherText -config="$(cygpath -w "$PWD")\\Config\\Localization\\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi
+```
+
+**Run (PowerShell):**
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi
+```
+
+**Expected outputs:**
+- `Content/Localization/T66/T66.manifest`
+- `Content/Localization/T66/<culture>/T66.archive`
+- `Content/Localization/T66/<culture>/T66.locres`
+
+**Verify `.locres` count (PowerShell):**
+```powershell
+(Get-ChildItem -Path "C:\UE\T66\Content\Localization\T66" -Recurse -Filter *.locres).Count
 ```
 
 Optional (recommended when touching data systems):

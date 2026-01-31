@@ -121,12 +121,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 	const FTextBlockStyle& TextButton = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
 
-	const FText VendorTitle = FText::FromString(TEXT("VENDOR"));
-	const FText ShopTitle = FText::FromString(TEXT("SHOP"));
-	const FText BankTitle = Loc ? Loc->GetText_Bank() : FText::FromString(TEXT("BANK"));
-	const FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
-	const FText AngerLabel = Loc ? Loc->GetText_Anger() : FText::FromString(TEXT("ANGER"));
-	const FText InventoryTitle = FText::FromString(TEXT("YOUR ITEMS"));
+	const FText VendorTitle = Loc ? Loc->GetText_Vendor() : NSLOCTEXT("T66.Vendor", "VendorTitle", "VENDOR");
+	const FText ShopTitle = Loc ? Loc->GetText_Shop() : NSLOCTEXT("T66.Vendor", "ShopTitle", "SHOP");
+	const FText BankTitle = Loc ? Loc->GetText_Bank() : NSLOCTEXT("T66.Vendor", "BankTitle", "BANK");
+	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
+	const FText AngerLabel = Loc ? Loc->GetText_Anger() : NSLOCTEXT("T66.Common", "Anger", "ANGER");
+	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "YOUR ITEMS");
 
 	const TArray<FName> EmptyStock;
 	const TArray<FName>& Stock = RunState ? RunState->GetVendorStockItemIDs() : EmptyStock;
@@ -174,7 +174,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								.HeightOverride(64.f)
 								[
 									SNew(STextBlock)
-									.Text(FText::FromString(TEXT(" ")))
+									.Text(FText::GetEmpty())
 									.TextStyle(&TextChip)
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
@@ -193,7 +193,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 							[
 								SNew(STextBlock)
-								.Text(FText::FromString(TEXT("UPGRADE")))
+								.Text(Loc ? Loc->GetText_Upgrade() : NSLOCTEXT("T66.Vendor", "UpgradeTag", "UPGRADE"))
 								.TextStyle(&TextChip)
 								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 							]
@@ -227,7 +227,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							.VAlign(VAlign_Center)
 							[
 								SAssignNew(BuyButtonTexts[i], STextBlock)
-								.Text(Loc ? Loc->GetText_Buy() : FText::FromString(TEXT("BUY")))
+								.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
 								.TextStyle(&TextButton)
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
@@ -242,7 +242,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							.VAlign(VAlign_Center)
 							[
 								SNew(STextBlock)
-								.Text(FText::FromString(TEXT("STEAL")))
+								.Text(Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"))
 								.TextStyle(&TextButton)
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
@@ -269,7 +269,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("STEAL (TIMING)")))
+					.Text(NSLOCTEXT("T66.Vendor", "StealTimingTitle", "STEAL (TIMING)"))
 					.TextStyle(&TextHeading)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
@@ -312,7 +312,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Press STOP near the center.")))
+					.Text(NSLOCTEXT("T66.Vendor", "StealTimingInstructions", "Press STOP near the center."))
 					.TextStyle(&TextBody)
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]
@@ -324,7 +324,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					.ContentPadding(FMargin(22.f, 12.f))
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("STOP")))
+						.Text(NSLOCTEXT("T66.Vendor", "Stop", "STOP"))
 						.TextStyle(&TextButton)
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
@@ -367,14 +367,18 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
 								[
 									SAssignNew(GoldText, STextBlock)
-									.Text(FText::FromString(TEXT("Gold: 0")))
+									.Text(FText::Format(
+										Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
+										FText::AsNumber(0)))
 									.TextStyle(&TextHeading)
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
 									SAssignNew(DebtText, STextBlock)
-									.Text(FText::FromString(TEXT("Owe: 0")))
+									.Text(FText::Format(
+										Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}"),
+										FText::AsNumber(0)))
 									.TextStyle(&TextBody)
 									.ColorAndOpacity(FT66Style::Tokens::Danger)
 								]
@@ -412,7 +416,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 								[
 									SAssignNew(AngerText, STextBlock)
-									.Text(FText::FromString(TEXT("0/100")))
+									.Text(FText::Format(
+										NSLOCTEXT("T66.Vendor", "AngerValueFormat", "{0}/{1}"),
+										FText::AsNumber(0),
+										FText::AsNumber(UT66RunStateSubsystem::VendorAngerThresholdGold)))
 									.TextStyle(&TextChip)
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
@@ -470,7 +477,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							[
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-								[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("Borrow"))).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+								[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Label", "Borrow")).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
 									SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
@@ -484,14 +491,14 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBorrowClicked))
 									.ButtonStyle(&BtnNeutral)
 									.ContentPadding(FMargin(16.f, 10.f))
-									[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("BORROW"))).TextStyle(&TextButton).ColorAndOpacity(FT66Style::Tokens::Text) ]
+									[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Button", "BORROW")).TextStyle(&TextButton).ColorAndOpacity(FT66Style::Tokens::Text) ]
 								]
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 							[
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-								[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("Payback"))).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+								[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Label", "Payback")).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
 									SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
@@ -505,7 +512,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnPaybackClicked))
 									.ButtonStyle(&BtnNeutral)
 									.ContentPadding(FMargin(16.f, 10.f))
-									[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("PAYBACK"))).TextStyle(&TextButton).ColorAndOpacity(FT66Style::Tokens::Text) ]
+									[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Button", "PAYBACK")).TextStyle(&TextButton).ColorAndOpacity(FT66Style::Tokens::Text) ]
 								]
 							]
 						]
@@ -546,7 +553,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										.Padding(FMargin(12.f, 10.f))
 										[
 											SAssignNew(InventorySlotTexts[0], STextBlock)
-											.Text(FText::FromString(TEXT("-")))
+											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 											.TextStyle(&TextChip)
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
@@ -564,7 +571,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										.Padding(FMargin(12.f, 10.f))
 										[
 											SAssignNew(InventorySlotTexts[1], STextBlock)
-											.Text(FText::FromString(TEXT("-")))
+											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 											.TextStyle(&TextChip)
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
@@ -582,7 +589,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										.Padding(FMargin(12.f, 10.f))
 										[
 											SAssignNew(InventorySlotTexts[2], STextBlock)
-											.Text(FText::FromString(TEXT("-")))
+											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 											.TextStyle(&TextChip)
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
@@ -600,7 +607,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										.Padding(FMargin(12.f, 10.f))
 										[
 											SAssignNew(InventorySlotTexts[3], STextBlock)
-											.Text(FText::FromString(TEXT("-")))
+											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 											.TextStyle(&TextChip)
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
@@ -618,7 +625,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										.Padding(FMargin(12.f, 10.f))
 										[
 											SAssignNew(InventorySlotTexts[4], STextBlock)
-											.Text(FText::FromString(TEXT("-")))
+											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 											.TextStyle(&TextChip)
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
@@ -667,7 +674,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											.ContentPadding(FMargin(18.f, 10.f))
 											[
 												SNew(STextBlock)
-												.Text(Loc ? Loc->GetText_Sell() : FText::FromString(TEXT("SELL")))
+												.Text(Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"))
 												.TextStyle(&TextButton)
 												.ColorAndOpacity(FT66Style::Tokens::Text)
 											]
@@ -744,12 +751,12 @@ void UT66VendorOverlayWidget::RefreshTopBar()
 
 	if (GoldText.IsValid())
 	{
-		const FText Fmt = Loc ? Loc->GetText_GoldFormat() : FText::FromString(TEXT("Gold: {0}"));
+		const FText Fmt = Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
 		GoldText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentGold())));
 	}
 	if (DebtText.IsValid())
 	{
-		const FText Fmt = Loc ? Loc->GetText_OweFormat() : FText::FromString(TEXT("Owe: {0}"));
+		const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}");
 		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
 	}
 
@@ -761,7 +768,10 @@ void UT66VendorOverlayWidget::RefreshTopBar()
 	}
 	if (AngerText.IsValid())
 	{
-		AngerText->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), RunState->GetVendorAngerGold(), UT66RunStateSubsystem::VendorAngerThresholdGold)));
+		AngerText->SetText(FText::Format(
+			NSLOCTEXT("T66.Vendor", "AngerValueFormat", "{0}/{1}"),
+			FText::AsNumber(RunState->GetVendorAngerGold()),
+			FText::AsNumber(UT66RunStateSubsystem::VendorAngerThresholdGold)));
 	}
 }
 
@@ -772,6 +782,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 	if (!RunState) return;
 
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	const TArray<FName>& Stock = RunState->GetVendorStockItemIDs();
 	const int32 SlotCount = ItemNameTexts.Num();
 	for (int32 i = 0; i < SlotCount; ++i)
@@ -783,7 +794,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 
 		if (ItemNameTexts.IsValidIndex(i) && ItemNameTexts[i].IsValid())
 		{
-			ItemNameTexts[i]->SetText(bHasItem ? FText::FromName(Stock[i]) : FText::FromString(TEXT("EMPTY")));
+			ItemNameTexts[i]->SetText(bHasItem ? FText::FromName(Stock[i]) : NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
 		}
 		if (ItemDescTexts.IsValidIndex(i) && ItemDescTexts[i].IsValid())
 		{
@@ -793,16 +804,12 @@ void UT66VendorOverlayWidget::RefreshStock()
 			}
 			else
 			{
-				// Combine tooltip lines into a single wrapped block.
-				FString Combined;
-				const TArray<FText> Lines = { D.EffectLine1, D.EffectLine2, D.EffectLine3 };
-				for (const FText& L : Lines)
-				{
-					if (L.IsEmpty()) continue;
-					if (!Combined.IsEmpty()) Combined += TEXT("\n");
-					Combined += L.ToString();
-				}
-				ItemDescTexts[i]->SetText(FText::FromString(Combined));
+				TArray<FText> Lines;
+				Lines.Reserve(3);
+				if (!D.EffectLine1.IsEmpty()) Lines.Add(D.EffectLine1);
+				if (!D.EffectLine2.IsEmpty()) Lines.Add(D.EffectLine2);
+				if (!D.EffectLine3.IsEmpty()) Lines.Add(D.EffectLine3);
+				ItemDescTexts[i]->SetText(Lines.Num() > 0 ? FText::Join(NSLOCTEXT("T66.Common", "NewLine", "\n"), Lines) : FText::GetEmpty());
 			}
 		}
 		if (ItemPriceTexts.IsValidIndex(i) && ItemPriceTexts[i].IsValid())
@@ -813,7 +820,9 @@ void UT66VendorOverlayWidget::RefreshStock()
 			}
 			else
 			{
-				ItemPriceTexts[i]->SetText(FText::FromString(FString::Printf(TEXT("PRICE: %dg"), D.BuyValueGold)));
+				ItemPriceTexts[i]->SetText(FText::Format(
+					NSLOCTEXT("T66.Vendor", "PriceFormat", "PRICE: {0}g"),
+					FText::AsNumber(D.BuyValueGold)));
 			}
 		}
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
@@ -832,16 +841,18 @@ void UT66VendorOverlayWidget::RefreshStock()
 		{
 			if (!bHasItem)
 			{
-				BuyButtonTexts[i]->SetText(FText::FromString(TEXT("BUY")));
+				BuyButtonTexts[i]->SetText(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"));
 			}
 			else if (bSold)
 			{
-				BuyButtonTexts[i]->SetText(FText::FromString(TEXT("SOLD")));
+				BuyButtonTexts[i]->SetText(NSLOCTEXT("T66.Vendor", "Sold", "SOLD"));
 			}
 			else
 			{
 				const int32 Price = bHasData ? D.BuyValueGold : 0;
-				BuyButtonTexts[i]->SetText(FText::FromString(FString::Printf(TEXT("BUY (%dg)"), Price)));
+				BuyButtonTexts[i]->SetText(FText::Format(
+					NSLOCTEXT("T66.Vendor", "BuyPriceFormat", "BUY ({0}g)"),
+					FText::AsNumber(Price)));
 			}
 		}
 		if (StealButtons.IsValidIndex(i) && StealButtons[i].IsValid())
@@ -868,7 +879,7 @@ void UT66VendorOverlayWidget::RefreshInventory()
 		const bool bHasItem = Inv.IsValidIndex(i) && !Inv[i].IsNone();
 		if (InventorySlotTexts[i].IsValid())
 		{
-			InventorySlotTexts[i]->SetText(bHasItem ? FText::FromName(Inv[i]) : FText::FromString(TEXT("-")));
+			InventorySlotTexts[i]->SetText(bHasItem ? FText::FromName(Inv[i]) : NSLOCTEXT("T66.Common", "Dash", "-"));
 		}
 		if (InventorySlotButtons.IsValidIndex(i) && InventorySlotButtons[i].IsValid())
 		{
@@ -913,21 +924,20 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 		}
 		else
 		{
-			FString Combined;
-			const TArray<FText> Lines = { D.EffectLine1, D.EffectLine2, D.EffectLine3 };
-			for (const FText& L : Lines)
-			{
-				if (L.IsEmpty()) continue;
-				if (!Combined.IsEmpty()) Combined += TEXT("\n");
-				Combined += L.ToString();
-			}
-			SellItemDescText->SetText(FText::FromString(Combined));
+			TArray<FText> Lines;
+			Lines.Reserve(3);
+			if (!D.EffectLine1.IsEmpty()) Lines.Add(D.EffectLine1);
+			if (!D.EffectLine2.IsEmpty()) Lines.Add(D.EffectLine2);
+			if (!D.EffectLine3.IsEmpty()) Lines.Add(D.EffectLine3);
+			SellItemDescText->SetText(Lines.Num() > 0 ? FText::Join(NSLOCTEXT("T66.Common", "NewLine", "\n"), Lines) : FText::GetEmpty());
 		}
 	}
 	if (SellItemPriceText.IsValid())
 	{
 		const int32 SellValue = bHasData ? D.SellValueGold : 0;
-		SellItemPriceText->SetText(FText::FromString(FString::Printf(TEXT("SELL FOR: %dg"), SellValue)));
+		SellItemPriceText->SetText(FText::Format(
+			NSLOCTEXT("T66.Vendor", "SellForFormat", "SELL FOR: {0}g"),
+			FText::AsNumber(SellValue)));
 	}
 	if (SellItemButton.IsValid())
 	{
@@ -946,14 +956,26 @@ FReply UT66VendorOverlayWidget::OnBorrowClicked()
 	UWorld* World = GetWorld();
 	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
 	if (!RunState) return FReply::Handled();
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
+	{
+		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+	}
 
 	if (BorrowAmount <= 0)
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Borrow amount must be > 0.")));
+		if (StatusText.IsValid())
+		{
+			StatusText->SetText(Loc ? Loc->GetText_BorrowAmountMustBePositive() : NSLOCTEXT("T66.Vendor", "BorrowMustBePositive", "Borrow amount must be > 0."));
+		}
 		return FReply::Handled();
 	}
 	RunState->BorrowGold(BorrowAmount);
-	if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Borrowed.")));
+	if (StatusText.IsValid())
+	{
+		const FText Fmt = Loc ? Loc->GetText_BorrowedAmountFormat() : NSLOCTEXT("T66.Vendor", "BorrowedAmountFormat", "Borrowed {0}.");
+		StatusText->SetText(FText::Format(Fmt, FText::AsNumber(BorrowAmount)));
+	}
 	RefreshTopBar();
 	return FReply::Handled();
 }
@@ -963,14 +985,26 @@ FReply UT66VendorOverlayWidget::OnPaybackClicked()
 	UWorld* World = GetWorld();
 	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
 	if (!RunState) return FReply::Handled();
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
+	{
+		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+	}
 
 	if (PaybackAmount <= 0)
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Payback amount must be > 0.")));
+		if (StatusText.IsValid())
+		{
+			StatusText->SetText(Loc ? Loc->GetText_PaybackAmountMustBePositive() : NSLOCTEXT("T66.Vendor", "PaybackMustBePositive", "Payback amount must be > 0."));
+		}
 		return FReply::Handled();
 	}
 	const int32 Paid = RunState->PayDebt(PaybackAmount);
-	if (StatusText.IsValid()) StatusText->SetText(FText::FromString(FString::Printf(TEXT("Paid %d."), Paid)));
+	if (StatusText.IsValid())
+	{
+		const FText Fmt = Loc ? Loc->GetText_PaidBackAmountFormat() : NSLOCTEXT("T66.Vendor", "PaidBackAmountFormat", "Paid back {0}.");
+		StatusText->SetText(FText::Format(Fmt, FText::AsNumber(Paid)));
+	}
 	RefreshTopBar();
 	return FReply::Handled();
 }
@@ -991,18 +1025,18 @@ FReply UT66VendorOverlayWidget::OnSellSelectedClicked()
 
 	if (SelectedInventoryIndex < 0)
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Select an item to sell.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "SelectItemToSell", "Select an item to sell."));
 		return FReply::Handled();
 	}
 
 	const bool bSold = RunState->SellInventoryItemAt(SelectedInventoryIndex);
 	if (bSold)
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Sold.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "SoldStatus", "Sold."));
 	}
 	else
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Could not sell.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "CouldNotSell", "Could not sell."));
 	}
 	RefreshAll();
 	return FReply::Handled();
@@ -1016,13 +1050,13 @@ FReply UT66VendorOverlayWidget::OnBuySlot(int32 SlotIndex)
 
 	if (IsBossActive())
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Boss is active.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "BossIsActive", "Boss is active."));
 		return FReply::Handled();
 	}
 
 	if (!RunState->HasInventorySpace())
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Inventory full.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "InventoryFull", "Inventory full."));
 		return FReply::Handled();
 	}
 
@@ -1030,11 +1064,11 @@ FReply UT66VendorOverlayWidget::OnBuySlot(int32 SlotIndex)
 	if (bBought)
 	{
 		bBoughtSomethingThisVisit = true;
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Purchased.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "Purchased", "Purchased."));
 	}
 	else
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Could not purchase.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "CouldNotPurchase", "Could not purchase."));
 	}
 	RefreshAll();
 	return FReply::Handled();
@@ -1044,12 +1078,12 @@ FReply UT66VendorOverlayWidget::OnStealSlot(int32 SlotIndex)
 {
 	if (!bBoughtSomethingThisVisit)
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Buy one item before stealing.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "BuyOneBeforeStealing", "Buy one item before stealing."));
 		return FReply::Handled();
 	}
 	if (IsBossActive())
 	{
-		if (StatusText.IsValid()) StatusText->SetText(FText::FromString(TEXT("Boss is active.")));
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "BossIsActive", "Boss is active."));
 		return FReply::Handled();
 	}
 	ShowStealPrompt(SlotIndex);
@@ -1134,10 +1168,10 @@ FReply UT66VendorOverlayWidget::OnStealStop()
 
 	if (StatusText.IsValid())
 	{
-		if (!bTimingHit) StatusText->SetText(FText::FromString(TEXT("Steal failed (miss). Anger increased.")));
-		else if (!bRngSuccess) StatusText->SetText(FText::FromString(TEXT("Steal failed. Anger increased.")));
-		else if (!bGranted) StatusText->SetText(FText::FromString(TEXT("Steal succeeded, but inventory is full.")));
-		else StatusText->SetText(FText::FromString(TEXT("Stolen.")));
+		if (!bTimingHit) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealFailedMiss", "Steal failed (miss). Anger increased."));
+		else if (!bRngSuccess) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealFailed", "Steal failed. Anger increased."));
+		else if (!bGranted) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealSucceededButInventoryFull", "Steal succeeded, but inventory is full."));
+		else StatusText->SetText(NSLOCTEXT("T66.Vendor", "Stolen", "Stolen."));
 	}
 
 	RefreshAll();

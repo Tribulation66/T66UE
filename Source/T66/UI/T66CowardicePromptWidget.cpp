@@ -3,6 +3,8 @@
 #include "UI/T66CowardicePromptWidget.h"
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Core/T66LocalizationSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -13,6 +15,12 @@
 
 TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 {
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+	}
+
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
@@ -27,14 +35,14 @@ TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Take Cowardice Gate?")))
+					.Text(NSLOCTEXT("T66.Cowardice", "Title", "Take Cowardice Gate?"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 				[
 					SAssignNew(StatusText, STextBlock)
-					.Text(FText::FromString(TEXT("")))
+					.Text(FText::GetEmpty())
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 					.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 				]
@@ -54,7 +62,7 @@ TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 							.VAlign(VAlign_Center)
 							[
 								SNew(STextBlock)
-								.Text(FText::FromString(TEXT("YES")))
+								.Text(Loc ? Loc->GetText_Yes() : NSLOCTEXT("T66.Common", "Yes", "YES"))
 								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 								.ColorAndOpacity(FLinearColor::White)
 							]
@@ -73,7 +81,7 @@ TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 							.VAlign(VAlign_Center)
 							[
 								SNew(STextBlock)
-								.Text(FText::FromString(TEXT("NO")))
+								.Text(Loc ? Loc->GetText_No() : NSLOCTEXT("T66.Common", "No", "NO"))
 								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 								.ColorAndOpacity(FLinearColor::White)
 							]
@@ -94,7 +102,7 @@ FReply UT66CowardicePromptWidget::OnYes()
 	const bool bOk = Gate->ConfirmCowardice();
 	if (!bOk && StatusText.IsValid())
 	{
-		StatusText->SetText(FText::FromString(TEXT("Failed.")));
+		StatusText->SetText(NSLOCTEXT("T66.Common", "Failed", "Failed."));
 	}
 	// Travel will happen; close immediately to restore input.
 	ClosePrompt();

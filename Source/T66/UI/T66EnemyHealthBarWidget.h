@@ -6,10 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "T66EnemyHealthBarWidget.generated.h"
 
-class UProgressBar;
-class USizeBox;
-class UOverlay;
-class UBorder;
+class SBox;
 
 /** Minimal health bar for enemies (WidgetComponent). */
 UCLASS(Blueprintable)
@@ -25,20 +22,15 @@ public:
 	void SetLocked(bool bInLocked);
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 
 private:
 	static constexpr float BarWidth = 90.f;
 	static constexpr float BarHeight = 10.f;
 
-	UPROPERTY()
-	TObjectPtr<UProgressBar> Bar;
-
-	UPROPERTY()
-	TObjectPtr<USizeBox> RootSizeBox;
-
-	UPROPERTY()
-	TObjectPtr<UBorder> LockDot;
+	TSharedPtr<SBox> FillWidthBox;
+	TSharedPtr<SBox> LockRingBox;
+	TSharedPtr<SWidget> RootSlate;
 
 	float Pct = 1.f;
 	bool bLocked = false;

@@ -11,6 +11,7 @@ class UCapsuleComponent;
 class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UInstancedStaticMeshComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
 
@@ -69,11 +70,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "SafeZone")
 	bool IsInSafeZone() const { return SafeZoneOverlapCount > 0; }
 
+	/** Force-refresh the attack range ring visibility/size. */
+	void RefreshAttackRangeRing();
+
 	// ========== Placeholder Visuals (for prototyping) ==========
 	
 	/** The placeholder static mesh (Cylinder for TypeA, Cube for TypeB) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Placeholder")
 	TObjectPtr<UStaticMeshComponent> PlaceholderMesh;
+
+	/** Visual ring showing the hero's current auto-attack range (toggle with HUD panels). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
+	TObjectPtr<UInstancedStaticMeshComponent> AttackRangeRingISM;
 
 	// ========== Future FBX Support ==========
 	// When ready for production models:
@@ -126,9 +134,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()
 	void HandleHeroDerivedStatsChanged();
+
+	UFUNCTION()
+	void HandleHUDPanelVisibilityChanged();
 
 	/** Touch damage: when enemy overlaps capsule, apply 1 heart damage (RunState i-frames apply) */
 	UFUNCTION()
@@ -183,4 +195,6 @@ private:
 private:
 	/** Load and cache the static mesh assets */
 	void CacheMeshAssets();
+
+	void UpdateAttackRangeRing();
 };

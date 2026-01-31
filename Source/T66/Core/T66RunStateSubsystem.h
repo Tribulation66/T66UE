@@ -41,8 +41,8 @@ public:
 	static constexpr int32 DefaultMaxHearts = 5;
 	static constexpr float DefaultInvulnDurationSeconds = 0.75f;
 	static constexpr int32 DefaultStartGold = 100;
-	static constexpr int32 MaxInventorySlots = 5;
-	static constexpr int32 MaxEquippedIdolSlots = 3;
+	static constexpr int32 MaxInventorySlots = 20;
+	static constexpr int32 MaxEquippedIdolSlots = 6;
 	static constexpr int32 DefaultHeroLevel = 1;
 	static constexpr int32 DefaultXPToLevel = 100;
 	static constexpr float UltimateCooldownSeconds = 30.f;
@@ -213,11 +213,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetInventory() const { return Inventory; }
 
-	/** Equipped idol slots (size=3). NAME_None means empty slot. */
+	/** Equipped idol slots (size=6). NAME_None means empty slot. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetEquippedIdols() const { return EquippedIdolIDs; }
 
-	/** Equip an idol into a specific slot (0..2). Returns true if changed. */
+	/** Equip an idol into a specific slot (0..5). Returns true if changed. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool EquipIdolInSlot(int32 SlotIndex, FName IdolID);
 
@@ -352,7 +352,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellInventoryItemAt(int32 InventoryIndex);
 
-	/** True if there is space in the inventory (max 5 for v0 HUD). */
+	/** True if there is space in the inventory (max 20). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
 	bool HasInventorySpace() const { return Inventory.Num() < MaxInventorySlots; }
 

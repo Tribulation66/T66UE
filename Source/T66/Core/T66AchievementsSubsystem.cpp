@@ -94,9 +94,14 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 		A.RequirementCount = 20;
 		A.RewardCoins = 250;
 
-		// NOTE: Localization hooks can be added later; keep safe fallbacks now.
-		A.DisplayName = FText::FromName(A.AchievementID);
-		A.Description = FText::FromString(TEXT("Kill 20 enemies."));
+		// Culture-based localization (gather/translate/compile .locres).
+		// NOTE: Loc can be null extremely early; fall back to stable NSLOCTEXT keys.
+		A.DisplayName = Loc
+			? Loc->GetText_AchievementName(A.AchievementID)
+			: NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Name", "KILL 20 ENEMIES");
+		A.Description = Loc
+			? Loc->GetText_AchievementDescription(A.AchievementID)
+			: NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Desc", "Kill 20 enemies.");
 
 		CachedDefinitions.Add(A);
 	}

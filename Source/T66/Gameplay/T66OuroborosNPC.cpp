@@ -6,7 +6,7 @@
 AT66OuroborosNPC::AT66OuroborosNPC()
 {
 	NPCID = FName(TEXT("Ouroboros"));
-	NPCName = FText::FromString(TEXT("Ouroboros"));
+	NPCName = NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros");
 	NPCColor = FLinearColor(0.1f, 0.8f, 0.2f, 1.f);
 }
 

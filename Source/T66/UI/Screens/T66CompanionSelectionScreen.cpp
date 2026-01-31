@@ -113,7 +113,7 @@ void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
 
 	FSkinData DefaultSkin;
 	DefaultSkin.SkinID = FName(TEXT("Default"));
-	DefaultSkin.DisplayName = FText::FromString(TEXT("Default"));
+	DefaultSkin.DisplayName = NSLOCTEXT("T66.CompanionSkins", "Default", "Default");
 	DefaultSkin.bIsDefault = true;
 	DefaultSkin.bIsOwned = true;
 	DefaultSkin.bIsEquipped = true;
@@ -122,7 +122,7 @@ void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
 
 	FSkinData AngelicSkin;
 	AngelicSkin.SkinID = FName(TEXT("Angelic"));
-	AngelicSkin.DisplayName = FText::FromString(TEXT("Angelic Grace"));
+	AngelicSkin.DisplayName = NSLOCTEXT("T66.CompanionSkins", "AngelicGrace", "Angelic Grace");
 	AngelicSkin.bIsDefault = false;
 	AngelicSkin.bIsOwned = true;
 	AngelicSkin.bIsEquipped = false;
@@ -131,7 +131,7 @@ void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
 
 	FSkinData DemonicSkin;
 	DemonicSkin.SkinID = FName(TEXT("Demonic"));
-	DemonicSkin.DisplayName = FText::FromString(TEXT("True Form"));
+	DemonicSkin.DisplayName = NSLOCTEXT("T66.CompanionSkins", "TrueForm", "True Form");
 	DemonicSkin.bIsDefault = false;
 	DemonicSkin.bIsOwned = false;
 	DemonicSkin.bIsEquipped = false;
@@ -145,15 +145,15 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	GeneratePlaceholderSkins();
 
 	// Get localized text
-	FText TitleText = Loc ? Loc->GetText_SelectCompanion() : FText::FromString(TEXT("SELECT COMPANION"));
-	FText CompanionGridText = Loc ? Loc->GetText_CompanionGrid() : FText::FromString(TEXT("COMPANION GRID"));
-	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : FText::FromString(TEXT("NO COMPANION"));
-	FText SkinsText = Loc ? Loc->GetText_Skins() : FText::FromString(TEXT("SKINS"));
-	FText LoreText = Loc ? Loc->GetText_Lore() : FText::FromString(TEXT("LORE"));
-	FText ConfirmText = Loc ? Loc->GetText_ConfirmCompanion() : FText::FromString(TEXT("CONFIRM COMPANION"));
-	FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
-	FText BuyText = Loc ? Loc->GetText_Buy() : FText::FromString(TEXT("BUY"));
-	FText EquipText = Loc ? Loc->GetText_Equip() : FText::FromString(TEXT("EQUIP"));
+	FText TitleText = Loc ? Loc->GetText_SelectCompanion() : NSLOCTEXT("T66.CompanionSelection", "Title", "SELECT COMPANION");
+	FText CompanionGridText = Loc ? Loc->GetText_CompanionGrid() : NSLOCTEXT("T66.CompanionSelection", "Grid", "COMPANION GRID");
+	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanion", "NO COMPANION");
+	FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.CompanionSelection", "Skins", "SKINS");
+	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.CompanionSelection", "Lore", "LORE");
+	FText ConfirmText = Loc ? Loc->GetText_ConfirmCompanion() : NSLOCTEXT("T66.CompanionSelection", "ConfirmCompanion", "CONFIRM COMPANION");
+	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
+	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
+	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 
 	// Build skins list
 	TSharedRef<SVerticalBox> SkinsListBox = SNew(SVerticalBox);
@@ -241,7 +241,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 
 	// Current display name/lore for right panel
 	FText CurrentCompanionName = NoCompanionText;
-	FText CurrentCompanionLore = FText::FromString(TEXT("Selecting no companion means you face the tribulation alone."));
+	FText CurrentCompanionLore = NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no companion means you face the tribulation alone.");
 	if (!PreviewedCompanionID.IsNone())
 	{
 		FCompanionData Data;
@@ -315,7 +315,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								.ButtonStyle(&BtnNeutral)
 								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
-									SNew(STextBlock).Text(FText::FromString(TEXT("<")))
+									SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "Prev", "<"))
 									.Font(FT66Style::Tokens::FontBold(20))
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
@@ -335,7 +335,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								.ButtonStyle(&BtnNeutral)
 								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
-									SNew(STextBlock).Text(FText::FromString(TEXT(">")))
+									SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "Next", ">"))
 									.Font(FT66Style::Tokens::FontBold(20))
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
@@ -429,7 +429,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 							[
 								SNew(STextBlock)
-								.Text(FText::FromString(TEXT("COMPANION INFO")))
+								.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionInfo", "COMPANION INFO"))
 								.TextStyle(&TxtHeading)
 							]
 							// Name + LORE button same row
@@ -486,7 +486,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								.Padding(FMargin(10.0f))
 								[
 									SNew(STextBlock)
-									.Text(FText::FromString(TEXT("Passive: Heals the player during combat")))
+									.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionPassivePlaceholder", "Passive: Heals the player during combat"))
 									.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
 									.ColorAndOpacity(FLinearColor(0.6f, 0.9f, 0.6f, 1.0f))
 									.AutoWrapText(true)
@@ -633,7 +633,7 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 		if (PreviewedCompanionID.IsNone())
 		{
 			UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-			CompanionNameWidget->SetText(Loc ? Loc->GetText_NoCompanion() : FText::FromString(TEXT("No Companion")));
+			CompanionNameWidget->SetText(Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanionTitle", "No Companion"));
 		}
 		else
 		{
@@ -650,7 +650,7 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 	{
 		if (PreviewedCompanionID.IsNone())
 		{
-			CompanionLoreWidget->SetText(FText::FromString(TEXT("Selecting no companion means you face the tribulation alone.")));
+			CompanionLoreWidget->SetText(NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no companion means you face the tribulation alone."));
 		}
 		else
 		{

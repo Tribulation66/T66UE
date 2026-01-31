@@ -9,6 +9,7 @@
 #include "Styling/SlateTypes.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Brushes/SlateColorBrush.h"
+#include "Fonts/CompositeFont.h"
 
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
@@ -42,7 +43,20 @@ namespace
 
 		if (FPaths::FileExists(Candidate))
 		{
-			return FSlateFontInfo(Candidate, Size);
+			// Avoid deprecated filename-based FSlateFontInfo ctors; build a tiny runtime composite font instead.
+			static TMap<FString, TSharedPtr<const FCompositeFont>> FontCache;
+			TSharedPtr<const FCompositeFont>& Cached = FontCache.FindOrAdd(Candidate);
+			if (!Cached.IsValid())
+			{
+				Cached = MakeShared<FStandaloneCompositeFont>(
+					FName(TEXT("Default")),
+					Candidate,
+					EFontHinting::Default,
+					EFontLoadingPolicy::LazyLoad
+				);
+			}
+
+			return FSlateFontInfo(Cached, Size);
 		}
 
 		// Fallback (engine default)

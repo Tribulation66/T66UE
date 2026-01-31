@@ -31,10 +31,13 @@ public:
 	int32 Damage = 20;
 
 	void SetTargetLocation(const FVector& TargetLoc);
+	void SetTargetActor(AActor* InTargetActor);
 	void SetScaleMultiplier(float InScaleMultiplier);
+	void SetTintColor(const FLinearColor& InColor);
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -42,4 +45,16 @@ protected:
 
 	float ScaleMultiplier = 1.f;
 	float BaseVisualScale = 0.15f;
+
+private:
+	/** Intended target for this shot. If set, we only apply damage to this target. */
+	TWeakObjectPtr<AActor> TargetActor;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> VisualMID = nullptr;
+
+	FLinearColor TintColor = FLinearColor(1.f, 0.2f, 0.2f, 1.f);
+
+	bool IsTargetAlive() const;
+	void ApplyDamageToTarget(AActor* Target);
 };

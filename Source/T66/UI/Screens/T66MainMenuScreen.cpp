@@ -40,12 +40,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 
 	// Get localized text
-	FText TitleText = Loc ? Loc->GetText_GameTitle() : FText::FromString(TEXT("TRIBULATION 66"));
-	FText NewGameText = Loc ? Loc->GetText_NewGame() : FText::FromString(TEXT("NEW GAME"));
-	FText LoadGameText = Loc ? Loc->GetText_LoadGame() : FText::FromString(TEXT("LOAD GAME"));
-	FText SettingsText = Loc ? Loc->GetText_Settings() : FText::FromString(TEXT("SETTINGS"));
-	FText AchievementsText = Loc ? Loc->GetText_Achievements() : FText::FromString(TEXT("ACHIEVEMENTS"));
-	FText QuitText = Loc ? Loc->GetText_Quit() : FText::FromString(TEXT("QUIT"));
+	FText TitleText = Loc ? Loc->GetText_GameTitle() : NSLOCTEXT("T66.MainMenu", "Title", "TRIBULATION 66");
+	FText NewGameText = Loc ? Loc->GetText_NewGame() : NSLOCTEXT("T66.MainMenu", "NewGame", "NEW GAME");
+	FText LoadGameText = Loc ? Loc->GetText_LoadGame() : NSLOCTEXT("T66.MainMenu", "LoadGame", "LOAD GAME");
+	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
+	FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
+	FText QuitText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
 
 	// Button style lambda
 	auto MakeMenuButton = [this](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
@@ -179,7 +179,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					[
 						// Globe icon placeholder - using a stylized "L" for Language
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("\xF0\x9F\x8C\x90"))) // Globe emoji as placeholder
+						.Text(NSLOCTEXT("T66.Common", "GlobeIcon", "🌐"))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
 						.ColorAndOpacity(FLinearColor::White)
 					]
@@ -204,13 +204,13 @@ void UT66MainMenuScreen::RefreshScreen_Implementation()
 {
 	Super::RefreshScreen_Implementation();
 	// Force rebuild UI with current language
-	TakeWidget();
+	ForceRebuildSlate();
 }
 
 void UT66MainMenuScreen::OnLanguageChanged(ET66Language NewLanguage)
 {
 	// Rebuild UI when language changes
-	TakeWidget();
+	ForceRebuildSlate();
 }
 
 // Slate click handlers (return FReply)

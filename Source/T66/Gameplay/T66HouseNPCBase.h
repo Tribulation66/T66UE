@@ -46,7 +46,7 @@ public:
 	TObjectPtr<UTextRenderComponent> NameText;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
-	FText NPCName = FText::FromString(TEXT("NPC"));
+	FText NPCName = NSLOCTEXT("T66.NPC", "NPC", "NPC");
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FLinearColor NPCColor = FLinearColor::White;

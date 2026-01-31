@@ -244,16 +244,16 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	GeneratePlaceholderSkins();
 
 	// Get localized text
-	FText HeroGridText = Loc ? Loc->GetText_HeroGrid() : FText::FromString(TEXT("HERO GRID"));
-	FText ChooseCompanionText = Loc ? Loc->GetText_ChooseCompanion() : FText::FromString(TEXT("CHOOSE COMPANION"));
-	FText SkinsText = Loc ? Loc->GetText_Skins() : FText::FromString(TEXT("SKINS"));
-	FText HeroInfoText = Loc ? Loc->GetText_HeroInfo() : FText::FromString(TEXT("HERO INFO"));
-	FText LoreText = Loc ? Loc->GetText_Lore() : FText::FromString(TEXT("LORE"));
-	FText TheLabText = Loc ? Loc->GetText_TheLab() : FText::FromString(TEXT("THE LAB"));
-	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : FText::FromString(TEXT("ENTER THE TRIBULATION"));
-	FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
-	FText BuyText = Loc ? Loc->GetText_Buy() : FText::FromString(TEXT("BUY"));
-	FText EquipText = Loc ? Loc->GetText_Equip() : FText::FromString(TEXT("EQUIP"));
+	FText HeroGridText = Loc ? Loc->GetText_HeroGrid() : NSLOCTEXT("T66.HeroSelection", "HeroGrid", "HERO GRID");
+	FText ChooseCompanionText = Loc ? Loc->GetText_ChooseCompanion() : NSLOCTEXT("T66.HeroSelection", "ChooseCompanion", "CHOOSE COMPANION");
+	FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.HeroSelection", "Skins", "SKINS");
+	FText HeroInfoText = Loc ? Loc->GetText_HeroInfo() : NSLOCTEXT("T66.HeroSelection", "HeroInfo", "HERO INFO");
+	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.HeroSelection", "Lore", "LORE");
+	FText TheLabText = Loc ? Loc->GetText_TheLab() : NSLOCTEXT("T66.HeroSelection", "TheLab", "THE LAB");
+	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
+	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
+	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
+	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 
 	// Initialize difficulty dropdown options
 	DifficultyOptions.Empty();
@@ -263,7 +263,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	};
 	for (ET66Difficulty Diff : Difficulties)
 	{
-		FText DiffText = Loc ? Loc->GetText_Difficulty(Diff) : FText::FromString(TEXT("???"));
+		FText DiffText = Loc ? Loc->GetText_Difficulty(Diff) : NSLOCTEXT("T66.Difficulty", "Unknown", "???");
 		DifficultyOptions.Add(MakeShared<FString>(DiffText.ToString()));
 	}
 	// Set current selection
@@ -432,7 +432,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								.ButtonStyle(&BtnNeutral)
 								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
-									SNew(STextBlock).Text(FText::FromString(TEXT("<")))
+									SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "Prev", "<"))
 									.Font(FT66Style::Tokens::FontBold(20))
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
@@ -452,7 +452,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								.ButtonStyle(&BtnNeutral)
 								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
-									SNew(STextBlock).Text(FText::FromString(TEXT(">")))
+									SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "Next", ">"))
 									.Font(FT66Style::Tokens::FontBold(20))
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
@@ -567,7 +567,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.ButtonStyle(&BtnNeutral)
 									[
 										SNew(STextBlock)
-										.Text(Loc ? Loc->GetText_BodyTypeA() : FText::FromString(TEXT("TYPE A")))
+										.Text(Loc ? Loc->GetText_BodyTypeA() : NSLOCTEXT("T66.HeroSelection", "BodyTypeA", "TYPE A"))
 										.TextStyle(&TxtChip)
 									]
 								]
@@ -589,7 +589,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.ButtonStyle(&BtnNeutral)
 									[
 										SNew(STextBlock)
-										.Text(Loc ? Loc->GetText_BodyTypeB() : FText::FromString(TEXT("TYPE B")))
+										.Text(Loc ? Loc->GetText_BodyTypeB() : NSLOCTEXT("T66.HeroSelection", "BodyTypeB", "TYPE B"))
 										.TextStyle(&TxtChip)
 									]
 								]
@@ -629,7 +629,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2))
 									[
 										SAssignNew(HeroNameWidget, STextBlock)
-										.Text(FText::FromString(TEXT("Select a Hero")))
+										.Text(Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"))
 										.TextStyle(&TxtButton)
 										.Justification(ETextJustify::Center)
 									]
@@ -665,7 +665,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									SNew(SBox).HeightOverride(140.0f)
 									[
 										SNew(STextBlock)
-										.Text(FText::FromString(TEXT("[VIDEO PREVIEW]")))
+										.Text(NSLOCTEXT("T66.HeroSelection", "VideoPreview", "[VIDEO PREVIEW]"))
 										.TextStyle(&TxtBody)
 										.Justification(ETextJustify::Center)
 									]
@@ -716,7 +716,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								+ SScrollBox::Slot()
 								[
 									SAssignNew(HeroDescWidget, STextBlock)
-									.Text(FText::FromString(TEXT("Select a hero to view their description.")))
+									.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroDescriptionHint", "Select a hero to view their description."))
 									.Font(FT66Style::Tokens::FontRegular(12))
 									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 									.AutoWrapText(true)
@@ -773,8 +773,10 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.InitiallySelectedItem(CurrentDifficultyOption)
 							[
 								SNew(STextBlock)
-								.Text_Lambda([this]() -> FText {
-									return CurrentDifficultyOption.IsValid() ? FText::FromString(*CurrentDifficultyOption) : FText::FromString(TEXT("Easy"));
+								.Text_Lambda([this, Loc]() -> FText {
+									return CurrentDifficultyOption.IsValid()
+										? FText::FromString(*CurrentDifficultyOption)
+										: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
 								})
 								.Font(FT66Style::Tokens::FontBold(12))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
@@ -887,11 +889,11 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 	{
 		if (HeroNameWidget.IsValid())
 		{
-			HeroNameWidget->SetText(FText::FromString(TEXT("Select a Hero")));
+			HeroNameWidget->SetText(Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"));
 		}
 		if (HeroDescWidget.IsValid())
 		{
-			HeroDescWidget->SetText(FText::FromString(TEXT("Select a hero to view their description.")));
+			HeroDescWidget->SetText(NSLOCTEXT("T66.HeroSelection", "SelectHeroDescriptionHint", "Select a hero to view their description."));
 		}
 		if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
 		{

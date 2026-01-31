@@ -37,11 +37,11 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 
-	FText ResumeText = Loc ? Loc->GetText_Resume() : FText::FromString(TEXT("RESUME GAME"));
-	FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : FText::FromString(TEXT("SAVE AND QUIT GAME"));
-	FText RestartText = Loc ? Loc->GetText_Restart() : FText::FromString(TEXT("RESTART"));
-	FText SettingsText = Loc ? Loc->GetText_Settings() : FText::FromString(TEXT("SETTINGS"));
-	FText ReportBugText = Loc ? Loc->GetText_ReportBug() : FText::FromString(TEXT("REPORT BUG"));
+	FText ResumeText = Loc ? Loc->GetText_Resume() : NSLOCTEXT("T66.PauseMenu", "Resume", "RESUME GAME");
+	FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT GAME");
+	FText RestartText = Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.PauseMenu", "Restart", "RESTART");
+	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
+	FText ReportBugText = Loc ? Loc->GetText_ReportBug() : NSLOCTEXT("T66.PauseMenu", "ReportBug", "REPORT BUG");
 
 	auto MakePauseButton = [this](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
 	{
@@ -85,7 +85,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 0.0f, 0.0f, 24.0f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("PAUSED")))
+						.Text(NSLOCTEXT("T66.PauseMenu", "PausedTitle", "PAUSED"))
 						.Font(FT66Style::Tokens::FontBold(36))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]

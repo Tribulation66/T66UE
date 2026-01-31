@@ -26,7 +26,7 @@ public:
 	AActor* GetLockedTarget() const { return LockedTarget.Get(); }
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-	float AttackRange = 4000.f;
+	float AttackRange = 1000.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	float FireIntervalSeconds = 1.f;
@@ -37,6 +37,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION()
 	void HandleInventoryChanged();
@@ -54,6 +55,9 @@ protected:
 	// Auto-attack sound effect (optional).
 	UPROPERTY()
 	TSoftObjectPtr<USoundBase> ShotSfx;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USoundBase> CachedShotSfx = nullptr;
 
 	bool bShotSfxWarnedMissing = false;
 

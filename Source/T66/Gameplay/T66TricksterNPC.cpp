@@ -5,7 +5,7 @@
 AT66TricksterNPC::AT66TricksterNPC()
 {
 	NPCID = NAME_None; // no DT row required for now
-	NPCName = FText::FromString(TEXT("Trickster"));
+	NPCName = NSLOCTEXT("T66.NPC", "Trickster", "Trickster");
 	NPCColor = FLinearColor(0.55f, 0.2f, 0.9f, 1.f);
 	SafeZoneRadius = 650.f;
 }

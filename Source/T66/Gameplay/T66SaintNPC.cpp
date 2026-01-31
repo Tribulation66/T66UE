@@ -7,7 +7,7 @@
 AT66SaintNPC::AT66SaintNPC()
 {
 	NPCID = FName(TEXT("Saint"));
-	NPCName = FText::FromString(TEXT("Saint"));
+	NPCName = NSLOCTEXT("T66.NPC", "Saint", "Saint");
 	NPCColor = FLinearColor(0.9f, 0.9f, 0.9f, 1.f);
 }
 
