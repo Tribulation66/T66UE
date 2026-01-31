@@ -186,6 +186,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void RemoveFirstOwedBoss();
 
+	/** Clear all owed bosses (used after a Coliseum clear). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void ClearOwedBosses();
+
 	/** Add gold (e.g. gambler win). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddGold(int32 Amount);
@@ -276,6 +280,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	bool GetBossActive() const { return bBossActive; }
 
+	/** Active boss identifier (NAME_None when no boss is active). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	FName GetActiveBossID() const { return ActiveBossID; }
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetBossCurrentHP() const { return BossCurrentHP; }
 
@@ -291,6 +299,10 @@ public:
 
 	/** Called when a boss awakens. Sets boss UI visible and initializes HP. */
 	void SetBossActive(int32 InMaxHP);
+
+	/** Called when a boss awakens. Sets boss UI visible, stores boss ID, and initializes HP. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void SetBossActiveWithId(FName InBossID, int32 InMaxHP);
 
 	/** Hide boss UI / clear boss HP (e.g. on boss death or stage transition). */
 	void SetBossInactive();
@@ -335,6 +347,10 @@ public:
 	/** Sell first inventory item. Returns true if sold. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellFirstItem();
+
+	/** Sell a specific inventory item slot (0..Inventory.Num-1). Returns true if sold. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	bool SellInventoryItemAt(int32 InventoryIndex);
 
 	/** True if there is space in the inventory (max 5 for v0 HUD). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
@@ -647,6 +663,9 @@ private:
 
 	UPROPERTY()
 	bool bBossActive = false;
+
+	UPROPERTY()
+	FName ActiveBossID = NAME_None;
 
 	UPROPERTY()
 	int32 BossMaxHP = 100;

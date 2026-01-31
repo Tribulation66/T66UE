@@ -5,6 +5,7 @@
 #include "Gameplay/T66UniqueDebuffProjectile.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -31,15 +32,9 @@ AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 		Move->SetMovementMode(MOVE_Flying);
 	}
 
-	// Visual: make it clearly "different" (purple).
-	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FLinearColor(0.65f, 0.20f, 0.90f, 1.f));
+	// Visuals are stage-driven in BeginPlay so each stage's Unique enemy looks different.
 	if (VisualMesh)
 	{
-		if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
-		{
-			VisualMesh->SetStaticMesh(Sphere);
-		}
-		VisualMesh->SetRelativeScale3D(FVector(0.75f, 0.75f, 0.75f));
 		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 40.f)); // float above capsule center
 	}
 }
@@ -47,6 +42,50 @@ AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 void AT66UniqueDebuffEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Stage-driven tuning + visuals (so each stage has its own unique enemy flavor).
+	int32 StageNum = 1;
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			StageNum = RunState->GetCurrentStage();
+		}
+	}
+	StageNum = FMath::Clamp(StageNum, 1, 66);
+
+	// Scale stats up as stages increase.
+	MaxHP = FMath::Clamp(60 + (StageNum * 3), 60, 9999);
+	CurrentHP = MaxHP;
+	FireIntervalSeconds = FMath::Clamp(1.40f - (static_cast<float>(StageNum) * 0.006f), 0.55f, 1.40f);
+	LifetimeSeconds = FMath::Clamp(10.f + (static_cast<float>(StageNum) * 0.12f), 10.f, 22.f);
+
+	// Visual: rotate basic shapes + unique color per stage.
+	if (VisualMesh)
+	{
+		UStaticMesh* Shape = nullptr;
+		switch (StageNum % 4)
+		{
+			case 1: Shape = FT66VisualUtil::GetBasicShapeSphere(); break;
+			case 2: Shape = FT66VisualUtil::GetBasicShapeCube(); break;
+			case 3: Shape = FT66VisualUtil::GetBasicShapeCylinder(); break;
+			default: Shape = FT66VisualUtil::GetBasicShapeCone(); break;
+		}
+		if (Shape)
+		{
+			VisualMesh->SetStaticMesh(Shape);
+		}
+
+		const float Hue = FMath::Fmod(static_cast<float>(StageNum) * 41.f, 360.f);
+		FLinearColor C = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 220, 245);
+		C.A = 1.f;
+		FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
+
+		// Slight size ramp over the run.
+		const float S = FMath::Lerp(0.70f, 1.05f, static_cast<float>(StageNum - 1) / 65.f);
+		VisualMesh->SetRelativeScale3D(FVector(S, S, S));
+	}
+
 	LifeRemaining = LifetimeSeconds;
 
 	// Lift to hover height (spawn loc is at capsule half-height; we add hover offset).

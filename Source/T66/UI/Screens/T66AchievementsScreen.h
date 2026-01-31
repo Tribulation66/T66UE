@@ -5,9 +5,11 @@
 #include "CoreMinimal.h"
 #include "UI/T66ScreenBase.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "T66AchievementsScreen.generated.h"
 
 class UT66LocalizationSubsystem;
+class UT66AchievementsSubsystem;
 
 /**
  * Achievements Screen - Bible 1.19
@@ -27,10 +29,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Achievements")
 	ET66AchievementTier CurrentTier = ET66AchievementTier::Black;
 
-	/** Total Achievement Coins earned (placeholder) */
-	UPROPERTY(BlueprintReadWrite, Category = "Achievements")
-	int32 TotalAchievementCoins = 1250;
-
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void SwitchToTier(ET66AchievementTier Tier);
 
@@ -39,6 +37,7 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
@@ -46,10 +45,15 @@ private:
 	TSharedPtr<SVerticalBox> AchievementListBox;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
+	UT66AchievementsSubsystem* GetAchievementsSubsystem() const;
 
-	void GeneratePlaceholderAchievements();
+	void RefreshAchievements();
 	void RebuildAchievementList();
 
 	FReply HandleTierClicked(ET66AchievementTier Tier);
 	FReply HandleBackClicked();
+	FReply HandleClaimClicked(FName AchievementID);
+
+	UFUNCTION()
+	void HandleLanguageChanged(ET66Language NewLanguage);
 };

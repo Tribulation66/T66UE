@@ -468,6 +468,110 @@ FText UT66LocalizationSubsystem::GetText_Achievements() const
 	}
 }
 
+FText UT66LocalizationSubsystem::GetText_AchievementTierBlack() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("PRETO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("黑"));
+	default: return FText::FromString(TEXT("BLACK"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_AchievementTierRed() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("VERMELHO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("紅"));
+	default: return FText::FromString(TEXT("RED"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_AchievementTierYellow() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("AMARELO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("黃"));
+	default: return FText::FromString(TEXT("YELLOW"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_AchievementTierWhite() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("BRANCO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("白"));
+	default: return FText::FromString(TEXT("WHITE"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_AchievementCoinsFormat() const
+{
+	// Keep the AC abbreviation stable across languages for readability (Bible: "Achievement Coins (AC)").
+	// Translators can adjust ordering/spacing per language.
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("{0} AC"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("{0} AC"));
+	default: return FText::FromString(TEXT("{0} AC"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Claim() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("RESGATAR"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("領取"));
+	default: return FText::FromString(TEXT("CLAIM"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_Claimed() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("RESGATADO"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("已領取"));
+	default: return FText::FromString(TEXT("CLAIMED"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_AchievementName(FName AchievementID) const
+{
+	// v0: first wired achievement
+	if (AchievementID == FName(TEXT("ACH_BLK_001")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("MATE 20 INIMIGOS"));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("擊殺 20 名敵人"));
+		default: return FText::FromString(TEXT("KILL 20 ENEMIES"));
+		}
+	}
+
+	// Fallback: show the ID so missing strings are obvious (and never crash).
+	return FText::FromName(AchievementID);
+}
+
+FText UT66LocalizationSubsystem::GetText_AchievementDescription(FName AchievementID) const
+{
+	if (AchievementID == FName(TEXT("ACH_BLK_001")))
+	{
+		switch (CurrentLanguage)
+		{
+		case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Mate 20 inimigos."));
+		case ET66Language::ChineseTraditional: return FText::FromString(TEXT("擊殺 20 名敵人。"));
+		default: return FText::FromString(TEXT("Kill 20 enemies."));
+		}
+	}
+
+	return FText::FromName(AchievementID);
+}
+
 FText UT66LocalizationSubsystem::GetText_Quit() const
 {
 	switch (CurrentLanguage)
@@ -1770,9 +1874,10 @@ FText UT66LocalizationSubsystem::GetText_IdolAltarDropAnIdolHere() const
 
 FText UT66LocalizationSubsystem::GetText_IdolAltarAlreadySelectedStage1() const
 {
-	static const FText En = FText::FromString(TEXT("Idol already selected for Stage 1."));
-	static const FText Pt = FText::FromString(TEXT("Ídolo já selecionado para a Fase 1."));
-	static const FText Zh = FText::FromString(TEXT("第 1 關已選擇偶像。"));
+	// Repurposed: v0 now allows selecting idols multiple times; lock only when all slots are full.
+	static const FText En = FText::FromString(TEXT("All idol slots are full."));
+	static const FText Pt = FText::FromString(TEXT("Todos os slots de ídolo estão cheios."));
+	static const FText Zh = FText::FromString(TEXT("所有偶像插槽已滿。"));
 	switch (CurrentLanguage)
 	{
 		case ET66Language::BrazilianPortuguese: return Pt;

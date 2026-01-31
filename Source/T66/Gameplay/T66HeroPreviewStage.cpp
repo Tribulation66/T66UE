@@ -13,6 +13,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 
 AT66HeroPreviewStage::AT66HeroPreviewStage()
 {
@@ -27,8 +28,9 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 	SceneCapture->SetupAttachment(RootComponent);
 	SceneCapture->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	SceneCapture->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	SceneCapture->bCaptureEveryFrame = false; // Only capture when we call CapturePreview
-	SceneCapture->bCaptureOnMovement = false;
+	// Real-time capture for smooth orbit + animation (no stutter).
+	SceneCapture->bCaptureEveryFrame = true;
+	SceneCapture->bCaptureOnMovement = true;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 	SceneCapture->FOVAngle = 30.f;
 	// Do NOT override exposure here; we want it to match the gameplay lighting feel.
@@ -38,20 +40,20 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 	PreviewLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PreviewLight"));
 	PreviewLight->SetupAttachment(RootComponent);
 	PreviewLight->SetRelativeLocation(PreviewPawnOffset * 0.5f); // Between camera and pawn
-	PreviewLight->SetIntensity(1800.f);
-	PreviewLight->SetAttenuationRadius(3000.f);
+	PreviewLight->SetIntensity(5200.f);
+	PreviewLight->SetAttenuationRadius(6000.f);
 	PreviewLight->SetLightColor(FLinearColor(1.f, 0.95f, 0.9f));
 
 	FillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FillLight"));
 	FillLight->SetupAttachment(RootComponent);
-	FillLight->SetIntensity(650.f);
-	FillLight->SetAttenuationRadius(3000.f);
+	FillLight->SetIntensity(2200.f);
+	FillLight->SetAttenuationRadius(8000.f);
 	FillLight->SetLightColor(FLinearColor(0.85f, 0.90f, 1.0f));
 
 	RimLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("RimLight"));
 	RimLight->SetupAttachment(RootComponent);
-	RimLight->SetIntensity(900.f);
-	RimLight->SetAttenuationRadius(3500.f);
+	RimLight->SetIntensity(2600.f);
+	RimLight->SetAttenuationRadius(8000.f);
 	RimLight->SetLightColor(FLinearColor(1.0f, 1.0f, 1.0f));
 
 	PreviewPlatform = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewPlatform"));
@@ -106,7 +108,9 @@ void AT66HeroPreviewStage::EnsureCaptureSetup()
 void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType)
 {
 	PreviewYawDegrees = 0.f;
+	OrbitPitchDegrees = 8.f;
 	UpdatePreviewPawn(HeroID, BodyType);
+	bHasOrbitFrame = false;
 	FrameCameraToPreview();
 	CapturePreview();
 }
@@ -115,7 +119,15 @@ void AT66HeroPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
 {
 	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
 	ApplyPreviewRotation();
-	CapturePreview();
+	FrameCameraToPreview();
+}
+
+void AT66HeroPreviewStage::AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees)
+{
+	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
+	OrbitPitchDegrees = FMath::Clamp(OrbitPitchDegrees + DeltaPitchDegrees, 0.f, 70.f);
+	ApplyPreviewRotation();
+	FrameCameraToPreview();
 }
 
 UPrimitiveComponent* AT66HeroPreviewStage::GetPreviewTargetComponent() const
@@ -150,16 +162,30 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	UPrimitiveComponent* Target = GetPreviewTargetComponent();
 	if (!Target) return;
 
-	const FBoxSphereBounds B = Target->Bounds;
-	const FVector Center = B.Origin;
-	const float Radius = FMath::Max(25.f, B.SphereRadius);
+	// Cache orbit framing once per hero selection so the platform/camera don't "swim" as you rotate.
+	if (!bHasOrbitFrame)
+	{
+		const FBoxSphereBounds B = Target->Bounds;
+		OrbitCenter = B.Origin;
+		OrbitRadius = FMath::Max(25.f, B.SphereRadius);
+		OrbitBottomZ = (B.Origin.Z - B.BoxExtent.Z);
+		bHasOrbitFrame = true;
+	}
+
+	const FVector Center = OrbitCenter;
+	const float Radius = OrbitRadius;
 
 	// Fit the whole bounds sphere in view.
 	const float HalfFovRad = FMath::DegreesToRadians(SceneCapture->FOVAngle * 0.5f);
 	// Slightly "zoomed in" so the character feels large (Dota-style).
 	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * 1.05f;
 
-	const FVector CamLoc = Center + FVector(-Dist, 0.f, Radius * 0.12f);
+	const float PitchRad = FMath::DegreesToRadians(OrbitPitchDegrees);
+	const float Z = (FMath::Sin(PitchRad) * Dist) + (Radius * 0.12f);
+	const float X = (-FMath::Cos(PitchRad) * Dist);
+	FVector CamLoc = Center + FVector(X, 0.f, Z);
+	// Never allow the camera to dip below the "ground" plane (prevents seeing under the platform).
+	CamLoc.Z = FMath::Max(CamLoc.Z, OrbitBottomZ + 60.f);
 	SceneCapture->SetWorldLocation(CamLoc);
 
 	const FRotator LookRot = FRotationMatrix::MakeFromX(Center - CamLoc).Rotator();
@@ -187,8 +213,7 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	if (PreviewPlatform)
 	{
 		// Put platform just below feet.
-		const float BottomZ = B.Origin.Z - B.BoxExtent.Z;
-		PreviewPlatform->SetWorldLocation(FVector(Center.X, Center.Y, BottomZ - 6.f));
+		PreviewPlatform->SetWorldLocation(FVector(Center.X, Center.Y, OrbitBottomZ - 6.f));
 		const float S = FMath::Clamp((Radius / 50.f) * 1.6f, 1.2f, 6.0f);
 		PreviewPlatform->SetWorldScale3D(FVector(S, S, 0.08f));
 	}
@@ -252,6 +277,16 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 		FVector PawnLoc = GetActorLocation() + GetActorRotation().RotateVector(PreviewPawnOffset);
 		PreviewPawn->SetActorLocation(PawnLoc);
 		ApplyPreviewRotation();
+
+		// Make sure materials/textures are fully streamed for the preview camera.
+		if (USkeletalMeshComponent* Skel = PreviewPawn->GetMesh())
+		{
+			Skel->bForceMipStreaming = true;
+			Skel->StreamingDistanceMultiplier = 50.f;
+			Skel->bPauseAnims = true;          // preview should be static
+			Skel->GlobalAnimRateScale = 0.f;
+			Skel->Stop();
+		}
 	}
 }
 

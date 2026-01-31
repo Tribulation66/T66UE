@@ -38,6 +38,7 @@ void AT66FrontendGameMode::BeginPlay()
 	UWorld* World = GetWorld();
 	if (World)
 	{
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
 		bool bHasPreviewStage = false;
 		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
 		{
@@ -70,6 +71,27 @@ void AT66FrontendGameMode::BeginPlay()
 				SpawnParams
 			);
 			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage for 3D companion preview"));
+		}
+
+		// Pre-warm preview so the first time the UI opens it's already "styled" (no pop-in).
+		if (T66GI)
+		{
+			for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+			{
+				const FName HeroID = !T66GI->SelectedHeroID.IsNone()
+					? T66GI->SelectedHeroID
+					: (T66GI->GetAllHeroIDs().Num() > 0 ? T66GI->GetAllHeroIDs()[0] : NAME_None);
+				if (!HeroID.IsNone())
+				{
+					It->SetPreviewHero(HeroID, T66GI->SelectedHeroBodyType);
+				}
+				break;
+			}
+			for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+			{
+				It->SetPreviewCompanion(T66GI->SelectedCompanionID);
+				break;
+			}
 		}
 	}
 

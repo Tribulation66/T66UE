@@ -43,12 +43,6 @@ public:
 	bool ConfigureGameplayLevel();
 
 	/**
-	 * Configure the ColiseumLevel to use BP_GameplayGameMode
-	 */
-	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
-	bool ConfigureColiseumLevel();
-
-	/**
 	 * Configure BP_FrontendGameMode defaults
 	 */
 	UFUNCTION(BlueprintCallable, Category = "T66 Setup")

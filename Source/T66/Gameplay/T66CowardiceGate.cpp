@@ -9,7 +9,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
-#include "Misc/PackageName.h"
 
 AT66CowardiceGate::AT66CowardiceGate()
 {
@@ -56,7 +55,7 @@ bool AT66CowardiceGate::ConfirmCowardice()
 	FStageData StageData;
 	if (!T66GI->GetStageData(CurrentStage, StageData))
 	{
-		StageData.BossID = FName(TEXT("Boss_01"));
+		StageData.BossID = FName(*FString::Printf(TEXT("Boss_%02d"), CurrentStage));
 	}
 	if (!StageData.BossID.IsNone())
 	{
@@ -72,10 +71,8 @@ bool AT66CowardiceGate::ConfirmCowardice()
 	const bool bIsCheckpointStage = (NextStage % 5) == 0;
 	if (bIsCheckpointStage && RunState->GetOwedBossIDs().Num() > 0)
 	{
-		// Prefer ColiseumLevel if it exists; else fall back to GameplayLevel in "forced coliseum mode".
-		const bool bHasColiseumMap = FPackageName::DoesPackageExist(TEXT("/Game/Maps/ColiseumLevel"));
-		T66GI->bForceColiseumMode = !bHasColiseumMap;
-		UGameplayStatics::OpenLevel(this, FName(bHasColiseumMap ? TEXT("/Game/Maps/ColiseumLevel") : TEXT("/Game/Maps/GameplayLevel")));
+		T66GI->bForceColiseumMode = true;
+		UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Maps/GameplayLevel")));
 		return true;
 	}
 

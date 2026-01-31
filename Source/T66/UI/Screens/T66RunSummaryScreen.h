@@ -6,6 +6,11 @@
 #include "UI/T66ScreenBase.h"
 #include "T66RunSummaryScreen.generated.h"
 
+class ASceneCapture2D;
+class UTextureRenderTarget2D;
+class AT66HeroPreviewStage;
+class AT66CompanionPreviewStage;
+
 /**
  * Run Summary screen shown on death: 3D preview placeholder, event log, Restart / Main Menu.
  */
@@ -28,6 +33,7 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
@@ -38,8 +44,35 @@ private:
 	void RebuildLogItems();
 	TSharedRef<ITableRow> GenerateLogRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable);
 
+	void EnsurePreviewCaptures();
+	void DestroyPreviewCaptures();
+
 	bool bLogVisible = true;
 
 	// Virtualized log list (prevents building a widget per entry).
 	TArray<TSharedPtr<FString>> LogItems;
+
+	// ===== 3D preview captures (runtime, no editor assets required) =====
+	UPROPERTY(Transient)
+	TObjectPtr<UTextureRenderTarget2D> HeroPreviewRT;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextureRenderTarget2D> CompanionPreviewRT;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ASceneCapture2D> HeroCaptureActor;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ASceneCapture2D> CompanionCaptureActor;
+
+	/** Brushes for Slate image widgets (resource = render target). */
+	TSharedPtr<struct FSlateBrush> HeroPreviewBrush;
+	TSharedPtr<struct FSlateBrush> CompanionPreviewBrush;
+
+	// ===== Preview stages (reuse same system as hero/companion selection) =====
+	UPROPERTY(Transient)
+	TObjectPtr<AT66HeroPreviewStage> HeroPreviewStage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<AT66CompanionPreviewStage> CompanionPreviewStage;
 };

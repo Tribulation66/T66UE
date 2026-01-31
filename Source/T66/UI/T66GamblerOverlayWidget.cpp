@@ -14,6 +14,7 @@
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Styling/CoreStyle.h"
+#include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
@@ -48,31 +49,44 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		}
 	}
 
-	auto MakeTitle = [](const FText& Text) -> TSharedRef<SWidget>
+	const ISlateStyle& Style = FT66Style::Get();
+	const FButtonStyle& BtnPrimary = Style.GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
+	const FButtonStyle& BtnNeutral = Style.GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+	const FButtonStyle& BtnDanger = Style.GetWidgetStyle<FButtonStyle>("T66.Button.Danger");
+
+	const FTextBlockStyle& TextTitle = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Title");
+	const FTextBlockStyle& TextHeading = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
+	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+	const FTextBlockStyle& TextButton = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+
+	auto MakeTitle = [&](const FText& Text) -> TSharedRef<SWidget>
 	{
 		return SNew(STextBlock)
 			.Text(Text)
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 36))
-			.ColorAndOpacity(FLinearColor::White);
+			.TextStyle(&TextTitle)
+			.ColorAndOpacity(FT66Style::Tokens::Text);
 	};
 
-	auto MakeButton = [](const FText& Text, const FOnClicked& OnClicked, const FLinearColor& Bg = FLinearColor(0.2f, 0.2f, 0.28f, 1.f)) -> TSharedRef<SWidget>
+	auto MakeButton = [&](const FText& Text, const FOnClicked& OnClicked, const FButtonStyle* BtnStyle = nullptr) -> TSharedRef<SWidget>
 	{
+		const FButtonStyle* Use = BtnStyle ? BtnStyle : &BtnNeutral;
 		return SNew(SBox)
-			.WidthOverride(420.f)
-			.HeightOverride(62.f)
+			.MinDesiredWidth(420.f)
+			.HeightOverride(56.f)
 			.Padding(FMargin(0.f, 8.f))
 			[
 				SNew(SButton)
 				.OnClicked(OnClicked)
-				.ButtonColorAndOpacity(Bg)
+				.ButtonStyle(Use)
+				.ContentPadding(FMargin(18.f, 10.f))
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
 					.Text(Text)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-					.ColorAndOpacity(FLinearColor::White)
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
 	};
@@ -85,29 +99,30 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_GamblerDialoguePrompt() : FText::FromString(TEXT("What do you want?")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
-			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
+			.TextStyle(&TextBody)
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-		[ MakeButton(Loc ? Loc->GetText_LetMeGamble() : FText::FromString(TEXT("LET ME GAMBLE")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueGamble), FLinearColor(0.7f, 0.55f, 0.1f, 1.f)) ]
+		[ MakeButton(Loc ? Loc->GetText_LetMeGamble() : FText::FromString(TEXT("LET ME GAMBLE")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueGamble), &BtnPrimary) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
 			SNew(SBox)
-			.WidthOverride(420.f)
-			.HeightOverride(62.f)
+			.MinDesiredWidth(420.f)
+			.HeightOverride(56.f)
 			.Padding(FMargin(0.f, 8.f))
 			[
 				SNew(SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnDialogueTeleport))
 				.IsEnabled_Lambda([this]() { return !IsBossActive(); })
-				.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+				.ButtonStyle(&BtnNeutral)
+				.ContentPadding(FMargin(18.f, 10.f))
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_TeleportMeToYourBrother() : FText::FromString(TEXT("TELEPORT ME TO YOUR BROTHER")))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-					.ColorAndOpacity(FLinearColor::White)
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			]
 		];
@@ -123,23 +138,23 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				// Bank panel
 				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
-				.Padding(16.f)
+				.BorderImage(Style.GetBrush("T66.Brush.Panel"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.Padding(FT66Style::Tokens::Space6)
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SNew(STextBlock)
 						.Text(Loc ? Loc->GetText_Bank() : FText::FromString(TEXT("BANK")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Bet() : FText::FromString(TEXT("Bet"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Bet() : FText::FromString(TEXT("Bet"))).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SAssignNew(GambleAmountSpin, SSpinBox<int32>)
@@ -151,14 +166,21 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						[
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGambleMax))
-							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Max() : FText::FromString(TEXT("MAX"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(14.f, 8.f))
+							[
+								SNew(STextBlock)
+								.Text(Loc ? Loc->GetText_Max() : FText::FromString(TEXT("MAX")))
+								.TextStyle(&TextButton)
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("Borrow"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("Borrow"))).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
@@ -170,15 +192,21 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						[
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBorrowClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
-							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("BORROW"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(14.f, 8.f))
+							[
+								SNew(STextBlock)
+								.Text(Loc ? Loc->GetText_Borrow() : FText::FromString(TEXT("BORROW")))
+								.TextStyle(&TextButton)
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("Payback"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+						[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("Payback"))).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
@@ -190,14 +218,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						[
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackMax))
-							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Max() : FText::FromString(TEXT("MAX"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(14.f, 8.f))
+							[
+								SNew(STextBlock)
+								.Text(Loc ? Loc->GetText_Max() : FText::FromString(TEXT("MAX")))
+								.TextStyle(&TextButton)
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
 							SNew(SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
-							[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("PAYBACK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor::White) ]
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(14.f, 8.f))
+							[
+								SNew(STextBlock)
+								.Text(Loc ? Loc->GetText_Payback() : FText::FromString(TEXT("PAYBACK")))
+								.TextStyle(&TextButton)
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
 						]
 					]
 				]
@@ -206,24 +247,24 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				// Games panel
 				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
-				.Padding(16.f)
+				.BorderImage(Style.GetBrush("T66.Brush.Panel"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.Padding(FT66Style::Tokens::Space6)
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SNew(STextBlock)
 						.Text(Loc ? Loc->GetText_Games() : FText::FromString(TEXT("GAMES")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot().AutoHeight()
-					[ MakeButton(Loc ? Loc->GetText_CoinFlip() : FText::FromString(TEXT("COIN FLIP")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
+					[ MakeButton(Loc ? Loc->GetText_CoinFlip() : FText::FromString(TEXT("COIN FLIP")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &BtnPrimary) ]
 					+ SVerticalBox::Slot().AutoHeight()
-					[ MakeButton(Loc ? Loc->GetText_RockPaperScissors() : FText::FromString(TEXT("ROCK PAPER SCISSORS")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
+					[ MakeButton(Loc ? Loc->GetText_RockPaperScissors() : FText::FromString(TEXT("ROCK PAPER SCISSORS")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &BtnPrimary) ]
 					+ SVerticalBox::Slot().AutoHeight()
-					[ MakeButton(Loc ? Loc->GetText_FindTheBall() : FText::FromString(TEXT("FIND THE BALL")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall), FLinearColor(0.55f, 0.50f, 0.12f, 1.f)) ]
+					[ MakeButton(Loc ? Loc->GetText_FindTheBall() : FText::FromString(TEXT("FIND THE BALL")), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall), &BtnPrimary) ]
 				]
 			]
 		];
@@ -236,15 +277,15 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_ChooseHeadsOrTails() : FText::FromString(TEXT("Choose Heads or Tails.")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
-			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
+			.TextStyle(&TextBody)
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SAssignNew(CoinFlipResultText, STextBlock)
 			.Text(Loc ? Loc->GetText_ResultDash() : FText::FromString(TEXT("Result: -")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-			.ColorAndOpacity(FLinearColor::White)
+			.TextStyle(&TextHeading)
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
@@ -253,22 +294,26 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(CoinFlipHeadsButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipHeads))
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
 				[
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_Heads() : FText::FromString(TEXT("HEADS")))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-					.ColorAndOpacity(FLinearColor::White)
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(CoinFlipTailsButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipTails))
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
 				[
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_Tails() : FText::FromString(TEXT("TAILS")))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-					.ColorAndOpacity(FLinearColor::White)
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			]
 		];
@@ -281,8 +326,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		[
 			SAssignNew(RpsResultText, STextBlock)
 			.Text(Loc ? Loc->GetText_PickOne() : FText::FromString(TEXT("Pick one.")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-			.ColorAndOpacity(FLinearColor::White)
+			.TextStyle(&TextHeading)
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
@@ -291,19 +336,40 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(RpsRockButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsRock))
-				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Rock() : FText::FromString(TEXT("ROCK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
+				[
+					SNew(STextBlock)
+					.Text(Loc ? Loc->GetText_Rock() : FText::FromString(TEXT("ROCK")))
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(RpsPaperButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsPaper))
-				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Paper() : FText::FromString(TEXT("PAPER"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
+				[
+					SNew(STextBlock)
+					.Text(Loc ? Loc->GetText_Paper() : FText::FromString(TEXT("PAPER")))
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(RpsScissorsButton, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsScissors))
-				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Scissors() : FText::FromString(TEXT("SCISSORS"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
+				[
+					SNew(STextBlock)
+					.Text(Loc ? Loc->GetText_Scissors() : FText::FromString(TEXT("SCISSORS")))
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			]
 		];
 
@@ -315,15 +381,15 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_PickACup() : FText::FromString(TEXT("Pick a cup.")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
-			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
+			.TextStyle(&TextBody)
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SAssignNew(BallResultText, STextBlock)
 			.Text(Loc ? Loc->GetText_ResultDash() : FText::FromString(TEXT("Result: -")))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-			.ColorAndOpacity(FLinearColor::White)
+			.TextStyle(&TextHeading)
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
@@ -332,74 +398,102 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(BallCup1Button, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBallCup1))
-				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Cup(1) : FText::FromString(TEXT("CUP 1"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
+				[
+					SNew(STextBlock)
+					.Text(Loc ? Loc->GetText_Cup(1) : FText::FromString(TEXT("CUP 1")))
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(BallCup2Button, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBallCup2))
-				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Cup(2) : FText::FromString(TEXT("CUP 2"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
+				[
+					SNew(STextBlock)
+					.Text(Loc ? Loc->GetText_Cup(2) : FText::FromString(TEXT("CUP 2")))
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				SAssignNew(BallCup3Button, SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBallCup3))
-				[ SNew(STextBlock).Text(Loc ? Loc->GetText_Cup(3) : FText::FromString(TEXT("CUP 3"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18)).ColorAndOpacity(FLinearColor::White) ]
+				.ButtonStyle(&BtnPrimary)
+				.ContentPadding(FMargin(18.f, 10.f))
+				[
+					SNew(STextBlock)
+					.Text(Loc ? Loc->GetText_Cup(3) : FText::FromString(TEXT("CUP 3")))
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			]
 		];
 
 	TSharedRef<SWidget> Root =
 		SNew(SBorder)
 		// Full-screen, opaque (no transparency)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
+		.BorderImage(Style.GetBrush("T66.Brush.Bg"))
+		.BorderBackgroundColor(FT66Style::Tokens::Bg)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
 				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(18.f, 14.f, 18.f, 6.f)
+				+ SVerticalBox::Slot().AutoHeight().Padding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, FT66Style::Tokens::Space6, FT66Style::Tokens::Space2)
 				[
 					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 14.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
 					[
 						SNew(SButton)
 						.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBack))
-					[ SNew(STextBlock).Text(Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+						.ButtonStyle(&BtnNeutral)
+						.ContentPadding(FMargin(18.f, 10.f))
+						[
+							SNew(STextBlock)
+							.Text(Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK")))
+							.TextStyle(&TextButton)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 					[
 						SAssignNew(StatusText, STextBlock)
 						.Text(FText::FromString(TEXT("")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&TextBody)
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
 						SAssignNew(GoldText, STextBlock)
 					.Text(FText::GetEmpty())
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&TextChip)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(14.f, 0.f, 0.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(FT66Style::Tokens::Space4, 0.f, 0.f, 0.f)
 					[
 						SAssignNew(DebtText, STextBlock)
 					.Text(FText::GetEmpty())
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-						.ColorAndOpacity(FLinearColor(0.95f, 0.15f, 0.15f, 1.f))
+						.TextStyle(&TextChip)
+						.ColorAndOpacity(FT66Style::Tokens::Danger)
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(18.f, 0.f, 18.f, 10.f)
+				+ SVerticalBox::Slot().AutoHeight().Padding(FT66Style::Tokens::Space6, 0.f, FT66Style::Tokens::Space6, FT66Style::Tokens::Space3)
 				[
 					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, FT66Style::Tokens::Space3, 0.f)
 					[
 						SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_Anger() : FText::FromString(TEXT("ANGER")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-						.ColorAndOpacity(FLinearColor(1.f, 0.4f, 0.35f, 1.f))
+						.TextStyle(&TextChip)
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 2.f, 10.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 2.f, FT66Style::Tokens::Space3, 0.f)
 					[
 						SNew(SBox)
 						.WidthOverride(240.f)
@@ -409,8 +503,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							+ SOverlay::Slot()
 							[
 								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.18f, 1.f))
+								.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+								.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 							]
 							+ SOverlay::Slot().HAlign(HAlign_Left)
 							[
@@ -418,8 +512,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								.WidthOverride(0.f)
 								[
 									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.95f, 0.2f, 0.15f, 1.f))
+									.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+									.BorderBackgroundColor(FT66Style::Tokens::Danger)
 								]
 							]
 						]
@@ -428,8 +522,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					[
 						SAssignNew(AngerText, STextBlock)
 						.Text(FText::FromString(TEXT("0%")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&TextChip)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				]
 				+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Fill).Padding(40.f)
@@ -455,24 +549,24 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.Visibility(EVisibility::Collapsed)
 				[
 					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.1f, 0.95f))
-					.Padding(18.f)
+					.BorderImage(Style.GetBrush("T66.Brush.Panel"))
+					.BorderBackgroundColor(FT66Style::Tokens::Panel)
+					.Padding(FT66Style::Tokens::Space6)
 					[
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 						[
 							SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_CheatPromptTitle() : FText::FromString(TEXT("Cheat?")))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
-							.ColorAndOpacity(FLinearColor::White)
+							.TextStyle(&TextHeading)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
 						[
 							SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_CheatPromptBody() : FText::FromString(TEXT("Cheating increases Anger.")))
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
-							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
+							.TextStyle(&TextBody)
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						]
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 						[
@@ -480,27 +574,39 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 							[
 								SNew(SBox)
-								.WidthOverride(140.f)
-								.HeightOverride(44.f)
+								.MinDesiredWidth(140.f)
+								.HeightOverride(48.f)
 								[
 									SNew(SButton)
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatYes))
-									.ButtonColorAndOpacity(FLinearColor(0.85f, 0.2f, 0.15f, 1.f))
+									.ButtonStyle(&BtnDanger)
+									.ContentPadding(FMargin(18.f, 10.f))
 									.HAlign(HAlign_Center).VAlign(VAlign_Center)
-									[ SNew(STextBlock).Text(Loc ? Loc->GetText_Yes() : FText::FromString(TEXT("YES"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+									[
+										SNew(STextBlock)
+										.Text(Loc ? Loc->GetText_Yes() : FText::FromString(TEXT("YES")))
+										.TextStyle(&TextButton)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
 								]
 							]
 							+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 							[
 								SNew(SBox)
-								.WidthOverride(140.f)
-								.HeightOverride(44.f)
+								.MinDesiredWidth(140.f)
+								.HeightOverride(48.f)
 								[
 									SNew(SButton)
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCheatNo))
-									.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+									.ButtonStyle(&BtnNeutral)
+									.ContentPadding(FMargin(18.f, 10.f))
 									.HAlign(HAlign_Center).VAlign(VAlign_Center)
-									[ SNew(STextBlock).Text(Loc ? Loc->GetText_No() : FText::FromString(TEXT("NO"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16)).ColorAndOpacity(FLinearColor::White) ]
+									[
+										SNew(STextBlock)
+										.Text(Loc ? Loc->GetText_No() : FText::FromString(TEXT("NO")))
+										.TextStyle(&TextButton)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
 								]
 							]
 						]

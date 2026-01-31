@@ -2,7 +2,9 @@
 
 #include "Core/T66MusicSubsystem.h"
 
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -24,6 +26,41 @@ static USoundBase* TryLoadFirstSoundAsset(const TArray<FSoftObjectPath>& Candida
 				InOutSoftPtr = TSoftObjectPtr<USoundBase>(P);
 				return SB;
 			}
+		}
+	}
+	return nullptr;
+}
+
+static USoundBase* TryLoadFirstSoundInFolder(const FString& FolderPath)
+{
+	// FolderPath should be like "/Game/Audio/OSTS/Heroes/Hero_Example"
+	if (FolderPath.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	const FName PathName(*FolderPath);
+	FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+
+	TArray<FAssetData> Assets;
+	ARM.Get().GetAssetsByPath(PathName, Assets, /*bRecursive=*/true);
+	if (Assets.Num() <= 0)
+	{
+		return nullptr;
+	}
+
+	// Deterministic selection: alphabetical by asset name.
+	Assets.Sort([](const FAssetData& A, const FAssetData& B)
+	{
+		return A.AssetName.LexicalLess(B.AssetName);
+	});
+
+	for (const FAssetData& AD : Assets)
+	{
+		UObject* Obj = AD.GetAsset();
+		if (USoundBase* SB = Cast<USoundBase>(Obj))
+		{
+			return SB;
 		}
 	}
 	return nullptr;
@@ -66,6 +103,7 @@ void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
 			RunState->SurvivalChanged.AddDynamic(this, &UT66MusicSubsystem::HandleSurvivalChanged);
+			RunState->BossChanged.AddDynamic(this, &UT66MusicSubsystem::HandleBossChanged);
 		}
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
@@ -109,6 +147,7 @@ void UT66MusicSubsystem::Deinitialize()
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
 			RunState->SurvivalChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleSurvivalChanged);
+			RunState->BossChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleBossChanged);
 		}
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
@@ -160,6 +199,11 @@ void UT66MusicSubsystem::HandleSurvivalChanged()
 	UpdateMusicState();
 }
 
+void UT66MusicSubsystem::HandleBossChanged()
+{
+	UpdateMusicState();
+}
+
 void UT66MusicSubsystem::UpdateMusicState()
 {
 	UGameInstance* GI = GetGameInstance();
@@ -168,6 +212,10 @@ void UT66MusicSubsystem::UpdateMusicState()
 	UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 	UWorld* World = GI->GetWorld();
 	if (!RunState || !World) return;
+
+	// Boss music (for Espadas / Difficulty bosses / Special bosses).
+	const bool bBossActive = RunState->GetBossActive();
+	const FName ActiveBossID = RunState->GetActiveBossID();
 
 	const bool bShouldSurvival =
 		RunState->IsInLastStand()
@@ -179,11 +227,14 @@ void UT66MusicSubsystem::UpdateMusicState()
 		if (!bSurvivalActive)
 		{
 			bSurvivalActive = true;
+			bBossMusicActive = false;
 			bAllowMainThemeLoop = false;
 			bAllowThemeLoop = false;
 			bAllowSurvivalLoop = true;
+			bAllowBossLoop = false;
 			StopMainTheme(0.25f);
 			StopTheme(0.25f);
+			StopBoss(0.15f);
 			EnsureSurvivalPlaying(World);
 		}
 	}
@@ -194,6 +245,32 @@ void UT66MusicSubsystem::UpdateMusicState()
 			bSurvivalActive = false;
 			bAllowSurvivalLoop = false;
 			StopSurvival(0.25f);
+		}
+
+		// Boss music has priority over base tracks (but below survival).
+		const bool bShouldBossMusic = bBossActive && !ActiveBossID.IsNone();
+		if (bShouldBossMusic)
+		{
+			USoundBase* BossTrack = ResolveAndLoadBossThemeSound(World);
+			if (BossTrack)
+			{
+				bBossMusicActive = true;
+				bAllowBossLoop = true;
+				bAllowMainThemeLoop = false;
+				bAllowThemeLoop = false;
+				StopMainTheme(0.25f);
+				StopTheme(0.25f);
+				EnsureBossPlaying(World);
+				ApplyMusicVolumes();
+				return;
+			}
+		}
+
+		if (bBossMusicActive)
+		{
+			bBossMusicActive = false;
+			bAllowBossLoop = false;
+			StopBoss(0.25f);
 		}
 
 		// Base music should play only when not in survival.
@@ -234,6 +311,7 @@ void UT66MusicSubsystem::ApplyMusicVolumes()
 	if (MainThemeComp) MainThemeComp->SetVolumeMultiplier(EffectiveMusic);
 	if (ThemeComp) ThemeComp->SetVolumeMultiplier(EffectiveMusic);
 	if (SurvivalComp) SurvivalComp->SetVolumeMultiplier(EffectiveMusic);
+	if (BossComp) BossComp->SetVolumeMultiplier(EffectiveMusic);
 }
 
 bool UT66MusicSubsystem::IsFrontendWorld(UWorld* World) const
@@ -285,7 +363,7 @@ void UT66MusicSubsystem::EnsureThemePlaying(UWorld* World)
 {
 	if (!World) return;
 
-	USoundBase* Sound = ResolveAndLoadThemeSound();
+	USoundBase* Sound = ResolveAndLoadGameplayThemeSound(World);
 	if (!Sound)
 	{
 		if (!bThemeStarted)
@@ -346,6 +424,39 @@ void UT66MusicSubsystem::EnsureSurvivalPlaying(UWorld* World)
 	}
 }
 
+void UT66MusicSubsystem::EnsureBossPlaying(UWorld* World)
+{
+	if (!World) return;
+	USoundBase* Sound = ResolveAndLoadBossThemeSound(World);
+	if (!Sound)
+	{
+		return;
+	}
+
+	if (!BossComp)
+	{
+		BossComp = UGameplayStatics::SpawnSound2D(World, Sound, 1.0f, 1.0f, 0.0f, nullptr, true, false);
+		if (BossComp)
+		{
+			BossComp->bIsUISound = true;
+			BossComp->OnAudioFinished.AddDynamic(this, &UT66MusicSubsystem::HandleBossFinished);
+		}
+	}
+
+	if (BossComp)
+	{
+		// If the sound changed (new boss), restart with the new track.
+		if (BossComp->Sound != Sound)
+		{
+			BossComp->SetSound(Sound);
+		}
+		if (!BossComp->IsPlaying())
+		{
+			BossComp->FadeIn(0.15f, 1.0f, 0.0f);
+		}
+	}
+}
+
 void UT66MusicSubsystem::StopTheme(float FadeSeconds)
 {
 	if (!ThemeComp) return;
@@ -376,6 +487,16 @@ void UT66MusicSubsystem::StopSurvival(float FadeSeconds)
 	}
 }
 
+void UT66MusicSubsystem::StopBoss(float FadeSeconds)
+{
+	if (!BossComp) return;
+	bAllowBossLoop = false;
+	if (BossComp->IsPlaying())
+	{
+		BossComp->FadeOut(FMath::Max(0.f, FadeSeconds), 0.0f);
+	}
+}
+
 void UT66MusicSubsystem::HandleThemeFinished()
 {
 	// Poor-man looping without requiring a SoundCue asset.
@@ -398,6 +519,14 @@ void UT66MusicSubsystem::HandleSurvivalFinished()
 	if (SurvivalComp && bSurvivalActive && bAllowSurvivalLoop)
 	{
 		SurvivalComp->Play(0.0f);
+	}
+}
+
+void UT66MusicSubsystem::HandleBossFinished()
+{
+	if (BossComp && bBossMusicActive && bAllowBossLoop)
+	{
+		BossComp->Play(0.0f);
 	}
 }
 
@@ -438,5 +567,91 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadSurvivalSound()
 		return Loaded;
 	}
 	return TryLoadFirstSoundAsset(SurvivalCandidates, SurvivalSound);
+}
+
+USoundBase* UT66MusicSubsystem::ResolveAndLoadGameplayThemeSound(UWorld* World)
+{
+	// Hero-specific theme folder (optional) overrides the default Theme.
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+
+	FName HeroKey = NAME_None;
+	if (T66GI && !T66GI->SelectedHeroID.IsNone())
+	{
+		FHeroData HeroData;
+		if (T66GI->GetHeroData(T66GI->SelectedHeroID, HeroData))
+		{
+			HeroKey = !HeroData.MapTheme.IsNone() ? HeroData.MapTheme : HeroData.HeroID;
+		}
+		else
+		{
+			HeroKey = T66GI->SelectedHeroID;
+		}
+	}
+
+	if (!HeroKey.IsNone())
+	{
+		const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Heroes/%s"), *HeroKey.ToString());
+		if (USoundBase* HeroTheme = TryLoadFirstSoundInFolder(Folder))
+		{
+			return HeroTheme;
+		}
+	}
+
+	// Fallback: project-wide Theme.
+	return ResolveAndLoadThemeSound();
+}
+
+USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
+{
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState) return nullptr;
+
+	const FName BossID = RunState->GetActiveBossID();
+	if (BossID.IsNone()) return nullptr;
+
+	const int32 Stage = RunState->GetCurrentStage();
+
+	// Categorize by stage number + explicit special boss IDs.
+	const FString BossIdStr = BossID.ToString();
+	const bool bSpecial =
+		BossID == FName(TEXT("VendorBoss")) ||
+		BossID == FName(TEXT("GamblerBoss")) ||
+		BossID == FName(TEXT("OuroborosBoss")) ||
+		BossIdStr.Contains(TEXT("Vendor"), ESearchCase::IgnoreCase) ||
+		BossIdStr.Contains(TEXT("Gambler"), ESearchCase::IgnoreCase) ||
+		BossIdStr.Contains(TEXT("Ouroboros"), ESearchCase::IgnoreCase);
+
+	const bool bEspada = (!bSpecial) && (Stage > 0) && ((Stage % 10) == 5);
+	const bool bDifficultyBoss = (!bSpecial) && (Stage > 0) && ((Stage % 10) == 0);
+
+	// Stage bosses: no special music.
+	if (!bSpecial && !bEspada && !bDifficultyBoss)
+	{
+		return nullptr;
+	}
+
+	FString Folder;
+	if (bSpecial)
+	{
+		Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Special/%s"), *BossID.ToString());
+	}
+	else if (bEspada)
+	{
+		Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Espadas/%s"), *BossID.ToString());
+	}
+	else
+	{
+		Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Difficulty/%s"), *BossID.ToString());
+	}
+
+	if (USoundBase* BossTheme = TryLoadFirstSoundInFolder(Folder))
+	{
+		return BossTheme;
+	}
+
+	// If nothing in the folder yet, fall back to base theme (no override).
+	return nullptr;
 }
 

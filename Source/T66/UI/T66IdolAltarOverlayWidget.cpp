@@ -168,8 +168,16 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
 	const TArray<FName>& Equipped = RunState ? RunState->GetEquippedIdols() : TArray<FName>();
-	const bool bSlot1Taken = (Equipped.Num() > 0 && !Equipped[0].IsNone());
-	const bool bLocked = bSlot1Taken;
+	int32 FirstEmptySlot = INDEX_NONE;
+	for (int32 i = 0; i < Equipped.Num(); ++i)
+	{
+		if (Equipped[i].IsNone())
+		{
+			FirstEmptySlot = i;
+			break;
+		}
+	}
+	const bool bLocked = (FirstEmptySlot == INDEX_NONE);
 
 	auto MakeIdolTile = [&](FName IdolID) -> TSharedRef<SWidget>
 	{
@@ -327,7 +335,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						[
 							SAssignNew(StatusText, STextBlock)
 							.Text(bLocked
-								? (Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : FText::FromString(TEXT("Idol already selected for Stage 1.")))
+							? (Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : FText::FromString(TEXT("All idol slots are full.")))
 								: FText::GetEmpty())
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
@@ -417,12 +425,22 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 	}
 
 	const TArray<FName>& Equipped = RunState->GetEquippedIdols();
-	if (Equipped.Num() > 0 && !Equipped[0].IsNone())
+	int32 FirstEmptySlot = INDEX_NONE;
+	for (int32 i = 0; i < Equipped.Num(); ++i)
+	{
+		if (Equipped[i].IsNone())
+		{
+			FirstEmptySlot = i;
+			break;
+		}
+	}
+
+	if (FirstEmptySlot == INDEX_NONE)
 	{
 		if (StatusText.IsValid())
 		{
 			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadyEquipped() : FText::FromString(TEXT("Already equipped.")));
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : FText::FromString(TEXT("All idol slots are full.")));
 		}
 		return FReply::Handled();
 	}
@@ -437,7 +455,7 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 		return FReply::Handled();
 	}
 
-	RunState->EquipIdolInSlot(0, PendingSelectedIdolID);
+	RunState->EquipIdolInSlot(FirstEmptySlot, PendingSelectedIdolID);
 	if (StatusText.IsValid())
 	{
 		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;

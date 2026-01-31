@@ -71,14 +71,22 @@ private:
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> SurvivalComp;
 
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> BossComp;
+
+	UPROPERTY()
+	TSoftObjectPtr<USoundBase> BossSound;
+
 	bool bThemeStarted = false;
 	bool bMainThemeStarted = false;
 	bool bSurvivalActive = false;
+	bool bBossMusicActive = false;
 
 	// Prevent "FadeOut -> OnAudioFinished -> loop again" while switching tracks.
 	bool bAllowThemeLoop = true;
 	bool bAllowMainThemeLoop = true;
 	bool bAllowSurvivalLoop = true;
+	bool bAllowBossLoop = true;
 
 	ET66BaseTrack DesiredBaseTrack = ET66BaseTrack::None;
 
@@ -90,6 +98,9 @@ private:
 
 	UFUNCTION()
 	void HandleSurvivalChanged();
+
+	UFUNCTION()
+	void HandleBossChanged();
 
 	void UpdateMusicState();
 
@@ -103,14 +114,18 @@ private:
 	USoundBase* ResolveAndLoadMainThemeSound();
 	USoundBase* ResolveAndLoadThemeSound();
 	USoundBase* ResolveAndLoadSurvivalSound();
+	USoundBase* ResolveAndLoadGameplayThemeSound(UWorld* World);
+	USoundBase* ResolveAndLoadBossThemeSound(UWorld* World);
 
 	void EnsureMainThemePlaying(UWorld* World);
 	void EnsureThemePlaying(UWorld* World);
 	void EnsureSurvivalPlaying(UWorld* World);
+	void EnsureBossPlaying(UWorld* World);
 
 	void StopMainTheme(float FadeSeconds);
 	void StopTheme(float FadeSeconds);
 	void StopSurvival(float FadeSeconds);
+	void StopBoss(float FadeSeconds);
 
 	UFUNCTION()
 	void HandleThemeFinished();
@@ -120,5 +135,8 @@ private:
 
 	UFUNCTION()
 	void HandleSurvivalFinished();
+
+	UFUNCTION()
+	void HandleBossFinished();
 };
 

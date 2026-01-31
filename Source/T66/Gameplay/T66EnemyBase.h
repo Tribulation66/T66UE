@@ -75,6 +75,22 @@ public:
 	/** Apply difficulty tier (Tier 0 = base; Tier 1 doubles, etc). */
 	void ApplyDifficultyTier(int32 Tier);
 
+	/** Stage mob ID (data-driven via DT_Stages EnemyA/B/C). NAME_None means "not a stage mob". */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mob")
+	FName MobID;
+
+	/** True if this instance is a mini-boss version of a stage mob. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mob")
+	bool bIsMiniBoss = false;
+
+	/** Configure placeholder visuals for a stage mob (shape + color). */
+	UFUNCTION(BlueprintCallable, Category = "Mob")
+	void ConfigureAsMob(FName InMobID);
+
+	/** Apply mini-boss multipliers (call after difficulty scaling). */
+	UFUNCTION(BlueprintCallable, Category = "Mob")
+	void ApplyMiniBossMultipliers(float HPScalar, float DamageScalar, float ScaleScalar);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

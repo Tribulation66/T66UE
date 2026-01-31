@@ -205,7 +205,7 @@ def main():
     unreal.log("--- Creating Levels ---")
     create_level("/Game/Maps/FrontendLevel")
     create_level("/Game/Maps/GameplayLevel")
-    create_level("/Game/Maps/ColiseumLevel")
+    # Coliseum lives inside GameplayLevel (walled-off arena). No separate Coliseum map is used.
 
     unreal.log("=== Asset Creation Complete ===")
 

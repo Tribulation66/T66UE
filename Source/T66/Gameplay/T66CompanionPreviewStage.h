@@ -36,6 +36,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void AddPreviewYaw(float DeltaYawDegrees);
 
+	/** Orbit the preview camera (yaw rotates companion, pitch moves camera up/down). */
+	UFUNCTION(BlueprintCallable, Category = "Preview")
+	void AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees);
+
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void CapturePreview();
 
@@ -82,4 +86,21 @@ protected:
 
 	UPROPERTY(Transient)
 	float PreviewYawDegrees = 0.f;
+
+	/** Orbit camera pitch (degrees). Negative looks slightly down. */
+	UPROPERTY(Transient)
+	float OrbitPitchDegrees = 8.f;
+
+	/** Cached orbit framing so the platform doesn't "swim" as you rotate. */
+	UPROPERTY(Transient)
+	bool bHasOrbitFrame = false;
+
+	UPROPERTY(Transient)
+	FVector OrbitCenter = FVector::ZeroVector;
+
+	UPROPERTY(Transient)
+	float OrbitRadius = 200.f;
+
+	UPROPERTY(Transient)
+	float OrbitBottomZ = 0.f;
 };

@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/T66UIManager.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
@@ -29,122 +30,36 @@ UT66LocalizationSubsystem* UT66AchievementsScreen::GetLocSubsystem() const
 	return nullptr;
 }
 
-void UT66AchievementsScreen::GeneratePlaceholderAchievements()
+UT66AchievementsSubsystem* UT66AchievementsScreen::GetAchievementsSubsystem() const
 {
-	AllAchievements.Empty();
-
-	// Black tier (25 AC each)
-	auto AddBlack = [this](const FString& ID, const FString& Name, const FString& Desc, int32 Req, int32 Prog, bool bDone)
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
-		FAchievementData A;
-		A.AchievementID = FName(*ID);
-		A.DisplayName = FText::FromString(Name);
-		A.Description = FText::FromString(Desc);
-		A.Tier = ET66AchievementTier::Black;
-		A.RewardCoins = 25;
-		A.RequirementCount = Req;
-		A.CurrentProgress = Prog;
-		A.bIsUnlocked = bDone;
-		AllAchievements.Add(A);
-	};
+		return GI->GetSubsystem<UT66AchievementsSubsystem>();
+	}
+	return nullptr;
+}
 
-	AddBlack(TEXT("ACH_BLK_001"), TEXT("First Blood"), TEXT("Kill 1 enemy."), 1, 1, true);
-	AddBlack(TEXT("ACH_BLK_002"), TEXT("Wave Clear"), TEXT("Clear your first wave."), 1, 1, true);
-	AddBlack(TEXT("ACH_BLK_003"), TEXT("Gate Crasher"), TEXT("Cross the stage gate and start the stage timer."), 1, 1, true);
-	AddBlack(TEXT("ACH_BLK_004"), TEXT("Summoning Stone"), TEXT("Summon a stage boss using the Summoning Stone."), 1, 0, false);
-	AddBlack(TEXT("ACH_BLK_005"), TEXT("Item Pickup"), TEXT("Pick up 10 items."), 10, 7, false);
-	AddBlack(TEXT("ACH_BLK_006"), TEXT("Gold Hoarder"), TEXT("Collect 1000 gold in one run."), 1000, 450, false);
-	AddBlack(TEXT("ACH_BLK_007"), TEXT("Vendor Visit"), TEXT("Visit the Black House vendor."), 1, 1, true);
-	AddBlack(TEXT("ACH_BLK_008"), TEXT("Tree of Life"), TEXT("Interact with the Tree of Life."), 1, 0, false);
-	AddBlack(TEXT("ACH_BLK_009"), TEXT("First Dodge"), TEXT("Successfully dodge an enemy attack."), 1, 1, true);
-	AddBlack(TEXT("ACH_BLK_010"), TEXT("Ultimate User"), TEXT("Use your Ultimate ability."), 1, 1, true);
-
-	// Red tier (100 AC each)
-	auto AddRed = [this](const FString& ID, const FString& Name, const FString& Desc, int32 Req, int32 Prog, bool bDone)
+void UT66AchievementsScreen::RefreshAchievements()
+{
+	if (UT66AchievementsSubsystem* Ach = GetAchievementsSubsystem())
 	{
-		FAchievementData A;
-		A.AchievementID = FName(*ID);
-		A.DisplayName = FText::FromString(Name);
-		A.Description = FText::FromString(Desc);
-		A.Tier = ET66AchievementTier::Red;
-		A.RewardCoins = 100;
-		A.RequirementCount = Req;
-		A.CurrentProgress = Prog;
-		A.bIsUnlocked = bDone;
-		AllAchievements.Add(A);
-	};
-
-	AddRed(TEXT("ACH_RED_001"), TEXT("Clean Stage"), TEXT("Clear a stage without taking any damage."), 1, 0, false);
-	AddRed(TEXT("ACH_RED_002"), TEXT("Perfect Wave"), TEXT("Clear 10 waves without taking any damage."), 10, 3, false);
-	AddRed(TEXT("ACH_RED_003"), TEXT("Boss Rush"), TEXT("Defeat a boss before the stage timer reaches 4:00."), 1, 0, false);
-	AddRed(TEXT("ACH_RED_004"), TEXT("Last-Second Escape"), TEXT("Defeat a boss with 10 seconds or less left."), 1, 0, false);
-	AddRed(TEXT("ACH_RED_005"), TEXT("Stage 10 Clear"), TEXT("Complete Stage 10."), 1, 1, true);
-	AddRed(TEXT("ACH_RED_006"), TEXT("Stage 20 Clear"), TEXT("Complete Stage 20."), 1, 0, false);
-	AddRed(TEXT("ACH_RED_007"), TEXT("Gambler's Friend"), TEXT("Win 5 bets at the Yellow House."), 5, 2, false);
-	AddRed(TEXT("ACH_RED_008"), TEXT("Item Synergy"), TEXT("Trigger an item synergy effect."), 1, 0, false);
-	AddRed(TEXT("ACH_RED_009"), TEXT("Companion Healed"), TEXT("Be healed by your companion 50 times."), 50, 23, false);
-	AddRed(TEXT("ACH_RED_010"), TEXT("Dodge Master"), TEXT("Dodge 100 attacks total."), 100, 67, false);
-
-	// Yellow tier (250 AC each)
-	auto AddYellow = [this](const FString& ID, const FString& Name, const FString& Desc, int32 Req, int32 Prog, bool bDone)
+		AllAchievements = Ach->GetAllAchievements();
+	}
+	else
 	{
-		FAchievementData A;
-		A.AchievementID = FName(*ID);
-		A.DisplayName = FText::FromString(Name);
-		A.Description = FText::FromString(Desc);
-		A.Tier = ET66AchievementTier::Yellow;
-		A.RewardCoins = 250;
-		A.RequirementCount = Req;
-		A.CurrentProgress = Prog;
-		A.bIsUnlocked = bDone;
-		AllAchievements.Add(A);
-	};
-
-	AddYellow(TEXT("ACH_YEL_001"), TEXT("Ten Stages Untouched"), TEXT("Clear 10 stages in a row without taking damage."), 10, 0, false);
-	AddYellow(TEXT("ACH_YEL_002"), TEXT("One-Heart Champion"), TEXT("Kill a stage boss while on exactly 1 Heart."), 1, 0, false);
-	AddYellow(TEXT("ACH_YEL_003"), TEXT("Miasma Champion"), TEXT("Kill a boss with 15 seconds or less left."), 1, 0, false);
-	AddYellow(TEXT("ACH_YEL_004"), TEXT("66-Second Stage"), TEXT("Clear a stage in under 66 seconds."), 1, 0, false);
-	AddYellow(TEXT("ACH_YEL_005"), TEXT("Stage 40 Clear"), TEXT("Complete Stage 40."), 1, 0, false);
-	AddYellow(TEXT("ACH_YEL_006"), TEXT("Stage 50 Clear"), TEXT("Complete Stage 50."), 1, 0, false);
-	AddYellow(TEXT("ACH_YEL_007"), TEXT("All Heroes Played"), TEXT("Complete a run with each hero."), 5, 2, false);
-	AddYellow(TEXT("ACH_YEL_008"), TEXT("Legendary Drop"), TEXT("Obtain a Yellow rarity item."), 1, 0, false);
-	AddYellow(TEXT("ACH_YEL_009"), TEXT("Debt Collector"), TEXT("Pay off a 5000+ gold debt to the Vendor."), 1, 0, false);
-	AddYellow(TEXT("ACH_YEL_010"), TEXT("Item Hoarder"), TEXT("Collect 30 items in one run."), 30, 12, false);
-
-	// White tier (1000 AC each)
-	auto AddWhite = [this](const FString& ID, const FString& Name, const FString& Desc, int32 Req, int32 Prog, bool bDone)
-	{
-		FAchievementData A;
-		A.AchievementID = FName(*ID);
-		A.DisplayName = FText::FromString(Name);
-		A.Description = FText::FromString(Desc);
-		A.Tier = ET66AchievementTier::White;
-		A.RewardCoins = 1000;
-		A.RequirementCount = Req;
-		A.CurrentProgress = Prog;
-		A.bIsUnlocked = bDone;
-		AllAchievements.Add(A);
-	};
-
-	AddWhite(TEXT("ACH_WHI_001"), TEXT("Kromer Salvation"), TEXT("Beat Stage 66 and give the kromer to the Saint."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_002"), TEXT("Betrayal Proof"), TEXT("Beat Stage 66 with NO COMPANION equipped."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_003"), TEXT("Final Difficulty Conqueror"), TEXT("Beat Stage 66 on Final difficulty."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_004"), TEXT("Unscathed To The End"), TEXT("Beat Stage 66 without taking damage."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_005"), TEXT("Speed Demon"), TEXT("Beat Stage 66 in under 60 minutes."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_006"), TEXT("Minimalist"), TEXT("Beat Stage 66 with 5 or fewer items."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_007"), TEXT("True Gambler"), TEXT("Win 50 bets at the Yellow House."), 50, 8, false);
-	AddWhite(TEXT("ACH_WHI_008"), TEXT("Duo Victory"), TEXT("Beat Stage 66 in Duo mode."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_009"), TEXT("Trio Victory"), TEXT("Beat Stage 66 in Trio mode."), 1, 0, false);
-	AddWhite(TEXT("ACH_WHI_010"), TEXT("Completionist"), TEXT("Unlock all other achievements."), 39, 9, false);
+		AllAchievements.Reset();
+	}
 }
 
 TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	FText AchievementsText = Loc ? Loc->GetText_Achievements() : FText::FromString(TEXT("ACHIEVEMENTS"));
-	FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+	UT66AchievementsSubsystem* Ach = GetAchievementsSubsystem();
 
-	GeneratePlaceholderAchievements();
+	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : FText::FromString(TEXT("ACHIEVEMENTS"));
+	const FText BackText = Loc ? Loc->GetText_Back() : FText::FromString(TEXT("BACK"));
+
+	RefreshAchievements();
 
 	// Tier button colors
 	auto GetTierColor = [](ET66AchievementTier Tier, bool bSelected) -> FLinearColor
@@ -226,16 +141,17 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(TEXT("\U0001FA99"))) // Coin emoji
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 24))
-							.ColorAndOpacity(FLinearColor(1.0f, 0.85f, 0.0f, 1.0f))
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.0f, 0.0f, 0.0f, 0.0f)
-						[
-							SNew(STextBlock)
-							.Text(FText::Format(FText::FromString(TEXT("{0} AC")), FText::AsNumber(TotalAchievementCoins)))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
-							.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+					.Text_Lambda([this, Ach, Loc]() -> FText
+					{
+						const int32 Balance = Ach ? Ach->GetAchievementCoinsBalance() : 0;
+						if (Loc)
+						{
+							return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Balance));
+						}
+						return FText::Format(FText::FromString(TEXT("{0} AC")), FText::AsNumber(Balance));
+					})
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+					.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
 						]
 					]
 				]
@@ -248,19 +164,19 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(FText::FromString(TEXT("BLACK")), ET66AchievementTier::Black)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierBlack() : FText::FromString(TEXT("BLACK")), ET66AchievementTier::Black)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(FText::FromString(TEXT("RED")), ET66AchievementTier::Red)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierRed() : FText::FromString(TEXT("RED")), ET66AchievementTier::Red)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(FText::FromString(TEXT("YELLOW")), ET66AchievementTier::Yellow)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierYellow() : FText::FromString(TEXT("YELLOW")), ET66AchievementTier::Yellow)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					MakeTierButton(FText::FromString(TEXT("WHITE")), ET66AchievementTier::White)
+					MakeTierButton(Loc ? Loc->GetText_AchievementTierWhite() : FText::FromString(TEXT("WHITE")), ET66AchievementTier::White)
 				]
 			]
 			// Achievement list
@@ -301,6 +217,10 @@ void UT66AchievementsScreen::RebuildAchievementList()
 
 	AchievementListBox->ClearChildren();
 
+	RefreshAchievements();
+	UT66AchievementsSubsystem* Ach = GetAchievementsSubsystem();
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+
 	for (const FAchievementData& Achievement : AllAchievements)
 	{
 		// Filter by current tier
@@ -318,6 +238,9 @@ void UT66AchievementsScreen::RebuildAchievementList()
 		FString ProgressStr = FString::Printf(TEXT("%d/%d"), 
 			FMath::Min(Achievement.CurrentProgress, Achievement.RequirementCount), 
 			Achievement.RequirementCount);
+
+		const bool bClaimed = Ach ? Ach->IsAchievementClaimed(Achievement.AchievementID) : false;
+		const bool bCanClaim = Achievement.bIsUnlocked && !bClaimed;
 
 		AchievementListBox->AddSlot()
 		.AutoHeight()
@@ -367,20 +290,43 @@ void UT66AchievementsScreen::RebuildAchievementList()
 				.VAlign(VAlign_Center)
 				.HAlign(HAlign_Right)
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Right)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(TEXT("\U0001FA99")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 16))
-						.ColorAndOpacity(FLinearColor(1.0f, 0.85f, 0.0f, 1.0f))
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(6.0f, 0.0f, 0.0f, 0.0f)
-					[
-						SNew(STextBlock)
-						.Text(FText::Format(FText::FromString(TEXT("{0} AC")), FText::AsNumber(Achievement.RewardCoins)))
+						.Text_Lambda([Loc, Achievement, bClaimed]() -> FText
+						{
+							if (bClaimed)
+							{
+								return Loc ? Loc->GetText_Claimed() : FText::FromString(TEXT("CLAIMED"));
+							}
+							if (Loc)
+							{
+								return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Achievement.RewardCoins));
+							}
+							return FText::Format(FText::FromString(TEXT("{0} AC")), FText::AsNumber(Achievement.RewardCoins));
+						})
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-						.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+						.ColorAndOpacity(bClaimed ? FLinearColor(0.6f, 0.8f, 0.6f, 1.0f) : FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Right)
+					.Padding(0.f, 6.f, 0.f, 0.f)
+					[
+						SNew(SButton)
+						.IsEnabled(bCanClaim)
+						.Visibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed)
+						.OnClicked(FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, Achievement.AchievementID))
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+						[
+							SNew(STextBlock)
+							.Text(Loc ? Loc->GetText_Claim() : FText::FromString(TEXT("CLAIM")))
+							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+							.ColorAndOpacity(FLinearColor::White)
+						]
 					]
 				]
 			]
@@ -393,6 +339,21 @@ void UT66AchievementsScreen::OnScreenActivated_Implementation()
 	Super::OnScreenActivated_Implementation();
 	CurrentTier = ET66AchievementTier::Black;
 	RebuildAchievementList();
+
+	// Subscribe to language changes (rebuild UI).
+	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+	{
+		Loc->OnLanguageChanged.AddUniqueDynamic(this, &UT66AchievementsScreen::HandleLanguageChanged);
+	}
+}
+
+void UT66AchievementsScreen::OnScreenDeactivated_Implementation()
+{
+	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+	{
+		Loc->OnLanguageChanged.RemoveDynamic(this, &UT66AchievementsScreen::HandleLanguageChanged);
+	}
+	Super::OnScreenDeactivated_Implementation();
 }
 
 void UT66AchievementsScreen::SwitchToTier(ET66AchievementTier Tier)
@@ -417,4 +378,19 @@ FReply UT66AchievementsScreen::HandleBackClicked()
 {
 	OnBackClicked();
 	return FReply::Handled();
+}
+
+FReply UT66AchievementsScreen::HandleClaimClicked(FName AchievementID)
+{
+	if (UT66AchievementsSubsystem* Ach = GetAchievementsSubsystem())
+	{
+		Ach->TryClaimAchievement(AchievementID);
+	}
+	RebuildAchievementList();
+	return FReply::Handled();
+}
+
+void UT66AchievementsScreen::HandleLanguageChanged(ET66Language NewLanguage)
+{
+	TakeWidget();
 }

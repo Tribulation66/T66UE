@@ -7,7 +7,9 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "EngineUtils.h"
@@ -42,6 +44,10 @@ void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
 	{
 		AliveCount--;
 	}
+	if (Enemy && ActiveMiniBoss.IsValid() && ActiveMiniBoss.Get() == Enemy)
+	{
+		ActiveMiniBoss = nullptr;
+	}
 }
 
 void AT66EnemyDirector::HandleStageTimerChanged()
@@ -58,6 +64,7 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 		if (!bSpawningArmed)
 		{
 			bSpawningArmed = true;
+			bSpawnedUniqueThisStage = false;
 			// Spawn immediately so players don't think spawns are broken, then continue on interval.
 			SpawnWave();
 			World->GetTimerManager().ClearTimer(SpawnTimerHandle);
@@ -68,6 +75,7 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 	{
 		// Timer frozen: don't spawn waves.
 		bSpawningArmed = false;
+		bSpawnedUniqueThisStage = false;
 		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
 	}
 }
@@ -107,6 +115,28 @@ void AT66EnemyDirector::SpawnWave()
 		}
 		RegularClass = AT66EnemyBase::StaticClass();
 	}
+
+	// Stage mobs: pull exact roster from DT_Stages (EnemyA/B/C). Fallback is deterministic IDs.
+	const int32 StageNum = RunState->GetCurrentStage();
+	FName MobA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), StageNum));
+	FName MobB = FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), StageNum));
+	FName MobC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), StageNum));
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+	{
+		FStageData StageData;
+		if (T66GI->GetStageData(StageNum, StageData))
+		{
+			if (!StageData.EnemyA.IsNone()) MobA = StageData.EnemyA;
+			if (!StageData.EnemyB.IsNone()) MobB = StageData.EnemyB;
+			if (!StageData.EnemyC.IsNone()) MobC = StageData.EnemyC;
+		}
+	}
+	const TArray<FName> MobIDs = { MobA, MobB, MobC };
+
+	const bool bCanSpawnMiniBoss = !ActiveMiniBoss.IsValid();
+	const int32 MiniBossIndex = (bCanSpawnMiniBoss && (Rng.FRand() < MiniBossChancePerWave))
+		? Rng.RandRange(0, FMath::Max(0, ToSpawn - 1))
+		: INDEX_NONE;
 
 	for (int32 i = 0; i < ToSpawn; ++i)
 	{
@@ -168,7 +198,27 @@ void AT66EnemyDirector::SpawnWave()
 			ClassToSpawn = GoblinThiefClass;
 		}
 
-		AT66EnemyBase* Enemy = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		const bool bIsMob = (ClassToSpawn == RegularClass);
+		const bool bIsMiniBoss = bIsMob && (MiniBossIndex == i);
+		const FName MobID = bIsMob ? MobIDs[Rng.RandRange(0, MobIDs.Num() - 1)] : NAME_None;
+
+		AT66EnemyBase* Enemy = nullptr;
+		if (bIsMob)
+		{
+			// Use deferred spawn so we can set mob visuals before BeginPlay.
+			const FTransform Xform(FRotator::ZeroRotator, SpawnLoc);
+			Enemy = World->SpawnActorDeferred<AT66EnemyBase>(ClassToSpawn, Xform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			if (Enemy)
+			{
+				Enemy->OwningDirector = this;
+				Enemy->ConfigureAsMob(MobID);
+				UGameplayStatics::FinishSpawningActor(Enemy, Xform);
+			}
+		}
+		else
+		{
+			Enemy = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		}
 		if (Enemy)
 		{
 			// Special enemies roll rarity and apply visuals/effects.
@@ -182,18 +232,27 @@ void AT66EnemyDirector::SpawnWave()
 				Gob->SetRarity(R);
 			}
 
-			Enemy->OwningDirector = this;
 			if (RunState)
 			{
 				Enemy->ApplyDifficultyTier(RunState->GetDifficultyTier());
 			}
+			if (bIsMiniBoss)
+			{
+				Enemy->ApplyMiniBossMultipliers(MiniBossHPScalar, MiniBossDamageScalar, MiniBossScale);
+				ActiveMiniBoss = Enemy;
+			}
 			AliveCount++;
-			UE_LOG(LogTemp, Log, TEXT("EnemyDirector: spawned enemy %d at (%.0f, %.0f, %.0f)"), AliveCount, SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
+			UE_LOG(LogTemp, Log, TEXT("EnemyDirector: spawned enemy %d Mob=%s MiniBoss=%d at (%.0f, %.0f, %.0f)"),
+				AliveCount,
+				*MobID.ToString(),
+				bIsMiniBoss ? 1 : 0,
+				SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
 		}
 	}
 
 	// Unique enemy: one at a time, spawned as a pressure spike.
-	if (UniqueEnemyClass && !ActiveUniqueEnemy.IsValid() && (Rng.FRand() < UniqueEnemyChancePerWave))
+	if (UniqueEnemyClass && !ActiveUniqueEnemy.IsValid()
+		&& (!bSpawnedUniqueThisStage || (Rng.FRand() < UniqueEnemyChancePerWave)))
 	{
 		FVector PlayerLoc = PlayerPawn->GetActorLocation();
 		FVector SpawnLoc = PlayerLoc;
@@ -243,6 +302,7 @@ void AT66EnemyDirector::SpawnWave()
 				Unique->ApplyDifficultyTier(RunState->GetDifficultyTier());
 			}
 			ActiveUniqueEnemy = Unique;
+			bSpawnedUniqueThisStage = true;
 		}
 	}
 }

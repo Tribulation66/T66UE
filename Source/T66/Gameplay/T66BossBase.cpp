@@ -135,7 +135,7 @@ void AT66BossBase::Awaken()
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
-		RunState->SetBossActive(MaxHP);
+		RunState->SetBossActiveWithId(BossID, MaxHP);
 	}
 
 	// Start firing projectiles

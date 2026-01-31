@@ -3,6 +3,7 @@
 #include "UI/Screens/T66QuitConfirmationModal.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
@@ -34,14 +35,15 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 	FText QuitText = Loc ? Loc->GetText_YesQuit() : FText::FromString(TEXT("YES, I WANT TO QUIT"));
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.7f))
+		// Opaque background (no transparency).
+		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f))
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 				.Padding(FMargin(40.0f, 30.0f))
 				[
 					SNew(SVerticalBox)
@@ -53,8 +55,8 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 36))
-						.ColorAndOpacity(FLinearColor::White)
+						.Font(FT66Style::Tokens::FontBold(36))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					// Message
 					+ SVerticalBox::Slot()
@@ -64,8 +66,9 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(MessageText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 18))
-						.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f))
+						.Font(FT66Style::Tokens::FontRegular(18))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
 					]
 					// Buttons
 					+ SVerticalBox::Slot()
@@ -78,19 +81,22 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 						.Padding(10.0f, 0.0f)
 						[
 							SNew(SBox)
-							.WidthOverride(180.0f)
-							.HeightOverride(50.0f)
+							.MinDesiredWidth(320.0f)
+							.HeightOverride(56.0f)
 							[
 								SNew(SButton)
 								.HAlign(HAlign_Center)
 								.VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleStayClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.2f, 0.5f, 0.2f, 1.0f))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
+								.ContentPadding(FMargin(18.f, 10.f))
 								[
 									SNew(STextBlock)
 									.Text(StayText)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
-									.ColorAndOpacity(FLinearColor::White)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+									.Justification(ETextJustify::Center)
+									.AutoWrapText(false)
 								]
 							]
 						]
@@ -99,19 +105,22 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 						.Padding(10.0f, 0.0f)
 						[
 							SNew(SBox)
-							.WidthOverride(180.0f)
-							.HeightOverride(50.0f)
+							.MinDesiredWidth(320.0f)
+							.HeightOverride(56.0f)
 							[
 								SNew(SButton)
 								.HAlign(HAlign_Center)
 								.VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleQuitClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.5f, 0.2f, 0.2f, 1.0f))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
+								.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
+								.ContentPadding(FMargin(18.f, 10.f))
 								[
 									SNew(STextBlock)
 									.Text(QuitText)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
-									.ColorAndOpacity(FLinearColor::White)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+									.Justification(ETextJustify::Center)
+									.AutoWrapText(false)
 								]
 							]
 						]

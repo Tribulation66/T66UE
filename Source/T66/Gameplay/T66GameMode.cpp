@@ -53,6 +53,9 @@ AT66GameMode::AT66GameMode()
 	// Default to our hero base class
 	DefaultPawnClass = AT66HeroBase::StaticClass();
 	DefaultHeroClass = AT66HeroBase::StaticClass();
+
+	// Coliseum arena lives inside GameplayLevel, off to the side (walled off).
+	ColiseumCenter = FVector(-10000.f, -5200.f, 200.f);
 }
 
 void AT66GameMode::BeginPlay()
@@ -90,9 +93,10 @@ void AT66GameMode::BeginPlay()
 		EnsureLevelSetup();
 	}
 
-	// ColiseumLevel (or forced Coliseum mode): only spawn owed bosses + miasma (no houses, no waves, no NPCs, no start gate/pillars).
-	if (IsColiseumLevel())
+	// Coliseum mode: only spawn owed bosses + miasma (no houses, no waves, no NPCs, no start gate/pillars).
+	if (IsColiseumStage())
 	{
+		ResetColiseumState();
 		if (UGameInstance* GI2 = GetGameInstance())
 		{
 			if (UT66RunStateSubsystem* RunState = GI2->GetSubsystem<UT66RunStateSubsystem>())
@@ -110,8 +114,9 @@ void AT66GameMode::BeginPlay()
 			MiasmaManager = GetWorld()->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		}
 
-		SpawnNextColiseumBossOrExit();
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - ColiseumLevel"));
+		SpawnColiseumArenaIfNeeded();
+		SpawnAllOwedBossesInColiseum();
+		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Coliseum"));
 		return;
 	}
 
@@ -145,7 +150,7 @@ void AT66GameMode::BeginPlay()
 
 void AT66GameMode::SpawnTutorialIfNeeded()
 {
-	if (IsColiseumLevel()) return;
+	if (IsColiseumStage()) return;
 
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
@@ -170,7 +175,7 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 
 void AT66GameMode::SpawnStageEffectTilesForStage()
 {
-	if (IsColiseumLevel()) return;
+	if (IsColiseumStage()) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -290,7 +295,7 @@ void AT66GameMode::Tick(float DeltaTime)
 
 			// Robust: if the timer is already active (even if we missed the delegate),
 			// try spawning the LoanShark when pending.
-			if (!IsColiseumLevel() && RunState->GetStageTimerActive())
+			if (!IsColiseumStage() && RunState->GetStageTimerActive())
 			{
 				TrySpawnLoanSharkIfNeeded();
 			}
@@ -317,7 +322,7 @@ void AT66GameMode::HandleStageTimerChanged()
 		MiasmaManager->UpdateFromRunState();
 	}
 
-	if (!IsColiseumLevel() && RunState->GetStageTimerActive())
+	if (!IsColiseumStage() && RunState->GetStageTimerActive())
 	{
 		TrySpawnLoanSharkIfNeeded();
 	}
@@ -418,7 +423,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 {
 	Super::RestartPlayer(NewPlayer);
 	SpawnCompanionForPlayer(NewPlayer);
-	if (!IsColiseumLevel())
+	if (!IsColiseumStage())
 	{
 		SpawnStartGateForPlayer(NewPlayer);
 		SpawnIdolAltarForPlayer(NewPlayer);
@@ -436,7 +441,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 
 void AT66GameMode::SpawnBossGateIfNeeded()
 {
-	if (IsColiseumLevel()) return;
+	if (IsColiseumStage()) return;
 	if (BossGate) return;
 
 	UWorld* World = GetWorld();
@@ -450,20 +455,112 @@ void AT66GameMode::SpawnBossGateIfNeeded()
 	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, FRotator::ZeroRotator, SpawnParams);
 }
 
-bool AT66GameMode::IsColiseumLevel() const
+bool AT66GameMode::IsColiseumStage() const
 {
-	const FString LevelName = UGameplayStatics::GetCurrentLevelName(this);
-	if (LevelName.Equals(TEXT("ColiseumLevel")))
-	{
-		return true;
-	}
-
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		return GI->bForceColiseumMode;
 	}
 	return false;
 }
+
+void AT66GameMode::SpawnAllOwedBossesInColiseum()
+{
+	// Spawn ALL owed bosses at once. No tick polling: each boss death calls HandleBossDefeatedAtLocation.
+	UWorld* World = GetWorld();
+	if (!World) return;
+	UGameInstance* GI = World->GetGameInstance();
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!T66GI || !RunState) return;
+
+	if (bColiseumExitGateSpawned)
+	{
+		// Coliseum already cleared this session.
+		return;
+	}
+
+	const TArray<FName>& Owed = RunState->GetOwedBossIDs();
+	if (Owed.Num() <= 0)
+	{
+		// Nothing owed: exit gate immediately.
+		bColiseumExitGateSpawned = true;
+		SpawnStageGateAtLocation(ColiseumCenter);
+		return;
+	}
+
+	// Reset and spawn.
+	ColiseumBossesRemaining = 0;
+
+	// Simple ring layout around ColiseumCenter.
+	const int32 N = FMath::Clamp(Owed.Num(), 1, 12);
+	const float Radius = 900.f + (static_cast<float>(N) * 55.f);
+	const float AngleStep = (2.f * PI) / static_cast<float>(N);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (int32 i = 0; i < Owed.Num(); ++i)
+	{
+		const FName BossID = Owed[i];
+		if (BossID.IsNone()) continue;
+
+		FBossData BossData;
+		if (!T66GI->GetBossData(BossID, BossData))
+		{
+			// Fallback boss tuning if DT row missing.
+			BossData.BossID = BossID;
+			BossData.MaxHP = 6000;
+			BossData.AwakenDistance = 999999.f;
+			BossData.MoveSpeed = 380.f;
+			BossData.FireIntervalSeconds = 1.6f;
+			BossData.ProjectileSpeed = 1100.f;
+			BossData.ProjectileDamageHearts = 2;
+			BossData.PlaceholderColor = FLinearColor(0.85f, 0.15f, 0.15f, 1.f);
+		}
+
+		UClass* BossClass = AT66BossBase::StaticClass();
+		if (!BossData.BossClass.IsNull())
+		{
+			if (UClass* Loaded = BossData.BossClass.LoadSynchronous())
+			{
+				if (Loaded->IsChildOf(AT66BossBase::StaticClass()))
+				{
+					BossClass = Loaded;
+				}
+			}
+		}
+
+		const float A = static_cast<float>(i) * AngleStep;
+		FVector SpawnLoc = ColiseumCenter + FVector(FMath::Cos(A) * Radius, FMath::Sin(A) * Radius, 0.f);
+
+		// Trace down to ground.
+		FHitResult Hit;
+		const FVector Start = SpawnLoc + FVector(0.f, 0.f, 4000.f);
+		const FVector End = SpawnLoc - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		{
+			SpawnLoc = Hit.ImpactPoint + FVector(0.f, 0.f, 200.f);
+		}
+
+		AActor* Spawned = World->SpawnActor<AActor>(BossClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Spawned))
+		{
+			Boss->InitializeBoss(BossData);
+			Boss->ForceAwaken();
+			ColiseumBossesRemaining++;
+		}
+	}
+
+	// If something went wrong and none spawned, still provide an exit.
+	if (ColiseumBossesRemaining <= 0)
+	{
+		bColiseumExitGateSpawned = true;
+		RunState->ClearOwedBosses();
+		SpawnStageGateAtLocation(ColiseumCenter);
+	}
+}
+
 
 void AT66GameMode::SpawnTricksterAndCowardiceGate()
 {
@@ -494,59 +591,10 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	}
 }
 
-void AT66GameMode::SpawnNextColiseumBossOrExit()
+void AT66GameMode::ResetColiseumState()
 {
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	UGameInstance* GI = World->GetGameInstance();
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!T66GI || !RunState) return;
-
-	const TArray<FName>& Owed = RunState->GetOwedBossIDs();
-	if (Owed.Num() <= 0)
-	{
-		// Nothing owed: spawn a stage gate to return to the checkpoint stage.
-		SpawnStageGateAtLocation(FVector(0.f, 0.f, 190.f));
-		return;
-	}
-
-	const FName BossID = Owed[0];
-	FBossData BossData;
-	if (!T66GI->GetBossData(BossID, BossData))
-	{
-		BossData.BossID = BossID;
-				BossData.MaxHP = 1000;
-		BossData.AwakenDistance = 999999.f;
-		BossData.MoveSpeed = 350.f;
-		BossData.FireIntervalSeconds = 2.0f;
-		BossData.ProjectileSpeed = 900.f;
-		BossData.ProjectileDamageHearts = 1;
-	}
-
-	UClass* BossClass = AT66BossBase::StaticClass();
-	if (!BossData.BossClass.IsNull())
-	{
-		if (UClass* Loaded = BossData.BossClass.LoadSynchronous())
-		{
-			if (Loaded->IsChildOf(AT66BossBase::StaticClass()))
-			{
-				BossClass = Loaded;
-			}
-		}
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	const FVector SpawnLoc(1400.f, 0.f, 200.f);
-	AActor* Spawned = World->SpawnActor<AActor>(BossClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-	if (AT66BossBase* Boss = Cast<AT66BossBase>(Spawned))
-	{
-		Boss->InitializeBoss(BossData);
-		// Coliseum should start immediately.
-		Boss->ForceAwaken();
-	}
+	ColiseumBossesRemaining = 0;
+	bColiseumExitGateSpawned = false;
 }
 
 void AT66GameMode::HandleBossDefeatedAtLocation(const FVector& Location)
@@ -556,28 +604,27 @@ void AT66GameMode::HandleBossDefeatedAtLocation(const FVector& Location)
 	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 
-	if (IsColiseumLevel())
+	if (IsColiseumStage())
 	{
-		// In Coliseum, keep the timer/miasma running; just advance owed-boss queue.
+		// Coliseum: keep the timer/miasma running; open the exit gate only when ALL owed bosses are dead.
 		if (RunState)
 		{
 			RunState->SetBossInactive();
 		}
 
-		// Remove the cleared owed boss, then spawn next or exit.
-		if (RunState && RunState->GetOwedBossIDs().Num() > 0)
+		if (ColiseumBossesRemaining > 0)
 		{
-			RunState->RemoveFirstOwedBoss();
+			ColiseumBossesRemaining = FMath::Max(0, ColiseumBossesRemaining - 1);
 		}
 
-		// If nothing left, spawn stage gate at the final boss death location (to return to checkpoint stage).
-		if (!RunState || RunState->GetOwedBossIDs().Num() <= 0)
+		if (!bColiseumExitGateSpawned && ColiseumBossesRemaining <= 0)
 		{
+			bColiseumExitGateSpawned = true;
+			if (RunState)
+			{
+				RunState->ClearOwedBosses();
+			}
 			SpawnStageGateAtLocation(Location);
-		}
-		else
-		{
-			SpawnNextColiseumBossOrExit();
 		}
 		return;
 	}
@@ -591,6 +638,13 @@ void AT66GameMode::HandleBossDefeatedAtLocation(const FVector& Location)
 	// Normal stage: boss dead => miasma disappears and Stage Gate appears.
 	ClearMiasma();
 	SpawnStageGateAtLocation(Location);
+
+	// Idol Altar unlock: after bosses of stages ending in 5 or 0 (i.e. Stage % 5 == 0),
+	// spawn an altar near the boss death so the player can pick an idol before leaving.
+	if (RunState && ((RunState->GetCurrentStage() % 5) == 0))
+	{
+		SpawnIdolAltarAtLocation(Location);
+	}
 }
 
 void AT66GameMode::ClearMiasma()
@@ -735,7 +789,7 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 
 void AT66GameMode::SpawnWorldInteractablesForStage()
 {
-	if (IsColiseumLevel()) return;
+	if (IsColiseumStage()) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -854,7 +908,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 {
-	if (IsColiseumLevel()) return;
+	if (IsColiseumStage()) return;
 	if (IdolAltar) return;
 
 	UWorld* World = GetWorld();
@@ -878,6 +932,31 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	FHitResult Hit;
 	const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 800.f);
 	const FVector TraceEnd = SpawnLoc - FVector(0.f, 0.f, 2000.f);
+	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+	{
+		SpawnLoc = Hit.ImpactPoint;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+}
+
+void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
+{
+	if (IsColiseumStage()) return;
+	if (IdolAltar) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Place near boss death, but offset so it doesn't overlap the Stage Gate.
+	FVector SpawnLoc = Location + FVector(420.f, 260.f, 0.f);
+
+	// Trace down so altar sits on the ground.
+	FHitResult Hit;
+	const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 3000.f);
+	const FVector TraceEnd = SpawnLoc - FVector(0.f, 0.f, 9000.f);
 	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
 	{
 		SpawnLoc = Hit.ImpactPoint;
@@ -1008,9 +1087,9 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	if (IsColiseumLevel())
+	if (IsColiseumStage())
 	{
-		SpawnNextColiseumBossOrExit();
+		SpawnAllOwedBossesInColiseum();
 		return;
 	}
 
@@ -1024,7 +1103,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	// Default/fallback stage config (if DT_Stages is not wired yet)
 	FStageData StageData;
 	StageData.StageNumber = StageNum;
-	StageData.BossID = FName(TEXT("Boss_01"));
+	StageData.BossID = FName(*FString::Printf(TEXT("Boss_%02d"), StageNum));
 	StageData.BossSpawnLocation = StageGateSpawnOffset; // far side by default
 
 	FStageData FromDT;
@@ -1040,12 +1119,29 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	// Default/fallback boss data (if DT_Bosses is not wired yet)
 	FBossData BossData;
 	BossData.BossID = StageData.BossID;
-	BossData.MaxHP = 1000;
-	BossData.AwakenDistance = 900.f;
-	BossData.MoveSpeed = 350.f;
-	BossData.FireIntervalSeconds = 2.0f;
-	BossData.ProjectileSpeed = 900.f;
-	BossData.ProjectileDamageHearts = 1;
+	{
+		// Stage-scaled fallback so all 66 stages work even if DT_Bosses isn't reimported yet.
+		const int32 S = FMath::Clamp(StageNum, 1, 66);
+		const float T = static_cast<float>(S - 1) / 65.f; // 0..1
+
+		// Bosses are intended to be 1000+ HP always (BossBase will clamp too).
+		BossData.MaxHP = 1000 + (S * 250);
+		BossData.AwakenDistance = 900.f;
+		BossData.MoveSpeed = 350.f + (S * 2.f);
+		BossData.FireIntervalSeconds = FMath::Clamp(2.0f - (S * 0.015f), 0.65f, 3.5f);
+		BossData.ProjectileSpeed = 900.f + (S * 15.f);
+		BossData.ProjectileDamageHearts = 1 + (S / 20);
+
+		// Visually differentiate bosses by stage (HSV wheel).
+		const float Hue = FMath::Fmod(static_cast<float>(S) * 31.f, 360.f);
+		FLinearColor C = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 210, 245);
+		C.A = 1.f;
+		// Slightly darken early, brighten later.
+		C.R = FMath::Lerp(C.R * 0.85f, C.R, T);
+		C.G = FMath::Lerp(C.G * 0.85f, C.G, T);
+		C.B = FMath::Lerp(C.B * 0.85f, C.B, T);
+		BossData.PlaceholderColor = C;
+	}
 
 	FBossData FromBossDT;
 	if (!StageData.BossID.IsNone() && T66GI->GetBossData(StageData.BossID, FromBossDT))
@@ -1090,11 +1186,97 @@ void AT66GameMode::EnsureLevelSetup()
 	UE_LOG(LogTemp, Log, TEXT("Checking level setup..."));
 	
 	SpawnFloorIfNeeded();
+	SpawnColiseumArenaIfNeeded();
 	SpawnBoundaryWallsIfNeeded();
 	SpawnPlatformEdgeWallsIfNeeded();
 	SpawnStartAreaExitWallsIfNeeded();
 	SpawnLightingIfNeeded();
 	SpawnPlayerStartIfNeeded();
+}
+
+void AT66GameMode::SpawnColiseumArenaIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (!CubeMesh) return;
+
+	auto HasTag = [&](FName Tag) -> bool
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			if (It->Tags.Contains(Tag))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// Coliseum arena: off to the side, walled off so it is not visible from the main map.
+	const FVector ArenaCenter(ColiseumCenter.X, ColiseumCenter.Y, -50.f);
+	const FName FloorTag(TEXT("T66_Floor_Coliseum"));
+	const FName WallTagPrefix(TEXT("T66_Wall_Coliseum"));
+
+	// Floor
+	if (!HasTag(FloorTag))
+	{
+		FActorSpawnParameters P;
+		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), ArenaCenter, FRotator::ZeroRotator, P);
+		if (Floor && Floor->GetStaticMeshComponent())
+		{
+			Floor->Tags.Add(FloorTag);
+			Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+			Floor->SetActorScale3D(FVector(34.f, 34.f, 1.f)); // 3400x3400
+			if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+			{
+				Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.12f, 0.10f, 0.10f, 1.f));
+			}
+			SpawnedSetupActors.Add(Floor);
+		}
+	}
+
+	// Walls around arena (local enclosure; avoids needing huge global bounds)
+	static constexpr float WallHeight = 2200.f;
+	static constexpr float WallThickness = 240.f;
+	const float WallZ = 0.f + (WallHeight * 0.5f);
+	const float Half = 1700.f;
+	const float Thick = WallThickness / 100.f;
+	const float Tall = WallHeight / 100.f;
+	const float Long = ((Half * 2.f) + WallThickness) / 100.f;
+
+	struct FWallSpec
+	{
+		FName Tag;
+		FVector Loc;
+		FVector Scale;
+	};
+
+	const TArray<FWallSpec> Walls = {
+		{ FName(TEXT("T66_Wall_Coliseum_N")), FVector(ArenaCenter.X, ArenaCenter.Y + Half + (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
+		{ FName(TEXT("T66_Wall_Coliseum_S")), FVector(ArenaCenter.X, ArenaCenter.Y - Half - (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
+		{ FName(TEXT("T66_Wall_Coliseum_E")), FVector(ArenaCenter.X + Half + (WallThickness * 0.5f), ArenaCenter.Y, WallZ), FVector(Thick, Long, Tall) },
+		{ FName(TEXT("T66_Wall_Coliseum_W")), FVector(ArenaCenter.X - Half - (WallThickness * 0.5f), ArenaCenter.Y, WallZ), FVector(Thick, Long, Tall) },
+	};
+
+	for (const FWallSpec& Spec : Walls)
+	{
+		if (HasTag(Spec.Tag)) continue;
+		FActorSpawnParameters P;
+		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Loc, FRotator::ZeroRotator, P);
+		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
+		Wall->Tags.Add(Spec.Tag);
+		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+		Wall->SetActorScale3D(Spec.Scale);
+		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+		{
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.06f, 0.06f, 1.f));
+		}
+		SpawnedSetupActors.Add(Wall);
+	}
 }
 
 void AT66GameMode::SpawnPlatformEdgeWallsIfNeeded()
@@ -1506,10 +1688,10 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		// Default spawn:
-		// - GameplayLevel: start area (so timer starts after passing start pillars)
-		// - ColiseumLevel: main area (timer starts immediately; no pillars)
-		const FVector SpawnLoc = IsColiseumLevel()
-			? FVector(0.f, 0.f, DefaultSpawnHeight)
+		// - Normal stage: start area (so timer starts after passing start pillars)
+		// - Coliseum mode: coliseum arena (timer starts immediately; no pillars)
+		const FVector SpawnLoc = IsColiseumStage()
+			? FVector(ColiseumCenter.X, ColiseumCenter.Y, DefaultSpawnHeight)
 			: FVector(-10000.f, 0.f, DefaultSpawnHeight);
 
 		APlayerStart* Start = World->SpawnActor<APlayerStart>(
@@ -1525,7 +1707,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 			Start->SetActorLabel(TEXT("DEV_PlayerStart"));
 			#endif
 			SpawnedSetupActors.Add(Start);
-			UE_LOG(LogTemp, Log, TEXT("Spawned development PlayerStart at (0, 0, %.1f)"), DefaultSpawnHeight);
+			UE_LOG(LogTemp, Log, TEXT("Spawned development PlayerStart at %s"), *SpawnLoc.ToString());
 		}
 	}
 }
@@ -1583,8 +1765,8 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	else
 	{
 		// No PlayerStart found - spawn at a safe default location
-		SpawnLocation = IsColiseumLevel()
-			? FVector(0.f, 0.f, 200.f)         // Coliseum: spawn in main arena
+		SpawnLocation = IsColiseumStage()
+			? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)  // Coliseum: spawn in arena
 			: FVector(-10000.f, 0.f, 200.f);   // Gameplay: spawn in starting area
 		UE_LOG(LogTemp, Warning, TEXT("No PlayerStart found! Spawning at default location (%.0f, %.0f, %.0f)."),
 			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
@@ -1592,7 +1774,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 	// Robust: always ensure Gameplay spawns in the Start Area regardless of where a PlayerStart was placed.
 	// (Coliseum spawns in the Main Area and starts timer immediately.)
-	if (!IsColiseumLevel())
+	if (!IsColiseumStage())
 	{
 		SpawnLocation = FVector(-10000.f, 0.f, 200.f);
 		SpawnRotation = FRotator::ZeroRotator;
@@ -1603,6 +1785,18 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			if (T66GI->bStageBoostPending)
 			{
 				SpawnLocation = FVector(-10000.f, 5200.f, 200.f);
+			}
+		}
+	}
+	else
+	{
+		// Forced coliseum mode uses an enclosed arena off to the side (not the main arena).
+		if (UT66GameInstance* T66GI = GetT66GameInstance())
+		{
+			if (T66GI->bForceColiseumMode)
+			{
+				SpawnLocation = ColiseumCenter;
+				SpawnRotation = FRotator::ZeroRotator;
 			}
 		}
 	}

@@ -120,8 +120,7 @@ public:
 	bool bIsStageTransition = false;
 
 	/**
-	 * If true, treat the current map as Coliseum behavior (used as a fallback when ColiseumLevel is missing
-	 * or when using GameplayLevel as a temporary Coliseum map).
+	 * If true, treat the current map as Coliseum behavior (Coliseum is embedded inside GameplayLevel).
 	 */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bForceColiseumMode = false;

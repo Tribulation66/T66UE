@@ -12,6 +12,7 @@ class SButton;
 template<typename NumericType> class SSpinBox;
 class SBox;
 class SBorder;
+class SUniformGridPanel;
 
 /** Full-screen, non-pausing Vendor shop UI (buy + steal + loans). */
 UCLASS(Blueprintable)
@@ -40,8 +41,24 @@ private:
 	TArray<TSharedPtr<STextBlock>> ItemDescTexts;
 	TArray<TSharedPtr<STextBlock>> ItemPriceTexts;
 	TArray<TSharedPtr<SBorder>> ItemTileBorders;
+	TArray<TSharedPtr<SBorder>> ItemIconBorders;
 	TArray<TSharedPtr<SButton>> BuyButtons;
 	TArray<TSharedPtr<SButton>> StealButtons;
+	TArray<TSharedPtr<STextBlock>> BuyButtonTexts;
+
+	// Inventory strip
+	static constexpr int32 InventorySlotCount = 5;
+	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
+	TArray<TSharedPtr<SButton>> InventorySlotButtons;
+	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
+	int32 SelectedInventoryIndex = -1;
+
+	// Sell panel
+	TSharedPtr<SBox> SellPanelContainer;
+	TSharedPtr<STextBlock> SellItemNameText;
+	TSharedPtr<STextBlock> SellItemDescText;
+	TSharedPtr<STextBlock> SellItemPriceText;
+	TSharedPtr<SButton> SellItemButton;
 
 	// Loans/sell controls
 	TSharedPtr<SSpinBox<int32>> BorrowAmountSpin;
@@ -64,11 +81,14 @@ private:
 	void RefreshAll();
 	void RefreshTopBar();
 	void RefreshStock();
+	void RefreshInventory();
+	void RefreshSellPanel();
 
 	FReply OnBack();
 	FReply OnBorrowClicked();
 	FReply OnPaybackClicked();
-	FReply OnSellFirstClicked();
+	FReply OnSelectInventorySlot(int32 InventoryIndex);
+	FReply OnSellSelectedClicked();
 
 	FReply OnBuySlot(int32 SlotIndex);
 	FReply OnStealSlot(int32 SlotIndex);
@@ -80,5 +100,14 @@ private:
 
 	void TriggerVendorBossIfAngry();
 	bool IsBossActive() const;
+
+	UFUNCTION()
+	void HandleGoldOrDebtChanged();
+
+	UFUNCTION()
+	void HandleInventoryChanged();
+
+	UFUNCTION()
+	void HandleVendorChanged();
 };
 

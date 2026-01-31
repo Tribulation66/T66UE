@@ -76,7 +76,7 @@ void AT66GamblerBoss::BeginPlay()
 		{
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
-				RunState->SetBossActive(MaxHP);
+				RunState->SetBossActiveWithId(FName(TEXT("GamblerBoss")), MaxHP);
 			}
 		}
 		World->GetTimerManager().SetTimer(FireTimerHandle, this, &AT66GamblerBoss::FireAtPlayer, FireIntervalSeconds, true, 0.35f);

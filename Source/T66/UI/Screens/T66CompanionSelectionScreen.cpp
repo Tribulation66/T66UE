@@ -77,7 +77,8 @@ namespace
 
 			if (Stage.IsValid())
 			{
-				Stage->AddPreviewYaw(Delta.X * DegreesPerPixel);
+				// Dota-style orbit: horizontal rotates yaw, vertical tilts camera.
+				Stage->AddPreviewOrbit(Delta.X * DegreesPerPixel, -Delta.Y * DegreesPerPixel);
 			}
 			return FReply::Handled();
 		}

@@ -284,6 +284,16 @@ struct T66_API FStageData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Effects")
 	float StageEffectStrength = 1.f;
 
+	/** Mob roster for this stage (exactly 3). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyA;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyB;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyC;
+
 	FStageData()
 		: StageNumber(1)
 		, BossID(NAME_None)

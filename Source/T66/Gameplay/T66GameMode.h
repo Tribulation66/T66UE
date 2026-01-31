@@ -117,12 +117,15 @@ protected:
 	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
 	void SpawnStartGateForPlayer(AController* Player);
 	void SpawnIdolAltarForPlayer(AController* Player);
+	void SpawnIdolAltarAtLocation(const FVector& Location);
 
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
 	void SpawnWorldInteractablesForStage();
 	void SpawnStageBoostPlatformAndInteractables();
 	void SpawnStageEffectTilesForStage();
+	void SpawnColiseumArenaIfNeeded();
+	void SpawnAllOwedBossesInColiseum();
 	void SpawnTutorialIfNeeded();
 
 	/** Spawn boss for current stage (dormant until player approaches). */
@@ -133,8 +136,8 @@ protected:
 
 	void SpawnTricksterAndCowardiceGate();
 
-	bool IsColiseumLevel() const;
-	void SpawnNextColiseumBossOrExit();
+	bool IsColiseumStage() const;
+	void ResetColiseumState();
 
 	/** Called when stage timer changes (we use it to detect "timer started"). */
 	UFUNCTION()
@@ -173,4 +176,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AT66IdolAltar> IdolAltar;
+
+	// Coliseum state (only used when bForceColiseumMode is true).
+	int32 ColiseumBossesRemaining = 0;
+	bool bColiseumExitGateSpawned = false;
+	FVector ColiseumCenter = FVector(0.f, -5200.f, 200.f);
 };

@@ -68,7 +68,7 @@ void AT66VendorBoss::BeginPlay()
 		{
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
-				RunState->SetBossActive(MaxHP);
+				RunState->SetBossActiveWithId(FName(TEXT("VendorBoss")), MaxHP);
 			}
 		}
 		World->GetTimerManager().SetTimer(FireTimerHandle, this, &AT66VendorBoss::FireAtPlayer, FireIntervalSeconds, true, 0.25f);

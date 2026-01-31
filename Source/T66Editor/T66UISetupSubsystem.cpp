@@ -140,17 +140,6 @@ void UT66UISetupSubsystem::RunFullSetup()
 		bAllSuccess = false;
 	}
 
-	// Configure ColiseumLevel
-	if (ConfigureColiseumLevel())
-	{
-		UE_LOG(LogT66Editor, Log, TEXT("[OK] ColiseumLevel configured"));
-	}
-	else
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("[FAIL] ColiseumLevel configuration failed"));
-		bAllSuccess = false;
-	}
-
 	if (bAllSuccess)
 	{
 		UE_LOG(LogT66Editor, Log, TEXT("=== T66 Full Setup Complete - All Success ==="));
@@ -240,46 +229,6 @@ bool UT66UISetupSubsystem::ConfigureGameplayLevel()
 			FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetMapPackageExtension());
 			UPackage::SavePackage(Package, World, *PackageFileName, SaveArgs);
 			UE_LOG(LogT66Editor, Log, TEXT("Saved GameplayLevel with GameMode override"));
-		}
-		return true;
-	}
-
-	return false;
-}
-
-bool UT66UISetupSubsystem::ConfigureColiseumLevel()
-{
-	const FString LevelPath = TEXT("/Game/Maps/ColiseumLevel");
-	UWorld* World = LoadObject<UWorld>(nullptr, *LevelPath);
-
-	if (!World)
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load ColiseumLevel at %s"), *LevelPath);
-		return false;
-	}
-
-	const FString GameModePath = TEXT("/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode_C");
-	UClass* GameModeClass = LoadClass<AGameModeBase>(nullptr, *GameModePath);
-
-	if (!GameModeClass)
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load BP_GameplayGameMode at %s"), *GameModePath);
-		return false;
-	}
-
-	if (World->GetWorldSettings())
-	{
-		World->GetWorldSettings()->DefaultGameMode = GameModeClass;
-		World->GetWorldSettings()->MarkPackageDirty();
-
-		UPackage* Package = World->GetOutermost();
-		if (Package)
-		{
-			FSavePackageArgs SaveArgs;
-			SaveArgs.TopLevelFlags = RF_Standalone;
-			FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetMapPackageExtension());
-			UPackage::SavePackage(Package, World, *PackageFileName, SaveArgs);
-			UE_LOG(LogT66Editor, Log, TEXT("Saved ColiseumLevel with GameMode override"));
 		}
 		return true;
 	}
@@ -407,6 +356,28 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 
 	for (const auto& Mapping : Mappings)
 	{
+		// Avoid noisy SkipPackage warnings: only attempt to load if the asset package exists.
+		FString PackagePath = Mapping.AssetPath;
+		int32 DotIdx = INDEX_NONE;
+		if (PackagePath.FindChar(TEXT('.'), DotIdx) && DotIdx > 0)
+		{
+			PackagePath = PackagePath.Left(DotIdx);
+		}
+
+		const bool bHasPackage = FPackageName::DoesPackageExist(PackagePath);
+		if (!bHasPackage)
+		{
+			const bool bOptional =
+				(Mapping.Type == ET66ScreenType::Achievements) ||
+				(Mapping.Type == ET66ScreenType::LanguageSelect) ||
+				(Mapping.Type == ET66ScreenType::HeroGrid) ||
+				(Mapping.Type == ET66ScreenType::CompanionGrid);
+			UE_LOG(LogT66Editor, Log, TEXT("%s widget asset missing: %s"),
+				bOptional ? TEXT("[SKIP] Optional") : TEXT("[WARN]"),
+				*PackagePath);
+			continue;
+		}
+
 		UClass* WidgetClass = LoadClass<UT66ScreenBase>(nullptr, Mapping.AssetPath);
 		if (WidgetClass)
 		{
@@ -415,7 +386,15 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 		}
 		else
 		{
-			UE_LOG(LogT66Editor, Warning, TEXT("Failed to load widget class: %s"), Mapping.AssetPath);
+			// Optional Blueprint overrides: C++ screens exist and work without these.
+			const bool bOptional =
+				(Mapping.Type == ET66ScreenType::Achievements) ||
+				(Mapping.Type == ET66ScreenType::LanguageSelect) ||
+				(Mapping.Type == ET66ScreenType::HeroGrid) ||
+				(Mapping.Type == ET66ScreenType::CompanionGrid);
+			UE_LOG(LogT66Editor, Log, TEXT("%s widget class missing: %s"),
+				bOptional ? TEXT("[SKIP] Optional") : TEXT("[WARN]"),
+				Mapping.AssetPath);
 		}
 	}
 
@@ -628,18 +607,6 @@ void UT66UISetupSubsystem::PrintSetupStatus()
 		{
 			UClass* GameModeClass = World->GetWorldSettings()->DefaultGameMode;
 			UE_LOG(LogT66Editor, Log, TEXT("FrontendLevel GameMode: %s"), 
-				GameModeClass ? *GameModeClass->GetName() : TEXT("(none)"));
-		}
-	}
-
-	// Check ColiseumLevel
-	{
-		const FString LevelPath = TEXT("/Game/Maps/ColiseumLevel");
-		UWorld* World = LoadObject<UWorld>(nullptr, *LevelPath);
-		if (World && World->GetWorldSettings())
-		{
-			UClass* GameModeClass = World->GetWorldSettings()->DefaultGameMode;
-			UE_LOG(LogT66Editor, Log, TEXT("ColiseumLevel GameMode: %s"),
 				GameModeClass ? *GameModeClass->GetName() : TEXT("(none)"));
 		}
 	}

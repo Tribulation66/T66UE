@@ -76,6 +76,35 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|MainMenu")
 	FText GetText_Achievements() const;
+
+	// Achievements Screen
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_AchievementTierBlack() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_AchievementTierRed() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_AchievementTierYellow() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_AchievementTierWhite() const;
+
+	/** Format string: "{0} AC" */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_AchievementCoinsFormat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_Claim() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_Claimed() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_AchievementName(FName AchievementID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
+	FText GetText_AchievementDescription(FName AchievementID) const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|MainMenu")
 	FText GetText_Quit() const;

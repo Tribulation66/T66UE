@@ -16,11 +16,12 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Last known-good commit:** 5758aa0 (Gameplay progression, Coliseum fallback, and map layout)
 - **Current milestone:** Phase 3+ — Stage progression + bosses + miasma + NPCs + debt + Coliseum + map layout
 - **Build status:** ✅ C++ compiles successfully
-- **Model pipeline status (WIP):**
-  - Zips are present in `C:\UE\T66\SourceAssets\` and have been extracted to `C:\UE\T66\SourceAssets\Extracted\`
-  - ~31 `.fbx` files detected across Hero/Companion/NPC/Enemy/Boss packs
-  - Import script exists but **has not yet been run** to create Unreal assets in `/Game/...`
-  - Runtime wiring (assigning the imported meshes/animations to heroes/enemies/bosses/companions) is **not yet implemented**
+- **Model pipeline status:** ✅ Imported + wired (data-driven)
+  - Source packs extracted to `C:\UE\T66\SourceAssets\Extracted\` (~31 `.fbx` files)
+  - Imported assets exist under `/Game/Characters/...` (SkeletalMeshes + Skeletons + AnimSequences where provided)
+  - Data-driven visuals mapping implemented via `DT_CharacterVisuals` (backed by `Content/Data/CharacterVisuals.csv`)
+  - Runtime wiring implemented (heroes/enemies/bosses/companions/NPCs apply skeletal visuals + optional looping anim at runtime)
+  - Note: some characters have **no animation assets** in the provided FBX packs, so they remain static (fallback picks any compatible anim only if it exists)
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 - **Full project setup (from project root):**
   - **Batch:** `Scripts\RunFullSetup.bat`
@@ -59,6 +60,178 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-01-31 — Character visuals pipeline + 3D previews overhaul + stage tiles visibility + boundary/wall fixes
+
+**Imported character visuals (data-driven)**
+- Added `FT66CharacterVisualRow` to `Source/T66/Data/T66DataTypes.h` (soft refs: `USkeletalMesh`, optional `UAnimationAsset`, plus offset/rot/scale + grounding flags).
+- Added `UT66CharacterVisualSubsystem` (`Source/T66/Core/T66CharacterVisualSubsystem.*`):
+  - Loads `DT_CharacterVisuals` (prefers `UT66GameInstance::CharacterVisualsDataTable`, falls back to `/Game/Data/DT_CharacterVisuals`).
+  - Applies skeletal mesh + transform to a `USkeletalMeshComponent`, hides placeholder mesh, optional single-node looping animation.
+  - Grounding fix: for `ACharacter`, auto-aligns **mesh bottom** to **capsule bottom** (fixes “waist pivot” meshes).
+  - Fallback animation lookup: if no explicit looping anim, queries Asset Registry for any `UAnimSequence` compatible with the mesh skeleton (prefers names containing idle/walk/run/loop).
+- Updated `T66.Build.cs` to include `AssetRegistry`.
+- Added `Content/Data/CharacterVisuals.csv` and scripts:
+  - `Scripts/SetupCharacterVisualsDataTable.py` (creates/fills `DT_CharacterVisuals`)
+  - `Scripts/ValidateCharacterVisuals.py` (validates CSV asset paths exist)
+
+**Actor wiring to visuals**
+- Heroes: `AT66HeroBase` applies visuals on initialize.
+- Enemies: `AT66EnemyBase` applies visuals by `CharacterVisualID` (and includes multiple safety fallbacks).
+- Bosses: `AT66BossBase` applies visuals by `BossID`.
+- Companions: `AT66CompanionBase` gained a dedicated skeletal mesh component; applies visuals; preview mode supported.
+- House NPCs: `AT66HouseNPCBase` applies visuals; snaps actor to ground; keeps safe-zone bubble behavior.
+- Vendor/Gambler boss rule enforced: boss variants reuse the NPC mesh (separate IDs for transforms).
+
+**Enemy visibility policy changes (per user request)**
+- Regular enemies and unique debuff enemies are forced to **use placeholder visuals** (colored spheres) instead of FBX visuals.
+  - Regular enemy: `AT66EnemyBase` uses sphere placeholder and skips visuals mapping when `CharacterVisualID == RegularEnemy` (or none).
+  - Unique debuff enemy: `AT66UniqueDebuffEnemy` uses a purple sphere placeholder and remains flying.
+- `AT66EnemyDirector` made robust to misconfigured `EnemyClass` (falls back to `AT66EnemyBase` for regular spawns).
+
+**3D preview stages (Hero/Companion selection)**
+- `AT66HeroPreviewStage` / `AT66CompanionPreviewStage`:
+  - Real-time `SceneCapture2D` (smooth orbit; no stutter on drag).
+  - Drag input updated to orbit: horizontal rotates yaw; vertical adjusts camera pitch.
+  - Pitch clamped and camera Z clamped so you can’t “look under” the platform.
+  - Preview platform is stable (orbit framing cached) and characters are forced static (no preview animation).
+  - Removed preview extra directional light to avoid forward-shading directional-light competition issues; rely on point/fill/rim lights.
+- UI drag widget updates in:
+  - `Source/T66/UI/Screens/T66HeroSelectionScreen.cpp`
+  - `Source/T66/UI/Screens/T66CompanionSelectionScreen.cpp`
+- Pre-warm preview to avoid first-open pop-in: `AT66FrontendGameMode::BeginPlay()` sets initial hero/companion previews.
+
+**Run Summary 3D previews**
+- `UT66RunSummaryScreen` now reuses the same preview-stage render targets (hero + companion) so it matches selection screens; displayed side-by-side.
+
+**Stage effects visibility**
+- `AT66StageEffectTile` now renders as a thin colored rectangular panel slightly above the ground (no longer buried / z-fighting).
+
+**Map walls**
+- `AT66GameMode` now spawns extra edge walls around narrower Start/Boss/connector platforms (`SpawnPlatformEdgeWallsIfNeeded`) so there are no “side gaps” before the global boundary walls.
+
+### 2026-01-31 — Achievements v0: persistent AC wallet + first real achievement (Kill 20 enemies → claim 250 AC)
+
+**User request**
+- Create a real Achievement Coins (AC) wallet starting at **0**.
+- Make the first Black achievement real: **Kill 20 enemies**.
+- Reward should be **250 AC**, claimable after reaching 20 kills, and the claim should update the AC wallet/balance.
+
+**What changed (C++ only; no Content/.uasset edits)**
+- Added profile save (lifetime progression, not run-slot):
+  - `Source/T66/Core/T66ProfileSaveGame.h` — stores `AchievementCoinsBalance` + per-achievement `FT66AchievementState` + `LifetimeEnemiesKilled`.
+- Added achievements/wallet subsystem:
+  - `Source/T66/Core/T66AchievementsSubsystem.h/.cpp`
+  - Saves to slot: `T66_Profile` (throttled to avoid per-kill disk IO; forced save on unlock/claim).
+  - Implemented `ACH_BLK_001`: requirement 20 kills, reward 250 AC, lifetime progress.
+- Wired enemy deaths to achievement progress:
+  - `Source/T66/Gameplay/T66EnemyBase.cpp` — `OnDeath()` now calls `UT66AchievementsSubsystem::NotifyEnemyKilled(1)`.
+- Updated Achievements screen to be real (no placeholder coins/rows):
+  - `Source/T66/UI/Screens/T66AchievementsScreen.h/.cpp` — shows real AC balance, real progress, and a **Claim** button when unlocked.
+**Note**
+- `UT66AchievementsSubsystem` currently uses safe fallback text for achievement name/description. Localization hooks for achievements can be added later in `UT66LocalizationSubsystem` when desired.
+
+**Verification / proof**
+- Built successfully (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+  - Note: existing warning in `T66Style.cpp` about `FSlateFontInfo` constructor (pre-existing).
+
+### 2026-01-31 — Stages v1: 66 stages + 66 bosses, stage-scaled boss stats, stage-variant unique enemy, idol altar on 5/0 boss clears
+
+**User request**
+- Build out **all 66 stages**, each with its own boss, a per-stage “unique enemy” visual, and stage effects as colored ground tiles.
+- After killing bosses on stages ending in **5 or 0**, spawn an **Idol Altar** to pick an idol.
+- Bosses need real stats (HP/damage/etc) that **scale up** as stages increase.
+
+**What changed**
+- Data expanded to 66 stages / 66 bosses:
+  - `Content/Data/Stages.csv` now includes `Stage_01` … `Stage_66` (BossID per stage + effect type/color/strength).
+  - `Content/Data/Bosses.csv` now includes `Boss_01` … `Boss_66` (scaled HP/speeds/fire rate/projectile damage).
+- Boss fallback now scales even without DT reimport:
+  - `Source/T66/Gameplay/T66GameMode.cpp`: fallback `StageData.BossID` is now `Boss_%02d` and fallback `FBossData` scales by stage + uses stage-varying colors.
+- Unique enemy is now stage-variant and guaranteed to appear at least once per stage:
+  - `Source/T66/Gameplay/T66EnemyDirector.*`: guarantee 1 unique enemy spawn per stage (then additional spawns use the existing chance).
+  - `Source/T66/Gameplay/T66UniqueDebuffEnemy.cpp`: per-stage visuals (cube/sphere/cylinder/cone + color) and per-stage stat scaling.
+- Idol altar after boss clears on stages ending with 5/0:
+  - `Source/T66/Gameplay/T66GameMode.*`: after boss defeat, if `Stage % 5 == 0` spawn an `AT66IdolAltar` near the boss death in addition to the stage gate.
+- Idol altar overlay updated to support repeated use across stages:
+  - `Source/T66/UI/T66IdolAltarOverlayWidget.cpp`: now equips into the **first empty idol slot** (0..2) and only locks if **all slots are full**.
+  - `Source/T66/Core/T66LocalizationSubsystem.cpp`: updated the “Stage 1 already selected” message to “All idol slots are full.” (repurposed text).
+
+**Verification / proof**
+- Built successfully (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-01-31 — Coliseum v2 (in-map): no ColiseumLevel asset required; all owed bosses spawn at once; exit gate appears when all are dead (event-driven)
+
+**User request**
+- Remove dependency on `/Game/Maps/ColiseumLevel`; Coliseum should live inside `GameplayLevel` off to the side (hidden by walls).
+- If bosses were skipped before checkpoint stages (5/10/15/…), route to Coliseum before continuing.
+- **All owed bosses should spawn at the same time**.
+- After all are dead, spawn the stage gate.
+- Do this without any Tick polling for performance.
+
+**What changed**
+- Coliseum routing no longer attempts to load `/Game/Maps/ColiseumLevel`:
+  - `Source/T66/Gameplay/T66StageGate.cpp` and `Source/T66/Gameplay/T66CowardiceGate.cpp` now set `bForceColiseumMode=true` and reload `/Game/Maps/GameplayLevel`.
+- Coliseum arena is spawned inside `GameplayLevel`:
+  - `Source/T66/Gameplay/T66GameMode.cpp`: `SpawnColiseumArenaIfNeeded()` spawns a dedicated coliseum floor + enclosing walls at an offset location.
+  - Player spawn location in forced coliseum mode uses that arena.
+- Coliseum boss spawning is now “all at once”:
+  - `AT66GameMode::SpawnAllOwedBossesInColiseum()` spawns every owed boss in a ring around the coliseum center and tracks `ColiseumBossesRemaining`.
+  - `AT66GameMode::HandleBossDefeatedAtLocation()` decrements the counter on each boss death and spawns the stage gate only when the count hits 0 (event-driven).
+- RunState gained `ClearOwedBosses()` for clean completion.
+- Setup scripts no longer treat ColiseumLevel as required:
+  - `Scripts/CreateAssets.py` no longer auto-creates `/Game/Maps/ColiseumLevel`
+  - `Scripts/FullSetup.py` and `Source/T66Editor/T66UISetupSubsystem.cpp` treat ColiseumLevel as optional and do not fail setup when it’s missing.
+  - `Source/T66Editor/T66UISetupSubsystem.cpp` logs missing optional widget blueprints (HeroGrid/CompanionGrid/etc) as `[SKIP] Optional` instead of warning spam.
+
+**Verification / proof**
+- Built successfully (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-01-31 — Vendor shop redesign (4 cards + Buy/Steal + inventory sell) + Gambler design polish
+
+**User request**
+- Vendor overlay should show **4 items** like the “Level up” card layout (name + description), with **Buy** and **Steal** under each item.
+- **Steal** should trigger the existing quick-time event flow.
+- Bottom should show **all owned items**; clicking an owned item opens a **Sell** option showing **sell value**; clicking Sell sells it.
+- Keep existing Vendor mechanics: **anger meter**, **borrow/payback**.
+- Restyle the Gambler overlay to match the project’s UI design decisions (`FT66Style`).
+
+**What changed (C++ only; no Content/.uasset edits)**
+- Vendor inventory selling:
+  - `Source/T66/Core/T66RunStateSubsystem.h/.cpp`
+    - Added `bool SellInventoryItemAt(int32 InventoryIndex)` so UI can sell a specific owned item (not just “sell first”).
+- Vendor overlay UI layout + styling:
+  - `Source/T66/UI/T66VendorOverlayWidget.h/.cpp`
+    - Rebuilt layout to a **4-card grid** (name, wrapped description, price, Buy/Steal buttons).
+    - Added a **bottom inventory strip** (5 slots) + **sell details panel** for selected item.
+    - Hooked UI updates to run-state delegates (event-driven): `GoldChanged`, `DebtChanged`, `InventoryChanged`, `VendorChanged`.
+    - Kept existing steal timing prompt + boss trigger behavior.
+- Gambler overlay design polish:
+  - `Source/T66/UI/T66GamblerOverlayWidget.cpp`
+    - Applied `FT66Style` tokens/styles to top bar, anger meter, casino panels, cheat prompt, and minigame buttons.
+    - Gameplay logic unchanged.
+
+**Notes / tech debt**
+- Vendor overlay currently has **some hardcoded UI strings** (e.g. “VENDOR”, “SHOP”, “UPGRADE”, “STEAL”, “YOUR ITEMS”, and a few price labels). Per guardrails, these should be moved into `UT66LocalizationSubsystem::GetText_*()` later.
+
+**Build/verification**
+- `T66Editor` build succeeded after changes.
+- During the build we hit an unrelated compile break in achievements due to missing `FT66AchievementState` visibility; fixed by including `Core/T66ProfileSaveGame.h` in `Source/T66/Core/T66AchievementsSubsystem.h`.
+
+### 2026-01-31 — Ground visual experiment (reverted)
+
+**User request**
+- Attempted a “grass-like” ground look with no imports (roughness/pebbles).
+
+**Outcome**
+- Implemented a no-import grass/pebble dressing pass in `AT66GameMode` and then **fully reverted it** due to poor visuals and suspected performance impact.
+- Current ground remains the original simple dev floor setup (no extra instancing/dressing).
 
 ### 2026-01-30 — SourceAssets model import pipeline (IN PROGRESS; handoff-ready)
 

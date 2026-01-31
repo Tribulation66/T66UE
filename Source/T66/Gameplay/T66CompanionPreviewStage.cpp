@@ -11,6 +11,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 
 AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 {
@@ -33,8 +34,9 @@ AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCapture"));
 	SceneCapture->SetupAttachment(RootComponent);
 	SceneCapture->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	SceneCapture->bCaptureEveryFrame = false;
-	SceneCapture->bCaptureOnMovement = false;
+	// Real-time capture for smooth orbit + animation (no stutter).
+	SceneCapture->bCaptureEveryFrame = true;
+	SceneCapture->bCaptureOnMovement = true;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 	SceneCapture->FOVAngle = 30.f;
 	// Do NOT override exposure here; we want it to match the gameplay lighting feel.
@@ -43,20 +45,20 @@ AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 	PreviewLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PreviewLight"));
 	PreviewLight->SetupAttachment(RootComponent);
 	PreviewLight->SetRelativeLocation(PreviewPawnOffset * 0.5f);
-	PreviewLight->SetIntensity(1800.f);
-	PreviewLight->SetAttenuationRadius(3000.f);
+	PreviewLight->SetIntensity(5200.f);
+	PreviewLight->SetAttenuationRadius(6000.f);
 	PreviewLight->SetLightColor(FLinearColor(1.f, 0.95f, 0.9f));
 
 	FillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FillLight"));
 	FillLight->SetupAttachment(RootComponent);
-	FillLight->SetIntensity(650.f);
-	FillLight->SetAttenuationRadius(3000.f);
+	FillLight->SetIntensity(2200.f);
+	FillLight->SetAttenuationRadius(8000.f);
 	FillLight->SetLightColor(FLinearColor(0.85f, 0.90f, 1.0f));
 
 	RimLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("RimLight"));
 	RimLight->SetupAttachment(RootComponent);
-	RimLight->SetIntensity(900.f);
-	RimLight->SetAttenuationRadius(3500.f);
+	RimLight->SetIntensity(2600.f);
+	RimLight->SetAttenuationRadius(8000.f);
 	RimLight->SetLightColor(FLinearColor(1.0f, 1.0f, 1.0f));
 
 	CompanionPawnClass = AT66CompanionBase::StaticClass();
@@ -92,7 +94,9 @@ void AT66CompanionPreviewStage::EnsureCaptureSetup()
 void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID)
 {
 	PreviewYawDegrees = 0.f;
+	OrbitPitchDegrees = 8.f;
 	UpdatePreviewPawn(CompanionID);
+	bHasOrbitFrame = false;
 	FrameCameraToPreview();
 	CapturePreview();
 }
@@ -101,7 +105,15 @@ void AT66CompanionPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
 {
 	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
 	ApplyPreviewRotation();
-	CapturePreview();
+	FrameCameraToPreview();
+}
+
+void AT66CompanionPreviewStage::AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees)
+{
+	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
+	OrbitPitchDegrees = FMath::Clamp(OrbitPitchDegrees + DeltaPitchDegrees, 0.f, 70.f);
+	ApplyPreviewRotation();
+	FrameCameraToPreview();
 }
 
 UPrimitiveComponent* AT66CompanionPreviewStage::GetPreviewTargetComponent() const
@@ -131,14 +143,26 @@ void AT66CompanionPreviewStage::FrameCameraToPreview()
 	UPrimitiveComponent* Target = GetPreviewTargetComponent();
 	if (!Target) return;
 
-	const FBoxSphereBounds B = Target->Bounds;
-	const FVector Center = B.Origin;
-	const float Radius = FMath::Max(25.f, B.SphereRadius);
+	if (!bHasOrbitFrame)
+	{
+		const FBoxSphereBounds B = Target->Bounds;
+		OrbitCenter = B.Origin;
+		OrbitRadius = FMath::Max(25.f, B.SphereRadius);
+		OrbitBottomZ = (B.Origin.Z - B.BoxExtent.Z);
+		bHasOrbitFrame = true;
+	}
+
+	const FVector Center = OrbitCenter;
+	const float Radius = OrbitRadius;
 
 	const float HalfFovRad = FMath::DegreesToRadians(SceneCapture->FOVAngle * 0.5f);
 	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * 1.05f;
 
-	const FVector CamLoc = Center + FVector(-Dist, 0.f, Radius * 0.12f);
+	const float PitchRad = FMath::DegreesToRadians(OrbitPitchDegrees);
+	const float Z = (FMath::Sin(PitchRad) * Dist) + (Radius * 0.12f);
+	const float X = (-FMath::Cos(PitchRad) * Dist);
+	FVector CamLoc = Center + FVector(X, 0.f, Z);
+	CamLoc.Z = FMath::Max(CamLoc.Z, OrbitBottomZ + 60.f);
 	SceneCapture->SetWorldLocation(CamLoc);
 
 	const FRotator LookRot = FRotationMatrix::MakeFromX(Center - CamLoc).Rotator();
@@ -165,8 +189,7 @@ void AT66CompanionPreviewStage::FrameCameraToPreview()
 	if (PreviewFloor && PreviewPawn)
 	{
 		// Keep floor under the pawn's origin so "ground" is stable.
-		const float BottomZ = B.Origin.Z - B.BoxExtent.Z;
-		PreviewFloor->SetWorldLocation(FVector(Center.X, Center.Y, BottomZ - 6.f));
+		PreviewFloor->SetWorldLocation(FVector(Center.X, Center.Y, OrbitBottomZ - 6.f));
 		const float S = FMath::Clamp((Radius / 50.f) * 1.6f, 1.2f, 6.0f);
 		PreviewFloor->SetWorldScale3D(FVector(S, S, 0.08f));
 	}
@@ -217,6 +240,16 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID)
 		PawnLoc.Z = GetActorLocation().Z;
 		PreviewPawn->SetActorLocation(PawnLoc);
 		ApplyPreviewRotation();
+
+		// Make sure materials/textures are fully streamed for the preview camera.
+		if (PreviewPawn->SkeletalMesh)
+		{
+			PreviewPawn->SkeletalMesh->bForceMipStreaming = true;
+			PreviewPawn->SkeletalMesh->StreamingDistanceMultiplier = 50.f;
+			PreviewPawn->SkeletalMesh->bPauseAnims = true; // preview should be static
+			PreviewPawn->SkeletalMesh->GlobalAnimRateScale = 0.f;
+			PreviewPawn->SkeletalMesh->Stop();
+		}
 	}
 }
 

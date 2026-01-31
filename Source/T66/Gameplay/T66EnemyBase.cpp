@@ -7,6 +7,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
@@ -68,6 +69,65 @@ AT66EnemyBase::AT66EnemyBase()
 		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Skel->SetVisibility(false, true); // shown only when a character visual mapping exists
 	}
+}
+
+void AT66EnemyBase::ConfigureAsMob(FName InMobID)
+{
+	MobID = InMobID;
+	// Stage mobs always use placeholder visuals for now.
+	CharacterVisualID = NAME_None;
+
+	if (!VisualMesh) return;
+
+	// Stable per-mob visuals: mesh shape + HSV color from MobID hash.
+	const uint32 H = GetTypeHash(MobID);
+	const int32 Shape = static_cast<int32>(H % 4u);
+
+	UStaticMesh* StaticShapeMesh = nullptr;
+	switch (Shape)
+	{
+		case 0: StaticShapeMesh = FT66VisualUtil::GetBasicShapeSphere(); break;
+		case 1: StaticShapeMesh = FT66VisualUtil::GetBasicShapeCube(); break;
+		case 2: StaticShapeMesh = FT66VisualUtil::GetBasicShapeCylinder(); break;
+		default: StaticShapeMesh = FT66VisualUtil::GetBasicShapeCone(); break;
+	}
+	if (StaticShapeMesh)
+	{
+		VisualMesh->SetStaticMesh(StaticShapeMesh);
+	}
+
+	// Hue derived from hash; keep saturation/value high for clarity.
+	const float Hue01 = static_cast<float>((H / 7u) % 360u) / 360.f;
+	const FLinearColor C = FLinearColor::MakeFromHSV8(
+		static_cast<uint8>(Hue01 * 255.f),
+		210,
+		240
+	);
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
+
+	// Reasonable default scale per shape.
+	switch (Shape)
+	{
+		case 1: VisualMesh->SetRelativeScale3D(FVector(0.75f, 0.75f, 0.75f)); break; // cube
+		case 2: VisualMesh->SetRelativeScale3D(FVector(0.70f, 0.70f, 0.95f)); break; // cylinder
+		case 3: VisualMesh->SetRelativeScale3D(FVector(0.80f, 0.80f, 0.95f)); break; // cone
+		default: VisualMesh->SetRelativeScale3D(FVector(0.85f, 0.85f, 0.85f)); break; // sphere
+	}
+}
+
+void AT66EnemyBase::ApplyMiniBossMultipliers(float HPScalar, float DamageScalar, float ScaleScalar)
+{
+	bIsMiniBoss = true;
+
+	// Stats: scale current (already difficulty-scaled) tuning.
+	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * FMath::Max(0.1f, HPScalar)));
+	CurrentHP = MaxHP;
+	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * FMath::Max(0.1f, DamageScalar)));
+	UpdateHealthBar();
+
+	// Visual: scale the whole actor (capsule + mesh) so it's obviously a mini-boss.
+	const float S = FMath::Clamp(ScaleScalar, 1.0f, 4.0f);
+	SetActorScale3D(FVector(S, S, S));
 }
 
 void AT66EnemyBase::BeginPlay()
@@ -314,11 +374,16 @@ void AT66EnemyBase::OnDeath()
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	if (RunState)
 	{
 		RunState->AddScore(PointValue);
 		RunState->AddHeroXP(XPValue);
 		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d"), PointValue));
+	}
+	if (Achievements)
+	{
+		Achievements->NotifyEnemyKilled(1);
 	}
 
 	if (OwningDirector)
@@ -333,7 +398,14 @@ void AT66EnemyBase::OnDeath()
 		// Spawn one loot bag with rarity, and roll an item from that rarity pool.
 		FRandomStream Rng(FPlatformTime::Cycles());
 		const int32 LuckStat = RunState ? RunState->GetLuckStat() : 1;
-		const ET66Rarity BagRarity = FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat);
+		ET66Rarity BagRarity = FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat);
+		if (bIsMiniBoss)
+		{
+			// Mini-bosses should skew toward higher tier loot bags.
+			// Simple bias: roll twice (luck-weighted) and take the better rarity.
+			const ET66Rarity R2 = FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat);
+			BagRarity = (static_cast<uint8>(R2) > static_cast<uint8>(BagRarity)) ? R2 : BagRarity;
+		}
 		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

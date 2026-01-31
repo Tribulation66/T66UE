@@ -320,7 +320,7 @@ def verify_all_assets():
         "/Game/Data/DT_LoanShark",
         "/Game/Maps/FrontendLevel",
         "/Game/Maps/GameplayLevel",
-        "/Game/Maps/ColiseumLevel",
+        # Coliseum is embedded inside GameplayLevel (no separate map).
     ]
 
     all_ok = True
@@ -390,7 +390,7 @@ def main():
     unreal.log("--- Importing DataTable Data ---")
     import_datatable_csv()
 
-    # 6. Configure map GameMode overrides (Frontend/Gameplay/Coliseum)
+    # 6. Configure map GameMode overrides (Frontend/Gameplay)
     unreal.log("")
     unreal.log("--- Configuring Map GameModes ---")
     try:
@@ -398,8 +398,7 @@ def main():
         if setup_sub:
             setup_sub.configure_frontend_level()
             setup_sub.configure_gameplay_level()
-            setup_sub.configure_coliseum_level()
-            unreal.log("Configured FrontendLevel/GameplayLevel/ColiseumLevel GameMode overrides")
+            unreal.log("Configured FrontendLevel/GameplayLevel GameMode overrides")
     except Exception as e:
         unreal.log_warning(f"Could not run T66UISetupSubsystem map configuration: {e}")
 

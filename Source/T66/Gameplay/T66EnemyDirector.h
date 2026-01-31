@@ -45,6 +45,19 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float UniqueEnemyChancePerWave = 0.25f;
 
+	/** Chance per spawn wave to spawn a mini-boss (one of this stage's mobs, scaled up). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float MiniBossChancePerWave = 0.10f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float MiniBossScale = 1.75f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float MiniBossHPScalar = 3.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float MiniBossDamageScalar = 2.0f;
+
 	/** Spawn interval in seconds */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float SpawnIntervalSeconds = 20.f;
@@ -82,4 +95,7 @@ protected:
 	bool bSpawningArmed = false;
 
 	TWeakObjectPtr<AT66EnemyBase> ActiveUniqueEnemy;
+	bool bSpawnedUniqueThisStage = false;
+
+	TWeakObjectPtr<AT66EnemyBase> ActiveMiniBoss;
 };

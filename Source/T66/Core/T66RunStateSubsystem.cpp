@@ -685,6 +685,13 @@ void UT66RunStateSubsystem::RemoveFirstOwedBoss()
 	LogAdded.Broadcast();
 }
 
+void UT66RunStateSubsystem::ClearOwedBosses()
+{
+	if (OwedBossIDs.Num() <= 0) return;
+	OwedBossIDs.Empty();
+	LogAdded.Broadcast();
+}
+
 void UT66RunStateSubsystem::BorrowGold(int32 Amount)
 {
 	if (Amount <= 0) return;
@@ -786,6 +793,35 @@ bool UT66RunStateSubsystem::SellFirstItem()
 
 	CurrentGold += ItemData.SellValueGold;
 	Inventory.RemoveAt(0);
+	RecomputeItemDerivedStats();
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Vendor,ItemID=%s"), ItemData.SellValueGold, *ItemID.ToString()));
+	GoldChanged.Broadcast();
+	InventoryChanged.Broadcast();
+	LogAdded.Broadcast();
+	return true;
+}
+
+bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
+{
+	if (InventoryIndex < 0 || InventoryIndex >= Inventory.Num()) return false;
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (!GI) return false;
+
+	const FName ItemID = Inventory[InventoryIndex];
+	FItemData ItemData;
+	if (!GI->GetItemData(ItemID, ItemData))
+	{
+		Inventory.RemoveAt(InventoryIndex);
+		RecomputeItemDerivedStats();
+		InventoryChanged.Broadcast();
+		AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=unknown,Source=Vendor,ItemID=%s"), *ItemID.ToString()));
+		LogAdded.Broadcast();
+		return true;
+	}
+
+	CurrentGold += ItemData.SellValueGold;
+	Inventory.RemoveAt(InventoryIndex);
 	RecomputeItemDerivedStats();
 	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Vendor,ItemID=%s"), ItemData.SellValueGold, *ItemID.ToString()));
 	GoldChanged.Broadcast();
@@ -1045,7 +1081,13 @@ void UT66RunStateSubsystem::ResetStageTimerToFull()
 
 void UT66RunStateSubsystem::SetBossActive(int32 InMaxHP)
 {
+	SetBossActiveWithId(NAME_None, InMaxHP);
+}
+
+void UT66RunStateSubsystem::SetBossActiveWithId(FName InBossID, int32 InMaxHP)
+{
 	bBossActive = true;
+	ActiveBossID = InBossID;
 	BossMaxHP = FMath::Max(1, InMaxHP);
 	BossCurrentHP = BossMaxHP;
 	BossChanged.Broadcast();
@@ -1054,6 +1096,7 @@ void UT66RunStateSubsystem::SetBossActive(int32 InMaxHP)
 void UT66RunStateSubsystem::SetBossInactive()
 {
 	bBossActive = false;
+	ActiveBossID = NAME_None;
 	BossCurrentHP = 0;
 	BossChanged.Broadcast();
 }
@@ -1069,6 +1112,7 @@ bool UT66RunStateSubsystem::ApplyBossDamage(int32 Damage)
 void UT66RunStateSubsystem::ResetBossState()
 {
 	bBossActive = false;
+	ActiveBossID = NAME_None;
 	BossMaxHP = 100;
 	BossCurrentHP = 0;
 	BossChanged.Broadcast();

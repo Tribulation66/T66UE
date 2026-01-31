@@ -78,7 +78,8 @@ namespace
 
 			if (Stage.IsValid())
 			{
-				Stage->AddPreviewYaw(Delta.X * DegreesPerPixel);
+				// Dota-style orbit: horizontal rotates yaw, vertical tilts camera.
+				Stage->AddPreviewOrbit(Delta.X * DegreesPerPixel, -Delta.Y * DegreesPerPixel);
 			}
 			return FReply::Handled();
 		}
@@ -913,6 +914,10 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 	RefreshHeroList();
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		// Apply saved settings before we trigger the first preview render.
+		SelectedDifficulty = GI->SelectedDifficulty;
+		SelectedBodyType = GI->SelectedHeroBodyType;
+
 		if (!GI->SelectedHeroID.IsNone())
 		{
 			PreviewHero(GI->SelectedHeroID);
@@ -921,8 +926,6 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 		{
 			PreviewHero(AllHeroIDs[0]);
 		}
-		SelectedDifficulty = GI->SelectedDifficulty;
-		SelectedBodyType = GI->SelectedHeroBodyType;
 	}
 }
 
