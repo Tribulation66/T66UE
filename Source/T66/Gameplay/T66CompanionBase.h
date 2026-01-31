@@ -8,6 +8,8 @@
 #include "T66CompanionBase.generated.h"
 
 class UStaticMeshComponent;
+class USceneComponent;
+class USkeletalMeshComponent;
 
 /**
  * Base class for companions. Uses a sphere mesh (placeholder).
@@ -29,6 +31,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> PlaceholderMesh;
+
+	/** Imported skeletal mesh visual (optional; driven by DT_CharacterVisuals). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
 
 	UFUNCTION(BlueprintCallable, Category = "Companion")
 	void InitializeCompanion(const FCompanionData& InData);
@@ -54,10 +60,16 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(VisibleAnywhere, Category = "Visuals")
+	TObjectPtr<USceneComponent> Root;
+
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> PlaceholderMaterial;
 
 	bool bIsPreviewMode = false;
+
+	UPROPERTY(Transient)
+	bool bUsingCharacterVisual = false;
 
 	// Healing (gameplay only)
 	float HealAccumSeconds = 0.f;

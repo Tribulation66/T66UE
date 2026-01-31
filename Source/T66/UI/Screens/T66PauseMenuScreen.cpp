@@ -7,6 +7,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66RunSaveGame.h"
+#include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Widgets/Layout/SBox.h"
@@ -44,6 +45,9 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 
 	auto MakePauseButton = [this](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
 	{
+		const FButtonStyle& Btn = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+		const FTextBlockStyle& Txt = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+
 		return SNew(SBox)
 			.WidthOverride(320.0f)
 			.HeightOverride(50.0f)
@@ -53,12 +57,13 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
+				.ButtonStyle(&Btn)
 				.ButtonColorAndOpacity(BgColor)
+				.ContentPadding(FMargin(18.f, 10.f))
 				[
 					SNew(STextBlock)
 					.Text(Text)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-					.ColorAndOpacity(FLinearColor::White)
+					.TextStyle(&Txt)
 					.Justification(ETextJustify::Center)
 				]
 			];
@@ -66,23 +71,23 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f))
+		.BorderBackgroundColor(FT66Style::Tokens::Scrim)
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
-				.Padding(FMargin(50.0f, 40.0f))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.Padding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 0.0f, 0.0f, 24.0f)
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(TEXT("PAUSED")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 36))
-						.ColorAndOpacity(FLinearColor::White)
+						.Font(FT66Style::Tokens::FontBold(36))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 					[ MakePauseButton(ResumeText, &UT66PauseMenuScreen::HandleResumeClicked, FLinearColor(0.15f, 0.4f, 0.2f, 1.0f)) ]

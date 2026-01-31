@@ -780,6 +780,46 @@ FText UT66LocalizationSubsystem::GetText_ControlUltimate() const
 	}
 }
 
+FText UT66LocalizationSubsystem::GetText_ControlOpenFullMap() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Abrir mapa completo"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("開啟全地圖"));
+	default: return FText::FromString(TEXT("Open Full Map"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlToggleMediaViewer() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Alternar visualizador de mídia"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("切換媒體檢視器"));
+	default: return FText::FromString(TEXT("Toggle Media Viewer"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlToggleGamerMode() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Alternar modo gamer (hitboxes)"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("切換玩家模式（碰撞盒）"));
+	default: return FText::FromString(TEXT("Toggle Gamer Mode (Hitboxes)"));
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlRestartRun() const
+{
+	switch (CurrentLanguage)
+	{
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Reiniciar corrida"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("重新開始"));
+	default: return FText::FromString(TEXT("Restart Run"));
+	}
+}
+
 FText UT66LocalizationSubsystem::GetText_ControlAttackLock() const
 {
 	switch (CurrentLanguage)
@@ -800,53 +840,43 @@ FText UT66LocalizationSubsystem::GetText_ControlAttackUnlock() const
 	}
 }
 
-FText UT66LocalizationSubsystem::GetText_IntenseVisuals() const
+FText UT66LocalizationSubsystem::GetText_PracticeMode() const
 {
 	switch (CurrentLanguage)
 	{
-	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Visuais Intensos"));
-	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("強烈特效"));
-	default: return FText::FromString(TEXT("Intense Visuals"));
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Modo de Prática"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("練習模式"));
+	default: return FText::FromString(TEXT("Practice Mode"));
 	}
 }
 
-FText UT66LocalizationSubsystem::GetText_AutoSprint() const
+FText UT66LocalizationSubsystem::GetText_SubmitLeaderboardAnonymous() const
 {
 	switch (CurrentLanguage)
 	{
-	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Auto Corrida"));
-	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("自動衝刺"));
-	default: return FText::FromString(TEXT("Auto Sprint"));
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Enviar ao Ranking como Anônimo"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("匿名提交排行榜"));
+	default: return FText::FromString(TEXT("Submit Leaderboard as Anonymous"));
 	}
 }
 
-FText UT66LocalizationSubsystem::GetText_SubmitScoresToLeaderboard() const
+FText UT66LocalizationSubsystem::GetText_SpeedRunMode() const
 {
 	switch (CurrentLanguage)
 	{
-	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Enviar Pontuações ao Ranking"));
-	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("提交分數到排行榜"));
-	default: return FText::FromString(TEXT("Submit Scores to Leaderboard"));
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Modo Speedrun"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("競速模式"));
+	default: return FText::FromString(TEXT("Speed Run Mode"));
 	}
 }
 
-FText UT66LocalizationSubsystem::GetText_ScreenShake() const
+FText UT66LocalizationSubsystem::GetText_GoonerMode() const
 {
 	switch (CurrentLanguage)
 	{
-	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Tremor de Tela"));
-	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("畫面震動"));
-	default: return FText::FromString(TEXT("Screen Shake"));
-	}
-}
-
-FText UT66LocalizationSubsystem::GetText_CameraSmoothing() const
-{
-	switch (CurrentLanguage)
-	{
-	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Suavização da Câmera"));
-	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("相機平滑"));
-	default: return FText::FromString(TEXT("Camera Smoothing"));
+	case ET66Language::BrazilianPortuguese: return FText::FromString(TEXT("Modo Gooner"));
+	case ET66Language::ChineseTraditional: return FText::FromString(TEXT("Gooner 模式"));
+	default: return FText::FromString(TEXT("Gooner Mode"));
 	}
 }
 

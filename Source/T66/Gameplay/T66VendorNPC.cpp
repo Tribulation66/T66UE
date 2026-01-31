@@ -2,7 +2,7 @@
 
 #include "Gameplay/T66VendorNPC.h"
 #include "Core/T66RunStateSubsystem.h"
-#include "Kismet/GameplayStatics.h"
+#include "Gameplay/T66PlayerController.h"
 
 AT66VendorNPC::AT66VendorNPC()
 {
@@ -23,5 +23,8 @@ bool AT66VendorNPC::TrySellFirstItem()
 
 bool AT66VendorNPC::Interact(APlayerController* PC)
 {
-	return TrySellFirstItem();
+	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
+	if (!T66PC) return false;
+	T66PC->OpenVendorOverlay();
+	return true;
 }

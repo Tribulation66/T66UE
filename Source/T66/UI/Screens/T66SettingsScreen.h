@@ -78,6 +78,12 @@ private:
 	TSharedPtr<SWidgetSwitcher> ContentSwitcher;
 	TSharedPtr<SWidgetSwitcher> ControlsDeviceSwitcher;
 
+	// ===== Gameplay placeholders (not yet wired) =====
+	bool bPracticeMode = false;
+	bool bSubmitLeaderboardAnonymous = false;
+	bool bSpeedRunMode = false;
+	bool bGoonerMode = false;
+
 	// Tab content builders
 	TSharedRef<SWidget> BuildGameplayTab();
 	TSharedRef<SWidget> BuildGraphicsTab();
@@ -125,6 +131,9 @@ private:
 
 	// ===== Controls UI state =====
 	ET66ControlsDeviceTab CurrentControlsDeviceTab = ET66ControlsDeviceTab::KeyboardMouse;
+	bool bRestoreDefaultsArmed = false;
+	bool bRestoreDefaultsArmedForController = false;
+	FTimerHandle RestoreDefaultsArmTimerHandle;
 
 	struct FControlRowKey
 	{

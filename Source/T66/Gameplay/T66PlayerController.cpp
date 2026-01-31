@@ -17,10 +17,15 @@
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
+#include "UI/T66VendorOverlayWidget.h"
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66CashTruckInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
+#include "Gameplay/T66StageBoostGate.h"
+#include "Gameplay/T66StageBoostGoldInteractable.h"
+#include "Gameplay/T66StageBoostLootInteractable.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66MediaViewerSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
@@ -148,11 +153,79 @@ void AT66PlayerController::SetupInputComponent()
 		// T = toggle HUD panels (inventory + minimap), F = interact (vendor / pickup)
 		InputComponent->BindAction(TEXT("ToggleHUD"), IE_Pressed, this, &AT66PlayerController::HandleToggleHUDPressed);
 		InputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AT66PlayerController::HandleInteractPressed);
+		InputComponent->BindAction(TEXT("Ultimate"), IE_Pressed, this, &AT66PlayerController::HandleUltimatePressed);
+		InputComponent->BindAction(TEXT("ToggleMediaViewer"), IE_Pressed, this, &AT66PlayerController::HandleToggleMediaViewerPressed);
+		InputComponent->BindAction(TEXT("OpenFullMap"), IE_Pressed, this, &AT66PlayerController::HandleOpenFullMapPressed);
+		InputComponent->BindAction(TEXT("ToggleGamerMode"), IE_Pressed, this, &AT66PlayerController::HandleToggleGamerModePressed);
+		InputComponent->BindAction(TEXT("RestartRun"), IE_Pressed, this, &AT66PlayerController::HandleRestartRunPressed);
 
 		// Manual attack lock/unlock (mouse only)
 		InputComponent->BindAction(TEXT("AttackLock"), IE_Pressed, this, &AT66PlayerController::HandleAttackLockPressed);
 		InputComponent->BindAction(TEXT("AttackUnlock"), IE_Pressed, this, &AT66PlayerController::HandleAttackUnlockPressed);
 	}
+}
+
+void AT66PlayerController::HandleUltimatePressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState) return;
+
+	if (!RunState->TryActivateUltimate())
+	{
+		return;
+	}
+
+	// v0 effect: deal flat damage to all active enemies.
+	for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+	{
+		if (AT66EnemyBase* E = *It)
+		{
+			E->TakeDamageFromHero(UT66RunStateSubsystem::UltimateDamage);
+		}
+	}
+}
+
+void AT66PlayerController::HandleToggleMediaViewerPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	if (UT66MediaViewerSubsystem* MV = GI ? GI->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
+	{
+		MV->ToggleMediaViewer();
+		UE_LOG(LogTemp, Log, TEXT("MediaViewer toggled: %s"), MV->IsMediaViewerOpen() ? TEXT("OPEN") : TEXT("CLOSED"));
+	}
+}
+
+void AT66PlayerController::HandleOpenFullMapPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	// TODO: Replace with a dedicated full-screen map overlay screen.
+	UE_LOG(LogTemp, Log, TEXT("OpenFullMap pressed (not implemented yet)."));
+}
+
+void AT66PlayerController::HandleToggleGamerModePressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	// TODO: Implement hitbox + projectile hitbox visualization overlay (Stage 50 unlock in Bible).
+	UE_LOG(LogTemp, Log, TEXT("ToggleGamerMode pressed (not implemented yet)."));
+}
+
+void AT66PlayerController::HandleRestartRunPressed()
+{
+	if (!IsGameplayLevel()) return;
+	// Bible: host-only in co-op. v0: solo only (no co-op yet).
+	if (IsPaused()) SetPause(false);
+	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
 }
 
 bool AT66PlayerController::CanUseCombatMouseInput() const
@@ -161,7 +234,8 @@ bool AT66PlayerController::CanUseCombatMouseInput() const
 	return IsGameplayLevel()
 		&& !(GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
-		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport());
+		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport())
+		&& !(VendorOverlayWidget && VendorOverlayWidget->IsInViewport());
 }
 
 void AT66PlayerController::HandleAttackLockPressed()
@@ -301,6 +375,9 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66TreeOfLifeInteractable* ClosestTree = nullptr;
 	AT66CashTruckInteractable* ClosestTruck = nullptr;
 	AT66WheelSpinInteractable* ClosestWheel = nullptr;
+	AT66StageBoostGate* ClosestBoostGate = nullptr;
+	AT66StageBoostGoldInteractable* ClosestBoostGold = nullptr;
+	AT66StageBoostLootInteractable* ClosestBoostLoot = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
 	float ClosestExitGateDistSq = InteractRadius * InteractRadius;
@@ -312,6 +389,9 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestTreeDistSq = InteractRadius * InteractRadius;
 	float ClosestTruckDistSq = InteractRadius * InteractRadius;
 	float ClosestWheelDistSq = InteractRadius * InteractRadius;
+	float ClosestBoostGateDistSq = InteractRadius * InteractRadius;
+	float ClosestBoostGoldDistSq = InteractRadius * InteractRadius;
+	float ClosestBoostLootDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
 	{
@@ -362,10 +442,28 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestWheelDistSq) { ClosestWheelDistSq = DistSq; ClosestWheel = W; }
 		}
+		else if (AT66StageBoostGate* BG = Cast<AT66StageBoostGate>(A))
+		{
+			if (DistSq < ClosestBoostGateDistSq) { ClosestBoostGateDistSq = DistSq; ClosestBoostGate = BG; }
+		}
+		else if (AT66StageBoostGoldInteractable* BoostGold = Cast<AT66StageBoostGoldInteractable>(A))
+		{
+			if (DistSq < ClosestBoostGoldDistSq) { ClosestBoostGoldDistSq = DistSq; ClosestBoostGold = BoostGold; }
+		}
+		else if (AT66StageBoostLootInteractable* L = Cast<AT66StageBoostLootInteractable>(A))
+		{
+			if (DistSq < ClosestBoostLootDistSq) { ClosestBoostLootDistSq = DistSq; ClosestBoostLoot = L; }
+		}
 	}
 
 	// Interact with Stage Gate (F) advances to next stage and reloads level
 	if (ClosestStageGate && ClosestStageGate->AdvanceToNextStage())
+	{
+		return;
+	}
+
+	// Stage Boost gate (F) enters the chosen difficulty start stage
+	if (ClosestBoostGate && ClosestBoostGate->EnterChosenStage())
 	{
 		return;
 	}
@@ -422,6 +520,16 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		return;
 	}
+
+	// Stage Boost interactables (Gold/Loot)
+	if (ClosestBoostGold && ClosestBoostGold->Interact(this))
+	{
+		return;
+	}
+	if (ClosestBoostLoot && ClosestBoostLoot->Interact(this))
+	{
+		return;
+	}
 	if (ClosestLootBag)
 	{
 		UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
@@ -461,6 +569,25 @@ void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
 	{
 		GamblerOverlayWidget->SetWinGoldAmount(WinGoldAmount);
 		GamblerOverlayWidget->AddToViewport(100); // above HUD
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+	}
+}
+
+void AT66PlayerController::OpenVendorOverlay()
+{
+	if (!IsGameplayLevel()) return;
+
+	if (!VendorOverlayWidget)
+	{
+		VendorOverlayWidget = CreateWidget<UT66VendorOverlayWidget>(this, UT66VendorOverlayWidget::StaticClass());
+	}
+
+	if (VendorOverlayWidget && !VendorOverlayWidget->IsInViewport())
+	{
+		VendorOverlayWidget->AddToViewport(100); // above HUD
 		FInputModeGameAndUI InputMode;
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);

@@ -1,7 +1,10 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66CompanionBase.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -13,8 +16,11 @@ AT66CompanionBase::AT66CompanionBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SetRootComponent(Root);
+
 	PlaceholderMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderMesh"));
-	SetRootComponent(PlaceholderMesh);
+	PlaceholderMesh->SetupAttachment(RootComponent);
 	PlaceholderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
@@ -22,7 +28,14 @@ AT66CompanionBase::AT66CompanionBase()
 	{
 		PlaceholderMesh->SetStaticMesh(SphereFinder.Object);
 		PlaceholderMesh->SetRelativeScale3D(FVector(0.4f)); // Sphere for companion size
+		// Sphere base radius: 50 * 0.4 = 20, so raise by 20 to sit on ground.
+		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 20.f));
 	}
+
+	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
+	SkeletalMesh->SetupAttachment(RootComponent);
+	SkeletalMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SkeletalMesh->SetVisibility(false, true);
 }
 
 void AT66CompanionBase::BeginPlay()
@@ -39,6 +52,20 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData)
 	CompanionID = InData.CompanionID;
 	CompanionData = InData;
 	SetPlaceholderColor(InData.PlaceholderColor);
+
+	// Imported model: map CompanionID -> mesh (DT_CharacterVisuals).
+	bUsingCharacterVisual = false;
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+		{
+			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CompanionID, SkeletalMesh, PlaceholderMesh, true);
+			if (!bUsingCharacterVisual && SkeletalMesh)
+			{
+				SkeletalMesh->SetVisibility(false, true);
+			}
+		}
+	}
 }
 
 void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
@@ -60,10 +87,11 @@ void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
 void AT66CompanionBase::SetPreviewMode(bool bPreview)
 {
 	bIsPreviewMode = bPreview;
-	// Make preview easier to see in UI.
-	if (PlaceholderMesh)
+	// Make preview easier to see in UI (only affects placeholder).
+	if (PlaceholderMesh && PlaceholderMesh->IsVisible())
 	{
 		PlaceholderMesh->SetRelativeScale3D(bIsPreviewMode ? FVector(0.85f) : FVector(0.4f));
+		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, bIsPreviewMode ? (50.f * 0.85f) : 20.f));
 	}
 }
 
@@ -86,16 +114,14 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	FVector TargetLoc = Hero->GetActorLocation() + OffsetWorld;
 
 	FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, FollowSpeed);
-	// Keep companion grounded (sphere bottom on ground).
+	// Keep companion grounded (actor origin = ground contact point; visuals handle their own offsets).
 	{
 		FHitResult Hit;
 		const FVector Start = NewLoc + FVector(0.f, 0.f, 2000.f);
 		const FVector End = NewLoc - FVector(0.f, 0.f, 9000.f);
 		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 		{
-			// Sphere base radius: 50 * 0.4 = 20
-			static constexpr float CompanionRadius = 20.f;
-			NewLoc.Z = Hit.ImpactPoint.Z + CompanionRadius;
+			NewLoc.Z = Hit.ImpactPoint.Z;
 		}
 	}
 	SetActorLocation(NewLoc, false, nullptr, ETeleportType::TeleportPhysics);

@@ -5,6 +5,8 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66LeaderboardSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -20,6 +22,20 @@ UT66RunSummaryScreen::UT66RunSummaryScreen(const FObjectInitializer& ObjectIniti
 {
 	ScreenType = ET66ScreenType::RunSummary;
 	bIsModal = true;
+}
+
+void UT66RunSummaryScreen::OnScreenActivated_Implementation()
+{
+	Super::OnScreenActivated_Implementation();
+
+	// Foundation: submit score at run end if allowed by settings (Practice Mode blocks).
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	if (RunState && LB)
+	{
+		LB->SubmitRunBounty(RunState->GetCurrentScore());
+	}
 }
 
 void UT66RunSummaryScreen::RebuildLogItems()
@@ -45,8 +61,8 @@ TSharedRef<ITableRow> UT66RunSummaryScreen::GenerateLogRow(TSharedPtr<FString> I
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(Line))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-			.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
+			.Font(FT66Style::Tokens::FontRegular(12))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		];
 }
 
@@ -67,7 +83,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	return SNew(SBorder)
 		// Full-screen, opaque (no transparency)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
+		.BorderBackgroundColor(FT66Style::Tokens::Bg)
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -75,8 +91,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.Padding(40.f)
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.f))
-				.Padding(40.f, 30.f)
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.Padding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
@@ -86,8 +102,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(Loc ? Loc->GetText_RunSummaryTitle() : FText::FromString(TEXT("RUN SUMMARY")))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 32))
-						.ColorAndOpacity(FLinearColor::White)
+						.Font(FT66Style::Tokens::FontBold(32))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -97,8 +113,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(Loc ? FText::Format(Loc->GetText_RunSummaryStageReachedBountyFormat(), FText::AsNumber(StageReached), FText::AsNumber(Bounty))
 							: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Bounty: %d"), StageReached, Bounty)))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-						.ColorAndOpacity(FLinearColor::White)
+						.Font(FT66Style::Tokens::FontBold(16))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -110,12 +126,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						.HeightOverride(120.f)
 						[
 							SNew(SBorder)
-							.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.2f, 1.f))
+							.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 							[
 								SNew(STextBlock)
 								.Text(Loc ? Loc->GetText_RunSummaryPreviewPlaceholder() : FText::FromString(TEXT("3D Preview")))
-								.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
-								.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.f))
+								.Font(FT66Style::Tokens::FontRegular(14))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 								.Justification(ETextJustify::Center)
 							]
 						]
@@ -147,12 +163,13 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								.HAlign(HAlign_Center)
 								.VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.2f, 0.5f, 0.2f, 1.f))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
+								.ContentPadding(FMargin(16.f, 10.f))
 								[
 									SNew(STextBlock)
 									.Text(Loc ? Loc->GetText_Restart() : FText::FromString(TEXT("RESTART")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 								]
 							]
 						]
@@ -168,12 +185,13 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								.HAlign(HAlign_Center)
 								.VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+								.ContentPadding(FMargin(16.f, 10.f))
 								[
 									SNew(STextBlock)
 									.Text(Loc ? Loc->GetText_MainMenu() : FText::FromString(TEXT("MAIN MENU")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 								]
 							]
 						]

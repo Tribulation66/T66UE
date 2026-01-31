@@ -6,13 +6,19 @@
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HeroProjectile.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "Sound/SoundBase.h"
+#include "UObject/SoftObjectPath.h"
 
 UT66CombatComponent::UT66CombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	// Optional SFX asset (must be imported to a SoundWave/SoundCue .uasset).
+	ShotSfx = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
 }
 
 void UT66CombatComponent::SetLockedTarget(AActor* InTarget)
@@ -37,6 +43,8 @@ void UT66CombatComponent::BeginPlay()
 	if (CachedRunState)
 	{
 		CachedRunState->InventoryChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+		CachedRunState->HeroProgressChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+		CachedRunState->SurvivalChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 	}
 
 	RecomputeFromRunState();
@@ -73,9 +81,48 @@ void UT66CombatComponent::RecomputeFromRunState()
 	const float DamageMult = CachedRunState->GetItemDamageMultiplier();
 	const float ScaleMult = CachedRunState->GetItemScaleMultiplier();
 
-	EffectiveFireIntervalSeconds = FMath::Clamp(BaseFireIntervalSeconds / FMath::Max(0.01f, AttackSpeedMult), 0.05f, 10.f);
-	EffectiveDamagePerShot = FMath::Clamp(FMath::RoundToInt(static_cast<float>(BaseDamagePerShot) * DamageMult), 1, 999999);
-	ProjectileScaleMultiplier = FMath::Clamp(ScaleMult, 0.1f, 10.f);
+	const float HeroAttackSpeedMult = CachedRunState->GetHeroAttackSpeedMultiplier() * CachedRunState->GetLastStandAttackSpeedMultiplier();
+	const float HeroDamageMult = CachedRunState->GetHeroDamageMultiplier();
+	const float HeroScaleMult = CachedRunState->GetHeroScaleMultiplier();
+
+	const float TotalAttackSpeed = AttackSpeedMult * HeroAttackSpeedMult;
+	const float TotalDamage = DamageMult * HeroDamageMult;
+	const float TotalScale = ScaleMult * HeroScaleMult;
+
+	EffectiveFireIntervalSeconds = FMath::Clamp(BaseFireIntervalSeconds / FMath::Max(0.01f, TotalAttackSpeed), 0.05f, 10.f);
+	EffectiveDamagePerShot = FMath::Clamp(FMath::RoundToInt(static_cast<float>(BaseDamagePerShot) * TotalDamage), 1, 999999);
+	ProjectileScaleMultiplier = FMath::Clamp(TotalScale, 0.1f, 10.f);
+}
+
+void UT66CombatComponent::PlayShotSfx()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Apply user SFX volume even if SoundClass assets aren't set up yet.
+	UGameInstance* GI = World->GetGameInstance();
+	UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	const float MasterVol = PS ? FMath::Clamp(PS->GetMasterVolume(), 0.f, 1.f) : 1.f;
+	const float SfxVol = PS ? FMath::Clamp(PS->GetSfxVolume(), 0.f, 1.f) : 1.f;
+	const float EffectiveSfx = MasterVol * SfxVol;
+	if (EffectiveSfx <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	USoundBase* Sound = ShotSfx.LoadSynchronous();
+	if (!Sound)
+	{
+		if (!bShotSfxWarnedMissing)
+		{
+			bShotSfxWarnedMissing = true;
+			UE_LOG(LogTemp, Warning, TEXT("Shot SFX not found. Import your Shot audio into UE so '/Game/Audio/SFX/Shot' exists (SoundWave/SoundCue)."));
+		}
+		return;
+	}
+
+	// Auto attack is effectively UI-ish for now; play 2D so it always reads clearly.
+	UGameplayStatics::PlaySound2D(World, Sound, EffectiveSfx);
 }
 
 void UT66CombatComponent::TryFire()
@@ -98,6 +145,24 @@ void UT66CombatComponent::TryFire()
 	FVector MyLoc = OwnerActor->GetActorLocation();
 	const float RangeSq = AttackRange * AttackRange;
 
+	auto SpawnProjectile = [&](const FVector& TargetLoc) -> bool
+	{
+		FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = OwnerActor;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		if (!Proj)
+		{
+			return false;
+		}
+		Proj->Damage = EffectiveDamagePerShot;
+		Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
+		Proj->SetTargetLocation(TargetLoc);
+		PlayShotSfx();
+		return true;
+	};
+
 	// If we have a valid locked target in range and alive, prefer it.
 	if (AActor* Locked = LockedTarget.Get())
 	{
@@ -109,17 +174,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (E->CurrentHP > 0)
 				{
-					FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
-					FActorSpawnParameters SpawnParams;
-					SpawnParams.Owner = OwnerActor;
-					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-					AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-					if (Proj)
-					{
-						Proj->Damage = EffectiveDamagePerShot;
-						Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
-						Proj->SetTargetLocation(Locked->GetActorLocation());
-					}
+					(void)SpawnProjectile(Locked->GetActorLocation());
 					return;
 				}
 				// Dead: clear lock.
@@ -129,17 +184,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (B->IsAwakened() && B->IsAlive())
 				{
-					FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
-					FActorSpawnParameters SpawnParams;
-					SpawnParams.Owner = OwnerActor;
-					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-					AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-					if (Proj)
-					{
-						Proj->Damage = EffectiveDamagePerShot;
-						Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
-						Proj->SetTargetLocation(Locked->GetActorLocation());
-					}
+					(void)SpawnProjectile(Locked->GetActorLocation());
 					return;
 				}
 				ClearLockedTarget();
@@ -148,17 +193,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (GB->CurrentHP > 0)
 				{
-					FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
-					FActorSpawnParameters SpawnParams;
-					SpawnParams.Owner = OwnerActor;
-					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-					AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-					if (Proj)
-					{
-						Proj->Damage = EffectiveDamagePerShot;
-						Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
-						Proj->SetTargetLocation(Locked->GetActorLocation());
-					}
+					(void)SpawnProjectile(Locked->GetActorLocation());
 					return;
 				}
 				ClearLockedTarget();
@@ -214,16 +249,6 @@ void UT66CombatComponent::TryFire()
 		: (ClosestBoss ? Cast<AActor>(ClosestBoss) : Cast<AActor>(ClosestEnemy));
 	if (Target)
 	{
-		FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = OwnerActor;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-		if (Proj)
-		{
-			Proj->Damage = EffectiveDamagePerShot;
-			Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
-			Proj->SetTargetLocation(Target->GetActorLocation());
-		}
+		(void)SpawnProjectile(Target->GetActorLocation());
 	}
 }

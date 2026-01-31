@@ -26,6 +26,11 @@
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66CashTruckInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
+#include "Gameplay/T66StageBoostGate.h"
+#include "Gameplay/T66StageBoostGoldInteractable.h"
+#include "Gameplay/T66StageBoostLootInteractable.h"
+#include "Gameplay/T66StageEffectTile.h"
+#include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -110,10 +115,23 @@ void AT66GameMode::BeginPlay()
 		return;
 	}
 
+	UT66GameInstance* GIAsT66 = GetT66GameInstance();
+	const bool bStageBoost = (GIAsT66 && GIAsT66->bStageBoostPending);
+
+	// Stage Boost: spawn a separate platform and skip normal stage content.
+	if (bStageBoost)
+	{
+		SpawnStageBoostPlatformAndInteractables();
+		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - StageBoost"));
+		return;
+	}
+
 	// Normal stage: houses + waves + miasma + boss + trickster/cowardice gate
 	SpawnCornerHousesAndNPCs();
 	SpawnTricksterAndCowardiceGate();
 	SpawnWorldInteractablesForStage();
+	SpawnStageEffectTilesForStage();
+	SpawnTutorialIfNeeded();
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -125,6 +143,140 @@ void AT66GameMode::BeginPlay()
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup complete, hero spawning handled by SpawnDefaultPawnFor"));
 }
 
+void AT66GameMode::SpawnTutorialIfNeeded()
+{
+	if (IsColiseumLevel()) return;
+
+	UGameInstance* GI = GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!RunState || !T66GI) return;
+	if (T66GI->bStageBoostPending) return;
+
+	// v0 per your request: stage 1 always shows tutorial prompts.
+	if (RunState->GetCurrentStage() != 1) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	FActorSpawnParameters P;
+	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AT66TutorialManager* M = World->SpawnActor<AT66TutorialManager>(AT66TutorialManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, P);
+	if (M)
+	{
+		SpawnedSetupActors.Add(M);
+	}
+}
+
+void AT66GameMode::SpawnStageEffectTilesForStage()
+{
+	if (IsColiseumLevel()) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UGameInstance* GI = GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!RunState || !T66GI) return;
+	if (T66GI->bStageBoostPending) return;
+
+	const int32 StageNum = RunState->GetCurrentStage();
+
+	// Stage data (optional); fall back to deterministic mapping.
+	FStageData StageData;
+	const bool bHasDT = T66GI->GetStageData(StageNum, StageData);
+	ET66StageEffectType EffectType = bHasDT ? StageData.StageEffectType : ET66StageEffectType::None;
+	FLinearColor EffectColor = bHasDT ? StageData.StageEffectColor : FLinearColor::White;
+	float Strength = bHasDT ? StageData.StageEffectStrength : 1.f;
+
+	if (EffectType == ET66StageEffectType::None)
+	{
+		const int32 Mod = StageNum % 3;
+		EffectType = (Mod == 1) ? ET66StageEffectType::Speed : (Mod == 2) ? ET66StageEffectType::Launch : ET66StageEffectType::Slide;
+		// Unique-ish color per stage (HSV wheel).
+		const float Hue = FMath::Fmod(static_cast<float>(StageNum) * 37.f, 360.f);
+		EffectColor = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 210, 240);
+		EffectColor.A = 1.f;
+		Strength = 1.f;
+	}
+
+	FRandomStream Rng(StageNum * 971 + 17);
+
+	// Main map square bounds (centered at 0,0). Keep some margin from edges.
+	static constexpr float MainHalfExtent = 5800.f;
+	static constexpr float SpawnZ = 40.f;
+	static constexpr float MinDistBetweenTiles = 420.f;
+	static constexpr float SafeBubbleMargin = 350.f;
+	static constexpr int32 TileCount = 12;
+
+	TArray<FVector> UsedLocs;
+
+	auto IsGoodLoc = [&](const FVector& L) -> bool
+	{
+		for (const FVector& U : UsedLocs)
+		{
+			if (FVector::DistSquared2D(L, U) < (MinDistBetweenTiles * MinDistBetweenTiles))
+			{
+				return false;
+			}
+		}
+		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+		{
+			const AT66HouseNPCBase* NPC = *It;
+			if (!NPC) continue;
+			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
+			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R))
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+
+	auto FindSpawnLoc = [&]() -> FVector
+	{
+		for (int32 Try = 0; Try < 80; ++Try)
+		{
+			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+			FVector Loc(X, Y, SpawnZ);
+
+			// Trace to ground.
+			FHitResult Hit;
+			const FVector Start = Loc + FVector(0.f, 0.f, 2000.f);
+			const FVector End = Loc - FVector(0.f, 0.f, 6000.f);
+			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+			{
+				Loc = Hit.ImpactPoint;
+			}
+
+			if (IsGoodLoc(Loc))
+			{
+				return Loc;
+			}
+		}
+		return FVector(0.f, 0.f, SpawnZ);
+	};
+
+	FActorSpawnParameters P;
+	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (int32 i = 0; i < TileCount; ++i)
+	{
+		const FVector L = FindSpawnLoc();
+		AT66StageEffectTile* Tile = World->SpawnActor<AT66StageEffectTile>(AT66StageEffectTile::StaticClass(), L, FRotator::ZeroRotator, P);
+		if (Tile)
+		{
+			Tile->EffectType = EffectType;
+			Tile->EffectColor = EffectColor;
+			Tile->Strength = Strength;
+			Tile->ApplyVisuals();
+			UsedLocs.Add(L);
+		}
+	}
+}
+
 void AT66GameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -133,6 +285,8 @@ void AT66GameMode::Tick(float DeltaTime)
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
 			RunState->TickStageTimer(DeltaTime);
+			RunState->TickSpeedRunTimer(DeltaTime);
+			RunState->TickHeroTimers(DeltaTime);
 
 			// Robust: if the timer is already active (even if we missed the delegate),
 			// try spawning the LoanShark when pending.
@@ -483,8 +637,7 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 		const FVector End = Companion->GetActorLocation() - FVector(0.f, 0.f, 9000.f);
 		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 		{
-			static constexpr float CompanionRadius = 20.f; // sphere radius at scale 0.4
-			Companion->SetActorLocation(Hit.ImpactPoint + FVector(0.f, 0.f, CompanionRadius), false, nullptr, ETeleportType::TeleportPhysics);
+			Companion->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
 		}
 		UE_LOG(LogTemp, Log, TEXT("Spawned companion: %s"), *CompanionData.DisplayName.ToString());
 	}
@@ -666,11 +819,13 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const int32 CountWheels = Rng.RandRange(2, 5);
 	const int32 CountTotems = Rng.RandRange(2, 5);
 
+	const int32 LuckStat = RunState->GetLuckStat();
+
 	for (int32 i = 0; i < CountTrees; ++i)
 	{
 		if (AT66TreeOfLifeInteractable* Tree = Cast<AT66TreeOfLifeInteractable>(SpawnOne(AT66TreeOfLifeInteractable::StaticClass())))
 		{
-			Tree->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
+			Tree->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
 		}
 	}
 	for (int32 i = 0; i < CountTrucks; ++i)
@@ -678,21 +833,21 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		if (AT66CashTruckInteractable* Truck = Cast<AT66CashTruckInteractable>(SpawnOne(AT66CashTruckInteractable::StaticClass())))
 		{
 			Truck->bIsMimic = (Rng.FRand() < 0.20f);
-			Truck->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
+			Truck->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
 		}
 	}
 	for (int32 i = 0; i < CountWheels; ++i)
 	{
 		if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnOne(AT66WheelSpinInteractable::StaticClass())))
 		{
-			Wheel->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
+			Wheel->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
 		}
 	}
 	for (int32 i = 0; i < CountTotems; ++i)
 	{
 		if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnOne(AT66DifficultyTotem::StaticClass())))
 		{
-			Totem->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
+			Totem->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
 		}
 	}
 }
@@ -731,6 +886,95 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+}
+
+void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!T66GI || !RunState) return;
+
+	RunState->SetInStageBoost(true);
+
+	// Difficulty index: Easy=0, Medium=1, Hard=2, ...
+	const int32 DiffIndex = FMath::Max(0, static_cast<int32>(T66GI->SelectedDifficulty));
+	const int32 StartStage = FMath::Clamp(1 + (DiffIndex * 10), 1, 66);
+
+	// Tuned v0 amounts (increase with difficulty step).
+	const int32 GoldAmount = 200 * DiffIndex;          // Medium=200, Hard=400, ...
+	const int32 LootBags = 2 + (DiffIndex * 2);        // Medium=4, Hard=6, ...
+
+	// Place boost platform in the Start Area, but offset so it's clearly separate.
+	const FVector PlatformCenter(-10000.f, 5200.f, -50.f);
+
+	// Platform floor
+	{
+		UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+		if (CubeMesh)
+		{
+			const FName Tag(TEXT("T66_Floor_Boost"));
+			bool bHas = false;
+			for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+			{
+				if (It->Tags.Contains(Tag)) { bHas = true; break; }
+			}
+			if (!bHas)
+			{
+				FActorSpawnParameters P;
+				P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), PlatformCenter, FRotator::ZeroRotator, P);
+				if (Floor && Floor->GetStaticMeshComponent())
+				{
+					Floor->Tags.Add(Tag);
+					Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+					Floor->SetActorScale3D(FVector(22.f, 22.f, 1.f));
+					if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+					{
+						Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
+					}
+				}
+			}
+		}
+	}
+
+	// Spawn interactables
+	{
+		FActorSpawnParameters P;
+		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AT66StageBoostGoldInteractable* Gold = World->SpawnActor<AT66StageBoostGoldInteractable>(
+			AT66StageBoostGoldInteractable::StaticClass(),
+			PlatformCenter + FVector(-260.f, -120.f, 120.f),
+			FRotator::ZeroRotator,
+			P);
+		if (Gold)
+		{
+			Gold->GoldAmount = GoldAmount;
+		}
+
+		AT66StageBoostLootInteractable* Loot = World->SpawnActor<AT66StageBoostLootInteractable>(
+			AT66StageBoostLootInteractable::StaticClass(),
+			PlatformCenter + FVector(-260.f, 220.f, 120.f),
+			FRotator::ZeroRotator,
+			P);
+		if (Loot)
+		{
+			Loot->LootBagCount = LootBags;
+		}
+
+		AT66StageBoostGate* Gate = World->SpawnActor<AT66StageBoostGate>(
+			AT66StageBoostGate::StaticClass(),
+			PlatformCenter + FVector(520.f, 0.f, 200.f),
+			FRotator::ZeroRotator,
+			P);
+		if (Gate)
+		{
+			Gate->TargetStage = StartStage;
+		}
+	}
 }
 
 void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
@@ -847,8 +1091,177 @@ void AT66GameMode::EnsureLevelSetup()
 	
 	SpawnFloorIfNeeded();
 	SpawnBoundaryWallsIfNeeded();
+	SpawnPlatformEdgeWallsIfNeeded();
+	SpawnStartAreaExitWallsIfNeeded();
 	SpawnLightingIfNeeded();
 	SpawnPlayerStartIfNeeded();
+}
+
+void AT66GameMode::SpawnPlatformEdgeWallsIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (!CubeMesh) return;
+
+	auto HasTag = [&](FName Tag) -> bool
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			if (It->Tags.Contains(Tag))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// Add local walls around the narrower Start/Boss squares and the connector strips,
+	// so you can't fall off the sides before reaching the global boundary walls.
+	static constexpr float FloorTopZ = 0.f;
+	static constexpr float WallHeight = 1500.f;
+	static constexpr float WallThickness = 200.f;
+	const float WallZ = FloorTopZ + (WallHeight * 0.5f);
+
+	static constexpr float StartBossHalfY = 3000.f;   // start/boss floors are 6000 wide
+	static constexpr float StartBossHalfX = 3000.f;   // start/boss floors are 6000 long
+	static constexpr float ConnHalfY = 1500.f;        // connector floors are 3000 wide
+	static constexpr float ConnHalfX = 1000.f;        // connector floors are 2000 long
+
+	const float Thick = WallThickness / 100.f;
+	const float Tall = WallHeight / 100.f;
+
+	struct FWallSpec
+	{
+		FName Tag;
+		FVector Location;
+		FVector Scale;
+		FLinearColor Color;
+	};
+
+	auto MakeNSWallsForPlatform = [&](const TCHAR* Prefix, const FVector& Center, float HalfX, float HalfY, const FLinearColor& Color)
+	{
+		const float LongX = (HalfX * 2.f + WallThickness) / 100.f;
+		const float Y = HalfY + (WallThickness * 0.5f);
+		return TArray<FWallSpec>{
+			{ FName(*FString::Printf(TEXT("%s_N"), Prefix)), FVector(Center.X, Center.Y + Y, WallZ), FVector(LongX, Thick, Tall), Color },
+			{ FName(*FString::Printf(TEXT("%s_S"), Prefix)), FVector(Center.X, Center.Y - Y, WallZ), FVector(LongX, Thick, Tall), Color },
+		};
+	};
+
+	TArray<FWallSpec> Walls;
+	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_StartEdge"), FVector(-10000.f, 0.f, 0.f), StartBossHalfX, StartBossHalfY, FLinearColor(0.08f,0.08f,0.10f,1.f)));
+	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_BossEdge"),  FVector( 10000.f, 0.f, 0.f), StartBossHalfX, StartBossHalfY, FLinearColor(0.08f,0.08f,0.10f,1.f)));
+	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_ConnStart"), FVector( -6000.f, 0.f, 0.f), ConnHalfX,     ConnHalfY,     FLinearColor(0.07f,0.07f,0.09f,1.f)));
+	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_ConnBoss"),  FVector(  6000.f, 0.f, 0.f), ConnHalfX,     ConnHalfY,     FLinearColor(0.07f,0.07f,0.09f,1.f)));
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (const FWallSpec& Spec : Walls)
+	{
+		if (HasTag(Spec.Tag)) continue;
+		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
+		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
+
+		Wall->Tags.Add(Spec.Tag);
+		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+		Wall->SetActorScale3D(Spec.Scale);
+		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+		{
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
+		}
+		SpawnedSetupActors.Add(Wall);
+	}
+}
+
+void AT66GameMode::SpawnStartAreaExitWallsIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (!CubeMesh) return;
+
+	auto HasTag = [&](FName Tag) -> bool
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			if (It->Tags.Contains(Tag))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// Build a simple corridor so you can only leave Start Area through the Start Gate pillars.
+	// Layout: Start square ends at X=-7000. Main square begins at X=-7000.
+	// We block the X=-7000 boundary except a small opening near Y=0, then funnel to X=-6000.
+	static constexpr float FloorTopZ = 0.f;
+	static constexpr float WallHeight = 1500.f;
+	static constexpr float WallThickness = 200.f;
+	static constexpr float WallZ = FloorTopZ + (WallHeight * 0.5f);
+
+	static constexpr float StartBoundaryX = -7000.f;
+	static constexpr float GateX = -6000.f;
+	static constexpr float StartHalfY = 3000.f;
+	static constexpr float GateHalfY = 1500.f; // connector width
+	static constexpr float GapHalfY = 160.f;   // opening to pass through
+
+	const float Thick = WallThickness / 100.f;
+	const float Tall = WallHeight / 100.f;
+
+	struct FWallSpec
+	{
+		FName Tag;
+		FVector Location;
+		FVector Scale;
+		FLinearColor Color;
+	};
+
+	const float SegStartCenterY = (StartHalfY + GapHalfY) * 0.5f;
+	const float SegStartScaleY = (StartHalfY - GapHalfY) / 100.f;
+
+	const float SegGateCenterY = (GateHalfY + GapHalfY) * 0.5f;
+	const float SegGateScaleY = (GateHalfY - GapHalfY) / 100.f;
+
+	const float CorridorY = GapHalfY + (WallThickness * 0.5f);
+	const float CorridorLenX = (GateX - StartBoundaryX);
+	const float CorridorScaleX = CorridorLenX / 100.f;
+
+	const TArray<FWallSpec> Walls = {
+		// Block Start->Main boundary at X=-7000, leaving opening around Y=0
+		{ FName("T66_Wall_StartExit_N1"), FVector(StartBoundaryX,  SegStartCenterY, WallZ), FVector(Thick, SegStartScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
+		{ FName("T66_Wall_StartExit_S1"), FVector(StartBoundaryX, -SegStartCenterY, WallZ), FVector(Thick, SegStartScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
+
+		// Corridor side walls from X=-7000 to X=-6000
+		{ FName("T66_Wall_StartExit_SideN"), FVector(StartBoundaryX + (CorridorLenX * 0.5f),  CorridorY, WallZ), FVector(CorridorScaleX, Thick, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
+		{ FName("T66_Wall_StartExit_SideS"), FVector(StartBoundaryX + (CorridorLenX * 0.5f), -CorridorY, WallZ), FVector(CorridorScaleX, Thick, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
+
+		// Block corridor->main at X=-6000, leaving opening where pillars are
+		{ FName("T66_Wall_StartExit_N2"), FVector(GateX,  SegGateCenterY, WallZ), FVector(Thick, SegGateScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
+		{ FName("T66_Wall_StartExit_S2"), FVector(GateX, -SegGateCenterY, WallZ), FVector(Thick, SegGateScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
+	};
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (const FWallSpec& Spec : Walls)
+	{
+		if (HasTag(Spec.Tag)) continue;
+		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
+		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
+		Wall->Tags.Add(Spec.Tag);
+		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+		Wall->SetActorScale3D(Spec.Scale);
+		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+		{
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
+		}
+		SpawnedSetupActors.Add(Wall);
+	}
 }
 
 void AT66GameMode::SpawnFloorIfNeeded()
@@ -1183,6 +1596,15 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	{
 		SpawnLocation = FVector(-10000.f, 0.f, 200.f);
 		SpawnRotation = FRotator::ZeroRotator;
+
+		// Difficulty Boost: spawn on the Boost platform instead of the normal Start Area.
+		if (UT66GameInstance* T66GI = GetT66GameInstance())
+		{
+			if (T66GI->bStageBoostPending)
+			{
+				SpawnLocation = FVector(-10000.f, 5200.f, 200.f);
+			}
+		}
 	}
 
 	// Spawn parameters

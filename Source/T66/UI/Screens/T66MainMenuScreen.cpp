@@ -3,10 +3,12 @@
 #include "UI/Screens/T66MainMenuScreen.h"
 #include "UI/T66UIManager.h"
 #include "UI/Components/T66LeaderboardPanel.h"
+#include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/Style/T66Style.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
@@ -34,6 +36,8 @@ UT66LocalizationSubsystem* UT66MainMenuScreen::GetLocSubsystem() const
 TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 
 	// Get localized text
 	FText TitleText = Loc ? Loc->GetText_GameTitle() : FText::FromString(TEXT("TRIBULATION 66"));
@@ -44,27 +48,31 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	FText QuitText = Loc ? Loc->GetText_Quit() : FText::FromString(TEXT("QUIT"));
 
 	// Button style lambda
-	auto MakeMenuButton = [this](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FLinearColor(0.1f, 0.1f, 0.15f, 1.0f)) -> TSharedRef<SWidget>
+	auto MakeMenuButton = [this](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
 	{
+		const ISlateStyle& Style = FT66Style::Get();
+		const bool bNeutral = BgColor.Equals(FT66Style::Tokens::Panel2, 0.0001f);
+		const FButtonStyle& Btn = Style.GetWidgetStyle<FButtonStyle>(bNeutral ? "T66.Button.Neutral" : "T66.Button.Primary");
+		const FTextBlockStyle& Txt = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+
 		return SNew(SBox)
 			.WidthOverride(280.0f)
 			.HeightOverride(55.0f)
-			.Padding(FMargin(0.0f, 4.0f))
+			.Padding(FMargin(0.0f, FT66Style::Tokens::Space2 * 0.5f))
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(BgColor)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
 				.Padding(FMargin(0.0f))
 				[
 					SNew(SButton)
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
 					.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
-					.ButtonColorAndOpacity(BgColor)
+					.ButtonStyle(&Btn)
 					[
 						SNew(STextBlock)
 						.Text(Text)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&Txt)
 						.Justification(ETextJustify::Center)
 					]
 				]
@@ -72,7 +80,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	};
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.0f))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
 		[
 			SNew(SOverlay)
 			// Main two-panel layout
@@ -93,8 +101,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 52))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Title"))
 					]
 					// Button stack
 					+ SVerticalBox::Slot()
@@ -104,11 +111,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							MakeMenuButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, FLinearColor(0.2f, 0.4f, 0.8f, 1.0f))
+							MakeMenuButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, FT66Style::Tokens::Accent2)
 						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, FLinearColor(0.15f, 0.35f, 0.7f, 1.0f))
+							MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, FT66Style::Tokens::Accent2 * 0.85f)
 						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
@@ -129,6 +136,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				[
 					SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
 					.LocalizationSubsystem(Loc)
+					.LeaderboardSubsystem(LB)
 				]
 			]
 			// Quit button (top-right)
@@ -145,12 +153,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
 					.OnClicked(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleQuitClicked))
-					.ButtonColorAndOpacity(FLinearColor(0.5f, 0.15f, 0.15f, 1.0f))
+					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
 					[
 						SNew(STextBlock)
 						.Text(QuitText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 					]
 				]
 			]

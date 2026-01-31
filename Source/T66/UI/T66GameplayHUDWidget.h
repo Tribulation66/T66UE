@@ -7,9 +7,12 @@
 #include "T66GameplayHUDWidget.generated.h"
 
 class UT66RunStateSubsystem;
+class UT66PlayerSettingsSubsystem;
 class STextBlock;
 class SBorder;
 class SBox;
+class ST66RingWidget;
+class ST66DotWidget;
 class AT66LootBagPickup;
 
 /**
@@ -41,16 +44,28 @@ protected:
 	TSharedPtr<STextBlock> ScoreText;
 	TSharedPtr<STextBlock> StageText;
 	TSharedPtr<STextBlock> TimerText;
+	TSharedPtr<STextBlock> SpeedRunText;
+	TSharedPtr<STextBlock> SpeedRunTargetText;
 	TSharedPtr<SBox> BossBarContainerBox;
 	TSharedPtr<SBox> BossBarFillBox;
 	TSharedPtr<STextBlock> BossBarText;
 	TSharedPtr<SBox> LootPromptBox;
 	TSharedPtr<SBorder> LootPromptBorder;
 	TSharedPtr<STextBlock> LootPromptText;
+	TSharedPtr<SBox> SurvivalBarFillBox;
+	TSharedPtr<SBorder> SurvivalBarFillBorder;
+	TSharedPtr<ST66RingWidget> LevelRingWidget;
+	TSharedPtr<STextBlock> LevelText;
+	TSharedPtr<SBorder> UltimateBorder;
+	TSharedPtr<STextBlock> UltimateText;
+	TArray<TSharedPtr<ST66DotWidget>> StatusEffectDots;
+	TArray<TSharedPtr<SBox>> StatusEffectDotBoxes;
+	TSharedPtr<SBorder> CurseOverlayBorder;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
 	TArray<TSharedPtr<SBorder>> IdolSlotBorders;
 	TSharedPtr<SBorder> PortraitBorder;
+	TArray<TSharedPtr<STextBlock>> StatLineTexts;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TSharedPtr<SBox> InventoryPanelBox;
 	TSharedPtr<SBox> MinimapPanelBox;

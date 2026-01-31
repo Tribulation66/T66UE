@@ -16,6 +16,36 @@ ET66Rarity FT66RarityUtil::RollDefaultRarity(FRandomStream& Rng)
 	return ET66Rarity::White;
 }
 
+ET66Rarity FT66RarityUtil::RollRarityWithLuck(FRandomStream& Rng, int32 LuckStat)
+{
+	// v0: LuckStat increases odds of higher tiers by reweighting the base distribution.
+	// LuckStat=1 => exactly the base distribution.
+	const int32 L = FMath::Max(1, LuckStat);
+	const float LuckBonus = FMath::Clamp(static_cast<float>(L - 1) * 0.02f, 0.f, 2.0f); // up to +200%
+	const float F = 1.f + LuckBonus;
+
+	// Base weights (same as RollDefaultRarity):
+	float WBlack = 0.70f;
+	float WRed = 0.20f;
+	float WYellow = 0.09f;
+	float WWhite = 0.01f;
+
+	// Luck pushes weight upward (rarer tiers get higher powers).
+	WRed *= F;
+	WYellow *= (F * F);
+	WWhite *= (F * F * F);
+
+	const float Sum = WBlack + WRed + WYellow + WWhite;
+	const float Roll = Rng.FRand() * Sum;
+	float Acc = WBlack;
+	if (Roll < Acc) return ET66Rarity::Black;
+	Acc += WRed;
+	if (Roll < Acc) return ET66Rarity::Red;
+	Acc += WYellow;
+	if (Roll < Acc) return ET66Rarity::Yellow;
+	return ET66Rarity::White;
+}
+
 FLinearColor FT66RarityUtil::GetRarityColor(ET66Rarity R)
 {
 	switch (R)

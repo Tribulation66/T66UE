@@ -19,6 +19,7 @@ class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class AT66EnemyBase;
 class UT66IdolAltarOverlayWidget;
+class UT66VendorOverlayWidget;
 class AT66LootBagPickup;
 
 /**
@@ -81,6 +82,9 @@ public:
 	/** Open the Gambler overlay (non-pausing). */
 	void OpenGamblerOverlay(int32 WinGoldAmount);
 
+	/** Open the Vendor overlay (non-pausing). */
+	void OpenVendorOverlay();
+
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
 
@@ -123,6 +127,21 @@ protected:
 	/** Interact (F): vendor sell or pickup collect */
 	void HandleInteractPressed();
 
+	/** Ultimate (R): AoE damage with cooldown */
+	void HandleUltimatePressed();
+
+	/** Toggle Media Viewer panel (placeholder). */
+	void HandleToggleMediaViewerPressed();
+
+	/** Open full map (placeholder). */
+	void HandleOpenFullMapPressed();
+
+	/** Toggle Gamer Mode hitbox overlay (placeholder). */
+	void HandleToggleGamerModePressed();
+
+	/** Restart run (instant) (placeholder, host-only later). */
+	void HandleRestartRunPressed();
+
 	/** Manual attack lock (LMB) / unlock (RMB) */
 	void HandleAttackLockPressed();
 	void HandleAttackUnlockPressed();
@@ -140,6 +159,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
+
+	UPROPERTY()
+	TObjectPtr<UT66VendorOverlayWidget> VendorOverlayWidget;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
 

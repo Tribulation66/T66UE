@@ -11,6 +11,8 @@
 
 AT66LeprechaunEnemy::AT66LeprechaunEnemy()
 {
+	CharacterVisualID = FName(TEXT("Leprechaun"));
+
 	// Distinct look: sphere above a cube.
 	if (VisualMesh)
 	{
@@ -41,6 +43,17 @@ AT66LeprechaunEnemy::AT66LeprechaunEnemy()
 
 	ApplyRarityVisuals();
 	RecomputeGoldFromRarity();
+}
+
+void AT66LeprechaunEnemy::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// If an imported skeletal mesh is in use, hide placeholder parts.
+	if (bUsingCharacterVisual)
+	{
+		if (HeadSphere) HeadSphere->SetVisibility(false, true);
+	}
 }
 
 void AT66LeprechaunEnemy::SetRarity(ET66Rarity InRarity)

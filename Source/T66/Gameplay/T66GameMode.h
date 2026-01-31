@@ -18,6 +18,11 @@ class AT66TricksterNPC;
 class AT66ColiseumExitGate;
 class AT66BossGate;
 class AT66IdolAltar;
+class AT66StageBoostGate;
+class AT66StageBoostGoldInteractable;
+class AT66StageBoostLootInteractable;
+class AT66StageEffectTile;
+class AT66TutorialManager;
 class UT66GameInstance;
 class ADirectionalLight;
 class ASkyLight;
@@ -94,6 +99,8 @@ protected:
 
 	/** Spawn boundary walls so the player can't fall off. */
 	void SpawnBoundaryWallsIfNeeded();
+	void SpawnStartAreaExitWallsIfNeeded();
+	void SpawnPlatformEdgeWallsIfNeeded();
 
 	/** Spawn lighting if none exists */
 	void SpawnLightingIfNeeded();
@@ -114,6 +121,9 @@ protected:
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
 	void SpawnWorldInteractablesForStage();
+	void SpawnStageBoostPlatformAndInteractables();
+	void SpawnStageEffectTilesForStage();
+	void SpawnTutorialIfNeeded();
 
 	/** Spawn boss for current stage (dormant until player approaches). */
 	void SpawnBossForCurrentStage();

@@ -11,6 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerInput.h"
 #include "GameFramework/GameUserSettings.h"
+#include "UI/Style/T66Style.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -62,12 +63,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 				.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleTabClicked, Tab))
 				.ButtonColorAndOpacity_Lambda([this, Tab]() -> FSlateColor {
 					bool bIsSelected = (CurrentTab == Tab);
-					return bIsSelected ? FLinearColor(0.25f, 0.4f, 0.7f, 1.0f) : FLinearColor(0.12f, 0.12f, 0.18f, 1.0f);
+					return bIsSelected ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
 				})
+				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+				.ContentPadding(FMargin(12.f, 8.f))
 				[
 					SNew(STextBlock).Text(Text)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
-					.ColorAndOpacity(FLinearColor::White)
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
 				]
 			];
 	};
@@ -76,7 +78,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f))
+		.BorderBackgroundColor(FT66Style::Tokens::Scrim)
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -85,8 +87,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 			.HeightOverride(700.0f)
 			[
 				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.1f, 1.0f))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 				.Padding(FMargin(0.0f))
 				[
 					SNew(SVerticalBox)
@@ -95,7 +96,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 					.AutoHeight()
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.14f, 1.0f))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 						.Padding(FMargin(15.0f, 10.0f))
 						[
 							SNew(SHorizontalBox)
@@ -175,7 +176,7 @@ FReply UT66SettingsScreen::NativeOnKeyDown(const FGeometry& InGeometry, const FK
 	if (bWaitingForRebind)
 	{
 		const FKey K = InKeyEvent.GetKey();
-		if (K == EKeys::Escape)
+		if (K == EKeys::Escape || K == EKeys::Gamepad_FaceButton_Right)
 		{
 			bWaitingForRebind = false;
 			if (RebindStatusText.IsValid())
@@ -192,7 +193,9 @@ FReply UT66SettingsScreen::NativeOnKeyDown(const FGeometry& InGeometry, const FK
 	}
 
 	// Esc closes settings (Bible: no global cancel button).
-	if (InKeyEvent.GetKey() == EKeys::Escape)
+	if (InKeyEvent.GetKey() == EKeys::Escape
+		|| InKeyEvent.GetKey() == EKeys::Gamepad_FaceButton_Right
+		|| InKeyEvent.GetKey() == EKeys::Gamepad_Special_Left)
 	{
 		HandleCloseClicked();
 		return FReply::Handled();
@@ -325,6 +328,7 @@ void UT66SettingsScreen::ApplyRebindToInputSettings(const FKey& NewKey)
 	}
 
 	// Conflict overwrite: remove any existing mapping using NewKey on the same device class.
+	FString Overwrote;
 	{
 		const TArray<FInputActionKeyMapping> ActionMappings = Settings->GetActionMappings();
 		for (const FInputActionKeyMapping& M : ActionMappings)
@@ -332,6 +336,10 @@ void UT66SettingsScreen::ApplyRebindToInputSettings(const FKey& NewKey)
 			const bool bSameDevice = Pending.bIsController ? IsControllerKey(M.Key) : IsKeyboardMouseKey(M.Key);
 			if (bSameDevice && M.Key == NewKey && (M.ActionName != Pending.Name))
 			{
+				if (Overwrote.IsEmpty())
+				{
+					Overwrote = M.ActionName.ToString();
+				}
 				Settings->RemoveActionMapping(M);
 			}
 		}
@@ -341,6 +349,10 @@ void UT66SettingsScreen::ApplyRebindToInputSettings(const FKey& NewKey)
 			const bool bSameDevice = Pending.bIsController ? IsControllerKey(M.Key) : IsKeyboardMouseKey(M.Key);
 			if (bSameDevice && M.Key == NewKey && (M.AxisName != Pending.Name || !FMath::IsNearlyEqual(M.Scale, Pending.Scale)))
 			{
+				if (Overwrote.IsEmpty())
+				{
+					Overwrote = M.AxisName.ToString();
+				}
 				Settings->RemoveAxisMapping(M);
 			}
 		}
@@ -382,7 +394,14 @@ void UT66SettingsScreen::ApplyRebindToInputSettings(const FKey& NewKey)
 	{
 		if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
 		{
-			RebindStatusText->SetText(Loc->GetText_RebindSaved());
+			if (!Overwrote.IsEmpty())
+			{
+				RebindStatusText->SetText(FText::FromString(FString::Printf(TEXT("Overwrote: %s"), *Overwrote)));
+			}
+			else
+			{
+				RebindStatusText->SetText(Loc->GetText_RebindSaved());
+			}
 		}
 	}
 }
@@ -428,7 +447,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UT66PlayerSettingsSubsystem* PS = GetPlayerSettings();
 
-	auto MakeToggleRow = [this, Loc, PS](const FText& Label, TFunction<bool()> GetValue, TFunction<void(bool)> SetValue) -> TSharedRef<SWidget>
+	auto MakeToggleRow = [this, Loc](const FText& Label, TFunction<bool()> GetValue, TFunction<void(bool)> SetValue) -> TSharedRef<SWidget>
 	{
 		const FText OnText = Loc ? Loc->GetText_On() : FText::FromString(TEXT("ON"));
 		const FText OffText = Loc ? Loc->GetText_Off() : FText::FromString(TEXT("OFF"));
@@ -486,41 +505,33 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_IntenseVisuals() : FText::FromString(TEXT("Intense Visuals")),
-					[PS]() { return PS ? PS->GetIntenseVisuals() : true; },
-					[PS](bool b) { if (PS) PS->SetIntenseVisuals(b); }
+					Loc ? Loc->GetText_PracticeMode() : FText::FromString(TEXT("Practice Mode")),
+					[PS]() { return PS ? PS->GetPracticeMode() : false; },
+					[PS](bool b) { if (PS) PS->SetPracticeMode(b); }
 				)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_AutoSprint() : FText::FromString(TEXT("Auto Sprint")),
-					[PS]() { return PS ? PS->GetAutoSprint() : false; },
-					[PS](bool b) { if (PS) PS->SetAutoSprint(b); }
+					Loc ? Loc->GetText_SubmitLeaderboardAnonymous() : FText::FromString(TEXT("Submit Leaderboard as Anonymous")),
+					[PS]() { return PS ? PS->GetSubmitLeaderboardAnonymous() : false; },
+					[PS](bool b) { if (PS) PS->SetSubmitLeaderboardAnonymous(b); }
 				)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_SubmitScoresToLeaderboard() : FText::FromString(TEXT("Submit Scores to Leaderboard")),
-					[PS]() { return PS ? PS->GetSubmitScoresToLeaderboard() : true; },
-					[PS](bool b) { if (PS) PS->SetSubmitScoresToLeaderboard(b); }
+					Loc ? Loc->GetText_SpeedRunMode() : FText::FromString(TEXT("Speed Run Mode")),
+					[PS]() { return PS ? PS->GetSpeedRunMode() : false; },
+					[PS](bool b) { if (PS) PS->SetSpeedRunMode(b); }
 				)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
-					Loc ? Loc->GetText_ScreenShake() : FText::FromString(TEXT("Screen Shake")),
-					[PS]() { return PS ? PS->GetScreenShake() : true; },
-					[PS](bool b) { if (PS) PS->SetScreenShake(b); }
-				)
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
-			[
-				MakeToggleRow(
-					Loc ? Loc->GetText_CameraSmoothing() : FText::FromString(TEXT("Camera Smoothing")),
-					[PS]() { return PS ? PS->GetCameraSmoothing() : true; },
-					[PS](bool b) { if (PS) PS->SetCameraSmoothing(b); }
+					Loc ? Loc->GetText_GoonerMode() : FText::FromString(TEXT("Gooner Mode")),
+					[PS]() { return PS ? PS->GetGoonerMode() : false; },
+					[PS](bool b) { if (PS) PS->SetGoonerMode(b); }
 				)
 			]
 		];
@@ -1061,6 +1072,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 					[ MakeRow(Loc ? Loc->GetText_ControlToggleHUD() : FText::FromString(TEXT("Toggle HUD")), false, FName(TEXT("ToggleHUD")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlOpenFullMap() : FText::FromString(TEXT("Open Full Map")), false, FName(TEXT("OpenFullMap")), false) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleMediaViewer() : FText::FromString(TEXT("Toggle Media Viewer")), false, FName(TEXT("ToggleMediaViewer")), false) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleGamerMode() : FText::FromString(TEXT("Toggle Gamer Mode (Hitboxes)")), false, FName(TEXT("ToggleGamerMode")), false) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlRestartRun() : FText::FromString(TEXT("Restart Run")), false, FName(TEXT("RestartRun")), false) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 					[ MakeRow(Loc ? Loc->GetText_ControlDash() : FText::FromString(TEXT("Dash")), false, FName(TEXT("Dash")), false) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 					[ MakeRow(Loc ? Loc->GetText_ControlUltimate() : FText::FromString(TEXT("Ultimate")), false, FName(TEXT("Ultimate")), false) ]
@@ -1094,6 +1113,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					[ MakeRow(Loc ? Loc->GetText_ControlPauseMenuSecondary() : FText::FromString(TEXT("Pause Menu (secondary)")), false, FName(TEXT("Pause")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 					[ MakeRow(Loc ? Loc->GetText_ControlToggleHUD() : FText::FromString(TEXT("Toggle HUD")), false, FName(TEXT("ToggleHUD")), true) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlOpenFullMap() : FText::FromString(TEXT("Open Full Map")), false, FName(TEXT("OpenFullMap")), true) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleMediaViewer() : FText::FromString(TEXT("Toggle Media Viewer")), false, FName(TEXT("ToggleMediaViewer")), true) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlToggleGamerMode() : FText::FromString(TEXT("Toggle Gamer Mode (Hitboxes)")), false, FName(TEXT("ToggleGamerMode")), true) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[ MakeRow(Loc ? Loc->GetText_ControlRestartRun() : FText::FromString(TEXT("Restart Run")), false, FName(TEXT("RestartRun")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 					[ MakeRow(Loc ? Loc->GetText_ControlDash() : FText::FromString(TEXT("Dash")), false, FName(TEXT("Dash")), true) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
@@ -1223,6 +1250,34 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 		[
+			SNew(SBorder)
+			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.Padding(FMargin(15.0f, 12.0f))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(0.4f).VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(Loc ? Loc->GetText_OutputDevice() : FText::FromString(TEXT("Output Device")))
+					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+					.ColorAndOpacity(FLinearColor::White)
+				]
+				+ SHorizontalBox::Slot().FillWidth(0.6f)
+				[
+					SNew(SBorder)
+					.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
+					.Padding(FMargin(10.f, 6.f))
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(TEXT("Default")))
+						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+						.ColorAndOpacity(FLinearColor(0.75f, 0.75f, 0.8f, 1.0f))
+					]
+				]
+			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_SubtitlesAlwaysOn() : FText::FromString(TEXT("Subtitles: always on")))
 			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
@@ -1340,6 +1395,43 @@ FReply UT66SettingsScreen::HandleRestoreDefaultsClicked()
 {
 	// Device-specific restore (KBM vs Controller) to match the current sub-tab.
 	const bool bRestoreController = (CurrentControlsDeviceTab == ET66ControlsDeviceTab::Controller);
+
+	// Confirmation (Bible requires a confirm): arm on first click, execute on second click shortly after.
+	if (!bRestoreDefaultsArmed || (bRestoreDefaultsArmedForController != bRestoreController))
+	{
+		bRestoreDefaultsArmed = true;
+		bRestoreDefaultsArmedForController = bRestoreController;
+		if (RebindStatusText.IsValid())
+		{
+			RebindStatusText->SetText(FText::FromString(TEXT("Press Restore Defaults again to confirm.")));
+		}
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(RestoreDefaultsArmTimerHandle);
+			FTimerDelegate D;
+			D.BindLambda([this]()
+			{
+				bRestoreDefaultsArmed = false;
+				if (RebindStatusText.IsValid())
+				{
+					if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+					{
+						RebindStatusText->SetText(Loc->GetText_RebindInstructions());
+					}
+				}
+			});
+			World->GetTimerManager().SetTimer(RestoreDefaultsArmTimerHandle, D, 2.5f, false);
+		}
+		return FReply::Handled();
+	}
+
+	// Disarm now that we're executing.
+	bRestoreDefaultsArmed = false;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(RestoreDefaultsArmTimerHandle);
+	}
+
 	UInputSettings* Settings = UInputSettings::GetInputSettings();
 	if (!Settings) return FReply::Handled();
 
@@ -1394,6 +1486,10 @@ FReply UT66SettingsScreen::HandleRestoreDefaultsClicked()
 		}
 	}
 	RefreshControlsKeyTexts();
+	if (RebindStatusText.IsValid())
+	{
+		RebindStatusText->SetText(FText::FromString(TEXT("Defaults restored.")));
+	}
 	return FReply::Handled();
 }
 

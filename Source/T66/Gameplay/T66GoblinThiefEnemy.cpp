@@ -12,6 +12,8 @@
 
 AT66GoblinThiefEnemy::AT66GoblinThiefEnemy()
 {
+	CharacterVisualID = FName(TEXT("GoblinThief"));
+
 	// Distinct look: pyramid (cone) shape.
 	if (VisualMesh)
 	{

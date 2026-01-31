@@ -16,6 +16,11 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - **Last known-good commit:** 5758aa0 (Gameplay progression, Coliseum fallback, and map layout)
 - **Current milestone:** Phase 3+ — Stage progression + bosses + miasma + NPCs + debt + Coliseum + map layout
 - **Build status:** ✅ C++ compiles successfully
+- **Model pipeline status (WIP):**
+  - Zips are present in `C:\UE\T66\SourceAssets\` and have been extracted to `C:\UE\T66\SourceAssets\Extracted\`
+  - ~31 `.fbx` files detected across Hero/Companion/NPC/Enemy/Boss packs
+  - Import script exists but **has not yet been run** to create Unreal assets in `/Game/...`
+  - Runtime wiring (assigning the imported meshes/animations to heroes/enemies/bosses/companions) is **not yet implemented**
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 - **Full project setup (from project root):**
   - **Batch:** `Scripts\RunFullSetup.bat`
@@ -54,6 +59,38 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-01-30 — SourceAssets model import pipeline (IN PROGRESS; handoff-ready)
+
+**User request**
+- User provided zipped character packs (heroes, companions, vendor/gambler/npcs, enemies, bosses), sometimes with animations.
+- Vendor/Gambler “boss mode” should reuse the same model as normal mode (no mesh swap needed).
+
+**What is done**
+- **Zips are stored here:** `C:\UE\T66\SourceAssets\`
+- **Extraction completed** into: `C:\UE\T66\SourceAssets\Extracted\`
+  - Created helper script: `Scripts/ExtractSourceAssets.ps1`
+  - Output packs include: `Hero1..Hero9`, `Companion1..Companion3`, `Vendor`, `Gambler`, `SaintNPC`, `RegularEnemy`, `GoblinThief`, `Leprachaun`, `StageBoss`
+  - Confirmed ~31 `.fbx` across packs (many “Meshy_AI_*” exports); some packs include “Animation_Walking_withSkin.fbx” etc.
+- Created import script (not yet executed): `Scripts/ImportSourceAssetsModels.py`
+  - Intended to import into `/Game/Characters/<Category>/<PackName>/`
+  - Heuristics:
+    - Prefer `*Character_output.fbx` for the mesh
+    - Import additional FBX that contain `animation`/`walking`/`running` as animations and bind to the skeleton created by the primary mesh import
+
+**What is NOT done yet (next agent work)**
+1) **Run the import** (creates actual UE assets under `/Game/Characters/...`):
+   - Command:
+     - `UnrealEditor-Cmd.exe "C:\UE\T66\T66.uproject" -run=pythonscript -script="C:\UE\T66\Scripts\ImportSourceAssetsModels.py"`
+   - Then verify imported assets exist (SkeletalMesh, Skeleton, AnimSequence, Materials/Textures).
+2) **Create runtime binding** so actual actors use the imported meshes:
+   - **Heroes:** In `AT66HeroBase` (or Hero DataTable), add a mapping from `HeroID` → `TSoftObjectPtr<USkeletalMesh>` (and optionally an Idle `UAnimationAsset`) and set it on a `USkeletalMeshComponent` (hide placeholder mesh).
+   - **Enemies/Bosses/NPCs/Companions:** same approach (DataTable fields or class defaults), but keep `AT66VendorBoss` and `AT66GamblerBoss` using the same mesh as their NPC versions.
+   - **Animations:** If an Idle animation exists, play it (or use the first imported anim). For best results, prefer an AnimBP later; for now a single looping AnimSequence is fine.
+3) **Grounding / scaling pass**:
+   - Imported meshes often have different pivots/scales; add per-character offsets/scales (data-driven) so they sit on ground and look correct in both gameplay and preview stages.
+4) **Build + smoke test**
+   - `Build.bat T66Editor ...` and run PIE to verify meshes/animations load and no sync-load spam or missing asset logs.
 
 ### 2026-01-29 — Gameplay progression, Coliseum fallback, and map layout
 
@@ -366,6 +403,13 @@ It must be kept up-to-date so a new agent can resume work safely without guessin
 - Create WBP_LanguageSelect / WBP_Achievements if you want Blueprint overrides; re-run T66Setup.
 - Create WBP_EnemyHealthBar and assign to enemy HealthBarWidget for health bar visuals.
 - Create WBP_SaveSlots at `/Game/Blueprints/UI/WBP_SaveSlots` for Save Slots screen customization.
+
+### Model pipeline (handoff)
+
+1. Run `Scripts/ImportSourceAssetsModels.py` via `UnrealEditor-Cmd.exe` to import meshes + animations.
+2. Add data-driven mesh binding (HeroID/NPCID/BossID/etc → SkeletalMesh + optional Idle anim).
+3. Apply grounding/scaling tweaks (data-driven offsets).
+4. Build + verify.
 
 ### T66Setup (editor)
 

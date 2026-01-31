@@ -9,6 +9,8 @@
 #include "Misc/DateTime.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/EngineVersion.h"
+#include "Misc/App.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 #include "Widgets/Layout/SBox.h"
@@ -163,6 +165,11 @@ void UT66ReportBugScreen::OnSubmitClicked()
 	Report += FString::Printf(TEXT("Map: %s\n"), *MapName);
 	Report += FString::Printf(TEXT("OS: %s\n"), *FPlatformMisc::GetOSVersion());
 	Report += FString::Printf(TEXT("CPU: %s\n"), *FPlatformMisc::GetCPUBrand());
+	Report += FString::Printf(TEXT("Project: %s\n"), FApp::GetProjectName());
+	const FString BuildVersion = FApp::GetBuildVersion();
+	Report += FString::Printf(TEXT("BuildVersion: %s\n"), *BuildVersion);
+	Report += FString::Printf(TEXT("EngineVersion: %s\n"), *FEngineVersion::Current().ToString());
+	Report += TEXT("Sentry: not configured (placeholder)\n");
 	Report += TEXT("\n-- Run Context (best effort) --\n");
 	Report += FString::Printf(TEXT("Stage: %d\n"), Stage);
 	Report += FString::Printf(TEXT("Hearts: %d / %d\n"), Hearts, MaxHearts);

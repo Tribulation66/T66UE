@@ -59,6 +59,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> LoanSharkDataTable;
 
+	/** Reference to the Character Visuals DataTable (ID -> SkeletalMesh + optional looping anim + transform). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> CharacterVisualsDataTable;
+
 	// ============================================
 	// Player Selections (for current run setup)
 	// ============================================
@@ -78,6 +82,10 @@ public:
 	/** Selected difficulty */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
+
+	/** If true, the next GameplayLevel load should spawn into the Stage Boost platform first. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bStageBoostPending = false;
 
 	/** Selected body type for hero */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
@@ -157,6 +165,10 @@ public:
 	/** Get the loaded Loan Shark DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetLoanSharkDataTable();
+
+	/** Get the loaded Character Visuals DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetCharacterVisualsDataTable();
 
 	/** Get item data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -270,4 +282,8 @@ private:
 	/** Cached loaded Loan Shark DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedLoanSharkDataTable;
+
+	/** Cached loaded Character Visuals DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedCharacterVisualsDataTable;
 };

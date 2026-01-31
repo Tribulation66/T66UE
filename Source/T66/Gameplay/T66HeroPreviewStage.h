@@ -12,6 +12,7 @@ class UTextureRenderTarget2D;
 class AT66HeroBase;
 class USceneComponent;
 class UPointLightComponent;
+class UStaticMeshComponent;
 
 /**
  * Preview stage for the Hero Selection screen.
@@ -37,6 +38,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void SetPreviewHero(FName HeroID, ET66BodyType BodyType);
 
+	/** Rotate preview hero by yaw delta (degrees). Intended for UI drag-rotate. */
+	UFUNCTION(BlueprintCallable, Category = "Preview")
+	void AddPreviewYaw(float DeltaYawDegrees);
+
 	/** Capture the current scene to the render target (called after SetPreviewHero) */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void CapturePreview();
@@ -50,6 +55,10 @@ protected:
 	/** Spawn or update the preview hero pawn */
 	void UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType);
 
+	void ApplyPreviewRotation();
+	void FrameCameraToPreview();
+	class UPrimitiveComponent* GetPreviewTargetComponent() const;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<USceneCaptureComponent2D> SceneCapture;
 
@@ -57,12 +66,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UPointLightComponent> PreviewLight;
 
+	/** Fill light to keep shadows readable. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
+	TObjectPtr<UPointLightComponent> FillLight;
+
+	/** Rim light for separation from background. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
+	TObjectPtr<UPointLightComponent> RimLight;
+
+	/** Simple platform so the hero looks grounded (Dota-style). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
+	TObjectPtr<UStaticMeshComponent> PreviewPlatform;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UTextureRenderTarget2D> RenderTarget;
 
 	/** Size of the render target (matches typical preview area) */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
-	FIntPoint RenderTargetSize = FIntPoint(512, 512);
+	FIntPoint RenderTargetSize = FIntPoint(1024, 1440);
 
 	/** Hero pawn class (same as gameplay - unified hero) */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
@@ -74,5 +95,8 @@ protected:
 
 	/** Spawn location for the preview pawn (relative to this actor) */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
-	FVector PreviewPawnOffset = FVector(150.f, 0.f, 0.f);
+	FVector PreviewPawnOffset = FVector::ZeroVector;
+
+	UPROPERTY(Transient)
+	float PreviewYawDegrees = 0.f;
 };

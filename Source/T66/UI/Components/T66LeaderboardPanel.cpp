@@ -1,7 +1,9 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Components/T66LeaderboardPanel.h"
+#include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -13,6 +15,7 @@
 void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 {
 	LocSubsystem = InArgs._LocalizationSubsystem;
+	LeaderboardSubsystem = InArgs._LeaderboardSubsystem;
 
 	// Initialize dropdown options
 	PartySizeOptions.Add(MakeShared<FString>(TEXT("Solo")));
@@ -29,11 +32,19 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	DifficultyOptions.Add(MakeShared<FString>(TEXT("Final")));
 	SelectedDifficultyOption = DifficultyOptions[0];
 
-	TypeOptions.Add(MakeShared<FString>(TEXT("High Score")));
+	TypeOptions.Add(MakeShared<FString>(TEXT("Bounty")));
 	TypeOptions.Add(MakeShared<FString>(TEXT("Speed Run")));
 	SelectedTypeOption = TypeOptions[0];
 
-	GeneratePlaceholderData();
+	// Speed run stage dropdown (only shown when Speed Run type is selected).
+	for (int32 S = 1; S <= 10; ++S)
+	{
+		StageOptions.Add(MakeShared<FString>(FString::FromInt(S)));
+	}
+	SelectedStageOption = StageOptions.Num() > 0 ? StageOptions[0] : MakeShared<FString>(TEXT("1"));
+	CurrentSpeedRunStage = 1;
+
+	RefreshLeaderboard();
 
 	FText TitleText = LocSubsystem ? LocSubsystem->GetText_Leaderboard() : FText::FromString(TEXT("LEADERBOARD"));
 	FText GlobalText = LocSubsystem ? LocSubsystem->GetText_Global() : FText::FromString(TEXT("GLOBAL"));
@@ -43,38 +54,48 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	// Use lambdas that capture 'this' and evaluate state dynamically
 	auto MakeFilterButton = [this](const FText& Text, ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
 	{
-		return SNew(SBox).WidthOverride(95.0f).HeightOverride(32.0f)
+		const FButtonStyle& Neutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+		const FTextBlockStyle& Txt = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+
+		return SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(32.0f)
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center).VAlign(VAlign_Center)
 				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-				.ButtonColorAndOpacity_Lambda([this, Filter]() -> FSlateColor {
-					bool bIsSelected = (CurrentFilter == Filter);
-					return bIsSelected ? FLinearColor(0.3f, 0.5f, 0.8f, 1.0f) : FLinearColor(0.15f, 0.15f, 0.2f, 1.0f);
+				.ButtonStyle(&Neutral)
+				.ContentPadding(FMargin(10.f, 6.f))
+				.ButtonColorAndOpacity_Lambda([this, Filter]() -> FLinearColor {
+					return (CurrentFilter == Filter) ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
 				})
 				[
-					SNew(STextBlock).Text(Text)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
-					.ColorAndOpacity(FLinearColor::White)
+					SNew(STextBlock)
+					.Text(Text)
+					.TextStyle(&Txt)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
 	};
 
 	auto MakeTimeButton = [this](const FText& Text, ET66LeaderboardTime Time, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
 	{
-		return SNew(SBox).WidthOverride(100.0f).HeightOverride(30.0f)
+		const FButtonStyle& Neutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+		const FTextBlockStyle& Txt = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+
+		return SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(30.0f)
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center).VAlign(VAlign_Center)
 				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-				.ButtonColorAndOpacity_Lambda([this, Time]() -> FSlateColor {
-					bool bIsSelected = (CurrentTimeFilter == Time);
-					return bIsSelected ? FLinearColor(0.4f, 0.6f, 0.3f, 1.0f) : FLinearColor(0.12f, 0.12f, 0.18f, 1.0f);
+				.ButtonStyle(&Neutral)
+				.ContentPadding(FMargin(10.f, 6.f))
+				.ButtonColorAndOpacity_Lambda([this, Time]() -> FLinearColor {
+					return (CurrentTimeFilter == Time) ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
 				})
 				[
-					SNew(STextBlock).Text(Text)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
-					.ColorAndOpacity(FLinearColor::White)
+					SNew(STextBlock)
+					.Text(Text)
+					.TextStyle(&Txt)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
 	};
@@ -82,8 +103,8 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	ChildSlot
 	[
 		SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.08f, 1.0f))
-		.Padding(FMargin(12.0f))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+		.Padding(FMargin(FT66Style::Tokens::Space3))
 		[
 			SNew(SVerticalBox)
 			// Title
@@ -94,8 +115,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			[
 				SNew(STextBlock)
 				.Text(TitleText)
-				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 26))
-				.ColorAndOpacity(FLinearColor::White)
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
 			]
 			// Filter toggles (Global | Friends | Streamers)
 			+ SVerticalBox::Slot()
@@ -194,6 +214,27 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						]
 					]
 				]
+				// Stage dropdown (only for Speed Run)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
+				[
+					SNew(SBox)
+					.WidthOverride(70.0f)
+					.HeightOverride(30.0f)
+					.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::SpeedRun ? EVisibility::Visible : EVisibility::Collapsed; })
+					[
+						SNew(SComboBox<TSharedPtr<FString>>)
+						.OptionsSource(&StageOptions)
+						.OnSelectionChanged(this, &ST66LeaderboardPanel::OnStageChanged)
+						.OnGenerateWidget(this, &ST66LeaderboardPanel::MakeStageWidget)
+						.InitiallySelectedItem(SelectedStageOption)
+						[
+							SNew(STextBlock)
+							.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::FromString(TEXT("1")); })
+							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+							.ColorAndOpacity(FLinearColor::White)
+						]
+					]
+				]
 			]
 			// Column headers
 			+ SVerticalBox::Slot()
@@ -239,7 +280,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::HighScore ? EVisibility::Visible : EVisibility::Collapsed; })
 						[
 							SNew(STextBlock)
-							.Text(FText::FromString(TEXT("SCORE")))
+							.Text(FText::FromString(TEXT("BOUNTY")))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 							.Justification(ETextJustify::Right)
@@ -305,8 +346,9 @@ void ST66LeaderboardPanel::GeneratePlaceholderData()
 		
 		if (CurrentType == ET66LeaderboardType::HighScore)
 		{
-			Entry.Score = 1000000 - (i * 75000) + FMath::RandRange(-5000, 5000);
-			Entry.TimeSeconds = 0.0f; // Not relevant for high score
+			// Bounty placeholder (kept as fallback when subsystem isn't available).
+			Entry.Score = 2000 - (i * 140) + FMath::RandRange(-20, 20);
+			Entry.TimeSeconds = -1.0f; // Not relevant for bounty
 		}
 		else
 		{
@@ -414,6 +456,10 @@ void ST66LeaderboardPanel::RebuildEntryList()
 
 FString ST66LeaderboardPanel::FormatTime(float Seconds) const
 {
+	if (Seconds < 0.f)
+	{
+		return FString(TEXT("--:--"));
+	}
 	int32 Minutes = FMath::FloorToInt(Seconds / 60.0f);
 	int32 Secs = FMath::FloorToInt(FMath::Fmod(Seconds, 60.0f));
 	return FString::Printf(TEXT("%02d:%02d"), Minutes, Secs);
@@ -422,41 +468,50 @@ FString ST66LeaderboardPanel::FormatTime(float Seconds) const
 void ST66LeaderboardPanel::SetFilter(ET66LeaderboardFilter NewFilter)
 {
 	CurrentFilter = NewFilter;
-	GeneratePlaceholderData();
-	RebuildEntryList();
+	RefreshLeaderboard();
 }
 
 void ST66LeaderboardPanel::SetTimeFilter(ET66LeaderboardTime NewTime)
 {
 	CurrentTimeFilter = NewTime;
-	GeneratePlaceholderData();
-	RebuildEntryList();
+	RefreshLeaderboard();
 }
 
 void ST66LeaderboardPanel::SetPartySize(ET66PartySize NewPartySize)
 {
 	CurrentPartySize = NewPartySize;
-	GeneratePlaceholderData();
-	RebuildEntryList();
+	RefreshLeaderboard();
 }
 
 void ST66LeaderboardPanel::SetDifficulty(ET66Difficulty NewDifficulty)
 {
 	CurrentDifficulty = NewDifficulty;
-	GeneratePlaceholderData();
-	RebuildEntryList();
+	RefreshLeaderboard();
 }
 
 void ST66LeaderboardPanel::SetLeaderboardType(ET66LeaderboardType NewType)
 {
 	CurrentType = NewType;
-	GeneratePlaceholderData();
-	RebuildEntryList();
+	RefreshLeaderboard();
 }
 
 void ST66LeaderboardPanel::RefreshLeaderboard()
 {
-	GeneratePlaceholderData();
+	if (LeaderboardSubsystem)
+	{
+		if (CurrentType == ET66LeaderboardType::HighScore)
+		{
+			LeaderboardEntries = LeaderboardSubsystem->BuildBountyEntries(CurrentDifficulty, CurrentPartySize);
+		}
+		else
+		{
+			LeaderboardEntries = LeaderboardSubsystem->BuildSpeedRunEntries(CurrentDifficulty, CurrentPartySize, CurrentSpeedRunStage);
+		}
+	}
+	else
+	{
+		GeneratePlaceholderData();
+	}
 	RebuildEntryList();
 }
 
@@ -519,8 +574,16 @@ void ST66LeaderboardPanel::OnTypeChanged(TSharedPtr<FString> NewSelection, ESele
 	if (!NewSelection.IsValid()) return;
 	SelectedTypeOption = NewSelection;
 
-	if (*NewSelection == TEXT("High Score")) SetLeaderboardType(ET66LeaderboardType::HighScore);
+	if (*NewSelection == TEXT("Bounty")) SetLeaderboardType(ET66LeaderboardType::HighScore);
 	else if (*NewSelection == TEXT("Speed Run")) SetLeaderboardType(ET66LeaderboardType::SpeedRun);
+}
+
+void ST66LeaderboardPanel::OnStageChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	if (!NewSelection.IsValid()) return;
+	SelectedStageOption = NewSelection;
+	CurrentSpeedRunStage = FMath::Clamp(FCString::Atoi(**NewSelection), 1, 10);
+	RefreshLeaderboard();
 }
 
 TSharedRef<SWidget> ST66LeaderboardPanel::MakePartySizeWidget(TSharedPtr<FString> InOption)
@@ -540,6 +603,14 @@ TSharedRef<SWidget> ST66LeaderboardPanel::MakeDifficultyWidget(TSharedPtr<FStrin
 }
 
 TSharedRef<SWidget> ST66LeaderboardPanel::MakeTypeWidget(TSharedPtr<FString> InOption)
+{
+	return SNew(STextBlock)
+		.Text(FText::FromString(*InOption))
+		.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+		.ColorAndOpacity(FLinearColor::White);
+}
+
+TSharedRef<SWidget> ST66LeaderboardPanel::MakeStageWidget(TSharedPtr<FString> InOption)
 {
 	return SNew(STextBlock)
 		.Text(FText::FromString(*InOption))

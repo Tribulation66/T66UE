@@ -4,6 +4,7 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -95,6 +96,14 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(OtherActor))
 	{
 		GB->TakeDamageFromHeroHit(Damage);
+		Destroy();
+		return;
+	}
+
+	// Vendor boss damage per hit
+	if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(OtherActor))
+	{
+		VB->TakeDamageFromHeroHit(Damage);
 		Destroy();
 		return;
 	}

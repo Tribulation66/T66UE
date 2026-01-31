@@ -9,6 +9,7 @@
 class USphereComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
+class USkeletalMeshComponent;
 class AT66HeroBase;
 class APlayerController;
 class UPrimitiveComponent;
@@ -36,6 +37,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	/** Imported skeletal mesh visual (optional; driven by DT_CharacterVisuals). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UTextRenderComponent> NameText;
@@ -86,5 +91,8 @@ protected:
 
 private:
 	int32 HeroOverlapCount = 0;
+
+	UPROPERTY(Transient)
+	bool bUsingCharacterVisual = false;
 };
 

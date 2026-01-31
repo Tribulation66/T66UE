@@ -7,6 +7,8 @@
 #include "T66DataTypes.generated.h"
 
 class AActor;
+class USkeletalMesh;
+class UAnimationAsset;
 
 /**
  * Hero data row for the Hero DataTable
@@ -119,6 +121,28 @@ enum class ET66ItemEffectType : uint8
 	BonusDamagePct UMETA(DisplayName = "BonusDamagePct"),
 	BonusAttackSpeedPct UMETA(DisplayName = "BonusAttackSpeedPct"),
 	DashCooldownReductionPct UMETA(DisplayName = "DashCooldownReductionPct"),
+	BonusMoveSpeedPct UMETA(DisplayName = "BonusMoveSpeedPct"),
+	BonusArmorPctPoints UMETA(DisplayName = "BonusArmorPctPoints"),
+	BonusEvasionPctPoints UMETA(DisplayName = "BonusEvasionPctPoints"),
+	BonusLuckFlat UMETA(DisplayName = "BonusLuckFlat"),
+};
+
+UENUM(BlueprintType)
+enum class ET66StageEffectType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Speed UMETA(DisplayName = "Speed"),
+	Launch UMETA(DisplayName = "Launch"),
+	Slide UMETA(DisplayName = "Slide"),
+};
+
+UENUM(BlueprintType)
+enum class ET66HeroStatusEffectType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Burn UMETA(DisplayName = "Burn"),
+	Chill UMETA(DisplayName = "Chill"),
+	Curse UMETA(DisplayName = "Curse"),
 };
 
 /**
@@ -248,6 +272,18 @@ struct T66_API FStageData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
 	FVector BossSpawnLocation = FVector(2500.f, 0.f, 200.f);
 
+	/** Stage effect applied by ground tiles (helpful movement effect). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Effects")
+	ET66StageEffectType StageEffectType = ET66StageEffectType::None;
+
+	/** Visual color for stage effect tiles. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Effects")
+	FLinearColor StageEffectColor = FLinearColor(0.20f, 0.90f, 0.35f, 1.f);
+
+	/** Strength scalar for stage effect tuning (1.0 = default). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Effects")
+	float StageEffectStrength = 1.f;
+
 	FStageData()
 		: StageNumber(1)
 		, BossID(NAME_None)
@@ -312,6 +348,53 @@ struct T66_API FLoanSharkData : public FTableRowBase
 	int32 DebtPerExtraHeart = 200;
 
 	FLoanSharkData() = default;
+};
+
+/**
+ * Character visual mapping row.
+ * Maps a stable gameplay ID (HeroID / CompanionID / NPCID / BossID / EnemyVisualID) to imported skeletal assets.
+ *
+ * - SkeletalMesh: the mesh to assign to a USkeletalMeshComponent
+ * - LoopingAnimation: optional looping animation (Idle preferred; otherwise any reasonable loop)
+ * - MeshRelative*: applied directly to the target component
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66CharacterVisualRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Primary mesh to display. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
+
+	/** Optional looping animation (AnimSequence/AnimComposite/etc). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UAnimationAsset> LoopingAnimation;
+
+	/** Relative location applied to the target mesh component. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FVector MeshRelativeLocation = FVector(0.f, 0.f, -88.f);
+
+	/** Relative rotation applied to the target mesh component. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FRotator MeshRelativeRotation = FRotator(0.f, -90.f, 0.f);
+
+	/** Relative scale applied to the target mesh component. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FVector MeshRelativeScale = FVector(1.f, 1.f, 1.f);
+
+	/** If true and LoopingAnimation is set, play it in a loop. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	bool bLoopAnimation = true;
+
+	/**
+	 * If true, the system will auto-adjust the target component's Z so the mesh bounds bottom sits at the actor origin.
+	 * Intended for non-capsule actors (companions, house NPCs) where the actor origin is treated as "ground contact".
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	bool bAutoGroundToActorOrigin = false;
+
+	FT66CharacterVisualRow() = default;
 };
 
 /**
@@ -414,7 +497,7 @@ enum class ET66LeaderboardTime : uint8
 UENUM(BlueprintType)
 enum class ET66LeaderboardType : uint8
 {
-	HighScore UMETA(DisplayName = "High Score"),
+	HighScore UMETA(DisplayName = "Bounty"),
 	SpeedRun UMETA(DisplayName = "Speed Run")
 };
 
@@ -472,6 +555,56 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 		, Difficulty(ET66Difficulty::Easy)
 		, StageReached(0)
 		, bIsLocalPlayer(false)
+	{}
+};
+
+/**
+ * Leaderboard tuning row: 10th-place "Bounty" target.
+ * Import `Leaderboard_BountyTargets.csv` into a DataTable using this row struct.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66LeaderboardBountyTargetRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	ET66Difficulty Difficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	ET66PartySize PartySize = ET66PartySize::Solo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int64 TargetBounty10 = 0;
+
+	FT66LeaderboardBountyTargetRow()
+		: Difficulty(ET66Difficulty::Easy)
+		, PartySize(ET66PartySize::Solo)
+		, TargetBounty10(0)
+	{}
+};
+
+/**
+ * Leaderboard tuning row: 10th-place "Speed Run" target time per stage.
+ * Import `Leaderboard_SpeedrunTargets.csv` into a DataTable using this row struct.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66LeaderboardSpeedRunTargetRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	ET66Difficulty Difficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 Stage = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	float TargetTime10Seconds = 0.f;
+
+	FT66LeaderboardSpeedRunTargetRow()
+		: Difficulty(ET66Difficulty::Easy)
+		, Stage(1)
+		, TargetTime10Seconds(0.f)
 	{}
 };
 

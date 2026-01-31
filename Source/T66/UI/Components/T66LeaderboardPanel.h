@@ -8,6 +8,7 @@
 #include "Widgets/Input/SComboBox.h"
 
 class UT66LocalizationSubsystem;
+class UT66LeaderboardSubsystem;
 
 /**
  * Leaderboard Panel - Slate widget for displaying leaderboard
@@ -18,8 +19,10 @@ class T66_API ST66LeaderboardPanel : public SCompoundWidget
 public:
 	SLATE_BEGIN_ARGS(ST66LeaderboardPanel)
 		: _LocalizationSubsystem(nullptr)
+		, _LeaderboardSubsystem(nullptr)
 	{}
 		SLATE_ARGUMENT(UT66LocalizationSubsystem*, LocalizationSubsystem)
+		SLATE_ARGUMENT(UT66LeaderboardSubsystem*, LeaderboardSubsystem)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
@@ -41,6 +44,7 @@ private:
 
 	TArray<FLeaderboardEntry> LeaderboardEntries;
 	UT66LocalizationSubsystem* LocSubsystem = nullptr;
+	UT66LeaderboardSubsystem* LeaderboardSubsystem = nullptr;
 
 	TSharedPtr<SVerticalBox> EntryListBox;
 
@@ -48,10 +52,15 @@ private:
 	TArray<TSharedPtr<FString>> PartySizeOptions;
 	TArray<TSharedPtr<FString>> DifficultyOptions;
 	TArray<TSharedPtr<FString>> TypeOptions;
+	TArray<TSharedPtr<FString>> StageOptions;
 
 	TSharedPtr<FString> SelectedPartySizeOption;
 	TSharedPtr<FString> SelectedDifficultyOption;
 	TSharedPtr<FString> SelectedTypeOption;
+	TSharedPtr<FString> SelectedStageOption;
+
+	// Only used for Speed Run leaderboard (stage 1..10).
+	int32 CurrentSpeedRunStage = 1;
 
 	// Generate placeholder data
 	void GeneratePlaceholderData();
@@ -68,10 +77,12 @@ private:
 	void OnPartySizeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	void OnDifficultyChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	void OnTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+	void OnStageChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 
 	TSharedRef<SWidget> MakePartySizeWidget(TSharedPtr<FString> InOption);
 	TSharedRef<SWidget> MakeDifficultyWidget(TSharedPtr<FString> InOption);
 	TSharedRef<SWidget> MakeTypeWidget(TSharedPtr<FString> InOption);
+	TSharedRef<SWidget> MakeStageWidget(TSharedPtr<FString> InOption);
 
 	// Get localized text
 	FText GetFilterText(ET66LeaderboardFilter Filter) const;

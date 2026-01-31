@@ -33,6 +33,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
 
+	/** XP granted to the hero on death. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Progression")
+	int32 XPValue = 20;
+
 	/** If false, this enemy will not spawn a loot bag on death (used by mimics/special cases). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loot")
 	bool bDropsLoot = true;
@@ -40,6 +44,10 @@ public:
 	/** Visible mesh (cylinder) so enemy is seen */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	/** Visual mapping ID used by UT66CharacterVisualSubsystem (data-driven imported mesh). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Visuals")
+	FName CharacterVisualID = FName(TEXT("RegularEnemy"));
 
 	/** Health bar widget above head */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
@@ -92,4 +100,9 @@ private:
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseTouchDamageHearts = 0;
+
+protected:
+	/** True if an imported skeletal mesh was applied and placeholders should be hidden. */
+	UPROPERTY(Transient)
+	bool bUsingCharacterVisual = false;
 };

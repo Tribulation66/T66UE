@@ -2,10 +2,12 @@
 
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -58,6 +60,11 @@ AT66HouseNPCBase::AT66HouseNPCBase()
 	NameText->SetWorldSize(40.f);
 	NameText->SetRelativeLocation(FVector(0.f, 0.f, 250.f));
 	NameText->SetTextRenderColor(FColor::White);
+
+	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
+	SkeletalMesh->SetupAttachment(RootComponent);
+	SkeletalMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SkeletalMesh->SetVisibility(false, true);
 }
 
 void AT66HouseNPCBase::BeginPlay()
@@ -86,6 +93,37 @@ void AT66HouseNPCBase::BeginPlay()
 
 	SafeZoneSphere->OnComponentBeginOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneBeginOverlap);
 	SafeZoneSphere->OnComponentEndOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneEndOverlap);
+
+	// Apply imported character mesh if available (data-driven).
+	bUsingCharacterVisual = false;
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+		{
+			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(NPCID, SkeletalMesh, VisualMesh, true);
+			if (!bUsingCharacterVisual && SkeletalMesh)
+			{
+				SkeletalMesh->SetVisibility(false, true);
+			}
+		}
+	}
+
+	// If we're using a skeletal mesh, treat actor origin as "ground contact" and re-snap to ground.
+	if (bUsingCharacterVisual)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			FHitResult Hit;
+			const FVector Here = GetActorLocation();
+			const FVector Start = Here + FVector(0.f, 0.f, 2000.f);
+			const FVector End = Here - FVector(0.f, 0.f, 6000.f);
+			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+			{
+				SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
+				ApplyVisuals();
+			}
+		}
+	}
 }
 
 void AT66HouseNPCBase::LoadFromDataTable()

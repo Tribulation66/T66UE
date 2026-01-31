@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Misc/App.h"
+#include "Sound/SoundClass.h"
+#include "Core/T66MediaViewerSubsystem.h"
 
 const FString UT66PlayerSettingsSubsystem::SlotName(TEXT("T66_PlayerSettings"));
 
@@ -52,63 +54,51 @@ void UT66PlayerSettingsSubsystem::SetLastSettingsTabIndex(int32 TabIndex)
 	Save();
 }
 
-bool UT66PlayerSettingsSubsystem::GetIntenseVisuals() const
+bool UT66PlayerSettingsSubsystem::GetPracticeMode() const
 {
-	return SettingsObj ? SettingsObj->bIntenseVisuals : true;
+	return SettingsObj ? SettingsObj->bPracticeMode : false;
 }
 
-void UT66PlayerSettingsSubsystem::SetIntenseVisuals(bool bEnabled)
+void UT66PlayerSettingsSubsystem::SetPracticeMode(bool bEnabled)
 {
 	if (!SettingsObj) return;
-	SettingsObj->bIntenseVisuals = bEnabled;
+	SettingsObj->bPracticeMode = bEnabled;
 	Save();
 }
 
-bool UT66PlayerSettingsSubsystem::GetAutoSprint() const
+bool UT66PlayerSettingsSubsystem::GetSubmitLeaderboardAnonymous() const
 {
-	return SettingsObj ? SettingsObj->bAutoSprint : false;
+	return SettingsObj ? SettingsObj->bSubmitLeaderboardAnonymous : false;
 }
 
-void UT66PlayerSettingsSubsystem::SetAutoSprint(bool bEnabled)
+void UT66PlayerSettingsSubsystem::SetSubmitLeaderboardAnonymous(bool bEnabled)
 {
 	if (!SettingsObj) return;
-	SettingsObj->bAutoSprint = bEnabled;
+	SettingsObj->bSubmitLeaderboardAnonymous = bEnabled;
 	Save();
 }
 
-bool UT66PlayerSettingsSubsystem::GetSubmitScoresToLeaderboard() const
+bool UT66PlayerSettingsSubsystem::GetSpeedRunMode() const
 {
-	return SettingsObj ? SettingsObj->bSubmitScoresToLeaderboard : true;
+	return SettingsObj ? SettingsObj->bSpeedRunMode : false;
 }
 
-void UT66PlayerSettingsSubsystem::SetSubmitScoresToLeaderboard(bool bEnabled)
+void UT66PlayerSettingsSubsystem::SetSpeedRunMode(bool bEnabled)
 {
 	if (!SettingsObj) return;
-	SettingsObj->bSubmitScoresToLeaderboard = bEnabled;
+	SettingsObj->bSpeedRunMode = bEnabled;
 	Save();
 }
 
-bool UT66PlayerSettingsSubsystem::GetScreenShake() const
+bool UT66PlayerSettingsSubsystem::GetGoonerMode() const
 {
-	return SettingsObj ? SettingsObj->bScreenShake : true;
+	return SettingsObj ? SettingsObj->bGoonerMode : false;
 }
 
-void UT66PlayerSettingsSubsystem::SetScreenShake(bool bEnabled)
+void UT66PlayerSettingsSubsystem::SetGoonerMode(bool bEnabled)
 {
 	if (!SettingsObj) return;
-	SettingsObj->bScreenShake = bEnabled;
-	Save();
-}
-
-bool UT66PlayerSettingsSubsystem::GetCameraSmoothing() const
-{
-	return SettingsObj ? SettingsObj->bCameraSmoothing : true;
-}
-
-void UT66PlayerSettingsSubsystem::SetCameraSmoothing(bool bEnabled)
-{
-	if (!SettingsObj) return;
-	SettingsObj->bCameraSmoothing = bEnabled;
+	SettingsObj->bGoonerMode = bEnabled;
 	Save();
 }
 
@@ -134,7 +124,7 @@ void UT66PlayerSettingsSubsystem::SetMusicVolume(float NewValue01)
 {
 	if (!SettingsObj) return;
 	SettingsObj->MusicVolume = FMath::Clamp(NewValue01, 0.0f, 1.0f);
-	// Stored now; applied later when music/sfx routing is implemented via SoundClasses/Submixes.
+	ApplyClassVolumesIfPresent();
 	Save();
 }
 
@@ -147,7 +137,7 @@ void UT66PlayerSettingsSubsystem::SetSfxVolume(float NewValue01)
 {
 	if (!SettingsObj) return;
 	SettingsObj->SfxVolume = FMath::Clamp(NewValue01, 0.0f, 1.0f);
-	// Stored now; applied later when music/sfx routing is implemented via SoundClasses/Submixes.
+	ApplyClassVolumesIfPresent();
 	Save();
 }
 
@@ -164,16 +154,51 @@ void UT66PlayerSettingsSubsystem::SetMuteWhenUnfocused(bool bEnabled)
 	Save();
 }
 
+void UT66PlayerSettingsSubsystem::SetOutputDeviceId(const FString& NewId)
+{
+	if (!SettingsObj) return;
+	SettingsObj->OutputDeviceId = NewId;
+	// TODO: Apply to audio device routing when implemented.
+	Save();
+}
+
+FString UT66PlayerSettingsSubsystem::GetOutputDeviceId() const
+{
+	return SettingsObj ? SettingsObj->OutputDeviceId : FString();
+}
+
 void UT66PlayerSettingsSubsystem::ApplyAudioToEngine()
 {
 	if (!SettingsObj) return;
+	// Bible: when Media Viewer is open, all other game audio is muted.
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			if (MV->IsMediaViewerOpen())
+			{
+				return;
+			}
+		}
+	}
 	// Global master volume multiplier.
 	FApp::SetVolumeMultiplier(FMath::Clamp(SettingsObj->MasterVolume, 0.0f, 1.0f));
+	ApplyClassVolumesIfPresent();
 }
 
 void UT66PlayerSettingsSubsystem::ApplyUnfocusedAudioToEngine()
 {
 	if (!SettingsObj) return;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			if (MV->IsMediaViewerOpen())
+			{
+				return;
+			}
+		}
+	}
 	// If muted when unfocused, drop unfocused volume to 0; otherwise keep at 1.
 	FApp::SetUnfocusedVolumeMultiplier(SettingsObj->bMuteWhenUnfocused ? 0.0f : 1.0f);
 }
@@ -202,3 +227,21 @@ void UT66PlayerSettingsSubsystem::ApplySafeModeSettings()
 	Save();
 }
 
+void UT66PlayerSettingsSubsystem::ApplyClassVolumesIfPresent()
+{
+	if (!SettingsObj) return;
+
+	// Foundation: if/when we create SoundClass assets, we can apply per-class volume multipliers.
+	// This is safe to call even if assets don't exist yet.
+	static const TCHAR* MusicClassPath = TEXT("/Game/Audio/SC_Music.SC_Music");
+	static const TCHAR* SfxClassPath = TEXT("/Game/Audio/SC_SFX.SC_SFX");
+
+	if (USoundClass* Music = LoadObject<USoundClass>(nullptr, MusicClassPath))
+	{
+		Music->Properties.Volume = FMath::Clamp(SettingsObj->MusicVolume, 0.0f, 1.0f);
+	}
+	if (USoundClass* Sfx = LoadObject<USoundClass>(nullptr, SfxClassPath))
+	{
+		Sfx->Properties.Volume = FMath::Clamp(SettingsObj->SfxVolume, 0.0f, 1.0f);
+	}
+}

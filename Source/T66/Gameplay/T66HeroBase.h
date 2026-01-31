@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UT66CombatComponent;
+class UT66RunStateSubsystem;
 
 /**
  * Base class for all playable heroes in Tribulation 66
@@ -118,8 +119,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void DashForward();
 
+	/** Stage effect helper: reduce friction so the hero slides for a short time. */
+	UFUNCTION(BlueprintCallable, Category = "Movement|StageEffects")
+	void ApplyStageSlide(float DurationSeconds);
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+
+	UFUNCTION()
+	void HandleHeroDerivedStatsChanged();
 
 	/** Touch damage: when enemy overlaps capsule, apply 1 heart damage (RunState i-frames apply) */
 	UFUNCTION()
@@ -151,6 +160,11 @@ private:
 
 	int32 SafeZoneOverlapCount = 0;
 
+	UPROPERTY()
+	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
+
+	float BaseMaxWalkSpeed = 1200.f;
+
 	// Dash tuning
 	float LastDashTime = -9999.f;
 
@@ -159,6 +173,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement|Dash")
 	float DashStrength = 1600.f;
+
+	// Stage slide tuning/state
+	float BaseGroundFriction = 8.f;
+	float BaseBrakingFrictionFactor = 2.f;
+	float BaseBrakingDecelerationWalking = 2048.f;
+	float StageSlideSecondsRemaining = 0.f;
 
 private:
 	/** Load and cache the static mesh assets */

@@ -4,18 +4,91 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "Widgets/SCompoundWidget.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Images/SImage.h"
 #include "Engine/TextureRenderTarget2D.h"
+
+namespace
+{
+	class ST66DragRotateCompanionPreview : public SCompoundWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66DragRotateCompanionPreview) {}
+			SLATE_ARGUMENT(TWeakObjectPtr<AT66CompanionPreviewStage>, Stage)
+			SLATE_ARGUMENT(const FSlateBrush*, Brush)
+			SLATE_ARGUMENT(float, DegreesPerPixel)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			Stage = InArgs._Stage;
+			DegreesPerPixel = InArgs._DegreesPerPixel;
+			bDragging = false;
+
+			ChildSlot
+			[
+				SNew(SImage).Image(InArgs._Brush)
+			];
+		}
+
+		virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+		{
+			if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+			{
+				bDragging = true;
+				LastPos = MouseEvent.GetScreenSpacePosition();
+				return FReply::Handled().CaptureMouse(SharedThis(this));
+			}
+			return FReply::Unhandled();
+		}
+
+		virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+		{
+			if (bDragging && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+			{
+				bDragging = false;
+				return FReply::Handled().ReleaseMouseCapture();
+			}
+			return FReply::Unhandled();
+		}
+
+		virtual FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+		{
+			if (!bDragging)
+			{
+				return FReply::Unhandled();
+			}
+
+			const FVector2D Pos = MouseEvent.GetScreenSpacePosition();
+			const FVector2D Delta = Pos - LastPos;
+			LastPos = Pos;
+
+			if (Stage.IsValid())
+			{
+				Stage->AddPreviewYaw(Delta.X * DegreesPerPixel);
+			}
+			return FReply::Handled();
+		}
+
+	private:
+		TWeakObjectPtr<AT66CompanionPreviewStage> Stage;
+		bool bDragging = false;
+		FVector2D LastPos = FVector2D::ZeroVector;
+		float DegreesPerPixel = 0.25f;
+	};
+}
 
 UT66CompanionSelectionScreen::UT66CompanionSelectionScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -187,8 +260,14 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			PreviewColor = Data.PlaceholderColor;
 	}
 
+	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+	const FButtonStyle& BtnPrimary = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
+	const FTextBlockStyle& TxtHeading = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
+	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.0f))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -205,16 +284,17 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					.VAlign(VAlign_Center)
 					.Padding(0.0f, 0.0f, 20.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(130.0f).HeightOverride(40.0f)
+						SNew(SBox).MinDesiredWidth(160.0f).HeightOverride(40.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleCompanionGridClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+							.ButtonStyle(&BtnNeutral)
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+							.ContentPadding(FMargin(12.f, 8.f))
 							[
 								SNew(STextBlock).Text(CompanionGridText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtChip)
 							]
 						]
 					]
@@ -231,11 +311,12 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								SNew(SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandlePrevClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+								.ButtonStyle(&BtnNeutral)
+								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
 									SNew(STextBlock).Text(FText::FromString(TEXT("<")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
-									.ColorAndOpacity(FLinearColor::White)
+									.Font(FT66Style::Tokens::FontBold(20))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
 							]
 						]
@@ -250,27 +331,29 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								SNew(SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNextClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+								.ButtonStyle(&BtnNeutral)
+								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
 									SNew(STextBlock).Text(FText::FromString(TEXT(">")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
-									.ColorAndOpacity(FLinearColor::White)
+									.Font(FT66Style::Tokens::FontBold(20))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
 							]
 						]
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(20.0f, 0.0f, 0.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(140.0f).HeightOverride(40.0f)
+						SNew(SBox).MinDesiredWidth(160.0f).HeightOverride(40.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNoCompanionClicked))
-							.ButtonColorAndOpacity(PreviewedCompanionID.IsNone() ? FLinearColor(0.5f, 0.3f, 0.3f, 1.0f) : FLinearColor(0.3f, 0.2f, 0.2f, 1.0f))
+							.ButtonStyle(&BtnNeutral)
+							.ButtonColorAndOpacity(PreviewedCompanionID.IsNone() ? FT66Style::Tokens::Accent : FT66Style::Tokens::Panel2)
+							.ContentPadding(FMargin(12.f, 8.f))
 							[
 								SNew(STextBlock).Text(NoCompanionText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtChip)
 							]
 						]
 					]
@@ -287,9 +370,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					.Padding(0.0f, 0.0f, 10.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.08f, 0.18f, 0.12f, 1.0f))
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.Padding(FMargin(10.0f))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.Padding(FMargin(FT66Style::Tokens::Space3))
 						[
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot()
@@ -298,8 +380,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
 								SNew(STextBlock).Text(SkinsText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtHeading)
 							]
 							+ SVerticalBox::Slot()
 							.FillHeight(1.0f)
@@ -320,10 +401,15 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
 						.FillHeight(1.0f)
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+						[
+						SNew(SBox)
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
 						[
 							CreateCompanionPreviewWidget(PreviewColor)
+						]
 						]
 					]
 					// RIGHT PANEL: Companion Info (blueish, name + LORE same row, bigger medals)
@@ -332,9 +418,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.22f, 1.0f))
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.Padding(FMargin(15.0f))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.Padding(FMargin(FT66Style::Tokens::Space4))
 						[
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot()
@@ -344,8 +429,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							[
 								SNew(STextBlock)
 								.Text(FText::FromString(TEXT("COMPANION INFO")))
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtHeading)
 							]
 							// Name + LORE button same row
 							+ SVerticalBox::Slot()
@@ -372,12 +456,12 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 										SNew(SButton)
 										.HAlign(HAlign_Center).VAlign(VAlign_Center)
 										.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked))
-										.ButtonColorAndOpacity(FLinearColor(0.25f, 0.2f, 0.15f, 1.0f))
+										.ButtonStyle(&BtnNeutral)
+										.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 										.IsEnabled(!PreviewedCompanionID.IsNone())
 										[
 											SNew(STextBlock).Text(LoreText)
-											.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
-											.ColorAndOpacity(FLinearColor::White)
+											.TextStyle(&TxtChip)
 										]
 									]
 								]
@@ -506,21 +590,25 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::CreateCompanionPreviewWidget(c
 	{
 		CompanionPreviewBrush = MakeShared<FSlateBrush>();
 		CompanionPreviewBrush->SetResourceObject(RenderTarget);
-		CompanionPreviewBrush->ImageSize = FVector2D(250.f, 350.f);
+		CompanionPreviewBrush->ImageSize = FVector2D(512.f, 720.f);
 		CompanionPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
 		CompanionPreviewBrush->Tiling = ESlateBrushTileType::NoTile;
-		return SNew(SBox)
-			.WidthOverride(250.0f)
-			.HeightOverride(350.0f)
+		return SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			[
-				SNew(SImage).Image(CompanionPreviewBrush.Get())
+				SNew(ST66DragRotateCompanionPreview)
+				.Stage(Stage)
+				.Brush(CompanionPreviewBrush.Get())
+				.DegreesPerPixel(0.28f)
 			];
 	}
 	return SAssignNew(CompanionPreviewColorBox, SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FallbackColor)
 		[
-			SNew(SBox).WidthOverride(250.0f).HeightOverride(350.0f)
+			SNew(SBox)
 		];
 }
 

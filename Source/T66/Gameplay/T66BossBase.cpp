@@ -3,9 +3,11 @@
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66BossProjectile.h"
 #include "Gameplay/T66GameMode.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "AIController.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -40,6 +42,13 @@ AT66BossBase::AT66BossBase()
 	{
 		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.9f, 0.05f, 0.05f, 1.f));
 	}
+
+	// Prepare built-in SkeletalMeshComponent for imported models.
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Skel->SetVisibility(false, true); // shown only when a character visual mapping exists
+	}
 }
 
 void AT66BossBase::InitializeBoss(const FBossData& BossData)
@@ -61,6 +70,19 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
 		{
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), BossData.PlaceholderColor);
+		}
+	}
+
+	// Imported model: map BossID -> mesh (DT_CharacterVisuals).
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+		{
+			const bool bApplied = Visuals->ApplyCharacterVisual(BossID, GetMesh(), VisualMesh, true);
+			if (!bApplied && GetMesh())
+			{
+				GetMesh()->SetVisibility(false, true);
+			}
 		}
 	}
 }

@@ -453,6 +453,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString BossesTablePath = TEXT("/Game/Data/DT_Bosses.DT_Bosses");
 	const FString StagesTablePath = TEXT("/Game/Data/DT_Stages.DT_Stages");
 	const FString HouseNPCsTablePath = TEXT("/Game/Data/DT_HouseNPCs.DT_HouseNPCs");
+	const FString CharacterVisualsTablePath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
 
 	UDataTable* HeroesTable = LoadObject<UDataTable>(nullptr, *HeroesTablePath);
 	UDataTable* CompanionsTable = LoadObject<UDataTable>(nullptr, *CompanionsTablePath);
@@ -460,6 +461,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	UDataTable* BossesTable = LoadObject<UDataTable>(nullptr, *BossesTablePath);
 	UDataTable* StagesTable = LoadObject<UDataTable>(nullptr, *StagesTablePath);
 	UDataTable* HouseNPCsTable = LoadObject<UDataTable>(nullptr, *HouseNPCsTablePath);
+	UDataTable* CharacterVisualsTable = LoadObject<UDataTable>(nullptr, *CharacterVisualsTablePath);
 
 	if (HeroesTable)
 	{
@@ -519,6 +521,16 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_HouseNPCs (create via CreateAssets.py then ImportData.py)"));
+	}
+
+	if (CharacterVisualsTable)
+	{
+		GameInstanceCDO->CharacterVisualsDataTable = CharacterVisualsTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set CharacterVisualsDataTable to DT_CharacterVisuals"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_CharacterVisuals (create via SetupCharacterVisualsDataTable.py)"));
 	}
 
 	return SaveBlueprint(Blueprint);

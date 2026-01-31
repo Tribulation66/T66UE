@@ -5,6 +5,7 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -107,16 +108,15 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.85f))
+		.BorderBackgroundColor(FT66Style::Tokens::Scrim)
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
-				.Padding(FMargin(30.0f, 25.0f))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.Padding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))
 				[
 					SNew(SVerticalBox)
 					// Title
@@ -127,8 +127,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
 					]
 					// Scrollable grid
 					+ SVerticalBox::Slot()
@@ -152,11 +151,12 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroGridScreen::HandleCloseClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.2f, 0.2f, 0.28f, 1.0f))
+							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+							.ContentPadding(FMargin(16.f, 10.f))
 							[
 								SNew(STextBlock).Text(CloseText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 							]
 						]
 					]

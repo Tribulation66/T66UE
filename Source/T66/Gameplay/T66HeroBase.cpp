@@ -3,9 +3,12 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66CombatComponent.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -83,6 +86,13 @@ AT66HeroBase::AT66HeroBase()
 	bUseControllerRotationRoll = false;
 
 	CombatComponent = CreateDefaultSubobject<UT66CombatComponent>(TEXT("CombatComponent"));
+
+	// Prepare built-in SkeletalMeshComponent for imported models.
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Skel->SetVisibility(false, true); // shown only when a character visual mapping exists
+	}
 }
 
 void AT66HeroBase::AddSafeZoneOverlap(int32 Delta)
@@ -111,6 +121,27 @@ void AT66HeroBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Cache baseline friction values so stage effects can temporarily override safely.
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		BaseGroundFriction = Movement->GroundFriction;
+		BaseBrakingFrictionFactor = Movement->BrakingFrictionFactor;
+		BaseBrakingDecelerationWalking = Movement->BrakingDecelerationWalking;
+	}
+
+	// Foundation: cosmetic toggles (e.g. Gooner Mode) live in PlayerSettings.
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			if (PS->GetGoonerMode())
+			{
+				// TODO: When real character meshes exist, apply barefoot cosmetic set here.
+				UE_LOG(LogTemp, Log, TEXT("Gooner Mode enabled (placeholder; no meshes to modify yet)."));
+			}
+		}
+	}
+
 	// Create dynamic material for color changes
 	if (PlaceholderMesh && PlaceholderMesh->GetMaterial(0))
 	{
@@ -136,6 +167,35 @@ void AT66HeroBase::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("HeroBase - FollowCamera is NULL!"));
 	}
+
+	// Cache run state for derived stats (level + last-stand).
+	CachedRunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (CachedRunState)
+	{
+		CachedRunState->HeroProgressChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+		CachedRunState->SurvivalChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+		CachedRunState->InventoryChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+	}
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		BaseMaxWalkSpeed = Movement->MaxWalkSpeed;
+	}
+	HandleHeroDerivedStatsChanged();
+}
+
+void AT66HeroBase::HandleHeroDerivedStatsChanged()
+{
+	if (!CachedRunState) return;
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement) return;
+
+	const float Mult = CachedRunState->GetHeroMoveSpeedMultiplier()
+		* CachedRunState->GetItemMoveSpeedMultiplier()
+		* CachedRunState->GetLastStandMoveSpeedMultiplier()
+		* CachedRunState->GetStageMoveSpeedMultiplier()
+		* CachedRunState->GetStatusMoveSpeedMultiplier();
+	Movement->MaxWalkSpeed = FMath::Clamp(BaseMaxWalkSpeed * Mult, 200.f, 10000.f);
 }
 
 void AT66HeroBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -150,6 +210,39 @@ void AT66HeroBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponen
 			RunState->ApplyDamage(1);
 		}
 	}
+}
+
+void AT66HeroBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Stage slide: temporary low-friction movement.
+	if (StageSlideSecondsRemaining > 0.f)
+	{
+		StageSlideSecondsRemaining = FMath::Max(0.f, StageSlideSecondsRemaining - DeltaSeconds);
+		if (StageSlideSecondsRemaining <= 0.f)
+		{
+			if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+			{
+				Movement->GroundFriction = BaseGroundFriction;
+				Movement->BrakingFrictionFactor = BaseBrakingFrictionFactor;
+				Movement->BrakingDecelerationWalking = BaseBrakingDecelerationWalking;
+			}
+		}
+	}
+}
+
+void AT66HeroBase::ApplyStageSlide(float DurationSeconds)
+{
+	if (DurationSeconds <= 0.f) return;
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		// Very low braking so the hero "slides" along the ground.
+		Movement->GroundFriction = 0.15f;
+		Movement->BrakingFrictionFactor = 0.05f;
+		Movement->BrakingDecelerationWalking = 128.f;
+	}
+	StageSlideSecondsRemaining = FMath::Max(StageSlideSecondsRemaining, DurationSeconds);
 }
 
 void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType)
@@ -178,6 +271,27 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 	//     GetMesh()->SetSkeletalMesh(SKMesh);
 	//     PlaceholderMesh->SetVisibility(false);
 	// }
+
+	// Imported models: resolve and apply a mapped skeletal mesh if available.
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+		{
+			const bool bApplied = Visuals->ApplyCharacterVisual(HeroID, GetMesh(), PlaceholderMesh, true);
+			if (!bApplied)
+			{
+				// Fall back to placeholder mesh.
+				if (GetMesh())
+				{
+					GetMesh()->SetVisibility(false, true);
+				}
+				if (PlaceholderMesh)
+				{
+					PlaceholderMesh->SetVisibility(true, true);
+				}
+			}
+		}
+	}
 }
 
 void AT66HeroBase::SetPlaceholderColor(FLinearColor Color)

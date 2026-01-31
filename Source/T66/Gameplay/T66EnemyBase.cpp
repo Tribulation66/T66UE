@@ -6,13 +6,16 @@
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
 #include "UI/T66EnemyHealthBarWidget.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -45,16 +48,11 @@ AT66EnemyBase::AT66EnemyBase()
 	// Align primitive mesh to ground when capsule is grounded:
 	// capsule half-height~88, cylinder half-height=50 => relative Z = 50 - 88 = -38.
 	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -38.f));
-	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-	if (Cylinder)
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
-		VisualMesh->SetStaticMesh(Cylinder);
-		VisualMesh->SetRelativeScale3D(FVector(0.9f, 0.9f, 1.f));
-		UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0);
-		if (Mat)
-		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.8f, 0.2f, 0.2f, 1.f));
-		}
+		VisualMesh->SetStaticMesh(Sphere);
+		VisualMesh->SetRelativeScale3D(FVector(0.85f, 0.85f, 0.85f));
+		FT66VisualUtil::ApplyT66Color(VisualMesh, this, FLinearColor(0.90f, 0.25f, 0.20f, 1.f)); // regular enemy default
 	}
 
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
@@ -63,6 +61,13 @@ AT66EnemyBase::AT66EnemyBase()
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
 	HealthBarWidget->SetDrawAtDesiredSize(true);
 	HealthBarWidget->SetDrawSize(FVector2D(120.f, 12.f));
+
+	// Prepare built-in SkeletalMeshComponent for imported models.
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Skel->SetVisibility(false, true); // shown only when a character visual mapping exists
+	}
 }
 
 void AT66EnemyBase::BeginPlay()
@@ -90,6 +95,82 @@ void AT66EnemyBase::BeginPlay()
 	{
 		Capsule->OnComponentBeginOverlap.AddDynamic(this, &AT66EnemyBase::OnCapsuleBeginOverlap);
 	}
+
+	// Fail-safe: always make sure the placeholder is visible unless we successfully apply a skeletal mesh.
+	if (VisualMesh)
+	{
+		VisualMesh->SetHiddenInGame(false, true);
+		VisualMesh->SetVisibility(true, true);
+	}
+
+	// Per request: RegularEnemy + Unique enemy use simple placeholder visuals (no FBX).
+	const bool bForcePlaceholder = CharacterVisualID.IsNone() || (CharacterVisualID == FName(TEXT("RegularEnemy")));
+	if (bForcePlaceholder)
+	{
+		if (USkeletalMeshComponent* Skel = GetMesh())
+		{
+			Skel->SetHiddenInGame(true, true);
+			Skel->SetVisibility(false, true);
+		}
+#if !UE_BUILD_SHIPPING
+		static int32 LoggedEnemies = 0;
+		if (LoggedEnemies < 12)
+		{
+			++LoggedEnemies;
+			UE_LOG(LogTemp, Warning, TEXT("EnemyVisuals: %s VisualID=%s UsingPlaceholder=1"), *GetName(), *CharacterVisualID.ToString());
+		}
+#endif
+		return;
+	}
+
+	// Apply imported character mesh if available (data-driven).
+	bUsingCharacterVisual = false;
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+			{
+				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true);
+				if (USkeletalMeshComponent* Skel = GetMesh())
+				{
+					// If we didn't apply a skeletal mesh, keep the character mesh hidden and use the cylinder.
+					if (!bUsingCharacterVisual || !Skel->GetSkeletalMeshAsset())
+					{
+						bUsingCharacterVisual = false;
+						Skel->SetHiddenInGame(true, true);
+						Skel->SetVisibility(false, true);
+						if (VisualMesh)
+						{
+							VisualMesh->SetHiddenInGame(false, true);
+							VisualMesh->SetVisibility(true, true);
+						}
+					}
+				}
+			}
+		}
+	}
+
+#if !UE_BUILD_SHIPPING
+	// Lightweight visibility diagnostics (helps track "enemies are invisible" reports).
+	static int32 LoggedEnemies = 0;
+	if (LoggedEnemies < 12)
+	{
+		++LoggedEnemies;
+		const USkeletalMeshComponent* Skel = GetMesh();
+		const TCHAR* SkelName = (Skel && Skel->GetSkeletalMeshAsset()) ? *Skel->GetSkeletalMeshAsset()->GetName() : TEXT("None");
+		UE_LOG(LogTemp, Warning, TEXT("EnemyVisuals: %s VisualID=%s UsingSkel=%d SkelAsset=%s SkelVisible=%d SkelHidden=%d PlaceholderVisible=%d PlaceholderHidden=%d"),
+			*GetName(),
+			*CharacterVisualID.ToString(),
+			bUsingCharacterVisual ? 1 : 0,
+			SkelName,
+			Skel ? (Skel->IsVisible() ? 1 : 0) : 0,
+			Skel ? (Skel->bHiddenInGame ? 1 : 0) : 0,
+			VisualMesh ? (VisualMesh->IsVisible() ? 1 : 0) : 0,
+			VisualMesh ? (VisualMesh->bHiddenInGame ? 1 : 0) : 0
+		);
+	}
+#endif
 }
 
 void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
@@ -236,6 +317,7 @@ void AT66EnemyBase::OnDeath()
 	if (RunState)
 	{
 		RunState->AddScore(PointValue);
+		RunState->AddHeroXP(XPValue);
 		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d"), PointValue));
 	}
 
@@ -250,7 +332,8 @@ void AT66EnemyBase::OnDeath()
 	{
 		// Spawn one loot bag with rarity, and roll an item from that rarity pool.
 		FRandomStream Rng(FPlatformTime::Cycles());
-		const ET66Rarity BagRarity = FT66RarityUtil::RollDefaultRarity(Rng);
+		const int32 LuckStat = RunState ? RunState->GetLuckStat() : 1;
+		const ET66Rarity BagRarity = FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat);
 		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

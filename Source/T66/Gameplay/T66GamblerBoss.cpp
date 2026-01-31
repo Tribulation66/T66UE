@@ -2,8 +2,10 @@
 
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66BossProjectile.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -38,12 +40,34 @@ AT66GamblerBoss::AT66GamblerBoss()
 			VisualMesh->SetMaterial(0, Mat);
 		}
 	}
+
+	// Prepare built-in SkeletalMeshComponent for imported models.
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Skel->SetVisibility(false, true);
+	}
 }
 
 void AT66GamblerBoss::BeginPlay()
 {
 	Super::BeginPlay();
 	CurrentHP = MaxHP;
+
+	// Gambler boss must use the same mesh as Gambler NPC (per rule).
+	// We use a dedicated VisualID so the boss can have a capsule-friendly transform,
+	// while still referencing the same SkeletalMesh asset as the Gambler NPC.
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+		{
+			const bool bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("GamblerBoss")), GetMesh(), VisualMesh, true);
+			if (!bApplied && GetMesh())
+			{
+				GetMesh()->SetVisibility(false, true);
+			}
+		}
+	}
 
 	// Show boss bar immediately
 	if (UWorld* World = GetWorld())

@@ -4,12 +4,15 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
+#include "Widgets/SCompoundWidget.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
@@ -17,6 +20,76 @@
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/Images/SImage.h"
 #include "Engine/TextureRenderTarget2D.h"
+
+namespace
+{
+	class ST66DragRotatePreview : public SCompoundWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66DragRotatePreview) {}
+			SLATE_ARGUMENT(TWeakObjectPtr<AT66HeroPreviewStage>, Stage)
+			SLATE_ARGUMENT(const FSlateBrush*, Brush)
+			SLATE_ARGUMENT(float, DegreesPerPixel)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			Stage = InArgs._Stage;
+			DegreesPerPixel = InArgs._DegreesPerPixel;
+			bDragging = false;
+
+			ChildSlot
+			[
+				SNew(SImage).Image(InArgs._Brush)
+			];
+		}
+
+		virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+		{
+			if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+			{
+				bDragging = true;
+				LastPos = MouseEvent.GetScreenSpacePosition();
+				return FReply::Handled().CaptureMouse(SharedThis(this));
+			}
+			return FReply::Unhandled();
+		}
+
+		virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+		{
+			if (bDragging && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+			{
+				bDragging = false;
+				return FReply::Handled().ReleaseMouseCapture();
+			}
+			return FReply::Unhandled();
+		}
+
+		virtual FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+		{
+			if (!bDragging)
+			{
+				return FReply::Unhandled();
+			}
+
+			const FVector2D Pos = MouseEvent.GetScreenSpacePosition();
+			const FVector2D Delta = Pos - LastPos;
+			LastPos = Pos;
+
+			if (Stage.IsValid())
+			{
+				Stage->AddPreviewYaw(Delta.X * DegreesPerPixel);
+			}
+			return FReply::Handled();
+		}
+
+	private:
+		TWeakObjectPtr<AT66HeroPreviewStage> Stage;
+		bool bDragging = false;
+		FVector2D LastPos = FVector2D::ZeroVector;
+		float DegreesPerPixel = 0.25f;
+	};
+}
 
 UT66HeroSelectionScreen::UT66HeroSelectionScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -160,8 +233,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::GenerateDifficultyItem(TSharedPtr<F
 {
 	return SNew(STextBlock)
 		.Text(FText::FromString(*InItem))
-		.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-		.ColorAndOpacity(FLinearColor::White);
+		.Font(FT66Style::Tokens::FontRegular(12))
+		.ColorAndOpacity(FT66Style::Tokens::Text);
 }
 
 TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
@@ -207,9 +280,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	TSharedRef<SVerticalBox> SkinsListBox = SNew(SVerticalBox);
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
-		FLinearColor RowBg = Skin.bIsEquipped 
-			? FLinearColor(0.2f, 0.4f, 0.3f, 1.0f) 
-			: FLinearColor(0.1f, 0.1f, 0.15f, 1.0f);
+		FLinearColor RowBg = Skin.bIsEquipped ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
 		
 		// Get localized skin name
 		FText SkinDisplayName = Loc ? Loc->GetText_SkinName(Skin.SkinID) : FText::FromName(Skin.SkinID);
@@ -219,8 +290,9 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		.Padding(0.0f, 3.0f)
 		[
 			SNew(SBorder)
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 			.BorderBackgroundColor(RowBg)
-			.Padding(FMargin(10.0f, 8.0f))
+			.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2))
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
@@ -229,24 +301,24 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(SkinDisplayName)
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
-					.ColorAndOpacity(FLinearColor::White)
+					.Font(FT66Style::Tokens::FontRegular(13))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				.Padding(5.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(78.0f).HeightOverride(28.0f)
+					SNew(SBox).MinDesiredWidth(90.0f).HeightOverride(28.0f)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center).VAlign(VAlign_Center)
-						.ButtonColorAndOpacity(Skin.bIsOwned ? FLinearColor(0.2f, 0.5f, 0.3f, 1.0f) : FLinearColor(0.5f, 0.4f, 0.1f, 1.0f))
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+						.ButtonColorAndOpacity(Skin.bIsOwned ? FT66Style::Tokens::Success : FT66Style::Tokens::Accent)
 						[
 							SNew(STextBlock)
 							.Text(Skin.bIsOwned ? EquipText : BuyText)
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
-							.ColorAndOpacity(FLinearColor::White)
+							.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
 						]
 					]
 				]
@@ -301,8 +373,16 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		];
 	}
 
+	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+	const FButtonStyle& BtnPrimary = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
+	const FButtonStyle& BtnDanger = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger");
+	const FTextBlockStyle& TxtHeading = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
+	const FTextBlockStyle& TxtBody = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.0f))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -320,16 +400,17 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.VAlign(VAlign_Center)
 					.Padding(0.0f, 0.0f, 20.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(130.0f).HeightOverride(40.0f)
+						SNew(SBox).MinDesiredWidth(150.0f).HeightOverride(40.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroGridClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+							.ButtonStyle(&BtnNeutral)
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+							.ContentPadding(FMargin(12.f, 8.f))
 							[
 								SNew(STextBlock).Text(HeroGridText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtChip)
 							]
 						]
 					]
@@ -347,11 +428,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								SNew(SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandlePrevClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+								.ButtonStyle(&BtnNeutral)
+								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
 									SNew(STextBlock).Text(FText::FromString(TEXT("<")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
-									.ColorAndOpacity(FLinearColor::White)
+									.Font(FT66Style::Tokens::FontBold(20))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
 							]
 						]
@@ -366,11 +448,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								SNew(SButton)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleNextClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+								.ButtonStyle(&BtnNeutral)
+								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
 									SNew(STextBlock).Text(FText::FromString(TEXT(">")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
-									.ColorAndOpacity(FLinearColor::White)
+									.Font(FT66Style::Tokens::FontBold(20))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
 							]
 						]
@@ -388,9 +471,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.Padding(0.0f, 0.0f, 10.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.Padding(FMargin(10.0f))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.Padding(FMargin(FT66Style::Tokens::Space3))
 						[
 							SNew(SVerticalBox)
 							// Skins header
@@ -400,8 +482,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
 								SNew(STextBlock).Text(SkinsText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtHeading)
 							]
 							// Skins list
 							+ SVerticalBox::Slot()
@@ -424,16 +505,21 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 						// Hero Preview Area - 3D preview image or colored box
 						+ SVerticalBox::Slot()
 						.FillHeight(1.0f)
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Fill)
 						[
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot()
 							.FillHeight(1.0f)
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
+							.HAlign(HAlign_Fill)
+							.VAlign(VAlign_Fill)
 							[
-								CreateHeroPreviewWidget(HeroPreviewColor)
+								SNew(SBox)
+								.HAlign(HAlign_Fill)
+								.VAlign(VAlign_Fill)
+								[
+									CreateHeroPreviewWidget(HeroPreviewColor)
+								]
 							]
 							// Choose Companion button below preview (wide enough for full text)
 							+ SVerticalBox::Slot()
@@ -441,16 +527,17 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.HAlign(HAlign_Center)
 							.Padding(0.0f, 20.0f, 0.0f, 0.0f)
 							[
-								SNew(SBox).WidthOverride(280.0f).HeightOverride(45.0f)
+								SNew(SBox).MinDesiredWidth(300.0f).HeightOverride(45.0f)
 								[
 									SNew(SButton)
 									.HAlign(HAlign_Center).VAlign(VAlign_Center)
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked))
-									.ButtonColorAndOpacity(FLinearColor(0.3f, 0.3f, 0.5f, 1.0f))
+									.ButtonStyle(&BtnPrimary)
+									.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
+									.ContentPadding(FMargin(16.f, 10.f))
 									[
 										SNew(STextBlock).Text(ChooseCompanionText)
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-										.ColorAndOpacity(FLinearColor::White)
+										.TextStyle(&TxtButton)
 									]
 								]
 							]
@@ -473,14 +560,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeAClicked))
 									.ButtonColorAndOpacity_Lambda([this]() -> FSlateColor {
 										return SelectedBodyType == ET66BodyType::TypeA
-											? FLinearColor(0.4f, 0.5f, 0.7f, 1.0f)
-											: FLinearColor(0.15f, 0.15f, 0.2f, 1.0f);
+											? FT66Style::Tokens::Accent2
+											: FT66Style::Tokens::Panel2;
 									})
+									.ButtonStyle(&BtnNeutral)
 									[
 										SNew(STextBlock)
 										.Text(Loc ? Loc->GetText_BodyTypeA() : FText::FromString(TEXT("TYPE A")))
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-										.ColorAndOpacity(FLinearColor::White)
+										.TextStyle(&TxtChip)
 									]
 								]
 							]
@@ -495,14 +582,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeBClicked))
 									.ButtonColorAndOpacity_Lambda([this]() -> FSlateColor {
 										return SelectedBodyType == ET66BodyType::TypeB
-											? FLinearColor(0.4f, 0.5f, 0.7f, 1.0f)
-											: FLinearColor(0.15f, 0.15f, 0.2f, 1.0f);
+											? FT66Style::Tokens::Accent2
+											: FT66Style::Tokens::Panel2;
 									})
+									.ButtonStyle(&BtnNeutral)
 									[
 										SNew(STextBlock)
 										.Text(Loc ? Loc->GetText_BodyTypeB() : FText::FromString(TEXT("TYPE B")))
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-										.ColorAndOpacity(FLinearColor::White)
+										.TextStyle(&TxtChip)
 									]
 								]
 							]
@@ -514,9 +601,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.Padding(FMargin(15.0f))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.Padding(FMargin(FT66Style::Tokens::Space4))
 						[
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot()
@@ -525,8 +611,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 							[
 								SNew(STextBlock).Text(HeroInfoText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtHeading)
 							]
 							// Hero name + Lore button on same row
 							+ SVerticalBox::Slot()
@@ -539,13 +624,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								.VAlign(VAlign_Center)
 								[
 									SNew(SBorder)
-									.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
-									.Padding(FMargin(12.0f, 8.0f))
+									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+									.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2))
 									[
 										SAssignNew(HeroNameWidget, STextBlock)
 										.Text(FText::FromString(TEXT("Select a Hero")))
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-										.ColorAndOpacity(FLinearColor::White)
+										.TextStyle(&TxtButton)
 										.Justification(ETextJustify::Center)
 									]
 								]
@@ -554,16 +638,16 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								.VAlign(VAlign_Center)
 								.Padding(8.0f, 0.0f, 0.0f, 0.0f)
 								[
-									SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+									SNew(SBox).MinDesiredWidth(110.0f).HeightOverride(36.0f)
 									[
 										SNew(SButton)
 										.HAlign(HAlign_Center).VAlign(VAlign_Center)
 										.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked))
-										.ButtonColorAndOpacity(FLinearColor(0.2f, 0.15f, 0.1f, 1.0f))
+										.ButtonStyle(&BtnNeutral)
+										.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 										[
 											SNew(STextBlock).Text(LoreText)
-											.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-											.ColorAndOpacity(FLinearColor::White)
+											.TextStyle(&TxtChip)
 										]
 									]
 								]
@@ -574,15 +658,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.Padding(0.0f, 0.0f, 0.0f, 12.0f)
 							[
 								SNew(SBorder)
-								.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.0f))
+								.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 								.Padding(FMargin(5.0f))
 								[
 									SNew(SBox).HeightOverride(140.0f)
 									[
 										SNew(STextBlock)
 										.Text(FText::FromString(TEXT("[VIDEO PREVIEW]")))
-										.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-										.ColorAndOpacity(FLinearColor(0.4f, 0.4f, 0.4f, 1.0f))
+										.TextStyle(&TxtBody)
 										.Justification(ETextJustify::Center)
 									]
 								]
@@ -633,8 +716,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								[
 									SAssignNew(HeroDescWidget, STextBlock)
 									.Text(FText::FromString(TEXT("Select a hero to view their description.")))
-									.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-									.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f))
+									.Font(FT66Style::Tokens::FontRegular(12))
+									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 									.AutoWrapText(true)
 								]
 							]
@@ -653,16 +736,17 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.AutoWidth()
 					.Padding(10.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(120.0f).HeightOverride(50.0f)
+						SNew(SBox).MinDesiredWidth(140.0f).HeightOverride(50.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+							.ButtonStyle(&BtnNeutral)
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+							.ContentPadding(FMargin(16.f, 10.f))
 							[
 								SNew(STextBlock).Text(TheLabText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtButton)
 							]
 						]
 					]
@@ -672,7 +756,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.VAlign(VAlign_Center)
 					.Padding(10.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(140.0f).HeightOverride(40.0f)
+						SNew(SBox).MinDesiredWidth(170.0f).HeightOverride(40.0f)
 						[
 							SNew(SComboBox<TSharedPtr<FString>>)
 							.OptionsSource(&DifficultyOptions)
@@ -682,8 +766,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) -> TSharedRef<SWidget> {
 								return SNew(STextBlock)
 									.Text(FText::FromString(*InItem))
-									.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
-									.ColorAndOpacity(FLinearColor::White);
+									.Font(FT66Style::Tokens::FontRegular(12))
+									.ColorAndOpacity(FT66Style::Tokens::Text);
 							})
 							.InitiallySelectedItem(CurrentDifficultyOption)
 							[
@@ -691,8 +775,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								.Text_Lambda([this]() -> FText {
 									return CurrentDifficultyOption.IsValid() ? FText::FromString(*CurrentDifficultyOption) : FText::FromString(TEXT("Easy"));
 								})
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
-								.ColorAndOpacity(FLinearColor::White)
+								.Font(FT66Style::Tokens::FontBold(12))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
 						]
 					]
@@ -706,11 +790,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleEnterClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.6f, 0.2f, 0.1f, 1.0f))
+							.ButtonStyle(&BtnDanger)
+							.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
+							.ContentPadding(FMargin(18.f, 10.f))
 							[
 								SNew(STextBlock).Text(EnterText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&TxtButton)
 							]
 						]
 					]
@@ -722,16 +807,16 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			.VAlign(VAlign_Bottom)
 			.Padding(20.0f, 0.0f, 0.0f, 20.0f)
 			[
-				SNew(SBox).WidthOverride(100.0f).HeightOverride(40.0f)
+				SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(40.0f)
 				[
 					SNew(SButton)
 					.HAlign(HAlign_Center).VAlign(VAlign_Center)
 					.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackClicked))
-					.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+					.ButtonStyle(&BtnNeutral)
+					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 					[
 						SNew(STextBlock).Text(BackText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-						.ColorAndOpacity(FLinearColor::White)
+						.TextStyle(&TxtButton)
 					]
 				]
 			]
@@ -926,6 +1011,7 @@ void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->bStageBoostPending = (SelectedDifficulty != ET66Difficulty::Easy);
 	}
 	NavigateTo(ET66ScreenType::CompanionSelection);
 }
@@ -938,6 +1024,7 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->bStageBoostPending = (SelectedDifficulty != ET66Difficulty::Easy);
 	}
 	if (UIManager) UIManager->HideAllUI();
 	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
@@ -966,16 +1053,20 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::CreateHeroPreviewWidget(const FLine
 		// 3D preview: use render target as image
 		HeroPreviewBrush = MakeShared<FSlateBrush>();
 		HeroPreviewBrush->SetResourceObject(RenderTarget);
-		HeroPreviewBrush->ImageSize = FVector2D(250.f, 350.f);
+		// Keep a reasonable desired size; SScaleBox below handles actual layout.
+		HeroPreviewBrush->ImageSize = FVector2D(512.f, 720.f);
 		HeroPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
 		HeroPreviewBrush->Tiling = ESlateBrushTileType::NoTile;
 
-		return SNew(SBox)
-			.WidthOverride(250.0f)
-			.HeightOverride(350.0f)
+		return SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			[
-				SNew(SImage)
-				.Image(HeroPreviewBrush.Get())
+				SNew(ST66DragRotatePreview)
+				.Stage(PreviewStage)
+				.Brush(HeroPreviewBrush.Get())
+				.DegreesPerPixel(0.28f)
 			];
 	}
 
@@ -985,8 +1076,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::CreateHeroPreviewWidget(const FLine
 		.BorderBackgroundColor(FallbackColor)
 		[
 			SNew(SBox)
-			.WidthOverride(250.0f)
-			.HeightOverride(350.0f)
 		];
 }
 

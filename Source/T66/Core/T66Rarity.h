@@ -21,6 +21,9 @@ struct FT66RarityUtil
 	/** Default rarity roll (left-weighted): Black common → White extremely rare. Tunable later. */
 	static ET66Rarity RollDefaultRarity(FRandomStream& Rng);
 
+	/** Luck-influenced rarity roll (used for world interactables + loot bags). LuckStat>=1. */
+	static ET66Rarity RollRarityWithLuck(FRandomStream& Rng, int32 LuckStat);
+
 	/** UI/world tint for a rarity. */
 	static FLinearColor GetRarityColor(ET66Rarity R);
 

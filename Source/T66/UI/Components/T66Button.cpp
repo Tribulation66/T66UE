@@ -5,6 +5,7 @@
 #include "Components/TextBlock.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66Style.h"
 #include "Core/T66GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -26,6 +27,17 @@ void UT66Button::NativePreConstruct()
 	{
 		ButtonTextWidget->SetText(ButtonText);
 	}
+
+	// Apply theme (safe if running in editor preview too)
+	if (ButtonTextWidget)
+	{
+		ButtonTextWidget->SetFont(FT66Style::Tokens::FontButton());
+		ButtonTextWidget->SetColorAndOpacity(FSlateColor(FT66Style::Tokens::Text));
+	}
+	if (ButtonWidget)
+	{
+		ButtonWidget->SetStyle(FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"));
+	}
 }
 
 void UT66Button::NativeConstruct()
@@ -42,6 +54,17 @@ void UT66Button::NativeConstruct()
 	if (ButtonTextWidget && !ButtonText.IsEmpty())
 	{
 		ButtonTextWidget->SetText(ButtonText);
+	}
+
+	// Ensure theme is applied at runtime (in case BP overrides)
+	if (ButtonTextWidget)
+	{
+		ButtonTextWidget->SetFont(FT66Style::Tokens::FontButton());
+		ButtonTextWidget->SetColorAndOpacity(FSlateColor(FT66Style::Tokens::Text));
+	}
+	if (ButtonWidget)
+	{
+		ButtonWidget->SetStyle(FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"));
 	}
 }
 

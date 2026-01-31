@@ -38,34 +38,28 @@ public:
 
 	// ===== Gameplay =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
-	void SetIntenseVisuals(bool bEnabled);
+	void SetPracticeMode(bool bEnabled);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
-	bool GetIntenseVisuals() const;
+	bool GetPracticeMode() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
-	void SetAutoSprint(bool bEnabled);
+	void SetSubmitLeaderboardAnonymous(bool bEnabled);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
-	bool GetAutoSprint() const;
+	bool GetSubmitLeaderboardAnonymous() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
-	void SetSubmitScoresToLeaderboard(bool bEnabled);
+	void SetSpeedRunMode(bool bEnabled);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
-	bool GetSubmitScoresToLeaderboard() const;
+	bool GetSpeedRunMode() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
-	void SetScreenShake(bool bEnabled);
+	void SetGoonerMode(bool bEnabled);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
-	bool GetScreenShake() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
-	void SetCameraSmoothing(bool bEnabled);
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
-	bool GetCameraSmoothing() const;
+	bool GetGoonerMode() const;
 
 	// ===== Audio =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
@@ -92,6 +86,13 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Audio")
 	bool GetMuteWhenUnfocused() const;
 
+	// Stored for future use (when audio device routing is implemented).
+	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
+	void SetOutputDeviceId(const FString& NewId);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Audio")
+	FString GetOutputDeviceId() const;
+
 	// ===== Utilities =====
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void ApplySafeModeSettings();
@@ -108,5 +109,7 @@ private:
 
 	void ApplyAudioToEngine();
 	void ApplyUnfocusedAudioToEngine();
+
+	void ApplyClassVolumesIfPresent();
 };
 

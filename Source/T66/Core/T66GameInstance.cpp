@@ -2,6 +2,48 @@
 
 #include "Core/T66GameInstance.h"
 #include "Engine/DataTable.h"
+#include "Engine/Engine.h"
+#include "GameFramework/GameUserSettings.h"
+#include "HAL/IConsoleManager.h"
+
+namespace
+{
+	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
+	// Do this once on boot (no per-frame work).
+	void ApplyCrispRenderingDefaults()
+	{
+		if (GEngine)
+		{
+			if (UGameUserSettings* GUS = GEngine->GetGameUserSettings())
+			{
+				// Ensure we're rendering at native resolution (no upscaling blur).
+				GUS->SetDynamicResolutionEnabled(false);
+				GUS->SetResolutionScaleValueEx(100.f);
+				GUS->ApplySettings(false);
+			}
+		}
+
+		auto SetCVarFloat = [](const TCHAR* Name, float Value)
+		{
+			if (IConsoleVariable* CVar = IConsoleManager::Get().FindConsoleVariable(Name))
+			{
+				CVar->Set(Value, ECVF_SetByGameSetting);
+			}
+		};
+		auto SetCVarInt = [](const TCHAR* Name, int32 Value)
+		{
+			if (IConsoleVariable* CVar = IConsoleManager::Get().FindConsoleVariable(Name))
+			{
+				CVar->Set(Value, ECVF_SetByGameSetting);
+			}
+		};
+
+		SetCVarFloat(TEXT("r.ScreenPercentage"), 100.f);
+		SetCVarFloat(TEXT("r.SecondaryScreenPercentage.GameViewport"), 100.f);
+		SetCVarInt(TEXT("r.DynamicRes.OperationMode"), 0);
+		SetCVarInt(TEXT("r.TemporalAA.Upsampling"), 0);
+	}
+}
 
 UT66GameInstance::UT66GameInstance()
 {
@@ -18,6 +60,8 @@ void UT66GameInstance::Init()
 {
 	Super::Init();
 
+	ApplyCrispRenderingDefaults();
+
 	// Pre-load DataTables on init if paths are set
 	GetHeroDataTable();
 	GetCompanionDataTable();
@@ -26,6 +70,7 @@ void UT66GameInstance::Init()
 	GetStagesDataTable();
 	GetHouseNPCsDataTable();
 	GetLoanSharkDataTable();
+	GetCharacterVisualsDataTable();
 }
 
 UDataTable* UT66GameInstance::GetHeroDataTable()
@@ -137,6 +182,12 @@ void UT66GameInstance::EnsureCachedItemIDsByRarity()
 		FItemData D;
 		if (GetItemData(ItemID, D))
 		{
+			// Canonical item list: items that exist in the game should be both lootable and purchasable.
+			// v0 rule: BuyValueGold > 0 indicates it is part of the canonical pool.
+			if (D.BuyValueGold <= 0)
+			{
+				continue;
+			}
 			switch (D.ItemRarity)
 			{
 				case ET66ItemRarity::Black: CachedItemIDs_Black.Add(ItemID); break;
@@ -227,6 +278,15 @@ UDataTable* UT66GameInstance::GetLoanSharkDataTable()
 		CachedLoanSharkDataTable = LoanSharkDataTable.LoadSynchronous();
 	}
 	return CachedLoanSharkDataTable;
+}
+
+UDataTable* UT66GameInstance::GetCharacterVisualsDataTable()
+{
+	if (!CachedCharacterVisualsDataTable && !CharacterVisualsDataTable.IsNull())
+	{
+		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.LoadSynchronous();
+	}
+	return CachedCharacterVisualsDataTable;
 }
 
 bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)

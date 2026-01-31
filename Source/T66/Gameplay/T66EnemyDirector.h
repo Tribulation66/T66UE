@@ -37,6 +37,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float GoblinThiefChance = 0.05f;
 
+	/** Unique enemy (flying debuff shooter). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	TSubclassOf<AT66EnemyBase> UniqueEnemyClass;
+
+	/** Chance per spawn wave to also spawn a Unique enemy (if none active). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float UniqueEnemyChancePerWave = 0.25f;
+
 	/** Spawn interval in seconds */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float SpawnIntervalSeconds = 20.f;
@@ -72,4 +80,6 @@ protected:
 	FTimerHandle SpawnTimerHandle;
 	int32 AliveCount = 0;
 	bool bSpawningArmed = false;
+
+	TWeakObjectPtr<AT66EnemyBase> ActiveUniqueEnemy;
 };

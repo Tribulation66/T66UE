@@ -18,7 +18,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 1;
+	int32 SchemaVersion = 2;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -27,7 +27,21 @@ public:
 
 	// ===== Gameplay =====
 	UPROPERTY(SaveGame)
-	bool bIntenseVisuals = true;
+	bool bPracticeMode = false;
+
+	UPROPERTY(SaveGame)
+	bool bSubmitLeaderboardAnonymous = false;
+
+	UPROPERTY(SaveGame)
+	bool bSpeedRunMode = false;
+
+	UPROPERTY(SaveGame)
+	bool bGoonerMode = false;
+
+	// ===== Legacy (not surfaced in Settings UI) =====
+	// Kept for backward compatibility with existing saves / future VFX tuning.
+	UPROPERTY(SaveGame)
+	bool bIntenseVisuals = false;
 
 	UPROPERTY(SaveGame)
 	bool bAutoSprint = false;
@@ -36,10 +50,10 @@ public:
 	bool bSubmitScoresToLeaderboard = true;
 
 	UPROPERTY(SaveGame)
-	bool bScreenShake = true;
+	bool bScreenShake = false;
 
 	UPROPERTY(SaveGame)
-	bool bCameraSmoothing = true;
+	bool bCameraSmoothing = false;
 
 	// ===== Audio =====
 	UPROPERTY(SaveGame)

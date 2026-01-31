@@ -15,12 +15,18 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPanelVisibilityChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDied);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnScoreChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageTimerChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpeedRunTimerChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDebtChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGamblerAngerChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnIdolsChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeroProgressChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUltimateChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSurvivalChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnVendorChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStatusEffectsChanged);
 
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
@@ -37,6 +43,13 @@ public:
 	static constexpr int32 DefaultStartGold = 100;
 	static constexpr int32 MaxInventorySlots = 5;
 	static constexpr int32 MaxEquippedIdolSlots = 3;
+	static constexpr int32 DefaultHeroLevel = 1;
+	static constexpr int32 DefaultXPToLevel = 100;
+	static constexpr float UltimateCooldownSeconds = 30.f;
+	static constexpr int32 UltimateDamage = 200;
+	static constexpr float SurvivalChargePerHeart = 0.20f; // 5 hearts of damage -> full
+	static constexpr float LastStandDurationSeconds = 10.f;
+	static constexpr int32 VendorAngerThresholdGold = 100;
 	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
 	static constexpr int32 MaxEventLogEntries = 400;
 	static constexpr int32 MaxStructuredEventLogEntries = 800;
@@ -69,6 +82,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnStageTimerChanged StageTimerChanged;
 
+	/** Speedrun elapsed time (per-stage; starts when stage timer becomes active). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnSpeedRunTimerChanged SpeedRunTimerChanged;
+
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnStageChanged StageChanged;
 
@@ -87,6 +104,26 @@ public:
 	/** Equipped idols changed (slot 0..2). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnIdolsChanged IdolsChanged;
+
+	/** Hero XP/Level changed (used for HUD + derived stats). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnHeroProgressChanged HeroProgressChanged;
+
+	/** Ultimate cooldown changed (used for HUD). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnUltimateChanged UltimateChanged;
+
+	/** Survival charge / last-stand state changed (used for HUD + derived stats). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnSurvivalChanged SurvivalChanged;
+
+	/** Vendor shop / anger changed (used by Vendor overlay). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnVendorChanged VendorChanged;
+
+	/** Hero status effects changed (burn/chill/curse). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnStatusEffectsChanged StatusEffectsChanged;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentHearts() const { return CurrentHearts; }
@@ -213,8 +250,22 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetStageTimerSecondsRemaining() const { return StageTimerSecondsRemaining; }
 
+	/**
+	 * Speedrun elapsed time (per-stage).
+	 * Starts counting when the stage timer becomes active (i.e., after leaving the start area / crossing the start gate).
+	 * Resets to 0 when the stage timer is reset/frozen for the next stage.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetSpeedRunElapsedSeconds() const { return SpeedRunElapsedSeconds; }
+
 	/** Call every frame from GameMode Tick to count down when timer is active. */
 	void TickStageTimer(float DeltaTime);
+
+	/** Call every frame from GameMode Tick to update speedrun timer. */
+	void TickSpeedRunTimer(float DeltaTime);
+
+	/** Call every frame from GameMode Tick to tick ultimate + last-stand timers. */
+	void TickHeroTimers(float DeltaTime);
 
 	/** Reset timer to full duration and freeze (e.g. when entering next stage so start gate starts it again). */
 	void ResetStageTimerToFull();
@@ -290,6 +341,201 @@ public:
 	bool HasInventorySpace() const { return Inventory.Num() < MaxInventorySlots; }
 
 	// ============================================
+	// Hero Level / Stats
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
+	int32 GetHeroLevel() const { return HeroLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
+	int32 GetHeroXP() const { return HeroXP; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
+	int32 GetHeroXPToNextLevel() const { return XPToNextLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
+	float GetHeroXP01() const { return (XPToNextLevel <= 0) ? 0.f : FMath::Clamp(static_cast<float>(HeroXP) / static_cast<float>(XPToNextLevel), 0.f, 1.f); }
+
+	/** Add XP and auto-level (v0: 100 XP per level). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Hero")
+	void AddHeroXP(int32 Amount);
+
+	/** Stat points (v0): each stat == current HeroLevel. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetSpeedStat() const { return HeroLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetDamageStat() const { return HeroLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetAttackSpeedStat() const { return HeroLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetScaleStat() const { return HeroLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetArmorStat() const { return HeroLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetEvasionStat() const { return HeroLevel; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetLuckStat() const { return FMath::Max(1, HeroLevel + ItemBonusLuckFlat); }
+
+	/** Derived multipliers from hero stats (separate from item multipliers). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetHeroMoveSpeedMultiplier() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetHeroDamageMultiplier() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetHeroAttackSpeedMultiplier() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetHeroScaleMultiplier() const;
+
+	/** Damage reduction percent (0..1) applied to incoming hits (v0: 1% per level). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetArmorReduction01() const;
+
+	/** Dodge chance percent (0..1) (v0: 1% per level). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetEvasionChance01() const;
+
+	// ============================================
+	// Vendor (Shop + Anger + Stealing)
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
+	int32 GetVendorAngerGold() const { return VendorAngerGold; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
+	float GetVendorAnger01() const { return FMath::Clamp(static_cast<float>(VendorAngerGold) / static_cast<float>(VendorAngerThresholdGold), 0.f, 1.f); }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
+	void ResetVendorForStage();
+
+	/** Reset only vendor anger (used when VendorBoss is defeated). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
+	void ResetVendorAnger();
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
+	void EnsureVendorStockForCurrentStage();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
+	const TArray<FName>& GetVendorStockItemIDs() const { return VendorStockItemIDs; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
+	bool IsVendorStockSlotSold(int32 Index) const;
+
+	/** Attempt to buy a vendor slot; returns true if purchased. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
+	bool TryBuyVendorStockSlot(int32 Index);
+
+	/** Attempt to steal a vendor slot (grants item if success). Always increases anger based on attempt outcome. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
+	bool ResolveVendorStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess);
+
+	/** True if vendor anger has reached threshold and a boss should spawn. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
+	bool IsVendorAngryEnoughToBoss() const { return VendorAngerGold >= VendorAngerThresholdGold; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
+	bool HasBoughtFromVendorThisStage() const { return bVendorBoughtSomethingThisStage; }
+
+	// ============================================
+	// Stage Boost (Difficulty start)
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|StageBoost")
+	bool IsInStageBoost() const { return bInStageBoost; }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|StageBoost")
+	void SetInStageBoost(bool bInBoost);
+
+	// ============================================
+	// Ultimate
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
+	bool IsUltimateReady() const { return UltimateCooldownRemainingSeconds <= 0.f; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
+	float GetUltimateCooldownRemainingSeconds() const { return FMath::Max(0.f, UltimateCooldownRemainingSeconds); }
+
+	/** Consume ultimate if ready; returns true if it was activated. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|Ultimate")
+	bool TryActivateUltimate();
+
+	// ============================================
+	// Survival / Last Stand
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
+	float GetSurvivalCharge01() const { return SurvivalCharge01; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
+	bool IsInLastStand() const { return bInLastStand; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
+	float GetLastStandSecondsRemaining() const { return FMath::Max(0.f, LastStandSecondsRemaining); }
+
+	/** Additional multiplier during last stand (v0: 2x speed + 2x attack speed). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
+	float GetLastStandMoveSpeedMultiplier() const { return bInLastStand ? 2.f : 1.f; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
+	float GetLastStandAttackSpeedMultiplier() const { return bInLastStand ? 2.f : 1.f; }
+
+	// ============================================
+	// Stage effects (ground tiles)
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|StageEffects")
+	float GetStageMoveSpeedMultiplier() const { return StageMoveSpeedMultiplier; }
+
+	/** Temporary speed boost from stage tiles. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
+	void ApplyStageSpeedBoost(float MoveSpeedMultiplier, float DurationSeconds);
+
+	// ============================================
+	// Hero status effects (Unique enemy debuffs)
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Status")
+	bool HasStatusBurn() const { return StatusBurnSecondsRemaining > 0.f; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Status")
+	bool HasStatusChill() const { return StatusChillSecondsRemaining > 0.f; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Status")
+	bool HasStatusCurse() const { return StatusCurseSecondsRemaining > 0.f; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Status")
+	float GetStatusMoveSpeedMultiplier() const { return StatusChillSecondsRemaining > 0.f ? StatusChillMoveSpeedMultiplier : 1.f; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Status")
+	float GetStatusCurseAlpha01() const { return HasStatusCurse() ? 1.f : 0.f; }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Status")
+	void ApplyStatusBurn(float DurationSeconds, float DamagePerSecond);
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Status")
+	void ApplyStatusChill(float DurationSeconds, float MoveSpeedMultiplier);
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Status")
+	void ApplyStatusCurse(float DurationSeconds);
+
+	/** Damage that bypasses evasion/armor (used by status effects). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Status")
+	bool ApplyTrueDamage(int32 Hearts);
+
+	/** Item-derived move speed multiplier (separate from hero level). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items|Derived")
+	float GetItemMoveSpeedMultiplier() const { return ItemMoveSpeedMultiplier; }
+
+	// ============================================
 	// Items -> Derived combat tuning (event-driven)
 	// ============================================
 
@@ -325,6 +571,8 @@ public:
 private:
 	void TrimLogsIfNeeded();
 	void RecomputeItemDerivedStats();
+	void EnterLastStand();
+	void EndLastStandAndDie();
 
 	UPROPERTY()
 	int32 CurrentHearts = DefaultMaxHearts;
@@ -378,6 +626,19 @@ private:
 	/** Last integer second we broadcasted (throttle StageTimerChanged to once per second). */
 	int32 LastBroadcastStageTimerSecond = static_cast<int32>(StageTimerDurationSeconds);
 
+	// Speedrun timer (counts up from start gate; resets each stage).
+	UPROPERTY()
+	float SpeedRunElapsedSeconds = 0.f;
+
+	UPROPERTY()
+	float SpeedRunStartWorldSeconds = 0.f;
+
+	UPROPERTY()
+	bool bSpeedRunStarted = false;
+
+	/** Last integer second we broadcasted (throttle SpeedRunTimerChanged to once per second). */
+	int32 LastBroadcastSpeedRunSecond = -1;
+
 	UPROPERTY()
 	int32 CurrentScore = 0;
 
@@ -411,5 +672,53 @@ private:
 	float ItemAttackSpeedMultiplier = 1.f;
 	float DashCooldownMultiplier = 1.f;
 	float ItemScaleMultiplier = 1.f;
+
+	// Extra item-derived modifiers beyond base "Power"
+	float ItemMoveSpeedMultiplier = 1.f;
+	float ItemArmorBonus01 = 0.f;
+	float ItemEvasionBonus01 = 0.f;
+	int32 ItemBonusLuckFlat = 0;
+
+	// ============================================
+	// Hero XP / Level + timers
+	// ============================================
+
+	int32 HeroLevel = DefaultHeroLevel;
+	int32 HeroXP = 0;
+	int32 XPToNextLevel = DefaultXPToLevel;
+
+	float UltimateCooldownRemainingSeconds = 0.f;
+	int32 LastBroadcastUltimateSecond = 0;
+
+	float SurvivalCharge01 = 0.f;
+	bool bInLastStand = false;
+	float LastStandSecondsRemaining = 0.f;
+	int32 LastBroadcastLastStandSecond = 0;
+
+	// ============================================
+	// Vendor shop state (per-stage)
+	// ============================================
+
+	int32 VendorAngerGold = 0;
+	int32 VendorStockStage = 0;
+	TArray<FName> VendorStockItemIDs;
+	TArray<bool> VendorStockSold;
+	bool bVendorBoughtSomethingThisStage = false;
+
+	bool bInStageBoost = false;
+
+	// Stage effects
+	float StageMoveSpeedMultiplier = 1.f;
+	float StageMoveSpeedSecondsRemaining = 0.f;
+
+	// Status effects
+	float StatusBurnSecondsRemaining = 0.f;
+	float StatusBurnDamagePerSecond = 0.f;
+	float StatusBurnAccumDamage = 0.f;
+
+	float StatusChillSecondsRemaining = 0.f;
+	float StatusChillMoveSpeedMultiplier = 1.f;
+
+	float StatusCurseSecondsRemaining = 0.f;
 	float InvulnDurationSeconds = DefaultInvulnDurationSeconds;
 };

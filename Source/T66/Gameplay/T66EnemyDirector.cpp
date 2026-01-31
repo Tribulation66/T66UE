@@ -5,6 +5,7 @@
 #include "Gameplay/T66LeprechaunEnemy.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -17,6 +18,7 @@ AT66EnemyDirector::AT66EnemyDirector()
 	EnemyClass = AT66EnemyBase::StaticClass();
 	LeprechaunClass = AT66LeprechaunEnemy::StaticClass();
 	GoblinThiefClass = AT66GoblinThiefEnemy::StaticClass();
+	UniqueEnemyClass = AT66UniqueDebuffEnemy::StaticClass();
 }
 
 void AT66EnemyDirector::BeginPlay()
@@ -73,7 +75,7 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 void AT66EnemyDirector::SpawnWave()
 {
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
-	if (!PlayerPawn || !EnemyClass) return;
+	if (!PlayerPawn) return;
 
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
@@ -88,6 +90,24 @@ void AT66EnemyDirector::SpawnWave()
 
 	UWorld* World = GetWorld();
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
+
+	// Robust fallback: if EnemyClass is unset or misconfigured to a special enemy, use base enemy for the "regular" slot.
+	TSubclassOf<AT66EnemyBase> RegularClass = EnemyClass;
+	if (!RegularClass
+		|| RegularClass->IsChildOf(AT66GoblinThiefEnemy::StaticClass())
+		|| RegularClass->IsChildOf(AT66LeprechaunEnemy::StaticClass())
+		|| RegularClass->IsChildOf(AT66UniqueDebuffEnemy::StaticClass()))
+	{
+		static bool bWarnedEnemyClass = false;
+		if (!bWarnedEnemyClass)
+		{
+			bWarnedEnemyClass = true;
+			const FString BadName = RegularClass ? RegularClass->GetName() : FString(TEXT("None"));
+			UE_LOG(LogTemp, Warning, TEXT("EnemyDirector: EnemyClass is '%s' (invalid for regular). Falling back to AT66EnemyBase for regular spawns."), *BadName);
+		}
+		RegularClass = AT66EnemyBase::StaticClass();
+	}
+
 	for (int32 i = 0; i < ToSpawn; ++i)
 	{
 		FVector PlayerLoc = PlayerPawn->GetActorLocation();
@@ -137,7 +157,7 @@ void AT66EnemyDirector::SpawnWave()
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 		// Pick which enemy type to spawn.
-		TSubclassOf<AT66EnemyBase> ClassToSpawn = EnemyClass;
+		TSubclassOf<AT66EnemyBase> ClassToSpawn = RegularClass;
 		const float Roll = Rng.FRand();
 		if (LeprechaunClass && Roll < LeprechaunChance)
 		{
@@ -169,6 +189,60 @@ void AT66EnemyDirector::SpawnWave()
 			}
 			AliveCount++;
 			UE_LOG(LogTemp, Log, TEXT("EnemyDirector: spawned enemy %d at (%.0f, %.0f, %.0f)"), AliveCount, SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
+		}
+	}
+
+	// Unique enemy: one at a time, spawned as a pressure spike.
+	if (UniqueEnemyClass && !ActiveUniqueEnemy.IsValid() && (Rng.FRand() < UniqueEnemyChancePerWave))
+	{
+		FVector PlayerLoc = PlayerPawn->GetActorLocation();
+		FVector SpawnLoc = PlayerLoc;
+
+		// Try a few times to avoid spawning inside safe zones.
+		for (int32 Try = 0; Try < 6; ++Try)
+		{
+			float Angle = FMath::RandRange(0.f, 2.f * PI);
+			float Dist = FMath::RandRange(SpawnMinDistance, SpawnMaxDistance);
+			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
+			SpawnLoc = PlayerLoc + Offset;
+
+			bool bInSafe = false;
+			for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+			{
+				AT66HouseNPCBase* NPC = *It;
+				if (!NPC) continue;
+				const float R = NPC->GetSafeZoneRadius();
+				if (FVector::DistSquared2D(SpawnLoc, NPC->GetActorLocation()) < (R * R))
+				{
+					bInSafe = true;
+					break;
+				}
+			}
+			if (!bInSafe) break;
+		}
+
+		// Trace down for ground.
+		FHitResult Hit;
+		FVector Start = SpawnLoc + FVector(0.f, 0.f, 500.f);
+		FVector End = SpawnLoc - FVector(0.f, 0.f, 2000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		{
+			static constexpr float EnemyCapsuleHalfHeight = 88.f;
+			SpawnLoc = Hit.ImpactPoint + FVector(0.f, 0.f, EnemyCapsuleHalfHeight);
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		AT66EnemyBase* Unique = World->SpawnActor<AT66EnemyBase>(UniqueEnemyClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		if (Unique)
+		{
+			// Unique enemies shouldn't influence the director's AliveCount budget.
+			Unique->OwningDirector = nullptr;
+			if (RunState)
+			{
+				Unique->ApplyDifficultyTier(RunState->GetDifficultyTier());
+			}
+			ActiveUniqueEnemy = Unique;
 		}
 	}
 }

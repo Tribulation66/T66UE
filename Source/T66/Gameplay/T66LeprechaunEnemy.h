@@ -32,6 +32,9 @@ public:
 
 	virtual bool TakeDamageFromHero(int32 Damage) override;
 
+protected:
+	virtual void BeginPlay() override;
+
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> HeadSphere;

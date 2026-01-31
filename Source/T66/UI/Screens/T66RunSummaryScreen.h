@@ -27,6 +27,7 @@ public:
 	void OnViewLogClicked();
 
 protected:
+	virtual void OnScreenActivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:

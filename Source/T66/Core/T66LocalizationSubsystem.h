@@ -175,6 +175,18 @@ public:
 	FText GetText_ControlUltimate() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlOpenFullMap() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlToggleMediaViewer() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlToggleGamerMode() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlRestartRun() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
 	FText GetText_ControlAttackLock() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
@@ -186,19 +198,16 @@ public:
 
 	// Gameplay settings labels
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
-	FText GetText_IntenseVisuals() const;
+	FText GetText_PracticeMode() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
-	FText GetText_AutoSprint() const;
+	FText GetText_SubmitLeaderboardAnonymous() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
-	FText GetText_SubmitScoresToLeaderboard() const;
+	FText GetText_SpeedRunMode() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
-	FText GetText_ScreenShake() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Gameplay")
-	FText GetText_CameraSmoothing() const;
+	FText GetText_GoonerMode() const;
 
 	// Graphics settings labels/options
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")

@@ -3,6 +3,7 @@
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -172,7 +173,10 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	// Use dynamic lambdas so button colors update when tier changes
 	auto MakeTierButton = [this, &GetTierColor, &GetTierTextColor](const FText& Text, ET66AchievementTier Tier) -> TSharedRef<SWidget>
 	{
-		return SNew(SBox).WidthOverride(100.0f).HeightOverride(40.0f).Padding(FMargin(4.0f, 0.0f))
+		const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+		const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+
+		return SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(40.0f).Padding(FMargin(4.0f, 0.0f))
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -181,9 +185,11 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 					bool bIsSelected = (CurrentTier == Tier);
 					return GetTierColor(Tier, bIsSelected);
 				})
+				.ButtonStyle(&BtnNeutral)
+				.ContentPadding(FMargin(12.f, 8.f))
 				[
 					SNew(STextBlock).Text(Text)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+					.TextStyle(&TxtChip)
 					.ColorAndOpacity_Lambda([this, Tier, GetTierTextColor]() -> FSlateColor {
 						bool bIsSelected = (CurrentTier == Tier);
 						return GetTierTextColor(Tier, bIsSelected);
@@ -193,7 +199,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	};
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.0f))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
 		[
 			SNew(SVerticalBox)
 			// Header row
@@ -206,14 +212,14 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
 				[
 					SNew(STextBlock).Text(AchievementsText)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 42))
-					.ColorAndOpacity(FLinearColor::White)
+					.Font(FT66Style::Tokens::FontBold(42))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				// Total AC display
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SNew(SBorder)
-					.BorderBackgroundColor(FLinearColor(0.15f, 0.12f, 0.05f, 1.0f))
+					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 					.Padding(FMargin(15.0f, 8.0f))
 					[
 						SNew(SHorizontalBox)
