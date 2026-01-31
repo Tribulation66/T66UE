@@ -3,6 +3,28 @@
 This file is the persistent memory for any AI agent working on T66.
 It must be kept up-to-date so a new agent can resume work safely without guessing.
 
+## HARD RULE (Non‑Negotiable) — Localize *every* new player-facing string at implementation time
+
+**Any time you add or change player-facing text, you must complete the full localization pipeline as part of that same change-set (no “we’ll translate it later”).**
+
+- **1) Author text correctly (no manual per-language logic)**
+  - Use **`LOCTEXT` / `NSLOCTEXT`** and/or **String Tables** (`FText::FromStringTable`).
+  - **Never** add `switch(CurrentLanguage)` translation tables or other per-language string logic.
+  - **Never** ship new UI strings via `FText::FromString(TEXT("..."))` (except truly non-player-facing debug/dev strings).
+- **2) Gather**
+  - Run GatherText (source and/or assets as applicable) so the new keys land in `Content/Localization/T66/T66.manifest` and the `.archive` files.
+- **3) Translate (all 22 supported cultures)**
+  - Populate translations for **all** supported cultures (22 total; `en` + 21 others).
+  - Approved approaches:
+    - Update `.po` / `.archive` entries manually (human translation), OR
+    - Run the offline batch translator (`Scripts/AutoTranslateLocalizationArchives.py`) to populate `.archive` translations as a baseline.
+- **4) Compile**
+  - Run compile (`Config/Localization/T66_Compile.ini`) to regenerate `Content/Localization/T66/<culture>/T66.locres`.
+- **5) Verify**
+  - Verify the new text visibly changes when switching culture (and that UI remains event-driven; no tick polling).
+
+**Agent acknowledgement requirement:** After reading `memory.md` and `T66_Cursor_Guidelines.md`, the agent must explicitly acknowledge this rule in its next message before making changes (e.g., “Acknowledged: any new player-facing text will be localized end-to-end: author → gather → translate → compile `.locres` → verify.”).
+
 **Rule:** This is not a brainstorm file. It is an engineering log + state tracker.
 
 **Hard Rule (Localization / Culture-based):** Every **player-facing** string must be localized using Unreal’s **culture-based localization pipeline** (gather → translations → `.locres` at runtime). This includes Slate/UMG text, prompts, tooltips, NPC names, achievement text, and button labels.  
@@ -19,7 +41,7 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
 - **Repo path:** C:\UE\T66 (Windows) / c:\UE\T66
 - **Engine version:** Unreal Engine 5.7
 - **Active branch:** main
-- **Last known-good commit:** 5758aa0 (Gameplay progression, Coliseum fallback, and map layout)
+- **Last known-good commit:** 2f24cb4 (HUD: map/minimap, lock-on, range ring, wheel HUD, TikTok toggle)
 - **Current milestone:** Phase 3+ — Stage progression + bosses + miasma + NPCs + debt + Coliseum + map layout
 - **Build status:** ✅ C++ compiles successfully
 - **Model pipeline status:** ✅ Imported + wired (data-driven)
@@ -149,6 +171,37 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
   - `Get-ChildItem -Path "C:\UE\T66\Content\Localization\T66" -Recurse -Filter *.locres | % FullName`
 - Verified runtime culture override does **not** fall back due to missing localization paths:
   - `T66.exe -culture=fr ...` logs `Overriding language with command-line option (fr).` and does **not** print `No localization for 'fr' exists...`.
+
+### 2026-01-31 — Batch translations authored (offline) + `.locres` regenerated; Language Select UX fixes
+
+**Goal**
+- Ensure runtime language switching visibly changes UI text by populating non-English translations (no longer empty archives → English fallback).
+- Fix Language Select UX: persistent selection highlight, spacing regression, and ensure language names do not change when culture changes.
+
+**What changed**
+- **Offline translation pass (machine baseline)**
+  - Added `Scripts/AutoTranslateLocalizationArchives.py`:
+    - Reads `Content/Localization/T66/en/T66.archive`
+    - Writes `Translation.Text` for every entry into each target culture’s `Content/Localization/T66/<culture>/T66.archive`
+    - Uses offline Argos Translate models cached in `Saved/Localization/ArgosModels/`
+    - Includes a lockfile (`Saved/Localization/AutoTranslateLocalizationArchives.lock`) to prevent concurrent runs clobbering archives.
+  - Populated translations for the full 22-culture set:
+    - `en`, `zh-Hans`, `zh-Hant`, `ja`, `ko`, `ru`, `pl`, `de`, `fr`, `es-ES`, `es-419`, `pt-BR`, `pt-PT`, `it`, `tr`, `uk`, `cs`, `hu`, `th`, `vi`, `id`, `ar`
+- **Compile `.locres` after translation**
+  - Ran compile-only:
+    - `UnrealEditor-Cmd.exe ... -run=GatherText -config="Config/Localization/T66_Compile.ini" -log="Saved/Logs/T66_Compile_AfterTranslate.log"`
+  - Verified `.locres` exists per-culture at: `Content/Localization/T66/<culture>/T66.locres` (sizes differ from `en`).
+- **Language Select UX**
+  - `UT66LanguageSelectScreen`:
+    - Persistent visual highlight is bound to `PreviewedLanguage` (stays highlighted until another is clicked).
+    - Reverted list spacing/centering to the prior feel (after the scrollability work) while keeping highlight.
+    - Confirm now applies culture after closing the modal to avoid the selector’s own localized UI visibly switching mid-interaction.
+  - `UT66LocalizationSubsystem::GetLanguageDisplayName`:
+    - Changed to `FText::AsCultureInvariant(...)` so language names in the selector remain in their native forms and do **not** change when the game culture changes.
+
+**Verification**
+- `T66Editor` builds successfully after changes.
+- Compile commandlet completed with exit code 0 and wrote `.locres` for all cultures.
 
 ### 2026-01-31 — Character visuals pipeline + 3D previews overhaul + stage tiles visibility + boundary/wall fixes
 
