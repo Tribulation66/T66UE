@@ -22,3 +22,6 @@ Thumbs.db
 
 # Build artifacts
 Build/
+
+# Source art / raw imports (do not commit)
+SourceAssets/
