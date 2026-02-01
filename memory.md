@@ -123,6 +123,12 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
   - `StaticMeshComponent0 has to be 'Movable' if you'd like to move`
 - `AT66GameMode` now temporarily sets spawned/updated dev geometry (`AStaticMeshActor` floors/walls) to **Movable** while applying transform, then back to **Static**.
 
+**Follow-up (remove placeholder houses)**
+- Removed the corner “house cube” visuals and kept only the NPCs + safe-zone discs:
+  - `AT66GameMode::SpawnCornerHousesAndNPCs()` no longer spawns `AT66HouseBlock`.
+- Deleted unused placeholder house actor class:
+  - `Source/T66/Gameplay/T66HouseBlock.h/.cpp`
+
 ### 2026-01-31 — In-run HUD overhaul (map/minimap) + lock-on/crosshair + range ring + wheel HUD spin + TikTok placeholder
 
 **HUD layout + map/minimap**

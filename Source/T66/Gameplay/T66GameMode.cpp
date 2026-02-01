@@ -9,7 +9,6 @@
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66MiasmaManager.h"
-#include "Gameplay/T66HouseBlock.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66SaintNPC.h"
@@ -752,11 +751,10 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Main area: houses are placed near the 4 corners of the main square.
+	// Main area: corner NPCs are placed near the 4 corners of the main square.
 	// NOTE: NPC safe-zones are centered on the NPC cylinders (not the house blocks),
 	// so we place the NPCs *inward* toward the map center to keep the full bubble inside bounds.
 	const float Corner = 7000.f;
-	const float HouseZ = 200.f; // big cube house sits on ground (half-height 200)
 	const float NPCZ = 60.f;    // small cylinder NPC sits on ground-ish
 	const float NPCOffset = 700.f;
 
@@ -770,10 +768,10 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 
 	// Placeholder colors: Vendor=Black, Gambler=Red, Ouroboros=Green, Saint=White
 	const TArray<FCornerDef> Corners = {
-		{ FVector( Corner,  Corner, HouseZ), AT66VendorNPC::StaticClass(),    NSLOCTEXT("T66.NPC", "Vendor", "Vendor"),        FLinearColor(0.05f,0.05f,0.05f,1.f) },
-		{ FVector( Corner, -Corner, HouseZ), AT66GamblerNPC::StaticClass(),   NSLOCTEXT("T66.NPC", "Gambler", "Gambler"),      FLinearColor(0.8f,0.1f,0.1f,1.f) },
-		{ FVector(-Corner,  Corner, HouseZ), AT66OuroborosNPC::StaticClass(), NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros"),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
-		{ FVector(-Corner, -Corner, HouseZ), AT66SaintNPC::StaticClass(),     NSLOCTEXT("T66.NPC", "Saint", "Saint"),          FLinearColor(0.9f,0.9f,0.9f,1.f) },
+		{ FVector( Corner,  Corner, NPCZ), AT66VendorNPC::StaticClass(),    NSLOCTEXT("T66.NPC", "Vendor", "Vendor"),        FLinearColor(0.05f,0.05f,0.05f,1.f) },
+		{ FVector( Corner, -Corner, NPCZ), AT66GamblerNPC::StaticClass(),   NSLOCTEXT("T66.NPC", "Gambler", "Gambler"),      FLinearColor(0.8f,0.1f,0.1f,1.f) },
+		{ FVector(-Corner,  Corner, NPCZ), AT66OuroborosNPC::StaticClass(), NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros"),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
+		{ FVector(-Corner, -Corner, NPCZ), AT66SaintNPC::StaticClass(),     NSLOCTEXT("T66.NPC", "Saint", "Saint"),          FLinearColor(0.9f,0.9f,0.9f,1.f) },
 	};
 
 	FActorSpawnParameters SpawnParams;
@@ -781,14 +779,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 
 	for (const FCornerDef& D : Corners)
 	{
-		AT66HouseBlock* House = World->SpawnActor<AT66HouseBlock>(AT66HouseBlock::StaticClass(), D.CornerLoc, FRotator::ZeroRotator, SpawnParams);
-		if (House)
-		{
-			House->HouseColor = D.Color;
-			House->ApplyVisuals();
-		}
-
-		// NPC cylinder next to house (interactable; for now all sell items)
+		// Corner NPC (interactable). Place inward from the corner so the safe-zone disc stays fully on-map.
 		const float SX = (D.CornerLoc.X >= 0.f) ? 1.f : -1.f;
 		const float SY = (D.CornerLoc.Y >= 0.f) ? 1.f : -1.f;
 		const FVector NPCLoc(

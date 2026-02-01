@@ -6,18 +6,54 @@
 
 #include "Misc/Paths.h"
 
+// NOTE: WebView2 requires Win32 headers, but they define macros like `max`, `PlaySound`, `UpdateResource`
+// which can break Unreal/standard headers when using unity builds. Wrap + undef to keep the TU clean.
+#include "Windows/AllowWindowsPlatformTypes.h"
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-
 #include <windows.h>
 #include <objbase.h>
-#include <string>
+#include <intrin.h>
+
+// Some Windows SDK/UE include permutations can result in WRL headers not seeing InterlockedCompareExchange.
+// Provide a tiny local fallback only for the WRL include, then immediately undef it to avoid polluting the TU.
+#if !defined(InterlockedCompareExchange)
+static __forceinline LONG T66_InterlockedCompareExchange(volatile LONG* Destination, LONG Exchange, LONG Comparand)
+{
+	return _InterlockedCompareExchange(reinterpret_cast<volatile long*>(Destination), Exchange, Comparand);
+}
+#define InterlockedCompareExchange T66_InterlockedCompareExchange
+#define T66_UNDEF_INTERLOCKED_COMPAREEXCHANGE 1
+#endif
+
 #include <wrl.h>
+
+#if defined(T66_UNDEF_INTERLOCKED_COMPAREEXCHANGE)
+#undef InterlockedCompareExchange
+#undef T66_UNDEF_INTERLOCKED_COMPAREEXCHANGE
+#endif
+
 #include <WebView2.h>
+#include "Windows/HideWindowsPlatformTypes.h"
+
+#if defined(PlaySound)
+#undef PlaySound
+#endif
+#if defined(UpdateResource)
+#undef UpdateResource
+#endif
+#if defined(max)
+#undef max
+#endif
+#if defined(min)
+#undef min
+#endif
+
+#include <string>
 
 namespace
 {
@@ -287,7 +323,7 @@ struct FT66WebView2Host::FImpl
 	{
 		if (Host)
 		{
-			MoveWindow(Host, ScreenR.Min.X, ScreenR.Min.Y, ScreenR.Width(), ScreenR.Height(), TRUE);
+			MoveWindow(Host, ScreenR.Min.X, ScreenR.Min.Y, ScreenR.Width(), ScreenR.Height(), 1);
 		}
 		if (Ctrl)
 		{
@@ -372,7 +408,7 @@ struct FT66WebView2Host::FImpl
 								Ctrl->get_CoreWebView2(&View);
 
 								// IMPORTANT: This is toggled on open/close. If we hide it, we must re-show it.
-								Ctrl->put_IsVisible(bWantVisible ? TRUE : FALSE);
+								Ctrl->put_IsVisible(bWantVisible ? 1 : 0);
 								UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] Controller/WebView ready."));
 								LogHwndInfo(TEXT("HostPostController"), Host);
 
@@ -388,11 +424,11 @@ struct FT66WebView2Host::FImpl
 								ComPtr<ICoreWebView2Settings> Settings;
 								if (SUCCEEDED(View->get_Settings(&Settings)) && Settings)
 								{
-									Settings->put_AreDefaultContextMenusEnabled(FALSE);
-									Settings->put_AreDevToolsEnabled(FALSE);
-									Settings->put_IsStatusBarEnabled(FALSE);
-									Settings->put_IsZoomControlEnabled(FALSE);
-									Settings->put_IsBuiltInErrorPageEnabled(TRUE);
+									Settings->put_AreDefaultContextMenusEnabled(0);
+									Settings->put_AreDevToolsEnabled(0);
+									Settings->put_IsStatusBarEnabled(0);
+									Settings->put_IsZoomControlEnabled(0);
+									Settings->put_IsBuiltInErrorPageEnabled(1);
 								}
 
 								// Force an opaque background to avoid any transparency / desktop bleed artifacts.
@@ -413,7 +449,7 @@ struct FT66WebView2Host::FImpl
 										{
 											if (Args)
 											{
-												Args->put_Handled(TRUE);
+												Args->put_Handled(1);
 											}
 											return S_OK;
 										}).Get(),
@@ -432,7 +468,7 @@ struct FT66WebView2Host::FImpl
 												if (!IsAllowedUrl(Url))
 												{
 													UE_LOG(LogTemp, Warning, TEXT("[TIKTOK][WEBVIEW2] BLOCK nav '%s'"), *ShortUrl(Url));
-													Args->put_Cancel(TRUE);
+													Args->put_Cancel(1);
 													return S_OK;
 												}
 												UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] NavStarting '%s'"), *ShortUrl(Url));
@@ -782,7 +818,7 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 	if (Impl->Ctrl && Impl->Host)
 	{
 		Impl->ApplyBoundsScreen(ScreenRectPx);
-		Impl->Ctrl->put_IsVisible(TRUE);
+		Impl->Ctrl->put_IsVisible(1);
 		ShowWindow(Impl->Host, SW_SHOWNA);
 		SetWindowPos(Impl->Host, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
@@ -875,7 +911,7 @@ void FT66WebView2Host::Hide()
 
 		if (Impl->Ctrl)
 		{
-			Impl->Ctrl->put_IsVisible(FALSE);
+			Impl->Ctrl->put_IsVisible(0);
 		}
 		if (Impl->Host)
 		{

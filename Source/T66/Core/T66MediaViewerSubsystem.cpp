@@ -12,7 +12,30 @@
 #include "Core/T66WebView2Host.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericWindow.h"
+#include "Windows/AllowWindowsPlatformTypes.h"
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include "Windows/WindowsHWrapper.h"
 #include <objbase.h>
+#include "Windows/HideWindowsPlatformTypes.h"
+
+// Prevent Win32 macros from leaking into unity TUs.
+#if defined(PlaySound)
+#undef PlaySound
+#endif
+#if defined(UpdateResource)
+#undef UpdateResource
+#endif
+#if defined(max)
+#undef max
+#endif
+#if defined(min)
+#undef min
+#endif
 #endif
 
 void UT66MediaViewerSubsystem::ToggleMediaViewer()
