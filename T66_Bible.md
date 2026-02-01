@@ -2,6 +2,17 @@
 
 Visual-first UI + gameplay descriptions (for design lock-in) + internal inventories (for planning).
 
+## 0.0 Post-BibleV1 implementation notes (repo truth)
+
+This Bible is periodically reconciled to match the current repository implementation. When a section conflicts with the repo, the repo’s behavior is treated as the current truth and this document is updated.
+
+Key reconciled decisions so far:
+- **Stage 1 tutorial**: implemented as a dedicated enclosed **Tutorial Area** (separate from the normal Start Area) with a **portal teleport** into the Start Area (no level load).
+- **Enemy spawning**: current “waves” are **interval-based** (time + MaxAlive cap) rather than point-budget “clear-to-start-next-wave” pacing.
+- **Mini-bosses**: implemented as scaled-up versions of normal mobs (limited to 1 active at a time) with rarity-biased loot.
+- **Unique enemies**: implemented as a flying ranged debuff shooter applying Burn/Chill/Curse via projectiles (not via an explosion).
+- **Loot bags**: current baseline is one loot bag per enemy death when `bDropsLoot` is true (no per-enemy drop chance yet).
+
 # 1. FRONTEND - BEFORE THE RUN
 
 ## 1.1 BOOT INTRO
@@ -674,9 +685,14 @@ New Game Arrival (Meteor Drop): When entering a run for the first time (or start
 
 Restart Entry (Fast): If the run is restarted (Pause Menu → Restart), the Start Area entry is fast and skips the Meteor Landing. Resuming a saved run also skips the Meteor Landing.
 
-First-Run Tutorial Behavior (Stage 1 Only): If this is the player’s first time ever playing, Stage 1 uses a special larger Tutorial Start Area. This larger Start Area contains the full tutorial flow and guidance before the player exits into the main map. In all other cases (including all later stages), the Start Area is the standard small version.
+First-Run Tutorial Behavior (Stage 1 Only): If this is the player’s first time ever playing, Stage 1 begins in a dedicated enclosed Tutorial Area (separate from the normal Start Area) inside the gameplay map. This Tutorial Area contains the full tutorial flow and guidance. Once the tutorial combat is completed, a Tutorial Portal appears; interacting with it teleports the player to the normal Stage 1 Start Area (no level load). In all other cases (including all later stages), the player spawns directly into the standard small Start Area.
 
-Tutorial White Item Demonstration: During the first-run tutorial, a single safe tutorial enemy spawns and drops a guaranteed White item bag. The tutorial also forces one White proc by requiring one Auto Attack hit so the mechanic is clearly demonstrated.
+Tutorial Item Demonstrations (Stage 1, first run):
+- Auto Attack: the tutorial introduces auto attack behavior and has the player kill a single safe tutorial enemy.
+- First bag: after that kill, a guaranteed Black loot bag appears containing a deterministic tutorial item whose primary stat matches the hero’s highest stat.
+- Mini-boss + Ult: after the item explanation, an “elite” tutorial enemy spawns with mini-boss multipliers and the tutorial prompts the player to use ULT (R).
+- White bag: after the mini-boss dies, a guaranteed White loot bag appears and the tutorial explains White items.
+- Final wave + exit: the tutorial spawns a short wave encounter inside the Tutorial Area; once cleared, the Tutorial Portal is available to enter the standard Start Area.
 
 Gate Start Rule: After the tutorial sequence (first run) or immediately (all other runs), the player exits the Start Area through the gate into the stage map. Crossing this gate begins the stage countdown timer and wave system for that stage.
 
@@ -944,9 +960,9 @@ Enemy Catch-Up Teleport (Anti-Ditch Rule): If the player gets too far from activ
 
 Wave Budgets + Enemy Point Value:
 
-- Wave composition is driven by a point budget.
+- Point budgets are a planned tuning axis, but the current implementation is interval-based spawning (time + MaxAlive cap), not point-budget spending.
 
-- Every enemy has a PointValue used to build waves and support stage scoring caps.
+- Every enemy has a PointValue used for Bounty score and run event logging, and it remains the planned input for future point-budget wave composition and scoring caps.
 
 Enemy Data Schema (Required Fields): MovementProfile, BaseDamage, AttackPatternID/Descriptor, PointValue.
 
@@ -954,7 +970,7 @@ Enemy Data Schema (Required Fields): MovementProfile, BaseDamage, AttackPatternI
 
 Each stage in Tribulation 66 is short, deterministic, and aggressively time-pressured. The stage timer does not start until the player crosses the entry gate into the main square map. When the gate is crossed, the countdown begins at 6:66. Miasma starts rising from the first second of the timer and continues rising throughout the stage, collapsing the playable space until full coverage at 0. When the timer reaches 0 and the map is fully covered, miasma damage becomes unavoidable and will tick the players down until death.
 
-Enemy waves arrive in rapid bursts. The tuning target is 6–9 waves per stage, roughly one minute per wave. The next wave does not begin until the last wave-counting enemy dies and any active Unique enemies have been resolved (killed or exploded), which creates a clear rhythm: survive the burst, clear the field, then face the next burst.
+Enemy spawns are driven by an interval-based Enemy Director that only activates once the stage timer is active (after the Start Gate). The director periodically attempts to spawn enemies near the player up to a MaxAlive cap, creating continuous pressure rather than discrete “clear-to-start-next-wave” pacing.
 
 Co-op Revive: In co-op, a dead teammate can be revived by interacting once (tap Interact). This triggers a short defibrillator revive animation that grants brief i-frames to the reviver. The revived player returns with exactly one heart and gains a short Supercharged buff (faster movement + faster attacks) for a few seconds.
 
@@ -962,25 +978,23 @@ Co-op Economy: Gold is personal per player (not shared).
 
 Each normal stage contains four color-coded corner houses that act as interactable safe bubbles (Vendor, Gambler, Saint, Ouroboros). Players can shop, gamble, detour, or avoid danger while time keeps running. Exception: Boss-Only Checkpoint Stages do not include these houses and are a clean boss arena only.
 
-Wave composition is driven by a point budget. The wave director spends the budget on wave-counting enemies. Unique enemies can spawn at any time as pressure spikes and do not replace the core wave population. Mini-bosses may appear with roughly a 50% chance per wave, capped at 1 per wave. All non-boss enemies are melee-only.
+Enemy spawning (current implementation):
+
+- Regular mobs spawn as part of interval-based spawn waves (time + MaxAlive cap).
+- Mini-bosses are scaled-up versions of normal stage mobs and are limited to 1 active at a time; when eligible, at most 1 mini-boss can be selected within a spawn wave (default chance is ~10% per spawn wave).
+- Unique enemies can spawn as additional pressure spikes (default chance is ~25% per spawn wave when no Unique is active). Unique enemies are flying ranged debuff shooters; their projectiles apply damage and a hero status effect (Burn/Chill/Curse). Unique enemies do not drop loot or items and do not award XP/score.
 
 Unique Enemies (Pressure Spikes + Hero Status Source):
 
-• Unique enemies can appear during waves as pressure spikes, and Stage Bosses can also summon Unique enemies during boss fights.
+• Unique enemies can appear during the stage as pressure spikes (spawned by the Enemy Director when eligible). Only one Unique can be active at a time.
 
-• Unique enemies are temporary. If not killed, they explode automatically after a short duration.
+• Unique enemies are temporary. If not killed, they despawn automatically after a short lifetime window.
 
-• Unique explosions deal damage and apply the Unique’s hero-facing status effect.
-
-• Being hit by a Unique explosion counts as the Unique hitting the hero (it triggers the status + the heart visual effect change).
+• Unique enemies apply their hero-facing status effect via debuff projectiles (not via an explosion). Being hit applies the status and drives the heart visual effect change.
 
 • Unique enemies are valid targets for Manual Attack Lock, so the player can click-lock them and focus them down.
 
-• If the player kills a Unique enemy before its timer ends, the explosion does not happen (preventing the damage/status).
-
-• Unique enemies do not drop loot bags or items.
-
-• Wave-clear requirement: Unique enemies must be resolved by being killed or by exploding before the wave is considered cleared.
+• Unique enemies do not drop loot bags or items, and do not award XP/score.
 
 Skulls (Burden) affect future spawns only. When a wave begins, the wave director snapshots the current Burden tier and uses it for that wave’s scaling. Already-spawned enemies do not change retroactively when Burden changes mid-wave.
 
@@ -1068,7 +1082,7 @@ Additional Field: LuckImpactValue (can be negative). Example: Goblin Thief spawn
 
 ### 2.11.1 Specials
 
-Global specials can appear in any stage and do not count toward wave-clear conditions. Waves end only when all wave-counting enemies are dead and any active Unique enemies have been resolved (killed or exploded). Global specials are rarity-scaled in strength.
+Global specials can appear in any stage as part of the enemy spawning pressure system. The current implementation does not use discrete “wave-clear conditions” to gate the next spawns; instead, spawning is interval-based (time + MaxAlive cap). Global specials are rarity-scaled in strength.
 
 ### 2.11.2 Core Rules
 
@@ -1263,18 +1277,16 @@ Safe bubble: The Trickster is surrounded by the standard NPC safe bubble (enemie
 
 ## 3.1 LOOT BAG DROP (ENEMY DEATH ROLL)
 
-Required Fields (Luck Input): LootBagDropChance, MinBagsPerStage, MaxBagsPerStage.
+Planned Fields (Luck Input): LootBagDropChance, MinBagsPerStage, MaxBagsPerStage.
 
 Note: Loot bag drop outcomes and bag counts contribute to Luck Rating (unusually high counts push Luck upward).
 
-Enemies have a per-archetype Loot Bag drop chance that is rolled once on death.
+Loot Bag drops (current implementation):
 
-- Each enemy archetype has LootBagDropChancePercent (defined in the Enemy Loot Drop Table).
-- On enemy death, roll once. Success spawns a Loot Bag at the death location. Failure spawns nothing.
-- Loot Bag drops are per-enemy, not per-wave.
-Stage Seed Range: each stage has a seeded expected range for how many Loot Bags can drop overall, enforcing guaranteed minimums and preventing extreme dry streaks.
-
-- Mini-bosses may use a different Loot Bag drop chance (or a guaranteed drop) as defined in the table. Unique enemies do not drop Loot Bags or items.
+- If an enemy’s `bDropsLoot` is true, it spawns **one** Loot Bag on death (no per-enemy drop chance yet).
+- The Loot Bag rarity is rolled using a Luck-weighted rarity roll.
+- Mini-bosses bias toward higher rarity by rolling rarity twice (Luck-weighted) and taking the better result.
+- Unique enemies do not drop Loot Bags or items.
 
 ## 3.2 LOOT BAG RARITY ODDS (PROBABILITY TABLE)
 

@@ -59,6 +59,19 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
 
 ---
 
+## 0.1) Keystone audit: Bible reconciliation index
+
+This section exists to prevent “spec drift” between `T66_Bible.md` and the repo. When the repo’s behavior diverges from the Bible, we reconcile the Bible to match the repo and list the updated sections here.
+
+- **Keystone audit checklist**: `T66_Keystone_Audit_Report.md`
+- **Bible sections reconciled (doc updates)**:
+  - `T66_Bible.md` → **2.2 START AREA + GATE START** (Stage 1 first-run tutorial is a dedicated Tutorial Area + portal teleport into Start Area)
+  - `T66_Bible.md` → **2.9 IN-RUN STAGE FLOW** (interval-based enemy spawns; mini-boss + Unique behavior updated)
+  - `T66_Bible.md` → **2.11.1 Specials** (removed wave-clear gating language; aligned to interval-based spawns)
+  - `T66_Bible.md` → **Loot Bag drops** section (aligned to “1 bag per enemy death when `bDropsLoot` is true” + mini-boss rarity bias)
+
+---
+
 ## 1) Guardrails (always true)
 
 - Make changes in **atomic change-sets**.
@@ -89,6 +102,58 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-02-01 — Asset audit + remove unused `WBP_T66Button`
+
+**Goal**
+- Run the UI `WBP_*` asset audit and remove proven-unused UI bloat in a tiny batch.
+
+**What changed**
+- `Scripts/AssetAudit.py`:
+  - Fixed UE5.7 commandlet compatibility (AssetData API differences, dependency options API differences, referencer type handling).
+  - Report now lists only `WidgetBlueprint` assets (avoids `WidgetBlueprintGeneratedClass` duplicates).
+- Updated `T66_Asset_Audit_Report.md`:
+  - `/Game/Blueprints/UI` → `WBP_*` found: **9**
+  - Unreferenced (non-optional): **0**
+- Removed unused asset:
+  - Deleted `Content/Blueprints/UI/Components/WBP_T66Button.uasset` (`/Game/Blueprints/UI/Components/WBP_T66Button`)
+- Prevent reintroduction via setup scripts:
+  - `Scripts/FullSetup.py` no longer auto-creates `WBP_T66Button`.
+  - `Scripts/VerifySetup.py` no longer expects `WBP_T66Button`.
+- Build fix (ValidateFast blocker):
+  - `Source/T66/Core/T66GameInstance.h` and `Source/T66/Gameplay/T66GameMode.h` forward declare `FStreamableHandle` as `struct` (fixes MSVC `C4099`).
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- Asset audit ✅:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=pythonscript -script="C:\UE\T66\Scripts\AssetAudit.py" -unattended -nop4 -nosplash -nullrhi`
+- VerifySetup ✅:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=pythonscript -script="C:\UE\T66\Scripts\VerifySetup.py" -unattended -nop4 -nosplash -nullrhi`
+- ValidateFast (UE 5.7) ✅:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+### 2026-02-01 — Keystone docs: audit report + Bible reconciliation + guideline hardening
+
+**Goal**
+- Establish a keystone “single checklist” and reduce future spec drift.
+
+**What changed**
+- Added `T66_Keystone_Audit_Report.md` (session checklist: divergences + perf/leak risks + bloat strategy).
+- Reconciled `T66_Bible.md` to match current repo behavior for:
+  - Stage 1 tutorial vs Start Area
+  - Interval-based spawns (vs point-budget / wave-clear pacing)
+  - Mini-boss + Unique enemy behavior
+  - Loot bag drop behavior (including mini-boss rarity bias)
+- Hardened `T66_Cursor_Guidelines.md` with:
+  - Low-end performance checklist
+  - Lifetime safety checklist
+  - Optional-by-design WBP override note
+
+**Localization**
+- Docs only; no new player-facing runtime strings.
 
 ### 2026-02-01 — Vendor/Gambler layouts: reserve left space + 2×2 grids + shorter buttons
 

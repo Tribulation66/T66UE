@@ -118,6 +118,51 @@ void AT66EnemyDirector::SpawnWave()
 	UWorld* World = GetWorld();
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 
+	// Cache safe-zone NPCs per-world so we don't do repeated full actor iterators during spawn waves.
+	struct FSafeNPCache
+	{
+		TWeakObjectPtr<UWorld> World;
+		double LastRefreshSeconds = -1.0;
+		TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
+	};
+	static FSafeNPCache SafeCache;
+
+	auto RefreshSafeCacheIfNeeded = [&]()
+	{
+		if (!World) return;
+		const double NowSeconds = FPlatformTime::Seconds();
+		const bool bWorldChanged = (SafeCache.World.Get() != World);
+		const bool bNeedsRefresh = bWorldChanged || (SafeCache.LastRefreshSeconds < 0.0) || ((NowSeconds - SafeCache.LastRefreshSeconds) > 2.0);
+		if (!bNeedsRefresh) return;
+
+		SafeCache.World = World;
+		SafeCache.LastRefreshSeconds = NowSeconds;
+		SafeCache.NPCs.Reset();
+		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+		{
+			if (AT66HouseNPCBase* NPC = *It)
+			{
+				SafeCache.NPCs.Add(NPC);
+			}
+		}
+	};
+
+	auto IsInAnySafeZone2D = [&](const FVector& Loc) -> bool
+	{
+		RefreshSafeCacheIfNeeded();
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : SafeCache.NPCs)
+		{
+			AT66HouseNPCBase* NPC = WeakNPC.Get();
+			if (!NPC) continue;
+			const float R = NPC->GetSafeZoneRadius();
+			if (FVector::DistSquared2D(Loc, NPC->GetActorLocation()) < (R * R))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
 	// Robust fallback: if EnemyClass is unset or misconfigured to a special enemy, use base enemy for the "regular" slot.
 	TSubclassOf<AT66EnemyBase> RegularClass = EnemyClass;
 	if (!RegularClass
@@ -169,19 +214,7 @@ void AT66EnemyDirector::SpawnWave()
 			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
 			SpawnLoc = PlayerLoc + Offset;
 
-			bool bInSafe = false;
-			for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
-			{
-				AT66HouseNPCBase* NPC = *It;
-				if (!NPC) continue;
-				const float R = NPC->GetSafeZoneRadius();
-				if (FVector::DistSquared2D(SpawnLoc, NPC->GetActorLocation()) < (R * R))
-				{
-					bInSafe = true;
-					break;
-				}
-			}
-			if (!bInSafe)
+			if (!IsInAnySafeZone2D(SpawnLoc))
 			{
 				break;
 			}
@@ -292,19 +325,7 @@ void AT66EnemyDirector::SpawnWave()
 			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
 			SpawnLoc = PlayerLoc + Offset;
 
-			bool bInSafe = false;
-			for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
-			{
-				AT66HouseNPCBase* NPC = *It;
-				if (!NPC) continue;
-				const float R = NPC->GetSafeZoneRadius();
-				if (FVector::DistSquared2D(SpawnLoc, NPC->GetActorLocation()) < (R * R))
-				{
-					bInSafe = true;
-					break;
-				}
-			}
-			if (!bInSafe) break;
+			if (!IsInAnySafeZone2D(SpawnLoc)) break;
 		}
 
 		// Trace down for ground.

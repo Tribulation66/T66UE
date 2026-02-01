@@ -23,6 +23,7 @@ class T66_API UT66GamblerOverlayWidget : public UUserWidget
 
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeDestruct() override;
 
 	void CloseOverlay();
 

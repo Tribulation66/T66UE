@@ -1,6 +1,5 @@
 """
 Complete T66 Setup Script
-- Creates WBP_T66Button widget blueprint
 - Configures BP_T66GameInstance with DataTable references
 - Configures BP_T66PlayerController with ScreenClasses
 - Configures GameModes with PlayerController class
@@ -368,33 +367,28 @@ def main():
     unreal.log("T66 FULL SETUP SCRIPT")
     unreal.log("=" * 60)
 
-    # 1. Create button widget
-    unreal.log("")
-    unreal.log("--- Creating Button Widget ---")
-    create_button_widget()
-
-    # 2. Configure Game Instance
+    # 1. Configure Game Instance
     unreal.log("")
     unreal.log("--- Configuring BP_T66GameInstance ---")
     configure_game_instance()
 
-    # 3. Configure Player Controller
+    # 2. Configure Player Controller
     unreal.log("")
     unreal.log("--- Configuring BP_T66PlayerController ---")
     configure_player_controller()
 
-    # 4. Configure GameModes
+    # 3. Configure GameModes
     unreal.log("")
     unreal.log("--- Configuring GameModes ---")
     configure_frontend_gamemode()
     configure_gameplay_gamemode()
 
-    # 5. Import DataTable data
+    # 4. Import DataTable data
     unreal.log("")
     unreal.log("--- Importing DataTable Data ---")
     import_datatable_csv()
 
-    # 6. Configure map GameMode overrides (Frontend/Gameplay)
+    # 5. Configure map GameMode overrides (Frontend/Gameplay)
     unreal.log("")
     unreal.log("--- Configuring Map GameModes ---")
     try:
@@ -406,7 +400,7 @@ def main():
     except Exception as e:
         unreal.log_warning(f"Could not run T66UISetupSubsystem map configuration: {e}")
 
-    # 7. Verify
+    # 6. Verify
     verify_all_assets()
 
     unreal.log("")

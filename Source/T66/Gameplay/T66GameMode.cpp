@@ -33,6 +33,8 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "Engine/DirectionalLight.h"
@@ -175,6 +177,10 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			RunState->DifficultyChanged.RemoveDynamic(this, &AT66GameMode::HandleDifficultyChanged);
 		}
 	}
+
+	ActiveAsyncLoadHandles.Reset();
+	PlayerCompanions.Reset();
+	StageBoss = nullptr;
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -524,6 +530,52 @@ void AT66GameMode::SpawnAllOwedBossesInColiseum()
 		return;
 	}
 
+	// Preload any BossClass soft references asynchronously to avoid hitches.
+	// If a load fails/misses, we still spawn with AT66BossBase as a fallback.
+	if (!bColiseumBossesAsyncLoadAttempted && !bColiseumBossesAsyncLoadInFlight)
+	{
+		TArray<FSoftObjectPath> PathsToLoad;
+		PathsToLoad.Reserve(Owed.Num());
+		for (const FName& BossID : Owed)
+		{
+			if (BossID.IsNone()) continue;
+
+			FBossData BossData;
+			if (T66GI->GetBossData(BossID, BossData))
+			{
+				if (!BossData.BossClass.IsNull())
+				{
+					// Only request async load if the class isn't already resident.
+					if (!BossData.BossClass.Get())
+					{
+						PathsToLoad.AddUnique(BossData.BossClass.ToSoftObjectPath());
+					}
+				}
+			}
+		}
+
+		if (PathsToLoad.Num() > 0)
+		{
+			bColiseumBossesAsyncLoadAttempted = true;
+			bColiseumBossesAsyncLoadInFlight = true;
+
+			TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				PathsToLoad,
+				FStreamableDelegate::CreateWeakLambda(this, [this]()
+				{
+					bColiseumBossesAsyncLoadInFlight = false;
+					SpawnAllOwedBossesInColiseum();
+				}));
+			if (Handle.IsValid())
+			{
+				ActiveAsyncLoadHandles.Add(Handle);
+				return;
+			}
+			// If async load couldn't start, fall through to immediate spawning (with fallbacks).
+			bColiseumBossesAsyncLoadInFlight = false;
+		}
+	}
+
 	// Reset and spawn.
 	ColiseumBossesRemaining = 0;
 
@@ -557,7 +609,7 @@ void AT66GameMode::SpawnAllOwedBossesInColiseum()
 		UClass* BossClass = AT66BossBase::StaticClass();
 		if (!BossData.BossClass.IsNull())
 		{
-			if (UClass* Loaded = BossData.BossClass.LoadSynchronous())
+			if (UClass* Loaded = BossData.BossClass.Get())
 			{
 				if (Loaded->IsChildOf(AT66BossBase::StaticClass()))
 				{
@@ -704,11 +756,31 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 	APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
 	if (!HeroPawn) return;
 
-	UClass* CompanionClass = AT66CompanionBase::StaticClass();
-	if (!CompanionData.CompanionClass.IsNull())
+	// Prevent duplicate companions on respawn.
+	if (Player)
 	{
-		UClass* Loaded = CompanionData.CompanionClass.LoadSynchronous();
-		if (Loaded) CompanionClass = Loaded;
+		if (TWeakObjectPtr<AT66CompanionBase>* Existing = PlayerCompanions.Find(Player))
+		{
+			if (AT66CompanionBase* ExistingComp = Existing->Get())
+			{
+				ExistingComp->Destroy();
+			}
+			PlayerCompanions.Remove(Player);
+		}
+	}
+
+	UClass* CompanionClass = AT66CompanionBase::StaticClass();
+	const bool bWantsSpecificClass = !CompanionData.CompanionClass.IsNull();
+	const bool bHasLoadedClass = bWantsSpecificClass && (CompanionData.CompanionClass.Get() != nullptr);
+	if (bHasLoadedClass)
+	{
+		if (UClass* Loaded = CompanionData.CompanionClass.Get())
+		{
+			if (Loaded->IsChildOf(AT66CompanionBase::StaticClass()))
+			{
+				CompanionClass = Loaded;
+			}
+		}
 	}
 
 	FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(-150.f, 100.f, 0.f);
@@ -720,6 +792,10 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 	{
 		Companion->InitializeCompanion(CompanionData);
 		Companion->SetPreviewMode(false); // gameplay: follow hero
+		if (Player)
+		{
+			PlayerCompanions.Add(Player, Companion);
+		}
 		// Snap companion to ground so it doesn't float.
 		FHitResult Hit;
 		const FVector Start = Companion->GetActorLocation() + FVector(0.f, 0.f, 2000.f);
@@ -729,6 +805,68 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 			Companion->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
 		}
 		UE_LOG(LogTemp, Log, TEXT("Spawned companion: %s"), *CompanionData.DisplayName.ToString());
+	}
+
+	// If the companion class is a soft reference and isn't loaded yet, load asynchronously and replace.
+	if (bWantsSpecificClass && !bHasLoadedClass)
+	{
+		const FSoftObjectPath ClassPath = CompanionData.CompanionClass.ToSoftObjectPath();
+		const TWeakObjectPtr<AController> WeakPlayer(Player);
+		const TWeakObjectPtr<AT66CompanionBase> WeakExisting(Companion);
+		const FCompanionData CompanionDataCopy = CompanionData;
+
+		TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+			ClassPath,
+			FStreamableDelegate::CreateWeakLambda(this, [this, WeakPlayer, WeakExisting, CompanionDataCopy]()
+			{
+				AController* PlayerCtrl = WeakPlayer.Get();
+				if (!PlayerCtrl) return;
+
+				UWorld* World2 = GetWorld();
+				if (!World2) return;
+
+				UClass* Loaded = CompanionDataCopy.CompanionClass.Get();
+				if (!Loaded || !Loaded->IsChildOf(AT66CompanionBase::StaticClass()))
+				{
+					return;
+				}
+
+				AT66CompanionBase* ExistingComp = WeakExisting.Get();
+				// If the existing companion is already the correct class (or was destroyed), do nothing.
+				if (ExistingComp && ExistingComp->GetClass() == Loaded)
+				{
+					return;
+				}
+
+				// Remove the old companion if it's still around.
+				if (TWeakObjectPtr<AT66CompanionBase>* Current = PlayerCompanions.Find(PlayerCtrl))
+				{
+					if (AT66CompanionBase* C = Current->Get())
+					{
+						C->Destroy();
+					}
+					PlayerCompanions.Remove(PlayerCtrl);
+				}
+
+				APawn* HeroPawn2 = PlayerCtrl->GetPawn();
+				if (!HeroPawn2) return;
+
+				FVector SpawnLoc2 = HeroPawn2->GetActorLocation() + FVector(-150.f, 100.f, 0.f);
+				FActorSpawnParameters SpawnParams2;
+				SpawnParams2.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				AT66CompanionBase* NewComp = World2->SpawnActor<AT66CompanionBase>(Loaded, SpawnLoc2, FRotator::ZeroRotator, SpawnParams2);
+				if (NewComp)
+				{
+					NewComp->InitializeCompanion(CompanionDataCopy);
+					NewComp->SetPreviewMode(false);
+					PlayerCompanions.Add(PlayerCtrl, NewComp);
+				}
+			}));
+		if (Handle.IsValid())
+		{
+			ActiveAsyncLoadHandles.Add(Handle);
+		}
 	}
 }
 
@@ -1157,9 +1295,11 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	}
 
 	UClass* BossClass = AT66BossBase::StaticClass();
-	if (!BossData.BossClass.IsNull())
+	const bool bWantsSpecificBossClass = !BossData.BossClass.IsNull();
+	const bool bBossClassLoaded = bWantsSpecificBossClass && (BossData.BossClass.Get() != nullptr);
+	if (bBossClassLoaded)
 	{
-		if (UClass* Loaded = BossData.BossClass.LoadSynchronous())
+		if (UClass* Loaded = BossData.BossClass.Get())
 		{
 			if (Loaded->IsChildOf(AT66BossBase::StaticClass()))
 			{
@@ -1184,7 +1324,51 @@ void AT66GameMode::SpawnBossForCurrentStage()
 		}
 
 		Boss->InitializeBoss(BossData);
+		StageBoss = Boss;
 		UE_LOG(LogTemp, Log, TEXT("Spawned boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
+
+		// If the boss class is a soft reference and isn't loaded yet, load asynchronously and replace the dormant boss.
+		if (bWantsSpecificBossClass && !bBossClassLoaded)
+		{
+			const FSoftObjectPath ClassPath = BossData.BossClass.ToSoftObjectPath();
+			const TWeakObjectPtr<AT66BossBase> WeakExistingBoss(Boss);
+			const FBossData BossDataCopy = BossData;
+
+			TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				ClassPath,
+				FStreamableDelegate::CreateWeakLambda(this, [this, WeakExistingBoss, BossDataCopy]()
+				{
+					UWorld* World2 = GetWorld();
+					if (!World2) return;
+
+					UClass* Loaded = BossDataCopy.BossClass.Get();
+					if (!Loaded || !Loaded->IsChildOf(AT66BossBase::StaticClass()))
+					{
+						return;
+					}
+
+					AT66BossBase* ExistingBoss = WeakExistingBoss.Get();
+					if (!ExistingBoss) return;
+					if (ExistingBoss->GetClass() == Loaded) return;
+
+					// Preserve the already-snapped location so the replacement doesn't float/sink.
+					const FVector Loc = ExistingBoss->GetActorLocation();
+					ExistingBoss->Destroy();
+
+					FActorSpawnParameters SpawnParams2;
+					SpawnParams2.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+					AActor* Spawned2 = World2->SpawnActor<AActor>(Loaded, Loc, FRotator::ZeroRotator, SpawnParams2);
+					if (AT66BossBase* NewBoss = Cast<AT66BossBase>(Spawned2))
+					{
+						NewBoss->InitializeBoss(BossDataCopy);
+						StageBoss = NewBoss;
+					}
+				}));
+			if (Handle.IsValid())
+			{
+				ActiveAsyncLoadHandles.Add(Handle);
+			}
+		}
 	}
 }
 
@@ -1893,10 +2077,19 @@ UClass* AT66GameMode::GetDefaultPawnClassForController_Implementation(AControlle
 			// If the hero has a specific class defined, use that
 			if (!HeroData.HeroClass.IsNull())
 			{
-				UClass* HeroClass = HeroData.HeroClass.LoadSynchronous();
-				if (HeroClass)
+				// Avoid sync loads during spawn; prefer already-loaded class, otherwise fall back safely.
+				if (UClass* HeroClass = HeroData.HeroClass.Get())
 				{
 					return HeroClass;
+				}
+
+				// Kick off an async load so subsequent spawns can use the intended class without hitching.
+				TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+					HeroData.HeroClass.ToSoftObjectPath(),
+					FStreamableDelegate());
+				if (Handle.IsValid())
+				{
+					ActiveAsyncLoadHandles.Add(Handle);
 				}
 			}
 		}

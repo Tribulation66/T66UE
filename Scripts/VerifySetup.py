@@ -48,7 +48,6 @@ def main():
         "/Game/Blueprints/UI/WBP_SaveSlots",
         "/Game/Blueprints/UI/WBP_Settings",
         "/Game/Blueprints/UI/WBP_QuitConfirmation",
-        "/Game/Blueprints/UI/Components/WBP_T66Button",
     ]
     for path in widgets:
         status = check_asset_exists(path)

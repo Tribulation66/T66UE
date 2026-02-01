@@ -85,6 +85,7 @@ private:
 	int32 PendingStealIndex = -1;
 	float StealMarker01 = 0.f;
 	bool bStealForward = true;
+	float StealLastTickTimeSeconds = 0.f;
 	FTimerHandle StealTickTimerHandle;
 
 	// Per-visit gating: must buy once before any stealing.

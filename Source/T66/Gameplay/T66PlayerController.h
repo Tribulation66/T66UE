@@ -25,6 +25,8 @@ class AT66VendorNPC;
 class AT66GamblerNPC;
 enum class ET66Rarity : uint8;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
+
 /**
  * Player Controller for Tribulation 66
  * Handles both frontend (UI) and gameplay modes
@@ -102,6 +104,10 @@ public:
 	void SetNearbyLootBag(AT66LootBagPickup* LootBag);
 	void ClearNearbyLootBag(AT66LootBagPickup* LootBag);
 	AT66LootBagPickup* GetNearbyLootBag() const { return NearbyLootBag.Get(); }
+
+	/** Broadcast whenever the nearby loot bag changes (enter/exit overlap). */
+	UPROPERTY(BlueprintAssignable, Category = "Loot")
+	FT66NearbyLootBagChanged NearbyLootBagChanged;
 
 protected:
 	virtual void BeginPlay() override;

@@ -37,6 +37,31 @@ public:
 	UFUNCTION()
 	void RefreshHUD();
 
+	// Targeted refreshes (avoid calling full RefreshHUD for every tiny change).
+	UFUNCTION()
+	void RefreshEconomy();
+
+	UFUNCTION()
+	void RefreshStageAndTimer();
+
+	UFUNCTION()
+	void RefreshSpeedRunTimers();
+
+	UFUNCTION()
+	void RefreshBossBar();
+
+	UFUNCTION()
+	void RefreshTutorialHint();
+
+	UFUNCTION()
+	void RefreshHearts();
+
+	UFUNCTION()
+	void RefreshStatusEffects();
+
+	UFUNCTION()
+	void RefreshLootPrompt();
+
 	/** Full-screen map overlay (M / OpenFullMap). */
 	void SetFullMapOpen(bool bOpen);
 	bool IsFullMapOpen() const { return bFullMapOpen; }

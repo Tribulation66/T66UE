@@ -26,6 +26,7 @@ class UT66GameInstance;
 class ADirectionalLight;
 class ASkyLight;
 class APlayerStart;
+struct FStreamableHandle;
 
 /**
  * Game Mode for Tribulation 66 gameplay levels
@@ -181,6 +182,19 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AT66IdolAltar> IdolAltar;
+
+	// Async load tracking (prevents gameplay hitching from sync loads).
+	TArray<TSharedPtr<FStreamableHandle>> ActiveAsyncLoadHandles;
+
+	// Track currently spawned companions per player so respawns don't duplicate them.
+	TMap<TWeakObjectPtr<AController>, TWeakObjectPtr<AT66CompanionBase>> PlayerCompanions;
+
+	// Track the current stage boss so we can safely replace it after async load.
+	TWeakObjectPtr<AT66BossBase> StageBoss;
+
+	// Coliseum: async-load boss classes before spawning.
+	bool bColiseumBossesAsyncLoadInFlight = false;
+	bool bColiseumBossesAsyncLoadAttempted = false;
 
 	// Coliseum state (only used when bForceColiseumMode is true).
 	int32 ColiseumBossesRemaining = 0;

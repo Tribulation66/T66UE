@@ -943,7 +943,11 @@ void AT66PlayerController::StartWheelSpinHUD(ET66Rarity Rarity)
 
 void AT66PlayerController::SetNearbyLootBag(AT66LootBagPickup* LootBag)
 {
-	NearbyLootBag = LootBag;
+	if (NearbyLootBag.Get() != LootBag)
+	{
+		NearbyLootBag = LootBag;
+		NearbyLootBagChanged.Broadcast();
+	}
 }
 
 void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
@@ -951,6 +955,7 @@ void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
 	if (NearbyLootBag.Get() == LootBag)
 	{
 		NearbyLootBag.Reset();
+		NearbyLootBagChanged.Broadcast();
 	}
 }
 

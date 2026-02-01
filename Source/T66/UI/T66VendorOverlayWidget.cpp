@@ -1463,6 +1463,7 @@ void UT66VendorOverlayWidget::ShowStealPrompt(int32 SlotIndex)
 	bStealPromptVisible = true;
 	StealMarker01 = 0.f;
 	bStealForward = true;
+	StealLastTickTimeSeconds = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
 
 	if (StealMarkerSpacerBox.IsValid())
 	{
@@ -1475,7 +1476,8 @@ void UT66VendorOverlayWidget::ShowStealPrompt(int32 SlotIndex)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(StealTickTimerHandle);
-		World->GetTimerManager().SetTimer(StealTickTimerHandle, this, &UT66VendorOverlayWidget::TickStealBar, 0.016f, true);
+		// 30Hz is sufficient for this UI and reduces overhead on low-end CPUs.
+		World->GetTimerManager().SetTimer(StealTickTimerHandle, this, &UT66VendorOverlayWidget::TickStealBar, 0.033f, true);
 	}
 }
 
@@ -1497,7 +1499,12 @@ void UT66VendorOverlayWidget::TickStealBar()
 {
 	// Bounce marker back and forth.
 	const float Speed = 1.6f; // cycles per second-ish
-	const float Delta = 0.016f;
+	UWorld* World = GetWorld();
+	if (!World) return;
+	const float Now = static_cast<float>(World->GetTimeSeconds());
+	float Delta = Now - StealLastTickTimeSeconds;
+	StealLastTickTimeSeconds = Now;
+	Delta = FMath::Clamp(Delta, 0.f, 0.05f);
 	StealMarker01 += (bStealForward ? 1.f : -1.f) * Speed * Delta;
 	if (StealMarker01 >= 1.f) { StealMarker01 = 1.f; bStealForward = false; }
 	if (StealMarker01 <= 0.f) { StealMarker01 = 0.f; bStealForward = true; }

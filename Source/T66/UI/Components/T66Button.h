@@ -94,6 +94,7 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativePreConstruct() override;
+	virtual void NativeDestruct() override;
 
 private:
 	/** Execute the configured action */

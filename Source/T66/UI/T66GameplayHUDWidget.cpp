@@ -522,23 +522,23 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 
-	RunState->HeartsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->GoldChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->DebtChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->HeartsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHearts);
+	RunState->GoldChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
+	RunState->DebtChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 	RunState->InventoryChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->PanelVisibilityChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->ScoreChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->ScoreChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 	RunState->StageChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->StageTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->SpeedRunTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->StageTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStageAndTimer);
+	RunState->SpeedRunTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshSpeedRunTimers);
+	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
 	RunState->DifficultyChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->IdolsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
+	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 
 	if (UGameInstance* GI = GetGameInstance())
@@ -553,10 +553,16 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		}
 	}
 
+	// Loot prompt should update immediately on overlap changes (no stage-timer polling).
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		PC->NearbyLootBagChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshLootPrompt);
+	}
+
 	// Map/minimap refresh (lightweight, throttled timer; no per-frame UI thinking).
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.15f, true);
+		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.25f, true);
 	}
 	RefreshHUD();
 }
@@ -575,24 +581,24 @@ void UT66GameplayHUDWidget::NativeDestruct()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (RunState)
 	{
-		RunState->HeartsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->GoldChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->DebtChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->HeartsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHearts);
+		RunState->GoldChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
+		RunState->DebtChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 		RunState->InventoryChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->PanelVisibilityChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->ScoreChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->ScoreChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 		RunState->StageChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->StageTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->SpeedRunTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->StageTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshStageAndTimer);
+		RunState->SpeedRunTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshSpeedRunTimers);
+		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
 		RunState->DifficultyChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->IdolsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->StatusEffectsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->StatusEffectsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	}
 	if (UGameInstance* GI = GetGameInstance())
 	{
@@ -604,6 +610,11 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		{
 			MV->OnMediaViewerOpenChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::HandleMediaViewerOpenChanged);
 		}
+	}
+
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		PC->NearbyLootBagChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshLootPrompt);
 	}
 	Super::NativeDestruct();
 }
@@ -720,7 +731,7 @@ void UT66GameplayHUDWidget::UpdateTikTokVisibility()
 		if (UWorld* World = GetWorld())
 		{
 			World->GetTimerManager().ClearTimer(TikTokOverlaySyncHandle);
-			World->GetTimerManager().SetTimer(TikTokOverlaySyncHandle, this, &UT66GameplayHUDWidget::SyncTikTokWebView2OverlayToPlaceholder, 0.25f, true);
+			World->GetTimerManager().SetTimer(TikTokOverlaySyncHandle, this, &UT66GameplayHUDWidget::SyncTikTokWebView2OverlayToPlaceholder, 0.50f, true);
 		}
 #endif
 	}
@@ -783,7 +794,8 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	// Big spin: multiple rotations + random offset.
 	WheelTotalAngleDeg = static_cast<float>(Rng.RandRange(5, 9)) * 360.f + static_cast<float>(Rng.RandRange(0, 359));
 
-	World->GetTimerManager().SetTimer(WheelSpinTickHandle, this, &UT66GameplayHUDWidget::TickWheelSpin, 0.016f, true);
+	// 30Hz is plenty for a simple HUD spin and reduces timer overhead on low-end CPUs.
+	World->GetTimerManager().SetTimer(WheelSpinTickHandle, this, &UT66GameplayHUDWidget::TickWheelSpin, 0.033f, true);
 }
 
 void UT66GameplayHUDWidget::TickWheelSpin()
@@ -894,6 +906,13 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		return;
 	}
 
+	// If neither minimap nor full map is visible, skip all work.
+	const bool bMinimapVisible = MinimapPanelBox.IsValid() && (MinimapPanelBox->GetVisibility() != EVisibility::Collapsed);
+	if (!bMinimapVisible && !bFullMapOpen)
+	{
+		return;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World)
 	{
@@ -929,14 +948,11 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	}
 }
 
-void UT66GameplayHUDWidget::RefreshHUD()
+void UT66GameplayHUDWidget::RefreshEconomy()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66PlayerSettingsSubsystem* PS = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
-	UT66LeaderboardSubsystem* LB = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
-	UT66GameInstance* GIAsT66 = Cast<UT66GameInstance>(GetGameInstance());
 
 	// Gold
 	if (GoldText.IsValid())
@@ -944,6 +960,25 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		const FText Fmt = Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
 		GoldText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentGold())));
 	}
+
+	// Owe (Debt) in red
+	if (DebtText.IsValid())
+	{
+		const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}");
+		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
+	}
+
+	// Bounty (Score)
+	if (ScoreText.IsValid())
+	{
+		ScoreText->SetText(FText::AsNumber(RunState->GetCurrentScore()));
+	}
+}
+
+void UT66GameplayHUDWidget::RefreshTutorialHint()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
 
 	// Tutorial hint (above crosshair)
 	if (TutorialHintBorder.IsValid() && TutorialHintLine1Text.IsValid() && TutorialHintLine2Text.IsValid())
@@ -959,19 +994,15 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			TutorialHintLine2Text->SetVisibility(L2.IsEmpty() ? EVisibility::Collapsed : EVisibility::Visible);
 		}
 	}
-	// Owe (Debt) in red
-	if (DebtText.IsValid())
-	{
-		const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}");
-		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
-	}
-	// Bounty (Score)
-	if (ScoreText.IsValid())
-	{
-		ScoreText->SetText(FText::AsNumber(RunState->GetCurrentScore()));
-	}
+}
 
-	// Stage number: x
+void UT66GameplayHUDWidget::RefreshStageAndTimer()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
+	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+
+	// Stage number
 	if (StageText.IsValid())
 	{
 		if (RunState->IsInStageBoost())
@@ -999,6 +1030,15 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			FText::AsNumber(M),
 			FText::AsNumber(S, &TwoDigits)));
 	}
+}
+
+void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
+	UT66PlayerSettingsSubsystem* PS = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* LB = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	UT66GameInstance* GIAsT66 = Cast<UT66GameInstance>(GetGameInstance());
 
 	// Speedrun timer: counts up after leaving the start area (visibility toggled by player setting)
 	if (SpeedRunText.IsValid())
@@ -1052,6 +1092,12 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			}
 		}
 	}
+}
+
+void UT66GameplayHUDWidget::RefreshBossBar()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
 
 	// Boss health bar: visible only when boss awakened
 	const bool bBossActive = RunState->GetBossActive();
@@ -1077,90 +1123,123 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				FText::AsNumber(BossMax)));
 		}
 	}
+}
 
+void UT66GameplayHUDWidget::RefreshLootPrompt()
+{
 	// Loot prompt: top-of-HUD, non-blocking. Accept with F, Reject with RMB.
-	if (LootPromptBox.IsValid())
+	if (!LootPromptBox.IsValid())
 	{
-		AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer());
-		AT66LootBagPickup* Bag = PC ? PC->GetNearbyLootBag() : nullptr;
-		if (Bag)
-		{
-			FItemData D;
-			UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
-			const bool bHasData = T66GI && T66GI->GetItemData(Bag->GetItemID(), D);
-			const FString ItemName = bHasData ? D.ItemID.ToString() : Bag->GetItemID().ToString();
-
-			if (LootPromptText.IsValid())
-			{
-				const FText RarityText =
-					(Bag->GetLootRarity() == ET66Rarity::Black) ? NSLOCTEXT("T66.Rarity", "Black", "BLACK") :
-					(Bag->GetLootRarity() == ET66Rarity::Red) ? NSLOCTEXT("T66.Rarity", "Red", "RED") :
-					(Bag->GetLootRarity() == ET66Rarity::Yellow) ? NSLOCTEXT("T66.Rarity", "Yellow", "YELLOW") :
-					NSLOCTEXT("T66.Rarity", "White", "WHITE");
-
-				LootPromptText->SetText(FText::Format(
-					NSLOCTEXT("T66.GameplayHUD", "LootPromptFormat", "LOOT BAG ({0}): {1}   [F] {2}   [RMB] {3}"),
-					RarityText,
-					FText::FromString(ItemName),
-					NSLOCTEXT("T66.GameplayHUD", "Accept", "Accept"),
-					NSLOCTEXT("T66.GameplayHUD", "Reject", "Reject")));
-			}
-			if (LootPromptBorder.IsValid())
-			{
-				LootPromptBorder->SetBorderBackgroundColor(FT66RarityUtil::GetRarityColor(Bag->GetLootRarity()) * 0.35f + FLinearColor(0.02f, 0.02f, 0.03f, 0.65f));
-			}
-			LootPromptBox->SetVisibility(EVisibility::Visible);
-		}
-		else
-		{
-			LootPromptBox->SetVisibility(EVisibility::Collapsed);
-		}
+		return;
 	}
+
+	AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer());
+	AT66LootBagPickup* Bag = PC ? PC->GetNearbyLootBag() : nullptr;
+	if (!Bag)
+	{
+		LootPromptBox->SetVisibility(EVisibility::Collapsed);
+		return;
+	}
+
+	FItemData D;
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	const bool bHasData = T66GI && T66GI->GetItemData(Bag->GetItemID(), D);
+	const FString ItemName = bHasData ? D.ItemID.ToString() : Bag->GetItemID().ToString();
+
+	if (LootPromptText.IsValid())
+	{
+		const FText RarityText =
+			(Bag->GetLootRarity() == ET66Rarity::Black) ? NSLOCTEXT("T66.Rarity", "Black", "BLACK") :
+			(Bag->GetLootRarity() == ET66Rarity::Red) ? NSLOCTEXT("T66.Rarity", "Red", "RED") :
+			(Bag->GetLootRarity() == ET66Rarity::Yellow) ? NSLOCTEXT("T66.Rarity", "Yellow", "YELLOW") :
+			NSLOCTEXT("T66.Rarity", "White", "WHITE");
+
+		LootPromptText->SetText(FText::Format(
+			NSLOCTEXT("T66.GameplayHUD", "LootPromptFormat", "LOOT BAG ({0}): {1}   [F] {2}   [RMB] {3}"),
+			RarityText,
+			FText::FromString(ItemName),
+			NSLOCTEXT("T66.GameplayHUD", "Accept", "Accept"),
+			NSLOCTEXT("T66.GameplayHUD", "Reject", "Reject")));
+	}
+	if (LootPromptBorder.IsValid())
+	{
+		LootPromptBorder->SetBorderBackgroundColor(FT66RarityUtil::GetRarityColor(Bag->GetLootRarity()) * 0.35f + FLinearColor(0.02f, 0.02f, 0.03f, 0.65f));
+	}
+	LootPromptBox->SetVisibility(EVisibility::Visible);
+}
+
+void UT66GameplayHUDWidget::RefreshHearts()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
 
 	// Hearts: 5-slot compression with tier colors (red -> blue -> green -> ...)
+	const int32 HeartsNow = RunState->GetCurrentHearts();
+	int32 Tier = 0;
+	int32 Count = 0;
+	FT66RarityUtil::ComputeTierAndCount5(HeartsNow, Tier, Count);
+	const FLinearColor TierC = FT66RarityUtil::GetTierColor(Tier);
+	const FLinearColor EmptyC(0.25f, 0.25f, 0.28f, 1.f);
+	for (int32 i = 0; i < HeartBorders.Num(); ++i)
 	{
-		const int32 HeartsNow = RunState->GetCurrentHearts();
-		int32 Tier = 0;
-		int32 Count = 0;
-		FT66RarityUtil::ComputeTierAndCount5(HeartsNow, Tier, Count);
-		const FLinearColor TierC = FT66RarityUtil::GetTierColor(Tier);
-		const FLinearColor EmptyC(0.25f, 0.25f, 0.28f, 1.f);
-		for (int32 i = 0; i < HeartBorders.Num(); ++i)
-		{
-			if (!HeartBorders[i].IsValid()) continue;
-			const bool bFilled = (i < Count);
-			HeartBorders[i]->SetBorderBackgroundColor(bFilled ? TierC : EmptyC);
-		}
+		if (!HeartBorders[i].IsValid()) continue;
+		const bool bFilled = (i < Count);
+		HeartBorders[i]->SetBorderBackgroundColor(bFilled ? TierC : EmptyC);
 	}
+}
+
+void UT66GameplayHUDWidget::RefreshStatusEffects()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
 
 	// Status effect dots (above hearts)
+	const bool bBurn = RunState->HasStatusBurn();
+	const bool bChill = RunState->HasStatusChill();
+	const bool bCurse = RunState->HasStatusCurse();
+
+	auto SetDot = [&](int32 Index, bool bActive, const FLinearColor& C)
 	{
-		const bool bBurn = RunState->HasStatusBurn();
-		const bool bChill = RunState->HasStatusChill();
-		const bool bCurse = RunState->HasStatusCurse();
-
-		auto SetDot = [&](int32 Index, bool bActive, const FLinearColor& C)
+		if (StatusEffectDotBoxes.Num() <= Index || StatusEffectDots.Num() <= Index) return;
+		if (StatusEffectDotBoxes[Index].IsValid())
 		{
-			if (StatusEffectDotBoxes.Num() <= Index || StatusEffectDots.Num() <= Index) return;
-			if (StatusEffectDotBoxes[Index].IsValid())
-			{
-				StatusEffectDotBoxes[Index]->SetVisibility(bActive ? EVisibility::Visible : EVisibility::Collapsed);
-			}
-			if (bActive && StatusEffectDots[Index].IsValid())
-			{
-				StatusEffectDots[Index]->SetDotColor(C);
-			}
-		};
-
-		SetDot(0, bBurn, FLinearColor(0.95f, 0.25f, 0.10f, 1.f));
-		SetDot(1, bChill, FLinearColor(0.20f, 0.60f, 0.95f, 1.f));
-		SetDot(2, bCurse, FLinearColor(0.65f, 0.20f, 0.90f, 1.f));
-
-		if (CurseOverlayBorder.IsValid())
-		{
-			CurseOverlayBorder->SetVisibility(bCurse ? EVisibility::Visible : EVisibility::Collapsed);
+			StatusEffectDotBoxes[Index]->SetVisibility(bActive ? EVisibility::Visible : EVisibility::Collapsed);
 		}
+		if (bActive && StatusEffectDots[Index].IsValid())
+		{
+			StatusEffectDots[Index]->SetDotColor(C);
+		}
+	};
+
+	SetDot(0, bBurn, FLinearColor(0.95f, 0.25f, 0.10f, 1.f));
+	SetDot(1, bChill, FLinearColor(0.20f, 0.60f, 0.95f, 1.f));
+	SetDot(2, bCurse, FLinearColor(0.65f, 0.20f, 0.90f, 1.f));
+
+	if (CurseOverlayBorder.IsValid())
+	{
+		CurseOverlayBorder->SetVisibility(bCurse ? EVisibility::Visible : EVisibility::Collapsed);
 	}
+}
+
+void UT66GameplayHUDWidget::RefreshHUD()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
+	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66PlayerSettingsSubsystem* PS = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* LB = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	UT66GameInstance* GIAsT66 = Cast<UT66GameInstance>(GetGameInstance());
+
+	RefreshEconomy();
+	RefreshTutorialHint();
+
+	RefreshStageAndTimer();
+	RefreshSpeedRunTimers();
+	RefreshBossBar();
+	RefreshLootPrompt();
+
+	RefreshHearts();
+	RefreshStatusEffects();
 
 	// Portrait: tier color based on MAX heart quantity (not current health).
 	if (PortraitBorder.IsValid())

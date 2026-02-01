@@ -9,6 +9,7 @@
 #include "T66GameInstance.generated.h"
 
 class UDataTable;
+struct FStreamableHandle;
 
 /**
  * Game Instance for Tribulation 66
@@ -26,6 +27,10 @@ public:
 	UT66GameInstance();
 
 	virtual void Init() override;
+
+	/** Returns true once core DataTables have finished async preloading. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool AreCoreDataTablesLoaded() const { return bCoreDataTablesLoaded; }
 
 	// ============================================
 	// DataTable References
@@ -252,6 +257,13 @@ public:
 	bool HasCompanionSelected() const { return !SelectedCompanionID.IsNone(); }
 
 private:
+	void PrimeCoreDataTablesAsync();
+	void HandleCoreDataTablesLoaded();
+
+	bool bCoreDataTablesLoadRequested = false;
+	bool bCoreDataTablesLoaded = false;
+	TSharedPtr<FStreamableHandle> CoreDataTablesLoadHandle;
+
 	void EnsureCachedItemIDs();
 	void EnsureCachedItemIDsByRarity();
 

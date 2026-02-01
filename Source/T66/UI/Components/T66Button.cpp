@@ -47,6 +47,8 @@ void UT66Button::NativeConstruct()
 	// Bind button click
 	if (ButtonWidget)
 	{
+		// Avoid duplicate bindings if the widget is reconstructed.
+		ButtonWidget->OnClicked.RemoveDynamic(this, &UT66Button::OnButtonClicked);
 		ButtonWidget->OnClicked.AddDynamic(this, &UT66Button::OnButtonClicked);
 	}
 
@@ -66,6 +68,15 @@ void UT66Button::NativeConstruct()
 	{
 		ButtonWidget->SetStyle(FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"));
 	}
+}
+
+void UT66Button::NativeDestruct()
+{
+	if (ButtonWidget)
+	{
+		ButtonWidget->OnClicked.RemoveDynamic(this, &UT66Button::OnButtonClicked);
+	}
+	Super::NativeDestruct();
 }
 
 void UT66Button::OnButtonClicked()

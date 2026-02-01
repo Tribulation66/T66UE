@@ -24,6 +24,15 @@
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
 
+void UT66GamblerOverlayWidget::NativeDestruct()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(RevealTimerHandle);
+	}
+	Super::NativeDestruct();
+}
+
 void UT66GamblerOverlayWidget::SetWinGoldAmount(int32 InAmount)
 {
 	WinGoldAmount = FMath::Max(0, InAmount);

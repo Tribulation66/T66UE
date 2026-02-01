@@ -121,6 +121,23 @@ Assume decisions made in-service of BibleV1 are “final-at-launch” unless SSO
 ### Low-end performance is a feature
 Design for weak CPUs/GPUs and low RAM. Avoid patterns that are “fine on dev machines” but hitch/crash on lower-end hardware.
 
+#### Low-end performance checklist (default)
+
+- **No synchronous loads during gameplay**:
+  - Avoid `LoadSynchronous()` / `StaticLoadObject()` / `LoadObject()` in gameplay hot paths (spawning, combat, HUD updates).
+  - If a sync load is unavoidable, it must happen during a safe “loading” window and be recorded in `memory.md` with justification.
+- **No per-frame UI thinking**:
+  - No polling/Tick-driven widget updates. Prefer event-driven delegates that update only the affected UI element(s).
+  - Avoid 60Hz timers for UI except for tightly bounded animations that stop immediately when not visible.
+- **Keep Tick cheap (or off)**:
+  - Prefer `PrimaryActorTick.bCanEverTick = false` unless proven necessary.
+  - If Tick is needed, throttle expensive work (accumulators, tick intervals) and avoid iterating world actors every Tick.
+- **Avoid hot-path world scans**:
+  - Avoid `TActorIterator<>` in loops that can run many times (enemy spawning, per-enemy logic). Use cached registries/lists.
+- **Avoid churn (allocations + spawn/destroy)**:
+  - Reuse UI/screens where appropriate; prefer show/hide over rebuild for frequently used widgets.
+  - Consider pooling for frequently spawned transient actors if profiling shows spikes.
+
 ### LLM-friendly = deterministic + schema-first
 The project must be structured so an LLM can safely extend it:
 - Stable file/folder conventions
@@ -333,6 +350,23 @@ Follow these rules:
 - When data is missing or invalid: fail gracefully, log clearly, and avoid crashes.
 - Keep error messages actionable (include asset name/RowID).
 
+## 6.4 Lifetime safety checklist (delegates, timers, UObjects)
+
+Memory leaks and “stale callback” crashes often come from lifetime mismatches. Follow these rules:
+
+- **Delegates must be symmetric**:
+  - If you `AddDynamic` / `AddUObject` / `AddLambda`, you must reliably `RemoveDynamic` / `RemoveAll(this)` in the owning object’s teardown path.
+  - Actors: unbind in `EndPlay`.
+  - Widgets: unbind in `NativeDestruct()` and/or in your screen deactivation path (if screens are cached).
+- **Timers must be cleared**:
+  - Any repeating timer started by an object must be cleared when the object is no longer active/visible.
+  - Prefer starting timers only while a UI surface is visible; stop them immediately on close.
+- **Prefer weak references across long-lived boundaries**:
+  - If a subsystem/screen caches pointers to world actors, prefer `TWeakObjectPtr` and validate before use.
+- **UI manager/screen caching must not leak**:
+  - If screens are cached for reuse, ensure they don’t keep binding to RunState delegates multiple times across activations.
+  - Avoid “bind every time on open, never unbind” patterns.
+
 ---
 
 ## 7. CLI operations (Windows + Git Bash oriented)
@@ -436,6 +470,14 @@ When editing UI Blueprints:
 - Enforce “event-driven UI” (no per-frame logic).
 - Prefer show/hide over rebuild for frequently used widgets.
 - Avoid heavy effects by default.
+
+### Optional-by-design override assets (do not treat as bloat)
+
+Some UI Blueprints are intentionally optional “override skins” for C++-driven screens. If they are missing, the C++ fallback must still work.
+
+- `WBP_LanguageSelect` (optional override for `T66LanguageSelectScreen`)
+- `WBP_Achievements` (optional override for `T66AchievementsScreen`)
+- `WBP_SaveSlots` at `/Game/Blueprints/UI/WBP_SaveSlots` (optional override for Save Slots)
 
 ### Non-blocking micro-interactions (loot, proximity prompts, etc.)
 

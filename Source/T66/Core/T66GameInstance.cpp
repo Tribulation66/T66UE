@@ -2,7 +2,9 @@
 
 #include "Core/T66GameInstance.h"
 #include "Engine/DataTable.h"
+#include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
+#include "Engine/StreamableManager.h"
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
 
@@ -62,23 +64,83 @@ void UT66GameInstance::Init()
 
 	ApplyCrispRenderingDefaults();
 
-	// Pre-load DataTables on init if paths are set
-	GetHeroDataTable();
-	GetCompanionDataTable();
-	GetItemsDataTable();
-	GetIdolsDataTable();
-	GetBossesDataTable();
-	GetStagesDataTable();
-	GetHouseNPCsDataTable();
-	GetLoanSharkDataTable();
-	GetCharacterVisualsDataTable();
+	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
+	PrimeCoreDataTablesAsync();
+}
+
+void UT66GameInstance::PrimeCoreDataTablesAsync()
+{
+	if (bCoreDataTablesLoadRequested)
+	{
+		return;
+	}
+	bCoreDataTablesLoadRequested = true;
+
+	TArray<FSoftObjectPath> Paths;
+	Paths.Reserve(9);
+
+	auto AddDT = [&](const TSoftObjectPtr<UDataTable>& DT)
+	{
+		if (!DT.IsNull())
+		{
+			Paths.AddUnique(DT.ToSoftObjectPath());
+		}
+	};
+
+	AddDT(HeroDataTable);
+	AddDT(CompanionDataTable);
+	AddDT(ItemsDataTable);
+	AddDT(IdolsDataTable);
+	AddDT(BossesDataTable);
+	AddDT(StagesDataTable);
+	AddDT(HouseNPCsDataTable);
+	AddDT(LoanSharkDataTable);
+	AddDT(CharacterVisualsDataTable);
+
+	if (Paths.Num() <= 0)
+	{
+		bCoreDataTablesLoaded = true;
+		return;
+	}
+
+	CoreDataTablesLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Paths,
+		FStreamableDelegate::CreateUObject(this, &UT66GameInstance::HandleCoreDataTablesLoaded));
+
+	// If the handle couldn't be created, fall back to on-demand loads via getters.
+	if (!CoreDataTablesLoadHandle.IsValid())
+	{
+		bCoreDataTablesLoaded = true;
+	}
+}
+
+void UT66GameInstance::HandleCoreDataTablesLoaded()
+{
+	// Cache any tables that successfully loaded.
+	if (!CachedHeroDataTable) CachedHeroDataTable = HeroDataTable.Get();
+	if (!CachedCompanionDataTable) CachedCompanionDataTable = CompanionDataTable.Get();
+	if (!CachedItemsDataTable) CachedItemsDataTable = ItemsDataTable.Get();
+	if (!CachedIdolsDataTable) CachedIdolsDataTable = IdolsDataTable.Get();
+	if (!CachedBossesDataTable) CachedBossesDataTable = BossesDataTable.Get();
+	if (!CachedStagesDataTable) CachedStagesDataTable = StagesDataTable.Get();
+	if (!CachedHouseNPCsDataTable) CachedHouseNPCsDataTable = HouseNPCsDataTable.Get();
+	if (!CachedLoanSharkDataTable) CachedLoanSharkDataTable = LoanSharkDataTable.Get();
+	if (!CachedCharacterVisualsDataTable) CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
+
+	bCoreDataTablesLoaded = true;
 }
 
 UDataTable* UT66GameInstance::GetHeroDataTable()
 {
 	if (!CachedHeroDataTable && !HeroDataTable.IsNull())
 	{
-		CachedHeroDataTable = HeroDataTable.LoadSynchronous();
+		CachedHeroDataTable = HeroDataTable.Get();
+		if (!CachedHeroDataTable)
+		{
+			// Kick off async preload if we haven't already, but keep a safe sync fallback.
+			PrimeCoreDataTablesAsync();
+			CachedHeroDataTable = HeroDataTable.LoadSynchronous();
+		}
 	}
 	return CachedHeroDataTable;
 }
@@ -87,7 +149,12 @@ UDataTable* UT66GameInstance::GetCompanionDataTable()
 {
 	if (!CachedCompanionDataTable && !CompanionDataTable.IsNull())
 	{
-		CachedCompanionDataTable = CompanionDataTable.LoadSynchronous();
+		CachedCompanionDataTable = CompanionDataTable.Get();
+		if (!CachedCompanionDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedCompanionDataTable = CompanionDataTable.LoadSynchronous();
+		}
 	}
 	return CachedCompanionDataTable;
 }
@@ -96,7 +163,12 @@ UDataTable* UT66GameInstance::GetIdolsDataTable()
 {
 	if (!CachedIdolsDataTable && !IdolsDataTable.IsNull())
 	{
-		CachedIdolsDataTable = IdolsDataTable.LoadSynchronous();
+		CachedIdolsDataTable = IdolsDataTable.Get();
+		if (!CachedIdolsDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedIdolsDataTable = IdolsDataTable.LoadSynchronous();
+		}
 	}
 	return CachedIdolsDataTable;
 }
@@ -140,7 +212,12 @@ UDataTable* UT66GameInstance::GetItemsDataTable()
 {
 	if (!CachedItemsDataTable && !ItemsDataTable.IsNull())
 	{
-		CachedItemsDataTable = ItemsDataTable.LoadSynchronous();
+		CachedItemsDataTable = ItemsDataTable.Get();
+		if (!CachedItemsDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedItemsDataTable = ItemsDataTable.LoadSynchronous();
+		}
 	}
 	return CachedItemsDataTable;
 }
@@ -258,7 +335,12 @@ UDataTable* UT66GameInstance::GetBossesDataTable()
 {
 	if (!CachedBossesDataTable && !BossesDataTable.IsNull())
 	{
-		CachedBossesDataTable = BossesDataTable.LoadSynchronous();
+		CachedBossesDataTable = BossesDataTable.Get();
+		if (!CachedBossesDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedBossesDataTable = BossesDataTable.LoadSynchronous();
+		}
 	}
 	return CachedBossesDataTable;
 }
@@ -267,7 +349,12 @@ UDataTable* UT66GameInstance::GetStagesDataTable()
 {
 	if (!CachedStagesDataTable && !StagesDataTable.IsNull())
 	{
-		CachedStagesDataTable = StagesDataTable.LoadSynchronous();
+		CachedStagesDataTable = StagesDataTable.Get();
+		if (!CachedStagesDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedStagesDataTable = StagesDataTable.LoadSynchronous();
+		}
 	}
 	return CachedStagesDataTable;
 }
@@ -276,7 +363,12 @@ UDataTable* UT66GameInstance::GetHouseNPCsDataTable()
 {
 	if (!CachedHouseNPCsDataTable && !HouseNPCsDataTable.IsNull())
 	{
-		CachedHouseNPCsDataTable = HouseNPCsDataTable.LoadSynchronous();
+		CachedHouseNPCsDataTable = HouseNPCsDataTable.Get();
+		if (!CachedHouseNPCsDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedHouseNPCsDataTable = HouseNPCsDataTable.LoadSynchronous();
+		}
 	}
 	return CachedHouseNPCsDataTable;
 }
@@ -285,7 +377,12 @@ UDataTable* UT66GameInstance::GetLoanSharkDataTable()
 {
 	if (!CachedLoanSharkDataTable && !LoanSharkDataTable.IsNull())
 	{
-		CachedLoanSharkDataTable = LoanSharkDataTable.LoadSynchronous();
+		CachedLoanSharkDataTable = LoanSharkDataTable.Get();
+		if (!CachedLoanSharkDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedLoanSharkDataTable = LoanSharkDataTable.LoadSynchronous();
+		}
 	}
 	return CachedLoanSharkDataTable;
 }
@@ -294,7 +391,12 @@ UDataTable* UT66GameInstance::GetCharacterVisualsDataTable()
 {
 	if (!CachedCharacterVisualsDataTable && !CharacterVisualsDataTable.IsNull())
 	{
-		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.LoadSynchronous();
+		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
+		if (!CachedCharacterVisualsDataTable)
+		{
+			PrimeCoreDataTablesAsync();
+			CachedCharacterVisualsDataTable = CharacterVisualsDataTable.LoadSynchronous();
+		}
 	}
 	return CachedCharacterVisualsDataTable;
 }
