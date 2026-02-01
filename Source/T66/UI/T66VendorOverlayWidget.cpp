@@ -134,7 +134,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const TArray<FName> EmptyStock;
 	const TArray<FName>& Stock = RunState ? RunState->GetVendorStockItemIDs() : EmptyStock;
 
-	static constexpr int32 ShopSlotCount = 3;
+	static constexpr int32 ShopSlotCount = 4;
 	ItemNameTexts.SetNum(ShopSlotCount);
 	ItemDescTexts.SetNum(ShopSlotCount);
 	ItemPriceTexts.SetNum(ShopSlotCount);
@@ -153,7 +153,21 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
-		ShopGrid->AddSlot(i, 0)
+		// Layout (reserve the left side for TikTok):
+		// [Slot 1] [Slot 2]
+		// [Slot 0] [Slot 3]
+		int32 Col = 0;
+		int32 Row = 0;
+		switch (i)
+		{
+			case 0: Col = 0; Row = 1; break;
+			case 1: Col = 0; Row = 0; break;
+			case 2: Col = 1; Row = 0; break;
+			case 3: Col = 1; Row = 1; break;
+			default: Col = 0; Row = 0; break;
+		}
+
+		ShopGrid->AddSlot(Col, Row)
 		[
 			SNew(SBox)
 			.MinDesiredWidth(400.f)
@@ -206,10 +220,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
 						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 						[
 							SNew(SBox)
-							.MinDesiredWidth(260.f)
+							.WidthOverride(260.f)
 							[
 								SAssignNew(BuyButtons[i], SButton)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i))
@@ -225,10 +239,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								]
 							]
 						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
 						[
 							SNew(SBox)
-							.MinDesiredWidth(260.f)
+							.WidthOverride(260.f)
 							[
 								SAssignNew(StealButtons[i], SButton)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i))
@@ -1054,6 +1068,12 @@ void UT66VendorOverlayWidget::SetPage(EVendorPage Page)
 {
 	if (!PageSwitcher.IsValid()) return;
 	PageSwitcher->SetActiveWidgetIndex(static_cast<int32>(Page));
+}
+
+void UT66VendorOverlayWidget::OpenShopPage()
+{
+	SetPage(EVendorPage::Shop);
+	RefreshAll();
 }
 
 FReply UT66VendorOverlayWidget::OnDialogueShop()

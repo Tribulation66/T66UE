@@ -41,6 +41,10 @@ public:
 	void TikTokPrev();
 	void TikTokNext();
 
+	// Pre-warm TikTok in the background so login + CSS formatting are done before first toggle.
+	// Safe to call multiple times.
+	void PrewarmTikTok();
+
 private:
 	bool bIsOpen = false;
 
@@ -48,6 +52,7 @@ private:
 	TUniquePtr<FT66WebView2Host> TikTokWebView2;
 	bool bHasTikTokWebView2Rect = false;
 	FIntRect TikTokWebView2Rect;
+	bool bHasPrewarmedTikTok = false;
 #endif
 
 	// Snapshot of audio state before opening the viewer (so we can restore exactly).

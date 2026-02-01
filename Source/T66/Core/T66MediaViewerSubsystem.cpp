@@ -43,6 +43,63 @@ void UT66MediaViewerSubsystem::ToggleMediaViewer()
 	SetMediaViewerOpen(!bIsOpen);
 }
 
+void UT66MediaViewerSubsystem::PrewarmTikTok()
+{
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	if (bHasPrewarmedTikTok)
+	{
+		return;
+	}
+
+	if (!TikTokWebView2)
+	{
+		TikTokWebView2 = MakeUnique<FT66WebView2Host>();
+	}
+
+	// Ensure COM is initialized for WebView2 (best effort).
+	const HRESULT HrCo = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	if (FAILED(HrCo) && HrCo != RPC_E_CHANGED_MODE)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed (0x%08x)."), static_cast<uint32>(HrCo));
+	}
+
+	void* ParentHandle = nullptr;
+	if (FSlateApplication::IsInitialized())
+	{
+		ParentHandle = const_cast<void*>(FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr));
+
+		TSharedPtr<SWindow> Active = FSlateApplication::Get().GetActiveTopLevelWindow();
+		if (Active.IsValid() && Active->GetNativeWindow().IsValid())
+		{
+			ParentHandle = Active->GetNativeWindow()->GetOSWindowHandle();
+		}
+	}
+
+	// Persistent web profile so the user stays logged in.
+	// HARD RULE: keep WebView2 data inside the game folder (not user profile/AppData).
+	const FString RootDir = GIsEditor
+		? FPaths::ProjectDir()
+		: FPaths::ConvertRelativePathToFull(FPaths::Combine(FPlatformProcess::BaseDir(), TEXT(".."), TEXT("..")));
+	const FString UserData = FPaths::ConvertRelativePathToFull(
+		FPaths::Combine(RootDir, TEXT("Saved"), TEXT("TikTokWebView2"), TEXT("UserData")));
+	IFileManager::Get().MakeDirectory(*UserData, /*Tree*/true);
+
+	if (TikTokWebView2->EnsureCreated(ParentHandle, UserData))
+	{
+		bHasPrewarmedTikTok = true;
+
+		// Preload TikTok so session + CSS injection are ready before first toggle.
+		if (!TikTokWebView2->HasEverNavigated())
+		{
+			TikTokWebView2->Navigate(TEXT("https://www.tiktok.com/"));
+		}
+
+		// Keep hidden (and hard-muted) until the player opens it.
+		TikTokWebView2->Hide();
+	}
+#endif
+}
+
 void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 {
 	if (bIsOpen == bOpen) return;
@@ -125,7 +182,7 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 			// (so we don't force a relogin mid-run).
 			if (!TikTokWebView2->HasEverNavigated())
 			{
-				TikTokWebView2->Navigate(TEXT("https://www.tiktok.com/login/qrcode"));
+				TikTokWebView2->Navigate(TEXT("https://www.tiktok.com/"));
 			}
 		}
 	}

@@ -54,9 +54,14 @@ bool UT66RunStateSubsystem::EquipIdolInSlot(int32 SlotIndex, FName IdolID)
 	{
 		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
 	}
+	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+	}
 
 	if (EquippedIdolIDs[SlotIndex] == IdolID) return false;
 	EquippedIdolIDs[SlotIndex] = IdolID;
+	EquippedIdolLevels[SlotIndex] = 1;
 	IdolsChanged.Broadcast();
 	return true;
 }
@@ -68,12 +73,68 @@ bool UT66RunStateSubsystem::EquipIdolFirstEmpty(FName IdolID)
 	{
 		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
 	}
+	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+	}
 
 	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
 	{
 		if (EquippedIdolIDs[i].IsNone())
 		{
 			EquippedIdolIDs[i] = IdolID;
+			EquippedIdolLevels[i] = 1;
+			IdolsChanged.Broadcast();
+			return true;
+		}
+	}
+	return false;
+}
+
+int32 UT66RunStateSubsystem::GetEquippedIdolLevelInSlot(int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= MaxEquippedIdolSlots) return 0;
+	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots) return 0;
+	if (SlotIndex >= EquippedIdolIDs.Num()) return 0;
+	if (EquippedIdolIDs[SlotIndex].IsNone()) return 0;
+	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots) return 1; // back-compat default
+	return FMath::Clamp(static_cast<int32>(EquippedIdolLevels[SlotIndex]), 1, MaxIdolLevel);
+}
+
+bool UT66RunStateSubsystem::SelectIdolFromAltar(FName IdolID)
+{
+	if (IdolID.IsNone()) return false;
+
+	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+	}
+	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+	}
+
+	// If already equipped, level it up.
+	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
+	{
+		if (EquippedIdolIDs[i] == IdolID)
+		{
+			const int32 Cur = FMath::Clamp(static_cast<int32>(EquippedIdolLevels[i]), 1, MaxIdolLevel);
+			const int32 Next = FMath::Clamp(Cur + 1, 1, MaxIdolLevel);
+			if (Next == Cur) return false;
+			EquippedIdolLevels[i] = static_cast<uint8>(Next);
+			IdolsChanged.Broadcast();
+			return true;
+		}
+	}
+
+	// Otherwise, equip into first empty slot (level 1).
+	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
+	{
+		if (EquippedIdolIDs[i].IsNone())
+		{
+			EquippedIdolIDs[i] = IdolID;
+			EquippedIdolLevels[i] = 1;
 			IdolsChanged.Broadcast();
 			return true;
 		}
@@ -86,8 +147,13 @@ void UT66RunStateSubsystem::ClearEquippedIdols()
 	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
 	{
 		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
 		IdolsChanged.Broadcast();
 		return;
+	}
+	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
 	}
 
 	bool bAny = false;
@@ -101,6 +167,7 @@ void UT66RunStateSubsystem::ClearEquippedIdols()
 	}
 	if (bAny)
 	{
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
 		IdolsChanged.Broadcast();
 	}
 }
@@ -362,6 +429,12 @@ bool UT66RunStateSubsystem::ApplyTrueDamage(int32 Hearts)
 
 	if (CurrentHearts <= 0)
 	{
+		// Dev Immortality: never end the run.
+		if (bDevImmortality)
+		{
+			return true;
+		}
+
 		// If charged, trigger last-stand instead of dying.
 		if (SurvivalCharge01 >= 1.f)
 		{
@@ -425,7 +498,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	if (!GI)
 	{
 		// Fallback: keep deterministic placeholder behavior.
-		VendorStockItemIDs = { FName(TEXT("Item_01")), FName(TEXT("Item_02")), FName(TEXT("Item_03")) };
+		VendorStockItemIDs = { FName(TEXT("Item_01")), FName(TEXT("Item_02")), FName(TEXT("Item_03")), FName(TEXT("Item_04")) };
 		VendorStockSold.Init(false, VendorStockItemIDs.Num());
 		VendorChanged.Broadcast();
 		return;
@@ -479,7 +552,8 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		return Pool[0];
 	};
 
-	// Stock: 3 items (1 black, 1 red, 1 yellow)
+	// Stock: 4 items (2 black, 1 red, 1 yellow)
+	VendorStockItemIDs.Add(PickUnique(PoolBlack));
 	VendorStockItemIDs.Add(PickUnique(PoolBlack));
 	VendorStockItemIDs.Add(PickUnique(PoolRed));
 	VendorStockItemIDs.Add(PickUnique(PoolYellow));
@@ -689,6 +763,14 @@ void UT66RunStateSubsystem::EndLastStandAndDie()
 	LastBroadcastLastStandSecond = 0;
 	SurvivalChanged.Broadcast();
 
+	// Dev Immortality: never end the run.
+	if (bDevImmortality)
+	{
+		CurrentHearts = 0;
+		HeartsChanged.Broadcast();
+		return;
+	}
+
 	// Die as normal now.
 	CurrentHearts = 0;
 	HeartsChanged.Broadcast();
@@ -731,6 +813,12 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
 
 	if (CurrentHearts <= 0)
 	{
+		// Dev Immortality: never end the run.
+		if (bDevImmortality)
+		{
+			return true;
+		}
+
 		// If charged, trigger last-stand instead of dying.
 		if (SurvivalCharge01 >= 1.f)
 		{
@@ -855,6 +943,15 @@ void UT66RunStateSubsystem::HealHearts(int32 Hearts)
 
 void UT66RunStateSubsystem::KillPlayer()
 {
+	// Dev Immortality: never end the run.
+	if (bDevImmortality)
+	{
+		CurrentHearts = 0;
+		LastDamageTime = -9999.f;
+		HeartsChanged.Broadcast();
+		return;
+	}
+
 	// If charged, trigger last-stand instead of dying.
 	if (!bInLastStand && SurvivalCharge01 >= 1.f)
 	{
@@ -1023,6 +1120,64 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 	}
 }
 
+void UT66RunStateSubsystem::SetTutorialHint(const FText& InLine1, const FText& InLine2)
+{
+	bTutorialHintVisible = true;
+	TutorialHintLine1 = InLine1;
+	TutorialHintLine2 = InLine2;
+	TutorialHintChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::ClearTutorialHint()
+{
+	if (!bTutorialHintVisible && TutorialHintLine1.IsEmpty() && TutorialHintLine2.IsEmpty())
+	{
+		return;
+	}
+	bTutorialHintVisible = false;
+	TutorialHintLine1 = FText::GetEmpty();
+	TutorialHintLine2 = FText::GetEmpty();
+	TutorialHintChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::NotifyTutorialMoveInput()
+{
+	if (bTutorialMoveInputSeen) return;
+	bTutorialMoveInputSeen = true;
+	TutorialInputChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::NotifyTutorialJumpInput()
+{
+	if (bTutorialJumpInputSeen) return;
+	bTutorialJumpInputSeen = true;
+	TutorialInputChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::ResetTutorialInputFlags()
+{
+	const bool bWasMove = bTutorialMoveInputSeen;
+	const bool bWasJump = bTutorialJumpInputSeen;
+	bTutorialMoveInputSeen = false;
+	bTutorialJumpInputSeen = false;
+	if (bWasMove || bWasJump)
+	{
+		TutorialInputChanged.Broadcast();
+	}
+}
+
+void UT66RunStateSubsystem::ToggleDevImmortality()
+{
+	bDevImmortality = !bDevImmortality;
+	DevCheatsChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::ToggleDevPower()
+{
+	bDevPower = !bDevPower;
+	DevCheatsChanged.Broadcast();
+}
+
 void UT66RunStateSubsystem::ResetForNewRun()
 {
 	MaxHearts = DefaultMaxHearts;
@@ -1039,6 +1194,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	Inventory.Empty();
 	RecomputeItemDerivedStats();
 	EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+	EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
 	EventLog.Empty();
 	StructuredEventLog.Empty();
 	CurrentStage = 1;
@@ -1052,6 +1208,8 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
 	bHUDPanelsVisible = true;
+	ClearTutorialHint();
+	ResetTutorialInputFlags();
 
 	// Clear transient stage/status effects at run start.
 	StageMoveSpeedMultiplier = 1.f;

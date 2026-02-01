@@ -1138,6 +1138,11 @@ FText UT66LocalizationSubsystem::GetText_Back() const
 	return NSLOCTEXT("T66.Common", "Back", "BACK");
 }
 
+FText UT66LocalizationSubsystem::GetText_Level() const
+{
+	return NSLOCTEXT("T66.Common", "Level", "LEVEL");
+}
+
 FText UT66LocalizationSubsystem::GetText_Confirm() const
 {
 	return NSLOCTEXT("T66.Common", "Confirm", "CONFIRM");

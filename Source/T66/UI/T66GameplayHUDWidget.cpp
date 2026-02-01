@@ -18,6 +18,7 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SLeafWidget.h"
@@ -292,8 +293,8 @@ public:
 		bMinimap = InArgs._bMinimap;
 		bShowLabels = InArgs._bShowLabels;
 
-		FullWorldMin = FVector2D(-13000.f, -7000.f);
-		FullWorldMax = FVector2D(13000.f, 7000.f);
+		FullWorldMin = FVector2D(-13000.f, -10000.f);
+		FullWorldMax = FVector2D(13000.f, 10000.f);
 		MinimapHalfExtent = 2500.f;
 
 		// Safety: never draw markers outside the widget bounds.
@@ -401,7 +402,7 @@ public:
 
 			const TArray<FArea> Areas = {
 				{ NSLOCTEXT("T66.Map", "AreaStart", "START"), FVector2D(-10000.f, 0.f), FVector2D(3000.f, 3000.f), FLinearColor(0.20f, 0.60f, 0.95f, 0.10f), FLinearColor(0.20f, 0.60f, 0.95f, 0.30f) },
-				{ NSLOCTEXT("T66.Map", "AreaMain",  "MAIN"),  FVector2D(0.f, 0.f),      FVector2D(7000.f, 7000.f), FLinearColor(0.90f, 0.90f, 0.95f, 0.06f), FLinearColor(0.90f, 0.90f, 0.95f, 0.18f) },
+				{ NSLOCTEXT("T66.Map", "AreaMain",  "MAIN"),  FVector2D(0.f, 0.f),      FVector2D(10000.f, 10000.f), FLinearColor(0.90f, 0.90f, 0.95f, 0.06f), FLinearColor(0.90f, 0.90f, 0.95f, 0.18f) },
 				{ NSLOCTEXT("T66.Map", "AreaBoss",  "BOSS"),  FVector2D(10000.f, 0.f),  FVector2D(3000.f, 3000.f), FLinearColor(0.95f, 0.15f, 0.15f, 0.08f), FLinearColor(0.95f, 0.15f, 0.15f, 0.25f) },
 			};
 
@@ -537,6 +538,8 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
@@ -587,6 +590,8 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->StatusEffectsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	}
 	if (UGameInstance* GI = GetGameInstance())
@@ -846,6 +851,24 @@ void UT66GameplayHUDWidget::CloseWheelSpin()
 	}
 }
 
+FReply UT66GameplayHUDWidget::OnToggleImmortality()
+{
+	if (UT66RunStateSubsystem* RunState = GetRunState())
+	{
+		RunState->ToggleDevImmortality();
+	}
+	return FReply::Handled();
+}
+
+FReply UT66GameplayHUDWidget::OnTogglePower()
+{
+	if (UT66RunStateSubsystem* RunState = GetRunState())
+	{
+		RunState->ToggleDevPower();
+	}
+	return FReply::Handled();
+}
+
 void UT66GameplayHUDWidget::SetFullMapOpen(bool bOpen)
 {
 	bFullMapOpen = bOpen;
@@ -920,6 +943,21 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	{
 		const FText Fmt = Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
 		GoldText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentGold())));
+	}
+
+	// Tutorial hint (above crosshair)
+	if (TutorialHintBorder.IsValid() && TutorialHintLine1Text.IsValid() && TutorialHintLine2Text.IsValid())
+	{
+		const bool bShow = RunState->IsTutorialHintVisible() && (!RunState->GetTutorialHintLine1().IsEmpty() || !RunState->GetTutorialHintLine2().IsEmpty());
+		TutorialHintBorder->SetVisibility(bShow ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+		if (bShow)
+		{
+			const FText L1 = RunState->GetTutorialHintLine1();
+			const FText L2 = RunState->GetTutorialHintLine2();
+			TutorialHintLine1Text->SetText(L1);
+			TutorialHintLine2Text->SetText(L2);
+			TutorialHintLine2Text->SetVisibility(L2.IsEmpty() ? EVisibility::Collapsed : EVisibility::Visible);
+		}
 	}
 	// Owe (Debt) in red
 	if (DebtText.IsValid())
@@ -1207,6 +1245,24 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
+	// Dev toggles (immortality / power)
+	if (ImmortalityButtonText.IsValid())
+	{
+		const bool bOn = RunState->GetDevImmortalityEnabled();
+		ImmortalityButtonText->SetText(bOn
+			? NSLOCTEXT("T66.Dev", "ImmortalityOn", "IMMORTALITY: ON")
+			: NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"));
+		ImmortalityButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.20f, 0.85f, 0.35f, 1.f) : FT66Style::Tokens::Text);
+	}
+	if (PowerButtonText.IsValid())
+	{
+		const bool bOn = RunState->GetDevPowerEnabled();
+		PowerButtonText->SetText(bOn
+			? NSLOCTEXT("T66.Dev", "PowerOn", "POWER: ON")
+			: NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"));
+		PowerButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.95f, 0.80f, 0.20f, 1.f) : FT66Style::Tokens::Text);
+	}
+
 	// Idol slots (3): colored if equipped, grey if empty
 	const TArray<FName>& Idols = RunState->GetEquippedIdols();
 	for (int32 i = 0; i < IdolSlotBorders.Num(); ++i)
@@ -1218,6 +1274,16 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			C = UT66RunStateSubsystem::GetIdolColor(Idols[i]);
 		}
 		IdolSlotBorders[i]->SetBorderBackgroundColor(C);
+
+		// Idol level dots (10 max): show one yellow dot per level.
+		const int32 Level = RunState->GetEquippedIdolLevelInSlot(i);
+		for (int32 d = 0; d < UT66RunStateSubsystem::MaxIdolLevel; ++d)
+		{
+			const int32 FlatIdx = (i * UT66RunStateSubsystem::MaxIdolLevel) + d;
+			if (!IdolLevelDotBorders.IsValidIndex(FlatIdx) || !IdolLevelDotBorders[FlatIdx].IsValid()) continue;
+			const bool bShow = (Level > 0) && (d < Level);
+			IdolLevelDotBorders[FlatIdx]->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
+		}
 	}
 
 	// Inventory slots: item color + hover tooltip, grey when empty
@@ -1349,10 +1415,13 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
 	DifficultyBorders.SetNum(5);
 	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
+	IdolLevelDotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots * UT66RunStateSubsystem::MaxIdolLevel);
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	StatLineTexts.SetNum(6);
 	StatusEffectDots.SetNum(3);
 	StatusEffectDotBoxes.SetNum(3);
+	WorldDialogueOptionBorders.SetNum(3);
+	WorldDialogueOptionTexts.SetNum(3);
 	static constexpr float BossBarWidth = 600.f;
 
 	// Difficulty row (5-slot compression squares) sized to match minimap width.
@@ -1432,6 +1501,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		TSharedPtr<SBorder> IdolBorder;
+		TSharedPtr<SBorder> Dots[UT66RunStateSubsystem::MaxIdolLevel];
 		const int32 Row = i / 2;
 		const int32 Col = i % 2;
 		IdolSlotsRef->AddSlot(Col, Row)
@@ -1441,12 +1511,129 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.WidthOverride(IdolSlotSize)
 				.HeightOverride(IdolSlotSize)
 				[
-					SAssignNew(IdolBorder, SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.18f, 0.18f, 0.22f, 1.f))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SAssignNew(IdolBorder, SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.18f, 0.18f, 0.22f, 1.f))
+					]
+					// Idol level dots (2 rows x 5 cols, bottom-centered)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Bottom)
+					.Padding(0.f, 0.f, 0.f, 4.f)
+					[
+						SNew(SUniformGridPanel)
+						.SlotPadding(FMargin(1.f, 1.f))
+						+ SUniformGridPanel::Slot(0, 0)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[0], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(1, 0)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[1], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(2, 0)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[2], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(3, 0)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[3], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(4, 0)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[4], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(0, 1)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[5], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(1, 1)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[6], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(2, 1)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[7], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(3, 1)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[8], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+						+ SUniformGridPanel::Slot(4, 1)
+						[
+							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
+							[
+								SAssignNew(Dots[9], SBorder)
+								.Visibility(EVisibility::Collapsed)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
+							]
+						]
+					]
 				]
 			];
 		IdolSlotBorders[i] = IdolBorder;
+		for (int32 d = 0; d < UT66RunStateSubsystem::MaxIdolLevel; ++d)
+		{
+			IdolLevelDotBorders[(i * UT66RunStateSubsystem::MaxIdolLevel) + d] = Dots[d];
+		}
 	}
 
 	// Stats panel (always visible) next to idol slots
@@ -1572,6 +1759,73 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.Text(FText::GetEmpty())
 					.Font(FT66Style::Tokens::FontBold(14))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+			]
+		]
+		// Timer (top-center of whole screen)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Top)
+		.Padding(0.f, 18.f)
+		[
+			SAssignNew(TimerText, STextBlock)
+			.Text(NSLOCTEXT("T66.GameplayHUD", "StageTimerDefault", "6:00"))
+			.Font(FT66Style::Tokens::FontBold(24))
+			.ColorAndOpacity(FT66Style::Tokens::Success)
+		]
+		// In-world NPC dialogue (positioned via RenderTransform; hidden by default)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		[
+			SAssignNew(WorldDialogueBox, SBox)
+			.Visibility(EVisibility::Collapsed)
+			.RenderTransform(FSlateRenderTransform(FVector2D(0.f, 0.f)))
+			[
+				SNew(SBorder)
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.Padding(12.f)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SAssignNew(WorldDialogueOptionBorders[0], SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 0.85f))
+						.Padding(10.f, 6.f)
+						[
+							SAssignNew(WorldDialogueOptionTexts[0], STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66Style::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+					[
+						SAssignNew(WorldDialogueOptionBorders[1], SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 0.85f))
+						.Padding(10.f, 6.f)
+						[
+							SAssignNew(WorldDialogueOptionTexts[1], STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66Style::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+					[
+						SAssignNew(WorldDialogueOptionBorders[2], SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 0.85f))
+						.Padding(10.f, 6.f)
+						[
+							SAssignNew(WorldDialogueOptionTexts[2], STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66Style::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+					]
 				]
 			]
 		]
@@ -1815,17 +2069,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								.bShowLabels(false)
 							]
 						]
-						// Timer centered at the top of the minimap
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Top)
-						.Padding(0.f, 6.f)
-						[
-							SAssignNew(TimerText, STextBlock)
-							.Text(NSLOCTEXT("T66.GameplayHUD", "StageTimerDefault", "6:00"))
-							.Font(FT66Style::Tokens::FontBold(20))
-							.ColorAndOpacity(FT66Style::Tokens::Success)
-						]
 					]
 				]
 				// Stage number beneath minimap, above skulls
@@ -1842,7 +2085,40 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					SNew(SBox)
 					.WidthOverride(MinimapWidth)
 					[
-						DifficultyRowRef
+						SNew(SVerticalBox)
+						// Immortality toggle (above skulls)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 6.f)
+						[
+							SAssignNew(ImmortalityButton, SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality))
+							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+							.ContentPadding(FMargin(8.f, 4.f))
+							[
+								SAssignNew(ImmortalityButtonText, STextBlock)
+								.Text(NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"))
+								.Font(FT66Style::Tokens::FontBold(10))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+						]
+						// Difficulty skulls
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							DifficultyRowRef
+						]
+						// Power toggle (below skulls)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
+						[
+							SAssignNew(PowerButton, SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower))
+							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+							.ContentPadding(FMargin(8.f, 4.f))
+							[
+								SAssignNew(PowerButtonText, STextBlock)
+								.Text(NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"))
+								.Font(FT66Style::Tokens::FontBold(10))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+						]
 					]
 				]
 			]
@@ -1888,6 +2164,37 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							InvGridRef
 						]
 					]
+				]
+			]
+		]
+		// Tutorial hint (above crosshair)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		.Padding(0.f, -220.f, 0.f, 0.f)
+		[
+			SAssignNew(TutorialHintBorder, SBorder)
+			.Visibility(EVisibility::Collapsed)
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+			.Padding(FMargin(12.f, 8.f))
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+				[
+					SAssignNew(TutorialHintLine1Text, STextBlock)
+					.Text(FText::GetEmpty())
+					.Font(FT66Style::Tokens::FontBold(18))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+				]
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
+				[
+					SAssignNew(TutorialHintLine2Text, STextBlock)
+					.Visibility(EVisibility::Collapsed)
+					.Text(FText::GetEmpty())
+					.Font(FT66Style::Tokens::FontRegular(14))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Justification(ETextJustify::Center)
 				]
 			]
 		]
@@ -1974,4 +2281,64 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		];
 
 	return Root;
+}
+
+static void T66_ApplyWorldDialogueSelection(
+	const TArray<TSharedPtr<SBorder>>& OptionBorders,
+	const TArray<TSharedPtr<STextBlock>>& OptionTexts,
+	int32 SelectedIndex)
+{
+	for (int32 i = 0; i < OptionBorders.Num(); ++i)
+	{
+		const bool bSelected = (i == SelectedIndex);
+		if (OptionBorders[i].IsValid())
+		{
+			OptionBorders[i]->SetBorderBackgroundColor(bSelected
+				? FLinearColor(0.18f, 0.18f, 0.26f, 0.95f)
+				: FLinearColor(0.06f, 0.06f, 0.08f, 0.85f));
+		}
+		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
+		{
+			OptionTexts[i]->SetColorAndOpacity(bSelected ? FT66Style::Tokens::Text : FT66Style::Tokens::TextMuted);
+		}
+	}
+}
+
+void UT66GameplayHUDWidget::ShowWorldDialogue(const TArray<FText>& Options, int32 SelectedIndex)
+{
+	if (!WorldDialogueBox.IsValid()) return;
+	if (Options.Num() < 3) return;
+	if (WorldDialogueOptionTexts.Num() < 3) return;
+
+	for (int32 i = 0; i < 3; ++i)
+	{
+		if (WorldDialogueOptionTexts[i].IsValid())
+		{
+			WorldDialogueOptionTexts[i]->SetText(Options[i]);
+		}
+	}
+	T66_ApplyWorldDialogueSelection(WorldDialogueOptionBorders, WorldDialogueOptionTexts, SelectedIndex);
+	WorldDialogueBox->SetVisibility(EVisibility::Visible);
+}
+
+void UT66GameplayHUDWidget::HideWorldDialogue()
+{
+	if (!WorldDialogueBox.IsValid()) return;
+	WorldDialogueBox->SetVisibility(EVisibility::Collapsed);
+}
+
+void UT66GameplayHUDWidget::SetWorldDialogueSelection(int32 SelectedIndex)
+{
+	T66_ApplyWorldDialogueSelection(WorldDialogueOptionBorders, WorldDialogueOptionTexts, SelectedIndex);
+}
+
+void UT66GameplayHUDWidget::SetWorldDialogueScreenPosition(const FVector2D& ScreenPos)
+{
+	if (!WorldDialogueBox.IsValid()) return;
+	WorldDialogueBox->SetRenderTransform(FSlateRenderTransform(ScreenPos));
+}
+
+bool UT66GameplayHUDWidget::IsWorldDialogueVisible() const
+{
+	return WorldDialogueBox.IsValid() && WorldDialogueBox->GetVisibility() == EVisibility::Visible;
 }

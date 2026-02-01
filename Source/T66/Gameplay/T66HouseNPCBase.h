@@ -80,6 +80,17 @@ protected:
 	/** Optional per-NPC customization beyond name/color/radius. */
 	virtual void ApplyNPCData(const FHouseNPCData& Data);
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+
+	/** If true, NPC smoothly rotates in place to face the player (yaw only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Facing")
+	bool bFacePlayerAlways = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Facing")
+	float FacePlayerYawInterpSpeed = 8.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Facing")
+	float FacePlayerMaxDistance = 2500.f;
 
 	UFUNCTION()
 	void OnSafeZoneBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

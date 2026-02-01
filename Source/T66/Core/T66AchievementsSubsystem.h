@@ -86,6 +86,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void ResetProfileProgress();
 
+	// ============================================
+	// Tutorial (first-time onboarding)
+	// ============================================
+
+	/** True if the player has completed the tutorial area at least once (profile). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Tutorial")
+	bool HasCompletedTutorial() const;
+
+	/** Mark tutorial completed in the profile save (persists immediately). */
+	UFUNCTION(BlueprintCallable, Category = "Tutorial")
+	void MarkTutorialCompleted();
+
 	/** Union: stages cleared with a specific companion (lifetime / profile). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
 	int32 GetCompanionUnionStagesCleared(FName CompanionID) const;

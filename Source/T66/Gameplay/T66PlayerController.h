@@ -20,6 +20,9 @@ class AT66EnemyBase;
 class UT66IdolAltarOverlayWidget;
 class UT66VendorOverlayWidget;
 class AT66LootBagPickup;
+class AT66HouseNPCBase;
+class AT66VendorNPC;
+class AT66GamblerNPC;
 enum class ET66Rarity : uint8;
 
 /**
@@ -85,6 +88,10 @@ public:
 	/** Open the Vendor overlay (non-pausing). */
 	void OpenVendorOverlay();
 
+	/** In-world dialogue (open-world) for vendor/gambler interactions (non-pausing). */
+	void OpenWorldDialogueVendor(AT66VendorNPC* Vendor);
+	void OpenWorldDialogueGambler(AT66GamblerNPC* Gambler);
+
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
 
@@ -127,6 +134,10 @@ protected:
 
 	/** Toggle HUD panels (inventory + minimap), gameplay only, T key */
 	void HandleToggleHUDPressed();
+
+	/** Dev toggles (F9/F10 by default). */
+	void HandleToggleImmortalityPressed();
+	void HandleTogglePowerPressed();
 
 	/** Toggle TikTok placeholder panel (gameplay only, O key). */
 	void HandleToggleTikTokPressed();
@@ -199,4 +210,29 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66IdolAltarOverlayWidget> IdolAltarOverlayWidget;
+
+	// ============================================================
+	// In-world NPC dialogue (Vendor/Gambler)
+	// ============================================================
+	enum class ET66WorldDialogueKind : uint8
+	{
+		None,
+		Vendor,
+		Gambler,
+	};
+
+	ET66WorldDialogueKind WorldDialogueKind = ET66WorldDialogueKind::None;
+	bool bWorldDialogueOpen = false;
+	int32 WorldDialogueSelectedIndex = 0;
+	float LastWorldDialogueNavTimeSeconds = -1000.f;
+	static constexpr float WorldDialogueNavDebounceSeconds = 0.18f;
+
+	TWeakObjectPtr<AT66HouseNPCBase> WorldDialogueTargetNPC;
+	FTimerHandle WorldDialoguePositionTimerHandle;
+
+	void CloseWorldDialogue();
+	void NavigateWorldDialogue(int32 Delta);
+	void ConfirmWorldDialogue();
+	void UpdateWorldDialoguePosition();
+	void TeleportToNPC(FName NPCID);
 };

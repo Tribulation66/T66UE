@@ -215,6 +215,18 @@ struct FT66WebView2Host::FImpl
 	double DesiredZoomFactor = 1.0;
 	bool bHasEverNavigated = false;
 
+	void SetWebViewMuted(bool bMuted)
+	{
+		// Hard requirement: no audio may leak when the overlay is hidden.
+		// WebView2 supports global document mute via ICoreWebView2_8.
+		if (!View) return;
+		ComPtr<ICoreWebView2_8> View8;
+		if (SUCCEEDED(View.As(&View8)) && View8)
+		{
+			View8->put_IsMuted(bMuted ? 1 : 0);
+		}
+	}
+
 	~FImpl()
 	{
 		if (View && NavToken.value) { View->remove_NavigationStarting(NavToken); }
@@ -689,7 +701,8 @@ struct FT66WebView2Host::FImpl
 		Script.Reserve(8192);
 
 		Script += TEXT("(function(){try{");
-		Script += TEXT("var TT=window.__t66TikTok; if(!TT){TT=window.__t66TikTok={q:[],busy:false,sc:null};}");
+		Script += TEXT("var TT=window.__t66TikTok; if(!TT){TT=window.__t66TikTok={q:[],busy:false,sc:null,hidden:false,__moveId:0};}");
+		Script += TEXT("TT.hidden = false;"); // user pressed Q/E; if we are visible, allow playback/moves
 
 		Script += TEXT("function raf(){return new Promise(function(r){requestAnimationFrame(function(){r();});});}");
 		Script += TEXT("function sl(ms){return new Promise(function(r){setTimeout(r,ms);});}");
@@ -719,8 +732,6 @@ struct FT66WebView2Host::FImpl
 		Script += TEXT("function inView(r){if(!r)return false;return !(r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth);}");
 		Script += TEXT("function nearVideos(limit){var vids=document.querySelectorAll('video');var out=[];if(!vids)return out;for(var i=0;i<vids.length&&i<limit;i++){var v=vids[i];if(!v)continue;var r=null;try{r=v.getBoundingClientRect();}catch(e){}");
 		Script += TEXT("if(!r||r.height<80||r.width<80)continue;if(!inView(r))continue;out.push(v);}return out;}");
-		Script += TEXT("function stopVisible(){var vs=nearVideos(60);for(var i=0;i<vs.length;i++){var v=vs[i];try{v.muted=true;v.pause&&v.pause();}catch(e){}}}");
-		Script += TEXT("function pauseOthers(t){var vids=document.querySelectorAll('video');for(var i=0;i<vids.length&&i<80;i++){var v=vids[i];if(!v||v===t)continue;try{v.muted=true;v.pause&&v.pause();}catch(e){}}}");
 		Script += TEXT("function pickNeighbor(cur,dir){var vids=document.querySelectorAll('video');if(!vids||!vids.length)return null;");
 		Script += TEXT("var cr=null,cc=(innerHeight||800)*0.5;try{if(cur){cr=cur.getBoundingClientRect();if(cr)cc=cr.top+cr.height*0.5;}}catch(e){}");
 		Script += TEXT("var best=null,bestC=(dir>0)?1e18:-1e18;for(var i=0;i<vids.length&&i<80;i++){var v=vids[i];if(!v||v===cur)continue;");
@@ -731,35 +742,41 @@ struct FT66WebView2Host::FImpl
 		Script += TEXT("if(s===document.body||s===document.documentElement||s===document.scrollingElement){window.scrollBy({top:d,left:0,behavior:'auto'});}else{s.scrollTop=(s.scrollTop||0)+d;}return true;}catch(e){return false;}}");
 		Script += TEXT("function scrollToCenter(v){try{if(!v||!v.scrollIntoView)return false;v.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});return true;}catch(e){return false;}}");
 
-		// Autoplay policy / race hardening:
-		// - play muted first (usually allowed)
-		// - then unmute after play starts; if unmute fights, re-apply a few frames
-		Script += TEXT("async function playAudio(v){if(!v)return false;try{v.volume=1;v.playbackRate=1;}catch(e){}");
-		Script += TEXT("try{v.muted=true;v.defaultMuted=true;v.setAttribute&&v.setAttribute('muted','');}catch(e){}");
-		Script += TEXT("for(var i=0;i<3;i++){try{var p=v.play&&v.play();if(p&&p.then)await p;}catch(e){}if(v&&!v.paused)break;await sl(90);}"); // allow settle
-		Script += TEXT("for(var j=0;j<6;j++){try{v.muted=false;v.defaultMuted=false;v.removeAttribute&&v.removeAttribute('muted');}catch(e){}await raf();if(v&&!v.muted)break;}");
-		Script += TEXT("if(v&&v.paused){try{var p2=v.play&&v.play();if(p2&&p2.then)await p2;}catch(e){}}return v&&!v.paused;}");
+		// While the viewer is visible:
+		// - enforce exactly one active video (center-most) playing + unmuted
+		// - immediately stop (mute+pause) any other visible videos so old audio never bleeds
+		// - block TikTok from pausing videos via prototype hook (except when we explicitly allow internal pause)
+		Script += TEXT("if(!TT._init){TT._init=1;TT.active=null;TT._timer=0;TT.moving=0;TT.__allow=0;");
+		Script += TEXT("try{TT._origPause=HTMLMediaElement.prototype.pause;}catch(e){}");
+		Script += TEXT("try{HTMLMediaElement.prototype.pause=function(){try{var T=window.__t66TikTok;if(!T||!T._origPause)return; if(T.hidden||T.__allow) return T._origPause.apply(this,arguments); return;}catch(e){try{var T2=window.__t66TikTok;if(T2&&T2._origPause) return T2._origPause.apply(this,arguments);}catch(e2){}}};}catch(e){}");
+		Script += TEXT("try{var d=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,'muted');");
+		Script += TEXT("if(d&&d.set&&d.get&&d.configurable){TT._origMutedSet=d.set;TT._origMutedGet=d.get;");
+		Script += TEXT("Object.defineProperty(HTMLMediaElement.prototype,'muted',{configurable:true,enumerable:d.enumerable,");
+		Script += TEXT("get:function(){return TT._origMutedGet.call(this);},");
+		Script += TEXT("set:function(v){var T=window.__t66TikTok;if(!T||!T._origMutedSet)return; if(T.hidden||T.__allow) return T._origMutedSet.call(this,!!v); if(this===T.active) return T._origMutedSet.call(this,false); return T._origMutedSet.call(this,true);}});}}catch(e){}");
+		Script += TEXT("}");
 
-		Script += TEXT("async function keepAlive(moveId,v){var t0=now();while(now()-t0<1800){await sl(260);");
-		Script += TEXT("if(TT.__moveId!==moveId)return; if(!v||!v.isConnected){v=await stable(420);} if(!v)continue;");
-		Script += TEXT("try{var r=v.getBoundingClientRect();if(!r||area(r)<800)continue;}catch(e){}");
-		Script += TEXT("if(v.paused){await playAudio(v);pauseOthers(v);} }}");
+		Script += TEXT("function setMuted(v,b){try{v.muted=!!b;v.defaultMuted=!!b;if(b){v.setAttribute&&v.setAttribute('muted','');}else{v.removeAttribute&&v.removeAttribute('muted');}}catch(e){}}");
+		Script += TEXT("function safePlay(v){if(!v) return; try{v.volume=1;v.playbackRate=1;}catch(e){} setMuted(v,false); try{if(v.paused){var p=v.play&&v.play();if(p&&p.catch)p.catch(function(){});} }catch(e){} }");
+		Script += TEXT("function safeStop(v){if(!v) return; setMuted(v,true); try{if(TT._origPause){TT.__allow=1;TT._origPause.call(v);TT.__allow=0;}else{v.pause&&v.pause();}}catch(e){} TT.__allow=0; }");
 
-		Script += TEXT("async function step(dir){");
-		Script += TEXT("TT.sc=null;var before=centerV();stopVisible();var target=pickNeighbor(before,dir);var s=sc();");
-		Script += TEXT("var did=false;if(target){did=scrollToCenter(target);}"); // smooth scroll toward target
-		Script += TEXT("if(!did){var dy=0;try{if(before){var r=before.getBoundingClientRect();if(r&&r.height>0)dy=Math.floor(r.height*1.05);}}catch(e){}");
-		Script += TEXT("if(!dy)dy=Math.floor((innerHeight||800)*0.92);dy=dy*(dir>0?1:-1);try{if(s&&s.scrollBy){s.scrollBy({top:dy,left:0,behavior:'smooth'});}else{window.scrollBy({top:dy,left:0,behavior:'smooth'});}}catch(e){}}");
-		Script += TEXT("s=sc();await idle(s,1200);var v=await stable(850);");
-		Script += TEXT("if(v&&before&&v===before){"); // didn't move; try one more larger step
-		Script += TEXT("try{var dy2=Math.floor((innerHeight||800)*0.95)*(dir>0?1:-1);if(s&&s.scrollBy){s.scrollBy({top:dy2,left:0,behavior:'smooth'});}else{window.scrollBy({top:dy2,left:0,behavior:'smooth'});}}catch(e){}");
-		Script += TEXT("await idle(s,1200);v=await stable(850);}");
-		Script += TEXT("if(v){s=sc();snapTo(v,s);await idle(s,500);v=await stable(420);var id=(TT.__moveId=(TT.__moveId||0)+1);");
-		Script += TEXT("await playAudio(v);pauseOthers(v);try{v.muted=false;v.defaultMuted=false;v.removeAttribute&&v.removeAttribute('muted');}catch(e){}");
-		Script += TEXT("keepAlive(id,v);}else{pauseOthers(null);}}");
+		Script += TEXT("function enforce(){if(TT.hidden||TT.moving) return; var v=TT.active; if(!v||!v.isConnected) v=centerV(); if(!v) return; TT.active=v;");
+		Script += TEXT("var vs=nearVideos(70); for(var i=0;i<vs.length;i++){var vv=vs[i]; if(vv===v) continue; safeStop(vv);} safePlay(v); }");
 
-		Script += TEXT("TT.move=TT.move||function(dir){TT.q.push(dir);if(TT.busy)return;TT.busy=true;(async function(){");
-		Script += TEXT("while(TT.q.length){var d=TT.q.shift();await step(d);await sl(60);}TT.busy=false;})();};");
+		Script += TEXT("TT.start=TT.start||function(){TT.hidden=false; if(TT._timer) return; TT._timer=setInterval(enforce,200); setTimeout(enforce,0);};");
+		Script += TEXT("TT.stop=TT.stop||function(){TT.hidden=true; if(TT._timer){clearInterval(TT._timer);TT._timer=0;}};");
+
+		Script += TEXT("async function moveOnce(dir){TT.start(); TT.moving=1;");
+		Script += TEXT("var before=TT.active||centerV(); var t=pickNeighbor(before,dir)||pickNeighbor(centerV(),dir); var s=t?findSc(t.parentElement||t):sc();");
+		Script += TEXT("if(before) safeStop(before);");
+		Script += TEXT("var moved=false; if(t){moved=snapTo(t,s);} ");
+		Script += TEXT("if(!moved){var dy=Math.floor((innerHeight||800)*0.98)*(dir>0?1:-1); try{if(s&&s.scrollBy){s.scrollBy({top:dy,left:0,behavior:'auto'});}else{window.scrollBy({top:dy,left:0,behavior:'auto'});}}catch(e){}}");
+		Script += TEXT("await idle(s,1200); var v=centerV();");
+		Script += TEXT("if(before && v===before && t && t.isConnected){snapTo(t,s); await idle(s,900); v=centerV(); if(v===before) v=t;}");
+		Script += TEXT("if(v){TT.active=v; snapTo(v,s);} TT.moving=0; enforce(); }");
+
+		Script += TEXT("TT.move=TT.move||function(dir){TT.q.push(dir); if(TT.busy) return; TT.busy=true; (async function(){");
+		Script += TEXT("while(TT.q.length){var d=TT.q.shift(); await moveOnce(d); await sl(80);} TT.busy=false;})();};");
 
 		Script += FString::Printf(TEXT("TT.move(%d);"), Dir);
 		Script += TEXT("}catch(e){}})();");
@@ -817,6 +834,8 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 	// Only show after WebView2 controller is ready; otherwise this can appear as a transparent/blank overlay.
 	if (Impl->Ctrl && Impl->Host)
 	{
+		// Unmute at WebView2 layer (Hide() hard-mutes here).
+		Impl->SetWebViewMuted(false);
 		Impl->ApplyBoundsScreen(ScreenRectPx);
 		Impl->Ctrl->put_IsVisible(1);
 		ShowWindow(Impl->Host, SW_SHOWNA);
@@ -827,6 +846,7 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 		static const wchar_t* ResumeScript = LR"JS(
 			(function(){
 				try{
+					if (window.__t66TikTok){ window.__t66TikTok.hidden = false; }
 					var vids = Array.prototype.slice.call(document.querySelectorAll('video') || []);
 					var best=null, bestArea=0;
 					for (var i=0;i<vids.length;i++){
@@ -837,26 +857,22 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 						var a=w*h;
 						if(a>bestArea){bestArea=a; best=v;}
 					}
-					for (var j=0;j<vids.length;j++){
-						var vv=vids[j]; if(!vv) continue;
-						var isBest = (vv===best);
-						try{
-							vv.muted = !isBest;
-							if (!isBest) { vv.pause && vv.pause(); }
-						}catch(e){}
-					}
 					if (best){
 						try{
 							if (typeof best.volume === 'number') best.volume = 1.0;
-							best.muted = true;
-							best.defaultMuted = true;
-							if (best.setAttribute) best.setAttribute('muted','');
+							try{
+								best.muted = false;
+								best.defaultMuted = false;
+								if (best.removeAttribute) best.removeAttribute('muted');
+							}catch(e){}
 							if (best.play) best.play().catch(function(){});
 							setTimeout(function(){
 								try{
-									best.muted = false;
-									best.defaultMuted = false;
-									if (best.removeAttribute) best.removeAttribute('muted');
+									try{
+										best.muted = false;
+										best.defaultMuted = false;
+										if (best.removeAttribute) best.removeAttribute('muted');
+									}catch(e){}
 									if (best.play) best.play().catch(function(){});
 								}catch(e){}
 							}, 120);
@@ -865,15 +881,19 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 							setTimeout(function(){
 								try{
 									if (best && best.paused && best.play){
-										best.muted = true;
-										best.defaultMuted = true;
-										if (best.setAttribute) best.setAttribute('muted','');
+										try{
+											best.muted = false;
+											best.defaultMuted = false;
+											if (best.removeAttribute) best.removeAttribute('muted');
+										}catch(e){}
 										best.play().catch(function(){});
 										setTimeout(function(){
 											try{
-												best.muted = false;
-												best.defaultMuted = false;
-												if (best.removeAttribute) best.removeAttribute('muted');
+												try{
+													best.muted = false;
+													best.defaultMuted = false;
+													if (best.removeAttribute) best.removeAttribute('muted');
+												}catch(e){}
 												if (best.play) best.play().catch(function(){});
 											}catch(e){}
 										}, 120);
@@ -882,6 +902,11 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 							}, 1100);
 						}catch(e){}
 					}
+
+					// Ensure the TikTok guardian is running while visible (enforces single-audio + force-play).
+					try{
+						if (window.__t66TikTok && window.__t66TikTok.start) { window.__t66TikTok.start(); }
+					}catch(e){}
 				}catch(e){}
 			})();
 		)JS";
@@ -896,13 +921,21 @@ void FT66WebView2Host::Hide()
 		Impl->bWantVisible = false;
 
 		// Pause/mute any playing media so audio never leaks after hiding the overlay.
+		// Also hard-mute at the WebView2 layer (unbreakable; protects against any JS failure).
+		Impl->SetWebViewMuted(true);
 		static const wchar_t* PauseScript = LR"JS(
 			(function(){
 				try{
-					var vids = Array.prototype.slice.call(document.querySelectorAll('video') || []);
-					for (var i=0;i<vids.length;i++){
-						var v=vids[i]; if(!v) continue;
-						try{ v.muted = true; v.pause && v.pause(); }catch(e){}
+					if (window.__t66TikTok){
+						window.__t66TikTok.hidden = true;
+						window.__t66TikTok.__moveId = (window.__t66TikTok.__moveId||0) + 1; // cancel keepAlive loops
+						if (window.__t66TikTok.stop) { window.__t66TikTok.stop(); }
+					}
+					var els = Array.prototype.slice.call(document.querySelectorAll('video,audio') || []);
+					for (var i=0;i<els.length;i++){
+						var e=els[i]; if(!e) continue;
+						try{ e.muted = true; e.defaultMuted = true; if (e.setAttribute) e.setAttribute('muted',''); }catch(ex){}
+						try{ e.pause && e.pause(); }catch(ex2){}
 					}
 				}catch(e){}
 			})();

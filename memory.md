@@ -90,6 +90,152 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
 
 ## 4) Change log (append-only)
 
+### 2026-02-01 — Vendor/Gambler layouts: reserve left space + 2×2 grids + shorter buttons
+
+**Goal**
+- Reserve a large empty area on the **left** side of the Vendor shop and Gambler casino cards view (for a future TikTok panel).
+- In Vendor:
+  - Shorten overly-long **BUY/STEAL** buttons.
+  - Change the shop layout to **2×2** and reorder so Item 1 is under Item 2, and a new Item 4 is under Item 3.
+- In Gambler:
+  - Reorder the casino “game cards” so game 1 is **below** games 2+3, and push the block right.
+
+**What changed**
+- **Vendor shop UI**
+  - `Source/T66/UI/T66VendorOverlayWidget.cpp`
+    - `ShopSlotCount` **3 → 4**
+    - Shop grid changed from a single-row layout to a **2×2 grid** with remapped positions:
+      - Slot 1 top-left, Slot 2 top-right, Slot 0 bottom-left, Slot 3 bottom-right
+    - **BUY/STEAL button width** set to fixed `WidthOverride(260.f)` and centered (no longer expanding across the tile).
+- **Vendor stock generation**
+  - `Source/T66/Core/T66RunStateSubsystem.cpp`
+    - Vendor stock now generates **4 items** (2 black, 1 red, 1 yellow).
+    - Fallback placeholder stock updated to `{ Item_01, Item_02, Item_03, Item_04 }`.
+- **Gambler casino cards view**
+  - `Source/T66/UI/T66GamblerOverlayWidget.cpp`
+    - Replaced the single-row (3-across) cards layout with a right-shifted `SUniformGridPanel`:
+      - Top row: Rock Paper Scissors, Find The Ball
+      - Bottom row: Coin Flip (left slot), right slot empty
+    - Added a left `SSpacer` to push cards to the right (reserve left side).
+
+**Localization**
+- No new player-facing strings added.
+
+**Verification / proof**
+- Builds ✅ (UE 5.7):
+  - `& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66Editor Win64 Development -Project='C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild`
+  - `& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66 Win64 Development -Project='C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild`
+
+### 2026-02-01 — Leaderboard: local best run summary snapshots + clickable “YOU” row + Run Summary stats panel
+
+**Goal**
+- Reset and re-earn a local best “Bounty” leaderboard score and have that **local entry be clickable**.
+- Clicking the local leaderboard entry opens the **Run Summary** for that best run.
+- If a new best score is set later, the saved run summary is **replaced** and clicking opens the **new** best run.
+- Add **Level + Stats** to the Run Summary screen.
+
+**What changed**
+- **Saved run-summary snapshot (file-per-best-run)**
+  - Added `UT66LeaderboardRunSummarySaveGame` (`Source/T66/Core/T66LeaderboardRunSummarySaveGame.h/.cpp`)
+  - `UT66LeaderboardSubsystem::SubmitRunBounty()` now writes a snapshot **only when a new best is set** (Practice Mode still blocks submission).
+  - Snapshot slot name is deterministic per difficulty/party:
+    - `T66_LocalBestBountyRunSummary_<Difficulty>_<PartySize>`
+- **Reset local best (for testing)**
+  - Removed the in-UI reset button (user request). For local testing, delete `Saved/SaveGames/T66_LocalLeaderboard.sav` to clear the local entry.
+- **Clickable local leaderboard row**
+  - `ST66LeaderboardPanel` (`Source/T66/UI/Components/T66LeaderboardPanel.*`)
+    - The local player row is rendered as a full-row button; it opens the snapshot when one exists.
+    - Clicking requests opening the saved summary and opens the Run Summary modal.
+  - Implemented a simple transient handshake:
+    - `UT66LeaderboardSubsystem::RequestOpenLocalBestBountyRunSummary(...)`
+    - `UT66LeaderboardSubsystem::ConsumePendingRunSummaryRequest(...)`
+    - `UT66RunSummaryScreen` consumes this request on activation to load the snapshot.
+- **Run Summary: Level + Stats + saved-view mode**
+  - `UT66RunSummaryScreen` now:
+    - Shows a “Base Stats” panel with **LEVEL** + all 7 stats (Damage, Attack Speed, Attack Size, Armor, Evasion, Luck, Speed).
+    - Can display either the **current run** or a **saved leaderboard snapshot**.
+    - When opened from leaderboard (saved-view), the left button becomes **BACK** (closes the modal).
+- **Localization**
+  - Added `UT66LocalizationSubsystem::GetText_Level()` (new key: `T66.Common.Level`).
+  - Ran Gather → Translate → Compile and verified `.locres` for all 22 cultures.
+
+**Verification / proof**
+- ValidateFast (UE 5.7) ✅
+  - `Build.bat T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `Build.bat T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+- Localization ✅
+  - Source gather:
+    - `UnrealEditor-Cmd.exe "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" ...`
+  - Translate archives:
+    - `python -u "C:\UE\T66\Scripts\AutoTranslateLocalizationArchives.py"`
+  - Compile:
+    - `UnrealEditor-Cmd.exe "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" ...`
+  - `.locres` count: **22**
+
+### 2026-02-01 — Leaderboard UX follow-up: remove reset UI, fix “YOU row” click, leaderboard-view summary = Back-only
+
+**User request**
+- No in-UI “clear/reset” option; instead reset should be done by clearing local data so **YOU** shows rank **11** with score **0** (and speedrun time **0**).
+- Clicking the **YOU** row should open the saved leaderboard run summary; in that mode the only button should be **BACK** (no restart).
+
+**What changed**
+- **Removed reset UI + APIs**
+  - Removed the leaderboard “CLEAR” UI and deleted the reset functions from `UT66LeaderboardSubsystem`.
+  - Local leaderboard reset is now achieved by deleting:
+    - `Saved/SaveGames/T66_LocalLeaderboard.sav`
+- **Fix: clicking “YOU” row not opening modal**
+  - Root cause: the Main Menu Slate UI can be constructed before `UT66UIManager` assigns `UIManager` onto the screen, so the leaderboard panel’s `UIManager` pointer was null at runtime.
+  - Fix:
+    - `ST66LeaderboardPanel` gained `SetUIManager(UT66UIManager*)`
+    - `UT66MainMenuScreen::OnScreenActivated_Implementation()` injects `UIManager` into the leaderboard panel after activation.
+- **Leaderboard-view Run Summary is Back-only**
+  - When `UT66RunSummaryScreen` is opened in saved-leaderboard mode, it now renders only a single **BACK** button (closes modal).
+  - In normal run-death mode it still shows **RESTART + MAIN MENU**.
+- **Leaderboard display tweaks**
+  - Unset times now show **0** (not `--:--`) for the local “YOU” entry.
+
+**Verification / proof**
+- Build (UE 5.7) ✅
+  - `Build.bat T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `Build.bat T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+### 2026-02-01 — HUD timer top-center + in-world Vendor/Gambler dialogue + NPC face-player rotation
+
+**Goal**
+- Move the stage timer to the **top-center of the whole screen** (not inside the minimap).
+- Replace the Vendor/Gambler “full-screen dialogue” opening flow with an **in-world 3-option selector**:
+  - Option 1: Shop / Gamble
+  - Option 2: Teleport me to your brother
+  - Option 3: Back
+- Make house NPCs **rotate in place to face the player** (Vendor, Gambler, Saint, Ouroboros, Trickster, etc.).
+
+**What changed**
+- **HUD timer placement**:
+  - `Source/T66/UI/T66GameplayHUDWidget.cpp` — timer moved to a root overlay slot at `HAlign_Center/VAlign_Top` (removed from minimap overlay).
+- **In-world dialogue selector (HUD-rendered)**:
+  - `Source/T66/UI/T66GameplayHUDWidget.h/.cpp` — added a lightweight 3-row dialogue panel that is positioned using `RenderTransform` (updated only while the dialogue is open).
+  - `Source/T66/Gameplay/T66PlayerController.h/.cpp` — added world dialogue state + input handling:
+    - Default selection is the top option.
+    - Navigate with **W/S** (or controller stick via `MoveForward` axis) with debounce; confirm with **Interact (F)**.
+    - Option 1 opens the existing overlays directly to **Shop/Casino pages** (skips the overlay dialogue page).
+    - Option 2 teleports to the other NPC (blocked when `RunState->GetBossActive()` is true, matching overlay behavior).
+- **Vendor/Gambler interaction change**:
+  - `Source/T66/Gameplay/T66VendorNPC.cpp` and `Source/T66/Gameplay/T66GamblerNPC.cpp` now open the in-world dialogue instead of directly opening overlays.
+  - `Source/T66/Gameplay/T66GamblerNPC.h` — added `GetWinGoldAmount()` so the overlay keeps the same win gold tuning when opened from the dialogue.
+- **Overlay helpers**:
+  - `Source/T66/UI/T66VendorOverlayWidget.h/.cpp` — added `OpenShopPage()`.
+  - `Source/T66/UI/T66GamblerOverlayWidget.h/.cpp` — added `OpenCasinoPage()`.
+- **NPC face-player rotation**:
+  - `Source/T66/Gameplay/T66HouseNPCBase.h/.cpp` — enabled ticking at 0.05s interval and smoothly rotates yaw toward the player (distance-gated).
+
+**Localization**
+- No new player-facing strings added; re-used existing `UT66LocalizationSubsystem` texts for the options.
+
+**Verification / proof**
+- Builds ✅ (UE 5.7):
+  - `& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66Editor Win64 Development -Project='C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild`
+  - `& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66 Win64 Development -Project='C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild`
+
 ### 2026-02-01 — Bigger main map + fully enclosed walls + corner houses fully inside bounds
 
 **Goal**
@@ -128,6 +274,115 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
   - `AT66GameMode::SpawnCornerHousesAndNPCs()` no longer spawns `AT66HouseBlock`.
 - Deleted unused placeholder house actor class:
   - `Source/T66/Gameplay/T66HouseBlock.h/.cpp`
+
+### 2026-02-01 — Tutorial arena + first-time tutorial flow (on-screen text above crosshair)
+
+**Goal**
+- Add a dedicated enclosed **Tutorial Area** inside `GameplayLevel` and make it the spawn for **first-time players**.
+- Drive the tutorial experience with **on-screen text above the crosshair** (no world-space prompt actors).
+- End tutorial via a **portal teleport** (no level load).
+- Tutorial loot bag should drop an item whose **primary stat line matches the hero’s highest stat**.
+
+**What changed**
+- **Profile tracking (first-time detection)**
+  - `UT66ProfileSaveGame`:
+    - Added `bHasCompletedTutorial` (profile lifetime flag).
+    - Bumped `SaveVersion` to 3 (safe default clamp).
+  - `UT66AchievementsSubsystem`:
+    - Added `HasCompletedTutorial()` and `MarkTutorialCompleted()` (persists to `T66_Profile`).
+- **Tutorial spawn behavior**
+  - `AT66GameMode::SpawnDefaultPawnFor_Implementation()`:
+    - Spawns into the tutorial arena if `bForceSpawnInTutorialArea` is true **or** the profile has not completed the tutorial yet.
+  - `AT66GameMode::SpawnTutorialIfNeeded()`:
+    - Spawns `AT66TutorialManager` only when Stage 1 and tutorial is forced/first-time.
+- **On-screen tutorial text (above crosshair)**
+  - `UT66RunStateSubsystem`:
+    - Added tutorial hint state (`TutorialHintLine1/2`, `bTutorialHintVisible`) + `TutorialHintChanged` delegate.
+    - Added tutorial input flags (`bTutorialMoveInputSeen`, `bTutorialJumpInputSeen`) + `TutorialInputChanged` delegate.
+  - `UT66GameplayHUDWidget`:
+    - Added a tutorial hint panel above the crosshair (event-driven; no per-frame UI polling).
+- **Tutorial flow system**
+  - `AT66TutorialManager`:
+    - Event-driven state machine that shows exact requested text and spawns:
+      - 1 enemy → black loot bag (hero-highest-stat tutorial item)
+      - 1 “elite” (mini-boss scaled) enemy → white loot bag
+      - 10-enemy wave
+      - portal spawn when wave cleared
+    - Uses `NSLOCTEXT("T66.Tutorial", ...)` for all tutorial hint strings.
+  - `AT66TutorialPortal` (new):
+    - Interact (F) teleports the player to the normal Stage 1 start area **without loading**.
+    - Marks tutorial completed in profile and clears tutorial hint.
+  - `AT66PlayerController::HandleInteractPressed()`:
+    - Added support for interacting with `AT66TutorialPortal`.
+  - `AT66PlayerController` movement/jump handlers:
+    - Notify `UT66RunStateSubsystem` the first time Move/Jump inputs occur (for tutorial progression).
+- **Tutorial stat-matched item**
+  - `UT66GameInstance::GetItemData()`:
+    - Added synthetic “tutorial-only” item rows (no content DT changes required):
+      - `Item_Tutorial_Damage`, `Item_Tutorial_AttackSpeed`, `Item_Tutorial_AttackSize`, `Item_Tutorial_Armor`, `Item_Tutorial_Evasion`, `Item_Tutorial_Luck`
+    - These have `MainStatType/MainStatValue` so they correctly grant the intended primary stat line.
+
+**Localization**
+- Ran Gather → Translate → Compile for all tutorial hint strings.
+
+**Verification / proof**
+- Source gather:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" ...`
+- Translate archives:
+  - `python -u "C:\UE\T66\Scripts\AutoTranslateLocalizationArchives.py"`
+- Compile:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" ...`
+- `.locres` count: **22**
+
+### 2026-02-01 — Idols v1: per-boss altar drops + 10-level stacking + HUD level pips + dev toggles
+
+**Goal**
+- Remove idol altar from tutorial + Stage 1 start; instead **drop an idol altar after every boss kill** (every stage).
+- Add idol stacking: selecting the same idol again increases its level (**up to 10**).
+- Show idol level as **small yellow pips** in each idol slot.
+- Add always-visible HUD toggles for:
+  - **Immortality** (can take damage, hearts can hit 0, but run never ends)
+  - **Power** (auto-attack damage = 999999)
+
+**What changed**
+- **Idol altar spawn timing**
+  - `AT66GameMode::RestartPlayer()` no longer spawns an altar in Stage 1.
+  - `AT66GameMode::HandleBossDefeatedAtLocation()` now spawns `AT66IdolAltar` after **every** boss kill.
+  - `SpawnStageGateAtLocation()` and tutorial ground traces updated to be more robust (WorldStatic fallback to Visibility) to avoid slight floating.
+- **Idol leveling (runtime)**
+  - `UT66RunStateSubsystem`:
+    - Added `EquippedIdolLevels` + `MaxIdolLevel = 10`.
+    - Added `SelectIdolFromAltar()`:
+      - If idol already equipped → level++ (clamped 1..10)
+      - Else equip into first empty slot at level 1.
+  - `UT66IdolAltarOverlayWidget` now calls `SelectIdolFromAltar()` so the altar supports repeated selections for leveling.
+- **HUD idol level pips**
+  - `UT66GameplayHUDWidget` draws a 2×5 pip grid inside each idol slot and toggles visibility based on idol level.
+- **Idol levels DataTable (data-only for now)**
+  - Added `FIdolData` to `T66DataTypes.h` with `Level01Value..Level10Value`.
+  - Added `Content/Data/Idols.csv`.
+  - Added `Content/Data/DT_Idols.uasset` and `Scripts/SetupIdolsDataTable.py`.
+  - `UT66GameInstance` now includes `IdolsDataTable` + `GetIdolData()`.
+- **Dev toggles**
+  - `UT66RunStateSubsystem`: added `bDevImmortality`, `bDevPower` + `DevCheatsChanged` delegate.
+  - Immortality is enforced in `ApplyDamage`, `ApplyTrueDamage`, `KillPlayer`, `EndLastStandAndDie`.
+  - Power is enforced in `UT66CombatComponent` by overriding `EffectiveDamagePerShot = 999999`.
+  - HUD buttons added near difficulty skulls:
+    - `IMMORTALITY: ON/OFF`
+    - `POWER: ON/OFF`
+  - Keybinds:
+    - `1` toggles Immortality (`ToggleImmortality`)
+    - `2` toggles Power (`TogglePower`)
+
+**Tutorial grounding polish**
+- `AT66LootBagPickup` visuals offset adjusted to sit on the ground.
+- `AT66TutorialPortal` visuals offset adjusted to sit on the ground.
+
+**Verification / proof**
+- Build (UE 5.7) ✅
+  - `Build.bat T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+- Localization ✅
+  - Ran Gather → Translate → Compile; `.locres` count: **22**
 
 ### 2026-01-31 — In-run HUD overhaul (map/minimap) + lock-on/crosshair + range ring + wheel HUD spin + TikTok placeholder
 
@@ -362,6 +617,117 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
   - Navigation move script now scrolls toward the target with **smooth** scrolling, then **re-centers** the final chosen video after scroll-idle so it lands on a single full video (no “half/half” final state).
   - Added a short “keep playing” watchdog after landing: if TikTok pauses the video shortly after, we re-`play()` (muted-first → unmute) and re-assert single-audio-source.
   - Resume-on-toggle script also retries playback once ~1.1s later if the video auto-pauses after resume.
+
+**Notes**
+- No new player-facing strings were added/changed.
+
+**Verification / proof (ValidateFast, UE 5.7)** ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-02-01 — TikTok/WebView2: hard “no audio leak” guarantee on toggle-off + reduce stutter fighting
+
+**Problems**
+- TikTok audio could continue playing after toggling the viewer off (this must never happen).
+- After next/prev, playback could stutter/stop due to over-aggressive pause/play fighting.
+
+**What changed**
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Added WebView2-level global mute using `ICoreWebView2_8::put_IsMuted(...)`:
+    - `Hide()` now calls `SetWebViewMuted(true)` **before** any JS executes (unbreakable mute).
+    - `ShowAtScreenRect()` calls `SetWebViewMuted(false)` before resuming playback.
+  - `Hide()` JS now:
+    - Sets `window.__t66TikTok.hidden=true` and bumps `__moveId` to cancel any in-flight keep-alive loops.
+    - Mutes/pauses both `video` **and** `audio` tags.
+  - Move JS now respects `TT.hidden` and avoids immediate “pause everything” behavior (muting first, pausing after target is stable) to reduce stutter.
+
+**Notes**
+- No new player-facing strings were added/changed.
+
+**Verification / proof (ValidateFast, UE 5.7)** ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-02-01 — TikTok/WebView2: CapsLock toggle + Q/E navigation no longer pauses/mutes
+
+**User request**
+- Fix “play/stop/play/stop” stutter by ensuring navigation does **not** pause or mute videos.
+- Remap TikTok toggle to **CapsLock**.
+
+**What changed**
+- `Config/DefaultInput.ini`
+  - `ToggleTikTok` key changed **O → CapsLock**
+  - `Dash` key changed **CapsLock → LeftShift** (to avoid double-binding conflicts)
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Q/E navigation JS no longer calls `pause()` or sets `muted=true` (only `Hide()` is allowed to pause/mute).
+  - Resume script un-mutes the chosen visible video on show (since hide explicitly mutes/pauses).
+- `Source/T66/Gameplay/T66PlayerController.cpp`
+  - Updated comment to reflect Dash key moved to `DefaultInput.ini` (now LeftShift by default).
+
+**Notes**
+- Audio is still guaranteed to never leak when toggled off via WebView2 global mute (`put_IsMuted(true)`), plus the hide pause/mute script.
+- No new player-facing strings were added/changed.
+
+**Verification / proof (ValidateFast, UE 5.7)** ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-02-01 — TikTok/WebView2: “single active video” guardian (no stutter + no old-audio bleed) + preload on gameplay map load
+
+**Problems**
+- Q/E could leave the previous TikTok audio playing.
+- Many videos would “play/stop/play/stop” (TikTok page pausing itself), causing stutter and eventually stopping.
+- First toggle after entering gameplay could show visible “formatting” and/or login-related work; user wants this done before first toggle.
+
+**What changed**
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Replaced the Q/E move script with a persistent in-page **guardian**:
+    - While visible, enforces **exactly one active (center-most) video** is **unmuted + playing**.
+    - Immediately **mutes + pauses any other visible videos** so old audio cannot bleed and overall load is reduced.
+    - Installs prototype hooks so the page cannot pause videos while visible (except when we explicitly allow internal pause for non-active videos).
+  - `Hide()` now also stops the guardian (in addition to WebView2-level global mute + pause/mute script).
+  - `ShowAtScreenRect()` resume script starts the guardian while visible.
+- `Source/T66/Core/T66MediaViewerSubsystem.h/.cpp`
+  - Added `PrewarmTikTok()` to create WebView2 + navigate in the background, then keep it hidden/muted.
+  - Changed first navigation target to `https://www.tiktok.com/` (instead of the QR login URL) so an already-signed-in session can preload without forcing the QR flow.
+- `Source/T66/Gameplay/T66PlayerController.cpp`
+  - Calls `UT66MediaViewerSubsystem::PrewarmTikTok()` on gameplay `BeginPlay()` so login/session + CSS injection happen before the player first toggles the panel.
+
+**Notes**
+- No new player-facing strings were added/changed.
+- WebView2 UserData still stays inside the game folder (`Saved/TikTokWebView2/UserData`).
+
+**Verification / proof (ValidateFast, UE 5.7)** ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-02-01 — TikTok/WebView2: Q/E “commit to next/prev” (no half-scroll staying on same video)
+
+**Problem**
+- With the guardian approach, pressing **Q (next)** could sometimes scroll partially but still remain on the same video.
+
+**What changed**
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - `moveOnce(dir)` now **commits** to the next/prev target:
+    - Finds the correct scroller for the target video.
+    - Uses `snapTo(target, scroller)` (non-smooth) and waits for scroll-idle.
+    - If the centered video is still the old one, retries with a larger step and finally forces the target as the active video for the guardian.
+
+**Notes**
+- No new player-facing strings were added/changed.
+
+**Verification / proof (ValidateFast, UE 5.7)** ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-02-01 — TikTok/WebView2: force-close viewer on death (auto toggle-off)
+
+**User request**
+- TikTok/media viewer should automatically toggle off when the player dies.
+
+**What changed**
+- `Source/T66/Gameplay/T66PlayerController.cpp`
+  - `OnPlayerDied()` now checks `UT66MediaViewerSubsystem` and calls `SetMediaViewerOpen(false)` before pausing and showing the Run Summary modal.
 
 **Notes**
 - No new player-facing strings were added/changed.

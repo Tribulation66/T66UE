@@ -21,7 +21,7 @@ bool AT66GamblerNPC::Interact(APlayerController* PC)
 {
 	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
 	if (!T66PC) return false;
-	T66PC->OpenGamblerOverlay(WinGoldAmount);
+	T66PC->OpenWorldDialogueGambler(this);
 	return true;
 }
 

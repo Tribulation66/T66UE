@@ -519,6 +519,10 @@ public:
 	// Common
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
 	FText GetText_Back() const;
+
+	/** Shared label: "LEVEL" */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
+	FText GetText_Level() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
 	FText GetText_Confirm() const;

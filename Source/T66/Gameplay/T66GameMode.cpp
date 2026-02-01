@@ -30,6 +30,7 @@
 #include "Gameplay/T66StageEffectTile.h"
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -184,12 +185,17 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66AchievementsSubsystem* Ach = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!RunState || !T66GI) return;
 	if (T66GI->bStageBoostPending) return;
 
 	// v0 per your request: stage 1 always shows tutorial prompts.
 	if (RunState->GetCurrentStage() != 1) return;
+
+	// Only run tutorial if first-time (profile) or forced by dev switch.
+	const bool bShouldSpawnTutorial = bForceSpawnInTutorialArea || (Ach && !Ach->HasCompletedTutorial());
+	if (!bShouldSpawnTutorial) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -239,7 +245,7 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 	FRandomStream Rng(StageNum * 971 + 17);
 
 	// Main map square bounds (centered at 0,0). Keep some margin from edges.
-	static constexpr float MainHalfExtent = 7200.f;
+	static constexpr float MainHalfExtent = 9200.f;
 	static constexpr float SpawnZ = 40.f;
 	static constexpr float MinDistBetweenTiles = 420.f;
 	static constexpr float SafeBubbleMargin = 350.f;
@@ -456,7 +462,6 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 	if (!IsColiseumStage())
 	{
 		SpawnStartGateForPlayer(NewPlayer);
-		SpawnIdolAltarForPlayer(NewPlayer);
 	}
 
 	UT66GameInstance* GI = GetT66GameInstance();
@@ -671,7 +676,7 @@ void AT66GameMode::HandleBossDefeatedAtLocation(const FVector& Location)
 
 	// Idol Altar unlock: after bosses of stages ending in 5 or 0 (i.e. Stage % 5 == 0),
 	// spawn an altar near the boss death so the player can pick an idol before leaving.
-	if (RunState && ((RunState->GetCurrentStage() % 5) == 0))
+	if (RunState)
 	{
 		SpawnIdolAltarAtLocation(Location);
 	}
@@ -754,7 +759,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	// Main area: corner NPCs are placed near the 4 corners of the main square.
 	// NOTE: NPC safe-zones are centered on the NPC cylinders (not the house blocks),
 	// so we place the NPCs *inward* toward the map center to keep the full bubble inside bounds.
-	const float Corner = 7000.f;
+	const float Corner = 9000.f;
 	const float NPCZ = 60.f;    // small cylinder NPC sits on ground-ish
 	const float NPCOffset = 700.f;
 
@@ -831,7 +836,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	FRandomStream Rng(StageNum * 1337 + 42);
 
 	// Main map square bounds (centered at 0,0). Keep some margin from walls.
-	static constexpr float MainHalfExtent = 7200.f;
+	static constexpr float MainHalfExtent = 9200.f;
 	static constexpr float SpawnZ = 220.f;
 	static constexpr float MinDistBetweenInteractables = 900.f;
 	static constexpr float SafeBubbleMargin = 250.f;
@@ -938,37 +943,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 {
 	if (IsColiseumStage()) return;
-	if (IdolAltar) return;
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	UGameInstance* GI = GetGameInstance();
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
-	if (StageNum != 1) return;
-
-	APawn* Pawn = Player ? Player->GetPawn() : nullptr;
-
-	// Map layout: Start area is the "Start Square" around X = -10000.
-	// Spawn near the actual player spawn so it's always in the correct area even if PlayerStart is moved.
-	const FVector FallbackStartAreaLoc(-10000.f, 0.f, 200.f);
-	const FVector Anchor = Pawn ? Pawn->GetActorLocation() : FallbackStartAreaLoc;
-
-	FVector SpawnLoc = Anchor + FVector(450.f, 350.f, 0.f);
-
-	// Trace down so altar sits on the ground.
-	FHitResult Hit;
-	const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 800.f);
-	const FVector TraceEnd = SpawnLoc - FVector(0.f, 0.f, 2000.f);
-	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
-	{
-		SpawnLoc = Hit.ImpactPoint;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	// v1: Idol altars only spawn after boss kills (one per stage).
 }
 
 void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
@@ -1098,7 +1073,8 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 		FHitResult Hit;
 		const FVector Start = SpawnLoc + FVector(0.f, 0.f, 3000.f);
 		const FVector End = SpawnLoc - FVector(0.f, 0.f, 9000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic) ||
+			World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
 		{
 			SpawnLoc = Hit.ImpactPoint;
 		}
@@ -1218,11 +1194,119 @@ void AT66GameMode::EnsureLevelSetup()
 	
 	SpawnFloorIfNeeded();
 	SpawnColiseumArenaIfNeeded();
+	SpawnTutorialArenaIfNeeded();
 	SpawnBoundaryWallsIfNeeded();
 	SpawnPlatformEdgeWallsIfNeeded();
 	SpawnStartAreaExitWallsIfNeeded();
 	SpawnLightingIfNeeded();
 	SpawnPlayerStartIfNeeded();
+}
+
+void AT66GameMode::SpawnTutorialArenaIfNeeded()
+{
+	// Tutorial Arena is an enclosed side-area inside GameplayLevel. It is only relevant for normal gameplay stages.
+	if (IsColiseumStage()) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (T66GI && T66GI->bStageBoostPending)
+	{
+		// Keep the boost platform area clean; tutorial arena not needed there.
+		return;
+	}
+
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (!CubeMesh) return;
+
+	auto HasTag = [&](FName Tag) -> bool
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			if (It->Tags.Contains(Tag))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// Place near the north side of the main square, fully inside global bounds.
+	// (Can't be constexpr in UE due to FVector not being constexpr-friendly on this toolchain.)
+	const FVector TutorialCenter(0.f, 7500.f, -50.f);
+	static constexpr float Half = 2000.f;
+	static constexpr float WallHeight = 2200.f;
+	static constexpr float WallThickness = 240.f;
+
+	const FName FloorTag(TEXT("T66_Floor_Tutorial"));
+
+	// Floor
+	if (!HasTag(FloorTag))
+	{
+		FActorSpawnParameters P;
+		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), TutorialCenter, FRotator::ZeroRotator, P);
+		if (Floor && Floor->GetStaticMeshComponent())
+		{
+			Floor->Tags.Add(FloorTag);
+			Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
+			Floor->SetActorScale3D(FVector(40.f, 40.f, 1.f)); // 4000x4000
+			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
+			if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+			{
+				Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.14f, 0.14f, 0.16f, 1.f));
+			}
+			if (!SpawnedSetupActors.Contains(Floor))
+			{
+				SpawnedSetupActors.Add(Floor);
+			}
+		}
+	}
+
+	// Walls
+	struct FWallSpec
+	{
+		FName Tag;
+		FVector Loc;
+		FVector Scale;
+	};
+
+	const float WallZ = 0.f + (WallHeight * 0.5f);
+	const float Thick = WallThickness / 100.f;
+	const float Tall = WallHeight / 100.f;
+	const float Long = ((Half * 2.f) + WallThickness) / 100.f;
+
+	const TArray<FWallSpec> Walls = {
+		{ FName(TEXT("T66_Wall_Tutorial_N")), FVector(TutorialCenter.X, TutorialCenter.Y + Half + (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
+		{ FName(TEXT("T66_Wall_Tutorial_S")), FVector(TutorialCenter.X, TutorialCenter.Y - Half - (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
+		{ FName(TEXT("T66_Wall_Tutorial_E")), FVector(TutorialCenter.X + Half + (WallThickness * 0.5f), TutorialCenter.Y, WallZ), FVector(Thick, Long, Tall) },
+		{ FName(TEXT("T66_Wall_Tutorial_W")), FVector(TutorialCenter.X - Half - (WallThickness * 0.5f), TutorialCenter.Y, WallZ), FVector(Thick, Long, Tall) },
+	};
+
+	for (const FWallSpec& Spec : Walls)
+	{
+		if (HasTag(Spec.Tag)) continue;
+		FActorSpawnParameters P;
+		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Loc, FRotator::ZeroRotator, P);
+		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
+		Wall->Tags.Add(Spec.Tag);
+		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
+		Wall->SetActorScale3D(Spec.Scale);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
+		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+		{
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.08f, 0.10f, 1.f));
+		}
+		if (!SpawnedSetupActors.Contains(Wall))
+		{
+			SpawnedSetupActors.Add(Wall);
+		}
+	}
 }
 
 void AT66GameMode::SpawnColiseumArenaIfNeeded()
@@ -1507,7 +1591,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	};
 
 	const TArray<FFloorSpec> Floors = {
-		{ FName("T66_Floor_Main"),   MainCenter,          FVector(160.f, 160.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
+		{ FName("T66_Floor_Main"),   MainCenter,          FVector(200.f, 200.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
 		{ FName("T66_Floor_Start"),  StartCenter,         FVector(60.f,  60.f,  1.f), FLinearColor(0.22f, 0.24f, 0.28f, 1.f) },
 		{ FName("T66_Floor_Boss"),   BossCenter,          FVector(60.f,  60.f,  1.f), FLinearColor(0.26f, 0.22f, 0.22f, 1.f) },
 		{ FName("T66_Floor_Conn1"),  StartConnectorCenter, FVector(20.f, 30.f, 1.f), FLinearColor(0.25f, 0.25f, 0.28f, 1.f) },
@@ -1590,7 +1674,7 @@ void AT66GameMode::SpawnBoundaryWallsIfNeeded()
 
 	static constexpr float StartBossHalf = 3000.f; // start/boss floors are 6000 wide
 	static constexpr float TotalHalfX = 10000.f + StartBossHalf; // start center -10000, boss center +10000
-	static constexpr float MainHalfY = 8000.f; // main floor is 16000 wide
+	static constexpr float MainHalfY = 10000.f; // main floor is 20000 wide
 	static constexpr float TotalHalfY = MainHalfY;
 
 	const float WallZ = FloorTopZ + (WallHeight * 0.5f);
@@ -1618,7 +1702,7 @@ void AT66GameMode::SpawnBoundaryWallsIfNeeded()
 	// Critical: the main square ends at X=±8000, but the overall footprint extends to X=±13000 due to the start/boss squares.
 	// Without extra "main edge" walls, the player can walk to the east/west edges of the main square and fall off.
 	{
-		static constexpr float MainHalfX = 8000.f;
+		static constexpr float MainHalfX = 10000.f;
 		const float MainEdgeX = MainHalfX + (WallThickness * 0.5f);
 		const float GapY = StartBossHalf; // keep the boss/start overlap corridor (|Y| <= 3000) open
 		const float SegLenY = (MainHalfY - GapY);
@@ -1866,6 +1950,30 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			if (T66GI->bStageBoostPending)
 			{
 				SpawnLocation = FVector(-10000.f, 5200.f, 200.f);
+			}
+			else
+			{
+				// Tutorial Arena spawn:
+				// - forced by dev switch, OR
+				// - first-time player (profile flag not completed yet)
+				bool bShouldTutorialSpawn = bForceSpawnInTutorialArea;
+				if (!bShouldTutorialSpawn)
+				{
+					if (UGameInstance* GI = GetGameInstance())
+					{
+						if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+						{
+							bShouldTutorialSpawn = !Ach->HasCompletedTutorial();
+						}
+					}
+				}
+
+				if (bShouldTutorialSpawn)
+				{
+					// Center is (0, 7500). Spawn near the "south" side so the player faces into the space.
+					SpawnLocation = FVector(-1600.f, 6100.f, 200.f);
+					SpawnRotation = FRotator::ZeroRotator;
+				}
 			}
 		}
 	}

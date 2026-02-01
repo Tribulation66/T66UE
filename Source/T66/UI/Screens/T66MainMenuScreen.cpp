@@ -137,6 +137,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
 					.LocalizationSubsystem(Loc)
 					.LeaderboardSubsystem(LB)
+					.UIManager(UIManager)
 				]
 			]
 			// Quit button (top-right)
@@ -192,6 +193,13 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("MainMenuScreen activated!"));
+
+	// Important: Screen UI can be built before UIManager is assigned by UT66UIManager.
+	// Inject it here so the leaderboard panel can open modals on row click.
+	if (LeaderboardPanel.IsValid())
+	{
+		LeaderboardPanel->SetUIManager(UIManager);
+	}
 
 	// Subscribe to language changes
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())

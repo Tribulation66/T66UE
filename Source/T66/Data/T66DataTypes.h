@@ -427,6 +427,50 @@ struct T66_API FStageData : public FTableRowBase
 };
 
 /**
+ * Idol data row for the Idols DataTable.
+ *
+ * v0: levels are data-only (effects will be wired later).
+ * CSV-friendly layout: explicit Level01..Level10 columns.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FIdolData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName IdolID;
+
+	/** Current design target: 10 levels per idol. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	int32 MaxLevel = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level01Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level02Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level03Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level04Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level05Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level06Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level07Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level08Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level09Value = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	float Level10Value = 0.f;
+
+	FIdolData()
+		: IdolID(NAME_None)
+	{}
+};
+
+/**
  * House NPC data row (Vendor/Gambler/Saint/Ouroboros).
  */
 USTRUCT(BlueprintType)

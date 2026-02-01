@@ -27,6 +27,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUltimateChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSurvivalChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnVendorChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStatusEffectsChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialHintChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialInputChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDevCheatsChanged);
 
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
@@ -125,6 +128,18 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnStatusEffectsChanged StatusEffectsChanged;
 
+	/** Tutorial hint text changed (above crosshair). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnTutorialHintChanged TutorialHintChanged;
+
+	/** Tutorial input progress changed (move/jump). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnTutorialInputChanged TutorialInputChanged;
+
+	/** Dev-only toggles (immortality/power) changed. */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnDevCheatsChanged DevCheatsChanged;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentHearts() const { return CurrentHearts; }
 
@@ -210,12 +225,35 @@ public:
 	void SetLoanSharkPending(bool bPending) { bLoanSharkPending = bPending; }
 	bool GetLoanSharkPending() const { return bLoanSharkPending; }
 
+	// ============================================
+	// Dev toggles (HUD switches)
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Dev")
+	bool GetDevImmortalityEnabled() const { return bDevImmortality; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Dev")
+	bool GetDevPowerEnabled() const { return bDevPower; }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Dev")
+	void ToggleDevImmortality();
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Dev")
+	void ToggleDevPower();
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetInventory() const { return Inventory; }
 
 	/** Equipped idol slots (size=6). NAME_None means empty slot. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetEquippedIdols() const { return EquippedIdolIDs; }
+
+	/** Idol max level (level-up by selecting same idol again). */
+	static constexpr int32 MaxIdolLevel = 10;
+
+	/** Equipped idol level for a specific slot (0..5). Returns 0 when empty. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetEquippedIdolLevelInSlot(int32 SlotIndex) const;
 
 	/** Equip an idol into a specific slot (0..5). Returns true if changed. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -224,6 +262,14 @@ public:
 	/** Equip an idol into the first empty slot. Returns true if equipped. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool EquipIdolFirstEmpty(FName IdolID);
+
+	/**
+	 * Idol altar selection:
+	 * - if idol is already equipped, increase its level up to MaxIdolLevel
+	 * - otherwise, equip into first empty slot at level 1
+	 */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	bool SelectIdolFromAltar(FName IdolID);
 
 	/** Clear all equipped idols. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -397,6 +443,32 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
 	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck)); }
+
+	// ============================================
+	// Tutorial (HUD hint + first-time onboarding)
+	// ============================================
+
+	/** Set the on-screen tutorial hint (shown above crosshair). */
+	void SetTutorialHint(const FText& InLine1, const FText& InLine2);
+
+	/** Clear the on-screen tutorial hint. */
+	void ClearTutorialHint();
+
+	FText GetTutorialHintLine1() const { return TutorialHintLine1; }
+	FText GetTutorialHintLine2() const { return TutorialHintLine2; }
+	bool IsTutorialHintVisible() const { return bTutorialHintVisible; }
+
+	/** Mark that movement input has been used at least once (for tutorial flow). */
+	void NotifyTutorialMoveInput();
+
+	/** Mark that jump input has been used at least once (for tutorial flow). */
+	void NotifyTutorialJumpInput();
+
+	bool HasSeenTutorialMoveInput() const { return bTutorialMoveInputSeen; }
+	bool HasSeenTutorialJumpInput() const { return bTutorialJumpInputSeen; }
+
+	/** Reset tutorial input flags (used when beginning tutorial). */
+	void ResetTutorialInputFlags();
 
 	/** Derived multipliers from hero stats (separate from item multipliers). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
@@ -632,6 +704,9 @@ private:
 	TArray<FName> EquippedIdolIDs;
 
 	UPROPERTY()
+	TArray<uint8> EquippedIdolLevels;
+
+	UPROPERTY()
 	TArray<FString> EventLog;
 
 	UPROPERTY()
@@ -667,6 +742,30 @@ private:
 
 	UPROPERTY()
 	bool bHUDPanelsVisible = true;
+
+	// Tutorial hint text (HUD, above crosshair).
+	UPROPERTY()
+	bool bTutorialHintVisible = false;
+
+	UPROPERTY()
+	FText TutorialHintLine1;
+
+	UPROPERTY()
+	FText TutorialHintLine2;
+
+	// Tutorial input flags (first-time onboarding).
+	UPROPERTY()
+	bool bTutorialMoveInputSeen = false;
+
+	UPROPERTY()
+	bool bTutorialJumpInputSeen = false;
+
+	// Dev toggles (debug/test).
+	UPROPERTY()
+	bool bDevImmortality = false;
+
+	UPROPERTY()
+	bool bDevPower = false;
 
 	UPROPERTY()
 	bool bBossActive = false;

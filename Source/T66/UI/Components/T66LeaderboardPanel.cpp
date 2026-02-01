@@ -3,6 +3,7 @@
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -16,6 +17,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 {
 	LocSubsystem = InArgs._LocalizationSubsystem;
 	LeaderboardSubsystem = InArgs._LeaderboardSubsystem;
+	UIManager = InArgs._UIManager;
 
 	// Initialize dropdown options
 	PartySizeOptions.Add(MakeShared<FString>(TEXT("Solo")));
@@ -319,6 +321,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	RebuildEntryList();
 }
 
+void ST66LeaderboardPanel::SetUIManager(UT66UIManager* InUIManager)
+{
+	UIManager = InUIManager;
+	// No rebuild required; click handlers will now be able to open modals.
+}
+
 void ST66LeaderboardPanel::GeneratePlaceholderData()
 {
 	LeaderboardEntries.Empty();
@@ -385,10 +393,20 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		// Format score with commas
 		FString ScoreStr = FString::Printf(TEXT("%lld"), Entry.Score);
 
-		EntryListBox->AddSlot()
-		.AutoHeight()
-		.Padding(0.0f, 2.0f)
-		[
+		const bool bHasLocalSummary =
+			LeaderboardSubsystem
+			&& (CurrentType == ET66LeaderboardType::HighScore)
+			&& LeaderboardSubsystem->HasLocalBestBountyRunSummary(CurrentDifficulty, CurrentPartySize);
+
+		const bool bRowClickable =
+			Entry.bIsLocalPlayer
+			&& (CurrentType == ET66LeaderboardType::HighScore)
+			&& (Entry.Score > 0)
+			&& (UIManager != nullptr)
+			&& bHasLocalSummary;
+
+		// Build the row content once.
+		const TSharedRef<SWidget> RowContents =
 			SNew(SBorder)
 			.BorderBackgroundColor(RowColor)
 			.Padding(FMargin(10.0f, 8.0f))
@@ -449,7 +467,28 @@ void ST66LeaderboardPanel::RebuildEntryList()
 						.Justification(ETextJustify::Right)
 					]
 				]
-			]
+			];
+
+		// Your row should be a full-row button (even if the snapshot doesn't exist yet).
+		const bool bIsLocalRowButton = Entry.bIsLocalPlayer;
+		TSharedRef<SWidget> RowWidget =
+			bIsLocalRowButton
+			? StaticCastSharedRef<SWidget>(
+				SNew(SButton)
+				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.ContentPadding(0.f)
+				.Cursor(bRowClickable ? EMouseCursor::Hand : EMouseCursor::Default)
+				.OnClicked_Lambda([this, Entry]() { return HandleLocalEntryClicked(Entry); })
+				[
+					RowContents
+				])
+			: RowContents;
+
+		EntryListBox->AddSlot()
+		.AutoHeight()
+		.Padding(0.0f, 2.0f)
+		[
+			RowWidget
 		];
 	}
 }
@@ -700,4 +739,32 @@ FText ST66LeaderboardPanel::GetTypeText(ET66LeaderboardType Type) const
 	case ET66LeaderboardType::SpeedRun: return NSLOCTEXT("T66.Leaderboard", "SpeedRun", "SPEED RUN");
 	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
+}
+
+FReply ST66LeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry& Entry)
+{
+	if (!Entry.bIsLocalPlayer || !LeaderboardSubsystem || !UIManager)
+	{
+		return FReply::Unhandled();
+	}
+
+	// v0: only local-best bounty can open a run summary snapshot.
+	if (CurrentType != ET66LeaderboardType::HighScore)
+	{
+		return FReply::Handled();
+	}
+
+	if (Entry.Score <= 0)
+	{
+		return FReply::Handled();
+	}
+
+	if (!LeaderboardSubsystem->HasLocalBestBountyRunSummary(CurrentDifficulty, CurrentPartySize))
+	{
+		return FReply::Handled();
+	}
+
+	LeaderboardSubsystem->RequestOpenLocalBestBountyRunSummary(CurrentDifficulty, CurrentPartySize);
+	UIManager->ShowModal(ET66ScreenType::RunSummary);
+	return FReply::Handled();
 }

@@ -6,6 +6,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66CompanionBase.h"
 #include "Gameplay/T66HeroPreviewStage.h"
@@ -34,13 +35,20 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
+	// If we were opened from a leaderboard row click, load the saved snapshot first.
+	LoadSavedRunSummaryIfRequested();
+
 	// Foundation: submit score at run end if allowed by settings (Practice Mode blocks).
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
-	if (RunState && LB)
+	// Important: do NOT submit when we're just viewing a saved run from the leaderboard.
+	if (!bViewingSavedLeaderboardRunSummary)
 	{
-		LB->SubmitRunBounty(RunState->GetCurrentScore());
+		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+		if (RunState && LB)
+		{
+			LB->SubmitRunBounty(RunState->GetCurrentScore());
+		}
 	}
 
 	EnsurePreviewCaptures();
@@ -99,12 +107,16 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 	// Drive them from the saved selection so it matches the hero/companion selection UI.
 	if (HeroPreviewStage)
 	{
-		const FName HeroID = !GI->SelectedHeroID.IsNone()
-			? GI->SelectedHeroID
-			: (GI->GetAllHeroIDs().Num() > 0 ? GI->GetAllHeroIDs()[0] : NAME_None);
+		const FName HeroID =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID :
+			(!GI->SelectedHeroID.IsNone() ? GI->SelectedHeroID :
+				(GI->GetAllHeroIDs().Num() > 0 ? GI->GetAllHeroIDs()[0] : NAME_None));
+
+		const ET66BodyType BodyType =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroBodyType : GI->SelectedHeroBodyType;
 		if (!HeroID.IsNone())
 		{
-			HeroPreviewStage->SetPreviewHero(HeroID, GI->SelectedHeroBodyType);
+			HeroPreviewStage->SetPreviewHero(HeroID, BodyType);
 		}
 		if (UTextureRenderTarget2D* RT = HeroPreviewStage->GetRenderTarget())
 		{
@@ -120,7 +132,9 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 
 	if (CompanionPreviewStage)
 	{
-		CompanionPreviewStage->SetPreviewCompanion(GI->SelectedCompanionID);
+		const FName CompanionID =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->CompanionID : GI->SelectedCompanionID;
+		CompanionPreviewStage->SetPreviewCompanion(CompanionID);
 		if (UTextureRenderTarget2D* RT = CompanionPreviewStage->GetRenderTarget())
 		{
 			if (!CompanionPreviewBrush.IsValid())
@@ -141,12 +155,57 @@ void UT66RunSummaryScreen::DestroyPreviewCaptures()
 	CompanionPreviewBrush.Reset();
 }
 
+void UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
+{
+	bViewingSavedLeaderboardRunSummary = false;
+	LoadedSavedSummary = nullptr;
+
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	if (!LB)
+	{
+		return;
+	}
+
+	FString SlotName;
+	if (!LB->ConsumePendingRunSummaryRequest(SlotName))
+	{
+		return;
+	}
+
+	if (SlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{
+		return;
+	}
+
+	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
+	LoadedSavedSummary = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded);
+	if (LoadedSavedSummary)
+	{
+		bViewingSavedLeaderboardRunSummary = true;
+	}
+}
+
 void UT66RunSummaryScreen::RebuildLogItems()
 {
 	LogItems.Reset();
 
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	const TArray<FString>& Log = RunState ? RunState->GetEventLog() : TArray<FString>();
+	const TArray<FString>* LogPtr = nullptr;
+	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+	{
+		LogPtr = &LoadedSavedSummary->EventLog;
+	}
+	else
+	{
+		UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		if (RunState)
+		{
+			LogPtr = &RunState->GetEventLog();
+		}
+	}
+
+	const TArray<FString>& Log = LogPtr ? *LogPtr : TArray<FString>();
 
 	LogItems.Reserve(Log.Num());
 	for (const FString& Entry : Log)
@@ -172,8 +231,45 @@ TSharedRef<ITableRow> UT66RunSummaryScreen::GenerateLogRow(TSharedPtr<FString> I
 TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 {
 	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	const int32 StageReached = RunState ? RunState->GetCurrentStage() : 1;
-	const int32 Bounty = RunState ? RunState->GetCurrentScore() : 0;
+	const int32 StageReached =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached :
+		(RunState ? RunState->GetCurrentStage() : 1);
+
+	const int32 Bounty =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Bounty :
+		(RunState ? RunState->GetCurrentScore() : 0);
+
+	const int32 HeroLevel =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroLevel :
+		(RunState ? RunState->GetHeroLevel() : 1);
+
+	const int32 DamageStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->DamageStat :
+		(RunState ? RunState->GetDamageStat() : 1);
+
+	const int32 AttackSpeedStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->AttackSpeedStat :
+		(RunState ? RunState->GetAttackSpeedStat() : 1);
+
+	const int32 AttackSizeStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->AttackSizeStat :
+		(RunState ? RunState->GetScaleStat() : 1);
+
+	const int32 ArmorStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->ArmorStat :
+		(RunState ? RunState->GetArmorStat() : 1);
+
+	const int32 EvasionStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->EvasionStat :
+		(RunState ? RunState->GetEvasionStat() : 1);
+
+	const int32 LuckStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->LuckStat :
+		(RunState ? RunState->GetLuckStat() : 1);
+
+	const int32 SpeedStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->SpeedStat :
+		(RunState ? RunState->GetSpeedStat() : 1);
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
 	EnsurePreviewCaptures();
@@ -252,12 +348,54 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			];
 	};
 
+	// Level + stats (requested for Run Summary and saved leaderboard snapshots).
+	TSharedRef<SVerticalBox> StatsBox = SNew(SVerticalBox);
+	{
+		const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
+
+		auto AddStatLine = [&](const FText& Label, int32 Value)
+		{
+			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			];
+		};
+
+		AddStatLine(Loc ? Loc->GetText_Level() : NSLOCTEXT("T66.Common", "Level", "LEVEL"), HeroLevel);
+		AddStatLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), DamageStat);
+		AddStatLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), AttackSpeedStat);
+		AddStatLine(Loc ? Loc->GetText_Stat_AttackSize() : NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size"), AttackSizeStat);
+		AddStatLine(Loc ? Loc->GetText_Stat_Armor() : NSLOCTEXT("T66.Stats", "Armor", "Armor"), ArmorStat);
+		AddStatLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), EvasionStat);
+		AddStatLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), LuckStat);
+		AddStatLine(Loc ? Loc->GetText_Stat_Speed() : NSLOCTEXT("T66.Stats", "Speed", "Speed"), SpeedStat);
+	}
+
 	// Build idols + inventory lists.
 	TSharedRef<SVerticalBox> IdolsBox = SNew(SVerticalBox);
 	TSharedRef<SVerticalBox> InvBox = SNew(SVerticalBox);
-	if (RunState)
 	{
-		const TArray<FName>& Idols = RunState->GetEquippedIdols();
+		const TArray<FName>* IdolsPtr = nullptr;
+		const TArray<FName>* InventoryPtr = nullptr;
+
+		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+		{
+			IdolsPtr = &LoadedSavedSummary->EquippedIdols;
+			InventoryPtr = &LoadedSavedSummary->Inventory;
+		}
+		else if (RunState)
+		{
+			IdolsPtr = &RunState->GetEquippedIdols();
+			InventoryPtr = &RunState->GetInventory();
+		}
+
+		const TArray<FName> Empty;
+		const TArray<FName>& Idols = IdolsPtr ? *IdolsPtr : Empty;
+		const TArray<FName>& Inventory = InventoryPtr ? *InventoryPtr : Empty;
+
 		for (int32 IdolSlotIndex = 0; IdolSlotIndex < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++IdolSlotIndex)
 		{
 			const FName IdolID = (Idols.IsValidIndex(IdolSlotIndex)) ? Idols[IdolSlotIndex] : NAME_None;
@@ -290,7 +428,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			];
 		}
 
-		const TArray<FName>& Inventory = RunState->GetInventory();
 		if (Inventory.Num() <= 0)
 		{
 			InvBox->AddSlot().AutoHeight()
@@ -366,6 +503,15 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 
+					// Level + Stats
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+					[
+						MakePanel(
+							Loc ? Loc->GetText_BaseStatsHeader() : NSLOCTEXT("T66.HeroSelection", "BaseStatsHeader", "Base Stats"),
+							StatsBox
+						)
+					]
+
 					// Previews row
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
 					[
@@ -397,39 +543,55 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					// Buttons
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
 					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
-						[
-							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(54.f)
-							[
-								SNew(SButton)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
-								.ContentPadding(FMargin(18.f, 10.f))
-								[
-									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"))
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-								]
-							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
-						[
+						bViewingSavedLeaderboardRunSummary
+						? StaticCastSharedRef<SWidget>(
 							SNew(SBox).MinDesiredWidth(200.f).HeightOverride(54.f)
 							[
 								SNew(SButton)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
+								.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
 								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
 								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								.ContentPadding(FMargin(18.f, 10.f))
 								[
 									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"))
+									.Text(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"))
 									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 								]
+							])
+						: StaticCastSharedRef<SWidget>(
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
+							[
+								SNew(SBox).MinDesiredWidth(180.f).HeightOverride(54.f)
+								[
+									SNew(SButton)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
+									.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+									.ButtonColorAndOpacity(FT66Style::Tokens::Success)
+									.ContentPadding(FMargin(18.f, 10.f))
+									[
+										SNew(STextBlock)
+										.Text(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"))
+										.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+									]
+								]
 							]
-						]
+							+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
+							[
+								SNew(SBox).MinDesiredWidth(200.f).HeightOverride(54.f)
+								[
+									SNew(SButton)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
+									.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+									.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+									.ContentPadding(FMargin(18.f, 10.f))
+									[
+										SNew(STextBlock)
+										.Text(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"))
+										.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+									]
+								]
+							])
 					]
 				]
 			]
@@ -443,6 +605,17 @@ FReply UT66RunSummaryScreen::HandleViewLogClicked() { OnViewLogClicked(); return
 void UT66RunSummaryScreen::OnRestartClicked()
 {
 	DestroyPreviewCaptures();
+	if (bViewingSavedLeaderboardRunSummary)
+	{
+		// Viewer-mode (opened from leaderboard): just close the modal.
+		if (UIManager)
+		{
+			UIManager->CloseModal();
+			return;
+		}
+		UGameplayStatics::OpenLevel(this, FName(TEXT("FrontendLevel")));
+		return;
+	}
 	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState) RunState->ResetForNewRun();
 	APlayerController* PC = GetOwningPlayer();
@@ -453,6 +626,17 @@ void UT66RunSummaryScreen::OnRestartClicked()
 void UT66RunSummaryScreen::OnMainMenuClicked()
 {
 	DestroyPreviewCaptures();
+	if (bViewingSavedLeaderboardRunSummary)
+	{
+		// Viewer-mode (opened from leaderboard): the main menu is already underneath.
+		if (UIManager)
+		{
+			UIManager->CloseModal();
+			return;
+		}
+		UGameplayStatics::OpenLevel(this, FName(TEXT("FrontendLevel")));
+		return;
+	}
 	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState) RunState->ResetForNewRun();
 	APlayerController* PC = GetOwningPlayer();

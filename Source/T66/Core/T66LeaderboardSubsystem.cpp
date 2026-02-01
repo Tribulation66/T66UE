@@ -1,9 +1,11 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalLeaderboardSaveGame.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66RunStateSubsystem.h"
 
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
@@ -80,6 +82,91 @@ void UT66LeaderboardSubsystem::SaveLocalSave() const
 {
 	if (!LocalSave) return;
 	UGameplayStatics::SaveGameToSlot(LocalSave, LocalSaveSlotName, 0);
+}
+
+FString UT66LeaderboardSubsystem::DifficultyKey(ET66Difficulty Difficulty)
+{
+	switch (Difficulty)
+	{
+	case ET66Difficulty::Easy: return TEXT("Easy");
+	case ET66Difficulty::Medium: return TEXT("Medium");
+	case ET66Difficulty::Hard: return TEXT("Hard");
+	case ET66Difficulty::VeryHard: return TEXT("VeryHard");
+	case ET66Difficulty::Impossible: return TEXT("Impossible");
+	case ET66Difficulty::Perdition: return TEXT("Perdition");
+	case ET66Difficulty::Final: return TEXT("Final");
+	default: return TEXT("Unknown");
+	}
+}
+
+FString UT66LeaderboardSubsystem::PartySizeKey(ET66PartySize PartySize)
+{
+	switch (PartySize)
+	{
+	case ET66PartySize::Solo: return TEXT("Solo");
+	case ET66PartySize::Duo: return TEXT("Duo");
+	case ET66PartySize::Trio: return TEXT("Trio");
+	default: return TEXT("Unknown");
+	}
+}
+
+FString UT66LeaderboardSubsystem::MakeLocalBestBountyRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize)
+{
+	return FString::Printf(TEXT("T66_LocalBestBountyRunSummary_%s_%s"), *DifficultyKey(Difficulty), *PartySizeKey(PartySize));
+}
+
+bool UT66LeaderboardSubsystem::HasLocalBestBountyRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize) const
+{
+	const FString SlotName = MakeLocalBestBountyRunSummarySlotName(Difficulty, PartySize);
+	return UGameplayStatics::DoesSaveGameExist(SlotName, 0);
+}
+
+bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Bounty) const
+{
+	UGameInstance* GI = GetGameInstance();
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!T66GI || !RunState)
+	{
+		return false;
+	}
+
+	UT66LeaderboardRunSummarySaveGame* Snapshot =
+		Cast<UT66LeaderboardRunSummarySaveGame>(UGameplayStatics::CreateSaveGameObject(UT66LeaderboardRunSummarySaveGame::StaticClass()));
+	if (!Snapshot)
+	{
+		return false;
+	}
+
+	Snapshot->SchemaVersion = 1;
+	Snapshot->LeaderboardType = ET66LeaderboardType::HighScore;
+	Snapshot->Difficulty = Difficulty;
+	Snapshot->PartySize = PartySize;
+	Snapshot->SavedAtUtc = FDateTime::UtcNow();
+
+	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 66);
+	Snapshot->Bounty = FMath::Max(0, Bounty);
+
+	Snapshot->HeroID = T66GI->SelectedHeroID;
+	Snapshot->HeroBodyType = T66GI->SelectedHeroBodyType;
+	Snapshot->CompanionID = T66GI->SelectedCompanionID;
+	Snapshot->CompanionBodyType = T66GI->SelectedCompanionBodyType;
+
+	Snapshot->HeroLevel = FMath::Max(1, RunState->GetHeroLevel());
+	Snapshot->DamageStat = FMath::Max(1, RunState->GetDamageStat());
+	Snapshot->AttackSpeedStat = FMath::Max(1, RunState->GetAttackSpeedStat());
+	Snapshot->AttackSizeStat = FMath::Max(1, RunState->GetScaleStat());
+	Snapshot->ArmorStat = FMath::Max(1, RunState->GetArmorStat());
+	Snapshot->EvasionStat = FMath::Max(1, RunState->GetEvasionStat());
+	Snapshot->LuckStat = FMath::Max(1, RunState->GetLuckStat());
+	Snapshot->SpeedStat = FMath::Max(1, RunState->GetSpeedStat());
+
+	Snapshot->EquippedIdols = RunState->GetEquippedIdols();
+	Snapshot->Inventory = RunState->GetInventory();
+	Snapshot->EventLog = RunState->GetEventLog();
+
+	const FString SlotName = MakeLocalBestBountyRunSummarySlotName(Difficulty, PartySize);
+	return UGameplayStatics::SaveGameToSlot(Snapshot, SlotName, 0);
 }
 
 uint64 UT66LeaderboardSubsystem::MakeBountyKey(ET66Difficulty Difficulty, ET66PartySize PartySize)
@@ -335,6 +422,20 @@ bool UT66LeaderboardSubsystem::SubmitRunBounty(int32 Bounty)
 		Record->BestBounty = static_cast<int64>(Bounty);
 		Record->bSubmittedAnonymous = bAnon;
 		SaveLocalSave();
+
+		// Persist a snapshot of this best run so the leaderboard row can open the Run Summary later.
+		(void)SaveLocalBestBountyRunSummarySnapshot(Diff, Party, Bounty);
+	}
+	else
+	{
+		// If the player already has a best score (from an older build), we might not have a snapshot yet.
+		// If the current run matches the stored best and the snapshot is missing, capture it now so clicking works.
+		const bool bHasBest = (Record->BestBounty > 0);
+		const bool bSnapshotMissing = !UGameplayStatics::DoesSaveGameExist(MakeLocalBestBountyRunSummarySlotName(Diff, Party), 0);
+		if (bHasBest && bSnapshotMissing && static_cast<int64>(Bounty) == Record->BestBounty)
+		{
+			(void)SaveLocalBestBountyRunSummarySnapshot(Diff, Party, Bounty);
+		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Leaderboard: submit local bounty. Bounty=%d NewBest=%s Anonymous=%s"), Bounty, bIsNewBest ? TEXT("true") : TEXT("false"), bAnon ? TEXT("true") : TEXT("false"));
@@ -397,6 +498,22 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	return true;
 }
 
+void UT66LeaderboardSubsystem::RequestOpenLocalBestBountyRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize)
+{
+	PendingRunSummarySlotName = MakeLocalBestBountyRunSummarySlotName(Difficulty, PartySize);
+}
+
+bool UT66LeaderboardSubsystem::ConsumePendingRunSummaryRequest(FString& OutSaveSlotName)
+{
+	if (PendingRunSummarySlotName.IsEmpty())
+	{
+		return false;
+	}
+	OutSaveSlotName = PendingRunSummarySlotName;
+	PendingRunSummarySlotName.Reset();
+	return true;
+}
+
 TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const
 {
 	TArray<FLeaderboardEntry> Out;
@@ -424,7 +541,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Diffi
 		E.Rank = Rank;
 		E.PlayerName = FakeNames[Rank - 1];
 		E.Score = static_cast<int64>(FMath::RoundToInt64(static_cast<double>(Target10) * static_cast<double>(Mult)));
-		E.TimeSeconds = -1.f;
+		E.TimeSeconds = 0.f;
 		E.PartySize = PartySize;
 		E.Difficulty = Difficulty;
 		E.bIsLocalPlayer = false;
@@ -475,7 +592,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Diffi
 			FLeaderboardEntry You;
 			You.PlayerName = LocalName;
 			You.Score = LocalBest;
-			You.TimeSeconds = -1.f;
+			You.TimeSeconds = 0.f;
 			You.PartySize = PartySize;
 			You.Difficulty = Difficulty;
 			You.bIsLocalPlayer = true;
@@ -498,7 +615,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Diffi
 		You.Rank = 11;
 		You.PlayerName = LocalName;
 		You.Score = LocalBest;
-		You.TimeSeconds = -1.f;
+		You.TimeSeconds = 0.f;
 		You.PartySize = PartySize;
 		You.Difficulty = Difficulty;
 		You.bIsLocalPlayer = true;
@@ -609,7 +726,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 		You.Rank = 11;
 		You.PlayerName = LocalName;
 		You.Score = 0;
-		You.TimeSeconds = (LocalBest > 0.01f) ? LocalBest : -1.f;
+		You.TimeSeconds = (LocalBest > 0.01f) ? LocalBest : 0.f;
 		You.StageReached = Stage;
 		You.PartySize = PartySize;
 		You.Difficulty = Difficulty;

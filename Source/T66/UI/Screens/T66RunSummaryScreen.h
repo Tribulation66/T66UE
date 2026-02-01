@@ -10,6 +10,7 @@ class ASceneCapture2D;
 class UTextureRenderTarget2D;
 class AT66HeroPreviewStage;
 class AT66CompanionPreviewStage;
+class UT66LeaderboardRunSummarySaveGame;
 
 /**
  * Run Summary screen shown on death: 3D preview placeholder, event log, Restart / Main Menu.
@@ -46,8 +47,16 @@ private:
 
 	void EnsurePreviewCaptures();
 	void DestroyPreviewCaptures();
+	void LoadSavedRunSummaryIfRequested();
 
 	bool bLogVisible = true;
+
+	/** True when opened from a leaderboard entry (saved snapshot instead of current run state). */
+	bool bViewingSavedLeaderboardRunSummary = false;
+
+	/** Loaded snapshot when bViewingSavedLeaderboardRunSummary is true. */
+	UPROPERTY(Transient)
+	TObjectPtr<UT66LeaderboardRunSummarySaveGame> LoadedSavedSummary;
 
 	// Virtualized log list (prevents building a widget per entry).
 	TArray<TSharedPtr<FString>> LogItems;

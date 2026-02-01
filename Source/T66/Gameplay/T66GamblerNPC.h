@@ -17,6 +17,8 @@ public:
 
 	virtual bool Interact(APlayerController* PC) override;
 
+	int32 GetWinGoldAmount() const { return WinGoldAmount; }
+
 protected:
 	virtual void ApplyNPCData(const FHouseNPCData& Data) override;
 

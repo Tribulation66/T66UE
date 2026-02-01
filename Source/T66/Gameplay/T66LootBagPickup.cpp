@@ -29,7 +29,8 @@ AT66LootBagPickup::AT66LootBagPickup()
 	{
 		VisualMesh->SetStaticMesh(Cube);
 		VisualMesh->SetRelativeScale3D(FVector(0.35f, 0.25f, 0.20f));
-		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 20.f));
+		// Cube is 100 units tall; scale Z=0.20 => 20 tall, half-height=10. Sit on ground plane.
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 	}
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FLinearColor(0.9f, 0.8f, 0.25f, 1.f));
 }

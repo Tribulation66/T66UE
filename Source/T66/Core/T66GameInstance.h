@@ -43,6 +43,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> ItemsDataTable;
 
+	/** Reference to the Idols DataTable (idol levels 1..10). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> IdolsDataTable;
+
 	/** Reference to the Bosses DataTable (v0: placeholder boss) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> BossesDataTable;
@@ -141,6 +145,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetItemsDataTable();
 
+	/** Get the loaded Idols DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetIdolsDataTable();
+
 	/** Get a random item ID from the Items DataTable (cached; never returns NAME_None). */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	FName GetRandomItemID();
@@ -172,6 +180,10 @@ public:
 	/** Get item data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetItemData(FName ItemID, FItemData& OutItemData);
+
+	/** Get idol data by ID. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetIdolData(FName IdolID, FIdolData& OutIdolData);
 
 	/** Get boss data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -254,6 +266,10 @@ private:
 	/** Cached loaded Items DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedItemsDataTable;
+
+	/** Cached loaded Idols DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedIdolsDataTable;
 
 	/** Cached item row names (built once per runtime session). */
 	UPROPERTY(Transient)

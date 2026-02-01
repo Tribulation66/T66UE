@@ -13,6 +13,7 @@ class UT66MediaViewerSubsystem;
 class STextBlock;
 class SBorder;
 class SBox;
+class SButton;
 class ST66RingWidget;
 class ST66DotWidget;
 class ST66WorldMapWidget;
@@ -40,6 +41,15 @@ public:
 	void SetFullMapOpen(bool bOpen);
 	bool IsFullMapOpen() const { return bFullMapOpen; }
 	void ToggleFullMap();
+
+	// ============================================================
+	// In-world NPC dialogue (Vendor/Gambler) - HUD-rendered
+	// ============================================================
+	void ShowWorldDialogue(const TArray<FText>& Options, int32 SelectedIndex);
+	void HideWorldDialogue();
+	void SetWorldDialogueSelection(int32 SelectedIndex);
+	void SetWorldDialogueScreenPosition(const FVector2D& ScreenPos);
+	bool IsWorldDialogueVisible() const;
 
 	/** TikTok placeholder toggle (O / ToggleTikTok). */
 	void ToggleTikTokPlaceholder();
@@ -69,6 +79,9 @@ protected:
 	void ResolveWheelSpin();
 	void CloseWheelSpin();
 
+	FReply OnToggleImmortality();
+	FReply OnTogglePower();
+
 	/** Cached Slate widgets for updates (set in BuildSlateUI via SAssignNew) */
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
@@ -83,6 +96,10 @@ protected:
 	TSharedPtr<SBox> LootPromptBox;
 	TSharedPtr<SBorder> LootPromptBorder;
 	TSharedPtr<STextBlock> LootPromptText;
+	TSharedPtr<SBorder> TutorialHintBorder;
+	TSharedPtr<STextBlock> TutorialHintLine1Text;
+	TSharedPtr<STextBlock> TutorialHintLine2Text;
+	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // 10 per idol slot
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
 	TSharedPtr<SBorder> UltimateBorder;
@@ -94,6 +111,10 @@ protected:
 	TSharedPtr<SBorder> FullMapOverlayBorder;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
+	TSharedPtr<SButton> ImmortalityButton;
+	TSharedPtr<STextBlock> ImmortalityButtonText;
+	TSharedPtr<SButton> PowerButton;
+	TSharedPtr<STextBlock> PowerButtonText;
 	TArray<TSharedPtr<SBorder>> IdolSlotBorders;
 	TSharedPtr<SBorder> PortraitBorder;
 	TArray<TSharedPtr<STextBlock>> StatLineTexts;
@@ -107,6 +128,9 @@ protected:
 	TSharedPtr<STextBlock> WheelSpinText;
 	TSharedPtr<ST66WorldMapWidget> MinimapWidget;
 	TSharedPtr<ST66WorldMapWidget> FullMapWidget;
+	TSharedPtr<SBox> WorldDialogueBox;
+	TArray<TSharedPtr<SBorder>> WorldDialogueOptionBorders;
+	TArray<TSharedPtr<STextBlock>> WorldDialogueOptionTexts;
 
 	bool bFullMapOpen = false;
 	FTimerHandle MapRefreshTimerHandle;

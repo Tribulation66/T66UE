@@ -28,6 +28,9 @@ public:
 
 	void CloseOverlay();
 
+	/** Skip dialogue and open shop page (used by in-world dialogue). */
+	void OpenShopPage();
+
 private:
 	enum class EVendorPage : uint8
 	{

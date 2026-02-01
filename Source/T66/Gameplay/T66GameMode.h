@@ -56,6 +56,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	float DefaultSpawnHeight = 200.f;
 
+	/**
+	 * Dev switch: force the hero to spawn in the Tutorial Arena instead of the normal Stage 1 Start Area.
+	 * (Requested for iteration. Default currently ON per user request.)
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tutorial")
+	bool bForceSpawnInTutorialArea = true;
+
 	/** Offset from world origin for Stage Gate (far side of map). Start Gate is spawned near player. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
 	FVector StageGateSpawnOffset = FVector(10000.f, 0.f, 200.f);
@@ -125,6 +132,7 @@ protected:
 	void SpawnStageBoostPlatformAndInteractables();
 	void SpawnStageEffectTilesForStage();
 	void SpawnColiseumArenaIfNeeded();
+	void SpawnTutorialArenaIfNeeded();
 	void SpawnAllOwedBossesInColiseum();
 	void SpawnTutorialIfNeeded();
 

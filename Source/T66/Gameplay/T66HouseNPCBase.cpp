@@ -12,10 +12,12 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 AT66HouseNPCBase::AT66HouseNPCBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.05f; // cheap "turn-to-face" update
 
 	InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
 	InteractionSphere->SetSphereRadius(150.f);
@@ -192,6 +194,32 @@ bool AT66HouseNPCBase::Interact(APlayerController* PC)
 {
 	// Base NPC does nothing.
 	return false;
+}
+
+void AT66HouseNPCBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bFacePlayerAlways) return;
+	if (!GetWorld()) return;
+
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (!PlayerPawn) return;
+
+	const FVector Here = GetActorLocation();
+	const FVector There = PlayerPawn->GetActorLocation();
+	FVector ToPlayer = (There - Here);
+	ToPlayer.Z = 0.f;
+	if (ToPlayer.IsNearlyZero()) return;
+	if (ToPlayer.SizeSquared() > (FacePlayerMaxDistance * FacePlayerMaxDistance)) return;
+
+	const FRotator Current = GetActorRotation();
+	FRotator Desired = ToPlayer.Rotation();
+	Desired.Pitch = 0.f;
+	Desired.Roll = 0.f;
+
+	const FRotator NewRot = FMath::RInterpTo(Current, Desired, DeltaSeconds, FacePlayerYawInterpSpeed);
+	SetActorRotation(NewRot);
 }
 
 void AT66HouseNPCBase::OnSafeZoneBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

@@ -65,6 +65,7 @@ def configure_game_instance():
             hero_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Heroes")
             companion_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Companions")
             items_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Items")
+            idols_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Idols")
             bosses_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Bosses")
             stages_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Stages")
             house_npcs_dt = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_HouseNPCs")
@@ -79,6 +80,9 @@ def configure_game_instance():
             if items_dt:
                 cdo.set_editor_property("ItemsDataTable", items_dt)
                 unreal.log("Set ItemsDataTable on BP_T66GameInstance")
+            if idols_dt:
+                cdo.set_editor_property("IdolsDataTable", idols_dt)
+                unreal.log("Set IdolsDataTable on BP_T66GameInstance")
             if bosses_dt:
                 cdo.set_editor_property("BossesDataTable", bosses_dt)
                 unreal.log("Set BossesDataTable on BP_T66GameInstance")

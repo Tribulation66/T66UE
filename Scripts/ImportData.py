@@ -66,6 +66,24 @@ def main():
     else:
         unreal.log_error("Could not load DT_Items (create it first via CreateAssets.py)")
 
+    # Import Idols
+    dt_idols = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Idols")
+    if dt_idols:
+        csv_path = get_content_path("Data/Idols.csv")
+        if os.path.isfile(csv_path):
+            success = unreal.DataTableFunctionLibrary.fill_data_table_from_csv_file(dt_idols, csv_path)
+            if success:
+                unreal.log("Successfully imported Idols from CSV")
+                unreal.EditorAssetLibrary.save_asset("/Game/Data/DT_Idols")
+                row_names = unreal.DataTableFunctionLibrary.get_data_table_row_names(dt_idols)
+                unreal.log("DT_Idols now has {} rows".format(len(row_names)))
+            else:
+                unreal.log_error("Failed to import Idols from CSV")
+        else:
+            unreal.log_warning("Idols CSV not found: " + csv_path)
+    else:
+        unreal.log_warning("Could not load DT_Idols (create it first via CreateAssets.py)")
+
     # Import Bosses
     dt_bosses = unreal.EditorAssetLibrary.load_asset("/Game/Data/DT_Bosses")
     if dt_bosses:

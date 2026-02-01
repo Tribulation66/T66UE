@@ -66,6 +66,7 @@ void UT66GameInstance::Init()
 	GetHeroDataTable();
 	GetCompanionDataTable();
 	GetItemsDataTable();
+	GetIdolsDataTable();
 	GetBossesDataTable();
 	GetStagesDataTable();
 	GetHouseNPCsDataTable();
@@ -89,6 +90,15 @@ UDataTable* UT66GameInstance::GetCompanionDataTable()
 		CachedCompanionDataTable = CompanionDataTable.LoadSynchronous();
 	}
 	return CachedCompanionDataTable;
+}
+
+UDataTable* UT66GameInstance::GetIdolsDataTable()
+{
+	if (!CachedIdolsDataTable && !IdolsDataTable.IsNull())
+	{
+		CachedIdolsDataTable = IdolsDataTable.LoadSynchronous();
+	}
+	return CachedIdolsDataTable;
 }
 
 bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
@@ -300,6 +310,50 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 	if (FoundRow)
 	{
 		OutItemData = *FoundRow;
+		return true;
+	}
+
+	// Tutorial-only items: synthetic DT rows (so tutorial can drop stat-matched items without content updates).
+	auto MakeTutorialItem = [&](ET66HeroStatType StatType, const FLinearColor& Color, int32 StatValue) -> bool
+	{
+		OutItemData = FItemData();
+		OutItemData.ItemID = ItemID;
+		OutItemData.ItemRarity = ET66ItemRarity::Black;
+		OutItemData.PlaceholderColor = Color;
+		OutItemData.BuyValueGold = 0;
+		OutItemData.SellValueGold = 0;
+		OutItemData.PowerGivenPercent = 0.f;
+		OutItemData.EffectType = ET66ItemEffectType::None;
+		OutItemData.EffectMagnitude = 0.f;
+		OutItemData.MainStatType = StatType;
+		OutItemData.MainStatValue = FMath::Clamp(StatValue, 1, 999);
+		OutItemData.EffectLine1 = FText::GetEmpty();
+		OutItemData.EffectLine2 = FText::GetEmpty();
+		OutItemData.EffectLine3 = FText::GetEmpty();
+		return true;
+	};
+
+	if (ItemID == TEXT("Item_Tutorial_Damage"))      return MakeTutorialItem(ET66HeroStatType::Damage,      FLinearColor(0.90f, 0.30f, 0.20f, 1.f), 2);
+	if (ItemID == TEXT("Item_Tutorial_AttackSpeed")) return MakeTutorialItem(ET66HeroStatType::AttackSpeed, FLinearColor(0.20f, 0.70f, 0.30f, 1.f), 2);
+	if (ItemID == TEXT("Item_Tutorial_AttackSize"))  return MakeTutorialItem(ET66HeroStatType::AttackSize,  FLinearColor(0.20f, 0.40f, 0.90f, 1.f), 2);
+	if (ItemID == TEXT("Item_Tutorial_Armor"))       return MakeTutorialItem(ET66HeroStatType::Armor,       FLinearColor(0.65f, 0.65f, 0.75f, 1.f), 2);
+	if (ItemID == TEXT("Item_Tutorial_Evasion"))     return MakeTutorialItem(ET66HeroStatType::Evasion,     FLinearColor(0.75f, 0.25f, 0.95f, 1.f), 2);
+	if (ItemID == TEXT("Item_Tutorial_Luck"))        return MakeTutorialItem(ET66HeroStatType::Luck,        FLinearColor(0.95f, 0.80f, 0.15f, 1.f), 2);
+
+	return false;
+}
+
+bool UT66GameInstance::GetIdolData(FName IdolID, FIdolData& OutIdolData)
+{
+	UDataTable* DataTable = GetIdolsDataTable();
+	if (!DataTable)
+	{
+		return false;
+	}
+	FIdolData* FoundRow = DataTable->FindRow<FIdolData>(IdolID, TEXT("GetIdolData"));
+	if (FoundRow)
+	{
+		OutIdolData = *FoundRow;
 		return true;
 	}
 	return false;

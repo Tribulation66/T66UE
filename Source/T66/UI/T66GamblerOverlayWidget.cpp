@@ -294,15 +294,34 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			.TextStyle(&TextTitle)
 			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+		+ SVerticalBox::Slot().AutoHeight()
 		[
+			// Reserve left side for TikTok by pushing cards to the right.
 			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[
+				SNew(SSpacer)
+			]
 			+ SHorizontalBox::Slot().AutoWidth()
-			[ MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip)) ]
-			+ SHorizontalBox::Slot().AutoWidth()
-			[ MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps)) ]
-			+ SHorizontalBox::Slot().AutoWidth()
-			[ MakeGameCard(Loc ? Loc->GetText_FindTheBall() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall)) ]
+			[
+				SNew(SUniformGridPanel)
+				.SlotPadding(FMargin(0.f, 0.f, 0.f, 0.f))
+				// Layout:
+				// [Game 2] [Game 3]
+				// [Game 1] [   -  ]
+				+ SUniformGridPanel::Slot(0, 0)
+				[
+					MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps))
+				]
+				+ SUniformGridPanel::Slot(1, 0)
+				[
+					MakeGameCard(Loc ? Loc->GetText_FindTheBall() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall))
+				]
+				+ SUniformGridPanel::Slot(0, 1)
+				[
+					MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip))
+				]
+			]
 		];
 
 	TSharedRef<SWidget> CoinFlipView =
@@ -1187,6 +1206,11 @@ void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 	if (Page == EGamblerPage::CoinFlip && CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(Loc2 ? Loc2->GetText_ResultDash() : NSLOCTEXT("T66.Gambler", "ResultDash", "Result: -"));
 	if (Page == EGamblerPage::RockPaperScissors && RpsResultText.IsValid()) RpsResultText->SetText(Loc2 ? Loc2->GetText_PickOne() : NSLOCTEXT("T66.Gambler", "PickOne", "Pick one."));
 	if (Page == EGamblerPage::FindTheBall && BallResultText.IsValid()) BallResultText->SetText(Loc2 ? Loc2->GetText_ResultDash() : NSLOCTEXT("T66.Gambler", "ResultDash", "Result: -"));
+}
+
+void UT66GamblerOverlayWidget::OpenCasinoPage()
+{
+	SetPage(EGamblerPage::Casino);
 }
 
 void UT66GamblerOverlayWidget::RefreshTopBar()

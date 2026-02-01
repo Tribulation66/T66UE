@@ -26,6 +26,9 @@ public:
 
 	void CloseOverlay();
 
+	/** Skip dialogue and open casino page (used by in-world dialogue). */
+	void OpenCasinoPage();
+
 	void SetWinGoldAmount(int32 InAmount);
 
 private:

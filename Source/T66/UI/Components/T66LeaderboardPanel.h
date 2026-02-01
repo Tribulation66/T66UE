@@ -9,6 +9,7 @@
 
 class UT66LocalizationSubsystem;
 class UT66LeaderboardSubsystem;
+class UT66UIManager;
 
 /**
  * Leaderboard Panel - Slate widget for displaying leaderboard
@@ -20,12 +21,17 @@ public:
 	SLATE_BEGIN_ARGS(ST66LeaderboardPanel)
 		: _LocalizationSubsystem(nullptr)
 		, _LeaderboardSubsystem(nullptr)
+		, _UIManager(nullptr)
 	{}
 		SLATE_ARGUMENT(UT66LocalizationSubsystem*, LocalizationSubsystem)
 		SLATE_ARGUMENT(UT66LeaderboardSubsystem*, LeaderboardSubsystem)
+		SLATE_ARGUMENT(UT66UIManager*, UIManager)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
+
+	/** Must be set after the owning screen has a valid UIManager. */
+	void SetUIManager(UT66UIManager* InUIManager);
 
 	void SetFilter(ET66LeaderboardFilter NewFilter);
 	void SetTimeFilter(ET66LeaderboardTime NewTime);
@@ -45,6 +51,7 @@ private:
 	TArray<FLeaderboardEntry> LeaderboardEntries;
 	UT66LocalizationSubsystem* LocSubsystem = nullptr;
 	UT66LeaderboardSubsystem* LeaderboardSubsystem = nullptr;
+	UT66UIManager* UIManager = nullptr;
 
 	TSharedPtr<SVerticalBox> EntryListBox;
 
@@ -65,6 +72,7 @@ private:
 	// Generate placeholder data
 	void GeneratePlaceholderData();
 	void RebuildEntryList();
+	FReply HandleLocalEntryClicked(const FLeaderboardEntry& Entry);
 
 	// Button handlers
 	FReply HandleGlobalClicked();

@@ -9,6 +9,7 @@
 
 struct FLeaderboardEntry;
 class UT66LocalLeaderboardSaveGame;
+class UT66LeaderboardRunSummarySaveGame;
 class UDataTable;
 
 /**
@@ -34,6 +35,19 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Leaderboard")
 	bool SubmitStageSpeedRunTime(int32 Stage, float Seconds);
+ 
+	/** Returns true if a saved run summary exists for the local best bounty entry. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	bool HasLocalBestBountyRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+
+	/**
+	 * UI helper: request opening the local-best bounty run summary.
+	 * `UT66RunSummaryScreen` will consume this request on activation.
+	 */
+	void RequestOpenLocalBestBountyRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize);
+
+	/** Consume the pending "open run summary" request (returns true if one existed). */
+	bool ConsumePendingRunSummaryRequest(FString& OutSaveSlotName);
 
 	/** Build menu entries for Bounty: Top 10 + local entry ("You") at rank 11 unless in Top 10. */
 	TArray<FLeaderboardEntry> BuildBountyEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
@@ -60,6 +74,12 @@ private:
 	void LoadOrCreateLocalSave();
 	void SaveLocalSave() const;
 
+	static FString DifficultyKey(ET66Difficulty Difficulty);
+	static FString PartySizeKey(ET66PartySize PartySize);
+	static FString MakeLocalBestBountyRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize);
+
+	bool SaveLocalBestBountyRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Bounty) const;
+
 	bool LoadTargetsFromDataTablesIfPresent();
 	void LoadTargetsFromCsv();
 	void LoadBountyTargetsFromCsv(const FString& AbsPath);
@@ -72,5 +92,8 @@ private:
 	float GetSpeedRunTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 
 	bool GetSettingsPracticeAndAnon(bool& bOutPractice, bool& bOutAnon) const;
+
+	// Transient UI "handshake": panel sets a requested slot name, RunSummaryScreen consumes it.
+	FString PendingRunSummarySlotName;
 };
 

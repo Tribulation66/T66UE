@@ -6,8 +6,6 @@
 
 AT66VendorNPC::AT66VendorNPC()
 {
-	PrimaryActorTick.bCanEverTick = false;
-
 	NPCID = FName(TEXT("Vendor"));
 	NPCName = NSLOCTEXT("T66.NPC", "Vendor", "Vendor");
 	NPCColor = FLinearColor(0.05f, 0.05f, 0.05f, 1.f);
@@ -25,6 +23,6 @@ bool AT66VendorNPC::Interact(APlayerController* PC)
 {
 	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
 	if (!T66PC) return false;
-	T66PC->OpenVendorOverlay();
+	T66PC->OpenWorldDialogueVendor(this);
 	return true;
 }

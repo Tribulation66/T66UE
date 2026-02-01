@@ -45,6 +45,7 @@ void UT66CombatComponent::BeginPlay()
 		CachedRunState->InventoryChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 		CachedRunState->HeroProgressChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 		CachedRunState->SurvivalChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+		CachedRunState->DevCheatsChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 	}
 
 	RecomputeFromRunState();
@@ -67,6 +68,7 @@ void UT66CombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		CachedRunState->InventoryChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 		CachedRunState->HeroProgressChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 		CachedRunState->SurvivalChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+		CachedRunState->DevCheatsChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -122,6 +124,12 @@ void UT66CombatComponent::RecomputeFromRunState()
 	EffectiveFireIntervalSeconds = FMath::Clamp(BaseFireIntervalSeconds / FMath::Max(0.01f, TotalAttackSpeed), 0.05f, 10.f);
 	EffectiveDamagePerShot = FMath::Clamp(FMath::RoundToInt(static_cast<float>(BaseDamagePerShot) * TotalDamage), 1, 999999);
 	ProjectileScaleMultiplier = FMath::Clamp(TotalScale, 0.1f, 10.f);
+
+	// Dev Power toggle: auto-attack does absurd damage.
+	if (CachedRunState->GetDevPowerEnabled())
+	{
+		EffectiveDamagePerShot = 999999;
+	}
 }
 
 void UT66CombatComponent::PlayShotSfx()

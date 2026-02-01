@@ -58,7 +58,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	}
 
 	// Enforce safe defaults.
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 2);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 3);
 	Profile->AchievementCoinsBalance = FMath::Max(0, Profile->AchievementCoinsBalance);
 	Profile->LifetimeEnemiesKilled = FMath::Max(0, Profile->LifetimeEnemiesKilled);
 
@@ -72,6 +72,20 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
 {
 	return Profile ? FMath::Max(0, Profile->AchievementCoinsBalance) : 0;
+}
+
+bool UT66AchievementsSubsystem::HasCompletedTutorial() const
+{
+	return Profile ? Profile->bHasCompletedTutorial : false;
+}
+
+void UT66AchievementsSubsystem::MarkTutorialCompleted()
+{
+	if (!Profile) return;
+	if (Profile->bHasCompletedTutorial) return;
+	Profile->bHasCompletedTutorial = true;
+	bProfileDirty = true;
+	SaveProfileIfNeeded(true);
 }
 
 const FT66AchievementState* UT66AchievementsSubsystem::FindState(FName AchievementID) const

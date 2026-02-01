@@ -22,7 +22,7 @@ public:
 
 	/** Half-extent of square area to cover (centered at world origin). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
-	float CoverageHalfExtent = 7800.f;
+	float CoverageHalfExtent = 9800.f;
 
 	/** Tile size (square). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")

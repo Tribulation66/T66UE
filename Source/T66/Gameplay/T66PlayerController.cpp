@@ -24,10 +24,13 @@
 #include "Gameplay/T66StageBoostGate.h"
 #include "Gameplay/T66StageBoostGoldInteractable.h"
 #include "Gameplay/T66StageBoostLootInteractable.h"
+#include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66VendorNPC.h"
+#include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66ItemPickup.h"
 #include "Gameplay/T66LootBagPickup.h"
@@ -56,6 +59,15 @@ void AT66PlayerController::BeginPlay()
 	{
 		SetupGameplayMode();
 		SetupGameplayHUD();
+
+		// Prewarm TikTok/WebView2 so login + CSS formatting are done before first toggle.
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+			{
+				MV->PrewarmTikTok();
+			}
+		}
 
 		UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		if (RunState)
@@ -149,7 +161,7 @@ void AT66PlayerController::SetupInputComponent()
 		// Zoom (scroll wheel, game world only)
 		InputComponent->BindAxis(TEXT("Zoom"), this, &AT66PlayerController::HandleZoom);
 
-		// Dash (CapsLock)
+		// Dash (default: LeftShift; configured in DefaultInput.ini)
 		InputComponent->BindAction(TEXT("Dash"), IE_Pressed, this, &AT66PlayerController::HandleDashPressed);
 		
 		// Jump (Space)
@@ -162,6 +174,8 @@ void AT66PlayerController::SetupInputComponent()
 
 		// T = toggle HUD panels (inventory + minimap), F = interact (vendor / pickup)
 		InputComponent->BindAction(TEXT("ToggleHUD"), IE_Pressed, this, &AT66PlayerController::HandleToggleHUDPressed);
+		InputComponent->BindAction(TEXT("ToggleImmortality"), IE_Pressed, this, &AT66PlayerController::HandleToggleImmortalityPressed);
+		InputComponent->BindAction(TEXT("TogglePower"), IE_Pressed, this, &AT66PlayerController::HandleTogglePowerPressed);
 		InputComponent->BindAction(TEXT("ToggleTikTok"), IE_Pressed, this, &AT66PlayerController::HandleToggleTikTokPressed);
 		InputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AT66PlayerController::HandleInteractPressed);
 		InputComponent->BindAction(TEXT("Ultimate"), IE_Pressed, this, &AT66PlayerController::HandleUltimatePressed);
@@ -178,6 +192,30 @@ void AT66PlayerController::SetupInputComponent()
 		// User preference: Q = Next, E = Previous.
 		InputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AT66PlayerController::HandleTikTokNextPressed);
 		InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AT66PlayerController::HandleTikTokPrevPressed);
+	}
+}
+
+void AT66PlayerController::HandleToggleImmortalityPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->ToggleDevImmortality();
+		}
+	}
+}
+
+void AT66PlayerController::HandleTogglePowerPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->ToggleDevPower();
+		}
 	}
 }
 
@@ -434,6 +472,13 @@ void AT66PlayerController::HandleInteractPressed()
 {
 	if (!IsGameplayLevel()) return;
 
+	// If we're in an in-world NPC dialogue, Interact confirms the selection.
+	if (bWorldDialogueOpen)
+	{
+		ConfirmWorldDialogue();
+		return;
+	}
+
 	APawn* ControlledPawn = GetPawn();
 	if (!ControlledPawn) return;
 
@@ -453,6 +498,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66HouseNPCBase* ClosestNPC = nullptr;
 	AT66ItemPickup* ClosestPickup = nullptr;
 	AT66LootBagPickup* ClosestLootBag = nullptr;
+	AT66TutorialPortal* ClosestTutorialPortal = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
 	AT66TreeOfLifeInteractable* ClosestTree = nullptr;
 	AT66CashTruckInteractable* ClosestTruck = nullptr;
@@ -466,6 +512,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestNPCDistSq = InteractRadius * InteractRadius;
 	float ClosestPickupDistSq = InteractRadius * InteractRadius;
 	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
+	float ClosestTutorialPortalDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
 	float ClosestTreeDistSq = InteractRadius * InteractRadius;
 	float ClosestTruckDistSq = InteractRadius * InteractRadius;
@@ -503,6 +550,10 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestLootBagDistSq) { ClosestLootBagDistSq = DistSq; ClosestLootBag = Bag; }
 		}
+		else if (AT66TutorialPortal* Portal = Cast<AT66TutorialPortal>(A))
+		{
+			if (DistSq < ClosestTutorialPortalDistSq) { ClosestTutorialPortalDistSq = DistSq; ClosestTutorialPortal = Portal; }
+		}
 		else if (AT66IdolAltar* Altar = Cast<AT66IdolAltar>(A))
 		{
 			if (DistSq < ClosestIdolAltarDistSq) { ClosestIdolAltarDistSq = DistSq; ClosestIdolAltar = Altar; }
@@ -535,6 +586,12 @@ void AT66PlayerController::HandleInteractPressed()
 
 	// Interact with Stage Gate (F) advances to next stage and reloads level
 	if (ClosestStageGate && ClosestStageGate->AdvanceToNextStage())
+	{
+		return;
+	}
+
+	// Tutorial portal (teleport within the same map; no load)
+	if (ClosestTutorialPortal && ClosestTutorialPortal->Interact(this))
 	{
 		return;
 	}
@@ -665,6 +722,195 @@ void AT66PlayerController::OpenVendorOverlay()
 	}
 }
 
+void AT66PlayerController::OpenWorldDialogueVendor(AT66VendorNPC* Vendor)
+{
+	if (!IsGameplayLevel()) return;
+	if (!GameplayHUDWidget) return;
+	if (!Vendor) return;
+
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	const TArray<FText> Options =
+	{
+		Loc ? Loc->GetText_IWantToShop() : NSLOCTEXT("T66.Vendor", "IWantToShop", "I want to shop"),
+		Loc ? Loc->GetText_TeleportMeToYourBrother() : NSLOCTEXT("T66.Gambler", "TeleportMeToYourBrother", "Teleport me to your brother"),
+		Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "Back"),
+	};
+
+	WorldDialogueKind = ET66WorldDialogueKind::Vendor;
+	WorldDialogueTargetNPC = Vendor;
+	WorldDialogueSelectedIndex = 0;
+	bWorldDialogueOpen = true;
+	LastWorldDialogueNavTimeSeconds = -1000.f;
+
+	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
+	UpdateWorldDialoguePosition();
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.05f, true);
+}
+
+void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
+{
+	if (!IsGameplayLevel()) return;
+	if (!GameplayHUDWidget) return;
+	if (!Gambler) return;
+
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	const TArray<FText> Options =
+	{
+		Loc ? Loc->GetText_LetMeGamble() : NSLOCTEXT("T66.Gambler", "LetMeGamble", "Let me gamble"),
+		Loc ? Loc->GetText_TeleportMeToYourBrother() : NSLOCTEXT("T66.Gambler", "TeleportMeToYourBrother", "Teleport me to your brother"),
+		Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "Back"),
+	};
+
+	WorldDialogueKind = ET66WorldDialogueKind::Gambler;
+	WorldDialogueTargetNPC = Gambler;
+	WorldDialogueSelectedIndex = 0;
+	bWorldDialogueOpen = true;
+	LastWorldDialogueNavTimeSeconds = -1000.f;
+
+	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
+	UpdateWorldDialoguePosition();
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.05f, true);
+}
+
+void AT66PlayerController::CloseWorldDialogue()
+{
+	bWorldDialogueOpen = false;
+	WorldDialogueKind = ET66WorldDialogueKind::None;
+	WorldDialogueSelectedIndex = 0;
+	WorldDialogueTargetNPC.Reset();
+	GetWorldTimerManager().ClearTimer(WorldDialoguePositionTimerHandle);
+
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->HideWorldDialogue();
+	}
+}
+
+void AT66PlayerController::NavigateWorldDialogue(int32 Delta)
+{
+	if (!bWorldDialogueOpen) return;
+	WorldDialogueSelectedIndex = FMath::Clamp(WorldDialogueSelectedIndex + Delta, 0, 2);
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->SetWorldDialogueSelection(WorldDialogueSelectedIndex);
+	}
+}
+
+void AT66PlayerController::ConfirmWorldDialogue()
+{
+	if (!bWorldDialogueOpen) return;
+
+	// Capture before we close (closing clears state).
+	const ET66WorldDialogueKind Kind = WorldDialogueKind;
+	const int32 Choice = WorldDialogueSelectedIndex;
+	AT66HouseNPCBase* TargetNPC = WorldDialogueTargetNPC.Get();
+	const int32 GamblerWinGoldAmount = (Kind == ET66WorldDialogueKind::Gambler)
+		? (Cast<AT66GamblerNPC>(TargetNPC) ? Cast<AT66GamblerNPC>(TargetNPC)->GetWinGoldAmount() : 0)
+		: 0;
+
+	CloseWorldDialogue();
+
+	// 0: main action, 1: teleport, 2: back
+	if (Choice == 2)
+	{
+		return;
+	}
+
+	if (Choice == 1)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+				{
+					// Mirror overlay behavior: no teleport once boss encounter starts.
+					if (RunState->GetBossActive())
+					{
+						return;
+					}
+				}
+			}
+		}
+
+		TeleportToNPC((Kind == ET66WorldDialogueKind::Vendor) ? FName(TEXT("Gambler")) : FName(TEXT("Vendor")));
+		return;
+	}
+
+	// Choice == 0
+	if (Kind == ET66WorldDialogueKind::Vendor)
+	{
+		OpenVendorOverlay();
+		if (VendorOverlayWidget)
+		{
+			// Skip overlay dialogue page; go straight to shop.
+			VendorOverlayWidget->OpenShopPage();
+		}
+	}
+	else if (Kind == ET66WorldDialogueKind::Gambler)
+	{
+		OpenGamblerOverlay(GamblerWinGoldAmount);
+		if (GamblerOverlayWidget)
+		{
+			// Skip overlay dialogue page; go straight to casino.
+			GamblerOverlayWidget->OpenCasinoPage();
+		}
+	}
+}
+
+void AT66PlayerController::UpdateWorldDialoguePosition()
+{
+	if (!bWorldDialogueOpen) return;
+	if (!GameplayHUDWidget) return;
+	AT66HouseNPCBase* NPC = WorldDialogueTargetNPC.Get();
+	if (!NPC)
+	{
+		CloseWorldDialogue();
+		return;
+	}
+
+	FVector2D ScreenPos(0.f, 0.f);
+	const FVector WorldAnchor = NPC->GetActorLocation() + FVector(0.f, 0.f, 180.f);
+	if (!ProjectWorldLocationToScreen(WorldAnchor, ScreenPos, true))
+	{
+		return;
+	}
+
+	// Nudge to the right of the NPC (like the sketch), slightly upward.
+	ScreenPos += FVector2D(140.f, -40.f);
+
+	int32 VX = 0, VY = 0;
+	GetViewportSize(VX, VY);
+	ScreenPos.X = FMath::Clamp(ScreenPos.X, 12.f, FMath::Max(12.f, static_cast<float>(VX) - 340.f));
+	ScreenPos.Y = FMath::Clamp(ScreenPos.Y, 12.f, FMath::Max(12.f, static_cast<float>(VY) - 180.f));
+
+	GameplayHUDWidget->SetWorldDialogueScreenPosition(ScreenPos);
+}
+
+void AT66PlayerController::TeleportToNPC(FName NPCID)
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+	APawn* PlayerPawn = GetPawn();
+	if (!PlayerPawn) return;
+
+	AT66HouseNPCBase* Target = nullptr;
+	for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+	{
+		AT66HouseNPCBase* N = *It;
+		if (N && N->NPCID == NPCID)
+		{
+			Target = N;
+			break;
+		}
+	}
+	if (!Target) return;
+
+	PlayerPawn->SetActorLocation(Target->GetActorLocation() + FVector(250.f, 0.f, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
+}
+
 void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 {
 	if (!IsGameplayLevel() || !Gate) return;
@@ -710,6 +956,19 @@ void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
 
 void AT66PlayerController::OnPlayerDied()
 {
+	// Hard rule: if TikTok/media viewer is open, force-close it on death.
+	// This ensures the overlay is hidden and audio cannot continue during the run summary.
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			if (MV->IsMediaViewerOpen())
+			{
+				MV->SetMediaViewerOpen(false);
+			}
+		}
+	}
+
 	SetPause(true);
 	EnsureGameplayUIManager();
 	if (UIManager)
@@ -813,7 +1072,43 @@ void AT66PlayerController::HandleEscapePressed()
 
 void AT66PlayerController::HandleMoveForward(float Value)
 {
-	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
+	if (!IsGameplayLevel()) return;
+
+	// While an in-world NPC dialogue is open, use forward/back as UI navigation and block movement.
+	if (bWorldDialogueOpen)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			const float Now = World->GetTimeSeconds();
+			if (Now - LastWorldDialogueNavTimeSeconds >= WorldDialogueNavDebounceSeconds)
+			{
+				// Down (S / stick down) goes to next option.
+				if (Value <= -0.6f)
+				{
+					NavigateWorldDialogue(+1);
+					LastWorldDialogueNavTimeSeconds = Now;
+				}
+				// Up (W / stick up) goes to previous option.
+				else if (Value >= 0.6f)
+				{
+					NavigateWorldDialogue(-1);
+					LastWorldDialogueNavTimeSeconds = Now;
+				}
+			}
+		}
+		return;
+	}
+
+	if (FMath::IsNearlyZero(Value)) return;
+
+	// Tutorial progress: first time the player moves.
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->NotifyTutorialMoveInput();
+		}
+	}
 	
 	if (APawn* MyPawn = GetPawn())
 	{
@@ -830,7 +1125,21 @@ void AT66PlayerController::HandleMoveForward(float Value)
 
 void AT66PlayerController::HandleMoveRight(float Value)
 {
-	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
+	if (!IsGameplayLevel()) return;
+
+	// Block strafing while an in-world NPC dialogue is open (so WASD doesn't move you).
+	if (bWorldDialogueOpen) return;
+
+	if (FMath::IsNearlyZero(Value)) return;
+
+	// Tutorial progress: first time the player moves.
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->NotifyTutorialMoveInput();
+		}
+	}
 	
 	if (APawn* MyPawn = GetPawn())
 	{
@@ -864,6 +1173,15 @@ void AT66PlayerController::HandleTurn(float Value)
 void AT66PlayerController::HandleJumpPressed()
 {
 	if (!IsGameplayLevel()) return;
+
+	// Tutorial progress: first time the player jumps.
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->NotifyTutorialJumpInput();
+		}
+	}
 	
 	if (ACharacter* MyCharacter = Cast<ACharacter>(GetPawn()))
 	{

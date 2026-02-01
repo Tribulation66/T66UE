@@ -168,6 +168,14 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
 	const TArray<FName>& Equipped = RunState ? RunState->GetEquippedIdols() : TArray<FName>();
+	TSet<FName> EquippedSet;
+	for (const FName& N : Equipped)
+	{
+		if (!N.IsNone())
+		{
+			EquippedSet.Add(N);
+		}
+	}
 	int32 FirstEmptySlot = INDEX_NONE;
 	for (int32 i = 0; i < Equipped.Num(); ++i)
 	{
@@ -177,10 +185,12 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			break;
 		}
 	}
-	const bool bLocked = (FirstEmptySlot == INDEX_NONE);
+	const bool bHasEmptySlot = (FirstEmptySlot != INDEX_NONE);
 
 	auto MakeIdolTile = [&](FName IdolID) -> TSharedRef<SWidget>
 	{
+		// If slots are full, only allow dragging idols that are already equipped (to level them up).
+		const bool bLocked = (!bHasEmptySlot && !EquippedSet.Contains(IdolID));
 		const FLinearColor C = UT66RunStateSubsystem::GetIdolColor(IdolID);
 		return SNew(ST66IdolTile)
 			.IdolID(IdolID)
@@ -291,7 +301,8 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			.HeightOverride(64.f * 2.f + 12.f)
 			[
 				SAssignNew(CenterPadBorder, ST66IdolDropTarget)
-				.bLocked(bLocked)
+				// Always allow selecting an idol; RunState will decide whether it can be applied (equip vs level-up).
+				.bLocked(false)
 				.Color(CenterC)
 				.ToolTipText(PendingSelectedIdolID.IsNone()
 					? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : NSLOCTEXT("T66.IdolAltar", "DropAnIdolHere", "Drop an Idol here."))
@@ -334,9 +345,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						.HeightOverride(28.f)
 						[
 							SAssignNew(StatusText, STextBlock)
-							.Text(bLocked
-							? (Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : NSLOCTEXT("T66.IdolAltar", "AllSlotsFull", "All idol slots are full."))
-								: FText::GetEmpty())
+							.Text(FText::GetEmpty())
 							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
 							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 							.Justification(ETextJustify::Center)
@@ -370,7 +379,6 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 							[
 								SNew(SButton)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnConfirm))
-								.IsEnabled(!bLocked)
 								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.55f, 0.25f, 1.f))
 								[
 									SNew(STextBlock)
@@ -424,27 +432,6 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 		return FReply::Handled();
 	}
 
-	const TArray<FName>& Equipped = RunState->GetEquippedIdols();
-	int32 FirstEmptySlot = INDEX_NONE;
-	for (int32 i = 0; i < Equipped.Num(); ++i)
-	{
-		if (Equipped[i].IsNone())
-		{
-			FirstEmptySlot = i;
-			break;
-		}
-	}
-
-	if (FirstEmptySlot == INDEX_NONE)
-	{
-		if (StatusText.IsValid())
-		{
-			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : NSLOCTEXT("T66.IdolAltar", "AllSlotsFull", "All idol slots are full."));
-		}
-		return FReply::Handled();
-	}
-
 	if (PendingSelectedIdolID.IsNone())
 	{
 		if (StatusText.IsValid())
@@ -455,7 +442,16 @@ FReply UT66IdolAltarOverlayWidget::OnConfirm()
 		return FReply::Handled();
 	}
 
-	RunState->EquipIdolInSlot(FirstEmptySlot, PendingSelectedIdolID);
+	const bool bApplied = RunState->SelectIdolFromAltar(PendingSelectedIdolID);
+	if (!bApplied)
+	{
+		if (StatusText.IsValid())
+		{
+			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : NSLOCTEXT("T66.IdolAltar", "IdolSelectFailed", "Cannot select that idol right now."));
+		}
+		return FReply::Handled();
+	}
 	if (StatusText.IsValid())
 	{
 		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;

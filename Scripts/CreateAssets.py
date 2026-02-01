@@ -177,6 +177,12 @@ def main():
     else:
         unreal.log_error("Could not find ItemData struct")
 
+    idol_struct = unreal.find_object(None, "/Script/T66.IdolData")
+    if idol_struct:
+        create_data_table("/Game/Data/DT_Idols", idol_struct)
+    else:
+        unreal.log_warning("Could not find IdolData struct (DT_Idols not created)")
+
     boss_struct = unreal.find_object(None, "/Script/T66.BossData")
     if boss_struct:
         create_data_table("/Game/Data/DT_Bosses", boss_struct)
