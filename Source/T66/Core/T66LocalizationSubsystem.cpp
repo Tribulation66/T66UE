@@ -319,6 +319,80 @@ FText UT66LocalizationSubsystem::GetText_HeroDescription(FName HeroID) const
 	return NSLOCTEXT("T66.HeroDescriptions", "SelectHeroPrompt", "Select a hero to view their description.");
 }
 
+FText UT66LocalizationSubsystem::GetText_HeroQuote(FName HeroID) const
+{
+	// NOTE: These are new strings; they will be gathered and translated by our localization pipeline.
+	if (HeroID == FName(TEXT("Hero_AliceInWonderlandRabbit"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_AliceInWonderlandRabbit", "\"Try and catch me.\"");
+	if (HeroID == FName(TEXT("Hero_LuBu"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_LuBu", "\"None can stand before me!\"");
+	if (HeroID == FName(TEXT("Hero_LeonardoDaVinci"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_LeonardoDaVinci", "\"Observe. Adapt. Triumph.\"");
+	if (HeroID == FName(TEXT("Hero_Yakub"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_Yakub", "\"Perfection is forged.\"");
+	if (HeroID == FName(TEXT("Hero_KingArthur"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_KingArthur", "\"By my oath.\"");
+	if (HeroID == FName(TEXT("Hero_MiyamotoMusashi"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_MiyamotoMusashi", "\"Two blades, one truth.\"");
+	if (HeroID == FName(TEXT("Hero_CaptainJackSparrow"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_CaptainJackSparrow", "\"Savvy?\"");
+	if (HeroID == FName(TEXT("Hero_SoloLeveler"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_SoloLeveler", "\"I rise alone.\"");
+	if (HeroID == FName(TEXT("Hero_Saitama"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_Saitama", "\"Okay.\"");
+	if (HeroID == FName(TEXT("Hero_RoboGoon"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_RoboGoon", "\"Target acquired.\"");
+	if (HeroID == FName(TEXT("Hero_GeorgeWashington"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_GeorgeWashington", "\"Hold the line.\"");
+	if (HeroID == FName(TEXT("Hero_Cain"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_Cain", "\"Still I walk.\"");
+	if (HeroID == FName(TEXT("Hero_BillyTheKid"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_BillyTheKid", "\"Quick draw.\"");
+	if (HeroID == FName(TEXT("Hero_RoachKing"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_RoachKing", "\"The swarm obeys.\"");
+	if (HeroID == FName(TEXT("Hero_Goblino"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_Goblino", "\"Mine now.\"");
+	if (HeroID == FName(TEXT("Hero_BulkBite"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_BulkBite", "\"CHOMP.\"");
+	if (HeroID == FName(TEXT("Hero_HoboWanderer"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_HoboWanderer", "\"Still standing.\"");
+	if (HeroID == FName(TEXT("Hero_DryHumor"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_DryHumor", "\"How thrilling.\"");
+	if (HeroID == FName(TEXT("Hero_LyricVoi"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_LyricVoi", "\"Hear my verse.\"");
+	if (HeroID == FName(TEXT("Hero_Jesterma"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_Jesterma", "\"Smile. Then bleed.\"");
+	if (HeroID == FName(TEXT("Hero_NorthKing"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_NorthKing", "\"Kneel to winter.\"");
+	if (HeroID == FName(TEXT("Hero_Peakwarden"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_Peakwarden", "\"Unmoved.\"");
+	if (HeroID == FName(TEXT("Hero_QuinnHex"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_QuinnHex", "\"Hexed.\"");
+	if (HeroID == FName(TEXT("Hero_SandSultan"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_SandSultan", "\"The dunes decide.\"");
+	if (HeroID == FName(TEXT("Hero_CharNut"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_CharNut", "\"Burn bright.\"");
+	if (HeroID == FName(TEXT("Hero_Wraithveil"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_Wraithveil", "\"You won't see me coming.\"");
+	return FText::GetEmpty();
+}
+
+// ========== Stat Labels (shared) ==========
+
+FText UT66LocalizationSubsystem::GetText_Stat_Damage() const
+{
+	return NSLOCTEXT("T66.Stats", "Damage", "Damage");
+}
+
+FText UT66LocalizationSubsystem::GetText_Stat_AttackSpeed() const
+{
+	return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
+}
+
+FText UT66LocalizationSubsystem::GetText_Stat_AttackSize() const
+{
+	return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+}
+
+FText UT66LocalizationSubsystem::GetText_Stat_Armor() const
+{
+	return NSLOCTEXT("T66.Stats", "Armor", "Armor");
+}
+
+FText UT66LocalizationSubsystem::GetText_Stat_Evasion() const
+{
+	return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
+}
+
+FText UT66LocalizationSubsystem::GetText_Stat_Luck() const
+{
+	return NSLOCTEXT("T66.Stats", "Luck", "Luck");
+}
+
+FText UT66LocalizationSubsystem::GetText_Stat_Speed() const
+{
+	return NSLOCTEXT("T66.Stats", "Speed", "Speed");
+}
+
+FText UT66LocalizationSubsystem::GetText_StatLineFormat() const
+{
+	return NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
+}
+
 // ========== Companion Names ==========
 
 FText UT66LocalizationSubsystem::GetText_CompanionName(FName CompanionID) const
@@ -944,6 +1018,11 @@ FText UT66LocalizationSubsystem::GetText_Lore() const
 	return NSLOCTEXT("T66.HeroSelection", "Lore", "LORE");
 }
 
+FText UT66LocalizationSubsystem::GetText_BaseStatsHeader() const
+{
+	return NSLOCTEXT("T66.HeroSelection", "BaseStatsHeader", "Base Stats");
+}
+
 // ========== Skin Names ==========
 
 FText UT66LocalizationSubsystem::GetText_SkinName(FName SkinID) const
@@ -1022,6 +1101,36 @@ FText UT66LocalizationSubsystem::GetText_ConfirmCompanion() const
 	return NSLOCTEXT("T66.CompanionSelection", "ConfirmCompanion", "CONFIRM COMPANION");
 }
 
+FText UT66LocalizationSubsystem::GetText_Union() const
+{
+	return NSLOCTEXT("T66.CompanionSelection", "Union", "UNION");
+}
+
+FText UT66LocalizationSubsystem::GetText_UnionProgressFormat() const
+{
+	return NSLOCTEXT("T66.CompanionSelection", "UnionProgressFormat", "Union: {0}/{1}");
+}
+
+FText UT66LocalizationSubsystem::GetText_BasicHealing() const
+{
+	return NSLOCTEXT("T66.CompanionSelection", "BasicHealing", "Basic Healing");
+}
+
+FText UT66LocalizationSubsystem::GetText_GoodHealing() const
+{
+	return NSLOCTEXT("T66.CompanionSelection", "GoodHealing", "Good Healing");
+}
+
+FText UT66LocalizationSubsystem::GetText_MediumHealing() const
+{
+	return NSLOCTEXT("T66.CompanionSelection", "MediumHealing", "Medium Healing");
+}
+
+FText UT66LocalizationSubsystem::GetText_HyperHealing() const
+{
+	return NSLOCTEXT("T66.CompanionSelection", "HyperHealing", "Hyper Healing");
+}
+
 // ========== Common ==========
 
 FText UT66LocalizationSubsystem::GetText_Back() const
@@ -1069,6 +1178,16 @@ FText UT66LocalizationSubsystem::GetText_Vendor() const
 	return NSLOCTEXT("T66.Vendor", "VendorTitle", "VENDOR");
 }
 
+FText UT66LocalizationSubsystem::GetText_VendorDialoguePrompt() const
+{
+	return NSLOCTEXT("T66.Vendor", "VendorDialoguePrompt", "What do you want?");
+}
+
+FText UT66LocalizationSubsystem::GetText_IWantToShop() const
+{
+	return NSLOCTEXT("T66.Vendor", "IWantToShop", "I want to shop");
+}
+
 FText UT66LocalizationSubsystem::GetText_Shop() const
 {
 	return NSLOCTEXT("T66.Vendor", "ShopTitle", "SHOP");
@@ -1076,7 +1195,7 @@ FText UT66LocalizationSubsystem::GetText_Shop() const
 
 FText UT66LocalizationSubsystem::GetText_YourItems() const
 {
-	return NSLOCTEXT("T66.Vendor", "InventoryTitle", "YOUR ITEMS");
+	return NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
 }
 
 FText UT66LocalizationSubsystem::GetText_Upgrade() const
@@ -1087,6 +1206,11 @@ FText UT66LocalizationSubsystem::GetText_Upgrade() const
 FText UT66LocalizationSubsystem::GetText_Steal() const
 {
 	return NSLOCTEXT("T66.Vendor", "Steal", "STEAL");
+}
+
+FText UT66LocalizationSubsystem::GetText_Reroll() const
+{
+	return NSLOCTEXT("T66.Vendor", "Reroll", "REROLL");
 }
 
 // ========== Gameplay Overlays ==========
@@ -1322,7 +1446,7 @@ FText UT66LocalizationSubsystem::GetText_GoldFormat() const
 
 FText UT66LocalizationSubsystem::GetText_OweFormat() const
 {
-	return NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}");
+	return NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
 }
 
 FText UT66LocalizationSubsystem::GetText_StageNumberFormat() const

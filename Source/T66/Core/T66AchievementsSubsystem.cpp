@@ -58,9 +58,15 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	}
 
 	// Enforce safe defaults.
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 1);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 2);
 	Profile->AchievementCoinsBalance = FMath::Max(0, Profile->AchievementCoinsBalance);
 	Profile->LifetimeEnemiesKilled = FMath::Max(0, Profile->LifetimeEnemiesKilled);
+
+	// Union defaults: clamp to sane ranges so corrupted saves can't break gameplay math.
+	for (TPair<FName, int32>& Pair : Profile->CompanionUnionStagesClearedByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
 }
 
 int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
@@ -246,11 +252,58 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	Profile->AchievementCoinsBalance = 0;
 	Profile->AchievementStateByID.Reset();
 	Profile->LifetimeEnemiesKilled = 0;
+	Profile->CompanionUnionStagesClearedByID.Reset();
 
 	MarkDirtyAndMaybeSave(true);
 	AchievementCoinsChanged.Broadcast();
 	AchievementsStateChanged.Broadcast();
 
 	RebuildDefinitions();
+}
+
+int32 UT66AchievementsSubsystem::GetCompanionUnionStagesCleared(FName CompanionID) const
+{
+	if (!Profile || CompanionID.IsNone()) return 0;
+	const int32* Found = Profile->CompanionUnionStagesClearedByID.Find(CompanionID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
+float UT66AchievementsSubsystem::GetCompanionUnionProgress01(FName CompanionID) const
+{
+	if (CompanionID.IsNone()) return 0.f;
+	const int32 Stages = GetCompanionUnionStagesCleared(CompanionID);
+	return (UnionTier_HyperStages <= 0)
+		? 0.f
+		: FMath::Clamp(static_cast<float>(Stages) / static_cast<float>(UnionTier_HyperStages), 0.f, 1.f);
+}
+
+float UT66AchievementsSubsystem::GetCompanionUnionHealingIntervalSeconds(FName CompanionID) const
+{
+	const int32 Stages = GetCompanionUnionStagesCleared(CompanionID);
+	if (Stages >= UnionTier_HyperStages) return UnionHealInterval_HyperSeconds;
+	if (Stages >= UnionTier_MediumStages) return UnionHealInterval_MediumSeconds;
+	if (Stages >= UnionTier_GoodStages) return UnionHealInterval_GoodSeconds;
+	return UnionHealInterval_BasicSeconds;
+}
+
+void UT66AchievementsSubsystem::AddCompanionUnionStagesCleared(FName CompanionID, int32 DeltaStagesCleared)
+{
+	if (CompanionID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaStagesCleared, 0, 1000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetCompanionUnionStagesCleared(CompanionID);
+	const int32 Next = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	Profile->CompanionUnionStagesClearedByID.FindOrAdd(CompanionID) = Next;
+
+	// Save immediately when crossing a tier boundary; otherwise throttle.
+	const bool bTierCrossed =
+		(Prev < UnionTier_GoodStages && Next >= UnionTier_GoodStages) ||
+		(Prev < UnionTier_MediumStages && Next >= UnionTier_MediumStages) ||
+		(Prev < UnionTier_HyperStages && Next >= UnionTier_HyperStages);
+	MarkDirtyAndMaybeSave(bTierCrossed);
 }
 

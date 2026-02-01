@@ -5,6 +5,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Data/T66DataTypes.h"
@@ -13,9 +14,7 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
-#include "Brushes/SlateImageBrush.h"
 #include "Misc/Paths.h"
-#include "Engine/Texture2D.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SGridPanel.h"
@@ -29,6 +28,15 @@
 #include "Math/TransformCalculus2D.h"
 #include "Rendering/SlateRenderTransform.h"
 #include "EngineUtils.h"
+#include "Framework/Application/SlateApplication.h"
+
+namespace
+{
+	// TikTok web has a minimum layout width. Keep the original height to avoid overlapping the bottom-left HUD,
+	// but widen the panel so TikTok's layout centers properly.
+	static constexpr float GT66TikTokPanelW = 420.f;
+	static constexpr float GT66TikTokPanelH = 600.f;
+}
 
 class ST66RingWidget : public SLeafWidget
 {
@@ -536,6 +544,10 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		{
 			PS->OnSettingsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		}
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			MV->OnMediaViewerOpenChanged.AddDynamic(this, &UT66GameplayHUDWidget::HandleMediaViewerOpenChanged);
+		}
 	}
 
 	// Map/minimap refresh (lightweight, throttled timer; no per-frame UI thinking).
@@ -551,6 +563,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(MapRefreshTimerHandle);
+		World->GetTimerManager().ClearTimer(TikTokOverlaySyncHandle);
 		World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
 		World->GetTimerManager().ClearTimer(WheelResolveHandle);
 		World->GetTimerManager().ClearTimer(WheelCloseHandle);
@@ -582,49 +595,138 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		{
 			PS->OnSettingsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		}
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			MV->OnMediaViewerOpenChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::HandleMediaViewerOpenChanged);
+		}
 	}
 	Super::NativeDestruct();
 }
 
+bool UT66GameplayHUDWidget::IsTikTokPlaceholderVisible() const
+{
+	return IsMediaViewerOpen();
+}
+
 void UT66GameplayHUDWidget::ToggleTikTokPlaceholder()
 {
-	bTikTokPlaceholderVisible = !bTikTokPlaceholderVisible;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			MV->ToggleMediaViewer();
+			return;
+		}
+	}
+}
+
+bool UT66GameplayHUDWidget::IsMediaViewerOpen() const
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			return MV->IsMediaViewerOpen();
+		}
+	}
+	return false;
+}
+
+void UT66GameplayHUDWidget::HandleMediaViewerOpenChanged(bool /*bIsOpen*/)
+{
 	UpdateTikTokVisibility();
 }
 
-void UT66GameplayHUDWidget::BuildOrUpdateTikTokBrush()
+void UT66GameplayHUDWidget::RequestTikTokWebView2OverlaySync()
 {
-	if (TikTokBrush.IsValid())
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	// Defer one tick so Slate has a valid cached geometry for the panel.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(TikTokOverlaySyncHandle);
+		World->GetTimerManager().SetTimerForNextTick(this, &UT66GameplayHUDWidget::SyncTikTokWebView2OverlayToPlaceholder);
+	}
+#endif
+}
+
+void UT66GameplayHUDWidget::SyncTikTokWebView2OverlayToPlaceholder()
+{
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	if (!IsMediaViewerOpen()) return;
+	if (!TikTokPlaceholderBox.IsValid()) return;
+	if (!FSlateApplication::IsInitialized()) return;
+
+	// If the widget is collapsed, geometry may be invalid. Guard against 0-size.
+	const FGeometry Geo = TikTokPlaceholderBox->GetCachedGeometry();
+	const FVector2D LocalSize = Geo.GetLocalSize();
+	if (LocalSize.X < 4.f || LocalSize.Y < 4.f)
 	{
 		return;
 	}
 
-	static constexpr float TikTokW = 240.f;
-	static constexpr float TikTokH = 430.f;
-
-	// Prefer the imported texture asset so it works in packaged builds.
-	if (UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, TEXT("/Game/Placeholder/tiktok.tiktok")))
+	const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(TikTokPlaceholderBox.ToSharedRef());
+	if (!Window.IsValid())
 	{
-		FSlateBrush* Brush = new FSlateBrush();
-		Brush->SetResourceObject(Tex);
-		Brush->ImageSize = FVector2D(TikTokW, TikTokH);
-		TikTokBrush = MakeShareable(Brush);
 		return;
 	}
 
-	// Fallback: load from raw PNG in Content/Placeholder (dev convenience).
-	const FString ImgPath = FPaths::Combine(FPaths::ProjectContentDir(), TEXT("Placeholder"), TEXT("tiktok.png"));
-	TikTokBrush = MakeShareable(new FSlateImageBrush(ImgPath, FVector2D(TikTokW, TikTokH)));
+	// Compute rect in window client coordinates (pixels). In practice, Slate's "screen space" aligns with window screen space.
+	const FVector2D AbsTL = Geo.LocalToAbsolute(FVector2D::ZeroVector);
+	const FVector2D AbsBR = Geo.LocalToAbsolute(LocalSize);
+
+	// Treat Slate absolute space as desktop screen coordinates, then let Win32 do ScreenToClient against the real HWND.
+	const int32 X0 = FMath::RoundToInt(AbsTL.X);
+	const int32 Y0 = FMath::RoundToInt(AbsTL.Y);
+	const int32 X1 = FMath::RoundToInt(AbsBR.X);
+	const int32 Y1 = FMath::RoundToInt(AbsBR.Y);
+	const FIntRect Rect(FIntPoint(X0, Y0), FIntPoint(X1, Y1));
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			MV->SetTikTokWebView2ScreenRect(Rect);
+		}
+	}
+#endif
 }
 
 void UT66GameplayHUDWidget::UpdateTikTokVisibility()
 {
-	const UT66RunStateSubsystem* RunState = GetRunState();
-	const bool bPanelsVisible = RunState ? RunState->GetHUDPanelsVisible() : true;
-	const EVisibility Vis = (bPanelsVisible && bTikTokPlaceholderVisible) ? EVisibility::Visible : EVisibility::Collapsed;
+	const bool bOpen = IsMediaViewerOpen();
+
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	// On Windows, TikTok UI is rendered by a native WebView2 overlay, but we keep the Slate panel visible
+	// as a layout anchor so we can position the overlay correctly.
+	const EVisibility Vis = bOpen ? EVisibility::Visible : EVisibility::Collapsed;
+#else
+	const EVisibility Vis = bOpen ? EVisibility::Visible : EVisibility::Collapsed;
+#endif
 	if (TikTokPlaceholderBox.IsValid())
 	{
 		TikTokPlaceholderBox->SetVisibility(Vis);
+	}
+	UE_LOG(LogTemp, Log, TEXT("[TIKTOK] Viewer %s"), bOpen ? TEXT("OPEN") : TEXT("CLOSED"));
+	if (bOpen)
+	{
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+		// Align native WebView2 overlay to the phone panel location (and keep it aligned if window DPI/position changes).
+		RequestTikTokWebView2OverlaySync();
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(TikTokOverlaySyncHandle);
+			World->GetTimerManager().SetTimer(TikTokOverlaySyncHandle, this, &UT66GameplayHUDWidget::SyncTikTokWebView2OverlayToPlaceholder, 0.25f, true);
+		}
+#endif
+	}
+	else
+	{
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(TikTokOverlaySyncHandle);
+		}
+#endif
 	}
 }
 
@@ -1060,32 +1162,22 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	}
 
 	// Stats panel next to idols (always visible)
-	if (StatLineTexts.Num() >= 7)
+	if (StatLineTexts.Num() >= 6)
 	{
-		const float Spd = RunState->GetHeroMoveSpeedMultiplier()
-			* RunState->GetItemMoveSpeedMultiplier()
-			* RunState->GetLastStandMoveSpeedMultiplier()
-			* RunState->GetStageMoveSpeedMultiplier()
-			* RunState->GetStatusMoveSpeedMultiplier();
-		const float Dmg = RunState->GetHeroDamageMultiplier() * RunState->GetItemDamageMultiplier();
-		const float AS = RunState->GetHeroAttackSpeedMultiplier() * RunState->GetItemAttackSpeedMultiplier() * RunState->GetLastStandAttackSpeedMultiplier();
-		const float Scl = RunState->GetHeroScaleMultiplier() * RunState->GetItemScaleMultiplier();
-		const float Arm01 = RunState->GetArmorReduction01();
-		const float Eva01 = RunState->GetEvasionChance01();
+		// Show raw foundational stat numbers (base + level-ups + items). Speed is not shown here.
+		const int32 Dmg = RunState->GetDamageStat();
+		const int32 AtkSpd = RunState->GetAttackSpeedStat();
+		const int32 Size = RunState->GetScaleStat(); // Attack Size
+		const int32 Arm = RunState->GetArmorStat();
+		const int32 Eva = RunState->GetEvasionStat();
 		const int32 Luck = RunState->GetLuckStat();
 
-		FNumberFormattingOptions TwoFrac;
-		TwoFrac.MinimumFractionalDigits = 2;
-		TwoFrac.MaximumFractionalDigits = 2;
-
-		// Ordering per HUD spec: SPD is moved to below LUCK.
-		if (StatLineTexts[0].IsValid()) StatLineTexts[0]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Dmg", "DMG: {0}x"), FText::AsNumber(Dmg, &TwoFrac)));
-		if (StatLineTexts[1].IsValid()) StatLineTexts[1]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_As", "AS:  {0}x"), FText::AsNumber(AS, &TwoFrac)));
-		if (StatLineTexts[2].IsValid()) StatLineTexts[2]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Scl", "SCL: {0}x"), FText::AsNumber(Scl, &TwoFrac)));
-		if (StatLineTexts[3].IsValid()) StatLineTexts[3]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Arm", "ARM: {0}%"), FText::AsNumber(FMath::RoundToInt(Arm01 * 100.f))));
-		if (StatLineTexts[4].IsValid()) StatLineTexts[4]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Eva", "EVA: {0}%"), FText::AsNumber(FMath::RoundToInt(Eva01 * 100.f))));
+		if (StatLineTexts[0].IsValid()) StatLineTexts[0]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Dmg", "DMG: {0}"), FText::AsNumber(Dmg)));
+		if (StatLineTexts[1].IsValid()) StatLineTexts[1]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_As", "AS:  {0}"), FText::AsNumber(AtkSpd)));
+		if (StatLineTexts[2].IsValid()) StatLineTexts[2]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Scl", "SCL: {0}"), FText::AsNumber(Size)));
+		if (StatLineTexts[3].IsValid()) StatLineTexts[3]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Arm", "ARM: {0}"), FText::AsNumber(Arm)));
+		if (StatLineTexts[4].IsValid()) StatLineTexts[4]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Eva", "EVA: {0}"), FText::AsNumber(Eva)));
 		if (StatLineTexts[5].IsValid()) StatLineTexts[5]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Lck", "LCK: {0}"), FText::AsNumber(Luck)));
-		if (StatLineTexts[6].IsValid()) StatLineTexts[6]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Spd", "SPD: {0}x"), FText::AsNumber(Spd, &TwoFrac)));
 	}
 
 	// Difficulty (Skulls): 5-slot compression with tier colors + half-step support
@@ -1148,52 +1240,63 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				TipLines.Reserve(8);
 				TipLines.Add(FText::FromName(ItemID));
 
-				if (D.PowerGivenPercent != 0.f)
+				// Main stat line (v1): one foundational stat (excluding Speed), flat numeric bonus.
+				auto StatLabel = [&](ET66HeroStatType Type) -> FText
 				{
-					FNumberFormattingOptions OneFrac;
-					OneFrac.MinimumFractionalDigits = 1;
-					OneFrac.MaximumFractionalDigits = 1;
-					TipLines.Add(FText::Format(
-						NSLOCTEXT("T66.ItemTooltip", "PowerFormat", "Power: +{0}%"),
-						FText::AsNumber(D.PowerGivenPercent, &OneFrac)));
-				}
-				// Show the real effect applied by the item. Prefer EffectLines, but fall back to EffectType/magnitude.
-				const bool bAnyLine = !D.EffectLine1.IsEmpty() || !D.EffectLine2.IsEmpty() || !D.EffectLine3.IsEmpty();
-				if (!D.EffectLine1.IsEmpty()) TipLines.Add(D.EffectLine1);
-				if (!D.EffectLine2.IsEmpty()) TipLines.Add(D.EffectLine2);
-				if (!D.EffectLine3.IsEmpty()) TipLines.Add(D.EffectLine3);
-				if (!bAnyLine && D.EffectType != ET66ItemEffectType::None && D.EffectMagnitude != 0.f)
+					if (Loc)
+					{
+						switch (Type)
+						{
+							case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
+							case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
+							case ET66HeroStatType::AttackSize: return Loc->GetText_Stat_AttackSize();
+							case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
+							case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
+							case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
+							default: break;
+						}
+					}
+					// Fallback (safe)
+					switch (Type)
+					{
+						case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
+						case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
+						case ET66HeroStatType::AttackSize: return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+						case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
+						case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
+						case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
+						default: return FText::GetEmpty();
+					}
+				};
+
+				ET66HeroStatType MainType = D.MainStatType;
+				int32 MainValue = D.MainStatValue;
+				if (MainValue == 0)
 				{
-					FText Effect = FText::GetEmpty();
+					// Derive from legacy v0 fields until DT_Items is updated.
 					switch (D.EffectType)
 					{
-						case ET66ItemEffectType::BonusDamagePct:
-							Effect = FText::Format(NSLOCTEXT("T66.ItemTooltip", "BonusDamagePct", "+{0}% auto-attack damage"), FText::AsNumber(D.EffectMagnitude));
-							break;
-						case ET66ItemEffectType::BonusAttackSpeedPct:
-							Effect = FText::Format(NSLOCTEXT("T66.ItemTooltip", "BonusAttackSpeedPct", "+{0}% attack speed"), FText::AsNumber(D.EffectMagnitude));
-							break;
-						case ET66ItemEffectType::DashCooldownReductionPct:
-							Effect = FText::Format(NSLOCTEXT("T66.ItemTooltip", "DashCooldownReductionPct", "-{0}% dash cooldown"), FText::AsNumber(D.EffectMagnitude));
-							break;
+						case ET66ItemEffectType::BonusDamagePct: MainType = ET66HeroStatType::Damage; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
+						case ET66ItemEffectType::BonusAttackSpeedPct: MainType = ET66HeroStatType::AttackSpeed; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
+						case ET66ItemEffectType::BonusArmorPctPoints: MainType = ET66HeroStatType::Armor; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
+						case ET66ItemEffectType::BonusEvasionPctPoints: MainType = ET66HeroStatType::Evasion; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
+						case ET66ItemEffectType::BonusLuckFlat: MainType = ET66HeroStatType::Luck; MainValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude)); break;
 						case ET66ItemEffectType::BonusMoveSpeedPct:
-							Effect = FText::Format(NSLOCTEXT("T66.ItemTooltip", "BonusMoveSpeedPct", "+{0}% move speed"), FText::AsNumber(D.EffectMagnitude));
-							break;
-						case ET66ItemEffectType::BonusArmorPctPoints:
-							Effect = FText::Format(NSLOCTEXT("T66.ItemTooltip", "BonusArmorPctPoints", "+{0}% armor (damage reduction)"), FText::AsNumber(D.EffectMagnitude));
-							break;
-						case ET66ItemEffectType::BonusEvasionPctPoints:
-							Effect = FText::Format(NSLOCTEXT("T66.ItemTooltip", "BonusEvasionPctPoints", "+{0}% evasion (dodge chance)"), FText::AsNumber(D.EffectMagnitude));
-							break;
-						case ET66ItemEffectType::BonusLuckFlat:
-							Effect = FText::Format(NSLOCTEXT("T66.ItemTooltip", "BonusLuckFlat", "+{0} Luck (rarity odds)"), FText::AsNumber(FMath::RoundToInt(D.EffectMagnitude)));
+						case ET66ItemEffectType::DashCooldownReductionPct:
+							// Speed is not an item stat; map mobility effects to Evasion for now.
+							MainType = ET66HeroStatType::Evasion;
+							MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
 							break;
 						default: break;
 					}
-					if (!Effect.IsEmpty())
-					{
-						TipLines.Add(Effect);
-					}
+				}
+
+				if (MainValue > 0)
+				{
+					TipLines.Add(FText::Format(
+						NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"),
+						StatLabel(MainType),
+						FText::AsNumber(MainValue)));
 				}
 				if (D.SellValueGold > 0)
 				{
@@ -1237,7 +1340,6 @@ void UT66GameplayHUDWidget::RefreshHUD()
 TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	BuildOrUpdateTikTokBrush();
 	const FText StageInit = Loc ? FText::Format(Loc->GetText_StageNumberFormat(), FText::AsNumber(1)) : NSLOCTEXT("T66.GameplayHUD", "StageNumberInit", "Stage number: 1");
 	const FText GoldInit = Loc ? FText::Format(Loc->GetText_GoldFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "GoldInit", "Gold: 0");
 	const FText OweInit = Loc ? FText::Format(Loc->GetText_OweFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "OweInit", "Owe: 0");
@@ -1248,7 +1350,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	DifficultyBorders.SetNum(5);
 	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	StatLineTexts.SetNum(7);
+	StatLineTexts.SetNum(6);
 	StatusEffectDots.SetNum(3);
 	StatusEffectDotBoxes.SetNum(3);
 	static constexpr float BossBarWidth = 600.f;
@@ -1361,8 +1463,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(2) ];
 	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(3) ];
 	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(4) ];
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(5) ];
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)[ MakeStatLine(6) ];
+	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)[ MakeStatLine(5) ];
 
 	// Wrap stats so we can hide/show them with HUD panels (and so Ultimate shifts left when collapsed).
 	TSharedRef<SWidget> StatsPanelWrapped =
@@ -1481,21 +1582,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.Padding(24.f, 24.f)
 		[
 			SNew(SVerticalBox)
-			// Timer above Stage number (per HUD spec)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-			[
-				SAssignNew(TimerText, STextBlock)
-				.Text(NSLOCTEXT("T66.GameplayHUD", "StageTimerDefault", "6:00"))
-				.Font(FT66Style::Tokens::FontBold(20))
-				.ColorAndOpacity(FT66Style::Tokens::Success)
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-			[
-				SAssignNew(StageText, STextBlock)
-				.Text(StageInit)
-				.Font(FT66Style::Tokens::FontBold(16))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-			]
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(SHorizontalBox)
@@ -1515,7 +1601,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 			// Speedrun info below bounty (per request)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 			[
 				SAssignNew(SpeedRunText, STextBlock)
 				.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "SR 0:00"))
@@ -1535,8 +1621,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 			[
 				SAssignNew(TikTokPlaceholderBox, SBox)
-				.WidthOverride(240.f)
-				.HeightOverride(430.f)
+				.WidthOverride(GT66TikTokPanelW)
+				.HeightOverride(GT66TikTokPanelH)
 				[
 					SNew(SBorder)
 					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
@@ -1547,8 +1633,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
 						.Padding(2.f)
 						[
-							SNew(SImage)
-							.Image(TikTokBrush.Get())
+							// Important: no scaling here. Scaling can break browser hit-testing (click/scroll),
+							// so we anchor any native overlay to match this box's size/position.
+							SAssignNew(TikTokContentBox, SBox)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
+							]
 						]
 					]
 				]
@@ -1711,15 +1803,38 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.WidthOverride(240.f)
 					.HeightOverride(180.f)
 					[
-						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
-						.Padding(8.f)
+						SNew(SOverlay)
+						+ SOverlay::Slot()
 						[
-							SAssignNew(MinimapWidget, ST66WorldMapWidget)
-							.bMinimap(true)
-							.bShowLabels(false)
+							SNew(SBorder)
+							.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+							.Padding(8.f)
+							[
+								SAssignNew(MinimapWidget, ST66WorldMapWidget)
+								.bMinimap(true)
+								.bShowLabels(false)
+							]
+						]
+						// Timer centered at the top of the minimap
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Top)
+						.Padding(0.f, 6.f)
+						[
+							SAssignNew(TimerText, STextBlock)
+							.Text(NSLOCTEXT("T66.GameplayHUD", "StageTimerDefault", "6:00"))
+							.Font(FT66Style::Tokens::FontBold(20))
+							.ColorAndOpacity(FT66Style::Tokens::Success)
 						]
 					]
+				]
+				// Stage number beneath minimap, above skulls
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 0.f)
+				[
+					SAssignNew(StageText, STextBlock)
+					.Text(StageInit)
+					.Font(FT66Style::Tokens::FontBold(16))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				// Difficulty beneath minimap (no outer box), sized to minimap width
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
@@ -1753,14 +1868,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(GoldText, STextBlock)
 							.Text(GoldInit)
-							.Font(FT66Style::Tokens::FontBold(16))
+							.Font(FT66Style::Tokens::FontBold(20))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 						[
 							SAssignNew(DebtText, STextBlock)
 							.Text(OweInit)
-							.Font(FT66Style::Tokens::FontBold(16))
+							.Font(FT66Style::Tokens::FontBold(20))
 							.ColorAndOpacity(FT66Style::Tokens::Danger)
 						]
 					]

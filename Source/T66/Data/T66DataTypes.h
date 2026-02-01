@@ -60,6 +60,108 @@ struct T66_API FHeroData : public FTableRowBase
 };
 
 /**
+ * Core hero stats used by the leveling system.
+ * Intended tuning range (early): 1-5 at base, then increases via level ups.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66HeroStatBlock
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Damage = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 AttackSpeed = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 AttackSize = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Armor = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Evasion = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Luck = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Speed = 1;
+};
+
+/** Flat additive stat bonuses (used for items, buffs, etc.). Defaults to 0. */
+USTRUCT(BlueprintType)
+struct T66_API FT66HeroStatBonuses
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Damage = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 AttackSpeed = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 AttackSize = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Armor = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Evasion = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Luck = 0;
+};
+
+/** Random gain range (inclusive) for a stat on level up. */
+USTRUCT(BlueprintType)
+struct T66_API FT66HeroStatGainRange
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Min = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Max = 0;
+
+	int32 Roll(FRandomStream& Rng) const
+	{
+		const int32 A = FMath::Min(Min, Max);
+		const int32 B = FMath::Max(Min, Max);
+		if (B <= 0) return 0;
+		return Rng.RandRange(FMath::Max(0, A), FMath::Max(0, B));
+	}
+};
+
+/** Per-level gains for the 6 foundational stats (Speed is always +1 per level). */
+USTRUCT(BlueprintType)
+struct T66_API FT66HeroPerLevelStatGains
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange AttackSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange AttackSize;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange Armor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange Evasion;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange Luck;
+};
+
+/**
  * Companion data row for the Companion DataTable
  * Each row represents one selectable companion
  * NOTE: Localized display names are managed by UT66LocalizationSubsystem::GetText_CompanionName()
@@ -127,6 +229,18 @@ enum class ET66ItemEffectType : uint8
 	BonusLuckFlat UMETA(DisplayName = "BonusLuckFlat"),
 };
 
+/** Foundational hero stats (excluding Speed) that items can roll as their main stat line. */
+UENUM(BlueprintType)
+enum class ET66HeroStatType : uint8
+{
+	Damage UMETA(DisplayName = "Damage"),
+	AttackSpeed UMETA(DisplayName = "AttackSpeed"),
+	AttackSize UMETA(DisplayName = "AttackSize"),
+	Armor UMETA(DisplayName = "Armor"),
+	Evasion UMETA(DisplayName = "Evasion"),
+	Luck UMETA(DisplayName = "Luck"),
+};
+
 UENUM(BlueprintType)
 enum class ET66StageEffectType : uint8
 {
@@ -178,6 +292,18 @@ struct T66_API FItemData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
 	float EffectMagnitude = 0.f;
+
+	// ============================================
+	// Item Stat Lines (v1)
+	// ============================================
+
+	/** Main stat line: one foundational stat (excluding Speed) with a flat numeric bonus. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Lines")
+	ET66HeroStatType MainStatType = ET66HeroStatType::Damage;
+
+	/** Flat points added to the chosen stat. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Lines")
+	int32 MainStatValue = 0;
 
 	/** Tooltip lines (shown under Power). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")

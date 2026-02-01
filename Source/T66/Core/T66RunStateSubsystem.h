@@ -376,27 +376,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|Hero")
 	void AddHeroXP(int32 Amount);
 
-	/** Stat points (v0): each stat == current HeroLevel. */
+	/** Foundational stat points (Damage/Attack Speed/Attack Size/Armor/Evasion/Luck + Speed). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetSpeedStat() const { return HeroLevel; }
+	int32 GetSpeedStat() const { return FMath::Max(1, HeroStats.Speed); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetDamageStat() const { return HeroLevel; }
+	int32 GetDamageStat() const { return FMath::Max(1, HeroStats.Damage + FMath::Max(0, ItemStatBonuses.Damage)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetAttackSpeedStat() const { return HeroLevel; }
+	int32 GetAttackSpeedStat() const { return FMath::Max(1, HeroStats.AttackSpeed + FMath::Max(0, ItemStatBonuses.AttackSpeed)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetScaleStat() const { return HeroLevel; }
+	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackSize + FMath::Max(0, ItemStatBonuses.AttackSize)); } // Attack Size (aka Scale)
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetArmorStat() const { return HeroLevel; }
+	int32 GetArmorStat() const { return FMath::Max(1, HeroStats.Armor + FMath::Max(0, ItemStatBonuses.Armor)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetEvasionStat() const { return HeroLevel; }
+	int32 GetEvasionStat() const { return FMath::Max(1, HeroStats.Evasion + FMath::Max(0, ItemStatBonuses.Evasion)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetLuckStat() const { return FMath::Max(1, HeroLevel + ItemBonusLuckFlat); }
+	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck)); }
 
 	/** Derived multipliers from hero stats (separate from item multipliers). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
@@ -438,6 +438,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
 	void EnsureVendorStockForCurrentStage();
+
+	/** Force a reroll of the current stage's vendor stock (resets sold flags). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
+	void RerollVendorStockForCurrentStage();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
 	const TArray<FName>& GetVendorStockItemIDs() const { return VendorStockItemIDs; }
@@ -589,6 +593,9 @@ private:
 	void RecomputeItemDerivedStats();
 	void EnterLastStand();
 	void EndLastStandAndDie();
+	void InitializeHeroStatTuningForSelectedHero();
+	void InitializeHeroStatsForNewRun();
+	void ApplyOneHeroLevelUp();
 
 	UPROPERTY()
 	int32 CurrentHearts = DefaultMaxHearts;
@@ -682,6 +689,9 @@ private:
 	// Derived combat tuning from Inventory (recomputed on InventoryChanged)
 	// ============================================
 
+	/** Flat stat bonuses from inventory items (main stat line only, v1). */
+	FT66HeroStatBonuses ItemStatBonuses = FT66HeroStatBonuses{};
+
 	float ItemPowerGivenPercent = 0.f;
 	float BonusDamagePercent = 0.f;
 	float BonusAttackSpeedPercent = 0.f;
@@ -706,6 +716,15 @@ private:
 	int32 HeroXP = 0;
 	int32 XPToNextLevel = DefaultXPToLevel;
 
+	/** Current hero's foundational stat points (base + level-ups). */
+	FT66HeroStatBlock HeroStats = FT66HeroStatBlock{};
+
+	/** Current hero's per-level gain ranges (Speed is always +1 per level). */
+	FT66HeroPerLevelStatGains HeroPerLevelGains = FT66HeroPerLevelStatGains{};
+
+	/** Run-persistent RNG for hero stat gains (so stage reloads don't reshuffle). */
+	FRandomStream HeroStatRng;
+
 	float UltimateCooldownRemainingSeconds = 0.f;
 	int32 LastBroadcastUltimateSecond = 0;
 
@@ -720,6 +739,8 @@ private:
 
 	int32 VendorAngerGold = 0;
 	int32 VendorStockStage = 0;
+	int32 VendorStockRerollStage = 0;
+	int32 VendorStockRerollCounter = 0;
 	TArray<FName> VendorStockItemIDs;
 	TArray<bool> VendorStockSold;
 	bool bVendorBoughtSomethingThisStage = false;

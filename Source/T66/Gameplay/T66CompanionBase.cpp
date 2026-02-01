@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66CompanionBase.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -139,16 +140,35 @@ void AT66CompanionBase::Tick(float DeltaTime)
 
 	// Heal the hero over time (up to max hearts).
 	HealAccumSeconds += DeltaTime;
-	if (HealAccumSeconds >= HealIntervalSeconds)
+	float EffectiveInterval = HealIntervalSeconds;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
-		HealAccumSeconds = 0.f;
+		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			// Union tiers: Basic=10s, Good=5s, Medium=3s, Hyper=1s per heart.
+			EffectiveInterval = FMath::Clamp(Ach->GetCompanionUnionHealingIntervalSeconds(CompanionID), 0.25f, 60.f);
+		}
+	}
+
+	if (HealAccumSeconds >= EffectiveInterval)
+	{
+		// Avoid drift on variable frame times; handle large deltas safely.
+		int32 Heals = 0;
+		while (HealAccumSeconds >= EffectiveInterval && Heals < 8)
+		{
+			HealAccumSeconds -= EffectiveInterval;
+			++Heals;
+		}
 		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 		{
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
 				if (RunState->GetCurrentHearts() < RunState->GetMaxHearts())
 				{
-					RunState->HealHearts(HealAmountHearts);
+					for (int32 H = 0; H < Heals; ++H)
+					{
+						RunState->HealHearts(HealAmountHearts);
+					}
 				}
 			}
 		}

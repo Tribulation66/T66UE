@@ -28,6 +28,21 @@ public:
 	static const FString ProfileSaveSlotName;
 	static constexpr int32 ProfileSaveUserIndex = 0;
 
+	// ============================================
+	// Companion Union (profile progression)
+	// ============================================
+
+	/** Union tier thresholds expressed as "stages cleared with this companion". */
+	static constexpr int32 UnionTier_GoodStages = 5;
+	static constexpr int32 UnionTier_MediumStages = 10;
+	static constexpr int32 UnionTier_HyperStages = 20;
+
+	/** Union healing intervals per tier (seconds per 1 heart). */
+	static constexpr float UnionHealInterval_BasicSeconds = 10.f;
+	static constexpr float UnionHealInterval_GoodSeconds = 5.f;
+	static constexpr float UnionHealInterval_MediumSeconds = 3.f;
+	static constexpr float UnionHealInterval_HyperSeconds = 1.f;
+
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
@@ -70,6 +85,22 @@ public:
 	/** Debug/dev: reset all achievements and AC to zero. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void ResetProfileProgress();
+
+	/** Union: stages cleared with a specific companion (lifetime / profile). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
+	int32 GetCompanionUnionStagesCleared(FName CompanionID) const;
+
+	/** Union: increment stage-clears for a companion (e.g., when the player clears a stage with them). */
+	UFUNCTION(BlueprintCallable, Category = "Union")
+	void AddCompanionUnionStagesCleared(FName CompanionID, int32 DeltaStagesCleared = 1);
+
+	/** Union: healing interval in seconds per 1 heart (Basic/Good/Medium/Hyper). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
+	float GetCompanionUnionHealingIntervalSeconds(FName CompanionID) const;
+
+	/** Union: progress 0..1 toward Hyper tier (for UI bars). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
+	float GetCompanionUnionProgress01(FName CompanionID) const;
 
 private:
 	UPROPERTY()

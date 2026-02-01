@@ -77,10 +77,20 @@ namespace
 
 			if (Stage.IsValid())
 			{
-				// Dota-style orbit: horizontal rotates yaw, vertical tilts camera.
-				Stage->AddPreviewOrbit(Delta.X * DegreesPerPixel, -Delta.Y * DegreesPerPixel);
+				// Rotate the companion without orbiting the camera (no vertical pitch).
+				Stage->AddPreviewYaw(Delta.X * DegreesPerPixel);
 			}
 			return FReply::Handled();
+		}
+
+		virtual FReply OnMouseWheel(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+		{
+			if (Stage.IsValid())
+			{
+				Stage->AddPreviewZoom(MouseEvent.GetWheelDelta());
+				return FReply::Handled();
+			}
+			return FReply::Unhandled();
 		}
 
 	private:

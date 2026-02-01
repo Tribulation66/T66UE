@@ -36,6 +36,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void AddPreviewYaw(float DeltaYawDegrees);
 
+	/** Zoom preview in/out (wheel delta). Max zoom-out is the default framing. */
+	UFUNCTION(BlueprintCallable, Category = "Preview")
+	void AddPreviewZoom(float WheelDelta);
+
 	/** Orbit the preview camera (yaw rotates companion, pitch moves camera up/down). */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees);
@@ -50,6 +54,7 @@ protected:
 	void ApplyPreviewRotation();
 	void FrameCameraToPreview();
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;
+	void ApplyShadowSettings();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<USceneCaptureComponent2D> SceneCapture;
@@ -103,4 +108,24 @@ protected:
 
 	UPROPERTY(Transient)
 	float OrbitBottomZ = 0.f;
+
+	/** Push the floor slightly back so the companion reads "forward" on it (toward camera). */
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
+	float FloorForwardOffset = 35.f;
+
+	/** Multiplier on the auto-framed camera distance (smaller = companion appears bigger). */
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
+	float CameraDistanceMultiplier = 0.92f;
+
+	/** User zoom factor applied on top of CameraDistanceMultiplier (<= 1.0 means zoom-in). */
+	UPROPERTY(Transient)
+	float PreviewZoomMultiplier = 1.0f;
+
+	/** Minimum zoom-in multiplier (smaller = closer zoom). */
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
+	float MinPreviewZoomMultiplier = 0.65f;
+
+	/** If true, disable shadow casting for preview meshes/floor. */
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
+	bool bDisablePreviewShadows = true;
 };

@@ -46,6 +46,23 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "EngineUtils.h"
 
+namespace
+{
+	// Helper: avoid PIE warnings ("StaticMeshComponent has to be 'Movable' if you'd like to move")
+	// by temporarily setting mobility to Movable while we apply transforms.
+	static void T66_SetStaticMeshActorMobility(AStaticMeshActor* Actor, EComponentMobility::Type Mobility)
+	{
+		if (!Actor) return;
+		if (UStaticMeshComponent* SMC = Actor->GetStaticMeshComponent())
+		{
+			if (SMC->Mobility != Mobility)
+			{
+				SMC->SetMobility(Mobility);
+			}
+		}
+	}
+}
+
 AT66GameMode::AT66GameMode()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -223,7 +240,7 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 	FRandomStream Rng(StageNum * 971 + 17);
 
 	// Main map square bounds (centered at 0,0). Keep some margin from edges.
-	static constexpr float MainHalfExtent = 5800.f;
+	static constexpr float MainHalfExtent = 7200.f;
 	static constexpr float SpawnZ = 40.f;
 	static constexpr float MinDistBetweenTiles = 420.f;
 	static constexpr float SafeBubbleMargin = 350.f;
@@ -735,8 +752,10 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Main area is larger; keep houses as four corners inside the main square.
-	const float Corner = 6000.f;
+	// Main area: houses are placed near the 4 corners of the main square.
+	// NOTE: NPC safe-zones are centered on the NPC cylinders (not the house blocks),
+	// so we place the NPCs *inward* toward the map center to keep the full bubble inside bounds.
+	const float Corner = 7000.f;
 	const float HouseZ = 200.f; // big cube house sits on ground (half-height 200)
 	const float NPCZ = 60.f;    // small cylinder NPC sits on ground-ish
 	const float NPCOffset = 700.f;
@@ -770,7 +789,12 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 		}
 
 		// NPC cylinder next to house (interactable; for now all sell items)
-		const FVector NPCLoc(D.CornerLoc.X + NPCOffset, D.CornerLoc.Y, NPCZ);
+		const float SX = (D.CornerLoc.X >= 0.f) ? 1.f : -1.f;
+		const float SY = (D.CornerLoc.Y >= 0.f) ? 1.f : -1.f;
+		const FVector NPCLoc(
+			D.CornerLoc.X - (SX * NPCOffset),
+			D.CornerLoc.Y - (SY * NPCOffset),
+			NPCZ);
 		AActor* SpawnedNPC = World->SpawnActor<AActor>(D.NPCClass, NPCLoc, FRotator::ZeroRotator, SpawnParams);
 		if (AT66HouseNPCBase* NPC = Cast<AT66HouseNPCBase>(SpawnedNPC))
 		{
@@ -815,8 +839,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const int32 StageNum = RunState->GetCurrentStage();
 	FRandomStream Rng(StageNum * 1337 + 42);
 
-	// Main map square bounds (centered at 0,0). Keep some margin from edges.
-	static constexpr float MainHalfExtent = 6200.f;
+	// Main map square bounds (centered at 0,0). Keep some margin from walls.
+	static constexpr float MainHalfExtent = 7200.f;
 	static constexpr float SpawnZ = 220.f;
 	static constexpr float MinDistBetweenInteractables = 900.f;
 	static constexpr float SafeBubbleMargin = 250.f;
@@ -1023,7 +1047,9 @@ void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
 				{
 					Floor->Tags.Add(Tag);
 					Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+				T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
 					Floor->SetActorScale3D(FVector(22.f, 22.f, 1.f));
+				T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 					if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 					{
 						Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
@@ -1243,7 +1269,9 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 		{
 			Floor->Tags.Add(FloorTag);
 			Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
 			Floor->SetActorScale3D(FVector(34.f, 34.f, 1.f)); // 3400x3400
+			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 			if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 			{
 				Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.12f, 0.10f, 0.10f, 1.f));
@@ -1284,7 +1312,9 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 		Wall->Tags.Add(Spec.Tag);
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
 		Wall->SetActorScale3D(Spec.Scale);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.06f, 0.06f, 1.f));
@@ -1363,7 +1393,9 @@ void AT66GameMode::SpawnPlatformEdgeWallsIfNeeded()
 
 		Wall->Tags.Add(Spec.Tag);
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
 		Wall->SetActorScale3D(Spec.Scale);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
@@ -1451,7 +1483,9 @@ void AT66GameMode::SpawnStartAreaExitWallsIfNeeded()
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 		Wall->Tags.Add(Spec.Tag);
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
 		Wall->SetActorScale3D(Spec.Scale);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
@@ -1482,7 +1516,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	};
 
 	const TArray<FFloorSpec> Floors = {
-		{ FName("T66_Floor_Main"),   MainCenter,          FVector(140.f, 140.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
+		{ FName("T66_Floor_Main"),   MainCenter,          FVector(160.f, 160.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
 		{ FName("T66_Floor_Start"),  StartCenter,         FVector(60.f,  60.f,  1.f), FLinearColor(0.22f, 0.24f, 0.28f, 1.f) },
 		{ FName("T66_Floor_Boss"),   BossCenter,          FVector(60.f,  60.f,  1.f), FLinearColor(0.26f, 0.22f, 0.22f, 1.f) },
 		{ FName("T66_Floor_Conn1"),  StartConnectorCenter, FVector(20.f, 30.f, 1.f), FLinearColor(0.25f, 0.25f, 0.28f, 1.f) },
@@ -1492,16 +1526,16 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!CubeMesh) return;
 
-	auto HasTag = [&](FName Tag) -> bool
+	auto FindTaggedActor = [&](FName Tag) -> AStaticMeshActor*
 	{
 		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
 		{
 			if (It->Tags.Contains(Tag))
 			{
-				return true;
+				return *It;
 			}
 		}
-		return false;
+		return nullptr;
 	};
 
 	FActorSpawnParameters SpawnParams;
@@ -1509,21 +1543,32 @@ void AT66GameMode::SpawnFloorIfNeeded()
 
 	for (const FFloorSpec& Spec : Floors)
 	{
-		if (HasTag(Spec.Tag)) continue;
-
-		AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
+		AStaticMeshActor* Floor = FindTaggedActor(Spec.Tag);
+		if (!Floor)
+		{
+			Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
+		}
 		if (!Floor || !Floor->GetStaticMeshComponent()) continue;
 
-		Floor->Tags.Add(Spec.Tag);
+		if (!Floor->Tags.Contains(Spec.Tag))
+		{
+			Floor->Tags.Add(Spec.Tag);
+		}
+		T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
+		Floor->SetActorLocation(Spec.Location);
 		Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		Floor->SetActorScale3D(Spec.Scale);
+		T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 
 		if (UMaterialInstanceDynamic* FloorMat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
 			FloorMat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
 		}
 
-		SpawnedSetupActors.Add(Floor);
+		if (!SpawnedSetupActors.Contains(Floor))
+		{
+			SpawnedSetupActors.Add(Floor);
+		}
 	}
 }
 
@@ -1535,16 +1580,16 @@ void AT66GameMode::SpawnBoundaryWallsIfNeeded()
 	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!CubeMesh) return;
 
-	auto HasTag = [&](FName Tag) -> bool
+	auto FindTaggedActor = [&](FName Tag) -> AStaticMeshActor*
 	{
 		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
 		{
 			if (It->Tags.Contains(Tag))
 			{
-				return true;
+				return *It;
 			}
 		}
-		return false;
+		return nullptr;
 	};
 
 	// Walls around the entire playable footprint (start + main + boss).
@@ -1554,7 +1599,7 @@ void AT66GameMode::SpawnBoundaryWallsIfNeeded()
 
 	static constexpr float StartBossHalf = 3000.f; // start/boss floors are 6000 wide
 	static constexpr float TotalHalfX = 10000.f + StartBossHalf; // start center -10000, boss center +10000
-	static constexpr float MainHalfY = 7000.f; // main floor is 14000 wide
+	static constexpr float MainHalfY = 8000.f; // main floor is 16000 wide
 	static constexpr float TotalHalfY = MainHalfY;
 
 	const float WallZ = FloorTopZ + (WallHeight * 0.5f);
@@ -1572,32 +1617,63 @@ void AT66GameMode::SpawnBoundaryWallsIfNeeded()
 	const float Thick = WallThickness / 100.f;
 	const float Tall = WallHeight / 100.f;
 
-	const TArray<FWallSpec> Walls = {
+	TArray<FWallSpec> Walls = {
 		{ FName("T66_Wall_N"), FVector(0.f,  TotalHalfY + (WallThickness * 0.5f), WallZ), FVector(LongX, Thick, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
 		{ FName("T66_Wall_S"), FVector(0.f, -TotalHalfY - (WallThickness * 0.5f), WallZ), FVector(LongX, Thick, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
 		{ FName("T66_Wall_E"), FVector( TotalHalfX + (WallThickness * 0.5f), 0.f, WallZ), FVector(Thick, LongY, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
 		{ FName("T66_Wall_W"), FVector(-TotalHalfX - (WallThickness * 0.5f), 0.f, WallZ), FVector(Thick, LongY, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
 	};
 
+	// Critical: the main square ends at X=±8000, but the overall footprint extends to X=±13000 due to the start/boss squares.
+	// Without extra "main edge" walls, the player can walk to the east/west edges of the main square and fall off.
+	{
+		static constexpr float MainHalfX = 8000.f;
+		const float MainEdgeX = MainHalfX + (WallThickness * 0.5f);
+		const float GapY = StartBossHalf; // keep the boss/start overlap corridor (|Y| <= 3000) open
+		const float SegLenY = (MainHalfY - GapY);
+		const float SegScaleY = SegLenY / 100.f;
+		const float CenterY = (GapY + MainHalfY) * 0.5f;
+
+		// North segments (+Y)
+		Walls.Add({ FName("T66_Wall_MainEdge_E_N"), FVector( MainEdgeX,  CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
+		Walls.Add({ FName("T66_Wall_MainEdge_W_N"), FVector(-MainEdgeX,  CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
+
+		// South segments (-Y)
+		Walls.Add({ FName("T66_Wall_MainEdge_E_S"), FVector( MainEdgeX, -CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
+		Walls.Add({ FName("T66_Wall_MainEdge_W_S"), FVector(-MainEdgeX, -CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
+	}
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	for (const FWallSpec& Spec : Walls)
 	{
-		if (HasTag(Spec.Tag)) continue;
-		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
+		AStaticMeshActor* Wall = FindTaggedActor(Spec.Tag);
+		if (!Wall)
+		{
+			Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
+		}
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 
-		Wall->Tags.Add(Spec.Tag);
+		if (!Wall->Tags.Contains(Spec.Tag))
+		{
+			Wall->Tags.Add(Spec.Tag);
+		}
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
+		Wall->SetActorLocation(Spec.Location);
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		Wall->SetActorScale3D(Spec.Scale);
+		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
 		}
 
-		SpawnedSetupActors.Add(Wall);
+		if (!SpawnedSetupActors.Contains(Wall))
+		{
+			SpawnedSetupActors.Add(Wall);
+		}
 	}
 }
 

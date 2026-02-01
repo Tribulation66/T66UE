@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -168,47 +169,115 @@ void UT66RunStateSubsystem::ResetGamblerAnger()
 	GamblerAngerChanged.Broadcast();
 }
 
+void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
+{
+	// Safe defaults
+	HeroStats = FT66HeroStatBlock{};
+	HeroPerLevelGains = FT66HeroPerLevelStatGains{};
+	HeroPerLevelGains.Damage.Min = 1;      HeroPerLevelGains.Damage.Max = 2;
+	HeroPerLevelGains.AttackSpeed.Min = 1; HeroPerLevelGains.AttackSpeed.Max = 2;
+	HeroPerLevelGains.AttackSize.Min = 1;  HeroPerLevelGains.AttackSize.Max = 2;
+	HeroPerLevelGains.Armor.Min = 1;       HeroPerLevelGains.Armor.Max = 2;
+	HeroPerLevelGains.Evasion.Min = 1;     HeroPerLevelGains.Evasion.Max = 2;
+	HeroPerLevelGains.Luck.Min = 1;        HeroPerLevelGains.Luck.Max = 2;
+
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		FT66HeroStatBlock Base;
+		FT66HeroPerLevelStatGains Gains;
+		if (T66GI->GetHeroStatTuning(T66GI->SelectedHeroID, Base, Gains))
+		{
+			HeroStats = Base;
+			HeroPerLevelGains = Gains;
+		}
+	}
+
+	// Enforce sane minimums for gameplay safety.
+	HeroStats.Damage = FMath::Clamp(HeroStats.Damage, 1, 9999);
+	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed, 1, 9999);
+	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize, 1, 9999);
+	HeroStats.Armor = FMath::Clamp(HeroStats.Armor, 1, 9999);
+	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion, 1, 9999);
+	HeroStats.Luck = FMath::Clamp(HeroStats.Luck, 1, 9999);
+	HeroStats.Speed = FMath::Clamp(HeroStats.Speed, 1, 9999);
+}
+
+void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
+{
+	// Speed is a foundational stat, but it behaves differently:
+	// user request: always +1 Speed per level.
+	HeroStats.Speed = FMath::Clamp(HeroStats.Speed + 1, 1, 9999);
+
+	// Other foundational stats roll within the hero's per-level gain ranges.
+	HeroStats.Damage = FMath::Clamp(HeroStats.Damage + HeroPerLevelGains.Damage.Roll(HeroStatRng), 1, 9999);
+	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed + HeroPerLevelGains.AttackSpeed.Roll(HeroStatRng), 1, 9999);
+	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize + HeroPerLevelGains.AttackSize.Roll(HeroStatRng), 1, 9999);
+	HeroStats.Armor = FMath::Clamp(HeroStats.Armor + HeroPerLevelGains.Armor.Roll(HeroStatRng), 1, 9999);
+	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion + HeroPerLevelGains.Evasion.Roll(HeroStatRng), 1, 9999);
+	HeroStats.Luck = FMath::Clamp(HeroStats.Luck + HeroPerLevelGains.Luck.Roll(HeroStatRng), 1, 9999);
+}
+
+void UT66RunStateSubsystem::InitializeHeroStatsForNewRun()
+{
+	// Seed RNG once per run so stage reloads keep the same future stat gain sequence.
+	int32 Seed = static_cast<int32>(FPlatformTime::Cycles());
+	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		Seed ^= static_cast<int32>(GetTypeHash(T66GI->SelectedHeroID));
+		Seed ^= static_cast<int32>(GetTypeHash(T66GI->SelectedCompanionID));
+	}
+	Seed ^= (HeroLevel * 1337);
+	HeroStatRng.Initialize(Seed);
+
+	InitializeHeroStatTuningForSelectedHero();
+
+	// Apply level-up gains for any non-1 starting level (difficulty boosts start at +10 levels per step).
+	const int32 TargetLevel = FMath::Max(1, HeroLevel);
+	for (int32 L = 2; L <= TargetLevel; ++L)
+	{
+		ApplyOneHeroLevelUp();
+	}
+}
+
 float UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier() const
 {
-	// v0 mapping: +3% per level
-	const int32 L = FMath::Max(1, HeroLevel);
-	return 1.f + (static_cast<float>(L - 1) * 0.03f);
+	// Mapping is driven by the foundational Speed stat (not shown in the HUD stat panel).
+	// Keep it modest because Speed gains are +1 per level.
+	const int32 S = GetSpeedStat();
+	return 1.f + (static_cast<float>(S - 1) * 0.01f);
 }
 
 float UT66RunStateSubsystem::GetHeroDamageMultiplier() const
 {
-	// v0 mapping: +5% per level
-	const int32 L = FMath::Max(1, HeroLevel);
-	return 1.f + (static_cast<float>(L - 1) * 0.05f);
+	const int32 D = GetDamageStat();
+	return 1.f + (static_cast<float>(D - 1) * 0.015f);
 }
 
 float UT66RunStateSubsystem::GetHeroAttackSpeedMultiplier() const
 {
-	// v0 mapping: +3% per level
-	const int32 L = FMath::Max(1, HeroLevel);
-	return 1.f + (static_cast<float>(L - 1) * 0.03f);
+	const int32 AS = GetAttackSpeedStat();
+	return 1.f + (static_cast<float>(AS - 1) * 0.012f);
 }
 
 float UT66RunStateSubsystem::GetHeroScaleMultiplier() const
 {
-	// v0 mapping: +2% per level
-	const int32 L = FMath::Max(1, HeroLevel);
-	return 1.f + (static_cast<float>(L - 1) * 0.02f);
+	const int32 Sz = GetScaleStat(); // Attack Size
+	return 1.f + (static_cast<float>(Sz - 1) * 0.008f);
 }
 
 float UT66RunStateSubsystem::GetArmorReduction01() const
 {
-	// v0 mapping: +1% per level, clamped.
-	const int32 L = FMath::Max(1, HeroLevel);
-	const float Base = static_cast<float>(L - 1) * 0.01f;
+	// Damage reduction derived from Armor stat, clamped.
+	const int32 A = GetArmorStat();
+	const float Base = static_cast<float>(A - 1) * 0.008f;
 	return FMath::Clamp(Base + ItemArmorBonus01, 0.f, 0.80f);
 }
 
 float UT66RunStateSubsystem::GetEvasionChance01() const
 {
-	// v0 mapping: +1% per level, clamped.
-	const int32 L = FMath::Max(1, HeroLevel);
-	const float Base = static_cast<float>(L - 1) * 0.01f;
+	// Dodge chance derived from Evasion stat, clamped.
+	const int32 E = GetEvasionStat();
+	const float Base = static_cast<float>(E - 1) * 0.006f;
 	return FMath::Clamp(Base + ItemEvasionBonus01, 0.f, 0.60f);
 }
 
@@ -224,6 +293,7 @@ void UT66RunStateSubsystem::AddHeroXP(int32 Amount)
 	{
 		HeroXP -= XPToNextLevel;
 		HeroLevel = FMath::Clamp(HeroLevel + 1, 1, 9999);
+		ApplyOneHeroLevelUp();
 		bLeveled = true;
 	}
 	HeroProgressChanged.Broadcast();
@@ -340,6 +410,13 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		return;
 	}
 
+	// Reset reroll counter when stage changes.
+	if (VendorStockRerollStage != Stage)
+	{
+		VendorStockRerollStage = Stage;
+		VendorStockRerollCounter = 0;
+	}
+
 	VendorStockStage = Stage;
 	VendorStockItemIDs.Reset();
 	VendorStockSold.Reset();
@@ -386,7 +463,8 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	if (PoolRed.Num() == 0) PoolRed = { FName(TEXT("Item_02")) };
 	if (PoolYellow.Num() == 0) PoolYellow = { FName(TEXT("Item_03")) };
 
-	FRandomStream Rng(Stage * 777 + 13);
+	// Seed is stable per stage, but changes per reroll so the stock can refresh.
+	FRandomStream Rng(Stage * 777 + 13 + VendorStockRerollCounter * 10007);
 	auto PickUnique = [&](const TArray<FName>& Pool) -> FName
 	{
 		if (Pool.Num() == 0) return NAME_None;
@@ -401,8 +479,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		return Pool[0];
 	};
 
-	// v0 stock: 4 items (2 black, 1 red, 1 yellow)
-	VendorStockItemIDs.Add(PickUnique(PoolBlack));
+	// Stock: 3 items (1 black, 1 red, 1 yellow)
 	VendorStockItemIDs.Add(PickUnique(PoolBlack));
 	VendorStockItemIDs.Add(PickUnique(PoolRed));
 	VendorStockItemIDs.Add(PickUnique(PoolYellow));
@@ -416,6 +493,24 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	}
 	VendorStockSold.Init(false, VendorStockItemIDs.Num());
 	VendorChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::RerollVendorStockForCurrentStage()
+{
+	const int32 Stage = FMath::Clamp(CurrentStage, 1, 66);
+	if (VendorStockRerollStage != Stage)
+	{
+		VendorStockRerollStage = Stage;
+		VendorStockRerollCounter = 0;
+	}
+	VendorStockRerollCounter = FMath::Clamp(VendorStockRerollCounter + 1, 0, 9999);
+
+	// Force regeneration even if the stage didn't change.
+	VendorStockStage = 0;
+	VendorStockItemIDs.Reset();
+	VendorStockSold.Reset();
+	EnsureVendorStockForCurrentStage();
+	// EnsureVendorStockForCurrentStage broadcasts VendorChanged.
 }
 
 bool UT66RunStateSubsystem::IsVendorStockSlotSold(int32 Index) const
@@ -751,6 +846,7 @@ void UT66RunStateSubsystem::HealHearts(int32 Hearts)
 {
 	if (bInLastStand) return;
 	if (Hearts <= 0) return;
+
 	const int32 NewHearts = FMath::Clamp(CurrentHearts + Hearts, 0, MaxHearts);
 	if (NewHearts == CurrentHearts) return;
 	CurrentHearts = NewHearts;
@@ -832,14 +928,40 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 
 void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 {
+	// v1 items: a single "main stat line" that adds flat points to one foundational stat (excluding Speed).
+	// (Secondary/tertiary lines will be added later.)
+
+	ItemStatBonuses = FT66HeroStatBonuses{};
+
+	// Legacy v0 item tuning is now ignored for gameplay. Keep values stable/safe.
 	ItemPowerGivenPercent = 0.f;
 	BonusDamagePercent = 0.f;
 	BonusAttackSpeedPercent = 0.f;
 	DashCooldownReductionPercent = 0.f;
-	float BonusMoveSpeedPercent = 0.f;
-	float BonusArmorPctPoints = 0.f;
-	float BonusEvasionPctPoints = 0.f;
-	int32 BonusLuckFlat = 0;
+	ItemDamageMultiplier = 1.f;
+	ItemAttackSpeedMultiplier = 1.f;
+	DashCooldownMultiplier = 1.f;
+	ItemScaleMultiplier = 1.f;
+	ItemMoveSpeedMultiplier = 1.f;
+	ItemArmorBonus01 = 0.f;
+	ItemEvasionBonus01 = 0.f;
+	ItemBonusLuckFlat = 0;
+
+	auto AddBonus = [&](ET66HeroStatType Type, int32 Delta)
+	{
+		const int32 V = FMath::Clamp(Delta, 0, 9999);
+		if (V <= 0) return;
+		switch (Type)
+		{
+			case ET66HeroStatType::Damage:      ItemStatBonuses.Damage += V; break;
+			case ET66HeroStatType::AttackSpeed: ItemStatBonuses.AttackSpeed += V; break;
+			case ET66HeroStatType::AttackSize:  ItemStatBonuses.AttackSize += V; break;
+			case ET66HeroStatType::Armor:       ItemStatBonuses.Armor += V; break;
+			case ET66HeroStatType::Evasion:     ItemStatBonuses.Evasion += V; break;
+			case ET66HeroStatType::Luck:        ItemStatBonuses.Luck += V; break;
+			default: break;
+		}
+	};
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	for (const FName& ItemID : Inventory)
@@ -847,43 +969,58 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 		if (ItemID.IsNone()) continue;
 
 		FItemData D;
-		if (!GI || !GI->GetItemData(ItemID, D))
+		const bool bHasRow = (GI && GI->GetItemData(ItemID, D));
+
+		ET66HeroStatType StatType = bHasRow ? D.MainStatType : ET66HeroStatType::Damage;
+		int32 StatValue = bHasRow ? D.MainStatValue : 0;
+
+		// If the DT row hasn't been updated yet, derive a reasonable single-stat bonus from the old effect fields.
+		if (bHasRow && StatValue == 0)
 		{
-			// Safe fallback: keep the old v0 feel even if the DT row is missing.
-			if (ItemID == TEXT("Item_01")) { ItemPowerGivenPercent += 5.f; BonusDamagePercent += 10.f; }
-			else if (ItemID == TEXT("Item_02")) { ItemPowerGivenPercent += 7.5f; BonusAttackSpeedPercent += 15.f; }
-			else if (ItemID == TEXT("Item_03")) { ItemPowerGivenPercent += 10.f; DashCooldownReductionPercent += 25.f; }
-			continue;
+			switch (D.EffectType)
+			{
+				case ET66ItemEffectType::BonusDamagePct:
+					StatType = ET66HeroStatType::Damage;
+					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
+					break;
+				case ET66ItemEffectType::BonusAttackSpeedPct:
+					StatType = ET66HeroStatType::AttackSpeed;
+					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
+					break;
+				case ET66ItemEffectType::BonusArmorPctPoints:
+					StatType = ET66HeroStatType::Armor;
+					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f);
+					break;
+				case ET66ItemEffectType::BonusEvasionPctPoints:
+					StatType = ET66HeroStatType::Evasion;
+					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f);
+					break;
+				case ET66ItemEffectType::BonusLuckFlat:
+					StatType = ET66HeroStatType::Luck;
+					StatValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude));
+					break;
+				// Speed is not an item stat; map mobility effects to Evasion as a temporary stand-in.
+				case ET66ItemEffectType::BonusMoveSpeedPct:
+				case ET66ItemEffectType::DashCooldownReductionPct:
+					StatType = ET66HeroStatType::Evasion;
+					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
+					break;
+				default:
+					break;
+			}
 		}
 
-		ItemPowerGivenPercent += D.PowerGivenPercent;
-		switch (D.EffectType)
+		// Safe fallback if row is missing entirely.
+		if (!bHasRow && StatValue == 0)
 		{
-			case ET66ItemEffectType::BonusDamagePct: BonusDamagePercent += D.EffectMagnitude; break;
-			case ET66ItemEffectType::BonusAttackSpeedPct: BonusAttackSpeedPercent += D.EffectMagnitude; break;
-			case ET66ItemEffectType::DashCooldownReductionPct: DashCooldownReductionPercent += D.EffectMagnitude; break;
-			case ET66ItemEffectType::BonusMoveSpeedPct: BonusMoveSpeedPercent += D.EffectMagnitude; break;
-			case ET66ItemEffectType::BonusArmorPctPoints: BonusArmorPctPoints += D.EffectMagnitude; break;
-			case ET66ItemEffectType::BonusEvasionPctPoints: BonusEvasionPctPoints += D.EffectMagnitude; break;
-			case ET66ItemEffectType::BonusLuckFlat: BonusLuckFlat += FMath::RoundToInt(D.EffectMagnitude); break;
-			default: break;
+			if (ItemID == TEXT("Item_01")) { StatType = ET66HeroStatType::Damage; StatValue = 2; }
+			else if (ItemID == TEXT("Item_02")) { StatType = ET66HeroStatType::AttackSpeed; StatValue = 2; }
+			else if (ItemID == TEXT("Item_03")) { StatType = ET66HeroStatType::Evasion; StatValue = 2; }
+			else if (ItemID == TEXT("Item_08")) { StatType = ET66HeroStatType::Luck; StatValue = 2; }
 		}
+
+		AddBonus(StatType, StatValue);
 	}
-
-	const float PowerMult = 1.f + (ItemPowerGivenPercent / 100.f);
-	const float DamageMult = 1.f + (BonusDamagePercent / 100.f);
-	const float AttackSpeedMult = 1.f + (BonusAttackSpeedPercent / 100.f);
-	const float DashCdMult = 1.f - (DashCooldownReductionPercent / 100.f);
-
-	ItemDamageMultiplier = FMath::Clamp(PowerMult * DamageMult, 0.1f, 100.f);
-	ItemAttackSpeedMultiplier = FMath::Clamp(PowerMult * AttackSpeedMult, 0.1f, 100.f);
-	DashCooldownMultiplier = FMath::Clamp(DashCdMult, 0.05f, 1.f);
-	ItemScaleMultiplier = FMath::Clamp(PowerMult, 0.1f, 10.f);
-
-	ItemMoveSpeedMultiplier = FMath::Clamp(1.f + (BonusMoveSpeedPercent / 100.f), 0.1f, 10.f);
-	ItemArmorBonus01 = FMath::Clamp(BonusArmorPctPoints / 100.f, 0.f, 0.80f);
-	ItemEvasionBonus01 = FMath::Clamp(BonusEvasionPctPoints / 100.f, 0.f, 0.60f);
-	ItemBonusLuckFlat = FMath::Clamp(BonusLuckFlat, 0, 9999);
 }
 
 void UT66RunStateSubsystem::ResetForNewRun()
@@ -934,6 +1071,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 		HeroLevel = FMath::Clamp(DefaultHeroLevel + (Steps * 10), 1, 9999);
 		bInStageBoost = T66GI->bStageBoostPending;
 	}
+	InitializeHeroStatsForNewRun();
 	HeroXP = 0;
 	XPToNextLevel = DefaultXPToLevel;
 	UltimateCooldownRemainingSeconds = 0.f;

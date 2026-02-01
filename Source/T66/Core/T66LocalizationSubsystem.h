@@ -422,6 +422,10 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
 	FText GetText_Lore() const;
+
+	/** "Base Stats" section header in the hero selection description panel. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
+	FText GetText_BaseStatsHeader() const;
 	
 	// Skin names
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Skins")
@@ -439,6 +443,26 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|CompanionSelection")
 	FText GetText_ConfirmCompanion() const;
+
+	// Companion Union (selection UI)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|CompanionSelection")
+	FText GetText_Union() const;
+
+	/** Format string: "Union: {0}/{1}" */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|CompanionSelection")
+	FText GetText_UnionProgressFormat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|CompanionSelection")
+	FText GetText_BasicHealing() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|CompanionSelection")
+	FText GetText_GoodHealing() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|CompanionSelection")
+	FText GetText_MediumHealing() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|CompanionSelection")
+	FText GetText_HyperHealing() const;
 	
 	// Data - Hero and Companion Names
 	// These functions return localized names for heroes/companions by ID
@@ -450,6 +474,36 @@ public:
 	/** Localized hero description blurb (placeholder text per hero) */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
 	FText GetText_HeroDescription(FName HeroID) const;
+
+	/** Short per-hero quote shown on the Hero Info panel (new strings; safe to machine-translate). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
+	FText GetText_HeroQuote(FName HeroID) const;
+
+	// Stats (shared labels)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_Damage() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_AttackSpeed() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_AttackSize() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_Armor() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_Evasion() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_Luck() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_Speed() const;
+
+	/** Format string: "{0}: {1}" */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_StatLineFormat() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
 	FText GetText_CompanionName(FName CompanionID) const;
@@ -492,6 +546,12 @@ public:
 	FText GetText_Vendor() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_VendorDialoguePrompt() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_IWantToShop() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
 	FText GetText_Shop() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
@@ -502,6 +562,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
 	FText GetText_Steal() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")
+	FText GetText_Reroll() const;
 
 	// Gameplay overlays / prompts
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
@@ -628,7 +691,7 @@ public:
 	FText GetText_GoldFormat() const; // "Gold: {0}"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
-	FText GetText_OweFormat() const; // "Owe: {0}"
+	FText GetText_OweFormat() const; // "Debt: {0}"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
 	FText GetText_StageNumberFormat() const; // "Stage number: {0}"

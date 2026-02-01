@@ -173,6 +173,11 @@ void AT66PlayerController::SetupInputComponent()
 		// Manual attack lock/unlock (mouse only)
 		InputComponent->BindAction(TEXT("AttackLock"), IE_Pressed, this, &AT66PlayerController::HandleAttackLockPressed);
 		InputComponent->BindAction(TEXT("AttackUnlock"), IE_Pressed, this, &AT66PlayerController::HandleAttackUnlockPressed);
+
+		// TikTok next/prev (hard-bound; no mouse required). Only acts while viewer is open.
+		// User preference: Q = Next, E = Previous.
+		InputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AT66PlayerController::HandleTikTokNextPressed);
+		InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AT66PlayerController::HandleTikTokPrevPressed);
 	}
 }
 
@@ -211,7 +216,8 @@ void AT66PlayerController::HandleToggleMediaViewerPressed()
 	if (UT66MediaViewerSubsystem* MV = GI ? GI->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
 	{
 		MV->ToggleMediaViewer();
-		UE_LOG(LogTemp, Log, TEXT("MediaViewer toggled: %s"), MV->IsMediaViewerOpen() ? TEXT("OPEN") : TEXT("CLOSED"));
+		const bool bNowOpen = MV->IsMediaViewerOpen();
+		UE_LOG(LogTemp, Log, TEXT("MediaViewer toggled: %s"), bNowOpen ? TEXT("OPEN") : TEXT("CLOSED"));
 	}
 }
 
@@ -266,6 +272,7 @@ void AT66PlayerController::HandleRestartRunPressed()
 bool AT66PlayerController::CanUseCombatMouseInput() const
 {
 	// Suppress combat mouse inputs if a modal overlay is active (cursor is visible for UI).
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	return IsGameplayLevel()
 		&& !(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 		&& !(GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
@@ -392,6 +399,34 @@ void AT66PlayerController::HandleToggleTikTokPressed()
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->ToggleTikTokPlaceholder();
+	}
+}
+
+void AT66PlayerController::HandleTikTokPrevPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	if (UT66MediaViewerSubsystem* MV = GI ? GI->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
+	{
+		if (MV->IsMediaViewerOpen())
+		{
+			MV->TikTokPrev();
+		}
+	}
+}
+
+void AT66PlayerController::HandleTikTokNextPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	if (UT66MediaViewerSubsystem* MV = GI ? GI->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
+	{
+		if (MV->IsMediaViewerOpen())
+		{
+			MV->TikTokNext();
+		}
 	}
 }
 
@@ -704,6 +739,22 @@ void AT66PlayerController::EnsureGameplayUIManager()
 void AT66PlayerController::HandleEscapePressed()
 {
 	if (!IsGameplayLevel()) return;
+
+	// Esc as back: close Media Viewer before other UI.
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			if (MV->IsMediaViewerOpen())
+			{
+				MV->SetMediaViewerOpen(false);
+				SetIgnoreMoveInput(false);
+				SetIgnoreLookInput(false);
+				RestoreGameplayInputMode();
+				return;
+			}
+		}
+	}
 
 	// Esc as back: close the full map before opening pause menu.
 	if (GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())

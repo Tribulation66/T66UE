@@ -109,7 +109,9 @@ void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType)
 {
 	PreviewYawDegrees = 0.f;
 	OrbitPitchDegrees = 8.f;
+	PreviewZoomMultiplier = 1.0f;
 	UpdatePreviewPawn(HeroID, BodyType);
+	ApplyShadowSettings();
 	bHasOrbitFrame = false;
 	FrameCameraToPreview();
 	CapturePreview();
@@ -122,12 +124,21 @@ void AT66HeroPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
 	FrameCameraToPreview();
 }
 
+void AT66HeroPreviewStage::AddPreviewZoom(float WheelDelta)
+{
+	// WheelDelta: positive = wheel up (zoom in), negative = wheel down (zoom out).
+	// We clamp max zoom-out to the default framing, so wheel down just returns toward 1.0.
+	static constexpr float StepPerWheel = 0.08f;
+	const float MinZ = FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f);
+	PreviewZoomMultiplier = FMath::Clamp(PreviewZoomMultiplier - (WheelDelta * StepPerWheel), MinZ, 1.0f);
+	FrameCameraToPreview();
+}
+
 void AT66HeroPreviewStage::AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees)
 {
-	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
-	OrbitPitchDegrees = FMath::Clamp(OrbitPitchDegrees + DeltaPitchDegrees, 0.f, 70.f);
-	ApplyPreviewRotation();
-	FrameCameraToPreview();
+	// Keep preview as a simple 360 view (no vertical pitch).
+	(void)DeltaPitchDegrees;
+	AddPreviewYaw(DeltaYawDegrees);
 }
 
 UPrimitiveComponent* AT66HeroPreviewStage::GetPreviewTargetComponent() const
@@ -178,7 +189,10 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	// Fit the whole bounds sphere in view.
 	const float HalfFovRad = FMath::DegreesToRadians(SceneCapture->FOVAngle * 0.5f);
 	// Slightly "zoomed in" so the character feels large (Dota-style).
-	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * 1.05f;
+	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier, 0.60f, 2.0f);
+	const float ZoomMult = FMath::Clamp(PreviewZoomMultiplier, FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f), 1.0f);
+	const float EffectiveMult = FMath::Clamp(BaseMult * ZoomMult, 0.25f, BaseMult);
+	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * EffectiveMult;
 
 	const float PitchRad = FMath::DegreesToRadians(OrbitPitchDegrees);
 	const float Z = (FMath::Sin(PitchRad) * Dist) + (Radius * 0.12f);
@@ -213,9 +227,36 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	if (PreviewPlatform)
 	{
 		// Put platform just below feet.
-		PreviewPlatform->SetWorldLocation(FVector(Center.X, Center.Y, OrbitBottomZ - 6.f));
+		PreviewPlatform->SetWorldLocation(FVector(Center.X + PlatformForwardOffset, Center.Y, OrbitBottomZ - 6.f));
 		const float S = FMath::Clamp((Radius / 50.f) * 1.6f, 1.2f, 6.0f);
 		PreviewPlatform->SetWorldScale3D(FVector(S, S, 0.08f));
+	}
+}
+
+void AT66HeroPreviewStage::ApplyShadowSettings()
+{
+	if (!bDisablePreviewShadows)
+	{
+		return;
+	}
+
+	if (PreviewPlatform)
+	{
+		PreviewPlatform->SetCastShadow(false);
+	}
+
+	if (!PreviewPawn)
+	{
+		return;
+	}
+
+	// Disable shadow casting on all primitive components of the preview pawn (skeletal mesh, placeholder mesh, etc.).
+	TInlineComponentArray<UPrimitiveComponent*> PrimComps;
+	PreviewPawn->GetComponents(PrimComps);
+	for (UPrimitiveComponent* Prim : PrimComps)
+	{
+		if (!Prim) continue;
+		Prim->SetCastShadow(false);
 	}
 }
 

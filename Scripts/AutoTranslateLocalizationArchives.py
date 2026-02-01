@@ -16,6 +16,10 @@ to compile updated .locres files.
 Notes
 - This produces *machine translations* intended as a first pass; it is not a substitute for professional localization QA.
 - Preserves format placeholders like {0}, {1}, and tries not to touch pure-symbol strings.
+- By default this script is **non-destructive**:
+  - It only fills missing/empty translations (and optionally refreshes entries it previously auto-translated when the English
+    source text changes).
+  - It does NOT overwrite existing non-empty translations that were not created by this script (so human translations are safe).
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ from __future__ import annotations
 import os
 import json
 import re
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -33,6 +38,7 @@ LOC_ROOT = ROOT / "Content" / "Localization" / "T66"
 SOURCE_ARCHIVE = LOC_ROOT / "en" / "T66.archive"
 ARGOS_CACHE_DIR = ROOT / "Saved" / "Localization" / "ArgosModels"
 LOCK_FILE = ROOT / "Saved" / "Localization" / "AutoTranslateLocalizationArchives.lock"
+STATE_FILE = ROOT / "Saved" / "Localization" / "AutoTranslateLocalizationArchives.state.json"
 
 # Argos uses Stanza by default for sentence chunking, but newer Stanza versions can break some languages.
 # We force Spacy-based chunking for stability.
@@ -88,6 +94,31 @@ def _read_json_utf16(path: Path) -> Any:
 
 def _write_json_utf16(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-16")
+
+def _sha1_utf8(s: str) -> str:
+    return hashlib.sha1(s.encode("utf-8")).hexdigest()
+
+def _read_state() -> Dict[str, Dict[str, str]]:
+    """
+    State format:
+      {
+        "<culture>": {
+          "<namespace>|<key>": "<sha1(source_text)>"
+        }
+      }
+    Only entries present in this state are considered "owned" by the auto-translator for refresh-on-source-change.
+    """
+    try:
+        if not STATE_FILE.exists():
+            return {}
+        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        # Fail open: treat as no prior state.
+        return {}
+
+def _write_state(state: Dict[str, Dict[str, str]]) -> None:
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _is_only_symbols_or_whitespace(s: str) -> bool:
@@ -246,6 +277,9 @@ def main() -> int:
         source_root = _read_json_utf16(SOURCE_ARCHIVE)
         source_children = _walk_archive_children(source_root)
 
+        state = _read_state()
+        state_changed = False
+
         # Collect all distinct Argos codes we need.
         argos_to_codes = sorted({_get_argos_code(c) for c in TARGET_CULTURES})
 
@@ -276,7 +310,15 @@ def main() -> int:
             if translator is None:
                 raise RuntimeError(f"No translator available for {culture} (argos code {argos_code})")
 
-            updated = 0
+            # State bucket per culture
+            culture_state = state.get(culture, {})
+            if not isinstance(culture_state, dict):
+                culture_state = {}
+
+            filled = 0
+            refreshed = 0
+            skipped = 0
+            changed_any = False
             for ns, src_child in source_children:
                 key = src_child.get("Key", "") or ""
                 src_text = (src_child.get("Source") or {}).get("Text", "")
@@ -286,6 +328,28 @@ def main() -> int:
                 tgt_child = target_map.get((ns, key))
                 if not tgt_child:
                     # If key/namespace missing, skip (shouldn't happen)
+                    continue
+
+                entry_id = f"{ns}|{key}"
+                src_hash = _sha1_utf8(src_text)
+
+                # Existing translation?
+                existing_translation = ""
+                if isinstance(tgt_child.get("Translation"), dict):
+                    existing_translation = str(tgt_child["Translation"].get("Text", "") or "")
+
+                # Decide whether we should write:
+                # - Fill if missing/empty
+                # - Also treat "same as English" as effectively untranslated for non-symbol text
+                # - Refresh only if this entry was previously auto-translated by this script and the English source changed
+                should_fill = (existing_translation.strip() == "")
+                if (not should_fill) and (not _is_only_symbols_or_whitespace(src_text)) and (existing_translation == src_text):
+                    should_fill = True
+
+                should_refresh = (entry_id in culture_state) and (culture_state.get(entry_id) != src_hash)
+
+                if not should_fill and not should_refresh:
+                    skipped += 1
                     continue
 
                 if _is_only_symbols_or_whitespace(src_text):
@@ -298,11 +362,34 @@ def main() -> int:
                 tgt_child.setdefault("Translation", {})
                 if not isinstance(tgt_child["Translation"], dict):
                     tgt_child["Translation"] = {}
-                tgt_child["Translation"]["Text"] = translated
-                updated += 1
+                if tgt_child["Translation"].get("Text") != translated:
+                    tgt_child["Translation"]["Text"] = translated
+                    changed_any = True
 
-            _write_json_utf16(target_archive, target_root)
-            print(f"[ok] {culture}: updated {updated} entries", flush=True)
+                # Mark as owned by auto-translator so we can refresh when English changes in the future.
+                if culture_state.get(entry_id) != src_hash:
+                    culture_state[entry_id] = src_hash
+                    state_changed = True
+
+                if should_refresh:
+                    refreshed += 1
+                else:
+                    filled += 1
+
+            if changed_any:
+                _write_json_utf16(target_archive, target_root)
+
+            # Persist culture state back into global state
+            if state.get(culture) != culture_state:
+                state[culture] = culture_state
+
+            print(
+                f"[ok] {culture}: filled {filled}, refreshed {refreshed}, skipped {skipped} (total {filled + refreshed + skipped})",
+                flush=True,
+            )
+
+        if state_changed:
+            _write_state(state)
 
         print("[done] archives updated. Re-run compile to regenerate .locres.", flush=True)
         return 0

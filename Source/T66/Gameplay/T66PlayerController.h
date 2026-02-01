@@ -131,6 +131,10 @@ protected:
 	/** Toggle TikTok placeholder panel (gameplay only, O key). */
 	void HandleToggleTikTokPressed();
 
+	/** TikTok controls while viewer is open (no mouse needed). */
+	void HandleTikTokPrevPressed();
+	void HandleTikTokNextPressed();
+
 	/** Interact (F): vendor sell or pickup collect */
 	void HandleInteractPressed();
 

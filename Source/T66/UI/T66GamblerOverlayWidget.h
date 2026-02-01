@@ -12,6 +12,8 @@ class SWidgetSwitcher;
 class SButton;
 template<typename NumericType> class SSpinBox;
 class SBox;
+class SBorder;
+class SImage;
 
 /** Full-screen, non-pausing Gambler UI (dialogue -> casino -> minigames). */
 UCLASS(Blueprintable)
@@ -37,13 +39,28 @@ private:
 	};
 
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
+	TSharedPtr<SWidgetSwitcher> CasinoSwitcher;
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> StatusText;
 
-	// Anger meter (0..1)
-	TSharedPtr<SBox> AngerFillBox;
+	// Anger indicator (0..1) - circle color + optional text
+	TSharedPtr<SImage> AngerCircleImage;
 	TSharedPtr<STextBlock> AngerText;
+
+	// Inventory strip (shared with vendor)
+	static constexpr int32 InventorySlotCount = 5;
+	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
+	TArray<TSharedPtr<SButton>> InventorySlotButtons;
+	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
+	int32 SelectedInventoryIndex = -1;
+
+	// Sell panel
+	TSharedPtr<SBox> SellPanelContainer;
+	TSharedPtr<STextBlock> SellItemNameText;
+	TSharedPtr<STextBlock> SellItemDescText;
+	TSharedPtr<STextBlock> SellItemPriceText;
+	TSharedPtr<SButton> SellItemButton;
 
 	// Cheat prompt overlay
 	TSharedPtr<SBox> CheatPromptContainer;
@@ -104,6 +121,9 @@ private:
 	FReply OnDialogueGamble();
 	FReply OnDialogueTeleport();
 
+	FReply OnSelectInventorySlot(int32 InventoryIndex);
+	FReply OnSellSelectedClicked();
+
 	FReply OnGambleMax();
 	FReply OnBorrowClicked();
 	FReply OnPaybackMax();
@@ -127,6 +147,8 @@ private:
 
 	void SetPage(EGamblerPage Page);
 	void RefreshTopBar();
+	void RefreshInventory();
+	void RefreshSellPanel();
 	bool IsBossActive() const;
 	bool TryPayToPlay();
 	void AwardWin();

@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66StageGate.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Components/BoxComponent.h"
@@ -56,6 +57,15 @@ bool AT66StageGate::AdvanceToNextStage()
 		// Return to GameplayLevel (checkpoint stage is already set before entering Coliseum).
 		UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Maps/GameplayLevel")));
 		return true;
+	}
+
+	// Companion Union: clearing stages with a companion increases Union for that companion (profile progression).
+	if (!T66GI->SelectedCompanionID.IsNone())
+	{
+		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Ach->AddCompanionUnionStagesCleared(T66GI->SelectedCompanionID, 1);
+		}
 	}
 
 	const int32 NextStage = RunState->GetCurrentStage() + 1;

@@ -93,6 +93,7 @@ private:
 	// Widgets that need updating
 	TSharedPtr<STextBlock> HeroNameWidget;        // Hero name in right panel below Hero Info
 	TSharedPtr<STextBlock> HeroDescWidget;        // Description in right panel
+	TSharedPtr<STextBlock> HeroLoreWidget;        // Lore text when Lore panel is open
 	TSharedPtr<SBorder> HeroPreviewColorBox;      // Fallback colored box when no 3D preview
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
 
@@ -117,6 +118,9 @@ private:
 	void GeneratePlaceholderSkins();
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
+
+	/** True when the Lore panel is visible (right-side panel swaps to lore). */
+	bool bShowingLore = false;
 
 	// Handle language change to rebuild UI
 	UFUNCTION()

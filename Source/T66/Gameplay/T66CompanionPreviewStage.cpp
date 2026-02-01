@@ -95,7 +95,9 @@ void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID)
 {
 	PreviewYawDegrees = 0.f;
 	OrbitPitchDegrees = 8.f;
+	PreviewZoomMultiplier = 1.0f;
 	UpdatePreviewPawn(CompanionID);
+	ApplyShadowSettings();
 	bHasOrbitFrame = false;
 	FrameCameraToPreview();
 	CapturePreview();
@@ -108,12 +110,19 @@ void AT66CompanionPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
 	FrameCameraToPreview();
 }
 
+void AT66CompanionPreviewStage::AddPreviewZoom(float WheelDelta)
+{
+	static constexpr float StepPerWheel = 0.08f;
+	const float MinZ = FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f);
+	PreviewZoomMultiplier = FMath::Clamp(PreviewZoomMultiplier - (WheelDelta * StepPerWheel), MinZ, 1.0f);
+	FrameCameraToPreview();
+}
+
 void AT66CompanionPreviewStage::AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees)
 {
-	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
-	OrbitPitchDegrees = FMath::Clamp(OrbitPitchDegrees + DeltaPitchDegrees, 0.f, 70.f);
-	ApplyPreviewRotation();
-	FrameCameraToPreview();
+	// Keep preview as a simple 360 view (no vertical pitch).
+	(void)DeltaPitchDegrees;
+	AddPreviewYaw(DeltaYawDegrees);
 }
 
 UPrimitiveComponent* AT66CompanionPreviewStage::GetPreviewTargetComponent() const
@@ -156,7 +165,10 @@ void AT66CompanionPreviewStage::FrameCameraToPreview()
 	const float Radius = OrbitRadius;
 
 	const float HalfFovRad = FMath::DegreesToRadians(SceneCapture->FOVAngle * 0.5f);
-	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * 1.05f;
+	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier, 0.60f, 2.0f);
+	const float ZoomMult = FMath::Clamp(PreviewZoomMultiplier, FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f), 1.0f);
+	const float EffectiveMult = FMath::Clamp(BaseMult * ZoomMult, 0.25f, BaseMult);
+	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * EffectiveMult;
 
 	const float PitchRad = FMath::DegreesToRadians(OrbitPitchDegrees);
 	const float Z = (FMath::Sin(PitchRad) * Dist) + (Radius * 0.12f);
@@ -189,9 +201,35 @@ void AT66CompanionPreviewStage::FrameCameraToPreview()
 	if (PreviewFloor && PreviewPawn)
 	{
 		// Keep floor under the pawn's origin so "ground" is stable.
-		PreviewFloor->SetWorldLocation(FVector(Center.X, Center.Y, OrbitBottomZ - 6.f));
+		PreviewFloor->SetWorldLocation(FVector(Center.X + FloorForwardOffset, Center.Y, OrbitBottomZ - 6.f));
 		const float S = FMath::Clamp((Radius / 50.f) * 1.6f, 1.2f, 6.0f);
 		PreviewFloor->SetWorldScale3D(FVector(S, S, 0.08f));
+	}
+}
+
+void AT66CompanionPreviewStage::ApplyShadowSettings()
+{
+	if (!bDisablePreviewShadows)
+	{
+		return;
+	}
+
+	if (PreviewFloor)
+	{
+		PreviewFloor->SetCastShadow(false);
+	}
+
+	if (!PreviewPawn)
+	{
+		return;
+	}
+
+	TInlineComponentArray<UPrimitiveComponent*> PrimComps;
+	PreviewPawn->GetComponents(PrimComps);
+	for (UPrimitiveComponent* Prim : PrimComps)
+	{
+		if (!Prim) continue;
+		Prim->SetCastShadow(false);
 	}
 }
 

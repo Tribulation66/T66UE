@@ -7,6 +7,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66VendorBoss.h"
+#include "Gameplay/T66GamblerNPC.h"
 #include "Data/T66DataTypes.h"
 #include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
@@ -19,6 +20,8 @@
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
+#include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
 
 static UT66RunStateSubsystem* GetRunStateFromWorld(UWorld* World)
@@ -125,13 +128,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FText ShopTitle = Loc ? Loc->GetText_Shop() : NSLOCTEXT("T66.Vendor", "ShopTitle", "SHOP");
 	const FText BankTitle = Loc ? Loc->GetText_Bank() : NSLOCTEXT("T66.Vendor", "BankTitle", "BANK");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	const FText AngerLabel = Loc ? Loc->GetText_Anger() : NSLOCTEXT("T66.Common", "Anger", "ANGER");
-	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "YOUR ITEMS");
+	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
+	const FText RerollText = Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.Vendor", "Reroll", "REROLL");
 
 	const TArray<FName> EmptyStock;
 	const TArray<FName>& Stock = RunState ? RunState->GetVendorStockItemIDs() : EmptyStock;
 
-	static constexpr int32 ShopSlotCount = 4;
+	static constexpr int32 ShopSlotCount = 3;
 	ItemNameTexts.SetNum(ShopSlotCount);
 	ItemDescTexts.SetNum(ShopSlotCount);
 	ItemPriceTexts.SetNum(ShopSlotCount);
@@ -153,7 +156,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		ShopGrid->AddSlot(i, 0)
 		[
 			SNew(SBox)
-			.MinDesiredWidth(340.f)
+			.MinDesiredWidth(400.f)
 			[
 				SAssignNew(ItemTileBorders[i], SBorder)
 				.BorderImage(Style.GetBrush("T66.Brush.Panel"))
@@ -190,13 +193,6 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								.TextStyle(&TextHeading)
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(Loc ? Loc->GetText_Upgrade() : NSLOCTEXT("T66.Vendor", "UpgradeTag", "UPGRADE"))
-								.TextStyle(&TextChip)
-								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-							]
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
@@ -209,42 +205,43 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
-						SAssignNew(ItemPriceTexts[i], STextBlock)
-						.Text(FText::GetEmpty())
-						.TextStyle(&TextChip)
-						.ColorAndOpacity(FT66Style::Tokens::Accent2)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space2, 0.f)
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SAssignNew(BuyButtons[i], SButton)
-							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i))
-							.ButtonStyle(&BtnPrimary)
-							.ContentPadding(FMargin(16.f, 12.f))
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
+							SNew(SBox)
+							.MinDesiredWidth(260.f)
 							[
-								SAssignNew(BuyButtonTexts[i], STextBlock)
-								.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
-								.TextStyle(&TextButton)
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								SAssignNew(BuyButtons[i], SButton)
+								.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i))
+								.ButtonStyle(&BtnPrimary)
+								.ContentPadding(FMargin(12.f, 10.f))
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								[
+									SAssignNew(BuyButtonTexts[i], STextBlock)
+									.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
+									.Font(FT66Style::Tokens::FontBold(14))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
 							]
 						]
-						+ SHorizontalBox::Slot().FillWidth(1.f)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
 						[
-							SAssignNew(StealButtons[i], SButton)
-							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i))
-							.ButtonStyle(&BtnDanger)
-							.ContentPadding(FMargin(16.f, 12.f))
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
+							SNew(SBox)
+							.MinDesiredWidth(260.f)
 							[
-								SNew(STextBlock)
-								.Text(Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"))
-								.TextStyle(&TextButton)
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								SAssignNew(StealButtons[i], SButton)
+								.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i))
+								.ButtonStyle(&BtnDanger)
+								.ContentPadding(FMargin(12.f, 10.f))
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								[
+									SNew(STextBlock)
+									.Text(Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"))
+									.Font(FT66Style::Tokens::FontBold(14))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
 							]
 						]
 					]
@@ -332,138 +329,180 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			]
 		];
 
-	TSharedRef<SWidget> Root =
-		SNew(SOverlay)
-		+ SOverlay::Slot()
-		[
-			SNew(SBorder)
-			.BorderImage(Style.GetBrush("T66.Brush.Bg"))
-			.BorderBackgroundColor(FT66Style::Tokens::Scrim)
-			.Padding(24.f)
+	auto MakeTitle = [&](const FText& Text) -> TSharedRef<SWidget>
+	{
+		return SNew(STextBlock)
+			.Text(Text)
+			.TextStyle(&TextTitle)
+			.ColorAndOpacity(FT66Style::Tokens::Text);
+	};
+
+	auto MakeButton = [&](const FText& Text, const FOnClicked& OnClicked, const FButtonStyle* BtnStyle = nullptr) -> TSharedRef<SWidget>
+	{
+		const FButtonStyle* Use = BtnStyle ? BtnStyle : &BtnNeutral;
+		return SNew(SBox)
+			.MinDesiredWidth(420.f)
+			.HeightOverride(56.f)
+			.Padding(FMargin(0.f, 8.f))
 			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
+				SNew(SButton)
+				.OnClicked(OnClicked)
+				.IsEnabled_Lambda([this]() { return !IsBossActive(); })
+				.ButtonStyle(Use)
+				.ContentPadding(FMargin(18.f, 10.f))
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					SNew(STextBlock)
+					.Text(Text)
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+			];
+	};
+
+	const FText VendorPrompt = Loc ? Loc->GetText_VendorDialoguePrompt() : NSLOCTEXT("T66.Vendor", "VendorDialoguePrompt", "What do you want?");
+	const FText ShopChoice = Loc ? Loc->GetText_IWantToShop() : NSLOCTEXT("T66.Vendor", "IWantToShop", "I want to shop");
+	const FText TeleportChoice = Loc ? Loc->GetText_TeleportMeToYourBrother() : NSLOCTEXT("T66.Gambler", "TeleportMeToYourBrother", "Teleport me to your brother");
+
+	TSharedRef<SWidget> DialoguePage =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 20.f)
+		[ MakeTitle(VendorTitle) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f)
+		[
+			SNew(STextBlock)
+			.Text(VendorPrompt)
+			.TextStyle(&TextBody)
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+		]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+		[ MakeButton(ShopChoice, FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnDialogueShop), &BtnPrimary) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+		[ MakeButton(TeleportChoice, FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnDialogueTeleport), &BtnNeutral) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+		[
+			SNew(SBox)
+			.MinDesiredWidth(420.f)
+			.HeightOverride(56.f)
+			.Padding(FMargin(0.f, 8.f))
+			[
+				SNew(SButton)
+				.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack))
+				.ButtonStyle(&BtnNeutral)
+				.ContentPadding(FMargin(18.f, 10.f))
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(BackText)
+					.TextStyle(&TextButton)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+			]
+		];
+
+	TSharedRef<SWidget> ShopPage =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(VendorTitle)
+				.TextStyle(&TextTitle)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+		[
+			SAssignNew(StatusText, STextBlock)
+			.Text(FText::GetEmpty())
+			.TextStyle(&TextBody)
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+		]
+		+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
+			[
+				SNew(SBorder)
+				.BorderImage(Style.GetBrush("T66.Brush.Panel"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.Padding(FT66Style::Tokens::Space6)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 					[
-						SNew(STextBlock)
-						.Text(VendorTitle)
-						.TextStyle(&TextTitle)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						SNew(SSpacer)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						SNew(SBox).WidthOverride(420.f)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
-								[
-									SAssignNew(GoldText, STextBlock)
-									.Text(FText::Format(
-										Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
-										FText::AsNumber(0)))
-									.TextStyle(&TextHeading)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-								[
-									SAssignNew(DebtText, STextBlock)
-									.Text(FText::Format(
-										Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}"),
-										FText::AsNumber(0)))
-									.TextStyle(&TextBody)
-									.ColorAndOpacity(FT66Style::Tokens::Danger)
-								]
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-								[
-									SNew(STextBlock)
-									.Text(AngerLabel)
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-								]
-								+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-								[
-									SNew(SBorder)
-									.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-									.BorderBackgroundColor(FT66Style::Tokens::Panel2)
-									.Padding(2.f)
-									[
-										SNew(SOverlay)
-										+ SOverlay::Slot()
-										[
-											SAssignNew(AngerFillBox, SBox)
-											.WidthOverride(0.f)
-											[
-												SNew(SBorder)
-												.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-												.BorderBackgroundColor(FT66Style::Tokens::Danger)
-											]
-										]
-									]
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
-								[
-									SAssignNew(AngerText, STextBlock)
-									.Text(FText::Format(
-										NSLOCTEXT("T66.Vendor", "AngerValueFormat", "{0}/{1}"),
-										FText::AsNumber(0),
-										FText::AsNumber(UT66RunStateSubsystem::VendorAngerThresholdGold)))
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-								]
-							]
+							SNew(STextBlock)
+							.Text(ShopTitle)
+							.TextStyle(&TextHeading)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
-					]
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
-				[
-					SAssignNew(StatusText, STextBlock)
-					.Text(FText::GetEmpty())
-					.TextStyle(&TextBody)
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				]
-				+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
-					[
-						SNew(SBorder)
-						.BorderImage(Style.GetBrush("T66.Brush.Panel"))
-						.BorderBackgroundColor(FT66Style::Tokens::Panel)
-						.Padding(FT66Style::Tokens::Space6)
+						+ SHorizontalBox::Slot().FillWidth(1.f)
 						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
+							SNew(SSpacer)
+						]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+						[
+							SNew(SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll))
+							.IsEnabled_Lambda([this]() { return !IsBossActive(); })
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(16.f, 10.f))
 							[
 								SNew(STextBlock)
-								.Text(ShopTitle)
-								.TextStyle(&TextHeading)
+								.Text(RerollText)
+								.TextStyle(&TextButton)
 								.ColorAndOpacity(FT66Style::Tokens::Text)
-							]
-							+ SVerticalBox::Slot().FillHeight(1.f)
-							[
-								ShopGrid
 							]
 						]
 					]
-					+ SHorizontalBox::Slot().AutoWidth()
+					+ SVerticalBox::Slot().FillHeight(1.f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().FillWidth(1.f)
+						[
+							SNew(SSpacer)
+						]
+						+ SHorizontalBox::Slot().AutoWidth()
+						[
+							ShopGrid
+						]
+					]
+				]
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				SNew(SBorder)
+				.BorderImage(Style.GetBrush("T66.Brush.Panel"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.Padding(FT66Style::Tokens::Space6)
+				[
+					SNew(SVerticalBox)
+					// Anger circle (top)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
+					[
+						SNew(SBox)
+						.WidthOverride(220.f)
+						.HeightOverride(220.f)
+						[
+							SAssignNew(AngerCircleImage, SImage)
+							.Image(Style.GetBrush("T66.Brush.Circle"))
+							.ColorAndOpacity(FLinearColor::White)
+						]
+					]
+					// Bank (bottom, separate panel)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 					[
 						SNew(SBorder)
-						.BorderImage(Style.GetBrush("T66.Brush.Panel"))
-						.BorderBackgroundColor(FT66Style::Tokens::Panel)
-						.Padding(FT66Style::Tokens::Space6)
+						.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+						.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+						.Padding(FT66Style::Tokens::Space5)
 						[
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
@@ -477,13 +516,17 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							[
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-								[ SNew(STextBlock).Text(Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Label", "Borrow")).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
-									SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
-									.MinValue(0).MaxValue(999999).Delta(10)
-									.Value_Lambda([this]() { return BorrowAmount; })
-									.OnValueChanged_Lambda([this](int32 V) { BorrowAmount = FMath::Max(0, V); })
+									SNew(SBox)
+									.WidthOverride(110.f)
+									.HeightOverride(44.f)
+									[
+										SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
+										.MinValue(0).MaxValue(999999).Delta(10)
+										.Font(FT66Style::Tokens::FontBold(16))
+										.Value_Lambda([this]() { return BorrowAmount; })
+										.OnValueChanged_Lambda([this](int32 V) { BorrowAmount = FMath::Max(0, V); })
+									]
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
@@ -498,13 +541,25 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							[
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-								[ SNew(STextBlock).Text(Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Label", "Payback")).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+								[
+									SNew(SBox)
+									.WidthOverride(110.f)
+									.HeightOverride(44.f)
+									[
+										SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
+										.MinValue(0).MaxValue(999999).Delta(10)
+										.Font(FT66Style::Tokens::FontBold(16))
+										.Value_Lambda([this]() { return PaybackAmount; })
+										.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
+									]
+								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
-									SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
-									.MinValue(0).MaxValue(999999).Delta(10)
-									.Value_Lambda([this]() { return PaybackAmount; })
-									.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
+									SNew(SButton)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnPaybackMax))
+									.ButtonStyle(&BtnNeutral)
+									.ContentPadding(FMargin(16.f, 10.f))
+									[ SNew(STextBlock).Text(Loc ? Loc->GetText_Max() : NSLOCTEXT("T66.Common", "Max", "MAX")).TextStyle(&TextButton).ColorAndOpacity(FT66Style::Tokens::Text) ]
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
@@ -518,185 +573,257 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						]
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
+		[
+			SNew(SButton)
+			.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack))
+			.ButtonStyle(&BtnNeutral)
+			.ContentPadding(FMargin(20.f, 12.f))
+			[
+				SNew(STextBlock)
+				.Text(BackText)
+				.TextStyle(&TextButton)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+		[
+			SNew(SBorder)
+			.BorderImage(Style.GetBrush("T66.Brush.Panel"))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel)
+			.Padding(FT66Style::Tokens::Space6)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
 				[
-					SNew(SBorder)
-					.BorderImage(Style.GetBrush("T66.Brush.Panel"))
-					.BorderBackgroundColor(FT66Style::Tokens::Panel)
-					.Padding(FT66Style::Tokens::Space6)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							SNew(STextBlock)
-							.Text(InventoryTitle)
-							.TextStyle(&TextHeading)
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
-						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().FillWidth(1.f)
-							[
+						SNew(STextBlock)
+						.Text(InventoryTitle)
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(18.f, 0.f, 16.f, 0.f)
+					[
+						SAssignNew(GoldText, STextBlock)
+						.Text(FText::Format(
+							Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
+							FText::AsNumber(0)))
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SAssignNew(DebtText, STextBlock)
+						.Text(FText::Format(
+							Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}"),
+							FText::AsNumber(0)))
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Danger)
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						SNew(SSpacer)
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
 								// Inventory slots
 								SNew(SUniformGridPanel)
-								.SlotPadding(FMargin(FT66Style::Tokens::Space2, 0.f))
-								+ SUniformGridPanel::Slot(0, 0)
-								[
-									SAssignNew(InventorySlotButtons[0], SButton)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 0))
-									.ButtonStyle(&BtnNeutral)
-									.ContentPadding(FMargin(0.f))
-									[
-										SAssignNew(InventorySlotBorders[0], SBorder)
-										.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-										.Padding(FMargin(12.f, 10.f))
-										[
-											SAssignNew(InventorySlotTexts[0], STextBlock)
-											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-											.TextStyle(&TextChip)
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-									]
-								]
-								+ SUniformGridPanel::Slot(1, 0)
-								[
-									SAssignNew(InventorySlotButtons[1], SButton)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 1))
-									.ButtonStyle(&BtnNeutral)
-									.ContentPadding(FMargin(0.f))
-									[
-										SAssignNew(InventorySlotBorders[1], SBorder)
-										.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-										.Padding(FMargin(12.f, 10.f))
-										[
-											SAssignNew(InventorySlotTexts[1], STextBlock)
-											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-											.TextStyle(&TextChip)
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-									]
-								]
-								+ SUniformGridPanel::Slot(2, 0)
-								[
-									SAssignNew(InventorySlotButtons[2], SButton)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 2))
-									.ButtonStyle(&BtnNeutral)
-									.ContentPadding(FMargin(0.f))
-									[
-										SAssignNew(InventorySlotBorders[2], SBorder)
-										.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-										.Padding(FMargin(12.f, 10.f))
-										[
-											SAssignNew(InventorySlotTexts[2], STextBlock)
-											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-											.TextStyle(&TextChip)
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-									]
-								]
-								+ SUniformGridPanel::Slot(3, 0)
-								[
-									SAssignNew(InventorySlotButtons[3], SButton)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 3))
-									.ButtonStyle(&BtnNeutral)
-									.ContentPadding(FMargin(0.f))
-									[
-										SAssignNew(InventorySlotBorders[3], SBorder)
-										.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-										.Padding(FMargin(12.f, 10.f))
-										[
-											SAssignNew(InventorySlotTexts[3], STextBlock)
-											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-											.TextStyle(&TextChip)
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-									]
-								]
-								+ SUniformGridPanel::Slot(4, 0)
-								[
-									SAssignNew(InventorySlotButtons[4], SButton)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 4))
-									.ButtonStyle(&BtnNeutral)
-									.ContentPadding(FMargin(0.f))
-									[
-										SAssignNew(InventorySlotBorders[4], SBorder)
-										.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-										.Padding(FMargin(12.f, 10.f))
-										[
-											SAssignNew(InventorySlotTexts[4], STextBlock)
-											.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-											.TextStyle(&TextChip)
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-									]
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth().Padding(FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
+						.SlotPadding(FMargin(FT66Style::Tokens::Space2, 0.f))
+						+ SUniformGridPanel::Slot(0, 0)
+						[
+							SAssignNew(InventorySlotButtons[0], SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 0))
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(0.f))
 							[
-								// Sell details for selected item
-								SAssignNew(SellPanelContainer, SBox)
-								.Visibility(EVisibility::Collapsed)
+										SNew(SBox)
+										.WidthOverride(160.f)
+										.HeightOverride(160.f)
 								[
-									SNew(SBorder)
-									.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-									.BorderBackgroundColor(FT66Style::Tokens::Panel2)
-									.Padding(FT66Style::Tokens::Space4)
-									[
-										SNew(SVerticalBox)
-										+ SVerticalBox::Slot().AutoHeight()
-										[
-											SAssignNew(SellItemNameText, STextBlock)
-											.Text(FText::GetEmpty())
-											.TextStyle(&TextHeading)
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-										[
-											SAssignNew(SellItemDescText, STextBlock)
-											.Text(FText::GetEmpty())
-											.TextStyle(&TextBody)
-											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-											.AutoWrapText(true)
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
-										[
-											SAssignNew(SellItemPriceText, STextBlock)
-											.Text(FText::GetEmpty())
-											.TextStyle(&TextChip)
-											.ColorAndOpacity(FT66Style::Tokens::Accent2)
-										]
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-										[
-											SAssignNew(SellItemButton, SButton)
-											.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSellSelectedClicked))
-											.ButtonStyle(&BtnPrimary)
-											.ContentPadding(FMargin(18.f, 10.f))
+											SAssignNew(InventorySlotBorders[0], SBorder)
+											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+											.Padding(FMargin(12.f, 10.f))
 											[
-												SNew(STextBlock)
-												.Text(Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"))
-												.TextStyle(&TextButton)
+												SAssignNew(InventorySlotTexts[0], STextBlock)
+												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+												.TextStyle(&TextChip)
 												.ColorAndOpacity(FT66Style::Tokens::Text)
 											]
-										]
+								]
+							]
+						]
+						+ SUniformGridPanel::Slot(1, 0)
+						[
+							SAssignNew(InventorySlotButtons[1], SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 1))
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(0.f))
+							[
+										SNew(SBox)
+										.WidthOverride(160.f)
+										.HeightOverride(160.f)
+								[
+											SAssignNew(InventorySlotBorders[1], SBorder)
+											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+											.Padding(FMargin(12.f, 10.f))
+											[
+												SAssignNew(InventorySlotTexts[1], STextBlock)
+												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+												.TextStyle(&TextChip)
+												.ColorAndOpacity(FT66Style::Tokens::Text)
+											]
+								]
+							]
+						]
+						+ SUniformGridPanel::Slot(2, 0)
+						[
+							SAssignNew(InventorySlotButtons[2], SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 2))
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(0.f))
+							[
+										SNew(SBox)
+										.WidthOverride(160.f)
+										.HeightOverride(160.f)
+								[
+											SAssignNew(InventorySlotBorders[2], SBorder)
+											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+											.Padding(FMargin(12.f, 10.f))
+											[
+												SAssignNew(InventorySlotTexts[2], STextBlock)
+												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+												.TextStyle(&TextChip)
+												.ColorAndOpacity(FT66Style::Tokens::Text)
+											]
+								]
+							]
+						]
+						+ SUniformGridPanel::Slot(3, 0)
+						[
+							SAssignNew(InventorySlotButtons[3], SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 3))
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(0.f))
+							[
+										SNew(SBox)
+										.WidthOverride(160.f)
+										.HeightOverride(160.f)
+								[
+											SAssignNew(InventorySlotBorders[3], SBorder)
+											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+											.Padding(FMargin(12.f, 10.f))
+											[
+												SAssignNew(InventorySlotTexts[3], STextBlock)
+												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+												.TextStyle(&TextChip)
+												.ColorAndOpacity(FT66Style::Tokens::Text)
+											]
+								]
+							]
+						]
+						+ SUniformGridPanel::Slot(4, 0)
+						[
+							SAssignNew(InventorySlotButtons[4], SButton)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, 4))
+							.ButtonStyle(&BtnNeutral)
+							.ContentPadding(FMargin(0.f))
+							[
+										SNew(SBox)
+										.WidthOverride(160.f)
+										.HeightOverride(160.f)
+								[
+											SAssignNew(InventorySlotBorders[4], SBorder)
+											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+											.Padding(FMargin(12.f, 10.f))
+											[
+												SAssignNew(InventorySlotTexts[4], STextBlock)
+												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+												.TextStyle(&TextChip)
+												.ColorAndOpacity(FT66Style::Tokens::Text)
+											]
+								]
+							]
+						]
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
+					[
+						// Sell details for selected item
+						SAssignNew(SellPanelContainer, SBox)
+								.Visibility(EVisibility::Visible)
+						[
+							SNew(SBorder)
+							.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
+							.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+							.Padding(FT66Style::Tokens::Space4)
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight()
+								[
+									SAssignNew(SellItemNameText, STextBlock)
+									.Text(FText::GetEmpty())
+									.TextStyle(&TextHeading)
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+								[
+									SAssignNew(SellItemDescText, STextBlock)
+									.Text(FText::GetEmpty())
+									.TextStyle(&TextBody)
+									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									.AutoWrapText(true)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+								[
+									SAssignNew(SellItemPriceText, STextBlock)
+									.Text(FText::GetEmpty())
+									.TextStyle(&TextChip)
+									.ColorAndOpacity(FT66Style::Tokens::Accent2)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+								[
+									SAssignNew(SellItemButton, SButton)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSellSelectedClicked))
+									.ButtonStyle(&BtnPrimary)
+									.ContentPadding(FMargin(18.f, 10.f))
+									[
+										SNew(STextBlock)
+										.Text(Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"))
+										.TextStyle(&TextButton)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
 									]
 								]
 							]
 						]
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
+			]
+		];
+
+	TSharedRef<SWidget> Root =
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			SNew(SBorder)
+			.BorderImage(Style.GetBrush("T66.Brush.Bg"))
+			.BorderBackgroundColor(FT66Style::Tokens::Bg)
+			.Padding(24.f)
+			[
+				SAssignNew(PageSwitcher, SWidgetSwitcher)
+				+ SWidgetSwitcher::Slot()
 				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack))
-					.ButtonStyle(&BtnNeutral)
-					.ContentPadding(FMargin(20.f, 12.f))
-					[
-						SNew(STextBlock)
-						.Text(BackText)
-						.TextStyle(&TextButton)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
+					DialoguePage
+				]
+				+ SWidgetSwitcher::Slot()
+				[
+					ShopPage
 				]
 			]
 		]
@@ -707,6 +834,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			StealPromptWidget
 		];
 
+	SetPage(EVendorPage::Dialogue);
 	RefreshAll();
 	return Root;
 }
@@ -760,19 +888,46 @@ void UT66VendorOverlayWidget::RefreshTopBar()
 		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
 	}
 
-	const float Anger01 = RunState->GetVendorAnger01();
-	if (AngerFillBox.IsValid())
+	// Anger circle color rules (discrete):
+	// 0 => white
+	// 1-50 => pink
+	// 51-99 => purple
+	// 100 => red (boss triggers)
+	if (AngerCircleImage.IsValid())
 	{
-		const float Full = 240.f;
-		AngerFillBox->SetWidthOverride(FMath::Clamp(Full * Anger01, 0.f, Full));
+		const int32 Anger = FMath::Clamp(RunState->GetVendorAngerGold(), 0, UT66RunStateSubsystem::VendorAngerThresholdGold);
+		FLinearColor C = FLinearColor::White;
+		if (Anger >= UT66RunStateSubsystem::VendorAngerThresholdGold)
+		{
+			C = FT66Style::Tokens::Danger;
+		}
+		else if (Anger >= 51)
+		{
+			C = FLinearColor(0.60f, 0.25f, 0.90f, 1.f); // purple
+		}
+		else if (Anger >= 1)
+		{
+			C = FLinearColor(0.95f, 0.35f, 0.65f, 1.f); // pink
+		}
+		AngerCircleImage->SetColorAndOpacity(FSlateColor(C));
 	}
-	if (AngerText.IsValid())
+}
+
+FReply UT66VendorOverlayWidget::OnReroll()
+{
+	if (IsBossActive())
 	{
-		AngerText->SetText(FText::Format(
-			NSLOCTEXT("T66.Vendor", "AngerValueFormat", "{0}/{1}"),
-			FText::AsNumber(RunState->GetVendorAngerGold()),
-			FText::AsNumber(UT66RunStateSubsystem::VendorAngerThresholdGold)));
+		return FReply::Handled();
 	}
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World))
+		{
+			RunState->RerollVendorStockForCurrentStage();
+		}
+	}
+	RefreshAll();
+	return FReply::Handled();
 }
 
 void UT66VendorOverlayWidget::RefreshStock()
@@ -804,25 +959,58 @@ void UT66VendorOverlayWidget::RefreshStock()
 			}
 			else
 			{
-				TArray<FText> Lines;
-				Lines.Reserve(3);
-				if (!D.EffectLine1.IsEmpty()) Lines.Add(D.EffectLine1);
-				if (!D.EffectLine2.IsEmpty()) Lines.Add(D.EffectLine2);
-				if (!D.EffectLine3.IsEmpty()) Lines.Add(D.EffectLine3);
-				ItemDescTexts[i]->SetText(Lines.Num() > 0 ? FText::Join(NSLOCTEXT("T66.Common", "NewLine", "\n"), Lines) : FText::GetEmpty());
-			}
-		}
-		if (ItemPriceTexts.IsValidIndex(i) && ItemPriceTexts[i].IsValid())
-		{
-			if (!bHasData)
-			{
-				ItemPriceTexts[i]->SetText(FText::GetEmpty());
-			}
-			else
-			{
-				ItemPriceTexts[i]->SetText(FText::Format(
-					NSLOCTEXT("T66.Vendor", "PriceFormat", "PRICE: {0}g"),
-					FText::AsNumber(D.BuyValueGold)));
+				// Items v1: show only the single main stat line (flat numeric bonus).
+				auto StatLabel = [&](ET66HeroStatType Type) -> FText
+				{
+					if (Loc)
+					{
+						switch (Type)
+						{
+							case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
+							case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
+							case ET66HeroStatType::AttackSize: return Loc->GetText_Stat_AttackSize();
+							case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
+							case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
+							case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
+							default: break;
+						}
+					}
+					switch (Type)
+					{
+						case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
+						case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
+						case ET66HeroStatType::AttackSize: return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+						case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
+						case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
+						case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
+						default: return FText::GetEmpty();
+					}
+				};
+
+				ET66HeroStatType MainType = D.MainStatType;
+				int32 MainValue = D.MainStatValue;
+				if (MainValue == 0)
+				{
+					// Derive from legacy v0 fields until DT_Items is updated.
+					switch (D.EffectType)
+					{
+						case ET66ItemEffectType::BonusDamagePct: MainType = ET66HeroStatType::Damage; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
+						case ET66ItemEffectType::BonusAttackSpeedPct: MainType = ET66HeroStatType::AttackSpeed; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
+						case ET66ItemEffectType::BonusArmorPctPoints: MainType = ET66HeroStatType::Armor; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
+						case ET66ItemEffectType::BonusEvasionPctPoints: MainType = ET66HeroStatType::Evasion; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
+						case ET66ItemEffectType::BonusLuckFlat: MainType = ET66HeroStatType::Luck; MainValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude)); break;
+						case ET66ItemEffectType::BonusMoveSpeedPct:
+						case ET66ItemEffectType::DashCooldownReductionPct:
+							MainType = ET66HeroStatType::Evasion;
+							MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
+							break;
+						default: break;
+					}
+				}
+
+				ItemDescTexts[i]->SetText((MainValue > 0)
+					? FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue))
+					: FText::GetEmpty());
 			}
 		}
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
@@ -862,13 +1050,85 @@ void UT66VendorOverlayWidget::RefreshStock()
 	}
 }
 
+void UT66VendorOverlayWidget::SetPage(EVendorPage Page)
+{
+	if (!PageSwitcher.IsValid()) return;
+	PageSwitcher->SetActiveWidgetIndex(static_cast<int32>(Page));
+}
+
+FReply UT66VendorOverlayWidget::OnDialogueShop()
+{
+	SetPage(EVendorPage::Shop);
+	RefreshAll();
+	return FReply::Handled();
+}
+
+FReply UT66VendorOverlayWidget::OnDialogueTeleport()
+{
+	if (IsBossActive())
+	{
+		// Keep UI open but report status.
+		if (StatusText.IsValid())
+		{
+			UT66LocalizationSubsystem* Loc2 = nullptr;
+			if (UWorld* World = GetWorld())
+			{
+				if (UGameInstance* GI = World->GetGameInstance())
+				{
+					Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+				}
+			}
+			StatusText->SetText(Loc2 ? Loc2->GetText_TeleportDisabledBossActive() : NSLOCTEXT("T66.Vendor", "TeleportDisabledBossActive", "Teleport disabled (boss encounter started)."));
+		}
+		return FReply::Handled();
+	}
+
+	TeleportToGambler();
+	CloseOverlay();
+	return FReply::Handled();
+}
+
+void UT66VendorOverlayWidget::TeleportToGambler()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	APawn* Pawn = GetOwningPlayerPawn();
+	if (!Pawn) return;
+
+	AT66GamblerNPC* Gambler = nullptr;
+	for (TActorIterator<AT66GamblerNPC> It(World); It; ++It)
+	{
+		Gambler = *It;
+		break;
+	}
+	if (!Gambler) return;
+
+	const FVector GamblerLoc = Gambler->GetActorLocation();
+	Pawn->SetActorLocation(GamblerLoc + FVector(250.f, 0.f, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
+}
+
 void UT66VendorOverlayWidget::RefreshInventory()
 {
 	UWorld* World = GetWorld();
 	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
 	if (!RunState) return;
 
+	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	const TArray<FName>& Inv = RunState->GetInventory();
+
+	// Auto-select the first valid item so the details panel is "big" immediately.
+	if (SelectedInventoryIndex < 0)
+	{
+		for (int32 i = 0; i < Inv.Num(); ++i)
+		{
+			if (!Inv[i].IsNone())
+			{
+				SelectedInventoryIndex = i;
+				break;
+			}
+		}
+	}
 	if (SelectedInventoryIndex >= Inv.Num())
 	{
 		SelectedInventoryIndex = (Inv.Num() > 0) ? (Inv.Num() - 1) : -1;
@@ -887,8 +1147,22 @@ void UT66VendorOverlayWidget::RefreshInventory()
 		}
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
-			const bool bSelected = (i == SelectedInventoryIndex);
-			InventorySlotBorders[i]->SetBorderBackgroundColor(bSelected ? FT66Style::Tokens::Accent : FT66Style::Tokens::Panel2);
+			FLinearColor Fill = FT66Style::Tokens::Panel2;
+			if (bHasItem && GI)
+			{
+				FItemData D;
+				if (GI->GetItemData(Inv[i], D))
+				{
+					Fill = D.PlaceholderColor;
+				}
+			}
+
+			// If selected, tint toward accent for readability.
+			if (i == SelectedInventoryIndex)
+			{
+				Fill = Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f;
+			}
+			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
 		}
 	}
 }
@@ -904,9 +1178,17 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 
 	if (SellPanelContainer.IsValid())
 	{
-		SellPanelContainer->SetVisibility(bValidSelection ? EVisibility::Visible : EVisibility::Collapsed);
+		// Keep visible so the inventory layout doesn't "pop" when selecting an item.
+		SellPanelContainer->SetVisibility(EVisibility::Visible);
 	}
-	if (!bValidSelection) return;
+	if (!bValidSelection)
+	{
+		if (SellItemNameText.IsValid()) SellItemNameText->SetText(FText::GetEmpty());
+		if (SellItemDescText.IsValid()) SellItemDescText->SetText(FText::GetEmpty());
+		if (SellItemPriceText.IsValid()) SellItemPriceText->SetText(FText::GetEmpty());
+		if (SellItemButton.IsValid()) SellItemButton->SetEnabled(false);
+		return;
+	}
 
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	FItemData D;
@@ -924,12 +1206,62 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 		}
 		else
 		{
-			TArray<FText> Lines;
-			Lines.Reserve(3);
-			if (!D.EffectLine1.IsEmpty()) Lines.Add(D.EffectLine1);
-			if (!D.EffectLine2.IsEmpty()) Lines.Add(D.EffectLine2);
-			if (!D.EffectLine3.IsEmpty()) Lines.Add(D.EffectLine3);
-			SellItemDescText->SetText(Lines.Num() > 0 ? FText::Join(NSLOCTEXT("T66.Common", "NewLine", "\n"), Lines) : FText::GetEmpty());
+			UT66LocalizationSubsystem* Loc = nullptr;
+			if (UGameInstance* GI2 = World ? World->GetGameInstance() : nullptr)
+			{
+				Loc = GI2->GetSubsystem<UT66LocalizationSubsystem>();
+			}
+
+			auto StatLabel = [&](ET66HeroStatType Type) -> FText
+			{
+				if (Loc)
+				{
+					switch (Type)
+					{
+						case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
+						case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
+						case ET66HeroStatType::AttackSize: return Loc->GetText_Stat_AttackSize();
+						case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
+						case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
+						case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
+						default: break;
+					}
+				}
+				switch (Type)
+				{
+					case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
+					case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
+					case ET66HeroStatType::AttackSize: return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+					case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
+					case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
+					case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
+					default: return FText::GetEmpty();
+				}
+			};
+
+			ET66HeroStatType MainType = D.MainStatType;
+			int32 MainValue = D.MainStatValue;
+			if (MainValue == 0)
+			{
+				switch (D.EffectType)
+				{
+					case ET66ItemEffectType::BonusDamagePct: MainType = ET66HeroStatType::Damage; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
+					case ET66ItemEffectType::BonusAttackSpeedPct: MainType = ET66HeroStatType::AttackSpeed; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
+					case ET66ItemEffectType::BonusArmorPctPoints: MainType = ET66HeroStatType::Armor; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
+					case ET66ItemEffectType::BonusEvasionPctPoints: MainType = ET66HeroStatType::Evasion; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
+					case ET66ItemEffectType::BonusLuckFlat: MainType = ET66HeroStatType::Luck; MainValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude)); break;
+					case ET66ItemEffectType::BonusMoveSpeedPct:
+					case ET66ItemEffectType::DashCooldownReductionPct:
+						MainType = ET66HeroStatType::Evasion;
+						MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
+						break;
+					default: break;
+				}
+			}
+
+			SellItemDescText->SetText((MainValue > 0)
+				? FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue))
+				: FText::GetEmpty());
 		}
 	}
 	if (SellItemPriceText.IsValid())
@@ -947,6 +1279,11 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 
 FReply UT66VendorOverlayWidget::OnBack()
 {
+	if (PageSwitcher.IsValid() && PageSwitcher->GetActiveWidgetIndex() == static_cast<int32>(EVendorPage::Shop))
+	{
+		SetPage(EVendorPage::Dialogue);
+		return FReply::Handled();
+	}
 	CloseOverlay();
 	return FReply::Handled();
 }
@@ -971,12 +1308,26 @@ FReply UT66VendorOverlayWidget::OnBorrowClicked()
 		return FReply::Handled();
 	}
 	RunState->BorrowGold(BorrowAmount);
-	if (StatusText.IsValid())
-	{
-		const FText Fmt = Loc ? Loc->GetText_BorrowedAmountFormat() : NSLOCTEXT("T66.Vendor", "BorrowedAmountFormat", "Borrowed {0}.");
-		StatusText->SetText(FText::Format(Fmt, FText::AsNumber(BorrowAmount)));
-	}
+	if (StatusText.IsValid()) StatusText->SetText(FText::GetEmpty());
 	RefreshTopBar();
+	return FReply::Handled();
+}
+
+FReply UT66VendorOverlayWidget::OnPaybackMax()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World))
+		{
+			PaybackAmount = FMath::Max(0, RunState->GetCurrentDebt());
+			if (PaybackAmountSpin.IsValid())
+			{
+				PaybackAmountSpin->SetValue(PaybackAmount);
+			}
+			if (StatusText.IsValid()) StatusText->SetText(FText::GetEmpty());
+			RefreshTopBar();
+		}
+	}
 	return FReply::Handled();
 }
 
@@ -1000,11 +1351,7 @@ FReply UT66VendorOverlayWidget::OnPaybackClicked()
 		return FReply::Handled();
 	}
 	const int32 Paid = RunState->PayDebt(PaybackAmount);
-	if (StatusText.IsValid())
-	{
-		const FText Fmt = Loc ? Loc->GetText_PaidBackAmountFormat() : NSLOCTEXT("T66.Vendor", "PaidBackAmountFormat", "Paid back {0}.");
-		StatusText->SetText(FText::Format(Fmt, FText::AsNumber(Paid)));
-	}
+	if (StatusText.IsValid()) StatusText->SetText(FText::GetEmpty());
 	RefreshTopBar();
 	return FReply::Handled();
 }

@@ -73,8 +73,15 @@ private:
 	int32 CurrentCompanionIndex = -1;
 	TSharedPtr<STextBlock> CompanionNameWidget;
 	TSharedPtr<STextBlock> CompanionLoreWidget;
+	TSharedPtr<STextBlock> CompanionUnionText;
 	TSharedPtr<SBorder> CompanionPreviewColorBox;
+	TSharedPtr<SBox> CompanionUnionBox;
+	TSharedPtr<class SProgressBar> CompanionUnionProgressBar;
 	TSharedPtr<struct FSlateBrush> CompanionPreviewBrush;
+
+	// Cached union UI state (updated on PreviewCompanion / UpdateCompanionDisplay)
+	float CompanionUnionProgress01 = 0.f;
+	int32 CompanionUnionStagesCleared = 0;
 
 	// Placeholder skins list
 	TArray<FSkinData> PlaceholderSkins;

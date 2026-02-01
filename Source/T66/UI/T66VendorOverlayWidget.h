@@ -12,7 +12,9 @@ class SButton;
 template<typename NumericType> class SSpinBox;
 class SBox;
 class SBorder;
+class SImage;
 class SUniformGridPanel;
+class SWidgetSwitcher;
 
 /** Full-screen, non-pausing Vendor shop UI (buy + steal + loans). */
 UCLASS(Blueprintable)
@@ -27,14 +29,21 @@ public:
 	void CloseOverlay();
 
 private:
-	// Top bar
+	enum class EVendorPage : uint8
+	{
+		Dialogue = 0,
+		Shop = 1,
+	};
+
+	TSharedPtr<SWidgetSwitcher> PageSwitcher;
+
+	// Bottom bar (next to inventory title)
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> StatusText;
 
-	// Anger meter (0..1)
-	TSharedPtr<SBox> AngerFillBox;
-	TSharedPtr<STextBlock> AngerText;
+	// Anger indicator (0..1) - circle color + optional text
+	TSharedPtr<SImage> AngerCircleImage;
 
 	// Vendor stock widgets
 	TArray<TSharedPtr<STextBlock>> ItemNameTexts;
@@ -84,8 +93,15 @@ private:
 	void RefreshInventory();
 	void RefreshSellPanel();
 
+	FReply OnReroll();
+	FReply OnDialogueShop();
+	FReply OnDialogueTeleport();
+	void SetPage(EVendorPage Page);
+	void TeleportToGambler();
+
 	FReply OnBack();
 	FReply OnBorrowClicked();
+	FReply OnPaybackMax();
 	FReply OnPaybackClicked();
 	FReply OnSelectInventorySlot(int32 InventoryIndex);
 	FReply OnSellSelectedClicked();

@@ -124,6 +124,8 @@ void FT66Style::Initialize()
 	StyleInstance->Set("T66.Brush.Panel", new FSlateRoundedBoxBrush(Tokens::Panel, Tokens::CornerRadius));
 	StyleInstance->Set("T66.Brush.Panel2", new FSlateRoundedBoxBrush(Tokens::Panel2, Tokens::CornerRadius));
 	StyleInstance->Set("T66.Brush.Stroke", new FSlateRoundedBoxBrush(Tokens::Stroke, Tokens::CornerRadiusSmall));
+	// Circle-ish brush (use BorderBackgroundColor for actual tint)
+	StyleInstance->Set("T66.Brush.Circle", new FSlateRoundedBoxBrush(FLinearColor::White, 110.f));
 
 	// Text styles
 	{

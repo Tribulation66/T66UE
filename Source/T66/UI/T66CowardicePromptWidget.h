@@ -19,7 +19,7 @@ class T66_API UT66CowardicePromptWidget : public UUserWidget
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 
-	void SetGate(AT66CowardiceGate* InGate) { Gate = InGate; }
+	void SetGate(AT66CowardiceGate* InGate);
 
 private:
 	TWeakObjectPtr<AT66CowardiceGate> Gate;

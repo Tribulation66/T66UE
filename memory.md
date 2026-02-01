@@ -90,6 +90,39 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
 
 ## 4) Change log (append-only)
 
+### 2026-02-01 — Bigger main map + fully enclosed walls + corner houses fully inside bounds
+
+**Goal**
+- Make the main map bigger.
+- Ensure the entire playable area has walls so there is **no way to fall off** the world.
+- Ensure corner houses/NPC safe-zones (“bubbles”) are fully inside the map (no safe-zone disc hanging off the edge).
+
+**What changed**
+- **Main floor size increased**:
+  - `AT66GameMode::SpawnFloorIfNeeded()` — main floor scale **140×140 → 160×160** (14,000 → 16,000).
+- **Boundary walls now actually enclose the main square** (not just the far start/boss footprint):
+  - `AT66GameMode::SpawnBoundaryWallsIfNeeded()` — kept the global N/S walls, but added **MainEdge** E/W wall segments at \(X=\pm 8000\) for \( |Y| > 3000 \) so the player can’t fall off the main square’s east/west edges.
+  - Also changed floor/wall setup to **spawn-or-update by tag** (so existing tagged actors get resized/repositioned when constants change).
+- **Corner houses + NPC safe-zones fully inside bounds**:
+  - `AT66GameMode::SpawnCornerHousesAndNPCs()` — moved house corners outward for the larger map and moved NPC cylinders **inward (toward map center)** so their `SafeZoneRadius` disc can’t spill outside the floor.
+- **Spawn bounds updated for the larger main**:
+  - `SpawnWorldInteractablesForStage()` and `SpawnStageEffectTilesForStage()` main extents updated to **7200** (keeps margin from walls and safe-zones).
+- **Miasma coverage expanded for bigger map**:
+  - `AT66MiasmaManager::CoverageHalfExtent` **6500 → 7800**.
+
+**Build fix (needed for ValidateFast)**
+- `Source/T66/Core/T66WebView2Host.cpp` — split the large WebView2 TikTok JS raw-string literals into multiple concatenated raw strings to fix MSVC `C2026: string too big`.
+
+**Verification / proof**
+- ValidateFast (UE 5.7) ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+**Follow-up (PIE warning fix)**
+- Fixed PIE warnings like:
+  - `StaticMeshComponent0 has to be 'Movable' if you'd like to move`
+- `AT66GameMode` now temporarily sets spawned/updated dev geometry (`AStaticMeshActor` floors/walls) to **Movable** while applying transform, then back to **Static**.
+
 ### 2026-01-31 — In-run HUD overhaul (map/minimap) + lock-on/crosshair + range ring + wheel HUD spin + TikTok placeholder
 
 **HUD layout + map/minimap**
@@ -130,7 +163,209 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
 **Verification**
 - `T66Editor` builds successfully after changes.
 
+### 2026-01-31 — Media Viewer v0 (TikTok via Unreal WebBrowser/CEF): locked to TikTok + persistent login
+
+**Goal**
+- Replace the TikTok HUD placeholder with a real, in-game Chromium (CEF) browser panel.
+- Prevent access to arbitrary websites (strict allowlist).
+- Persist login across sessions (cookie storage), without exposing a general-purpose browser UI.
+
+**What changed**
+- Enabled Unreal’s browser stack:
+  - `T66.uproject`: enabled plugin `WebBrowserWidget`.
+  - `Source/T66/T66.Build.cs`: added `WebBrowser` module dependency.
+- `UT66GameplayHUDWidget`:
+  - TikTok panel now lazy-creates an `SWebBrowser` instance on first open and mounts it into the existing phone-shaped panel.
+  - No controls/address bar; context menu suppressed.
+  - Popups blocked (`OnBeforePopup` suppressed).
+  - Navigation locked via `OnBeforeNavigation`: only allows TikTok + required TikTok CDNs (no general browsing).
+  - Browser context uses a dedicated cookie store:
+    - `bPersistSessionCookies=true`
+    - `CookieStorageLocation=<Project>/Saved/TikTokBrowser/Cookies`
+    - Note: “stay logged in” inherently requires saving site cookies/data for TikTok; we isolate it to a dedicated folder and block non-allowlisted navigation.
+- `AT66PlayerController`:
+  - Opening the viewer switches to `FInputModeGameAndUI`, shows cursor, and suppresses movement/look input so the page is usable.
+  - `Esc` closes the viewer first (back behavior), then proceeds to full-map/pause behavior.
+  - Combat mouse actions are suppressed while the viewer is open.
+
+**Verification / proof**
+- Built successfully (UE 5.7):
+  - `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+  - `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-01-31 — Media Viewer v1 (Windows-only): WebView2 overlay for real TikTok video playback (H.264/AAC)
+
+**Why**
+- UE’s bundled CEF build cannot play TikTok’s typical MP4 streams (H.264/AAC), which caused “having trouble playing this, please refresh”.
+- WebView2 uses the installed Edge runtime, so H.264/AAC playback works on Windows.
+
+**What changed**
+- Added WebView2 SDK bits to the repo (from NuGet) for deterministic builds:
+  - `ThirdParty/WebView2/include/WebView2.h`
+  - `ThirdParty/WebView2/include/WebView2EnvironmentOptions.h`
+  - `ThirdParty/WebView2/bin/Win64/WebView2Loader.dll`
+- `Source/T66/T66.Build.cs`:
+  - Adds WebView2 include path on Win64
+  - Stages/copies `WebView2Loader.dll` to `Binaries/Win64` via `RuntimeDependencies`
+  - Defines `T66_WITH_WEBVIEW2=1` on Win64
+- Implemented a minimal WebView2 host:
+  - `Source/T66/Core/T66WebView2Host.h/.cpp`
+  - Dynamic-loads `WebView2Loader.dll`
+  - Uses persistent `UserData` at `Saved/TikTokWebView2/UserData` so login persists across sessions
+  - Blocks popups and enforces a TikTok/CDN allowlist on navigation
+- Wired WebView2 into the existing Media Viewer toggle:
+  - `Source/T66/Core/T66MediaViewerSubsystem.h/.cpp` shows/hides the WebView2 overlay on open/close
+  - `Source/T66/UI/T66GameplayHUDWidget.cpp` avoids creating the CEF browser on Win64 when WebView2 is enabled
+
+**Notes**
+- This path is intended for Windows-only TikTok support. Non-Windows platforms should not rely on TikTok playback (Steam Deck version will omit the feature).
+
+**Verification / proof**
+- ValidateFast (UE 5.7) ✅
+  - `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - Verified `WebView2Loader.dll` exists at `Binaries/Win64/WebView2Loader.dll`.
+
+### 2026-01-31 — TikTok/WebView2: fix black/desktop-bleed rendering + add deep runtime logs
+
+**Problem**
+- Toggling the TikTok viewer could show a **black window** and/or **desktop bleed** / “hole” effect where WebView2 content should be.
+
+**Root cause**
+- WebView2 controller was being hidden via `Ctrl->put_IsVisible(FALSE)` on close, but was **not being re-shown** on subsequent open (`put_IsVisible(TRUE)` missing on show).
+- WebView2 default background can be transparent depending on runtime/controller behavior; combined with overlay/windowing, this can look like bleed.
+
+**What changed**
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Ensure the controller is re-shown on open (`put_IsVisible(TRUE)` in show path).
+  - Force an **opaque** black background via `ICoreWebView2Controller2::put_DefaultBackgroundColor`.
+  - Added detailed `[TIKTOK][WEBVIEW2]` logs: owner/host `HWND`, parent/owner/rootOwner, style/exstyle flags, window/client rects, DPI, environment/controller creation outcomes, and show rects.
+  - Call `NotifyParentWindowPositionChanged()` after applying bounds.
+- `Source/T66/Core/T66MediaViewerSubsystem.cpp`
+  - More robust parent `HWND` selection (`FindBestParentWindowHandleForDialogs` fallback).
+  - Avoid repeated `MoveWindow` spam by ignoring unchanged rect updates.
+
+**Verification / proof**
+- Build (UE 5.7) ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+### 2026-01-31 — TikTok/WebView2: keep gameplay input + Q/E next/prev + video-only UI
+
+**User request**
+- Keep TikTok visible but **do not lock** player movement/camera (no mouse cursor, no input-mode swap).
+- Add keyboard-only controls: **Q = previous**, **E = next** TikTok.
+- Hide TikTok chrome so **only the video** shows in the phone panel.
+
+**What changed**
+- `Source/T66/Gameplay/T66PlayerController.cpp/.h`
+  - Removed the MediaViewer/TikTok toggle behavior that switched to `FInputModeGameAndUI` and suppressed movement/look.
+  - Added hard key binds:
+    - `Q` → previous TikTok (only when viewer is open)
+    - `E` → next TikTok (only when viewer is open)
+  - Media viewer no longer blocks combat mouse input (`CanUseCombatMouseInput` no longer treats TikTok as a modal overlay).
+- `Source/T66/Core/T66MediaViewerSubsystem.h/.cpp`
+  - Added `TikTokPrev()` / `TikTokNext()` helpers that forward to the WebView2 host.
+- `Source/T66/Core/T66WebView2Host.h/.cpp`
+  - Host window no longer steals focus and no longer intercepts mouse clicks (`WS_EX_NOACTIVATE | WS_EX_TRANSPARENT`).
+  - Added best-effort CSS injection on navigation completed to hide common TikTok chrome (nav/header/footer/sidebar) so the phone panel shows mostly the video content.
+  - Implemented `PrevVideo()` / `NextVideo()` by scrolling the page smoothly (no mouse required).
+
+**Verification / proof**
+- Build (UE 5.7) ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+### 2026-01-31 — TikTok/WebView2: Q/E snap to next/prev video card (deterministic)
+
+**Problem**
+- Q/E “next/prev” behaved like small scroll steps and did not reliably advance exactly one video.
+
+**What changed**
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Replaced the naive scroll-by approach with a deterministic “card snap”:
+    - Find all visible `<video>` elements
+    - Pick the current card closest to viewport center
+    - Pick the next/prev card by vertical center position
+    - Scroll the correct scroll container so the target card is centered (instant snap), then nudge playback
+
+**Verification / proof**
+- Build (UE 5.7) ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+### 2026-01-31 — TikTok/WebView2: stop audio bleed + don't re-navigate on toggle
+
+**Problems**
+- After Q/E snap, the **previous video's audio** could continue playing.
+- Toggling TikTok off/on would **navigate back to QR login** and effectively “re-login” each time (even though cookies persisted).
+
+**What changed**
+- `Source/T66/Core/T66WebView2Host.cpp` / `.h`
+  - Q/E scripts now:
+    - Pause/mute all videos immediately
+    - Snap to next/prev card
+    - After scroll settles, pause everything again and **play/unmute only the most-visible video**
+  - `Hide()` now executes a pause/mute script before hiding so audio never leaks when the overlay is hidden.
+  - `ShowAtScreenRect()` now resumes playback of the most-visible video when re-shown.
+  - Added `HasEverNavigated()` so higher-level code can avoid re-navigating every toggle.
+- `Source/T66/Core/T66MediaViewerSubsystem.cpp`
+  - Only calls `Navigate("https://www.tiktok.com/login/qrcode")` on the **first ever open** (when WebView2 hasn’t navigated yet).
+  - Subsequent toggles just show/hide the existing session.
+
+**Verification / proof**
+- Build (UE 5.7) ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+### 2026-02-01 — TikTok/WebView2: “perfect” Q/E next/prev (responsive + no stuck-muted) + fix MSVC string literal limit
+
+**Problems**
+- Q/E “next/prev” was laggy/flaky (sometimes only worked once), and sometimes landed on a muted next video / weird audio state.
+- `T66Editor` build could fail with: `error C2026: string too big` in `T66WebView2Host.cpp` due to the giant injected JS raw string literal.
+
+**What changed**
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Replaced the giant `PrevVideo()` / `NextVideo()` raw JS literals with a shared `MoveVideo(dir)` that **builds JS via `FString` concatenation** (avoids MSVC string literal size limits).
+  - Reworked Q/E JS to be fast + deterministic:
+    - Uses `document.elementsFromPoint(center)` to identify the “current” video cheaply (fallback to a small bounded scan).
+    - Picks the next/prev **neighbor `<video>`** by vertical center (bounded scan) and snaps it to viewport center.
+    - Waits for **scroll-idle + stable centered element** (short bounded wait) before enforcing playback.
+    - Autoplay hardening: **play muted first**, then **unmute after play starts** with a few-frame retry to avoid “stuck muted”.
+    - Ensures one audio source by pausing/muting all other videos after the target begins playing.
+  - `ShowAtScreenRect()` resume script hardened similarly (play muted → unmute shortly after) so toggling off/on doesn’t resume into a muted-only state.
+
+**Notes**
+- No new player-facing strings were added/changed.
+
+**Verification / proof (ValidateFast, UE 5.7)** ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
+### 2026-02-01 — TikTok/WebView2: remove “half/half” landings + fix “plays 1s then pauses” + swap Q/E mapping
+
+**Problems**
+- Sometimes next/prev would land “between” two videos (split view: bottom of one + top of the next).
+- Sometimes after a successful next/prev, the video would play briefly then auto-pause.
+- Input preference change: **Q = Next**, **E = Previous**.
+
+**What changed**
+- `Source/T66/Gameplay/T66PlayerController.cpp`
+  - Swapped hard key bindings: `Q` → next, `E` → previous (still only active while TikTok viewer is open).
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Navigation move script now scrolls toward the target with **smooth** scrolling, then **re-centers** the final chosen video after scroll-idle so it lands on a single full video (no “half/half” final state).
+  - Added a short “keep playing” watchdog after landing: if TikTok pauses the video shortly after, we re-`play()` (muted-first → unmute) and re-assert single-audio-source.
+  - Resume-on-toggle script also retries playback once ~1.1s later if the video auto-pauses after resume.
+
+**Notes**
+- No new player-facing strings were added/changed.
+
+**Verification / proof (ValidateFast, UE 5.7)** ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+- `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development -Project="C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64` ✅
+
 ### 2026-01-31 — Localization foundations + UI text migration
+
 
 - Finalized the supported language list in `ET66Language` and ensured the Language Select UI enumerates `GetAvailableLanguages()`.
 - Migrated player-facing hardcoded `FText::FromString(TEXT("..."))` fallbacks across UI and a few gameplay-facing prompts (NPC names/tutorial prompts) to `NSLOCTEXT` (and/or `UT66LocalizationSubsystem::GetText_*()` where applicable).
@@ -850,3 +1085,139 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
   - Arabic
 - **Subsystem:** `UT66LocalizationSubsystem`
 - **Usage:** `GetText_*()` for all UI strings; screens subscribe to OnLanguageChanged where needed.
+
+---
+
+### 2026-01-31 — Hero foundational stats v1 + Companion Union progression (healing tiers) + localized UI
+
+**Hero stats (foundational)**
+- Replaced v0 “each stat == HeroLevel” behavior with:
+  - 6 foundational stats: **Damage, Attack Speed, Attack Size, Armor, Evasion, Luck**
+  - **Speed** remains foundational but is treated specially: **+1 Speed per level**
+- Added per-hero base stats (1–5) and per-level random gain ranges (hero-archetype driven):
+  - Central tuning: `UT66GameInstance::GetHeroStatTuning(HeroID, BaseStats, PerLevelGains)`
+  - Runtime storage + derived multipliers: `UT66RunStateSubsystem` (stats are no longer just `HeroLevel`)
+
+**UI**
+- Gameplay HUD stat panel: **Speed removed from the displayed stat lines** (still affects movement).
+- Hero Selection: hero description panel now appends a localized **Base Stats** section showing each hero’s base stats.
+- Companion Selection: added a localized **Union** bar with labeled checkpoints: **Basic Healing, Good Healing, Medium Healing, Hyper Healing**.
+
+**Companion Union (gameplay + persistence)**
+- Union increases by clearing stages with a companion:
+  - Implemented on `AT66StageGate::AdvanceToNextStage` (normal stage clears).
+- Union boosts healing received (tuned):
+  - Union now controls **companion heal interval** (1 heart per interval):
+    - **Basic**: 10s
+    - **Good**: 5s
+    - **Medium**: 3s
+    - **Hyper**: 1s
+- Persistent storage:
+  - `UT66ProfileSaveGame` now stores `CompanionUnionStagesClearedByID` (CompanionID → stages cleared).
+
+**Verification / proof**
+- **ValidateFast (UE 5.7)** ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+- **GatherText (source)** ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Source.log"`
+- **Translate archives (22 cultures)** ✅
+  - `python -u "C:\UE\T66\Scripts\AutoTranslateLocalizationArchives.py"`
+- **Compile `.locres`** ✅
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Compile.log"`
+- **Artifact check** ✅
+  - `(Get-ChildItem -Path "C:\UE\T66\Content\Localization\T66" -Recurse -Filter *.locres).Count` → **22**
+
+**Follow-up tuning (same change-set)**
+- Hero Selection description text made larger.
+- Removed **Speed** from:
+  - hero selection base-stats text
+  - in-run stat panel
+- In-run stat panel now shows **raw stat numbers** (not \(x\) multipliers / %).
+- Items now apply a single **main stat line** (one of the 6 foundational stats; no Speed):
+  - Implemented as flat stat points in `UT66RunStateSubsystem` (tooltip shows `{Stat}: +{N}`).
+  - Vendor UI now shows the same single stat line (shop + sell panels).
+- Companion healing nerf:
+  - Removed any “multiply healing amount” behavior; healing is rate-based via Union tier intervals.
+
+**Hero Selection UI refresh (2026-01-31)**
+- Layout:
+  - Removed **THE LAB** button from this screen.
+  - Moved **Difficulty** selector + **ENTER THE TRIBULATION** under the **left (Skins) panel**.
+  - Moved **Body Type (A/B)** buttons directly under the character platform; moved **CHOOSE COMPANION** under body type.
+  - Video preview placeholder made taller (square-ish).
+- Hero carousel:
+  - Fixed portrait-swatch carousel so the colored squares update as you cycle heroes.
+- Lore:
+  - Lore now opens as a same-size panel on the right side (no modal).
+  - Existing localized hero description text now lives in the Lore panel.
+  - Hero info panel now shows a short per-hero **quote** (new localized strings).
+- Preview stage:
+  - Dragging the preview rotates the hero (no camera orbit) so the platform stays visually stable.
+
+**Verification / proof (rerun after these edits)**
+- ValidateFast ✅ (same commands as above)
+- GatherText → Translate → Compile ✅
+- `.locres` count: **22**
+
+---
+
+## Hero Selection UI polish (2026-01-31)
+
+- **Side panels height**: Left (Skins) and Right (Hero Info) panels are now slightly shorter via bottom padding so they end above the bottom control row.
+- **AC balance placement/style**: AC balance moved to the **top-right** of the Skins panel header and styled to match the Achievements page (Panel2 chip + gold text, Bold 22).
+- **Skins readability**: Skin name/price font sizes increased for better use of space.
+- **Default skin price**: `Default` skin now costs **0 AC** (other skins remain 250 AC in the hero screen placeholder data).
+- **Controls**:
+  - **HERO GRID** button moved to the **left of** the left carousel arrow.
+  - **CHOOSE COMPANION** moved to the **right of TYPE B** (same row).
+
+---
+
+## Preview zoom + Vendor/Gambler UI refresh (2026-01-31)
+
+- **3D preview zoom (Hero + Companion selection)**:
+  - Mouse wheel now **zooms in** on the preview (default framing is the **max zoom-out**).
+  - Implemented via new `PreviewZoomMultiplier` applied on top of `CameraDistanceMultiplier`:
+    - `AT66HeroPreviewStage::AddPreviewZoom()`
+    - `AT66CompanionPreviewStage::AddPreviewZoom()`
+  - Wired mouse wheel in:
+    - `ST66DragRotatePreview` (hero selection)
+    - `ST66DragRotateCompanionPreview` (companion selection)
+
+- **Vendor UI cleanup + layout**
+  - Shop item cards no longer show **UPGRADE** or **PRICE:** lines (price stays on buy button).
+  - **Gold / Owe** moved next to **YOUR ITEMS** header (bottom).
+  - **Anger** bar replaced by a **color-changing circle** (white → red) while keeping the same anger logic.
+  - **Bank** section moved to the **bottom** of the right panel.
+  - Vendor now opens with a **dialogue prompt** (Shop vs Teleport to brother) like the gambler.
+
+- **Gambler UI layout (vendor-like)**
+  - Casino hub now shows **3 horizontal game cards** (Coin Flip / RPS / Find the Ball).
+  - Selecting a game swaps the center area to that game (cards disappear) and shows **Bet** controls below.
+  - Added **inventory strip + sell panel** (same placement/behavior as vendor).
+  - Replaced anger fill bar with the same **anger circle** and moved bank into the **right panel**.
+
+- **Theme assets**
+  - Added `T66.Brush.Circle` to `FT66Style` (rounded-box brush with large radius) for the anger indicator.
+
+- **Localization**
+  - New vendor dialogue strings added:
+    - `T66.Vendor.IWantToShop`
+    - `T66.Vendor.VendorDialoguePrompt`
+  - GatherText → AutoTranslate → Compile rerun; `.locres` count remains **22**.
+
+### 2026-01-31 — Vendor/Gambler overlays: Inventory header + fixed slot sizing + white circle above Bank
+
+- **Inventory header text**
+  - Both Vendor and Gambler overlays now show **INVENTORY** (localized via `UT66LocalizationSubsystem::GetText_YourItems()`).
+  - Fallback text when `Loc == nullptr` is also **INVENTORY** (so it can’t regress to “YOUR ITEMS”).
+  - **Gold / Owe** sits next to the Inventory header in both overlays.
+- **Inventory slot sizing**
+  - Slots are consistently large (no “small then big” behavior on selection); selection only tints.
+- **Bank marker**
+  - Added a filled **white circle** above the **BANK** section in both overlays (uses `T66.Brush.Circle`).
+- **Gambler label cleanup**
+  - Removed the “GAMES” label from the gambler casino panel.
+- **Verification**
+  - `T66Editor` build succeeded (UE 5.7).

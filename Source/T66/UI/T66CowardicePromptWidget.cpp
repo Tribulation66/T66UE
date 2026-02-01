@@ -13,6 +13,11 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
 
+void UT66CowardicePromptWidget::SetGate(AT66CowardiceGate* InGate)
+{
+	Gate = InGate;
+}
+
 TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 {
 	UT66LocalizationSubsystem* Loc = nullptr;

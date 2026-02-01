@@ -75,7 +75,7 @@ protected:
 	float HealAccumSeconds = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Healing")
-	float HealIntervalSeconds = 2.0f;
+	float HealIntervalSeconds = 10.0f; // Basic Union tier
 
 	UPROPERTY(EditDefaultsOnly, Category = "Healing")
 	int32 HealAmountHearts = 1;

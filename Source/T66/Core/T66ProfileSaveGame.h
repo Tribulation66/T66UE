@@ -36,7 +36,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 1;
+	int32 SaveVersion = 2;
 
 	/** Achievement Coins (AC) wallet balance. Starts at 0 for new profiles. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Achievements")
@@ -49,5 +49,12 @@ public:
 	/** Optional lifetime stat: total enemies killed. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	int32 LifetimeEnemiesKilled = 0;
+
+	/**
+	 * Companion Union progression (lifetime / profile).
+	 * Key: CompanionID, Value: number of stages cleared while that companion was selected.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Union")
+	TMap<FName, int32> CompanionUnionStagesClearedByID;
 };
 

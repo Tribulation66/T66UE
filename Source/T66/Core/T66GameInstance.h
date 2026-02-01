@@ -214,6 +214,16 @@ public:
 	bool GetSelectedCompanionData(FCompanionData& OutCompanionData);
 
 	// ============================================
+	// Hero Stats (Foundational + Level-up gains)
+	// ============================================
+
+	/**
+	 * Get hero stat tuning (base stats and per-level gain ranges) for a hero.
+	 * This is used both by the run-state leveling system and by the hero selection UI.
+	 */
+	bool GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBaseStats, FT66HeroPerLevelStatGains& OutPerLevelGains) const;
+
+	// ============================================
 	// Selection Helpers
 	// ============================================
 

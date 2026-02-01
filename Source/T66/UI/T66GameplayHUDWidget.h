@@ -9,6 +9,7 @@
 
 class UT66RunStateSubsystem;
 class UT66PlayerSettingsSubsystem;
+class UT66MediaViewerSubsystem;
 class STextBlock;
 class SBorder;
 class SBox;
@@ -16,7 +17,6 @@ class ST66RingWidget;
 class ST66DotWidget;
 class ST66WorldMapWidget;
 class AT66LootBagPickup;
-struct FSlateBrush;
 enum class ET66Rarity : uint8;
 
 /**
@@ -43,7 +43,7 @@ public:
 
 	/** TikTok placeholder toggle (O / ToggleTikTok). */
 	void ToggleTikTokPlaceholder();
-	bool IsTikTokPlaceholderVisible() const { return bTikTokPlaceholderVisible; }
+	bool IsTikTokPlaceholderVisible() const;
 
 	/** Wheel spin: show HUD animation + award gold (no overlay). */
 	void StartWheelSpin(ET66Rarity WheelRarity);
@@ -55,8 +55,14 @@ protected:
 	UT66RunStateSubsystem* GetRunState() const;
 
 	void RefreshMapData();
-	void BuildOrUpdateTikTokBrush();
 	void UpdateTikTokVisibility();
+	bool IsMediaViewerOpen() const;
+
+	void RequestTikTokWebView2OverlaySync();
+	void SyncTikTokWebView2OverlayToPlaceholder();
+
+	UFUNCTION()
+	void HandleMediaViewerOpenChanged(bool bIsOpen);
 
 	// Wheel spin animation (HUD-side; no overlay)
 	void TickWheelSpin();
@@ -95,16 +101,16 @@ protected:
 	TSharedPtr<SBox> InventoryPanelBox;
 	TSharedPtr<SBox> MinimapPanelBox;
 	TSharedPtr<SBox> TikTokPlaceholderBox;
+	TSharedPtr<SBox> TikTokContentBox;
 	TSharedPtr<SBox> WheelSpinBox;
 	TSharedPtr<SBorder> WheelSpinDisk;
 	TSharedPtr<STextBlock> WheelSpinText;
 	TSharedPtr<ST66WorldMapWidget> MinimapWidget;
 	TSharedPtr<ST66WorldMapWidget> FullMapWidget;
-	TSharedPtr<FSlateBrush> TikTokBrush;
 
 	bool bFullMapOpen = false;
-	bool bTikTokPlaceholderVisible = true;
 	FTimerHandle MapRefreshTimerHandle;
+	FTimerHandle TikTokOverlaySyncHandle;
 
 	// Wheel spin state
 	bool bWheelPanelOpen = false;
