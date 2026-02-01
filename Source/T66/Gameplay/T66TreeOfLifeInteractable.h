@@ -7,6 +7,7 @@
 #include "T66TreeOfLifeInteractable.generated.h"
 
 class UStaticMeshComponent;
+class UStaticMesh;
 
 /** Tree of Life: grants max hearts (rarity-scaled) and consumes itself. */
 UCLASS(Blueprintable)
@@ -19,6 +20,19 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tree")
 	TObjectPtr<UStaticMeshComponent> CrownMesh;
+
+	/** Optional rarity meshes (when imported). If null/unloaded, we fall back to primitive shapes. */
+	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshBlack;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshRed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshYellow;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshWhite;
 
 	virtual bool Interact(APlayerController* PC) override;
 

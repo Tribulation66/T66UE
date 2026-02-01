@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66CompanionSelectionScreen.h"
 #include "UI/T66UIManager.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Style/T66Style.h"
@@ -18,6 +19,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Notifications/SProgressBar.h"
 #include "Engine/TextureRenderTarget2D.h"
 
 namespace
@@ -121,32 +123,26 @@ void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
 {
 	PlaceholderSkins.Empty();
 
-	FSkinData DefaultSkin;
-	DefaultSkin.SkinID = FName(TEXT("Default"));
-	DefaultSkin.DisplayName = NSLOCTEXT("T66.CompanionSkins", "Default", "Default");
-	DefaultSkin.bIsDefault = true;
-	DefaultSkin.bIsOwned = true;
-	DefaultSkin.bIsEquipped = true;
-	DefaultSkin.CoinCost = 0;
-	PlaceholderSkins.Add(DefaultSkin);
-
-	FSkinData AngelicSkin;
-	AngelicSkin.SkinID = FName(TEXT("Angelic"));
-	AngelicSkin.DisplayName = NSLOCTEXT("T66.CompanionSkins", "AngelicGrace", "Angelic Grace");
-	AngelicSkin.bIsDefault = false;
-	AngelicSkin.bIsOwned = true;
-	AngelicSkin.bIsEquipped = false;
-	AngelicSkin.CoinCost = 3000;
-	PlaceholderSkins.Add(AngelicSkin);
-
-	FSkinData DemonicSkin;
-	DemonicSkin.SkinID = FName(TEXT("Demonic"));
-	DemonicSkin.DisplayName = NSLOCTEXT("T66.CompanionSkins", "TrueForm", "True Form");
-	DemonicSkin.bIsDefault = false;
-	DemonicSkin.bIsOwned = false;
-	DemonicSkin.bIsEquipped = false;
-	DemonicSkin.CoinCost = 6000;
-	PlaceholderSkins.Add(DemonicSkin);
+	// Match hero skins format (shared skin IDs + shared localization).
+	static constexpr int32 SkinPriceAC = 250;
+	const FName SkinIDs[5] = {
+		FName(TEXT("Default")),
+		FName(TEXT("Golden")),
+		FName(TEXT("Shadow")),
+		FName(TEXT("Infernal")),
+		FName(TEXT("Frost")),
+	};
+	for (int32 i = 0; i < 5; ++i)
+	{
+		const FName SkinID = SkinIDs[i];
+		FSkinData Skin;
+		Skin.SkinID = SkinID;
+		Skin.bIsDefault = (SkinID == FName(TEXT("Default")));
+		Skin.bIsOwned = Skin.bIsDefault;          // Default owned
+		Skin.bIsEquipped = Skin.bIsDefault;       // Default equipped
+		Skin.CoinCost = Skin.bIsDefault ? 0 : SkinPriceAC;
+		PlaceholderSkins.Add(Skin);
+	}
 }
 
 TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
@@ -165,21 +161,32 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 
-	// Build skins list
+	// AC balance (shown in the skins panel) - match hero selection UI
+	int32 ACBalance = 0;
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (const UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			ACBalance = Ach->GetAchievementCoinsBalance();
+		}
+	}
+	const FText ACBalanceText = Loc
+		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
+		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(ACBalance));
+
+	// Build skins list (match hero formatting/styling)
 	TSharedRef<SVerticalBox> SkinsListBox = SNew(SVerticalBox);
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
-		FLinearColor RowBg = Skin.bIsEquipped 
-			? FLinearColor(0.2f, 0.4f, 0.3f, 1.0f) 
-			: FLinearColor(0.1f, 0.1f, 0.15f, 1.0f);
-
+		FText SkinDisplayName = Loc ? Loc->GetText_SkinName(Skin.SkinID) : FText::FromName(Skin.SkinID);
 		SkinsListBox->AddSlot()
-		.AutoHeight()
-		.Padding(0.0f, 3.0f)
+		.FillHeight(1.0f)
+		.Padding(0.0f, 6.0f)
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(RowBg)
-			.Padding(FMargin(10.0f, 8.0f))
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+			.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
@@ -187,25 +194,43 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(Skin.DisplayName)
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
-					.ColorAndOpacity(FLinearColor::White)
+					.Text(SkinDisplayName)
+					.Font(FT66Style::Tokens::FontRegular(16))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				.Padding(5.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(78.0f).HeightOverride(28.0f)
+					SNew(SBox).MinDesiredWidth(110.0f).HeightOverride(46.0f)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center).VAlign(VAlign_Center)
-						.ButtonColorAndOpacity(Skin.bIsOwned ? FLinearColor(0.2f, 0.5f, 0.3f, 1.0f) : FLinearColor(0.5f, 0.4f, 0.1f, 1.0f))
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+						.ButtonColorAndOpacity(FT66Style::Tokens::Accent)
 						[
-							SNew(STextBlock)
-							.Text(Skin.bIsOwned ? EquipText : BuyText)
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
-							.ColorAndOpacity(FLinearColor::White)
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+							[
+								SNew(STextBlock)
+								.Text(Skin.bIsOwned ? EquipText : BuyText)
+								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+							]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+							[
+								SNew(STextBlock)
+								.Text_Lambda([Loc, Skin]() -> FText
+								{
+									const int32 Price = FMath::Max(0, Skin.CoinCost);
+									return Loc
+										? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Price))
+										: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(Price));
+								})
+								.Font(FT66Style::Tokens::FontRegular(12))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Visibility(Skin.bIsOwned ? EVisibility::Collapsed : EVisibility::Visible)
+							]
 						]
 					]
 				]
@@ -385,22 +410,34 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						.Padding(FMargin(FT66Style::Tokens::Space3))
 						[
 							SNew(SVerticalBox)
+							// Skins header + AC balance (match hero selection)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
-							.HAlign(HAlign_Center)
 							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
-								SNew(STextBlock).Text(SkinsText)
-								.TextStyle(&TxtHeading)
+								SNew(SOverlay)
+								+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+								[
+									SNew(STextBlock).Text(SkinsText)
+									.TextStyle(&TxtHeading)
+								]
+								+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
+								[
+									SNew(SBorder)
+									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+									.Padding(FMargin(15.0f, 8.0f))
+									[
+										SNew(STextBlock)
+										.Text(ACBalanceText)
+										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+										.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+									]
+								]
 							]
 							+ SVerticalBox::Slot()
 							.FillHeight(1.0f)
 							[
-								SNew(SScrollBox)
-								+ SScrollBox::Slot()
-								[
-									SkinsListBox
-								]
+								SkinsListBox
 							]
 						]
 					]
@@ -507,26 +544,82 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							.HAlign(HAlign_Center)
 							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f)
+								SAssignNew(CompanionUnionBox, SBox)
 								[
-									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
+									SNew(SVerticalBox)
+									// Top: stages cleared / needed
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									.HAlign(HAlign_Center)
 									[
-										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.2f, 0.5f, 0.2f, 1.0f))
+										SAssignNew(CompanionUnionText, STextBlock)
+										.Text(FText::GetEmpty())
+										.Font(FT66Style::Tokens::FontBold(12))
+										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 									]
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f)
-								[
-									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
+									// Bar with checkpoint lines
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									.HAlign(HAlign_Center)
+									.Padding(0.f, 6.f)
 									[
-										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.5f, 0.4f, 0.1f, 1.0f))
+										SNew(SBox)
+										.WidthOverride(240.f)
+										.HeightOverride(14.f)
+										[
+											SNew(SOverlay)
+											+ SOverlay::Slot()
+											[
+												SAssignNew(CompanionUnionProgressBar, SProgressBar)
+												.Percent_Lambda([this]() -> TOptional<float> { return FMath::Clamp(CompanionUnionProgress01, 0.f, 1.f); })
+												.FillColorAndOpacity(FLinearColor(0.20f, 0.65f, 0.35f, 1.0f))
+											]
+											// Checkpoint line at 5/20
+											+ SOverlay::Slot()
+											.HAlign(HAlign_Left)
+											.Padding(FMargin(240.f * 0.25f - 1.f, 0.f, 0.f, 0.f))
+											[
+												SNew(SBox).WidthOverride(2.f).HeightOverride(14.f)
+												[
+													SNew(SBorder)
+													.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+													.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+												]
+											]
+											// Checkpoint line at 10/20
+											+ SOverlay::Slot()
+											.HAlign(HAlign_Left)
+											.Padding(FMargin(240.f * 0.50f - 1.f, 0.f, 0.f, 0.f))
+											[
+												SNew(SBox).WidthOverride(2.f).HeightOverride(14.f)
+												[
+													SNew(SBorder)
+													.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+													.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+												]
+											]
+											// Checkpoint line at 20/20 (end cap)
+											+ SOverlay::Slot()
+											.HAlign(HAlign_Right)
+											[
+												SNew(SBox).WidthOverride(2.f).HeightOverride(14.f)
+												[
+													SNew(SBorder)
+													.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+													.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+												]
+											]
+										]
 									]
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f)
-								[
-									SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
+									// Bottom: healing type (1-4)
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									.HAlign(HAlign_Center)
 									[
-										SNew(SBorder).BorderBackgroundColor(FLinearColor(0.5f, 0.15f, 0.15f, 1.0f))
+										SAssignNew(CompanionUnionHealingText, STextBlock)
+										.Text(FText::GetEmpty())
+										.Font(FT66Style::Tokens::FontBold(12))
+										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 									]
 								]
 							]
@@ -667,6 +760,47 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 			FCompanionData Data;
 			if (GetPreviewedCompanionData(Data))
 				CompanionLoreWidget->SetText(Data.LoreText);
+		}
+	}
+
+	// Friendliness / Union UI (profile progression; only meaningful when a companion is selected)
+	if (CompanionUnionBox.IsValid())
+	{
+		CompanionUnionBox->SetVisibility(PreviewedCompanionID.IsNone() ? EVisibility::Collapsed : EVisibility::Visible);
+	}
+
+	CompanionUnionProgress01 = 0.f;
+	CompanionUnionStagesCleared = 0;
+	if (!PreviewedCompanionID.IsNone())
+	{
+		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+		{
+			if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+			{
+				CompanionUnionStagesCleared = FMath::Max(0, Ach->GetCompanionUnionStagesCleared(PreviewedCompanionID));
+				CompanionUnionProgress01 = FMath::Clamp(Ach->GetCompanionUnionProgress01(PreviewedCompanionID), 0.f, 1.f);
+
+				const int32 Needed = UT66AchievementsSubsystem::UnionTier_HyperStages;
+				if (CompanionUnionText.IsValid())
+				{
+					CompanionUnionText->SetText(FText::Format(
+						NSLOCTEXT("T66.CompanionSelection", "FriendlinessStagesFormat", "Stages: {0}/{1}"),
+						FText::AsNumber(CompanionUnionStagesCleared),
+						FText::AsNumber(Needed)));
+				}
+
+				int32 HealingType = 1; // Basic
+				if (CompanionUnionStagesCleared >= UT66AchievementsSubsystem::UnionTier_HyperStages) HealingType = 4;
+				else if (CompanionUnionStagesCleared >= UT66AchievementsSubsystem::UnionTier_MediumStages) HealingType = 3;
+				else if (CompanionUnionStagesCleared >= UT66AchievementsSubsystem::UnionTier_GoodStages) HealingType = 2;
+
+				if (CompanionUnionHealingText.IsValid())
+				{
+					CompanionUnionHealingText->SetText(FText::Format(
+						NSLOCTEXT("T66.CompanionSelection", "HealingTypeFormat", "Healing Type: {0}"),
+						FText::AsNumber(HealingType)));
+				}
+			}
 		}
 	}
 }

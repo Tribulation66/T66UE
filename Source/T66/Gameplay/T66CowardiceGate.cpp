@@ -9,6 +9,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/SoftObjectPath.h"
+#include "Engine/World.h"
+#include "CollisionQueryParams.h"
 
 AT66CowardiceGate::AT66CowardiceGate()
 {
@@ -30,6 +33,44 @@ AT66CowardiceGate::AT66CowardiceGate()
 	GateMesh->SetRelativeScale3D(FVector(2.f, 3.f, 2.6f));
 	GateMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GateMesh->SetupAttachment(RootComponent);
+
+	// Default expected import location (safe if missing).
+	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/SM_CowardiceGate.SM_CowardiceGate")));
+}
+
+void AT66CowardiceGate::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GateMesh && !GateMeshOverride.IsNull())
+	{
+		if (UStaticMesh* M = GateMeshOverride.LoadSynchronous())
+		{
+			GateMesh->SetStaticMesh(M);
+			GateMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+			// Ground to actor origin using bounds (handles pivots already at the base).
+			const FBoxSphereBounds B = M->GetBounds();
+			const float BottomZ = (B.Origin.Z - B.BoxExtent.Z);
+			GateMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ));
+		}
+	}
+
+	// Snap to ground so the gate never floats.
+	if (UWorld* World = GetWorld())
+	{
+		FHitResult Hit;
+		const FVector Here = GetActorLocation();
+		const FVector Start = Here + FVector(0.f, 0.f, 2000.f);
+		const FVector End = Here - FVector(0.f, 0.f, 12000.f);
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(T66CowardiceGateSnap), false, this);
+		FCollisionObjectQueryParams ObjParams;
+		ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);
+		ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+		if (World->LineTraceSingleByObjectType(Hit, Start, End, ObjParams, Params))
+		{
+			SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
+		}
+	}
 }
 
 bool AT66CowardiceGate::Interact(APlayerController* PC)

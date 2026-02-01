@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/SoftObjectPath.h"
 
 AT66CashTruckInteractable::AT66CashTruckInteractable()
 {
@@ -56,10 +57,55 @@ AT66CashTruckInteractable::AT66CashTruckInteractable()
 	}
 
 	ApplyRarityVisuals();
+
+	// Default expected import locations (safe if missing).
+	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_Black.SM_CashTruck_Black")));
+	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_Red.SM_CashTruck_Red")));
+	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_Yellow.SM_CashTruck_Yellow")));
+	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_White.SM_CashTruck_White")));
 }
 
 void AT66CashTruckInteractable::ApplyRarityVisuals()
 {
+	auto PickMesh = [&]() -> const TSoftObjectPtr<UStaticMesh>&
+	{
+		switch (Rarity)
+		{
+			case ET66Rarity::Black: return MeshBlack;
+			case ET66Rarity::Red: return MeshRed;
+			case ET66Rarity::Yellow: return MeshYellow;
+			case ET66Rarity::White: return MeshWhite;
+			default: return MeshBlack;
+		}
+	};
+
+	UStaticMesh* M = nullptr;
+	const TSoftObjectPtr<UStaticMesh>& Ptr = PickMesh();
+	if (!Ptr.IsNull())
+	{
+		M = Ptr.Get();
+		if (!M)
+		{
+			M = Ptr.LoadSynchronous();
+		}
+	}
+
+	if (M && VisualMesh)
+	{
+		VisualMesh->SetStaticMesh(M);
+		VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+		VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		const float HalfHeight = FMath::Max(1.f, M->GetBounds().BoxExtent.Z);
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, HalfHeight));
+
+		// Hide placeholder wheels (imported mesh usually includes them).
+		for (UStaticMeshComponent* W : WheelMeshes)
+		{
+			if (W) W->SetVisibility(false, true);
+		}
+		return;
+	}
+
 	// Make rarity obvious: tint the truck body.
 	const FLinearColor BodyC = bIsMimic ? FLinearColor(0.35f, 0.10f, 0.55f, 1.f) : FT66RarityUtil::GetRarityColor(Rarity);
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, BodyC);

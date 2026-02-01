@@ -74,6 +74,7 @@ private:
 	TSharedPtr<STextBlock> CompanionNameWidget;
 	TSharedPtr<STextBlock> CompanionLoreWidget;
 	TSharedPtr<STextBlock> CompanionUnionText;
+	TSharedPtr<STextBlock> CompanionUnionHealingText;
 	TSharedPtr<SBorder> CompanionPreviewColorBox;
 	TSharedPtr<SBox> CompanionUnionBox;
 	TSharedPtr<class SProgressBar> CompanionUnionProgressBar;

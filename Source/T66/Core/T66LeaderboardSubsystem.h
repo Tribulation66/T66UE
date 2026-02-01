@@ -40,6 +40,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	bool HasLocalBestBountyRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
+	/** True if the most recent high score submit set a new personal best (for the active difficulty/party). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	bool WasLastHighScoreNewPersonalBest() const { return bLastHighScoreWasNewBest; }
+
+	/** True if the most recent speed run submit set a new personal best time (for the active difficulty/party/stage). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	bool WasLastSpeedRunNewPersonalBest() const { return bLastSpeedRunWasNewBest; }
+
+	/** Stage number associated with the most recent speed run submission. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	int32 GetLastSpeedRunSubmittedStage() const { return LastSpeedRunSubmittedStage; }
+
 	/**
 	 * UI helper: request opening the local-best bounty run summary.
 	 * `UT66RunSummaryScreen` will consume this request on activation.
@@ -95,5 +107,10 @@ private:
 
 	// Transient UI "handshake": panel sets a requested slot name, RunSummaryScreen consumes it.
 	FString PendingRunSummarySlotName;
+
+	// ===== Last submit results (for Run Summary "New Personal Best" banners) =====
+	bool bLastHighScoreWasNewBest = false;
+	bool bLastSpeedRunWasNewBest = false;
+	int32 LastSpeedRunSubmittedStage = 0;
 };
 

@@ -27,6 +27,10 @@ void AT66EnemyDirector::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Cache base counts (used for difficulty scaling).
+	BaseEnemiesPerWave = FMath::Max(1, EnemiesPerWave);
+	BaseMaxAliveEnemies = FMath::Max(1, MaxAliveEnemies);
+
 	// Only begin spawning once the Stage Timer becomes active (after Start Gate).
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
@@ -112,7 +116,13 @@ void AT66EnemyDirector::SpawnWave()
 		return;
 	}
 
-	int32 ToSpawn = FMath::Min(EnemiesPerWave, MaxAliveEnemies - AliveCount);
+	// Difficulty scaling affects enemy count (waves + max alive).
+	const float Scalar = RunState->GetDifficultyScalar();
+	int32 EffectivePerWave = FMath::Clamp(FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * Scalar), 1, 200);
+	int32 EffectiveMaxAlive = FMath::Clamp(FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseMaxAliveEnemies)) * Scalar), 1, 500);
+	EffectiveMaxAlive = FMath::Max(EffectiveMaxAlive, EffectivePerWave);
+
+	int32 ToSpawn = FMath::Min(EffectivePerWave, EffectiveMaxAlive - AliveCount);
 	if (ToSpawn <= 0) return;
 
 	UWorld* World = GetWorld();
@@ -286,7 +296,7 @@ void AT66EnemyDirector::SpawnWave()
 
 			if (RunState)
 			{
-				Enemy->ApplyDifficultyTier(RunState->GetDifficultyTier());
+				Enemy->ApplyDifficultyScalar(Scalar);
 			}
 			if (bIsMiniBoss)
 			{
@@ -347,7 +357,7 @@ void AT66EnemyDirector::SpawnWave()
 			Unique->OwningDirector = nullptr;
 			if (RunState)
 			{
-				Unique->ApplyDifficultyTier(RunState->GetDifficultyTier());
+				Unique->ApplyDifficultyScalar(Scalar);
 			}
 			ActiveUniqueEnemy = Unique;
 			bSpawnedUniqueThisStage = true;

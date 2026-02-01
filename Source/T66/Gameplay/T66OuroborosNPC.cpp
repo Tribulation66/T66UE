@@ -10,6 +10,13 @@ AT66OuroborosNPC::AT66OuroborosNPC()
 	NPCColor = FLinearColor(0.1f, 0.8f, 0.2f, 1.f);
 }
 
+void AT66OuroborosNPC::BeginPlay()
+{
+	// Force this for already-placed instances that may have saved the old default.
+	NPCID = FName(TEXT("Ouroboros"));
+	Super::BeginPlay();
+}
+
 bool AT66OuroborosNPC::Interact(APlayerController* PC)
 {
 	UWorld* World = GetWorld();

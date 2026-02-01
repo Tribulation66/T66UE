@@ -60,6 +60,17 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 	FireIntervalSeconds = BossData.FireIntervalSeconds;
 	ProjectileSpeed = BossData.ProjectileSpeed;
 	ProjectileDamageHearts = BossData.ProjectileDamageHearts;
+	PointValue = FMath::Max(0, BossData.PointValue);
+
+	// Conservative default if DT doesn't specify a score: tie to HP scale.
+	if (PointValue <= 0)
+	{
+		PointValue = FMath::Clamp(MaxHP / 10, 100, 5000);
+	}
+
+	BaseMaxHP = MaxHP;
+	BaseProjectileDamageHearts = ProjectileDamageHearts;
+	bBaseTuningInitialized = true;
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
@@ -82,6 +93,42 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 			if (!bApplied && GetMesh())
 			{
 				GetMesh()->SetVisibility(false, true);
+			}
+		}
+	}
+
+	// Apply current run difficulty (boss is usually dormant until awaken).
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			ApplyDifficultyScalar(RunState->GetDifficultyScalar());
+		}
+	}
+}
+
+void AT66BossBase::ApplyDifficultyScalar(float Scalar)
+{
+	if (!bBaseTuningInitialized)
+	{
+		BaseMaxHP = MaxHP;
+		BaseProjectileDamageHearts = ProjectileDamageHearts;
+		bBaseTuningInitialized = true;
+	}
+
+	const float ClampedScalar = FMath::Clamp(Scalar, 1.0f, 99.0f);
+	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * ClampedScalar));
+	ProjectileDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseProjectileDamageHearts) * ClampedScalar));
+
+	// If boss is active, rescale the RunState boss bar max HP while preserving percent.
+	if (bAwakened)
+	{
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RunState->RescaleBossMaxHPPreservePercent(MaxHP);
+				CurrentHP = RunState->GetBossCurrentHP();
 			}
 		}
 	}
@@ -206,7 +253,7 @@ void AT66BossBase::Die()
 	// Delegate death handling to GameMode (normal vs Coliseum).
 	if (AT66GameMode* GM = World ? World->GetAuthGameMode<AT66GameMode>() : nullptr)
 	{
-		GM->HandleBossDefeatedAtLocation(GetActorLocation());
+		GM->HandleBossDefeated(this);
 	}
 
 	Destroy();

@@ -1,27 +1,27 @@
 ---,HeroID,DisplayName,Description,PlaceholderColor,HeroClass,Portrait,MapTheme,bUnlockedByDefault
-Hero_AliceInWonderlandRabbit,Hero_AliceInWonderlandRabbit,"Alice in Wonderland Rabbit","","(R=0.9,G=0.7,B=0.9,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_AliceInWonderlandRabbit,true
-Hero_LuBu,Hero_LuBu,"Lu Bu","","(R=0.8,G=0.2,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_LuBu,true
-Hero_LeonardoDaVinci,Hero_LeonardoDaVinci,"Leonardo da Vinci","","(R=0.6,G=0.5,B=0.3,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_LeonardoDaVinci,true
-Hero_Yakub,Hero_Yakub,"Yakub","","(R=0.3,G=0.3,B=0.8,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_Yakub,true
-Hero_KingArthur,Hero_KingArthur,"King Arthur","","(R=0.7,G=0.7,B=0.9,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_KingArthur,true
-Hero_MiyamotoMusashi,Hero_MiyamotoMusashi,"Miyamoto Musashi","","(R=0.4,G=0.4,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_MiyamotoMusashi,true
-Hero_CaptainJackSparrow,Hero_CaptainJackSparrow,"Captain Jack Sparrow","","(R=0.5,G=0.35,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_CaptainJackSparrow,true
-Hero_SoloLeveler,Hero_SoloLeveler,"Solo Leveler","","(R=0.2,G=0.2,B=0.6,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_SoloLeveler,true
-Hero_Saitama,Hero_Saitama,"Saitama","","(R=1.0,G=0.9,B=0.3,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_Saitama,true
-Hero_RoboGoon,Hero_RoboGoon,"RoboGoon","","(R=0.5,G=0.5,B=0.6,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_RoboGoon,true
-Hero_GeorgeWashington,Hero_GeorgeWashington,"George Washington","","(R=0.2,G=0.3,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_GeorgeWashington,true
-Hero_Cain,Hero_Cain,"Cain","","(R=0.6,G=0.2,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_Cain,true
-Hero_BillyTheKid,Hero_BillyTheKid,"Billy the Kid","","(R=0.7,G=0.5,B=0.3,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_BillyTheKid,true
-Hero_RoachKing,Hero_RoachKing,"Roach King","","(R=0.35,G=0.25,B=0.15,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_RoachKing,true
-Hero_Goblino,Hero_Goblino,"Goblino","","(R=0.3,G=0.6,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_Goblino,true
-Hero_BulkBite,Hero_BulkBite,"BulkBite","","(R=0.5,G=0.3,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_BulkBite,true
-Hero_HoboWanderer,Hero_HoboWanderer,"HoboWanderer","","(R=0.45,G=0.4,B=0.35,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_HoboWanderer,true
-Hero_DryHumor,Hero_DryHumor,"DryHumor","","(R=0.8,G=0.7,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_DryHumor,true
-Hero_LyricVoi,Hero_LyricVoi,"LyricVoi","","(R=0.6,G=0.4,B=0.7,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_LyricVoi,true
-Hero_Jesterma,Hero_Jesterma,"Jesterma","","(R=0.9,G=0.3,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_Jesterma,true
-Hero_NorthKing,Hero_NorthKing,"NorthKing","","(R=0.4,G=0.6,B=0.8,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_NorthKing,true
-Hero_Peakwarden,Hero_Peakwarden,"Peakwarden","","(R=0.5,G=0.5,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_Peakwarden,true
-Hero_QuinnHex,Hero_QuinnHex,"QuinnHex","","(R=0.5,G=0.2,B=0.6,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_QuinnHex,true
-Hero_SandSultan,Hero_SandSultan,"SandSultan","","(R=0.85,G=0.7,B=0.4,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_SandSultan,true
-Hero_CharNut,Hero_CharNut,"CharNut","","(R=0.3,G=0.2,B=0.15,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_CharNut,true
-Hero_Wraithveil,Hero_Wraithveil,"Wraithveil","","(R=0.3,G=0.3,B=0.4,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",,Hero_Wraithveil,true
+Hero_AliceInWonderlandRabbit,Hero_AliceInWonderlandRabbit,"Alice in Wonderland Rabbit","","(R=0.9,G=0.7,B=0.9,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_AliceInWonderlandRabbit/T_HeroPortrait_Hero_AliceInWonderlandRabbit.T_HeroPortrait_Hero_AliceInWonderlandRabbit",Hero_AliceInWonderlandRabbit,true
+Hero_LuBu,Hero_LuBu,"Lu Bu","","(R=0.8,G=0.2,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_LuBu/T_HeroPortrait_Hero_LuBu.T_HeroPortrait_Hero_LuBu",Hero_LuBu,true
+Hero_LeonardoDaVinci,Hero_LeonardoDaVinci,"Leonardo da Vinci","","(R=0.6,G=0.5,B=0.3,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_LeonardoDaVinci/T_HeroPortrait_Hero_LeonardoDaVinci.T_HeroPortrait_Hero_LeonardoDaVinci",Hero_LeonardoDaVinci,true
+Hero_Yakub,Hero_Yakub,"Yakub","","(R=0.3,G=0.3,B=0.8,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_Yakub/T_HeroPortrait_Hero_Yakub.T_HeroPortrait_Hero_Yakub",Hero_Yakub,true
+Hero_KingArthur,Hero_KingArthur,"King Arthur","","(R=0.7,G=0.7,B=0.9,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_KingArthur/T_HeroPortrait_Hero_KingArthur.T_HeroPortrait_Hero_KingArthur",Hero_KingArthur,true
+Hero_MiyamotoMusashi,Hero_MiyamotoMusashi,"Miyamoto Musashi","","(R=0.4,G=0.4,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_MiyamotoMusashi/T_HeroPortrait_Hero_MiyamotoMusashi.T_HeroPortrait_Hero_MiyamotoMusashi",Hero_MiyamotoMusashi,true
+Hero_CaptainJackSparrow,Hero_CaptainJackSparrow,"Captain Jack Sparrow","","(R=0.5,G=0.35,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_CaptainJackSparrow/T_HeroPortrait_Hero_CaptainJackSparrow.T_HeroPortrait_Hero_CaptainJackSparrow",Hero_CaptainJackSparrow,true
+Hero_SoloLeveler,Hero_SoloLeveler,"Solo Leveler","","(R=0.2,G=0.2,B=0.6,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_SoloLeveler/T_HeroPortrait_Hero_SoloLeveler.T_HeroPortrait_Hero_SoloLeveler",Hero_SoloLeveler,true
+Hero_Saitama,Hero_Saitama,"Saitama","","(R=1.0,G=0.9,B=0.3,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_Saitama/T_HeroPortrait_Hero_Saitama.T_HeroPortrait_Hero_Saitama",Hero_Saitama,true
+Hero_RoboGoon,Hero_RoboGoon,"RoboGoon","","(R=0.5,G=0.5,B=0.6,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_RoboGoon/T_HeroPortrait_Hero_RoboGoon.T_HeroPortrait_Hero_RoboGoon",Hero_RoboGoon,true
+Hero_GeorgeWashington,Hero_GeorgeWashington,"George Washington","","(R=0.2,G=0.3,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_GeorgeWashington/T_HeroPortrait_Hero_GeorgeWashington.T_HeroPortrait_Hero_GeorgeWashington",Hero_GeorgeWashington,true
+Hero_Cain,Hero_Cain,"Cain","","(R=0.6,G=0.2,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_Cain/T_HeroPortrait_Hero_Cain.T_HeroPortrait_Hero_Cain",Hero_Cain,true
+Hero_BillyTheKid,Hero_BillyTheKid,"Billy the Kid","","(R=0.7,G=0.5,B=0.3,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_BillyTheKid/T_HeroPortrait_Hero_BillyTheKid.T_HeroPortrait_Hero_BillyTheKid",Hero_BillyTheKid,true
+Hero_RoachKing,Hero_RoachKing,"Roach King","","(R=0.35,G=0.25,B=0.15,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_RoachKing/T_HeroPortrait_Hero_RoachKing.T_HeroPortrait_Hero_RoachKing",Hero_RoachKing,true
+Hero_Goblino,Hero_Goblino,"Goblino","","(R=0.3,G=0.6,B=0.2,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_Goblino/T_HeroPortrait_Hero_Goblino.T_HeroPortrait_Hero_Goblino",Hero_Goblino,true
+Hero_BulkBite,Hero_BulkBite,"BulkBite","","(R=0.5,G=0.3,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_BulkBite/T_HeroPortrait_Hero_BulkBite.T_HeroPortrait_Hero_BulkBite",Hero_BulkBite,true
+Hero_HoboWanderer,Hero_HoboWanderer,"HoboWanderer","","(R=0.45,G=0.4,B=0.35,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_HoboWanderer/T_HeroPortrait_Hero_HoboWanderer.T_HeroPortrait_Hero_HoboWanderer",Hero_HoboWanderer,true
+Hero_DryHumor,Hero_DryHumor,"DryHumor","","(R=0.8,G=0.7,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_DryHumor/T_HeroPortrait_Hero_DryHumor.T_HeroPortrait_Hero_DryHumor",Hero_DryHumor,true
+Hero_LyricVoi,Hero_LyricVoi,"LyricVoi","","(R=0.6,G=0.4,B=0.7,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_LyricVoi/T_HeroPortrait_Hero_LyricVoi.T_HeroPortrait_Hero_LyricVoi",Hero_LyricVoi,true
+Hero_Jesterma,Hero_Jesterma,"Jesterma","","(R=0.9,G=0.3,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_Jesterma/T_HeroPortrait_Hero_Jesterma.T_HeroPortrait_Hero_Jesterma",Hero_Jesterma,true
+Hero_NorthKing,Hero_NorthKing,"NorthKing","","(R=0.4,G=0.6,B=0.8,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_NorthKing/T_HeroPortrait_Hero_NorthKing.T_HeroPortrait_Hero_NorthKing",Hero_NorthKing,true
+Hero_Peakwarden,Hero_Peakwarden,"Peakwarden","","(R=0.5,G=0.5,B=0.5,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_Peakwarden/T_HeroPortrait_Hero_Peakwarden.T_HeroPortrait_Hero_Peakwarden",Hero_Peakwarden,true
+Hero_QuinnHex,Hero_QuinnHex,"QuinnHex","","(R=0.5,G=0.2,B=0.6,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_QuinnHex/T_HeroPortrait_Hero_QuinnHex.T_HeroPortrait_Hero_QuinnHex",Hero_QuinnHex,true
+Hero_SandSultan,Hero_SandSultan,"SandSultan","","(R=0.85,G=0.7,B=0.4,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_SandSultan/T_HeroPortrait_Hero_SandSultan.T_HeroPortrait_Hero_SandSultan",Hero_SandSultan,true
+Hero_CharNut,Hero_CharNut,"CharNut","","(R=0.3,G=0.2,B=0.15,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_CharNut/T_HeroPortrait_Hero_CharNut.T_HeroPortrait_Hero_CharNut",Hero_CharNut,true
+Hero_Wraithveil,Hero_Wraithveil,"Wraithveil","","(R=0.3,G=0.3,B=0.4,A=1.0)","/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C","/Game/UI/Sprites/Heros/Hero_Wraithveil/T_HeroPortrait_Hero_Wraithveil.T_HeroPortrait_Hero_Wraithveil",Hero_Wraithveil,true

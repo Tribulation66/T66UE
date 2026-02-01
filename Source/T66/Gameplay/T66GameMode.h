@@ -59,10 +59,10 @@ public:
 
 	/**
 	 * Dev switch: force the hero to spawn in the Tutorial Arena instead of the normal Stage 1 Start Area.
-	 * (Requested for iteration. Default currently ON per user request.)
+	 * Default OFF (spawn in normal start area).
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tutorial")
-	bool bForceSpawnInTutorialArea = true;
+	bool bForceSpawnInTutorialArea = false;
 
 	/** Offset from world origin for Stage Gate (far side of map). Start Gate is spawned near player. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
@@ -85,8 +85,8 @@ public:
 	/** Clear all miasma tiles (e.g. when boss is defeated). */
 	void ClearMiasma();
 
-	/** Called by BossBase on death so GameMode can decide what happens (normal vs Coliseum). */
-	void HandleBossDefeatedAtLocation(const FVector& Location);
+	/** Called by BossBase on death so GameMode can decide what happens (normal vs Coliseum) and award score. */
+	void HandleBossDefeated(AT66BossBase* Boss);
 
 protected:
 	virtual void BeginPlay() override;

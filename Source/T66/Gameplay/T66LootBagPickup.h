@@ -9,6 +9,7 @@
 
 class USphereComponent;
 class UStaticMeshComponent;
+class UStaticMesh;
 class AT66PlayerController;
 
 UCLASS(Blueprintable)
@@ -46,6 +47,19 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	/** Optional rarity meshes (when imported). If null/unloaded, we fall back to the colored cube. */
+	UPROPERTY(EditDefaultsOnly, Category = "Visuals|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshBlack;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visuals|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshRed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visuals|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshYellow;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visuals|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshWhite;
 
 protected:
 	virtual void BeginPlay() override;

@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/SoftObjectPath.h"
 
 AT66TreeOfLifeInteractable::AT66TreeOfLifeInteractable()
 {
@@ -27,11 +28,56 @@ AT66TreeOfLifeInteractable::AT66TreeOfLifeInteractable()
 		CrownMesh->SetRelativeScale3D(FVector(1.2f, 1.2f, 1.2f));
 		CrownMesh->SetRelativeLocation(FVector(0.f, 0.f, 260.f));
 	}
+
+	// Default expected import locations (safe if missing).
+	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/SM_Tree_Black.SM_Tree_Black")));
+	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/SM_Tree_Red.SM_Tree_Red")));
+	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/SM_Tree_Yellow.SM_Tree_Yellow")));
+	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/SM_Tree_White.SM_Tree_White")));
+
 	ApplyRarityVisuals();
 }
 
 void AT66TreeOfLifeInteractable::ApplyRarityVisuals()
 {
+	auto PickMesh = [&]() -> const TSoftObjectPtr<UStaticMesh>&
+	{
+		switch (Rarity)
+		{
+			case ET66Rarity::Black: return MeshBlack;
+			case ET66Rarity::Red: return MeshRed;
+			case ET66Rarity::Yellow: return MeshYellow;
+			case ET66Rarity::White: return MeshWhite;
+			default: return MeshBlack;
+		}
+	};
+
+	UStaticMesh* M = nullptr;
+	const TSoftObjectPtr<UStaticMesh>& Ptr = PickMesh();
+	if (!Ptr.IsNull())
+	{
+		M = Ptr.Get();
+		if (!M)
+		{
+			M = Ptr.LoadSynchronous();
+		}
+	}
+
+	if (M && VisualMesh)
+	{
+		VisualMesh->SetStaticMesh(M);
+		VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+		VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		const float HalfHeight = FMath::Max(1.f, M->GetBounds().BoxExtent.Z);
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, HalfHeight));
+
+		if (CrownMesh)
+		{
+			CrownMesh->SetVisibility(false, true);
+		}
+		return;
+	}
+
 	const FLinearColor R = FT66RarityUtil::GetRarityColor(Rarity);
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, R);
 	FT66VisualUtil::ApplyT66Color(CrownMesh, this, R);

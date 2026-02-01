@@ -121,16 +121,18 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 void AT66EnemyBase::ApplyMiniBossMultipliers(float HPScalar, float DamageScalar, float ScaleScalar)
 {
 	bIsMiniBoss = true;
+	MiniBossHPScalarApplied = FMath::Max(0.1f, HPScalar);
+	MiniBossDamageScalarApplied = FMath::Max(0.1f, DamageScalar);
+	MiniBossScaleScalarApplied = FMath::Clamp(ScaleScalar, 1.0f, 4.0f);
 
 	// Stats: scale current (already difficulty-scaled) tuning.
-	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * FMath::Max(0.1f, HPScalar)));
+	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * MiniBossHPScalarApplied));
 	CurrentHP = MaxHP;
-	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * FMath::Max(0.1f, DamageScalar)));
+	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * MiniBossDamageScalarApplied));
 	UpdateHealthBar();
 
 	// Visual: scale the whole actor (capsule + mesh) so it's obviously a mini-boss.
-	const float S = FMath::Clamp(ScaleScalar, 1.0f, 4.0f);
-	SetActorScale3D(FVector(S, S, S));
+	SetActorScale3D(FVector(MiniBossScaleScalarApplied, MiniBossScaleScalarApplied, MiniBossScaleScalarApplied));
 }
 
 void AT66EnemyBase::BeginPlay()
@@ -140,6 +142,7 @@ void AT66EnemyBase::BeginPlay()
 	{
 		BaseMaxHP = MaxHP;
 		BaseTouchDamageHearts = TouchDamageHearts;
+		BasePointValue = PointValue;
 		bBaseTuningInitialized = true;
 	}
 	// Ensure HP is valid on spawn (in case difficulty scaled before BeginPlay).
@@ -238,20 +241,44 @@ void AT66EnemyBase::BeginPlay()
 #endif
 }
 
-void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
+void AT66EnemyBase::ApplyDifficultyScalar(float Scalar)
 {
 	if (!bBaseTuningInitialized)
 	{
 		BaseMaxHP = MaxHP;
 		BaseTouchDamageHearts = TouchDamageHearts;
+		BasePointValue = PointValue;
 		bBaseTuningInitialized = true;
 	}
-	const int32 ClampedTier = FMath::Max(0, Tier);
-	const float Mult = 1.f + static_cast<float>(ClampedTier);
-	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * Mult));
-	CurrentHP = MaxHP;
-	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseTouchDamageHearts) * Mult));
+
+	const float ClampedScalar = FMath::Clamp(Scalar, 1.0f, 99.0f);
+
+	// Preserve current HP percentage when scaling mid-fight.
+	const float PrevMax = static_cast<float>(FMath::Max(1, MaxHP));
+	const float PrevCur = static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP));
+	const float Pct = FMath::Clamp(PrevCur / PrevMax, 0.f, 1.f);
+
+	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * ClampedScalar));
+	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseTouchDamageHearts) * ClampedScalar));
+
+	// Re-apply mini-boss multipliers if this enemy was promoted.
+	if (bIsMiniBoss)
+	{
+		MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * FMath::Max(0.1f, MiniBossHPScalarApplied)));
+		TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * FMath::Max(0.1f, MiniBossDamageScalarApplied)));
+		SetActorScale3D(FVector(MiniBossScaleScalarApplied, MiniBossScaleScalarApplied, MiniBossScaleScalarApplied));
+	}
+
+	CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(MaxHP) * Pct), 1, MaxHP);
 	UpdateHealthBar();
+}
+
+void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
+{
+	// Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...
+	const int32 ClampedTier = FMath::Max(0, Tier);
+	const float Scalar = 1.0f + (0.1f * static_cast<float>(ClampedTier));
+	ApplyDifficultyScalar(Scalar);
 }
 
 void AT66EnemyBase::Tick(float DeltaSeconds)
@@ -408,9 +435,11 @@ void AT66EnemyBase::OnDeath()
 	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	if (RunState)
 	{
-		RunState->AddScore(PointValue);
+		const float Scalar = RunState->GetDifficultyScalar();
+		const int32 AwardPoints = FMath::Max(0, FMath::RoundToInt(static_cast<float>(PointValue) * Scalar));
+		RunState->AddScore(AwardPoints);
 		RunState->AddHeroXP(XPValue);
-		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d"), PointValue));
+		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d"), AwardPoints));
 	}
 	if (Achievements)
 	{

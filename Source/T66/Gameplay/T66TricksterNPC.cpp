@@ -4,10 +4,18 @@
 
 AT66TricksterNPC::AT66TricksterNPC()
 {
-	NPCID = NAME_None; // no DT row required for now
+	// Use DT_CharacterVisuals (and optionally DT_HouseNPCs later) to drive the imported mesh.
+	NPCID = FName(TEXT("Trickster"));
 	NPCName = NSLOCTEXT("T66.NPC", "Trickster", "Trickster");
 	NPCColor = FLinearColor(0.55f, 0.2f, 0.9f, 1.f);
 	SafeZoneRadius = 650.f;
+}
+
+void AT66TricksterNPC::BeginPlay()
+{
+	// Force this for already-placed instances that may have saved the old default (None).
+	NPCID = FName(TEXT("Trickster"));
+	Super::BeginPlay();
 }
 
 bool AT66TricksterNPC::Interact(APlayerController* PC)

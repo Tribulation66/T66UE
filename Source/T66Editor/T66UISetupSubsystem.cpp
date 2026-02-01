@@ -350,8 +350,6 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 		{ ET66ScreenType::Achievements, TEXT("/Game/Blueprints/UI/WBP_Achievements.WBP_Achievements_C") },
 		{ ET66ScreenType::QuitConfirmation, TEXT("/Game/Blueprints/UI/WBP_QuitConfirmation.WBP_QuitConfirmation_C") },
 		{ ET66ScreenType::LanguageSelect, TEXT("/Game/Blueprints/UI/WBP_LanguageSelect.WBP_LanguageSelect_C") },
-		{ ET66ScreenType::HeroGrid, TEXT("/Game/Blueprints/UI/WBP_HeroGrid.WBP_HeroGrid_C") },
-		{ ET66ScreenType::CompanionGrid, TEXT("/Game/Blueprints/UI/WBP_CompanionGrid.WBP_CompanionGrid_C") },
 	};
 
 	for (const auto& Mapping : Mappings)

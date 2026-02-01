@@ -6,6 +6,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
+#include "UObject/SoftObjectPath.h"
 
 AT66IdolAltar::AT66IdolAltar()
 {
@@ -30,12 +31,20 @@ AT66IdolAltar::AT66IdolAltar()
 	TopRect->SetupAttachment(RootComponent);
 	TopRect->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
+	VisualMesh->SetupAttachment(RootComponent);
+	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	VisualMesh->SetVisibility(false, true);
+
 	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
 	{
 		BaseRect->SetStaticMesh(Cube);
 		MidRect->SetStaticMesh(Cube);
 		TopRect->SetStaticMesh(Cube);
 	}
+
+	// Default expected import location (safe if missing).
+	AltarMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/SM_IdolAltar.SM_IdolAltar")));
 
 	// Pyramid-like stacking: wide base, smaller mid, smallest top.
 	// Grounded stack (bottom of base at Z=0).
@@ -54,6 +63,24 @@ AT66IdolAltar::AT66IdolAltar()
 void AT66IdolAltar::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Swap to imported mesh if present.
+	if (VisualMesh && !AltarMeshOverride.IsNull())
+	{
+		if (UStaticMesh* M = AltarMeshOverride.LoadSynchronous())
+		{
+			VisualMesh->SetStaticMesh(M);
+			VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+			const float HalfHeight = FMath::Max(1.f, M->GetBounds().BoxExtent.Z);
+			VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, HalfHeight));
+			VisualMesh->SetVisibility(true, true);
+
+			// Hide placeholder stack.
+			if (BaseRect) BaseRect->SetVisibility(false, true);
+			if (MidRect) MidRect->SetVisibility(false, true);
+			if (TopRect) TopRect->SetVisibility(false, true);
+		}
+	}
 
 	// Robust: snap the altar to ground so it's never floating.
 	if (UWorld* World = GetWorld())
@@ -74,6 +101,12 @@ void AT66IdolAltar::ApplyVisuals()
 	const FLinearColor C0(0.10f, 0.10f, 0.12f, 1.f);
 	const FLinearColor C1(0.12f, 0.12f, 0.16f, 1.f);
 	const FLinearColor C2(0.14f, 0.14f, 0.20f, 1.f);
+
+	if (VisualMesh && VisualMesh->IsVisible())
+	{
+		// Imported mesh: leave materials as-authored.
+		return;
+	}
 
 	if (UMaterialInstanceDynamic* M = BaseRect->CreateAndSetMaterialInstanceDynamic(0))
 	{

@@ -393,6 +393,60 @@ FText UT66LocalizationSubsystem::GetText_StatLineFormat() const
 	return NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
 }
 
+// ========== Items (names derived from ItemID) ==========
+
+FText UT66LocalizationSubsystem::GetText_ItemRarityName(ET66ItemRarity Rarity) const
+{
+	switch (Rarity)
+	{
+		case ET66ItemRarity::Black: return NSLOCTEXT("T66.Items", "RarityBlack", "Black");
+		case ET66ItemRarity::Red: return NSLOCTEXT("T66.Items", "RarityRed", "Red");
+		case ET66ItemRarity::Yellow: return NSLOCTEXT("T66.Items", "RarityYellow", "Yellow");
+		case ET66ItemRarity::White: return NSLOCTEXT("T66.Items", "RarityWhite", "White");
+		case ET66ItemRarity::Cursed: return NSLOCTEXT("T66.Items", "RarityCursed", "Cursed");
+		default: break;
+	}
+	return FText::GetEmpty();
+}
+
+FText UT66LocalizationSubsystem::GetText_ItemNameFormat() const
+{
+	return NSLOCTEXT("T66.Items", "ItemNameFormat", "{0} {1}");
+}
+
+FText UT66LocalizationSubsystem::GetText_ItemDisplayName(FName ItemID) const
+{
+	const FString S = ItemID.ToString();
+
+	// Canonical IDs: Item_<Color>_<Number>
+	FString ColorStr;
+	FString NumStr;
+	if (S.Split(TEXT("_"), nullptr, &ColorStr))
+	{
+		// After first split, ColorStr holds the remainder; split again.
+		// Example: "Black_01"
+		FString Tail = ColorStr;
+		if (Tail.Split(TEXT("_"), &ColorStr, &NumStr))
+		{
+			ET66ItemRarity R = ET66ItemRarity::Black;
+			if (ColorStr.Equals(TEXT("Black"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::Black;
+			else if (ColorStr.Equals(TEXT("Red"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::Red;
+			else if (ColorStr.Equals(TEXT("Yellow"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::Yellow;
+			else if (ColorStr.Equals(TEXT("White"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::White;
+			else if (ColorStr.Equals(TEXT("Cursed"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::Cursed;
+
+			const int32 Index = FMath::Max(0, FCString::Atoi(*NumStr));
+			if (Index > 0)
+			{
+				return FText::Format(GetText_ItemNameFormat(), GetText_ItemRarityName(R), FText::AsNumber(Index));
+			}
+		}
+	}
+
+	// Fallback: show raw ID.
+	return FText::FromName(ItemID);
+}
+
 // ========== Companion Names ==========
 
 FText UT66LocalizationSubsystem::GetText_CompanionName(FName CompanionID) const
@@ -1288,18 +1342,30 @@ FText UT66LocalizationSubsystem::GetText_IdolAltarEquipped() const
 
 FText UT66LocalizationSubsystem::GetText_IdolTooltip(FName IdolID) const
 {
-	if (IdolID == FName(TEXT("Idol_Frost"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Frost_Tooltip", "FROST\nAuto attacks freeze enemies for 0.5s.");
-	if (IdolID == FName(TEXT("Idol_Shock"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Shock_Tooltip", "SHOCK\nAuto attacks chain to 1 nearby enemy.");
-	if (IdolID == FName(TEXT("Idol_Glue"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Glue_Tooltip", "GLUE\nAuto attacks slow enemies briefly.");
-	if (IdolID == FName(TEXT("Idol_Silence"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Silence_Tooltip", "SILENCE\nAuto attacks prevent enemy attacks briefly.");
-	if (IdolID == FName(TEXT("Idol_Mark"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Mark_Tooltip", "MARK\nAuto attacks mark enemies (take extra auto-attack damage).");
-	if (IdolID == FName(TEXT("Idol_Pierce"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Pierce_Tooltip", "PIERCE\nAuto attacks pierce +1 enemy.");
-	if (IdolID == FName(TEXT("Idol_Split"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Split_Tooltip", "SPLIT\nAuto attacks split into 2 weaker projectiles on hit.");
-	if (IdolID == FName(TEXT("Idol_Knockback"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Knockback_Tooltip", "KNOCKBACK\nAuto attacks knock enemies back.");
-	if (IdolID == FName(TEXT("Idol_Ricochet"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Ricochet_Tooltip", "RICOCHET\nAuto attacks bounce once to another enemy.");
-	if (IdolID == FName(TEXT("Idol_Hex"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Hex_Tooltip", "HEX\nAuto attacks briefly stun enemies.");
-	if (IdolID == FName(TEXT("Idol_Fire"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Fire_Tooltip", "FIRE\nAuto attacks apply a burn: 10 damage per second.");
-	if (IdolID == FName(TEXT("Idol_Lifesteal"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Lifesteal_Tooltip", "LIFESTEAL\nAuto attacks heal you by 1 heart per hit.");
+	// Back-compat aliases.
+	if (IdolID == FName(TEXT("Idol_Shock"))) IdolID = FName(TEXT("Idol_Lightning"));
+	if (IdolID == FName(TEXT("Idol_Silence"))) IdolID = FName(TEXT("Idol_Darkness"));
+	if (IdolID == FName(TEXT("Idol_Mark"))) IdolID = FName(TEXT("Idol_Light"));
+	if (IdolID == FName(TEXT("Idol_Pierce"))) IdolID = FName(TEXT("Idol_Metal"));
+	if (IdolID == FName(TEXT("Idol_Split"))) IdolID = FName(TEXT("Idol_Wind"));
+	if (IdolID == FName(TEXT("Idol_Knockback"))) IdolID = FName(TEXT("Idol_Wood"));
+	if (IdolID == FName(TEXT("Idol_Ricochet"))) IdolID = FName(TEXT("Idol_Water"));
+	if (IdolID == FName(TEXT("Idol_Hex"))) IdolID = FName(TEXT("Idol_Spectral"));
+	if (IdolID == FName(TEXT("Idol_Lifesteal"))) IdolID = FName(TEXT("Idol_Poison"));
+
+	if (IdolID == FName(TEXT("Idol_Darkness"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Darkness_Tooltip", "DARKNESS\nAn idol of shadowed power.");
+	if (IdolID == FName(TEXT("Idol_Light"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Light_Tooltip", "LIGHT\nAn idol of radiant power.");
+	if (IdolID == FName(TEXT("Idol_Lightning"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Lightning_Tooltip", "LIGHTNING\nAn idol of crackling power.");
+	if (IdolID == FName(TEXT("Idol_Metal"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Metal_Tooltip", "METAL\nAn idol of unyielding power.");
+	if (IdolID == FName(TEXT("Idol_Poison"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Poison_Tooltip", "POISON\nAn idol of venomous power.");
+	if (IdolID == FName(TEXT("Idol_Spectral"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Spectral_Tooltip", "SPECTRAL\nAn idol of unseen power.");
+	if (IdolID == FName(TEXT("Idol_Water"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Water_Tooltip", "WATER\nAn idol of flowing power.");
+	if (IdolID == FName(TEXT("Idol_Wind"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Wind_Tooltip", "WIND\nAn idol of cutting power.");
+	if (IdolID == FName(TEXT("Idol_Wood"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Wood_Tooltip", "WOOD\nAn idol of growing power.");
+
+	if (IdolID == FName(TEXT("Idol_Frost"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Frost_Tooltip", "FROST\nAn idol of frozen power.");
+	if (IdolID == FName(TEXT("Idol_Glue"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Glue_Tooltip", "GLUE\nAn idol of binding power.");
+	if (IdolID == FName(TEXT("Idol_Fire"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Fire_Tooltip", "FIRE\nAn idol of burning power.");
 	return NSLOCTEXT("T66.IdolAltar", "IdolTooltipUnknown", "IDOL\nUnknown.");
 }
 
@@ -1461,7 +1527,7 @@ FText UT66LocalizationSubsystem::GetText_StageNumberFormat() const
 
 FText UT66LocalizationSubsystem::GetText_BountyLabel() const
 {
-	return NSLOCTEXT("T66.GameplayHUD", "BountyLabel", "Bounty:");
+	return NSLOCTEXT("T66.GameplayHUD", "BountyLabel", "High Score:");
 }
 
 FText UT66LocalizationSubsystem::GetText_PortraitPlaceholder() const
@@ -1483,7 +1549,7 @@ FText UT66LocalizationSubsystem::GetText_RunSummaryTitle() const
 
 FText UT66LocalizationSubsystem::GetText_RunSummaryStageReachedBountyFormat() const
 {
-	return NSLOCTEXT("T66.RunSummary", "StageReachedBountyFormat", "Stage Reached: {0}  |  Bounty: {1}");
+	return NSLOCTEXT("T66.RunSummary", "StageReachedBountyFormat", "Stage Reached: {0}  |  High Score: {1}");
 }
 
 FText UT66LocalizationSubsystem::GetText_RunSummaryPreviewPlaceholder() const
@@ -1494,6 +1560,16 @@ FText UT66LocalizationSubsystem::GetText_RunSummaryPreviewPlaceholder() const
 FText UT66LocalizationSubsystem::GetText_MainMenu() const
 {
 	return NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU");
+}
+
+FText UT66LocalizationSubsystem::GetText_NewPersonalHighScore() const
+{
+	return NSLOCTEXT("T66.RunSummary", "NewPersonalHighScore", "New Personal High Score");
+}
+
+FText UT66LocalizationSubsystem::GetText_NewPersonalBestTime() const
+{
+	return NSLOCTEXT("T66.RunSummary", "NewPersonalBestTime", "New Personal Best Time");
 }
 
 // ========== Run Log ==========

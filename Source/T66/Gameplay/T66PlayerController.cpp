@@ -1241,8 +1241,6 @@ void AT66PlayerController::AutoLoadScreenClasses()
 		{ ET66ScreenType::SaveSlots, TEXT("/Game/Blueprints/UI/WBP_SaveSlots.WBP_SaveSlots_C") },
 		{ ET66ScreenType::Settings, TEXT("/Game/Blueprints/UI/WBP_Settings.WBP_Settings_C") },
 		{ ET66ScreenType::QuitConfirmation, TEXT("/Game/Blueprints/UI/WBP_QuitConfirmation.WBP_QuitConfirmation_C") },
-		{ ET66ScreenType::HeroGrid, TEXT("/Game/Blueprints/UI/WBP_HeroGrid.WBP_HeroGrid_C") },
-		{ ET66ScreenType::CompanionGrid, TEXT("/Game/Blueprints/UI/WBP_CompanionGrid.WBP_CompanionGrid_C") },
 	};
 
 	for (const auto& Mapping : ScreenPaths)
@@ -1283,6 +1281,16 @@ void AT66PlayerController::AutoLoadScreenClasses()
 			}
 		}
 	}
+
+	// HeroGrid/CompanionGrid are C++ screens by design (no optional WBP overrides).
+	if (!ScreenClasses.Contains(ET66ScreenType::HeroGrid) || ScreenClasses[ET66ScreenType::HeroGrid] == nullptr)
+	{
+		ScreenClasses.Add(ET66ScreenType::HeroGrid, UT66HeroGridScreen::StaticClass());
+	}
+	if (!ScreenClasses.Contains(ET66ScreenType::CompanionGrid) || ScreenClasses[ET66ScreenType::CompanionGrid] == nullptr)
+	{
+		ScreenClasses.Add(ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass());
+	}
 }
 
 void AT66PlayerController::InitializeUI()
@@ -1317,6 +1325,9 @@ void AT66PlayerController::InitializeUI()
 			UE_LOG(LogTemp, Log, TEXT("Registered screen class for type %d"), static_cast<int32>(Pair.Key));
 		}
 	}
+
+	// Ensure core modal screens are available in frontend too (leaderboard row opens Run Summary).
+	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
 
 	bUIInitialized = true;
 

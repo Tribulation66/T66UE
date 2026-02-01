@@ -7,6 +7,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/Texture2D.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -14,6 +15,9 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
+#include "Widgets/Images/SImage.h"
+#include "Styling/SlateBrush.h"
+#include "Widgets/Layout/SSpacer.h"
 
 UT66HeroGridScreen::UT66HeroGridScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -61,6 +65,8 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	// Grid: 6 columns, rows as needed. Each cell is a colored box for a hero.
 	const int32 Columns = 6;
 	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
+	HeroPortraitBrushes.Reset();
+	HeroPortraitBrushes.Reserve(AllHeroIDs.Num());
 
 	for (int32 Row = 0; Row * Columns < AllHeroIDs.Num(); Row++)
 	{
@@ -73,9 +79,27 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 			FName HeroID = AllHeroIDs[Index];
 			FHeroData HeroData;
 			FLinearColor SpriteColor = FLinearColor(0.25f, 0.25f, 0.3f, 1.0f);
+			TSharedPtr<FSlateBrush> PortraitBrush;
 			if (GI && GI->GetHeroData(HeroID, HeroData))
 			{
 				SpriteColor = HeroData.PlaceholderColor;
+
+				if (!HeroData.Portrait.IsNull())
+				{
+					UTexture2D* Tex = HeroData.Portrait.Get();
+					if (!Tex)
+					{
+						Tex = HeroData.Portrait.LoadSynchronous();
+					}
+					if (Tex)
+					{
+						PortraitBrush = MakeShared<FSlateBrush>();
+						PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
+						PortraitBrush->SetResourceObject(Tex);
+						PortraitBrush->ImageSize = FVector2D(72.f, 72.f);
+						HeroPortraitBrushes.Add(PortraitBrush);
+					}
+				}
 			}
 
 			FName HeroIDCopy = HeroID; // For lambda capture
@@ -88,12 +112,22 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 					.HeightOverride(72.0f)
 					[
 						SNew(SButton)
-						.ButtonColorAndOpacity(SpriteColor)
+						.ButtonColorAndOpacity(FLinearColor::Transparent)
 						.OnClicked_Lambda([this, HeroIDCopy]() { return HandleHeroClicked(HeroIDCopy); })
 						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(SpriteColor)
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(SpriteColor)
+							]
+							+ SOverlay::Slot()
+							[
+								PortraitBrush.IsValid()
+								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrush.Get()))
+								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+							]
 						]
 					]
 				];

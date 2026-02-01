@@ -170,7 +170,14 @@ void AT66TutorialManager::StartWhiteItemExplanationStep(const FVector& BagWorldL
 		if (Bag)
 		{
 			Bag->SetLootRarity(ET66Rarity::White);
-			Bag->SetItemID(FName(TEXT("Item_04")));
+			if (UT66GameInstance* GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+			{
+				Bag->SetItemID(GI->GetRandomItemIDForLootRarity(ET66Rarity::White));
+			}
+			else
+			{
+				Bag->SetItemID(FName(TEXT("Item_White_01")));
+			}
 		}
 	}
 
@@ -242,7 +249,7 @@ void AT66TutorialManager::SpawnPortalAndFinish()
 
 FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const
 {
-	if (!RunState) return FName(TEXT("Item_Tutorial_Damage"));
+	if (!RunState) return FName(TEXT("Item_Black_01"));
 
 	struct FStatPick
 	{
@@ -269,16 +276,30 @@ FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const
 		}
 	}
 
-	switch (BestType)
+	// Replace the tutorial-only items with a real item whose main stat matches the strongest stat.
+	UWorld* World = GetWorld();
+	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	if (!GI) return FName(TEXT("Item_Black_01"));
+
+	if (UDataTable* ItemsDT = GI->GetItemsDataTable())
 	{
-		case ET66HeroStatType::Damage:      return FName(TEXT("Item_Tutorial_Damage"));
-		case ET66HeroStatType::AttackSpeed: return FName(TEXT("Item_Tutorial_AttackSpeed"));
-		case ET66HeroStatType::AttackSize:  return FName(TEXT("Item_Tutorial_AttackSize"));
-		case ET66HeroStatType::Armor:       return FName(TEXT("Item_Tutorial_Armor"));
-		case ET66HeroStatType::Evasion:     return FName(TEXT("Item_Tutorial_Evasion"));
-		case ET66HeroStatType::Luck:        return FName(TEXT("Item_Tutorial_Luck"));
-		default:                            return FName(TEXT("Item_Tutorial_Damage"));
+		const TArray<FName> RowNames = ItemsDT->GetRowNames();
+		for (const FName& ItemID : RowNames)
+		{
+			if (ItemID.IsNone()) continue;
+			FItemData D;
+			if (!GI->GetItemData(ItemID, D)) continue;
+			if (D.ItemRarity != ET66ItemRarity::Black) continue;
+			if (D.BuyValueGold <= 0) continue;
+			if (D.MainStatType == BestType)
+			{
+				return ItemID;
+			}
+		}
 	}
+
+	// Safe fallback.
+	return GI->GetRandomItemIDForLootRarity(ET66Rarity::Black);
 }
 
 FName AT66TutorialManager::PickStage1MobID() const
@@ -344,7 +365,7 @@ AT66EnemyBase* AT66TutorialManager::SpawnTutorialEnemyAt(const FVector& InLocati
 
 	if (RunState)
 	{
-		Enemy->ApplyDifficultyTier(RunState->GetDifficultyTier());
+		Enemy->ApplyDifficultyScalar(RunState->GetDifficultyScalar());
 	}
 
 	if (bMiniBoss)

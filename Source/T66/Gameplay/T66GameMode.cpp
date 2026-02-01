@@ -191,7 +191,6 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	UT66AchievementsSubsystem* Ach = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!RunState || !T66GI) return;
 	if (T66GI->bStageBoostPending) return;
@@ -199,9 +198,8 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 	// v0 per your request: stage 1 always shows tutorial prompts.
 	if (RunState->GetCurrentStage() != 1) return;
 
-	// Only run tutorial if first-time (profile) or forced by dev switch.
-	const bool bShouldSpawnTutorial = bForceSpawnInTutorialArea || (Ach && !Ach->HasCompletedTutorial());
-	if (!bShouldSpawnTutorial) return;
+	// Only run tutorial when forced by the dev switch (spawn in tutorial arena).
+	if (!bForceSpawnInTutorialArea) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -259,8 +257,46 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 
 	TArray<FVector> UsedLocs;
 
+	// No-spawn zones: keep gameplay spawns out of special enclosed arenas and the Start Area.
+	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
+	{
+		// Start Area floor is a 6000x6000 square centered at (-10000, 0).
+		// Note: our spawn sample range overlaps its east edge (X in [-9200, -7000]), so we must explicitly exclude it.
+		static constexpr float StartHalf = 3000.f;
+		static constexpr float StartMargin = 300.f;
+		static constexpr float StartCenterX = -10000.f;
+		static constexpr float StartCenterY = 0.f;
+		if (FMath::Abs(L.X - StartCenterX) <= (StartHalf + StartMargin) && FMath::Abs(L.Y - StartCenterY) <= (StartHalf + StartMargin))
+		{
+			return true;
+		}
+
+		// Special enclosed arenas (Boost / Coliseum / Tutorial) live in-map at Y=+7500.
+		static constexpr float ArenaHalf = 2000.f;   // 4000x4000 floors
+		static constexpr float ArenaMargin = 300.f;
+		struct FArena2D { float X; float Y; };
+		static constexpr FArena2D Arenas[] = {
+			{ -5000.f, 7500.f }, // Boost
+			{     0.f, 7500.f }, // Coliseum
+			{  5000.f, 7500.f }, // Tutorial
+		};
+		for (const FArena2D& A : Arenas)
+		{
+			if (FMath::Abs(L.X - A.X) <= (ArenaHalf + ArenaMargin) && FMath::Abs(L.Y - A.Y) <= (ArenaHalf + ArenaMargin))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	};
+
 	auto IsGoodLoc = [&](const FVector& L) -> bool
 	{
+		if (IsInsideNoSpawnZone(L))
+		{
+			return false;
+		}
 		for (const FVector& U : UsedLocs)
 		{
 			if (FVector::DistSquared2D(L, U) < (MinDistBetweenTiles * MinDistBetweenTiles))
@@ -376,12 +412,21 @@ void AT66GameMode::HandleDifficultyChanged()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
 
-	const int32 Tier = RunState->GetDifficultyTier();
+	const float Scalar = RunState->GetDifficultyScalar();
 	for (TActorIterator<AT66EnemyBase> It(GetWorld()); It; ++It)
 	{
 		if (AT66EnemyBase* E = *It)
 		{
-			E->ApplyDifficultyTier(Tier);
+			E->ApplyDifficultyScalar(Scalar);
+		}
+	}
+
+	// Bosses: scale HP + projectile damage (count unchanged).
+	for (TActorIterator<AT66BossBase> It(GetWorld()); It; ++It)
+	{
+		if (AT66BossBase* B = *It)
+		{
+			B->ApplyDifficultyScalar(Scalar);
 		}
 	}
 }
@@ -684,12 +729,24 @@ void AT66GameMode::ResetColiseumState()
 	bColiseumExitGateSpawned = false;
 }
 
-void AT66GameMode::HandleBossDefeatedAtLocation(const FVector& Location)
+void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
+	const FVector Location = Boss ? Boss->GetActorLocation() : FVector::ZeroVector;
 	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+
+	// Award boss score (scaled by current difficulty).
+	if (RunState && Boss)
+	{
+		const float Scalar = RunState->GetDifficultyScalar();
+		const int32 AwardPoints = FMath::Max(0, FMath::RoundToInt(static_cast<float>(Boss->GetPointValue()) * Scalar));
+		if (AwardPoints > 0)
+		{
+			RunState->AddScore(AwardPoints);
+		}
+	}
 
 	if (IsColiseumStage())
 	{
@@ -981,8 +1038,46 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 	TArray<FVector> UsedLocs;
 
+	// No-spawn zones: keep gameplay spawns out of special enclosed arenas and the Start Area.
+	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
+	{
+		// Start Area floor is a 6000x6000 square centered at (-10000, 0).
+		// Note: our spawn sample range overlaps its east edge (X in [-9200, -7000]), so we must explicitly exclude it.
+		static constexpr float StartHalf = 3000.f;
+		static constexpr float StartMargin = 300.f;
+		static constexpr float StartCenterX = -10000.f;
+		static constexpr float StartCenterY = 0.f;
+		if (FMath::Abs(L.X - StartCenterX) <= (StartHalf + StartMargin) && FMath::Abs(L.Y - StartCenterY) <= (StartHalf + StartMargin))
+		{
+			return true;
+		}
+
+		// Special enclosed arenas (Boost / Coliseum / Tutorial) live in-map at Y=+7500.
+		static constexpr float ArenaHalf = 2000.f;   // 4000x4000 floors
+		static constexpr float ArenaMargin = 300.f;
+		struct FArena2D { float X; float Y; };
+		static constexpr FArena2D Arenas[] = {
+			{ -5000.f, 7500.f }, // Boost
+			{     0.f, 7500.f }, // Coliseum
+			{  5000.f, 7500.f }, // Tutorial
+		};
+		for (const FArena2D& A : Arenas)
+		{
+			if (FMath::Abs(L.X - A.X) <= (ArenaHalf + ArenaMargin) && FMath::Abs(L.Y - A.Y) <= (ArenaHalf + ArenaMargin))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	};
+
 	auto IsGoodLoc = [&](const FVector& L) -> bool
 	{
+		if (IsInsideNoSpawnZone(L))
+		{
+			return false;
+		}
 		for (const FVector& U : UsedLocs)
 		{
 			if (FVector::DistSquared2D(L, U) < (MinDistBetweenInteractables * MinDistBetweenInteractables))
@@ -2146,22 +2241,8 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			}
 			else
 			{
-				// Tutorial Arena spawn:
-				// - forced by dev switch, OR
-				// - first-time player (profile flag not completed yet)
-				bool bShouldTutorialSpawn = bForceSpawnInTutorialArea;
-				if (!bShouldTutorialSpawn)
-				{
-					if (UGameInstance* GI = GetGameInstance())
-					{
-						if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
-						{
-							bShouldTutorialSpawn = !Ach->HasCompletedTutorial();
-						}
-					}
-				}
-
-				if (bShouldTutorialSpawn)
+				// Tutorial Arena spawn: forced by dev switch only.
+				if (bForceSpawnInTutorialArea)
 				{
 					// Center is (0, 7500). Spawn near the "south" side so the player faces into the space.
 					SpawnLocation = FVector(-1600.f, 6100.f, 200.f);

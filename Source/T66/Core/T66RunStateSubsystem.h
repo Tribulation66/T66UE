@@ -155,19 +155,23 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetDifficultyTier() const { return DifficultyTier; }
 
-	/** Difficulty as "Skulls" (can be fractional, e.g. 0.5). */
+	/** Difficulty as "Skulls" (integer; increments by 1 per totem interaction). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
-	float GetDifficultySkulls() const { return DifficultySkulls; }
+	int32 GetDifficultySkulls() const { return DifficultySkulls; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
-	float GetDifficultyMultiplier() const;
+	int32 GetDifficultyScalarTier() const;
+
+	/** Difficulty scalar applied to enemy/boss HP/damage/count/score (tier-based, per spec). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetDifficultyScalar() const;
 
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void IncreaseDifficultyTier();
 
-	/** Add skulls directly (can be fractional). Updates DifficultyTier cache for enemy scaling. */
+	/** Add skulls directly. Updates cached tier and broadcasts DifficultyChanged. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
-	void AddDifficultySkulls(float DeltaSkulls);
+	void AddDifficultySkulls(int32 DeltaSkulls);
 
 	/** Increase max hearts and also grant the new hearts immediately (clamped). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -308,6 +312,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetSpeedRunElapsedSeconds() const { return SpeedRunElapsedSeconds; }
 
+	/** True if this run has produced a new personal-best speed run time for any completed stage (difficulty/party scoped). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|SpeedRun")
+	bool DidThisRunSetNewPersonalBestTime() const { return bThisRunSetNewPersonalBestSpeedRunTime; }
+
 	/** Call every frame from GameMode Tick to count down when timer is active. */
 	void TickStageTimer(float DeltaTime);
 
@@ -349,6 +357,9 @@ public:
 	/** Called when a boss awakens. Sets boss UI visible, stores boss ID, and initializes HP. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void SetBossActiveWithId(FName InBossID, int32 InMaxHP);
+
+	/** Difficulty scaling: update boss max HP while preserving current HP percent. */
+	void RescaleBossMaxHPPreservePercent(int32 NewMaxHP);
 
 	/** Hide boss UI / clear boss HP (e.g. on boss death or stage transition). */
 	void SetBossInactive();
@@ -684,9 +695,9 @@ private:
 	UPROPERTY()
 	int32 DifficultyTier = 0;
 
-	/** Difficulty in skulls (can be fractional). */
+	/** Difficulty in skulls (integer). */
 	UPROPERTY()
-	float DifficultySkulls = 0.f;
+	int32 DifficultySkulls = 0;
 
 	UPROPERTY()
 	int32 TotemsActivatedCount = 0;
@@ -736,6 +747,9 @@ private:
 
 	/** Last integer second we broadcasted (throttle SpeedRunTimerChanged to once per second). */
 	int32 LastBroadcastSpeedRunSecond = -1;
+
+	// Run Summary banner: set true if any completed stage submission set a new personal best time.
+	bool bThisRunSetNewPersonalBestSpeedRunTime = false;
 
 	UPROPERTY()
 	int32 CurrentScore = 0;

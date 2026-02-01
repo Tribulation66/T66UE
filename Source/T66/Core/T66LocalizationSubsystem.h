@@ -504,6 +504,18 @@ public:
 	/** Format string: "{0}: {1}" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
 	FText GetText_StatLineFormat() const;
+
+	// Items (data-driven IDs; avoid per-item strings)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
+	FText GetText_ItemRarityName(ET66ItemRarity Rarity) const;
+
+	/** Format string: "{0} {1}" */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
+	FText GetText_ItemNameFormat() const;
+
+	/** Player-facing item name derived from ItemID: "Black 1", etc. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
+	FText GetText_ItemDisplayName(FName ItemID) const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
 	FText GetText_CompanionName(FName CompanionID) const;
@@ -701,7 +713,7 @@ public:
 	FText GetText_StageNumberFormat() const; // "Stage number: {0}"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
-	FText GetText_BountyLabel() const; // "Bounty:"
+	FText GetText_BountyLabel() const; // "High Score:" (legacy name)
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
 	FText GetText_PortraitPlaceholder() const;
@@ -713,7 +725,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
 	FText GetText_RunSummaryTitle() const;
 
-	/** "Stage Reached: {0}  |  Bounty: {1}" */
+	/** "Stage Reached: {0}  |  High Score: {1}" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
 	FText GetText_RunSummaryStageReachedBountyFormat() const;
 
@@ -722,6 +734,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
 	FText GetText_MainMenu() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
+	FText GetText_NewPersonalHighScore() const; // "New Personal High Score"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
+	FText GetText_NewPersonalBestTime() const; // "New Personal Best Time"
 
 	// Run Log (Run Summary scrolling log)
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunLog")

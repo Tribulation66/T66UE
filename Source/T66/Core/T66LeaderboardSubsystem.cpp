@@ -382,6 +382,7 @@ bool UT66LeaderboardSubsystem::SubmitRunBounty(int32 Bounty)
 	if (!LocalSave) return false;
 
 	Bounty = FMath::Max(0, Bounty);
+	bLastHighScoreWasNewBest = false;
 
 	bool bPractice = false;
 	bool bAnon = false;
@@ -419,6 +420,7 @@ bool UT66LeaderboardSubsystem::SubmitRunBounty(int32 Bounty)
 	const bool bIsNewBest = (static_cast<int64>(Bounty) > Record->BestBounty);
 	if (bIsNewBest)
 	{
+		bLastHighScoreWasNewBest = true;
 		Record->BestBounty = static_cast<int64>(Bounty);
 		Record->bSubmittedAnonymous = bAnon;
 		SaveLocalSave();
@@ -450,6 +452,8 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	Stage = FMath::Clamp(Stage, 1, 66);
 	Seconds = FMath::Max(0.f, Seconds);
 	if (Seconds <= 0.01f) return false;
+	bLastSpeedRunWasNewBest = false;
+	LastSpeedRunSubmittedStage = Stage;
 
 	bool bPractice = false;
 	bool bAnon = false;
@@ -489,6 +493,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	const bool bIsNewBest = bUnset || (Seconds < Record->BestSeconds);
 	if (bIsNewBest)
 	{
+		bLastSpeedRunWasNewBest = true;
 		Record->BestSeconds = Seconds;
 		Record->bSubmittedAnonymous = bAnon;
 		SaveLocalSave();
@@ -516,6 +521,12 @@ bool UT66LeaderboardSubsystem::ConsumePendingRunSummaryRequest(FString& OutSaveS
 
 TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const
 {
+	// Ensure local save is loaded so "YOU" row reflects persisted best score.
+	if (!LocalSave)
+	{
+		const_cast<UT66LeaderboardSubsystem*>(this)->LoadOrCreateLocalSave();
+	}
+
 	TArray<FLeaderboardEntry> Out;
 	Out.Reserve(11);
 
@@ -627,6 +638,12 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Diffi
 
 TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const
 {
+	// Ensure local save is loaded so "YOU" row reflects persisted best time.
+	if (!LocalSave)
+	{
+		const_cast<UT66LeaderboardSubsystem*>(this)->LoadOrCreateLocalSave();
+	}
+
 	TArray<FLeaderboardEntry> Out;
 	Out.Reserve(11);
 

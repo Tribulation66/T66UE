@@ -240,10 +240,10 @@ void UT66GameInstance::EnsureCachedItemIDs()
 	// Fallback (keeps game functional even if DT isn't wired yet).
 	if (CachedItemIDs.Num() == 0)
 	{
-		CachedItemIDs.Add(FName(TEXT("Item_01")));
-		CachedItemIDs.Add(FName(TEXT("Item_02")));
-		CachedItemIDs.Add(FName(TEXT("Item_03")));
-		CachedItemIDs.Add(FName(TEXT("Item_04")));
+		CachedItemIDs.Add(FName(TEXT("Item_Black_01")));
+		CachedItemIDs.Add(FName(TEXT("Item_Red_01")));
+		CachedItemIDs.Add(FName(TEXT("Item_Yellow_01")));
+		CachedItemIDs.Add(FName(TEXT("Item_White_01")));
 	}
 }
 
@@ -287,10 +287,10 @@ void UT66GameInstance::EnsureCachedItemIDsByRarity()
 		else
 		{
 			// Safe fallback mapping for early project bootstraps.
-			if (ItemID == TEXT("Item_01")) CachedItemIDs_Black.Add(ItemID);
-			else if (ItemID == TEXT("Item_02")) CachedItemIDs_Red.Add(ItemID);
-			else if (ItemID == TEXT("Item_03")) CachedItemIDs_Yellow.Add(ItemID);
-			else if (ItemID == TEXT("Item_04")) CachedItemIDs_White.Add(ItemID);
+			if (ItemID == TEXT("Item_Black_01")) CachedItemIDs_Black.Add(ItemID);
+			else if (ItemID == TEXT("Item_Red_01")) CachedItemIDs_Red.Add(ItemID);
+			else if (ItemID == TEXT("Item_Yellow_01")) CachedItemIDs_Yellow.Add(ItemID);
+			else if (ItemID == TEXT("Item_White_01")) CachedItemIDs_White.Add(ItemID);
 		}
 	}
 
@@ -306,7 +306,7 @@ FName UT66GameInstance::GetRandomItemID()
 	EnsureCachedItemIDs();
 	if (CachedItemIDs.Num() <= 0)
 	{
-		return FName(TEXT("Item_01"));
+		return FName(TEXT("Item_Black_01"));
 	}
 	return CachedItemIDs[FMath::RandRange(0, CachedItemIDs.Num() - 1)];
 }
@@ -414,33 +414,6 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 		OutItemData = *FoundRow;
 		return true;
 	}
-
-	// Tutorial-only items: synthetic DT rows (so tutorial can drop stat-matched items without content updates).
-	auto MakeTutorialItem = [&](ET66HeroStatType StatType, const FLinearColor& Color, int32 StatValue) -> bool
-	{
-		OutItemData = FItemData();
-		OutItemData.ItemID = ItemID;
-		OutItemData.ItemRarity = ET66ItemRarity::Black;
-		OutItemData.PlaceholderColor = Color;
-		OutItemData.BuyValueGold = 0;
-		OutItemData.SellValueGold = 0;
-		OutItemData.PowerGivenPercent = 0.f;
-		OutItemData.EffectType = ET66ItemEffectType::None;
-		OutItemData.EffectMagnitude = 0.f;
-		OutItemData.MainStatType = StatType;
-		OutItemData.MainStatValue = FMath::Clamp(StatValue, 1, 999);
-		OutItemData.EffectLine1 = FText::GetEmpty();
-		OutItemData.EffectLine2 = FText::GetEmpty();
-		OutItemData.EffectLine3 = FText::GetEmpty();
-		return true;
-	};
-
-	if (ItemID == TEXT("Item_Tutorial_Damage"))      return MakeTutorialItem(ET66HeroStatType::Damage,      FLinearColor(0.90f, 0.30f, 0.20f, 1.f), 2);
-	if (ItemID == TEXT("Item_Tutorial_AttackSpeed")) return MakeTutorialItem(ET66HeroStatType::AttackSpeed, FLinearColor(0.20f, 0.70f, 0.30f, 1.f), 2);
-	if (ItemID == TEXT("Item_Tutorial_AttackSize"))  return MakeTutorialItem(ET66HeroStatType::AttackSize,  FLinearColor(0.20f, 0.40f, 0.90f, 1.f), 2);
-	if (ItemID == TEXT("Item_Tutorial_Armor"))       return MakeTutorialItem(ET66HeroStatType::Armor,       FLinearColor(0.65f, 0.65f, 0.75f, 1.f), 2);
-	if (ItemID == TEXT("Item_Tutorial_Evasion"))     return MakeTutorialItem(ET66HeroStatType::Evasion,     FLinearColor(0.75f, 0.25f, 0.95f, 1.f), 2);
-	if (ItemID == TEXT("Item_Tutorial_Luck"))        return MakeTutorialItem(ET66HeroStatType::Luck,        FLinearColor(0.95f, 0.80f, 0.15f, 1.f), 2);
 
 	return false;
 }

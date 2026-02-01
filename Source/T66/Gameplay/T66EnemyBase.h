@@ -72,7 +72,10 @@ public:
 	/** Show/hide the lock indicator on this enemy's health bar. */
 	void SetLockedIndicator(bool bLocked);
 
-	/** Apply difficulty tier (Tier 0 = base; Tier 1 doubles, etc). */
+	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). */
+	void ApplyDifficultyScalar(float Scalar);
+
+	/** Apply difficulty tier (Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...). */
 	void ApplyDifficultyTier(int32 Tier);
 
 	/** Stage mob ID (data-driven via DT_Stages EnemyA/B/C). NAME_None means "not a stage mob". */
@@ -116,6 +119,12 @@ private:
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseTouchDamageHearts = 0;
+	int32 BasePointValue = 0;
+
+	// Persist mini-boss multipliers so difficulty changes can re-apply cleanly.
+	float MiniBossHPScalarApplied = 1.0f;
+	float MiniBossDamageScalarApplied = 1.0f;
+	float MiniBossScaleScalarApplied = 1.0f;
 
 protected:
 	/** True if an imported skeletal mesh was applied and placeholders should be hidden. */

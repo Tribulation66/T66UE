@@ -8,6 +8,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UStaticMesh;
 class APlayerController;
 
 /**
@@ -28,10 +29,17 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
 	TObjectPtr<UStaticMeshComponent> GateMesh;
 
+	/** Optional imported gate mesh (if null/unloaded, uses cube). */
+	UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+	TSoftObjectPtr<UStaticMesh> GateMeshOverride;
+
 	/** Called by PlayerController when pressing F nearby. Returns true if handled. */
 	bool Interact(APlayerController* PC);
 
 	/** Called by the prompt widget when player confirms "Yes". */
 	bool ConfirmCowardice();
+
+protected:
+	virtual void BeginPlay() override;
 };
 

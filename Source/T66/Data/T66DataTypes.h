@@ -9,6 +9,7 @@
 class AActor;
 class USkeletalMesh;
 class UAnimationAsset;
+class UTexture2D;
 
 /**
  * Hero data row for the Hero DataTable
@@ -276,6 +277,10 @@ struct T66_API FItemData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FLinearColor PlaceholderColor = FLinearColor::White;
 
+	/** UI icon (sprite) for this item. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> Icon;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
 	int32 BuyValueGold = 0;
 
@@ -371,6 +376,10 @@ struct T66_API FBossData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	int32 ProjectileDamageHearts = 1;
 
+	/** Score awarded for defeating this boss (before difficulty scalar). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Score")
+	int32 PointValue = 0;
+
 	FBossData()
 		: BossID(NAME_None)
 	{}
@@ -439,6 +448,10 @@ struct T66_API FIdolData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName IdolID;
+
+	/** UI icon (sprite) for this idol. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> Icon;
 
 	/** Current design target: 10 levels per idol. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
@@ -677,7 +690,7 @@ enum class ET66LeaderboardTime : uint8
 UENUM(BlueprintType)
 enum class ET66LeaderboardType : uint8
 {
-	HighScore UMETA(DisplayName = "Bounty"),
+	HighScore UMETA(DisplayName = "High Score"),
 	SpeedRun UMETA(DisplayName = "Speed Run")
 };
 

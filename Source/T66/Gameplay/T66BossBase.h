@@ -52,8 +52,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss")
 	int32 ProjectileDamageHearts = 1;
 
+	/** Score awarded for defeating this boss (before difficulty scalar). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss")
+	int32 PointValue = 0;
+
 	/** Initialize boss from data table (optional). */
 	void InitializeBoss(const FBossData& BossData);
+
+	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). */
+	void ApplyDifficultyScalar(float Scalar);
 
 	/** Called by hero projectile overlap; returns true if boss died. */
 	bool TakeDamageFromHeroHit(int32 DamageAmount);
@@ -64,6 +71,8 @@ public:
 	/** Coliseum: start the fight immediately (bypasses proximity). */
 	void ForceAwaken() { Awaken(); }
 
+	int32 GetPointValue() const { return PointValue; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -73,5 +82,10 @@ protected:
 	void Die();
 
 	FTimerHandle FireTimerHandle;
+
+private:
+	bool bBaseTuningInitialized = false;
+	int32 BaseMaxHP = 0;
+	int32 BaseProjectileDamageHearts = 0;
 };
 

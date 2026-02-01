@@ -15,6 +15,7 @@ class SBorder;
 class SImage;
 class SUniformGridPanel;
 class SWidgetSwitcher;
+struct FSlateBrush;
 
 /** Full-screen, non-pausing Vendor shop UI (buy + steal + loans). */
 UCLASS(Blueprintable)
@@ -54,6 +55,8 @@ private:
 	TArray<TSharedPtr<STextBlock>> ItemPriceTexts;
 	TArray<TSharedPtr<SBorder>> ItemTileBorders;
 	TArray<TSharedPtr<SBorder>> ItemIconBorders;
+	TArray<TSharedPtr<SImage>> ItemIconImages;
+	TArray<TSharedPtr<FSlateBrush>> ItemIconBrushes;
 	TArray<TSharedPtr<SButton>> BuyButtons;
 	TArray<TSharedPtr<SButton>> StealButtons;
 	TArray<TSharedPtr<STextBlock>> BuyButtonTexts;
@@ -63,6 +66,8 @@ private:
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SButton>> InventorySlotButtons;
 	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
+	TArray<TSharedPtr<SImage>> InventorySlotIconImages;
+	TArray<TSharedPtr<FSlateBrush>> InventorySlotIconBrushes;
 	int32 SelectedInventoryIndex = -1;
 
 	// Sell panel

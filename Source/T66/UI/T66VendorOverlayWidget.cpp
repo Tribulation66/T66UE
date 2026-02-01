@@ -23,6 +23,8 @@
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
+#include "Engine/Texture2D.h"
 
 static UT66RunStateSubsystem* GetRunStateFromWorld(UWorld* World)
 {
@@ -140,6 +142,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	ItemPriceTexts.SetNum(ShopSlotCount);
 	ItemTileBorders.SetNum(ShopSlotCount);
 	ItemIconBorders.SetNum(ShopSlotCount);
+	ItemIconImages.SetNum(ShopSlotCount);
+	ItemIconBrushes.SetNum(ShopSlotCount);
 	BuyButtons.SetNum(ShopSlotCount);
 	StealButtons.SetNum(ShopSlotCount);
 	BuyButtonTexts.SetNum(ShopSlotCount);
@@ -147,6 +151,21 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotButtons.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+
+	for (int32 i = 0; i < ShopSlotCount; ++i)
+	{
+		ItemIconBrushes[i] = MakeShared<FSlateBrush>();
+		ItemIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+		ItemIconBrushes[i]->ImageSize = FVector2D(64.f, 64.f);
+	}
+	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
+	{
+		InventorySlotIconBrushes[i] = MakeShared<FSlateBrush>();
+		InventorySlotIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+		InventorySlotIconBrushes[i]->ImageSize = FVector2D(148.f, 148.f);
+	}
 
 	TSharedRef<SUniformGridPanel> ShopGrid = SNew(SUniformGridPanel)
 		.SlotPadding(FMargin(FT66Style::Tokens::Space4, FT66Style::Tokens::Space4));
@@ -190,10 +209,9 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								.WidthOverride(64.f)
 								.HeightOverride(64.f)
 								[
-									SNew(STextBlock)
-									.Text(FText::GetEmpty())
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SAssignNew(ItemIconImages[i], SImage)
+									.Image(ItemIconBrushes[i].Get())
+									.ColorAndOpacity(FLinearColor::White)
 								]
 							]
 						]
@@ -666,10 +684,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
 											.Padding(FMargin(12.f, 10.f))
 											[
-												SAssignNew(InventorySlotTexts[0], STextBlock)
-												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-												.TextStyle(&TextChip)
-												.ColorAndOpacity(FT66Style::Tokens::Text)
+												SNew(SOverlay)
+												+ SOverlay::Slot()
+												[
+													SAssignNew(InventorySlotIconImages[0], SImage)
+													.Image(InventorySlotIconBrushes[0].Get())
+													.ColorAndOpacity(FLinearColor::White)
+												]
+												+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+												[
+													SAssignNew(InventorySlotTexts[0], STextBlock)
+													.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+													.TextStyle(&TextChip)
+													.ColorAndOpacity(FT66Style::Tokens::Text)
+												]
 											]
 								]
 							]
@@ -689,10 +717,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
 											.Padding(FMargin(12.f, 10.f))
 											[
-												SAssignNew(InventorySlotTexts[1], STextBlock)
-												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-												.TextStyle(&TextChip)
-												.ColorAndOpacity(FT66Style::Tokens::Text)
+												SNew(SOverlay)
+												+ SOverlay::Slot()
+												[
+													SAssignNew(InventorySlotIconImages[1], SImage)
+													.Image(InventorySlotIconBrushes[1].Get())
+													.ColorAndOpacity(FLinearColor::White)
+												]
+												+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+												[
+													SAssignNew(InventorySlotTexts[1], STextBlock)
+													.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+													.TextStyle(&TextChip)
+													.ColorAndOpacity(FT66Style::Tokens::Text)
+												]
 											]
 								]
 							]
@@ -712,10 +750,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
 											.Padding(FMargin(12.f, 10.f))
 											[
-												SAssignNew(InventorySlotTexts[2], STextBlock)
-												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-												.TextStyle(&TextChip)
-												.ColorAndOpacity(FT66Style::Tokens::Text)
+												SNew(SOverlay)
+												+ SOverlay::Slot()
+												[
+													SAssignNew(InventorySlotIconImages[2], SImage)
+													.Image(InventorySlotIconBrushes[2].Get())
+													.ColorAndOpacity(FLinearColor::White)
+												]
+												+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+												[
+													SAssignNew(InventorySlotTexts[2], STextBlock)
+													.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+													.TextStyle(&TextChip)
+													.ColorAndOpacity(FT66Style::Tokens::Text)
+												]
 											]
 								]
 							]
@@ -735,10 +783,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
 											.Padding(FMargin(12.f, 10.f))
 											[
-												SAssignNew(InventorySlotTexts[3], STextBlock)
-												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-												.TextStyle(&TextChip)
-												.ColorAndOpacity(FT66Style::Tokens::Text)
+												SNew(SOverlay)
+												+ SOverlay::Slot()
+												[
+													SAssignNew(InventorySlotIconImages[3], SImage)
+													.Image(InventorySlotIconBrushes[3].Get())
+													.ColorAndOpacity(FLinearColor::White)
+												]
+												+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+												[
+													SAssignNew(InventorySlotTexts[3], STextBlock)
+													.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+													.TextStyle(&TextChip)
+													.ColorAndOpacity(FT66Style::Tokens::Text)
+												]
 											]
 								]
 							]
@@ -758,10 +816,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
 											.Padding(FMargin(12.f, 10.f))
 											[
-												SAssignNew(InventorySlotTexts[4], STextBlock)
-												.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-												.TextStyle(&TextChip)
-												.ColorAndOpacity(FT66Style::Tokens::Text)
+												SNew(SOverlay)
+												+ SOverlay::Slot()
+												[
+													SAssignNew(InventorySlotIconImages[4], SImage)
+													.Image(InventorySlotIconBrushes[4].Get())
+													.ColorAndOpacity(FLinearColor::White)
+												]
+												+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+												[
+													SAssignNew(InventorySlotTexts[4], STextBlock)
+													.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+													.TextStyle(&TextChip)
+													.ColorAndOpacity(FT66Style::Tokens::Text)
+												]
 											]
 								]
 							]
@@ -963,7 +1031,9 @@ void UT66VendorOverlayWidget::RefreshStock()
 
 		if (ItemNameTexts.IsValidIndex(i) && ItemNameTexts[i].IsValid())
 		{
-			ItemNameTexts[i]->SetText(bHasItem ? FText::FromName(Stock[i]) : NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
+			ItemNameTexts[i]->SetText(bHasItem
+				? (Loc ? Loc->GetText_ItemDisplayName(Stock[i]) : FText::FromName(Stock[i]))
+				: NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
 		}
 		if (ItemDescTexts.IsValidIndex(i) && ItemDescTexts[i].IsValid())
 		{
@@ -1030,6 +1100,24 @@ void UT66VendorOverlayWidget::RefreshStock()
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
 		{
 			ItemIconBorders[i]->SetBorderBackgroundColor(bHasData ? D.PlaceholderColor : FT66Style::Tokens::Panel2);
+		}
+		if (ItemIconBrushes.IsValidIndex(i) && ItemIconBrushes[i].IsValid())
+		{
+			UTexture2D* Tex = nullptr;
+			if (bHasData && !D.Icon.IsNull())
+			{
+				Tex = D.Icon.Get();
+				if (!Tex)
+				{
+					Tex = D.Icon.LoadSynchronous();
+				}
+			}
+			ItemIconBrushes[i]->SetResourceObject(Tex);
+		}
+		if (ItemIconImages.IsValidIndex(i) && ItemIconImages[i].IsValid())
+		{
+			const bool bHasIcon = bHasData && !D.Icon.IsNull() && (D.Icon.Get() != nullptr);
+			ItemIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 		}
 		if (ItemTileBorders.IsValidIndex(i) && ItemTileBorders[i].IsValid())
 		{
@@ -1159,7 +1247,8 @@ void UT66VendorOverlayWidget::RefreshInventory()
 		const bool bHasItem = Inv.IsValidIndex(i) && !Inv[i].IsNone();
 		if (InventorySlotTexts[i].IsValid())
 		{
-			InventorySlotTexts[i]->SetText(bHasItem ? FText::FromName(Inv[i]) : NSLOCTEXT("T66.Common", "Dash", "-"));
+			// Keep the strip clean: icons for items, "-" for empty slots.
+			InventorySlotTexts[i]->SetText(bHasItem ? FText::GetEmpty() : NSLOCTEXT("T66.Common", "Dash", "-"));
 		}
 		if (InventorySlotButtons.IsValidIndex(i) && InventorySlotButtons[i].IsValid())
 		{
@@ -1168,13 +1257,11 @@ void UT66VendorOverlayWidget::RefreshInventory()
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
 			FLinearColor Fill = FT66Style::Tokens::Panel2;
-			if (bHasItem && GI)
+			FItemData D;
+			const bool bHasData = bHasItem && GI && GI->GetItemData(Inv[i], D);
+			if (bHasData)
 			{
-				FItemData D;
-				if (GI->GetItemData(Inv[i], D))
-				{
-					Fill = D.PlaceholderColor;
-				}
+				Fill = D.PlaceholderColor;
 			}
 
 			// If selected, tint toward accent for readability.
@@ -1183,6 +1270,25 @@ void UT66VendorOverlayWidget::RefreshInventory()
 				Fill = Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f;
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
+
+			if (InventorySlotIconBrushes.IsValidIndex(i) && InventorySlotIconBrushes[i].IsValid())
+			{
+				UTexture2D* Tex = nullptr;
+				if (bHasData && !D.Icon.IsNull())
+				{
+					Tex = D.Icon.Get();
+					if (!Tex)
+					{
+						Tex = D.Icon.LoadSynchronous();
+					}
+				}
+				InventorySlotIconBrushes[i]->SetResourceObject(Tex);
+			}
+			if (InventorySlotIconImages.IsValidIndex(i) && InventorySlotIconImages[i].IsValid())
+			{
+				const bool bHasIcon = bHasData && !D.Icon.IsNull() && (D.Icon.Get() != nullptr);
+				InventorySlotIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
+			}
 		}
 	}
 }
@@ -1213,10 +1319,15 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	FItemData D;
 	const bool bHasData = GI && GI->GetItemData(Inv[SelectedInventoryIndex], D);
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (UGameInstance* GI2 = World ? World->GetGameInstance() : nullptr)
+	{
+		Loc = GI2->GetSubsystem<UT66LocalizationSubsystem>();
+	}
 
 	if (SellItemNameText.IsValid())
 	{
-		SellItemNameText->SetText(FText::FromName(Inv[SelectedInventoryIndex]));
+		SellItemNameText->SetText(Loc ? Loc->GetText_ItemDisplayName(Inv[SelectedInventoryIndex]) : FText::FromName(Inv[SelectedInventoryIndex]));
 	}
 	if (SellItemDescText.IsValid())
 	{
@@ -1226,12 +1337,6 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 		}
 		else
 		{
-			UT66LocalizationSubsystem* Loc = nullptr;
-			if (UGameInstance* GI2 = World ? World->GetGameInstance() : nullptr)
-			{
-				Loc = GI2->GetSubsystem<UT66LocalizationSubsystem>();
-			}
-
 			auto StatLabel = [&](ET66HeroStatType Type) -> FText
 			{
 				if (Loc)
@@ -1299,11 +1404,6 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 
 FReply UT66VendorOverlayWidget::OnBack()
 {
-	if (PageSwitcher.IsValid() && PageSwitcher->GetActiveWidgetIndex() == static_cast<int32>(EVendorPage::Shop))
-	{
-		SetPage(EVendorPage::Dialogue);
-		return FReply::Handled();
-	}
 	CloseOverlay();
 	return FReply::Handled();
 }

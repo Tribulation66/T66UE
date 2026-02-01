@@ -7,6 +7,7 @@
 #include "T66CashTruckInteractable.generated.h"
 
 class UStaticMeshComponent;
+class UStaticMesh;
 
 /** Cash Truck: grants gold (rarity-scaled) or spawns a Mimic truck enemy. */
 UCLASS(Blueprintable)
@@ -22,6 +23,19 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truck")
 	bool bIsMimic = false;
+
+	/** Optional rarity meshes (when imported). If null/unloaded, we fall back to primitive shapes. */
+	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshBlack;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshRed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshYellow;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshWhite;
 
 	virtual bool Interact(APlayerController* PC) override;
 

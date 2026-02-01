@@ -16,5 +16,8 @@ public:
 	AT66OuroborosNPC();
 
 	virtual bool Interact(APlayerController* PC) override;
+
+protected:
+	virtual void BeginPlay() override;
 };
 

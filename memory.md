@@ -103,6 +103,29 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 
 ## 4) Change log (append-only)
 
+### 2026-02-01 — UI cleanup: remove Hero/CompanionGrid WBP loads + preview capture on-demand
+
+**Goal**
+- Remove noisy load warnings for `WBP_HeroGrid` / `WBP_CompanionGrid` (these are C++ screens).
+- Remove SceneCapture “major inefficiency” warnings in hero/companion preview stages.
+
+**What changed**
+- `Source/T66/Gameplay/T66PlayerController.cpp`:
+  - `AutoLoadScreenClasses()` no longer attempts to load `WBP_HeroGrid` / `WBP_CompanionGrid` by path.
+  - Always registers `UT66HeroGridScreen` / `UT66CompanionGridScreen` as C++ screens if missing.
+- `Source/T66Editor/T66UISetupSubsystem.cpp`:
+  - Removed `HeroGrid` / `CompanionGrid` WBP mappings from the setup list.
+- `Source/T66/Gameplay/T66HeroPreviewStage.cpp`, `Source/T66/Gameplay/T66CompanionPreviewStage.cpp`:
+  - Disabled `bCaptureEveryFrame`/`bCaptureOnMovement` and switched to on-demand captures (capture after rotate/zoom).
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- ValidateFast (UE 5.7) ✅:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
 ### 2026-02-01 — Asset audit + remove unused `WBP_T66Button`
 
 **Goal**
@@ -1658,3 +1681,157 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
   - Removed the “GAMES” label from the gambler casino panel.
 - **Verification**
   - `T66Editor` build succeeded (UE 5.7).
+
+### 2026-02-01 — Stage flow hardening + special arenas + High Score rename + HUD/Run Summary refresh
+
+**Goal**
+- Fix “Stage 2 trapped spawn” by ensuring **normal stages always reuse `GameplayLevel`** and stage-transition flags don’t leak.
+- Officialize the three special arenas (Boost / Coliseum / Tutorial) as **contained areas inside `GameplayLevel`**.
+- Rename “Bounty” → **High Score** (player-facing + internal identifiers) while keeping **SaveGame backward compatibility**.
+- Apply requested HUD/menus/run-summary UX tweaks and keep UI **event-driven**.
+
+**What changed**
+- **Stage transitions / map reuse**
+  - `Source/T66/Gameplay/T66StageGate.cpp`:
+    - Normal stages now always `OpenLevel("/Game/Maps/GameplayLevel")` (no more re-opening the current level name).
+    - Defensive: clear `bStageBoostPending` during normal stage advance so Boost cannot “leak” into later stages.
+  - `Source/T66/Gameplay/T66GameMode.cpp`:
+    - Tutorial spawn is restricted so we **don’t spawn into the enclosed tutorial arena on later stages** (prevents trap cases).
+
+- **Special stages (Boost / Coliseum / Tutorial) as enclosed arenas**
+  - `Source/T66/Gameplay/T66GameMode.cpp`:
+    - Special arena row at **Y=+7500**:
+      - Boost \((-5000, 7500)\), Coliseum \((0, 7500)\), Tutorial \((5000, 7500)\)
+    - Ensure level setup now spawns/maintains these arenas and their walls as needed.
+    - Added no-spawn filters so random gameplay spawns don’t pollute these enclosed arenas.
+
+- **Start Area no-spawn rule**
+  - `Source/T66/Gameplay/T66GameMode.cpp`:
+    - Added an explicit “no-spawn zone” so **no world interactables** and **no stage-effect tiles** can spawn in the **Start Area** (6000×6000 centered at \((-10000, 0)\)).
+
+- **Boss gate corridor walls**
+  - `Source/T66/Gameplay/T66GameMode.cpp`:
+    - Added boss-area entry corridor walls so the boss area is only reachable through the intended opening near the boss gate pillars.
+
+- **HUD / UI changes**
+  - `Source/T66/UI/T66GameplayHUDWidget.cpp`:
+    - Wheel spin HUD moved to the **right side**.
+    - Swapped difficulty skull row to be **above** the immortality toggle.
+    - “SR” label expanded to **“Speed Run”**.
+    - Stage label now supports special stage labels: **Boost / Coliseum / Tutorial**.
+  - `Source/T66/UI/Screens/T66PauseMenuScreen.cpp`:
+    - Un-squished pause menu buttons (larger sizing + consistent spacing).
+
+- **Run Summary improvements**
+  - `Source/T66/UI/Screens/T66RunSummaryScreen.cpp`, `Source/T66/UI/Screens/T66RunSummaryScreen.h`:
+    - Event log is now a toggleable panel (hidden by default).
+    - Displays **High Score** in the “Stage Reached” line.
+    - Submits high score to leaderboard when appropriate.
+
+- **Vendor / Gambler fullscreen overlay behavior**
+  - `Source/T66/UI/T66VendorOverlayWidget.cpp`, `Source/T66/UI/T66GamblerOverlayWidget.cpp`:
+    - “Back” now exits gameplay overlays cleanly (no longer bouncing to dialogue pages).
+
+- **Companion friendliness (“Union”)**
+  - `Source/T66/Core/T66AchievementsSubsystem.h`:
+    - Union tier thresholds updated to **10 / 20 / 30** stages cleared.
+  - `Source/T66/UI/Screens/T66CompanionSelectionScreen.cpp`:
+    - Added a Friendliness (Union) progress UI (text + progress bar) using Achievements data.
+
+- **Bounty → High Score (internal + player-facing) with SaveGame back-compat**
+  - `Source/T66/Core/T66LeaderboardSubsystem.h/.cpp`:
+    - `SubmitRunHighScore(...)` and High Score entry building.
+    - Legacy wrappers maintained where needed for back-compat.
+    - Run-summary snapshot slot naming supports legacy “Bounty” slot names.
+  - `Source/T66/Core/T66LocalLeaderboardSaveGame.h`, `Source/T66/Core/T66LeaderboardRunSummarySaveGame.h`:
+    - Save fields renamed to High Score naming.
+  - `Config/DefaultEngine.ini`:
+    - Added `[CoreRedirects]` property redirects for SaveGame backward compatibility.
+  - `Source/T66/Core/T66LocalizationSubsystem.h/.cpp`:
+    - Updated localized strings: “Stage: {0}”, “High Score:”, “Stage Reached … | High Score …”.
+    - Kept deprecated wrappers for old Blueprint function names.
+  - `Source/T66/Gameplay/T66EnemyBase.h`:
+    - Comment updated: “Bounty score” → “High Score”.
+  - `Source/T66/UI/Components/T66LeaderboardPanel.cpp`:
+    - UI now displays “High Score” instead of “Bounty”.
+
+**Localization**
+- Completed pipeline for the new/changed player-facing strings:
+  - Gather: `Config/Localization/T66_Gather.ini`
+  - Translate: `Scripts/AutoTranslateLocalizationArchives.py` (baseline machine translations)
+  - Compile: `Config/Localization/T66_Compile.ini`
+- Outputs updated under `Content/Localization/T66/` (`.manifest`, `.archive`, `.locres`).
+
+**Verification / proof**
+- Builds ✅ (UE 5.7):
+  - `T66Editor` Win64 Development
+  - `T66` Win64 Development
+
+---
+
+### 2026-02-01 — Difficulty totems: skull-scalar difficulty + score multiplier + companion UI polish
+
+**Goal**
+- Replace the old rarity-based / fractional / single-use difficulty totems with the new **infinite-use skull** system.
+- Make skulls affect **enemy HP, enemy damage, enemy count, enemy points**, and also **boss HP, boss damage, boss points** (boss count unchanged).
+- Remove remaining player-facing “Bounty” and show **High Score + score multiplier** on HUD.
+- Remove tutorial-only items to stop log noise and use normal items instead.
+- Update companion selection: remove medals, add friendliness checkpoints and match companion skins styling to hero skins.
+
+**What changed**
+- **RunState difficulty is now integer skulls + tier scalar**
+  - `Source/T66/Core/T66RunStateSubsystem.h/.cpp`:
+    - `DifficultySkulls` is now `int32` (no half-skulls).
+    - Added tier math + `GetDifficultyScalar()` (Tier 0 => 1.0x, Tier 1 => 1.1x, Tier 2 => 1.2x, ...).
+- **Difficulty totems are infinite-use + global growth**
+  - `Source/T66/Gameplay/T66DifficultyTotem.h/.cpp`:
+    - Interact always adds **+1 skull**.
+    - Totems do **not** consume; you can interact repeatedly.
+    - Every interaction updates **all totems** to grow taller together (with a safe clamp).
+- **Enemy scaling + enemy count scaling**
+  - `Source/T66/Gameplay/T66EnemyBase.h/.cpp`:
+    - Added `ApplyDifficultyScalar(float)` (preserves HP percent on mid-fight scaling).
+    - Enemy score award is scaled by difficulty scalar at death time.
+  - `Source/T66/Gameplay/T66EnemyDirector.h/.cpp`:
+    - Scales `EnemiesPerWave` and `MaxAliveEnemies` from cached base counts using the difficulty scalar (with caps).
+  - `Source/T66/Gameplay/T66GameMode.cpp`:
+    - `HandleDifficultyChanged()` now applies scalar scaling to all active enemies.
+- **Boss scaling + boss score**
+  - `Source/T66/Data/T66DataTypes.h`: added `FBossData::PointValue` (optional; defaulted conservatively in code when missing).
+  - `Source/T66/Core/T66RunStateSubsystem.h/.cpp`: added `RescaleBossMaxHPPreservePercent()` for boss bar scaling without healing to full.
+  - `Source/T66/Gameplay/T66BossBase.h/.cpp`:
+    - Added boss `PointValue` and `ApplyDifficultyScalar(float)` (HP + projectile damage; preserves boss HP percent via RunState).
+  - `Source/T66/Gameplay/T66GameMode.h/.cpp`:
+    - Boss death handling now receives the boss pointer, awards scaled boss points, and continues existing gate/coliseum logic.
+    - `HandleDifficultyChanged()` also scales bosses.
+- **HUD / UI**
+  - `Source/T66/UI/T66GameplayHUDWidget.h/.cpp`:
+    - Difficulty skull HUD no longer supports half-skulls.
+    - Top-left score label now shows **High Score** and displays a **score multiplier** (e.g. `x1.2`).
+  - `Source/T66/Core/T66LocalizationSubsystem.h/.cpp`:
+    - Updated player-facing strings to say **High Score** instead of **Bounty** (legacy function names retained where needed).
+  - `Source/T66/UI/Components/T66LeaderboardPanel.cpp`:
+    - Leaderboard type dropdown now displays **High Score** instead of **Bounty**.
+  - `Source/T66/UI/Screens/T66RunSummaryScreen.cpp`:
+    - Run summary line now displays **High Score** in fallback formatting.
+- **Tutorial items removed**
+  - `Source/T66/Gameplay/T66TutorialManager.cpp`:
+    - Tutorial now selects a real `Item_0X` item (tries to match the hero’s strongest stat by scanning known items).
+  - `Source/T66/Core/T66GameInstance.cpp`:
+    - Removed synthetic `Item_Tutorial_*` item generation.
+- **Companion selection**
+  - `Source/T66/UI/Screens/T66CompanionSelectionScreen.h/.cpp`:
+    - Removed medal UI.
+    - Added Friendliness (Union) UI with checkpoint lines (5/10/20), stages text, and healing type (1–4).
+    - Rebuilt companion skins list to match hero skins styling (FT66Style + AC balance header).
+
+**Localization**
+- Completed the required end-to-end pipeline for new/changed player-facing strings:
+  - Gather: `Config/Localization/T66_Gather_Source.ini`
+  - Translate baseline: `Scripts/AutoTranslateLocalizationArchives.py`
+  - Compile: `Config/Localization/T66_Compile.ini`
+
+**Verification / proof**
+- ValidateFast builds ✅ (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`

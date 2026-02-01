@@ -27,6 +27,7 @@ protected:
 
 private:
 	TArray<FName> AllHeroIDs;
+	TArray<TSharedPtr<struct FSlateBrush>> HeroPortraitBrushes;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	FReply HandleHeroClicked(FName HeroID);

@@ -10,6 +10,7 @@
 
 class UT66LocalizationSubsystem;
 class AT66HeroPreviewStage;
+struct FSlateBrush;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
@@ -100,6 +101,9 @@ private:
 	/** Brush for 3D preview image (render target); kept alive for SImage */
 	TSharedPtr<struct FSlateBrush> HeroPreviewBrush;
 
+	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
+	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
+
 	/** Find the hero preview stage in the world (FrontendLevel) */
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 
@@ -114,6 +118,7 @@ private:
 	TSharedPtr<FString> CurrentDifficultyOption;
 
 	void RefreshHeroList();
+	void RefreshHeroCarouselPortraits();
 	void UpdateHeroDisplay();
 	void GeneratePlaceholderSkins();
 

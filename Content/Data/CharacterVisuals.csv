@@ -17,6 +17,9 @@ Vendor,"/Game/Characters/NPCs/Vendor/Vendor/Meshy_AI_Gentleman_Goblin_0130203434
 Gambler,"/Game/Characters/NPCs/Gambler/Gambler/Meshy_AI_Axe_Wielding_Patriot_0130203714_texture.Meshy_AI_Axe_Wielding_Patriot_0130203714_texture",,"(X=0,Y=0,Z=0)","(Pitch=0,Yaw=-90,Roll=0)","(X=1,Y=1,Z=1)",true,true
 Saint,"/Game/Characters/NPCs/Saint/SaintNPC/Meshy_AI_Halo_Monk_0130203446_texture.Meshy_AI_Halo_Monk_0130203446_texture",,"(X=0,Y=0,Z=0)","(Pitch=0,Yaw=-90,Roll=0)","(X=1,Y=1,Z=1)",true,true
 
+Trickster,"/Game/Characters/NPCs/Trickster/Trickster/SK_Trickster.SK_Trickster",,"(X=0,Y=0,Z=0)","(Pitch=0,Yaw=-90,Roll=0)","(X=1,Y=1,Z=1)",true,true
+Ouroboros,"/Game/Characters/NPCs/Ouroboros/Ouroboros/SK_Ouroboros.SK_Ouroboros",,"(X=0,Y=0,Z=0)","(Pitch=0,Yaw=-90,Roll=0)","(X=1,Y=1,Z=1)",true,true
+
 VendorBoss,"/Game/Characters/NPCs/Vendor/Vendor/Meshy_AI_Gentleman_Goblin_0130203434_texture.Meshy_AI_Gentleman_Goblin_0130203434_texture",,"(X=0,Y=0,Z=-88)","(Pitch=0,Yaw=-90,Roll=0)","(X=1,Y=1,Z=1)",true,false
 GamblerBoss,"/Game/Characters/NPCs/Gambler/Gambler/Meshy_AI_Axe_Wielding_Patriot_0130203714_texture.Meshy_AI_Axe_Wielding_Patriot_0130203714_texture",,"(X=0,Y=0,Z=-88)","(Pitch=0,Yaw=-90,Roll=0)","(X=1,Y=1,Z=1)",true,false
 

@@ -10,38 +10,51 @@
 
 const TArray<FName>& UT66RunStateSubsystem::GetAllIdolIDs()
 {
-	// Stable IDs (contract): keep these names stable forever.
+	// Canonical idol IDs (sprites + UI depend on these).
+	// Back-compat: GetIdolColor/tooltip code accepts some legacy IDs, but this list is the current altar roster.
 	static const TArray<FName> Idols = {
-		FName(TEXT("Idol_Frost")),
-		FName(TEXT("Idol_Shock")),
-		FName(TEXT("Idol_Glue")),
-		FName(TEXT("Idol_Silence")),
-		FName(TEXT("Idol_Mark")),
-		FName(TEXT("Idol_Pierce")),
-		FName(TEXT("Idol_Split")),
-		FName(TEXT("Idol_Knockback")),
-		FName(TEXT("Idol_Ricochet")),
-		FName(TEXT("Idol_Hex")),
+		FName(TEXT("Idol_Darkness")),
 		FName(TEXT("Idol_Fire")),
-		FName(TEXT("Idol_Lifesteal")),
+		FName(TEXT("Idol_Frost")),
+		FName(TEXT("Idol_Glue")),
+		FName(TEXT("Idol_Light")),
+		FName(TEXT("Idol_Lightning")),
+		FName(TEXT("Idol_Metal")),
+		FName(TEXT("Idol_Poison")),
+		FName(TEXT("Idol_Spectral")),
+		FName(TEXT("Idol_Water")),
+		FName(TEXT("Idol_Wind")),
+		FName(TEXT("Idol_Wood")),
 	};
 	return Idols;
 }
 
 FLinearColor UT66RunStateSubsystem::GetIdolColor(FName IdolID)
 {
+	// Back-compat aliases.
+	if (IdolID == FName(TEXT("Idol_Shock"))) IdolID = FName(TEXT("Idol_Lightning"));
+	if (IdolID == FName(TEXT("Idol_Silence"))) IdolID = FName(TEXT("Idol_Darkness"));
+	if (IdolID == FName(TEXT("Idol_Mark"))) IdolID = FName(TEXT("Idol_Light"));
+	if (IdolID == FName(TEXT("Idol_Pierce"))) IdolID = FName(TEXT("Idol_Metal"));
+	if (IdolID == FName(TEXT("Idol_Split"))) IdolID = FName(TEXT("Idol_Wind"));
+	if (IdolID == FName(TEXT("Idol_Knockback"))) IdolID = FName(TEXT("Idol_Wood"));
+	if (IdolID == FName(TEXT("Idol_Ricochet"))) IdolID = FName(TEXT("Idol_Water"));
+	if (IdolID == FName(TEXT("Idol_Hex"))) IdolID = FName(TEXT("Idol_Spectral"));
+	if (IdolID == FName(TEXT("Idol_Lifesteal"))) IdolID = FName(TEXT("Idol_Poison"));
+
+	if (IdolID == FName(TEXT("Idol_Darkness"))) return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Light"))) return FLinearColor(0.92f, 0.92f, 0.98f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Lightning"))) return FLinearColor(0.70f, 0.25f, 0.95f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Metal"))) return FLinearColor(0.55f, 0.55f, 0.75f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Poison"))) return FLinearColor(0.20f, 0.85f, 0.35f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Spectral"))) return FLinearColor(0.60f, 0.25f, 0.90f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Water"))) return FLinearColor(0.20f, 0.95f, 0.95f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Wind"))) return FLinearColor(0.95f, 0.80f, 0.20f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Wood"))) return FLinearColor(0.35f, 0.65f, 0.25f, 1.f);
+
 	if (IdolID == FName(TEXT("Idol_Frost"))) return FLinearColor(0.35f, 0.75f, 1.0f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Shock"))) return FLinearColor(0.70f, 0.25f, 0.95f, 1.f);
 	if (IdolID == FName(TEXT("Idol_Glue"))) return FLinearColor(0.20f, 0.85f, 0.35f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Silence"))) return FLinearColor(0.55f, 0.55f, 0.75f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Mark"))) return FLinearColor(0.95f, 0.80f, 0.20f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Pierce"))) return FLinearColor(0.92f, 0.92f, 0.98f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Split"))) return FLinearColor(0.95f, 0.20f, 0.20f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Knockback"))) return FLinearColor(0.95f, 0.55f, 0.15f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Ricochet"))) return FLinearColor(0.20f, 0.95f, 0.95f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Hex"))) return FLinearColor(0.10f, 0.10f, 0.10f, 1.f);
 	if (IdolID == FName(TEXT("Idol_Fire"))) return FLinearColor(0.95f, 0.25f, 0.10f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Lifesteal"))) return FLinearColor(0.75f, 0.10f, 0.25f, 1.f);
 	return FLinearColor(0.25f, 0.25f, 0.28f, 1.f);
 }
 
@@ -186,24 +199,34 @@ void UT66RunStateSubsystem::TrimLogsIfNeeded()
 	}
 }
 
-float UT66RunStateSubsystem::GetDifficultyMultiplier() const
+int32 UT66RunStateSubsystem::GetDifficultyScalarTier() const
 {
-	// Linear scaling: Tier 0 => 1x, Tier 1 => 2x, Tier 2 => 3x, ...
-	return 1.f + static_cast<float>(FMath::Max(0, DifficultyTier));
+	const int32 Skulls = FMath::Max(0, DifficultySkulls);
+	if (Skulls <= 0) return 0;
+	// Tier 1 for skulls 1-5, Tier 2 for skulls 6-10, etc.
+	return ((Skulls - 1) / 5) + 1;
+}
+
+float UT66RunStateSubsystem::GetDifficultyScalar() const
+{
+	// Per spec update: every skull increments scalar by +0.1.
+	// Skull 1 => 1.1x ... Skull 5 => 1.5x, then color tier advances on skull 6.
+	const int32 Skulls = FMath::Max(0, DifficultySkulls);
+	return FMath::Clamp(1.0f + (0.1f * static_cast<float>(Skulls)), 1.0f, 99.0f);
 }
 
 void UT66RunStateSubsystem::IncreaseDifficultyTier()
 {
-	AddDifficultySkulls(1.0f);
+	AddDifficultySkulls(1);
 }
 
-void UT66RunStateSubsystem::AddDifficultySkulls(float DeltaSkulls)
+void UT66RunStateSubsystem::AddDifficultySkulls(int32 DeltaSkulls)
 {
-	if (DeltaSkulls == 0.f) return;
-	DifficultySkulls = FMath::Clamp(DifficultySkulls + DeltaSkulls, 0.f, 9999.f);
+	if (DeltaSkulls == 0) return;
+	DifficultySkulls = FMath::Clamp(DifficultySkulls + DeltaSkulls, 0, 9999);
 
-	// Cache integer tier for existing enemy scaling logic (tier 0 -> 1x, tier 1 -> 2x, ...).
-	DifficultyTier = FMath::Clamp(FMath::FloorToInt(DifficultySkulls), 0, 999);
+	// Cache integer "tier" for backward-compat call sites (treated as skull count).
+	DifficultyTier = FMath::Clamp(DifficultySkulls, 0, 999);
 	DifficultyChanged.Broadcast();
 }
 
@@ -498,7 +521,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	if (!GI)
 	{
 		// Fallback: keep deterministic placeholder behavior.
-		VendorStockItemIDs = { FName(TEXT("Item_01")), FName(TEXT("Item_02")), FName(TEXT("Item_03")), FName(TEXT("Item_04")) };
+		VendorStockItemIDs = { FName(TEXT("Item_Black_01")), FName(TEXT("Item_Red_01")), FName(TEXT("Item_Yellow_01")), FName(TEXT("Item_White_01")) };
 		VendorStockSold.Init(false, VendorStockItemIDs.Num());
 		VendorChanged.Broadcast();
 		return;
@@ -532,9 +555,9 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	}
 
 	// Fallback if DT missing or pools empty.
-	if (PoolBlack.Num() == 0) PoolBlack = { FName(TEXT("Item_01")) };
-	if (PoolRed.Num() == 0) PoolRed = { FName(TEXT("Item_02")) };
-	if (PoolYellow.Num() == 0) PoolYellow = { FName(TEXT("Item_03")) };
+	if (PoolBlack.Num() == 0) PoolBlack = { FName(TEXT("Item_Black_01")) };
+	if (PoolRed.Num() == 0) PoolRed = { FName(TEXT("Item_Red_01")) };
+	if (PoolYellow.Num() == 0) PoolYellow = { FName(TEXT("Item_Yellow_01")) };
 
 	// Seed is stable per stage, but changes per reroll so the stock can refresh.
 	FRandomStream Rng(Stage * 777 + 13 + VendorStockRerollCounter * 10007);
@@ -1110,10 +1133,10 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 		// Safe fallback if row is missing entirely.
 		if (!bHasRow && StatValue == 0)
 		{
-			if (ItemID == TEXT("Item_01")) { StatType = ET66HeroStatType::Damage; StatValue = 2; }
-			else if (ItemID == TEXT("Item_02")) { StatType = ET66HeroStatType::AttackSpeed; StatValue = 2; }
-			else if (ItemID == TEXT("Item_03")) { StatType = ET66HeroStatType::Evasion; StatValue = 2; }
-			else if (ItemID == TEXT("Item_08")) { StatType = ET66HeroStatType::Luck; StatValue = 2; }
+			if (ItemID == TEXT("Item_Black_01")) { StatType = ET66HeroStatType::Damage; StatValue = 2; }
+			else if (ItemID == TEXT("Item_Red_01")) { StatType = ET66HeroStatType::AttackSpeed; StatValue = 2; }
+			else if (ItemID == TEXT("Item_Yellow_01")) { StatType = ET66HeroStatType::Evasion; StatValue = 2; }
+			else if (ItemID == TEXT("Item_White_01")) { StatType = ET66HeroStatType::Luck; StatValue = 2; }
 		}
 
 		AddBonus(StatType, StatValue);
@@ -1186,7 +1209,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	CurrentDebt = 0;
 	bLoanSharkPending = false;
 	DifficultyTier = 0;
-	DifficultySkulls = 0.f;
+	DifficultySkulls = 0;
 	TotemsActivatedCount = 0;
 	GamblerAnger01 = 0.f;
 	ResetVendorForStage();
@@ -1205,6 +1228,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	SpeedRunStartWorldSeconds = 0.f;
 	bSpeedRunStarted = false;
 	LastBroadcastSpeedRunSecond = -1;
+	bThisRunSetNewPersonalBestSpeedRunTime = false;
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
 	bHUDPanelsVisible = true;
@@ -1280,6 +1304,10 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 				if (UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr)
 				{
 					LB->SubmitStageSpeedRunTime(CompletedStage, Elapsed);
+					if (LB->WasLastSpeedRunNewPersonalBest() && LB->GetLastSpeedRunSubmittedStage() == CompletedStage)
+					{
+						bThisRunSetNewPersonalBestSpeedRunTime = true;
+					}
 				}
 			}
 		}
@@ -1386,6 +1414,18 @@ void UT66RunStateSubsystem::SetBossActiveWithId(FName InBossID, int32 InMaxHP)
 	ActiveBossID = InBossID;
 	BossMaxHP = FMath::Max(1, InMaxHP);
 	BossCurrentHP = BossMaxHP;
+	BossChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::RescaleBossMaxHPPreservePercent(int32 NewMaxHP)
+{
+	if (!bBossActive) return;
+	const int32 PrevMax = FMath::Max(1, BossMaxHP);
+	const int32 PrevCur = FMath::Clamp(BossCurrentHP, 0, PrevMax);
+	const float Pct = FMath::Clamp(static_cast<float>(PrevCur) / static_cast<float>(PrevMax), 0.f, 1.f);
+
+	BossMaxHP = FMath::Max(1, NewMaxHP);
+	BossCurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(BossMaxHP) * Pct), 0, BossMaxHP);
 	BossChanged.Broadcast();
 }
 

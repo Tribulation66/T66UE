@@ -769,10 +769,12 @@ struct FT66WebView2Host::FImpl
 		Script += TEXT("async function moveOnce(dir){TT.start(); TT.moving=1;");
 		Script += TEXT("var before=TT.active||centerV(); var t=pickNeighbor(before,dir)||pickNeighbor(centerV(),dir); var s=t?findSc(t.parentElement||t):sc();");
 		Script += TEXT("if(before) safeStop(before);");
-		Script += TEXT("var moved=false; if(t){moved=snapTo(t,s);} ");
-		Script += TEXT("if(!moved){var dy=Math.floor((innerHeight||800)*0.98)*(dir>0?1:-1); try{if(s&&s.scrollBy){s.scrollBy({top:dy,left:0,behavior:'auto'});}else{window.scrollBy({top:dy,left:0,behavior:'auto'});}}catch(e){}}");
+		Script += TEXT("var dy=Math.floor((innerHeight||800)*1.10)*(dir>0?1:-1);");
+		Script += TEXT("if(t){try{t.scrollIntoView&&t.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});}catch(e){} snapTo(t,s);}else{try{if(s&&s.scrollBy){s.scrollBy({top:dy,left:0,behavior:'auto'});}else{window.scrollBy({top:dy,left:0,behavior:'auto'});}}catch(e){}}");
 		Script += TEXT("await idle(s,1200); var v=centerV();");
-		Script += TEXT("if(before && v===before && t && t.isConnected){snapTo(t,s); await idle(s,900); v=centerV(); if(v===before) v=t;}");
+		Script += TEXT("if(before && v===before){"); // still on same video -> force a bigger commit step
+		Script += TEXT("try{if(t&&t.isConnected){t.scrollIntoView&&t.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'}); snapTo(t,s);}else{if(s&&s.scrollBy){s.scrollBy({top:dy,left:0,behavior:'auto'});}else{window.scrollBy({top:dy,left:0,behavior:'auto'});}}}catch(e){}");
+		Script += TEXT("await idle(s,900); v=centerV(); if(v===before && t && t.isConnected) v=t; }");
 		Script += TEXT("if(v){TT.active=v; snapTo(v,s);} TT.moving=0; enforce(); }");
 
 		Script += TEXT("TT.move=TT.move||function(dir){TT.q.push(dir); if(TT.busy) return; TT.busy=true; (async function(){");

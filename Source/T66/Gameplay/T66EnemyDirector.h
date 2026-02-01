@@ -99,4 +99,8 @@ protected:
 	bool bSpawnedUniqueThisStage = false;
 
 	TWeakObjectPtr<AT66EnemyBase> ActiveMiniBoss;
+
+	// Cache base spawn counts so difficulty scaling doesn't compound.
+	int32 BaseEnemiesPerWave = 0;
+	int32 BaseMaxAliveEnemies = 0;
 };

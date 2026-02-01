@@ -2,8 +2,11 @@
 
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Data/T66DataTypes.h"
+#include "Engine/Texture2D.h"
 
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -12,7 +15,9 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
 #include "Input/DragAndDrop.h"
 
 void UT66IdolAltarOverlayWidget::NativeDestruct()
@@ -54,6 +59,7 @@ public:
 		SLATE_ARGUMENT(bool, bLocked)
 		SLATE_ARGUMENT(FText, ToolTipText)
 		SLATE_ARGUMENT(FLinearColor, Color)
+		SLATE_ARGUMENT(const FSlateBrush*, IconBrush)
 		SLATE_EVENT(FOnHoverIdol, OnHoverIdol)
 	SLATE_END_ARGS()
 
@@ -69,6 +75,16 @@ public:
 			.BorderBackgroundColor(InArgs._Color)
 			.Padding(2.f)
 			.ToolTipText(InArgs._ToolTipText)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SImage)
+					.Image(InArgs._IconBrush)
+					.ColorAndOpacity(FLinearColor::White)
+					.Visibility(InArgs._IconBrush ? EVisibility::Visible : EVisibility::Collapsed)
+				]
+			]
 		);
 	}
 
@@ -166,6 +182,45 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 {
 	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+
+	// Keep icon brushes alive for the lifetime of this overlay rebuild.
+	TMap<FName, TSharedPtr<FSlateBrush>> IdolIconBrushes;
+	auto GetIdolIconBrush = [&](FName IdolID) -> const FSlateBrush*
+	{
+		if (IdolID.IsNone()) return nullptr;
+		if (const TSharedPtr<FSlateBrush>* Found = IdolIconBrushes.Find(IdolID))
+		{
+			return Found->Get();
+		}
+
+		UTexture2D* Tex = nullptr;
+		if (GI)
+		{
+			FIdolData D;
+			if (GI->GetIdolData(IdolID, D) && !D.Icon.IsNull())
+			{
+				Tex = D.Icon.Get();
+				if (!Tex)
+				{
+					Tex = D.Icon.LoadSynchronous();
+				}
+			}
+		}
+
+		if (!Tex)
+		{
+			IdolIconBrushes.Add(IdolID, nullptr);
+			return nullptr;
+		}
+
+		TSharedPtr<FSlateBrush> B = MakeShared<FSlateBrush>();
+		B->DrawAs = ESlateBrushDrawType::Image;
+		B->SetResourceObject(Tex);
+		B->ImageSize = FVector2D(64.f, 64.f);
+		IdolIconBrushes.Add(IdolID, B);
+		return B.Get();
+	};
 
 	const TArray<FName>& Equipped = RunState ? RunState->GetEquippedIdols() : TArray<FName>();
 	TSet<FName> EquippedSet;
@@ -196,6 +251,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			.IdolID(IdolID)
 			.bLocked(bLocked)
 			.Color(C)
+			.IconBrush(GetIdolIconBrush(IdolID))
 			.ToolTipText(GetIdolTooltipText(Loc, IdolID))
 			.OnHoverIdol(ST66IdolTile::FOnHoverIdol::CreateLambda([this, Loc](FName Hovered)
 			{

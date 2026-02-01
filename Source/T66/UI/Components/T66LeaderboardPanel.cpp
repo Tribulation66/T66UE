@@ -34,7 +34,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	DifficultyOptions.Add(MakeShared<FString>(TEXT("Final")));
 	SelectedDifficultyOption = DifficultyOptions[0];
 
-	TypeOptions.Add(MakeShared<FString>(TEXT("Bounty")));
+	TypeOptions.Add(MakeShared<FString>(TEXT("High Score")));
 	TypeOptions.Add(MakeShared<FString>(TEXT("Speed Run")));
 	SelectedTypeOption = TypeOptions[0];
 
@@ -282,7 +282,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::HighScore ? EVisibility::Visible : EVisibility::Collapsed; })
 						[
 							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Leaderboard", "Bounty", "BOUNTY"))
+							.Text(NSLOCTEXT("T66.Leaderboard", "HighScore", "HIGH SCORE"))
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 							.Justification(ETextJustify::Right)
@@ -354,9 +354,9 @@ void ST66LeaderboardPanel::GeneratePlaceholderData()
 		
 		if (CurrentType == ET66LeaderboardType::HighScore)
 		{
-			// Bounty placeholder (kept as fallback when subsystem isn't available).
+			// High score placeholder (kept as fallback when subsystem isn't available).
 			Entry.Score = 2000 - (i * 140) + FMath::RandRange(-20, 20);
-			Entry.TimeSeconds = -1.0f; // Not relevant for bounty
+			Entry.TimeSeconds = -1.0f; // Not relevant for high score
 		}
 		else
 		{
@@ -401,7 +401,6 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		const bool bRowClickable =
 			Entry.bIsLocalPlayer
 			&& (CurrentType == ET66LeaderboardType::HighScore)
-			&& (Entry.Score > 0)
 			&& (UIManager != nullptr)
 			&& bHasLocalSummary;
 
@@ -613,7 +612,7 @@ void ST66LeaderboardPanel::OnTypeChanged(TSharedPtr<FString> NewSelection, ESele
 	if (!NewSelection.IsValid()) return;
 	SelectedTypeOption = NewSelection;
 
-	if (*NewSelection == TEXT("Bounty")) SetLeaderboardType(ET66LeaderboardType::HighScore);
+	if (*NewSelection == TEXT("High Score")) SetLeaderboardType(ET66LeaderboardType::HighScore);
 	else if (*NewSelection == TEXT("Speed Run")) SetLeaderboardType(ET66LeaderboardType::SpeedRun);
 }
 
@@ -750,11 +749,6 @@ FReply ST66LeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry& En
 
 	// v0: only local-best bounty can open a run summary snapshot.
 	if (CurrentType != ET66LeaderboardType::HighScore)
-	{
-		return FReply::Handled();
-	}
-
-	if (Entry.Score <= 0)
 	{
 		return FReply::Handled();
 	}

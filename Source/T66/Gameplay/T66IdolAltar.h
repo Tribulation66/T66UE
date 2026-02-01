@@ -8,6 +8,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UStaticMesh;
 
 /**
  * Stage 1 Start Area Idol Altar.
@@ -34,6 +35,13 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "IdolAltar")
 	TObjectPtr<UStaticMeshComponent> TopRect;
+
+	/** Optional imported altar mesh (if set, we hide the 3-rect placeholder stack). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "IdolAltar")
+	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = "IdolAltar")
+	TSoftObjectPtr<UStaticMesh> AltarMeshOverride;
 
 	/** Apply simple placeholder visuals (color/material). */
 	void ApplyVisuals();

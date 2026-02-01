@@ -7,6 +7,7 @@
 #include "T66WheelSpinInteractable.generated.h"
 
 class UStaticMeshComponent;
+class UStaticMesh;
 class APlayerController;
 
 /** Wheel Spin: opens a non-pausing wheel popup and awards gold. */
@@ -23,6 +24,19 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Wheel")
 	TObjectPtr<UStaticMeshComponent> WheelMesh;
+
+	/** Optional rarity meshes (when imported). If null/unloaded, we fall back to primitive shapes. */
+	UPROPERTY(EditDefaultsOnly, Category = "Wheel|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshBlack;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Wheel|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshRed;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Wheel|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshYellow;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Wheel|Meshes")
+	TSoftObjectPtr<UStaticMesh> MeshWhite;
 
 	virtual bool Interact(APlayerController* PC) override;
 

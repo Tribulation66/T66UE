@@ -49,7 +49,12 @@ private:
 	void DestroyPreviewCaptures();
 	void LoadSavedRunSummaryIfRequested();
 
-	bool bLogVisible = true;
+	// Event log is hidden by default; toggled by the "EVENT LOG" button.
+	bool bLogVisible = false;
+
+	// Run Summary banners (set on activation for the most recent run).
+	bool bNewPersonalHighScore = false;
+	bool bNewPersonalBestTime = false;
 
 	/** True when opened from a leaderboard entry (saved snapshot instead of current run state). */
 	bool bViewingSavedLeaderboardRunSummary = false;
@@ -66,17 +71,15 @@ private:
 	TObjectPtr<UTextureRenderTarget2D> HeroPreviewRT;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextureRenderTarget2D> CompanionPreviewRT;
-
-	UPROPERTY(Transient)
 	TObjectPtr<ASceneCapture2D> HeroCaptureActor;
-
-	UPROPERTY(Transient)
-	TObjectPtr<ASceneCapture2D> CompanionCaptureActor;
 
 	/** Brushes for Slate image widgets (resource = render target). */
 	TSharedPtr<struct FSlateBrush> HeroPreviewBrush;
 	TSharedPtr<struct FSlateBrush> CompanionPreviewBrush;
+
+	/** Brushes for item/idol icon images (resource = UTexture2D). */
+	TArray<TSharedPtr<struct FSlateBrush>> InventoryItemIconBrushes;
+	TArray<TSharedPtr<struct FSlateBrush>> IdolIconBrushes;
 
 	// ===== Preview stages (reuse same system as hero/companion selection) =====
 	UPROPERTY(Transient)

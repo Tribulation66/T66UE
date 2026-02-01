@@ -8,6 +8,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UStaticMesh;
 
 /**
  * STAGE GATE: Big 3D rectangle. Interact (F) to advance to next stage (reload level,
@@ -26,6 +27,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
 	TObjectPtr<UStaticMeshComponent> GateMesh;
+
+	/** Optional imported portal mesh (if null/unloaded, uses cube). */
+	UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+	TSoftObjectPtr<UStaticMesh> GateMeshOverride;
 
 	/** Called when player presses Interact (F) while overlapping. Returns true if advance was triggered. */
 	UFUNCTION(BlueprintCallable, Category = "Stage")

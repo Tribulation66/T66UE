@@ -28,9 +28,9 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 	SceneCapture->SetupAttachment(RootComponent);
 	SceneCapture->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	SceneCapture->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	// Real-time capture for smooth orbit + animation (no stutter).
-	SceneCapture->bCaptureEveryFrame = true;
-	SceneCapture->bCaptureOnMovement = true;
+	// Capture on-demand (preview updates only when hero/rotation/zoom changes).
+	SceneCapture->bCaptureEveryFrame = false;
+	SceneCapture->bCaptureOnMovement = false;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 	SceneCapture->FOVAngle = 30.f;
 	// Do NOT override exposure here; we want it to match the gameplay lighting feel.
@@ -122,6 +122,7 @@ void AT66HeroPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
 	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
 	ApplyPreviewRotation();
 	FrameCameraToPreview();
+	CapturePreview();
 }
 
 void AT66HeroPreviewStage::AddPreviewZoom(float WheelDelta)
@@ -132,6 +133,7 @@ void AT66HeroPreviewStage::AddPreviewZoom(float WheelDelta)
 	const float MinZ = FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f);
 	PreviewZoomMultiplier = FMath::Clamp(PreviewZoomMultiplier - (WheelDelta * StepPerWheel), MinZ, 1.0f);
 	FrameCameraToPreview();
+	CapturePreview();
 }
 
 void AT66HeroPreviewStage::AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees)

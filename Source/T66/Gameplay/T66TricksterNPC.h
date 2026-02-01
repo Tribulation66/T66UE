@@ -15,5 +15,8 @@ class T66_API AT66TricksterNPC : public AT66HouseNPCBase
 public:
 	AT66TricksterNPC();
 	virtual bool Interact(APlayerController* PC) override;
+
+protected:
+	virtual void BeginPlay() override;
 };
 

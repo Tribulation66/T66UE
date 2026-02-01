@@ -22,6 +22,8 @@
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/Images/SImage.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/Texture2D.h"
+#include "Styling/SlateBrush.h"
 
 namespace
 {
@@ -298,6 +300,19 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	// Build hero sprite carousel (colored boxes for each hero)
 	TSharedRef<SHorizontalBox> HeroCarousel = SNew(SHorizontalBox);
 	RefreshHeroList(); // Ensure hero list is populated
+
+	// Ensure we have stable brushes for the 5 visible slots.
+	HeroCarouselPortraitBrushes.SetNum(5);
+	for (int32 i = 0; i < HeroCarouselPortraitBrushes.Num(); ++i)
+	{
+		if (!HeroCarouselPortraitBrushes[i].IsValid())
+		{
+			HeroCarouselPortraitBrushes[i] = MakeShared<FSlateBrush>();
+			HeroCarouselPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+			HeroCarouselPortraitBrushes[i]->ImageSize = FVector2D(60.f, 60.f);
+		}
+	}
+	RefreshHeroCarouselPortraits();
 	
 	// Show 5 heroes centered on current (prev2, prev1, current, next1, next2)
 	for (int32 Offset = -2; Offset <= 2; Offset++)
@@ -306,6 +321,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 
 		const float BoxSize = (Offset == 0) ? 60.0f : 45.0f; // Current hero is larger
 		const float Opacity = (Offset == 0) ? 1.0f : 0.6f;
+		const int32 SlotIdx = Offset + 2;
 		
 		HeroCarousel->AddSlot()
 		.AutoWidth()
@@ -316,27 +332,48 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			.WidthOverride(BoxSize)
 			.HeightOverride(BoxSize)
 			[
-				SNew(SBorder)
-				.BorderBackgroundColor_Lambda([this, Offset, Opacity]() -> FSlateColor
-				{
-					if (AllHeroIDs.Num() <= 0)
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SBorder)
+					.BorderBackgroundColor_Lambda([this, Offset, Opacity]() -> FSlateColor
 					{
-						return FLinearColor(0.2f, 0.2f, 0.25f, 1.0f);
-					}
-
-					const int32 HeroIdx = (CurrentHeroIndex + Offset + AllHeroIDs.Num()) % AllHeroIDs.Num();
-					FLinearColor SpriteColor(0.2f, 0.2f, 0.25f, 1.0f);
-					if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
-					{
-						FHeroData HeroData;
-						if (GI->GetHeroData(AllHeroIDs[HeroIdx], HeroData))
+						if (AllHeroIDs.Num() <= 0)
 						{
-							SpriteColor = HeroData.PlaceholderColor;
+							return FLinearColor(0.2f, 0.2f, 0.25f, 1.0f);
 						}
-					}
-					return SpriteColor * Opacity;
-				})
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+
+						const int32 HeroIdx = (CurrentHeroIndex + Offset + AllHeroIDs.Num()) % AllHeroIDs.Num();
+						FLinearColor SpriteColor(0.2f, 0.2f, 0.25f, 1.0f);
+						if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+						{
+							FHeroData HeroData;
+							if (GI->GetHeroData(AllHeroIDs[HeroIdx], HeroData))
+							{
+								SpriteColor = HeroData.PlaceholderColor;
+							}
+						}
+						return SpriteColor * Opacity;
+					})
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SImage)
+					.Image_Lambda([this, SlotIdx]() -> const FSlateBrush*
+					{
+						return HeroCarouselPortraitBrushes.IsValidIndex(SlotIdx) ? HeroCarouselPortraitBrushes[SlotIdx].Get() : nullptr;
+					})
+					.Visibility_Lambda([this, SlotIdx]() -> EVisibility
+					{
+						if (!HeroCarouselPortraitBrushes.IsValidIndex(SlotIdx) || !HeroCarouselPortraitBrushes[SlotIdx].IsValid())
+						{
+							return EVisibility::Collapsed;
+						}
+						return HeroCarouselPortraitBrushes[SlotIdx]->GetResourceObject() ? EVisibility::Visible : EVisibility::Collapsed;
+					})
+					.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity))
+				]
 			]
 		];
 	}
@@ -989,6 +1026,66 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		else if (HeroPreviewColorBox.IsValid())
 		{
 			HeroPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.4f, 1.0f));
+		}
+	}
+
+	// Keep the top carousel portraits in sync with the preview index.
+	RefreshHeroCarouselPortraits();
+}
+
+void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
+{
+	if (AllHeroIDs.Num() <= 0)
+	{
+		for (TSharedPtr<FSlateBrush>& B : HeroCarouselPortraitBrushes)
+		{
+			if (B.IsValid()) B->SetResourceObject(nullptr);
+		}
+		return;
+	}
+
+	// Ensure 5 stable slots.
+	HeroCarouselPortraitBrushes.SetNum(5);
+	for (int32 i = 0; i < HeroCarouselPortraitBrushes.Num(); ++i)
+	{
+		if (!HeroCarouselPortraitBrushes[i].IsValid())
+		{
+			HeroCarouselPortraitBrushes[i] = MakeShared<FSlateBrush>();
+			HeroCarouselPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+			HeroCarouselPortraitBrushes[i]->ImageSize = FVector2D(60.f, 60.f);
+		}
+	}
+
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		for (int32 Offset = -2; Offset <= 2; ++Offset)
+		{
+			const int32 SlotIdx = Offset + 2;
+			if (!HeroCarouselPortraitBrushes.IsValidIndex(SlotIdx) || !HeroCarouselPortraitBrushes[SlotIdx].IsValid())
+			{
+				continue;
+			}
+
+			const int32 HeroIdx = (CurrentHeroIndex + Offset + AllHeroIDs.Num()) % AllHeroIDs.Num();
+			const FName HeroID = AllHeroIDs.IsValidIndex(HeroIdx) ? AllHeroIDs[HeroIdx] : NAME_None;
+
+			UTexture2D* Tex = nullptr;
+			if (!HeroID.IsNone())
+			{
+				FHeroData D;
+				if (GI->GetHeroData(HeroID, D) && !D.Portrait.IsNull())
+				{
+					Tex = D.Portrait.Get();
+					if (!Tex)
+					{
+						Tex = D.Portrait.LoadSynchronous();
+					}
+				}
+			}
+
+			const float BoxSize = (Offset == 0) ? 60.f : 45.f;
+			HeroCarouselPortraitBrushes[SlotIdx]->SetResourceObject(Tex);
+			HeroCarouselPortraitBrushes[SlotIdx]->ImageSize = FVector2D(BoxSize, BoxSize);
 		}
 	}
 }

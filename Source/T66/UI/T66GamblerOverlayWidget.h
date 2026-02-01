@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Input/Reply.h"
+#include "Styling/SlateBrush.h"
 #include "T66GamblerOverlayWidget.generated.h"
 
 class STextBlock;
@@ -57,6 +58,8 @@ private:
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SButton>> InventorySlotButtons;
 	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
+	TArray<TSharedPtr<SImage>> InventorySlotIconImages;
+	TArray<TSharedPtr<FSlateBrush>> InventorySlotIconBrushes;
 	int32 SelectedInventoryIndex = -1;
 
 	// Sell panel
@@ -95,6 +98,11 @@ private:
 	TSharedPtr<SButton> BallCup1Button;
 	TSharedPtr<SButton> BallCup2Button;
 	TSharedPtr<SButton> BallCup3Button;
+
+	// Game icons (casino cards)
+	FSlateBrush GameIcon_CoinFlip;
+	FSlateBrush GameIcon_Rps;
+	FSlateBrush GameIcon_FindBall;
 
 	int32 WinGoldAmount = 10; // used as a default gamble amount suggestion from DT
 	bool bInputLocked = false;

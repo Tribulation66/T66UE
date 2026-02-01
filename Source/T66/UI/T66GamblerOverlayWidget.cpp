@@ -17,12 +17,14 @@
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
 #include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Engine/Texture2D.h"
 
 void UT66GamblerOverlayWidget::NativeDestruct()
 {
@@ -56,6 +58,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotButtons.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
 	UT66LocalizationSubsystem* Loc = nullptr;
 	if (UWorld* World = GetWorld())
@@ -76,6 +80,31 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 	const FTextBlockStyle& TextButton = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+
+	// --- Game icons (Sprites/Games) ---
+	auto SetupBrushFromTexture = [](FSlateBrush& Brush, UTexture2D* Tex)
+	{
+		Brush = FSlateBrush();
+		if (Tex)
+		{
+			Brush.SetResourceObject(Tex);
+			Brush.ImageSize = FVector2D(72.f, 72.f);
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+		}
+	};
+
+	SetupBrushFromTexture(GameIcon_CoinFlip, LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Coin.T_Game_Coin")));
+	SetupBrushFromTexture(GameIcon_Rps, LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_RPS.T_Game_RPS")));
+	// Source file name is "Ball game.png" -> importer creates "T_Game_Ball_game"
+	SetupBrushFromTexture(GameIcon_FindBall, LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Ball_game.T_Game_Ball_game")));
+
+	// Inventory slot icon brushes (same sizing as vendor for consistency)
+	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
+	{
+		InventorySlotIconBrushes[i] = MakeShared<FSlateBrush>();
+		InventorySlotIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+		InventorySlotIconBrushes[i]->ImageSize = FVector2D(148.f, 148.f);
+	}
 
 	auto MakeTitle = [&](const FText& Text) -> TSharedRef<SWidget>
 	{
@@ -255,7 +284,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 		];
 
-	auto MakeGameCard = [&](const FText& TitleText, const FOnClicked& OnClicked) -> TSharedRef<SWidget>
+	auto MakeGameCard = [&](const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
 			.WidthOverride(260.f)
@@ -273,9 +302,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					.Padding(FT66Style::Tokens::Space6)
 					[
 						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().FillHeight(1.f)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 						[
-							SNew(SSpacer)
+							SNew(SBox)
+							.WidthOverride(84.f)
+							.HeightOverride(84.f)
+							[
+								SNew(SImage)
+								.Image(IconBrush)
+								.ColorAndOpacity(FLinearColor::White)
+							]
 						]
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 						[
@@ -285,10 +321,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 							.AutoWrapText(true)
 						]
-						+ SVerticalBox::Slot().FillHeight(1.f)
-						[
-							SNew(SSpacer)
-						]
+						+ SVerticalBox::Slot().FillHeight(1.f) [ SNew(SSpacer) ]
 					]
 				]
 			];
@@ -320,15 +353,15 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				// [Game 1] [   -  ]
 				+ SUniformGridPanel::Slot(0, 0)
 				[
-					MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps))
+					MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps)
 				]
 				+ SUniformGridPanel::Slot(1, 0)
 				[
-					MakeGameCard(Loc ? Loc->GetText_FindTheBall() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall))
+					MakeGameCard(Loc ? Loc->GetText_FindTheBall() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall), &GameIcon_FindBall)
 				]
 				+ SUniformGridPanel::Slot(0, 1)
 				[
-					MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip))
+					MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip)
 				]
 			]
 		];
@@ -659,12 +692,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							[
 								SAssignNew(InventorySlotBorders[0], SBorder)
 								.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-								.Padding(FMargin(12.f, 10.f))
+								.Padding(FMargin(0.f))
 								[
-									SAssignNew(InventorySlotTexts[0], STextBlock)
-									.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SOverlay)
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SNew(SBox)
+										.WidthOverride(148.f)
+										.HeightOverride(148.f)
+										[
+											SAssignNew(InventorySlotIconImages[0], SImage)
+											.Image(InventorySlotIconBrushes[0].Get())
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SAssignNew(InventorySlotTexts[0], STextBlock)
+										.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+										.TextStyle(&TextChip)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
 								]
 							]
 						]
@@ -682,12 +730,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							[
 								SAssignNew(InventorySlotBorders[1], SBorder)
 								.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-								.Padding(FMargin(12.f, 10.f))
+								.Padding(FMargin(0.f))
 								[
-									SAssignNew(InventorySlotTexts[1], STextBlock)
-									.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SOverlay)
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SNew(SBox)
+										.WidthOverride(148.f)
+										.HeightOverride(148.f)
+										[
+											SAssignNew(InventorySlotIconImages[1], SImage)
+											.Image(InventorySlotIconBrushes[1].Get())
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SAssignNew(InventorySlotTexts[1], STextBlock)
+										.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+										.TextStyle(&TextChip)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
 								]
 							]
 						]
@@ -705,12 +768,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							[
 								SAssignNew(InventorySlotBorders[2], SBorder)
 								.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-								.Padding(FMargin(12.f, 10.f))
+								.Padding(FMargin(0.f))
 								[
-									SAssignNew(InventorySlotTexts[2], STextBlock)
-									.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SOverlay)
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SNew(SBox)
+										.WidthOverride(148.f)
+										.HeightOverride(148.f)
+										[
+											SAssignNew(InventorySlotIconImages[2], SImage)
+											.Image(InventorySlotIconBrushes[2].Get())
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SAssignNew(InventorySlotTexts[2], STextBlock)
+										.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+										.TextStyle(&TextChip)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
 								]
 							]
 						]
@@ -728,12 +806,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							[
 								SAssignNew(InventorySlotBorders[3], SBorder)
 								.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-								.Padding(FMargin(12.f, 10.f))
+								.Padding(FMargin(0.f))
 								[
-									SAssignNew(InventorySlotTexts[3], STextBlock)
-									.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SOverlay)
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SNew(SBox)
+										.WidthOverride(148.f)
+										.HeightOverride(148.f)
+										[
+											SAssignNew(InventorySlotIconImages[3], SImage)
+											.Image(InventorySlotIconBrushes[3].Get())
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SAssignNew(InventorySlotTexts[3], STextBlock)
+										.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+										.TextStyle(&TextChip)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
 								]
 							]
 						]
@@ -751,12 +844,27 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							[
 								SAssignNew(InventorySlotBorders[4], SBorder)
 								.BorderImage(Style.GetBrush("T66.Brush.Panel2"))
-								.Padding(FMargin(12.f, 10.f))
+								.Padding(FMargin(0.f))
 								[
-									SAssignNew(InventorySlotTexts[4], STextBlock)
-									.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-									.TextStyle(&TextChip)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SOverlay)
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SNew(SBox)
+										.WidthOverride(148.f)
+										.HeightOverride(148.f)
+										[
+											SAssignNew(InventorySlotIconImages[4], SImage)
+											.Image(InventorySlotIconBrushes[4].Get())
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+									+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+									[
+										SAssignNew(InventorySlotTexts[4], STextBlock)
+										.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+										.TextStyle(&TextChip)
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
 								]
 							]
 						]
@@ -959,34 +1067,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 FReply UT66GamblerOverlayWidget::OnBack()
 {
-	// Back navigates up; if at dialogue, closes the overlay (return to gameplay).
-	if (!PageSwitcher.IsValid())
-	{
-		CloseOverlay();
-		return FReply::Handled();
-	}
-
-	const int32 Index = PageSwitcher->GetActiveWidgetIndex();
-	if (Index == 0) // Dialogue
-	{
-		CloseOverlay();
-	}
-	else
-	{
-		// If a game is open, go back to the game cards first.
-		if (CasinoSwitcher.IsValid() && CasinoSwitcher->GetActiveWidgetIndex() != 0)
-		{
-			CasinoSwitcher->SetActiveWidgetIndex(0);
-			SetStatus(FText::GetEmpty());
-			RefreshTopBar();
-			RefreshInventory();
-			RefreshSellPanel();
-		}
-		else
-		{
-			SetPage(EGamblerPage::Dialogue);
-		}
-	}
+	// Back should always exit the interaction (close the overlay).
+	CloseOverlay();
 	return FReply::Handled();
 }
 
@@ -1350,7 +1432,8 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 		const bool bHasItem = Inv.IsValidIndex(i) && !Inv[i].IsNone();
 		if (InventorySlotTexts[i].IsValid())
 		{
-			InventorySlotTexts[i]->SetText(bHasItem ? FText::FromName(Inv[i]) : NSLOCTEXT("T66.Common", "Dash", "-"));
+			// Keep the strip clean: icons for items, "-" for empty slots.
+			InventorySlotTexts[i]->SetText(bHasItem ? FText::GetEmpty() : NSLOCTEXT("T66.Common", "Dash", "-"));
 		}
 		if (InventorySlotButtons.IsValidIndex(i) && InventorySlotButtons[i].IsValid())
 		{
@@ -1359,13 +1442,11 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
 			FLinearColor Fill = FT66Style::Tokens::Panel2;
-			if (bHasItem && T66GI)
+			FItemData D;
+			const bool bHasData = bHasItem && T66GI && T66GI->GetItemData(Inv[i], D);
+			if (bHasData)
 			{
-				FItemData D;
-				if (T66GI->GetItemData(Inv[i], D))
-				{
-					Fill = D.PlaceholderColor;
-				}
+				Fill = D.PlaceholderColor;
 			}
 
 			if (i == SelectedInventoryIndex)
@@ -1373,6 +1454,25 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 				Fill = Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f;
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
+
+			if (InventorySlotIconBrushes.IsValidIndex(i) && InventorySlotIconBrushes[i].IsValid())
+			{
+				UTexture2D* Tex = nullptr;
+				if (bHasData && !D.Icon.IsNull())
+				{
+					Tex = D.Icon.Get();
+					if (!Tex)
+					{
+						Tex = D.Icon.LoadSynchronous();
+					}
+				}
+				InventorySlotIconBrushes[i]->SetResourceObject(Tex);
+			}
+			if (InventorySlotIconImages.IsValidIndex(i) && InventorySlotIconImages[i].IsValid())
+			{
+				const bool bHasIcon = bHasData && !D.Icon.IsNull() && (D.Icon.Get() != nullptr);
+				InventorySlotIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
+			}
 		}
 	}
 }
@@ -1405,12 +1505,12 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 	FItemData D;
 	const bool bHasData = T66GI && T66GI->GetItemData(Inv[SelectedInventoryIndex], D);
 
+	UT66LocalizationSubsystem* Loc = GI0 ? GI0->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	if (SellItemNameText.IsValid())
 	{
-		SellItemNameText->SetText(FText::FromName(Inv[SelectedInventoryIndex]));
+		SellItemNameText->SetText(Loc ? Loc->GetText_ItemDisplayName(Inv[SelectedInventoryIndex]) : FText::FromName(Inv[SelectedInventoryIndex]));
 	}
 
-	UT66LocalizationSubsystem* Loc = GI0 ? GI0->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	auto StatLabel = [&](ET66HeroStatType Type) -> FText
 	{
 		if (Loc)
