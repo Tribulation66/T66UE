@@ -194,6 +194,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	}
 
 	// Default for ACharacter: keep mesh bottom aligned to capsule bottom (ground contact).
+	bool bAppliedAutoCenterFix = false;
 	if (ACharacter* OwnerChar = Cast<ACharacter>(TargetMesh->GetOwner()))
 	{
 		if (UCapsuleComponent* Cap = OwnerChar->GetCapsuleComponent())
@@ -204,6 +205,32 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 			const float CurrentBottom = RelLoc.Z + BottomZ;
 			const float DesiredBottom = -CapsuleHalfHeight;
 			RelLoc.Z += (DesiredBottom - CurrentBottom);
+
+			// Some non-biped FBX exports have a huge local-space bounds origin (pivot far from geometry),
+			// which effectively moves the mesh far away from the capsule (appearing "invisible" in-game).
+			// Fix: auto-center XY by subtracting the rotated bounds origin. This is gated by a small
+			// threshold so normal character meshes (with near-zero origin) are unaffected.
+			const FVector LocalOriginXY(B.Origin.X * Scale.X, B.Origin.Y * Scale.Y, 0.f);
+			const float OriginXYSize = LocalOriginXY.Size();
+			if (OriginXYSize > 1.f)
+			{
+				const FVector RotatedOriginXY = Res.Row.MeshRelativeRotation.RotateVector(LocalOriginXY);
+				RelLoc.X -= RotatedOriginXY.X;
+				RelLoc.Y -= RotatedOriginXY.Y;
+				bAppliedAutoCenterFix = true;
+
+#if !UE_BUILD_SHIPPING
+				static int32 LoggedCenterFixes = 0;
+				if (LoggedCenterFixes < 12)
+				{
+					++LoggedCenterFixes;
+					UE_LOG(LogTemp, Warning, TEXT("[INVIS] CharacterVisuals: AutoCenteredXY VisualID=%s OriginXY=(%.1f,%.1f) RotatedXY=(%.1f,%.1f)"),
+						*VisualID.ToString(),
+						LocalOriginXY.X, LocalOriginXY.Y,
+						RotatedOriginXY.X, RotatedOriginXY.Y);
+				}
+#endif
+			}
 		}
 	}
 	TargetMesh->SetRelativeLocation(RelLoc);
@@ -221,6 +248,66 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	{
 		TargetMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 		TargetMesh->PlayAnimation(Res.LoopingAnim, Res.Row.bLoopAnimation);
+	}
+
+	// ============================================================
+	// INVIS fail-safe:
+	// If an imported mesh winds up far away from the owning actor (bad pivot/bounds),
+	// the enemy/boss can become effectively invisible even though gameplay/collision exists.
+	// Detect that case and fall back to placeholder visuals, and log actionable diagnostics.
+	// ============================================================
+	{
+		const AActor* Owner = Cast<AActor>(TargetMesh->GetOwner());
+		const FVector OwnerLoc = Owner ? Owner->GetActorLocation() : TargetMesh->GetComponentLocation();
+		const FBoxSphereBounds WorldB = TargetMesh->CalcBounds(TargetMesh->GetComponentTransform());
+
+		const float DistToOwner = (WorldB.Origin - OwnerLoc).Size();
+		const bool bBoundsTiny = (WorldB.SphereRadius < 1.f);
+		const bool bBoundsFar = (DistToOwner > 5000.f); // 50m+ away from capsule = effectively invisible in normal gameplay.
+		const bool bBoundsFinite =
+			FMath::IsFinite(WorldB.Origin.X) && FMath::IsFinite(WorldB.Origin.Y) && FMath::IsFinite(WorldB.Origin.Z) &&
+			FMath::IsFinite(WorldB.BoxExtent.X) && FMath::IsFinite(WorldB.BoxExtent.Y) && FMath::IsFinite(WorldB.BoxExtent.Z) &&
+			FMath::IsFinite(WorldB.SphereRadius);
+
+		if (bBoundsTiny || bBoundsFar || !bBoundsFinite)
+		{
+#if !UE_BUILD_SHIPPING
+			static int32 LoggedInvisFixes = 0;
+			if (LoggedInvisFixes < 32)
+			{
+				++LoggedInvisFixes;
+				const FString MeshName = Res.Mesh ? Res.Mesh->GetName() : FString(TEXT("None"));
+				const FString MeshPath = Res.Mesh ? Res.Mesh->GetPathName() : FString(TEXT("None"));
+				const FString OwnerName = Owner ? Owner->GetName() : FString(TEXT("None"));
+
+				UE_LOG(LogTemp, Error,
+					TEXT("[INVIS] Rejecting visual apply (fallback to placeholder). VisualID=%s Owner=%s Mesh=%s MeshPath=%s DistToOwner=%.1f BoundsCenter=(%.1f,%.1f,%.1f) BoundsExtent=(%.1f,%.1f,%.1f) SphereRadius=%.1f RelLoc=(%.1f,%.1f,%.1f) RelRot=(P=%.1f,Y=%.1f,R=%.1f) RelScale=(%.3f,%.3f,%.3f) AutoCenterXY=%d"),
+					*VisualID.ToString(),
+					*OwnerName,
+					*MeshName,
+					*MeshPath,
+					DistToOwner,
+					WorldB.Origin.X, WorldB.Origin.Y, WorldB.Origin.Z,
+					WorldB.BoxExtent.X, WorldB.BoxExtent.Y, WorldB.BoxExtent.Z,
+					WorldB.SphereRadius,
+					RelLoc.X, RelLoc.Y, RelLoc.Z,
+					Res.Row.MeshRelativeRotation.Pitch, Res.Row.MeshRelativeRotation.Yaw, Res.Row.MeshRelativeRotation.Roll,
+					Scale.X, Scale.Y, Scale.Z,
+					bAppliedAutoCenterFix ? 1 : 0
+				);
+			}
+#endif
+
+			// Revert: hide skeletal mesh, show placeholder.
+			TargetMesh->SetHiddenInGame(true, true);
+			TargetMesh->SetVisibility(false, true);
+			if (PlaceholderToHide)
+			{
+				PlaceholderToHide->SetHiddenInGame(false, true);
+				PlaceholderToHide->SetVisibility(true, true);
+			}
+			return false;
+		}
 	}
 
 	return true;

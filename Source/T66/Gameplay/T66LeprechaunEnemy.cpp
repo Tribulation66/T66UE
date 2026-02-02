@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66LeprechaunEnemy.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -9,9 +10,22 @@
 #include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+static FName T66_GetLeprechaunVisualIdForRarity(ET66Rarity R)
+{
+	switch (R)
+	{
+	case ET66Rarity::Black:  return FName(TEXT("Leprechaun_Black"));
+	case ET66Rarity::Red:    return FName(TEXT("Leprechaun_Red"));
+	case ET66Rarity::Yellow: return FName(TEXT("Leprechaun_Yellow"));
+	case ET66Rarity::White:  return FName(TEXT("Leprechaun_White"));
+	default:                 return FName(TEXT("Leprechaun_Black"));
+	}
+}
+
 AT66LeprechaunEnemy::AT66LeprechaunEnemy()
 {
-	CharacterVisualID = FName(TEXT("Leprechaun"));
+	// Default to Black; Director will call SetRarity shortly after spawn.
+	CharacterVisualID = T66_GetLeprechaunVisualIdForRarity(Rarity);
 
 	// Distinct look: sphere above a cube.
 	if (VisualMesh)
@@ -59,12 +73,36 @@ void AT66LeprechaunEnemy::BeginPlay()
 void AT66LeprechaunEnemy::SetRarity(ET66Rarity InRarity)
 {
 	Rarity = InRarity;
+	CharacterVisualID = T66_GetLeprechaunVisualIdForRarity(Rarity);
+
+	// Re-apply imported visuals now (SetRarity is typically called AFTER BeginPlay).
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+			{
+				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true);
+			}
+		}
+	}
+	if (bUsingCharacterVisual && HeadSphere)
+	{
+		HeadSphere->SetVisibility(false, true);
+		HeadSphere->SetHiddenInGame(true, true);
+	}
+
 	ApplyRarityVisuals();
 	RecomputeGoldFromRarity();
 }
 
 void AT66LeprechaunEnemy::ApplyRarityVisuals()
 {
+	// If we have a real imported mesh, do not tint placeholder parts.
+	if (bUsingCharacterVisual)
+	{
+		return;
+	}
 	const FLinearColor C = FT66RarityUtil::GetRarityColor(Rarity);
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
 	FT66VisualUtil::ApplyT66Color(HeadSphere, this, C);

@@ -6,6 +6,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SkillRatingSubsystem.h"
 
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
@@ -126,6 +127,7 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 	UGameInstance* GI = GetGameInstance();
 	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66SkillRatingSubsystem* Skill = GI ? GI->GetSubsystem<UT66SkillRatingSubsystem>() : nullptr;
 	if (!T66GI || !RunState)
 	{
 		return false;
@@ -138,7 +140,7 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 		return false;
 	}
 
-	Snapshot->SchemaVersion = 1;
+	Snapshot->SchemaVersion = 4;
 	Snapshot->LeaderboardType = ET66LeaderboardType::HighScore;
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
@@ -160,6 +162,15 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 	Snapshot->EvasionStat = FMath::Max(1, RunState->GetEvasionStat());
 	Snapshot->LuckStat = FMath::Max(1, RunState->GetLuckStat());
 	Snapshot->SpeedStat = FMath::Max(1, RunState->GetSpeedStat());
+
+	Snapshot->LuckRating0To100 = RunState->GetLuckRating0To100();
+	Snapshot->LuckRatingQuantity0To100 = RunState->GetLuckRatingQuantity0To100();
+	Snapshot->LuckRatingQuality0To100 = RunState->GetLuckRatingQuality0To100();
+	Snapshot->SkillRating0To100 = Skill ? Skill->GetSkillRating0To100() : -1;
+
+	// Proof-of-run link is user-provided post-run; default empty for new snapshots.
+	Snapshot->ProofOfRunUrl = FString();
+	Snapshot->bProofOfRunLocked = false;
 
 	Snapshot->EquippedIdols = RunState->GetEquippedIdols();
 	Snapshot->Inventory = RunState->GetInventory();

@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66CompanionPreviewStage.h"
 #include "Gameplay/T66CompanionBase.h"
+#include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SceneComponent.h"
@@ -275,6 +276,17 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID)
 		PreviewPawn->SetActorHiddenInGame(false);
 		PreviewPawn->InitializeCompanion(CompanionData);
 		PreviewPawn->SetPreviewMode(true);
+
+		// Locked companions should preview as a black silhouette (no real model).
+		if (UGameInstance* GI2 = UGameplayStatics::GetGameInstance(this))
+		{
+			if (UT66CompanionUnlockSubsystem* Unlocks = GI2->GetSubsystem<UT66CompanionUnlockSubsystem>())
+			{
+				const bool bUnlocked = Unlocks->IsCompanionUnlocked(CompanionID);
+				PreviewPawn->SetLockedVisual(!bUnlocked);
+			}
+		}
+
 		FVector PawnLoc = GetActorLocation() + GetActorRotation().RotateVector(PreviewPawnOffset);
 		// Keep pawn anchored; camera frames it dynamically.
 		PawnLoc.Z = GetActorLocation().Z;

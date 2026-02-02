@@ -23,6 +23,7 @@ class AT66LootBagPickup;
 class AT66HouseNPCBase;
 class AT66VendorNPC;
 class AT66GamblerNPC;
+class AT66RecruitableCompanion;
 enum class ET66Rarity : uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
@@ -93,6 +94,7 @@ public:
 	/** In-world dialogue (open-world) for vendor/gambler interactions (non-pausing). */
 	void OpenWorldDialogueVendor(AT66VendorNPC* Vendor);
 	void OpenWorldDialogueGambler(AT66GamblerNPC* Gambler);
+	void OpenWorldDialogueCompanion(AT66RecruitableCompanion* Companion);
 
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
@@ -225,15 +227,18 @@ private:
 		None,
 		Vendor,
 		Gambler,
+		Companion,
 	};
 
 	ET66WorldDialogueKind WorldDialogueKind = ET66WorldDialogueKind::None;
 	bool bWorldDialogueOpen = false;
 	int32 WorldDialogueSelectedIndex = 0;
+	int32 WorldDialogueNumOptions = 3;
 	float LastWorldDialogueNavTimeSeconds = -1000.f;
 	static constexpr float WorldDialogueNavDebounceSeconds = 0.18f;
 
 	TWeakObjectPtr<AT66HouseNPCBase> WorldDialogueTargetNPC;
+	TWeakObjectPtr<AT66RecruitableCompanion> WorldDialogueTargetCompanion;
 	FTimerHandle WorldDialoguePositionTimerHandle;
 
 	void CloseWorldDialogue();

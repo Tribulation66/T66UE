@@ -23,5 +23,9 @@ Thumbs.db
 # Build artifacts
 Build/
 
+# Python cache (scripts)
+**/__pycache__/
+*.pyc
+
 # Source art / raw imports (do not commit)
 SourceAssets/

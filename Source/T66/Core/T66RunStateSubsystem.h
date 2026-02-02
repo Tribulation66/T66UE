@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66Rarity.h"
 #include "T66RunStateSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeartsChanged);
@@ -466,6 +467,29 @@ public:
 	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck)); }
 
 	// ============================================
+	// Luck Rating (aggregated Luck/RNG outcomes)
+	// ============================================
+
+	/** Record a luck-affected quantity roll outcome, normalized within [Min..Max]. */
+	void RecordLuckQuantityRoll(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue);
+
+	/** Record a luck-affected boolean outcome (false=0, true=1). */
+	void RecordLuckQuantityBool(FName Category, bool bSucceeded);
+
+	/** Record a luck-affected quality outcome (rarity tier). */
+	void RecordLuckQualityRarity(FName Category, ET66Rarity Rarity);
+
+	/** Final run Luck Rating (0..100), derived from recorded quantity + quality outcomes. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetLuckRating0To100() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetLuckRatingQuantity0To100() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetLuckRatingQuality0To100() const;
+
+	// ============================================
 	// Tutorial (HUD hint + first-time onboarding)
 	// ============================================
 
@@ -684,6 +708,29 @@ public:
 	void AddLogEntry(const FString& Entry);
 
 private:
+	struct FT66LuckAccumulator
+	{
+		double Sum01 = 0.0;
+		int32 Count = 0;
+
+		void Add01(float V01)
+		{
+			Sum01 += static_cast<double>(FMath::Clamp(V01, 0.f, 1.f));
+			// Note: keep this UHT-friendly (no digit separators).
+			Count = FMath::Clamp(Count + 1, 0, 1000000);
+		}
+
+		float Avg01() const
+		{
+			return (Count > 0) ? static_cast<float>(Sum01 / static_cast<double>(Count)) : 0.5f;
+		}
+	};
+
+	float ComputeLuckRatingQuantity01() const;
+	float ComputeLuckRatingQuality01() const;
+
+	void ResetLuckRatingTracking();
+
 	void TrimLogsIfNeeded();
 	void RecomputeItemDerivedStats();
 	void EnterLastStand();
@@ -870,6 +917,10 @@ private:
 	TArray<bool> VendorStockSold;
 	bool bVendorBoughtSomethingThisStage = false;
 	ET66VendorStealOutcome LastVendorStealOutcome = ET66VendorStealOutcome::None;
+
+	// Aggregated tracking for Luck Rating (per run).
+	TMap<FName, FT66LuckAccumulator> LuckQuantityByCategory;
+	TMap<FName, FT66LuckAccumulator> LuckQualityByCategory;
 
 	bool bInStageBoost = false;
 

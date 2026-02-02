@@ -17,6 +17,9 @@ Category mapping:
 
 Run:
   UnrealEditor-Cmd.exe T66.uproject -run=pythonscript -script="Scripts/ImportSourceAssetsModels.py"
+
+Optional filter:
+  -T66ImportPacks=PackA,PackB,PackC
 """
 
 import os
@@ -97,12 +100,18 @@ def category_for_pack(pack_name: str) -> str:
         return "NPCs/Saint"
     if n == "regularenemy":
         return "Enemies/Regular"
-    if n == "goblinthief":
+    if n == "goblinthief" or n.startswith("goblinthief_"):
         return "Enemies/GoblinThief"
-    if n == "leprachaun":
+    if n == "leprachaun" or n.startswith("leprachaun_") or n.startswith("leprechaun"):
         return "Enemies/Leprechaun"
     if n == "stageboss":
         return "Bosses/StageBoss"
+    # Stage-specific packs (mobs + uniques) are stored together.
+    if n.startswith("mob_stage") or n.startswith("unique_stage"):
+        return "Enemies/Stages"
+    # Boss visuals are keyed by BossID (Boss_01, Boss_02, ...)
+    if re.match(r"^boss_\d+$", n):
+        return "Bosses/Stages"
     return "Misc"
 
 
@@ -115,6 +124,7 @@ def import_fbx(
     dest_path: str,
     as_skeletal: bool,
     skeleton_asset_path: str | None,
+    destination_name: str = "",
     import_mesh: bool = True,
     import_textures: bool = True,
     import_materials: bool = True,
@@ -125,7 +135,7 @@ def import_fbx(
     task = unreal.AssetImportTask()
     task.automated = True
     try_set_editor_property(task, "suppress_import_dialogs", True)
-    task.destination_name = ""
+    task.destination_name = destination_name or ""
     task.destination_path = dest_path
     task.filename = file_path
     task.replace_existing = True
@@ -145,6 +155,9 @@ def import_fbx(
             try_set_editor_property(opts, "mesh_type_to_import", unreal.FBXImportType.FBXIT_SKELETAL_MESH)
         elif import_animations:
             try_set_editor_property(opts, "mesh_type_to_import", unreal.FBXImportType.FBXIT_ANIMATION)
+    else:
+        # Static mesh import
+        try_set_editor_property(opts, "mesh_type_to_import", unreal.FBXImportType.FBXIT_STATIC_MESH)
 
     # Skeletal options
     if as_skeletal:
@@ -174,6 +187,30 @@ def find_first_skeleton_in_folder(dest_path: str):
     return None
 
 
+def _parse_pack_filter_from_cmdline() -> set[str]:
+    """
+    Supports:
+      -T66ImportPacks=PackA,PackB,PackC
+    If empty, imports all packs.
+    """
+    try:
+        cmd = str(unreal.SystemLibrary.get_command_line())
+    except Exception:
+        cmd = ""
+
+    # Grab up to first whitespace; allow quoted values too.
+    m = re.search(r"-T66ImportPacks=(\"[^\"]+\"|[^\s]+)", cmd)
+    if not m:
+        return set()
+
+    raw = m.group(1).strip()
+    if raw.startswith("\"") and raw.endswith("\""):
+        raw = raw[1:-1]
+
+    parts = [p.strip() for p in re.split(r"[,\;]", raw) if p.strip()]
+    return set(parts)
+
+
 def main():
     unreal.log("=== ImportSourceAssetsModels ===")
     if not os.path.isdir(PROJECT_SOURCE):
@@ -181,6 +218,10 @@ def main():
         return
 
     packs = [d for d in os.listdir(PROJECT_SOURCE) if os.path.isdir(os.path.join(PROJECT_SOURCE, d))]
+    pack_filter = _parse_pack_filter_from_cmdline()
+    if pack_filter:
+        packs = [p for p in packs if p in pack_filter]
+        unreal.log(f"Pack filter active: importing {len(packs)} packs: {sorted(packs)}")
     if not packs:
         unreal.log_warning("No extracted packs found.")
         return
@@ -196,13 +237,29 @@ def main():
         category = category_for_pack(pack)
         dest = make_dest_path(category, pack)
 
+        n = pack.lower()
+
         # Heuristic: most of these packs are skeletal characters.
+        # Stage 2 Unique is allowed to be static (no animations).
         as_skeletal = True
+        dest_name = ""
+        if n == "unique_stage02":
+            as_skeletal = False
+            dest_name = "SM_Unique_Stage02"
 
         unreal.log(f"[{pack}] Importing primary FBX: {primary} -> {dest}")
 
         # First import the primary file to create skeletal mesh + skeleton.
-        imported = import_fbx(primary, dest, as_skeletal=as_skeletal, skeleton_asset_path=None)
+        # Import the mesh without animations first. Many mesh FBXs contain junk/invalid embedded animation
+        # ranges that can trigger Interchange FBX ensures; we import explicit animation FBXs separately.
+        imported = import_fbx(
+            primary,
+            dest,
+            as_skeletal=as_skeletal,
+            skeleton_asset_path=None,
+            destination_name=dest_name,
+            import_animations=False,
+        )
         unreal.log(f"[{pack}] Imported {len(imported)} assets from primary")
 
         # Find generated skeleton and use it for any additional animation FBXs in this pack.
@@ -211,6 +268,8 @@ def main():
             unreal.log(f"[{pack}] Using skeleton: {skel_path}")
 
         # Import remaining FBX files (often animations)
+        if not as_skeletal:
+            continue
         for other in fbx:
             if os.path.normcase(other) == os.path.normcase(primary):
                 continue
@@ -224,6 +283,7 @@ def main():
                     dest,
                     as_skeletal=True,
                     skeleton_asset_path=skel_path,
+                    destination_name="",
                     import_mesh=False,
                     import_textures=False,
                     import_materials=False,

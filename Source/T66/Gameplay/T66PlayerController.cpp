@@ -32,6 +32,8 @@
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66RecruitableCompanion.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66ItemPickup.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66StageGate.h"
@@ -496,6 +498,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66CowardiceGate* ClosestCowardiceGate = nullptr;
 	AT66DifficultyTotem* ClosestTotem = nullptr;
 	AT66HouseNPCBase* ClosestNPC = nullptr;
+	AT66RecruitableCompanion* ClosestRecruitableCompanion = nullptr;
 	AT66ItemPickup* ClosestPickup = nullptr;
 	AT66LootBagPickup* ClosestLootBag = nullptr;
 	AT66TutorialPortal* ClosestTutorialPortal = nullptr;
@@ -510,6 +513,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
 	float ClosestTotemDistSq = InteractRadius * InteractRadius;
 	float ClosestNPCDistSq = InteractRadius * InteractRadius;
+	float ClosestRecruitableCompanionDistSq = InteractRadius * InteractRadius;
 	float ClosestPickupDistSq = InteractRadius * InteractRadius;
 	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
 	float ClosestTutorialPortalDistSq = InteractRadius * InteractRadius;
@@ -541,6 +545,10 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66HouseNPCBase* N = Cast<AT66HouseNPCBase>(A))
 		{
 			if (DistSq < ClosestNPCDistSq) { ClosestNPCDistSq = DistSq; ClosestNPC = N; }
+		}
+		else if (AT66RecruitableCompanion* RC = Cast<AT66RecruitableCompanion>(A))
+		{
+			if (DistSq < ClosestRecruitableCompanionDistSq) { ClosestRecruitableCompanionDistSq = DistSq; ClosestRecruitableCompanion = RC; }
 		}
 		else if (AT66ItemPickup* P = Cast<AT66ItemPickup>(A))
 		{
@@ -582,6 +590,12 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestBoostLootDistSq) { ClosestBoostLootDistSq = DistSq; ClosestBoostLoot = L; }
 		}
+	}
+
+	// Recruitable companion should take priority over stage gate so you can recruit right after boss death.
+	if (ClosestRecruitableCompanion && ClosestRecruitableCompanion->Interact(this))
+	{
+		return;
 	}
 
 	// Interact with Stage Gate (F) advances to next stage and reloads level
@@ -739,7 +753,9 @@ void AT66PlayerController::OpenWorldDialogueVendor(AT66VendorNPC* Vendor)
 
 	WorldDialogueKind = ET66WorldDialogueKind::Vendor;
 	WorldDialogueTargetNPC = Vendor;
+	WorldDialogueTargetCompanion.Reset();
 	WorldDialogueSelectedIndex = 0;
+	WorldDialogueNumOptions = 3;
 	bWorldDialogueOpen = true;
 	LastWorldDialogueNavTimeSeconds = -1000.f;
 
@@ -765,7 +781,36 @@ void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
 
 	WorldDialogueKind = ET66WorldDialogueKind::Gambler;
 	WorldDialogueTargetNPC = Gambler;
+	WorldDialogueTargetCompanion.Reset();
 	WorldDialogueSelectedIndex = 0;
+	WorldDialogueNumOptions = 3;
+	bWorldDialogueOpen = true;
+	LastWorldDialogueNavTimeSeconds = -1000.f;
+
+	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
+	UpdateWorldDialoguePosition();
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.05f, true);
+}
+
+void AT66PlayerController::OpenWorldDialogueCompanion(AT66RecruitableCompanion* Companion)
+{
+	if (!IsGameplayLevel()) return;
+	if (!GameplayHUDWidget) return;
+	if (!Companion) return;
+
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	const TArray<FText> Options =
+	{
+		Loc ? Loc->GetText_FollowMe() : NSLOCTEXT("T66.CompanionRecruit", "FollowMe", "Follow me"),
+		Loc ? Loc->GetText_Leave() : NSLOCTEXT("T66.CompanionRecruit", "Leave", "Leave"),
+	};
+
+	WorldDialogueKind = ET66WorldDialogueKind::Companion;
+	WorldDialogueTargetNPC.Reset();
+	WorldDialogueTargetCompanion = Companion;
+	WorldDialogueSelectedIndex = 0;
+	WorldDialogueNumOptions = 2;
 	bWorldDialogueOpen = true;
 	LastWorldDialogueNavTimeSeconds = -1000.f;
 
@@ -779,7 +824,9 @@ void AT66PlayerController::CloseWorldDialogue()
 	bWorldDialogueOpen = false;
 	WorldDialogueKind = ET66WorldDialogueKind::None;
 	WorldDialogueSelectedIndex = 0;
+	WorldDialogueNumOptions = 3;
 	WorldDialogueTargetNPC.Reset();
+	WorldDialogueTargetCompanion.Reset();
 	GetWorldTimerManager().ClearTimer(WorldDialoguePositionTimerHandle);
 
 	if (GameplayHUDWidget)
@@ -791,7 +838,8 @@ void AT66PlayerController::CloseWorldDialogue()
 void AT66PlayerController::NavigateWorldDialogue(int32 Delta)
 {
 	if (!bWorldDialogueOpen) return;
-	WorldDialogueSelectedIndex = FMath::Clamp(WorldDialogueSelectedIndex + Delta, 0, 2);
+	const int32 MaxIndex = FMath::Max(0, WorldDialogueNumOptions - 1);
+	WorldDialogueSelectedIndex = FMath::Clamp(WorldDialogueSelectedIndex + Delta, 0, MaxIndex);
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->SetWorldDialogueSelection(WorldDialogueSelectedIndex);
@@ -806,13 +854,38 @@ void AT66PlayerController::ConfirmWorldDialogue()
 	const ET66WorldDialogueKind Kind = WorldDialogueKind;
 	const int32 Choice = WorldDialogueSelectedIndex;
 	AT66HouseNPCBase* TargetNPC = WorldDialogueTargetNPC.Get();
+	AT66RecruitableCompanion* TargetCompanion = WorldDialogueTargetCompanion.Get();
 	const int32 GamblerWinGoldAmount = (Kind == ET66WorldDialogueKind::Gambler)
 		? (Cast<AT66GamblerNPC>(TargetNPC) ? Cast<AT66GamblerNPC>(TargetNPC)->GetWinGoldAmount() : 0)
 		: 0;
 
 	CloseWorldDialogue();
 
-	// 0: main action, 1: teleport, 2: back
+	if (Kind == ET66WorldDialogueKind::Companion)
+	{
+		// 0: follow me, 1: leave
+		if (Choice != 0)
+		{
+			return;
+		}
+
+		if (!TargetCompanion || TargetCompanion->CompanionID.IsNone())
+		{
+			return;
+		}
+
+		if (AT66GameMode* GM = GetWorld() ? Cast<AT66GameMode>(UGameplayStatics::GetGameMode(this)) : nullptr)
+		{
+			const FName NewCompanionID = TargetCompanion->CompanionID;
+			if (GM->SwapCompanionForPlayer(this, NewCompanionID))
+			{
+				TargetCompanion->Destroy();
+			}
+		}
+		return;
+	}
+
+	// Vendor/Gambler: 0: main action, 1: teleport, 2: back
 	if (Choice == 2)
 	{
 		return;
@@ -864,15 +937,25 @@ void AT66PlayerController::UpdateWorldDialoguePosition()
 {
 	if (!bWorldDialogueOpen) return;
 	if (!GameplayHUDWidget) return;
-	AT66HouseNPCBase* NPC = WorldDialogueTargetNPC.Get();
-	if (!NPC)
+
+	AActor* AnchorActor = nullptr;
+	if (WorldDialogueKind == ET66WorldDialogueKind::Companion)
+	{
+		AnchorActor = WorldDialogueTargetCompanion.Get();
+	}
+	else
+	{
+		AnchorActor = WorldDialogueTargetNPC.Get();
+	}
+
+	if (!AnchorActor)
 	{
 		CloseWorldDialogue();
 		return;
 	}
 
 	FVector2D ScreenPos(0.f, 0.f);
-	const FVector WorldAnchor = NPC->GetActorLocation() + FVector(0.f, 0.f, 180.f);
+	const FVector WorldAnchor = AnchorActor->GetActorLocation() + FVector(0.f, 0.f, 180.f);
 	if (!ProjectWorldLocationToScreen(WorldAnchor, ScreenPos, true))
 	{
 		return;

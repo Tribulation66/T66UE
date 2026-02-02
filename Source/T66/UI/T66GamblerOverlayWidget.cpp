@@ -1787,6 +1787,11 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 		}
 	}
 
+	if (RunState)
+	{
+		RunState->RecordLuckQuantityBool(FName(TEXT("GamblerCheatSuccess")), bCheatSuccess);
+	}
+
 	if (!bCheatSuccess && RunState)
 	{
 		RunState->AddGamblerAngerFromBet(GambleAmount);

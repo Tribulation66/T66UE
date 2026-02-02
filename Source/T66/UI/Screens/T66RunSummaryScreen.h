@@ -11,6 +11,8 @@ class UTextureRenderTarget2D;
 class AT66HeroPreviewStage;
 class AT66CompanionPreviewStage;
 class UT66LeaderboardRunSummarySaveGame;
+class SEditableTextBox;
+class SMultiLineEditableTextBox;
 
 /**
  * Run Summary screen shown on death: 3D preview placeholder, event log, Restart / Main Menu.
@@ -36,18 +38,26 @@ protected:
 	virtual void OnScreenActivated_Implementation() override;
 	virtual void OnScreenDeactivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 
 private:
 	FReply HandleRestartClicked();
 	FReply HandleMainMenuClicked();
 	FReply HandleViewLogClicked();
+	FReply HandleProofConfirmClicked();
+	FReply HandleProofEditClicked();
+	FReply HandleReportCheatingClicked();
+	FReply HandleReportSubmitClicked();
+	FReply HandleReportCloseClicked();
+
+	void HandleProofLinkNavigate() const;
 
 	void RebuildLogItems();
 	TSharedRef<ITableRow> GenerateLogRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable);
 
 	void EnsurePreviewCaptures();
 	void DestroyPreviewCaptures();
-	void LoadSavedRunSummaryIfRequested();
+	bool LoadSavedRunSummaryIfRequested();
 
 	// Event log is hidden by default; toggled by the "EVENT LOG" button.
 	bool bLogVisible = false;
@@ -63,8 +73,22 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LeaderboardRunSummarySaveGame> LoadedSavedSummary;
 
+	/** Save slot name associated with LoadedSavedSummary (needed to persist proof edits). */
+	FString LoadedSavedSummarySlotName;
+
 	// Virtualized log list (prevents building a widget per entry).
 	TArray<TSharedPtr<FString>> LogItems;
+	TSharedPtr<SListView<TSharedPtr<FString>>> LogListView;
+
+	// ===== Proof of Run (leaderboard snapshot owner only) =====
+	FString ProofOfRunUrl;
+	bool bProofOfRunLocked = false;
+
+	TSharedPtr<SEditableTextBox> ProofUrlTextBox;
+
+	// ===== Cheat report UI (available to all viewers) =====
+	bool bReportPromptVisible = false;
+	TSharedPtr<SMultiLineEditableTextBox> ReportReasonTextBox;
 
 	// ===== 3D preview captures (runtime, no editor assets required) =====
 	UPROPERTY(Transient)

@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -10,9 +11,22 @@
 #include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+static FName T66_GetGoblinThiefVisualIdForRarity(ET66Rarity R)
+{
+	switch (R)
+	{
+	case ET66Rarity::Black:  return FName(TEXT("GoblinThief_Black"));
+	case ET66Rarity::Red:    return FName(TEXT("GoblinThief_Red"));
+	case ET66Rarity::Yellow: return FName(TEXT("GoblinThief_Yellow"));
+	case ET66Rarity::White:  return FName(TEXT("GoblinThief_White"));
+	default:                 return FName(TEXT("GoblinThief_Black"));
+	}
+}
+
 AT66GoblinThiefEnemy::AT66GoblinThiefEnemy()
 {
-	CharacterVisualID = FName(TEXT("GoblinThief"));
+	// Default to Black; Director will call SetRarity shortly after spawn.
+	CharacterVisualID = T66_GetGoblinThiefVisualIdForRarity(Rarity);
 
 	// Distinct look: pyramid (cone) shape.
 	if (VisualMesh)
@@ -41,12 +55,31 @@ AT66GoblinThiefEnemy::AT66GoblinThiefEnemy()
 void AT66GoblinThiefEnemy::SetRarity(ET66Rarity InRarity)
 {
 	Rarity = InRarity;
+	CharacterVisualID = T66_GetGoblinThiefVisualIdForRarity(Rarity);
+
+	// Re-apply imported visuals now (SetRarity is typically called AFTER BeginPlay).
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+			{
+				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true);
+			}
+		}
+	}
+
 	ApplyRarityVisuals();
 	RecomputeGoldFromRarity();
 }
 
 void AT66GoblinThiefEnemy::ApplyRarityVisuals()
 {
+	// If we have a real imported mesh, do not tint the placeholder cone.
+	if (bUsingCharacterVisual)
+	{
+		return;
+	}
 	const FLinearColor C = FT66RarityUtil::GetRarityColor(Rarity);
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
 }

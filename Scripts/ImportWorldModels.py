@@ -48,6 +48,14 @@ def _ensure_game_dir(game_path: str):
         unreal.EditorAssetLibrary.make_directory(game_path)
 
 
+def _to_game_log_path(p: str) -> str:
+    # Avoid backslashes in f-string expressions (UE python can be picky).
+    try:
+        return p.replace(os.sep, "/")
+    except Exception:
+        return str(p)
+
+
 def _extract_zip(zip_path: str, out_dir: str):
     os.makedirs(out_dir, exist_ok=True)
     with zipfile.ZipFile(zip_path, "r") as z:
@@ -140,8 +148,19 @@ def _color_from_name(s: str) -> str | None:
 
 def main():
     proj = _proj_dir()
-    src_models = os.path.join(proj, "SourceAssets", "Models")
-    extracted_root = os.path.join(src_models, "Extracted")
+    # Models can live in either:
+    # - SourceAssets/Models (preferred)
+    # - SourceAssets/Extracted/Models (some setups relocate zips here)
+    src_models_candidates = [
+        os.path.join(proj, "SourceAssets", "Models"),
+        os.path.join(proj, "SourceAssets", "Extracted", "Models"),
+    ]
+    src_models_roots = [p for p in src_models_candidates if os.path.isdir(p)]
+    if not src_models_roots:
+        unreal.log_warning("[Models] No models root found under SourceAssets (expected Models/ or Extracted/Models/).")
+        return
+    # Use the first root for extraction output (keeps behavior stable).
+    extracted_root = os.path.join(src_models_roots[0], "Extracted")
 
     # Some UE Python builds don't expose SystemLibrary.is_running_commandlet; guard safely.
     try:
@@ -154,15 +173,16 @@ def main():
 
     unreal.log("=== ImportWorldModels: START ===")
     unreal.log(f"[Models] ProjectDir: {proj}")
-    unreal.log(f"[Models] Source: {src_models}")
+    unreal.log("[Models] Sources: " + ", ".join([_to_game_log_path(p) for p in src_models_roots]))
 
     zip_paths = []
-    for dirpath, _, files in os.walk(src_models):
-        for fn in files:
-            if fn.lower().endswith(".zip"):
-                zip_paths.append(os.path.join(dirpath, fn))
+    for root in src_models_roots:
+        for dirpath, _, files in os.walk(root):
+            for fn in files:
+                if fn.lower().endswith(".zip"):
+                    zip_paths.append(os.path.join(dirpath, fn))
     if not zip_paths:
-        unreal.log_warning("[Models] No .zip files found under SourceAssets/Models")
+        unreal.log_warning("[Models] No .zip files found under model roots")
         return
 
     imported = 0
@@ -232,7 +252,9 @@ def main():
                 if not color:
                     unreal.log_warning(f"[Models] Tree zip missing color keyword: {zp}")
                     continue
-                dest_dir = "/Game/World/Interactables/Trees"
+                # Import into per-color subfolders so generic FBX asset names (Material_001, Image_0...)
+                # don't collide/overwrite between colors.
+                dest_dir = f"/Game/World/Interactables/Trees/{color}"
                 dest_name = f"SM_Tree_{color}"
                 unreal.log(f"[Models] Import Tree {color}: {fbx} -> {dest_dir}/{dest_name}")
                 paths = _import_fbx_static(fbx, dest_dir, dest_name)
@@ -242,7 +264,9 @@ def main():
                 if not color:
                     unreal.log_warning(f"[Models] Truck zip missing color keyword: {zp}")
                     continue
-                dest_dir = "/Game/World/Interactables/Trucks"
+                # Import into per-color subfolders so generic FBX asset names (Material_001, Image_0...)
+                # don't collide/overwrite between colors.
+                dest_dir = f"/Game/World/Interactables/Trucks/{color}"
                 dest_name = f"SM_CashTruck_{color}"
                 unreal.log(f"[Models] Import CashTruck {color}: {fbx} -> {dest_dir}/{dest_name}")
                 paths = _import_fbx_static(fbx, dest_dir, dest_name)
@@ -252,7 +276,9 @@ def main():
                 if not color:
                     unreal.log_warning(f"[Models] Wheel zip missing color keyword: {zp}")
                     continue
-                dest_dir = "/Game/World/Interactables/Wheels"
+                # Import into per-color subfolders so generic FBX asset names (Material_001, Image_0...)
+                # don't collide/overwrite between colors.
+                dest_dir = f"/Game/World/Interactables/Wheels/{color}"
                 dest_name = f"SM_Wheel_{color}"
                 unreal.log(f"[Models] Import Wheel {color}: {fbx} -> {dest_dir}/{dest_name}")
                 paths = _import_fbx_static(fbx, dest_dir, dest_name)

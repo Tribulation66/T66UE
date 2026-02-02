@@ -59,10 +59,11 @@ AT66CashTruckInteractable::AT66CashTruckInteractable()
 	ApplyRarityVisuals();
 
 	// Default expected import locations (safe if missing).
-	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_Black.SM_CashTruck_Black")));
-	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_Red.SM_CashTruck_Red")));
-	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_Yellow.SM_CashTruck_Yellow")));
-	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/SM_CashTruck_White.SM_CashTruck_White")));
+	// Note: per-color subfolders avoid material/texture name collisions (Material_001, Image_0...).
+	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/Black/SM_CashTruck_Black.SM_CashTruck_Black")));
+	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/Red/SM_CashTruck_Red.SM_CashTruck_Red")));
+	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/Yellow/SM_CashTruck_Yellow.SM_CashTruck_Yellow")));
+	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/White/SM_CashTruck_White.SM_CashTruck_White")));
 }
 
 void AT66CashTruckInteractable::ApplyRarityVisuals()
@@ -92,11 +93,15 @@ void AT66CashTruckInteractable::ApplyRarityVisuals()
 
 	if (M && VisualMesh)
 	{
+		// Ensure we don't keep any placeholder tint material from a prior fallback.
+		VisualMesh->EmptyOverrideMaterials();
 		VisualMesh->SetStaticMesh(M);
 		VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 		VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
-		const float HalfHeight = FMath::Max(1.f, M->GetBounds().BoxExtent.Z);
-		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, HalfHeight));
+		// Ground to actor origin using bounds (handles pivots already at the base).
+		const FBoxSphereBounds B = M->GetBounds();
+		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z);
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ));
 
 		// Hide placeholder wheels (imported mesh usually includes them).
 		for (UStaticMeshComponent* W : WheelMeshes)

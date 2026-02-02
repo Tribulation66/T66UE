@@ -3,6 +3,7 @@
 #include "UI/Screens/T66CompanionSelectionScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Style/T66Style.h"
@@ -117,6 +118,23 @@ UT66LocalizationSubsystem* UT66CompanionSelectionScreen::GetLocSubsystem() const
 		return GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 	return nullptr;
+}
+
+bool UT66CompanionSelectionScreen::IsCompanionUnlocked(FName CompanionID) const
+{
+	if (CompanionID.IsNone())
+	{
+		return true;
+	}
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66CompanionUnlockSubsystem* Unlocks = GI->GetSubsystem<UT66CompanionUnlockSubsystem>())
+		{
+			return Unlocks->IsCompanionUnlocked(CompanionID);
+		}
+	}
+	return true; // fail-open so we don't hard-lock the UI if subsystem is missing
 }
 
 void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
@@ -258,6 +276,12 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		{
 			SpriteColor = Data.PlaceholderColor;
 		}
+		const bool bUnlocked = IsCompanionUnlocked(CompanionID);
+		if (!CompanionID.IsNone() && !bUnlocked)
+		{
+			// Locked silhouette: black tile.
+			SpriteColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
+		}
 		float BoxSize = (Offset == 0) ? 60.0f : 45.0f;
 		float Opacity = (Offset == 0) ? 1.0f : 0.6f;
 		CompanionCarousel->AddSlot()
@@ -294,6 +318,10 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		FCompanionData Data;
 		if (GetPreviewedCompanionData(Data))
 			PreviewColor = Data.PlaceholderColor;
+	}
+	if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+	{
+		PreviewColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 	}
 
 	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
@@ -639,6 +667,10 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						.HAlign(HAlign_Center).VAlign(VAlign_Center)
 						.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked))
 						.ButtonColorAndOpacity(FLinearColor(0.2f, 0.5f, 0.2f, 1.0f))
+						.IsEnabled_Lambda([this]() -> bool
+						{
+							return PreviewedCompanionID.IsNone() || IsCompanionUnlocked(PreviewedCompanionID);
+						})
 						[
 							SNew(STextBlock).Text(ConfirmText)
 							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
@@ -729,6 +761,11 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 			CompanionPreviewColorBox->SetBorderBackgroundColor(Data.PlaceholderColor);
 		else
 			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.4f, 1.0f));
+
+		if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+		{
+			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.02f, 1.0f));
+		}
 	}
 
 	if (CompanionNameWidget.IsValid())
@@ -766,7 +803,8 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 	// Friendliness / Union UI (profile progression; only meaningful when a companion is selected)
 	if (CompanionUnionBox.IsValid())
 	{
-		CompanionUnionBox->SetVisibility(PreviewedCompanionID.IsNone() ? EVisibility::Collapsed : EVisibility::Visible);
+		const bool bShowUnion = !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID);
+		CompanionUnionBox->SetVisibility(bShowUnion ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 
 	CompanionUnionProgress01 = 0.f;
@@ -815,7 +853,7 @@ void UT66CompanionSelectionScreen::OnScreenActivated_Implementation()
 	RefreshCompanionList();
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (!GI->SelectedCompanionID.IsNone())
+		if (!GI->SelectedCompanionID.IsNone() && AllCompanionIDs.Contains(GI->SelectedCompanionID))
 			PreviewCompanion(GI->SelectedCompanionID);
 		else
 			SelectNoCompanion();
@@ -904,6 +942,11 @@ void UT66CompanionSelectionScreen::OnCompanionGridClicked() { ShowModal(ET66Scre
 void UT66CompanionSelectionScreen::OnCompanionLoreClicked() { if (!PreviewedCompanionID.IsNone()) ShowModal(ET66ScreenType::CompanionLore); }
 void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 {
+	// Locked companions cannot be confirmed/selected.
+	if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+	{
+		return;
+	}
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->SelectedCompanionID = PreviewedCompanionID;

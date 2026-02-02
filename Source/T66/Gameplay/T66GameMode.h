@@ -23,6 +23,7 @@ class AT66StageBoostLootInteractable;
 class AT66StageEffectTile;
 class AT66TutorialManager;
 class UT66GameInstance;
+class AT66RecruitableCompanion;
 class ADirectionalLight;
 class ASkyLight;
 class APlayerStart;
@@ -81,6 +82,9 @@ public:
 
 	/** Spawn Stage Gate (interact F to next stage) at a specific location (typically boss death). */
 	void SpawnStageGateAtLocation(const FVector& Location);
+
+	/** Swap active companion during a run (spawns old companion as a recruitable at its current location). */
+	bool SwapCompanionForPlayer(AController* Player, FName NewCompanionID);
 
 	/** Clear all miasma tiles (e.g. when boss is defeated). */
 	void ClearMiasma();

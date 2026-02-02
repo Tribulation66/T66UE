@@ -24,13 +24,15 @@ AT66CompanionBase::AT66CompanionBase()
 	PlaceholderMesh->SetupAttachment(RootComponent);
 	PlaceholderMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-	if (SphereFinder.Succeeded())
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderFinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	if (CylinderFinder.Succeeded())
 	{
-		PlaceholderMesh->SetStaticMesh(SphereFinder.Object);
-		PlaceholderMesh->SetRelativeScale3D(FVector(0.4f)); // Sphere for companion size
-		// Sphere base radius: 50 * 0.4 = 20, so raise by 20 to sit on ground.
-		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 20.f));
+		PlaceholderMesh->SetStaticMesh(CylinderFinder.Object);
+		// Placeholder cylinder (used when no character visual exists).
+		// NOTE: actor origin is treated as ground contact point in gameplay.
+		const FVector GameplayScale(0.42f, 0.42f, 0.95f);
+		PlaceholderMesh->SetRelativeScale3D(GameplayScale);
+		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 50.f * GameplayScale.Z));
 	}
 
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
@@ -91,9 +93,48 @@ void AT66CompanionBase::SetPreviewMode(bool bPreview)
 	// Make preview easier to see in UI (only affects placeholder).
 	if (PlaceholderMesh && PlaceholderMesh->IsVisible())
 	{
-		PlaceholderMesh->SetRelativeScale3D(bIsPreviewMode ? FVector(0.85f) : FVector(0.4f));
-		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, bIsPreviewMode ? (50.f * 0.85f) : 20.f));
+		const FVector GameplayScale(0.42f, 0.42f, 0.95f);
+		const FVector PreviewScale(0.78f, 0.78f, 1.25f);
+		const FVector NewScale = bIsPreviewMode ? PreviewScale : GameplayScale;
+		PlaceholderMesh->SetRelativeScale3D(NewScale);
+		PlaceholderMesh->SetRelativeLocation(FVector(0.f, 0.f, 50.f * NewScale.Z));
 	}
+}
+
+void AT66CompanionBase::SetLockedVisual(bool bLocked)
+{
+	bLockedVisual = bLocked;
+
+	if (bLockedVisual)
+	{
+		// Locked silhouette: hide skeletal mesh and show a near-black placeholder cylinder.
+		if (SkeletalMesh)
+		{
+			SkeletalMesh->SetVisibility(false, true);
+			SkeletalMesh->SetHiddenInGame(true, true);
+		}
+		if (PlaceholderMesh)
+		{
+			PlaceholderMesh->SetVisibility(true, true);
+			PlaceholderMesh->SetHiddenInGame(false, true);
+		}
+		SetPlaceholderColor(FLinearColor(0.02f, 0.02f, 0.02f, 1.0f));
+		return;
+	}
+
+	// Unlocked: revert to the normal visual selection.
+	if (bUsingCharacterVisual && SkeletalMesh)
+	{
+		SkeletalMesh->SetHiddenInGame(false, true);
+		SkeletalMesh->SetVisibility(true, true);
+	}
+	if (PlaceholderMesh)
+	{
+		const bool bShowPlaceholder = !bUsingCharacterVisual;
+		PlaceholderMesh->SetVisibility(bShowPlaceholder, true);
+		PlaceholderMesh->SetHiddenInGame(!bShowPlaceholder, true);
+	}
+	SetPlaceholderColor(CompanionData.PlaceholderColor);
 }
 
 void AT66CompanionBase::Tick(float DeltaTime)

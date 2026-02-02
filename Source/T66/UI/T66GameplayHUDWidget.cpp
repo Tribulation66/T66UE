@@ -778,11 +778,15 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	FRandomStream SpinRng(static_cast<int32>(FPlatformTime::Cycles())); // visual-only randomness (not luck-affected)
 
 	int32 PendingGold = 50;
+	int32 MinGold = 0;
+	int32 MaxGold = 0;
+	bool bHasGoldRange = false;
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66RngSubsystem* RngSub = GI->GetSubsystem<UT66RngSubsystem>())
 		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+			if (RunState)
 			{
 				RngSub->UpdateLuckStat(RunState->GetLuckStat());
 			}
@@ -797,8 +801,17 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 					(WheelRarity == ET66Rarity::White) ? Tuning->WheelGoldRange_White :
 					Tuning->WheelGoldRange_Black;
 
+				MinGold = FMath::FloorToInt(FMath::Min(Range.Min, Range.Max));
+				MaxGold = FMath::CeilToInt(FMath::Max(Range.Min, Range.Max));
+				bHasGoldRange = true;
+
 				FRandomStream& Stream = RngSub->GetRunStream();
 				PendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+			}
+
+			if (RunState && bHasGoldRange)
+			{
+				RunState->RecordLuckQuantityRoll(FName(TEXT("WheelGold")), PendingGold, MinGold, MaxGold);
 			}
 		}
 	}

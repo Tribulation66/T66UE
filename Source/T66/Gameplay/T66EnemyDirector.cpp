@@ -243,6 +243,13 @@ void AT66EnemyDirector::SpawnWave()
 		LepToSpawn = FMath::Clamp(LepToSpawn, 0, ToSpawn - GobToSpawn);
 	}
 
+	// Luck Rating tracking (quantity): per-wave special mob counts (including 0 when not present).
+	if (RunState && Tuning)
+	{
+		RunState->RecordLuckQuantityRoll(FName(TEXT("GoblinCountPerWave")), GobToSpawn, 0, Tuning->GoblinCountPerWave.Max);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("LeprechaunCountPerWave")), LepToSpawn, 0, Tuning->LeprechaunCountPerWave.Max);
+	}
+
 	// Build the exact spawn plan for this wave.
 	const int32 MobToSpawn = FMath::Max(0, ToSpawn - GobToSpawn - LepToSpawn);
 	TArray<TSubclassOf<AT66EnemyBase>> SpawnPlan;
@@ -350,10 +357,18 @@ void AT66EnemyDirector::SpawnWave()
 			if (AT66LeprechaunEnemy* Lep = Cast<AT66LeprechaunEnemy>(Enemy))
 			{
 				Lep->SetRarity(R);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("LeprechaunRarity")), R);
+				}
 			}
 			else if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
 			{
 				Gob->SetRarity(R);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("GoblinRarity")), R);
+				}
 			}
 
 			if (RunState)

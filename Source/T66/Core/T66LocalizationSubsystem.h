@@ -532,6 +532,14 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
 	FText GetText_Back() const;
 
+	/** In-world recruit dialogue option. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
+	FText GetText_FollowMe() const;
+
+	/** In-world recruit dialogue option. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
+	FText GetText_Leave() const;
+
 	/** Shared label: "LEVEL" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
 	FText GetText_Level() const;

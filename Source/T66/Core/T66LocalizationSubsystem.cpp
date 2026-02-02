@@ -451,19 +451,6 @@ FText UT66LocalizationSubsystem::GetText_ItemDisplayName(FName ItemID) const
 
 FText UT66LocalizationSubsystem::GetText_CompanionName(FName CompanionID) const
 {
-	if (CompanionID == FName(TEXT("Companion_Luna")))
-	{
-		return NSLOCTEXT("T66.CompanionNames", "Companion_Luna", "Luna");
-	}
-	if (CompanionID == FName(TEXT("Companion_Ember")))
-	{
-		return NSLOCTEXT("T66.CompanionNames", "Companion_Ember", "Ember");
-	}
-	if (CompanionID == FName(TEXT("Companion_Shade")))
-	{
-		return NSLOCTEXT("T66.CompanionNames", "Companion_Shade", "Shade");
-	}
-
 	// Fallback: return the CompanionID as text
 	return FText::FromName(CompanionID);
 }
@@ -1190,6 +1177,16 @@ FText UT66LocalizationSubsystem::GetText_HyperHealing() const
 FText UT66LocalizationSubsystem::GetText_Back() const
 {
 	return NSLOCTEXT("T66.Common", "Back", "BACK");
+}
+
+FText UT66LocalizationSubsystem::GetText_FollowMe() const
+{
+	return NSLOCTEXT("T66.Common", "FollowMe", "Follow me");
+}
+
+FText UT66LocalizationSubsystem::GetText_Leave() const
+{
+	return NSLOCTEXT("T66.Common", "Leave", "Leave");
 }
 
 FText UT66LocalizationSubsystem::GetText_Level() const

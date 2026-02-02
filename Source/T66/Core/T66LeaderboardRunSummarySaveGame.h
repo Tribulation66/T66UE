@@ -21,7 +21,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 1;
+	int32 SchemaVersion = 4;
 
 	/** What kind of leaderboard this run belongs to (currently HighScore only). */
 	UPROPERTY(SaveGame)
@@ -84,6 +84,34 @@ public:
 
 	UPROPERTY(SaveGame)
 	int32 SpeedStat = 1;
+
+	// ===== Ratings (post-run) =====
+
+	/** Luck Rating (0..100). SchemaVersion>=2. */
+	UPROPERTY(SaveGame)
+	int32 LuckRating0To100 = -1;
+
+	/** Quantity component (0..100). SchemaVersion>=2. */
+	UPROPERTY(SaveGame)
+	int32 LuckRatingQuantity0To100 = -1;
+
+	/** Quality component (0..100). SchemaVersion>=2. */
+	UPROPERTY(SaveGame)
+	int32 LuckRatingQuality0To100 = -1;
+
+	/** Skill Rating (0..100). SchemaVersion>=4. */
+	UPROPERTY(SaveGame)
+	int32 SkillRating0To100 = -1;
+
+	// ===== Proof of Run =====
+
+	/** Proof-of-run URL (e.g. YouTube). SchemaVersion>=3. */
+	UPROPERTY(SaveGame)
+	FString ProofOfRunUrl;
+
+	/** True if ProofOfRunUrl is considered "confirmed" (locks edit by default). SchemaVersion>=3. */
+	UPROPERTY(SaveGame)
+	bool bProofOfRunLocked = false;
 
 	// ===== Inventory / idols / log =====
 

@@ -34,6 +34,8 @@ void AT66DifficultyTotem::BeginPlay()
 	{
 		if (UStaticMesh* M = TotemMeshOverride.LoadSynchronous())
 		{
+			// Ensure we don't keep any placeholder tint material from a prior fallback.
+			VisualMesh->EmptyOverrideMaterials();
 			VisualMesh->SetStaticMesh(M);
 			VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 		}

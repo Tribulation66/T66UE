@@ -95,6 +95,7 @@ private:
 	void GeneratePlaceholderSkins();
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
+	bool IsCompanionUnlocked(FName CompanionID) const;
 
 	// Handle language change to rebuild UI
 	UFUNCTION()

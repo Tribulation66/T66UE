@@ -39,10 +39,11 @@ AT66WheelSpinInteractable::AT66WheelSpinInteractable()
 	}
 
 	// Default expected import locations (safe if missing).
-	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/SM_Wheel_Black.SM_Wheel_Black")));
-	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/SM_Wheel_Red.SM_Wheel_Red")));
-	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/SM_Wheel_Yellow.SM_Wheel_Yellow")));
-	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/SM_Wheel_White.SM_Wheel_White")));
+	// Note: per-color subfolders avoid material/texture name collisions (Material_001, Image_0...).
+	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/Black/SM_Wheel_Black.SM_Wheel_Black")));
+	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/Red/SM_Wheel_Red.SM_Wheel_Red")));
+	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/Yellow/SM_Wheel_Yellow.SM_Wheel_Yellow")));
+	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/White/SM_Wheel_White.SM_Wheel_White")));
 
 	ApplyRarityVisuals();
 }
@@ -75,11 +76,14 @@ void AT66WheelSpinInteractable::ApplyRarityVisuals()
 	if (M && WheelMesh)
 	{
 		// Imported mesh: use as-authored and hide the sphere base.
+		WheelMesh->EmptyOverrideMaterials();
 		WheelMesh->SetStaticMesh(M);
 		WheelMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 		WheelMesh->SetRelativeRotation(FRotator::ZeroRotator);
-		const float HalfHeight = FMath::Max(1.f, M->GetBounds().BoxExtent.Z);
-		WheelMesh->SetRelativeLocation(FVector(0.f, 0.f, HalfHeight));
+		// Ground to actor origin using bounds (handles pivots already at the base).
+		const FBoxSphereBounds B = M->GetBounds();
+		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z);
+		WheelMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ));
 
 		if (SphereBase)
 		{

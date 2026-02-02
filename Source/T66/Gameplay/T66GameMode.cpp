@@ -35,6 +35,7 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SkillRatingSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
@@ -407,6 +408,14 @@ void AT66GameMode::Tick(float DeltaTime)
 			RunState->TickStageTimer(DeltaTime);
 			RunState->TickSpeedRunTimer(DeltaTime);
 			RunState->TickHeroTimers(DeltaTime);
+
+			// Skill Rating: time is driven here; damage is an input event from RunState.
+			if (UT66SkillRatingSubsystem* Skill = GI->GetSubsystem<UT66SkillRatingSubsystem>())
+			{
+				// Track only during combat time (stage timer active) and not during last-stand invulnerability.
+				Skill->SetTrackingActive(RunState->GetStageTimerActive() && !RunState->IsInLastStand());
+				Skill->TickSkillRating(DeltaTime);
+			}
 
 			// Robust: if the timer is already active (even if we missed the delegate),
 			// try spawning the LoanShark when pending.
@@ -1275,6 +1284,20 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const int32 CountTrucks = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TrucksPerStage, Rng) : Rng.RandRange(2, 5);
 	const int32 CountWheels = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->WheelsPerStage, Rng) : Rng.RandRange(2, 5);
 
+	// Luck Rating tracking (quantity).
+	if (RunState)
+	{
+		const int32 TreesMin = (Tuning ? Tuning->TreesPerStage.Min : 2);
+		const int32 TreesMax = (Tuning ? Tuning->TreesPerStage.Max : 5);
+		const int32 TrucksMin = (Tuning ? Tuning->TrucksPerStage.Min : 2);
+		const int32 TrucksMax = (Tuning ? Tuning->TrucksPerStage.Max : 5);
+		const int32 WheelsMin = (Tuning ? Tuning->WheelsPerStage.Min : 2);
+		const int32 WheelsMax = (Tuning ? Tuning->WheelsPerStage.Max : 5);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("TreesPerStage")), CountTrees, TreesMin, TreesMax);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("TrucksPerStage")), CountTrucks, TrucksMin, TrucksMax);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("WheelsPerStage")), CountWheels, WheelsMin, WheelsMax);
+	}
+
 	// Not luck-affected (for now).
 	const int32 CountTotems = Rng.RandRange(2, 5);
 
@@ -1283,7 +1306,12 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		if (AT66TreeOfLifeInteractable* Tree = Cast<AT66TreeOfLifeInteractable>(SpawnOne(AT66TreeOfLifeInteractable::StaticClass())))
 		{
 			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
-			Tree->SetRarity((RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng));
+			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			Tree->SetRarity(R);
+			if (RunState)
+			{
+				RunState->RecordLuckQualityRarity(FName(TEXT("TreeRarity")), R);
+			}
 		}
 	}
 	for (int32 i = 0; i < CountTrucks; ++i)
@@ -1294,7 +1322,12 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			Truck->bIsMimic = (Rng.GetFraction() < MimicChance); // explicitly not luck-affected
 
 			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
-			Truck->SetRarity((RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng));
+			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			Truck->SetRarity(R);
+			if (RunState)
+			{
+				RunState->RecordLuckQualityRarity(FName(TEXT("TruckRarity")), R);
+			}
 		}
 	}
 	for (int32 i = 0; i < CountWheels; ++i)
@@ -1302,7 +1335,12 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnOne(AT66WheelSpinInteractable::StaticClass())))
 		{
 			const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
-			Wheel->SetRarity((RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng));
+			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			Wheel->SetRarity(R);
+			if (RunState)
+			{
+				RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), R);
+			}
 		}
 	}
 	for (int32 i = 0; i < CountTotems; ++i)

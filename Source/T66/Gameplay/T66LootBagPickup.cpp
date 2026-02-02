@@ -4,6 +4,7 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "UObject/SoftObjectPath.h"
 #include "Engine/World.h"
@@ -16,17 +17,36 @@ AT66LootBagPickup::AT66LootBagPickup()
 	PrimaryActorTick.bCanEverTick = false;
 	InitialLifeSpan = 120.f;
 
+	// Physics root: blocks the world so the bag can fall naturally with gravity.
+	PhysicsRoot = CreateDefaultSubobject<USphereComponent>(TEXT("PhysicsRoot"));
+	PhysicsRoot->SetSphereRadius(30.f);
+	PhysicsRoot->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	PhysicsRoot->SetGenerateOverlapEvents(false);
+	PhysicsRoot->SetCollisionResponseToAllChannels(ECR_Ignore);
+	PhysicsRoot->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	PhysicsRoot->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	RootComponent = PhysicsRoot;
+
+	// Pickup sphere: large overlap radius so interaction is easy.
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
+	SphereComponent->SetupAttachment(RootComponent);
 	SphereComponent->SetSphereRadius(120.f);
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	SphereComponent->SetGenerateOverlapEvents(true);
 	SphereComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
 	SphereComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	RootComponent = SphereComponent;
 
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	FallMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("FallMovement"));
+	FallMovement->SetUpdatedComponent(PhysicsRoot);
+	FallMovement->InitialSpeed = 0.f;
+	FallMovement->MaxSpeed = 5000.f;
+	FallMovement->ProjectileGravityScale = 1.f;
+	FallMovement->bRotationFollowsVelocity = false;
+	FallMovement->bShouldBounce = false;
 
 	// Default expected import locations (safe if missing; we fall back to the cube).
 	// Note: meshes are imported into per-color subfolders so their materials/textures don't collide.
@@ -40,7 +60,8 @@ AT66LootBagPickup::AT66LootBagPickup()
 		VisualMesh->SetStaticMesh(Cube);
 		VisualMesh->SetRelativeScale3D(FVector(0.35f, 0.25f, 0.20f));
 		// Cube is 100 units tall; scale Z=0.20 => 20 tall, half-height=10. Sit on ground plane.
-		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+		const float R = PhysicsRoot ? PhysicsRoot->GetScaledSphereRadius() : 0.f;
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 10.f - R));
 	}
 }
 
@@ -50,24 +71,6 @@ void AT66LootBagPickup::BeginPlay()
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66LootBagPickup::OnSphereBeginOverlap);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &AT66LootBagPickup::OnSphereEndOverlap);
 	UpdateVisualsFromRarity();
-
-	// Snap to ground so bags never float (spawns may happen above the floor).
-	if (UWorld* World = GetWorld())
-	{
-		FHitResult Hit;
-		const FVector Here = GetActorLocation();
-		const FVector Start = Here + FVector(0.f, 0.f, 2000.f);
-		const FVector End = Here - FVector(0.f, 0.f, 9000.f);
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(T66LootBagSnap), false, this);
-		// Use object query so this works whether the ground is WorldStatic or WorldDynamic.
-		FCollisionObjectQueryParams ObjParams;
-		ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);
-		ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-		if (World->LineTraceSingleByObjectType(Hit, Start, End, ObjParams, Params))
-		{
-			SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
-		}
-	}
 }
 
 void AT66LootBagPickup::SetItemID(FName InItemID)
@@ -121,10 +124,20 @@ void AT66LootBagPickup::UpdateVisualsFromRarity()
 		VisualMesh->SetStaticMesh(Mesh);
 		VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 
-		// Ground the mesh to actor origin using its bounds, independent of pivot placement.
+		// Configure collision radius from bounds so the bag lands on the ground naturally.
+		if (PhysicsRoot)
+		{
+			const FBoxSphereBounds B2 = Mesh->GetBounds();
+			const float XY = FMath::Max(B2.BoxExtent.X, B2.BoxExtent.Y);
+			const float R = FMath::Clamp(XY, 12.f, 140.f);
+			PhysicsRoot->SetSphereRadius(R);
+		}
+
+		// Ground the mesh to the *physics root* bottom using its bounds, independent of pivot placement.
 		const FBoxSphereBounds B = Mesh->GetBounds();
 		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z);
-		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ));
+		const float R = PhysicsRoot ? PhysicsRoot->GetScaledSphereRadius() : 0.f;
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ - R));
 		return;
 	}
 
@@ -134,7 +147,15 @@ void AT66LootBagPickup::UpdateVisualsFromRarity()
 		VisualMesh->EmptyOverrideMaterials();
 		VisualMesh->SetStaticMesh(Cube);
 		VisualMesh->SetRelativeScale3D(FVector(0.35f, 0.25f, 0.20f));
-		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
+		// Approximate collision radius from scaled cube half-extents (100 cube * scale / 2).
+		if (PhysicsRoot)
+		{
+			const float HalfX = 50.f * 0.35f;
+			const float HalfY = 50.f * 0.25f;
+			PhysicsRoot->SetSphereRadius(FMath::Clamp(FMath::Max(HalfX, HalfY), 12.f, 60.f));
+		}
+		const float R = PhysicsRoot ? PhysicsRoot->GetScaledSphereRadius() : 0.f;
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 10.f - R));
 	}
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FT66RarityUtil::GetRarityColor(LootRarity));
 }

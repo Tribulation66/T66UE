@@ -48,6 +48,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Companion")
 	void SetPreviewMode(bool bPreview);
 
+	/** UI locking: show black silhouette (hide skeletal mesh, show placeholder). */
+	UFUNCTION(BlueprintCallable, Category = "Companion")
+	void SetLockedVisual(bool bLocked);
+
 	/** Offset from hero when following (e.g. behind and to the side) */
 	UPROPERTY(EditDefaultsOnly, Category = "Follow")
 	FVector FollowOffset = FVector(-120.f, 80.f, 0.f);
@@ -70,6 +74,9 @@ protected:
 
 	UPROPERTY(Transient)
 	bool bUsingCharacterVisual = false;
+
+	UPROPERTY(Transient)
+	bool bLockedVisual = false;
 
 	// Healing (gameplay only)
 	float HealAccumSeconds = 0.f;

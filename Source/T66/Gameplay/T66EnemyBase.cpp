@@ -470,7 +470,12 @@ void AT66EnemyBase::OnDeath()
 		const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 		const float BaseDropChance = Tuning ? Tuning->LootBagDropChanceBase : 0.10f;
 		const float DropChance = RngSub ? RngSub->BiasChance01(BaseDropChance) : FMath::Clamp(BaseDropChance, 0.f, 1.f);
-		if (Stream.GetFraction() > DropChance)
+		const bool bDroppedBag = (Stream.GetFraction() <= DropChance);
+		if (RunState)
+		{
+			RunState->RecordLuckQuantityBool(FName(TEXT("EnemyLootBagDrop")), bDroppedBag);
+		}
+		if (!bDroppedBag)
 		{
 			Destroy();
 			return;
@@ -484,6 +489,10 @@ void AT66EnemyBase::OnDeath()
 			// Simple bias: roll twice (luck-weighted) and take the better rarity.
 			const ET66Rarity R2 = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
 			BagRarity = (static_cast<uint8>(R2) > static_cast<uint8>(BagRarity)) ? R2 : BagRarity;
+		}
+		if (RunState)
+		{
+			RunState->RecordLuckQualityRarity(FName(TEXT("EnemyLootBagRarity")), BagRarity);
 		}
 		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
 		FActorSpawnParameters SpawnParams;

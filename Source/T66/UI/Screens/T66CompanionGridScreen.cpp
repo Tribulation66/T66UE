@@ -3,6 +3,7 @@
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66CompanionSelectionScreen.h"
 #include "UI/T66UIManager.h"
+#include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -75,6 +76,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 
 			FName CompanionID = IDsWithNone[Index];
 			FLinearColor SpriteColor = FLinearColor(0.35f, 0.25f, 0.25f, 1.0f); // Gray-red for "no companion"
+			bool bUnlocked = true;
 			if (!CompanionID.IsNone() && GI)
 			{
 				FCompanionData Data;
@@ -82,6 +84,16 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 				{
 					SpriteColor = Data.PlaceholderColor;
 				}
+
+				if (UT66CompanionUnlockSubsystem* Unlocks = GI->GetSubsystem<UT66CompanionUnlockSubsystem>())
+				{
+					bUnlocked = Unlocks->IsCompanionUnlocked(CompanionID);
+				}
+			}
+			if (!CompanionID.IsNone() && !bUnlocked)
+			{
+				// Locked silhouette: black tile (still visible in the grid).
+				SpriteColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 			}
 
 			FName CompanionIDCopy = CompanionID;
@@ -96,6 +108,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 						SNew(SButton)
 						.ButtonColorAndOpacity(SpriteColor)
 						.OnClicked_Lambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); })
+						.IsEnabled(CompanionIDCopy.IsNone() || bUnlocked)
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -171,6 +184,21 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 
 FReply UT66CompanionGridScreen::HandleCompanionClicked(FName CompanionID)
 {
+	// Ignore locked companions (grid buttons should already be disabled, but keep it robust).
+	if (!CompanionID.IsNone())
+	{
+		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			if (UT66CompanionUnlockSubsystem* Unlocks = GI->GetSubsystem<UT66CompanionUnlockSubsystem>())
+			{
+				if (!Unlocks->IsCompanionUnlocked(CompanionID))
+				{
+					return FReply::Handled();
+				}
+			}
+		}
+	}
+
 	if (UIManager)
 	{
 		UT66ScreenBase* Underlying = UIManager->GetCurrentScreen();

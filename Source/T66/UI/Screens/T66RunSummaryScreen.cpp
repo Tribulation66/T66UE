@@ -3,6 +3,7 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
@@ -23,9 +24,13 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSpacer.h"
+#include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Input/SMultiLineEditableTextBox.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Views/STableRow.h"
 #include "Styling/CoreStyle.h"
+#include "HAL/PlatformProcess.h"
 
 UT66RunSummaryScreen::UT66RunSummaryScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -39,11 +44,13 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	Super::OnScreenActivated_Implementation();
 
 	// If we were opened from a leaderboard row click, load the saved snapshot first.
-	LoadSavedRunSummaryIfRequested();
-	// Important: this screen uses programmatic Slate UI. The widget tree may already be built by the time
-	// OnScreenActivated runs (AddToViewport/TakeWidget). If we loaded a saved summary here, we must rebuild
-	// immediately so the first open reflects the snapshot (and shows the correct "Back" viewer-mode button).
-	if (bViewingSavedLeaderboardRunSummary)
+	const bool bWasViewingSaved = bViewingSavedLeaderboardRunSummary;
+	const TObjectPtr<UT66LeaderboardRunSummarySaveGame> PrevSummary = LoadedSavedSummary;
+	const bool bConsumedRequest = LoadSavedRunSummaryIfRequested();
+
+	// If a new pending request was consumed (or viewer state changed), rebuild immediately.
+	// NOTE: Snapshot loading also happens during RebuildWidget() so the first open should already be correct.
+	if (bConsumedRequest || (bWasViewingSaved != bViewingSavedLeaderboardRunSummary) || (PrevSummary != LoadedSavedSummary))
 	{
 		ForceRebuildSlate();
 	}
@@ -149,28 +156,37 @@ void UT66RunSummaryScreen::DestroyPreviewCaptures()
 	HeroPreviewBrush.Reset();
 }
 
-void UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
+bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 {
-	bViewingSavedLeaderboardRunSummary = false;
-	LoadedSavedSummary = nullptr;
-
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	if (!LB)
 	{
-		return;
+		return false;
 	}
 
 	FString SlotName;
 	if (!LB->ConsumePendingRunSummaryRequest(SlotName))
 	{
-		return;
+		// No pending request: do not clobber any existing viewer state.
+		return false;
 	}
+
+	// We are consuming a request: clear previous snapshot state now.
+	bViewingSavedLeaderboardRunSummary = false;
+	LoadedSavedSummary = nullptr;
+	LoadedSavedSummarySlotName.Reset();
+	bLogVisible = false;
+	bReportPromptVisible = false;
+	ReportReasonTextBox.Reset();
+	ProofUrlTextBox.Reset();
+	ProofOfRunUrl.Reset();
+	bProofOfRunLocked = false;
 
 	if (SlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(SlotName, 0))
 	{
-		return;
+		return true;
 	}
 
 	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
@@ -178,7 +194,24 @@ void UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 	if (LoadedSavedSummary)
 	{
 		bViewingSavedLeaderboardRunSummary = true;
+		LoadedSavedSummarySlotName = SlotName;
+
+		// Proof-of-run fields are schema-versioned. If not present, default to empty/unlocked.
+		if (LoadedSavedSummary->SchemaVersion >= 3)
+		{
+			ProofOfRunUrl = LoadedSavedSummary->ProofOfRunUrl;
+			bProofOfRunLocked = LoadedSavedSummary->bProofOfRunLocked;
+		}
 	}
+	return true;
+}
+
+TSharedRef<SWidget> UT66RunSummaryScreen::RebuildWidget()
+{
+	// Critical: Slate is built before OnScreenActivated() (AddToViewport/TakeWidget).
+	// Load any pending leaderboard snapshot here so the first render is correct (no "empty run" flash).
+	LoadSavedRunSummaryIfRequested();
+	return BuildSlateUI();
 }
 
 void UT66RunSummaryScreen::RebuildLogItems()
@@ -272,8 +305,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	IdolIconBrushes.Reset();
 
 	RebuildLogItems();
-	TSharedRef<SListView<TSharedPtr<FString>>> LogList =
-		SNew(SListView<TSharedPtr<FString>>)
+	SAssignNew(LogListView, SListView<TSharedPtr<FString>>)
 		.ListItemsSource(&LogItems)
 		.OnGenerateRow(SListView<TSharedPtr<FString>>::FOnGenerateRow::CreateUObject(this, &UT66RunSummaryScreen::GenerateLogRow))
 		.SelectionMode(ESelectionMode::None);
@@ -341,8 +373,148 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 			.Padding(FMargin(FT66Style::Tokens::Space2))
 			[
-				LogList
+				LogListView.IsValid() ? StaticCastSharedRef<SWidget>(LogListView.ToSharedRef()) : StaticCastSharedRef<SWidget>(SNew(SSpacer))
 			]);
+
+	// Proof of run UI.
+	// NOTE: Today this is local-only, so we treat the player as the owner of viewed runs.
+	// When runs can be viewed cross-account, we'll gate edit/confirm by real ownership.
+	const bool bIsOwnerOfViewedRun = true;
+
+	TSharedRef<SWidget> ProofBody =
+		SNew(SVerticalBox)
+		// Link view (clickable) + Edit button
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+			[
+				SNew(SBorder)
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.Padding(FMargin(10.f, 8.f))
+				.Visibility_Lambda([this]() { return (bProofOfRunLocked && !ProofOfRunUrl.IsEmpty()) ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					SNew(SHyperlink)
+					.Text_Lambda([this]() { return FText::FromString(ProofOfRunUrl); })
+					.OnNavigate(FSimpleDelegate::CreateUObject(this, &UT66RunSummaryScreen::HandleProofLinkNavigate))
+				]
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
+			[
+				SNew(SButton)
+				.Visibility_Lambda([this, bIsOwnerOfViewedRun]() { return (bIsOwnerOfViewedRun && bProofOfRunLocked) ? EVisibility::Visible : EVisibility::Collapsed; })
+				.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofEditClicked))
+				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+				.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+				.ContentPadding(FMargin(14.f, 8.f))
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.RunSummary", "Edit", "EDIT"))
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+				]
+			]
+		]
+		// Edit view (textbox) + Confirm button
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(SHorizontalBox)
+			.Visibility_Lambda([this, bIsOwnerOfViewedRun]() { return (bIsOwnerOfViewedRun && !bProofOfRunLocked) ? EVisibility::Visible : EVisibility::Collapsed; })
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+			[
+				SAssignNew(ProofUrlTextBox, SEditableTextBox)
+				.Text(FText::FromString(ProofOfRunUrl))
+				.OnTextChanged_Lambda([this](const FText& NewText)
+				{
+					// Keep the draft in sync with what the player typed.
+					ProofOfRunUrl = NewText.ToString();
+				})
+				.HintText(NSLOCTEXT("T66.RunSummary", "ProofHint", "Paste YouTube link here..."))
+				.MinDesiredWidth(420.f)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
+			[
+				SNew(SButton)
+				.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofConfirmClicked))
+				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+				.ButtonColorAndOpacity(FT66Style::Tokens::Success)
+				.ContentPadding(FMargin(14.f, 8.f))
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.RunSummary", "Confirm", "CONFIRM"))
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+				]
+			]
+		];
+
+	TSharedRef<SWidget> ProofOfRunPanel =
+		MakePanel(
+			NSLOCTEXT("T66.RunSummary", "ProofOfRunHeader", "PROOF OF RUN"),
+			ProofBody
+		);
+
+	// Cheat report UI (available to everyone).
+	TSharedRef<SWidget> ReportCheatButton =
+		SNew(SButton)
+		.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked))
+		.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+		.ButtonColorAndOpacity(FLinearColor(0.75f, 0.20f, 0.20f, 1.f))
+		.ContentPadding(FMargin(14.f, 10.f))
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.RunSummary", "TheyreCheating", "THEY'RE CHEATING"))
+			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+		];
+
+	TSharedRef<SWidget> ReportPrompt =
+		SNew(SBorder)
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+		.Padding(FMargin(FT66Style::Tokens::Space3))
+		.Visibility_Lambda([this]() { return bReportPromptVisible ? EVisibility::Visible : EVisibility::Collapsed; })
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.RunSummary", "ReportReasonHeader", "REASON"))
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				SAssignNew(ReportReasonTextBox, SMultiLineEditableTextBox)
+				.HintText(NSLOCTEXT("T66.RunSummary", "ReportReasonHint", "Describe why you believe they're cheating..."))
+				.AutoWrapText(true)
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
+				[
+					SNew(SButton)
+					.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportSubmitClicked))
+					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+					.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
+					.ContentPadding(FMargin(14.f, 8.f))
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.RunSummary", "Submit", "SUBMIT"))
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
+				[
+					SNew(SButton)
+					.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCloseClicked))
+					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+					.ContentPadding(FMargin(14.f, 8.f))
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.RunSummary", "Close", "CLOSE"))
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+					]
+				]
+			]
+		];
 
 	auto MakeEventLogButton = [&](const FText& Text) -> TSharedRef<SWidget>
 	{
@@ -599,6 +771,79 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		StatsBox
 	);
 
+	// Placeholder panels (wiring for calculation will come later).
+	auto MakeBigCenteredValue = [](const FText& ValueText) -> TSharedRef<SWidget>
+	{
+		return SNew(SBox)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(ValueText)
+				.Font(FT66Style::Tokens::FontBold(34))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Justification(ETextJustify::Center)
+			];
+	};
+
+	// Canonical names:
+	// - Dodge Rating -> Skill Rating (computed from no-damage windows)
+	// - Luck Rating (computed from recorded RNG outcomes)
+	// - Probability of Cheating (wiring TBD)
+	const int32 LuckRating0To100 =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+		? ((LoadedSavedSummary->SchemaVersion >= 2) ? LoadedSavedSummary->LuckRating0To100 : -1)
+		: (RunState ? RunState->GetLuckRating0To100() : -1);
+
+	UT66SkillRatingSubsystem* Skill = nullptr;
+	if (!bViewingSavedLeaderboardRunSummary)
+	{
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			Skill = GameInstance->GetSubsystem<UT66SkillRatingSubsystem>();
+		}
+	}
+	const int32 SkillRating0To100 =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+		? ((LoadedSavedSummary->SchemaVersion >= 4) ? LoadedSavedSummary->SkillRating0To100 : -1)
+		: (Skill ? Skill->GetSkillRating0To100() : -1);
+
+	const FText LuckRatingText =
+		(LuckRating0To100 >= 0)
+		? FText::Format(NSLOCTEXT("T66.RunSummary", "RatingOutOf100Format", "{0} / 100"), FText::AsNumber(LuckRating0To100))
+		: NSLOCTEXT("T66.RunSummary", "RatingNA", "N/A");
+
+	const FText SkillRatingText =
+		(SkillRating0To100 >= 0)
+		? FText::Format(NSLOCTEXT("T66.RunSummary", "RatingOutOf100Format", "{0} / 100"), FText::AsNumber(SkillRating0To100))
+		: NSLOCTEXT("T66.RunSummary", "RatingNA", "N/A");
+
+	TSharedRef<SWidget> LuckRatingPanel = MakePanel(
+		NSLOCTEXT("T66.RunSummary", "LuckRatingPanel", "LUCK RATING"),
+		MakeBigCenteredValue(LuckRatingText)
+	);
+	TSharedRef<SWidget> SkillRatingPanel = MakePanel(
+		NSLOCTEXT("T66.RunSummary", "SkillRatingPanel", "SKILL RATING"),
+		MakeBigCenteredValue(SkillRatingText)
+	);
+	const FText CheatProbLine = FText::Format(
+		NSLOCTEXT("T66.RunSummary", "CheatProbabilityLineFormat", "Probability of Cheating: {0}%"),
+		FText::AsNumber(0)
+	);
+	TSharedRef<SWidget> CheatProbabilityPanel = MakePanel(
+		NSLOCTEXT("T66.RunSummary", "IntegrityPanel", "INTEGRITY"),
+		SNew(SBox)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(STextBlock)
+			.Text(CheatProbLine)
+			.Font(FT66Style::Tokens::FontBold(18))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.Justification(ETextJustify::Center)
+		]
+	);
+
 	TSharedRef<SWidget> InventoryPanel = MakePanel(
 		NSLOCTEXT("T66.RunSummary", "InventoryPanel", "INVENTORY"),
 		SNew(SScrollBox) + SScrollBox::Slot()[InvBox]
@@ -672,29 +917,74 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					// Main content: Hero preview top-left, stats to the right, items to the right of stats
 					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, 18.f)
 					[
-						SNew(SHorizontalBox)
-						// Left column: Hero preview + Idols below
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
+						SNew(SVerticalBox)
+						// Top half: Hero preview + stats + ratings
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
 						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()
+							SNew(SHorizontalBox)
+							// Left: Hero preview
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
 							[
 								MakeHeroPreview(HeroPreviewBrush)
 							]
-							+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 18.f, 0.f, 0.f)
+							// Middle: Base stats (fixed width so ratings sit immediately next to it)
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
 							[
-								IdolsPanel
+								SNew(SBox)
+								.WidthOverride(420.f)
+								[
+									BaseStatsPanel
+								]
+							]
+							// Right: Ratings (kept tight next to Base Stats)
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+								[
+									LuckRatingPanel
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+								[
+									SkillRatingPanel
+								]
+								+ SVerticalBox::Slot().FillHeight(1.f)
+								[
+									CheatProbabilityPanel
+								]
+							]
+							// Spacer so the block stays left (leaves room for right-side log drawer).
+							+ SHorizontalBox::Slot().FillWidth(1.f)
+							[
+								SNew(SSpacer)
 							]
 						]
-						// Middle: Base stats
-						+ SHorizontalBox::Slot().FillWidth(0.42f).Padding(0.f, 0.f, 18.f, 0.f)
+						// Bottom half: Idols + Inventory (short + tight side-by-side, leaving room below)
+						+ SVerticalBox::Slot().AutoHeight()
 						[
-							BaseStatsPanel
-						]
-						// Right: Inventory / items
-						+ SHorizontalBox::Slot().FillWidth(0.58f)
-						[
-							InventoryPanel
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
+							[
+								SNew(SBox)
+								.WidthOverride(520.f)
+								.HeightOverride(250.f)
+								[
+									IdolsPanel
+								]
+							]
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								SNew(SBox)
+								.WidthOverride(620.f)
+								.HeightOverride(250.f)
+								[
+									InventoryPanel
+								]
+							]
+							+ SHorizontalBox::Slot().FillWidth(1.f)
+							[
+								SNew(SSpacer)
+							]
 						]
 					]
 					// Buttons row (inside panel)
@@ -704,7 +994,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					]
 				]
 			]
-			// Event log dropdown/popup (top-right)
+			// Right-side drawer: event log only (toggle with button).
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Right)
 			.VAlign(VAlign_Top)
@@ -713,9 +1003,43 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SBox)
 				.WidthOverride(520.f)
 				.HeightOverride(620.f)
-				.Visibility(bLogVisible ? EVisibility::Visible : EVisibility::Collapsed)
+				.Visibility_Lambda([this]() { return bLogVisible ? EVisibility::Visible : EVisibility::Collapsed; })
 				[
 					EventLogPanel
+				]
+			]
+			// Right-side: proof + report block (compact, shown under Event Log while open).
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Top)
+			.Padding(0.f, 70.f + 620.f + 12.f, 0.f, 0.f)
+			[
+				SNew(SBox)
+				.WidthOverride(520.f)
+				// Always present in this right-side space (not tied to the Event Log toggle).
+				.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						ProofOfRunPanel
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+					[
+						SNew(SBox)
+						.HeightOverride(44.f)
+						[
+							ReportCheatButton
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+					[
+						SNew(SBox)
+						.HeightOverride(150.f)
+						[
+							ReportPrompt
+						]
+					]
 				]
 			]
 		];
@@ -724,6 +1048,84 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 FReply UT66RunSummaryScreen::HandleRestartClicked() { OnRestartClicked(); return FReply::Handled(); }
 FReply UT66RunSummaryScreen::HandleMainMenuClicked() { OnMainMenuClicked(); return FReply::Handled(); }
 FReply UT66RunSummaryScreen::HandleViewLogClicked() { OnViewLogClicked(); return FReply::Handled(); }
+FReply UT66RunSummaryScreen::HandleProofConfirmClicked()
+{
+	const FString Url = ProofUrlTextBox.IsValid() ? ProofUrlTextBox->GetText().ToString() : ProofOfRunUrl;
+	ProofOfRunUrl = Url;
+	ProofOfRunUrl.TrimStartAndEndInline();
+	bProofOfRunLocked = !ProofOfRunUrl.IsEmpty();
+
+	// Avoid the "textbox disappears and nothing shows" state.
+	if (!bProofOfRunLocked && ProofUrlTextBox.IsValid())
+	{
+		ProofUrlTextBox->SetText(FText::FromString(ProofOfRunUrl));
+	}
+
+	// Persist into the snapshot immediately (only when we're viewing a saved run summary).
+	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && !LoadedSavedSummarySlotName.IsEmpty())
+	{
+		LoadedSavedSummary->SchemaVersion = FMath::Max(LoadedSavedSummary->SchemaVersion, 3);
+		LoadedSavedSummary->ProofOfRunUrl = ProofOfRunUrl;
+		LoadedSavedSummary->bProofOfRunLocked = bProofOfRunLocked;
+		UGameplayStatics::SaveGameToSlot(LoadedSavedSummary, LoadedSavedSummarySlotName, 0);
+	}
+
+	InvalidateLayoutAndVolatility();
+	return FReply::Handled();
+}
+
+FReply UT66RunSummaryScreen::HandleProofEditClicked()
+{
+	bProofOfRunLocked = false;
+	if (ProofUrlTextBox.IsValid())
+	{
+		ProofUrlTextBox->SetText(FText::FromString(ProofOfRunUrl));
+	}
+	InvalidateLayoutAndVolatility();
+	return FReply::Handled();
+}
+
+void UT66RunSummaryScreen::HandleProofLinkNavigate() const
+{
+	if (ProofOfRunUrl.IsEmpty()) return;
+	FPlatformProcess::LaunchURL(*ProofOfRunUrl, nullptr, nullptr);
+}
+
+FReply UT66RunSummaryScreen::HandleReportCheatingClicked()
+{
+	bReportPromptVisible = true;
+	InvalidateLayoutAndVolatility();
+	return FReply::Handled();
+}
+
+FReply UT66RunSummaryScreen::HandleReportSubmitClicked()
+{
+	const FString Reason = ReportReasonTextBox.IsValid() ? ReportReasonTextBox->GetText().ToString() : FString();
+	const int32 StageReached = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached : 0;
+	const int32 HighScore = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Bounty : 0;
+	const FName HeroID = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID : NAME_None;
+
+	UE_LOG(LogTemp, Warning, TEXT("[CHEAT REPORT] Stage=%d HighScore=%d Hero=%s Reason=%s"),
+		StageReached,
+		HighScore,
+		*HeroID.ToString(),
+		*Reason);
+
+	bReportPromptVisible = false;
+	if (ReportReasonTextBox.IsValid())
+	{
+		ReportReasonTextBox->SetText(FText::GetEmpty());
+	}
+	InvalidateLayoutAndVolatility();
+	return FReply::Handled();
+}
+
+FReply UT66RunSummaryScreen::HandleReportCloseClicked()
+{
+	bReportPromptVisible = false;
+	InvalidateLayoutAndVolatility();
+	return FReply::Handled();
+}
 
 void UT66RunSummaryScreen::OnRestartClicked()
 {
@@ -771,6 +1173,13 @@ void UT66RunSummaryScreen::OnMainMenuClicked()
 void UT66RunSummaryScreen::OnViewLogClicked()
 {
 	bLogVisible = !bLogVisible;
-	// RefreshScreen() is a no-op for this Slate-driven screen; force a rebuild so visibility updates immediately.
-	ForceRebuildSlate();
+	if (bLogVisible)
+	{
+		RebuildLogItems();
+		if (LogListView.IsValid())
+		{
+			LogListView->RequestListRefresh();
+		}
+	}
+	InvalidateLayoutAndVolatility();
 }

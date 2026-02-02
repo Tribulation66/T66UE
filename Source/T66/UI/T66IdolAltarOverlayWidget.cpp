@@ -129,6 +129,7 @@ public:
 		SLATE_ARGUMENT(FLinearColor, Color)
 		SLATE_ARGUMENT(FText, ToolTipText)
 		SLATE_ARGUMENT(FText, CenterText)
+		SLATE_ARGUMENT(const FSlateBrush*, IconBrush)
 		SLATE_EVENT(FOnIdolDropped, OnIdolDropped)
 	SLATE_END_ARGS()
 
@@ -143,13 +144,50 @@ public:
 			.BorderBackgroundColor(InArgs._Color)
 			.ToolTipText(InArgs._ToolTipText)
 			[
-				SNew(STextBlock)
-				.Text(InArgs._CenterText)
-				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-				.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
-				.Justification(ETextJustify::Center)
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SAssignNew(IconImage, SImage)
+					.Image(InArgs._IconBrush)
+					.ColorAndOpacity(FLinearColor::White)
+					.Visibility(InArgs._IconBrush ? EVisibility::Visible : EVisibility::Collapsed)
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SAssignNew(CenterTextWidget, STextBlock)
+					.Text(InArgs._CenterText)
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+					.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
+					.Justification(ETextJustify::Center)
+					.Visibility(InArgs._IconBrush ? EVisibility::Collapsed : EVisibility::Visible)
+				]
 			]
 		);
+	}
+
+	void SetIconBrush(const FSlateBrush* InBrush)
+	{
+		if (IconImage.IsValid())
+		{
+			IconImage->SetImage(InBrush);
+			IconImage->SetVisibility(InBrush ? EVisibility::Visible : EVisibility::Collapsed);
+		}
+		if (CenterTextWidget.IsValid())
+		{
+			CenterTextWidget->SetVisibility(InBrush ? EVisibility::Collapsed : EVisibility::Visible);
+		}
+	}
+
+	void SetCenterText(const FText& InText)
+	{
+		if (CenterTextWidget.IsValid())
+		{
+			CenterTextWidget->SetText(InText);
+		}
 	}
 
 	virtual FReply OnDrop(const FGeometry& MyGeometry, const FDragDropEvent& DragDropEvent) override
@@ -167,6 +205,8 @@ public:
 private:
 	bool bLocked = false;
 	FOnIdolDropped OnIdolDropped;
+	TSharedPtr<SImage> IconImage;
+	TSharedPtr<STextBlock> CenterTextWidget;
 };
 
 static FText GetIdolTooltipText(UT66LocalizationSubsystem* Loc, FName IdolID)
@@ -178,49 +218,58 @@ static FText GetIdolTooltipText(UT66LocalizationSubsystem* Loc, FName IdolID)
 	return NSLOCTEXT("T66.IdolAltar", "IdolTooltipUnknown", "IDOL\nUnknown.");
 }
 
+const FSlateBrush* UT66IdolAltarOverlayWidget::GetOrCreateIdolIconBrush(FName IdolID)
+{
+	if (IdolID.IsNone()) return nullptr;
+	if (const TSharedPtr<FSlateBrush>* Found = IdolIconBrushes.Find(IdolID))
+	{
+		return Found->Get();
+	}
+
+	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UTexture2D* Tex = nullptr;
+
+	if (GI)
+	{
+		FIdolData D;
+		if (GI->GetIdolData(IdolID, D) && !D.Icon.IsNull())
+		{
+			Tex = D.Icon.Get();
+			if (!Tex)
+			{
+				Tex = D.Icon.LoadSynchronous();
+			}
+		}
+	}
+
+	if (!Tex)
+	{
+		IdolIconBrushes.Add(IdolID, nullptr);
+		IdolIconTextureRefs.Remove(IdolID);
+		return nullptr;
+	}
+
+	// Keep the texture alive while the overlay is visible (prevents GC from collecting it).
+	IdolIconTextureRefs.Add(IdolID, Tex);
+
+	TSharedPtr<FSlateBrush> B = MakeShared<FSlateBrush>();
+	B->DrawAs = ESlateBrushDrawType::Image;
+	B->SetResourceObject(Tex);
+	B->ImageSize = FVector2D(64.f, 64.f);
+	IdolIconBrushes.Add(IdolID, B);
+	return B.Get();
+}
+
 TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 {
 	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
 
-	// Keep icon brushes alive for the lifetime of this overlay rebuild.
-	TMap<FName, TSharedPtr<FSlateBrush>> IdolIconBrushes;
-	auto GetIdolIconBrush = [&](FName IdolID) -> const FSlateBrush*
-	{
-		if (IdolID.IsNone()) return nullptr;
-		if (const TSharedPtr<FSlateBrush>* Found = IdolIconBrushes.Find(IdolID))
-		{
-			return Found->Get();
-		}
-
-		UTexture2D* Tex = nullptr;
-		if (GI)
-		{
-			FIdolData D;
-			if (GI->GetIdolData(IdolID, D) && !D.Icon.IsNull())
-			{
-				Tex = D.Icon.Get();
-				if (!Tex)
-				{
-					Tex = D.Icon.LoadSynchronous();
-				}
-			}
-		}
-
-		if (!Tex)
-		{
-			IdolIconBrushes.Add(IdolID, nullptr);
-			return nullptr;
-		}
-
-		TSharedPtr<FSlateBrush> B = MakeShared<FSlateBrush>();
-		B->DrawAs = ESlateBrushDrawType::Image;
-		B->SetResourceObject(Tex);
-		B->ImageSize = FVector2D(64.f, 64.f);
-		IdolIconBrushes.Add(IdolID, B);
-		return B.Get();
-	};
+	// Keep icon brushes alive for the lifetime of this overlay widget instance.
+	// (They are referenced by raw pointer inside Slate widgets; if these brushes are local temporaries,
+	// Slate can dereference dangling pointers during later paint/drag operations and crash.)
+	IdolIconBrushes.Reset();
+	IdolIconTextureRefs.Reset();
 
 	const TArray<FName>& Equipped = RunState ? RunState->GetEquippedIdols() : TArray<FName>();
 	TSet<FName> EquippedSet;
@@ -251,7 +300,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 			.IdolID(IdolID)
 			.bLocked(bLocked)
 			.Color(C)
-			.IconBrush(GetIdolIconBrush(IdolID))
+			.IconBrush(GetOrCreateIdolIconBrush(IdolID))
 			.ToolTipText(GetIdolTooltipText(Loc, IdolID))
 			.OnHoverIdol(ST66IdolTile::FOnHoverIdol::CreateLambda([this, Loc](FName Hovered)
 			{
@@ -360,6 +409,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				// Always allow selecting an idol; RunState will decide whether it can be applied (equip vs level-up).
 				.bLocked(false)
 				.Color(CenterC)
+				.IconBrush(GetOrCreateIdolIconBrush(PendingSelectedIdolID))
 				.ToolTipText(PendingSelectedIdolID.IsNone()
 					? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : NSLOCTEXT("T66.IdolAltar", "DropAnIdolHere", "Drop an Idol here."))
 					: GetIdolTooltipText(Loc, PendingSelectedIdolID))
@@ -478,6 +528,11 @@ void UT66IdolAltarOverlayWidget::RefreshCenterPad()
 	CenterPadBorder->SetToolTipText(PendingSelectedIdolID.IsNone()
 		? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : NSLOCTEXT("T66.IdolAltar", "DropAnIdolHere", "Drop an Idol here."))
 		: GetIdolTooltipText(Loc, PendingSelectedIdolID));
+
+	CenterPadBorder->SetIconBrush(GetOrCreateIdolIconBrush(PendingSelectedIdolID));
+	CenterPadBorder->SetCenterText(PendingSelectedIdolID.IsNone()
+		? (Loc ? Loc->GetText_IdolAltarDropHere() : NSLOCTEXT("T66.IdolAltar", "DropHere", "DROP\nHERE"))
+		: FText::GetEmpty());
 }
 
 FReply UT66IdolAltarOverlayWidget::OnConfirm()

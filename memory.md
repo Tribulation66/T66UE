@@ -41,21 +41,29 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
 - **Repo path:** C:\UE\T66 (Windows) / c:\UE\T66
 - **Engine version:** Unreal Engine 5.7
 - **Active branch:** main
-- **Last known-good commit:** 2f24cb4 (HUD: map/minimap, lock-on, range ring, wheel HUD, TikTok toggle)
-- **Current milestone:** Phase 3+ — Stage progression + bosses + miasma + NPCs + debt + Coliseum + map layout
+- **Last known-good commit:** 7b2c180 (official .1 version — sprites/models system + UI hookups)
+- **Current milestone:** Official .1 — replace placeholder sprites/models with data-driven assets + automation scripts
 - **Build status:** ✅ C++ compiles successfully
-- **Model pipeline status:** ✅ Imported + wired (data-driven)
-  - Source packs extracted to `C:\UE\T66\SourceAssets\Extracted\` (~31 `.fbx` files)
-  - Imported assets exist under `/Game/Characters/...` (SkeletalMeshes + Skeletons + AnimSequences where provided)
-  - Data-driven visuals mapping implemented via `DT_CharacterVisuals` (backed by `Content/Data/CharacterVisuals.csv`)
-  - Runtime wiring implemented (heroes/enemies/bosses/companions/NPCs apply skeletal visuals + optional looping anim at runtime)
-  - Note: some characters have **no animation assets** in the provided FBX packs, so they remain static (fallback picks any compatible anim only if it exists)
+- **Sprites pipeline status:** ✅ Imported + wired (data-driven)
+  - Source PNGs live under `SourceAssets/Sprites/**`
+  - Imported textures live under `/Game/UI/Sprites/**`
+  - Import script: `Scripts/ImportSpriteTextures.py` (run in full editor; commandlet imports can crash due to Slate/AssetTools)
+- **World models pipeline status:** ✅ Imported + wired (data-driven)
+  - Source FBX packs (`.zip`) may live under either:
+    - `SourceAssets/Models/**` (preferred), or
+    - `SourceAssets/Extracted/Models/**` (current repo layout as of 2026-02-02)
+  - Extracted to `<models-root>/Extracted/**` by `Scripts/ImportWorldModels.py`
+  - Imported meshes live under `/Game/World/**` and `/Game/Characters/NPCs/**`
+  - Import script: `Scripts/ImportWorldModels.py`
+  - Important: loot bags import into per-color subfolders (`/Game/World/LootBags/Black|Red|Yellow|White`) to avoid material/texture name collisions (`Material_001`, `Image_0`, etc)
+  - Important: Trees/Trucks/Wheels also import into per-color subfolders (`/Game/World/Interactables/Trees|Trucks|Wheels/Black|Red|Yellow|White`) to avoid the same collisions
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 - **Full project setup (from project root):**
   - **Batch:** `Scripts\RunFullSetup.bat`
   - **Bash:** `./Scripts/RunFullSetup.sh` (chmod +x if needed)
   - **Editor:** Py Execute Script → `Scripts/CreateAssets.py` then `Scripts/FullSetup.py` (or run `T66Setup` after DT_Items exists)
 - **Items-only setup:** `Scripts\RunItemsSetup.bat` or Py → `Scripts/SetupItemsDataTable.py`
+  - **Official .1 one-shot (full editor):** `Scripts/SetupAllAssetsAndDataTables.py`
 
 ---
 
@@ -102,6 +110,44 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-02-02 — Skill Rating system (no-damage windows) + run summary wiring
+
+**Goal**
+- Implement the v0 **Skill Rating** system based on “time without taking damage” using 5-second windows, mirroring the existing Luck Rating pipeline (compute → persist → display).
+
+**Design**
+- Starts at **50** (clamped 0..100).
+- Evaluates in non-overlapping **5s windows** while combat time is active (stage timer active).
+- Per 5s window:
+  - 0 hits: +1
+  - 1 hit: -1
+  - 2 hits: -5
+  - 3 hits: -10
+  - 4 hits: -20
+  - 5+ hits: -50
+- Damage is an **input event** (no polling for damage).
+
+**What changed**
+- Added new subsystem:
+  - `Source/T66/Core/T66SkillRatingSubsystem.h`
+  - `Source/T66/Core/T66SkillRatingSubsystem.cpp`
+- Wired damage events:
+  - `Source/T66/Core/T66RunStateSubsystem.cpp` calls `UT66SkillRatingSubsystem::NotifyDamageTaken()` when damage actually applies in `ApplyDamage` / `ApplyTrueDamage`.
+  - `ResetForNewRun()` resets the Skill Rating subsystem.
+- Time driver + tracking gate:
+  - `Source/T66/Gameplay/T66GameMode.cpp` ticks the skill subsystem and activates tracking only when stage timer is active and not in last-stand.
+- Persist + UI:
+  - `Source/T66/Core/T66LeaderboardRunSummarySaveGame.h` schema bumped to 4 and adds `SkillRating0To100`.
+  - `Source/T66/Core/T66LeaderboardSubsystem.cpp` snapshots `SkillRating0To100`.
+  - `Source/T66/UI/Screens/T66RunSummaryScreen.cpp` displays Skill Rating (live or saved summary).
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- ValidateFast (UE 5.7) ✅:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 
 ### 2026-02-01 — UI cleanup: remove Hero/CompanionGrid WBP loads + preview capture on-demand
 
@@ -1379,6 +1425,88 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 
 ---
 
+### 2026-02-02 — Luck Rating wired to central RNG + Run Summary ratings panel (Skill Rating rename + cheat-prob placeholder)
+
+**Goal**
+- Remove the “Luck Rating is a placeholder” state and make Luck Rating a real post-run metric driven by the centralized RNG work.
+- Update Run Summary layout to match the new direction:
+  - Inventory moved to the **bottom half** next to Idols.
+  - Add a ratings column to the right of Base Stats: **Luck Rating**, **Skill Rating**, **Probability of Cheating**.
+- Canonical rename: **Dodge Rating → Skill Rating** (calculation TBD; separate agent will implement).
+
+**What shipped (committed)**
+- Commit: `11bc868` — `Gameplay: central RNG + luck-biased outcomes`
+  - Added `UT66RngSubsystem` + config-backed tuning (`UT66RngTuningConfig`) and migrated luck-affected events to use it.
+  - Fixed Run Summary first-open snapshot rendering and Event Log toggle refresh.
+
+**What is currently implemented (may be uncommitted depending on repo state)**
+- **Luck Rating system (authoritative, per-run)** — `UT66RunStateSubsystem`
+  - Added an internal per-run tracker for Luck Rating:
+    - Tracks **Quantity** outcomes (normalized within \[Min..Max\] or bool 0/1).
+    - Tracks **Quality** outcomes (rarity mapped linearly: Black=0, Red=1/3, Yellow=2/3, White=1).
+    - Aggregation uses **“average of category averages”** so huge volumes (eg many kills) don’t dominate the score.
+  - Public getters:
+    - `GetLuckRating0To100()`
+    - `GetLuckRatingQuantity0To100()`
+    - `GetLuckRatingQuality0To100()`
+  - Tracker resets on `ResetForNewRun()`.
+
+- **Luck Rating feed points (recorded events)**
+  - **Enemy loot bags** — `AT66EnemyBase::OnDeath`
+    - Quantity: `EnemyLootBagDrop` (true/false).
+    - Quality: `EnemyLootBagRarity` (bag rarity).
+  - **World interactables** — `AT66GameMode::SpawnWorldInteractablesForStage`
+    - Quantity: `TreesPerStage`, `TrucksPerStage`, `WheelsPerStage`.
+    - Quality: `TreeRarity`, `TruckRarity`, `WheelRarity`.
+    - Note: location is intentionally not luck-affected (per spec).
+  - **Special enemies** — `AT66EnemyDirector::SpawnWave`
+    - Quantity: `GoblinCountPerWave`, `LeprechaunCountPerWave` (including 0).
+    - Quality: `GoblinRarity`, `LeprechaunRarity`.
+  - **Wheel payouts**
+    - Quantity: `WheelGold` recorded for both HUD wheel (`UT66GameplayHUDWidget`) and wheel overlay (`UT66WheelOverlayWidget`), normalized within the configured rarity payout range.
+  - **Vendor steal**
+    - Quantity: `VendorStealSuccess` (success = item granted + **no anger increase**; failure = anger increases).
+  - **Gambler cheat**
+    - Quantity: `GamblerCheatSuccess` (success = forced win + **no anger increase**; failure = anger increases and normal outcome RNG applies).
+  - **Level-up gains**
+    - Quantity: `LevelUp_*Gain` per stat gain roll (ranges unchanged; Luck biases high-end outcomes).
+
+- **Leaderboard snapshot schema update**
+  - `UT66LeaderboardRunSummarySaveGame` bumped **SchemaVersion to 2** and stores:
+    - `LuckRating0To100`
+    - `LuckRatingQuantity0To100`
+    - `LuckRatingQuality0To100`
+  - `UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot` now writes these fields from `UT66RunStateSubsystem`.
+  - Run Summary shows **N/A** when opening older snapshots with SchemaVersion < 2.
+
+- **Run Summary UI layout + ratings column**
+  - File: `Source/T66/UI/Screens/T66RunSummaryScreen.cpp`
+  - Layout now:
+    - **Top row**: Hero preview | Base Stats | Ratings column
+    - **Bottom row**: Idols | Inventory (side-by-side)
+  - Ratings column:
+    - **LUCK RATING** is now wired to real data (`RunState->GetLuckRating0To100()` or snapshot).
+    - **SKILL RATING** is the canonical rename from Dodge Rating — still a placeholder until implemented.
+    - **INTEGRITY** box contains placeholder text: `Probability of Cheating: 0%` (wiring TBD).
+
+**Skill Rating rename (coordination note)**
+- Canonical terminology: **Skill Rating** replaces “Dodge Rating” everywhere going forward.
+- Another agent will own the Skill Rating system implementation. This branch should not attempt to define Skill Rating math until that work lands.
+
+**Localization note (must not be skipped)**
+- New player-facing labels were added for ratings panels and integrity text.
+- These must go through the full localization pipeline (GatherText → translate all 22 cultures → compile `.locres` → verify).
+
+**Build / verification**
+- `T66` target builds successfully after Luck Rating wiring.
+- `T66Editor` may fail to rebuild if hot-reload DLLs are locked by a running editor instance (file lock / hot-reload artifact).
+
+**Local data reset (developer action, not committed)**
+- To reset the local “YOU” high score so the next run becomes best:
+  - Deleted:
+    - `Saved/SaveGames/T66_LocalLeaderboard.sav`
+    - `Saved/SaveGames/T66_LocalBestBountyRunSummary_Easy_Solo.sav`
+
 ### 2025-01-28 — Localization System + Bible-Compliant UI Restructure
 
 *(Previous entry — see original content in history. Summary: LocalizationSubsystem, Main Menu two-panel + leaderboard, Language Select, Hero/Companion selection restructure, FLeaderboardEntry, FSkinData, ET66LeaderboardFilter.)*
@@ -1830,6 +1958,174 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
   - Gather: `Config/Localization/T66_Gather_Source.ini`
   - Translate baseline: `Scripts/AutoTranslateLocalizationArchives.py`
   - Compile: `Config/Localization/T66_Compile.ini`
+
+**Verification / proof**
+- ValidateFast builds ✅ (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+---
+
+### 2026-02-01 — Official .1 release: data-driven sprites + world models + UI hookups
+
+**Goal**
+- Replace placeholder colored-square sprites and placeholder meshes with real PNG/FBX assets, while keeping a **repeatable system** so assets can be swapped later without rewriting UI/gameplay.
+
+**What changed (high-signal)**
+- **Data types (soft references)**
+  - `Source/T66/Data/T66DataTypes.h`:
+    - `FItemData.Icon` (`TSoftObjectPtr<UTexture2D>`)
+    - `FIdolData.Icon` (`TSoftObjectPtr<UTexture2D>`)
+    - `FHeroData.Portrait` (`TSoftObjectPtr<UTexture2D>`)
+- **CSV-driven content**
+  - `Content/Data/Items.csv`: regenerated to match `SourceAssets/Sprites/Items/*` counts (Black/Red/Yellow/White), includes `Icon`, and assigns deterministic rarity-scaled main stats (no Speed).
+  - `Content/Data/Idols.csv`: canonical IdolIDs + `Icon` paths.
+  - `Content/Data/Heroes.csv`: `Portrait` paths.
+  - `Content/Data/Bosses.csv`: added `PointValue` column and set `Boss_01=100` … `Boss_66=6600` (+100 per stage).
+- **UI now renders real icons/portraits**
+  - Vendor / Gambler / HUD / Run Summary / Hero carousel & grid / Idol altar tiles all use `SImage` + `FSlateBrush` bound to the new soft texture references (with safe fallbacks).
+  - Gambler inventory strip now matches vendor behavior (icons instead of `Item_Red_09` style text).
+- **World models**
+  - Loot bags, gates, wheel/tree/truck interactables, idol altar, difficulty totem: switched to soft mesh overrides with safe fallbacks.
+  - Loot bags: fixed “all bags share one material” by importing loot bags into per-color subfolders (avoids `Material_001` / `Image_0` collisions).
+  - Grounding: bags and gates snap to ground at runtime; trace uses object query for both `WorldStatic` and `WorldDynamic`.
+- **Difficulty totem growth**
+  - Totem interaction now **stacks mesh segments** instead of scaling the base mesh.
+- **NPC visuals**
+  - Trickster/Ouroboros use `DT_CharacterVisuals` (and force `NPCID` in `BeginPlay` to handle already-placed instances).
+- **Automation scripts (run in full editor)**
+  - `Scripts/ImportSpriteTextures.py`: imports PNGs under `/Game/UI/Sprites/**` with UI texture settings.
+  - `Scripts/ImportWorldModels.py`: extracts/imports model zips under `/Game/World/**` and NPC skeletal meshes under `/Game/Characters/NPCs/**`.
+  - `Scripts/SetupAllAssetsAndDataTables.py`: one-shot orchestrator (sprites + models + DataTables).
+
+**Notes**
+- `Scripts/__pycache__/` should remain untracked (don’t commit).
+
+**Commit**
+- `7b2c180` — `official .1 version`
+
+---
+
+### 2026-02-02 — ImportWorldModels: support `SourceAssets/Extracted/Models` + reimport per-color interactables
+
+**What changed**
+- `Scripts/ImportWorldModels.py` now scans both `SourceAssets/Models/**` and `SourceAssets/Extracted/Models/**` for `.zip` packs (some repo layouts relocate model zips under `Extracted/Models`).
+- Re-ran the importer successfully (unattended editor `-ExecutePythonScript`) and confirmed per-color subfolders exist on disk for:
+  - `Content/World/Interactables/Trees/Black|Red|Yellow|White/`
+  - `Content/World/Interactables/Trucks/Black|Red|Yellow|White/`
+  - `Content/World/Interactables/Wheels/Black|Red|Yellow|White/`
+
+---
+
+### 2026-02-01 — Replace placeholder enemy models: Goblin/Leprechaun + Stage 1/2 mobs/unique/boss
+
+**Goal**
+- Replace placeholder visuals for:
+  - Goblin Thief (all 4 rarities)
+  - Leprechaun (all 4 rarities)
+  - Stage 1 mobs + unique + boss
+  - Stage 2 mobs + unique + boss
+- Constraint: only **walk loop** animations required for now; **Stage 2 Unique** may be **static**.
+
+**What changed**
+- **Extracted the new zips to `SourceAssets/Extracted/` with stable pack names**
+  - Goblin: `GoblinThief_Black|Red|Yellow|White`
+  - Leprechaun: `Leprechaun_Black|Red|Yellow|White`
+  - Stage 1: `Mob_Stage01_Mob1`, `Mob_Stage01_Mob2`, `Unique_Stage01`, `Boss_01`
+  - Stage 2: `Mob_Stage02_Mob1`, `Mob_Stage02_Mob2`, `Unique_Stage02`, `Boss_02`
+- **Importer improvements**
+  - `Scripts/ImportSourceAssetsModels.py`:
+    - Added optional pack filter: `-T66ImportPacks=PackA,PackB,...` (prevents reimporting everything).
+    - Added category routing for the new packs (Enemies/Stages, Bosses/Stages, etc.).
+    - Stage 2 Unique imports as **StaticMesh** with stable name:
+      - `/Game/Characters/Enemies/Stages/Unique_Stage02/SM_Unique_Stage02`
+    - Imports the *mesh FBX without animations* first, then imports explicit animation FBXs (more stable with Interchange).
+- **Data-driven stage roster**
+  - `Content/Data/Stages.csv`:
+    - Stage 1: `EnemyA/B/C` now use `Mob_Stage01_Mob1` and `Mob_Stage01_Mob2` (no more `Mob_EmberImps`, etc.).
+    - Stage 2: `EnemyA/B/C` now use `Mob_Stage02_Mob1` and `Mob_Stage02_Mob2`.
+- **Character visuals table**
+  - `Content/Data/CharacterVisuals.csv`:
+    - Boss: `Boss_01` and new `Boss_02` now point at imported meshes + walk loops.
+    - Goblin: `GoblinThief` now points at the black variant; added `GoblinThief_Black|Red|Yellow|White`.
+    - Leprechaun: `Leprechaun` now points at the black variant; added `Leprechaun_Black|Red|Yellow|White`.
+    - Stage mobs: added `Mob_Stage01_Mob1`, `Mob_Stage01_Mob2`, `Mob_Stage02_Mob1`, `Mob_Stage02_Mob2`.
+    - Stage 1 unique: added `Unique_Stage01` (skeletal mesh + walk loop).
+- **Gameplay wiring**
+  - `Source/T66/Gameplay/T66EnemyBase.cpp`:
+    - Stage mobs now set `CharacterVisualID = MobID` so `DT_CharacterVisuals` can drive their mesh/animation (safe fallback to placeholders if row missing).
+  - `Source/T66/Gameplay/T66GoblinThiefEnemy.cpp`:
+    - Uses rarity-specific visual IDs (`GoblinThief_Black|Red|Yellow|White`) and reapplies visuals on `SetRarity()`.
+    - Stops tinting the placeholder cone when an imported mesh is in use.
+  - `Source/T66/Gameplay/T66LeprechaunEnemy.cpp`:
+    - Uses rarity-specific visual IDs (`Leprechaun_Black|Red|Yellow|White`) and reapplies visuals on `SetRarity()`.
+    - Stops tinting placeholder parts when an imported mesh is in use; hides the head sphere when using the imported mesh.
+  - `Source/T66/Gameplay/T66UniqueDebuffEnemy.cpp`:
+    - Stage 1 Unique uses `Unique_Stage01` imported skeletal mesh + walk loop (via `DT_CharacterVisuals`).
+    - Stage 2 Unique uses static mesh `/Game/Characters/Enemies/Stages/Unique_Stage02/SM_Unique_Stage02` (no animation).
+- **DataTables updated**
+  - Refilled `DT_CharacterVisuals` + `DT_Stages` from CSV.
+
+**Localization**
+- No new player-facing runtime strings were added/changed.
+
+**Verification / proof**
+- Extracted packs (PowerShell) ✅:
+  - `Expand-Archive` into `C:\UE\T66\SourceAssets\Extracted\{PackName}\`
+- Imported meshes/animations ✅ (full editor, headless):
+  - `UnrealEditor.exe "C:\UE\T66\T66.uproject" -nop4 -nosplash -unattended -nullrhi -log="T66_ImportEnemyModels_Editor2.log" "-T66ImportPacks=..." -ExecCmds="py C:/UE/T66/Scripts/ImportSourceAssetsModels.py"`
+- Reimported DataTables ✅:
+  - `UnrealEditor-Cmd.exe "C:\UE\T66\T66.uproject" -run=pythonscript -script="C:\UE\T66\Scripts\SetupCharacterVisualsDataTable.py" -unattended -nop4 -nosplash -nullrhi -log="T66_SetupCharacterVisuals.log"`
+  - `UnrealEditor-Cmd.exe "C:\UE\T66\T66.uproject" -run=pythonscript -script="C:\UE\T66\Scripts\SetupStagesDataTable.py" -unattended -nop4 -nosplash -nullrhi -log="T66_SetupStages.log"`
+- ValidateFast builds ✅ (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+---
+
+### 2026-02-01 — Loot bags: replace snap-to-ground with gravity drop
+
+**User report**
+- Loot bags were sometimes floating (common when spawned from enemies that die above the floor).
+
+**Goal**
+- Remove the explicit “snap to ground” traces and instead make loot bags **fall naturally with gravity**, which also looks correct for flying enemies.
+
+**What changed**
+- `Source/T66/Gameplay/T66LootBagPickup.h/.cpp`:
+  - Removed the BeginPlay line-trace “snap to ground”.
+  - Added a small physics/collision root sphere (`PhysicsRoot`) that blocks `WorldStatic` + `WorldDynamic`.
+  - Added a `UProjectileMovementComponent` (`FallMovement`) with `ProjectileGravityScale=1` so loot bags fall without enabling full physics simulation.
+  - Kept the large overlap sphere (`SphereComponent`, radius 120) for pickup detection.
+  - Updated visuals positioning so the bag mesh sits on the bottom of `PhysicsRoot` (no “hovering” due to collision radius).
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- ValidateFast builds ✅ (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+---
+
+### 2026-02-01 — Fix invisible non-biped enemies (pivot/bounds offset): auto-center imported meshes
+
+**User report**
+- Some imported enemies (notably quadruped-style packs) were “invisible but hittable” (health bar visible, collisions/damage work, but mesh not seen).
+
+**Root cause (most likely)**
+- Some FBX exports have a **bounds origin / pivot far from the actual geometry**, so the skeletal mesh is effectively placed far away from the capsule after attachment (appearing invisible).
+
+**What changed**
+- `Source/T66/Core/T66CharacterVisualSubsystem.cpp`:
+  - `ApplyCharacterVisual(...)` now auto-centers **XY** by subtracting the (rotated) bounds origin when the origin is non-trivial.
+  - This is gated by a small threshold so normal meshes (near-zero origin) are unaffected.
+- `Source/T66/Gameplay/T66UniqueDebuffEnemy.cpp`:
+  - Stage 2 Unique static mesh (`SM_Unique_Stage02`) is also recentered using its static-mesh bounds origin so it appears at the actor location.
+
+**Localization**
+- No new player-facing runtime strings.
 
 **Verification / proof**
 - ValidateFast builds ✅ (UE 5.7):

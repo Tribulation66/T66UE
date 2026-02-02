@@ -11,6 +11,8 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UStaticMesh;
 class AT66PlayerController;
+class UProjectileMovementComponent;
+class UPrimitiveComponent;
 
 UCLASS(Blueprintable)
 class T66_API AT66LootBagPickup : public AActor
@@ -45,8 +47,16 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
 	TObjectPtr<USphereComponent> SphereComponent;
 
+	/** Physics/collision root used for gravity-based falling. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
+	TObjectPtr<USphereComponent> PhysicsRoot;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	/** Lightweight gravity-driven fall without physics simulation. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	TObjectPtr<UProjectileMovementComponent> FallMovement;
 
 	/** Optional rarity meshes (when imported). If null/unloaded, we fall back to the colored cube. */
 	UPROPERTY(EditDefaultsOnly, Category = "Visuals|Meshes")

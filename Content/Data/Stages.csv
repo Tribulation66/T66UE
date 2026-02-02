@@ -1,6 +1,6 @@
 ---,StageNumber,BossID,BossSpawnLocation,StageEffectType,StageEffectColor,StageEffectStrength,EnemyA,EnemyB,EnemyC
-Stage_01,1,Boss_01,"(X=2500.0,Y=0.0,Z=200.0)",Speed,"(R=0.94,G=0.64,B=0.17,A=1.0)",1.00,Mob_EmberImps,Mob_CharcoalRams,Mob_Stage01_Extra
-Stage_02,2,Boss_02,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.76,G=0.94,B=0.17,A=1.0)",1.02,Mob_StaticRanchers,Mob_ThunderhoofChargers,Mob_SparkHawks
+Stage_01,1,Boss_01,"(X=2500.0,Y=0.0,Z=200.0)",Speed,"(R=0.94,G=0.64,B=0.17,A=1.0)",1.00,Mob_Stage01_Mob1,Mob_Stage01_Mob2,Mob_Stage01_Mob1
+Stage_02,2,Boss_02,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.76,G=0.94,B=0.17,A=1.0)",1.02,Mob_Stage02_Mob1,Mob_Stage02_Mob2,Mob_Stage02_Mob1
 Stage_03,3,Boss_03,"(X=2500.0,Y=0.0,Z=200.0)",Slide,"(R=0.28,G=0.94,B=0.17,A=1.0)",1.03,Mob_GaleWraiths,Mob_RazorGulls,Mob_KiteMarauders
 Stage_04,4,Boss_04,"(X=2500.0,Y=0.0,Z=200.0)",Speed,"(R=0.17,G=0.94,B=0.53,A=1.0)",1.05,Mob_ReefStriders,Mob_BrineBruisers,Mob_BubbleJellies
 Stage_05,5,Boss_05,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.17,G=0.88,B=0.94,A=1.0)",1.06,Mob_MaskedHollowGrunts,Mob_CeroHounds,Mob_Stage05_Extra

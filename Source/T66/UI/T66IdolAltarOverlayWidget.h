@@ -10,6 +10,7 @@
 class SBorder;
 class STextBlock;
 class ST66IdolDropTarget;
+class UTexture2D;
 
 /**
  * Idol Altar overlay (Stage 1):
@@ -31,6 +32,21 @@ private:
 	TSharedPtr<ST66IdolDropTarget> CenterPadBorder;
 	TSharedPtr<STextBlock> StatusText;
 	TSharedPtr<STextBlock> HoverTooltipText;
+
+	/** Returns a stable brush pointer for an idol's icon (or nullptr). */
+	const FSlateBrush* GetOrCreateIdolIconBrush(FName IdolID);
+
+	/**
+	 * Slate icon brush lifetime:
+	 * - Our idol tiles pass a raw FSlateBrush* into SImage.
+	 * - If the brush storage is local to RebuildWidget(), Slate can later dereference a dangling pointer and crash.
+	 * Keep brushes (and their textures) alive for the lifetime of the overlay widget instance.
+	 */
+	TMap<FName, TSharedPtr<FSlateBrush>> IdolIconBrushes;
+
+	/** Strong refs to keep icon textures from being GC'd while the overlay is open. */
+	UPROPERTY(Transient)
+	TMap<FName, TObjectPtr<UTexture2D>> IdolIconTextureRefs;
 
 	FReply OnConfirm();
 	FReply OnBack();

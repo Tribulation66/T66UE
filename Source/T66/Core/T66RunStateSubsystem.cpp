@@ -6,8 +6,120 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RngSubsystem.h"
+#include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+
+namespace
+{
+	static float T66_RarityTo01(ET66Rarity R)
+	{
+		// Linear mapping across tiers (Black worst -> White best).
+		switch (R)
+		{
+		case ET66Rarity::Black:  return 0.f;
+		case ET66Rarity::Red:    return 1.f / 3.f;
+		case ET66Rarity::Yellow: return 2.f / 3.f;
+		case ET66Rarity::White:  return 1.f;
+		default: return 0.f;
+		}
+	}
+
+	template<typename TMapType>
+	static float T66_AverageCategories01(const TMapType& ByCategory)
+	{
+		if (ByCategory.Num() <= 0)
+		{
+			return 0.5f; // neutral fallback if a run had no rolls recorded
+		}
+
+		double Sum = 0.0;
+		int32 N = 0;
+		for (const auto& Kvp : ByCategory)
+		{
+			const auto& Acc = Kvp.Value;
+			if (Acc.Count <= 0) continue;
+			Sum += static_cast<double>(Acc.Avg01());
+			++N;
+		}
+		return (N > 0) ? static_cast<float>(Sum / static_cast<double>(N)) : 0.5f;
+	}
+}
+
+void UT66RunStateSubsystem::ResetLuckRatingTracking()
+{
+	LuckQuantityByCategory.Reset();
+	LuckQualityByCategory.Reset();
+}
+
+void UT66RunStateSubsystem::RecordLuckQuantityRoll(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue)
+{
+	const int32 MinV = FMath::Min(MinValue, MaxValue);
+	const int32 MaxV = FMath::Max(MinValue, MaxValue);
+	float Score01 = 0.5f;
+	if (MaxV <= MinV)
+	{
+		Score01 = 1.f;
+	}
+	else
+	{
+		Score01 = FMath::Clamp(static_cast<float>(RolledValue - MinV) / static_cast<float>(MaxV - MinV), 0.f, 1.f);
+	}
+
+	LuckQuantityByCategory.FindOrAdd(Category).Add01(Score01);
+}
+
+void UT66RunStateSubsystem::RecordLuckQuantityBool(FName Category, bool bSucceeded)
+{
+	LuckQuantityByCategory.FindOrAdd(Category).Add01(bSucceeded ? 1.f : 0.f);
+}
+
+void UT66RunStateSubsystem::RecordLuckQualityRarity(FName Category, ET66Rarity Rarity)
+{
+	LuckQualityByCategory.FindOrAdd(Category).Add01(T66_RarityTo01(Rarity));
+}
+
+float UT66RunStateSubsystem::ComputeLuckRatingQuantity01() const
+{
+	return T66_AverageCategories01(LuckQuantityByCategory);
+}
+
+float UT66RunStateSubsystem::ComputeLuckRatingQuality01() const
+{
+	return T66_AverageCategories01(LuckQualityByCategory);
+}
+
+int32 UT66RunStateSubsystem::GetLuckRatingQuantity0To100() const
+{
+	return FMath::Clamp(FMath::RoundToInt(ComputeLuckRatingQuantity01() * 100.f), 0, 100);
+}
+
+int32 UT66RunStateSubsystem::GetLuckRatingQuality0To100() const
+{
+	return FMath::Clamp(FMath::RoundToInt(ComputeLuckRatingQuality01() * 100.f), 0, 100);
+}
+
+int32 UT66RunStateSubsystem::GetLuckRating0To100() const
+{
+	const bool bHasQuantity = (LuckQuantityByCategory.Num() > 0);
+	const bool bHasQuality = (LuckQualityByCategory.Num() > 0);
+
+	float Rating01 = 0.5f;
+	if (bHasQuantity && bHasQuality)
+	{
+		Rating01 = 0.5f * (ComputeLuckRatingQuantity01() + ComputeLuckRatingQuality01());
+	}
+	else if (bHasQuantity)
+	{
+		Rating01 = ComputeLuckRatingQuantity01();
+	}
+	else if (bHasQuality)
+	{
+		Rating01 = ComputeLuckRatingQuality01();
+	}
+
+	return FMath::Clamp(FMath::RoundToInt(Rating01 * 100.f), 0, 100);
+}
 
 const TArray<FName>& UT66RunStateSubsystem::GetAllIdolIDs()
 {
@@ -310,7 +422,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 		}
 	}
 
-	auto RollGainBiased = [&](const FT66HeroStatGainRange& Range) -> int32
+	auto RollGainBiased = [&](const FT66HeroStatGainRange& Range, FName Category) -> int32
 	{
 		const int32 A0 = FMath::Min(Range.Min, Range.Max);
 		const int32 B0 = FMath::Max(Range.Min, Range.Max);
@@ -327,16 +439,18 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 		const int32 Span = (B - A);
 		// Inclusive integer roll biased toward B.
 		const int32 Delta = FMath::Clamp(FMath::FloorToInt(U * static_cast<float>(Span + 1)), 0, Span);
-		return A + Delta;
+		const int32 Rolled = A + Delta;
+		RecordLuckQuantityRoll(Category, Rolled, A, B);
+		return Rolled;
 	};
 
 	// Other foundational stats roll within the hero's per-level gain ranges.
-	HeroStats.Damage = FMath::Clamp(HeroStats.Damage + RollGainBiased(HeroPerLevelGains.Damage), 1, 9999);
-	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed + RollGainBiased(HeroPerLevelGains.AttackSpeed), 1, 9999);
-	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize + RollGainBiased(HeroPerLevelGains.AttackSize), 1, 9999);
-	HeroStats.Armor = FMath::Clamp(HeroStats.Armor + RollGainBiased(HeroPerLevelGains.Armor), 1, 9999);
-	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion + RollGainBiased(HeroPerLevelGains.Evasion), 1, 9999);
-	HeroStats.Luck = FMath::Clamp(HeroStats.Luck + RollGainBiased(HeroPerLevelGains.Luck), 1, 9999);
+	HeroStats.Damage = FMath::Clamp(HeroStats.Damage + RollGainBiased(HeroPerLevelGains.Damage, FName(TEXT("LevelUp_DamageGain"))), 1, 9999);
+	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed + RollGainBiased(HeroPerLevelGains.AttackSpeed, FName(TEXT("LevelUp_AttackSpeedGain"))), 1, 9999);
+	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize + RollGainBiased(HeroPerLevelGains.AttackSize, FName(TEXT("LevelUp_AttackSizeGain"))), 1, 9999);
+	HeroStats.Armor = FMath::Clamp(HeroStats.Armor + RollGainBiased(HeroPerLevelGains.Armor, FName(TEXT("LevelUp_ArmorGain"))), 1, 9999);
+	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion + RollGainBiased(HeroPerLevelGains.Evasion, FName(TEXT("LevelUp_EvasionGain"))), 1, 9999);
+	HeroStats.Luck = FMath::Clamp(HeroStats.Luck + RollGainBiased(HeroPerLevelGains.Luck, FName(TEXT("LevelUp_LuckGain"))), 1, 9999);
 }
 
 void UT66RunStateSubsystem::InitializeHeroStatsForNewRun()
@@ -476,6 +590,15 @@ bool UT66RunStateSubsystem::ApplyTrueDamage(int32 Hearts)
 	LastDamageTime = Now;
 	const int32 Reduced = FMath::Max(1, Hearts);
 	CurrentHearts = FMath::Max(0, CurrentHearts - Reduced);
+
+	// Skill Rating tracking: any damage that actually applies counts as a hit event.
+	if (UGameInstance* GI3 = GetGameInstance())
+	{
+		if (UT66SkillRatingSubsystem* Skill = GI3->GetSubsystem<UT66SkillRatingSubsystem>())
+		{
+			Skill->NotifyDamageTaken();
+		}
+	}
 
 	// Survival charge fills on real damage taken.
 	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (static_cast<float>(Reduced) * SurvivalChargePerHeart), 0.f, 1.f);
@@ -742,6 +865,9 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 		VendorAngerGold = FMath::Clamp(VendorAngerGold + D.BuyValueGold, 0, 9999999);
 	}
 
+	// Luck Rating tracking (quantity): vendor steal success means item granted with no anger increase.
+	RecordLuckQuantityBool(FName(TEXT("VendorStealSuccess")), (LastVendorStealOutcome == ET66VendorStealOutcome::Success));
+
 	VendorChanged.Broadcast();
 	return bGranted;
 }
@@ -909,6 +1035,15 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
 
 	LastDamageTime = Now;
 	CurrentHearts = FMath::Max(0, CurrentHearts - Reduced);
+
+	// Skill Rating tracking: any damage that actually applies counts as a hit event.
+	if (UGameInstance* GI3 = GetGameInstance())
+	{
+		if (UT66SkillRatingSubsystem* Skill = GI3->GetSubsystem<UT66SkillRatingSubsystem>())
+		{
+			Skill->NotifyDamageTaken();
+		}
+	}
 
 	// Survival charge fills on real damage taken.
 	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (static_cast<float>(Reduced) * SurvivalChargePerHeart), 0.f, 1.f);
@@ -1301,6 +1436,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
 	EventLog.Empty();
 	StructuredEventLog.Empty();
+	ResetLuckRatingTracking();
 	CurrentStage = 1;
 	bStageTimerActive = false;
 	StageTimerSecondsRemaining = StageTimerDurationSeconds;
@@ -1312,6 +1448,16 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	bThisRunSetNewPersonalBestSpeedRunTime = false;
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
+
+	// Skill Rating: reset per brand new run.
+	if (UGameInstance* GI3 = GetGameInstance())
+	{
+		if (UT66SkillRatingSubsystem* Skill = GI3->GetSubsystem<UT66SkillRatingSubsystem>())
+		{
+			Skill->ResetForNewRun();
+		}
+	}
+
 	bHUDPanelsVisible = true;
 	ClearTutorialHint();
 	ResetTutorialInputFlags();
