@@ -4,9 +4,15 @@ Import a 2x2 ground atlas PNG and create a simple world-space tiled material.
 Input:
   SourceAssets/Ground/GroundAtlas_2x2_1024.png
 
+  If you have tile1.png..tile4.png instead, run BuildGroundAtlas.py first:
+    python Scripts/BuildGroundAtlas.py
+
 Outputs:
   /Game/World/Ground/T_GroundAtlas_2x2_1024
-  /Game/World/Ground/M_GroundAtlas_2x2
+  /Game/World/Ground/M_GroundAtlas_2x2_R0   (0°)
+  /Game/World/Ground/M_GroundAtlas_2x2_R90  (90°)
+  /Game/World/Ground/M_GroundAtlas_2x2_R180 (180°)
+  /Game/World/Ground/M_GroundAtlas_2x2_R270 (270°)
 
 Run (PowerShell):
 & "C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" "C:/UE/T66/T66.uproject" -run=pythonscript -script="C:/UE/T66/Scripts/ImportGroundAtlas.py" -unattended -nop4 -nosplash -nullrhi
@@ -114,54 +120,38 @@ def _create_or_load_material(dest_game_dir: str, asset_name: str) -> unreal.Mate
     return unreal.AssetToolsHelpers.get_asset_tools().create_asset(asset_name, dest_game_dir, unreal.Material, factory)
 
 
-def _rebuild_material_graph(mat: unreal.Material, atlas_tex: unreal.Texture2D):
+# Minimal graph that compiles on SM6: TexCoord * TilingScale -> Texture. No ComponentMask/OneMinus/Append.
+def _build_simple_material_graph(mat: unreal.Material, atlas_tex: unreal.Texture2D, _rotation_deg: int):
     mel = unreal.MaterialEditingLibrary
 
-    # Make the script re-runnable: clear and recreate the graph.
     try:
         mel.delete_all_material_expressions(mat)
     except Exception:
-        # Fallback: older builds may not expose delete_all_material_expressions.
-        exprs = mel.get_material_expressions(mat)
-        for e in exprs:
+        for e in mel.get_material_expressions(mat) or []:
             try:
                 mel.delete_material_expression(mat, e)
             except Exception:
                 pass
 
-    # Planar world-space UVs:
-    # UV = AbsoluteWorldPosition.xy / AtlasWorldSizeUU
-    # With wrap addressing, this repeats every AtlasWorldSizeUU units in world.
-    world_pos = mel.create_material_expression(mat, unreal.MaterialExpressionWorldPosition, -900, -100)
-    mask = mel.create_material_expression(mat, unreal.MaterialExpressionComponentMask, -700, -100)
-    mask.set_editor_property("r", True)
-    mask.set_editor_property("g", True)
-    mask.set_editor_property("b", False)
-    mask.set_editor_property("a", False)
-    mel.connect_material_expressions(world_pos, "", mask, "Input")
+    tex_coord = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -300, -60)
+    tiling = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -300, 80)
+    tiling.set_editor_property("parameter_name", "TilingScale")
+    tiling.set_editor_property("default_value", 10.0)
+    mul = mel.create_material_expression(mat, unreal.MaterialExpressionMultiply, -100, -60)
+    mel.connect_material_expressions(tex_coord, "", mul, "A")
+    mel.connect_material_expressions(tiling, "", mul, "B")
 
-    atlas_world_size = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -700, 80)
-    atlas_world_size.set_editor_property("parameter_name", "AtlasWorldSizeUU")
-    atlas_world_size.set_editor_property("default_value", 200.0)  # 2 tiles wide @ 100uu each by default
-
-    div = mel.create_material_expression(mat, unreal.MaterialExpressionDivide, -450, -100)
-    mel.connect_material_expressions(mask, "", div, "A")
-    mel.connect_material_expressions(atlas_world_size, "", div, "B")
-
-    tex_sample = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, -250, -60)
+    tex_sample = mel.create_material_expression(mat, unreal.MaterialExpressionTextureSampleParameter2D, 100, -60)
     tex_sample.set_editor_property("texture", atlas_tex)
     tex_sample.set_editor_property("parameter_name", "GroundAtlas")
-    mel.connect_material_expressions(div, "", tex_sample, "UVs")
+    mel.connect_material_expressions(mul, "", tex_sample, "UVs")
 
-    rough = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -250, 160)
+    rough = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -100, 120)
     rough.set_editor_property("parameter_name", "Roughness")
     rough.set_editor_property("default_value", 0.9)
 
-    # Wire outputs.
     mel.connect_material_property(tex_sample, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
-
-    # Recompile & save.
     try:
         mel.recompile_material(mat)
     except Exception:
@@ -177,13 +167,16 @@ def main():
 
     dest_dir = "/Game/World/Ground"
     tex_asset_name = "T_GroundAtlas_2x2_1024"
-    mat_asset_name = "M_GroundAtlas_2x2"
+    mat_variants = [
+        ("M_GroundAtlas_2x2_R0", 0),
+        ("M_GroundAtlas_2x2_R90", 90),
+        ("M_GroundAtlas_2x2_R180", 180),
+        ("M_GroundAtlas_2x2_R270", 270),
+    ]
 
     unreal.log("=== ImportGroundAtlas: START ===")
     unreal.log(f"[GroundAtlas] Source: {src}")
 
-    # Commandlets can crash in some UE builds when importing (Slate not initialized).
-    # If the texture already exists, prefer loading it instead of reimporting.
     existing_tex_asset_path = f"{dest_dir}/{tex_asset_name}"
     if unreal.EditorAssetLibrary.does_asset_exist(existing_tex_asset_path):
         tex_path = existing_tex_asset_path
@@ -195,23 +188,22 @@ def main():
         unreal.log_error("[GroundAtlas] Failed to load imported texture asset.")
         return
 
-    mat = _create_or_load_material(dest_dir, mat_asset_name)
-    if not mat:
-        unreal.log_error("[GroundAtlas] Failed to create/load material.")
-        return
+    for name, rot in mat_variants:
+        mat = _create_or_load_material(dest_dir, name)
+        if not mat:
+            unreal.log_error(f"[GroundAtlas] Failed to create/load material: {name}")
+            continue
+        _build_simple_material_graph(mat, atlas_tex, rot)
+        try:
+            unreal.EditorAssetLibrary.save_loaded_asset(mat)
+        except Exception:
+            pass
+        try:
+            unreal.EditorAssetLibrary.save_asset(f"{dest_dir}/{name}")
+        except Exception:
+            pass
 
-    _rebuild_material_graph(mat, atlas_tex)
-
-    try:
-        unreal.EditorAssetLibrary.save_loaded_asset(mat)
-    except Exception:
-        pass
-    try:
-        unreal.EditorAssetLibrary.save_asset(f"{dest_dir}/{mat_asset_name}")
-    except Exception:
-        pass
-
-    unreal.log(f"=== ImportGroundAtlas: DONE ({tex_path} , {dest_dir}/{mat_asset_name}) ===")
+    unreal.log(f"=== ImportGroundAtlas: DONE ({tex_path} , 4 materials) ===")
 
     # If launched via -ExecutePythonScript, auto-quit so automation doesn't leave an editor open.
     try:

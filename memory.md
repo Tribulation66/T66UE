@@ -57,6 +57,7 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
   - Import script: `Scripts/ImportWorldModels.py`
   - Important: loot bags import into per-color subfolders (`/Game/World/LootBags/Black|Red|Yellow|White`) to avoid material/texture name collisions (`Material_001`, `Image_0`, etc)
   - Important: Trees/Trucks/Wheels also import into per-color subfolders (`/Game/World/Interactables/Trees|Trucks|Wheels/Black|Red|Yellow|White`) to avoid the same collisions
+- **Ground pipeline status:** ✅ 4 atlas materials (R0/R90/R180/R270) — minimal TexCoord×TilingScale graph (SM6-safe). `Scripts/BuildGroundAtlas.py` + `Scripts/ImportGroundAtlas.py`. GameMode assigns one per floor by position.
 - **ValidateFast command:** `cmd /c "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 - **Full project setup (from project root):**
   - **Batch:** `Scripts\RunFullSetup.bat`
@@ -110,6 +111,30 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-02-02 — Ground: 4 material variants (SM6-safe) + procedural per-floor assignment
+
+**Goal**
+- Apply grass atlas to runtime floors; avoid PCD3D_SM6 material compile failures; add per-floor variety.
+
+**What changed**
+- `Scripts/ImportGroundAtlas.py`:
+  - Creates 4 materials: `M_GroundAtlas_2x2_R0`, `_R90`, `_R180`, `_R270` (all use minimal graph: TexCoord × TilingScale → Texture).
+  - No ComponentMask/OneMinus/AppendVector — those caused SM6 compile failures; minimal graph compiles.
+- `Scripts/BuildGroundAtlas.py`:
+  - Pillow script to combine `tile1.png`…`tile4.png` into `GroundAtlas_2x2_1024.png`.
+- `Source/T66/Gameplay/T66GameMode.h/.cpp`:
+  - Replaced `GroundFloorMaterial` with `GroundFloorMaterials` (array of 4).
+  - Picks one material per floor by position: `Idx = Floor(Frac(|Seed|) × 4)` where `Seed = X×0.000123 + Y×0.000456`.
+  - Sync preload of all 4 during level setup (no 1s delay).
+- Level fixes (from prior turns): Start area `-13000` (no overlap with Main); connector floors removed (z-fighting); walls removed.
+
+**Localization**
+- No new player-facing strings.
+
+**Verification**
+- Import: `UnrealEditor-Cmd ... -run=pythonscript -script=Scripts/ImportGroundAtlas.py -unattended -nop4 -nosplash -nullrhi` ✅
+- ValidateFast ✅
 
 ### 2026-02-02 — TikTok/WebView2: default to QR login page (non-click login)
 

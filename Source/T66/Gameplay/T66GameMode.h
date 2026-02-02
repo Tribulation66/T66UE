@@ -56,12 +56,11 @@ public:
 	bool bAutoSetupLevel = true;
 
 	/**
-	 * Optional floor material override applied to all runtime-spawned floor meshes.
-	 * Soft reference to avoid sync loads; if not yet loaded, the floors will fall back to simple tint.
+	 * Four ground material variants (0°, 90°, 180°, 270° rotation). One is picked per floor
+	 * based on floor position for deterministic variety. All must be loaded for grass texture.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
-	TSoftObjectPtr<UMaterialInterface> GroundFloorMaterial = TSoftObjectPtr<UMaterialInterface>(
-		FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2.M_GroundAtlas_2x2")));
+	TArray<TSoftObjectPtr<UMaterialInterface>> GroundFloorMaterials;
 
 	/** Default spawn height when no PlayerStart exists */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")

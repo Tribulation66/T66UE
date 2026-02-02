@@ -30,7 +30,7 @@ public:
 
 	/** Teleport target (Stage 1 start area). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tutorial")
-	FVector TargetLocation = FVector(-10000.f, 0.f, 200.f);
+	FVector TargetLocation = FVector(-12000.f, 0.f, 200.f);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tutorial")
 	bool bDestroyOnUse = true;

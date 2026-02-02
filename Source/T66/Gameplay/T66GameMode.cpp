@@ -131,6 +131,13 @@ AT66GameMode::AT66GameMode()
 
 	// Coliseum arena lives inside GameplayLevel, off to the side (walled off).
 	ColiseumCenter = FVector(-10000.f, -5200.f, 200.f);
+
+	// Default ground materials (4 rotation variants); pick one per floor by position
+	GroundFloorMaterials.Empty();
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270"))));
 }
 
 void AT66GameMode::BeginPlay()
@@ -321,7 +328,7 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 		// Note: our spawn sample range overlaps its east edge (X in [-9200, -7000]), so we must explicitly exclude it.
 		static constexpr float StartHalf = 3000.f;
 		static constexpr float StartMargin = 300.f;
-		static constexpr float StartCenterX = -10000.f;
+		static constexpr float StartCenterX = -13000.f;
 		static constexpr float StartCenterY = 0.f;
 		if (FMath::Abs(L.X - StartCenterX) <= (StartHalf + StartMargin) && FMath::Abs(L.Y - StartCenterY) <= (StartHalf + StartMargin))
 		{
@@ -1202,7 +1209,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		// Note: our spawn sample range overlaps its east edge (X in [-9200, -7000]), so we must explicitly exclude it.
 		static constexpr float StartHalf = 3000.f;
 		static constexpr float StartMargin = 300.f;
-		static constexpr float StartCenterX = -10000.f;
+		static constexpr float StartCenterX = -13000.f;
 		static constexpr float StartCenterY = 0.f;
 		if (FMath::Abs(L.X - StartCenterX) <= (StartHalf + StartMargin) && FMath::Abs(L.Y - StartCenterY) <= (StartHalf + StartMargin))
 		{
@@ -1674,9 +1681,7 @@ void AT66GameMode::EnsureLevelSetup()
 	SpawnColiseumArenaIfNeeded();
 	SpawnTutorialArenaIfNeeded();
 	TryApplyGroundFloorMaterialToAllFloors();
-	SpawnBoundaryWallsIfNeeded();
-	SpawnPlatformEdgeWallsIfNeeded();
-	SpawnStartAreaExitWallsIfNeeded();
+	// Walls removed per user request
 	SpawnLightingIfNeeded();
 	SpawnPlayerStartIfNeeded();
 }
@@ -1686,22 +1691,46 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	UMaterialInterface* GroundMat = GroundFloorMaterial.Get();
-	if (!GroundMat)
+	if (GroundFloorMaterials.Num() < 4)
 	{
-		// Request async load once; when it completes, re-apply across all tagged floors.
-		if (!GroundFloorMaterial.IsNull() && !bGroundFloorMaterialLoadRequested)
+		return;
+	}
+
+	// Check if all 4 materials are loaded
+	bool bAllLoaded = true;
+	for (int32 i = 0; i < 4; ++i)
+	{
+		if (!GroundFloorMaterials[i].Get())
+		{
+			bAllLoaded = false;
+			break;
+		}
+	}
+
+	if (!bAllLoaded)
+	{
+		if (!bGroundFloorMaterialLoadRequested)
 		{
 			bGroundFloorMaterialLoadRequested = true;
-			TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-				GroundFloorMaterial.ToSoftObjectPath(),
-				FStreamableDelegate::CreateWeakLambda(this, [this]()
-				{
-					TryApplyGroundFloorMaterialToAllFloors();
-				}));
-			if (Handle.IsValid())
+			TArray<FSoftObjectPath> Paths;
+			for (int32 i = 0; i < 4 && i < GroundFloorMaterials.Num(); ++i)
 			{
-				ActiveAsyncLoadHandles.Add(Handle);
+				if (!GroundFloorMaterials[i].IsNull())
+				{
+					Paths.Add(GroundFloorMaterials[i].ToSoftObjectPath());
+				}
+			}
+			if (Paths.Num() > 0)
+			{
+				TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+					Paths, FStreamableDelegate::CreateWeakLambda(this, [this]()
+					{
+						TryApplyGroundFloorMaterialToAllFloors();
+					}));
+				if (Handle.IsValid())
+				{
+					ActiveAsyncLoadHandles.Add(Handle);
+				}
 			}
 		}
 		return;
@@ -1714,7 +1743,16 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 		if (!T66_HasAnyFloorTag(A)) continue;
 		if (UStaticMeshComponent* SMC = A->GetStaticMeshComponent())
 		{
-			SMC->SetMaterial(0, GroundMat);
+			UMaterialInterface* Mat = GroundFloorMaterials[0].Get();  // fallback
+			const FVector Loc = A->GetActorLocation();
+			const float Seed = Loc.X * 0.000123f + Loc.Y * 0.000456f;
+			const int32 Idx = FMath::Clamp(FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * 4.f), 0, 3);
+			if (Idx < GroundFloorMaterials.Num())
+			{
+				UMaterialInterface* M = GroundFloorMaterials[Idx].Get();
+				if (M) Mat = M;
+			}
+			SMC->SetMaterial(0, Mat);
 		}
 	}
 }
@@ -1752,10 +1790,6 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 	// Place near the north side of the main square, fully inside global bounds.
 	// (Can't be constexpr in UE due to FVector not being constexpr-friendly on this toolchain.)
 	const FVector TutorialCenter(0.f, 7500.f, -50.f);
-	static constexpr float Half = 2000.f;
-	static constexpr float WallHeight = 2200.f;
-	static constexpr float WallThickness = 240.f;
-
 	const FName FloorTag(TEXT("T66_Floor_Tutorial"));
 
 	// Floor
@@ -1782,48 +1816,6 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 			}
 		}
 	}
-
-	// Walls
-	struct FWallSpec
-	{
-		FName Tag;
-		FVector Loc;
-		FVector Scale;
-	};
-
-	const float WallZ = 0.f + (WallHeight * 0.5f);
-	const float Thick = WallThickness / 100.f;
-	const float Tall = WallHeight / 100.f;
-	const float Long = ((Half * 2.f) + WallThickness) / 100.f;
-
-	const TArray<FWallSpec> Walls = {
-		{ FName(TEXT("T66_Wall_Tutorial_N")), FVector(TutorialCenter.X, TutorialCenter.Y + Half + (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
-		{ FName(TEXT("T66_Wall_Tutorial_S")), FVector(TutorialCenter.X, TutorialCenter.Y - Half - (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
-		{ FName(TEXT("T66_Wall_Tutorial_E")), FVector(TutorialCenter.X + Half + (WallThickness * 0.5f), TutorialCenter.Y, WallZ), FVector(Thick, Long, Tall) },
-		{ FName(TEXT("T66_Wall_Tutorial_W")), FVector(TutorialCenter.X - Half - (WallThickness * 0.5f), TutorialCenter.Y, WallZ), FVector(Thick, Long, Tall) },
-	};
-
-	for (const FWallSpec& Spec : Walls)
-	{
-		if (HasTag(Spec.Tag)) continue;
-		FActorSpawnParameters P;
-		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Loc, FRotator::ZeroRotator, P);
-		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
-		Wall->Tags.Add(Spec.Tag);
-		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
-		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
-		Wall->SetActorScale3D(Spec.Scale);
-		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
-		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
-		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.08f, 0.10f, 1.f));
-		}
-		if (!SpawnedSetupActors.Contains(Wall))
-		{
-			SpawnedSetupActors.Add(Wall);
-		}
-	}
 }
 
 void AT66GameMode::SpawnColiseumArenaIfNeeded()
@@ -1846,10 +1838,9 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 		return false;
 	};
 
-	// Coliseum arena: off to the side, walled off so it is not visible from the main map.
+	// Coliseum arena: off to the side
 	const FVector ArenaCenter(ColiseumCenter.X, ColiseumCenter.Y, -50.f);
 	const FName FloorTag(TEXT("T66_Floor_Coliseum"));
-	const FName WallTagPrefix(TEXT("T66_Wall_Coliseum"));
 
 	// Floor
 	if (!HasTag(FloorTag))
@@ -1870,48 +1861,6 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 			}
 			SpawnedSetupActors.Add(Floor);
 		}
-	}
-
-	// Walls around arena (local enclosure; avoids needing huge global bounds)
-	static constexpr float WallHeight = 2200.f;
-	static constexpr float WallThickness = 240.f;
-	const float WallZ = 0.f + (WallHeight * 0.5f);
-	const float Half = 1700.f;
-	const float Thick = WallThickness / 100.f;
-	const float Tall = WallHeight / 100.f;
-	const float Long = ((Half * 2.f) + WallThickness) / 100.f;
-
-	struct FWallSpec
-	{
-		FName Tag;
-		FVector Loc;
-		FVector Scale;
-	};
-
-	const TArray<FWallSpec> Walls = {
-		{ FName(TEXT("T66_Wall_Coliseum_N")), FVector(ArenaCenter.X, ArenaCenter.Y + Half + (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
-		{ FName(TEXT("T66_Wall_Coliseum_S")), FVector(ArenaCenter.X, ArenaCenter.Y - Half - (WallThickness * 0.5f), WallZ), FVector(Long, Thick, Tall) },
-		{ FName(TEXT("T66_Wall_Coliseum_E")), FVector(ArenaCenter.X + Half + (WallThickness * 0.5f), ArenaCenter.Y, WallZ), FVector(Thick, Long, Tall) },
-		{ FName(TEXT("T66_Wall_Coliseum_W")), FVector(ArenaCenter.X - Half - (WallThickness * 0.5f), ArenaCenter.Y, WallZ), FVector(Thick, Long, Tall) },
-	};
-
-	for (const FWallSpec& Spec : Walls)
-	{
-		if (HasTag(Spec.Tag)) continue;
-		FActorSpawnParameters P;
-		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Loc, FRotator::ZeroRotator, P);
-		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
-		Wall->Tags.Add(Spec.Tag);
-		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
-		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
-		Wall->SetActorScale3D(Spec.Scale);
-		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
-		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
-		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.08f, 0.06f, 0.06f, 1.f));
-		}
-		SpawnedSetupActors.Add(Wall);
 	}
 }
 
@@ -2091,13 +2040,20 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Layout: Start Square -> Main Square -> Boss Square, with two small connector floors.
-	// Pillars (gates) are spawned separately (no pillars in Coliseum).
+	// Preload all 4 ground materials during level setup so floors get grass texture immediately.
+	for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
+	{
+		if (!GroundFloorMaterials[i].IsNull() && !GroundFloorMaterials[i].Get())
+		{
+			GroundFloorMaterials[i].LoadSynchronous();
+		}
+	}
+
+	// Layout: Start Square (west) -> Main Square (center) -> Boss Square (east). No overlap.
+	// Main: X -10000..+10000. Start: X -16000..-10000. Boss: X +7000..+13000.
 	const FVector MainCenter(0.f, 0.f, -50.f);
-	const FVector StartCenter(-10000.f, 0.f, -50.f);
+	const FVector StartCenter(-13000.f, 0.f, -50.f);
 	const FVector BossCenter(10000.f, 0.f, -50.f);
-	const FVector StartConnectorCenter(-6000.f, 0.f, -50.f);
-	const FVector BossConnectorCenter(6000.f, 0.f, -50.f);
 
 	struct FFloorSpec
 	{
@@ -2107,12 +2063,27 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		FLinearColor Color;
 	};
 
+	// Destroy any existing connector floors (caused z-fighting/jitter; Main already covers that area).
+	auto DestroyTaggedIfExists = [&](FName Tag)
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			if (It->Tags.Contains(Tag))
+			{
+				It->Destroy();
+				break;
+			}
+		}
+	};
+	DestroyTaggedIfExists(FName("T66_Floor_Conn1"));
+	DestroyTaggedIfExists(FName("T66_Floor_Conn2"));
+
+	// Connector floors (Conn1/Conn2) removed: they overlapped Main and caused z-fighting/jitter.
+	// Main floor (200x200) already covers X=-10000..+10000; Start/Boss sit at the ends.
 	const TArray<FFloorSpec> Floors = {
-		{ FName("T66_Floor_Main"),   MainCenter,          FVector(200.f, 200.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
-		{ FName("T66_Floor_Start"),  StartCenter,         FVector(60.f,  60.f,  1.f), FLinearColor(0.22f, 0.24f, 0.28f, 1.f) },
-		{ FName("T66_Floor_Boss"),   BossCenter,          FVector(60.f,  60.f,  1.f), FLinearColor(0.26f, 0.22f, 0.22f, 1.f) },
-		{ FName("T66_Floor_Conn1"),  StartConnectorCenter, FVector(20.f, 30.f, 1.f), FLinearColor(0.25f, 0.25f, 0.28f, 1.f) },
-		{ FName("T66_Floor_Conn2"),  BossConnectorCenter,  FVector(20.f, 30.f, 1.f), FLinearColor(0.25f, 0.25f, 0.28f, 1.f) },
+		{ FName("T66_Floor_Main"),   MainCenter,   FVector(200.f, 200.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
+		{ FName("T66_Floor_Start"),  StartCenter,  FVector(60.f,  60.f,  1.f), FLinearColor(0.22f, 0.24f, 0.28f, 1.f) },
+		{ FName("T66_Floor_Boss"),   BossCenter,   FVector(60.f,  60.f,  1.f), FLinearColor(0.26f, 0.22f, 0.22f, 1.f) },
 	};
 
 	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -2152,9 +2123,14 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		Floor->SetActorScale3D(Spec.Scale);
 		T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 
-		// Prefer the configured ground material (soft-loaded). If it's not loaded yet,
-		// fall back to a simple tinted dynamic material and request an async load.
-		UMaterialInterface* GroundMat = GroundFloorMaterial.Get();
+		// Pick one of 4 ground material variants by floor position (deterministic variety)
+		UMaterialInterface* GroundMat = nullptr;
+		if (GroundFloorMaterials.Num() >= 4)
+		{
+			const float Seed = Spec.Location.X * 0.000123f + Spec.Location.Y * 0.000456f;
+			const int32 Idx = FMath::Clamp(FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * 4.f), 0, 3);
+			GroundMat = GroundFloorMaterials[Idx].Get();
+		}
 		if (GroundMat)
 		{
 			Floor->GetStaticMeshComponent()->SetMaterial(0, GroundMat);
@@ -2162,18 +2138,33 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		else
 		{
 			// Kick off async load once, then rerun SpawnFloorIfNeeded() to apply material to tagged floors.
-			if (!GroundFloorMaterial.IsNull() && !bGroundFloorMaterialLoadRequested)
+			if (!bGroundFloorMaterialLoadRequested)
 			{
-				bGroundFloorMaterialLoadRequested = true;
-				TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-					GroundFloorMaterial.ToSoftObjectPath(),
-					FStreamableDelegate::CreateWeakLambda(this, [this]()
-					{
-						SpawnFloorIfNeeded();
-					}));
-				if (Handle.IsValid())
+				bool bAnyToLoad = false;
+				for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
 				{
-					ActiveAsyncLoadHandles.Add(Handle);
+					if (!GroundFloorMaterials[i].IsNull()) bAnyToLoad = true;
+				}
+				if (bAnyToLoad)
+				{
+					bGroundFloorMaterialLoadRequested = true;
+					TArray<FSoftObjectPath> Paths;
+					for (int32 i = 0; i < 4 && i < GroundFloorMaterials.Num(); ++i)
+					{
+						if (!GroundFloorMaterials[i].IsNull())
+						{
+							Paths.Add(GroundFloorMaterials[i].ToSoftObjectPath());
+						}
+					}
+					if (Paths.Num() > 0)
+					{
+						TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+							Paths, FStreamableDelegate::CreateWeakLambda(this, [this]() { SpawnFloorIfNeeded(); }));
+						if (Handle.IsValid())
+						{
+							ActiveAsyncLoadHandles.Add(Handle);
+						}
+					}
 				}
 			}
 
@@ -2451,7 +2442,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		// - Coliseum mode: coliseum arena (timer starts immediately; no pillars)
 		const FVector SpawnLoc = IsColiseumStage()
 			? FVector(ColiseumCenter.X, ColiseumCenter.Y, DefaultSpawnHeight)
-			: FVector(-10000.f, 0.f, DefaultSpawnHeight);
+			: FVector(-13000.f, 0.f, DefaultSpawnHeight);
 
 		APlayerStart* Start = World->SpawnActor<APlayerStart>(
 			APlayerStart::StaticClass(),
@@ -2535,7 +2526,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		// No PlayerStart found - spawn at a safe default location
 		SpawnLocation = IsColiseumStage()
 			? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)  // Coliseum: spawn in arena
-			: FVector(-10000.f, 0.f, 200.f);   // Gameplay: spawn in starting area
+			: FVector(-13000.f, 0.f, 200.f);   // Gameplay: spawn in starting area
 		UE_LOG(LogTemp, Warning, TEXT("No PlayerStart found! Spawning at default location (%.0f, %.0f, %.0f)."),
 			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
 	}
@@ -2544,7 +2535,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// (Coliseum spawns in the Main Area and starts timer immediately.)
 	if (!IsColiseumStage())
 	{
-		SpawnLocation = FVector(-10000.f, 0.f, 200.f);
+		SpawnLocation = FVector(-13000.f, 0.f, 200.f);
 		SpawnRotation = FRotator::ZeroRotator;
 
 		// Difficulty Boost: spawn on the Boost platform instead of the normal Start Area.
