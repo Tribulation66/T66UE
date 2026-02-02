@@ -31,8 +31,11 @@
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66RecruitableCompanion.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -62,6 +65,40 @@ namespace
 				SMC->SetMobility(Mobility);
 			}
 		}
+	}
+
+	static bool T66_IsCompanionUnlockStage(int32 StageNum)
+	{
+		// Per design: companions unlock only for stages 1..60 excluding checkpoint stages (ending in 0/5).
+		return StageNum >= 1 && StageNum <= 60 && (StageNum % 5) != 0;
+	}
+
+	static int32 T66_CompanionIndexForStage(int32 StageNum)
+	{
+		if (!T66_IsCompanionUnlockStage(StageNum))
+		{
+			return INDEX_NONE;
+		}
+
+		int32 Count = 0;
+		for (int32 S = 1; S <= StageNum; ++S)
+		{
+			if (T66_IsCompanionUnlockStage(S))
+			{
+				++Count;
+			}
+		}
+		return Count; // 1..48
+	}
+
+	static FName T66_CompanionIDForStage(int32 StageNum)
+	{
+		const int32 Index = T66_CompanionIndexForStage(StageNum);
+		if (Index == INDEX_NONE)
+		{
+			return NAME_None;
+		}
+		return FName(*FString::Printf(TEXT("Companion_%02d"), Index));
 	}
 }
 
@@ -779,6 +816,36 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		RunState->SetStageTimerActive(false);
 	}
 
+	// First-time boss defeat unlock => spawn recruitable companion (stages 1..60 excluding 0/5).
+	if (RunState)
+	{
+		const int32 StageNum = RunState->GetCurrentStage();
+		const FName CompanionToUnlock = T66_CompanionIDForStage(StageNum);
+		if (!CompanionToUnlock.IsNone())
+		{
+			if (UT66CompanionUnlockSubsystem* Unlocks = GI ? GI->GetSubsystem<UT66CompanionUnlockSubsystem>() : nullptr)
+			{
+				const bool bNewlyUnlocked = Unlocks->UnlockCompanion(CompanionToUnlock);
+				if (bNewlyUnlocked)
+				{
+					if (UT66GameInstance* T66GI = GetT66GameInstance())
+					{
+						FCompanionData Data;
+						if (T66GI->GetCompanionData(CompanionToUnlock, Data))
+						{
+							FActorSpawnParameters SpawnParams;
+							SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+							if (AT66RecruitableCompanion* Recruit = World->SpawnActor<AT66RecruitableCompanion>(AT66RecruitableCompanion::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams))
+							{
+								Recruit->InitializeRecruit(Data);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Normal stage: boss dead => miasma disappears and Stage Gate appears.
 	ClearMiasma();
 	SpawnStageGateAtLocation(Location);
@@ -789,6 +856,67 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	{
 		SpawnIdolAltarAtLocation(Location);
 	}
+}
+
+bool AT66GameMode::SwapCompanionForPlayer(AController* Player, FName NewCompanionID)
+{
+	if (!Player) return false;
+	if (NewCompanionID.IsNone()) return false;
+
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!GI) return false;
+
+	// If this companion is already selected, treat as handled (no swap).
+	if (GI->SelectedCompanionID == NewCompanionID)
+	{
+		return true;
+	}
+
+	// Validate new companion exists in DT_Companions (prevents setting an invalid ID).
+	{
+		FCompanionData NewData;
+		if (!GI->GetCompanionData(NewCompanionID, NewData))
+		{
+			return false;
+		}
+	}
+
+	UWorld* World = GetWorld();
+	if (!World) return false;
+
+	// If a companion is currently following, spawn a recruitable version where it currently is.
+	FName OldCompanionID = NAME_None;
+	FVector OldCompanionLoc = FVector::ZeroVector;
+	if (TWeakObjectPtr<AT66CompanionBase>* Existing = PlayerCompanions.Find(Player))
+	{
+		if (AT66CompanionBase* ExistingComp = Existing->Get())
+		{
+			OldCompanionID = ExistingComp->CompanionID;
+			OldCompanionLoc = ExistingComp->GetActorLocation();
+			ExistingComp->Destroy();
+		}
+		PlayerCompanions.Remove(Player);
+	}
+
+	if (!OldCompanionID.IsNone())
+	{
+		FCompanionData OldData;
+		if (GI->GetCompanionData(OldCompanionID, OldData))
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66RecruitableCompanion* OldRecruit = World->SpawnActor<AT66RecruitableCompanion>(AT66RecruitableCompanion::StaticClass(), OldCompanionLoc, FRotator::ZeroRotator, SpawnParams))
+			{
+				OldRecruit->InitializeRecruit(OldData);
+			}
+		}
+	}
+
+	// Persist for the rest of the run (stage transitions read SelectedCompanionID).
+	GI->SelectedCompanionID = NewCompanionID;
+
+	SpawnCompanionForPlayer(Player);
+	return true;
 }
 
 void AT66GameMode::ClearMiasma()
@@ -1026,6 +1154,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
+	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
 
 	const int32 StageNum = RunState->GetCurrentStage();
 	FRandomStream Rng(StageNum * 1337 + 42);
@@ -1134,41 +1263,54 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		return A;
 	};
 
-	// Randomized counts per play (2-5 each).
-	const int32 CountTrees = Rng.RandRange(2, 5);
-	const int32 CountTrucks = Rng.RandRange(2, 5);
-	const int32 CountWheels = Rng.RandRange(2, 5);
-	const int32 CountTotems = Rng.RandRange(2, 5);
+	if (RngSub)
+	{
+		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+	}
 
-	const int32 LuckStat = RunState->GetLuckStat();
+	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
+
+	// Luck-affected counts (trees/trucks/wheels) use central tuning. Locations are still stage-seeded (not luck-affected).
+	const int32 CountTrees = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TreesPerStage, Rng) : Rng.RandRange(2, 5);
+	const int32 CountTrucks = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TrucksPerStage, Rng) : Rng.RandRange(2, 5);
+	const int32 CountWheels = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->WheelsPerStage, Rng) : Rng.RandRange(2, 5);
+
+	// Not luck-affected (for now).
+	const int32 CountTotems = Rng.RandRange(2, 5);
 
 	for (int32 i = 0; i < CountTrees; ++i)
 	{
 		if (AT66TreeOfLifeInteractable* Tree = Cast<AT66TreeOfLifeInteractable>(SpawnOne(AT66TreeOfLifeInteractable::StaticClass())))
 		{
-			Tree->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
+			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
+			Tree->SetRarity((RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng));
 		}
 	}
 	for (int32 i = 0; i < CountTrucks; ++i)
 	{
 		if (AT66CashTruckInteractable* Truck = Cast<AT66CashTruckInteractable>(SpawnOne(AT66CashTruckInteractable::StaticClass())))
 		{
-			Truck->bIsMimic = (Rng.FRand() < 0.20f);
-			Truck->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
+			const float MimicChance = Tuning ? FMath::Clamp(Tuning->TruckMimicChance, 0.f, 1.f) : 0.20f;
+			Truck->bIsMimic = (Rng.GetFraction() < MimicChance); // explicitly not luck-affected
+
+			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
+			Truck->SetRarity((RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng));
 		}
 	}
 	for (int32 i = 0; i < CountWheels; ++i)
 	{
 		if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnOne(AT66WheelSpinInteractable::StaticClass())))
 		{
-			Wheel->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
+			const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
+			Wheel->SetRarity((RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng));
 		}
 	}
 	for (int32 i = 0; i < CountTotems; ++i)
 	{
 		if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnOne(AT66DifficultyTotem::StaticClass())))
 		{
-			Totem->SetRarity(FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat));
+			// Not luck-affected (per current scope).
+			Totem->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
 		}
 	}
 }

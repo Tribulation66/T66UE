@@ -5,6 +5,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66RngSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -298,13 +299,44 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 	// user request: always +1 Speed per level.
 	HeroStats.Speed = FMath::Clamp(HeroStats.Speed + 1, 1, 9999);
 
+	UT66RngSubsystem* RngSub = nullptr;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		RngSub = GI->GetSubsystem<UT66RngSubsystem>();
+		if (RngSub)
+		{
+			// Luck influences how often we roll the high end, but the min/max ranges themselves stay fixed.
+			RngSub->UpdateLuckStat(GetLuckStat());
+		}
+	}
+
+	auto RollGainBiased = [&](const FT66HeroStatGainRange& Range) -> int32
+	{
+		const int32 A0 = FMath::Min(Range.Min, Range.Max);
+		const int32 B0 = FMath::Max(Range.Min, Range.Max);
+		const int32 A = FMath::Max(0, A0);
+		const int32 B = FMath::Max(0, B0);
+		if (B <= 0) return 0;
+		if (B <= A) return B;
+
+		float U = HeroStatRng.GetFraction(); // 0..1
+		if (RngSub)
+		{
+			U = RngSub->BiasHigh01(U);
+		}
+		const int32 Span = (B - A);
+		// Inclusive integer roll biased toward B.
+		const int32 Delta = FMath::Clamp(FMath::FloorToInt(U * static_cast<float>(Span + 1)), 0, Span);
+		return A + Delta;
+	};
+
 	// Other foundational stats roll within the hero's per-level gain ranges.
-	HeroStats.Damage = FMath::Clamp(HeroStats.Damage + HeroPerLevelGains.Damage.Roll(HeroStatRng), 1, 9999);
-	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed + HeroPerLevelGains.AttackSpeed.Roll(HeroStatRng), 1, 9999);
-	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize + HeroPerLevelGains.AttackSize.Roll(HeroStatRng), 1, 9999);
-	HeroStats.Armor = FMath::Clamp(HeroStats.Armor + HeroPerLevelGains.Armor.Roll(HeroStatRng), 1, 9999);
-	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion + HeroPerLevelGains.Evasion.Roll(HeroStatRng), 1, 9999);
-	HeroStats.Luck = FMath::Clamp(HeroStats.Luck + HeroPerLevelGains.Luck.Roll(HeroStatRng), 1, 9999);
+	HeroStats.Damage = FMath::Clamp(HeroStats.Damage + RollGainBiased(HeroPerLevelGains.Damage), 1, 9999);
+	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed + RollGainBiased(HeroPerLevelGains.AttackSpeed), 1, 9999);
+	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize + RollGainBiased(HeroPerLevelGains.AttackSize), 1, 9999);
+	HeroStats.Armor = FMath::Clamp(HeroStats.Armor + RollGainBiased(HeroPerLevelGains.Armor), 1, 9999);
+	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion + RollGainBiased(HeroPerLevelGains.Evasion), 1, 9999);
+	HeroStats.Luck = FMath::Clamp(HeroStats.Luck + RollGainBiased(HeroPerLevelGains.Luck), 1, 9999);
 }
 
 void UT66RunStateSubsystem::InitializeHeroStatsForNewRun()
@@ -648,17 +680,66 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 	if (!GI || !GI->GetItemData(VendorStockItemIDs[Index], D)) return false;
 	if (D.BuyValueGold <= 0) return false;
 
-	// v0 anger model tuned to your request: 100g total triggers boss.
-	const float AngerMult = bTimingHit ? (bRngSuccess ? 1.0f : 0.5f) : 1.0f;
-	VendorAngerGold = FMath::Clamp(VendorAngerGold + FMath::RoundToInt(static_cast<float>(D.BuyValueGold) * AngerMult), 0, 9999999);
+	// Determine success via central RNG. Timing window improves odds but does not guarantee success.
+	const UT66RngTuningConfig* Tuning = nullptr;
+	UT66RngSubsystem* RngSub = nullptr;
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		RngSub = GameInstance->GetSubsystem<UT66RngSubsystem>();
+		if (RngSub)
+		{
+			RngSub->UpdateLuckStat(GetLuckStat());
+			Tuning = RngSub->GetTuning();
+		}
+	}
+
+	float BaseChance = 0.f;
+	if (bTimingHit)
+	{
+		BaseChance = Tuning ? Tuning->VendorStealSuccessChanceOnTimingHitBase : 0.65f;
+	}
+	BaseChance = FMath::Clamp(BaseChance, 0.f, 1.f);
+
+	bool bSuccess = false;
+	if (bTimingHit && BaseChance > 0.f)
+	{
+		const float Chance = RngSub ? RngSub->BiasChance01(BaseChance) : BaseChance;
+		FRandomStream Local(FPlatformTime::Cycles());
+		FRandomStream& Stream = RngSub ? RngSub->GetRunStream() : Local;
+		bSuccess = (Stream.GetFraction() < Chance);
+	}
+
+	LastVendorStealOutcome = ET66VendorStealOutcome::None;
+	if (!bTimingHit)
+	{
+		LastVendorStealOutcome = ET66VendorStealOutcome::Miss;
+	}
+	else if (!bSuccess)
+	{
+		LastVendorStealOutcome = ET66VendorStealOutcome::Failed;
+	}
+	else if (!HasInventorySpace())
+	{
+		LastVendorStealOutcome = ET66VendorStealOutcome::InventoryFull;
+	}
+	else
+	{
+		LastVendorStealOutcome = ET66VendorStealOutcome::Success;
+	}
 
 	bool bGranted = false;
-	if (bTimingHit && bRngSuccess && HasInventorySpace())
+	if (LastVendorStealOutcome == ET66VendorStealOutcome::Success)
 	{
 		AddItem(VendorStockItemIDs[Index]);
 		VendorStockSold[Index] = true;
 		AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("VendorSteal=%s"), *VendorStockItemIDs[Index].ToString()));
 		bGranted = true;
+		// Success: no anger increase.
+	}
+	else
+	{
+		// Failure: anger increases and the item is not granted.
+		VendorAngerGold = FMath::Clamp(VendorAngerGold + D.BuyValueGold, 0, 9999999);
 	}
 
 	VendorChanged.Broadcast();
@@ -1254,6 +1335,16 @@ void UT66RunStateSubsystem::ResetForNewRun()
 		bInStageBoost = T66GI->bStageBoostPending;
 	}
 	InitializeHeroStatsForNewRun();
+
+	// Central RNG: seed a new run stream and set the initial effective Luck stat for biasing.
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
+		{
+			Rng->BeginRun(GetLuckStat());
+		}
+	}
+
 	HeroXP = 0;
 	XPToNextLevel = DefaultXPToLevel;
 	UltimateCooldownRemainingSeconds = 0.f;

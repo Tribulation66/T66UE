@@ -1630,22 +1630,18 @@ FReply UT66VendorOverlayWidget::OnStealStop()
 	const float DistFromCenter = FMath::Abs(StealMarker01 - 0.5f);
 	const bool bTimingHit = (DistFromCenter <= 0.12f);
 
-	bool bRngSuccess = false;
-	if (bTimingHit)
-	{
-		// v0 success odds: 65% if you hit timing window.
-		bRngSuccess = (FMath::FRand() < 0.65f);
-	}
-
-	const bool bGranted = RunState->ResolveVendorStealAttempt(PendingStealIndex, bTimingHit, bRngSuccess);
+	// Backend owns RNG: timing improves odds, Luck can bias outcomes.
+	const bool bGranted = RunState->ResolveVendorStealAttempt(PendingStealIndex, bTimingHit, false);
 	HideStealPrompt();
 
 	if (StatusText.IsValid())
 	{
-		if (!bTimingHit) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealFailedMiss", "Steal failed (miss). Anger increased."));
-		else if (!bRngSuccess) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealFailed", "Steal failed. Anger increased."));
-		else if (!bGranted) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealSucceededButInventoryFull", "Steal succeeded, but inventory is full."));
-		else StatusText->SetText(NSLOCTEXT("T66.Vendor", "Stolen", "Stolen."));
+		const ET66VendorStealOutcome Outcome = RunState->GetLastVendorStealOutcome();
+		if (Outcome == ET66VendorStealOutcome::Miss) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealFailedMiss", "Steal failed (miss). Anger increased."));
+		else if (Outcome == ET66VendorStealOutcome::Failed) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealFailed", "Steal failed. Anger increased."));
+		else if (Outcome == ET66VendorStealOutcome::InventoryFull) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealSucceededButInventoryFull", "Steal succeeded, but inventory is full."));
+		else if (Outcome == ET66VendorStealOutcome::Success && bGranted) StatusText->SetText(NSLOCTEXT("T66.Vendor", "Stolen", "Stolen."));
+		else StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealFailed", "Steal failed. Anger increased."));
 	}
 
 	RefreshAll();

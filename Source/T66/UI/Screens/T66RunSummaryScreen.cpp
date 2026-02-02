@@ -40,6 +40,13 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 
 	// If we were opened from a leaderboard row click, load the saved snapshot first.
 	LoadSavedRunSummaryIfRequested();
+	// Important: this screen uses programmatic Slate UI. The widget tree may already be built by the time
+	// OnScreenActivated runs (AddToViewport/TakeWidget). If we loaded a saved summary here, we must rebuild
+	// immediately so the first open reflects the snapshot (and shows the correct "Back" viewer-mode button).
+	if (bViewingSavedLeaderboardRunSummary)
+	{
+		ForceRebuildSlate();
+	}
 
 	// Default: banners are only relevant for a freshly-finished run (not for viewing saved leaderboard snapshots).
 	bNewPersonalHighScore = false;
@@ -764,5 +771,6 @@ void UT66RunSummaryScreen::OnMainMenuClicked()
 void UT66RunSummaryScreen::OnViewLogClicked()
 {
 	bLogVisible = !bLogVisible;
-	RefreshScreen();
+	// RefreshScreen() is a no-op for this Slate-driven screen; force a rebuild so visibility updates immediately.
+	ForceRebuildSlate();
 }

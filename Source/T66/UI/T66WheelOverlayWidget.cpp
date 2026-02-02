@@ -3,6 +3,7 @@
 #include "UI/T66WheelOverlayWidget.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66RngSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 
 #include "Widgets/SOverlay.h"
@@ -308,8 +309,34 @@ FReply UT66WheelOverlayWidget::OnSpin()
 	UWorld* World = GetWorld();
 	if (!World) return FReply::Handled();
 
-	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
-	PendingGold = RollWheelGold(Rng, WheelRarity);
+	FRandomStream SpinRng(static_cast<int32>(FPlatformTime::Cycles())); // visual-only randomness (not luck-affected)
+
+	int32 NewPendingGold = 50;
+	if (UGameInstance* GI = World->GetGameInstance())
+	{
+		if (UT66RngSubsystem* RngSub = GI->GetSubsystem<UT66RngSubsystem>())
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RngSub->UpdateLuckStat(RunState->GetLuckStat());
+			}
+
+			const UT66RngTuningConfig* Tuning = RngSub->GetTuning();
+			if (Tuning)
+			{
+				const FT66FloatRange Range =
+					(WheelRarity == ET66Rarity::Black) ? Tuning->WheelGoldRange_Black :
+					(WheelRarity == ET66Rarity::Red) ? Tuning->WheelGoldRange_Red :
+					(WheelRarity == ET66Rarity::Yellow) ? Tuning->WheelGoldRange_Yellow :
+					(WheelRarity == ET66Rarity::White) ? Tuning->WheelGoldRange_White :
+					Tuning->WheelGoldRange_Black;
+
+				FRandomStream& Stream = RngSub->GetRunStream();
+				NewPendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+			}
+		}
+	}
+	PendingGold = NewPendingGold;
 
 	if (StatusText.IsValid())
 	{
@@ -322,7 +349,7 @@ FReply UT66WheelOverlayWidget::OnSpin()
 	SpinElapsed = 0.f;
 	LastSpinTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
 	StartAngleDeg = 0.f;
-	TotalAngleDeg = static_cast<float>(Rng.RandRange(5, 9)) * 360.f + static_cast<float>(Rng.RandRange(0, 359));
+	TotalAngleDeg = static_cast<float>(SpinRng.RandRange(5, 9)) * 360.f + static_cast<float>(SpinRng.RandRange(0, 359));
 
 	if (SpinButton.IsValid()) SpinButton->SetEnabled(false);
 	if (BackButton.IsValid()) BackButton->SetEnabled(false);

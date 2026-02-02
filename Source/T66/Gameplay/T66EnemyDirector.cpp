@@ -7,6 +7,7 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66RngSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Data/T66DataTypes.h"
@@ -128,6 +129,13 @@ void AT66EnemyDirector::SpawnWave()
 	UWorld* World = GetWorld();
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 
+	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	if (RngSub && RunState)
+	{
+		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+	}
+	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
+
 	// Cache safe-zone NPCs per-world so we don't do repeated full actor iterators during spawn waves.
 	struct FSafeNPCache
 	{
@@ -207,12 +215,70 @@ void AT66EnemyDirector::SpawnWave()
 	}
 	const TArray<FName> MobIDs = { MobA, MobB, MobC };
 
-	const bool bCanSpawnMiniBoss = !ActiveMiniBoss.IsValid();
-	const int32 MiniBossIndex = (bCanSpawnMiniBoss && (Rng.FRand() < MiniBossChancePerWave))
-		? Rng.RandRange(0, FMath::Max(0, ToSpawn - 1))
-		: INDEX_NONE;
+	// ================================
+	// Special mobs (Goblin Thief / Leprechaun) — per-wave counts (Luck-affected)
+	// ================================
+	int32 GobToSpawn = 0;
+	int32 LepToSpawn = 0;
+	if (Tuning)
+	{
+		// Each special has its own "wave appears" chance, then a count roll.
+		const float GobChance = RngSub ? RngSub->BiasChance01(Tuning->GoblinWaveChanceBase) : FMath::Clamp(Tuning->GoblinWaveChanceBase, 0.f, 1.f);
+		const float LepChance = RngSub ? RngSub->BiasChance01(Tuning->LeprechaunWaveChanceBase) : FMath::Clamp(Tuning->LeprechaunWaveChanceBase, 0.f, 1.f);
 
-	for (int32 i = 0; i < ToSpawn; ++i)
+		if (GoblinThiefClass && (Rng.GetFraction() < GobChance))
+		{
+			GobToSpawn = RngSub ? RngSub->RollIntRangeBiased(Tuning->GoblinCountPerWave, Rng) : Rng.RandRange(Tuning->GoblinCountPerWave.Min, Tuning->GoblinCountPerWave.Max);
+		}
+		if (LeprechaunClass && (Rng.GetFraction() < LepChance))
+		{
+			LepToSpawn = RngSub ? RngSub->RollIntRangeBiased(Tuning->LeprechaunCountPerWave, Rng) : Rng.RandRange(Tuning->LeprechaunCountPerWave.Min, Tuning->LeprechaunCountPerWave.Max);
+		}
+
+		GobToSpawn = FMath::Max(0, GobToSpawn);
+		LepToSpawn = FMath::Max(0, LepToSpawn);
+
+		// Fit specials into the wave budget (they replace regular spawns, not add extra).
+		GobToSpawn = FMath::Clamp(GobToSpawn, 0, ToSpawn);
+		LepToSpawn = FMath::Clamp(LepToSpawn, 0, ToSpawn - GobToSpawn);
+	}
+
+	// Build the exact spawn plan for this wave.
+	const int32 MobToSpawn = FMath::Max(0, ToSpawn - GobToSpawn - LepToSpawn);
+	TArray<TSubclassOf<AT66EnemyBase>> SpawnPlan;
+	SpawnPlan.Reserve(ToSpawn);
+	for (int32 i = 0; i < MobToSpawn; ++i) SpawnPlan.Add(RegularClass);
+	for (int32 i = 0; i < LepToSpawn; ++i) SpawnPlan.Add(LeprechaunClass);
+	for (int32 i = 0; i < GobToSpawn; ++i) SpawnPlan.Add(GoblinThiefClass);
+
+	// Shuffle plan so specials aren't always in the same slots (this shuffle is not luck-affected; it uses the wave RNG only).
+	for (int32 i = SpawnPlan.Num() - 1; i > 0; --i)
+	{
+		const int32 j = Rng.RandRange(0, i);
+		SpawnPlan.Swap(i, j);
+	}
+
+	// Mini-boss: choose one of the *mob* spawns, not specials.
+	const bool bCanSpawnMiniBoss = !ActiveMiniBoss.IsValid();
+	int32 MiniBossIndex = INDEX_NONE;
+	if (bCanSpawnMiniBoss && (Rng.FRand() < MiniBossChancePerWave) && MobToSpawn > 0)
+	{
+		TArray<int32> MobIndices;
+		MobIndices.Reserve(MobToSpawn);
+		for (int32 i = 0; i < SpawnPlan.Num(); ++i)
+		{
+			if (SpawnPlan[i] == RegularClass)
+			{
+				MobIndices.Add(i);
+			}
+		}
+		if (MobIndices.Num() > 0)
+		{
+			MiniBossIndex = MobIndices[Rng.RandRange(0, MobIndices.Num() - 1)];
+		}
+	}
+
+	for (int32 i = 0; i < SpawnPlan.Num(); ++i)
 	{
 		FVector PlayerLoc = PlayerPawn->GetActorLocation();
 		FVector SpawnLoc = PlayerLoc;
@@ -249,15 +315,10 @@ void AT66EnemyDirector::SpawnWave()
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 		// Pick which enemy type to spawn.
-		TSubclassOf<AT66EnemyBase> ClassToSpawn = RegularClass;
-		const float Roll = Rng.FRand();
-		if (LeprechaunClass && Roll < LeprechaunChance)
+		TSubclassOf<AT66EnemyBase> ClassToSpawn = SpawnPlan[i];
+		if (!ClassToSpawn)
 		{
-			ClassToSpawn = LeprechaunClass;
-		}
-		else if (GoblinThiefClass && Roll < (LeprechaunChance + GoblinThiefChance))
-		{
-			ClassToSpawn = GoblinThiefClass;
+			ClassToSpawn = RegularClass;
 		}
 
 		const bool bIsMob = (ClassToSpawn == RegularClass);
@@ -284,7 +345,8 @@ void AT66EnemyDirector::SpawnWave()
 		if (Enemy)
 		{
 			// Special enemies roll rarity and apply visuals/effects.
-			const ET66Rarity R = FT66RarityUtil::RollDefaultRarity(Rng);
+			const FT66RarityWeights Weights = Tuning ? Tuning->SpecialEnemyRarityBase : FT66RarityWeights{};
+			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
 			if (AT66LeprechaunEnemy* Lep = Cast<AT66LeprechaunEnemy>(Enemy))
 			{
 				Lep->SetRarity(R);

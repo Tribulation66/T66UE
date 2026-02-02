@@ -11,6 +11,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66RngSubsystem.h"
 #include "UI/T66EnemyHealthBarWidget.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/CapsuleComponent.h"
@@ -77,8 +78,9 @@ AT66EnemyBase::AT66EnemyBase()
 void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 {
 	MobID = InMobID;
-	// Stage mobs always use placeholder visuals for now.
-	CharacterVisualID = NAME_None;
+	// Stage mobs can optionally map MobID -> imported skeletal mesh via DT_CharacterVisuals.
+	// If no row exists, we safely fall back to placeholder visuals.
+	CharacterVisualID = MobID;
 
 	if (!VisualMesh) return;
 
@@ -455,15 +457,32 @@ void AT66EnemyBase::OnDeath()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
 	if (bDropsLoot && T66GI)
 	{
-		// Spawn one loot bag with rarity, and roll an item from that rarity pool.
-		FRandomStream Rng(FPlatformTime::Cycles());
-		const int32 LuckStat = RunState ? RunState->GetLuckStat() : 1;
-		ET66Rarity BagRarity = FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat);
+		// Loot bag drop chance + rarity are now driven by the central RNG subsystem (Luck-biased).
+		UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+		if (RngSub && RunState)
+		{
+			RngSub->UpdateLuckStat(RunState->GetLuckStat());
+		}
+
+		FRandomStream LocalRng(FPlatformTime::Cycles());
+		FRandomStream& Stream = RngSub ? RngSub->GetRunStream() : LocalRng;
+
+		const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
+		const float BaseDropChance = Tuning ? Tuning->LootBagDropChanceBase : 0.10f;
+		const float DropChance = RngSub ? RngSub->BiasChance01(BaseDropChance) : FMath::Clamp(BaseDropChance, 0.f, 1.f);
+		if (Stream.GetFraction() > DropChance)
+		{
+			Destroy();
+			return;
+		}
+
+		const FT66RarityWeights Weights = Tuning ? Tuning->LootBagRarityBase : FT66RarityWeights{};
+		ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
 		if (bIsMiniBoss)
 		{
 			// Mini-bosses should skew toward higher tier loot bags.
 			// Simple bias: roll twice (luck-weighted) and take the better rarity.
-			const ET66Rarity R2 = FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat);
+			const ET66Rarity R2 = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
 			BagRarity = (static_cast<uint8>(R2) > static_cast<uint8>(BagRarity)) ? R2 : BagRarity;
 		}
 		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);

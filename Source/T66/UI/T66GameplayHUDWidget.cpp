@@ -8,6 +8,7 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66RngSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66LootBagPickup.h"
@@ -774,19 +775,34 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	WheelLastTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
 
 	// Roll pending gold immediately; award on resolve.
-	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
-	auto RollWheelGold = [&](ET66Rarity R) -> int32
+	FRandomStream SpinRng(static_cast<int32>(FPlatformTime::Cycles())); // visual-only randomness (not luck-affected)
+
+	int32 PendingGold = 50;
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		switch (R)
+		if (UT66RngSubsystem* RngSub = GI->GetSubsystem<UT66RngSubsystem>())
 		{
-		case ET66Rarity::Black:  { static const int32 V[] = { 25, 50, 75, 100 }; return V[Rng.RandRange(0, 3)]; }
-		case ET66Rarity::Red:    { static const int32 V[] = { 100, 150, 200, 300 }; return V[Rng.RandRange(0, 3)]; }
-		case ET66Rarity::Yellow: { static const int32 V[] = { 200, 300, 400, 600 }; return V[Rng.RandRange(0, 3)]; }
-		case ET66Rarity::White:  { static const int32 V[] = { 500, 750, 1000, 1500 }; return V[Rng.RandRange(0, 3)]; }
-		default: return 50;
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RngSub->UpdateLuckStat(RunState->GetLuckStat());
+			}
+
+			const UT66RngTuningConfig* Tuning = RngSub->GetTuning();
+			if (Tuning)
+			{
+				const FT66FloatRange Range =
+					(WheelRarity == ET66Rarity::Black) ? Tuning->WheelGoldRange_Black :
+					(WheelRarity == ET66Rarity::Red) ? Tuning->WheelGoldRange_Red :
+					(WheelRarity == ET66Rarity::Yellow) ? Tuning->WheelGoldRange_Yellow :
+					(WheelRarity == ET66Rarity::White) ? Tuning->WheelGoldRange_White :
+					Tuning->WheelGoldRange_Black;
+
+				FRandomStream& Stream = RngSub->GetRunStream();
+				PendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+			}
 		}
-	};
-	WheelPendingGold = RollWheelGold(WheelRarity);
+	}
+	WheelPendingGold = PendingGold;
 
 	WheelSpinDisk->SetBorderBackgroundColor(FT66RarityUtil::GetRarityColor(WheelRarity));
 	WheelSpinText->SetText(NSLOCTEXT("T66.Wheel", "Spinning", "Spinning..."));
@@ -794,7 +810,7 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	WheelSpinBox->SetVisibility(EVisibility::Visible);
 
 	// Big spin: multiple rotations + random offset.
-	WheelTotalAngleDeg = static_cast<float>(Rng.RandRange(5, 9)) * 360.f + static_cast<float>(Rng.RandRange(0, 359));
+	WheelTotalAngleDeg = static_cast<float>(SpinRng.RandRange(5, 9)) * 360.f + static_cast<float>(SpinRng.RandRange(0, 359));
 
 	// 30Hz is plenty for a simple HUD spin and reduces timer overhead on low-end CPUs.
 	World->GetTimerManager().SetTimer(WheelSpinTickHandle, this, &UT66GameplayHUDWidget::TickWheelSpin, 0.033f, true);
@@ -2604,14 +2620,19 @@ static void T66_ApplyWorldDialogueSelection(
 void UT66GameplayHUDWidget::ShowWorldDialogue(const TArray<FText>& Options, int32 SelectedIndex)
 {
 	if (!WorldDialogueBox.IsValid()) return;
-	if (Options.Num() < 3) return;
+	if (Options.Num() < 2) return;
 	if (WorldDialogueOptionTexts.Num() < 3) return;
 
 	for (int32 i = 0; i < 3; ++i)
 	{
+		const bool bHasOption = Options.IsValidIndex(i);
 		if (WorldDialogueOptionTexts[i].IsValid())
 		{
-			WorldDialogueOptionTexts[i]->SetText(Options[i]);
+			WorldDialogueOptionTexts[i]->SetText(bHasOption ? Options[i] : FText::GetEmpty());
+		}
+		if (WorldDialogueOptionBorders.IsValidIndex(i) && WorldDialogueOptionBorders[i].IsValid())
+		{
+			WorldDialogueOptionBorders[i]->SetVisibility(bHasOption ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 	}
 	T66_ApplyWorldDialogueSelection(WorldDialogueOptionBorders, WorldDialogueOptionTexts, SelectedIndex);

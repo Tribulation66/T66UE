@@ -4,6 +4,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66RngSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/SOverlay.h"
@@ -1753,22 +1754,16 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 
 	UWorld* World = GetWorld();
 	UT66RunStateSubsystem* RunState = nullptr;
+	UT66RngSubsystem* RngSub = nullptr;
+	const UT66RngTuningConfig* Tuning = nullptr;
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
 		RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
-	}
-	if (RunState)
-	{
-		RunState->AddGamblerAngerFromBet(GambleAmount);
-		RefreshTopBar();
-	}
-
-	// If anger hit 100%, close overlay and spawn Gambler boss immediately.
-	if (RunState && RunState->GetGamblerAnger01() >= 1.f)
-	{
-		CloseOverlay();
-		TriggerGamblerBossIfAngry();
-		return FReply::Handled();
+		RngSub = GI->GetSubsystem<UT66RngSubsystem>();
+		if (RngSub)
+		{
+			Tuning = RngSub->GetTuning();
+		}
 	}
 
 	bPendingWin = true;
@@ -1776,22 +1771,90 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 
 	UT66LocalizationSubsystem* Loc2 = RunState ? RunState->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
-	// Force a win by forcing the "result" to match the player's choice.
+	// Roll cheat success: success => force win with no anger increase. failure => anger increases and normal RNG plays out.
+	bool bCheatSuccess = false;
+	{
+		const float Base = Tuning ? FMath::Clamp(Tuning->GamblerCheatSuccessChanceBase, 0.f, 1.f) : 0.40f;
+		if (RunState && RngSub && Base > 0.f)
+		{
+			RngSub->UpdateLuckStat(RunState->GetLuckStat());
+			const float Chance = RngSub->BiasChance01(Base);
+			bCheatSuccess = (RngSub->GetRunStream().GetFraction() < Chance);
+		}
+		else
+		{
+			bCheatSuccess = (FMath::FRand() < Base);
+		}
+	}
+
+	if (!bCheatSuccess && RunState)
+	{
+		RunState->AddGamblerAngerFromBet(GambleAmount);
+		RefreshTopBar();
+
+		// If anger hit 100%, close overlay and spawn Gambler boss immediately.
+		if (RunState->GetGamblerAnger01() >= 1.f)
+		{
+			CloseOverlay();
+			TriggerGamblerBossIfAngry();
+			return FReply::Handled();
+		}
+	}
+
+	// Determine pending outcome.
 	switch (PendingRevealType)
 	{
 		case ERevealType::CoinFlip:
-			bPendingCoinFlipResultHeads = bPendingCoinFlipChoseHeads;
+		{
+			if (bCheatSuccess)
+			{
+				bPendingCoinFlipResultHeads = bPendingCoinFlipChoseHeads;
+				bPendingWin = true;
+			}
+			else
+			{
+				bPendingCoinFlipResultHeads = FMath::RandBool();
+				bPendingWin = (bPendingCoinFlipChoseHeads == bPendingCoinFlipResultHeads);
+			}
 			if (CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : NSLOCTEXT("T66.Gambler", "Rolling", "Rolling..."));
 			break;
+		}
 		case ERevealType::RockPaperScissors:
-			// Opponent choice that loses to player
-			PendingRpsOppChoice = (PendingRpsPlayerChoice + 2) % 3;
+		{
+			if (bCheatSuccess)
+			{
+				// Opponent choice that loses to player
+				PendingRpsOppChoice = (PendingRpsPlayerChoice + 2) % 3;
+				bPendingWin = true;
+			}
+			else
+			{
+				do
+				{
+					PendingRpsOppChoice = FMath::RandRange(0, 2);
+				} while (PendingRpsOppChoice == PendingRpsPlayerChoice);
+				bPendingWin = (PendingRpsPlayerChoice == 0 && PendingRpsOppChoice == 2)
+					|| (PendingRpsPlayerChoice == 1 && PendingRpsOppChoice == 0)
+					|| (PendingRpsPlayerChoice == 2 && PendingRpsOppChoice == 1);
+			}
 			if (RpsResultText.IsValid()) RpsResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : NSLOCTEXT("T66.Gambler", "Rolling", "Rolling..."));
 			break;
+		}
 		case ERevealType::FindTheBall:
-			PendingFindBallCorrectCup = PendingFindBallChosenCup;
+		{
+			if (bCheatSuccess)
+			{
+				PendingFindBallCorrectCup = PendingFindBallChosenCup;
+				bPendingWin = true;
+			}
+			else
+			{
+				PendingFindBallCorrectCup = FMath::RandRange(0, 2);
+				bPendingWin = (PendingFindBallChosenCup == PendingFindBallCorrectCup);
+			}
 			if (BallResultText.IsValid()) BallResultText->SetText(Loc2 ? Loc2->GetText_Rolling() : NSLOCTEXT("T66.Gambler", "Rolling", "Rolling..."));
 			break;
+		}
 		default:
 			break;
 	}

@@ -31,6 +31,16 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialHintChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialInputChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDevCheatsChanged);
 
+/** Result of a vendor steal attempt (used by UI feedback). */
+enum class ET66VendorStealOutcome : uint8
+{
+	None = 0,
+	Miss,
+	Failed,
+	InventoryFull,
+	Success,
+};
+
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
  * Survives death; reset on Restart / Main Menu.
@@ -540,6 +550,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|Vendor")
 	bool ResolveVendorStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess);
 
+	ET66VendorStealOutcome GetLastVendorStealOutcome() const { return LastVendorStealOutcome; }
+
 	/** True if vendor anger has reached threshold and a boss should spawn. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
 	bool IsVendorAngryEnoughToBoss() const { return VendorAngerGold >= VendorAngerThresholdGold; }
@@ -857,6 +869,7 @@ private:
 	TArray<FName> VendorStockItemIDs;
 	TArray<bool> VendorStockSold;
 	bool bVendorBoughtSomethingThisStage = false;
+	ET66VendorStealOutcome LastVendorStealOutcome = ET66VendorStealOutcome::None;
 
 	bool bInStageBoost = false;
 
