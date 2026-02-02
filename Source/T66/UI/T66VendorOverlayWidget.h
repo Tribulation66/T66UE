@@ -16,6 +16,7 @@ class SImage;
 class SUniformGridPanel;
 class SWidgetSwitcher;
 struct FSlateBrush;
+class UTexture2D;
 
 /** Full-screen, non-pausing Vendor shop UI (buy + steal + loans). */
 UCLASS(Blueprintable)
@@ -57,6 +58,10 @@ private:
 	TArray<TSharedPtr<SBorder>> ItemIconBorders;
 	TArray<TSharedPtr<SImage>> ItemIconImages;
 	TArray<TSharedPtr<FSlateBrush>> ItemIconBrushes;
+
+	// GC safety: brushes don't keep UTextures alive.
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTexture2D>> ItemIconTextureRefs;
 	TArray<TSharedPtr<SButton>> BuyButtons;
 	TArray<TSharedPtr<SButton>> StealButtons;
 	TArray<TSharedPtr<STextBlock>> BuyButtonTexts;
@@ -68,6 +73,10 @@ private:
 	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
 	TArray<TSharedPtr<SImage>> InventorySlotIconImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotIconBrushes;
+
+	// GC safety: brushes don't keep UTextures alive.
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTexture2D>> InventorySlotIconTextureRefs;
 	int32 SelectedInventoryIndex = -1;
 
 	// Sell panel

@@ -184,6 +184,14 @@ namespace
 	}
 
 	static std::wstring ToWide(const FString& S) { return std::wstring(*S); }
+
+	static bool IsTikTokLoginFlowUrl(const FString& Url)
+	{
+		const FString Lower = Url.ToLower();
+		// Treat any TikTok login route as "login flow" so we don't hide UI chrome needed for auth.
+		// (We specifically navigate to /login/qrcode for non-click QR login.)
+		return Lower.Contains(TEXT("/login")) || Lower.Contains(TEXT("login/qrcode"));
+	}
 }
 
 struct FT66WebView2Host::FImpl
@@ -507,8 +515,8 @@ struct FT66WebView2Host::FImpl
 											UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] NavCompleted '%s'"), *ShortUrl(Url));
 
 											// Best-effort: make TikTok "video-only" by hiding common chrome (nav/header/footer/sidebar).
-											// Do NOT apply this on the QR login screen.
-											if (!Url.Contains(TEXT("login/qrcode"), ESearchCase::IgnoreCase))
+											// Do NOT apply this during login flows (QR page needs its UI).
+											if (!IsTikTokLoginFlowUrl(Url))
 											{
 												static const wchar_t* VideoOnlyScript = LR"JS(
 													(function(){

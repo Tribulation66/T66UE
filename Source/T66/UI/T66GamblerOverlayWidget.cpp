@@ -61,6 +61,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotIconTextureRefs.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
 	UT66LocalizationSubsystem* Loc = nullptr;
 	if (UWorld* World = GetWorld())
@@ -94,10 +95,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		}
 	};
 
-	SetupBrushFromTexture(GameIcon_CoinFlip, LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Coin.T_Game_Coin")));
-	SetupBrushFromTexture(GameIcon_Rps, LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_RPS.T_Game_RPS")));
+	GameIconTex_CoinFlip = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Coin.T_Game_Coin"));
+	GameIconTex_Rps = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_RPS.T_Game_RPS"));
 	// Source file name is "Ball game.png" -> importer creates "T_Game_Ball_game"
-	SetupBrushFromTexture(GameIcon_FindBall, LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Ball_game.T_Game_Ball_game")));
+	GameIconTex_FindBall = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Ball_game.T_Game_Ball_game"));
+
+	SetupBrushFromTexture(GameIcon_CoinFlip, GameIconTex_CoinFlip);
+	SetupBrushFromTexture(GameIcon_Rps, GameIconTex_Rps);
+	SetupBrushFromTexture(GameIcon_FindBall, GameIconTex_FindBall);
 
 	// Inventory slot icon brushes (same sizing as vendor for consistency)
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
@@ -1466,6 +1471,11 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 					{
 						Tex = D.Icon.LoadSynchronous();
 					}
+				}
+				if (InventorySlotIconTextureRefs.IsValidIndex(i))
+				{
+					InventorySlotIconTextureRefs[i] = Tex;
+					Tex = InventorySlotIconTextureRefs[i];
 				}
 				InventorySlotIconBrushes[i]->SetResourceObject(Tex);
 			}

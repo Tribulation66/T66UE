@@ -27,6 +27,7 @@ class AT66RecruitableCompanion;
 class ADirectionalLight;
 class ASkyLight;
 class APlayerStart;
+class UMaterialInterface;
 struct FStreamableHandle;
 
 /**
@@ -53,6 +54,14 @@ public:
 	/** Whether to auto-create floor/lighting if missing (useful for development) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	bool bAutoSetupLevel = true;
+
+	/**
+	 * Optional floor material override applied to all runtime-spawned floor meshes.
+	 * Soft reference to avoid sync loads; if not yet loaded, the floors will fall back to simple tint.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
+	TSoftObjectPtr<UMaterialInterface> GroundFloorMaterial = TSoftObjectPtr<UMaterialInterface>(
+		FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2.M_GroundAtlas_2x2")));
 
 	/** Default spawn height when no PlayerStart exists */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
@@ -105,6 +114,9 @@ protected:
 
 	/** Set up basic level elements if missing (floor, lighting, player start) */
 	void EnsureLevelSetup();
+
+	/** Apply configured ground material to all tagged runtime floors (async-load safe). */
+	void TryApplyGroundFloorMaterialToAllFloors();
 
 	/** Spawn a floor plane if none exists */
 	void SpawnFloorIfNeeded();
@@ -195,6 +207,9 @@ private:
 
 	// Track the current stage boss so we can safely replace it after async load.
 	TWeakObjectPtr<AT66BossBase> StageBoss;
+
+	// Floor material soft-load.
+	bool bGroundFloorMaterialLoadRequested = false;
 
 	// Coliseum: async-load boss classes before spawning.
 	bool bColiseumBossesAsyncLoadInFlight = false;

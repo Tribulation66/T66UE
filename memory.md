@@ -111,6 +111,52 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 
 ## 4) Change log (append-only)
 
+### 2026-02-02 — TikTok/WebView2: default to QR login page (non-click login)
+
+**Goal**
+- Ensure the Media Viewer reliably opens TikTok in a state where the player can **log in without clicking** (QR code login visible).
+
+**What changed**
+- `Source/T66/Core/T66MediaViewerSubsystem.cpp`
+  - Initial TikTok navigation now goes to `https://www.tiktok.com/login/qrcode` (instead of the home feed) so the QR login is available immediately.
+- `Source/T66/Core/T66WebView2Host.cpp`
+  - Treat all `/login` routes as “login flow” and **skip** the “video-only / hide chrome” CSS injection during login (so the login UI cannot be accidentally hidden).
+  - QR visibility helper script still only runs on `login/qrcode`.
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- `T66Editor` build ✅ (UE 5.7):
+  - `powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66Editor Win64 Development 'C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild -architecture=x64"`
+- `T66` build ✅ (UE 5.7):
+  - `powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66 Win64 Development 'C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild -architecture=x64"`
+
+### 2026-02-02 — Fix crash: Slate item icon brushes referencing GC'd textures (TikTok toggle repro)
+
+**Root cause**
+- Slate warning immediately before the crash: `Attempted to access resource for T_Item_Black_01 ... pending kill` then `Assertion failed: Index >= 0` in `UObjectArray.h`.
+- Cause: `FSlateBrush::SetResourceObject(UTexture2D*)` does **not** keep the texture alive. The HUD inventory icons were setting brush resources but not storing the textures in a strong `UPROPERTY` reference, so GC could collect them; later Slate paint hits a dead UObject and asserts.
+
+**What changed**
+- `Source/T66/UI/T66GameplayHUDWidget.cpp`
+  - When updating each inventory slot icon, store `SlotTex` into `InventorySlotTextures[i]` (`UPROPERTY`) before using it for the brush, so GC cannot collect the texture while Slate still references it.
+- Added the same GC-safety pattern (strong `UPROPERTY` refs for any `UTexture2D` used by Slate brushes) in other UI surfaces that render item/portrait icons:
+  - `Source/T66/UI/T66VendorOverlayWidget.h/.cpp`
+  - `Source/T66/UI/T66GamblerOverlayWidget.h/.cpp`
+  - `Source/T66/UI/Screens/T66RunSummaryScreen.h/.cpp`
+  - `Source/T66/UI/Screens/T66HeroGridScreen.h/.cpp`
+  - `Source/T66/UI/Screens/T66HeroSelectionScreen.h/.cpp`
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- `T66Editor` build ✅ (UE 5.7):
+  - `powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66Editor Win64 Development 'C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild -architecture=x64"`
+- `T66` build ✅ (UE 5.7):
+  - `powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat' T66 Win64 Development 'C:\UE\T66\T66.uproject' -WaitMutex -FromMsBuild -architecture=x64"`
+
 ### 2026-02-02 — In-game Dev Console (Enter) + Esc priority fix
 
 **Goal**
@@ -151,6 +197,37 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 
 **Localization**
 - No new shipping player-facing runtime strings.
+
+### 2026-02-02 — Ground atlas + runtime floor material
+
+**Goal**
+- Create a 2×2 ground atlas PNG from 4 tiles and apply it as the runtime-spawned floor material.
+
+**What changed**
+- Created atlas PNG:
+  - `SourceAssets/Ground/GroundAtlas_2x2_1024.png`
+  - Note: source `tile1.png`…`tile4.png` were **1024×1024**, so atlas generation downscaled each to **512×512** before packing into **1024×1024**.
+- Added import/material automation:
+  - `Scripts/ImportGroundAtlas.py`
+  - Generates assets:
+    - `/Game/World/Ground/T_GroundAtlas_2x2_1024`
+    - `/Game/World/Ground/M_GroundAtlas_2x2` (world-space tiled; params: `AtlasWorldSizeUU` default **200**, `Roughness` default **0.9**)
+- Applied the material to runtime floors:
+  - `Source/T66/Gameplay/T66GameMode.h/.cpp`
+    - Added `GroundFloorMaterial` soft reference (defaults to `/Game/World/Ground/M_GroundAtlas_2x2`)
+    - `SpawnFloorIfNeeded()` applies it to all tagged floors; async loads and falls back to tint until loaded.
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- Atlas build (PowerShell):
+  - `python -c "<Pillow script...>"` → wrote `C:\UE\T66\SourceAssets\Ground\GroundAtlas_2x2_1024.png`
+- Asset generation (UE 5.7 commandlet):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=pythonscript -script="C:\UE\T66\Scripts\ImportGroundAtlas.py" -unattended -nop4 -nosplash -nullrhi` ✅
+- ValidateFast (UE 5.7) ✅:
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -waitmutex`
 
 ### 2026-02-02 — Skill Rating system (no-damage windows) + run summary wiring
 

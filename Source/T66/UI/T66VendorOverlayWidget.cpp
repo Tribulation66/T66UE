@@ -144,6 +144,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	ItemIconBorders.SetNum(ShopSlotCount);
 	ItemIconImages.SetNum(ShopSlotCount);
 	ItemIconBrushes.SetNum(ShopSlotCount);
+	ItemIconTextureRefs.SetNum(ShopSlotCount);
 	BuyButtons.SetNum(ShopSlotCount);
 	StealButtons.SetNum(ShopSlotCount);
 	BuyButtonTexts.SetNum(ShopSlotCount);
@@ -153,6 +154,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotIconTextureRefs.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
@@ -1112,6 +1114,11 @@ void UT66VendorOverlayWidget::RefreshStock()
 					Tex = D.Icon.LoadSynchronous();
 				}
 			}
+			if (ItemIconTextureRefs.IsValidIndex(i))
+			{
+				ItemIconTextureRefs[i] = Tex;
+				Tex = ItemIconTextureRefs[i];
+			}
 			ItemIconBrushes[i]->SetResourceObject(Tex);
 		}
 		if (ItemIconImages.IsValidIndex(i) && ItemIconImages[i].IsValid())
@@ -1281,6 +1288,11 @@ void UT66VendorOverlayWidget::RefreshInventory()
 					{
 						Tex = D.Icon.LoadSynchronous();
 					}
+				}
+				if (InventorySlotIconTextureRefs.IsValidIndex(i))
+				{
+					InventorySlotIconTextureRefs[i] = Tex;
+					Tex = InventorySlotIconTextureRefs[i];
 				}
 				InventorySlotIconBrushes[i]->SetResourceObject(Tex);
 			}

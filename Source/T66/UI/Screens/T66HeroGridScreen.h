@@ -8,6 +8,7 @@
 #include "T66HeroGridScreen.generated.h"
 
 class UT66LocalizationSubsystem;
+class UTexture2D;
 
 /**
  * Hero Grid Modal - overlay showing a grid of all heroes by their placeholder/sprite color.
@@ -28,6 +29,10 @@ protected:
 private:
 	TArray<FName> AllHeroIDs;
 	TArray<TSharedPtr<struct FSlateBrush>> HeroPortraitBrushes;
+
+	// GC safety: Slate brushes do not keep UTexture2D resources alive.
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTexture2D>> HeroPortraitTextures;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	FReply HandleHeroClicked(FName HeroID);

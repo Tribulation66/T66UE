@@ -38,6 +38,15 @@
 #endif
 #endif
 
+namespace
+{
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	// Non-click login path: land directly on QR login so the user can scan and authenticate.
+	// If already logged in, TikTok typically redirects to the feed automatically.
+	static const TCHAR* GT66TikTokInitialUrl = TEXT("https://www.tiktok.com/login/qrcode");
+#endif
+}
+
 void UT66MediaViewerSubsystem::ToggleMediaViewer()
 {
 	SetMediaViewerOpen(!bIsOpen);
@@ -91,7 +100,7 @@ void UT66MediaViewerSubsystem::PrewarmTikTok()
 		// Preload TikTok so session + CSS injection are ready before first toggle.
 		if (!TikTokWebView2->HasEverNavigated())
 		{
-			TikTokWebView2->Navigate(TEXT("https://www.tiktok.com/"));
+			TikTokWebView2->Navigate(GT66TikTokInitialUrl);
 		}
 
 		// Keep hidden (and hard-muted) until the player opens it.
@@ -182,7 +191,7 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 			// (so we don't force a relogin mid-run).
 			if (!TikTokWebView2->HasEverNavigated())
 			{
-				TikTokWebView2->Navigate(TEXT("https://www.tiktok.com/"));
+				TikTokWebView2->Navigate(GT66TikTokInitialUrl);
 			}
 		}
 	}

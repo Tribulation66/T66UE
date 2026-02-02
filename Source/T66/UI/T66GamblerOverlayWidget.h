@@ -15,6 +15,7 @@ template<typename NumericType> class SSpinBox;
 class SBox;
 class SBorder;
 class SImage;
+class UTexture2D;
 
 /** Full-screen, non-pausing Gambler UI (dialogue -> casino -> minigames). */
 UCLASS(Blueprintable)
@@ -60,6 +61,10 @@ private:
 	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
 	TArray<TSharedPtr<SImage>> InventorySlotIconImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotIconBrushes;
+
+	// GC safety: brushes don't keep UTextures alive.
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTexture2D>> InventorySlotIconTextureRefs;
 	int32 SelectedInventoryIndex = -1;
 
 	// Sell panel
@@ -103,6 +108,16 @@ private:
 	FSlateBrush GameIcon_CoinFlip;
 	FSlateBrush GameIcon_Rps;
 	FSlateBrush GameIcon_FindBall;
+
+	// GC safety: keep game icon textures alive while overlay is open.
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> GameIconTex_CoinFlip;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> GameIconTex_Rps;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> GameIconTex_FindBall;
 
 	int32 WinGoldAmount = 10; // used as a default gamble amount suggestion from DT
 	bool bInputLocked = false;

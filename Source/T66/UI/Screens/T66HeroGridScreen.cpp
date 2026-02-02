@@ -67,6 +67,8 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
 	HeroPortraitBrushes.Reset();
 	HeroPortraitBrushes.Reserve(AllHeroIDs.Num());
+	HeroPortraitTextures.Reset();
+	HeroPortraitTextures.Reserve(AllHeroIDs.Num());
 
 	for (int32 Row = 0; Row * Columns < AllHeroIDs.Num(); Row++)
 	{
@@ -93,6 +95,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 					}
 					if (Tex)
 					{
+						HeroPortraitTextures.Add(Tex);
 						PortraitBrush = MakeShared<FSlateBrush>();
 						PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
 						PortraitBrush->SetResourceObject(Tex);

@@ -1046,6 +1046,7 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 
 	// Ensure 5 stable slots.
 	HeroCarouselPortraitBrushes.SetNum(5);
+	HeroCarouselPortraitTextures.SetNum(5);
 	for (int32 i = 0; i < HeroCarouselPortraitBrushes.Num(); ++i)
 	{
 		if (!HeroCarouselPortraitBrushes[i].IsValid())
@@ -1084,6 +1085,11 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 			}
 
 			const float BoxSize = (Offset == 0) ? 60.f : 45.f;
+			if (HeroCarouselPortraitTextures.IsValidIndex(SlotIdx))
+			{
+				HeroCarouselPortraitTextures[SlotIdx] = Tex;
+				Tex = HeroCarouselPortraitTextures[SlotIdx];
+			}
 			HeroCarouselPortraitBrushes[SlotIdx]->SetResourceObject(Tex);
 			HeroCarouselPortraitBrushes[SlotIdx]->ImageSize = FVector2D(BoxSize, BoxSize);
 		}

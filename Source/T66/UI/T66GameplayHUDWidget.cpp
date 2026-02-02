@@ -1581,6 +1581,12 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		InventorySlotBorders[i]->SetBorderBackgroundColor(SlotColor);
 		InventorySlotBorders[i]->SetToolTipText(Tooltip);
 
+		// GC safety: Slate brushes do NOT keep textures alive. Keep a strong UObject reference per slot.
+		if (InventorySlotTextures.IsValidIndex(i))
+		{
+			InventorySlotTextures[i] = SlotTex;
+		}
+
 		if (InventorySlotBrushes.IsValidIndex(i) && InventorySlotBrushes[i].IsValid())
 		{
 			InventorySlotBrushes[i]->SetResourceObject(SlotTex);

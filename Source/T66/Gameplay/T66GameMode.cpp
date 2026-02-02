@@ -52,6 +52,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "EngineUtils.h"
 
 namespace
@@ -102,6 +103,22 @@ namespace
 			return NAME_None;
 		}
 		return FName(*FString::Printf(TEXT("Companion_%02d"), Index));
+	}
+
+	static bool T66_HasAnyFloorTag(const AActor* A)
+	{
+		if (!A) return false;
+		// Covers: T66_Floor_Main/Start/Boss/Conn*, and also Boost/Tutorial/Coliseum floors.
+		static const FName Prefix(TEXT("T66_Floor"));
+		for (const FName& Tag : A->Tags)
+		{
+			const FString S = Tag.ToString();
+			if (S.StartsWith(Prefix.ToString()))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -1656,11 +1673,50 @@ void AT66GameMode::EnsureLevelSetup()
 	SpawnFloorIfNeeded();
 	SpawnColiseumArenaIfNeeded();
 	SpawnTutorialArenaIfNeeded();
+	TryApplyGroundFloorMaterialToAllFloors();
 	SpawnBoundaryWallsIfNeeded();
 	SpawnPlatformEdgeWallsIfNeeded();
 	SpawnStartAreaExitWallsIfNeeded();
 	SpawnLightingIfNeeded();
 	SpawnPlayerStartIfNeeded();
+}
+
+void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UMaterialInterface* GroundMat = GroundFloorMaterial.Get();
+	if (!GroundMat)
+	{
+		// Request async load once; when it completes, re-apply across all tagged floors.
+		if (!GroundFloorMaterial.IsNull() && !bGroundFloorMaterialLoadRequested)
+		{
+			bGroundFloorMaterialLoadRequested = true;
+			TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+				GroundFloorMaterial.ToSoftObjectPath(),
+				FStreamableDelegate::CreateWeakLambda(this, [this]()
+				{
+					TryApplyGroundFloorMaterialToAllFloors();
+				}));
+			if (Handle.IsValid())
+			{
+				ActiveAsyncLoadHandles.Add(Handle);
+			}
+		}
+		return;
+	}
+
+	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+	{
+		AStaticMeshActor* A = *It;
+		if (!A) continue;
+		if (!T66_HasAnyFloorTag(A)) continue;
+		if (UStaticMeshComponent* SMC = A->GetStaticMeshComponent())
+		{
+			SMC->SetMaterial(0, GroundMat);
+		}
+	}
 }
 
 void AT66GameMode::SpawnTutorialArenaIfNeeded()
@@ -2096,9 +2152,35 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		Floor->SetActorScale3D(Spec.Scale);
 		T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 
-		if (UMaterialInstanceDynamic* FloorMat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+		// Prefer the configured ground material (soft-loaded). If it's not loaded yet,
+		// fall back to a simple tinted dynamic material and request an async load.
+		UMaterialInterface* GroundMat = GroundFloorMaterial.Get();
+		if (GroundMat)
 		{
-			FloorMat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
+			Floor->GetStaticMeshComponent()->SetMaterial(0, GroundMat);
+		}
+		else
+		{
+			// Kick off async load once, then rerun SpawnFloorIfNeeded() to apply material to tagged floors.
+			if (!GroundFloorMaterial.IsNull() && !bGroundFloorMaterialLoadRequested)
+			{
+				bGroundFloorMaterialLoadRequested = true;
+				TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+					GroundFloorMaterial.ToSoftObjectPath(),
+					FStreamableDelegate::CreateWeakLambda(this, [this]()
+					{
+						SpawnFloorIfNeeded();
+					}));
+				if (Handle.IsValid())
+				{
+					ActiveAsyncLoadHandles.Add(Handle);
+				}
+			}
+
+			if (UMaterialInstanceDynamic* FloorMat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+			{
+				FloorMat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
+			}
 		}
 
 		if (!SpawnedSetupActors.Contains(Floor))

@@ -86,6 +86,10 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 {
 	DestroyPreviewCaptures();
+	InventoryItemIconBrushes.Reset();
+	IdolIconBrushes.Reset();
+	InventoryItemIconTextures.Reset();
+	IdolIconTextures.Reset();
 	Super::OnScreenDeactivated_Implementation();
 }
 
@@ -303,6 +307,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	EnsurePreviewCaptures();
 	InventoryItemIconBrushes.Reset();
 	IdolIconBrushes.Reset();
+	InventoryItemIconTextures.Reset();
+	IdolIconTextures.Reset();
 
 	RebuildLogItems();
 	SAssignNew(LogListView, SListView<TSharedPtr<FString>>)
@@ -601,6 +607,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			TSharedPtr<FSlateBrush> IdolBrush;
 			if (IdolTex)
 			{
+				IdolIconTextures.Add(IdolTex);
 				IdolBrush = MakeShared<FSlateBrush>();
 				IdolBrush->DrawAs = ESlateBrushDrawType::Image;
 				IdolBrush->SetResourceObject(IdolTex);
@@ -671,6 +678,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				TSharedPtr<FSlateBrush> ItemBrush;
 				if (ItemTex)
 				{
+					InventoryItemIconTextures.Add(ItemTex);
 					ItemBrush = MakeShared<FSlateBrush>();
 					ItemBrush->DrawAs = ESlateBrushDrawType::Image;
 					ItemBrush->SetResourceObject(ItemTex);
