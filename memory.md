@@ -1966,6 +1966,32 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
 
 ---
 
+### 2026-02-02 — Gameplay: ensure blue mid-day sky at runtime (SkyAtmosphere)
+
+**Goal**
+- GameplayLevel is largely constructed at runtime (floors/walls/lighting). Ensure the in-game world has a **natural blue mid-day sky** (not just ambient tint), without relying on editor-authored sky actors.
+
+**What changed**
+- `Source/T66/Gameplay/T66GameMode.cpp`
+  - Extended `SpawnLightingIfNeeded()` to:
+    - Spawn `ASkyAtmosphere` when missing (provides the actual sky rendering).
+    - Ensure the DirectionalLight drives the sky atmosphere (`bAtmosphereSunLight=true`, `AtmosphereSunLightIndex=0`).
+    - Keep SkyLight color neutral (white) and `RecaptureSky()` after atmosphere + sun are configured so ambient lighting picks up the blue sky.
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- Runtime visual check ✅: user confirmed GameplayLevel now shows a blue sky in-game.
+- ValidateFast builds ✅ (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+**Commit**
+- `3ceda6a6370e1eaae3a2a620b3a75631d0f6bb68` — Gameplay: spawn runtime SkyAtmosphere for blue midday sky
+
+---
+
 ### 2026-02-01 — Official .1 release: data-driven sprites + world models + UI hookups
 
 **Goal**
