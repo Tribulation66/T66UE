@@ -44,7 +44,9 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
 #include "Components/LightComponent.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
+#include "Components/SkyAtmosphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/StaticMeshActor.h"
@@ -2216,27 +2218,53 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Check for existing directional light
-	bool bHasDirectionalLight = false;
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	ASkyAtmosphere* Atmosphere = nullptr;
+	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It)
 	{
-		bHasDirectionalLight = true;
+		Atmosphere = *It;
 		break;
 	}
 
-	// Check for existing sky light
-	bool bHasSkyLight = false;
+	ADirectionalLight* SunForAtmosphere = nullptr;
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	{
+		SunForAtmosphere = *It;
+		break;
+	}
+
+	ASkyLight* SkyForCapture = nullptr;
 	for (TActorIterator<ASkyLight> It(World); It; ++It)
 	{
-		bHasSkyLight = true;
+		SkyForCapture = *It;
 		break;
 	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	// Sky atmosphere (blue mid-day sky) if needed.
+	if (!Atmosphere)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No SkyAtmosphere found - spawning development sky atmosphere"));
+		ASkyAtmosphere* SpawnedAtmosphere = World->SpawnActor<ASkyAtmosphere>(
+			ASkyAtmosphere::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+		if (SpawnedAtmosphere)
+		{
+			#if WITH_EDITOR
+			SpawnedAtmosphere->SetActorLabel(TEXT("DEV_SkyAtmosphere"));
+			#endif
+			SpawnedSetupActors.Add(SpawnedAtmosphere);
+			Atmosphere = SpawnedAtmosphere;
+		}
+	}
+
 	// Spawn directional light (sun) if needed
-	if (!bHasDirectionalLight)
+	if (!SunForAtmosphere)
 	{
 		UE_LOG(LogTemp, Log, TEXT("No directional light found - spawning development sun"));
 
@@ -2249,21 +2277,26 @@ void AT66GameMode::SpawnLightingIfNeeded()
 
 		if (Sun)
 		{
-			if (ULightComponent* LightComp = Sun->GetLightComponent())
+			if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
 				LightComp->SetIntensity(3.f);
 				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
+
+				// Drive SkyAtmosphere sun/sky scattering (mid-day blue sky).
+				LightComp->bAtmosphereSunLight = true;
+				LightComp->AtmosphereSunLightIndex = 0;
 			}
 			#if WITH_EDITOR
 			Sun->SetActorLabel(TEXT("DEV_Sun"));
 			#endif
 			SpawnedSetupActors.Add(Sun);
+			SunForAtmosphere = Sun;
 			UE_LOG(LogTemp, Log, TEXT("Spawned development directional light"));
 		}
 	}
 
 	// Spawn sky light (ambient) if needed
-	if (!bHasSkyLight)
+	if (!SkyForCapture)
 	{
 		UE_LOG(LogTemp, Log, TEXT("No sky light found - spawning development ambient light"));
 
@@ -2279,14 +2312,34 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
 			{
 				SkyComp->SetIntensity(1.0f);
-				SkyComp->SetLightColor(FLinearColor(0.5f, 0.6f, 0.8f)); // Bluish ambient
-				SkyComp->RecaptureSky();
+				// Keep the sky light neutral; the blue tint should come from the actual sky capture.
+				SkyComp->SetLightColor(FLinearColor::White);
 			}
 			#if WITH_EDITOR
 			Sky->SetActorLabel(TEXT("DEV_SkyLight"));
 			#endif
 			SpawnedSetupActors.Add(Sky);
+			SkyForCapture = Sky;
 			UE_LOG(LogTemp, Log, TEXT("Spawned development sky light"));
+		}
+	}
+
+	// If we have an existing sun, ensure it drives the atmosphere (even if it was authored in the map).
+	if (SunForAtmosphere)
+	{
+		if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(SunForAtmosphere->GetLightComponent()))
+		{
+			LightComp->bAtmosphereSunLight = true;
+			LightComp->AtmosphereSunLightIndex = 0;
+		}
+	}
+
+	// Capture after SkyAtmosphere exists and sun is configured, so the skylight picks up a blue mid-day sky.
+	if (SkyForCapture)
+	{
+		if (USkyLightComponent* SkyComp = SkyForCapture->GetLightComponent())
+		{
+			SkyComp->RecaptureSky();
 		}
 	}
 }
