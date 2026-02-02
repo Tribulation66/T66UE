@@ -25,6 +25,8 @@ class AT66VendorNPC;
 class AT66GamblerNPC;
 class AT66RecruitableCompanion;
 enum class ET66Rarity : uint8;
+class SWidget;
+class SWeakWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
 
@@ -84,6 +86,9 @@ public:
 	/** Restore gameplay input mode and hide cursor (call after closing pause menu) */
 	UFUNCTION(BlueprintCallable, Category = "Game")
 	void RestoreGameplayInputMode();
+
+	/** Dev console overlay: Enter to open, Esc to close. Non-shipping builds only. */
+	void ToggleDevConsole();
 
 	/** Open the Gambler overlay (non-pausing). */
 	void OpenGamblerOverlay(int32 WinGoldAmount);
@@ -209,6 +214,11 @@ private:
 	/** In gameplay: lazily-created UIManager for pause menu only */
 	void EnsureGameplayUIManager();
 
+	/** Dev console overlay implementation */
+	void OpenDevConsole();
+	void CloseDevConsole();
+	bool IsDevConsoleOpen() const { return bDevConsoleOpen; }
+
 	/** Load screen classes from expected paths */
 	void AutoLoadScreenClasses();
 
@@ -218,6 +228,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66IdolAltarOverlayWidget> IdolAltarOverlayWidget;
+
+	bool bDevConsoleOpen = false;
+	TSharedPtr<SWidget> DevConsoleWidget;
+	TSharedPtr<SWeakWidget> DevConsoleWeakWidget;
 
 	// ============================================================
 	// In-world NPC dialogue (Vendor/Gambler)

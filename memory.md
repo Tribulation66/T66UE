@@ -111,6 +111,47 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 
 ## 4) Change log (append-only)
 
+### 2026-02-02 — In-game Dev Console (Enter) + Esc priority fix
+
+**Goal**
+- Have a reliable **in-game** console overlay (not the Editor Output Log) for running debug commands while playing.
+- Fix `Esc` conflicts so dev console close does **not** open the Pause Menu.
+
+**What changed**
+- `Source/T66/Gameplay/T66PlayerController.h/.cpp`
+  - Added a lightweight Slate **dev console overlay**:
+    - `Enter` opens (gameplay only; non-shipping builds only)
+    - `Esc` closes and has **priority** over Pause Menu (no more competition)
+    - Shows a filtered list of known commands + supports input history (Up/Down)
+- `T66_Console_Commands.md` documents the Enter dev console overlay.
+
+**Localization**
+- Dev console UI strings are **debug-only** (`!UE_BUILD_SHIPPING`), so they are not part of shipping player-facing localization.
+
+**Verification / proof**
+- Builds ✅ (UE 5.7):
+  - `T66Editor` Win64 Development
+  - `T66` Win64 Development
+
+### 2026-02-02 — Remove FAB ground options + delete imported packs
+
+**Goal**
+- Remove the temporary ground “Option*” system and delete imported FAB asset packs that were only brought in for ground testing.
+
+**What changed**
+- Removed `Option*` commands and related ground-swap code, keeping the in-game dev console overlay intact.
+- Deleted imported content folders and source caches:
+  - `Content/CozyNature`
+  - `Content/LP_SimpleNature_JC`
+  - `Content/Stylized_NatureLite_JC`
+  - `Content/StylizedProvencal`
+  - `Content/Polytope_Studio`
+  - `SourceAssets/Fab/VaultCache`
+  - `Content/__ExternalActors__` / `Content/__ExternalObjects__` (untracked)
+
+**Localization**
+- No new shipping player-facing runtime strings.
+
 ### 2026-02-02 — Skill Rating system (no-damage windows) + run summary wiring
 
 **Goal**

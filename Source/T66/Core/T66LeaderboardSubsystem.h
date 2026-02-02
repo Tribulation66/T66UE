@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66LocalLeaderboardSaveGame.h"
+#include "UI/T66UITypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66LeaderboardSubsystem.generated.h"
 
@@ -61,6 +63,37 @@ public:
 	/** Consume the pending "open run summary" request (returns true if one existed). */
 	bool ConsumePendingRunSummaryRequest(FString& OutSaveSlotName);
 
+	// ===== Account Status (Suspension / Appeal) =====
+
+	/** True when the Main Menu should show the Account Status button. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
+	bool ShouldShowAccountStatusButton() const;
+
+	/** Current account restriction record (local placeholder until backend exists). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
+	FT66AccountRestrictionRecord GetAccountRestrictionRecord() const;
+
+	/** True if there is a run summary slot associated with the restricted run. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
+	bool HasAccountRestrictionRunSummary() const;
+
+	/** True if the player can submit an appeal right now. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
+	bool CanSubmitAccountAppeal() const;
+
+	/** Submit an appeal message + evidence URL (local placeholder). */
+	UFUNCTION(BlueprintCallable, Category = "AccountStatus")
+	void SubmitAccountAppeal(const FString& Message, const FString& EvidenceUrl);
+
+	/**
+	 * UI helper: request opening the restricted run summary. When the Run Summary closes, it should return to Account Status.
+	 * Returns false if there is no associated run summary.
+	 */
+	bool RequestOpenAccountRestrictionRunSummary();
+
+	/** Consume the "return to modal after viewer-mode Run Summary" request. */
+	ET66ScreenType ConsumePendingReturnModalAfterViewerRunSummary();
+
 	/** Build menu entries for Bounty: Top 10 + local entry ("You") at rank 11 unless in Top 10. */
 	TArray<FLeaderboardEntry> BuildBountyEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
@@ -69,6 +102,9 @@ public:
 
 	/** Returns the 10th-place target time for this stage (used by HUD "time to beat"). */
 	bool GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const;
+
+	/** Debug helper: delete local leaderboard + local best run summary snapshots, then reload. */
+	void DebugClearLocalLeaderboard();
 
 private:
 	static constexpr const TCHAR* LocalSaveSlotName = TEXT("T66_LocalLeaderboard");
@@ -107,6 +143,9 @@ private:
 
 	// Transient UI "handshake": panel sets a requested slot name, RunSummaryScreen consumes it.
 	FString PendingRunSummarySlotName;
+
+	// Transient UI "handshake": a viewer-mode run summary can request reopening a modal afterwards (single-modal UI manager).
+	ET66ScreenType PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;
 
 	// ===== Last submit results (for Run Summary "New Personal Best" banners) =====
 	bool bLastHighScoreWasNewBest = false;

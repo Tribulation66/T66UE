@@ -13,6 +13,7 @@
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
+#include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
@@ -44,13 +45,371 @@
 #include "GameFramework/Character.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
+#include "Engine/GameViewportClient.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/SWeakWidget.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/Views/SListView.h"
+#include "Styling/CoreStyle.h"
 #include "EngineUtils.h"
+
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	class ST66DevConsole final : public SCompoundWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66DevConsole) {}
+			SLATE_ARGUMENT(TArray<FString>, Commands)
+			SLATE_EVENT(FSimpleDelegate, OnRequestClose)
+			SLATE_EVENT(FSimpleDelegate, OnRequestRunOptionHelp)
+			SLATE_EVENT(FOnTextCommitted, OnExecuteCommand)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			AllCommands.Reserve(InArgs._Commands.Num());
+			for (const FString& S : InArgs._Commands)
+			{
+				AllCommands.Add(MakeShared<FString>(S));
+			}
+
+			OnRequestClose = InArgs._OnRequestClose;
+			OnExecuteCommand = InArgs._OnExecuteCommand;
+
+			RebuildFiltered(TEXT(""));
+
+			ChildSlot
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.60f))
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Top)
+				.Padding(FMargin(24.f, 60.f, 24.f, 24.f))
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.06f, 0.95f))
+					.Padding(12.f)
+					[
+						SNew(SVerticalBox)
+
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(TEXT("DEV CONSOLE")))
+							.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.9f))
+						]
+
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.f, 6.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(TEXT("Enter = run   Esc = close   Up/Down = history")))
+							.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.6f))
+						]
+
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.f, 10.f, 0.f, 0.f)
+						[
+							SAssignNew(InputBox, SEditableTextBox)
+							.HintText(FText::FromString(TEXT("Type a command (e.g. Option1, Option4B, clearlead)")))
+							.OnTextChanged(this, &ST66DevConsole::HandleTextChanged)
+							.OnTextCommitted(this, &ST66DevConsole::HandleTextCommitted)
+							.OnKeyDownHandler(this, &ST66DevConsole::HandleInputKeyDown)
+						]
+
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.f, 10.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(TEXT("Commands (filtered):")))
+							.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.7f))
+						]
+
+						+ SVerticalBox::Slot()
+						.FillHeight(1.f)
+						.Padding(0.f, 6.f, 0.f, 0.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.35f))
+							.Padding(6.f)
+							[
+								SAssignNew(CommandListView, SListView<TSharedPtr<FString>>)
+								.ListItemsSource(&FilteredCommands)
+								.OnGenerateRow(this, &ST66DevConsole::GenerateRow)
+								.OnSelectionChanged(this, &ST66DevConsole::OnSelected)
+							]
+						]
+					]
+				]
+			];
+		}
+
+		void FocusInput()
+		{
+			if (InputBox.IsValid())
+			{
+				FSlateApplication::Get().SetKeyboardFocus(InputBox, EFocusCause::SetDirectly);
+			}
+		}
+
+		void PushHistory(const FString& Cmd)
+		{
+			if (Cmd.IsEmpty()) return;
+			History.Add(Cmd);
+			HistoryIndex = History.Num(); // one past end
+		}
+
+	private:
+		TSharedRef<ITableRow> GenerateRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable)
+		{
+			return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
+			[
+				SNew(STextBlock)
+				.Text(Item.IsValid() ? FText::FromString(*Item) : FText::GetEmpty())
+				.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.85f))
+			];
+		}
+
+		void OnSelected(TSharedPtr<FString> Item, ESelectInfo::Type)
+		{
+			if (!Item.IsValid() || !InputBox.IsValid()) return;
+			InputBox->SetText(FText::FromString(*Item));
+			FocusInput();
+		}
+
+		void HandleTextChanged(const FText& NewText)
+		{
+			RebuildFiltered(*NewText.ToString());
+			if (CommandListView.IsValid())
+			{
+				CommandListView->RequestListRefresh();
+			}
+		}
+
+		void HandleTextCommitted(const FText& Text, ETextCommit::Type CommitType)
+		{
+			if (CommitType != ETextCommit::OnEnter) return;
+			const FString Cmd = Text.ToString().TrimStartAndEnd();
+			if (Cmd.IsEmpty()) return;
+
+			PushHistory(Cmd);
+
+			if (OnExecuteCommand.IsBound())
+			{
+				OnExecuteCommand.Execute(Text, CommitType);
+			}
+
+			if (InputBox.IsValid())
+			{
+				InputBox->SetText(FText::GetEmpty());
+			}
+			RebuildFiltered(TEXT(""));
+			if (CommandListView.IsValid())
+			{
+				CommandListView->RequestListRefresh();
+			}
+			FocusInput();
+		}
+
+		FReply HandleInputKeyDown(const FGeometry&, const FKeyEvent& E)
+		{
+			const FKey Key = E.GetKey();
+			if (Key == EKeys::Escape)
+			{
+				if (OnRequestClose.IsBound())
+				{
+					OnRequestClose.Execute();
+				}
+				return FReply::Handled();
+			}
+
+			if (Key == EKeys::Up)
+			{
+				if (History.Num() > 0)
+				{
+					HistoryIndex = FMath::Clamp(HistoryIndex - 1, 0, History.Num() - 1);
+					if (InputBox.IsValid())
+					{
+						InputBox->SetText(FText::FromString(History[HistoryIndex]));
+					}
+				}
+				return FReply::Handled();
+			}
+
+			if (Key == EKeys::Down)
+			{
+				if (History.Num() > 0)
+				{
+					HistoryIndex = FMath::Clamp(HistoryIndex + 1, 0, History.Num());
+					if (InputBox.IsValid())
+					{
+						if (HistoryIndex >= History.Num())
+						{
+							InputBox->SetText(FText::GetEmpty());
+						}
+						else
+						{
+							InputBox->SetText(FText::FromString(History[HistoryIndex]));
+						}
+					}
+				}
+				return FReply::Handled();
+			}
+
+			return FReply::Unhandled();
+		}
+
+		void RebuildFiltered(const FString& Prefix)
+		{
+			const FString P = Prefix.TrimStartAndEnd();
+			FilteredCommands.Reset();
+
+			for (const TSharedPtr<FString>& Cmd : AllCommands)
+			{
+				if (!Cmd.IsValid()) continue;
+				if (P.IsEmpty() || Cmd->StartsWith(P, ESearchCase::IgnoreCase))
+				{
+					FilteredCommands.Add(Cmd);
+				}
+			}
+		}
+
+	private:
+		TArray<TSharedPtr<FString>> AllCommands;
+		TArray<TSharedPtr<FString>> FilteredCommands;
+
+		TSharedPtr<SEditableTextBox> InputBox;
+		TSharedPtr<SListView<TSharedPtr<FString>>> CommandListView;
+
+		TArray<FString> History;
+		int32 HistoryIndex = 0;
+
+		FSimpleDelegate OnRequestClose;
+		FOnTextCommitted OnExecuteCommand;
+	};
+}
+#endif // !UE_BUILD_SHIPPING
 
 AT66PlayerController::AT66PlayerController()
 {
 	// Default to showing mouse cursor (will be hidden in gameplay mode)
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
+}
+
+void AT66PlayerController::ToggleDevConsole()
+{
+#if !UE_BUILD_SHIPPING
+	if (!IsGameplayLevel()) return;
+	// Don't allow dev console while paused (prevents Esc competition with PauseMenu).
+	if (IsPaused()) return;
+	if (bDevConsoleOpen)
+	{
+		return; // close via Esc
+	}
+	OpenDevConsole();
+#endif
+}
+
+void AT66PlayerController::OpenDevConsole()
+{
+#if !UE_BUILD_SHIPPING
+	if (bDevConsoleOpen) return;
+	if (!GEngine || !GEngine->GameViewport) return;
+
+	// Stop gameplay input while console is open.
+	SetIgnoreLookInput(true);
+	SetIgnoreMoveInput(true);
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+
+	const TArray<FString> Commands = {
+		TEXT("clearlead"),
+		TEXT("clear.lead"),
+		TEXT("sus1"),
+		TEXT("sus2"),
+		TEXT("t66.AccountStatus.Force 1"),
+		TEXT("t66.AccountStatus.Force 2"),
+	};
+
+	TSharedPtr<ST66DevConsole> ConsoleWidget;
+	SAssignNew(ConsoleWidget, ST66DevConsole)
+		.Commands(Commands)
+		.OnRequestClose(FSimpleDelegate::CreateUObject(this, &AT66PlayerController::CloseDevConsole))
+		.OnExecuteCommand(FOnTextCommitted::CreateWeakLambda(this, [this](const FText& Text, ETextCommit::Type)
+		{
+			const FString Cmd = Text.ToString().TrimStartAndEnd();
+			if (!Cmd.IsEmpty())
+			{
+				// Route through PlayerController so Exec UFUNCTIONs are reachable.
+				ConsoleCommand(Cmd, /*bWriteToLog*/ true);
+			}
+		}));
+
+	DevConsoleWidget = ConsoleWidget;
+	DevConsoleWeakWidget = SNew(SWeakWidget).PossiblyNullContent(DevConsoleWidget.ToSharedRef());
+
+	GEngine->GameViewport->AddViewportWidgetContent(DevConsoleWeakWidget.ToSharedRef(), 20000);
+	bDevConsoleOpen = true;
+
+	ConsoleWidget->FocusInput();
+	UE_LOG(LogTemp, Log, TEXT("DevConsole: opened"));
+#endif
+}
+
+void AT66PlayerController::CloseDevConsole()
+{
+#if !UE_BUILD_SHIPPING
+	if (!bDevConsoleOpen) return;
+	if (GEngine && GEngine->GameViewport && DevConsoleWeakWidget.IsValid())
+	{
+		GEngine->GameViewport->RemoveViewportWidgetContent(DevConsoleWeakWidget.ToSharedRef());
+	}
+
+	DevConsoleWeakWidget.Reset();
+	DevConsoleWidget.Reset();
+	bDevConsoleOpen = false;
+
+	// Safety: if PauseMenu got opened while console was up, close it and unpause.
+	if (IsPaused())
+	{
+		if (UIManager && UIManager->IsModalActive() && UIManager->GetCurrentModalType() == ET66ScreenType::PauseMenu)
+		{
+			UIManager->CloseModal();
+		}
+		SetPause(false);
+	}
+
+	// Restore normal gameplay input.
+	SetIgnoreLookInput(false);
+	SetIgnoreMoveInput(false);
+	RestoreGameplayInputMode();
+	UE_LOG(LogTemp, Log, TEXT("DevConsole: closed"));
+#endif
 }
 
 void AT66PlayerController::BeginPlay()
@@ -194,6 +553,11 @@ void AT66PlayerController::SetupInputComponent()
 		// User preference: Q = Next, E = Previous.
 		InputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AT66PlayerController::HandleTikTokNextPressed);
 		InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AT66PlayerController::HandleTikTokPrevPressed);
+
+#if !UE_BUILD_SHIPPING
+		// Dev console overlay: Enter to open (close via Esc).
+		InputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &AT66PlayerController::ToggleDevConsole);
+#endif
 	}
 }
 
@@ -1087,6 +1451,19 @@ void AT66PlayerController::HandleEscapePressed()
 {
 	if (!IsGameplayLevel()) return;
 
+#if !UE_BUILD_SHIPPING
+	// Highest priority: if dev console is open, Esc should close it and never open PauseMenu.
+	if (bDevConsoleOpen)
+	{
+		CloseDevConsole();
+
+		// Debounce to avoid the same keypress immediately toggling PauseMenu.
+		const float Now = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
+		LastPauseToggleTime = Now;
+		return;
+	}
+#endif
+
 	// Esc as back: close Media Viewer before other UI.
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
@@ -1300,7 +1677,9 @@ void AT66PlayerController::HandleZoom(float Value)
 	{
 		const float ZoomSpeed = 25.f;
 		const float MinLength = 200.f;
-		const float MaxLength = 800.f;
+		// Keep this effectively "limitless" for development/testing.
+		// (Still clamped to avoid pathological values.)
+		const float MaxLength = 100000.f;
 		float NewLength = Hero->CameraBoom->TargetArmLength - Value * ZoomSpeed;
 		NewLength = FMath::Clamp(NewLength, MinLength, MaxLength);
 		Hero->CameraBoom->TargetArmLength = NewLength;
@@ -1411,6 +1790,11 @@ void AT66PlayerController::InitializeUI()
 
 	// Ensure core modal screens are available in frontend too (leaderboard row opens Run Summary).
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
+	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
+	if (!ScreenClasses.Contains(ET66ScreenType::AccountStatus) || ScreenClasses[ET66ScreenType::AccountStatus] == nullptr)
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, UT66AccountStatusScreen::StaticClass());
+	}
 
 	bUIInitialized = true;
 

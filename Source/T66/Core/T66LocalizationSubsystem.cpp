@@ -1505,6 +1505,71 @@ FText UT66LocalizationSubsystem::GetText_AccountStatus() const
 	return NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS");
 }
 
+FText UT66LocalizationSubsystem::GetText_AccountStatus_SuspicionHeadline() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "SuspicionHeadline", "RUN UNDER SUSPICION OF CHEATING");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_CertaintyHeadline() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "CertaintyHeadline", "FORBIDDEN EVENT DETECTED");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_ReasonLabel() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "ReasonLabel", "Reason");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_RunInQuestion() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "RunInQuestion", "RUN IN QUESTION");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_AppealTitle() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "AppealTitle", "APPEAL");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_AppealHint() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "AppealHint", "Write your appeal message here...");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_EvidenceHint() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "EvidenceHint", "Evidence link (optional)...");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_SubmitAppeal() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "SubmitAppeal", "SUBMIT APPEAL");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_NoAppealAvailable() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "NoAppealAvailable", "NO APPEAL AVAILABLE.");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_AppealNotSubmitted() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "AppealNotSubmitted", "Appeal not submitted");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_AppealUnderReview() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "AppealUnderReview", "Appeal under review");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_AppealDenied() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "AppealDenied", "Appeal denied");
+}
+
+FText UT66LocalizationSubsystem::GetText_AccountStatus_AppealApproved() const
+{
+	return NSLOCTEXT("T66.AccountStatus", "AppealApproved", "Appeal approved");
+}
+
 // ========== Gameplay HUD ==========
 
 FText UT66LocalizationSubsystem::GetText_GoldFormat() const

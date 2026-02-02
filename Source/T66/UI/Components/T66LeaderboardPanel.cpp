@@ -109,6 +109,43 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		.Padding(FMargin(FT66Style::Tokens::Space3))
 		[
 			SNew(SVerticalBox)
+			// Account Status button (only visible when account is restricted)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Right)
+			.Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				SNew(SBox)
+				.MinDesiredWidth(160.f)
+				.HeightOverride(32.f)
+				.Visibility_Lambda([this]()
+				{
+					return (LeaderboardSubsystem && LeaderboardSubsystem->ShouldShowAccountStatusButton())
+						? EVisibility::Visible
+						: EVisibility::Collapsed;
+				})
+				[
+					SNew(SButton)
+					.IsEnabled_Lambda([this]() { return UIManager != nullptr; })
+					.OnClicked_Lambda([this]()
+					{
+						if (UIManager)
+						{
+							UIManager->ShowModal(ET66ScreenType::AccountStatus);
+						}
+						return FReply::Handled();
+					})
+					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+					.ContentPadding(FMargin(12.f, 6.f))
+					[
+						SNew(STextBlock)
+						.Text(LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS"))
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+				]
+			]
 			// Title
 			+ SVerticalBox::Slot()
 			.AutoHeight()

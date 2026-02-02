@@ -1214,7 +1214,8 @@ void UT66GameplayHUDWidget::RefreshLootPrompt()
 				Tex = D.Icon.LoadSynchronous();
 			}
 		}
-		LootPromptIconBrush->SetResourceObject(Tex);
+		LootPromptIconTexture = Tex;
+		LootPromptIconBrush->SetResourceObject(LootPromptIconTexture);
 	}
 	if (LootPromptIconImage.IsValid())
 	{
@@ -1324,7 +1325,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				}
 			}
 		}
-		PortraitBrush->SetResourceObject(Tex);
+		PortraitTexture = Tex;
+		PortraitBrush->SetResourceObject(PortraitTexture);
 	}
 	if (PortraitImage.IsValid())
 	{
@@ -1623,10 +1625,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotImages.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotBrushes.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
+	IdolSlotTextures.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolLevelDotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots * UT66RunStateSubsystem::MaxIdolLevel);
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotTextures.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	StatLineTexts.SetNum(6);
 	StatusEffectDots.SetNum(3);
 	StatusEffectDotBoxes.SetNum(3);

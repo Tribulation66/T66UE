@@ -710,6 +710,45 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
 	FText GetText_AccountStatus() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_SuspicionHeadline() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_CertaintyHeadline() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_ReasonLabel() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_RunInQuestion() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_AppealTitle() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_AppealHint() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_EvidenceHint() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_SubmitAppeal() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_NoAppealAvailable() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_AppealNotSubmitted() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_AppealUnderReview() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_AppealDenied() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|AccountStatus")
+	FText GetText_AccountStatus_AppealApproved() const;
+
 	// Gameplay HUD (in-run)
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
 	FText GetText_GoldFormat() const; // "Gold: {0}"

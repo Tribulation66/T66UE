@@ -12,6 +12,56 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "HAL/IConsoleManager.h"
+
+static TAutoConsoleVariable<int32> CVarT66AccountStatusForce(
+	TEXT("t66.AccountStatus.Force"),
+	0,
+	TEXT("Debug: force Account Status visible. 0=normal, 1=Suspicion, 2=CheatingCertainty"),
+	ECVF_Cheat
+);
+
+// Short debug aliases (requested): `sus1` / `sus2`
+static FAutoConsoleCommand T66AccountStatusSus1Command(
+	TEXT("sus1"),
+	TEXT("Debug: force Account Status (Suspicion). Equivalent to: t66.AccountStatus.Force 1"),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		CVarT66AccountStatusForce->Set(1, ECVF_SetByConsole);
+	})
+);
+
+static FAutoConsoleCommand T66AccountStatusSus2Command(
+	TEXT("sus2"),
+	TEXT("Debug: force Account Status (Cheating Certainty). Equivalent to: t66.AccountStatus.Force 2"),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		CVarT66AccountStatusForce->Set(2, ECVF_SetByConsole);
+	})
+);
+
+static void T66_ClearLead(const TArray<FString>& Args, UWorld* World)
+{
+	(void)Args;
+	if (!World) return;
+	UGameInstance* GI = World->GetGameInstance();
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	if (!LB) return;
+	LB->DebugClearLocalLeaderboard();
+}
+
+// Requested debug console command: "clearlead" (plus a couple of handy aliases).
+static FAutoConsoleCommandWithWorldAndArgs T66ClearLeadCommand(
+	TEXT("clearlead"),
+	TEXT("Debug: clear local leaderboard + local best run summary snapshots."),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_ClearLead)
+);
+
+static FAutoConsoleCommandWithWorldAndArgs T66ClearLeadCommandAlias(
+	TEXT("clear.lead"),
+	TEXT("Debug alias for clearlead."),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_ClearLead)
+);
 
 static bool ParseDifficulty(const FString& In, ET66Difficulty& Out)
 {
@@ -83,6 +133,52 @@ void UT66LeaderboardSubsystem::SaveLocalSave() const
 {
 	if (!LocalSave) return;
 	UGameplayStatics::SaveGameToSlot(LocalSave, LocalSaveSlotName, 0);
+}
+
+void UT66LeaderboardSubsystem::DebugClearLocalLeaderboard()
+{
+	// Delete the core local leaderboard save.
+	(void)UGameplayStatics::DeleteGameInSlot(LocalSaveSlotName, 0);
+
+	// Delete all local best bounty run summary snapshots (all supported difficulty/party combinations).
+	static const ET66Difficulty Diffs[] =
+	{
+		ET66Difficulty::Easy,
+		ET66Difficulty::Medium,
+		ET66Difficulty::Hard,
+		ET66Difficulty::VeryHard,
+		ET66Difficulty::Impossible,
+		ET66Difficulty::Perdition,
+		ET66Difficulty::Final,
+	};
+
+	static const ET66PartySize Parties[] =
+	{
+		ET66PartySize::Solo,
+		ET66PartySize::Duo,
+		ET66PartySize::Trio,
+	};
+
+	for (const ET66Difficulty Diff : Diffs)
+	{
+		for (const ET66PartySize Party : Parties)
+		{
+			const FString Slot = MakeLocalBestBountyRunSummarySlotName(Diff, Party);
+			(void)UGameplayStatics::DeleteGameInSlot(Slot, 0);
+		}
+	}
+
+	// Reset transient state and recreate the save so UI can immediately read a valid object.
+	LocalSave = nullptr;
+	PendingRunSummarySlotName.Reset();
+	PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;
+	bLastHighScoreWasNewBest = false;
+	bLastSpeedRunWasNewBest = false;
+	LastSpeedRunSubmittedStage = 0;
+
+	LoadOrCreateLocalSave();
+
+	UE_LOG(LogTemp, Log, TEXT("Leaderboard: cleared local saves (LocalLeaderboard + LocalBestBountyRunSummary_*_*)"));
 }
 
 FString UT66LeaderboardSubsystem::DifficultyKey(ET66Difficulty Difficulty)
@@ -528,6 +624,110 @@ bool UT66LeaderboardSubsystem::ConsumePendingRunSummaryRequest(FString& OutSaveS
 	OutSaveSlotName = PendingRunSummarySlotName;
 	PendingRunSummarySlotName.Reset();
 	return true;
+}
+
+bool UT66LeaderboardSubsystem::ShouldShowAccountStatusButton() const
+{
+	if (CVarT66AccountStatusForce.GetValueOnGameThread() > 0)
+	{
+		return true;
+	}
+	// Ensure local save is loaded (frontend may query early).
+	if (!LocalSave)
+	{
+		const_cast<UT66LeaderboardSubsystem*>(this)->LoadOrCreateLocalSave();
+	}
+	return LocalSave && (LocalSave->AccountRestriction.Restriction != ET66AccountRestrictionKind::None);
+}
+
+FT66AccountRestrictionRecord UT66LeaderboardSubsystem::GetAccountRestrictionRecord() const
+{
+	const int32 Force = CVarT66AccountStatusForce.GetValueOnGameThread();
+	if (Force > 0)
+	{
+		FT66AccountRestrictionRecord DebugRec;
+		DebugRec.Restriction = (Force >= 2) ? ET66AccountRestrictionKind::CheatingCertainty : ET66AccountRestrictionKind::Suspicion;
+		DebugRec.RestrictionReason =
+			(Force >= 2)
+			? FString(TEXT("Forbidden Event: Impossible outcome detected"))
+			: FString(TEXT("Too Lucky"));
+		DebugRec.RunSummarySlotName = FString(); // optional; leave unset for now
+		DebugRec.AppealStatus = ET66AppealReviewStatus::NotSubmitted;
+		return DebugRec;
+	}
+	if (!LocalSave)
+	{
+		const_cast<UT66LeaderboardSubsystem*>(this)->LoadOrCreateLocalSave();
+	}
+	return LocalSave ? LocalSave->AccountRestriction : FT66AccountRestrictionRecord();
+}
+
+bool UT66LeaderboardSubsystem::HasAccountRestrictionRunSummary() const
+{
+	const FT66AccountRestrictionRecord Rec = GetAccountRestrictionRecord();
+	return !Rec.RunSummarySlotName.IsEmpty() && UGameplayStatics::DoesSaveGameExist(Rec.RunSummarySlotName, 0);
+}
+
+bool UT66LeaderboardSubsystem::CanSubmitAccountAppeal() const
+{
+	const FT66AccountRestrictionRecord Rec = GetAccountRestrictionRecord();
+	if (Rec.Restriction != ET66AccountRestrictionKind::Suspicion)
+	{
+		return false;
+	}
+	// Only allow one submission in the local placeholder implementation.
+	return Rec.AppealStatus == ET66AppealReviewStatus::NotSubmitted;
+}
+
+void UT66LeaderboardSubsystem::SubmitAccountAppeal(const FString& Message, const FString& EvidenceUrl)
+{
+	if (!LocalSave)
+	{
+		LoadOrCreateLocalSave();
+	}
+	if (!LocalSave || !CanSubmitAccountAppeal())
+	{
+		return;
+	}
+
+	FString Msg = Message;
+	FString Url = EvidenceUrl;
+	Msg.TrimStartAndEndInline();
+	Url.TrimStartAndEndInline();
+
+	// Minimal guard: empty submissions do nothing.
+	if (Msg.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AccountStatus: appeal not submitted (empty message)."));
+		return;
+	}
+
+	LocalSave->AccountRestriction.LastAppealMessage = Msg;
+	LocalSave->AccountRestriction.LastEvidenceUrl = Url;
+	LocalSave->AccountRestriction.AppealStatus = ET66AppealReviewStatus::UnderReview;
+	SaveLocalSave();
+
+	UE_LOG(LogTemp, Log, TEXT("AccountStatus: appeal submitted (local placeholder). EvidenceUrl=%s"), *Url);
+}
+
+bool UT66LeaderboardSubsystem::RequestOpenAccountRestrictionRunSummary()
+{
+	const FT66AccountRestrictionRecord Rec = GetAccountRestrictionRecord();
+	if (Rec.RunSummarySlotName.IsEmpty() || !UGameplayStatics::DoesSaveGameExist(Rec.RunSummarySlotName, 0))
+	{
+		return false;
+	}
+
+	PendingRunSummarySlotName = Rec.RunSummarySlotName;
+	PendingReturnModalAfterViewerRunSummary = ET66ScreenType::AccountStatus;
+	return true;
+}
+
+ET66ScreenType UT66LeaderboardSubsystem::ConsumePendingReturnModalAfterViewerRunSummary()
+{
+	const ET66ScreenType Out = PendingReturnModalAfterViewerRunSummary;
+	PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;
+	return Out;
 }
 
 TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const

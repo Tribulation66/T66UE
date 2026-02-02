@@ -15,6 +15,7 @@ class SBorder;
 class SBox;
 class SButton;
 class SImage;
+class UTexture2D;
 struct FSlateBrush;
 class ST66RingWidget;
 class ST66DotWidget;
@@ -185,4 +186,24 @@ protected:
 	FTimerHandle WheelSpinTickHandle;
 	FTimerHandle WheelResolveHandle;
 	FTimerHandle WheelCloseHandle;
+
+	// ============================================================
+	// GC safety for Slate brushes
+	//
+	// IMPORTANT: FSlateBrush does NOT keep UObject resources alive.
+	// If we set a brush resource to a texture loaded via soft reference,
+	// the texture can be GC'd and Slate will crash when trying to paint it.
+	// Keep strong UPROPERTY references for any textures used by Slate brushes.
+	// ============================================================
+	UPROPERTY()
+	TObjectPtr<UTexture2D> LootPromptIconTexture;
+
+	UPROPERTY()
+	TObjectPtr<UTexture2D> PortraitTexture;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UTexture2D>> IdolSlotTextures;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UTexture2D>> InventorySlotTextures;
 };

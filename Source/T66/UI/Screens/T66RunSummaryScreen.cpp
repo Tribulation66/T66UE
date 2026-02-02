@@ -1135,6 +1135,19 @@ void UT66RunSummaryScreen::OnRestartClicked()
 		// Viewer-mode (opened from leaderboard): just close the modal.
 		if (UIManager)
 		{
+			// Single-modal UI: if a caller requested returning to a modal after viewing, honor it.
+			if (UGameInstance* GI = GetGameInstance())
+			{
+				if (UT66LeaderboardSubsystem* LB = GI->GetSubsystem<UT66LeaderboardSubsystem>())
+				{
+					const ET66ScreenType ReturnModal = LB->ConsumePendingReturnModalAfterViewerRunSummary();
+					if (ReturnModal != ET66ScreenType::None)
+					{
+						UIManager->ShowModal(ReturnModal);
+						return;
+					}
+				}
+			}
 			UIManager->CloseModal();
 			return;
 		}
@@ -1156,6 +1169,19 @@ void UT66RunSummaryScreen::OnMainMenuClicked()
 		// Viewer-mode (opened from leaderboard): the main menu is already underneath.
 		if (UIManager)
 		{
+			// Single-modal UI: if a caller requested returning to a modal after viewing, honor it.
+			if (UGameInstance* GI = GetGameInstance())
+			{
+				if (UT66LeaderboardSubsystem* LB = GI->GetSubsystem<UT66LeaderboardSubsystem>())
+				{
+					const ET66ScreenType ReturnModal = LB->ConsumePendingReturnModalAfterViewerRunSummary();
+					if (ReturnModal != ET66ScreenType::None)
+					{
+						UIManager->ShowModal(ReturnModal);
+						return;
+					}
+				}
+			}
 			UIManager->CloseModal();
 			return;
 		}

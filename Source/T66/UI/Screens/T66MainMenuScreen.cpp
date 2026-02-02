@@ -304,5 +304,7 @@ void UT66MainMenuScreen::OnAccountStatusClicked()
 
 bool UT66MainMenuScreen::ShouldShowAccountStatus() const
 {
-	return false;
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	return LB && LB->ShouldShowAccountStatusButton();
 }
