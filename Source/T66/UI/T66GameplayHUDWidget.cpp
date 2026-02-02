@@ -7,12 +7,14 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
@@ -1205,21 +1207,19 @@ void UT66GameplayHUDWidget::RefreshLootPrompt()
 	}
 	if (LootPromptIconBrush.IsValid())
 	{
-		UTexture2D* Tex = nullptr;
-		if (bHasData && !D.Icon.IsNull())
+		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+		if (bHasData && !D.Icon.IsNull() && TexPool)
 		{
-			Tex = D.Icon.Get();
-			if (!Tex)
-			{
-				Tex = D.Icon.LoadSynchronous();
-			}
+			T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, LootPromptIconBrush, FName(TEXT("HUDLootPrompt")), /*bClearWhileLoading*/ true);
 		}
-		LootPromptIconTexture = Tex;
-		LootPromptIconBrush->SetResourceObject(LootPromptIconTexture);
+		else
+		{
+			LootPromptIconBrush->SetResourceObject(nullptr);
+		}
 	}
 	if (LootPromptIconImage.IsValid())
 	{
-		const bool bShow = bHasData && !D.Icon.IsNull() && (D.Icon.Get() != nullptr);
+		const bool bShow = bHasData && !D.Icon.IsNull();
 		LootPromptIconImage->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 	if (LootPromptBorder.IsValid())
@@ -1310,28 +1310,32 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		FT66RarityUtil::ComputeTierAndCount5(RunState->GetMaxHearts(), Tier, Count);
 		PortraitBorder->SetBorderBackgroundColor(Count > 0 ? FT66RarityUtil::GetTierColor(Tier) : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
 	}
+	TSoftObjectPtr<UTexture2D> PortraitSoft;
+	if (GIAsT66 && !GIAsT66->SelectedHeroID.IsNone())
+	{
+		FHeroData HeroData;
+		if (GIAsT66->GetHeroData(GIAsT66->SelectedHeroID, HeroData) && !HeroData.Portrait.IsNull())
+		{
+			PortraitSoft = HeroData.Portrait;
+		}
+	}
+	const bool bHasPortraitRef = !PortraitSoft.IsNull();
+
 	if (PortraitBrush.IsValid())
 	{
-		UTexture2D* Tex = nullptr;
-		if (GIAsT66 && !GIAsT66->SelectedHeroID.IsNone())
+		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+		if (PortraitSoft.IsNull() || !TexPool)
 		{
-			FHeroData HeroData;
-			if (GIAsT66->GetHeroData(GIAsT66->SelectedHeroID, HeroData) && !HeroData.Portrait.IsNull())
-			{
-				Tex = HeroData.Portrait.Get();
-				if (!Tex)
-				{
-					Tex = HeroData.Portrait.LoadSynchronous();
-				}
-			}
+			PortraitBrush->SetResourceObject(nullptr);
 		}
-		PortraitTexture = Tex;
-		PortraitBrush->SetResourceObject(PortraitTexture);
+		else
+		{
+			T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, PortraitBrush, FName(TEXT("HUDPortrait")), /*bClearWhileLoading*/ true);
+		}
 	}
 	if (PortraitImage.IsValid())
 	{
-		const bool bHasPortrait = PortraitBrush.IsValid() && (PortraitBrush->GetResourceObject() != nullptr);
-		PortraitImage->SetVisibility(bHasPortrait ? EVisibility::Visible : EVisibility::Collapsed);
+		PortraitImage->SetVisibility(bHasPortraitRef ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 
 	// Hero level + XP progress ring
@@ -1435,7 +1439,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	{
 		if (!IdolSlotBorders[i].IsValid()) continue;
 		FLinearColor C = FLinearColor(0.18f, 0.18f, 0.22f, 1.f);
-		UTexture2D* IdolTex = nullptr;
+		TSoftObjectPtr<UTexture2D> IdolIconSoft;
 		if (i < Idols.Num() && !Idols[i].IsNone())
 		{
 			C = UT66RunStateSubsystem::GetIdolColor(Idols[i]);
@@ -1444,11 +1448,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				FIdolData IdolData;
 				if (GIAsT66->GetIdolData(Idols[i], IdolData) && !IdolData.Icon.IsNull())
 				{
-					IdolTex = IdolData.Icon.Get();
-					if (!IdolTex)
-					{
-						IdolTex = IdolData.Icon.LoadSynchronous();
-					}
+					IdolIconSoft = IdolData.Icon;
 				}
 			}
 		}
@@ -1456,11 +1456,19 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 		if (IdolSlotBrushes.IsValidIndex(i) && IdolSlotBrushes[i].IsValid())
 		{
-			IdolSlotBrushes[i]->SetResourceObject(IdolTex);
+			UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+			if (IdolIconSoft.IsNull() || !TexPool)
+			{
+				IdolSlotBrushes[i]->SetResourceObject(nullptr);
+			}
+			else
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, IdolIconSoft, this, IdolSlotBrushes[i], FName(TEXT("HUDIdol"), i + 1), /*bClearWhileLoading*/ true);
+			}
 		}
 		if (IdolSlotImages.IsValidIndex(i) && IdolSlotImages[i].IsValid())
 		{
-			IdolSlotImages[i]->SetVisibility(IdolTex ? EVisibility::Visible : EVisibility::Collapsed);
+			IdolSlotImages[i]->SetVisibility(!IdolIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 
 		// Idol level dots (10 max): show one yellow dot per level.
@@ -1483,7 +1491,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 		FLinearColor SlotColor = FLinearColor(0.2f, 0.2f, 0.22f, 1.f);
 		FText Tooltip = FText::GetEmpty();
-		UTexture2D* SlotTex = nullptr;
+		TSoftObjectPtr<UTexture2D> SlotIconSoft;
 		if (i < Inv.Num() && !Inv[i].IsNone())
 		{
 			const FName ItemID = Inv[i];
@@ -1495,14 +1503,10 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				TipLines.Reserve(8);
 				TipLines.Add(Loc ? Loc->GetText_ItemDisplayName(ItemID) : FText::FromName(ItemID));
 
-				// Icon (optional). Prefer already-loaded, but allow a safe sync fallback for UI.
+				// Icon (optional). Do NOT sync-load in gameplay UI; request via the UI texture pool.
 				if (!D.Icon.IsNull())
 				{
-					SlotTex = D.Icon.Get();
-					if (!SlotTex)
-					{
-						SlotTex = D.Icon.LoadSynchronous();
-					}
+					SlotIconSoft = D.Icon;
 				}
 
 				// Main stat line (v1): one foundational stat (excluding Speed), flat numeric bonus.
@@ -1581,19 +1585,21 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		InventorySlotBorders[i]->SetBorderBackgroundColor(SlotColor);
 		InventorySlotBorders[i]->SetToolTipText(Tooltip);
 
-		// GC safety: Slate brushes do NOT keep textures alive. Keep a strong UObject reference per slot.
-		if (InventorySlotTextures.IsValidIndex(i))
-		{
-			InventorySlotTextures[i] = SlotTex;
-		}
-
 		if (InventorySlotBrushes.IsValidIndex(i) && InventorySlotBrushes[i].IsValid())
 		{
-			InventorySlotBrushes[i]->SetResourceObject(SlotTex);
+			UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+			if (SlotIconSoft.IsNull() || !TexPool)
+			{
+				InventorySlotBrushes[i]->SetResourceObject(nullptr);
+			}
+			else
+			{
+					T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, InventorySlotBrushes[i], FName(TEXT("HUDInv"), i + 1), /*bClearWhileLoading*/ true);
+			}
 		}
 		if (InventorySlotImages.IsValidIndex(i) && InventorySlotImages[i].IsValid())
 		{
-			InventorySlotImages[i]->SetVisibility(SlotTex ? EVisibility::Visible : EVisibility::Hidden);
+			InventorySlotImages[i]->SetVisibility(!SlotIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Hidden);
 		}
 	}
 
@@ -1631,12 +1637,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotImages.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotBrushes.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
-	IdolSlotTextures.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolLevelDotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots * UT66RunStateSubsystem::MaxIdolLevel);
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	InventorySlotTextures.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	StatLineTexts.SetNum(6);
 	StatusEffectDots.SetNum(3);
 	StatusEffectDotBoxes.SetNum(3);

@@ -177,6 +177,16 @@ def configure_gameplay_gamemode():
                 cdo.set_editor_property("DefaultPawnClass", hero_class)
                 unreal.log("Set DefaultPawnClass on BP_GameplayGameMode")
 
+            # Ground floor material (runtime-spawned floors use this; soft ref so no sync load)
+            ground_mat_path = "/Game/World/Ground/M_GroundAtlas_2x2.M_GroundAtlas_2x2"
+            if unreal.EditorAssetLibrary.does_asset_exist(ground_mat_path):
+                ground_mat = unreal.EditorAssetLibrary.load_asset(ground_mat_path)
+                if ground_mat:
+                    cdo.set_editor_property("GroundFloorMaterial", ground_mat)
+                    unreal.log("Set GroundFloorMaterial on BP_GameplayGameMode")
+            else:
+                unreal.log(f"Ground material not found ({ground_mat_path}); run ImportGroundAtlas.py first")
+
             unreal.EditorAssetLibrary.save_asset(bp_path)
             return True
         except Exception as e:

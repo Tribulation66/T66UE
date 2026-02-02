@@ -5,6 +5,8 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/Texture2D.h"
@@ -67,8 +69,12 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
 	HeroPortraitBrushes.Reset();
 	HeroPortraitBrushes.Reserve(AllHeroIDs.Num());
-	HeroPortraitTextures.Reset();
-	HeroPortraitTextures.Reserve(AllHeroIDs.Num());
+
+	UT66UITexturePoolSubsystem* TexPool = nullptr;
+	if (UGameInstance* GI0 = UGameplayStatics::GetGameInstance(this))
+	{
+		TexPool = GI0->GetSubsystem<UT66UITexturePoolSubsystem>();
+	}
 
 	for (int32 Row = 0; Row * Columns < AllHeroIDs.Num(); Row++)
 	{
@@ -88,19 +94,13 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 
 				if (!HeroData.Portrait.IsNull())
 				{
-					UTexture2D* Tex = HeroData.Portrait.Get();
-					if (!Tex)
+					PortraitBrush = MakeShared<FSlateBrush>();
+					PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
+					PortraitBrush->ImageSize = FVector2D(72.f, 72.f);
+					HeroPortraitBrushes.Add(PortraitBrush);
+					if (TexPool)
 					{
-						Tex = HeroData.Portrait.LoadSynchronous();
-					}
-					if (Tex)
-					{
-						HeroPortraitTextures.Add(Tex);
-						PortraitBrush = MakeShared<FSlateBrush>();
-						PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
-						PortraitBrush->SetResourceObject(Tex);
-						PortraitBrush->ImageSize = FVector2D(72.f, 72.f);
-						HeroPortraitBrushes.Add(PortraitBrush);
+						T66SlateTexture::BindSharedBrushAsync(TexPool, HeroData.Portrait, this, PortraitBrush, HeroID, /*bClearWhileLoading*/ true);
 					}
 				}
 			}

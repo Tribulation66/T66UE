@@ -2084,6 +2084,41 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
 
 ---
 
+### 2026-02-02 — UI foundation: central Slate texture pool (async, crash-safe) + no sync loads in UI
+
+**Goal**
+- Fix the root class of Slate crashes caused by brushes referencing GC’d textures.
+- Eliminate synchronous texture loads from gameplay UI by using a central async pool.
+- Establish a single convention + helper path for binding `TSoftObjectPtr<UTexture2D>` into Slate.
+
+**What changed**
+- Added central pool subsystem (strong ownership + async load fan-out + stale-request suppression):
+  - `Source/T66/Core/T66UITexturePoolSubsystem.h`
+  - `Source/T66/Core/T66UITexturePoolSubsystem.cpp`
+- Added binding helpers (keyed requests to prevent async races when UI rebinding slots):
+  - `Source/T66/UI/T66SlateTextureHelpers.h`
+  - `Source/T66/UI/T66SlateTextureHelpers.cpp`
+- Refactored UI to remove `LoadSynchronous()` / `LoadObject()` for textures and bind via the pool:
+  - `Source/T66/UI/T66GameplayHUDWidget.h/.cpp`
+  - `Source/T66/UI/T66VendorOverlayWidget.h/.cpp`
+  - `Source/T66/UI/T66GamblerOverlayWidget.h/.cpp`
+  - `Source/T66/UI/T66IdolAltarOverlayWidget.h/.cpp`
+  - `Source/T66/UI/Screens/T66HeroSelectionScreen.h/.cpp`
+  - `Source/T66/UI/Screens/T66HeroGridScreen.h/.cpp`
+  - `Source/T66/UI/Screens/T66RunSummaryScreen.h/.cpp`
+- Updated agent/project convention documentation:
+  - `T66_Cursor_Guidelines.md`
+
+**Localization**
+- No new player-facing runtime strings.
+
+**Verification / proof**
+- ValidateFast builds ✅ (UE 5.7):
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66Editor Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+  - `& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\Build.bat" T66 Win64 Development "C:\UE\T66\T66.uproject" -WaitMutex -FromMsBuild -architecture=x64`
+
+---
+
 ### 2026-02-02 — Gameplay: ensure blue mid-day sky at runtime (SkyAtmosphere)
 
 **Goal**

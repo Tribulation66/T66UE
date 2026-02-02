@@ -4,11 +4,13 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66VendorBoss.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Data/T66DataTypes.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
@@ -144,7 +146,6 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	ItemIconBorders.SetNum(ShopSlotCount);
 	ItemIconImages.SetNum(ShopSlotCount);
 	ItemIconBrushes.SetNum(ShopSlotCount);
-	ItemIconTextureRefs.SetNum(ShopSlotCount);
 	BuyButtons.SetNum(ShopSlotCount);
 	StealButtons.SetNum(ShopSlotCount);
 	BuyButtonTexts.SetNum(ShopSlotCount);
@@ -154,7 +155,6 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	InventorySlotIconTextureRefs.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
@@ -1022,6 +1022,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FName>& Stock = RunState->GetVendorStockItemIDs();
 	const int32 SlotCount = ItemNameTexts.Num();
 	for (int32 i = 0; i < SlotCount; ++i)
@@ -1105,25 +1106,18 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (ItemIconBrushes.IsValidIndex(i) && ItemIconBrushes[i].IsValid())
 		{
-			UTexture2D* Tex = nullptr;
-			if (bHasData && !D.Icon.IsNull())
+			if (bHasData && !D.Icon.IsNull() && TexPool)
 			{
-				Tex = D.Icon.Get();
-				if (!Tex)
-				{
-					Tex = D.Icon.LoadSynchronous();
-				}
+				T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, ItemIconBrushes[i], FName(TEXT("VendorStock"), i + 1), /*bClearWhileLoading*/ true);
 			}
-			if (ItemIconTextureRefs.IsValidIndex(i))
+			else
 			{
-				ItemIconTextureRefs[i] = Tex;
-				Tex = ItemIconTextureRefs[i];
+				ItemIconBrushes[i]->SetResourceObject(nullptr);
 			}
-			ItemIconBrushes[i]->SetResourceObject(Tex);
 		}
 		if (ItemIconImages.IsValidIndex(i) && ItemIconImages[i].IsValid())
 		{
-			const bool bHasIcon = bHasData && !D.Icon.IsNull() && (D.Icon.Get() != nullptr);
+			const bool bHasIcon = bHasData && !D.Icon.IsNull();
 			ItemIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 		}
 		if (ItemTileBorders.IsValidIndex(i) && ItemTileBorders[i].IsValid())
@@ -1230,6 +1224,7 @@ void UT66VendorOverlayWidget::RefreshInventory()
 	if (!RunState) return;
 
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FName>& Inv = RunState->GetInventory();
 
 	// Auto-select the first valid item so the details panel is "big" immediately.
@@ -1280,25 +1275,18 @@ void UT66VendorOverlayWidget::RefreshInventory()
 
 			if (InventorySlotIconBrushes.IsValidIndex(i) && InventorySlotIconBrushes[i].IsValid())
 			{
-				UTexture2D* Tex = nullptr;
-				if (bHasData && !D.Icon.IsNull())
+				if (bHasData && !D.Icon.IsNull() && TexPool)
 				{
-					Tex = D.Icon.Get();
-					if (!Tex)
-					{
-						Tex = D.Icon.LoadSynchronous();
-					}
+					T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, InventorySlotIconBrushes[i], FName(TEXT("VendorInv"), i + 1), /*bClearWhileLoading*/ true);
 				}
-				if (InventorySlotIconTextureRefs.IsValidIndex(i))
+				else
 				{
-					InventorySlotIconTextureRefs[i] = Tex;
-					Tex = InventorySlotIconTextureRefs[i];
+					InventorySlotIconBrushes[i]->SetResourceObject(nullptr);
 				}
-				InventorySlotIconBrushes[i]->SetResourceObject(Tex);
 			}
 			if (InventorySlotIconImages.IsValidIndex(i) && InventorySlotIconImages[i].IsValid())
 			{
-				const bool bHasIcon = bHasData && !D.Icon.IsNull() && (D.Icon.Get() != nullptr);
+				const bool bHasIcon = bHasData && !D.Icon.IsNull();
 				InventorySlotIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 			}
 		}

@@ -40,27 +40,29 @@ def _print_soft(obj, prop_name: str):
 def main():
     unreal.log("=== Ground material debug: START ===")
 
-    # Native CDO
+    # Native CDO (optional; find_class not available in commandlet)
     try:
-        gm_cls = unreal.find_class("T66GameMode")
-        if gm_cls:
-            cdo = unreal.get_default_object(gm_cls)
-            _print_soft(cdo, "GroundFloorMaterial")
-            try:
-                unreal.log(f"[GroundDebug] Native bAutoSetupLevel={cdo.get_editor_property('bAutoSetupLevel')}")
-            except Exception:
-                pass
+        if hasattr(unreal, "find_class"):
+            gm_cls = unreal.find_class("T66GameMode")
+            if gm_cls:
+                cdo = unreal.get_default_object(gm_cls)
+                _print_soft(cdo, "GroundFloorMaterial")
+                try:
+                    unreal.log(f"[GroundDebug] Native bAutoSetupLevel={cdo.get_editor_property('bAutoSetupLevel')}")
+                except Exception:
+                    pass
+        else:
+            unreal.log("[GroundDebug] Skipping native CDO (find_class not available in this context)")
     except Exception as e:
         unreal.log_warning(f"[GroundDebug] Failed to inspect native CDO: {e}")
 
-    # Blueprint GameMode
-    bp_path = "/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode"
-    bp = unreal.EditorAssetLibrary.load_asset(bp_path)
-    if bp:
+    # Blueprint GameMode (commandlet-safe: load_blueprint_class returns UClass)
+    bp_path = "/Game/Blueprints/GameModes/BP_GameplayGameMode"
+    bp_gc = unreal.EditorAssetLibrary.load_blueprint_class(bp_path)
+    if bp_gc:
         try:
-            gen = bp.generated_class
-            cdo2 = unreal.get_default_object(gen)
-            unreal.log(f"[GroundDebug] Loaded BP: {bp_path}")
+            cdo2 = unreal.get_default_object(bp_gc)
+            unreal.log(f"[GroundDebug] Loaded BP class: {bp_path}")
             _print_soft(cdo2, "GroundFloorMaterial")
             try:
                 unreal.log(f"[GroundDebug] BP bAutoSetupLevel={cdo2.get_editor_property('bAutoSetupLevel')}")
@@ -69,7 +71,7 @@ def main():
         except Exception as e:
             unreal.log_warning(f"[GroundDebug] Failed to inspect BP CDO: {e}")
     else:
-        unreal.log_warning(f"[GroundDebug] Missing BP asset: {bp_path}")
+        unreal.log_warning(f"[GroundDebug] Missing or could not load BP: {bp_path}")
 
     unreal.log("=== Ground material debug: DONE ===")
 

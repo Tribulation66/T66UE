@@ -126,6 +126,10 @@ Design for weak CPUs/GPUs and low RAM. Avoid patterns that are “fine on dev ma
 - **No synchronous loads during gameplay**:
   - Avoid `LoadSynchronous()` / `StaticLoadObject()` / `LoadObject()` in gameplay hot paths (spawning, combat, HUD updates).
   - If a sync load is unavoidable, it must happen during a safe “loading” window and be recorded in `memory.md` with justification.
+- **Slate brush texture ownership (crash prevention)**:
+  - Never rely on `FSlateBrush::SetResourceObject(UTexture2D*)` to keep textures alive (Slate does not own UObject lifetimes).
+  - Use `UT66UITexturePoolSubsystem` as the **central owner** for any `UTexture2D` used by Slate UI, and bind via `T66SlateTexture::Bind*` helpers.
+  - Exception: render targets (`UTextureRenderTarget2D`) owned by the widget/screen via `UPROPERTY(Transient)` are safe to bind directly.
 - **No per-frame UI thinking**:
   - No polling/Tick-driven widget updates. Prefer event-driven delegates that update only the affected UI element(s).
   - Avoid 60Hz timers for UI except for tightly bounded animations that stop immediately when not visible.

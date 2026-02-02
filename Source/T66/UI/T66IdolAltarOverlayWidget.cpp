@@ -4,9 +4,11 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Data/T66DataTypes.h"
 #include "Engine/Texture2D.h"
+#include "UI/T66SlateTextureHelpers.h"
 
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -227,36 +229,24 @@ const FSlateBrush* UT66IdolAltarOverlayWidget::GetOrCreateIdolIconBrush(FName Id
 	}
 
 	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
-	UTexture2D* Tex = nullptr;
 
-	if (GI)
-	{
-		FIdolData D;
-		if (GI->GetIdolData(IdolID, D) && !D.Icon.IsNull())
-		{
-			Tex = D.Icon.Get();
-			if (!Tex)
-			{
-				Tex = D.Icon.LoadSynchronous();
-			}
-		}
-	}
-
-	if (!Tex)
+	FIdolData D;
+	const bool bHasData = GI && GI->GetIdolData(IdolID, D);
+	if (!bHasData || D.Icon.IsNull())
 	{
 		IdolIconBrushes.Add(IdolID, nullptr);
-		IdolIconTextureRefs.Remove(IdolID);
 		return nullptr;
 	}
 
-	// Keep the texture alive while the overlay is visible (prevents GC from collecting it).
-	IdolIconTextureRefs.Add(IdolID, Tex);
-
 	TSharedPtr<FSlateBrush> B = MakeShared<FSlateBrush>();
 	B->DrawAs = ESlateBrushDrawType::Image;
-	B->SetResourceObject(Tex);
 	B->ImageSize = FVector2D(64.f, 64.f);
 	IdolIconBrushes.Add(IdolID, B);
+
+	if (UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr)
+	{
+		T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, B, IdolID, /*bClearWhileLoading*/ true);
+	}
 	return B.Get();
 }
 
@@ -269,7 +259,6 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	// (They are referenced by raw pointer inside Slate widgets; if these brushes are local temporaries,
 	// Slate can dereference dangling pointers during later paint/drag operations and crash.)
 	IdolIconBrushes.Reset();
-	IdolIconTextureRefs.Reset();
 
 	const TArray<FName>& Equipped = RunState ? RunState->GetEquippedIdols() : TArray<FName>();
 	TSet<FName> EquippedSet;

@@ -30,10 +30,6 @@ private:
 	TArray<FName> AllHeroIDs;
 	TArray<TSharedPtr<struct FSlateBrush>> HeroPortraitBrushes;
 
-	// GC safety: Slate brushes do not keep UTexture2D resources alive.
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UTexture2D>> HeroPortraitTextures;
-
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	FReply HandleHeroClicked(FName HeroID);
 	FReply HandleCloseClicked();

@@ -5,6 +5,8 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
@@ -1046,7 +1048,6 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 
 	// Ensure 5 stable slots.
 	HeroCarouselPortraitBrushes.SetNum(5);
-	HeroCarouselPortraitTextures.SetNum(5);
 	for (int32 i = 0; i < HeroCarouselPortraitBrushes.Num(); ++i)
 	{
 		if (!HeroCarouselPortraitBrushes[i].IsValid())
@@ -1059,6 +1060,7 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
 		for (int32 Offset = -2; Offset <= 2; ++Offset)
 		{
 			const int32 SlotIdx = Offset + 2;
@@ -1070,27 +1072,25 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 			const int32 HeroIdx = (CurrentHeroIndex + Offset + AllHeroIDs.Num()) % AllHeroIDs.Num();
 			const FName HeroID = AllHeroIDs.IsValidIndex(HeroIdx) ? AllHeroIDs[HeroIdx] : NAME_None;
 
-			UTexture2D* Tex = nullptr;
+			TSoftObjectPtr<UTexture2D> PortraitSoft;
 			if (!HeroID.IsNone())
 			{
 				FHeroData D;
 				if (GI->GetHeroData(HeroID, D) && !D.Portrait.IsNull())
 				{
-					Tex = D.Portrait.Get();
-					if (!Tex)
-					{
-						Tex = D.Portrait.LoadSynchronous();
-					}
+					PortraitSoft = D.Portrait;
 				}
 			}
 
 			const float BoxSize = (Offset == 0) ? 60.f : 45.f;
-			if (HeroCarouselPortraitTextures.IsValidIndex(SlotIdx))
+			if (PortraitSoft.IsNull() || !TexPool)
 			{
-				HeroCarouselPortraitTextures[SlotIdx] = Tex;
-				Tex = HeroCarouselPortraitTextures[SlotIdx];
+				HeroCarouselPortraitBrushes[SlotIdx]->SetResourceObject(nullptr);
 			}
-			HeroCarouselPortraitBrushes[SlotIdx]->SetResourceObject(Tex);
+			else
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, HeroCarouselPortraitBrushes[SlotIdx], FName(TEXT("HeroCarousel"), SlotIdx + 1), /*bClearWhileLoading*/ true);
+			}
 			HeroCarouselPortraitBrushes[SlotIdx]->ImageSize = FVector2D(BoxSize, BoxSize);
 		}
 	}

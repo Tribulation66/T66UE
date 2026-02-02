@@ -188,22 +188,10 @@ protected:
 	FTimerHandle WheelCloseHandle;
 
 	// ============================================================
-	// GC safety for Slate brushes
+	// Slate texture lifetime
 	//
 	// IMPORTANT: FSlateBrush does NOT keep UObject resources alive.
-	// If we set a brush resource to a texture loaded via soft reference,
-	// the texture can be GC'd and Slate will crash when trying to paint it.
-	// Keep strong UPROPERTY references for any textures used by Slate brushes.
+	// We rely on UT66UITexturePoolSubsystem as the central owner for any UTexture2D
+	// used by Slate brushes (async-loaded from soft references).
 	// ============================================================
-	UPROPERTY()
-	TObjectPtr<UTexture2D> LootPromptIconTexture;
-
-	UPROPERTY()
-	TObjectPtr<UTexture2D> PortraitTexture;
-
-	UPROPERTY()
-	TArray<TObjectPtr<UTexture2D>> IdolSlotTextures;
-
-	UPROPERTY()
-	TArray<TObjectPtr<UTexture2D>> InventorySlotTextures;
 };

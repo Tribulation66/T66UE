@@ -44,10 +44,6 @@ private:
 	 */
 	TMap<FName, TSharedPtr<FSlateBrush>> IdolIconBrushes;
 
-	/** Strong refs to keep icon textures from being GC'd while the overlay is open. */
-	UPROPERTY(Transient)
-	TMap<FName, TObjectPtr<UTexture2D>> IdolIconTextureRefs;
-
 	FReply OnConfirm();
 	FReply OnBack();
 

@@ -1,10 +1,12 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66GamblerOverlayWidget.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RngSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/SOverlay.h"
@@ -61,14 +63,15 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	InventorySlotIconTextureRefs.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
 	UT66LocalizationSubsystem* Loc = nullptr;
+	UT66UITexturePoolSubsystem* TexPool = nullptr;
 	if (UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GI = World->GetGameInstance())
 		{
 			Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+			TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
 		}
 	}
 
@@ -84,25 +87,28 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextButton = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
 
 	// --- Game icons (Sprites/Games) ---
-	auto SetupBrushFromTexture = [](FSlateBrush& Brush, UTexture2D* Tex)
+	// Avoid sync loads; request via the central UI texture pool.
+	GameIcon_CoinFlip = FSlateBrush();
+	GameIcon_CoinFlip.ImageSize = FVector2D(72.f, 72.f);
+	GameIcon_CoinFlip.DrawAs = ESlateBrushDrawType::Image;
+
+	GameIcon_Rps = FSlateBrush();
+	GameIcon_Rps.ImageSize = FVector2D(72.f, 72.f);
+	GameIcon_Rps.DrawAs = ESlateBrushDrawType::Image;
+
+	GameIcon_FindBall = FSlateBrush();
+	GameIcon_FindBall.ImageSize = FVector2D(72.f, 72.f);
+	GameIcon_FindBall.DrawAs = ESlateBrushDrawType::Image;
+
+	if (TexPool)
 	{
-		Brush = FSlateBrush();
-		if (Tex)
-		{
-			Brush.SetResourceObject(Tex);
-			Brush.ImageSize = FVector2D(72.f, 72.f);
-			Brush.DrawAs = ESlateBrushDrawType::Image;
-		}
-	};
-
-	GameIconTex_CoinFlip = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Coin.T_Game_Coin"));
-	GameIconTex_Rps = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_RPS.T_Game_RPS"));
-	// Source file name is "Ball game.png" -> importer creates "T_Game_Ball_game"
-	GameIconTex_FindBall = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Sprites/Games/T_Game_Ball_game.T_Game_Ball_game"));
-
-	SetupBrushFromTexture(GameIcon_CoinFlip, GameIconTex_CoinFlip);
-	SetupBrushFromTexture(GameIcon_Rps, GameIconTex_Rps);
-	SetupBrushFromTexture(GameIcon_FindBall, GameIconTex_FindBall);
+		const TSoftObjectPtr<UTexture2D> CoinSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/T_Game_Coin.T_Game_Coin")));
+		const TSoftObjectPtr<UTexture2D> RpsSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/T_Game_RPS.T_Game_RPS")));
+		const TSoftObjectPtr<UTexture2D> BallSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/T_Game_Ball_game.T_Game_Ball_game")));
+		T66SlateTexture::BindBrushAsync(TexPool, CoinSoft, this, GameIcon_CoinFlip, FName(TEXT("GamblerGameIcon"), 1), /*bClearWhileLoading*/ true);
+		T66SlateTexture::BindBrushAsync(TexPool, RpsSoft, this, GameIcon_Rps, FName(TEXT("GamblerGameIcon"), 2), /*bClearWhileLoading*/ true);
+		T66SlateTexture::BindBrushAsync(TexPool, BallSoft, this, GameIcon_FindBall, FName(TEXT("GamblerGameIcon"), 3), /*bClearWhileLoading*/ true);
+	}
 
 	// Inventory slot icon brushes (same sizing as vendor for consistency)
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
@@ -1411,6 +1417,7 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	if (!RunState) return;
 
 	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
@@ -1463,25 +1470,18 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 
 			if (InventorySlotIconBrushes.IsValidIndex(i) && InventorySlotIconBrushes[i].IsValid())
 			{
-				UTexture2D* Tex = nullptr;
-				if (bHasData && !D.Icon.IsNull())
+				if (bHasData && !D.Icon.IsNull() && TexPool)
 				{
-					Tex = D.Icon.Get();
-					if (!Tex)
-					{
-						Tex = D.Icon.LoadSynchronous();
-					}
+					T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, InventorySlotIconBrushes[i], FName(TEXT("GamblerInv"), i + 1), /*bClearWhileLoading*/ true);
 				}
-				if (InventorySlotIconTextureRefs.IsValidIndex(i))
+				else
 				{
-					InventorySlotIconTextureRefs[i] = Tex;
-					Tex = InventorySlotIconTextureRefs[i];
+					InventorySlotIconBrushes[i]->SetResourceObject(nullptr);
 				}
-				InventorySlotIconBrushes[i]->SetResourceObject(Tex);
 			}
 			if (InventorySlotIconImages.IsValidIndex(i) && InventorySlotIconImages[i].IsValid())
 			{
-				const bool bHasIcon = bHasData && !D.Icon.IsNull() && (D.Icon.Get() != nullptr);
+				const bool bHasIcon = bHasData && !D.Icon.IsNull();
 				InventorySlotIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 			}
 		}

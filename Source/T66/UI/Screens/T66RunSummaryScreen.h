@@ -13,7 +13,6 @@ class AT66CompanionPreviewStage;
 class UT66LeaderboardRunSummarySaveGame;
 class SEditableTextBox;
 class SMultiLineEditableTextBox;
-class UTexture2D;
 
 /**
  * Run Summary screen shown on death: 3D preview placeholder, event log, Restart / Main Menu.
@@ -105,13 +104,6 @@ private:
 	/** Brushes for item/idol icon images (resource = UTexture2D). */
 	TArray<TSharedPtr<struct FSlateBrush>> InventoryItemIconBrushes;
 	TArray<TSharedPtr<struct FSlateBrush>> IdolIconBrushes;
-
-	/** Strong refs to keep icon textures alive while this screen is visible (Slate brushes don't keep UObjects alive). */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UTexture2D>> InventoryItemIconTextures;
-
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UTexture2D>> IdolIconTextures;
 
 	// ===== Preview stages (reuse same system as hero/companion selection) =====
 	UPROPERTY(Transient)

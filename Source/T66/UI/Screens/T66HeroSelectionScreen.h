@@ -11,7 +11,6 @@
 class UT66LocalizationSubsystem;
 class AT66HeroPreviewStage;
 struct FSlateBrush;
-class UTexture2D;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
@@ -104,10 +103,6 @@ private:
 
 	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
-
-	/** Strong refs to keep portrait textures alive while referenced by Slate brushes. */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UTexture2D>> HeroCarouselPortraitTextures;
 
 	/** Find the hero preview stage in the world (FrontendLevel) */
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;

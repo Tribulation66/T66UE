@@ -8,6 +8,8 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
@@ -88,8 +90,6 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 	DestroyPreviewCaptures();
 	InventoryItemIconBrushes.Reset();
 	IdolIconBrushes.Reset();
-	InventoryItemIconTextures.Reset();
-	IdolIconTextures.Reset();
 	Super::OnScreenDeactivated_Implementation();
 }
 
@@ -303,12 +303,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		(RunState ? RunState->GetSpeedStat() : 1);
 	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
 	EnsurePreviewCaptures();
 	InventoryItemIconBrushes.Reset();
 	IdolIconBrushes.Reset();
-	InventoryItemIconTextures.Reset();
-	IdolIconTextures.Reset();
 
 	RebuildLogItems();
 	SAssignNew(LogListView, SListView<TSharedPtr<FString>>)
@@ -595,24 +594,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			const FLinearColor IdolColor = !IdolID.IsNone() ? UT66RunStateSubsystem::GetIdolColor(IdolID) : FT66Style::Tokens::Stroke;
 			FIdolData IdolData;
 			const bool bHasIdolData = GI && !IdolID.IsNone() && GI->GetIdolData(IdolID, IdolData);
-			UTexture2D* IdolTex = nullptr;
+			TSharedPtr<FSlateBrush> IdolBrush;
 			if (bHasIdolData && !IdolData.Icon.IsNull())
 			{
-				IdolTex = IdolData.Icon.Get();
-				if (!IdolTex)
-				{
-					IdolTex = IdolData.Icon.LoadSynchronous();
-				}
-			}
-			TSharedPtr<FSlateBrush> IdolBrush;
-			if (IdolTex)
-			{
-				IdolIconTextures.Add(IdolTex);
 				IdolBrush = MakeShared<FSlateBrush>();
 				IdolBrush->DrawAs = ESlateBrushDrawType::Image;
-				IdolBrush->SetResourceObject(IdolTex);
 				IdolBrush->ImageSize = FVector2D(18.f, 18.f);
 				IdolIconBrushes.Add(IdolBrush);
+				if (TexPool)
+				{
+					T66SlateTexture::BindSharedBrushAsync(TexPool, IdolData.Icon, this, IdolBrush, IdolID, /*bClearWhileLoading*/ true);
+				}
 			}
 
 			IdolsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
@@ -666,24 +658,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				if (ItemID.IsNone()) continue;
 				FItemData ItemData;
 				const bool bHasItemData = GI && GI->GetItemData(ItemID, ItemData);
-				UTexture2D* ItemTex = nullptr;
+				TSharedPtr<FSlateBrush> ItemBrush;
 				if (bHasItemData && !ItemData.Icon.IsNull())
 				{
-					ItemTex = ItemData.Icon.Get();
-					if (!ItemTex)
-					{
-						ItemTex = ItemData.Icon.LoadSynchronous();
-					}
-				}
-				TSharedPtr<FSlateBrush> ItemBrush;
-				if (ItemTex)
-				{
-					InventoryItemIconTextures.Add(ItemTex);
 					ItemBrush = MakeShared<FSlateBrush>();
 					ItemBrush->DrawAs = ESlateBrushDrawType::Image;
-					ItemBrush->SetResourceObject(ItemTex);
 					ItemBrush->ImageSize = FVector2D(18.f, 18.f);
 					InventoryItemIconBrushes.Add(ItemBrush);
+					if (TexPool)
+					{
+						T66SlateTexture::BindSharedBrushAsync(TexPool, ItemData.Icon, this, ItemBrush, ItemID, /*bClearWhileLoading*/ true);
+					}
 				}
 
 				InvBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
