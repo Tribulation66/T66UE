@@ -1678,6 +1678,7 @@ void AT66GameMode::EnsureLevelSetup()
 	UE_LOG(LogTemp, Log, TEXT("Checking level setup..."));
 	
 	SpawnFloorIfNeeded();
+
 	SpawnColiseumArenaIfNeeded();
 	SpawnTutorialArenaIfNeeded();
 	TryApplyGroundFloorMaterialToAllFloors();

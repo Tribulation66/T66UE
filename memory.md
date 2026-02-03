@@ -52,9 +52,9 @@ Use `LOCTEXT` / `NSLOCTEXT` and/or **String Tables** (`FText::FromStringTable`) 
   - Source FBX packs (`.zip`) may live under either:
     - `SourceAssets/Models/**` (preferred), or
     - `SourceAssets/Extracted/Models/**` (current repo layout as of 2026-02-02)
-  - Extracted to `<models-root>/Extracted/**` by `Scripts/ImportWorldModels.py`
+  - Extracted to `<models-root>/Extracted/**` by `Scripts/ImportModels.py`
   - Imported meshes live under `/Game/World/**` and `/Game/Characters/NPCs/**`
-  - Import script: `Scripts/ImportWorldModels.py`
+  - Import script: `Scripts/ImportModels.py`
   - Important: loot bags import into per-color subfolders (`/Game/World/LootBags/Black|Red|Yellow|White`) to avoid material/texture name collisions (`Material_001`, `Image_0`, etc)
   - Important: Trees/Trucks/Wheels also import into per-color subfolders (`/Game/World/Interactables/Trees|Trucks|Wheels/Black|Red|Yellow|White`) to avoid the same collisions
 - **Ground pipeline status:** ✅ 4 atlas materials (R0/R90/R180/R270) — minimal TexCoord×TilingScale graph (SM6-safe). `Scripts/BuildGroundAtlas.py` + `Scripts/ImportGroundAtlas.py`. GameMode assigns one per floor by position.
@@ -111,6 +111,40 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 ---
 
 ## 4) Change log (append-only)
+
+### 2026-02-03 — Remove redundant scripts; rename ImportWorldModels → ImportModels
+
+**What changed**
+- **Removed scripts:** SetupComplete.py, ConfigureAssets.py, ConfigureMainMenu.py, ImportSourceAssetsModels.py (redundant with FullSetup / ImportModels).
+- **Renamed:** ImportWorldModels.py → ImportModels.py; all references updated (FullSetup.py, SetupAllAssetsAndDataTables.py, README_Scripts.md, memory.md).
+
+### 2026-02-02 — Vending machine (Vending Machine Black): import + spawn in start area
+
+**Goal**
+- Use the `SourceAssets/Models/Vending Machine Black` folder: apply textures via FBX import and spawn the static mesh in the start area of the map.
+
+**What changed**
+- `Scripts/ImportModels.py`:
+  - Added support for **direct folders** (no .zip): scans `SourceAssets/Models` for folders whose name contains "vending" and "black".
+  - Imports the FBX from that folder (with textures/materials via existing `_import_fbx_static`) to `/Game/World/Interactables/VendingMachine/SM_VendingMachine_Black`.
+  - Docstring updated to list the new asset path.
+- `Source/T66/Gameplay/T66GameMode.h`:
+  - Added `TSoftObjectPtr<UStaticMesh> StartAreaVendingMachineMesh` (default: `/Game/World/Interactables/VendingMachine/SM_VendingMachine_Black`).
+  - Added `SpawnStartAreaVendingMachineIfNeeded()` declaration.
+- `Source/T66/Gameplay/T66GameMode.cpp`:
+  - Constructor sets default `StartAreaVendingMachineMesh`.
+  - `EnsureLevelSetup()` now calls `SpawnStartAreaVendingMachineIfNeeded()` after `SpawnFloorIfNeeded()`.
+  - `SpawnStartAreaVendingMachineIfNeeded()`: finds or spawns a static mesh actor with tag `T66_StartArea_VendingMachine` at start area location `(-13000, -1200, 0)` (floor top Z=0, south of center), loads mesh sync during level setup, sets mesh, adds to `SpawnedSetupActors`. Skipped in Coliseum stage.
+
+**Localization**
+- No new player-facing strings.
+
+**Verification**
+- ValidateFast (T66Editor Win64 Development) ✅.
+
+**User steps**
+1. **Import the vending machine** (run inside Unreal Editor): Tools → Execute Python Script… → `Scripts/ImportModels.py` (or `py "C:/UE/T66/Scripts/ImportModels.py"`). This imports `SourceAssets/Models/Vending Machine Black/Model.fbx` with textures to `/Game/World/Interactables/VendingMachine/SM_VendingMachine_Black`.
+2. **Play**: The vending machine will spawn in the start area automatically when the level loads (no Coliseum).
 
 ### 2026-02-02 — Ground: 4 material variants (SM6-safe) + procedural per-floor assignment
 
@@ -2199,7 +2233,7 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
   - Trickster/Ouroboros use `DT_CharacterVisuals` (and force `NPCID` in `BeginPlay` to handle already-placed instances).
 - **Automation scripts (run in full editor)**
   - `Scripts/ImportSpriteTextures.py`: imports PNGs under `/Game/UI/Sprites/**` with UI texture settings.
-  - `Scripts/ImportWorldModels.py`: extracts/imports model zips under `/Game/World/**` and NPC skeletal meshes under `/Game/Characters/NPCs/**`.
+  - `Scripts/ImportModels.py`: extracts/imports model zips under `/Game/World/**` and NPC skeletal meshes under `/Game/Characters/NPCs/**`.
   - `Scripts/SetupAllAssetsAndDataTables.py`: one-shot orchestrator (sprites + models + DataTables).
 
 **Notes**
@@ -2210,10 +2244,10 @@ Gameplay: T = HUD toggle, F = Interact, Esc = Pause
 
 ---
 
-### 2026-02-02 — ImportWorldModels: support `SourceAssets/Extracted/Models` + reimport per-color interactables
+### 2026-02-02 — ImportModels: support `SourceAssets/Extracted/Models` + reimport per-color interactables
 
 **What changed**
-- `Scripts/ImportWorldModels.py` now scans both `SourceAssets/Models/**` and `SourceAssets/Extracted/Models/**` for `.zip` packs (some repo layouts relocate model zips under `Extracted/Models`).
+- `Scripts/ImportModels.py` now scans both `SourceAssets/Models/**` and `SourceAssets/Extracted/Models/**` for `.zip` packs (some repo layouts relocate model zips under `Extracted/Models`).
 - Re-ran the importer successfully (unattended editor `-ExecutePythonScript`) and confirmed per-color subfolders exist on disk for:
   - `Content/World/Interactables/Trees/Black|Red|Yellow|White/`
   - `Content/World/Interactables/Trucks/Black|Red|Yellow|White/`

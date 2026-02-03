@@ -37,10 +37,10 @@ def main():
         unreal.log_error(f"[SetupAll] ImportSpriteTextures import failed: {e}")
 
     try:
-        import ImportWorldModels
-        _safe_call(ImportWorldModels.main, "ImportWorldModels")
+        import ImportModels
+        _safe_call(ImportModels.main, "ImportModels")
     except Exception as e:
-        unreal.log_error(f"[SetupAll] ImportWorldModels import failed: {e}")
+        unreal.log_error(f"[SetupAll] ImportModels import failed: {e}")
 
     try:
         import ImportData
