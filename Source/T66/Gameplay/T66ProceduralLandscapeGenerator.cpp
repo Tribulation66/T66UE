@@ -71,6 +71,8 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateHeightfield: invalid params (amplitude or scales)"));
 		return false;
 	}
+	const bool bUseSmallScale = Params.SmallScaleMeters >= 1.f;
+	const bool bOnlyVL = Params.bOnlyVeryLargeHills;
 
 	OutHeights.SetNumUninitialized(SizeX * SizeY);
 
@@ -79,20 +81,34 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 	const float VL = Params.VeryLargeScaleMeters;
 	const float L = Params.LargeScaleMeters;
 	const float M = Params.MediumScaleMeters;
+	const float S = bUseSmallScale ? Params.SmallScaleMeters : 0.f;
+	const float OriginX = Params.LandscapeOriginX;
+	const float OriginY = Params.LandscapeOriginY;
 
 	for (int32 Jy = 0; Jy < SizeY; ++Jy)
 	{
 		for (int32 Ix = 0; Ix < SizeX; ++Ix)
 		{
-			const float WorldX = Ix * QuadSizeUU;
-			const float WorldY = Jy * QuadSizeUU;
+			const float WorldX = OriginX + Ix * QuadSizeUU;
+			const float WorldY = OriginY + Jy * QuadSizeUU;
 			// Convert UU to meters (1 m = 100 UU)
 			const float WxM = WorldX / 100.f;
 			const float WyM = WorldY / 100.f;
 
-			float H = 0.65f * T66NoiseSigned(Seed, WxM, WyM, VL)
-				+ 0.25f * T66NoiseSigned(Seed + 1, WxM, WyM, L)
-				+ 0.10f * T66NoiseSigned(Seed + 2, WxM, WyM, M);
+			float H;
+			if (bOnlyVL)
+			{
+				H = T66NoiseSigned(Seed, WxM, WyM, VL);  // Single octave: sparse very large hills only
+			}
+			else
+			{
+				// Mix: ~3 large hills (VL) + ~4 medium hills (L) inside miasma; same height from amplitude
+				H = 0.55f * T66NoiseSigned(Seed, WxM, WyM, VL)
+					+ 0.45f * T66NoiseSigned(Seed + 1, WxM, WyM, L);
+				// Optional extra detail (disable for clean 3 large + 4 medium)
+				// H += 0.14f * T66NoiseSigned(Seed + 2, WxM, WyM, M);
+				// if (bUseSmallScale) H += 0.08f * T66NoiseSigned(Seed + 3, WxM, WyM, S);
+			}
 			H *= A;
 
 			if (Params.bCarveRiverValley)
@@ -110,6 +126,59 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 			}
 
 			OutHeights[Jy * SizeX + Ix] = H;
+		}
+	}
+
+	// Enforce large hills spread: large-hill peaks cannot be right next to each other (within LargeHillMinSpacingUU)
+	if (!bOnlyVL && Params.LargeHillMinSpacingUU > 0.f)
+	{
+		TArray<float> VLOnly;
+		VLOnly.SetNumUninitialized(SizeX * SizeY);
+		for (int32 Jy = 0; Jy < SizeY; ++Jy)
+		{
+			for (int32 Ix = 0; Ix < SizeX; ++Ix)
+			{
+				const float WxM = (OriginX + Ix * QuadSizeUU) / 100.f;
+				const float WyM = (OriginY + Jy * QuadSizeUU) / 100.f;
+				VLOnly[Jy * SizeX + Ix] = T66NoiseSigned(Seed, WxM, WyM, VL);
+			}
+		}
+		struct FPeak { int32 Idx; float Val; float Wx; float Wy; };
+		TArray<FPeak> Peaks;
+		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+		{
+			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+			{
+				const int32 Idx = Jy * SizeX + Ix;
+				const float V = VLOnly[Idx];
+				if (V <= VLOnly[Idx - 1] || V <= VLOnly[Idx + 1] || V <= VLOnly[Idx - SizeX] || V <= VLOnly[Idx + SizeX] ||
+				    V <= VLOnly[Idx - SizeX - 1] || V <= VLOnly[Idx - SizeX + 1] || V <= VLOnly[Idx + SizeX - 1] || V <= VLOnly[Idx + SizeX + 1])
+					continue;
+				const float Wx = OriginX + Ix * QuadSizeUU;
+				const float Wy = OriginY + Jy * QuadSizeUU;
+				Peaks.Add({ Idx, V, Wx, Wy });
+			}
+		}
+		Peaks.Sort([](const FPeak& A, const FPeak& B) { return A.Val > B.Val; });
+		const float MinSpacingSq = Params.LargeHillMinSpacingUU * Params.LargeHillMinSpacingUU;
+		for (int32 i = 0; i < Peaks.Num(); ++i)
+		{
+			const FPeak& P = Peaks[i];
+			bool bTooCloseToHigher = false;
+			for (int32 j = 0; j < i; ++j)
+			{
+				const float Dx = P.Wx - Peaks[j].Wx;
+				const float Dy = P.Wy - Peaks[j].Wy;
+				if ((Dx * Dx + Dy * Dy) < MinSpacingSq)
+				{
+					bTooCloseToHigher = true;
+					break;
+				}
+			}
+			if (bTooCloseToHigher)
+			{
+				OutHeights[P.Idx] *= 0.28f;  // dampen so this is no longer a distinct large-hill peak
+			}
 		}
 	}
 
@@ -145,6 +214,70 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 		Swap(OutHeights, Temp);
 	}
 
+	// Flat zones at world Z=0 with smooth blend into hills (start area and boss area)
+	static constexpr float StartMinX = -17600.f, StartMaxX = -13600.f, StartMinY = -2000.f, StartMaxY = 2000.f;
+	static constexpr float BossMinX = 13600.f, BossMaxX = 17600.f, BossMinY = -2000.f, BossMaxY = 2000.f;
+	const float BlendRadiusUU = 2500.f;  // UU over which to blend from flat to hills (wider = gentler slope)
+	const auto BlendTowardFlat = [BlendRadiusUU](float WorldVal, float ZoneMin, float ZoneMax) -> float
+	{
+		const float DistOut = FMath::Max(ZoneMin - WorldVal, FMath::Max(WorldVal - ZoneMax, 0.f));
+		const float T = FMath::Clamp(1.f - DistOut / BlendRadiusUU, 0.f, 1.f);
+		return FMath::SmoothStep(0.f, 1.f, T); // smoother transition at the edge
+	};
+
+	for (int32 Jy = 0; Jy < SizeY; ++Jy)
+	{
+		for (int32 Ix = 0; Ix < SizeX; ++Ix)
+		{
+			const float WorldX = OriginX + Ix * QuadSizeUU;
+			const float WorldY = OriginY + Jy * QuadSizeUU;
+			const int32 Idx = Jy * SizeX + Ix;
+			float H = OutHeights[Idx];
+
+			const float StartBlendX = BlendTowardFlat(WorldX, StartMinX, StartMaxX);
+			const float StartBlendY = BlendTowardFlat(WorldY, StartMinY, StartMaxY);
+			const float StartBlend = StartBlendX * StartBlendY;
+
+			const float BossBlendX = BlendTowardFlat(WorldX, BossMinX, BossMaxX);
+			const float BossBlendY = BlendTowardFlat(WorldY, BossMinY, BossMaxY);
+			const float BossBlend = BossBlendX * BossBlendY;
+
+			const float FlatBlend = FMath::Max(StartBlend, BossBlend);
+			if (FlatBlend > 0.f)
+			{
+				H = FMath::Lerp(H, 0.f, FlatBlend);
+			}
+			OutHeights[Idx] = H;
+		}
+	}
+
+	// Constrain hills to inside miasma walls (SafeHalfExtent = 18400). Outside this box, blend height to 0 so no hills extend past the walls.
+	static constexpr float MiasmaHalfExtent = 18400.f;
+	static constexpr float MiasmaBlendMarginUU = 600.f;  // Over this distance inside the wall, blend down so peaks don't stick out
+	for (int32 Jy = 0; Jy < SizeY; ++Jy)
+	{
+		for (int32 Ix = 0; Ix < SizeX; ++Ix)
+		{
+			const float WorldX = OriginX + Ix * QuadSizeUU;
+			const float WorldY = OriginY + Jy * QuadSizeUU;
+			const int32 Idx = Jy * SizeX + Ix;
+			const float DistInX = MiasmaHalfExtent - FMath::Abs(WorldX);
+			const float DistInY = MiasmaHalfExtent - FMath::Abs(WorldY);
+			// Mask = 1 fully inside; 0 outside; smooth blend in the margin band
+			const float Tx = FMath::Clamp(DistInX / MiasmaBlendMarginUU, 0.f, 1.f);
+			const float Ty = FMath::Clamp(DistInY / MiasmaBlendMarginUU, 0.f, 1.f);
+			const float Mask = FMath::Min(Tx, Ty);
+			const float SmoothedMask = Mask * Mask * (3.f - 2.f * Mask);
+			OutHeights[Idx] *= SmoothedMask;
+		}
+	}
+
+	// Z=0 is the lowest point: clamp so no geometry below 0 (flat zones stay at 0; prevents spawn under ground)
+	for (float& Hi : OutHeights)
+	{
+		Hi = FMath::Max(0.f, Hi);
+	}
+
 	return true;
 }
 
@@ -163,11 +296,15 @@ void FT66ProceduralLandscapeGenerator::FloatsToLandscapeHeightData(const TArray<
 
 void FT66ProceduralLandscapeGenerator::GetDimensionsForPreset(ET66LandscapeSizePreset Preset, int32& OutSizeX, int32& OutSizeY)
 {
-	// UE Landscape: SectionSize=63, SectionsPerComponent=1 => 63 quads per component, 64 vertices per component.
-	// Small: 8x8 components => 64*8+1 = 513? Actually 8*63+1 = 505. So 505 x 505.
-	// Large: 16x16 => 16*63+1 = 1009. 1009 x 1009.
+	// UE Landscape: SectionSize=63, SectionsPerComponent=1 => (Size-1) must be multiple of 63.
+	// MainMap: 505x505 (500x500 requested; 505 = 8*63+1 is nearest valid).
+	// Small: 505x505. Large: 1009x1009.
 	switch (Preset)
 	{
+	case ET66LandscapeSizePreset::MainMap:
+		OutSizeX = 8 * 63 + 1;  // 505 -> 50400 UU
+		OutSizeY = 8 * 63 + 1;  // 505
+		break;
 	case ET66LandscapeSizePreset::Small:
 		OutSizeX = 8 * 63 + 1;  // 505
 		OutSizeY = 8 * 63 + 1;
