@@ -20,9 +20,9 @@ class T66_API AT66MiasmaManager : public AActor
 public:
 	AT66MiasmaManager();
 
-	/** Half-extent of square area to cover (centered at world origin). */
+	/** Half-extent of square area to cover (centered at world origin). (4x map = 2x linear) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
-	float CoverageHalfExtent = 9800.f;
+	float CoverageHalfExtent = 19600.f;
 
 	/** Tile size (square). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
@@ -35,6 +35,10 @@ public:
 	/** Spawn order random seed. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
 	int32 Seed = 1337;
+
+	/** When true, no ground miasma tiles are spawned or updated. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Miasma")
+	bool bSpawningPaused = true;
 
 	/** Clears all spawned miasma tiles. */
 	void ClearAllMiasma();

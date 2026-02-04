@@ -120,10 +120,10 @@ protected:
 	/** Spawn a floor plane if none exists */
 	void SpawnFloorIfNeeded();
 
-	/** Spawn boundary walls so the player can't fall off. */
-	void SpawnBoundaryWallsIfNeeded();
-	void SpawnStartAreaExitWallsIfNeeded();
-	void SpawnPlatformEdgeWallsIfNeeded();
+	/** Spawn a very short red wall fully around the start area (inside main map). */
+	void SpawnStartAreaWallsIfNeeded();
+	/** Spawn a very short red wall fully around the boss area (same style as start). */
+	void SpawnBossAreaWallsIfNeeded();
 
 	/** Spawn lighting if none exists */
 	void SpawnLightingIfNeeded();

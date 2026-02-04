@@ -298,8 +298,9 @@ public:
 		bMinimap = InArgs._bMinimap;
 		bShowLabels = InArgs._bShowLabels;
 
-		FullWorldMin = FVector2D(-13000.f, -10000.f);
-		FullWorldMax = FVector2D(13000.f, 10000.f);
+		// 4x map: 2x linear extent
+		FullWorldMin = FVector2D(-26000.f, -20000.f);
+		FullWorldMax = FVector2D(26000.f, 20000.f);
 		MinimapHalfExtent = 2500.f;
 
 		// Safety: never draw markers outside the widget bounds.

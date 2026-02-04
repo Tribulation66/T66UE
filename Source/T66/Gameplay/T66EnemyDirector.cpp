@@ -83,7 +83,7 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
 
-	if (RunState->GetStageTimerActive())
+	if (!bSpawningPaused && RunState->GetStageTimerActive())
 	{
 		if (!bSpawningArmed)
 		{
@@ -106,6 +106,8 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 
 void AT66EnemyDirector::SpawnWave()
 {
+	if (bSpawningPaused) return;
+
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!PlayerPawn) return;
 

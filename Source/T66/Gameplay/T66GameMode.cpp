@@ -9,6 +9,7 @@
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66MiasmaManager.h"
+#include "Gameplay/T66MiasmaBoundary.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66SaintNPC.h"
@@ -130,7 +131,7 @@ AT66GameMode::AT66GameMode()
 	DefaultHeroClass = AT66HeroBase::StaticClass();
 
 	// Coliseum arena lives inside GameplayLevel, off to the side (walled off).
-	ColiseumCenter = FVector(-10000.f, -5200.f, 200.f);
+	ColiseumCenter = FVector(-20000.f, -10400.f, 200.f);
 
 	// Default ground materials (4 rotation variants); pick one per floor by position
 	GroundFloorMaterials.Empty();
@@ -224,6 +225,7 @@ void AT66GameMode::BeginPlay()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	GetWorld()->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 	MiasmaManager = GetWorld()->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	GetWorld()->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 	SpawnBossForCurrentStage();
 	SpawnBossGateIfNeeded();
 
@@ -312,8 +314,8 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 
 	FRandomStream Rng(StageNum * 971 + 17);
 
-	// Main map square bounds (centered at 0,0). Keep some margin from edges.
-	static constexpr float MainHalfExtent = 9200.f;
+	// Main map square bounds (centered at 0,0). Keep some margin from edges. (4x area = 2x linear)
+	static constexpr float MainHalfExtent = 18400.f;
 	static constexpr float SpawnZ = 40.f;
 	static constexpr float MinDistBetweenTiles = 420.f;
 	static constexpr float SafeBubbleMargin = 350.f;
@@ -321,32 +323,32 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 
 	TArray<FVector> UsedLocs;
 
-	// No-spawn zones: keep gameplay spawns out of special enclosed arenas and the Start Area.
+	// No-spawn zones: keep gameplay spawns out of start box (inside main) and special arenas.
 	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
-		// Start Area floor is a 6000x6000 square centered at (-10000, 0).
-		// Note: our spawn sample range overlaps its east edge (X in [-9200, -7000]), so we must explicitly exclude it.
-		static constexpr float StartHalf = 3000.f;
-		static constexpr float StartMargin = 300.f;
-		static constexpr float StartCenterX = -13000.f;
-		static constexpr float StartCenterY = 0.f;
-		if (FMath::Abs(L.X - StartCenterX) <= (StartHalf + StartMargin) && FMath::Abs(L.Y - StartCenterY) <= (StartHalf + StartMargin))
+		// Start area: square inside main map X -17600..-13600, Y -2000..2000 (gap from miasma wall).
+		static constexpr float StartBoxWest = -17600.f, StartBoxEast = -13600.f;
+		static constexpr float StartBoxNorth = 2000.f, StartBoxSouth = -2000.f;
+		static constexpr float StartMargin = 200.f;
+		if (L.X >= (StartBoxWest - StartMargin) && L.X <= (StartBoxEast + StartMargin) &&
+		    L.Y >= (StartBoxSouth - StartMargin) && L.Y <= (StartBoxNorth + StartMargin))
 		{
 			return true;
 		}
 
-		// Special enclosed arenas (Boost / Coliseum / Tutorial) live in-map at Y=+7500.
-		static constexpr float ArenaHalf = 2000.f;   // 4000x4000 floors
+		// Boost and Coliseum at Y=+15000; Tutorial to the side of main map (Y=+27000, separated by gap).
+		static constexpr float ArenaHalf = 4000.f;
 		static constexpr float ArenaMargin = 300.f;
-		struct FArena2D { float X; float Y; };
+		static constexpr float TutorialArenaHalf = 4000.f;
+		struct FArena2D { float X; float Y; float Half; };
 		static constexpr FArena2D Arenas[] = {
-			{ -5000.f, 7500.f }, // Boost
-			{     0.f, 7500.f }, // Coliseum
-			{  5000.f, 7500.f }, // Tutorial
+			{ -10000.f, 15000.f, ArenaHalf }, // Boost
+			{      0.f, 15000.f, ArenaHalf }, // Coliseum
+			{      0.f, 27000.f, TutorialArenaHalf }, // Tutorial (north of main, gap from Y=20000)
 		};
 		for (const FArena2D& A : Arenas)
 		{
-			if (FMath::Abs(L.X - A.X) <= (ArenaHalf + ArenaMargin) && FMath::Abs(L.Y - A.Y) <= (ArenaHalf + ArenaMargin))
+			if (FMath::Abs(L.X - A.X) <= (A.Half + ArenaMargin) && FMath::Abs(L.Y - A.Y) <= (A.Half + ArenaMargin))
 			{
 				return true;
 			}
@@ -609,7 +611,7 @@ void AT66GameMode::SpawnBossGateIfNeeded()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// Between main square and boss square (pillars).
-	const FVector BossGateLoc(6000.f, 0.f, 0.f);
+	const FVector BossGateLoc(12000.f, 0.f, 0.f);
 	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, FRotator::ZeroRotator, SpawnParams);
 }
 
@@ -783,7 +785,7 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// Place right before the boss pillars (main->boss connector).
-	const FVector BossGateLoc(6000.f, 0.f, 0.f);
+	const FVector BossGateLoc(12000.f, 0.f, 0.f);
 	const FVector GateLoc = BossGateLoc + FVector(-800.f, 0.f, 0.f);
 	const FVector TricksterLoc = GateLoc + FVector(-250.f, 200.f, 0.f);
 
@@ -1184,8 +1186,8 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 	// Spawn once per level (gate is a world landmark).
 	if (StartGate) return;
 
-	// Start Gate between start square and main square (pillars).
-	const FVector SpawnLoc(-6000.f, 0.f, 0.f);
+	// Start Gate at the opening of the start-area box (east side).
+	const FVector SpawnLoc(-13100.f, 0.f, 0.f);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
@@ -1211,40 +1213,40 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const int32 StageNum = RunState->GetCurrentStage();
 	FRandomStream Rng(StageNum * 1337 + 42);
 
-	// Main map square bounds (centered at 0,0). Keep some margin from walls.
-	static constexpr float MainHalfExtent = 9200.f;
+	// Main map square bounds (centered at 0,0). Keep some margin from walls. (4x area = 2x linear)
+	static constexpr float MainHalfExtent = 18400.f;
 	static constexpr float SpawnZ = 220.f;
 	static constexpr float MinDistBetweenInteractables = 900.f;
 	static constexpr float SafeBubbleMargin = 250.f;
 
 	TArray<FVector> UsedLocs;
 
-	// No-spawn zones: keep gameplay spawns out of special enclosed arenas and the Start Area.
+	// No-spawn zones: keep gameplay spawns out of start box (inside main) and special arenas.
 	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
-		// Start Area floor is a 6000x6000 square centered at (-10000, 0).
-		// Note: our spawn sample range overlaps its east edge (X in [-9200, -7000]), so we must explicitly exclude it.
-		static constexpr float StartHalf = 3000.f;
-		static constexpr float StartMargin = 300.f;
-		static constexpr float StartCenterX = -13000.f;
-		static constexpr float StartCenterY = 0.f;
-		if (FMath::Abs(L.X - StartCenterX) <= (StartHalf + StartMargin) && FMath::Abs(L.Y - StartCenterY) <= (StartHalf + StartMargin))
+		// Start area: square inside main map X -17600..-13600, Y -2000..2000 (gap from miasma wall).
+		static constexpr float StartBoxWest = -17600.f, StartBoxEast = -13600.f;
+		static constexpr float StartBoxNorth = 2000.f, StartBoxSouth = -2000.f;
+		static constexpr float StartMargin = 200.f;
+		if (L.X >= (StartBoxWest - StartMargin) && L.X <= (StartBoxEast + StartMargin) &&
+		    L.Y >= (StartBoxSouth - StartMargin) && L.Y <= (StartBoxNorth + StartMargin))
 		{
 			return true;
 		}
 
-		// Special enclosed arenas (Boost / Coliseum / Tutorial) live in-map at Y=+7500.
-		static constexpr float ArenaHalf = 2000.f;   // 4000x4000 floors
+		// Boost and Coliseum at Y=+15000; Tutorial to the side of main map (Y=+27000, separated by gap).
+		static constexpr float ArenaHalf = 4000.f;
 		static constexpr float ArenaMargin = 300.f;
-		struct FArena2D { float X; float Y; };
+		static constexpr float TutorialArenaHalf = 4000.f;
+		struct FArena2D { float X; float Y; float Half; };
 		static constexpr FArena2D Arenas[] = {
-			{ -5000.f, 7500.f }, // Boost
-			{     0.f, 7500.f }, // Coliseum
-			{  5000.f, 7500.f }, // Tutorial
+			{ -10000.f, 15000.f, ArenaHalf }, // Boost
+			{      0.f, 15000.f, ArenaHalf }, // Coliseum
+			{      0.f, 27000.f, TutorialArenaHalf }, // Tutorial (north of main, gap from Y=20000)
 		};
 		for (const FArena2D& A : Arenas)
 		{
-			if (FMath::Abs(L.X - A.X) <= (ArenaHalf + ArenaMargin) && FMath::Abs(L.Y - A.Y) <= (ArenaHalf + ArenaMargin))
+			if (FMath::Abs(L.X - A.X) <= (A.Half + ArenaMargin) && FMath::Abs(L.Y - A.Y) <= (A.Half + ArenaMargin))
 			{
 				return true;
 			}
@@ -1446,40 +1448,8 @@ void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
 	const int32 GoldAmount = 200 * DiffIndex;          // Medium=200, Hard=400, ...
 	const int32 LootBags = 2 + (DiffIndex * 2);        // Medium=4, Hard=6, ...
 
-	// Place boost platform in the Start Area, but offset so it's clearly separate.
-	const FVector PlatformCenter(-10000.f, 5200.f, -50.f);
-
-	// Platform floor
-	{
-		UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-		if (CubeMesh)
-		{
-			const FName Tag(TEXT("T66_Floor_Boost"));
-			bool bHas = false;
-			for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
-			{
-				if (It->Tags.Contains(Tag)) { bHas = true; break; }
-			}
-			if (!bHas)
-			{
-				FActorSpawnParameters P;
-				P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-				AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), PlatformCenter, FRotator::ZeroRotator, P);
-				if (Floor && Floor->GetStaticMeshComponent())
-				{
-					Floor->Tags.Add(Tag);
-					Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
-				T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
-					Floor->SetActorScale3D(FVector(22.f, 22.f, 1.f));
-				T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
-					if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
-					{
-						Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
-					}
-				}
-			}
-		}
-	}
+	// Place boost interactables on the main floor (no separate platform; hard rule: no overlapping grounds).
+	const FVector PlatformCenter(-20000.f, 10400.f, -50.f);
 
 	// Spawn interactables
 	{
@@ -1575,9 +1545,8 @@ void AT66GameMode::SpawnBossForCurrentStage()
 		StageData = FromDT;
 	}
 
-	// Map layout: always spawn the stage boss in the Boss Area square.
-	// (Fixes Stage 1 incorrectly spawning near the center if DT values were authored for the old layout.)
-	StageData.BossSpawnLocation = FVector(10000.f, 0.f, 200.f);
+	// Map layout: spawn the stage boss in the Boss Area square (right after pillars, inside safe zone).
+	StageData.BossSpawnLocation = FVector(15600.f, 0.f, 200.f);
 
 	// Default/fallback boss data (if DT_Bosses is not wired yet)
 	FBossData BossData;
@@ -1695,11 +1664,11 @@ void AT66GameMode::EnsureLevelSetup()
 	UE_LOG(LogTemp, Log, TEXT("Checking level setup..."));
 	
 	SpawnFloorIfNeeded();
-
 	SpawnColiseumArenaIfNeeded();
 	SpawnTutorialArenaIfNeeded();
 	TryApplyGroundFloorMaterialToAllFloors();
-	// Walls removed per user request
+	SpawnStartAreaWallsIfNeeded();
+	SpawnBossAreaWallsIfNeeded();
 	SpawnLightingIfNeeded();
 	SpawnPlayerStartIfNeeded();
 }
@@ -1805,12 +1774,12 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 		return false;
 	};
 
-	// Place near the north side of the main square, fully inside global bounds.
-	// (Can't be constexpr in UE due to FVector not being constexpr-friendly on this toolchain.)
-	const FVector TutorialCenter(0.f, 7500.f, -50.f);
+	// Tutorial: to the side of the main map, separated by empty space (no overlapping ground).
+	// Main map Y ends at 20000; tutorial at Y=27000 so gap of 7000.
+	const FVector TutorialCenter(0.f, 27000.f, -50.f);
 	const FName FloorTag(TEXT("T66_Floor_Tutorial"));
 
-	// Floor
+	// Floor (no overlap with main)
 	if (!HasTag(FloorTag))
 	{
 		FActorSpawnParameters P;
@@ -1822,7 +1791,7 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 			Floor->Tags.Add(FloorTag);
 			Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
-			Floor->SetActorScale3D(FVector(40.f, 40.f, 1.f)); // 4000x4000
+			Floor->SetActorScale3D(FVector(80.f, 80.f, 1.f)); // 8000x8000
 			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 			if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 			{
@@ -1856,33 +1825,10 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 		return false;
 	};
 
-	// Coliseum arena: off to the side
-	const FVector ArenaCenter(ColiseumCenter.X, ColiseumCenter.Y, -50.f);
-	const FName FloorTag(TEXT("T66_Floor_Coliseum"));
-
-	// Floor
-	if (!HasTag(FloorTag))
-	{
-		FActorSpawnParameters P;
-		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), ArenaCenter, FRotator::ZeroRotator, P);
-		if (Floor && Floor->GetStaticMeshComponent())
-		{
-			Floor->Tags.Add(FloorTag);
-			Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
-			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
-			Floor->SetActorScale3D(FVector(34.f, 34.f, 1.f)); // 3400x3400
-			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
-			if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
-			{
-				Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.12f, 0.10f, 0.10f, 1.f));
-			}
-			SpawnedSetupActors.Add(Floor);
-		}
-	}
+	// Coliseum arena: off to the side. No separate floor (hard rule: no overlapping grounds; main floor covers it).
 }
 
-void AT66GameMode::SpawnPlatformEdgeWallsIfNeeded()
+void AT66GameMode::SpawnStartAreaWallsIfNeeded()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -1894,62 +1840,49 @@ void AT66GameMode::SpawnPlatformEdgeWallsIfNeeded()
 	{
 		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
 		{
-			if (It->Tags.Contains(Tag))
-			{
-				return true;
-			}
+			if (It->Tags.Contains(Tag)) return true;
 		}
 		return false;
 	};
 
-	// Add local walls around the narrower Start/Boss squares and the connector strips,
-	// so you can't fall off the sides before reaching the global boundary walls.
+	// Very short red wall fully around the start area. Square, with gap from miasma wall (so back wall is not on the boundary).
+	// Square 4000x4000: X -17600..-13600, Y -2000..2000 (800 uu gap from miasma at -18400).
 	static constexpr float FloorTopZ = 0.f;
-	static constexpr float WallHeight = 1500.f;
-	static constexpr float WallThickness = 200.f;
-	const float WallZ = FloorTopZ + (WallHeight * 0.5f);
-
-	static constexpr float StartBossHalfY = 3000.f;   // start/boss floors are 6000 wide
-	static constexpr float StartBossHalfX = 3000.f;   // start/boss floors are 6000 long
-	static constexpr float ConnHalfY = 1500.f;        // connector floors are 3000 wide
-	static constexpr float ConnHalfX = 1000.f;        // connector floors are 2000 long
-
+	static constexpr float WallHeightShort = 80.f;
+	static constexpr float WallThickness = 120.f;
+	const float WallZ = FloorTopZ + (WallHeightShort * 0.5f);
 	const float Thick = WallThickness / 100.f;
-	const float Tall = WallHeight / 100.f;
+	const float Tall = WallHeightShort / 100.f;
+	const FLinearColor Red(0.75f, 0.12f, 0.12f, 1.f);
 
-	struct FWallSpec
-	{
-		FName Tag;
-		FVector Location;
-		FVector Scale;
-		FLinearColor Color;
+	const float BoxWestX = -17600.f;
+	const float BoxEastX = -13600.f;
+	const float BoxNorthY = 2000.f;
+	const float BoxSouthY = -2000.f;
+	const float BoxWidthX = BoxEastX - BoxWestX;   // 4000
+	const float BoxHeightY = BoxNorthY - BoxSouthY; // 4000
+	const float OpeningHalfY = 400.f;   // gap on east for Start Gate pillars
+	const float EastNorthLen = BoxNorthY - OpeningHalfY;
+	const float EastSouthLen = OpeningHalfY - BoxSouthY;
+	const float EastNorthCenterY = BoxNorthY - (EastNorthLen * 0.5f);
+	const float EastSouthCenterY = BoxSouthY + (EastSouthLen * 0.5f);
+
+	struct FWallSpec { FName Tag; FVector Location; FVector Scale; };
+	const TArray<FWallSpec> Walls = {
+		{ FName("T66_Wall_Start_W"),   FVector(BoxWestX - (WallThickness * 0.5f), 0.f, WallZ), FVector(Thick, BoxHeightY / 100.f, Tall) },
+		{ FName("T66_Wall_Start_N"),   FVector(BoxWestX + (BoxWidthX * 0.5f), BoxNorthY + (WallThickness * 0.5f), WallZ), FVector(BoxWidthX / 100.f, Thick, Tall) },
+		{ FName("T66_Wall_Start_S"),   FVector(BoxWestX + (BoxWidthX * 0.5f), BoxSouthY - (WallThickness * 0.5f), WallZ), FVector(BoxWidthX / 100.f, Thick, Tall) },
+		{ FName("T66_Wall_Start_E_N"), FVector(BoxEastX + (WallThickness * 0.5f), EastNorthCenterY, WallZ), FVector(Thick, EastNorthLen / 100.f, Tall) },
+		{ FName("T66_Wall_Start_E_S"), FVector(BoxEastX + (WallThickness * 0.5f), EastSouthCenterY, WallZ), FVector(Thick, EastSouthLen / 100.f, Tall) },
 	};
-
-	auto MakeNSWallsForPlatform = [&](const TCHAR* Prefix, const FVector& Center, float HalfX, float HalfY, const FLinearColor& Color)
-	{
-		const float LongX = (HalfX * 2.f + WallThickness) / 100.f;
-		const float Y = HalfY + (WallThickness * 0.5f);
-		return TArray<FWallSpec>{
-			{ FName(*FString::Printf(TEXT("%s_N"), Prefix)), FVector(Center.X, Center.Y + Y, WallZ), FVector(LongX, Thick, Tall), Color },
-			{ FName(*FString::Printf(TEXT("%s_S"), Prefix)), FVector(Center.X, Center.Y - Y, WallZ), FVector(LongX, Thick, Tall), Color },
-		};
-	};
-
-	TArray<FWallSpec> Walls;
-	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_StartEdge"), FVector(-10000.f, 0.f, 0.f), StartBossHalfX, StartBossHalfY, FLinearColor(0.08f,0.08f,0.10f,1.f)));
-	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_BossEdge"),  FVector( 10000.f, 0.f, 0.f), StartBossHalfX, StartBossHalfY, FLinearColor(0.08f,0.08f,0.10f,1.f)));
-	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_ConnStart"), FVector( -6000.f, 0.f, 0.f), ConnHalfX,     ConnHalfY,     FLinearColor(0.07f,0.07f,0.09f,1.f)));
-	Walls.Append(MakeNSWallsForPlatform(TEXT("T66_Wall_ConnBoss"),  FVector(  6000.f, 0.f, 0.f), ConnHalfX,     ConnHalfY,     FLinearColor(0.07f,0.07f,0.09f,1.f)));
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
 	for (const FWallSpec& Spec : Walls)
 	{
 		if (HasTag(Spec.Tag)) continue;
 		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
-
 		Wall->Tags.Add(Spec.Tag);
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
@@ -1957,13 +1890,13 @@ void AT66GameMode::SpawnPlatformEdgeWallsIfNeeded()
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Red);
 		}
 		SpawnedSetupActors.Add(Wall);
 	}
 }
 
-void AT66GameMode::SpawnStartAreaExitWallsIfNeeded()
+void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -1974,67 +1907,38 @@ void AT66GameMode::SpawnStartAreaExitWallsIfNeeded()
 	auto HasTag = [&](FName Tag) -> bool
 	{
 		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
-		{
-			if (It->Tags.Contains(Tag))
-			{
-				return true;
-			}
-		}
+			if (It->Tags.Contains(Tag)) return true;
 		return false;
 	};
 
-	// Build a simple corridor so you can only leave Start Area through the Start Gate pillars.
-	// Layout: Start square ends at X=-7000. Main square begins at X=-7000.
-	// We block the X=-7000 boundary except a small opening near Y=0, then funnel to X=-6000.
+	// Boss area: right after the boss pillars, fully inside safe zone with gap from miasma (|X|<=18400).
+	// Square 4000x4000: X 13600..17600 (800 uu gap from miasma at 18400), Y -2000..2000. Center (15600, 0).
 	static constexpr float FloorTopZ = 0.f;
-	static constexpr float WallHeight = 1500.f;
-	static constexpr float WallThickness = 200.f;
-	static constexpr float WallZ = FloorTopZ + (WallHeight * 0.5f);
-
-	static constexpr float StartBoundaryX = -7000.f;
-	static constexpr float GateX = -6000.f;
-	static constexpr float StartHalfY = 3000.f;
-	static constexpr float GateHalfY = 1500.f; // connector width
-	static constexpr float GapHalfY = 160.f;   // opening to pass through
-
+	static constexpr float WallHeightShort = 80.f;
+	static constexpr float WallThickness = 120.f;
+	const float WallZ = FloorTopZ + (WallHeightShort * 0.5f);
 	const float Thick = WallThickness / 100.f;
-	const float Tall = WallHeight / 100.f;
+	const float Tall = WallHeightShort / 100.f;
+	const FLinearColor Red(0.75f, 0.12f, 0.12f, 1.f);
 
-	struct FWallSpec
-	{
-		FName Tag;
-		FVector Location;
-		FVector Scale;
-		FLinearColor Color;
-	};
+	const float BoxWestX = 13600.f;
+	const float BoxEastX = 17600.f;
+	const float BoxNorthY = 2000.f;
+	const float BoxSouthY = -2000.f;
+	const float BoxWidthX = BoxEastX - BoxWestX;
+	const float BoxHeightY = BoxNorthY - BoxSouthY;
+	const float BoxCenterX = 15600.f;
 
-	const float SegStartCenterY = (StartHalfY + GapHalfY) * 0.5f;
-	const float SegStartScaleY = (StartHalfY - GapHalfY) / 100.f;
-
-	const float SegGateCenterY = (GateHalfY + GapHalfY) * 0.5f;
-	const float SegGateScaleY = (GateHalfY - GapHalfY) / 100.f;
-
-	const float CorridorY = GapHalfY + (WallThickness * 0.5f);
-	const float CorridorLenX = (GateX - StartBoundaryX);
-	const float CorridorScaleX = CorridorLenX / 100.f;
-
+	struct FWallSpec { FName Tag; FVector Location; FVector Scale; };
 	const TArray<FWallSpec> Walls = {
-		// Block Start->Main boundary at X=-7000, leaving opening around Y=0
-		{ FName("T66_Wall_StartExit_N1"), FVector(StartBoundaryX,  SegStartCenterY, WallZ), FVector(Thick, SegStartScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
-		{ FName("T66_Wall_StartExit_S1"), FVector(StartBoundaryX, -SegStartCenterY, WallZ), FVector(Thick, SegStartScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
-
-		// Corridor side walls from X=-7000 to X=-6000
-		{ FName("T66_Wall_StartExit_SideN"), FVector(StartBoundaryX + (CorridorLenX * 0.5f),  CorridorY, WallZ), FVector(CorridorScaleX, Thick, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
-		{ FName("T66_Wall_StartExit_SideS"), FVector(StartBoundaryX + (CorridorLenX * 0.5f), -CorridorY, WallZ), FVector(CorridorScaleX, Thick, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
-
-		// Block corridor->main at X=-6000, leaving opening where pillars are
-		{ FName("T66_Wall_StartExit_N2"), FVector(GateX,  SegGateCenterY, WallZ), FVector(Thick, SegGateScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
-		{ FName("T66_Wall_StartExit_S2"), FVector(GateX, -SegGateCenterY, WallZ), FVector(Thick, SegGateScaleY, Tall), FLinearColor(0.06f,0.06f,0.08f,1.f) },
+		{ FName("T66_Wall_Boss_W"), FVector(BoxWestX - (WallThickness * 0.5f), 0.f, WallZ), FVector(Thick, BoxHeightY / 100.f, Tall) },
+		{ FName("T66_Wall_Boss_E"), FVector(BoxEastX + (WallThickness * 0.5f), 0.f, WallZ), FVector(Thick, BoxHeightY / 100.f, Tall) },
+		{ FName("T66_Wall_Boss_N"), FVector(BoxCenterX, BoxNorthY + (WallThickness * 0.5f), WallZ), FVector(BoxWidthX / 100.f, Thick, Tall) },
+		{ FName("T66_Wall_Boss_S"), FVector(BoxCenterX, BoxSouthY - (WallThickness * 0.5f), WallZ), FVector(BoxWidthX / 100.f, Thick, Tall) },
 	};
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
 	for (const FWallSpec& Spec : Walls)
 	{
 		if (HasTag(Spec.Tag)) continue;
@@ -2047,7 +1951,7 @@ void AT66GameMode::SpawnStartAreaExitWallsIfNeeded()
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), Red);
 		}
 		SpawnedSetupActors.Add(Wall);
 	}
@@ -2067,12 +1971,8 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		}
 	}
 
-	// Layout: Start Square (west) -> Main Square (center) -> Boss Square (east). No overlap.
-	// Main: X -10000..+10000. Start: X -16000..-10000. Boss: X +7000..+13000.
-	const FVector MainCenter(0.f, 0.f, -50.f);
-	const FVector StartCenter(-13000.f, 0.f, -50.f);
-	const FVector BossCenter(10000.f, 0.f, -50.f);
-
+	// Hard rule: no overlapping grounds (causes z-fighting). One main run floor; Tutorial separate with gap.
+	// Main: single rectangle X -20000..+26000, Y -20000..+20000 (covers start area + main + boss).
 	struct FFloorSpec
 	{
 		FName Tag;
@@ -2081,7 +1981,6 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		FLinearColor Color;
 	};
 
-	// Destroy any existing connector floors (caused z-fighting/jitter; Main already covers that area).
 	auto DestroyTaggedIfExists = [&](FName Tag)
 	{
 		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
@@ -2095,13 +1994,13 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	};
 	DestroyTaggedIfExists(FName("T66_Floor_Conn1"));
 	DestroyTaggedIfExists(FName("T66_Floor_Conn2"));
+	DestroyTaggedIfExists(FName("T66_Floor_Start"));  // Start is inside main; no separate patch
+	DestroyTaggedIfExists(FName("T66_Floor_Boss"));   // Boss area is same main floor; no overlap
 
-	// Connector floors (Conn1/Conn2) removed: they overlapped Main and caused z-fighting/jitter.
-	// Main floor (200x200) already covers X=-10000..+10000; Start/Boss sit at the ends.
+	// Main floor only: center (3000,0) so X -20000..+26000, Y -20000..+20000 (cube 100uu => scale 460,400).
+	const FVector MainCenter(3000.f, 0.f, -50.f);
 	const TArray<FFloorSpec> Floors = {
-		{ FName("T66_Floor_Main"),   MainCenter,   FVector(200.f, 200.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
-		{ FName("T66_Floor_Start"),  StartCenter,  FVector(60.f,  60.f,  1.f), FLinearColor(0.22f, 0.24f, 0.28f, 1.f) },
-		{ FName("T66_Floor_Boss"),   BossCenter,   FVector(60.f,  60.f,  1.f), FLinearColor(0.26f, 0.22f, 0.22f, 1.f) },
+		{ FName("T66_Floor_Main"), MainCenter, FVector(460.f, 400.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
 	};
 
 	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -2195,111 +2094,6 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		if (!SpawnedSetupActors.Contains(Floor))
 		{
 			SpawnedSetupActors.Add(Floor);
-		}
-	}
-}
-
-void AT66GameMode::SpawnBoundaryWallsIfNeeded()
-{
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	if (!CubeMesh) return;
-
-	auto FindTaggedActor = [&](FName Tag) -> AStaticMeshActor*
-	{
-		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
-		{
-			if (It->Tags.Contains(Tag))
-			{
-				return *It;
-			}
-		}
-		return nullptr;
-	};
-
-	// Walls around the entire playable footprint (start + main + boss).
-	static constexpr float FloorTopZ = 0.f;      // dev floors sit at Z=-50 with thickness 100 => top at 0
-	static constexpr float WallHeight = 1500.f;
-	static constexpr float WallThickness = 200.f;
-
-	static constexpr float StartBossHalf = 3000.f; // start/boss floors are 6000 wide
-	static constexpr float TotalHalfX = 10000.f + StartBossHalf; // start center -10000, boss center +10000
-	static constexpr float MainHalfY = 10000.f; // main floor is 20000 wide
-	static constexpr float TotalHalfY = MainHalfY;
-
-	const float WallZ = FloorTopZ + (WallHeight * 0.5f);
-
-	struct FWallSpec
-	{
-		FName Tag;
-		FVector Location;
-		FVector Scale; // in AStaticMeshActor scale units (cube is 100uu)
-		FLinearColor Color;
-	};
-
-	const float LongX = (TotalHalfX * 2.f + WallThickness) / 100.f;
-	const float LongY = (TotalHalfY * 2.f + WallThickness) / 100.f;
-	const float Thick = WallThickness / 100.f;
-	const float Tall = WallHeight / 100.f;
-
-	TArray<FWallSpec> Walls = {
-		{ FName("T66_Wall_N"), FVector(0.f,  TotalHalfY + (WallThickness * 0.5f), WallZ), FVector(LongX, Thick, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
-		{ FName("T66_Wall_S"), FVector(0.f, -TotalHalfY - (WallThickness * 0.5f), WallZ), FVector(LongX, Thick, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
-		{ FName("T66_Wall_E"), FVector( TotalHalfX + (WallThickness * 0.5f), 0.f, WallZ), FVector(Thick, LongY, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
-		{ FName("T66_Wall_W"), FVector(-TotalHalfX - (WallThickness * 0.5f), 0.f, WallZ), FVector(Thick, LongY, Tall), FLinearColor(0.08f,0.08f,0.10f,1.f) },
-	};
-
-	// Critical: the main square ends at X=±8000, but the overall footprint extends to X=±13000 due to the start/boss squares.
-	// Without extra "main edge" walls, the player can walk to the east/west edges of the main square and fall off.
-	{
-		static constexpr float MainHalfX = 10000.f;
-		const float MainEdgeX = MainHalfX + (WallThickness * 0.5f);
-		const float GapY = StartBossHalf; // keep the boss/start overlap corridor (|Y| <= 3000) open
-		const float SegLenY = (MainHalfY - GapY);
-		const float SegScaleY = SegLenY / 100.f;
-		const float CenterY = (GapY + MainHalfY) * 0.5f;
-
-		// North segments (+Y)
-		Walls.Add({ FName("T66_Wall_MainEdge_E_N"), FVector( MainEdgeX,  CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
-		Walls.Add({ FName("T66_Wall_MainEdge_W_N"), FVector(-MainEdgeX,  CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
-
-		// South segments (-Y)
-		Walls.Add({ FName("T66_Wall_MainEdge_E_S"), FVector( MainEdgeX, -CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
-		Walls.Add({ FName("T66_Wall_MainEdge_W_S"), FVector(-MainEdgeX, -CenterY, WallZ), FVector(Thick, SegScaleY, Tall), FLinearColor(0.07f,0.07f,0.09f,1.f) });
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	for (const FWallSpec& Spec : Walls)
-	{
-		AStaticMeshActor* Wall = FindTaggedActor(Spec.Tag);
-		if (!Wall)
-		{
-			Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
-		}
-		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
-
-		if (!Wall->Tags.Contains(Spec.Tag))
-		{
-			Wall->Tags.Add(Spec.Tag);
-		}
-		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
-		Wall->SetActorLocation(Spec.Location);
-		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
-		Wall->SetActorScale3D(Spec.Scale);
-		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
-
-		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
-		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
-		}
-
-		if (!SpawnedSetupActors.Contains(Wall))
-		{
-			SpawnedSetupActors.Add(Wall);
 		}
 	}
 }
@@ -2460,7 +2254,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		// - Coliseum mode: coliseum arena (timer starts immediately; no pillars)
 		const FVector SpawnLoc = IsColiseumStage()
 			? FVector(ColiseumCenter.X, ColiseumCenter.Y, DefaultSpawnHeight)
-			: FVector(-13000.f, 0.f, DefaultSpawnHeight);
+			: FVector(-15600.f, 0.f, DefaultSpawnHeight);
 
 		APlayerStart* Start = World->SpawnActor<APlayerStart>(
 			APlayerStart::StaticClass(),
@@ -2544,7 +2338,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		// No PlayerStart found - spawn at a safe default location
 		SpawnLocation = IsColiseumStage()
 			? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)  // Coliseum: spawn in arena
-			: FVector(-13000.f, 0.f, 200.f);   // Gameplay: spawn in starting area
+			: FVector(-15600.f, 0.f, 200.f);   // Gameplay: spawn inside start-area square
 		UE_LOG(LogTemp, Warning, TEXT("No PlayerStart found! Spawning at default location (%.0f, %.0f, %.0f)."),
 			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
 	}
@@ -2553,7 +2347,8 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// (Coliseum spawns in the Main Area and starts timer immediately.)
 	if (!IsColiseumStage())
 	{
-		SpawnLocation = FVector(-13000.f, 0.f, 200.f);
+		// Start area is a square inside main map (X -17600..-13600, Y ±2000). Spawn at center.
+		SpawnLocation = FVector(-15600.f, 0.f, 200.f);
 		SpawnRotation = FRotator::ZeroRotator;
 
 		// Difficulty Boost: spawn on the Boost platform instead of the normal Start Area.
@@ -2561,15 +2356,14 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		{
 			if (T66GI->bStageBoostPending)
 			{
-				SpawnLocation = FVector(-10000.f, 5200.f, 200.f);
+				SpawnLocation = FVector(-20000.f, 10400.f, 200.f);
 			}
 			else
 			{
-				// Tutorial Arena spawn: forced by dev switch only.
+				// Tutorial Arena spawn: forced by dev switch only. Tutorial is north of main, separated by gap.
 				if (bForceSpawnInTutorialArea)
 				{
-					// Center is (0, 7500). Spawn near the "south" side so the player faces into the space.
-					SpawnLocation = FVector(-1600.f, 6100.f, 200.f);
+					SpawnLocation = FVector(-1600.f, 25000.f, 200.f);
 					SpawnRotation = FRotator::ZeroRotator;
 				}
 			}

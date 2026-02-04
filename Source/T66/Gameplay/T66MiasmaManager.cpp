@@ -14,8 +14,11 @@ AT66MiasmaManager::AT66MiasmaManager()
 void AT66MiasmaManager::BeginPlay()
 {
 	Super::BeginPlay();
-	BuildGrid();
-	UpdateFromRunState();
+	if (!bSpawningPaused)
+	{
+		BuildGrid();
+		UpdateFromRunState();
+	}
 }
 
 void AT66MiasmaManager::BuildGrid()
@@ -48,6 +51,8 @@ void AT66MiasmaManager::BuildGrid()
 
 void AT66MiasmaManager::UpdateFromRunState()
 {
+	if (bSpawningPaused) return;
+
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;

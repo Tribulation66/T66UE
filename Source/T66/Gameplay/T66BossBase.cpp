@@ -84,15 +84,35 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		}
 	}
 
-	// Imported model: map BossID -> mesh (DT_CharacterVisuals).
-	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	// Stage 1 boss: always use a simple sphere (no character visual override).
+	if (BossID == FName(TEXT("Boss_01")))
 	{
-		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+		if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
 		{
-			const bool bApplied = Visuals->ApplyCharacterVisual(BossID, GetMesh(), VisualMesh, true);
-			if (!bApplied && GetMesh())
+			VisualMesh->SetStaticMesh(Sphere);
+			VisualMesh->SetRelativeScale3D(FVector(6.f, 6.f, 6.f));
+		}
+		if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
+		{
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), BossData.PlaceholderColor);
+		}
+		if (USkeletalMeshComponent* Skel = GetMesh())
+		{
+			Skel->SetVisibility(false, true);
+		}
+	}
+	else
+	{
+		// Imported model: map BossID -> mesh (DT_CharacterVisuals).
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 			{
-				GetMesh()->SetVisibility(false, true);
+				const bool bApplied = Visuals->ApplyCharacterVisual(BossID, GetMesh(), VisualMesh, true);
+				if (!bApplied && GetMesh())
+				{
+					GetMesh()->SetVisibility(false, true);
+				}
 			}
 		}
 	}

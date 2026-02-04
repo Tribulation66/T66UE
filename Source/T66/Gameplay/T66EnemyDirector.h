@@ -78,6 +78,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float SpawnMaxDistance = 1000.f;
 
+	/** When true, no enemy waves are spawned (timer not armed, SpawnWave no-op). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Director")
+	bool bSpawningPaused = true;
+
 	/** Called by enemy when it dies */
 	UFUNCTION(BlueprintCallable, Category = "Director")
 	void NotifyEnemyDied(AT66EnemyBase* Enemy);
