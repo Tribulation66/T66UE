@@ -27,5 +27,5 @@ Build/
 **/__pycache__/
 *.pyc
 
-# Source art / raw imports (do not commit)
-SourceAssets/
+# Source art / raw imports (optional: remove line below to track SourceAssets for hero/character pipeline)
+# SourceAssets/
