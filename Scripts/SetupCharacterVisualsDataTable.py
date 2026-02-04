@@ -60,10 +60,7 @@ def main():
         unreal.log_error("Failed to fill DT_CharacterVisuals from CSV")
 
     unreal.log("=== Character Visuals Setup Done ===")
-    try:
-        unreal.SystemLibrary.quit_editor()
-    except Exception as e:
-        unreal.log_warning("Failed to quit editor automatically: " + str(e))
+    # Do not quit the editor; leave it open so you can continue working.
 
 
 if __name__ == "__main__":

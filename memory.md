@@ -112,6 +112,21 @@ This section exists to prevent “spec drift” between `T66_Bible.md` and the r
 
 ## 4) Change log (append-only)
 
+### 2026-02-03 — Hero selection: Key B → Type B; skins Default+Beachgoer; grid full-screen; 4 heroes stat tuning; HUD PortraitTypeB; 10k AC
+
+**What changed**
+- **Hero mapping:** Confirmed correct (Hero_1..Hero_4 = Knight, Ninja, Gunslinger, Magician Chad).
+- **Key B:** Pressing B on Hero Selection switches to Type B only; return to Type A via the "Type A" button (`NativeOnKeyDown` in `T66HeroSelectionScreen`).
+- **Skins:** Only Default and Beachgoer; 250 AC for Beachgoer; balance 10000 AC (profile default). Skins owned/equipped from `UT66AchievementsSubsystem` (profile-saved). Skin list: Preview (Beachgoer), Buy (if not owned), EQUIP (if owned). `PreviewSkinIDOverride` for temporary preview without equipping.
+- **Enter the Tribulation:** Button disabled when difficulty != Easy (`IsEnabled_Lambda`).
+- **Hero grid:** Full-screen overlay with back button (top-left). Grid uses `SGridPanel` with `SetColumnFill`/`SetRowFill`; 2 columns; 1:1 large portraits (256px); 4 heroes = 2×2.
+- **HUD portrait:** Uses `PortraitTypeB` when `SelectedHeroBodyType == TypeB`, else `Portrait` (`T66GameplayHUDWidget`).
+- **GetHeroStatTuning:** Replaced all previous hero IDs with Hero_1 (Knight – armor), Hero_2 (Ninja – evasion), Hero_3 (Gunslinger – attack speed), Hero_4 (Magician – luck).
+- **OnScreenActivated (Hero Selection):** Syncs `GI->SelectedHeroSkinID` from `GetEquippedHeroSkinID()`, resets `PreviewSkinIDOverride`. All `SetPreviewHero` calls pass `EffectiveSkinID` (override or selected skin).
+- **Build:** ValidateFast (T66Editor + T66) succeeded. Game launched successfully.
+
+**Files touched:** `T66HeroSelectionScreen.h/.cpp`, `T66HeroGridScreen.cpp`, `T66GameplayHUDWidget.cpp`, `T66GameInstance.cpp`, `memory.md`.
+
 ### 2026-02-03 — Remove redundant scripts; rename ImportWorldModels → ImportModels
 
 **What changed**

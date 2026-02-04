@@ -33,10 +33,11 @@ public:
 
 	/**
 	 * Set the preview hero. Spawns or updates the hero pawn and captures to the render target.
-	 * Call when hero focus or body type changes.
+	 * Call when hero focus, body type, or skin changes.
+	 * @param SkinID Skin to show (e.g. Default, Beachgoer); used for preview-only display.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
-	void SetPreviewHero(FName HeroID, ET66BodyType BodyType);
+	void SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID = NAME_None);
 
 	/** Rotate preview hero by yaw delta (degrees). Intended for UI drag-rotate. */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
@@ -56,12 +57,13 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** Create the render target and scene capture at runtime if not set in editor */
 	void EnsureCaptureSetup();
 
 	/** Spawn or update the preview hero pawn */
-	void UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType);
+	void UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType, FName SkinID);
 
 	void ApplyPreviewRotation();
 	void FrameCameraToPreview();

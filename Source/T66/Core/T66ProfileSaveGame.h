@@ -25,6 +25,16 @@ struct T66_API FT66AchievementState
 	bool bIsClaimed = false;
 };
 
+/** Wrapper for TMap value: list of owned skin IDs per hero (Unreal does not support TArray as TMap value in UPROPERTY). */
+USTRUCT(BlueprintType)
+struct T66_API FT66OwnedSkinsList
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
+	TArray<FName> SkinIDs;
+};
+
 /**
  * Player profile save (not tied to run slots).
  * Stores lifetime meta-progression like Achievement Coins (AC) and achievement progress.
@@ -36,11 +46,35 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 3;
+	int32 SaveVersion = 6;
 
-	/** Achievement Coins (AC) wallet balance. Starts at 0 for new profiles. */
+	/** Achievement Coins (AC) wallet balance. New profiles start with 10000 AC. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Achievements")
-	int32 AchievementCoinsBalance = 0;
+	int32 AchievementCoinsBalance = 10000;
+
+	/** Per-hero owned skin IDs (e.g. Hero_1 -> [Beachgoer]). Default is always considered owned. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
+	TMap<FName, FT66OwnedSkinsList> OwnedHeroSkinsByHero;
+
+	/** Per-hero equipped skin ID (e.g. Hero_1 -> Beachgoer). Missing/Default means Default. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
+	TMap<FName, FName> EquippedHeroSkinIDByHero;
+
+	/** @deprecated Migrated to OwnedHeroSkinsByHero in SaveVersion 5. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
+	TArray<FName> OwnedHeroSkinIDs;
+
+	/** @deprecated Migrated to EquippedHeroSkinIDByHero in SaveVersion 5. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
+	FName EquippedHeroSkinID = FName(TEXT("Default"));
+
+	/** Per-companion owned skin IDs (e.g. Companion_01 -> [Beachgoer]). Default is always considered owned. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
+	TMap<FName, FT66OwnedSkinsList> OwnedCompanionSkinsByCompanion;
+
+	/** Per-companion equipped skin ID (e.g. Companion_01 -> Beachgoer). Missing/Default means Default. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
+	TMap<FName, FName> EquippedCompanionSkinIDByCompanion;
 
 	/** Lifetime achievements state keyed by AchievementID. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Achievements")

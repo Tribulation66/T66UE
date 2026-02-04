@@ -2,7 +2,9 @@
 
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ProfileSaveGame.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66SkinSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
 const FString UT66AchievementsSubsystem::ProfileSaveSlotName(TEXT("T66_Profile"));
@@ -55,12 +57,36 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	if (!Profile)
 	{
 		Profile = NewObject<UT66ProfileSaveGame>(this);
+		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Created FRESH profile (no save file found)"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Loaded EXISTING profile from save file"));
 	}
 
 	// Enforce safe defaults.
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 3);
-	Profile->AchievementCoinsBalance = FMath::Max(0, Profile->AchievementCoinsBalance);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 6);
+	// Dev: ensure at least 10000 AC so skins can be purchased.
+	Profile->AchievementCoinsBalance = FMath::Max(Profile->AchievementCoinsBalance, 10000);
 	Profile->LifetimeEnemiesKilled = FMath::Max(0, Profile->LifetimeEnemiesKilled);
+
+	// Hero skins: log current state (no more auto-reset; purchases persist).
+	const FName DefaultSkin(TEXT("Default"));
+	
+	UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=%d, AC Balance=%d"),
+		Profile->OwnedHeroSkinsByHero.Num(), Profile->AchievementCoinsBalance);
+	
+	// Log current owned skins
+	for (const auto& Pair : Profile->OwnedHeroSkinsByHero)
+	{
+		FString SkinList;
+		for (const FName& S : Pair.Value.SkinIDs)
+		{
+			if (!SkinList.IsEmpty()) SkinList += TEXT(", ");
+			SkinList += S.ToString();
+		}
+		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: %s owns [%s]"), *Pair.Key.ToString(), *SkinList);
+	}
 
 	// Union defaults: clamp to sane ranges so corrupted saves can't break gameplay math.
 	for (TPair<FName, int32>& Pair : Profile->CompanionUnionStagesClearedByID)
@@ -72,6 +98,76 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
 {
 	return Profile ? FMath::Max(0, Profile->AchievementCoinsBalance) : 0;
+}
+
+bool UT66AchievementsSubsystem::SpendAchievementCoins(int32 Amount)
+{
+	if (!Profile || Amount <= 0 || Profile->AchievementCoinsBalance < Amount) return false;
+	Profile->AchievementCoinsBalance -= Amount;
+	bProfileDirty = true;
+	SaveProfileIfNeeded(true);
+	AchievementCoinsChanged.Broadcast();
+	return true;
+}
+
+bool UT66AchievementsSubsystem::IsHeroSkinOwned(FName HeroID, FName SkinID) const
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		return Skin->IsHeroSkinOwned(HeroID, SkinID);
+	return false;
+}
+
+bool UT66AchievementsSubsystem::PurchaseHeroSkin(FName HeroID, FName SkinID, int32 CostAC)
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		return Skin->PurchaseHeroSkin(HeroID, SkinID, CostAC);
+	return false;
+}
+
+FName UT66AchievementsSubsystem::GetEquippedHeroSkinID(FName HeroID) const
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		return Skin->GetEquippedHeroSkinID(HeroID);
+	return FName(TEXT("Default"));
+}
+
+void UT66AchievementsSubsystem::SetEquippedHeroSkinID(FName HeroID, FName SkinID)
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		Skin->SetEquippedHeroSkinID(HeroID, SkinID);
+}
+
+void UT66AchievementsSubsystem::ResetAllHeroSkinOwnership()
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		Skin->ResetAllHeroSkinOwnership();
+}
+
+bool UT66AchievementsSubsystem::IsCompanionSkinOwned(FName CompanionID, FName SkinID) const
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		return Skin->IsCompanionSkinOwned(CompanionID, SkinID);
+	return false;
+}
+
+bool UT66AchievementsSubsystem::PurchaseCompanionSkin(FName CompanionID, FName SkinID, int32 CostAC)
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		return Skin->PurchaseCompanionSkin(CompanionID, SkinID, CostAC);
+	return false;
+}
+
+FName UT66AchievementsSubsystem::GetEquippedCompanionSkinID(FName CompanionID) const
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		return Skin->GetEquippedCompanionSkinID(CompanionID);
+	return FName(TEXT("Default"));
+}
+
+void UT66AchievementsSubsystem::SetEquippedCompanionSkinID(FName CompanionID, FName SkinID)
+{
+	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		Skin->SetEquippedCompanionSkinID(CompanionID, SkinID);
 }
 
 bool UT66AchievementsSubsystem::HasCompletedTutorial() const
@@ -193,6 +289,16 @@ void UT66AchievementsSubsystem::SaveProfileIfNeeded(bool bForce)
 		UGameplayStatics::SaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);
 		LastProfileSaveWorldSeconds = Now;
 		bProfileDirty = false;
+	}
+}
+
+void UT66AchievementsSubsystem::MarkProfileDirtyAndSave(bool bBroadcastCoinsChanged)
+{
+	bProfileDirty = true;
+	SaveProfileIfNeeded(true);
+	if (bBroadcastCoinsChanged)
+	{
+		AchievementCoinsChanged.Broadcast();
 	}
 }
 

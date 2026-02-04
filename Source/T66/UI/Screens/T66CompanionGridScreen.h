@@ -27,6 +27,8 @@ protected:
 
 private:
 	TArray<FName> AllCompanionIDs;
+	/** Portrait brushes for grid cells (1:1 ratio, 256x256). */
+	TArray<TSharedPtr<struct FSlateBrush>> CompanionPortraitBrushes;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	FReply HandleCompanionClicked(FName CompanionID);

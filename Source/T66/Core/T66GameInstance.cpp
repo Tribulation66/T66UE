@@ -175,6 +175,10 @@ UDataTable* UT66GameInstance::GetIdolsDataTable()
 
 bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
 {
+	if (HeroID.IsNone())
+	{
+		return false;
+	}
 	UDataTable* DataTable = GetHeroDataTable();
 	if (!DataTable)
 	{
@@ -585,251 +589,41 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 		return false;
 	}
 
-	// NOTE: These are initial tuning values (1-5 base). They can be moved to a DataTable later,
-	// but for now they are centralized and deterministic by HeroID.
-	if (H == FName(TEXT("Hero_AliceInWonderlandRabbit")))
+	// Four heroes only: Knight (armor), Ninja (evasion), Gunslinger (attack speed), Magician (luck).
+	if (H == FName(TEXT("Hero_1"))) // Knight Chad - armor bias
 	{
-		OutBaseStats = { 2, 4, 2, 1, 5, 2, 4 };
+		OutBaseStats = { 3, 2, 2, 5, 1, 2, 2 };
 		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(2, 3);
+		OutPerLevelGains.AttackSpeed = Range(1, 2);
+		OutPerLevelGains.AttackSize = Range(1, 2);
+		OutPerLevelGains.Armor = Range(2, 4);
+		OutPerLevelGains.Evasion = Range(1, 2);
+		OutPerLevelGains.Luck = Range(1, 2);
+		return true;
+	}
+	if (H == FName(TEXT("Hero_2"))) // Ninja Chad - evasion bias
+	{
+		OutBaseStats = { 3, 3, 2, 1, 5, 2, 3 };
+		OutPerLevelGains.Damage = Range(1, 2);
+		OutPerLevelGains.AttackSpeed = Range(1, 2);
 		OutPerLevelGains.AttackSize = Range(1, 2);
 		OutPerLevelGains.Armor = Range(1, 2);
 		OutPerLevelGains.Evasion = Range(2, 4);
-		OutPerLevelGains.Luck = Range(1, 3);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_LuBu")))
-	{
-		OutBaseStats = { 5, 2, 3, 5, 1, 1, 2 };
-		OutPerLevelGains.Damage = Range(2, 4);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 4);
-		OutPerLevelGains.Evasion = Range(1, 2);
 		OutPerLevelGains.Luck = Range(1, 2);
 		return true;
 	}
-	if (H == FName(TEXT("Hero_LeonardoDaVinci")))
+	if (H == FName(TEXT("Hero_3"))) // Gunslinger Chad - attack speed bias
 	{
-		OutBaseStats = { 2, 2, 3, 2, 2, 5, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 3);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(2, 4);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_Yakub")))
-	{
-		OutBaseStats = { 3, 2, 2, 3, 3, 3, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 3);
-		OutPerLevelGains.Evasion = Range(1, 3);
-		OutPerLevelGains.Luck = Range(1, 3);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_KingArthur")))
-	{
-		OutBaseStats = { 4, 2, 2, 5, 1, 2, 2 };
-		OutPerLevelGains.Damage = Range(2, 3);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 4);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 3);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_MiyamotoMusashi")))
-	{
-		OutBaseStats = { 4, 5, 2, 2, 3, 1, 4 };
-		OutPerLevelGains.Damage = Range(2, 3);
-		OutPerLevelGains.AttackSpeed = Range(2, 4);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(1, 3);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_CaptainJackSparrow")))
-	{
-		OutBaseStats = { 2, 3, 2, 1, 4, 5, 4 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 3);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(2, 4);
-		OutPerLevelGains.Luck = Range(2, 4);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_SoloLeveler")))
-	{
-		OutBaseStats = { 3, 3, 3, 3, 3, 3, 3 };
-		OutPerLevelGains.Damage = Range(2, 4);
-		OutPerLevelGains.AttackSpeed = Range(2, 4);
-		OutPerLevelGains.AttackSize = Range(2, 4);
-		OutPerLevelGains.Armor = Range(2, 4);
-		OutPerLevelGains.Evasion = Range(2, 4);
-		OutPerLevelGains.Luck = Range(2, 4);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_Saitama")))
-	{
-		OutBaseStats = { 5, 2, 2, 4, 1, 1, 3 };
-		OutPerLevelGains.Damage = Range(3, 4);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 3);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_RoboGoon")))
-	{
-		OutBaseStats = { 3, 2, 3, 5, 1, 1, 2 };
-		OutPerLevelGains.Damage = Range(1, 3);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 4);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_GeorgeWashington")))
-	{
-		OutBaseStats = { 3, 2, 2, 4, 2, 3, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 3);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 3);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_Cain")))
-	{
-		OutBaseStats = { 2, 2, 2, 4, 3, 2, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 3);
-		OutPerLevelGains.Evasion = Range(1, 3);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_BillyTheKid")))
-	{
-		OutBaseStats = { 2, 5, 1, 1, 4, 3, 5 };
+		OutBaseStats = { 2, 5, 2, 2, 2, 2, 3 };
 		OutPerLevelGains.Damage = Range(1, 2);
 		OutPerLevelGains.AttackSpeed = Range(2, 4);
 		OutPerLevelGains.AttackSize = Range(1, 2);
 		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(2, 3);
-		OutPerLevelGains.Luck = Range(1, 3);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_RoachKing")))
-	{
-		OutBaseStats = { 2, 2, 3, 4, 3, 2, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 3);
-		OutPerLevelGains.Evasion = Range(1, 3);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_Goblino")))
-	{
-		OutBaseStats = { 2, 2, 2, 2, 3, 4, 3 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(1, 3);
-		OutPerLevelGains.Luck = Range(2, 4);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_BulkBite")))
-	{
-		OutBaseStats = { 4, 1, 5, 4, 1, 1, 2 };
-		OutPerLevelGains.Damage = Range(2, 4);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(2, 4);
-		OutPerLevelGains.Armor = Range(2, 3);
 		OutPerLevelGains.Evasion = Range(1, 2);
 		OutPerLevelGains.Luck = Range(1, 2);
 		return true;
 	}
-	if (H == FName(TEXT("Hero_HoboWanderer")))
-	{
-		OutBaseStats = { 2, 2, 2, 3, 2, 3, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 3);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 3);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_DryHumor")))
-	{
-		OutBaseStats = { 3, 3, 2, 1, 4, 2, 3 };
-		OutPerLevelGains.Damage = Range(1, 3);
-		OutPerLevelGains.AttackSpeed = Range(1, 3);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(2, 4);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_LyricVoi")))
-	{
-		OutBaseStats = { 2, 3, 2, 1, 3, 4, 3 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 3);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(1, 3);
-		OutPerLevelGains.Luck = Range(2, 4);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_Jesterma")))
-	{
-		OutBaseStats = { 3, 2, 2, 1, 4, 3, 4 };
-		OutPerLevelGains.Damage = Range(1, 3);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(2, 4);
-		OutPerLevelGains.Luck = Range(1, 3);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_NorthKing")))
-	{
-		OutBaseStats = { 3, 2, 3, 4, 1, 2, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 3);
-		OutPerLevelGains.Armor = Range(2, 3);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_Peakwarden")))
-	{
-		OutBaseStats = { 3, 2, 2, 5, 1, 2, 1 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 4);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_QuinnHex")))
+	if (H == FName(TEXT("Hero_4"))) // Magician Chad - luck bias
 	{
 		OutBaseStats = { 2, 2, 3, 1, 2, 5, 2 };
 		OutPerLevelGains.Damage = Range(1, 2);
@@ -840,40 +634,7 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 		OutPerLevelGains.Luck = Range(2, 4);
 		return true;
 	}
-	if (H == FName(TEXT("Hero_SandSultan")))
-	{
-		OutBaseStats = { 2, 2, 3, 2, 3, 4, 3 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 3);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(1, 3);
-		OutPerLevelGains.Luck = Range(2, 4);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_CharNut")))
-	{
-		OutBaseStats = { 3, 2, 2, 4, 1, 2, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 3);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_Wraithveil")))
-	{
-		OutBaseStats = { 3, 3, 2, 1, 5, 2, 4 };
-		OutPerLevelGains.Damage = Range(1, 3);
-		OutPerLevelGains.AttackSpeed = Range(1, 3);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(2, 4);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
 
-	// Default tuning applies.
+	// Unknown hero: default tuning applies.
 	return true;
 }

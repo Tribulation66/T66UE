@@ -3,9 +3,12 @@
 #include "UI/Screens/T66CompanionSelectionScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66SkinSubsystem.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
@@ -18,6 +21,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Notifications/SProgressBar.h"
@@ -140,26 +144,194 @@ bool UT66CompanionSelectionScreen::IsCompanionUnlocked(FName CompanionID) const
 void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
 {
 	PlaceholderSkins.Empty();
-
-	// Match hero skins format (shared skin IDs + shared localization).
-	static constexpr int32 SkinPriceAC = 250;
-	const FName SkinIDs[5] = {
-		FName(TEXT("Default")),
-		FName(TEXT("Golden")),
-		FName(TEXT("Shadow")),
-		FName(TEXT("Infernal")),
-		FName(TEXT("Frost")),
-	};
-	for (int32 i = 0; i < 5; ++i)
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66SkinSubsystem* Skin = GI ? GI->GetSubsystem<UT66SkinSubsystem>() : nullptr;
+	FName CompanionForSkins = PreviewedCompanionID.IsNone() && AllCompanionIDs.Num() > 0 ? AllCompanionIDs[0] : PreviewedCompanionID;
+	if (Skin && !CompanionForSkins.IsNone())
 	{
-		const FName SkinID = SkinIDs[i];
-		FSkinData Skin;
-		Skin.SkinID = SkinID;
-		Skin.bIsDefault = (SkinID == FName(TEXT("Default")));
-		Skin.bIsOwned = Skin.bIsDefault;          // Default owned
-		Skin.bIsEquipped = Skin.bIsDefault;       // Default equipped
-		Skin.CoinCost = Skin.bIsDefault ? 0 : SkinPriceAC;
-		PlaceholderSkins.Add(Skin);
+		PlaceholderSkins = Skin->GetSkinsForEntity(ET66SkinEntityType::Companion, CompanionForSkins);
+	}
+	else
+	{
+		for (FName SkinID : UT66SkinSubsystem::GetAllSkinIDs())
+		{
+			FSkinData S;
+			S.SkinID = SkinID;
+			S.bIsDefault = (SkinID == UT66SkinSubsystem::DefaultSkinID);
+			S.bIsOwned = S.bIsDefault;
+			S.bIsEquipped = S.bIsDefault;
+			S.CoinCost = S.bIsDefault ? 0 : UT66SkinSubsystem::DefaultSkinPriceAC;
+			PlaceholderSkins.Add(S);
+		}
+	}
+}
+
+void UT66CompanionSelectionScreen::RefreshSkinsList()
+{
+	GeneratePlaceholderSkins();
+	if (SkinsListBoxWidget.IsValid())
+	{
+		SkinsListBoxWidget->ClearChildren();
+		AddSkinRowsToBox(SkinsListBoxWidget);
+	}
+	if (ACBalanceTextBlock.IsValid())
+	{
+		int32 ACBalance = 0;
+		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+		{
+			if (UT66SkinSubsystem* Skin = GI->GetSubsystem<UT66SkinSubsystem>())
+				ACBalance = Skin->GetAchievementCoinsBalance();
+		}
+		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+		const FText ACBalanceText = Loc
+			? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
+			: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(ACBalance));
+		ACBalanceTextBlock->SetText(ACBalanceText);
+	}
+	UpdateCompanionDisplay();
+}
+
+void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& Box)
+{
+	if (!Box.IsValid()) return;
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	const FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
+	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
+	const FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
+	const FText EquippedText = NSLOCTEXT("T66.HeroSelection", "Equipped", "Equipped");
+	static constexpr int32 BeachgoerPriceAC = 250;
+	const FText BeachgoerPriceText = Loc
+		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(BeachgoerPriceAC))
+		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(BeachgoerPriceAC));
+
+	for (const FSkinData& Skin : PlaceholderSkins)
+	{
+		FName SkinIDCopy = Skin.SkinID;
+		bool bIsDefault = Skin.bIsDefault;
+		bool bIsOwned = Skin.bIsOwned;
+		bool bIsEquipped = Skin.bIsEquipped;
+		FName CID = PreviewedCompanionID.IsNone() && AllCompanionIDs.Num() > 0 ? AllCompanionIDs[0] : PreviewedCompanionID;
+
+		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(Loc ? Loc->GetText_SkinName(SkinIDCopy) : FText::FromName(SkinIDCopy))
+				.Font(FT66Style::Tokens::FontRegular(16))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			];
+
+		if (bIsDefault)
+		{
+			Row->AddSlot().AutoWidth().Padding(5.0f, 0.0f)
+				[
+					SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+					[
+						SNew(SWidgetSwitcher)
+						.WidgetIndex(bIsEquipped ? 1 : 0)
+						+ SWidgetSwitcher::Slot()
+						[
+							SNew(SButton)
+							.HAlign(HAlign_Center).VAlign(VAlign_Center)
+							.OnClicked_Lambda([this, CID]()
+							{
+								if (CID.IsNone()) return FReply::Handled();
+								if (UT66SkinSubsystem* SkinSub = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UT66SkinSubsystem>())
+								{
+									SkinSub->SetEquippedCompanionSkinID(CID, UT66SkinSubsystem::DefaultSkinID);
+									PreviewedCompanionSkinIDOverride = NAME_None;
+									RefreshSkinsList();
+								}
+								return FReply::Handled();
+							})
+							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+							.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
+							[ SNew(STextBlock).Text(EquipText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ]
+						]
+						+ SWidgetSwitcher::Slot()
+						[ SNew(STextBlock).Text(EquippedText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ]
+					]
+				];
+		}
+		else
+		{
+			Row->AddSlot().AutoWidth().Padding(4.0f, 0.0f)
+				[
+					SNew(SBox).WidthOverride(80.0f).HeightOverride(36.0f)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center).VAlign(VAlign_Center)
+						.OnClicked_Lambda([this, SkinIDCopy]()
+						{
+							PreviewedCompanionSkinIDOverride = (PreviewedCompanionSkinIDOverride == SkinIDCopy) ? NAME_None : SkinIDCopy;
+							UpdateCompanionDisplay();
+							return FReply::Handled();
+						})
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+						.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+						[ SNew(STextBlock).Text(PreviewText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ]
+					]
+				];
+			Row->AddSlot().AutoWidth().Padding(4.0f, 0.0f)
+				[
+					SNew(SBox).MinDesiredWidth(90.0f).HeightOverride(36.0f)
+					[
+						SNew(SWidgetSwitcher)
+						.WidgetIndex(!bIsOwned ? 0 : (bIsEquipped ? 2 : 1))
+						+ SWidgetSwitcher::Slot()
+						[
+							SNew(SButton)
+							.HAlign(HAlign_Center).VAlign(VAlign_Center)
+							.OnClicked_Lambda([this, CID, SkinIDCopy]()
+							{
+								if (CID.IsNone()) return FReply::Handled();
+								UT66SkinSubsystem* SkinSub = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UT66SkinSubsystem>();
+								if (!SkinSub || !SkinSub->PurchaseCompanionSkin(CID, SkinIDCopy, BeachgoerPriceAC)) return FReply::Handled();
+								SkinSub->SetEquippedCompanionSkinID(CID, SkinIDCopy);
+								PreviewedCompanionSkinIDOverride = NAME_None;
+								RefreshSkinsList();
+								return FReply::Handled();
+							})
+							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+							.ButtonColorAndOpacity(FT66Style::Tokens::Accent)
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BuyText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BeachgoerPriceText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::Text) ]
+							]
+						]
+						+ SWidgetSwitcher::Slot()
+						[
+							SNew(SButton)
+							.HAlign(HAlign_Center).VAlign(VAlign_Center)
+							.OnClicked_Lambda([this, CID, SkinIDCopy]()
+							{
+								if (CID.IsNone()) return FReply::Handled();
+								if (UT66SkinSubsystem* SkinSub = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UT66SkinSubsystem>())
+								{
+									SkinSub->SetEquippedCompanionSkinID(CID, SkinIDCopy);
+									PreviewedCompanionSkinIDOverride = NAME_None;
+									RefreshSkinsList();
+								}
+								return FReply::Handled();
+							})
+							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+							.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
+							[ SNew(STextBlock).Text(EquipText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ]
+						]
+						+ SWidgetSwitcher::Slot()
+						[ SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)[ SNew(STextBlock).Text(EquippedText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ] ]
+					]
+				];
+		}
+		Box->AddSlot().FillHeight(1.0f).Padding(0.0f, 6.0f)
+			[
+				SNew(SBorder)
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+				.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
+				[ Row ]
+			];
 	}
 }
 
@@ -179,82 +351,19 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 
-	// AC balance (shown in the skins panel) - match hero selection UI
+	// AC balance and skins list (same pattern as hero selection)
 	int32 ACBalance = 0;
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
-		if (const UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
-		{
-			ACBalance = Ach->GetAchievementCoinsBalance();
-		}
+		if (UT66SkinSubsystem* SkinSub = GI->GetSubsystem<UT66SkinSubsystem>())
+			ACBalance = SkinSub->GetAchievementCoinsBalance();
 	}
 	const FText ACBalanceText = Loc
 		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
 		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(ACBalance));
 
-	// Build skins list (match hero formatting/styling)
-	TSharedRef<SVerticalBox> SkinsListBox = SNew(SVerticalBox);
-	for (const FSkinData& Skin : PlaceholderSkins)
-	{
-		FText SkinDisplayName = Loc ? Loc->GetText_SkinName(Skin.SkinID) : FText::FromName(Skin.SkinID);
-		SkinsListBox->AddSlot()
-		.FillHeight(1.0f)
-		.Padding(0.0f, 6.0f)
-		[
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
-			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
-			.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				.VAlign(VAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(SkinDisplayName)
-					.Font(FT66Style::Tokens::FontRegular(16))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				.Padding(5.0f, 0.0f, 0.0f, 0.0f)
-				[
-					SNew(SBox).MinDesiredWidth(110.0f).HeightOverride(46.0f)
-					[
-						SNew(SButton)
-						.HAlign(HAlign_Center).VAlign(VAlign_Center)
-						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-						.ButtonColorAndOpacity(FT66Style::Tokens::Accent)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(Skin.bIsOwned ? EquipText : BuyText)
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
-							]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text_Lambda([Loc, Skin]() -> FText
-								{
-									const int32 Price = FMath::Max(0, Skin.CoinCost);
-									return Loc
-										? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Price))
-										: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(Price));
-								})
-								.Font(FT66Style::Tokens::FontRegular(12))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-								.Visibility(Skin.bIsOwned ? EVisibility::Collapsed : EVisibility::Visible)
-							]
-						]
-					]
-				]
-			]
-		];
-	}
+	SAssignNew(SkinsListBoxWidget, SVerticalBox);
+	AddSkinRowsToBox(SkinsListBoxWidget);
 
 	// Carousel list: [NO COMPANION] + companions
 	UT66GameInstance* GICheck = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
@@ -264,10 +373,24 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const int32 NumCarousel = CarouselIDs.Num();
 	const int32 CarouselIndex = FMath::Clamp(CurrentCompanionIndex + 1, 0, NumCarousel > 0 ? NumCarousel - 1 : 0);
 
-	// Build carousel (5 colored tiles: prev2, prev1, current, next1, next2)
+	// Ensure we have stable brushes for the 5 visible slots (portraits).
+	CompanionCarouselPortraitBrushes.SetNum(5);
+	for (int32 i = 0; i < CompanionCarouselPortraitBrushes.Num(); ++i)
+	{
+		if (!CompanionCarouselPortraitBrushes[i].IsValid())
+		{
+			CompanionCarouselPortraitBrushes[i] = MakeShared<FSlateBrush>();
+			CompanionCarouselPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+			CompanionCarouselPortraitBrushes[i]->ImageSize = FVector2D(60.f, 60.f);
+		}
+	}
+	RefreshCompanionCarouselPortraits();
+
+	// Build carousel (5 tiles: prev2, prev1, current, next1, next2) — portrait or colored fallback
 	TSharedRef<SHorizontalBox> CompanionCarousel = SNew(SHorizontalBox);
 	for (int32 Offset = -2; Offset <= 2; Offset++)
 	{
+		const int32 SlotIdx = Offset + 2;
 		int32 Idx = NumCarousel > 0 ? (CarouselIndex + Offset + NumCarousel * 2) % NumCarousel : 0;
 		FName CompanionID = NumCarousel > 0 ? CarouselIDs[Idx] : NAME_None;
 		FCompanionData Data;
@@ -279,11 +402,10 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		const bool bUnlocked = IsCompanionUnlocked(CompanionID);
 		if (!CompanionID.IsNone() && !bUnlocked)
 		{
-			// Locked silhouette: black tile.
 			SpriteColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 		}
-		float BoxSize = (Offset == 0) ? 60.0f : 45.0f;
-		float Opacity = (Offset == 0) ? 1.0f : 0.6f;
+		const float BoxSize = (Offset == 0) ? 60.0f : 45.0f;
+		const float Opacity = (Offset == 0) ? 1.0f : 0.6f;
 		CompanionCarousel->AddSlot()
 			.AutoWidth()
 			.Padding(4.0f, 0.0f)
@@ -291,9 +413,30 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			[
 				SNew(SBox).WidthOverride(BoxSize).HeightOverride(BoxSize)
 				[
-					SNew(SBorder)
-					.BorderBackgroundColor(SpriteColor * Opacity)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SBorder)
+						.BorderBackgroundColor(SpriteColor * Opacity)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					]
+					+ SOverlay::Slot()
+					[
+						SNew(SImage)
+						.Image_Lambda([this, SlotIdx]() -> const FSlateBrush*
+						{
+							return CompanionCarouselPortraitBrushes.IsValidIndex(SlotIdx) ? CompanionCarouselPortraitBrushes[SlotIdx].Get() : nullptr;
+						})
+						.Visibility_Lambda([this, SlotIdx]() -> EVisibility
+						{
+							if (!CompanionCarouselPortraitBrushes.IsValidIndex(SlotIdx) || !CompanionCarouselPortraitBrushes[SlotIdx].IsValid())
+							{
+								return EVisibility::Collapsed;
+							}
+							return CompanionCarouselPortraitBrushes[SlotIdx]->GetResourceObject() ? EVisibility::Visible : EVisibility::Collapsed;
+						})
+						.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity))
+					]
 				]
 			];
 	}
@@ -455,7 +598,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
 									.Padding(FMargin(15.0f, 8.0f))
 									[
-										SNew(STextBlock)
+										SAssignNew(ACBalanceTextBlock, STextBlock)
 										.Text(ACBalanceText)
 										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
 										.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
@@ -465,7 +608,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							+ SVerticalBox::Slot()
 							.FillHeight(1.0f)
 							[
-								SkinsListBox
+								SkinsListBoxWidget.ToSharedRef()
 							]
 						]
 					]
@@ -750,9 +893,22 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::CreateCompanionPreviewWidget(c
 
 void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 {
+	FName EffectiveSkin = PreviewedCompanionSkinIDOverride;
+	if (EffectiveSkin.IsNone() && !PreviewedCompanionID.IsNone())
+	{
+		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+		{
+			if (UT66SkinSubsystem* SkinSub = GI->GetSubsystem<UT66SkinSubsystem>())
+			{
+				EffectiveSkin = SkinSub->GetEquippedCompanionSkinID(PreviewedCompanionID);
+			}
+		}
+	}
+	if (EffectiveSkin.IsNone()) EffectiveSkin = FName(TEXT("Default"));
+
 	if (AT66CompanionPreviewStage* Stage = GetCompanionPreviewStage())
 	{
-		Stage->SetPreviewCompanion(PreviewedCompanionID);
+		Stage->SetPreviewCompanion(PreviewedCompanionID, EffectiveSkin);
 	}
 	else if (CompanionPreviewColorBox.IsValid())
 	{
@@ -841,6 +997,62 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 			}
 		}
 	}
+
+	RefreshCompanionCarouselPortraits();
+}
+
+void UT66CompanionSelectionScreen::RefreshCompanionCarouselPortraits()
+{
+	TArray<FName> CarouselIDs;
+	CarouselIDs.Add(NAME_None);
+	CarouselIDs.Append(AllCompanionIDs);
+	const int32 NumCarousel = CarouselIDs.Num();
+	const int32 CarouselIndex = FMath::Clamp(CurrentCompanionIndex + 1, 0, NumCarousel > 0 ? NumCarousel - 1 : 0);
+
+	CompanionCarouselPortraitBrushes.SetNum(5);
+	for (int32 i = 0; i < CompanionCarouselPortraitBrushes.Num(); ++i)
+	{
+		if (!CompanionCarouselPortraitBrushes[i].IsValid())
+		{
+			CompanionCarouselPortraitBrushes[i] = MakeShared<FSlateBrush>();
+			CompanionCarouselPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+			CompanionCarouselPortraitBrushes[i]->ImageSize = FVector2D(60.f, 60.f);
+		}
+	}
+
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
+		for (int32 Offset = -2; Offset <= 2; ++Offset)
+		{
+			const int32 SlotIdx = Offset + 2;
+			if (!CompanionCarouselPortraitBrushes.IsValidIndex(SlotIdx) || !CompanionCarouselPortraitBrushes[SlotIdx].IsValid())
+			{
+				continue;
+			}
+			const int32 Idx = NumCarousel > 0 ? (CarouselIndex + Offset + NumCarousel * 2) % NumCarousel : 0;
+			const FName CompanionID = NumCarousel > 0 ? CarouselIDs[Idx] : NAME_None;
+			TSoftObjectPtr<UTexture2D> PortraitSoft;
+			if (!CompanionID.IsNone())
+			{
+				FCompanionData D;
+				if (GI->GetCompanionData(CompanionID, D) && !D.Portrait.IsNull())
+				{
+					PortraitSoft = D.Portrait;
+				}
+			}
+			const float BoxSize = (Offset == 0) ? 60.f : 45.f;
+			if (PortraitSoft.IsNull() || !TexPool)
+			{
+				CompanionCarouselPortraitBrushes[SlotIdx]->SetResourceObject(nullptr);
+			}
+			else
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, CompanionCarouselPortraitBrushes[SlotIdx], FName(TEXT("CompanionCarousel"), SlotIdx + 1), /*bClearWhileLoading*/ true);
+			}
+			CompanionCarouselPortraitBrushes[SlotIdx]->ImageSize = FVector2D(BoxSize, BoxSize);
+		}
+	}
 }
 
 void UT66CompanionSelectionScreen::OnScreenActivated_Implementation()
@@ -900,15 +1112,14 @@ bool UT66CompanionSelectionScreen::GetPreviewedCompanionData(FCompanionData& Out
 void UT66CompanionSelectionScreen::PreviewCompanion(FName ID)
 {
 	PreviewedCompanionID = ID;
+	PreviewedCompanionSkinIDOverride = NAME_None;
 	CurrentCompanionIndex = ID.IsNone() ? -1 : AllCompanionIDs.IndexOfByKey(ID);
 	if (CurrentCompanionIndex == INDEX_NONE) CurrentCompanionIndex = -1;
 	FCompanionData Data;
 	bool bIsNoCompanion = ID.IsNone();
 	if (!bIsNoCompanion) GetPreviewedCompanionData(Data);
 	OnPreviewedCompanionChanged(Data, bIsNoCompanion);
-	UpdateCompanionDisplay();
-	// Rebuild UI to update button states
-	TakeWidget();
+	RefreshSkinsList();
 }
 
 void UT66CompanionSelectionScreen::SelectNoCompanion() { PreviewCompanion(NAME_None); }

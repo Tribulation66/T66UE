@@ -137,9 +137,10 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 
 		const ET66BodyType BodyType =
 			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroBodyType : GI->SelectedHeroBodyType;
+		FName SkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
 		if (!HeroID.IsNone())
 		{
-			HeroPreviewStage->SetPreviewHero(HeroID, BodyType);
+			HeroPreviewStage->SetPreviewHero(HeroID, BodyType, SkinID);
 		}
 		if (UTextureRenderTarget2D* RT = HeroPreviewStage->GetRenderTarget())
 		{

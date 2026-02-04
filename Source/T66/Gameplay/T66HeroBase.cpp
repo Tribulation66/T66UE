@@ -85,11 +85,15 @@ AT66HeroBase::AT66HeroBase()
 		AttackRangeRingISM->SetStaticMesh(CylinderMesh);
 	}
 
-	// Wireframe reads best for a "range ring" and won't white-out the floor now that it's segmented.
+	// Wireframe reads best for a "range ring"; engine debug material path can vary, so fallback to project material.
 	UMaterialInterface* RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineDebugMaterials/M_Wireframe.M_Wireframe"));
 	if (!RingMat)
 	{
 		RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
+	}
+	if (!RingMat)
+	{
+		RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 	}
 	if (RingMat)
 	{
@@ -381,7 +385,7 @@ void AT66HeroBase::ApplyStageSlide(float DurationSeconds)
 	StageSlideSecondsRemaining = FMath::Max(StageSlideSecondsRemaining, DurationSeconds);
 }
 
-void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType)
+void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType, FName InSkinID, bool bPreviewMode)
 {
 	HeroID = InHeroData.HeroID;
 	HeroData = InHeroData;
@@ -393,30 +397,30 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 	// Apply the placeholder color from hero data
 	SetPlaceholderColor(InHeroData.PlaceholderColor);
 
-	UE_LOG(LogTemp, Log, TEXT("Hero initialized: %s, BodyType: %s, Color: (%.2f, %.2f, %.2f)"),
+	FName SkinID = InSkinID.IsNone() ? FName(TEXT("Default")) : InSkinID;
+
+	UE_LOG(LogTemp, Log, TEXT("Hero initialized: %s, BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
 		*InHeroData.DisplayName.ToString(),
-		InBodyType == ET66BodyType::TypeA ? TEXT("TypeA (Cylinder)") : TEXT("TypeB (Cube)"),
+		InBodyType == ET66BodyType::TypeA ? TEXT("TypeA") : TEXT("TypeB"),
+		*SkinID.ToString(),
 		InHeroData.PlaceholderColor.R,
 		InHeroData.PlaceholderColor.G,
 		InHeroData.PlaceholderColor.B);
 
-	// FUTURE: When FBX models are ready, check if DataTable has skeletal mesh refs
-	// if (!InHeroData.BodyTypeAMesh.IsNull() && InBodyType == ET66BodyType::TypeA)
-	// {
-	//     USkeletalMesh* SKMesh = InHeroData.BodyTypeAMesh.LoadSynchronous();
-	//     GetMesh()->SetSkeletalMesh(SKMesh);
-	//     PlaceholderMesh->SetVisibility(false);
-	// }
-
-	// Imported models: resolve and apply a mapped skeletal mesh if available.
+	// Resolve hero visual by HeroID + BodyType + SkinID (e.g. Hero_1_TypeA, Hero_1_TypeB_Beachgoer).
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			const bool bApplied = Visuals->ApplyCharacterVisual(HeroID, GetMesh(), PlaceholderMesh, true);
+			const FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(HeroID, InBodyType, SkinID);
+			// Hero selection preview uses alert animation so the character is non-static in the showcase.
+			const bool bUseAlertAnimation = bPreviewMode;
+			UE_LOG(LogTemp, Log, TEXT("[ANIM] HeroBase::InitializeHero HeroID=%s BodyType=%s SkinID=%s bPreviewMode=%d bUseAlertAnimation=%d VisualID=%s"),
+				*HeroID.ToString(), InBodyType == ET66BodyType::TypeA ? TEXT("A") : TEXT("B"), *SkinID.ToString(),
+				bPreviewMode ? 1 : 0, bUseAlertAnimation ? 1 : 0, *VisualID.ToString());
+			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseAlertAnimation, bPreviewMode);
 			if (!bApplied)
 			{
-				// Fall back to placeholder mesh.
 				if (GetMesh())
 				{
 					GetMesh()->SetVisibility(false, true);

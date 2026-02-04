@@ -1007,10 +1007,19 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	FName CompanionSkinID = FName(TEXT("Default"));
+	if (UGameInstance* GII = GetGameInstance())
+	{
+		if (UT66AchievementsSubsystem* Ach = GII->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			CompanionSkinID = Ach->GetEquippedCompanionSkinID(GI->SelectedCompanionID);
+		}
+	}
+
 	AT66CompanionBase* Companion = World->SpawnActor<AT66CompanionBase>(CompanionClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 	if (Companion)
 	{
-		Companion->InitializeCompanion(CompanionData);
+		Companion->InitializeCompanion(CompanionData, CompanionSkinID);
 		Companion->SetPreviewMode(false); // gameplay: follow hero
 		if (Player)
 		{
@@ -1075,10 +1084,18 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 				FActorSpawnParameters SpawnParams2;
 				SpawnParams2.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+				FName AsyncSkinID = FName(TEXT("Default"));
+				if (UGameInstance* GII = GetGameInstance())
+				{
+					if (UT66AchievementsSubsystem* Ach = GII->GetSubsystem<UT66AchievementsSubsystem>())
+					{
+						AsyncSkinID = Ach->GetEquippedCompanionSkinID(CompanionDataCopy.CompanionID);
+					}
+				}
 				AT66CompanionBase* NewComp = World2->SpawnActor<AT66CompanionBase>(Loaded, SpawnLoc2, FRotator::ZeroRotator, SpawnParams2);
 				if (NewComp)
 				{
-					NewComp->InitializeCompanion(CompanionDataCopy);
+					NewComp->InitializeCompanion(CompanionDataCopy, AsyncSkinID);
 					NewComp->SetPreviewMode(false);
 					PlayerCompanions.Add(PlayerCtrl, NewComp);
 				}
@@ -2600,13 +2617,15 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			FHeroData HeroData;
 			if (GI->GetSelectedHeroData(HeroData))
 			{
-				// Pass both hero data AND body type from Game Instance
+				// Pass hero data, body type, and skin from Game Instance
 				ET66BodyType SelectedBodyType = GI->SelectedHeroBodyType;
-				Hero->InitializeHero(HeroData, SelectedBodyType);
-				
-				UE_LOG(LogTemp, Log, TEXT("Spawned hero: %s, BodyType: %s, Color: (%.2f, %.2f, %.2f)"),
+				FName SelectedSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
+				Hero->InitializeHero(HeroData, SelectedBodyType, SelectedSkinID, false);
+
+				UE_LOG(LogTemp, Log, TEXT("Spawned hero: %s, BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
 					*HeroData.DisplayName.ToString(),
 					SelectedBodyType == ET66BodyType::TypeA ? TEXT("TypeA") : TEXT("TypeB"),
+					*SelectedSkinID.ToString(),
 					HeroData.PlaceholderColor.R,
 					HeroData.PlaceholderColor.G,
 					HeroData.PlaceholderColor.B);

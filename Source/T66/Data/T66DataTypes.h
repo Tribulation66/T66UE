@@ -41,9 +41,13 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TSoftClassPtr<APawn> HeroClass;
 
-	/** Hero portrait texture for UI (optional) */
+	/** Hero portrait texture for UI (Type A; used in carousel and grid) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Portrait;
+
+	/** Hero portrait texture for Type B (used in HUD when Type B body is selected) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> PortraitTypeB;
 
 	/** Map theme associated with this hero (for Solo runs) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
@@ -560,9 +564,13 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
 
-	/** Optional looping animation (AnimSequence/AnimComposite/etc). */
+	/** Optional looping animation (AnimSequence/AnimComposite/etc). Used as Walk in gameplay. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UAnimationAsset> LoopingAnimation;
+
+	/** Optional alert/stand animation for preview (hero selection). If set, used in preview instead of LoopingAnimation. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UAnimationAsset> AlertAnimation;
 
 	/** Relative location applied to the target mesh component. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")

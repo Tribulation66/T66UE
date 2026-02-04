@@ -17,7 +17,8 @@
 
 AT66HeroPreviewStage::AT66HeroPreviewStage()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PostUpdateWork; // After animation and movement so capture sees updated pose
 
 	// Root (invisible)
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -76,6 +77,16 @@ void AT66HeroPreviewStage::BeginPlay()
 	EnsureCaptureSetup();
 }
 
+void AT66HeroPreviewStage::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	// Capture every frame so the preview shows the current animated pose (we tick after the pawn).
+	if (PreviewPawn && SceneCapture && RenderTarget)
+	{
+		SceneCapture->CaptureScene();
+	}
+}
+
 void AT66HeroPreviewStage::EnsureCaptureSetup()
 {
 	if (!SceneCapture) return;
@@ -105,15 +116,26 @@ void AT66HeroPreviewStage::EnsureCaptureSetup()
 	}
 }
 
-void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType)
+void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID)
 {
 	PreviewYawDegrees = 0.f;
 	OrbitPitchDegrees = 8.f;
 	PreviewZoomMultiplier = 1.0f;
-	UpdatePreviewPawn(HeroID, BodyType);
+	UpdatePreviewPawn(HeroID, BodyType, SkinID.IsNone() ? FName(TEXT("Default")) : SkinID);
 	ApplyShadowSettings();
 	bHasOrbitFrame = false;
 	FrameCameraToPreview();
+
+	// Drive capture from our Tick (after pawn anim) so the alert animation is visible; avoid bCaptureEveryFrame timing.
+	if (SceneCapture)
+	{
+		SceneCapture->bCaptureEveryFrame = false;
+	}
+	// Ensure we tick after the preview pawn so animation has updated before we capture.
+	if (PreviewPawn)
+	{
+		AddTickPrerequisiteActor(PreviewPawn);
+	}
 	CapturePreview();
 }
 
@@ -262,7 +284,7 @@ void AT66HeroPreviewStage::ApplyShadowSettings()
 	}
 }
 
-void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType)
+void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType, FName SkinID)
 {
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (!GI) return;
@@ -270,7 +292,6 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 	FHeroData HeroData;
 	if (!GI->GetHeroData(HeroID, HeroData))
 	{
-		// No hero data - hide or clear preview
 		if (PreviewPawn)
 		{
 			PreviewPawn->SetActorHiddenInGame(true);
@@ -281,7 +302,6 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Spawn new pawn if we don't have one or we need a fresh one
 	if (!PreviewPawn)
 	{
 		UClass* ClassToSpawn = HeroPawnClass ? HeroPawnClass.Get() : AT66HeroBase::StaticClass();
@@ -302,7 +322,7 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 	if (PreviewPawn)
 	{
 		PreviewPawn->SetActorHiddenInGame(false);
-		PreviewPawn->InitializeHero(HeroData, BodyType);
+		PreviewPawn->InitializeHero(HeroData, BodyType, SkinID, true);
 		// Freeze the hero so it doesn't fall / move off-camera in the menu level.
 		if (UCharacterMovementComponent* Move = PreviewPawn->GetCharacterMovement())
 		{
@@ -321,14 +341,14 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 		PreviewPawn->SetActorLocation(PawnLoc);
 		ApplyPreviewRotation();
 
-		// Make sure materials/textures are fully streamed for the preview camera.
+		// Stream textures; allow alert animation to play. Force mesh to tick so scene capture sees the animation.
 		if (USkeletalMeshComponent* Skel = PreviewPawn->GetMesh())
 		{
 			Skel->bForceMipStreaming = true;
 			Skel->StreamingDistanceMultiplier = 50.f;
-			Skel->bPauseAnims = true;          // preview should be static
-			Skel->GlobalAnimRateScale = 0.f;
-			Skel->Stop();
+			Skel->SetComponentTickEnabled(true);
+			Skel->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+			Skel->bEnableUpdateRateOptimizations = false;
 		}
 	}
 }

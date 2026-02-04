@@ -6,6 +6,8 @@
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -14,6 +16,9 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SSpacer.h"
 
 UT66CompanionGridScreen::UT66CompanionGridScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -57,73 +62,113 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionGrid", "NoCompanion", "NO COMPANION");
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
-	const int32 Columns = 6;
-	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
-
-	// First row: NO COMPANION tile, then companions
 	TArray<FName> IDsWithNone;
-	IDsWithNone.Add(NAME_None); // NO COMPANION
+	IDsWithNone.Add(NAME_None);
 	IDsWithNone.Append(AllCompanionIDs);
 
-	for (int32 Row = 0; Row * Columns < IDsWithNone.Num(); Row++)
+	const int32 Columns = FMath::Max(1, FMath::Min(3, IDsWithNone.Num()));
+	const int32 Rows = IDsWithNone.Num() > 0 ? (IDsWithNone.Num() + Columns - 1) / Columns : 0;
+
+	CompanionPortraitBrushes.Reset();
+	CompanionPortraitBrushes.Reserve(IDsWithNone.Num());
+
+	TSharedRef<SGridPanel> GridPanel = SNew(SGridPanel);
+	for (int32 Index = 0; Index < IDsWithNone.Num(); Index++)
 	{
-		TSharedRef<SHorizontalBox> RowBox = SNew(SHorizontalBox);
-		for (int32 Col = 0; Col < Columns; Col++)
+		const int32 Row = Index / Columns;
+		const int32 Col = Index % Columns;
+		FName CompanionID = IDsWithNone[Index];
+		FCompanionData Data;
+		FLinearColor SpriteColor = FLinearColor(0.35f, 0.25f, 0.25f, 1.0f);
+		bool bUnlocked = true;
+		if (!CompanionID.IsNone() && GI)
 		{
-			int32 Index = Row * Columns + Col;
-			if (Index >= IDsWithNone.Num()) break;
-
-			FName CompanionID = IDsWithNone[Index];
-			FLinearColor SpriteColor = FLinearColor(0.35f, 0.25f, 0.25f, 1.0f); // Gray-red for "no companion"
-			bool bUnlocked = true;
-			if (!CompanionID.IsNone() && GI)
+			if (GI->GetCompanionData(CompanionID, Data))
 			{
-				FCompanionData Data;
-				if (GI->GetCompanionData(CompanionID, Data))
-				{
-					SpriteColor = Data.PlaceholderColor;
-				}
-
-				if (UT66CompanionUnlockSubsystem* Unlocks = GI->GetSubsystem<UT66CompanionUnlockSubsystem>())
-				{
-					bUnlocked = Unlocks->IsCompanionUnlocked(CompanionID);
-				}
+				SpriteColor = Data.PlaceholderColor;
 			}
-			if (!CompanionID.IsNone() && !bUnlocked)
+			if (UT66CompanionUnlockSubsystem* Unlocks = GI->GetSubsystem<UT66CompanionUnlockSubsystem>())
 			{
-				// Locked silhouette: black tile (still visible in the grid).
-				SpriteColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
+				bUnlocked = Unlocks->IsCompanionUnlocked(CompanionID);
 			}
-
-			FName CompanionIDCopy = CompanionID;
-			RowBox->AddSlot()
-				.AutoWidth()
-				.Padding(6.0f, 6.0f)
-				[
-					SNew(SBox)
-					.WidthOverride(72.0f)
-					.HeightOverride(72.0f)
-					[
-						SNew(SButton)
-						.ButtonColorAndOpacity(SpriteColor)
-						.OnClicked_Lambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); })
-						.IsEnabled(CompanionIDCopy.IsNone() || bUnlocked)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(SpriteColor)
-						]
-					]
-				];
 		}
-		GridVertical->AddSlot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
+		if (!CompanionID.IsNone() && !bUnlocked)
+		{
+			SpriteColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
+		}
+
+		TSharedPtr<FSlateBrush> PortraitBrush;
+		if (!CompanionID.IsNone() && GI && GI->GetCompanionData(CompanionID, Data) && !Data.Portrait.IsNull())
+		{
+			PortraitBrush = MakeShared<FSlateBrush>();
+			PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
+			PortraitBrush->ImageSize = FVector2D(256.f, 256.f);
+			CompanionPortraitBrushes.Add(PortraitBrush);
+			if (TexPool)
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, Data.Portrait, this, PortraitBrush, CompanionID, /*bClearWhileLoading*/ true);
+			}
+		}
+		else
+		{
+			CompanionPortraitBrushes.Add(nullptr);
+		}
+
+		FName CompanionIDCopy = CompanionID;
+		TSharedPtr<FSlateBrush> PortraitBrushCopy = PortraitBrush;
+		GridPanel->AddSlot(Col, Row)
+			.Padding(8.0f)
 			[
-				RowBox
+				SNew(SButton)
+				.ButtonColorAndOpacity(FLinearColor::Transparent)
+				.OnClicked_Lambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); })
+				.IsEnabled(CompanionIDCopy.IsNone() || bUnlocked)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(SpriteColor)
+					]
+					+ SOverlay::Slot()
+					[
+						PortraitBrushCopy.IsValid()
+						? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrushCopy.Get()))
+						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+					]
+				]
 			];
 	}
+
+	// Fill remaining grid slots so layout is even
+	for (int32 Index = static_cast<int32>(IDsWithNone.Num()); Index < Rows * Columns; Index++)
+	{
+		const int32 Row = Index / Columns;
+		const int32 Col = Index % Columns;
+		GridPanel->AddSlot(Col, Row)
+			.Padding(8.0f)
+			[
+				SNew(SSpacer)
+			];
+	}
+	for (int32 Col = 0; Col < Columns; Col++)
+	{
+		GridPanel->SetColumnFill(Col, 1.0f);
+	}
+	for (int32 Row = 0; Row < Rows; Row++)
+	{
+		GridPanel->SetRowFill(Row, 1.0f);
+	}
+
+	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
+	GridVertical->AddSlot()
+		.FillHeight(1.0f)
+		[
+			GridPanel
+		];
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))

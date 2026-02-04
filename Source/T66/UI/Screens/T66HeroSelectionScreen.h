@@ -11,6 +11,7 @@
 class UT66LocalizationSubsystem;
 class AT66HeroPreviewStage;
 struct FSlateBrush;
+class SVerticalBox;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
@@ -104,6 +105,12 @@ private:
 	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
 
+	/** Skins list container; refreshed in place when Equip/Buy changes so buttons toggle without full rebuild. */
+	TSharedPtr<SVerticalBox> SkinsListBoxWidget;
+
+	/** AC balance text in skins panel; updated dynamically when purchasing skins. */
+	TSharedPtr<STextBlock> ACBalanceTextBlock;
+
 	/** Find the hero preview stage in the world (FrontendLevel) */
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 
@@ -121,15 +128,24 @@ private:
 	void RefreshHeroCarouselPortraits();
 	void UpdateHeroDisplay();
 	void GeneratePlaceholderSkins();
+	/** Repopulate skins list from current PlaceholderSkins (call after Equip/Buy so Equipped/Equip toggle in place). */
+	void RefreshSkinsList();
+	/** Add current PlaceholderSkins rows to the given vertical box (used by BuildSlateUI and RefreshSkinsList). */
+	void AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& Box);
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 
 	/** True when the Lore panel is visible (right-side panel swaps to lore). */
 	bool bShowingLore = false;
 
+	/** When set, preview shows this skin (e.g. Beachgoer) without equipping. NAME_None = use SelectedHeroSkinID. */
+	FName PreviewSkinIDOverride;
+
 	// Handle language change to rebuild UI
 	UFUNCTION()
 	void OnLanguageChanged(ET66Language NewLanguage);
+
+	virtual FReply NativeOnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 
 	// Click handlers
 	FReply HandlePrevClicked();

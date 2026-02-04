@@ -50,19 +50,23 @@ void AT66CompanionBase::BeginPlay()
 	}
 }
 
-void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData)
+void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName SkinID)
 {
 	CompanionID = InData.CompanionID;
 	CompanionData = InData;
 	SetPlaceholderColor(InData.PlaceholderColor);
 
-	// Imported model: map CompanionID -> mesh (DT_CharacterVisuals).
+	// VisualID = Companion_01 or Companion_01_Beachgoer (from DT_CharacterVisuals).
+	// In preview mode use alert animation and preview context (like hero selection).
 	bUsingCharacterVisual = false;
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CompanionID, SkeletalMesh, PlaceholderMesh, true);
+			const FName VisualID = UT66CharacterVisualSubsystem::GetCompanionVisualID(CompanionID, SkinID.IsNone() ? FName(TEXT("Default")) : SkinID);
+			const bool bUseAlertAnimation = bIsPreviewMode;
+			const bool bIsPreviewContext = bIsPreviewMode;
+			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(VisualID, SkeletalMesh, PlaceholderMesh, true, bUseAlertAnimation, bIsPreviewContext);
 			if (!bUsingCharacterVisual && SkeletalMesh)
 			{
 				SkeletalMesh->SetVisibility(false, true);

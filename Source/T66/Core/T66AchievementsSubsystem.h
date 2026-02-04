@@ -56,6 +56,46 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
 	int32 GetAchievementCoinsBalance() const;
 
+	/** Spend AC. Returns true if balance was sufficient and amount was deducted. Persists profile. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	bool SpendAchievementCoins(int32 Amount);
+
+	/** Hero skins: per-hero ownership. Default is always considered owned. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
+	bool IsHeroSkinOwned(FName HeroID, FName SkinID) const;
+
+	/** Purchase a skin for a specific hero with AC. Returns true if purchased (deducts AC, adds to that hero's owned). */
+	UFUNCTION(BlueprintCallable, Category = "Achievements|Skins")
+	bool PurchaseHeroSkin(FName HeroID, FName SkinID, int32 CostAC);
+
+	/** Currently equipped skin for a hero (Default if none set). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
+	FName GetEquippedHeroSkinID(FName HeroID) const;
+
+	/** Set equipped skin for a hero (must be owned for that hero). */
+	UFUNCTION(BlueprintCallable, Category = "Achievements|Skins")
+	void SetEquippedHeroSkinID(FName HeroID, FName SkinID);
+
+	/** Debug/dev: Reset all hero skin ownership (clears all purchased skins, everyone back to Default). */
+	UFUNCTION(BlueprintCallable, Category = "Achievements|Skins")
+	void ResetAllHeroSkinOwnership();
+
+	/** Companion skins: per-companion ownership. Default is always considered owned. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
+	bool IsCompanionSkinOwned(FName CompanionID, FName SkinID) const;
+
+	/** Purchase a skin for a specific companion with AC. Returns true if purchased. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements|Skins")
+	bool PurchaseCompanionSkin(FName CompanionID, FName SkinID, int32 CostAC);
+
+	/** Currently equipped skin for a companion (Default if none set). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
+	FName GetEquippedCompanionSkinID(FName CompanionID) const;
+
+	/** Set equipped skin for a companion (must be owned for that companion). */
+	UFUNCTION(BlueprintCallable, Category = "Achievements|Skins")
+	void SetEquippedCompanionSkinID(FName CompanionID, FName SkinID);
+
 	/** Get all achievements (definitions + current runtime state). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
 	TArray<FAchievementData> GetAllAchievements() const;
@@ -113,6 +153,13 @@ public:
 	/** Union: progress 0..1 toward Hyper tier (for UI bars). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
 	float GetCompanionUnionProgress01(FName CompanionID) const;
+
+	/** For T66SkinSubsystem: access profile to read/write skin data. Returns null if not loaded. */
+	UT66ProfileSaveGame* GetProfile() { return Profile; }
+	const UT66ProfileSaveGame* GetProfile() const { return Profile; }
+
+	/** For T66SkinSubsystem: mark profile dirty, save, and optionally broadcast AchievementCoinsChanged. */
+	void MarkProfileDirtyAndSave(bool bBroadcastCoinsChanged = false);
 
 private:
 	UPROPERTY()

@@ -12,10 +12,38 @@
 #include "Modules/ModuleManager.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
+#include "UObject/SoftObjectPath.h"
 
 static const TCHAR* T66_DefaultCharacterVisualsDTPath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
 static const FName T66_AnimSkeletonTag(TEXT("Skeleton"));
 static const FName T66_CharactersRootPath(TEXT("/Game/Characters"));
+
+/** If the given path points to a non-animation (e.g. SkeletalMesh), try the same path with _Anim suffix (e.g. AM_X.AM_X -> AM_X_Anim.AM_X_Anim). */
+static UAnimationAsset* LoadAnimationFallbackWithAnimSuffix(const TSoftObjectPtr<UAnimationAsset>& SoftPath)
+{
+	FString PathStr = SoftPath.ToString();
+	if (PathStr.IsEmpty() || PathStr.Contains(TEXT("_Anim."))) return nullptr;
+	int32 DotIdx;
+	if (!PathStr.FindLastChar(TEXT('.'), DotIdx)) return nullptr;
+	FString Base = PathStr.Left(DotIdx);
+	FString ObjName = PathStr.Mid(DotIdx + 1);
+	FString NewPath = Base + TEXT("_Anim.") + ObjName + TEXT("_Anim");
+	return Cast<UAnimationAsset>(TSoftObjectPtr<UAnimationAsset>(FSoftObjectPath(NewPath)).LoadSynchronous());
+}
+
+/** If path is Package_Anim.Object_Anim and package doesn't exist, try Package.Object_Anim (FBX import creates package without _Anim). */
+static UAnimationAsset* LoadAnimationFallbackStripPackageAnimSuffix(const TSoftObjectPtr<UAnimationAsset>& SoftPath)
+{
+	FString PathStr = SoftPath.ToString();
+	int32 DotIdx;
+	if (PathStr.IsEmpty() || !PathStr.FindLastChar(TEXT('.'), DotIdx)) return nullptr;
+	FString Base = PathStr.Left(DotIdx);
+	FString ObjName = PathStr.Mid(DotIdx + 1);
+	if (!Base.EndsWith(TEXT("_Anim"))) return nullptr;
+	FString BaseStrip = Base.LeftChop(4); // strip "_Anim"
+	FString NewPath = BaseStrip + TEXT(".") + ObjName;
+	return Cast<UAnimationAsset>(TSoftObjectPtr<UAnimationAsset>(FSoftObjectPath(NewPath)).LoadSynchronous());
+}
 
 UAnimationAsset* UT66CharacterVisualSubsystem::FindFallbackLoopingAnim(USkeleton* Skeleton) const
 {
@@ -140,10 +168,34 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		if (!Res.Row.SkeletalMesh.IsNull())
 		{
 			Res.Mesh = Res.Row.SkeletalMesh.LoadSynchronous();
+			UE_LOG(LogTemp, Log, TEXT("[MESH] ResolveVisual VisualID=%s SkeletalMesh path=%s Loaded=%s"),
+				*VisualID.ToString(), *Res.Row.SkeletalMesh.ToString(), Res.Mesh ? TEXT("YES") : TEXT("NO"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[MESH] ResolveVisual VisualID=%s SkeletalMesh path is NULL in DataTable row!"), *VisualID.ToString());
 		}
 		if (!Res.Row.LoopingAnimation.IsNull())
 		{
-			Res.LoopingAnim = Res.Row.LoopingAnimation.LoadSynchronous();
+			Res.LoopingAnim = Cast<UAnimationAsset>(Res.Row.LoopingAnimation.LoadSynchronous());
+			if (!Res.LoopingAnim)
+				Res.LoopingAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.LoopingAnimation);
+			if (!Res.LoopingAnim)
+				Res.LoopingAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.LoopingAnimation);
+		}
+		if (!Res.Row.AlertAnimation.IsNull())
+		{
+			Res.AlertAnim = Cast<UAnimationAsset>(Res.Row.AlertAnimation.LoadSynchronous());
+			if (!Res.AlertAnim)
+				Res.AlertAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.AlertAnimation);
+			if (!Res.AlertAnim)
+				Res.AlertAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.AlertAnimation);
+			UE_LOG(LogTemp, Log, TEXT("[ANIM] ResolveVisual VisualID=%s AlertAnimation path=%s AlertAnim=%s"),
+				*VisualID.ToString(), *Res.Row.AlertAnimation.ToString(), Res.AlertAnim ? *Res.AlertAnim->GetName() : TEXT("(null)"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("[ANIM] ResolveVisual VisualID=%s AlertAnimation is null (no alert anim row)"), *VisualID.ToString());
 		}
 		// If no explicit animation is set, try to find any AnimSequence for this Skeleton (cached).
 		if (!Res.LoopingAnim && Res.Mesh && Res.Mesh->GetSkeleton())
@@ -161,11 +213,36 @@ void UT66CharacterVisualSubsystem::PreloadCharacterVisual(FName VisualID)
 	ResolveVisual(VisualID);
 }
 
+FName UT66CharacterVisualSubsystem::GetHeroVisualID(FName HeroID, ET66BodyType BodyType, FName SkinID)
+{
+	if (HeroID.IsNone()) return NAME_None;
+	const TCHAR TypeChar = (BodyType == ET66BodyType::TypeA) ? TEXT('A') : TEXT('B');
+	FString Key = FString::Printf(TEXT("%s_Type%c"), *HeroID.ToString(), TypeChar);
+	if (SkinID != NAME_None && SkinID != FName(TEXT("Default")))
+	{
+		Key += TEXT("_");
+		Key += SkinID.ToString();
+	}
+	return FName(*Key);
+}
+
+FName UT66CharacterVisualSubsystem::GetCompanionVisualID(FName CompanionID, FName SkinID)
+{
+	if (CompanionID.IsNone()) return NAME_None;
+	if (SkinID.IsNone() || SkinID == FName(TEXT("Default")))
+	{
+		return CompanionID;
+	}
+	return FName(*(CompanionID.ToString() + TEXT("_") + SkinID.ToString()));
+}
+
 bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	FName VisualID,
 	USkeletalMeshComponent* TargetMesh,
 	USceneComponent* PlaceholderToHide,
-	bool bEnableSingleNodeAnimation)
+	bool bEnableSingleNodeAnimation,
+	bool bUseAlertAnimation,
+	bool bIsPreviewContext)
 {
 	if (VisualID.IsNone() || !TargetMesh)
 	{
@@ -175,6 +252,8 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	const FT66ResolvedCharacterVisual Res = ResolveVisual(VisualID);
 	if (!Res.bHasRow || !Res.Mesh)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[MESH] ApplyCharacterVisual FAILED for VisualID=%s: bHasRow=%d, Mesh=%s"),
+			*VisualID.ToString(), Res.bHasRow ? 1 : 0, Res.Mesh ? *Res.Mesh->GetName() : TEXT("(null)"));
 		return false;
 	}
 
@@ -224,7 +303,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 				if (LoggedCenterFixes < 12)
 				{
 					++LoggedCenterFixes;
-					UE_LOG(LogTemp, Warning, TEXT("[INVIS] CharacterVisuals: AutoCenteredXY VisualID=%s OriginXY=(%.1f,%.1f) RotatedXY=(%.1f,%.1f)"),
+					UE_LOG(LogTemp, Verbose, TEXT("[INVIS] CharacterVisuals: AutoCenteredXY VisualID=%s OriginXY=(%.1f,%.1f) RotatedXY=(%.1f,%.1f)"),
 						*VisualID.ToString(),
 						LocalOriginXY.X, LocalOriginXY.Y,
 						RotatedOriginXY.X, RotatedOriginXY.Y);
@@ -244,10 +323,43 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		PlaceholderToHide->SetHiddenInGame(true, true);
 	}
 
-	if (bEnableSingleNodeAnimation && Res.LoopingAnim)
+	if (bEnableSingleNodeAnimation)
 	{
-		TargetMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-		TargetMesh->PlayAnimation(Res.LoopingAnim, Res.Row.bLoopAnimation);
+		UAnimationAsset* AnimToPlay = (bUseAlertAnimation && Res.AlertAnim) ? Res.AlertAnim : Res.LoopingAnim;
+		// Log animation type and duration for debugging
+		float AnimDuration = 0.f;
+		FString AnimClass = TEXT("(null)");
+		if (AnimToPlay)
+		{
+			AnimClass = AnimToPlay->GetClass()->GetName();
+			AnimDuration = AnimToPlay->GetPlayLength();
+		}
+		UE_LOG(LogTemp, Log, TEXT("[ANIM] ApplyCharacterVisual VisualID=%s bUseAlertAnimation=%d bIsPreviewContext=%d Res.AlertAnim=%s Res.LoopingAnim=%s AnimToPlay=%s Class=%s Duration=%.3f"),
+			*VisualID.ToString(), bUseAlertAnimation ? 1 : 0, bIsPreviewContext ? 1 : 0,
+			Res.AlertAnim ? *Res.AlertAnim->GetName() : TEXT("(null)"),
+			Res.LoopingAnim ? *Res.LoopingAnim->GetName() : TEXT("(null)"),
+			AnimToPlay ? *AnimToPlay->GetName() : TEXT("(null)"),
+			*AnimClass, AnimDuration);
+		if (AnimToPlay)
+		{
+			// Preview (hero selection): ensure no AnimBlueprint overrides, mesh always ticks so animation is visible in scene capture.
+			if (bIsPreviewContext)
+			{
+				TargetMesh->SetAnimInstanceClass(nullptr);
+				TargetMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+				TargetMesh->SetComponentTickEnabled(true);
+				TargetMesh->bEnableUpdateRateOptimizations = false; // Preview is only visible to SceneCapture; avoid skipping anim updates.
+			}
+			// Reinitialize animation state after mesh change (otherwise PlayAnimation fails after SetSkeletalMesh).
+			TargetMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			TargetMesh->InitAnim(true);
+			// In preview we use alert anim and want it to loop; otherwise use row's loop setting.
+			const bool bLoop = bUseAlertAnimation ? true : Res.Row.bLoopAnimation;
+			TargetMesh->PlayAnimation(AnimToPlay, bLoop);
+			TargetMesh->SetPosition(0.f);
+			UE_LOG(LogTemp, Log, TEXT("[ANIM] PlayAnimation called: AnimMode=%d IsPlaying=%d Position=%.3f bLoop=%d"),
+				(int32)TargetMesh->GetAnimationMode(), TargetMesh->IsPlaying() ? 1 : 0, TargetMesh->GetPosition(), bLoop ? 1 : 0);
+		}
 	}
 
 	// ============================================================

@@ -29,8 +29,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Preview")
 	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
 
+	/** Set companion to display; SkinID = Default or Beachgoer for the 3D preview. */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
-	void SetPreviewCompanion(FName CompanionID);
+	void SetPreviewCompanion(FName CompanionID, FName SkinID = NAME_None);
 
 	/** Rotate preview companion by yaw delta (degrees). Intended for UI drag-rotate. */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
@@ -49,8 +50,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	void EnsureCaptureSetup();
-	void UpdatePreviewPawn(FName CompanionID);
+	void UpdatePreviewPawn(FName CompanionID, FName SkinID);
 	void ApplyPreviewRotation();
 	void FrameCameraToPreview();
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;

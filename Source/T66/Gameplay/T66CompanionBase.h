@@ -36,8 +36,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
 
+	/** Initialize with data and optional skin (Default if None). VisualID = GetCompanionVisualID(CompanionID, SkinID). */
 	UFUNCTION(BlueprintCallable, Category = "Companion")
-	void InitializeCompanion(const FCompanionData& InData);
+	void InitializeCompanion(const FCompanionData& InData, FName SkinID = NAME_None);
 
 	UFUNCTION(BlueprintCallable, Category = "Visuals")
 	void SetPlaceholderColor(FLinearColor Color);

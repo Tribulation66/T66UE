@@ -564,6 +564,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")
 	FText GetText_Equip() const;
+	FText GetText_Preview() const;
 
 	// Vendor
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Vendor")

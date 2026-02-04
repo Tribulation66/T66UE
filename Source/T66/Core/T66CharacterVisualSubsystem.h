@@ -25,6 +25,10 @@ struct FT66ResolvedCharacterVisual
 	UPROPERTY()
 	TObjectPtr<UAnimationAsset> LoopingAnim = nullptr;
 
+	/** Optional alert/stand animation (preview). */
+	UPROPERTY()
+	TObjectPtr<UAnimationAsset> AlertAnim = nullptr;
+
 	UPROPERTY()
 	FT66CharacterVisualRow Row;
 
@@ -51,7 +55,17 @@ public:
 		FName VisualID,
 		USkeletalMeshComponent* TargetMesh,
 		USceneComponent* PlaceholderToHide = nullptr,
-		bool bEnableSingleNodeAnimation = true);
+		bool bEnableSingleNodeAnimation = true,
+		bool bUseAlertAnimation = false,
+		bool bIsPreviewContext = false);
+
+	/** Compute hero VisualID from HeroID + BodyType + SkinID (e.g. Hero_1 + TypeA + Default -> Hero_1_TypeA). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
+	static FName GetHeroVisualID(FName HeroID, ET66BodyType BodyType, FName SkinID);
+
+	/** Compute companion VisualID from CompanionID + SkinID (e.g. Companion_01 + Beachgoer -> Companion_01_Beachgoer). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
+	static FName GetCompanionVisualID(FName CompanionID, FName SkinID);
 
 	/** Preload a visual mapping (loads assets synchronously once and caches). */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")

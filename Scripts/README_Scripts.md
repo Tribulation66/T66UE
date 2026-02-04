@@ -8,6 +8,13 @@
 
 ---
 
+## What the agent can and cannot run
+
+- **Agent can run:** Builds (Build.bat), PowerShell/terminal commands, standalone Python that does **not** use the `unreal` module (e.g. AutoTranslateLocalizationArchives.py), UAT/UnrealEditor-Cmd (GatherText, Cook, etc.). The agent can **confirm** these by running them and checking exit codes.
+- **Agent cannot run:** Scripts that use Unreal’s Editor Python API (`import unreal`, `unreal.EditorAssetLibrary`, etc.). Those only work **inside a running Unreal Editor** (Tools → Execute Python Script). The agent cannot start the Editor or execute code inside it, so imports like **ImportHeros.py**, **ImportCompanions.py**, and **ImportModels.py** must be run by you in the Editor. For a single action, use Tools → Execute Python Script → `Scripts/ImportHeros.py` or `Scripts/ImportCompanions.py`.
+
+---
+
 ## Essential (you need these)
 
 | Script | Why |
@@ -38,6 +45,8 @@
 
 | Script | When to run |
 |--------|-------------|
+| **ImportHeros.py** | **Run first** when hero models/portraits are missing. Imports from `SourceAssets/Heros/` (Knight, Ninja, Cowboy, Wizard → Hero_1..Hero_4) into `/Game/Characters/Heros/` and `/Game/UI/Sprites/Heros/`. Run **inside Unreal Editor**: Tools → Execute Python Script → `Scripts/ImportHeros.py`. Then run SetupCharacterVisualsDataTable.py and re-import Heroes (ImportData.py or FullSetup). **Note:** LogInterchangeEngine warnings about "invalid bind poses" and "No smoothing group" are expected; the import still succeeds and bind poses are auto-corrected. |
+| **ImportCompanions.py** | **Run when** companion models/portraits are missing. Imports from `SourceAssets/Companions/Companion N/` (Def_CON, Beach_CON, Portrait) into `/Game/Characters/Companions/Companion_NN/` (Default + Beach skins, mesh + Walking + Alert) and `/Game/UI/Sprites/Companions/`. Run **inside Unreal Editor**: Tools → Execute Python Script → `Scripts/ImportCompanions.py`. Then run SetupCharacterVisualsDataTable.py to refresh DT_CharacterVisuals from CharacterVisuals.csv. |
 | **ImportSpriteTextures.py** | When you add/change PNGs under `SourceAssets/Sprites/`. |
 | **BuildGroundAtlas.py** | When you change ground tiles (builds atlas PNG). Run before ImportGroundAtlas. |
 | **ImportGroundAtlas.py** | When you change ground atlas / materials. |

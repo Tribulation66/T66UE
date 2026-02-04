@@ -83,7 +83,8 @@ void AT66FrontendGameMode::BeginPlay()
 					: (T66GI->GetAllHeroIDs().Num() > 0 ? T66GI->GetAllHeroIDs()[0] : NAME_None);
 				if (!HeroID.IsNone())
 				{
-					It->SetPreviewHero(HeroID, T66GI->SelectedHeroBodyType);
+					FName SkinID = T66GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : T66GI->SelectedHeroSkinID;
+				It->SetPreviewHero(HeroID, T66GI->SelectedHeroBodyType, SkinID);
 				}
 				break;
 			}

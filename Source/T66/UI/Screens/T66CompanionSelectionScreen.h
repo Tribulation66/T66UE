@@ -27,6 +27,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Companion Selection")
 	FName PreviewedCompanionID;
 
+	/** When set, 3D preview shows this skin instead of equipped (e.g. Beachgoer preview). */
+	FName PreviewedCompanionSkinIDOverride = NAME_None;
+
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
 	TArray<FCompanionData> GetAllCompanions();
 
@@ -87,12 +90,24 @@ private:
 	// Placeholder skins list
 	TArray<FSkinData> PlaceholderSkins;
 
+	/** Skins list container; refreshed in place when Equip/Buy (same pattern as hero selection). */
+	TSharedPtr<class SVerticalBox> SkinsListBoxWidget;
+	/** AC balance text in skins panel; updated when purchasing. */
+	TSharedPtr<class STextBlock> ACBalanceTextBlock;
+
 	AT66CompanionPreviewStage* GetCompanionPreviewStage() const;
 	TSharedRef<SWidget> CreateCompanionPreviewWidget(const FLinearColor& FallbackColor);
 
 	void RefreshCompanionList();
 	void UpdateCompanionDisplay();
+	void RefreshCompanionCarouselPortraits();
 	void GeneratePlaceholderSkins();
+	/** Repopulate skins list and AC display without full rebuild. */
+	void RefreshSkinsList();
+	void AddSkinRowsToBox(const TSharedPtr<class SVerticalBox>& Box);
+
+	/** Brushes for the 5-slot companion carousel portraits (prev2..next2). */
+	TArray<TSharedPtr<struct FSlateBrush>> CompanionCarouselPortraitBrushes;
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	bool IsCompanionUnlocked(FName CompanionID) const;

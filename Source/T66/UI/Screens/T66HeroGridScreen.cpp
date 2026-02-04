@@ -13,6 +13,7 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
@@ -59,143 +60,127 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	}
 
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	FText TitleText = Loc ? Loc->GetText_HeroGrid() : NSLOCTEXT("T66.HeroGrid", "Title", "HERO GRID");
 	FText CloseText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-
-	// Grid: 6 columns, rows as needed. Each cell is a colored box for a hero.
-	const int32 Columns = 6;
-	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
-	HeroPortraitBrushes.Reset();
-	HeroPortraitBrushes.Reserve(AllHeroIDs.Num());
-
 	UT66UITexturePoolSubsystem* TexPool = nullptr;
 	if (UGameInstance* GI0 = UGameplayStatics::GetGameInstance(this))
 	{
 		TexPool = GI0->GetSubsystem<UT66UITexturePoolSubsystem>();
 	}
 
-	for (int32 Row = 0; Row * Columns < AllHeroIDs.Num(); Row++)
+	// Full-screen grid: 2 columns (or 1 for very few heroes). Each cell fills equal space; 1:1 portrait.
+	const int32 Columns = FMath::Max(1, FMath::Min(2, AllHeroIDs.Num()));
+	const int32 Rows = AllHeroIDs.Num() > 0 ? (AllHeroIDs.Num() + Columns - 1) / Columns : 0;
+
+	HeroPortraitBrushes.Reset();
+	HeroPortraitBrushes.Reserve(AllHeroIDs.Num());
+
+	TSharedRef<SGridPanel> GridPanel = SNew(SGridPanel);
+	for (int32 Index = 0; Index < AllHeroIDs.Num(); Index++)
 	{
-		TSharedRef<SHorizontalBox> RowBox = SNew(SHorizontalBox);
-		for (int32 Col = 0; Col < Columns; Col++)
+		const int32 Row = Index / Columns;
+		const int32 Col = Index % Columns;
+		FName HeroID = AllHeroIDs[Index];
+		FHeroData HeroData;
+		FLinearColor SpriteColor = FLinearColor(0.25f, 0.25f, 0.3f, 1.0f);
+		TSharedPtr<FSlateBrush> PortraitBrush;
+		if (GI && GI->GetHeroData(HeroID, HeroData))
 		{
-			int32 Index = Row * Columns + Col;
-			if (Index >= AllHeroIDs.Num()) break;
-
-			FName HeroID = AllHeroIDs[Index];
-			FHeroData HeroData;
-			FLinearColor SpriteColor = FLinearColor(0.25f, 0.25f, 0.3f, 1.0f);
-			TSharedPtr<FSlateBrush> PortraitBrush;
-			if (GI && GI->GetHeroData(HeroID, HeroData))
+			SpriteColor = HeroData.PlaceholderColor;
+			if (!HeroData.Portrait.IsNull())
 			{
-				SpriteColor = HeroData.PlaceholderColor;
-
-				if (!HeroData.Portrait.IsNull())
+				PortraitBrush = MakeShared<FSlateBrush>();
+				PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
+				PortraitBrush->ImageSize = FVector2D(256.f, 256.f);
+				HeroPortraitBrushes.Add(PortraitBrush);
+				if (TexPool)
 				{
-					PortraitBrush = MakeShared<FSlateBrush>();
-					PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
-					PortraitBrush->ImageSize = FVector2D(72.f, 72.f);
-					HeroPortraitBrushes.Add(PortraitBrush);
-					if (TexPool)
-					{
-						T66SlateTexture::BindSharedBrushAsync(TexPool, HeroData.Portrait, this, PortraitBrush, HeroID, /*bClearWhileLoading*/ true);
-					}
+					T66SlateTexture::BindSharedBrushAsync(TexPool, HeroData.Portrait, this, PortraitBrush, HeroID, /*bClearWhileLoading*/ true);
 				}
 			}
-
-			FName HeroIDCopy = HeroID; // For lambda capture
-			RowBox->AddSlot()
-				.AutoWidth()
-				.Padding(6.0f, 6.0f)
-				[
-					SNew(SBox)
-					.WidthOverride(72.0f)
-					.HeightOverride(72.0f)
-					[
-						SNew(SButton)
-						.ButtonColorAndOpacity(FLinearColor::Transparent)
-						.OnClicked_Lambda([this, HeroIDCopy]() { return HandleHeroClicked(HeroIDCopy); })
-						[
-							SNew(SOverlay)
-							+ SOverlay::Slot()
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(SpriteColor)
-							]
-							+ SOverlay::Slot()
-							[
-								PortraitBrush.IsValid()
-								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrush.Get()))
-								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-							]
-						]
-					]
-				];
 		}
-		GridVertical->AddSlot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
+		FName HeroIDCopy = HeroID;
+		GridPanel->AddSlot(Col, Row)
+			.Padding(8.0f)
 			[
-				RowBox
+				SNew(SButton)
+				.ButtonColorAndOpacity(FLinearColor::Transparent)
+				.OnClicked_Lambda([this, HeroIDCopy]() { return HandleHeroClicked(HeroIDCopy); })
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(SpriteColor)
+					]
+					+ SOverlay::Slot()
+					[
+						PortraitBrush.IsValid()
+						? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrush.Get()))
+						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+					]
+				]
 			];
 	}
 
+	// Fill remaining grid slots so layout is even (e.g. 4 heroes = 2x2)
+	for (int32 Index = static_cast<int32>(AllHeroIDs.Num()); Index < Rows * Columns; Index++)
+	{
+		const int32 Row = Index / Columns;
+		const int32 Col = Index % Columns;
+		GridPanel->AddSlot(Col, Row)
+			.Padding(8.0f)
+			[
+				SNew(SSpacer)
+			];
+	}
+	// Make grid rows and columns share space equally so the grid fills the screen
+	for (int32 Col = 0; Col < Columns; Col++)
+	{
+		GridPanel->SetColumnFill(Col, 1.0f);
+	}
+	for (int32 Row = 0; Row < Rows; Row++)
+	{
+		GridPanel->SetRowFill(Row, 1.0f);
+	}
+
+	// Full-screen overlay: grid fills entire screen, back button top-left
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Tokens::Scrim)
 		[
-			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			SNew(SOverlay)
+			// Grid fills whole screen
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))
+				SNew(SBox)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
 				[
-					SNew(SVerticalBox)
-					// Title
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 20.0f)
+					GridPanel
+				]
+			]
+			// Back button
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(24.0f, 24.0f, 0.0f, 0.0f)
+			[
+				SNew(SBox).WidthOverride(120.0f).HeightOverride(44.0f)
+				[
+					SNew(SButton)
+					.HAlign(HAlign_Center).VAlign(VAlign_Center)
+					.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroGridScreen::HandleCloseClicked))
+					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+					.ContentPadding(FMargin(16.f, 10.f))
 					[
-						SNew(STextBlock)
-						.Text(TitleText)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
-					]
-					// Scrollable grid
-					+ SVerticalBox::Slot()
-					.FillHeight(1.0f)
-					.MaxHeight(450.0f)
-					[
-						SNew(SScrollBox)
-						+ SScrollBox::Slot()
-						[
-							GridVertical
-						]
-					]
-					// Close button
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 20.0f, 0.0f, 0.0f)
-					[
-						SNew(SBox).WidthOverride(120.0f).HeightOverride(44.0f)
-						[
-							SNew(SButton)
-							.HAlign(HAlign_Center).VAlign(VAlign_Center)
-							.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroGridScreen::HandleCloseClicked))
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							.ContentPadding(FMargin(16.f, 10.f))
-							[
-								SNew(STextBlock).Text(CloseText)
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
-						]
+						SNew(STextBlock).Text(CloseText)
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 					]
 				]
 			]

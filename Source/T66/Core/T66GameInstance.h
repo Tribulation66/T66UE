@@ -104,6 +104,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66BodyType SelectedCompanionBodyType = ET66BodyType::TypeA;
 
+	/** Selected hero skin ID (e.g. Default, Beachgoer). Synced from profile when entering hero selection. */
+	UPROPERTY(BlueprintReadWrite, Category = "Selection")
+	FName SelectedHeroSkinID = FName(TEXT("Default"));
+
 	// ============================================
 	// Save / Load flow
 	// ============================================

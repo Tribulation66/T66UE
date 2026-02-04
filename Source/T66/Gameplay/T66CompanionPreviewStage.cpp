@@ -16,7 +16,8 @@
 
 AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PostUpdateWork; // After animation so capture sees updated pose
 
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -71,6 +72,16 @@ void AT66CompanionPreviewStage::BeginPlay()
 	EnsureCaptureSetup();
 }
 
+void AT66CompanionPreviewStage::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	// Capture every frame so the preview shows the current animated pose (we tick after the pawn).
+	if (PreviewPawn && SceneCapture && RenderTarget)
+	{
+		SceneCapture->CaptureScene();
+	}
+}
+
 void AT66CompanionPreviewStage::EnsureCaptureSetup()
 {
 	if (!SceneCapture) return;
@@ -92,12 +103,13 @@ void AT66CompanionPreviewStage::EnsureCaptureSetup()
 	if (RenderTarget) SceneCapture->TextureTarget = RenderTarget;
 }
 
-void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID)
+void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID, FName SkinID)
 {
 	PreviewYawDegrees = 0.f;
 	OrbitPitchDegrees = 8.f;
 	PreviewZoomMultiplier = 1.0f;
-	UpdatePreviewPawn(CompanionID);
+	const FName EffectiveSkin = SkinID.IsNone() ? FName(TEXT("Default")) : SkinID;
+	UpdatePreviewPawn(CompanionID, EffectiveSkin);
 	ApplyShadowSettings();
 	bHasOrbitFrame = false;
 	FrameCameraToPreview();
@@ -236,7 +248,7 @@ void AT66CompanionPreviewStage::ApplyShadowSettings()
 	}
 }
 
-void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID)
+void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID, FName SkinID)
 {
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (!GI) return;
@@ -271,10 +283,11 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID)
 		}
 	}
 
+	const FName EffectiveSkin = SkinID.IsNone() ? FName(TEXT("Default")) : SkinID;
 	if (PreviewPawn)
 	{
 		PreviewPawn->SetActorHiddenInGame(false);
-		PreviewPawn->InitializeCompanion(CompanionData);
+		PreviewPawn->InitializeCompanion(CompanionData, EffectiveSkin);
 		PreviewPawn->SetPreviewMode(true);
 
 		// Locked companions should preview as a black silhouette (no real model).
@@ -293,14 +306,11 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID)
 		PreviewPawn->SetActorLocation(PawnLoc);
 		ApplyPreviewRotation();
 
-		// Make sure materials/textures are fully streamed for the preview camera.
+		// Stream and tick so alert animation is visible in scene capture (captured in Tick).
 		if (PreviewPawn->SkeletalMesh)
 		{
 			PreviewPawn->SkeletalMesh->bForceMipStreaming = true;
 			PreviewPawn->SkeletalMesh->StreamingDistanceMultiplier = 50.f;
-			PreviewPawn->SkeletalMesh->bPauseAnims = true; // preview should be static
-			PreviewPawn->SkeletalMesh->GlobalAnimRateScale = 0.f;
-			PreviewPawn->SkeletalMesh->Stop();
 		}
 	}
 }

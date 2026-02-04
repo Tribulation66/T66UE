@@ -94,9 +94,11 @@ public:
 	 * Called after spawning to set up visuals and stats
 	 * @param InHeroData The hero's data from the DataTable
 	 * @param InBodyType The selected body type (A or B)
+	 * @param InSkinID Skin ID (e.g. Default, Beachgoer)
+	 * @param bPreviewMode If true, use alert animation (hero selection preview); otherwise use walk
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Hero")
-	void InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType = ET66BodyType::TypeA);
+	void InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType = ET66BodyType::TypeA, FName InSkinID = NAME_None, bool bPreviewMode = false);
 
 	/**
 	 * Set the placeholder color (for prototyping)

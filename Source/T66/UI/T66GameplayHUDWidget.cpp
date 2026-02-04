@@ -1314,9 +1314,17 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	if (GIAsT66 && !GIAsT66->SelectedHeroID.IsNone())
 	{
 		FHeroData HeroData;
-		if (GIAsT66->GetHeroData(GIAsT66->SelectedHeroID, HeroData) && !HeroData.Portrait.IsNull())
+		if (GIAsT66->GetHeroData(GIAsT66->SelectedHeroID, HeroData))
 		{
-			PortraitSoft = HeroData.Portrait;
+			const bool bUseTypeB = (GIAsT66->SelectedHeroBodyType == ET66BodyType::TypeB);
+			if (bUseTypeB && !HeroData.PortraitTypeB.IsNull())
+			{
+				PortraitSoft = HeroData.PortraitTypeB;
+			}
+			else if (!HeroData.Portrait.IsNull())
+			{
+				PortraitSoft = HeroData.Portrait;
+			}
 		}
 	}
 	const bool bHasPortraitRef = !PortraitSoft.IsNull();
