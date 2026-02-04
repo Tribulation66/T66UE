@@ -13,47 +13,22 @@
 - **Compile**: Run `Config/Localization/T66_Compile.ini` to regenerate `Content/Localization/T66/<culture>/T66.locres`.
 - **Verify**: Verify the new/changed text visibly updates when switching culture (event-driven; no tick polling).
 
-**Agent acknowledgement requirement:** After reading `memory.md` and this file, the agent must explicitly acknowledge this rule in its next message before making changes (e.g., “Acknowledged: any new player-facing text will be localized end-to-end: author → gather → translate → compile `.locres` → verify.”).
+**Agent acknowledgement requirement:** After reading `memory.md` (agent context) and this guideline, the agent must explicitly acknowledge the localization rule in its next message before making changes (e.g., “Acknowledged: any new player-facing text will be localized end-to-end: author → gather → translate → compile `.locres` → verify.”).
 
 ### Required “delta localization” workflow (agent must run this automatically)
 
-When a change-set adds/changes player-facing text, the agent must do the following **as part of the same change-set**. The agent must **run these commands itself** (do not ask the user to copy/paste commands).
+When a change-set adds/changes player-facing text, complete **as part of the same change-set** (agent runs the commands; do not ask the user to run them):
 
-- **If you changed C++ (`Source/**`) and/or config (`Config/**`) text**
-  - Run source gather:
+1. **Gather:** If you changed C++/config text → run source gather. If you changed assets (UMG/Blueprints/Maps/DataTables) → run assets gather. (Both if both.)
+2. **Translate:** Ensure all 22 cultures have entries (e.g. run `Scripts/AutoTranslateLocalizationArchives.py` if no human translations yet).
+3. **Compile:** Regenerate `.locres` for all cultures.
+4. **Verify:** At least one of: artifact check (all cultures have `T66.locres`) or runtime check (switch culture and confirm text updates).
 
-```powershell
-& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Source.log"
-```
-
-- **If you changed assets with text (UMG/Blueprints/Maps/DataTables/etc.)**
-  - Run the narrow assets gather:
-
-```powershell
-& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Assets.log"
-```
-
-- **Translations (must cover all 22 cultures)**
-  - If human translations are not provided yet, run the offline baseline translator to populate `.archive` entries:
-
-```powershell
-python -u "C:\UE\T66\Scripts\AutoTranslateLocalizationArchives.py"
-```
-
-- **Compile `.locres` (always after updating translations)**
-
-```powershell
-& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Compile.log"
-```
-
-- **Fast verification (agent must do at least one)**
-  - **Artifact check**: ensure `Content/Localization/T66/<culture>/T66.locres` exists for all cultures.
-  - **Runtime check**: launch editor/game, switch to a non-English language and confirm the new/changed text updates.
+**Exact commands:** See **Section 7 — CLI operations** (GatherText + AutoTranslate + Compile, PowerShell and Git Bash).
 
 This document is the operating manual for an AI agent (Cursor or any CLI-capable agent) working inside the **T66** Unreal project. It defines **how** to make changes safely, deterministically, and in a way that stays performant on low-end PCs—while remaining easy for LLMs to extend without breaking the game.
 
-**Required companion file:** `memory.md` (living progress ledger).  
-Every meaningful change must be reflected there with proof (commands run, results, and any risks).
+**Required companion file:** `memory.md` — **agent context** (quick reference: where to look, current state, guardrails). Use it for continuity; full change history lives in **git log**.
 
 ---
 
@@ -203,8 +178,7 @@ Every change must follow this loop:
 - No “mega commits” that hide unrelated edits.
 
 5) **Update `memory.md`**
-- What changed, how, and proof (commands + outcomes)
-- Include commit hash
+- Brief summary of what changed and key outcomes (for agent continuity); optional commit hash. Full proof lives in git.
 
 If any step fails, do not continue stacking changes. Roll back or fix forward immediately.
 
@@ -411,42 +385,34 @@ Run after every atomic change-set:
 
 ### Localization pipeline (culture-based; GatherText → translations → `.locres`)
 
+**When to run (delta workflow):** After adding/changing player-facing text: run **source** gather if C++/config changed, **assets** gather if UMG/Blueprints/Maps/DataTables changed (or both). Then translate (all 22 cultures), then compile, then verify. See HARD RULE section for the workflow; commands below.
+
 **Configs (source-controlled):**
-- `Config/Localization/T66_Gather_Source.ini` (fast/safe)
-- `Config/Localization/T66_Gather_Assets.ini` (narrow assets-only)
-- `Config/Localization/T66_Compile.ini` (compile-only)
+- `Config/Localization/T66_Gather_Source.ini` (C++ / config)
+- `Config/Localization/T66_Gather_Assets.ini` (assets only)
+- `Config/Localization/T66_Compile.ini` (compile only)
 
-**Runtime load (required):**
-- Ensure `Config/DefaultGame.ini` contains:
-  - `[Internationalization]`
-  - `LocalizationPaths=%GAMEDIR%Content/Localization/T66`
+**Runtime:** `Config/DefaultGame.ini` must have `[Internationalization]` and `LocalizationPaths=%GAMEDIR%Content/Localization/T66`.
 
-**Supported cultures (must be exactly 22):**
-- `en`, `zh-Hans`, `zh-Hant`, `ja`, `ko`, `ru`, `pl`, `de`, `fr`, `es-ES`, `es-419`, `pt-BR`, `pt-PT`, `it`, `tr`, `uk`, `cs`, `hu`, `th`, `vi`, `id`, `ar`
+**Supported cultures (22):** `en`, `zh-Hans`, `zh-Hant`, `ja`, `ko`, `ru`, `pl`, `de`, `fr`, `es-ES`, `es-419`, `pt-BR`, `pt-PT`, `it`, `tr`, `uk`, `cs`, `hu`, `th`, `vi`, `id`, `ar`.
 
-**Run (Git Bash):**
+**Git Bash:**
 ```bash
 "$UE_EDITOR_CMD_EXE" "$(cygpath -w "$UPROJECT")" -run=GatherText -config="$(cygpath -w "$PWD")\\Config\\Localization\\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi
 "$UE_EDITOR_CMD_EXE" "$(cygpath -w "$UPROJECT")" -run=GatherText -config="$(cygpath -w "$PWD")\\Config\\Localization\\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi
+python -u "C:/UE/T66/Scripts/AutoTranslateLocalizationArchives.py"
 "$UE_EDITOR_CMD_EXE" "$(cygpath -w "$UPROJECT")" -run=GatherText -config="$(cygpath -w "$PWD")\\Config\\Localization\\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi
 ```
 
-**Run (PowerShell):**
+**PowerShell (with logs):**
 ```powershell
-& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi
-& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi
-& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Source.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Source.log"
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Gather_Assets.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Gather_Assets.log"
+python -u "C:\UE\T66\Scripts\AutoTranslateLocalizationArchives.py"
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" -run=GatherText -config="C:\UE\T66\Config\Localization\T66_Compile.ini" -unattended -nop4 -nosplash -nullrhi -log="C:\UE\T66\Saved\Logs\T66_Compile.log"
 ```
 
-**Expected outputs:**
-- `Content/Localization/T66/T66.manifest`
-- `Content/Localization/T66/<culture>/T66.archive`
-- `Content/Localization/T66/<culture>/T66.locres`
-
-**Verify `.locres` count (PowerShell):**
-```powershell
-(Get-ChildItem -Path "C:\UE\T66\Content\Localization\T66" -Recurse -Filter *.locres).Count
-```
+**Outputs:** `Content/Localization/T66/T66.manifest`, `<culture>/T66.archive`, `<culture>/T66.locres`. **Verify (PowerShell):** `(Get-ChildItem -Path "C:\UE\T66\Content\Localization\T66" -Recurse -Filter *.locres).Count` → expect 22.
 
 Optional (recommended when touching data systems):
 - Run any project validation commandlets / automation tests that exist in the repo.
@@ -556,4 +522,4 @@ A deliverable is only “done” when:
 - It matches the relevant Bible section behaviorally.
 - It passes ValidateFast.
 - It has a clean commit.
-- `memory.md` records what changed and how it was verified.
+- `memory.md` has a brief note of what changed (for continuity); full verification is in git/commit.
