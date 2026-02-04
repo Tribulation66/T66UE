@@ -111,6 +111,9 @@ protected:
 	/** Get the Game Instance cast to our type */
 	UT66GameInstance* GetT66GameInstance() const;
 
+	/** Generate procedural hills terrain if level has a Landscape and GameInstance has a seed. Logs [MAP] on failure. */
+	void GenerateProceduralTerrainIfNeeded();
+
 	/** Set up basic level elements if missing (floor, lighting, player start) */
 	void EnsureLevelSetup();
 

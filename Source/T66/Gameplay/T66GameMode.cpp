@@ -55,6 +55,12 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "EngineUtils.h"
+#include "Gameplay/T66ProceduralLandscapeParams.h"
+#include "Gameplay/T66ProceduralLandscapeGenerator.h"
+#include "Landscape.h"
+#include "LandscapeInfo.h"
+#include "LandscapeEdit.h"
+#include "T66.h"
 
 namespace
 {
@@ -144,6 +150,9 @@ AT66GameMode::AT66GameMode()
 void AT66GameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Procedural hills terrain: apply heightfield from GameInstance seed if level has a Landscape
+	GenerateProceduralTerrainIfNeeded();
 
 	// Reset run state when entering gameplay level unless this is a stage transition (keep progress)
 	UGameInstance* GI = GetGameInstance();
@@ -2277,6 +2286,104 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 UT66GameInstance* AT66GameMode::GetT66GameInstance() const
 {
 	return Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+}
+
+void AT66GameMode::GenerateProceduralTerrainIfNeeded()
+{
+#if WITH_EDITOR
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!GI)
+	{
+		UE_LOG(LogT66, Warning, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: no T66GameInstance"));
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogT66, Warning, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: no World"));
+		return;
+	}
+
+	ALandscape* Landscape = nullptr;
+	for (TActorIterator<ALandscape> It(World); It; ++It)
+	{
+		Landscape = *It;
+		break;
+	}
+	if (!Landscape)
+	{
+		UE_LOG(LogT66, Log, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: no Landscape in level, skipping"));
+		return;
+	}
+
+	ULandscapeInfo* Info = Landscape->GetLandscapeInfo();
+	if (!Info)
+	{
+		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: Landscape has no LandscapeInfo"));
+		return;
+	}
+
+	FIntRect Extent;
+	if (!Info->GetLandscapeExtent(Extent))
+	{
+		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: GetLandscapeExtent failed"));
+		return;
+	}
+
+	const int32 SizeX = Extent.Width() + 1;
+	const int32 SizeY = Extent.Height() + 1;
+	if (SizeX < 2 || SizeY < 2)
+	{
+		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: invalid extent size %dx%d"), SizeX, SizeY);
+		return;
+	}
+
+	FT66ProceduralLandscapeParams Params;
+	Params.Seed = GI->ProceduralTerrainSeed;
+	Params.SizePreset = (SizeX <= 505 && SizeY <= 505) ? ET66LandscapeSizePreset::Small : ET66LandscapeSizePreset::Large;
+
+	TArray<float> Heights;
+	if (!FT66ProceduralLandscapeGenerator::GenerateHeightfield(
+		Params, SizeX, SizeY, FT66ProceduralLandscapeGenerator::DefaultQuadSizeUU, Heights))
+	{
+		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: GenerateHeightfield failed"));
+		return;
+	}
+
+	TArray<uint16> HeightData;
+	const float ScaleZ = FMath::Max(Landscape->GetActorScale3D().Z, 1.f);
+	FT66ProceduralLandscapeGenerator::FloatsToLandscapeHeightData(Heights, ScaleZ, HeightData);
+
+	if (HeightData.Num() != SizeX * SizeY)
+	{
+		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: height data size mismatch"));
+		return;
+	}
+
+	const int32 MinX = Extent.Min.X;
+	const int32 MinY = Extent.Min.Y;
+	const int32 MaxX = Extent.Max.X;
+	const int32 MaxY = Extent.Max.Y;
+
+	FHeightmapAccessor<false> HeightmapAccessor(Info);
+	TArray<uint16> RegionData;
+	RegionData.SetNumUninitialized(SizeX * SizeY);
+	for (int32 Jy = 0; Jy < SizeY; ++Jy)
+	{
+		for (int32 Ix = 0; Ix < SizeX; ++Ix)
+		{
+			RegionData[Jy * SizeX + Ix] = HeightData[Jy * SizeX + Ix];
+		}
+	}
+	HeightmapAccessor.SetData(MinX, MinY, MaxX, MaxY, RegionData.GetData());
+	HeightmapAccessor.Flush();
+
+	UE_LOG(LogT66, Log, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: applied procedural hills (seed=%d, %dx%d)"), Params.Seed, SizeX, SizeY);
+#else
+	// Runtime (packaged) build: landscape height editing is editor-only. Use level as saved or pre-generate in editor.
+	UE_LOG(LogT66, Verbose, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: skipped (editor-only API in packaged build)"));
+#endif
 }
 
 UClass* AT66GameMode::GetDefaultPawnClassForController_Implementation(AController* InController)

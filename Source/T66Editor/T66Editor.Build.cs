@@ -27,7 +27,13 @@ public class T66Editor : ModuleRules
 			"Blutility",
 			"EditorSubsystem",
 			"AssetTools",
-			"AssetRegistry"
+			"AssetRegistry",
+			"Landscape",
+			"LandscapeEditor",
+			"Foliage",
+			"LevelEditor",
+			"ToolMenus",
+			"EditorStyle"
 		});
 
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

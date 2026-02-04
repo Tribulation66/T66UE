@@ -96,6 +96,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bStageBoostPending = false;
 
+	/** Seed for procedural hills terrain. Set when entering tribulation; used when GameplayLevel loads. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	int32 ProceduralTerrainSeed = 0;
+
 	/** Selected body type for hero */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66BodyType SelectedHeroBodyType = ET66BodyType::TypeA;

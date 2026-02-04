@@ -13,4 +13,10 @@ class FT66EditorModule : public IModuleInterface
 public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+
+private:
+	void RegisterT66ToolsMenu();
+	void UnregisterT66ToolsMenu();
+
+	FName T66ToolsMenuName;
 };

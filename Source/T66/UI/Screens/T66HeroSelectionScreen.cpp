@@ -1547,6 +1547,8 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
 		GI->bStageBoostPending = (SelectedDifficulty != ET66Difficulty::Easy);
+		// New seed each time so procedural hills terrain layout differs per run
+		GI->ProceduralTerrainSeed = FMath::Rand();
 	}
 	if (UIManager) UIManager->HideAllUI();
 	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));

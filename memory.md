@@ -70,6 +70,8 @@
 - **Leaderboard:** Placeholder until Steam.
 - **Nav:** Enemies use Tick toward player; no nav required. For future pathfinding, add Nav Mesh Bounds in GameplayLevel.
 
+**Procedural terrain:** Implemented. Plan: `T66_Procedural_Landscape_Plan.md`. Editor: Window → T66 Tools → "Generate Procedural Hills Landscape (Dev)" (creates/updates Landscape in current level). Runtime: seed set in `UT66GameInstance::ProceduralTerrainSeed` when clicking "Enter the Tribulation"; `AT66GameMode::GenerateProceduralTerrainIfNeeded()` applies hills on GameplayLevel load. **Caveat:** Height apply uses editor-only API (`GetLandscapeExtent`, `FHeightmapAccessor`); in **packaged** builds terrain is not regenerated (use level as saved). In **PIE/editor** it runs each time. Logs use `[MAP]` prefix for diagnostics.
+
 ---
 
 ## Known issues / tech debt
