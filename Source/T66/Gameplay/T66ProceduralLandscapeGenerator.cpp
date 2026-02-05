@@ -102,12 +102,13 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 			}
 			else
 			{
-				// Mix: ~3 large hills (VL) + ~4 medium hills (L) inside miasma; same height from amplitude
-				H = 0.55f * T66NoiseSigned(Seed, WxM, WyM, VL)
-					+ 0.45f * T66NoiseSigned(Seed + 1, WxM, WyM, L);
-				// Optional extra detail (disable for clean 3 large + 4 medium)
-				// H += 0.14f * T66NoiseSigned(Seed + 2, WxM, WyM, M);
-				// if (bUseSmallScale) H += 0.08f * T66NoiseSigned(Seed + 3, WxM, WyM, S);
+				// Mix: ~3 large (VL) + ~7 medium (L) + a few small hills (S when bUseSmallScale)
+				H = 0.52f * T66NoiseSigned(Seed, WxM, WyM, VL)
+					+ 0.40f * T66NoiseSigned(Seed + 1, WxM, WyM, L);
+				if (bUseSmallScale)
+				{
+					H += 0.08f * T66NoiseSigned(Seed + 3, WxM, WyM, S);
+				}
 			}
 			// Flat plateaus at tops: remap so peaks become a flat cap at full amplitude (wide, climbable)
 			const float PlateauStart = 0.42f;
@@ -368,9 +369,32 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 		}
 	}
 
-	// Constrain hills to inside miasma walls. Match T66MiasmaBoundary::SafeHalfExtent (22000). Gentle blend so lowest points are Z=0 around the wall (no sharp drop).
+	// Hill peaks must be far enough from miasma wall so they can off-ramp without squishing. Dampen peaks that are too close.
 	static constexpr float MiasmaHalfExtent = 22000.f;
-	static constexpr float MiasmaBlendMarginUU = 2200.f;  // Wide blend so terrain eases to Z=0; hills have room for base at wall
+	static constexpr float MinPeakDistanceFromWallUU = 5000.f;  // Peaks closer than this get dampened so they can slope down to the wall
+	for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+	{
+		for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+		{
+			const int32 Idx = Jy * SizeX + Ix;
+			const float H = OutHeights[Idx];
+			const float WorldX = OriginX + Ix * QuadSizeUU;
+			const float WorldY = OriginY + Jy * QuadSizeUU;
+			const float DistToWallX = MiasmaHalfExtent - FMath::Abs(WorldX);
+			const float DistToWallY = MiasmaHalfExtent - FMath::Abs(WorldY);
+			const float DistToWall = FMath::Min(DistToWallX, DistToWallY);
+			if (DistToWall >= MinPeakDistanceFromWallUU) continue;
+			// Local maximum check (peak)
+			if (H <= OutHeights[Idx - 1] || H <= OutHeights[Idx + 1] || H <= OutHeights[Idx - SizeX] || H <= OutHeights[Idx + SizeX])
+				continue;
+			// Peak too close to wall: dampen so it can off-ramp in the remaining distance
+			const float T = FMath::Clamp(DistToWall / MinPeakDistanceFromWallUU, 0.f, 1.f);
+			OutHeights[Idx] = FMath::Lerp(H * 0.35f, H, T * T);
+		}
+	}
+
+	// Constrain hills to inside miasma walls. Match T66MiasmaBoundary::SafeHalfExtent (22000). Wide blend so peaks have room to off-ramp without squishing.
+	static constexpr float MiasmaBlendMarginUU = 5000.f;  // Wide margin so hills can slope down to Z=0 at the wall
 	for (int32 Jy = 0; Jy < SizeY; ++Jy)
 	{
 		for (int32 Ix = 0; Ix < SizeX; ++Ix)
@@ -380,7 +404,6 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 			const int32 Idx = Jy * SizeX + Ix;
 			const float DistInX = MiasmaHalfExtent - FMath::Abs(WorldX);
 			const float DistInY = MiasmaHalfExtent - FMath::Abs(WorldY);
-			// Mask = 1 fully inside; 0 outside; smooth blend over wide margin so no steep drop at wall
 			const float Tx = FMath::Clamp(DistInX / MiasmaBlendMarginUU, 0.f, 1.f);
 			const float Ty = FMath::Clamp(DistInY / MiasmaBlendMarginUU, 0.f, 1.f);
 			const float Mask = FMath::Min(Tx, Ty);

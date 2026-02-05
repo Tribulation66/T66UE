@@ -2226,7 +2226,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
 			{
 				SkyComp->SetMobility(EComponentMobility::Movable); // Dynamic so landscape stays lit without Build Lighting
-				SkyComp->SetIntensity(1.0f);
+				SkyComp->SetIntensity(0.7f); // Change #1: lower ambient so sun vs shadow reads more naturally (was 1.0)
 				// Keep the sky light neutral; the blue tint should come from the actual sky capture.
 				SkyComp->SetLightColor(FLinearColor::White);
 			}
@@ -2255,13 +2255,13 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		}
 	}
 	for (TActorIterator<ASkyLight> It(World); It; ++It)
-	{
-		if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
 		{
-			SC->SetMobility(EComponentMobility::Movable);
-			SC->SetIntensity(1.2f);  // Slightly stronger ambient to reduce black areas
-			SC->RecaptureSky();
-		}
+			if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
+			{
+				SC->SetMobility(EComponentMobility::Movable);
+				SC->SetIntensity(0.8f);  // Change #1: lower ambient so shadows read (was 1.2)
+				SC->RecaptureSky();
+			}
 		if (USceneComponent* Root = It->GetRootComponent())
 		{
 			Root->SetMobility(EComponentMobility::Movable);

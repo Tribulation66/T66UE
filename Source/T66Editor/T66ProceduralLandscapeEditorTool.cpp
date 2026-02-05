@@ -151,23 +151,30 @@ namespace T66ProceduralLandscapeEditor
 			UE_LOG(LogT66Editor, Warning, TEXT("[MAP] Landscape material not found (T66MapAssets or CozyNature); using fallback."));
 		}
 
-		// Grass layer: Cozy Nature layer info (T66MapAssets or CozyNature)
+		// Grass layer: Cozy Nature layer info (T66MapAssets or CozyNature). Required for full grass coverage on hills.
 		ULandscapeLayerInfoObject* GrassLayerInfo = LoadObject<ULandscapeLayerInfoObject>(nullptr, TEXT("/Game/T66MapAssets/Landscape/Grass_LayerInfo.Grass_LayerInfo"));
 		if (!GrassLayerInfo) GrassLayerInfo = LoadObject<ULandscapeLayerInfoObject>(nullptr, TEXT("/Game/CozyNature/Maps/LayerInfo/Grass_LayerInfo.Grass_LayerInfo"));
+		if (!GrassLayerInfo)
+		{
+			UE_LOG(LogT66Editor, Warning, TEXT("[MAP] Grass_LayerInfo not found. Run Window -> T66 Tools -> Setup T66 Map Assets, or grass will not apply to landscape (pale stripes on hills)."));
+		}
 
-		// Full grass coverage: one weight layer "Grass" at max weight everywhere
+		// Full grass coverage: one weight layer at max (255) for every vertex.
+		const int32 VertsX = SizeX;
+		const int32 VertsY = SizeY;
 		TMap<FGuid, TArray<FLandscapeImportLayerInfo>> MaterialLayerDataPerLayersForImport;
 		TArray<FLandscapeImportLayerInfo> GrassLayerInfos;
 		if (GrassLayerInfo)
 		{
 			FLandscapeImportLayerInfo GrassImportInfo(GrassLayerInfo->GetLayerName());
 			GrassImportInfo.LayerInfo = GrassLayerInfo;
-			GrassImportInfo.LayerData.SetNum(SizeX * SizeY);
+			GrassImportInfo.LayerData.SetNumUninitialized(VertsX * VertsY);
 			for (int32 i = 0; i < GrassImportInfo.LayerData.Num(); ++i)
 			{
 				GrassImportInfo.LayerData[i] = 255;
 			}
 			GrassLayerInfos.Add(MoveTemp(GrassImportInfo));
+			UE_LOG(LogT66Editor, Log, TEXT("[MAP] Grass layer \"%s\" applied at full weight to %d vertices"), *GrassLayerInfo->GetLayerName().ToString(), VertsX * VertsY);
 		}
 		MaterialLayerDataPerLayersForImport.Add(FGuid(), MoveTemp(GrassLayerInfos));
 		TArray<FLandscapeLayer> ImportLayers;
@@ -195,8 +202,16 @@ namespace T66ProceduralLandscapeEditor
 		}
 		Landscape->RegisterAllComponents();
 
-		// Force visual update
+		// Re-apply landscape material to the whole map so every component uses it (fixes hills missing ground/grass material).
+		if (LandscapeMat)
+		{
+			Landscape->LandscapeMaterial = LandscapeMat;
+			UE_LOG(LogT66Editor, Log, TEXT("[MAP] Landscape material re-applied to full landscape (all components)."));
+		}
+
+		// Force visual and material update so all components pick up the material and layer data.
 		Landscape->PostEditChange();
+		Landscape->MarkComponentsRenderStateDirty();
 
 		// Full bright: no shadows from landscape
 		for (UActorComponent* Comp : Landscape->GetComponents())
