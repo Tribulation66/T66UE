@@ -14,6 +14,8 @@ class UCameraComponent;
 class UInstancedStaticMeshComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
+class UT66HeroSpeedSubsystem;
+class UAnimationAsset;
 
 /**
  * Base class for all playable heroes in Tribulation 66
@@ -176,6 +178,20 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
+
+	/** Cached alert/walk/run anims (gameplay: alert when stopped, walk when moving slow, run when above threshold). */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedAlertAnim = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedWalkAnim = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedRunAnim = nullptr;
+
+	/** Last animation state so we only call PlayAnimation on change. */
+	enum class EMovementAnimState : uint8 { Idle, Walk, Run };
+	EMovementAnimState LastMovementAnimState = EMovementAnimState::Idle;
 
 	float BaseMaxWalkSpeed = 1200.f;
 

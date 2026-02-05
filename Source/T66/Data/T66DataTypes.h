@@ -53,6 +53,14 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	FName MapTheme;
 
+	/** Max movement speed (UU/s). Hero ramps from base speed toward this at AccelerationPercentPerSecond per second. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay|Movement", meta = (ClampMin = "100", ClampMax = "3000"))
+	float MaxSpeed = 1400.f;
+
+	/** Percent of MaxSpeed gained per second when moving (e.g. 20 = 20% of max per second until capped). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay|Movement", meta = (ClampMin = "1", ClampMax = "100"))
+	float AccelerationPercentPerSecond = 20.f;
+
 	/** Whether this hero is unlocked by default */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unlock")
 	bool bUnlockedByDefault = true;
@@ -552,7 +560,9 @@ struct T66_API FLoanSharkData : public FTableRowBase
  * Maps a stable gameplay ID (HeroID / CompanionID / NPCID / BossID / EnemyVisualID) to imported skeletal assets.
  *
  * - SkeletalMesh: the mesh to assign to a USkeletalMeshComponent
- * - LoopingAnimation: optional looping animation (Idle preferred; otherwise any reasonable loop)
+ * - LoopingAnimation: walk animation (used when moving slowly)
+ * - AlertAnimation: alert/stand animation (e.g. hero/companion selection preview)
+ * - RunAnimation: run animation (used when moving fast); if unset, walk is used for all movement
  * - MeshRelative*: applied directly to the target component
  */
 USTRUCT(BlueprintType)
@@ -564,13 +574,17 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
 
-	/** Optional looping animation (AnimSequence/AnimComposite/etc). Used as Walk in gameplay. */
+	/** Walk animation (looping). Used when moving below run threshold. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UAnimationAsset> LoopingAnimation;
 
-	/** Optional alert/stand animation for preview (hero selection). If set, used in preview instead of LoopingAnimation. */
+	/** Alert/stand animation (e.g. hero/companion selection preview). If set, used in preview instead of walk. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UAnimationAsset> AlertAnimation;
+
+	/** Run animation (looping). Used when moving above run threshold. If unset, walk is used for all movement. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UAnimationAsset> RunAnimation;
 
 	/** Relative location applied to the target mesh component. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")

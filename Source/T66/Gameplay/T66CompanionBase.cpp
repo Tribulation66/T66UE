@@ -3,6 +3,7 @@
 #include "Gameplay/T66CompanionBase.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66HeroSpeedSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SceneComponent.h"
@@ -70,6 +71,17 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 			if (!bUsingCharacterVisual && SkeletalMesh)
 			{
 				SkeletalMesh->SetVisibility(false, true);
+			}
+			else if (!bIsPreviewMode)
+			{
+				UAnimationAsset* WalkRaw = nullptr;
+				UAnimationAsset* RunRaw = nullptr;
+				UAnimationAsset* AlertRaw = nullptr;
+				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, RunRaw, AlertRaw);
+				CachedWalkAnim = WalkRaw;
+				CachedRunAnim = RunRaw;
+				CachedAlertAnim = AlertRaw;
+				LastMovementAnimState = 0;
 			}
 		}
 	}
@@ -145,6 +157,30 @@ void AT66CompanionBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	if (bIsPreviewMode) return;
+
+	// Animation: always match hero (same GetMovementAnimState: alert / walk / run after 1s walking).
+	if (bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->IsVisible() && (CachedAlertAnim || CachedWalkAnim || CachedRunAnim))
+	{
+		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+		UT66HeroSpeedSubsystem* SpeedSub = GI ? GI->GetSubsystem<UT66HeroSpeedSubsystem>() : nullptr;
+		if (SpeedSub)
+		{
+			const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 1=Walk, 2=Run
+			if (NewState != LastMovementAnimState)
+			{
+				LastMovementAnimState = static_cast<uint8>(NewState);
+				UAnimationAsset* ToPlay = nullptr;
+				if (NewState == 0)
+					ToPlay = CachedAlertAnim;
+				else if (NewState == 1)
+					ToPlay = CachedWalkAnim;
+				else
+					ToPlay = CachedRunAnim ? CachedRunAnim : CachedWalkAnim;
+				if (ToPlay)
+					SkeletalMesh->PlayAnimation(ToPlay, true);
+			}
+		}
+	}
 
 	// Follow the player's pawn (hero)
 	UWorld* World = GetWorld();

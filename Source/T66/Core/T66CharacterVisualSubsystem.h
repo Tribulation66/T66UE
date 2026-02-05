@@ -29,6 +29,10 @@ struct FT66ResolvedCharacterVisual
 	UPROPERTY()
 	TObjectPtr<UAnimationAsset> AlertAnim = nullptr;
 
+	/** Optional run animation (gameplay; when moving fast). */
+	UPROPERTY()
+	TObjectPtr<UAnimationAsset> RunAnim = nullptr;
+
 	UPROPERTY()
 	FT66CharacterVisualRow Row;
 
@@ -70,6 +74,10 @@ public:
 	/** Preload a visual mapping (loads assets synchronously once and caches). */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	void PreloadCharacterVisual(FName VisualID);
+
+	/** Get alert, walk, and run animations for a visual (for runtime animation state). OutRun/OutAlert may be null. */
+	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
+	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert);
 
 private:
 	FT66ResolvedCharacterVisual ResolveVisual(FName VisualID);

@@ -10,6 +10,8 @@
 class UStaticMeshComponent;
 class USceneComponent;
 class USkeletalMeshComponent;
+class UAnimationAsset;
+class UT66HeroSpeedSubsystem;
 
 /**
  * Base class for companions. Uses a sphere mesh (placeholder).
@@ -78,6 +80,19 @@ protected:
 
 	UPROPERTY(Transient)
 	bool bLockedVisual = false;
+
+	/** Cached alert/walk/run anims; companion uses hero speed subsystem (same rules: idle=alert, walk, run). */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedAlertAnim = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedWalkAnim = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedRunAnim = nullptr;
+
+	/** Last animation state so we only call PlayAnimation on change. */
+	uint8 LastMovementAnimState = 0; // 0=Idle, 1=Walk, 2=Run
 
 	// Healing (gameplay only)
 	float HealAccumSeconds = 0.f;

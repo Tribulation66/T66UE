@@ -4,6 +4,7 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66HeroSpeedSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Components/CapsuleComponent.h"
@@ -293,6 +294,43 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 			}
 		}
 	}
+
+	// Hero speed: ramp from input (10% of max per second); drive MaxWalkSpeed and animation state.
+	if (!bIsPreviewMode)
+	{
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UT66HeroSpeedSubsystem* SpeedSub = GI->GetSubsystem<UT66HeroSpeedSubsystem>())
+			{
+				// Movement input: use last movement input (set by controller when it calls AddMovementInput).
+				const FVector LastInput = GetLastMovementInputVector();
+				const bool bHasMovementInput = LastInput.SizeSquared() > 0.01f;
+				SpeedSub->Update(DeltaSeconds, bHasMovementInput);
+				if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+				{
+					Movement->MaxWalkSpeed = SpeedSub->GetCurrentSpeed();
+				}
+				// Animation: alert / walk / run from subsystem (run after 1s walking). Companion uses same state.
+				if (GetMesh() && GetMesh()->IsVisible() && (CachedAlertAnim || CachedWalkAnim || CachedRunAnim))
+				{
+					const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 1=Walk, 2=Run
+					if (static_cast<int32>(LastMovementAnimState) != NewState)
+					{
+						LastMovementAnimState = static_cast<EMovementAnimState>(NewState);
+						UAnimationAsset* ToPlay = nullptr;
+						if (NewState == 0)
+							ToPlay = CachedAlertAnim;
+						else if (NewState == 1)
+							ToPlay = CachedWalkAnim;
+						else
+							ToPlay = CachedRunAnim ? CachedRunAnim : CachedWalkAnim;
+						if (ToPlay)
+							GetMesh()->PlayAnimation(ToPlay, true);
+					}
+				}
+			}
+		}
+	}
 }
 
 void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -428,6 +466,23 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 				if (PlaceholderMesh)
 				{
 					PlaceholderMesh->SetVisibility(true, true);
+				}
+			}
+			else if (!bPreviewMode)
+			{
+				// Cache alert/walk/run anims and init hero speed params (subsystem drives speed + animation state).
+				UAnimationAsset* WalkRaw = nullptr;
+				UAnimationAsset* RunRaw = nullptr;
+				UAnimationAsset* AlertRaw = nullptr;
+				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, RunRaw, AlertRaw);
+				CachedWalkAnim = WalkRaw;
+				CachedRunAnim = RunRaw;
+				CachedAlertAnim = AlertRaw;
+				// Force first Tick to play alert (speed 0); if we left Idle we wouldn't call PlayAnimation.
+				LastMovementAnimState = EMovementAnimState::Walk;
+				if (UT66HeroSpeedSubsystem* SpeedSub = GI->GetSubsystem<UT66HeroSpeedSubsystem>())
+				{
+					SpeedSub->SetParams(InHeroData.MaxSpeed, InHeroData.AccelerationPercentPerSecond);
 				}
 			}
 		}

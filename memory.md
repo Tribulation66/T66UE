@@ -36,7 +36,8 @@
 | **AC balance / profile save** | `UT66AchievementsSubsystem`: `GetAchievementCoinsBalance()`, profile load/save. Skin *data* is in profile; skin *API* is in SkinSubsystem. |
 | **Hero/companion definitions** | `UT66GameInstance` (GetHeroData, GetCompanionData, GetAllHeroIDs, etc.) + DataTables `DT_Heroes`, `DT_Companions` + CSVs under `Content/Data/`. |
 | **Front-end UI obsidian 9-slice** | `FT66Style::EnsureObsidianBrushes()`, brushes `T66.Brush.ObsidianPanel`, `T66.Button.Obsidian`. Texture: `/Game/UI/Obsidian.Obsidian` (import via `Scripts/ImportSpriteTextures.py` from `SourceAssets/Images/obsidian.jpg`). |
-| **Character visuals / meshes / animations** | `UT66CharacterVisualSubsystem` (ApplyCharacterVisual, alert vs walk anim). Data: `DT_CharacterVisuals` / `CharacterVisuals.csv`. |
+| **Hero speed & animation** | `UT66HeroSpeedSubsystem`: hero speed ramps (10% of max per second when moving), run threshold 50% of max. Speed 0 → **alert**, 0 < speed < threshold → **walk**, ≥ threshold → **run**. Hero drives subsystem from movement input; companions copy subsystem speed for animation only. Params: `FHeroData::MaxSpeed`, `AccelerationPercentPerSecond` (Heroes.csv). |
+| **Character visuals / meshes / animations** | `UT66CharacterVisualSubsystem` (ApplyCharacterVisual, alert/walk/run). GetMovementAnimsForVisual(VisualID, OutWalk, OutRun, OutAlert). Data: `DT_CharacterVisuals` / `CharacterVisuals.csv` (RunAnimation column). |
 | **Hero selection UI** | `T66HeroSelectionScreen`: `RefreshSkinsList()`, `AddSkinRowsToBox()`, `SkinsListBoxWidget`, `ACBalanceTextBlock`, `PreviewSkinIDOverride`. Uses `UT66SkinSubsystem`. |
 | **Companion selection UI** | `T66CompanionSelectionScreen`: same pattern (SkinsListBoxWidget, RefreshSkinsList, AddSkinRowsToBox); uses `UT66SkinSubsystem`. |
 | **3D hero preview** | `AT66HeroPreviewStage` (Tick → CaptureScene after pawn anim). `T66HeroBase::InitializeHero(bPreviewMode)` → alert anim in preview. |
@@ -101,6 +102,8 @@
 
 ## Recent context (for continuity)
 
+- **Map / interactable placement:** World interactables (trees, trucks, wheels, totems) and stage effect tiles use **run-level seed** (`ProceduralTerrainSeed` from GameInstance, or `FMath::Rand()` when 0) so positions change every time "Enter the Tribulation" or PIE is started. **NPCs:** same 4 corner positions; which NPC (Vendor/Gambler/Ouroboros/Saint) is at which corner is **shuffled per run**. **Plateaus:** `AT66SpawnPlateau` (flat disc) is spawned under each world interactable, each corner NPC, and each stage effect tile so they sit on flat ground even on hills. **Grass:** procedural landscape editor no longer spawns grass HISM (`bSpawnGrassAssets = false` in `T66ProceduralLandscapeEditorTool.cpp`); landscape and trees/rocks unchanged.
+
 - **Central skin subsystem:** `UT66SkinSubsystem` holds all skin logic (hero + companion). AchievementsSubsystem keeps profile and delegates skin calls to SkinSubsystem. Hero and companion selection use `GetSkinsForEntity()`, `RefreshSkinsList()`, dynamic AC display.
 - **Persistence:** Profile (AC, owned/equipped skins) persists; one-time reset that cleared purchases was removed.
 - **Hero selection:** When switching heroes, skin is validated for the *new* hero (if not owned, falls back to Default); `PreviewSkinIDOverride` cleared on switch.
@@ -109,5 +112,9 @@
 **Grass on landscape:** StylizedGrassByMayu pack copied to `Content/World/StylizedGrassByMayu/`. Generate Procedural Hills Landscape (Dev) now assigns the grass landscape material and imports the Grass weight layer at full coverage so the ground is covered with grass.
 
 **Landscape look (less crunchy, more atmosphere):** GameMode `SpawnLightingIfNeeded()` spawns **Exponential Height Fog** (gentle density, soft blue-grey) and an unbound **PostProcessVolume** (exposure + slight desaturation) when missing, so distant terrain reads with atmospheric depth. Grass/ground material tuning (reduce normal strength, increase roughness, macro variation, blend variants): see **T66_Grass_Stylization_Plan.md** section “Procedural map (Polytope grass + Cozy landscape)”. Optional script: `Scripts/TuneGrassAndLandscapeMaterials.py` (run in editor) to set normal/roughness on T66MapAssets MIs if base materials expose those parameters.
+
+**Fonts:** Single theme with 5 options (index in T66Style.cpp: GThemeFontIndex). 0=Caesar Dressing, 1=Cinzel (default), 2=Cormorant SC, 3=Germania One, 4=Grenze. Console command **T66NextFont** cycles to next font and re-inits style. Paths under `Content/Slate/Fonts/New Fonts/`. Aztec, Almendra, Uncial removed (code and assets).
+
+**UI borders:** All T66 panel/button brushes (Bg, Panel, Panel2, Stroke, Circle, Primary/Neutral/Danger buttons) use white outline (Tokens::Border, Tokens::BorderWidth) so each element is visually distinct.
 
 **Full history:** `git log` (this file is context, not a full changelog).

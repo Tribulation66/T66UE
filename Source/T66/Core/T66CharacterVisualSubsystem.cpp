@@ -197,6 +197,14 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		{
 			UE_LOG(LogTemp, Log, TEXT("[ANIM] ResolveVisual VisualID=%s AlertAnimation is null (no alert anim row)"), *VisualID.ToString());
 		}
+		if (!Res.Row.RunAnimation.IsNull())
+		{
+			Res.RunAnim = Cast<UAnimationAsset>(Res.Row.RunAnimation.LoadSynchronous());
+			if (!Res.RunAnim)
+				Res.RunAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.RunAnimation);
+			if (!Res.RunAnim)
+				Res.RunAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.RunAnimation);
+		}
 		// If no explicit animation is set, try to find any AnimSequence for this Skeleton (cached).
 		if (!Res.LoopingAnim && Res.Mesh && Res.Mesh->GetSkeleton())
 		{
@@ -234,6 +242,18 @@ FName UT66CharacterVisualSubsystem::GetCompanionVisualID(FName CompanionID, FNam
 		return CompanionID;
 	}
 	return FName(*(CompanionID.ToString() + TEXT("_") + SkinID.ToString()));
+}
+
+void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert)
+{
+	OutWalk = nullptr;
+	OutRun = nullptr;
+	OutAlert = nullptr;
+	const FT66ResolvedCharacterVisual Res = ResolveVisual(VisualID);
+	if (!Res.bHasRow) return;
+	OutWalk = Res.LoopingAnim;
+	OutRun = Res.RunAnim;
+	OutAlert = Res.AlertAnim;
 }
 
 bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
