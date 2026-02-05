@@ -15,4 +15,9 @@ namespace T66ProceduralLandscapeEditor
 	 * Returns true on success.
 	 */
 	bool GenerateProceduralHillsLandscape(UWorld* World, const FT66ProceduralLandscapeParams& Params);
+
+#if WITH_EDITOR
+	/** Copy grass (Polytope), landscape/trees/rocks (Cozy Nature) into Content/T66MapAssets. Run once to consolidate. */
+	void SetupT66MapAssets();
+#endif
 }

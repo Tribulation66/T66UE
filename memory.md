@@ -70,7 +70,7 @@
 - **Leaderboard:** Placeholder until Steam.
 - **Nav:** Enemies use Tick toward player; no nav required. For future pathfinding, add Nav Mesh Bounds in GameplayLevel.
 
-**Procedural terrain:** Implemented. Plan: `T66_Procedural_Landscape_Plan.md`. Editor: Window → T66 Tools → "Generate Procedural Hills Landscape (Dev)" (creates/updates Landscape in current level). Runtime: seed set in `UT66GameInstance::ProceduralTerrainSeed` when clicking "Enter the Tribulation"; `AT66GameMode::GenerateProceduralTerrainIfNeeded()` applies hills on GameplayLevel load. **Caveat:** Height apply uses editor-only API (`GetLandscapeExtent`, `FHeightmapAccessor`); in **packaged** builds terrain is not regenerated (use level as saved). In **PIE/editor** it runs each time. Logs use `[MAP]` prefix for diagnostics.
+**Procedural terrain:** Implemented. Plan: `T66_Procedural_Landscape_Plan.md`. Editor: Window → T66 Tools → "Generate Procedural Hills Landscape (Dev)" (creates/updates Landscape in current level). Runtime: seed set in `UT66GameInstance::ProceduralTerrainSeed` when clicking "Enter the Tribulation"; `AT66GameMode::GenerateProceduralTerrainIfNeeded()` applies hills on GameplayLevel load. **Caveat:** Height apply uses editor-only API; in **packaged** builds terrain is not regenerated (use level as saved). Logs use `[MAP]` prefix. **Landscape & foliage:** Optional consolidated folder **Content/T66MapAssets**: run **Window → T66 Tools → Setup T66 Map Assets** once to copy sources there. **Grass:** from Polytope (`SM_Grass_02`, `MI_Plants_Grass`) — HISM every quad, full ground coverage, no collision. **Landscape, trees, rocks:** from Cozy Nature (`MI_Landscape`, `Grass_LayerInfo`, trees/rocks meshes and MIs). Tool loads T66MapAssets first, then Polytope/CozyNature. Trees: **10 total**, rocks: **6 total**, placed **procedurally at random**. No cast shadow; actors tagged `T66ProceduralFoliage`. Material usage fix: Polytope M_Plants, Cozy M_Trees, M_Rocks.
 
 ---
 
@@ -104,5 +104,7 @@
 - **Persistence:** Profile (AC, owned/equipped skins) persists; one-time reset that cleared purchases was removed.
 - **Hero selection:** When switching heroes, skin is validated for the *new* hero (if not owned, falls back to Default); `PreviewSkinIDOverride` cleared on switch.
 - **Companion selection:** Same skin/AC wiring as hero selection (SkinsListBoxWidget, RefreshSkinsList, AddSkinRowsToBox, SkinSubsystem).
+
+**Grass on landscape:** StylizedGrassByMayu pack copied to `Content/World/StylizedGrassByMayu/`. Generate Procedural Hills Landscape (Dev) now assigns the grass landscape material and imports the Grass weight layer at full coverage so the ground is covered with grass.
 
 **Full history:** `git log` (this file is context, not a full changelog).
