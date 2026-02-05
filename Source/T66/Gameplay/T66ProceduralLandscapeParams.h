@@ -27,19 +27,19 @@ struct FT66ProceduralLandscapeParams
 	int32 Seed = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "1"))
-	float HillAmplitude = 3500.f;  // World Z range in UU (100 UU = 1 m). ~35 m tall hills; was 25000 (too large).
+	float HillAmplitude = 3150.f;  // ~10% shorter than 3500; max hill height in UU. Wide bases + flat plateaus keep slopes climbable.
 
-	/** Large hills: wavelength in meters. ~165 gives ~3 large hills, spread apart (min spacing enforced in code). */
+	/** Large hills: wavelength in meters. Larger = wider hills. ~220 gives ~3 very wide large hills. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "10"))
-	float VeryLargeScaleMeters = 165.f;
+	float VeryLargeScaleMeters = 220.f;
 
-	/** Medium hills: wavelength in meters. ~52 gives ~7 medium hills inside miasma. */
+	/** Medium hills: wavelength in meters. ~72 gives ~7 medium hills, all wide for climbability. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "10"))
-	float LargeScaleMeters = 52.f;
+	float LargeScaleMeters = 72.f;
 
-	/** Min distance (UU) between large-hill peaks; peaks closer than this are suppressed so large hills stay spread. */
+	/** Min distance (UU) between large-hill peaks; only peaks closer than this are suppressed (avoid one merged blob). ~2800 = adjacent only. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "1000"))
-	float LargeHillMinSpacingUU = 7000.f;
+	float LargeHillMinSpacingUU = 2800.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "10"))
 	float MediumScaleMeters = 22.f;
@@ -57,6 +57,10 @@ struct FT66ProceduralLandscapeParams
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "0.1", ClampMax = "1.0"))
 	float SmoothStrength = 0.2f;
+
+	/** Max slope angle in degrees. Hills steeper than this are flattened so all terrain is climbable. 34° = conservative for 45° walkable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "10", ClampMax = "60"))
+	float MaxSlopeDegrees = 34.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape")
 	bool bCarveRiverValley = false;

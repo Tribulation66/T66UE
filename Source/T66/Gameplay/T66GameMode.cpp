@@ -324,7 +324,7 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 	FRandomStream Rng(StageNum * 971 + 17);
 
 	// Main map square bounds (centered at 0,0). Keep some margin from edges. (4x area = 2x linear)
-	static constexpr float MainHalfExtent = 18400.f;
+	static constexpr float MainHalfExtent = 22000.f;  // Match miasma SafeHalfExtent; playable area
 	static constexpr float SpawnZ = 40.f;
 	static constexpr float MinDistBetweenTiles = 420.f;
 	static constexpr float SafeBubbleMargin = 350.f;
@@ -1223,7 +1223,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	FRandomStream Rng(StageNum * 1337 + 42);
 
 	// Main map square bounds (centered at 0,0). Keep some margin from walls. (4x area = 2x linear)
-	static constexpr float MainHalfExtent = 18400.f;
+	static constexpr float MainHalfExtent = 22000.f;  // Match miasma SafeHalfExtent; playable area
 	static constexpr float SpawnZ = 220.f;
 	static constexpr float MinDistBetweenInteractables = 900.f;
 	static constexpr float SafeBubbleMargin = 250.f;
@@ -1842,6 +1842,24 @@ void AT66GameMode::SpawnStartAreaWallsIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	// Start area walls disabled: remove any that were saved in the level so player can leave freely.
+	static const FName WallTags[] = {
+		FName("T66_Wall_Start_W"), FName("T66_Wall_Start_N"), FName("T66_Wall_Start_S"),
+		FName("T66_Wall_Start_E_N"), FName("T66_Wall_Start_E_S")
+	};
+	for (FName Tag : WallTags)
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			if (It->Tags.Contains(Tag))
+			{
+				It->Destroy();
+				break;
+			}
+		}
+	}
+	return;
+
 	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!CubeMesh) return;
 
@@ -1870,9 +1888,9 @@ void AT66GameMode::SpawnStartAreaWallsIfNeeded()
 	const float BoxSouthY = -2000.f;
 	const float BoxWidthX = BoxEastX - BoxWestX;   // 4000
 	const float BoxHeightY = BoxNorthY - BoxSouthY; // 4000
-	const float OpeningHalfY = 400.f;   // gap on east for Start Gate pillars
-	const float EastNorthLen = BoxNorthY - OpeningHalfY;
-	const float EastSouthLen = OpeningHalfY - BoxSouthY;
+	const float OpeningHalfY = 400.f;   // gap on east for Start Gate pillars (opening Y from -400 to +400)
+	const float EastNorthLen = BoxNorthY - OpeningHalfY;   // north segment: 400 to 2000 -> length 1600
+	const float EastSouthLen = (-OpeningHalfY) - BoxSouthY; // south segment: -2000 to -400 -> length 1600 (was 2400, closed the gap)
 	const float EastNorthCenterY = BoxNorthY - (EastNorthLen * 0.5f);
 	const float EastSouthCenterY = BoxSouthY + (EastSouthLen * 0.5f);
 
@@ -1980,8 +1998,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		}
 	}
 
-	// Hard rule: no overlapping grounds (causes z-fighting). One main run floor; Tutorial separate with gap.
-	// Main: single rectangle X -20000..+26000, Y -20000..+20000 (covers start area + main + boss).
+	// Main run uses Landscape only (no main floor). Coliseum, Boost, and Tutorial are small island floors to the side.
 	struct FFloorSpec
 	{
 		FName Tag;
@@ -2001,15 +2018,17 @@ void AT66GameMode::SpawnFloorIfNeeded()
 			}
 		}
 	};
+	DestroyTaggedIfExists(FName("T66_Floor_Main"));   // No longer used; landscape is main ground
 	DestroyTaggedIfExists(FName("T66_Floor_Conn1"));
 	DestroyTaggedIfExists(FName("T66_Floor_Conn2"));
-	DestroyTaggedIfExists(FName("T66_Floor_Start"));  // Start is inside main; no separate patch
-	DestroyTaggedIfExists(FName("T66_Floor_Boss"));   // Boss area is same main floor; no overlap
+	DestroyTaggedIfExists(FName("T66_Floor_Start"));
+	DestroyTaggedIfExists(FName("T66_Floor_Boss"));
 
-	// Main floor only: center (3000,0) so X -20000..+26000, Y -20000..+20000 (cube 100uu => scale 460,400).
-	const FVector MainCenter(3000.f, 0.f, -50.f);
+	// Island floors only: Coliseum and Boost (small islands). Tutorial floor is spawned in SpawnTutorialIfNeeded.
+	constexpr float IslandFloorZ = -50.f;
 	const TArray<FFloorSpec> Floors = {
-		{ FName("T66_Floor_Main"), MainCenter, FVector(460.f, 400.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
+		{ FName("T66_Floor_Coliseum"), FVector(ColiseumCenter.X, ColiseumCenter.Y, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
+		{ FName("T66_Floor_Boost"),     FVector(-20000.f, 10400.f, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
 	};
 
 	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -2173,7 +2192,8 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		{
 			if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
-				LightComp->SetIntensity(3.f);
+				LightComp->SetMobility(EComponentMobility::Movable); // Dynamic lighting so landscape stays lit without Build Lighting
+				LightComp->SetIntensity(4.f);  // Stronger sun to reduce black/dark areas
 				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
 
 				// Drive SkyAtmosphere sun/sky scattering (mid-day blue sky).
@@ -2205,6 +2225,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		{
 			if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
 			{
+				SkyComp->SetMobility(EComponentMobility::Movable); // Dynamic so landscape stays lit without Build Lighting
 				SkyComp->SetIntensity(1.0f);
 				// Keep the sky light neutral; the blue tint should come from the actual sky capture.
 				SkyComp->SetLightColor(FLinearColor::White);
@@ -2218,22 +2239,32 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		}
 	}
 
-	// If we have an existing sun, ensure it drives the atmosphere (even if it was authored in the map).
-	if (SunForAtmosphere)
+	// Force ALL directional and sky lights in the level to Movable so everything stays lit (no baked/static).
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
 	{
-		if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(SunForAtmosphere->GetLightComponent()))
+		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(It->GetLightComponent()))
 		{
-			LightComp->bAtmosphereSunLight = true;
-			LightComp->AtmosphereSunLightIndex = 0;
+			LC->SetMobility(EComponentMobility::Movable);
+			LC->SetIntensity(4.f);
+			LC->bAtmosphereSunLight = true;
+			LC->AtmosphereSunLightIndex = 0;
+		}
+		if (USceneComponent* Root = It->GetRootComponent())
+		{
+			Root->SetMobility(EComponentMobility::Movable);
 		}
 	}
-
-	// Capture after SkyAtmosphere exists and sun is configured, so the skylight picks up a blue mid-day sky.
-	if (SkyForCapture)
+	for (TActorIterator<ASkyLight> It(World); It; ++It)
 	{
-		if (USkyLightComponent* SkyComp = SkyForCapture->GetLightComponent())
+		if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
 		{
-			SkyComp->RecaptureSky();
+			SC->SetMobility(EComponentMobility::Movable);
+			SC->SetIntensity(1.2f);  // Slightly stronger ambient to reduce black areas
+			SC->RecaptureSky();
+		}
+		if (USceneComponent* Root = It->GetRootComponent())
+		{
+			Root->SetMobility(EComponentMobility::Movable);
 		}
 	}
 }
@@ -2291,95 +2322,9 @@ UT66GameInstance* AT66GameMode::GetT66GameInstance() const
 void AT66GameMode::GenerateProceduralTerrainIfNeeded()
 {
 #if WITH_EDITOR
-	UT66GameInstance* GI = GetT66GameInstance();
-	if (!GI)
-	{
-		UE_LOG(LogT66, Warning, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: no T66GameInstance"));
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		UE_LOG(LogT66, Warning, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: no World"));
-		return;
-	}
-
-	ALandscape* Landscape = nullptr;
-	for (TActorIterator<ALandscape> It(World); It; ++It)
-	{
-		Landscape = *It;
-		break;
-	}
-	if (!Landscape)
-	{
-		UE_LOG(LogT66, Log, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: no Landscape in level, skipping"));
-		return;
-	}
-
-	ULandscapeInfo* Info = Landscape->GetLandscapeInfo();
-	if (!Info)
-	{
-		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: Landscape has no LandscapeInfo"));
-		return;
-	}
-
-	FIntRect Extent;
-	if (!Info->GetLandscapeExtent(Extent))
-	{
-		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: GetLandscapeExtent failed"));
-		return;
-	}
-
-	const int32 SizeX = Extent.Width() + 1;
-	const int32 SizeY = Extent.Height() + 1;
-	if (SizeX < 2 || SizeY < 2)
-	{
-		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: invalid extent size %dx%d"), SizeX, SizeY);
-		return;
-	}
-
-	FT66ProceduralLandscapeParams Params;
-	Params.Seed = GI->ProceduralTerrainSeed;
-	Params.SizePreset = (SizeX <= 505 && SizeY <= 505) ? ET66LandscapeSizePreset::Small : ET66LandscapeSizePreset::Large;
-
-	TArray<float> Heights;
-	if (!FT66ProceduralLandscapeGenerator::GenerateHeightfield(
-		Params, SizeX, SizeY, FT66ProceduralLandscapeGenerator::DefaultQuadSizeUU, Heights))
-	{
-		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: GenerateHeightfield failed"));
-		return;
-	}
-
-	TArray<uint16> HeightData;
-	const float ScaleZ = FMath::Max(Landscape->GetActorScale3D().Z, 1.f);
-	FT66ProceduralLandscapeGenerator::FloatsToLandscapeHeightData(Heights, ScaleZ, HeightData);
-
-	if (HeightData.Num() != SizeX * SizeY)
-	{
-		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: height data size mismatch"));
-		return;
-	}
-
-	const int32 MinX = Extent.Min.X;
-	const int32 MinY = Extent.Min.Y;
-	const int32 MaxX = Extent.Max.X;
-	const int32 MaxY = Extent.Max.Y;
-
-	FHeightmapAccessor<false> HeightmapAccessor(Info);
-	TArray<uint16> RegionData;
-	RegionData.SetNumUninitialized(SizeX * SizeY);
-	for (int32 Jy = 0; Jy < SizeY; ++Jy)
-	{
-		for (int32 Ix = 0; Ix < SizeX; ++Ix)
-		{
-			RegionData[Jy * SizeX + Ix] = HeightData[Jy * SizeX + Ix];
-		}
-	}
-	HeightmapAccessor.SetData(MinX, MinY, MaxX, MaxY, RegionData.GetData());
-	HeightmapAccessor.Flush();
-
-	UE_LOG(LogT66, Log, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: applied procedural hills (seed=%d, %dx%d)"), Params.Seed, SizeX, SizeY);
+	// Landscape heights are set only by the editor tool (T66 Tools -> Generate Procedural Hills Landscape).
+	// Run that tool to create/update the landscape; at runtime we use the level as saved.
+	UE_LOG(LogT66, Verbose, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: skipped (use editor tool to update landscape)"));
 #else
 	// Runtime (packaged) build: landscape height editing is editor-only. Use level as saved or pre-generate in editor.
 	UE_LOG(LogT66, Verbose, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: skipped (editor-only API in packaged build)"));

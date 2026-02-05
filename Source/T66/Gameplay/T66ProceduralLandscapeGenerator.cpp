@@ -109,6 +109,13 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 				// H += 0.14f * T66NoiseSigned(Seed + 2, WxM, WyM, M);
 				// if (bUseSmallScale) H += 0.08f * T66NoiseSigned(Seed + 3, WxM, WyM, S);
 			}
+			// Flat plateaus at tops: remap so peaks become a flat cap at full amplitude (wide, climbable)
+			const float PlateauStart = 0.42f;
+			const float PlateauTop = 1.0f;
+			if (H > PlateauStart)
+			{
+				H = FMath::Lerp(PlateauStart, PlateauTop, FMath::SmoothStep(PlateauStart, 0.78f, H));
+			}
 			H *= A;
 
 			if (Params.bCarveRiverValley)
@@ -177,7 +184,7 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 			}
 			if (bTooCloseToHigher)
 			{
-				OutHeights[P.Idx] *= 0.28f;  // dampen so this is no longer a distinct large-hill peak
+				OutHeights[P.Idx] *= 0.58f;  // gentle dampen so it becomes a shoulder, not flattened into one blob
 			}
 		}
 	}
@@ -212,6 +219,116 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 			}
 		}
 		Swap(OutHeights, Temp);
+	}
+
+	// Slope limiting: ensure no slope exceeds MaxSlopeDegrees so all hills are climbable
+	if (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
+	{
+		const float MaxSlope = FMath::Tan(FMath::DegreesToRadians(Params.MaxSlopeDegrees));
+		const float MaxDH = MaxSlope * QuadSizeUU;  // Max height change per quad
+		// Multiple iterations to propagate constraint across the heightfield
+		for (int32 Iter = 0; Iter < 8; ++Iter)
+		{
+			bool bChanged = false;
+			// Forward pass (left-to-right, top-to-bottom)
+			for (int32 Jy = 0; Jy < SizeY; ++Jy)
+			{
+				for (int32 Ix = 0; Ix < SizeX; ++Ix)
+				{
+					const int32 Idx = Jy * SizeX + Ix;
+					float H = OutHeights[Idx];
+					// Clamp relative to left neighbor
+					if (Ix > 0)
+					{
+						const float HL = OutHeights[Idx - 1];
+						if (H > HL + MaxDH) { H = HL + MaxDH; bChanged = true; }
+						else if (H < HL - MaxDH) { H = HL - MaxDH; bChanged = true; }
+					}
+					// Clamp relative to top neighbor
+					if (Jy > 0)
+					{
+						const float HT = OutHeights[Idx - SizeX];
+						if (H > HT + MaxDH) { H = HT + MaxDH; bChanged = true; }
+						else if (H < HT - MaxDH) { H = HT - MaxDH; bChanged = true; }
+					}
+					OutHeights[Idx] = H;
+				}
+			}
+			// Backward pass (right-to-left, bottom-to-top)
+			for (int32 Jy = SizeY - 1; Jy >= 0; --Jy)
+			{
+				for (int32 Ix = SizeX - 1; Ix >= 0; --Ix)
+				{
+					const int32 Idx = Jy * SizeX + Ix;
+					float H = OutHeights[Idx];
+					if (Ix < SizeX - 1)
+					{
+						const float HR = OutHeights[Idx + 1];
+						if (H > HR + MaxDH) { H = HR + MaxDH; bChanged = true; }
+						else if (H < HR - MaxDH) { H = HR - MaxDH; bChanged = true; }
+					}
+					if (Jy < SizeY - 1)
+					{
+						const float HB = OutHeights[Idx + SizeX];
+						if (H > HB + MaxDH) { H = HB + MaxDH; bChanged = true; }
+						else if (H < HB - MaxDH) { H = HB - MaxDH; bChanged = true; }
+					}
+					OutHeights[Idx] = H;
+				}
+			}
+			if (!bChanged) break;  // Converged
+		}
+	}
+
+	// [SLOPES] Verification: log terrain max slope and per-hill pass/fail
+	{
+		const float MaxSlopeLimit = (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
+			? FMath::Tan(FMath::DegreesToRadians(Params.MaxSlopeDegrees)) : 1.f;
+		float TerrainMaxSlope = 0.f;
+		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+		{
+			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+			{
+				const int32 Idx = Jy * SizeX + Ix;
+				const float H = OutHeights[Idx];
+				const float Sx = FMath::Max(FMath::Abs(H - OutHeights[Idx - 1]), FMath::Abs(H - OutHeights[Idx + 1])) / QuadSizeUU;
+				const float Sy = FMath::Max(FMath::Abs(H - OutHeights[Idx - SizeX]), FMath::Abs(H - OutHeights[Idx + SizeX])) / QuadSizeUU;
+				TerrainMaxSlope = FMath::Max(TerrainMaxSlope, FMath::Max(Sx, Sy));
+			}
+		}
+		const bool bWithinLimit = TerrainMaxSlope <= (MaxSlopeLimit + 0.001f);
+		UE_LOG(LogT66, Log, TEXT("[SLOPES] Terrain max slope: %.4f (limit tan(%.1f)=%.4f). %s"),
+			TerrainMaxSlope, Params.MaxSlopeDegrees, MaxSlopeLimit, bWithinLimit ? TEXT("All within limit") : TEXT("EXCEEDED limit"));
+
+		// Find hills (local maxima) and check each
+		TArray<int32> HillPeakIndices;
+		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+		{
+			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+			{
+				const int32 Idx = Jy * SizeX + Ix;
+				const float V = OutHeights[Idx];
+				if (V <= OutHeights[Idx - 1] || V <= OutHeights[Idx + 1] || V <= OutHeights[Idx - SizeX] || V <= OutHeights[Idx + SizeX] ||
+				    V <= OutHeights[Idx - SizeX - 1] || V <= OutHeights[Idx - SizeX + 1] || V <= OutHeights[Idx + SizeX - 1] || V <= OutHeights[Idx + SizeX + 1])
+					continue;
+				HillPeakIndices.Add(Idx);
+			}
+		}
+		for (int32 i = 0; i < HillPeakIndices.Num(); ++i)
+		{
+			const int32 Idx = HillPeakIndices[i];
+			const int32 Ix = Idx % SizeX;
+			const int32 Jy = Idx / SizeX;
+			const float H = OutHeights[Idx];
+			float PeakSlope = 0.f;
+			if (Ix > 0) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx - 1]) / QuadSizeUU);
+			if (Ix < SizeX - 1) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx + 1]) / QuadSizeUU);
+			if (Jy > 0) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx - SizeX]) / QuadSizeUU);
+			if (Jy < SizeY - 1) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx + SizeX]) / QuadSizeUU);
+			const bool bPasses = PeakSlope <= (MaxSlopeLimit + 0.001f);
+			UE_LOG(LogT66, Log, TEXT("[SLOPES] Hill %d %s (peak slope %.4f)"), i + 1, bPasses ? TEXT("passes check") : TEXT("FAILS"), PeakSlope);
+		}
+		UE_LOG(LogT66, Log, TEXT("[SLOPES] Total hills checked: %d"), HillPeakIndices.Num());
 	}
 
 	// Flat zones at world Z=0 with smooth blend into hills (start area and boss area)
@@ -251,9 +368,9 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 		}
 	}
 
-	// Constrain hills to inside miasma walls (SafeHalfExtent = 18400). Outside this box, blend height to 0 so no hills extend past the walls.
-	static constexpr float MiasmaHalfExtent = 18400.f;
-	static constexpr float MiasmaBlendMarginUU = 600.f;  // Over this distance inside the wall, blend down so peaks don't stick out
+	// Constrain hills to inside miasma walls. Match T66MiasmaBoundary::SafeHalfExtent (22000). Gentle blend so lowest points are Z=0 around the wall (no sharp drop).
+	static constexpr float MiasmaHalfExtent = 22000.f;
+	static constexpr float MiasmaBlendMarginUU = 2200.f;  // Wide blend so terrain eases to Z=0; hills have room for base at wall
 	for (int32 Jy = 0; Jy < SizeY; ++Jy)
 	{
 		for (int32 Ix = 0; Ix < SizeX; ++Ix)
@@ -263,7 +380,7 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 			const int32 Idx = Jy * SizeX + Ix;
 			const float DistInX = MiasmaHalfExtent - FMath::Abs(WorldX);
 			const float DistInY = MiasmaHalfExtent - FMath::Abs(WorldY);
-			// Mask = 1 fully inside; 0 outside; smooth blend in the margin band
+			// Mask = 1 fully inside; 0 outside; smooth blend over wide margin so no steep drop at wall
 			const float Tx = FMath::Clamp(DistInX / MiasmaBlendMarginUU, 0.f, 1.f);
 			const float Ty = FMath::Clamp(DistInY / MiasmaBlendMarginUU, 0.f, 1.f);
 			const float Mask = FMath::Min(Tx, Ty);

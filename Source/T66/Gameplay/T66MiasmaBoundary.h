@@ -21,9 +21,9 @@ class T66_API AT66MiasmaBoundary : public AActor
 public:
 	AT66MiasmaBoundary();
 
-	/** Half-extent of the safe playable rectangle (centered at 0,0). Outside this = miasma damage. */
+	/** Half-extent of the safe playable rectangle (centered at 0,0). Outside this = miasma damage. 22000 = larger map so hills can meet Z=0 gently at edges. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Miasma Boundary")
-	float SafeHalfExtent = 18400.f;
+	float SafeHalfExtent = 22000.f;
 
 	/** Damage interval while outside the boundary (seconds). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary")
