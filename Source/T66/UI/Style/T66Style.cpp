@@ -2,6 +2,8 @@
 
 #include "UI/Style/T66Style.h"
 
+#include "Core/T66UITexturePoolSubsystem.h"
+#include "Engine/Texture2D.h"
 #include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
@@ -9,93 +11,127 @@
 #include "Styling/SlateTypes.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Brushes/SlateColorBrush.h"
-#include "Fonts/CompositeFont.h"
+#include "Engine/GameInstance.h"
 
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
-// --- Colors ---
-const FLinearColor FT66Style::Tokens::Bg(0.015f, 0.015f, 0.020f, 1.0f);
-const FLinearColor FT66Style::Tokens::Panel(0.045f, 0.045f, 0.065f, 1.0f);
-const FLinearColor FT66Style::Tokens::Panel2(0.075f, 0.075f, 0.105f, 1.0f);
-const FLinearColor FT66Style::Tokens::Stroke(0.18f, 0.18f, 0.24f, 1.0f);
+// 9-slice brushes for obsidian texture (filled when texture loads). Margin = fixed edge size in slate units.
+static constexpr float ObsidianSliceMargin = 24.f;
+static FSlateBrush GObsidianPanelBrush;
+static FSlateBrush GObsidianButtonN;
+static FSlateBrush GObsidianButtonH;
+static FSlateBrush GObsidianButtonP;
+
+// --- Colors (pitch black panels/buttons, strong bold gold-yellow lettering) ---
+const FLinearColor FT66Style::Tokens::Bg(0.08f, 0.08f, 0.10f, 1.0f);         // darker grey
+const FLinearColor FT66Style::Tokens::Panel(0.0f, 0.0f, 0.0f, 1.0f);         // pitch black
+const FLinearColor FT66Style::Tokens::Panel2(0.0f, 0.0f, 0.0f, 1.0f);        // pitch black
+const FLinearColor FT66Style::Tokens::Stroke(0.18f, 0.18f, 0.20f, 1.0f);    // dark grey
 const FLinearColor FT66Style::Tokens::Scrim(0.f, 0.f, 0.f, 0.70f);
-const FLinearColor FT66Style::Tokens::Text(1.0f, 1.0f, 1.0f, 1.0f);
-const FLinearColor FT66Style::Tokens::TextMuted(0.78f, 0.78f, 0.86f, 1.0f);
-const FLinearColor FT66Style::Tokens::Accent(0.85f, 0.20f, 0.25f, 1.0f);   // blood red
-const FLinearColor FT66Style::Tokens::Accent2(0.20f, 0.55f, 0.90f, 1.0f);  // cold blue
+const FLinearColor FT66Style::Tokens::Text(1.0f, 0.84f, 0.0f, 1.0f);         // strong bold gold yellow
+const FLinearColor FT66Style::Tokens::TextMuted(0.95f, 0.78f, 0.1f, 1.0f);   // bold gold (muted)
+const FLinearColor FT66Style::Tokens::Accent(0.0f, 0.0f, 0.0f, 1.0f);        // pitch black (primary button)
+const FLinearColor FT66Style::Tokens::Accent2(0.0f, 0.0f, 0.0f, 1.0f);       // pitch black (secondary button)
 const FLinearColor FT66Style::Tokens::Danger(0.95f, 0.15f, 0.15f, 1.0f);
 const FLinearColor FT66Style::Tokens::Success(0.20f, 0.80f, 0.35f, 1.0f);
 
 namespace
 {
-	// Optional "cartoony" font support without editor imports:
-	// If you drop files into Content/Slate/Fonts/, we use them.
-	// - Content/Slate/Fonts/T66_Cartoon.ttf
-	// - Content/Slate/Fonts/T66_Cartoon_Bold.ttf
-	FSlateFontInfo MakeFont(const TCHAR* Weight, int32 Size)
+	// ----- Theme: change this to switch fonts for the entire project -----
+	enum class EFontTheme { Aztec, Almendra, Uncial, NewFonts };
+	static const EFontTheme GFontTheme = EFontTheme::NewFonts;
+	// 0=Caesar Dressing, 1=Cinzel, 2=Cormorant SC, 3=Germania One, 4=Grenze. Change to cycle.
+	static const int32 GThemeFontIndex = 0;
+
+	static const TCHAR* GThemeFontPaths[] = {
+		TEXT("New Fonts/Caesar_Dressing/CaesarDressing-Regular.ttf"),   // 0 Caesar Dressing
+		TEXT("New Fonts/Cinzel/static/Cinzel-Regular.ttf"),             // 1 Cinzel
+		TEXT("New Fonts/Cormorant_SC/CormorantSC-Regular.ttf"),         // 2 Cormorant SC
+		TEXT("New Fonts/Germania_One/GermaniaOne-Regular.ttf"),         // 3 Germania One
+		TEXT("New Fonts/Grenze/Grenze-Regular.ttf"),                    // 4 Grenze
+	};
+	static const int32 GThemeFontCount = UE_ARRAY_COUNT(GThemeFontPaths);
+
+	const FString& FontsDir()
 	{
-		const FString FontsDir = FPaths::ProjectContentDir() / TEXT("Slate/Fonts");
-		const FString Cartoon = FontsDir / TEXT("T66_Cartoon.ttf");
-		const FString CartoonBold = FontsDir / TEXT("T66_Cartoon_Bold.ttf");
+		static const FString Dir = FPaths::ProjectContentDir() / TEXT("Slate/Fonts");
+		return Dir;
+	}
 
+	// Aztec: Content/Slate/Fonts/Aztec.ttf (optional Aztec_Bold.ttf).
+	FSlateFontInfo MakeFontAztec(const TCHAR* Weight, int32 Size)
+	{
+		const FString Aztec = FontsDir() / TEXT("Aztec.ttf");
+		const FString AztecBold = FontsDir() / TEXT("Aztec_Bold.ttf");
 		const bool bWantBold = FCString::Stricmp(Weight, TEXT("Bold")) == 0;
-		const FString& Candidate = (bWantBold && FPaths::FileExists(CartoonBold)) ? CartoonBold : Cartoon;
-
+		const FString& Candidate = (bWantBold && FPaths::FileExists(AztecBold)) ? AztecBold : Aztec;
 		if (FPaths::FileExists(Candidate))
-		{
-			// Avoid deprecated filename-based FSlateFontInfo ctors; build a tiny runtime composite font instead.
-			static TMap<FString, TSharedPtr<const FCompositeFont>> FontCache;
-			TSharedPtr<const FCompositeFont>& Cached = FontCache.FindOrAdd(Candidate);
-			if (!Cached.IsValid())
-			{
-				Cached = MakeShared<FStandaloneCompositeFont>(
-					FName(TEXT("Default")),
-					Candidate,
-					EFontHinting::Default,
-					EFontLoadingPolicy::LazyLoad
-				);
-			}
-
-			return FSlateFontInfo(Cached, Size);
-		}
-
-		// Fallback (engine default)
+			return FSlateFontInfo(Candidate, Size);
 		return FCoreStyle::GetDefaultFontStyle(Weight, Size);
+	}
+
+	// Single TTF from Content/Slate/Fonts (path relative to FontsDir).
+	FSlateFontInfo MakeFontFromFile(const TCHAR* RelativePath, int32 Size)
+	{
+		const FString Path = FontsDir() / RelativePath;
+		if (!FPaths::FileExists(Path))
+			return FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
+		return FSlateFontInfo(Path, Size);
+	}
+
+	// One theme entry point: all UI font tokens go through here.
+	FSlateFontInfo ThemeFont(const TCHAR* Weight, int32 Size)
+	{
+		switch (GFontTheme)
+		{
+		case EFontTheme::Almendra:
+			return MakeFontFromFile(TEXT("AlmendraSC-Regular.ttf"), Size);
+		case EFontTheme::Uncial:
+			return MakeFontFromFile(TEXT("UncialAntiqua-Regular.ttf"), Size);
+		case EFontTheme::NewFonts:
+		{
+			const int32 Idx = FMath::Clamp(GThemeFontIndex, 0, GThemeFontCount - 1);
+			return MakeFontFromFile(GThemeFontPaths[Idx], Size);
+		}
+		case EFontTheme::Aztec:
+		default:
+			return MakeFontAztec(Weight, Size);
+		}
 	}
 }
 
-// --- Fonts (cartoon if present; else Roboto) ---
+// --- Font theme (all text uses GFontTheme in this file) ---
 FSlateFontInfo FT66Style::Tokens::FontRegular(int32 Size)
 {
-	return MakeFont(TEXT("Regular"), Size);
+	return ThemeFont(TEXT("Regular"), Size);
 }
 FSlateFontInfo FT66Style::Tokens::FontBold(int32 Size)
 {
-	return MakeFont(TEXT("Bold"), Size);
+	return ThemeFont(TEXT("Bold"), Size);
 }
 FSlateFontInfo FT66Style::Tokens::FontTitle()
 {
-	return MakeFont(TEXT("Bold"), 52);
+	return ThemeFont(TEXT("Bold"), 52);
 }
 FSlateFontInfo FT66Style::Tokens::FontHeading()
 {
-	return MakeFont(TEXT("Bold"), 24);
+	return ThemeFont(TEXT("Bold"), 24);
 }
 FSlateFontInfo FT66Style::Tokens::FontBody()
 {
-	return MakeFont(TEXT("Regular"), 14);
+	return ThemeFont(TEXT("Regular"), 14);
 }
 FSlateFontInfo FT66Style::Tokens::FontSmall()
 {
-	return MakeFont(TEXT("Regular"), 11);
+	return ThemeFont(TEXT("Regular"), 11);
 }
 FSlateFontInfo FT66Style::Tokens::FontChip()
 {
-	return MakeFont(TEXT("Bold"), 11);
+	return ThemeFont(TEXT("Bold"), 11);
 }
 FSlateFontInfo FT66Style::Tokens::FontButton()
 {
-	return MakeFont(TEXT("Bold"), 16);
+	return ThemeFont(TEXT("Bold"), 16);
 }
 
 FName FT66Style::GetStyleSetName()
@@ -126,6 +162,23 @@ void FT66Style::Initialize()
 	StyleInstance->Set("T66.Brush.Stroke", new FSlateRoundedBoxBrush(Tokens::Stroke, Tokens::CornerRadiusSmall));
 	// Circle-ish brush (use BorderBackgroundColor for actual tint)
 	StyleInstance->Set("T66.Brush.Circle", new FSlateRoundedBoxBrush(FLinearColor::White, 110.f));
+
+	// Obsidian 9-slice brushes (texture set at runtime via EnsureObsidianBrushes).
+	// TintColor = Panel when no texture so we draw dark instead of white; set to White when texture loads.
+	GObsidianPanelBrush = FSlateBrush();
+	GObsidianPanelBrush.DrawAs = ESlateBrushDrawType::Box;
+	GObsidianPanelBrush.Tiling = ESlateBrushTileType::NoTile;
+	GObsidianPanelBrush.Margin = FMargin(ObsidianSliceMargin);
+	GObsidianPanelBrush.TintColor = FSlateColor(Tokens::Panel);
+	StyleInstance->Set("T66.Brush.ObsidianPanel", &GObsidianPanelBrush);
+
+	GObsidianButtonN = FSlateBrush();
+	GObsidianButtonN.DrawAs = ESlateBrushDrawType::Box;
+	GObsidianButtonN.Tiling = ESlateBrushTileType::NoTile;
+	GObsidianButtonN.Margin = FMargin(ObsidianSliceMargin);
+	GObsidianButtonN.TintColor = FSlateColor(Tokens::Panel);
+	GObsidianButtonH = GObsidianButtonN;
+	GObsidianButtonP = GObsidianButtonN;
 
 	// Text styles
 	{
@@ -192,9 +245,78 @@ void FT66Style::Initialize()
 			.SetHovered(FSlateRoundedBoxBrush(DangerH, Tokens::CornerRadiusSmall))
 			.SetPressed(FSlateRoundedBoxBrush(DangerP, Tokens::CornerRadiusSmall));
 		StyleInstance->Set("T66.Button.Danger", Danger);
+
+		// Placeholder until obsidian texture loads (replaced in EnsureObsidianBrushes)
+		const FLinearColor PlaceholderN = Tokens::Panel2;
+		const FLinearColor PlaceholderH = Tokens::Panel2 + FLinearColor(0.05f, 0.05f, 0.07f, 0.f);
+		const FLinearColor PlaceholderP = Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f);
+		FButtonStyle ObsidianPlaceholder = FButtonStyle()
+			.SetNormal(FSlateRoundedBoxBrush(PlaceholderN, Tokens::CornerRadiusSmall))
+			.SetHovered(FSlateRoundedBoxBrush(PlaceholderH, Tokens::CornerRadiusSmall))
+			.SetPressed(FSlateRoundedBoxBrush(PlaceholderP, Tokens::CornerRadiusSmall));
+		StyleInstance->Set("T66.Button.Obsidian", ObsidianPlaceholder);
 	}
 
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleInstance);
+}
+
+void FT66Style::EnsureObsidianBrushes(UGameInstance* GI, UObject* Requester)
+{
+	if (!StyleInstance.IsValid() || !GI || !Requester)
+	{
+		return;
+	}
+
+	UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
+	if (!TexPool)
+	{
+		return;
+	}
+
+	const TSoftObjectPtr<UTexture2D> ObsidianSoft(FSoftObjectPath(TEXT("/Game/UI/Obsidian.Obsidian")));
+	if (ObsidianSoft.IsNull())
+	{
+		return;
+	}
+
+	if (UTexture2D* Loaded = TexPool->GetLoadedTexture(ObsidianSoft))
+	{
+		GObsidianPanelBrush.SetResourceObject(Loaded);
+		GObsidianPanelBrush.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonN.SetResourceObject(Loaded);
+		GObsidianButtonN.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonH.SetResourceObject(Loaded);
+		GObsidianButtonH.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonP.SetResourceObject(Loaded);
+		GObsidianButtonP.TintColor = FSlateColor(FLinearColor::White);
+		FButtonStyle ObsidianBtn = FButtonStyle()
+			.SetNormal(GObsidianButtonN)
+			.SetHovered(GObsidianButtonH)
+			.SetPressed(GObsidianButtonP);
+		StyleInstance->Set("T66.Button.Obsidian", ObsidianBtn);
+		return;
+	}
+
+	TexPool->RequestTexture(ObsidianSoft, Requester, FName(TEXT("Obsidian")), [](UTexture2D* Loaded)
+	{
+		if (!Loaded || !StyleInstance.IsValid())
+		{
+			return;
+		}
+		GObsidianPanelBrush.SetResourceObject(Loaded);
+		GObsidianPanelBrush.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonN.SetResourceObject(Loaded);
+		GObsidianButtonN.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonH.SetResourceObject(Loaded);
+		GObsidianButtonH.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonP.SetResourceObject(Loaded);
+		GObsidianButtonP.TintColor = FSlateColor(FLinearColor::White);
+		FButtonStyle ObsidianBtn = FButtonStyle()
+			.SetNormal(GObsidianButtonN)
+			.SetHovered(GObsidianButtonH)
+			.SetPressed(GObsidianButtonP);
+		StyleInstance->Set("T66.Button.Obsidian", ObsidianBtn);
+	});
 }
 
 void FT66Style::Shutdown()
