@@ -327,7 +327,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 		Box->AddSlot().FillHeight(1.0f).Padding(0.0f, 6.0f)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 				.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
 				[ Row ]
@@ -474,7 +474,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -577,7 +577,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					.Padding(0.0f, 0.0f, 10.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 						.Padding(FMargin(FT66Style::Tokens::Space3))
 						[
 							SNew(SVerticalBox)
@@ -595,12 +595,12 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
 								[
 									SNew(SBorder)
-									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 									.Padding(FMargin(15.0f, 8.0f))
 									[
 										SAssignNew(ACBalanceTextBlock, STextBlock)
 										.Text(ACBalanceText)
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+										.Font(FT66Style::Tokens::FontBold(22))
 										.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
 									]
 								]
@@ -637,7 +637,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 					[
 						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 						.Padding(FMargin(FT66Style::Tokens::Space4))
 						[
 							SNew(SVerticalBox)
@@ -662,7 +662,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								[
 									SAssignNew(CompanionNameWidget, STextBlock)
 									.Text(CurrentCompanionName)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+									.Font(FT66Style::Tokens::FontBold(16))
 									.ColorAndOpacity(FLinearColor::White)
 									.AutoWrapText(true)
 								]
@@ -691,7 +691,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 							[
 								SAssignNew(CompanionLoreWidget, STextBlock)
 								.Text(CurrentCompanionLore)
-								.Font(FCoreStyle::GetDefaultFontStyle("Italic", 12))
+								.Font(FT66Style::Tokens::FontRegular(12))
 								.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f))
 								.AutoWrapText(true)
 							]
@@ -705,7 +705,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 								[
 									SNew(STextBlock)
 									.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionPassivePlaceholder", "Passive: Heals the player during combat"))
-									.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+									.Font(FT66Style::Tokens::FontRegular(11))
 									.ColorAndOpacity(FLinearColor(0.6f, 0.9f, 0.6f, 1.0f))
 									.AutoWrapText(true)
 								]
@@ -816,7 +816,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 						})
 						[
 							SNew(STextBlock).Text(ConfirmText)
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+							.Font(FT66Style::Tokens::FontBold(16))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 					]
@@ -836,7 +836,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
 					[
 						SNew(STextBlock).Text(BackText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+						.Font(FT66Style::Tokens::FontBold(14))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 				]

@@ -35,6 +35,7 @@
 | **Skin ownership / purchase / equip** | `UT66SkinSubsystem` (hero + companion). `GetSkinsForEntity()`, `PurchaseSkin()`, `SetEquippedSkin()`, `OnSkinStateChanged`. |
 | **AC balance / profile save** | `UT66AchievementsSubsystem`: `GetAchievementCoinsBalance()`, profile load/save. Skin *data* is in profile; skin *API* is in SkinSubsystem. |
 | **Hero/companion definitions** | `UT66GameInstance` (GetHeroData, GetCompanionData, GetAllHeroIDs, etc.) + DataTables `DT_Heroes`, `DT_Companions` + CSVs under `Content/Data/`. |
+| **Front-end UI obsidian 9-slice** | `FT66Style::EnsureObsidianBrushes()`, brushes `T66.Brush.ObsidianPanel`, `T66.Button.Obsidian`. Texture: `/Game/UI/Obsidian.Obsidian` (import via `Scripts/ImportSpriteTextures.py` from `SourceAssets/Images/obsidian.jpg`). |
 | **Character visuals / meshes / animations** | `UT66CharacterVisualSubsystem` (ApplyCharacterVisual, alert vs walk anim). Data: `DT_CharacterVisuals` / `CharacterVisuals.csv`. |
 | **Hero selection UI** | `T66HeroSelectionScreen`: `RefreshSkinsList()`, `AddSkinRowsToBox()`, `SkinsListBoxWidget`, `ACBalanceTextBlock`, `PreviewSkinIDOverride`. Uses `UT66SkinSubsystem`. |
 | **Companion selection UI** | `T66CompanionSelectionScreen`: same pattern (SkinsListBoxWidget, RefreshSkinsList, AddSkinRowsToBox); uses `UT66SkinSubsystem`. |
@@ -106,5 +107,7 @@
 - **Companion selection:** Same skin/AC wiring as hero selection (SkinsListBoxWidget, RefreshSkinsList, AddSkinRowsToBox, SkinSubsystem).
 
 **Grass on landscape:** StylizedGrassByMayu pack copied to `Content/World/StylizedGrassByMayu/`. Generate Procedural Hills Landscape (Dev) now assigns the grass landscape material and imports the Grass weight layer at full coverage so the ground is covered with grass.
+
+**Landscape look (less crunchy, more atmosphere):** GameMode `SpawnLightingIfNeeded()` spawns **Exponential Height Fog** (gentle density, soft blue-grey) and an unbound **PostProcessVolume** (exposure + slight desaturation) when missing, so distant terrain reads with atmospheric depth. Grass/ground material tuning (reduce normal strength, increase roughness, macro variation, blend variants): see **T66_Grass_Stylization_Plan.md** section “Procedural map (Polytope grass + Cozy landscape)”. Optional script: `Scripts/TuneGrassAndLandscapeMaterials.py` (run in editor) to set normal/roughness on T66MapAssets MIs if base materials expose those parameters.
 
 **Full history:** `git log` (this file is context, not a full changelog).

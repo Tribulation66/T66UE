@@ -5,6 +5,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
+#include "Styling/CoreStyle.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -49,30 +50,28 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	RefreshLeaderboard();
 
 	FText TitleText = LocSubsystem ? LocSubsystem->GetText_Leaderboard() : NSLOCTEXT("T66.Leaderboard", "Title", "LEADERBOARD");
-	FText GlobalText = LocSubsystem ? LocSubsystem->GetText_Global() : NSLOCTEXT("T66.Leaderboard", "Global", "GLOBAL");
-	FText FriendsText = LocSubsystem ? LocSubsystem->GetText_Friends() : NSLOCTEXT("T66.Leaderboard", "Friends", "FRIENDS");
-	FText StreamersText = LocSubsystem ? LocSubsystem->GetText_Streamers() : NSLOCTEXT("T66.Leaderboard", "Streamers", "STREAMERS");
 
-	// Use lambdas that capture 'this' and evaluate state dynamically
-	auto MakeFilterButton = [this](const FText& Text, ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
+	const float SquareIconSize = 48.0f;
+
+	auto MakeSquareIconButton = [this, SquareIconSize](const FString& Letter, ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
 	{
-		const FButtonStyle& Neutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-		const FTextBlockStyle& Txt = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
-
-		return SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(32.0f)
+		const FButtonStyle& ObsidianBtn = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Obsidian");
+		return SNew(SBox)
+			.WidthOverride(SquareIconSize)
+			.HeightOverride(SquareIconSize)
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center).VAlign(VAlign_Center)
 				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-				.ButtonStyle(&Neutral)
-				.ContentPadding(FMargin(10.f, 6.f))
+				.ButtonStyle(&ObsidianBtn)
+				.ContentPadding(0.0f)
 				.ButtonColorAndOpacity_Lambda([this, Filter]() -> FLinearColor {
 					return (CurrentFilter == Filter) ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
 				})
 				[
 					SNew(STextBlock)
-					.Text(Text)
-					.TextStyle(&Txt)
+					.Text(FText::FromString(Letter))
+					.Font(FT66Style::Tokens::FontBold(22))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
@@ -80,118 +79,119 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 	auto MakeTimeButton = [this](const FText& Text, ET66LeaderboardTime Time, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
 	{
-		const FButtonStyle& Neutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-		const FTextBlockStyle& Txt = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
-
-		return SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(30.0f)
+		const FButtonStyle& ObsidianBtn = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Obsidian");
+		return SNew(SBox).MinDesiredWidth(160.0f).HeightOverride(44.0f)
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center).VAlign(VAlign_Center)
 				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-				.ButtonStyle(&Neutral)
-				.ContentPadding(FMargin(10.f, 6.f))
+				.ButtonStyle(&ObsidianBtn)
+				.ContentPadding(FMargin(14.f, 10.f))
 				.ButtonColorAndOpacity_Lambda([this, Time]() -> FLinearColor {
 					return (CurrentTimeFilter == Time) ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
 				})
 				[
 					SNew(STextBlock)
 					.Text(Text)
-					.TextStyle(&Txt)
+					.Font(FT66Style::Tokens::FontBold(14))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
 	};
 
+	FText WeeklyText = LocSubsystem ? LocSubsystem->GetText_Weekly() : NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY");
+	FText AllTimeText = NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME");
+
 	ChildSlot
 	[
-		SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-		.Padding(FMargin(FT66Style::Tokens::Space3))
+		SNew(SVerticalBox)
+		// Square icon buttons (G, F, S) right above and connected to the leaderboard panel
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Right)
+		.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 		[
-			SNew(SVerticalBox)
-			// Account Status button (only visible when account is restricted)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Right)
-			.Padding(0.f, 0.f, 0.f, 10.f)
+			SNew(SBorder)
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+			.Padding(FMargin(4.0f))
 			[
-				SNew(SBox)
-				.MinDesiredWidth(160.f)
-				.HeightOverride(32.f)
-				.Visibility_Lambda([this]()
-				{
-					return (LeaderboardSubsystem && LeaderboardSubsystem->ShouldShowAccountStatusButton())
-						? EVisibility::Visible
-						: EVisibility::Collapsed;
-				})
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(2.0f, 0.0f)
+				[ MakeSquareIconButton(TEXT("G"), ET66LeaderboardFilter::Global, &ST66LeaderboardPanel::HandleGlobalClicked) ]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(2.0f, 0.0f)
+				[ MakeSquareIconButton(TEXT("F"), ET66LeaderboardFilter::Friends, &ST66LeaderboardPanel::HandleFriendsClicked) ]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(2.0f, 0.0f)
+				[ MakeSquareIconButton(TEXT("S"), ET66LeaderboardFilter::Streamers, &ST66LeaderboardPanel::HandleStreamersClicked) ]
+			]
+		]
+		// Leaderboard panel (title, Weekly/All Time, dropdowns, list)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			SNew(SBorder)
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+			.Padding(FMargin(FT66Style::Tokens::Space3))
+			[
+				SNew(SVerticalBox)
+				// Account Status button (only visible when account is restricted)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Right)
+				.Padding(0.f, 0.f, 0.f, 10.f)
 				[
-					SNew(SButton)
-					.IsEnabled_Lambda([this]() { return UIManager != nullptr; })
-					.OnClicked_Lambda([this]()
+					SNew(SBox)
+					.MinDesiredWidth(160.f)
+					.HeightOverride(32.f)
+					.Visibility_Lambda([this]()
 					{
-						if (UIManager)
-						{
-							UIManager->ShowModal(ET66ScreenType::AccountStatus);
-						}
-						return FReply::Handled();
+						return (LeaderboardSubsystem && LeaderboardSubsystem->ShouldShowAccountStatusButton())
+							? EVisibility::Visible
+							: EVisibility::Collapsed;
 					})
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-					.ContentPadding(FMargin(12.f, 6.f))
 					[
-						SNew(STextBlock)
-						.Text(LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						SNew(SButton)
+						.IsEnabled_Lambda([this]() { return UIManager != nullptr; })
+						.OnClicked_Lambda([this]()
+						{
+							if (UIManager)
+							{
+								UIManager->ShowModal(ET66ScreenType::AccountStatus);
+							}
+							return FReply::Handled();
+						})
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+						.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+						.ContentPadding(FMargin(12.f, 6.f))
+						[
+							SNew(STextBlock)
+							.Text(LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS"))
+							.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
 					]
 				]
-			]
-			// Title
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-			[
-				SNew(STextBlock)
-				.Text(TitleText)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
-			]
-			// Filter toggles (Global | Friends | Streamers)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().Padding(2.0f, 0.0f)
+				// Title
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0.0f, 0.0f, 0.0f, 12.0f)
 				[
-					MakeFilterButton(GlobalText, ET66LeaderboardFilter::Global, &ST66LeaderboardPanel::HandleGlobalClicked)
+					SNew(STextBlock)
+					.Text(TitleText)
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
 				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(2.0f, 0.0f)
+				// Time toggles (Weekly | All Time) — larger buttons
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 				[
-					MakeFilterButton(FriendsText, ET66LeaderboardFilter::Friends, &ST66LeaderboardPanel::HandleFriendsClicked)
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
+					[ MakeTimeButton(WeeklyText, ET66LeaderboardTime::Current, &ST66LeaderboardPanel::HandleCurrentClicked) ]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
+					[ MakeTimeButton(AllTimeText, ET66LeaderboardTime::AllTime, &ST66LeaderboardPanel::HandleAllTimeClicked) ]
 				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(2.0f, 0.0f)
-				[
-					MakeFilterButton(StreamersText, ET66LeaderboardFilter::Streamers, &ST66LeaderboardPanel::HandleStreamersClicked)
-				]
-			]
-			// Time toggles (Current | All Time)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
-				[
-					MakeTimeButton(NSLOCTEXT("T66.Leaderboard", "Current", "CURRENT"), ET66LeaderboardTime::Current, &ST66LeaderboardPanel::HandleCurrentClicked)
-				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
-				[
-					MakeTimeButton(NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME"), ET66LeaderboardTime::AllTime, &ST66LeaderboardPanel::HandleAllTimeClicked)
-				]
-			]
 			// Dropdowns row (Party Size | Difficulty | Type)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
@@ -212,7 +212,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text_Lambda([this]() { return FText::FromString(*SelectedPartySizeOption); })
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+							.Font(FT66Style::Tokens::FontRegular(11))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 					]
@@ -230,15 +230,15 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text_Lambda([this]() { return FText::FromString(*SelectedDifficultyOption); })
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+							.Font(FT66Style::Tokens::FontRegular(11))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 					]
 				]
-				// Type dropdown
+				// Type dropdown (width fits "High Score" / "Speed Run" without truncation)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(100.0f).HeightOverride(30.0f)
+					SNew(SBox).MinDesiredWidth(120.0f).WidthOverride(120.0f).HeightOverride(30.0f)
 					[
 						SNew(SComboBox<TSharedPtr<FString>>)
 						.OptionsSource(&TypeOptions)
@@ -248,8 +248,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text_Lambda([this]() { return FText::FromString(*SelectedTypeOption); })
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+							.Font(FT66Style::Tokens::FontRegular(11))
 							.ColorAndOpacity(FLinearColor::White)
+							.OverflowPolicy(ETextOverflowPolicy::Clip)
 						]
 					]
 				]
@@ -269,7 +270,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::AsNumber(1); })
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+							.Font(FT66Style::Tokens::FontRegular(11))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 					]
@@ -281,7 +282,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			.Padding(0.0f, 0.0f, 0.0f, 4.0f)
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
 				.Padding(FMargin(10.0f, 6.0f))
 				[
 					SNew(SHorizontalBox)
@@ -295,7 +296,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text(NSLOCTEXT("T66.Leaderboard", "Rank", "RANK"))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+							.Font(FT66Style::Tokens::FontBold(10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 						]
 					]
@@ -306,7 +307,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					[
 						SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+						.Font(FT66Style::Tokens::FontBold(10))
 						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 					]
 					// Score header (only show for High Score)
@@ -320,7 +321,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text(NSLOCTEXT("T66.Leaderboard", "HighScore", "HIGH SCORE"))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+							.Font(FT66Style::Tokens::FontBold(10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 							.Justification(ETextJustify::Right)
 						]
@@ -335,22 +336,28 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text(NSLOCTEXT("T66.Leaderboard", "Time", "TIME"))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+							.Font(FT66Style::Tokens::FontBold(10))
 							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 							.Justification(ETextJustify::Right)
 						]
 					]
 				]
 			]
-			// Entry list
+			// Entry list: taller so 11 rows visible without scrolling
 			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
+			.AutoHeight()
+			.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
-				SNew(SScrollBox)
-				+ SScrollBox::Slot()
+				SNew(SBox)
+				.HeightOverride(480.0f)
 				[
-					SAssignNew(EntryListBox, SVerticalBox)
+					SNew(SScrollBox)
+					+ SScrollBox::Slot()
+					[
+						SAssignNew(EntryListBox, SVerticalBox)
+					]
 				]
+			]
 			]
 		]
 	];
@@ -419,10 +426,11 @@ void ST66LeaderboardPanel::RebuildEntryList()
 
 	for (const FLeaderboardEntry& Entry : LeaderboardEntries)
 	{
-		// Row background color - highlight local player
+		// No solid row background so obsidian panel texture shows through; local player gets subtle tint
+		const FSlateBrush* RowBrush = FCoreStyle::Get().GetBrush("NoBorder");
 		FLinearColor RowColor = Entry.bIsLocalPlayer 
-			? FLinearColor(0.2f, 0.4f, 0.3f, 1.0f)
-			: FLinearColor(0.08f, 0.08f, 0.12f, 1.0f);
+			? FLinearColor(0.2f, 0.4f, 0.3f, 0.35f)
+			: FLinearColor::Transparent;
 
 		// Format time as MM:SS
 		FString TimeStr = FormatTime(Entry.TimeSeconds);
@@ -444,6 +452,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		// Build the row content once.
 		const TSharedRef<SWidget> RowContents =
 			SNew(SBorder)
+			.BorderImage(RowBrush)
 			.BorderBackgroundColor(RowColor)
 			.Padding(FMargin(10.0f, 8.0f))
 			[
@@ -458,7 +467,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					[
 						SNew(STextBlock)
 						.Text(FText::Format(NSLOCTEXT("T66.Leaderboard", "RankFormat", "#{0}"), FText::AsNumber(Entry.Rank)))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
+						.Font(FT66Style::Tokens::FontBold(13))
 						.ColorAndOpacity(Entry.Rank <= 3 ? FLinearColor(1.0f, 0.85f, 0.0f, 1.0f) : FLinearColor::White)
 					]
 				]
@@ -469,7 +478,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(Entry.PlayerName))
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+					.Font(FT66Style::Tokens::FontRegular(12))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				// Score (only for High Score type)
@@ -483,7 +492,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(ScoreStr))
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+						.Font(FT66Style::Tokens::FontRegular(11))
 						.ColorAndOpacity(FLinearColor(0.7f, 0.9f, 0.7f, 1.0f))
 						.Justification(ETextJustify::Right)
 					]
@@ -498,7 +507,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(TimeStr))
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+						.Font(FT66Style::Tokens::FontRegular(11))
 						.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.9f, 1.0f))
 						.Justification(ETextJustify::Right)
 					]
@@ -665,7 +674,7 @@ TSharedRef<SWidget> ST66LeaderboardPanel::MakePartySizeWidget(TSharedPtr<FString
 {
 	return SNew(STextBlock)
 		.Text(FText::FromString(*InOption))
-		.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+		.Font(FT66Style::Tokens::FontRegular(11))
 		.ColorAndOpacity(FLinearColor::White);
 }
 
@@ -673,7 +682,7 @@ TSharedRef<SWidget> ST66LeaderboardPanel::MakeDifficultyWidget(TSharedPtr<FStrin
 {
 	return SNew(STextBlock)
 		.Text(FText::FromString(*InOption))
-		.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+		.Font(FT66Style::Tokens::FontRegular(11))
 		.ColorAndOpacity(FLinearColor::White);
 }
 
@@ -681,7 +690,7 @@ TSharedRef<SWidget> ST66LeaderboardPanel::MakeTypeWidget(TSharedPtr<FString> InO
 {
 	return SNew(STextBlock)
 		.Text(FText::FromString(*InOption))
-		.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+		.Font(FT66Style::Tokens::FontRegular(11))
 		.ColorAndOpacity(FLinearColor::White);
 }
 
@@ -689,7 +698,7 @@ TSharedRef<SWidget> ST66LeaderboardPanel::MakeStageWidget(TSharedPtr<FString> In
 {
 	return SNew(STextBlock)
 		.Text(FText::FromString(*InOption))
-		.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+		.Font(FT66Style::Tokens::FontRegular(11))
 		.ColorAndOpacity(FLinearColor::White);
 }
 
@@ -761,7 +770,7 @@ FText ST66LeaderboardPanel::GetTimeText(ET66LeaderboardTime Time) const
 {
 	switch (Time)
 	{
-	case ET66LeaderboardTime::Current: return NSLOCTEXT("T66.Leaderboard", "Current", "CURRENT");
+	case ET66LeaderboardTime::Current: return LocSubsystem ? LocSubsystem->GetText_Weekly() : NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY");
 	case ET66LeaderboardTime::AllTime: return NSLOCTEXT("T66.Leaderboard", "AllTime", "ALL TIME");
 	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}

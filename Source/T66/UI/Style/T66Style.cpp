@@ -1,11 +1,15 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Style/T66Style.h"
+#include "T66.h"
 
+#include "Blueprint/UserWidget.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/T66ScreenBase.h"
 #include "Engine/Texture2D.h"
 #include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
+#include "UObject/WeakObjectPtr.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Styling/SlateTypes.h"
@@ -17,7 +21,11 @@ TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
 // 9-slice brushes for obsidian texture (filled when texture loads). Margin = fixed edge size in slate units.
 static constexpr float ObsidianSliceMargin = 24.f;
-static FSlateBrush GObsidianPanelBrush;
+// Semi-transparent so obsidian is the visible background and the game scene shows through (borders stay visible).
+static const FLinearColor ObsidianTint(1.f, 1.f, 1.f, 0.82f);
+// Panel brush: heap-allocated so the style set can own and delete it on Shutdown (passing &static would cause the set to delete static memory and crash).
+static FSlateBrush* GObsidianPanelBrushPtr = nullptr;
+// Button brushes: static, not registered with the style set (only copied into FButtonStyle when texture loads).
 static FSlateBrush GObsidianButtonN;
 static FSlateBrush GObsidianButtonH;
 static FSlateBrush GObsidianButtonP;
@@ -163,14 +171,13 @@ void FT66Style::Initialize()
 	// Circle-ish brush (use BorderBackgroundColor for actual tint)
 	StyleInstance->Set("T66.Brush.Circle", new FSlateRoundedBoxBrush(FLinearColor::White, 110.f));
 
-	// Obsidian 9-slice brushes (texture set at runtime via EnsureObsidianBrushes).
-	// TintColor = Panel when no texture so we draw dark instead of white; set to White when texture loads.
-	GObsidianPanelBrush = FSlateBrush();
-	GObsidianPanelBrush.DrawAs = ESlateBrushDrawType::Box;
-	GObsidianPanelBrush.Tiling = ESlateBrushTileType::NoTile;
-	GObsidianPanelBrush.Margin = FMargin(ObsidianSliceMargin);
-	GObsidianPanelBrush.TintColor = FSlateColor(Tokens::Panel);
-	StyleInstance->Set("T66.Brush.ObsidianPanel", &GObsidianPanelBrush);
+	// Obsidian 9-slice brushes (heap-allocated; style set owns and deletes them on Shutdown).
+	GObsidianPanelBrushPtr = new FSlateBrush();
+	GObsidianPanelBrushPtr->DrawAs = ESlateBrushDrawType::Box;
+	GObsidianPanelBrushPtr->Tiling = ESlateBrushTileType::NoTile;
+	GObsidianPanelBrushPtr->Margin = FMargin(ObsidianSliceMargin);
+	GObsidianPanelBrushPtr->TintColor = FSlateColor(Tokens::Panel);
+	StyleInstance->Set("T66.Brush.ObsidianPanel", GObsidianPanelBrushPtr);
 
 	GObsidianButtonN = FSlateBrush();
 	GObsidianButtonN.DrawAs = ESlateBrushDrawType::Box;
@@ -262,60 +269,93 @@ void FT66Style::Initialize()
 
 void FT66Style::EnsureObsidianBrushes(UGameInstance* GI, UObject* Requester)
 {
+	UE_LOG(LogT66, Log, TEXT("[Obsidian] EnsureObsidianBrushes called, GI=%p Requester=%s"), GI, Requester ? *Requester->GetName() : TEXT("null"));
+
 	if (!StyleInstance.IsValid() || !GI || !Requester)
 	{
+		UE_LOG(LogT66, Warning, TEXT("[Obsidian] Early exit: StyleInstance=%d GI=%d Requester=%d"), StyleInstance.IsValid() ? 1 : 0, GI ? 1 : 0, Requester ? 1 : 0);
 		return;
 	}
 
 	UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
 	if (!TexPool)
 	{
+		UE_LOG(LogT66, Warning, TEXT("[Obsidian] TexPool is null"));
 		return;
 	}
 
-	const TSoftObjectPtr<UTexture2D> ObsidianSoft(FSoftObjectPath(TEXT("/Game/UI/Obsidian.Obsidian")));
+	const FSoftObjectPath ObsidianPath(TEXT("/Game/UI/Obsidian.Obsidian"));
+	const TSoftObjectPtr<UTexture2D> ObsidianSoft(ObsidianPath);
+	UE_LOG(LogT66, Log, TEXT("[Obsidian] Requesting texture: %s"), *ObsidianPath.ToString());
+
 	if (ObsidianSoft.IsNull())
 	{
+		UE_LOG(LogT66, Warning, TEXT("[Obsidian] ObsidianSoft.IsNull()"));
 		return;
 	}
 
 	if (UTexture2D* Loaded = TexPool->GetLoadedTexture(ObsidianSoft))
 	{
-		GObsidianPanelBrush.SetResourceObject(Loaded);
-		GObsidianPanelBrush.TintColor = FSlateColor(FLinearColor::White);
+		UE_LOG(LogT66, Log, TEXT("[Obsidian] Texture already loaded: %s"), Loaded ? *Loaded->GetName() : TEXT("null"));
+		if (GObsidianPanelBrushPtr)
+		{
+			GObsidianPanelBrushPtr->SetResourceObject(Loaded);
+			GObsidianPanelBrushPtr->TintColor = FSlateColor(ObsidianTint);
+		}
 		GObsidianButtonN.SetResourceObject(Loaded);
-		GObsidianButtonN.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonN.TintColor = FSlateColor(ObsidianTint);
 		GObsidianButtonH.SetResourceObject(Loaded);
-		GObsidianButtonH.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonH.TintColor = FSlateColor(ObsidianTint);
 		GObsidianButtonP.SetResourceObject(Loaded);
-		GObsidianButtonP.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonP.TintColor = FSlateColor(ObsidianTint);
 		FButtonStyle ObsidianBtn = FButtonStyle()
 			.SetNormal(GObsidianButtonN)
 			.SetHovered(GObsidianButtonH)
 			.SetPressed(GObsidianButtonP);
 		StyleInstance->Set("T66.Button.Obsidian", ObsidianBtn);
+		UE_LOG(LogT66, Log, TEXT("[Obsidian] Brushes updated (sync path). Texture=%s"), Loaded ? *Loaded->GetPathName() : TEXT("null"));
 		return;
 	}
 
-	TexPool->RequestTexture(ObsidianSoft, Requester, FName(TEXT("Obsidian")), [](UTexture2D* Loaded)
+	UE_LOG(LogT66, Log, TEXT("[Obsidian] Texture not loaded yet, requesting async..."));
+	TWeakObjectPtr<UObject> RequesterWeak(Requester);
+	TexPool->RequestTexture(ObsidianSoft, Requester, FName(TEXT("Obsidian")), [RequesterWeak](UTexture2D* Loaded)
 	{
+		UE_LOG(LogT66, Log, TEXT("[Obsidian] Async callback: Loaded=%p StyleInstance=%d"), Loaded, StyleInstance.IsValid() ? 1 : 0);
 		if (!Loaded || !StyleInstance.IsValid())
 		{
+			UE_LOG(LogT66, Warning, TEXT("[Obsidian] Async callback skipped: Loaded=%d StyleInstance=%d"), Loaded ? 1 : 0, StyleInstance.IsValid() ? 1 : 0);
 			return;
 		}
-		GObsidianPanelBrush.SetResourceObject(Loaded);
-		GObsidianPanelBrush.TintColor = FSlateColor(FLinearColor::White);
+		if (GObsidianPanelBrushPtr)
+		{
+			GObsidianPanelBrushPtr->SetResourceObject(Loaded);
+			GObsidianPanelBrushPtr->TintColor = FSlateColor(ObsidianTint);
+		}
 		GObsidianButtonN.SetResourceObject(Loaded);
-		GObsidianButtonN.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonN.TintColor = FSlateColor(ObsidianTint);
 		GObsidianButtonH.SetResourceObject(Loaded);
-		GObsidianButtonH.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonH.TintColor = FSlateColor(ObsidianTint);
 		GObsidianButtonP.SetResourceObject(Loaded);
-		GObsidianButtonP.TintColor = FSlateColor(FLinearColor::White);
+		GObsidianButtonP.TintColor = FSlateColor(ObsidianTint);
 		FButtonStyle ObsidianBtn = FButtonStyle()
 			.SetNormal(GObsidianButtonN)
 			.SetHovered(GObsidianButtonH)
 			.SetPressed(GObsidianButtonP);
 		StyleInstance->Set("T66.Button.Obsidian", ObsidianBtn);
+		UE_LOG(LogT66, Log, TEXT("[Obsidian] Brushes updated (async). Texture=%s"), Loaded ? *Loaded->GetPathName() : TEXT("null"));
+
+		// Force full Slate rebuild so buttons get the new style (old style was replaced and would be use-after-free).
+		if (UT66ScreenBase* Screen = Cast<UT66ScreenBase>(RequesterWeak.Get()))
+		{
+			Screen->ForceRebuildSlate();
+			UE_LOG(LogT66, Log, TEXT("[Obsidian] ForceRebuildSlate on requester so buttons use new style"));
+		}
+		else if (UUserWidget* Widget = Cast<UUserWidget>(RequesterWeak.Get()))
+		{
+			Widget->InvalidateLayoutAndVolatility();
+			UE_LOG(LogT66, Log, TEXT("[Obsidian] Invalidated requester widget for repaint"));
+		}
 	});
 }
 
@@ -328,5 +368,7 @@ void FT66Style::Shutdown()
 
 	FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
 	StyleInstance.Reset();
+	// Style set owned and deleted the panel brush; avoid use-after-free (e.g. hot reload).
+	GObsidianPanelBrushPtr = nullptr;
 }
 

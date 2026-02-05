@@ -114,7 +114,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	};
 
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 		[
 			SNew(SVerticalBox)
 			// Header row
@@ -134,7 +134,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 					.Padding(FMargin(15.0f, 8.0f))
 					[
 						SNew(SHorizontalBox)
@@ -150,7 +150,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 						}
 						return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Balance));
 					})
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+					.Font(FT66Style::Tokens::FontBold(22))
 					.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
 						]
 					]
@@ -203,7 +203,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 					.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
 					[
 						SNew(STextBlock).Text(BackText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+						.Font(FT66Style::Tokens::FontBold(16))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 				]
@@ -261,14 +261,14 @@ void UT66AchievementsScreen::RebuildAchievementList()
 					[
 						SNew(STextBlock)
 						.Text(Achievement.DisplayName)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+						.Font(FT66Style::Tokens::FontBold(14))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 4.0f, 0.0f, 0.0f)
 					[
 						SNew(STextBlock)
 						.Text(Achievement.Description)
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+						.Font(FT66Style::Tokens::FontRegular(11))
 						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 						.AutoWrapText(true)
 					]
@@ -281,7 +281,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(ProgressStr))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+					.Font(FT66Style::Tokens::FontBold(14))
 					.ColorAndOpacity(ProgressColor)
 				]
 				// Reward
@@ -308,7 +308,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 							}
 							return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Achievement.RewardCoins));
 						})
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+						.Font(FT66Style::Tokens::FontBold(14))
 						.ColorAndOpacity(bClaimed ? FLinearColor(0.6f, 0.8f, 0.6f, 1.0f) : FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
 					]
 					+ SVerticalBox::Slot()
@@ -324,7 +324,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						[
 							SNew(STextBlock)
 							.Text(Loc ? Loc->GetText_Claim() : NSLOCTEXT("T66.Achievements", "Claim", "CLAIM"))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+							.Font(FT66Style::Tokens::FontBold(12))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 					]

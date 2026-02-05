@@ -353,7 +353,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 			.Padding(0.0f, 6.0f)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 				.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
 				[
@@ -608,7 +608,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -695,7 +695,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.Padding(0.0f, 0.0f, 10.0f, 80.0f)
 					[
 						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 						.Padding(FMargin(FT66Style::Tokens::Space3))
 						[
 							SNew(SVerticalBox)
@@ -713,12 +713,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
 								[
 									SNew(SBorder)
-									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 									.Padding(FMargin(15.0f, 8.0f))
 									[
 										SAssignNew(ACBalanceTextBlock, STextBlock)
 										.Text(ACBalanceText)
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+										.Font(FT66Style::Tokens::FontBold(22))
 										.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
 									]
 								]
@@ -836,7 +836,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.Padding(10.0f, 0.0f, 0.0f, 80.0f)
 					[
 						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 						.Padding(FMargin(FT66Style::Tokens::Space4))
 						[
 							SNew(SVerticalBox)
@@ -868,7 +868,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.VAlign(VAlign_Center)
 									[
 										SNew(SBorder)
-										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 										.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2))
 										[
 											SAssignNew(HeroNameWidget, STextBlock)
@@ -903,7 +903,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
 								[
 									SNew(SBorder)
-									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 									.Padding(FMargin(5.0f))
 									[
 										SNew(SBox).HeightOverride(360.0f)
@@ -989,7 +989,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.VAlign(VAlign_Center)
 									[
 										SNew(SBorder)
-										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 										.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2))
 										[
 											SNew(STextBlock)

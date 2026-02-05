@@ -3,6 +3,7 @@
 #include "UI/T66ScreenBase.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
+#include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
@@ -44,6 +45,11 @@ TSharedRef<SWidget> UT66ScreenBase::BuildSlateUI()
 
 void UT66ScreenBase::OnScreenActivated_Implementation()
 {
+	// Ensure obsidian 9-slice is requested for front-end panels/buttons (pool deduplicates)
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		FT66Style::EnsureObsidianBrushes(GI, this);
+	}
 	RefreshScreen();
 }
 

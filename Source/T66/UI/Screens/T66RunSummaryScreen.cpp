@@ -324,7 +324,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	auto MakePanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
 	{
 		return SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 			.Padding(FMargin(FT66Style::Tokens::Space4))
 			[
 				SNew(SVerticalBox)
@@ -345,7 +345,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	{
 		return Brush.IsValid()
 			? StaticCastSharedRef<SWidget>(SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(0.f)
 				[
 					SNew(SBox)
@@ -356,7 +356,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					]
 				])
 			: StaticCastSharedRef<SWidget>(SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(0.f)
 				[
 					SNew(SBox)
@@ -376,7 +376,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		MakePanel(
 			NSLOCTEXT("T66.RunSummary", "EventLogTitle", "EVENT LOG"),
 			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 			.Padding(FMargin(FT66Style::Tokens::Space2))
 			[
 				LogListView.IsValid() ? StaticCastSharedRef<SWidget>(LogListView.ToSharedRef()) : StaticCastSharedRef<SWidget>(SNew(SSpacer))
@@ -396,7 +396,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(FMargin(10.f, 8.f))
 				.Visibility_Lambda([this]() { return (bProofOfRunLocked && !ProofOfRunUrl.IsEmpty()) ? EVisibility::Visible : EVisibility::Collapsed; })
 				[
@@ -473,7 +473,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	TSharedRef<SWidget> ReportPrompt =
 		SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 		.Padding(FMargin(FT66Style::Tokens::Space3))
 		.Visibility_Lambda([this]() { return bReportPromptVisible ? EVisibility::Visible : EVisibility::Collapsed; })
 		[
@@ -611,7 +611,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			IdolsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(FMargin(12.f, 10.f))
 				[
 					SNew(SHorizontalBox)
@@ -675,7 +675,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				InvBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 				[
 					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 					.Padding(FMargin(12.f, 10.f))
 					[
 						SNew(SHorizontalBox)
@@ -857,7 +857,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(FMargin(FT66Style::Tokens::Space6))
 				[
 					SNew(SVerticalBox)

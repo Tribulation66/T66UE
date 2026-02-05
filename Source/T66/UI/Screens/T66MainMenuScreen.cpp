@@ -6,9 +6,12 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66UITexturePoolSubsystem.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/Style/T66Style.h"
+#include "Engine/Texture2D.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
@@ -16,6 +19,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
+#include "Styling/SlateBrush.h"
 
 UT66MainMenuScreen::UT66MainMenuScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -40,99 +44,84 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 
 	// Get localized text
-	FText TitleText = Loc ? Loc->GetText_GameTitle() : NSLOCTEXT("T66.MainMenu", "Title", "TRIBULATION 66");
 	FText NewGameText = Loc ? Loc->GetText_NewGame() : NSLOCTEXT("T66.MainMenu", "NewGame", "NEW GAME");
 	FText LoadGameText = Loc ? Loc->GetText_LoadGame() : NSLOCTEXT("T66.MainMenu", "LoadGame", "LOAD GAME");
 	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
 	FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
 	FText QuitText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
 
-	// Button style lambda
-	auto MakeMenuButton = [this](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
+	// Button: 30% smaller (63 -> 44), equal padding on all 4 sides so text isn't glued to edges
+	const float ButtonPadding = 14.0f; // same on left, top, right, bottom
+	const float ButtonSpacing = 14.0f;
+	const int32 ButtonFontSize = 44;   // 63 * 0.7
+
+	auto MakeMenuButton = [this, ButtonPadding, ButtonFontSize](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
 	{
 		const ISlateStyle& Style = FT66Style::Get();
-		const bool bNeutral = BgColor.Equals(FT66Style::Tokens::Panel2, 0.0001f);
-		const FButtonStyle& Btn = Style.GetWidgetStyle<FButtonStyle>(bNeutral ? "T66.Button.Neutral" : "T66.Button.Primary");
-		const FTextBlockStyle& Txt = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+		const FButtonStyle& Btn = Style.GetWidgetStyle<FButtonStyle>("T66.Button.Obsidian");
 
-		return SNew(SBox)
-			.WidthOverride(280.0f)
-			.HeightOverride(55.0f)
-			.Padding(FMargin(0.0f, FT66Style::Tokens::Space2 * 0.5f))
+		return SNew(SButton)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
+			.ButtonStyle(&Btn)
+			.ContentPadding(FMargin(ButtonPadding, ButtonPadding, ButtonPadding, ButtonPadding))
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
-				.Padding(FMargin(0.0f))
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
-					.ButtonStyle(&Btn)
-					[
-						SNew(STextBlock)
-						.Text(Text)
-						.TextStyle(&Txt)
-						.Justification(ETextJustify::Center)
-					]
-				]
+				SNew(STextBlock)
+				.Text(Text)
+				.Font(FT66Style::Tokens::FontBold(ButtonFontSize))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Justification(ETextJustify::Center)
 			];
 	};
 
+	// Background image brush (filled by texture pool when MainMenuBackground texture loads)
+	MainMenuBackgroundBrush = MakeShared<FSlateBrush>();
+	MainMenuBackgroundBrush->DrawAs = ESlateBrushDrawType::Box;
+	MainMenuBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
+	MainMenuBackgroundBrush->SetResourceObject(nullptr);
+
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 		[
 			SNew(SOverlay)
-			// Main two-panel layout
+			// Full-screen background image (Content/UI/MainMenu/MainMenuBackgroundV3)
 			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SAssignNew(MainMenuBackgroundImage, SImage)
+				.Image(TAttribute<const FSlateBrush*>::Create([this]() -> const FSlateBrush* { return MainMenuBackgroundBrush.IsValid() ? MainMenuBackgroundBrush.Get() : nullptr; }))
+			]
+			// Menu buttons: left side, top aligned with leaderboard panel (moved up to match panel start)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(40.0f, 380.0f, 0.0f, 0.0f)
 			[
 				SNew(SHorizontalBox)
-				// Left Panel - Navigation
 				+ SHorizontalBox::Slot()
-				.FillWidth(0.4f)
-				.Padding(40.0f, 60.0f, 20.0f, 60.0f)
+				.AutoWidth()
 				[
 					SNew(SVerticalBox)
-					// Title
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Left)
-					.Padding(0.0f, 0.0f, 0.0f, 50.0f)
-					[
-						SNew(STextBlock)
-						.Text(TitleText)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Title"))
-					]
-					// Button stack
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.VAlign(VAlign_Top)
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							MakeMenuButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, FT66Style::Tokens::Accent2)
-						]
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, FT66Style::Tokens::Accent2 * 0.85f)
-						]
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							MakeMenuButton(SettingsText, &UT66MainMenuScreen::HandleSettingsClicked)
-						]
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							MakeMenuButton(AchievementsText, &UT66MainMenuScreen::HandleAchievementsClicked)
-						]
-					]
-					// Spacer
-					+ SVerticalBox::Slot().FillHeight(1.0f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
+					[ MakeMenuButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, FT66Style::Tokens::Accent2) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
+					[ MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, FT66Style::Tokens::Accent2) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
+					[ MakeMenuButton(SettingsText, &UT66MainMenuScreen::HandleSettingsClicked) ]
+					+ SVerticalBox::Slot().AutoHeight()
+					[ MakeMenuButton(AchievementsText, &UT66MainMenuScreen::HandleAchievementsClicked) ]
 				]
-				// Right Panel - Leaderboard
-				+ SHorizontalBox::Slot()
-				.FillWidth(0.6f)
-				.Padding(20.0f, 60.0f, 40.0f, 60.0f)
+			]
+			// Bottom-right: Leaderboard (taller, less wide)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Bottom)
+			.Padding(0.0f, 0.0f, 40.0f, 40.0f)
+			[
+				SNew(SBox)
+				.WidthOverride(720.0f)
 				[
 					SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
 					.LocalizationSubsystem(Loc)
@@ -181,7 +170,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						// Globe icon placeholder - using a stylized "L" for Language
 						SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.Common", "GlobeIcon", "🌐"))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
+						.Font(FT66Style::Tokens::FontBold(20))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 				]
@@ -193,6 +182,29 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("MainMenuScreen activated!"));
+
+	// Ensure obsidian 9-slice is loaded for buttons/panels, then request main menu background texture
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		FT66Style::EnsureObsidianBrushes(GI, this);
+		if (UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>())
+		{
+			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MainMenuBackgroundV3.MainMenuBackgroundV3")));
+			TSharedPtr<FSlateBrush> Brush = MainMenuBackgroundBrush;
+			TSharedPtr<SImage> Image = MainMenuBackgroundImage;
+			TexPool->RequestTexture(MainMenuBgSoft, this, TEXT("MainMenuBackground"), [Brush, Image](UTexture2D* Loaded)
+			{
+				if (Brush.IsValid())
+				{
+					Brush->SetResourceObject(Loaded);
+					if (Image.IsValid() && Brush.IsValid())
+					{
+						Image->SetImage(Brush.Get());
+					}
+				}
+			});
+		}
+	}
 
 	// Important: Screen UI can be built before UIManager is assigned by UT66UIManager.
 	// Inject it here so the leaderboard panel can open modals on row click.

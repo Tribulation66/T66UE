@@ -115,7 +115,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
 		[
 			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 			.Padding(FMargin(FT66Style::Tokens::Space3))
 			[
 				SNew(STextBlock)
@@ -247,7 +247,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(FMargin(FT66Style::Tokens::Space3))
 				[
 					SNew(STextBlock)
@@ -273,7 +273,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		.Padding(FMargin(60.f))
 		[
 			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 			.Padding(FMargin(FT66Style::Tokens::Space5))
 			[
 				SNew(SVerticalBox)

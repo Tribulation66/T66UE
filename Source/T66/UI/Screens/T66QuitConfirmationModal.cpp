@@ -43,7 +43,7 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(FMargin(40.0f, 30.0f))
 				[
 					SNew(SVerticalBox)

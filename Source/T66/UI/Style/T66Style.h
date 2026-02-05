@@ -25,6 +25,13 @@ public:
 	static const ISlateStyle& Get();
 	static FName GetStyleSetName();
 
+	/**
+	 * Ensure obsidian 9-slice texture is loaded and brushes are filled.
+	 * Call from a front-end screen (e.g. MainMenu) so brushes are ready for panels/buttons.
+	 * Texture path: /Game/UI/Obsidian.Obsidian (import SourceAssets/Images/obsidian.jpg via Scripts).
+	 */
+	static void EnsureObsidianBrushes(class UGameInstance* GI, class UObject* Requester);
+
 	// ----- Design tokens -----
 	struct Tokens
 	{
@@ -54,7 +61,7 @@ public:
 		static constexpr float Space6 = 24.f;
 		static constexpr float Space8 = 32.f;
 
-		// Fonts (Roboto fallback)
+		// Font theme: all text uses these. Change the theme in T66Style.cpp (GFontTheme) to switch fonts project-wide.
 		static FSlateFontInfo FontRegular(int32 Size);
 		static FSlateFontInfo FontBold(int32 Size);
 		static FSlateFontInfo FontTitle();

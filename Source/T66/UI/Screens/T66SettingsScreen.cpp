@@ -87,7 +87,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 			.HeightOverride(700.0f)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(FMargin(0.0f))
 				[
 					SNew(SVerticalBox)
@@ -96,7 +96,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 					.AutoHeight()
 					[
 						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 						.Padding(FMargin(15.0f, 10.0f))
 						[
 							SNew(SHorizontalBox)
@@ -131,7 +131,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 									.ButtonColorAndOpacity(FLinearColor(0.5f, 0.2f, 0.2f, 1.0f))
 									[
 										SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "CloseX", "X"))
-										.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
+										.Font(FT66Style::Tokens::FontBold(18))
 										.ColorAndOpacity(FLinearColor::White)
 									]
 								]
@@ -460,7 +460,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 				+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
 				[
 					SNew(STextBlock).Text(Label)
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+					.Font(FT66Style::Tokens::FontRegular(14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f, 0.0f, 0.0f)
@@ -475,7 +475,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 							.ButtonColorAndOpacity_Lambda([GetValue]() { return GetValue() ? FLinearColor(0.2f, 0.5f, 0.3f, 1.0f) : FLinearColor(0.15f, 0.15f, 0.2f, 1.0f); })
 							[
 								SNew(STextBlock).Text(OnText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
+								.Font(FT66Style::Tokens::FontBold(11))
 								.ColorAndOpacity(FLinearColor::White)
 							]
 						]
@@ -489,7 +489,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 							.ButtonColorAndOpacity_Lambda([GetValue]() { return !GetValue() ? FLinearColor(0.5f, 0.2f, 0.2f, 1.0f) : FLinearColor(0.15f, 0.15f, 0.2f, 1.0f); })
 							[
 								SNew(STextBlock).Text(OffText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
+								.Font(FT66Style::Tokens::FontBold(11))
 								.ColorAndOpacity(FLinearColor::White)
 							]
 						]
@@ -552,7 +552,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				+ SHorizontalBox::Slot().FillWidth(0.4f).VAlign(VAlign_Center)
 				[
 					SNew(STextBlock).Text(Label)
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+					.Font(FT66Style::Tokens::FontRegular(14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.6f)
@@ -571,14 +571,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 								.Padding(FMargin(10.0f, 4.0f))
 								[
 									SNew(STextBlock).Text_Lambda([GetCurrentValue]() { return GetCurrentValue(); })
-									.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+									.Font(FT66Style::Tokens::FontRegular(12))
 									.ColorAndOpacity(FLinearColor::White)
 								]
 							]
 							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 							[
 								SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
-								.Font(FCoreStyle::GetDefaultFontStyle("Regular", 10))
+								.Font(FT66Style::Tokens::FontRegular(10))
 								.ColorAndOpacity(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
 							]
 						]
@@ -740,13 +740,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					+ SHorizontalBox::Slot().FillWidth(1.0f)
 					[
 						SNew(STextBlock).Text(Loc ? Loc->GetText_BestPerformance() : NSLOCTEXT("T66.Settings.Fallback", "Best Performance", "Best Performance"))
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+						.Font(FT66Style::Tokens::FontRegular(11))
 						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Right)
 					[
 						SNew(STextBlock).Text(Loc ? Loc->GetText_BestQuality() : NSLOCTEXT("T66.Settings.Fallback", "Best Quality", "Best Quality"))
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+						.Font(FT66Style::Tokens::FontRegular(11))
 						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
 					]
 				]
@@ -796,7 +796,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				.ButtonColorAndOpacity(FLinearColor(0.2f, 0.5f, 0.3f, 1.0f))
 				[
 					SNew(STextBlock).Text(Loc ? Loc->GetText_Apply() : NSLOCTEXT("T66.Settings.Fallback", "APPLY", "APPLY"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+					.Font(FT66Style::Tokens::FontBold(14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 			]
@@ -822,14 +822,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				[
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_KeepTheseSettingsTitle() : NSLOCTEXT("T66.Settings.Fallback", "Keep these settings?", "Keep these settings?"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
+					.Font(FT66Style::Tokens::FontBold(18))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 15.f)
 				[
 					SAssignNew(VideoModeConfirmCountdownText, STextBlock)
 					.Text(FText::GetEmpty())
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
+					.Font(FT66Style::Tokens::FontRegular(13))
 					.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.9f, 1.f))
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
@@ -843,7 +843,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 						[
 							SNew(STextBlock)
 							.Text(Loc ? Loc->GetText_Keep() : NSLOCTEXT("T66.Settings.Fallback", "KEEP", "KEEP"))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
+							.Font(FT66Style::Tokens::FontBold(13))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 					]
@@ -855,7 +855,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 						[
 							SNew(STextBlock)
 							.Text(Loc ? Loc->GetText_Revert() : NSLOCTEXT("T66.Settings.Fallback", "REVERT", "REVERT"))
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
+							.Font(FT66Style::Tokens::FontBold(13))
 							.ColorAndOpacity(FLinearColor::White)
 						]
 					]
@@ -897,7 +897,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 			[
 				SNew(STextBlock)
 				.Text(Text)
-				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 11))
+				.Font(FT66Style::Tokens::FontBold(11))
 				.ColorAndOpacity(FLinearColor::White)
 			]
 		];
@@ -931,7 +931,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 				[
 					SAssignNew(KeyText, STextBlock)
 					.Text(KeyToText(OldKey))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+					.Font(FT66Style::Tokens::FontBold(12))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 			]
@@ -948,7 +948,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					.ButtonColorAndOpacity(FLinearColor(0.25f, 0.4f, 0.7f, 1.0f))
 					[
 						SNew(STextBlock).Text(RebindText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+						.Font(FT66Style::Tokens::FontBold(10))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 				]
@@ -974,7 +974,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					.ButtonColorAndOpacity(FLinearColor(0.3f, 0.2f, 0.2f, 1.0f))
 					[
 						SNew(STextBlock).Text(ClearText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 10))
+						.Font(FT66Style::Tokens::FontRegular(10))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 				]
@@ -997,7 +997,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 				[
 					SNew(STextBlock).Text(Label)
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
+					.Font(FT66Style::Tokens::FontRegular(13))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
@@ -1005,7 +1005,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 6.f, 0.f)
 					[
-						SNew(STextBlock).Text(PrimaryText).Font(FCoreStyle::GetDefaultFontStyle("Regular", 10)).ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.75f, 1.f))
+						SNew(STextBlock).Text(PrimaryText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.75f, 1.f))
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
@@ -1017,7 +1017,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 6.f, 0.f)
 					[
-						SNew(STextBlock).Text(SecondaryText).Font(FCoreStyle::GetDefaultFontStyle("Regular", 10)).ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.75f, 1.f))
+						SNew(STextBlock).Text(SecondaryText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.75f, 1.f))
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
@@ -1040,7 +1040,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		[
 			SAssignNew(RebindStatusText, STextBlock)
 			.Text(Loc ? Loc->GetText_RebindInstructions() : NSLOCTEXT("T66.Settings.Fallback", "RebindInstructions", "Click REBIND, then press a key/button (Esc cancels)."))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+			.Font(FT66Style::Tokens::FontRegular(12))
 			.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
 		]
 		+ SVerticalBox::Slot().FillHeight(1.0f)
@@ -1145,7 +1145,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 				.ButtonColorAndOpacity(FLinearColor(0.4f, 0.3f, 0.2f, 1.0f))
 				[
 					SNew(STextBlock).Text(Loc ? Loc->GetText_RestoreDefaults() : NSLOCTEXT("T66.Settings.Fallback", "Restore Defaults", "RESTORE DEFAULTS"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+					.Font(FT66Style::Tokens::FontBold(12))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 			]
@@ -1167,7 +1167,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				+ SHorizontalBox::Slot().FillWidth(0.3f).VAlign(VAlign_Center)
 				[
 					SNew(STextBlock).Text(Label)
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+					.Font(FT66Style::Tokens::FontRegular(14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.55f).VAlign(VAlign_Center).Padding(10.0f, 0.0f)
@@ -1184,7 +1184,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 						const int32 Percent = FMath::RoundToInt(GetValue() * 100.0f);
 						return FText::FromString(FString::Printf(TEXT("%d%%"), Percent));
 					})
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
+					.Font(FT66Style::Tokens::FontRegular(13))
 					.ColorAndOpacity(FLinearColor::White)
 					.Justification(ETextJustify::Right)
 				]
@@ -1227,7 +1227,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				[
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_MuteWhenUnfocused() : NSLOCTEXT("T66.Settings.Fallback", "Mute when unfocused", "Mute when unfocused"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+					.Font(FT66Style::Tokens::FontRegular(14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
@@ -1246,7 +1246,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 							const bool bOn = PS ? PS->GetMuteWhenUnfocused() : false;
 							return bOn ? (Loc ? Loc->GetText_On() : NSLOCTEXT("T66.Settings", "On", "ON")) : (Loc ? Loc->GetText_Off() : NSLOCTEXT("T66.Settings", "Off", "OFF"));
 						})
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12))
+						.Font(FT66Style::Tokens::FontBold(12))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 				]
@@ -1263,7 +1263,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				[
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_OutputDevice() : NSLOCTEXT("T66.Settings.Fallback", "Output Device", "Output Device"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+					.Font(FT66Style::Tokens::FontRegular(14))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.6f)
@@ -1274,7 +1274,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 					[
 						SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.Settings.Fallback", "Default", "Default"))
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+						.Font(FT66Style::Tokens::FontRegular(12))
 						.ColorAndOpacity(FLinearColor(0.75f, 0.75f, 0.8f, 1.0f))
 					]
 				]
@@ -1284,7 +1284,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_SubtitlesAlwaysOn() : NSLOCTEXT("T66.Settings.Fallback", "Subtitles: always on", "Subtitles: always on"))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+			.Font(FT66Style::Tokens::FontRegular(12))
 			.ColorAndOpacity(FLinearColor(0.75f, 0.75f, 0.8f, 1.0f))
 			.AutoWrapText(true)
 		];
@@ -1300,7 +1300,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_CrashingChecklistHeader() : NSLOCTEXT("T66.Settings.Fallback", "CrashingChecklistHeader", "If your game is crashing, try these steps:"))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+			.Font(FT66Style::Tokens::FontBold(16))
 			.ColorAndOpacity(FLinearColor::White)
 		]
 		// Checklist
@@ -1315,7 +1315,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 				[
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_CrashingChecklistBody() : FText::GetEmpty())
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
+					.Font(FT66Style::Tokens::FontRegular(13))
 					.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.0f))
 					.AutoWrapText(true)
 				]
@@ -1331,7 +1331,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 				.ButtonColorAndOpacity(FLinearColor(0.5f, 0.4f, 0.1f, 1.0f))
 				[
 					SNew(STextBlock).Text(Loc ? Loc->GetText_ApplySafeModeSettings() : NSLOCTEXT("T66.Settings.Fallback", "Apply Safe Mode Settings", "Apply Safe Mode Settings"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
+					.Font(FT66Style::Tokens::FontBold(13))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 			]
@@ -1350,14 +1350,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_StillHavingIssues() : NSLOCTEXT("T66.Settings.Fallback", "Still having issues?", "Still having issues?"))
-			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+			.Font(FT66Style::Tokens::FontBold(14))
 			.ColorAndOpacity(FLinearColor::White)
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 10.0f)
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_ReportBugDescription() : NSLOCTEXT("T66.Settings.Fallback", "ReportBugDescription", "Report a bug to help us fix it. Your report will include basic system info."))
-			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+			.Font(FT66Style::Tokens::FontRegular(12))
 			.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f))
 			.AutoWrapText(true)
 		]
@@ -1370,7 +1370,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 				.ButtonColorAndOpacity(FLinearColor(0.3f, 0.4f, 0.6f, 1.0f))
 				[
 					SNew(STextBlock).Text(Loc ? Loc->GetText_ReportBug() : NSLOCTEXT("T66.ReportBug", "Title", "REPORT BUG"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 13))
+					.Font(FT66Style::Tokens::FontBold(13))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 			]

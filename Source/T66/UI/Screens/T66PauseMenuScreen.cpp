@@ -78,7 +78,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
 				.Padding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))
 				[
 					SNew(SVerticalBox)
