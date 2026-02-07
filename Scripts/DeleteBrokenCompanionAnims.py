@@ -22,7 +22,7 @@ def main():
         
         for skin in ["Default", "Beach"]:
             skin_key = skin if skin == "Default" else "Beach"
-            for anim_type in ["Walking", "Alert"]:
+            for anim_type in ["Walking", "Alert", "Running"]:
                 # Old naming (without _Anim suffix)
                 assets_to_delete.append(f"{base_path}/{skin_key}/AM_{companion_id}_{skin_key}_{anim_type}")
                 # New naming (with _Anim suffix) - might have wrong internal name

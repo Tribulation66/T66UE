@@ -25,6 +25,13 @@
 #include "Factories/MaterialFactoryNew.h"
 #include "AssetToolsModule.h"
 #include "IAssetTools.h"
+#include "GameFramework/PlayerStart.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/SkyLight.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "Misc/PackageName.h"
+#include "Engine/World.h"
 
 // Console command for running setup
 static FAutoConsoleCommand T66SetupCommand(
@@ -41,6 +48,21 @@ static FAutoConsoleCommand T66SetupCommand(
 			else
 			{
 				UE_LOG(LogT66Editor, Error, TEXT("T66UISetupSubsystem not available"));
+			}
+		}
+	})
+);
+
+static FAutoConsoleCommand T66CreateLabLevelCommand(
+	TEXT("T66CreateLabLevel"),
+	TEXT("Creates The Lab level at Content/Maps/LabLevel (PlayerStart, lighting, GameMode)."),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		if (GEditor)
+		{
+			if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
+			{
+				Sub->CreateLabLevel();
 			}
 		}
 	})
@@ -590,6 +612,71 @@ bool UT66UISetupSubsystem::CreatePlaceholderMaterial()
 
 	UE_LOG(LogT66Editor, Warning, TEXT("Failed to save PlaceholderMaterial"));
 	return false;
+}
+
+bool UT66UISetupSubsystem::CreateLabLevel()
+{
+	const FString LabLevelPath = TEXT("/Game/Maps/LabLevel");
+
+	// Create a new world in our package (no template duplication = no cross-package BSP references)
+	UPackage* NewPackage = CreatePackage(*LabLevelPath);
+	if (!NewPackage)
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("CreateLabLevel: CreatePackage failed"));
+		return false;
+	}
+	UWorld* World = UWorld::CreateWorld(EWorldType::Editor, false, FName("LabLevel"), NewPackage, false);
+	if (!World || !World->PersistentLevel)
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("CreateLabLevel: CreateWorld failed"));
+		return false;
+	}
+	World->SetFlags(RF_Standalone | RF_Public);
+	World->PersistentLevel->SetFlags(RF_Standalone | RF_Public);
+	if (World->GetWorldSettings())
+	{
+		World->GetWorldSettings()->SetFlags(RF_Standalone | RF_Public);
+	}
+
+	// GameMode: same as GameplayLevel
+	const FString GameModePath = TEXT("/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode_C");
+	UClass* GameModeClass = LoadClass<AGameModeBase>(nullptr, *GameModePath);
+	if (GameModeClass && World->GetWorldSettings())
+	{
+		World->GetWorldSettings()->DefaultGameMode = GameModeClass;
+	}
+
+	// Spawn PlayerStart at origin (Lab spawn uses 0,0,200)
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.OverrideLevel = World->PersistentLevel;
+	FVector PlayerStartLoc(0.f, 0.f, 200.f);
+	World->SpawnActor<APlayerStart>(APlayerStart::StaticClass(), PlayerStartLoc, FRotator::ZeroRotator, SpawnParams);
+
+	// Spawn DirectionalLight
+	ADirectionalLight* DirLight = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector::ZeroVector, FRotator(-45.f, 0.f, 0.f), SpawnParams);
+	if (DirLight && DirLight->GetLightComponent())
+	{
+		DirLight->GetLightComponent()->SetIntensity(10.f);
+	}
+
+	// Spawn SkyLight
+	World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+	World->MarkPackageDirty();
+	NewPackage->MarkPackageDirty();
+
+	// Save to disk
+	FString Filename = FPackageName::LongPackageNameToFilename(LabLevelPath, FPackageName::GetMapPackageExtension());
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = RF_Standalone;
+	if (!UPackage::SavePackage(NewPackage, World, *Filename, SaveArgs))
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("CreateLabLevel: SavePackage failed for %s"), *LabLevelPath);
+		return false;
+	}
+	UE_LOG(LogT66Editor, Log, TEXT("CreateLabLevel: created and saved LabLevel at %s"), *LabLevelPath);
+	return true;
 }
 
 void UT66UISetupSubsystem::PrintSetupStatus()

@@ -2,7 +2,7 @@
 Import companion skeletal meshes, animations, and portraits from SourceAssets/Companions.
 
 Expects: SourceAssets/Companions/Companion N/ with:
-  - Def_CON/   (Default skin): Meshy_AI_Character_output.fbx, Meshy_AI_Animation_Walking_withSkin.fbx, Meshy_AI_Animation_Alert_withSkin.fbx
+  - Def_CON/   (Default skin): Meshy_AI_Character_output.fbx, Meshy_AI_Animation_Walking_withSkin.fbx, Meshy_AI_Animation_Alert_withSkin.fbx, Meshy_AI_Animation_Running_withSkin.fbx
   - Beach_CON/ (Beach skin):   same
   - Portrait/  one PNG for the companion portrait
 
@@ -147,6 +147,7 @@ def main():
             mesh_fbx = _find_fbx_in_dir(src_dir, "Character_output")
             walk_fbx = _find_fbx_in_dir(src_dir, "Walking")
             alert_fbx = _find_fbx_in_dir(src_dir, "Alert")
+            run_fbx = _find_fbx_in_dir(src_dir, "Running")
 
             # Import mesh first
             if mesh_fbx:
@@ -166,6 +167,12 @@ def main():
                 anim_name = f"AM_{companion_id}_{dest_sub}_Alert"
                 _import_fbx_skeletal(alert_fbx, game_dest, anim_name, import_animations=True, import_mesh=True)
                 unreal.log(f"[ImportCompanions] Anim {companion_id} {dest_sub} Alert: {alert_fbx}")
+                imported += 1
+            if run_fbx:
+                anim_name = f"AM_{companion_id}_{dest_sub}_Running"
+                # import_mesh=False: skeleton already exists from Character_output; avoid overwriting materials
+                _import_fbx_skeletal(run_fbx, game_dest, anim_name, import_animations=True, import_mesh=False)
+                unreal.log(f"[ImportCompanions] Anim {companion_id} {dest_sub} Running: {run_fbx}")
                 imported += 1
 
     unreal.log(f"=== ImportCompanions: DONE (imported {imported} assets) ===")

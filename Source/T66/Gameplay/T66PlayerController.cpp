@@ -15,10 +15,12 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
+#include "UI/T66LabOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
+#include "UI/T66CollectorOverlayWidget.h"
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66CashTruckInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
@@ -26,6 +28,7 @@
 #include "Gameplay/T66StageBoostGoldInteractable.h"
 #include "Gameplay/T66StageBoostLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
@@ -480,11 +483,15 @@ bool AT66PlayerController::IsFrontendLevel() const
 bool AT66PlayerController::IsGameplayLevel() const
 {
 	if (!GetWorld()) return false;
-	
+	if (UGameInstance* GI = GetWorld()->GetGameInstance())
+	{
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+		{
+			if (T66GI->bIsLabLevel) return true;
+		}
+	}
 	FString MapName = GetWorld()->GetMapName();
 	MapName = UWorld::RemovePIEPrefix(MapName);
-	
-	// Check if this is a gameplay level
 	return MapName.Contains(TEXT("Gameplay"));
 }
 
@@ -784,6 +791,8 @@ void AT66PlayerController::SetupGameplayHUD()
 	{
 		GameplayHUDWidget->AddToViewport(0);
 	}
+	// The Lab: no floating panel; player interacts with The Collector NPC to open full-screen Collector UI.
+	// (LabOverlayWidget not created when in Lab.)
 }
 
 void AT66PlayerController::HandleToggleHUDPressed()
@@ -1093,6 +1102,25 @@ void AT66PlayerController::OpenVendorOverlay()
 	if (VendorOverlayWidget && !VendorOverlayWidget->IsInViewport())
 	{
 		VendorOverlayWidget->AddToViewport(100); // above HUD
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+	}
+}
+
+void AT66PlayerController::OpenCollectorOverlay()
+{
+	if (!IsGameplayLevel()) return;
+
+	if (!CollectorOverlayWidget)
+	{
+		CollectorOverlayWidget = CreateWidget<UT66CollectorOverlayWidget>(this, UT66CollectorOverlayWidget::StaticClass());
+	}
+
+	if (CollectorOverlayWidget && !CollectorOverlayWidget->IsInViewport())
+	{
+		CollectorOverlayWidget->AddToViewport(100);
 		FInputModeGameAndUI InputMode;
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);

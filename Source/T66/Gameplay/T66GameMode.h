@@ -21,6 +21,7 @@ class AT66StageBoostGate;
 class AT66StageBoostGoldInteractable;
 class AT66StageBoostLootInteractable;
 class AT66StageEffectTile;
+class AT66SpawnPlateau;
 class AT66TutorialManager;
 class UT66GameInstance;
 class AT66RecruitableCompanion;
@@ -134,6 +135,12 @@ protected:
 	/** Spawn a PlayerStart if none exists */
 	void SpawnPlayerStartIfNeeded();
 
+	/** Lab only: one central floor ~1/4 gameplay map size so the hero doesn't fall. */
+	void SpawnLabFloorIfNeeded();
+
+	/** Lab only: spawn The Collector NPC if not present. */
+	void SpawnLabCollectorIfNeeded();
+
 	/** Spawn the selected companion (if any) and attach follow behavior */
 	void SpawnCompanionForPlayer(AController* Player);
 
@@ -161,9 +168,17 @@ protected:
 	/** Spawn the 4 corner houses + 4 NPC cylinders (vendor/gambler/ouroboros/saint). */
 	void SpawnCornerHousesAndNPCs();
 
+	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
+	void SpawnLevelContentAfterLandscapeReady();
+
+	/** Spawn a flat plateau so its top surface is at TopCenterLoc (used under NPCs and world interactables). */
+	void SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc);
+
 	void SpawnTricksterAndCowardiceGate();
 
 	bool IsColiseumStage() const;
+	/** True when current level is The Lab (practice room). */
+	bool IsLabLevel() const;
 	void ResetColiseumState();
 
 	/** Called when stage timer changes (we use it to detect "timer started"). */
@@ -174,6 +189,38 @@ protected:
 	void HandleDifficultyChanged();
 
 	void TrySpawnLoanSharkIfNeeded();
+
+public:
+	// ============================================
+	// The Lab: spawn / reset (only used when IsLabLevel())
+	// ============================================
+
+	/** Spawn one mob in the Lab (CharacterVisualID: RegularEnemy, Leprechaun, GoblinThief, UniqueEnemy). Returns spawned actor or null. */
+	UFUNCTION(BlueprintCallable, Category = "Lab")
+	AActor* SpawnLabMob(FName CharacterVisualID);
+
+	/** Spawn one boss in the Lab from Bosses DataTable. Returns spawned actor or null. */
+	UFUNCTION(BlueprintCallable, Category = "Lab")
+	AActor* SpawnLabBoss(FName BossID);
+
+	/** Spawn Tree of Life in the Lab (NPC tab). Returns spawned actor or null. */
+	UFUNCTION(BlueprintCallable, Category = "Lab")
+	AActor* SpawnLabTreeOfLife();
+
+	/** Spawn an interactable in the Lab (TreeOfLife, CashTruck, WheelSpin, IdolAltar). Returns spawned actor or null. */
+	UFUNCTION(BlueprintCallable, Category = "Lab")
+	AActor* SpawnLabInteractable(FName InteractableID);
+
+	/** Random position on the Lab floor with min distance from existing Lab-spawned actors. */
+	FVector GetRandomLabSpawnLocation() const;
+
+	/** Destroy all actors spawned via Lab panels and clear the list. */
+	UFUNCTION(BlueprintCallable, Category = "Lab")
+	void ResetLabSpawnedActors();
+
+	/** Number of actors currently tracked as Lab-spawned (for UI). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Lab")
+	int32 GetLabSpawnedActorsCount() const { return LabSpawnedActors.Num(); }
 
 private:
 	/** Track spawned setup actors for cleanup */
@@ -221,4 +268,10 @@ private:
 	int32 ColiseumBossesRemaining = 0;
 	bool bColiseumExitGateSpawned = false;
 	FVector ColiseumCenter = FVector(0.f, -5200.f, 200.f);
+
+	// The Lab: actors spawned from Lab panels (for Reset Enemies).
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> LabSpawnedActors;
+
+	FVector GetLabSpawnLocation() const;
 };

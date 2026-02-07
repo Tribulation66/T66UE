@@ -43,32 +43,6 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
 	FText ReportBugText = Loc ? Loc->GetText_ReportBug() : NSLOCTEXT("T66.PauseMenu", "ReportBug", "REPORT BUG");
 
-	auto MakePauseButton = [this](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
-	{
-		const FButtonStyle& Btn = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-		const FTextBlockStyle& Txt = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
-
-		return SNew(SBox)
-			.WidthOverride(320.0f)
-			.HeightOverride(50.0f)
-			.Padding(FMargin(0.0f, 6.0f))
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
-				.ButtonStyle(&Btn)
-				.ButtonColorAndOpacity(BgColor)
-				.ContentPadding(FMargin(18.f, 10.f))
-				[
-					SNew(STextBlock)
-					.Text(Text)
-					.TextStyle(&Txt)
-					.Justification(ETextJustify::Center)
-				]
-			];
-	};
-
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Tokens::Scrim)
@@ -78,7 +52,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 				.Padding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))
 				[
 					SNew(SVerticalBox)
@@ -89,16 +63,16 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 						.Font(FT66Style::Tokens::FontBold(36))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-					[ MakePauseButton(ResumeText, &UT66PauseMenuScreen::HandleResumeClicked, FLinearColor(0.15f, 0.4f, 0.2f, 1.0f)) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-					[ MakePauseButton(SaveAndQuitText, &UT66PauseMenuScreen::HandleSaveAndQuitClicked, FLinearColor(0.25f, 0.25f, 0.35f, 1.0f)) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-					[ MakePauseButton(RestartText, &UT66PauseMenuScreen::HandleRestartClicked, FLinearColor(0.3f, 0.25f, 0.2f, 1.0f)) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-					[ MakePauseButton(SettingsText, &UT66PauseMenuScreen::HandleSettingsClicked, FLinearColor(0.2f, 0.2f, 0.28f, 1.0f)) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-					[ MakePauseButton(ReportBugText, &UT66PauseMenuScreen::HandleReportBugClicked, FLinearColor(0.28f, 0.2f, 0.2f, 1.0f)) ]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+					[ FT66Style::MakeButton(ResumeText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleResumeClicked), ET66ButtonType::Success, 320.f, 50.f) ]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+					[ FT66Style::MakeButton(SaveAndQuitText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSaveAndQuitClicked), ET66ButtonType::Neutral, 320.f, 50.f) ]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+					[ FT66Style::MakeButton(RestartText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleRestartClicked), ET66ButtonType::Danger, 320.f, 50.f) ]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+					[ FT66Style::MakeButton(SettingsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSettingsClicked), ET66ButtonType::Neutral, 320.f, 50.f) ]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+					[ FT66Style::MakeButton(ReportBugText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleReportBugClicked), ET66ButtonType::Neutral, 320.f, 50.f) ]
 				]
 			]
 		];

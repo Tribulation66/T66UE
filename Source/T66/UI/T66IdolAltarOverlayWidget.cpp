@@ -9,6 +9,7 @@
 #include "Data/T66DataTypes.h"
 #include "Engine/Texture2D.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66Style.h"
 
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -162,7 +163,7 @@ public:
 				[
 					SAssignNew(CenterTextWidget, STextBlock)
 					.Text(InArgs._CenterText)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+					.Font(FT66Style::Tokens::FontBold(14))
 					.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
 					.Justification(ETextJustify::Center)
 					.Visibility(InArgs._IconBrush ? EVisibility::Collapsed : EVisibility::Visible)
@@ -430,7 +431,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 					[
 						SNew(STextBlock)
 						.Text(Loc ? Loc->GetText_IdolAltarTitle() : NSLOCTEXT("T66.IdolAltar", "Title", "IDOL ALTAR"))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
+						.Font(FT66Style::Tokens::FontBold(28))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
@@ -441,7 +442,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						[
 							SAssignNew(StatusText, STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+							.Font(FT66Style::Tokens::FontRegular(14))
 							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 							.Justification(ETextJustify::Center)
 							.WrapTextAt(360.f)
@@ -455,7 +456,7 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						[
 							SAssignNew(HoverTooltipText, STextBlock)
 							.Text(Loc ? Loc->GetText_IdolAltarHoverHint() : NSLOCTEXT("T66.IdolAltar", "HoverHint", "Hover an idol to see its effect."))
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+							.Font(FT66Style::Tokens::FontRegular(14))
 							.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.9f, 1.f))
 							.Justification(ETextJustify::Center)
 							.WrapTextAt(360.f)
@@ -470,33 +471,17 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							SNew(SBox).WidthOverride(180.f).HeightOverride(44.f)
-							[
-								SNew(SButton)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnConfirm))
-								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.55f, 0.25f, 1.f))
-								[
-									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_Confirm() : NSLOCTEXT("T66.Common", "Confirm", "CONFIRM"))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
+							FT66Style::MakeButton(
+								Loc ? Loc->GetText_Confirm() : NSLOCTEXT("T66.Common", "Confirm", "CONFIRM"),
+								FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnConfirm),
+								ET66ButtonType::Success, 180.f, 44.f)
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							SNew(SBox).WidthOverride(180.f).HeightOverride(44.f)
-							[
-								SNew(SButton)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnBack))
-								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
-								[
-									SNew(STextBlock)
-									.Text(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"))
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
+							FT66Style::MakeButton(
+								Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"),
+								FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnBack),
+								ET66ButtonType::Neutral, 180.f, 44.f)
 						]
 					]
 				]

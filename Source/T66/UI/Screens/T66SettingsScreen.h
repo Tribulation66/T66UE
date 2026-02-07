@@ -78,11 +78,7 @@ private:
 	TSharedPtr<SWidgetSwitcher> ContentSwitcher;
 	TSharedPtr<SWidgetSwitcher> ControlsDeviceSwitcher;
 
-	// ===== Gameplay placeholders (not yet wired) =====
-	bool bPracticeMode = false;
-	bool bSubmitLeaderboardAnonymous = false;
-	bool bSpeedRunMode = false;
-	bool bGoonerMode = false;
+	// Gameplay toggles are wired via UT66PlayerSettingsSubsystem (persisted in UT66PlayerSettingsSaveGame).
 
 	// Tab content builders
 	TSharedRef<SWidget> BuildGameplayTab();
@@ -172,8 +168,9 @@ private:
 		FIntPoint Resolution = FIntPoint(1920, 1080);
 		EWindowMode::Type WindowMode = EWindowMode::Fullscreen;
 		ET66DisplayMode DisplayMode = ET66DisplayMode::Standard;
-		int32 QualityNotch = 3;         // 0..3
-		int32 FpsCapIndex = 1;          // 0=30,1=60,2=90,3=120,4=Unlimited
+		int32 MonitorIndex = 0;        // 0 = primary, 1+ = secondary
+		int32 QualityNotch = 3;        // 0..3
+		int32 FpsCapIndex = 1;         // 0=30,1=60,2=90,3=120,4=Unlimited
 		bool bDirty = false;
 	};
 

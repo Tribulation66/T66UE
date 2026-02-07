@@ -40,7 +40,7 @@ static UAnimationAsset* LoadAnimationFallbackStripPackageAnimSuffix(const TSoftO
 	FString Base = PathStr.Left(DotIdx);
 	FString ObjName = PathStr.Mid(DotIdx + 1);
 	if (!Base.EndsWith(TEXT("_Anim"))) return nullptr;
-	FString BaseStrip = Base.LeftChop(4); // strip "_Anim"
+	FString BaseStrip = Base.LeftChop(5); // strip "_Anim" (5 chars: _, A, n, i, m)
 	FString NewPath = BaseStrip + TEXT(".") + ObjName;
 	return Cast<UAnimationAsset>(TSoftObjectPtr<UAnimationAsset>(FSoftObjectPath(NewPath)).LoadSynchronous());
 }
@@ -336,6 +336,26 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 
 	TargetMesh->SetHiddenInGame(false, true);
 	TargetMesh->SetVisibility(true, true);
+
+	// In preview context: force highest mip streaming on all material textures so
+	// the character isn't blank/black, and log material info for diagnostics.
+	if (bIsPreviewContext)
+	{
+		TargetMesh->bForceMipStreaming = true;
+		TargetMesh->StreamingDistanceMultiplier = 50.f;
+#if !UE_BUILD_SHIPPING
+		const int32 NumMats = TargetMesh->GetNumMaterials();
+		for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
+		{
+			UMaterialInterface* Mat = TargetMesh->GetMaterial(MatIdx);
+			UE_LOG(LogTemp, Log, TEXT("[MESH] Preview material slot %d/%d: %s (class=%s) for VisualID=%s"),
+				MatIdx, NumMats,
+				Mat ? *Mat->GetName() : TEXT("(null)"),
+				Mat ? *Mat->GetClass()->GetName() : TEXT("N/A"),
+				*VisualID.ToString());
+		}
+#endif
+	}
 
 	if (PlaceholderToHide)
 	{

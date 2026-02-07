@@ -57,7 +57,8 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	if (!Profile)
 	{
 		Profile = NewObject<UT66ProfileSaveGame>(this);
-		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Created FRESH profile (no save file found)"));
+		Profile->AchievementCoinsBalance = 10000; // Starting grant for new players only
+		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Created FRESH profile (no save file found, starting AC=%d)"), Profile->AchievementCoinsBalance);
 	}
 	else
 	{
@@ -65,9 +66,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	}
 
 	// Enforce safe defaults.
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 6);
-	// Dev: ensure at least 10000 AC so skins can be purchased.
-	Profile->AchievementCoinsBalance = FMath::Max(Profile->AchievementCoinsBalance, 10000);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 7);
 	Profile->LifetimeEnemiesKilled = FMath::Max(0, Profile->LifetimeEnemiesKilled);
 
 	// Hero skins: log current state (no more auto-reset; purchases persist).
@@ -306,6 +305,38 @@ void UT66AchievementsSubsystem::MarkDirtyAndMaybeSave(bool bForce)
 {
 	bProfileDirty = true;
 	SaveProfileIfNeeded(bForce);
+}
+
+bool UT66AchievementsSubsystem::AddLabUnlockedItem(FName ItemID)
+{
+	if (ItemID.IsNone()) return false;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return false;
+	if (Profile->LabUnlockedItemIDs.Contains(ItemID)) return false;
+	Profile->LabUnlockedItemIDs.Add(ItemID);
+	MarkDirtyAndMaybeSave(true);
+	return true;
+}
+
+bool UT66AchievementsSubsystem::AddLabUnlockedEnemy(FName EnemyOrBossID)
+{
+	if (EnemyOrBossID.IsNone()) return false;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return false;
+	if (Profile->LabUnlockedEnemyIDs.Contains(EnemyOrBossID)) return false;
+	Profile->LabUnlockedEnemyIDs.Add(EnemyOrBossID);
+	MarkDirtyAndMaybeSave(true);
+	return true;
+}
+
+bool UT66AchievementsSubsystem::IsLabUnlockedItem(FName ItemID) const
+{
+	return Profile && Profile->LabUnlockedItemIDs.Contains(ItemID);
+}
+
+bool UT66AchievementsSubsystem::IsLabUnlockedEnemy(FName EnemyOrBossID) const
+{
+	return Profile && Profile->LabUnlockedEnemyIDs.Contains(EnemyOrBossID);
 }
 
 void UT66AchievementsSubsystem::NotifyEnemyKilled(int32 Count)

@@ -10,6 +10,7 @@
 class UT66UIManager;
 class UT66ScreenBase;
 class UT66GameplayHUDWidget;
+class UT66LabOverlayWidget;
 class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
 class UT66CowardicePromptWidget;
@@ -19,6 +20,7 @@ class AT66CowardiceGate;
 class AT66EnemyBase;
 class UT66IdolAltarOverlayWidget;
 class UT66VendorOverlayWidget;
+class UT66CollectorOverlayWidget;
 class AT66LootBagPickup;
 class AT66HouseNPCBase;
 class AT66VendorNPC;
@@ -95,6 +97,9 @@ public:
 
 	/** Open the Vendor overlay (non-pausing). */
 	void OpenVendorOverlay();
+
+	/** Open the Lab Collector full-screen overlay (non-pausing). */
+	void OpenCollectorOverlay();
 
 	/** In-world dialogue (open-world) for vendor/gambler interactions (non-pausing). */
 	void OpenWorldDialogueVendor(AT66VendorNPC* Vendor);
@@ -189,6 +194,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<UT66GameplayHUDWidget> GameplayHUDWidget;
 
+	/** Lab overlay (items + enemies panels + exit); shown only when bIsLabLevel */
+	UPROPERTY()
+	TObjectPtr<UT66LabOverlayWidget> LabOverlayWidget;
+
 	UPROPERTY()
 	TObjectPtr<UT66GamblerOverlayWidget> GamblerOverlayWidget;
 
@@ -197,6 +206,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66VendorOverlayWidget> VendorOverlayWidget;
+
+	/** Lab Collector full-screen UI (opened by interacting with The Collector NPC). */
+	UPROPERTY()
+	TObjectPtr<UT66CollectorOverlayWidget> CollectorOverlayWidget;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
 

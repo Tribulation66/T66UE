@@ -1,9 +1,9 @@
 ---,CompanionID,DisplayName,LoreText,PlaceholderColor,CompanionClass,Portrait,bUnlockedByDefault
-Companion_01,Companion_01,"Companion 1","","(R=0.950,G=0.427,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_01/T_Companion_01,true
-Companion_02,Companion_02,"Companion 2","","(R=0.950,G=0.493,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_02/T_Companion_02,true
-Companion_03,Companion_03,"Companion 3","","(R=0.950,G=0.558,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_03/T_Companion_03,true
-Companion_04,Companion_04,"Companion 4","","(R=0.950,G=0.623,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_04/T_Companion_04,true
-Companion_05,Companion_05,"Companion 5","","(R=0.950,G=0.689,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_05/T_Companion_05,true
-Companion_06,Companion_06,"Companion 6","","(R=0.950,G=0.754,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_06/T_Companion_06,true
-Companion_07,Companion_07,"Companion 7","","(R=0.950,G=0.819,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_07/T_Companion_07,true
-Companion_08,Companion_08,"Companion 8","","(R=0.950,G=0.885,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_08/T_Companion_08,true
+Companion_01,Companion_01,"Companion 1","","(R=0.950,G=0.427,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_01/T_Companion_01.T_Companion_01,true
+Companion_02,Companion_02,"Companion 2","","(R=0.950,G=0.493,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_02/T_Companion_02.T_Companion_02,true
+Companion_03,Companion_03,"Companion 3","","(R=0.950,G=0.558,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_03/T_Companion_03.T_Companion_03,true
+Companion_04,Companion_04,"Companion 4","","(R=0.950,G=0.623,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_04/T_Companion_04.T_Companion_04,true
+Companion_05,Companion_05,"Companion 5","","(R=0.950,G=0.689,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_05/T_Companion_05.T_Companion_05,true
+Companion_06,Companion_06,"Companion 6","","(R=0.950,G=0.754,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_06/T_Companion_06.T_Companion_06,true
+Companion_07,Companion_07,"Companion 7","","(R=0.950,G=0.819,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_07/T_Companion_07.T_Companion_07,true
+Companion_08,Companion_08,"Companion 8","","(R=0.950,G=0.885,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_08/T_Companion_08.T_Companion_08,true

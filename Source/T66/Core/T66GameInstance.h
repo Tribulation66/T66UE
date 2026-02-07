@@ -142,6 +142,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bForceColiseumMode = false;
 
+	/** If true, the current level is The Lab (practice room). No rewards, no run save; exit returns to Hero Selection. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bIsLabLevel = false;
+
 	// ============================================
 	// DataTable Access Helpers
 	// ============================================

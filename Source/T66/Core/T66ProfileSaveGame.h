@@ -46,7 +46,15 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 6;
+	int32 SaveVersion = 7;
+
+	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
+	TArray<FName> LabUnlockedItemIDs;
+
+	/** Enemy/Boss IDs ever killed (any run type) — used to show only unlocked entities in The Lab. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
+	TArray<FName> LabUnlockedEnemyIDs;
 
 	/** Achievement Coins (AC) wallet balance. New profiles start with 10000 AC. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Achievements")

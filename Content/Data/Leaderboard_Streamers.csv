@@ -1,0 +1,11 @@
+Name,Rank,PlayerName,Score,TimeSeconds,HeroID,PartySize,Difficulty,StageReached,bIsLocalPlayer
+Streamer_01,1,TTV_GodGamer,2200,0,,Solo,Easy,0,False
+Streamer_02,2,YT_ProPlays,2050,0,,Solo,Easy,0,False
+Streamer_03,3,Twitch_Legend,1900,0,,Solo,Easy,0,False
+Streamer_04,4,StreamKing99,1760,0,,Solo,Easy,0,False
+Streamer_05,5,ContentQueen,1620,0,,Solo,Easy,0,False
+Streamer_06,6,LiveWire_TV,1480,0,,Solo,Easy,0,False
+Streamer_07,7,ClickbaitCarl,1350,0,,Solo,Easy,0,False
+Streamer_08,8,SubGoalSam,1220,0,,Solo,Easy,0,False
+Streamer_09,9,DonationDan,1100,0,,Solo,Easy,0,False
+Streamer_10,10,F2P_Freddy,980,0,,Solo,Easy,0,False

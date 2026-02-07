@@ -100,6 +100,12 @@ public:
 	/** Build menu entries for Speed Run: per-stage Top 10 + local entry ("You") at rank 11 unless in Top 10. */
 	TArray<FLeaderboardEntry> BuildSpeedRunEntries(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 
+	/**
+	 * Build leaderboard entries for the current filter (Global / Friends / Streamers).
+	 * Global uses the existing built list (Bounty or SpeedRun). Friends/Streamers load from DT_Leaderboard_Friends / DT_Leaderboard_Streamers.
+	 */
+	TArray<FLeaderboardEntry> BuildEntriesForFilter(ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 SpeedRunStage) const;
+
 	/** Returns the 10th-place target time for this stage (used by HUD "time to beat"). */
 	bool GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const;
 
@@ -110,6 +116,8 @@ private:
 	static constexpr const TCHAR* LocalSaveSlotName = TEXT("T66_LocalLeaderboard");
 	static constexpr const TCHAR* BountyTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_BountyTargets.DT_Leaderboard_BountyTargets");
 	static constexpr const TCHAR* SpeedRunTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets");
+	static constexpr const TCHAR* FriendsDTPath = TEXT("/Game/Data/DT_Leaderboard_Friends.DT_Leaderboard_Friends");
+	static constexpr const TCHAR* StreamersDTPath = TEXT("/Game/Data/DT_Leaderboard_Streamers.DT_Leaderboard_Streamers");
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LocalLeaderboardSaveGame> LocalSave;

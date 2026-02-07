@@ -8,8 +8,9 @@
 
 /**
  * Hero movement speed and animation state.
- * Speed ramps when moving; animation: alert when stopped, walk when moving, run after 1 second of walking.
- * Hero and companion both use GetMovementAnimState() so the companion always matches the hero's animation.
+ * Speed still ramps when moving (acceleration/deceleration unchanged).
+ * Animation is binary: 0 = Idle (alert), 1 = Moving (run). No walk state.
+ * Hero and companion both use GetMovementAnimState() so the companion always matches the hero.
  */
 UCLASS()
 class T66_API UT66HeroSpeedSubsystem : public UGameInstanceSubsystem
@@ -17,9 +18,6 @@ class T66_API UT66HeroSpeedSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	/** Seconds of continuous walking before switching to run animation. */
-	static constexpr float SecondsWalkingBeforeRun = 1.f;
-
 	/** When moving, speed is at least this fraction of max (so base speed feels higher). */
 	static constexpr float BaseSpeedFraction = 0.2f;
 
@@ -41,8 +39,7 @@ public:
 
 	/**
 	 * Animation state for hero and companion (both read this so companion always matches hero).
-	 * 0 = Idle (alert), 1 = Walk, 2 = Run.
-	 * Run starts after SecondsWalkingBeforeRun of continuous movement.
+	 * 0 = Idle (alert), 2 = Moving (run). No walk; speed/acceleration are unchanged but not tied to animation.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|HeroSpeed")
 	int32 GetMovementAnimState() const;
@@ -60,8 +57,4 @@ private:
 
 	UPROPERTY(Transient)
 	float DecelerationPerSecond = 120.f;
-
-	/** Time spent moving this run (reset when stopped). After >= SecondsWalkingBeforeRun we use run anim. */
-	UPROPERTY(Transient)
-	float TimeWalkingSeconds = 0.f;
 };

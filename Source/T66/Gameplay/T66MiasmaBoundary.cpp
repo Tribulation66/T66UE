@@ -71,7 +71,17 @@ void AT66MiasmaBoundary::SpawnWallVisuals()
 
 	for (const FWallDef& W : Walls)
 	{
-		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), W.Location, FRotator::ZeroRotator, SpawnParams);
+		// Trace down so wall sits on landscape/terrain
+		FVector WallLoc = W.Location;
+		FHitResult Hit;
+		const FVector TraceStart = WallLoc + FVector(0.f, 0.f, 4000.f);
+		const FVector TraceEnd = WallLoc - FVector(0.f, 0.f, 8000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+		{
+			WallLoc.Z = Hit.ImpactPoint.Z + HalfHeight;
+		}
+
+		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), WallLoc, FRotator::ZeroRotator, SpawnParams);
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);

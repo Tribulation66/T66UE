@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66SaveSlotsScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66Style.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66RunSaveGame.h"
@@ -30,7 +31,8 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	FText EmptyText = Loc ? Loc->GetText_EmptySlot() : NSLOCTEXT("T66.SaveSlots", "EmptySlot", "EMPTY SLOT");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
-	auto MakeSlotButton = [this, SaveSub, EmptyText](int32 SlotIndex) -> TSharedRef<SWidget>
+	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+	auto MakeSlotButton = [this, SaveSub, EmptyText, &BtnNeutral](int32 SlotIndex) -> TSharedRef<SWidget>
 	{
 		bool bOccupied = false;
 		FString LastPlayed, HeroName, MapName;
@@ -42,7 +44,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		FLinearColor BgColor = bOccupied ? FLinearColor(0.15f, 0.25f, 0.2f, 1.0f) : FLinearColor(0.12f, 0.12f, 0.14f, 1.0f);
 
 		return SNew(SBox)
-			.WidthOverride(180.0f)
+			.MinDesiredWidth(180.0f)
 			.HeightOverride(90.0f)
 			.Padding(8.0f)
 			[
@@ -51,11 +53,12 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				.VAlign(VAlign_Center)
 				.IsEnabled(bOccupied)
 				.OnClicked_Lambda([this, SlotIndex]() { OnSlotClicked(SlotIndex); return FReply::Handled(); })
+				.ButtonStyle(&BtnNeutral)
 				.ButtonColorAndOpacity(BgColor)
 				[
 					SNew(STextBlock)
 					.Text(Label)
-					.Font(FCoreStyle::GetDefaultFontStyle(bOccupied ? "Bold" : "Regular", 12))
+					.Font(bOccupied ? FT66Style::Tokens::FontBold(12) : FT66Style::Tokens::FontRegular(12))
 					.ColorAndOpacity(bOccupied ? FLinearColor::White : FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
 					.AutoWrapText(true)
 					.Justification(ETextJustify::Center)
@@ -73,7 +76,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 40.0f, 0.0f, 30.0f)
 				[
 					SNew(STextBlock).Text(TitleText)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 48))
+					.Font(FT66Style::Tokens::FontBold(48))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SVerticalBox::Slot().FillHeight(1.0f).HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -104,17 +107,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			]
 			+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(20.0f, 0.0f, 0.0f, 20.0f)
 			[
-				SNew(SBox).WidthOverride(120.0f).HeightOverride(50.0f)
-				[
-					SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked))
-					.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
-					[
-						SNew(STextBlock).Text(BackText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-						.ColorAndOpacity(FLinearColor::White)
-					]
-				]
+				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f, 50.f)
 			]
 		];
 }

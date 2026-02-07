@@ -278,18 +278,22 @@ namespace T66ProceduralLandscapeEditor
 			HISM->AddInstance(T, true);
 		};
 
-		// Grass: Polytope (from T66MapAssets if set up, else Polytope) — full ground coverage, no collision
-		UStaticMesh* GrassMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/T66MapAssets/Grass/SM_Grass_02.SM_Grass_02"));
-		if (!GrassMesh) GrassMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Polytope_Studio/Nature_Free/Meshes/Plants/SM_Grass_02.SM_Grass_02"));
-		UMaterialInterface* GrassMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/T66MapAssets/Grass/MI_Plants_Grass.MI_Plants_Grass"));
-		if (!GrassMat) GrassMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Polytope_Studio/Nature_Free/Materials/MI_Plants_Grass.MI_Plants_Grass"));
-		if (UHierarchicalInstancedStaticMeshComponent* GrassHISM = GrassMesh ? SpawnHISMWithMeshAndMat(GrassMesh, GrassMat, true) : nullptr)
+		// Grass: disabled (toggle off). Landscape and trees/rocks still spawn.
+		static constexpr bool bSpawnGrassAssets = false;
+		if (bSpawnGrassAssets)
 		{
-			for (int32 Iy = 1; Iy < SizeY - 1; ++Iy)
+			UStaticMesh* GrassMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/T66MapAssets/Grass/SM_Grass_02.SM_Grass_02"));
+			if (!GrassMesh) GrassMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Polytope_Studio/Nature_Free/Meshes/Plants/SM_Grass_02.SM_Grass_02"));
+			UMaterialInterface* GrassMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/T66MapAssets/Grass/MI_Plants_Grass.MI_Plants_Grass"));
+			if (!GrassMat) GrassMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Polytope_Studio/Nature_Free/Materials/MI_Plants_Grass.MI_Plants_Grass"));
+			if (UHierarchicalInstancedStaticMeshComponent* GrassHISM = GrassMesh ? SpawnHISMWithMeshAndMat(GrassMesh, GrassMat, true) : nullptr)
 			{
-				for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+				for (int32 Iy = 1; Iy < SizeY - 1; ++Iy)
 				{
-					AddInstanceAt(GrassHISM, Ix, Iy, 0.9f, 1.1f);
+					for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+					{
+						AddInstanceAt(GrassHISM, Ix, Iy, 0.9f, 1.1f);
+					}
 				}
 			}
 		}

@@ -14,8 +14,8 @@ class T66_API FT66ProceduralLandscapeGenerator
 public:
 	/**
 	 * Generate a heightfield (floats, world Z in UU) into OutHeights.
-	 * Grid is SizeX x SizeY (vertex count). World X/Y span is from (0,0) to (SizeX-1)*QuadSizeUU, (SizeY-1)*QuadSizeUU.
-	 * Returns false if params or dimensions are invalid.
+	 * Grid is SizeX x SizeY (vertex count). World position at (Ix,Jy) is (LandscapeOriginX + Ix*QuadSizeUU, LandscapeOriginY + Jy*QuadSizeUU).
+	 * Applies flat zones (start area, boss area) at Z=0 with smooth blend. Returns false if params or dimensions are invalid.
 	 */
 	static bool GenerateHeightfield(
 		const FT66ProceduralLandscapeParams& Params,

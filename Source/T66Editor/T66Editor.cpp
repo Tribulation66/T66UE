@@ -2,6 +2,7 @@
 
 #include "T66Editor.h"
 #include "T66ProceduralLandscapeEditorTool.h"
+#include "T66UISetupSubsystem.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Core/T66GameInstance.h"
 #include "Editor.h"
@@ -111,6 +112,22 @@ void FT66EditorModule::RegisterT66ToolsMenu()
 				FUIAction(FExecuteAction::CreateLambda([]()
 				{
 					T66ProceduralLandscapeEditor::SetupT66MapAssets();
+				}))
+			);
+			SubSection.AddMenuEntry(
+				TEXT("CreateLabLevel"),
+				NSLOCTEXT("T66Editor", "CreateLabLevel", "Create Lab Level"),
+				NSLOCTEXT("T66Editor", "CreateLabLevelTooltip", "Create The Lab level (Content/Maps/LabLevel) with PlayerStart, lighting, and GameMode. Replaces current level."),
+				FSlateIcon(),
+				FUIAction(FExecuteAction::CreateLambda([]()
+				{
+					if (GEditor)
+					{
+						if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
+						{
+							Sub->CreateLabLevel();
+						}
+					}
 				}))
 			);
 		})

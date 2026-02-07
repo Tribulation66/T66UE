@@ -222,40 +222,55 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 		Swap(OutHeights, Temp);
 	}
 
-	// Slope limiting: ensure no slope exceeds MaxSlopeDegrees so all hills are climbable
-	if (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
+	// Lambda: enforce max slope (cardinal + diagonal) so hills never exceed MaxSlopeDegrees.
+	// Diagonal neighbors use max delta = MaxDH * sqrt(2) so diagonal slopes are also capped.
+	const auto EnforceSlopeLimit = [&OutHeights, SizeX, SizeY, QuadSizeUU](
+		float MaxSlopeDegrees, int32 MaxIterations) -> void
 	{
-		const float MaxSlope = FMath::Tan(FMath::DegreesToRadians(Params.MaxSlopeDegrees));
-		const float MaxDH = MaxSlope * QuadSizeUU;  // Max height change per quad
-		// Multiple iterations to propagate constraint across the heightfield
-		for (int32 Iter = 0; Iter < 8; ++Iter)
+		if (MaxSlopeDegrees <= 0.f || MaxSlopeDegrees >= 90.f) return;
+		const float MaxSlope = FMath::Tan(FMath::DegreesToRadians(MaxSlopeDegrees));
+		const float MaxDH = MaxSlope * QuadSizeUU;
+		const float MaxDHDiag = MaxDH * 1.41421356f;  // sqrt(2) for diagonal step
+		for (int32 Iter = 0; Iter < MaxIterations; ++Iter)
 		{
 			bool bChanged = false;
-			// Forward pass (left-to-right, top-to-bottom)
+			// Forward pass
 			for (int32 Jy = 0; Jy < SizeY; ++Jy)
 			{
 				for (int32 Ix = 0; Ix < SizeX; ++Ix)
 				{
 					const int32 Idx = Jy * SizeX + Ix;
 					float H = OutHeights[Idx];
-					// Clamp relative to left neighbor
+					// Cardinal
 					if (Ix > 0)
 					{
 						const float HL = OutHeights[Idx - 1];
 						if (H > HL + MaxDH) { H = HL + MaxDH; bChanged = true; }
 						else if (H < HL - MaxDH) { H = HL - MaxDH; bChanged = true; }
 					}
-					// Clamp relative to top neighbor
 					if (Jy > 0)
 					{
 						const float HT = OutHeights[Idx - SizeX];
 						if (H > HT + MaxDH) { H = HT + MaxDH; bChanged = true; }
 						else if (H < HT - MaxDH) { H = HT - MaxDH; bChanged = true; }
 					}
+					// Diagonal (so diagonal slopes never exceed limit)
+					if (Ix > 0 && Jy > 0)
+					{
+						const float HTL = OutHeights[Idx - SizeX - 1];
+						if (H > HTL + MaxDHDiag) { H = HTL + MaxDHDiag; bChanged = true; }
+						else if (H < HTL - MaxDHDiag) { H = HTL - MaxDHDiag; bChanged = true; }
+					}
+					if (Ix < SizeX - 1 && Jy > 0)
+					{
+						const float HTR = OutHeights[Idx - SizeX + 1];
+						if (H > HTR + MaxDHDiag) { H = HTR + MaxDHDiag; bChanged = true; }
+						else if (H < HTR - MaxDHDiag) { H = HTR - MaxDHDiag; bChanged = true; }
+					}
 					OutHeights[Idx] = H;
 				}
 			}
-			// Backward pass (right-to-left, bottom-to-top)
+			// Backward pass
 			for (int32 Jy = SizeY - 1; Jy >= 0; --Jy)
 			{
 				for (int32 Ix = SizeX - 1; Ix >= 0; --Ix)
@@ -274,10 +289,55 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 						if (H > HB + MaxDH) { H = HB + MaxDH; bChanged = true; }
 						else if (H < HB - MaxDH) { H = HB - MaxDH; bChanged = true; }
 					}
+					if (Ix < SizeX - 1 && Jy < SizeY - 1)
+					{
+						const float HBR = OutHeights[Idx + SizeX + 1];
+						if (H > HBR + MaxDHDiag) { H = HBR + MaxDHDiag; bChanged = true; }
+						else if (H < HBR - MaxDHDiag) { H = HBR - MaxDHDiag; bChanged = true; }
+					}
+					if (Ix > 0 && Jy < SizeY - 1)
+					{
+						const float HBL = OutHeights[Idx + SizeX - 1];
+						if (H > HBL + MaxDHDiag) { H = HBL + MaxDHDiag; bChanged = true; }
+						else if (H < HBL - MaxDHDiag) { H = HBL - MaxDHDiag; bChanged = true; }
+					}
 					OutHeights[Idx] = H;
 				}
 			}
-			if (!bChanged) break;  // Converged
+			if (!bChanged) break;
+		}
+	};
+
+	// First slope limit after smoothing (base terrain is climbable)
+	if (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
+	{
+		EnforceSlopeLimit(Params.MaxSlopeDegrees, 8);
+	}
+
+	// Flatten hill tops: at each local maximum, set the 3x3 neighborhood to the peak height so the hill itself has a flat top (no platform actor).
+	{
+		Temp = OutHeights;
+		const int32 R = 1;  // 3x3 neighborhood (R=1 -> -1..1)
+		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+		{
+			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+			{
+				const int32 Idx = Jy * SizeX + Ix;
+				const float V = Temp[Idx];
+				if (V <= Temp[Idx - 1] || V <= Temp[Idx + 1] || V <= Temp[Idx - SizeX] || V <= Temp[Idx + SizeX] ||
+				    V <= Temp[Idx - SizeX - 1] || V <= Temp[Idx - SizeX + 1] || V <= Temp[Idx + SizeX - 1] || V <= Temp[Idx + SizeX + 1])
+					continue;
+				float PeakH = V;
+				for (int32 dy = -R; dy <= R; ++dy)
+					for (int32 dx = -R; dx <= R; ++dx)
+						PeakH = FMath::Max(PeakH, Temp[FMath::Clamp(Jy + dy, 0, SizeY - 1) * SizeX + FMath::Clamp(Ix + dx, 0, SizeX - 1)]);
+				for (int32 dy = -R; dy <= R; ++dy)
+					for (int32 dx = -R; dx <= R; ++dx)
+					{
+						const int32 Oi = FMath::Clamp(Jy + dy, 0, SizeY - 1) * SizeX + FMath::Clamp(Ix + dx, 0, SizeX - 1);
+						OutHeights[Oi] = FMath::Max(OutHeights[Oi], PeakH);
+					}
+			}
 		}
 	}
 
@@ -416,6 +476,13 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 	for (float& Hi : OutHeights)
 	{
 		Hi = FMath::Max(0.f, Hi);
+	}
+
+	// Final slope guardrail: flat-zone blend, peak dampening, and miasma mask can re-introduce steep slopes.
+	// Enforce max slope one last time so the output is guaranteed never to exceed MaxSlopeDegrees.
+	if (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
+	{
+		EnforceSlopeLimit(Params.MaxSlopeDegrees, 16);
 	}
 
 	return true;

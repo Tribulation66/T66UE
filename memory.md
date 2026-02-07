@@ -43,9 +43,11 @@
 | **Hero selection UI** | `T66HeroSelectionScreen`: `RefreshSkinsList()`, `AddSkinRowsToBox()`, `SkinsListBoxWidget`, `ACBalanceTextBlock`, `PreviewSkinIDOverride`. Uses `UT66SkinSubsystem`. |
 | **Companion selection UI** | `T66CompanionSelectionScreen`: same pattern (SkinsListBoxWidget, RefreshSkinsList, AddSkinRowsToBox); uses `UT66SkinSubsystem`. |
 | **3D hero preview** | `AT66HeroPreviewStage` (Tick → CaptureScene after pawn anim). `T66HeroBase::InitializeHero(bPreviewMode)` → alert anim in preview. |
+| **Preview materials** | `T66PreviewMaterials.h/.cpp`: `GetGroundMaterial()` / `GetSkyMaterial()` / `GetStarMaterial()` — loads from `/Game/UI/Preview/` or auto-creates in editor. All use single VectorParam→output (one hop, no chains). Used by both hero + companion preview stages. |
 | **Localization** | `UT66LocalizationSubsystem::GetText_*()`. All UI strings via this or NSLOCTEXT; no hardcoded player-facing text. |
 | **Run state (hearts, gold, inventory)** | `UT66RunStateSubsystem`. |
 | **Save/load run** | `UT66SaveSubsystem`, `UT66RunSaveGame`. Profile (AC, skins, achievements): `UT66ProfileSaveGame`, saved by AchievementsSubsystem. |
+| **The Lab** | Entry: Hero Selection "THE LAB" button (above Enter the Tribulation) → sets `UT66GameInstance::bIsLabLevel`, opens `LabLevel`. `AT66GameMode::IsLabLevel()`; Lab-only BeginPlay (floor, light, hero+companion; no waves/NPCs/gates). `UT66LabOverlayWidget`: Items panel (unlocked only), Enemies tabs (NPC/Mobs/Stage Bosses), Reset Items/Enemies, Exit. Spawn: `SpawnLabMob`, `SpawnLabBoss`, `SpawnLabTreeOfLife`; `ResetLabSpawnedActors`. Unlocks: `UT66ProfileSaveGame::LabUnlockedItemIDs`, `LabUnlockedEnemyIDs`; `UT66AchievementsSubsystem::AddLabUnlockedItem/Enemy`, `IsLabUnlockedItem/Enemy`. RunState `ClearInventory()` for Lab Reset Items. |
 
 ---
 
@@ -70,6 +72,7 @@
 
 ## Open questions / blockers
 
+- **LabLevel map:** Create in editor before using The Lab: File → New Level → Empty Level (or duplicate FrontendLevel). Add a **PlayerStart** at (0, 0, 200). Optionally add a simple floor (plane) and Directional Light + Sky Light for a white grid-room look. World Settings → GameMode Override: use same as GameplayLevel (e.g. BP_GameplayGameMode). Save as **LabLevel** in `Content/Maps/` so the path is `/Game/Maps/LabLevel`. Code opens via `OpenLevel(this, FName(TEXT("LabLevel")))`.
 - **WBP_LanguageSelect / WBP_Achievements:** Optional; C++ works without. Re-run `T66Setup` if you add Blueprint overrides.
 - **Leaderboard:** Placeholder until Steam.
 - **Nav:** Enemies use Tick toward player; no nav required. For future pathfinding, add Nav Mesh Bounds in GameplayLevel.
@@ -138,5 +141,7 @@
 - **WebView2 HTTP hardening (deferred):** `T66WebView2Host.cpp:304` allows both HTTP and HTTPS. Should reject plain HTTP (TikTok serves HTTPS only). Also `storage.googleapis.com` is overly broad — tighten to specific bucket prefix. Low urgency (requires network-level MITM to exploit).
 - **Heros → Heroes full rename (deferred, Red-risk):** `Content/Characters/Heros/` uses the misspelled folder name across 100+ assets, CSVs, and import scripts. Full rename is a Red-risk mass operation; one-line music subsystem fix applied for now. Do as a dedicated batch with checkpoint commit.
 - **Theme: in-game lighting (deferred):** Dark/Light theme currently only changes UI palette. Future intent: extend to change in-game lighting (day/night) — not yet implemented.
+
+**3D Hero/Companion preview environment:** Both `AT66HeroPreviewStage` and `AT66CompanionPreviewStage` include a sky dome (inverted sphere, dynamically scaled), ambient light, theme-reactive lighting, and parameterized materials. **Simplified material pattern (v3):** Every material uses a single VectorParameter → one output pin (no multi-node chains, which fail silently in C++ material construction). Three materials in `/Game/UI/Preview/`: `M_PreviewGround` (BaseColor param → BaseColor, DefaultLit), `M_PreviewSky` (SkyColor param → EmissiveColor, self-lit), `M_PreviewStar` (StarColor param → EmissiveColor, self-lit). Auto-created in editor via `T66PreviewMaterials::GetGroundMaterial()` / `GetSkyMaterial()` / `GetStarMaterial()` (WITH_EDITORONLY_DATA). **Stars:** 20 small UStaticMeshComponent spheres (engine Sphere mesh) scattered on upper hemisphere via fixed seed (7777), hidden in day mode, shown in dark mode with bright emissive. **Dynamic dome scaling (fix):** Backdrop dome now scales dynamically in `FrameCameraToPreview()` so it always encloses the camera; characters with large mesh bounds push the camera far away — old fixed-size dome left the camera in void (black preview). Stars, ambient light attenuation, and key/fill/rim attenuation also scale. **Blue sky (fix):** Sky is now blue in both themes: Day = FLinearColor(2.0, 3.5, 6.0), Night = FLinearColor(1.2, 2.0, 4.0), matching gameplay level's SkyAtmosphere look. Star color = FLinearColor(8, 8, 7) warm white. **Preview diagnostics:** `ApplyCharacterVisual` logs material names/classes per slot when `bIsPreviewContext` is true, and forces texture streaming (`bForceMipStreaming`, `StreamingDistanceMultiplier=50`). Orbit bounds logged with `[PREVIEW]` prefix. Old assets must be deleted when material graph changes (C++ recreates on next PIE).
 
 **Full history:** `git log` (this file is context, not a full changelog).

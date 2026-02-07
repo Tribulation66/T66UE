@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66Style.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -62,7 +63,7 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
+						.Font(FT66Style::Tokens::FontBold(28))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SVerticalBox::Slot()
@@ -74,7 +75,7 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 						.HeightOverride(120.0f)
 						[
 							SNew(SMultiLineEditableTextBox)
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
+							.Font(FT66Style::Tokens::FontRegular(12))
 							.OnTextChanged_Lambda([this](const FText& T) { BugReportText = T.ToString(); })
 							.HintText(HintText)
 						]
@@ -88,43 +89,13 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.WidthOverride(120.0f)
-							.HeightOverride(44.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleSubmitClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.2f, 0.45f, 0.2f, 1.0f))
-								[
-									SNew(STextBlock)
-									.Text(SubmitText)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
+							FT66Style::MakeButton(SubmitText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleSubmitClicked), ET66ButtonType::Success, 120.f, 44.f)
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.WidthOverride(120.0f)
-							.HeightOverride(44.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleCancelClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.3f, 1.0f))
-								[
-									SNew(STextBlock)
-									.Text(CancelText)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
+							FT66Style::MakeButton(CancelText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleCancelClicked), ET66ButtonType::Neutral, 120.f, 44.f)
 						]
 					]
 				]

@@ -45,8 +45,8 @@
 
 | Script | When to run |
 |--------|-------------|
-| **ImportHeros.py** | **Run first** when hero models/portraits are missing. Imports from `SourceAssets/Heros/` (Knight, Ninja, Cowboy, Wizard → Hero_1..Hero_4) into `/Game/Characters/Heros/` and `/Game/UI/Sprites/Heros/`. Run **inside Unreal Editor**: Tools → Execute Python Script → `Scripts/ImportHeros.py`. Then run SetupCharacterVisualsDataTable.py and re-import Heroes (ImportData.py or FullSetup). **Note:** LogInterchangeEngine warnings about "invalid bind poses" and "No smoothing group" are expected; the import still succeeds and bind poses are auto-corrected. |
-| **ImportCompanions.py** | **Run when** companion models/portraits are missing. Imports from `SourceAssets/Companions/Companion N/` (Def_CON, Beach_CON, Portrait) into `/Game/Characters/Companions/Companion_NN/` (Default + Beach skins, mesh + Walking + Alert) and `/Game/UI/Sprites/Companions/`. Run **inside Unreal Editor**: Tools → Execute Python Script → `Scripts/ImportCompanions.py`. Then run SetupCharacterVisualsDataTable.py to refresh DT_CharacterVisuals from CharacterVisuals.csv. |
+| **ImportHeros.py** | **Run first** when hero models/portraits are missing. Imports from `SourceAssets/Heros/` (Knight, Ninja, Cowboy, Wizard → Hero_1..Hero_4) into `/Game/Characters/Heros/` and `/Game/UI/Sprites/Heros/` (mesh + Walking + Alert + **Running**). Run **inside Unreal Editor**: Tools → Execute Python Script → `Scripts/ImportHeros.py`. Then run SetupCharacterVisualsDataTable.py and re-import Heroes (ImportData.py or FullSetup). **Note:** LogInterchangeEngine warnings about "invalid bind poses" and "No smoothing group" are expected; the import still succeeds and bind poses are auto-corrected. |
+| **ImportCompanions.py** | **Run when** companion models/portraits are missing. Imports from `SourceAssets/Companions/Companion N/` (Def_CON, Beach_CON, Portrait) into `/Game/Characters/Companions/Companion_NN/` (Default + Beach skins, mesh + Walking + Alert + **Running**) and `/Game/UI/Sprites/Companions/`. Run **inside Unreal Editor**: Tools → Execute Python Script → `Scripts/ImportCompanions.py`. Then run SetupCharacterVisualsDataTable.py to refresh DT_CharacterVisuals from CharacterVisuals.csv. |
 | **ImportSpriteTextures.py** | When you add/change PNGs under `SourceAssets/Sprites/`. |
 | **BuildGroundAtlas.py** | When you change ground tiles (builds atlas PNG). Run before ImportGroundAtlas. |
 | **ImportGroundAtlas.py** | When you change ground atlas / materials. |
@@ -63,6 +63,23 @@
 | **ExtractSourceAssets.ps1** | When you need to extract source asset packs. |
 
 **Count: 14** — only when touching that content.
+
+### Getting run animations in-game
+
+Run animations are in **SourceAssets** (`Meshy_AI_Animation_Running_withSkin.fbx`) but must be imported into Content so the game can use them. **CharacterVisuals.csv** already has RunAnimation paths; the import scripts now include Running.
+
+1. **Open Unreal Editor** and load the T66 project.
+2. **Import heroes (including Running):** Tools → Execute Python Script → `Scripts/ImportHeros.py`.  
+   - Imports mesh + Walking + Alert + **Running** for each hero (Knight→Hero_1, Ninja→Hero_2, Cowboy→Hero_3, Wizard→Hero_4), Default and Beach, Type A and B.  
+   - Output names: `AM_Hero_N_Default_TypeA_Running` (Unreal may expose as `AM_..._Running_Anim`; CSV uses the _Anim path).
+3. **Import companions (including Running):** Tools → Execute Python Script → `Scripts/ImportCompanions.py`.  
+   - Imports mesh + Walking + Alert + **Running** for Companion_01–Companion_08, Default and Beach.  
+   - Output names: `AM_Companion_NN_Default_Running`, `AM_Companion_NN_Beach_Running`.
+4. **Refresh DataTable from CSV (if needed):** Tools → Execute Python Script → `Scripts/SetupCharacterVisualsDataTable.py` (or run **ImportData.py** / FullSetup to refill all CSVs).  
+   - Ensures DT_CharacterVisuals matches CharacterVisuals.csv RunAnimation column.
+5. **Save and test:** Run the game; hero and companion should play run animation after ~1 second of movement.
+
+**Name match:** SourceAssets FBX `Meshy_AI_Animation_Running_withSkin.fbx` → script looks for filename containing `"Running"` → imports as `AM_{id}_{skin}_Running` → C++/CSV reference `AM_{id}_{skin}_Running_Anim` (engine/fallback handles _Anim).
 
 ---
 

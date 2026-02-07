@@ -310,18 +310,16 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 				{
 					Movement->MaxWalkSpeed = SpeedSub->GetCurrentSpeed();
 				}
-				// Animation: alert / walk / run from subsystem (run after 1s walking). Companion uses same state.
-				if (GetMesh() && GetMesh()->IsVisible() && (CachedAlertAnim || CachedWalkAnim || CachedRunAnim))
+				// Animation: two states only — Alert (idle) and Run (any movement). Companion uses same state.
+				if (GetMesh() && GetMesh()->IsVisible() && (CachedAlertAnim || CachedRunAnim || CachedWalkAnim))
 				{
-					const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 1=Walk, 2=Run
+					const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 2=Run
 					if (static_cast<int32>(LastMovementAnimState) != NewState)
 					{
 						LastMovementAnimState = static_cast<EMovementAnimState>(NewState);
 						UAnimationAsset* ToPlay = nullptr;
 						if (NewState == 0)
 							ToPlay = CachedAlertAnim;
-						else if (NewState == 1)
-							ToPlay = CachedWalkAnim;
 						else
 							ToPlay = CachedRunAnim ? CachedRunAnim : CachedWalkAnim;
 						if (ToPlay)

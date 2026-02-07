@@ -21,6 +21,9 @@
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66LeprechaunEnemy.h"
+#include "Gameplay/T66GoblinThiefEnemy.h"
+#include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66CashTruckInteractable.h"
@@ -29,6 +32,8 @@
 #include "Gameplay/T66StageBoostGoldInteractable.h"
 #include "Gameplay/T66StageBoostLootInteractable.h"
 #include "Gameplay/T66StageEffectTile.h"
+#include "Gameplay/T66SpawnPlateau.h"
+#include "Gameplay/T66LabCollector.h"
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
@@ -41,6 +46,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 #include "GameFramework/PlayerStart.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
@@ -52,6 +58,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "Components/ExponentialHeightFogComponent.h"
+#include "Engine/PostProcessVolume.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "EngineUtils.h"
@@ -212,6 +221,24 @@ void AT66GameMode::BeginPlay()
 		return;
 	}
 
+	// The Lab: minimal arena, hero + companion only; no waves, NPCs, gates, or run progress.
+	if (IsLabLevel())
+	{
+		if (UGameInstance* GILab = GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GILab->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RunState->ResetForNewRun();
+			}
+		}
+		if (bAutoSetupLevel)
+		{
+			EnsureLevelSetup();
+		}
+		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Lab"));
+		return;
+	}
+
 	UT66GameInstance* GIAsT66 = GetT66GameInstance();
 	const bool bStageBoost = (GIAsT66 && GIAsT66->bStageBoostPending);
 
@@ -223,7 +250,18 @@ void AT66GameMode::BeginPlay()
 		return;
 	}
 
-	// Normal stage: houses + waves + miasma + boss + trickster/cowardice gate
+	// Normal stage: defer all ground-dependent spawns until next tick so the landscape is fully formed and collision is ready.
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		World->GetTimerManager().SetTimerForNextTick(this, &AT66GameMode::SpawnLevelContentAfterLandscapeReady);
+	}
+	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup scheduled; content will spawn after landscape is ready."));
+}
+
+void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
+{
+	// Landscape and collision are ready (called next tick after BeginPlay). Spawn all ground-dependent content so traces hit terrain.
 	SpawnCornerHousesAndNPCs();
 	SpawnTricksterAndCowardiceGate();
 	SpawnWorldInteractablesForStage();
@@ -232,13 +270,17 @@ void AT66GameMode::BeginPlay()
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	GetWorld()->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	MiasmaManager = GetWorld()->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	GetWorld()->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		World->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
 	SpawnBossForCurrentStage();
 	SpawnBossGateIfNeeded();
 
-	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup complete, hero spawning handled by SpawnDefaultPawnFor"));
+	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Level content spawned (landscape ready)."));
 }
 
 void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -321,7 +363,9 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 		Strength = 1.f;
 	}
 
-	FRandomStream Rng(StageNum * 971 + 17);
+	// Run-level seed so stage effect tile positions change every run/PIE (like world interactables).
+	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0) ? T66GI->ProceduralTerrainSeed : FMath::Rand();
+	FRandomStream Rng(RunSeed + StageNum * 971 + 17);
 
 	// Main map square bounds (centered at 0,0). Keep some margin from edges. (4x area = 2x linear)
 	static constexpr float MainHalfExtent = 22000.f;  // Match miasma SafeHalfExtent; playable area
@@ -392,45 +436,52 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 		return true;
 	};
 
-	auto FindSpawnLoc = [&]() -> FVector
+	struct FStageTileSpawnHit { FVector Loc; FVector Normal; };
+	auto FindSpawnLoc = [&]() -> FStageTileSpawnHit
 	{
+		const FVector Up = FVector::UpVector;
 		for (int32 Try = 0; Try < 80; ++Try)
 		{
 			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 			FVector Loc(X, Y, SpawnZ);
+			FVector Normal = Up;
 
-			// Trace to ground.
 			FHitResult Hit;
 			const FVector Start = Loc + FVector(0.f, 0.f, 2000.f);
 			const FVector End = Loc - FVector(0.f, 0.f, 6000.f);
 			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 			{
 				Loc = Hit.ImpactPoint;
+				Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, Up);
 			}
 
 			if (IsGoodLoc(Loc))
 			{
-				return Loc;
+				return { Loc, Normal };
 			}
 		}
-		return FVector(0.f, 0.f, SpawnZ);
+		return { FVector(0.f, 0.f, SpawnZ), Up };
 	};
 
 	FActorSpawnParameters P;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	// Stage effect tile mesh: relative Z=6, scale Z=0.06 (cube half 50*0.06=3), so mesh bottom is 3 UU below mesh center = 3 UU above root. Offset spawn so tile bottom sits on surface.
+	static constexpr float StageEffectTileMeshBottomOffset = 3.f;
 	for (int32 i = 0; i < TileCount; ++i)
 	{
-		const FVector L = FindSpawnLoc();
-		AT66StageEffectTile* Tile = World->SpawnActor<AT66StageEffectTile>(AT66StageEffectTile::StaticClass(), L, FRotator::ZeroRotator, P);
+		const FStageTileSpawnHit Th = FindSpawnLoc();
+		const FQuat SlopeRot = FQuat::FindBetweenNormals(FVector::UpVector, Th.Normal);
+		const FVector TileLoc = Th.Loc - StageEffectTileMeshBottomOffset * Th.Normal;
+		AT66StageEffectTile* Tile = World->SpawnActor<AT66StageEffectTile>(AT66StageEffectTile::StaticClass(), TileLoc, SlopeRot.Rotator(), P);
 		if (Tile)
 		{
 			Tile->EffectType = EffectType;
 			Tile->EffectColor = EffectColor;
 			Tile->Strength = Strength;
 			Tile->ApplyVisuals();
-			UsedLocs.Add(L);
+			UsedLocs.Add(TileLoc);
 		}
 	}
 }
@@ -456,7 +507,7 @@ void AT66GameMode::Tick(float DeltaTime)
 
 			// Robust: if the timer is already active (even if we missed the delegate),
 			// try spawning the LoanShark when pending.
-			if (!IsColiseumStage() && RunState->GetStageTimerActive())
+			if (!IsColiseumStage() && !IsLabLevel() && RunState->GetStageTimerActive())
 			{
 				TrySpawnLoanSharkIfNeeded();
 			}
@@ -473,6 +524,7 @@ void AT66GameMode::Tick(float DeltaTime)
 
 void AT66GameMode::HandleStageTimerChanged()
 {
+	if (IsLabLevel()) return;
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
@@ -491,6 +543,7 @@ void AT66GameMode::HandleStageTimerChanged()
 
 void AT66GameMode::HandleDifficultyChanged()
 {
+	if (IsLabLevel()) return;
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
@@ -593,7 +646,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 {
 	Super::RestartPlayer(NewPlayer);
 	SpawnCompanionForPlayer(NewPlayer);
-	if (!IsColiseumStage())
+	if (!IsColiseumStage() && !IsLabLevel())
 	{
 		SpawnStartGateForPlayer(NewPlayer);
 	}
@@ -629,6 +682,15 @@ bool AT66GameMode::IsColiseumStage() const
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		return GI->bForceColiseumMode;
+	}
+	return false;
+}
+
+bool AT66GameMode::IsLabLevel() const
+{
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		return GI->bIsLabLevel;
 	}
 	return false;
 }
@@ -828,6 +890,15 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		if (AwardPoints > 0)
 		{
 			RunState->AddScore(AwardPoints);
+		}
+	}
+
+	// Lab unlock: mark this boss as unlocked for The Lab.
+	if (Boss && !Boss->BossID.IsNone() && GI)
+	{
+		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Achieve->AddLabUnlockedEnemy(Boss->BossID);
 		}
 	}
 
@@ -1142,46 +1213,86 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Main area: corner NPCs are placed near the 4 corners of the main square.
-	// NOTE: NPC safe-zones are centered on the NPC cylinders (not the house blocks),
-	// so we place the NPCs *inward* toward the map center to keep the full bubble inside bounds.
+	// Corner positions as reference; NPCs are placed at the closest flat surface to each corner.
 	const float Corner = 9000.f;
-	const float NPCZ = 60.f;    // small cylinder NPC sits on ground-ish
 	const float NPCOffset = 700.f;
 
-	struct FCornerDef
+	struct FCornerPosition { float X; float Y; };
+	const FCornerPosition CornerPositions[] = {
+		{ Corner - NPCOffset,  Corner - NPCOffset },
+		{ Corner - NPCOffset, -Corner + NPCOffset },
+		{ -Corner + NPCOffset,  Corner - NPCOffset },
+		{ -Corner + NPCOffset, -Corner + NPCOffset },
+	};
+
+	struct FNPCDef
 	{
-		FVector CornerLoc;
 		TSubclassOf<AActor> NPCClass;
 		FText Name;
 		FLinearColor Color;
 	};
+	TArray<FNPCDef> NPCDefs = {
+		{ AT66VendorNPC::StaticClass(),    NSLOCTEXT("T66.NPC", "Vendor", "Vendor"),        FLinearColor(0.05f,0.05f,0.05f,1.f) },
+		{ AT66GamblerNPC::StaticClass(),   NSLOCTEXT("T66.NPC", "Gambler", "Gambler"),      FLinearColor(0.8f,0.1f,0.1f,1.f) },
+		{ AT66OuroborosNPC::StaticClass(), NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros"),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
+		{ AT66SaintNPC::StaticClass(),     NSLOCTEXT("T66.NPC", "Saint", "Saint"),          FLinearColor(0.9f,0.9f,0.9f,1.f) },
+	};
 
-	// Placeholder colors: Vendor=Black, Gambler=Red, Ouroboros=Green, Saint=White
-	const TArray<FCornerDef> Corners = {
-		{ FVector( Corner,  Corner, NPCZ), AT66VendorNPC::StaticClass(),    NSLOCTEXT("T66.NPC", "Vendor", "Vendor"),        FLinearColor(0.05f,0.05f,0.05f,1.f) },
-		{ FVector( Corner, -Corner, NPCZ), AT66GamblerNPC::StaticClass(),   NSLOCTEXT("T66.NPC", "Gambler", "Gambler"),      FLinearColor(0.8f,0.1f,0.1f,1.f) },
-		{ FVector(-Corner,  Corner, NPCZ), AT66OuroborosNPC::StaticClass(), NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros"),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
-		{ FVector(-Corner, -Corner, NPCZ), AT66SaintNPC::StaticClass(),     NSLOCTEXT("T66.NPC", "Saint", "Saint"),          FLinearColor(0.9f,0.9f,0.9f,1.f) },
+	// Shuffle NPC assignment to corners so each run has different NPCs at each corner.
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0) ? T66GI->ProceduralTerrainSeed : FMath::Rand();
+	FRandomStream ShuffleRng(RunSeed + 991);
+	for (int32 i = NPCDefs.Num() - 1; i > 0; --i)
+	{
+		const int32 j = ShuffleRng.RandRange(0, i);
+		NPCDefs.Swap(i, j);
+	}
+
+	// Find closest flat surface to a reference point (flat = normal nearly vertical). Search in rings outward.
+	auto FindClosestFlatSurface = [World](float RefX, float RefY) -> FVector
+	{
+		static constexpr float MinNormalZ = 0.92f;   // ~22° max slope
+		static constexpr float SearchRadiusMax = 1200.f;
+		static constexpr float RadiusStep = 120.f;
+		static constexpr int32 NumAngles = 16;
+
+		FVector Fallback(RefX, RefY, 60.f);
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(Hit, FVector(RefX, RefY, 2000.f), FVector(RefX, RefY, -4000.f), ECC_WorldStatic))
+		{
+			Fallback = Hit.ImpactPoint;
+		}
+
+		for (float R = 0.f; R <= SearchRadiusMax; R += RadiusStep)
+		{
+			const int32 AngleSteps = (R <= 0.f) ? 1 : NumAngles;
+			for (int32 a = 0; a < AngleSteps; ++a)
+			{
+				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(a) / static_cast<float>(AngleSteps));
+				const float X = RefX + R * FMath::Cos(Angle);
+				const float Y = RefY + R * FMath::Sin(Angle);
+				const FVector Start(X, Y, 2000.f);
+				const FVector End(X, Y, -4000.f);
+				if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic) && Hit.ImpactNormal.Z >= MinNormalZ)
+				{
+					return Hit.ImpactPoint;
+				}
+			}
+		}
+		return Fallback;
 	};
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	for (const FCornerDef& D : Corners)
+	for (int32 i = 0; i < 4; ++i)
 	{
-		// Corner NPC (interactable). Place inward from the corner so the safe-zone disc stays fully on-map.
-		const float SX = (D.CornerLoc.X >= 0.f) ? 1.f : -1.f;
-		const float SY = (D.CornerLoc.Y >= 0.f) ? 1.f : -1.f;
-		const FVector NPCLoc(
-			D.CornerLoc.X - (SX * NPCOffset),
-			D.CornerLoc.Y - (SY * NPCOffset),
-			NPCZ);
-		AActor* SpawnedNPC = World->SpawnActor<AActor>(D.NPCClass, NPCLoc, FRotator::ZeroRotator, SpawnParams);
+		const FVector FlatLoc = FindClosestFlatSurface(CornerPositions[i].X, CornerPositions[i].Y);
+		AActor* SpawnedNPC = World->SpawnActor<AActor>(NPCDefs[i].NPCClass, FlatLoc, FRotator::ZeroRotator, SpawnParams);
 		if (AT66HouseNPCBase* NPC = Cast<AT66HouseNPCBase>(SpawnedNPC))
 		{
-			NPC->NPCName = D.Name;
-			NPC->NPCColor = D.Color;
+			NPC->NPCName = NPCDefs[i].Name;
+			NPC->NPCColor = NPCDefs[i].Color;
 			NPC->ApplyVisuals();
 		}
 	}
@@ -1207,6 +1318,16 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 	}
 }
 
+void AT66GameMode::SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc)
+{
+	if (!World) return;
+	static constexpr float PlateauHalfHeight = 10.f; // top of disc at TopCenterLoc.Z
+	const FVector PlateauLoc(TopCenterLoc.X, TopCenterLoc.Y, TopCenterLoc.Z - PlateauHalfHeight);
+	FActorSpawnParameters P;
+	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	World->SpawnActor<AT66SpawnPlateau>(AT66SpawnPlateau::StaticClass(), PlateauLoc, FRotator::ZeroRotator, P);
+}
+
 void AT66GameMode::SpawnWorldInteractablesForStage()
 {
 	if (IsColiseumStage()) return;
@@ -1218,9 +1339,12 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
 	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = GetT66GameInstance();
 
+	// Run-level seed so positions change every time "Enter the Tribulation" or PIE is started (like procedural terrain).
+	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0) ? T66GI->ProceduralTerrainSeed : FMath::Rand();
 	const int32 StageNum = RunState->GetCurrentStage();
-	FRandomStream Rng(StageNum * 1337 + 42);
+	FRandomStream Rng(RunSeed + StageNum * 1337 + 42);
 
 	// Main map square bounds (centered at 0,0). Keep some margin from walls. (4x area = 2x linear)
 	static constexpr float MainHalfExtent = 22000.f;  // Match miasma SafeHalfExtent; playable area
@@ -1290,39 +1414,42 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		return true;
 	};
 
-	auto FindSpawnLoc = [&]() -> FVector
+	struct FSpawnHitResult { FVector Loc; FVector Normal; };
+	auto FindSpawnLoc = [&]() -> FSpawnHitResult
 	{
+		const FVector Up = FVector::UpVector;
 		for (int32 Try = 0; Try < 40; ++Try)
 		{
 			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 			FVector Loc(X, Y, SpawnZ);
+			FVector Normal = Up;
 
-			// Trace to ground.
 			FHitResult Hit;
 			const FVector Start = Loc + FVector(0.f, 0.f, 1000.f);
 			const FVector End = Loc - FVector(0.f, 0.f, 4000.f);
 			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 			{
 				Loc = Hit.ImpactPoint;
+				Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, Up);
 			}
 
 			if (IsGoodLoc(Loc))
 			{
-				return Loc;
+				return { Loc, Normal };
 			}
 		}
-		// Fallback: center-ish.
-		return FVector(0.f, 0.f, SpawnZ);
+		return { FVector(0.f, 0.f, SpawnZ), Up };
 	};
 
 	auto SpawnOne = [&](UClass* Cls) -> AActor*
 	{
 		FActorSpawnParameters P;
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		const FVector L = FindSpawnLoc();
-		AActor* A = World->SpawnActor<AActor>(Cls, L, FRotator::ZeroRotator, P);
-		if (A) UsedLocs.Add(L);
+		const FSpawnHitResult HitResult = FindSpawnLoc();
+		const FQuat SlopeRot = FQuat::FindBetweenNormals(FVector::UpVector, HitResult.Normal);
+		AActor* A = World->SpawnActor<AActor>(Cls, HitResult.Loc, SlopeRot.Rotator(), P);
+		if (A) UsedLocs.Add(HitResult.Loc);
 		return A;
 	};
 
@@ -1671,7 +1798,16 @@ void AT66GameMode::SpawnBossForCurrentStage()
 void AT66GameMode::EnsureLevelSetup()
 {
 	UE_LOG(LogTemp, Log, TEXT("Checking level setup..."));
-	
+
+	if (IsLabLevel())
+	{
+		SpawnLabFloorIfNeeded();
+		SpawnLightingIfNeeded();  // Same sky and lighting as gameplay: SkyAtmosphere (blue sky), sun, sky light, fog, post process
+		SpawnLabCollectorIfNeeded();
+		SpawnPlayerStartIfNeeded();
+		return;
+	}
+
 	SpawnFloorIfNeeded();
 	SpawnColiseumArenaIfNeeded();
 	SpawnTutorialArenaIfNeeded();
@@ -1798,8 +1934,8 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 		if (Floor && Floor->GetStaticMeshComponent())
 		{
 			Floor->Tags.Add(FloorTag);
-			Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
+			Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 			Floor->SetActorScale3D(FVector(80.f, 80.f, 1.f)); // 8000x8000
 			T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 			if (UMaterialInstanceDynamic* Mat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
@@ -1911,8 +2047,8 @@ void AT66GameMode::SpawnStartAreaWallsIfNeeded()
 		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 		Wall->Tags.Add(Spec.Tag);
-		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
+		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		Wall->SetActorScale3D(Spec.Scale);
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
@@ -1972,8 +2108,8 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 		Wall->Tags.Add(Spec.Tag);
-		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
+		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		Wall->SetActorScale3D(Spec.Scale);
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
@@ -1988,15 +2124,10 @@ void AT66GameMode::SpawnFloorIfNeeded()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
+	if (IsLabLevel()) return;  // Lab uses SpawnLabFloorIfNeeded() only
 
-	// Preload all 4 ground materials during level setup so floors get grass texture immediately.
-	for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
-	{
-		if (!GroundFloorMaterials[i].IsNull() && !GroundFloorMaterials[i].Get())
-		{
-			GroundFloorMaterials[i].LoadSynchronous();
-		}
-	}
+	// Ground materials are loaded async: if not yet resident the floor spawns without material,
+	// and the async callback at the bottom of this function re-applies once loaded.
 
 	// Main run uses Landscape only (no main floor). Coliseum, Boost, and Tutorial are small island floors to the side.
 	struct FFloorSpec
@@ -2239,6 +2370,88 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		}
 	}
 
+	// Exponential Height Fog for atmospheric depth (distant terrain lighter/softer, less flat/gamey).
+	AExponentialHeightFog* HeightFog = nullptr;
+	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
+	{
+		HeightFog = *It;
+		break;
+	}
+	if (!HeightFog)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No Exponential Height Fog found - spawning for atmospheric depth"));
+		AExponentialHeightFog* SpawnedFog = World->SpawnActor<AExponentialHeightFog>(
+			AExponentialHeightFog::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+		if (SpawnedFog)
+		{
+			UExponentialHeightFogComponent* FogComp = SpawnedFog->FindComponentByClass<UExponentialHeightFogComponent>();
+			if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(SpawnedFog->GetRootComponent());
+			if (FogComp)
+			{
+				FogComp->SetFogDensity(0.015f);       // Gentle haze (was default ~0.02; lower = softer)
+				FogComp->SetFogHeightFalloff(0.2f);  // How fog falls off with height
+				FogComp->SetFogMaxOpacity(0.6f);     // Cap so distance reads hazy, not solid
+				FogComp->SetStartDistance(0.f);       // Fog starts from camera
+				FogComp->SetFogInscatteringColor(FLinearColor(0.7f, 0.75f, 0.85f)); // Slight blue-grey for sky match
+			}
+#if WITH_EDITOR
+			SpawnedFog->SetActorLabel(TEXT("DEV_ExponentialHeightFog"));
+#endif
+			SpawnedSetupActors.Add(SpawnedFog);
+			HeightFog = SpawnedFog;
+		}
+	}
+
+	// PostProcessVolume (unbound) for exposure and color grading so distance reads less punchy.
+	APostProcessVolume* PPVolume = nullptr;
+	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+	{
+		APostProcessVolume* P = *It;
+		if (P && P->bUnbound)
+		{
+			PPVolume = P;
+			break;
+		}
+	}
+	if (!PPVolume)
+	{
+		// Prefer finding any post process volume and making it unbound
+		for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+		{
+			PPVolume = *It;
+			break;
+		}
+	}
+	if (!PPVolume)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No PostProcessVolume found - spawning for exposure/color grading"));
+		APostProcessVolume* SpawnedPP = World->SpawnActor<APostProcessVolume>(
+			APostProcessVolume::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+		if (SpawnedPP)
+		{
+			SpawnedPP->bUnbound = true;
+			FPostProcessSettings& PPS = SpawnedPP->Settings;
+			PPS.bOverride_AutoExposureMinBrightness = true;
+			PPS.AutoExposureMinBrightness = 0.4f;
+			PPS.bOverride_AutoExposureMaxBrightness = true;
+			PPS.AutoExposureMaxBrightness = 1.2f;
+			PPS.bOverride_ColorSaturation = true;
+			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f); // Slight desaturation so scene isn't uniformly punchy
+#if WITH_EDITOR
+			SpawnedPP->SetActorLabel(TEXT("DEV_PostProcessVolume"));
+#endif
+			SpawnedSetupActors.Add(SpawnedPP);
+		}
+	}
+
 	// Force ALL directional and sky lights in the level to Movable so everything stays lit (no baked/static).
 	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
 	{
@@ -2312,6 +2525,114 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 			UE_LOG(LogTemp, Log, TEXT("Spawned development PlayerStart at %s"), *SpawnLoc.ToString());
 		}
 	}
+}
+
+void AT66GameMode::SpawnLabFloorIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World || !IsLabLevel()) return;
+
+	// One central floor: ~1/4 of gameplay map (MainHalfExtent 22000 -> Lab half 5500)
+	static const FName LabFloorTag(TEXT("T66_Floor_Lab"));
+	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+	{
+		if (It->Tags.Contains(LabFloorTag))
+		{
+			It->Destroy();
+			break;
+		}
+	}
+
+	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (!CubeMesh) return;
+
+	// Cube 100uu default. Scale (110, 110, 1) -> 11000 x 11000 x 100. Center at (0,0,50) so top at 100.
+	const float LabHalfExtent = 5500.f;  // 1/4 of 22000
+	const float LabFloorHeight = 100.f;
+	const FVector LabFloorScale(LabHalfExtent * 2.f / 100.f, LabHalfExtent * 2.f / 100.f, LabFloorHeight / 100.f);
+	const FVector LabFloorLoc(0.f, 0.f, LabFloorHeight * 0.5f);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AStaticMeshActor* Floor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), LabFloorLoc, FRotator::ZeroRotator, SpawnParams);
+	if (!Floor || !Floor->GetStaticMeshComponent()) return;
+
+	Floor->Tags.Add(LabFloorTag);
+	T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Movable);
+	Floor->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
+	Floor->SetActorScale3D(LabFloorScale);
+	Floor->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Floor->GetStaticMeshComponent()->SetCollisionResponseToAllChannels(ECR_Block);
+	T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
+
+	if (GroundFloorMaterials.Num() > 0 && GroundFloorMaterials[0].Get())
+	{
+		Floor->GetStaticMeshComponent()->SetMaterial(0, GroundFloorMaterials[0].Get());
+	}
+	SpawnedSetupActors.Add(Floor);
+	UE_LOG(LogTemp, Log, TEXT("Spawned Lab central floor (half-extent %.0f, top Z %.0f)"), LabHalfExtent, LabFloorHeight);
+}
+
+void AT66GameMode::SpawnLabCollectorIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World || !IsLabLevel()) return;
+
+	for (TActorIterator<AT66LabCollector> It(World); It; ++It)
+	{
+		return;  // Already have a Collector
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	// Place Collector in front of spawn (player spawns at 0,0,120)
+	const FVector CollectorLoc(400.f, 0.f, 120.f);
+	AT66LabCollector* Collector = World->SpawnActor<AT66LabCollector>(AT66LabCollector::StaticClass(), CollectorLoc, FRotator::ZeroRotator, SpawnParams);
+	if (Collector)
+	{
+		SpawnedSetupActors.Add(Collector);
+		UE_LOG(LogTemp, Log, TEXT("Spawned The Collector in Lab"));
+	}
+}
+
+FVector AT66GameMode::GetRandomLabSpawnLocation() const
+{
+	// Lab floor: half extent 5500, top Z = 100. Keep margin from edge and min distance between spawns.
+	static constexpr float LabHalfExtent = 5500.f;
+	static constexpr float Margin = 800.f;
+	static constexpr float MinDistBetween = 400.f;
+	static constexpr float SpawnZ = 100.f;
+	static constexpr int32 MaxAttempts = 20;
+
+	UWorld* World = GetWorld();
+	if (!World) return FVector(400.f, 0.f, SpawnZ);
+
+	FRandomStream Rng(FMath::Rand());
+	for (int32 Attempt = 0; Attempt < MaxAttempts; ++Attempt)
+	{
+		const float X = Rng.FRandRange(-(LabHalfExtent - Margin), LabHalfExtent - Margin);
+		const float Y = Rng.FRandRange(-(LabHalfExtent - Margin), LabHalfExtent - Margin);
+		const FVector Candidate(X, Y, SpawnZ);
+
+		bool bTooClose = false;
+		for (AActor* A : LabSpawnedActors)
+		{
+			if (!A) continue;
+			if (FVector::Dist2D(Candidate, A->GetActorLocation()) < MinDistBetween)
+			{
+				bTooClose = true;
+				break;
+			}
+		}
+		if (!bTooClose) return Candidate;
+	}
+	// Fallback: offset from last spawn or default
+	if (LabSpawnedActors.Num() > 0 && LabSpawnedActors.Last())
+	{
+		FVector Last = LabSpawnedActors.Last()->GetActorLocation();
+		return Last + FVector(MinDistBetween, 0.f, 0.f);
+	}
+	return FVector(400.f, 0.f, SpawnZ);
 }
 
 UT66GameInstance* AT66GameMode::GetT66GameInstance() const
@@ -2397,7 +2718,13 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 	// Robust: always ensure Gameplay spawns in the Start Area regardless of where a PlayerStart was placed.
 	// (Coliseum spawns in the Main Area and starts timer immediately.)
-	if (!IsColiseumStage())
+	if (IsLabLevel())
+	{
+		// Lab floor top is at Z=100; spawn slightly above so hero lands on it
+		SpawnLocation = FVector(0.f, 0.f, 120.f);
+		SpawnRotation = FRotator::ZeroRotator;
+	}
+	else if (!IsColiseumStage())
 	{
 		// Start area is a square inside main map (X -17600..-13600, Y ±2000). Spawn at center.
 		SpawnLocation = FVector(-15600.f, 0.f, 200.f);
@@ -2501,4 +2828,153 @@ AT66HeroBase* AT66GameMode::SpawnSelectedHero(AController* Controller)
 	}
 
 	return Cast<AT66HeroBase>(SpawnedPawn);
+}
+
+// ============================================
+// The Lab: spawn / reset
+// ============================================
+
+FVector AT66GameMode::GetLabSpawnLocation() const
+{
+	UWorld* World = GetWorld();
+	if (!World) return FVector(400.f, 0.f, 200.f);
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APlayerController* PC = It->Get())
+		{
+			APawn* Pawn = PC->GetPawn();
+			if (Pawn)
+			{
+				FVector Loc = Pawn->GetActorLocation();
+				FVector Fwd = Pawn->GetActorForwardVector();
+				Fwd.Z = 0.f;
+				Fwd.Normalize();
+				return Loc + Fwd * 500.f + FVector(0.f, 0.f, 0.f);
+			}
+		}
+	}
+	return FVector(400.f, 0.f, 200.f);
+}
+
+AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
+{
+	if (!IsLabLevel()) return nullptr;
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+
+	TSubclassOf<AT66EnemyBase> ClassToSpawn;
+	if (CharacterVisualID == FName(TEXT("Leprechaun")))
+		ClassToSpawn = AT66LeprechaunEnemy::StaticClass();
+	else if (CharacterVisualID == FName(TEXT("GoblinThief")))
+		ClassToSpawn = AT66GoblinThiefEnemy::StaticClass();
+	else if (CharacterVisualID == FName(TEXT("UniqueEnemy")))
+		ClassToSpawn = AT66UniqueDebuffEnemy::StaticClass();
+	else
+		ClassToSpawn = AT66EnemyBase::StaticClass();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FVector Loc = GetRandomLabSpawnLocation();
+	FRotator Rot = FRotator::ZeroRotator;
+	AT66EnemyBase* Mob = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, Loc, Rot, SpawnParams);
+	if (Mob)
+	{
+		if (!CharacterVisualID.IsNone())
+		{
+			Mob->CharacterVisualID = CharacterVisualID;
+		}
+		LabSpawnedActors.Add(Mob);
+	}
+	return Mob;
+}
+
+AActor* AT66GameMode::SpawnLabBoss(FName BossID)
+{
+	if (!IsLabLevel()) return nullptr;
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!GI) return nullptr;
+
+	FBossData BossData;
+	if (!GI->GetBossData(BossID, BossData)) return nullptr;
+
+	UClass* ClassToSpawn = BossData.BossClass.Get();
+	if (!ClassToSpawn)
+	{
+		ClassToSpawn = AT66BossBase::StaticClass();
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FVector Loc = GetRandomLabSpawnLocation();
+	FRotator Rot = FRotator::ZeroRotator;
+	AT66BossBase* Boss = World->SpawnActor<AT66BossBase>(ClassToSpawn, Loc, Rot, SpawnParams);
+	if (Boss)
+	{
+		Boss->InitializeBoss(BossData);
+		Boss->bAwakened = true;
+		Boss->CurrentHP = Boss->MaxHP;
+		LabSpawnedActors.Add(Boss);
+	}
+	return Boss;
+}
+
+AActor* AT66GameMode::SpawnLabTreeOfLife()
+{
+	if (!IsLabLevel()) return nullptr;
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FVector Loc = GetRandomLabSpawnLocation();
+	FRotator Rot = FRotator::ZeroRotator;
+	AT66TreeOfLifeInteractable* Tree = World->SpawnActor<AT66TreeOfLifeInteractable>(AT66TreeOfLifeInteractable::StaticClass(), Loc, Rot, SpawnParams);
+	if (Tree)
+	{
+		LabSpawnedActors.Add(Tree);
+	}
+	return Tree;
+}
+
+AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
+{
+	if (!IsLabLevel()) return nullptr;
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+
+	UClass* ClassToSpawn = nullptr;
+	if (InteractableID == FName(TEXT("TreeOfLife")))
+		ClassToSpawn = AT66TreeOfLifeInteractable::StaticClass();
+	else if (InteractableID == FName(TEXT("CashTruck")))
+		ClassToSpawn = AT66CashTruckInteractable::StaticClass();
+	else if (InteractableID == FName(TEXT("WheelSpin")))
+		ClassToSpawn = AT66WheelSpinInteractable::StaticClass();
+	else if (InteractableID == FName(TEXT("IdolAltar")))
+		ClassToSpawn = AT66IdolAltar::StaticClass();
+	if (!ClassToSpawn) return nullptr;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FVector Loc = GetRandomLabSpawnLocation();
+	FRotator Rot = FRotator::ZeroRotator;
+	AActor* Spawned = World->SpawnActor(ClassToSpawn, &Loc, &Rot, SpawnParams);
+	if (Spawned)
+	{
+		LabSpawnedActors.Add(Spawned);
+	}
+	return Spawned;
+}
+
+void AT66GameMode::ResetLabSpawnedActors()
+{
+	for (AActor* A : LabSpawnedActors)
+	{
+		if (A)
+		{
+			A->Destroy();
+		}
+	}
+	LabSpawnedActors.Empty();
 }

@@ -1,15 +1,13 @@
 """
-One-shot setup for local leaderboard target DataTables.
+One-shot setup for local leaderboard target DataTables and filter DTs.
 
 Creates (or fixes) these DataTables under /Game/Data:
   - DT_Leaderboard_BountyTargets   (FT66LeaderboardBountyTargetRow)
   - DT_Leaderboard_SpeedrunTargets (FT66LeaderboardSpeedRunTargetRow)
+  - DT_Leaderboard_Friends         (FLeaderboardEntry) — Friends filter
+  - DT_Leaderboard_Streamers       (FLeaderboardEntry) — Streamers filter
 
-Then fills them from:
-  Content/Data/Leaderboard_BountyTargets.csv
-  Content/Data/Leaderboard_SpeedrunTargets.csv
-
-Run from project root:
+Fills from Content/Data/*.csv. Run from project root:
   UnrealEditor-Cmd.exe T66.uproject -run=pythonscript -script="Scripts/SetupLeaderboardDataTables.py"
 """
 
@@ -109,17 +107,24 @@ def main():
     dt_speed_path = "/Game/Data/DT_Leaderboard_SpeedrunTargets"
 
     # Clean up common "bad import" assets created by dragging the CSV into Content Browser.
-    # These typically end up as DataTables with the wrong row struct and will keep reimporting with errors.
-    for bad_path in ["/Game/Data/Leaderboard_BountyTargets", "/Game/Data/Leaderboard_SpeedrunTargets"]:
+    for bad_path in [
+        "/Game/Data/Leaderboard_BountyTargets", "/Game/Data/Leaderboard_SpeedrunTargets",
+        "/Game/Data/Leaderboard_Friends", "/Game/Data/Leaderboard_Streamers",
+    ]:
         if unreal.EditorAssetLibrary.does_asset_exist(bad_path):
             unreal.log_warning(f"Removing bad import asset: {bad_path}")
             unreal.EditorAssetLibrary.delete_asset(bad_path)
 
     bounty_struct_path = "/Script/T66.T66LeaderboardBountyTargetRow"
     speed_struct_path = "/Script/T66.T66LeaderboardSpeedRunTargetRow"
+    entry_struct_path = "/Script/T66.LeaderboardEntry"
 
     dt_bounty = _ensure_datatable("DT_Leaderboard_BountyTargets", dt_bounty_path, bounty_struct_path)
     dt_speed = _ensure_datatable("DT_Leaderboard_SpeedrunTargets", dt_speed_path, speed_struct_path)
+    dt_friends_path = "/Game/Data/DT_Leaderboard_Friends"
+    dt_streamers_path = "/Game/Data/DT_Leaderboard_Streamers"
+    dt_friends = _ensure_datatable("DT_Leaderboard_Friends", dt_friends_path, entry_struct_path)
+    dt_streamers = _ensure_datatable("DT_Leaderboard_Streamers", dt_streamers_path, entry_struct_path)
 
     ok = True
     if dt_bounty:
@@ -129,6 +134,16 @@ def main():
 
     if dt_speed:
         ok = _fill_from_csv(dt_speed, "Data/Leaderboard_SpeedrunTargets.csv", dt_speed_path) and ok
+    else:
+        ok = False
+
+    if dt_friends:
+        ok = _fill_from_csv(dt_friends, "Data/Leaderboard_Friends.csv", dt_friends_path) and ok
+    else:
+        ok = False
+
+    if dt_streamers:
+        ok = _fill_from_csv(dt_streamers, "Data/Leaderboard_Streamers.csv", dt_streamers_path) and ok
     else:
         ok = False
 

@@ -412,6 +412,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItem(FName ItemID);
 
+	/** Clear inventory only (e.g. Lab "Reset Items"). Recomputes stats and broadcasts. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void ClearInventory();
+
 	/** Sell first inventory item. Returns true if sold. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellFirstItem();

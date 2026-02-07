@@ -5,6 +5,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RngSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
+#include "UI/Style/T66Style.h"
 
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -100,14 +101,14 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 					[
 						SNew(STextBlock)
 						.Text(Title)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
+						.Font(FT66Style::Tokens::FontBold(28))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SAssignNew(StatusText, STextBlock)
 						.Text(Loc ? Loc->GetText_PressSpinToRollGold() : NSLOCTEXT("T66.Wheel", "PressSpinToRollGold", "Press SPIN to roll gold."))
-						.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+						.Font(FT66Style::Tokens::FontRegular(14))
 						.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 					]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 12.f)
@@ -203,31 +204,33 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							SNew(SBox).WidthOverride(180.f).HeightOverride(44.f)
+							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(44.f)
 							[
 								SAssignNew(SpinButton, SButton)
+								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnSpin))
-								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.55f, 0.25f, 1.f))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
+								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
 								[
 									SNew(STextBlock)
 									.Text(SpinTxt)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 								]
 							]
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
-							SNew(SBox).WidthOverride(180.f).HeightOverride(44.f)
+							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(44.f)
 							[
 								SAssignNew(BackButton, SButton)
+								.HAlign(HAlign_Center).VAlign(VAlign_Center)
 								.OnClicked(FOnClicked::CreateUObject(this, &UT66WheelOverlayWidget::OnBack))
-								.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 								[
 									SNew(STextBlock)
 									.Text(BackTxt)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-									.ColorAndOpacity(FLinearColor::White)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 								]
 							]
 						]

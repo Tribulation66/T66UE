@@ -446,6 +446,11 @@ void AT66EnemyBase::OnDeath()
 	if (Achievements)
 	{
 		Achievements->NotifyEnemyKilled(1);
+		// Lab unlock: mark this enemy type as unlocked for The Lab.
+		if (!CharacterVisualID.IsNone())
+		{
+			Achievements->AddLabUnlockedEnemy(CharacterVisualID);
+		}
 	}
 
 	if (OwningDirector)

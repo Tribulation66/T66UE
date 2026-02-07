@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66LanguageSelectScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -77,7 +78,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(LangName)
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+							.Font(FT66Style::Tokens::FontBold(22))
 							.ColorAndOpacity_Lambda(GetRowTextColor)
 							.Justification(ETextJustify::Center)
 						]
@@ -118,7 +119,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 36))
+						.Font(FT66Style::Tokens::FontBold(36))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					// Language List
@@ -147,43 +148,13 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.WidthOverride(150.0f)
-							.HeightOverride(50.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleBackClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.3f, 0.3f, 0.35f, 1.0f))
-								[
-									SNew(STextBlock)
-									.Text(BackText)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
+							FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleBackClicked), ET66ButtonType::Neutral, 150.f, 50.f)
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.WidthOverride(150.0f)
-							.HeightOverride(50.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked))
-								.ButtonColorAndOpacity(FLinearColor(0.2f, 0.5f, 0.3f, 1.0f))
-								[
-									SNew(STextBlock)
-									.Text(ConfirmText)
-									.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
+							FT66Style::MakeButton(ConfirmText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked), ET66ButtonType::Success, 150.f, 50.f)
 						]
 					]
 				]

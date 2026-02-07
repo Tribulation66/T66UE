@@ -11,6 +11,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
+#include "UI/Style/T66Style.h"
 #include "Styling/CoreStyle.h"
 
 void UT66CowardicePromptWidget::SetGate(AT66CowardiceGate* InGate)
@@ -41,14 +42,14 @@ TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Cowardice", "Title", "Take Cowardice Gate?"))
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 22))
+					.Font(FT66Style::Tokens::FontBold(22))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 				[
 					SAssignNew(StatusText, STextBlock)
 					.Text(FText::GetEmpty())
-					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+					.Font(FT66Style::Tokens::FontRegular(14))
 					.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
@@ -56,41 +57,17 @@ TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 					[
-						SNew(SBox)
-						.WidthOverride(140.f)
-						.HeightOverride(44.f)
-						[
-							SNew(SButton)
-							.OnClicked(FOnClicked::CreateUObject(this, &UT66CowardicePromptWidget::OnYes))
-							.ButtonColorAndOpacity(FLinearColor(0.55f, 0.15f, 0.15f, 1.f))
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(Loc ? Loc->GetText_Yes() : NSLOCTEXT("T66.Common", "Yes", "YES"))
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-								.ColorAndOpacity(FLinearColor::White)
-							]
-						]
+						FT66Style::MakeButton(
+							Loc ? Loc->GetText_Yes() : NSLOCTEXT("T66.Common", "Yes", "YES"),
+							FOnClicked::CreateUObject(this, &UT66CowardicePromptWidget::OnYes),
+							ET66ButtonType::Danger, 140.f, 44.f)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 					[
-						SNew(SBox)
-						.WidthOverride(140.f)
-						.HeightOverride(44.f)
-						[
-							SNew(SButton)
-							.OnClicked(FOnClicked::CreateUObject(this, &UT66CowardicePromptWidget::OnNo))
-							.ButtonColorAndOpacity(FLinearColor(0.2f, 0.2f, 0.28f, 1.f))
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(Loc ? Loc->GetText_No() : NSLOCTEXT("T66.Common", "No", "NO"))
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-								.ColorAndOpacity(FLinearColor::White)
-							]
-						]
+						FT66Style::MakeButton(
+							Loc ? Loc->GetText_No() : NSLOCTEXT("T66.Common", "No", "NO"),
+							FOnClicked::CreateUObject(this, &UT66CowardicePromptWidget::OnNo),
+							ET66ButtonType::Neutral, 140.f, 44.f)
 					]
 				]
 			]

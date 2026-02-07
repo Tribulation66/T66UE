@@ -13,6 +13,7 @@ class AT66HeroBase;
 class USceneComponent;
 class UPointLightComponent;
 class UStaticMeshComponent;
+class UMaterialInstanceDynamic;
 
 /**
  * Preview stage for the Hero Selection screen.
@@ -55,8 +56,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void CapturePreview();
 
+	/** Update preview lighting to match the current Dark/Light theme (day = sunlight, night = moonlight). */
+	UFUNCTION(BlueprintCallable, Category = "Preview")
+	void ApplyThemeLighting();
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Create the render target and scene capture at runtime if not set in editor */
@@ -69,6 +75,10 @@ protected:
 	void FrameCameraToPreview();
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;
 	void ApplyShadowSettings();
+
+	/** Called when player settings change (theme toggle). */
+	UFUNCTION()
+	void OnThemeChanged();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<USceneCaptureComponent2D> SceneCapture;
@@ -147,4 +157,31 @@ protected:
 	/** If true, disable shadow casting for preview meshes/platform. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	bool bDisablePreviewShadows = true;
+
+	/** Sky dome (inverted sphere) providing the background color. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
+	TObjectPtr<UStaticMeshComponent> BackdropSphere;
+
+	/** Ambient light inside the sky dome for uniform sky coloring. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
+	TObjectPtr<UPointLightComponent> AmbientSkyLight;
+
+	/** Dynamic material for ground coloring (grass tint). */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> GroundMID;
+
+	/** Dynamic material for backdrop sphere coloring (sky tint). */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> BackdropMID;
+
+	/** Star dot meshes (small spheres on upper hemisphere, visible in dark mode). */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> StarMeshes;
+
+	/** Position offsets for each star relative to dome center. */
+	TArray<FVector> StarOffsets;
+
+	/** Shared dynamic material for all star dots. */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> StarMID;
 };

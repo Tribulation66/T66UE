@@ -1,0 +1,11 @@
+Name,Rank,PlayerName,Score,TimeSeconds,HeroID,PartySize,Difficulty,StageReached,bIsLocalPlayer
+Friend_01,1,BestBuddy,1800,0,,Solo,Easy,0,False
+Friend_02,2,SquadLeader,1650,0,,Solo,Easy,0,False
+Friend_03,3,NightOwl_42,1520,0,,Solo,Easy,0,False
+Friend_04,4,CouchWarrior,1400,0,,Solo,Easy,0,False
+Friend_05,5,LootGoblin,1280,0,,Solo,Easy,0,False
+Friend_06,6,DungeonDad,1150,0,,Solo,Easy,0,False
+Friend_07,7,PixelPaladin,1030,0,,Solo,Easy,0,False
+Friend_08,8,CasualCarl,920,0,,Solo,Easy,0,False
+Friend_09,9,SneakySteve,810,0,,Solo,Easy,0,False
+Friend_10,10,AFK_Andy,700,0,,Solo,Easy,0,False

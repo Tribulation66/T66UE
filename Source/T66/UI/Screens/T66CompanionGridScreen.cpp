@@ -8,6 +8,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -191,7 +192,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
+						.Font(FT66Style::Tokens::FontBold(28))
 						.ColorAndOpacity(FLinearColor::White)
 					]
 					+ SVerticalBox::Slot()
@@ -209,16 +210,16 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 					.HAlign(HAlign_Center)
 					.Padding(0.0f, 20.0f, 0.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(120.0f).HeightOverride(44.0f)
+						SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(44.0f)
 						[
 							SNew(SButton)
 							.HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionGridScreen::HandleCloseClicked))
-							.ButtonColorAndOpacity(FLinearColor(0.2f, 0.2f, 0.28f, 1.0f))
+							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 							[
 								SNew(STextBlock).Text(CloseText)
-								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
-								.ColorAndOpacity(FLinearColor::White)
+								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 							]
 						]
 					]

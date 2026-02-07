@@ -27,7 +27,7 @@ struct FT66ProceduralLandscapeParams
 	int32 Seed = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "1"))
-	float HillAmplitude = 3150.f;  // ~10% shorter than 3500; max hill height in UU. Wide bases + flat plateaus keep slopes climbable.
+	float HillAmplitude = 3465.f;  // ~10% taller than 3150; max hill height in UU. Slope limiter keeps climbable.
 
 	/** Large hills: wavelength in meters. Larger = wider hills. ~220 gives ~3 very wide large hills. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "10"))
@@ -44,9 +44,9 @@ struct FT66ProceduralLandscapeParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "10"))
 	float MediumScaleMeters = 22.f;
 
-	/** Set 0 to disable small bumps. */
+	/** Small hills: wavelength in meters. ~18 gives a few small hills; set 0 to disable. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "0"))
-	float SmallScaleMeters = 0.f;
+	float SmallScaleMeters = 18.f;
 
 	/** If true, only very-large-scale noise (no medium). If false, mix large + medium for ~3 large + ~4 medium hills. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape")

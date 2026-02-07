@@ -115,6 +115,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void NotifyEnemyKilled(int32 Count = 1);
 
+	// ============================================
+	// Lab unlocks (items/enemies ever obtained or killed)
+	// ============================================
+
+	/** Mark an item as unlocked for The Lab (call when player obtains it in any run). Returns true if newly added. */
+	UFUNCTION(BlueprintCallable, Category = "Lab")
+	bool AddLabUnlockedItem(FName ItemID);
+
+	/** Mark an enemy/boss as unlocked for The Lab (call when player kills it in any run). Returns true if newly added. */
+	UFUNCTION(BlueprintCallable, Category = "Lab")
+	bool AddLabUnlockedEnemy(FName EnemyOrBossID);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Lab")
+	bool IsLabUnlockedItem(FName ItemID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Lab")
+	bool IsLabUnlockedEnemy(FName EnemyOrBossID) const;
+
 	/**
 	 * Claim an unlocked achievement reward (adds AC to wallet).
 	 * Returns true if claimed.

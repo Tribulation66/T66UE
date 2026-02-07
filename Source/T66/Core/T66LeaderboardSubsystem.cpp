@@ -965,3 +965,186 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	return Out;
 }
 
+static TArray<FLeaderboardEntry> LoadEntriesFromDataTable(UDataTable* DT)
+{
+	TArray<FLeaderboardEntry> Out;
+	if (!DT || DT->GetRowStruct() != FLeaderboardEntry::StaticStruct())
+	{
+		return Out;
+	}
+	const FString Ctx(TEXT("LeaderboardEntriesDT"));
+	TArray<FLeaderboardEntry*> Rows;
+	DT->GetAllRows<FLeaderboardEntry>(Ctx, Rows);
+	for (int32 i = 0; i < Rows.Num(); ++i)
+	{
+		if (Rows[i])
+		{
+			FLeaderboardEntry E = *Rows[i];
+			E.Rank = i + 1;
+			Out.Add(E);
+		}
+	}
+	return Out;
+}
+
+TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 SpeedRunStage) const
+{
+	if (Filter == ET66LeaderboardFilter::Global)
+	{
+		if (Type == ET66LeaderboardType::HighScore)
+		{
+			return BuildBountyEntries(Difficulty, PartySize);
+		}
+		return BuildSpeedRunEntries(Difficulty, PartySize, SpeedRunStage);
+	}
+
+	// Friends / Streamers: load base Top 10 from DT, then splice in local player's "YOU" entry
+	// exactly the same way Global does.
+	const TCHAR* Path = (Filter == ET66LeaderboardFilter::Friends) ? FriendsDTPath : StreamersDTPath;
+	UDataTable* DT = LoadObject<UDataTable>(nullptr, Path);
+	TArray<FLeaderboardEntry> Out = LoadEntriesFromDataTable(DT);
+
+	if (Out.Num() == 0) return Out;
+
+	// Ensure local save is loaded
+	if (!LocalSave)
+	{
+		const_cast<UT66LeaderboardSubsystem*>(this)->LoadOrCreateLocalSave();
+	}
+
+	bool bPractice = false;
+	bool bAnonNow = false;
+	(void)GetSettingsPracticeAndAnon(bPractice, bAnonNow);
+
+	if (Type == ET66LeaderboardType::HighScore)
+	{
+		// Get local best bounty for this difficulty/party
+		int64 LocalBest = 0;
+		bool bLocalAnonStored = false;
+		if (LocalSave)
+		{
+			for (const FT66LocalBountyRecord& R : LocalSave->BountyRecords)
+			{
+				if (R.Difficulty == Difficulty && R.PartySize == PartySize)
+				{
+					LocalBest = R.BestBounty;
+					bLocalAnonStored = R.bSubmittedAnonymous;
+					break;
+				}
+			}
+		}
+		const bool bUseAnonName = (LocalBest > 0) ? bLocalAnonStored : bAnonNow;
+		const FString LocalName = bUseAnonName ? TEXT("ANONYMOUS") : TEXT("YOU");
+
+		// Try to insert into top 10
+		const int64 Tenth = Out.Last().Score;
+		bool bLocalInTop10 = false;
+		if (LocalBest >= Tenth && LocalBest > 0)
+		{
+			int32 InsertIndex = Out.Num();
+			for (int32 i = 0; i < Out.Num(); ++i)
+			{
+				if (LocalBest > Out[i].Score)
+				{
+					InsertIndex = i;
+					break;
+				}
+			}
+			if (InsertIndex < 10)
+			{
+				FLeaderboardEntry You;
+				You.PlayerName = LocalName;
+				You.Score = LocalBest;
+				You.PartySize = PartySize;
+				You.Difficulty = Difficulty;
+				You.bIsLocalPlayer = true;
+				Out.Insert(You, InsertIndex);
+				Out.SetNum(10);
+				bLocalInTop10 = true;
+			}
+		}
+
+		// Re-rank
+		for (int32 i = 0; i < Out.Num(); ++i) Out[i].Rank = i + 1;
+
+		if (!bLocalInTop10)
+		{
+			FLeaderboardEntry You;
+			You.Rank = 11;
+			You.PlayerName = LocalName;
+			You.Score = LocalBest;
+			You.PartySize = PartySize;
+			You.Difficulty = Difficulty;
+			You.bIsLocalPlayer = true;
+			Out.Add(You);
+		}
+	}
+	else // SpeedRun
+	{
+		int32 Stage = FMath::Clamp(SpeedRunStage, 1, 66);
+		float LocalBest = 0.f;
+		bool bLocalAnonStored = false;
+		if (LocalSave)
+		{
+			for (const FT66LocalSpeedRunStageRecord& R : LocalSave->SpeedRunStageRecords)
+			{
+				if (R.Difficulty == Difficulty && R.PartySize == PartySize && R.Stage == Stage)
+				{
+					LocalBest = R.BestSeconds;
+					bLocalAnonStored = R.bSubmittedAnonymous;
+					break;
+				}
+			}
+		}
+		const bool bUseAnonName = (LocalBest > 0.01f) ? bLocalAnonStored : bAnonNow;
+		const FString LocalName = bUseAnonName ? TEXT("ANONYMOUS") : TEXT("YOU");
+
+		const float Tenth = Out.Last().TimeSeconds;
+		bool bLocalInTop10 = false;
+		if (LocalBest > 0.01f && LocalBest <= Tenth)
+		{
+			int32 InsertIndex = Out.Num();
+			for (int32 i = 0; i < Out.Num(); ++i)
+			{
+				if (LocalBest < Out[i].TimeSeconds)
+				{
+					InsertIndex = i;
+					break;
+				}
+			}
+			if (InsertIndex < 10)
+			{
+				FLeaderboardEntry You;
+				You.PlayerName = LocalName;
+				You.Score = 0;
+				You.TimeSeconds = LocalBest;
+				You.StageReached = Stage;
+				You.PartySize = PartySize;
+				You.Difficulty = Difficulty;
+				You.bIsLocalPlayer = true;
+				Out.Insert(You, InsertIndex);
+				Out.SetNum(10);
+				bLocalInTop10 = true;
+			}
+		}
+
+		for (int32 i = 0; i < Out.Num(); ++i) Out[i].Rank = i + 1;
+
+		if (!bLocalInTop10)
+		{
+			FLeaderboardEntry You;
+			You.Rank = 11;
+			You.PlayerName = LocalName;
+			You.Score = 0;
+			You.TimeSeconds = (LocalBest > 0.01f) ? LocalBest : 0.f;
+			You.StageReached = Stage;
+			You.PartySize = PartySize;
+			You.Difficulty = Difficulty;
+			You.bIsLocalPlayer = true;
+			Out.Add(You);
+		}
+	}
+
+	return Out;
+}
+

@@ -10,8 +10,6 @@
 struct FSlateBrush;
 class ST66LeaderboardPanel;
 class SImage;
-enum class ET66UITheme : uint8;
-
 /**
  * Main Menu Screen
  * Left side: Navigation buttons (New Game, Load Game, Settings, Achievements)
@@ -62,10 +60,6 @@ private:
 	TSharedPtr<FSlateBrush> MainMenuBackgroundBrush;
 	TSharedPtr<SImage> MainMenuBackgroundImage;
 
-	// Theme toggle: deferred + locked to prevent crashes from mid-event rebuild
-	ET66UITheme PendingTheme;
-	bool bThemeChangeInProgress = false;
-
 	// Get localization subsystem
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 
@@ -76,9 +70,9 @@ private:
 	FReply HandleAchievementsClicked();
 	FReply HandleLanguageClicked();
 	FReply HandleQuitClicked();
-	FReply HandleDarkThemeClicked();
-	FReply HandleLightThemeClicked();
-	void ApplyPendingTheme();
+
+	/** Load the correct background texture (MMDark / MMLight) into the background brush. */
+	void RequestBackgroundTexture();
 
 	// Handle language change to rebuild UI
 	UFUNCTION()

@@ -112,6 +112,12 @@ private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	bool IsCompanionUnlocked(FName CompanionID) const;
 
+	/** True when the Lore panel is visible (right-side panel swaps to lore, same as hero selection). */
+	bool bShowingLore = false;
+
+	/** Lore detail text shown in the lore panel (scrollable). */
+	TSharedPtr<STextBlock> CompanionLoreDetailWidget;
+
 	// Handle language change to rebuild UI
 	UFUNCTION()
 	void OnLanguageChanged(ET66Language NewLanguage);

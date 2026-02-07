@@ -114,7 +114,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	};
 
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 		[
 			SNew(SVerticalBox)
 			// Header row
@@ -134,24 +134,24 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 					.Padding(FMargin(15.0f, 8.0f))
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
 							SNew(STextBlock)
-					.Text_Lambda([this, Ach, Loc]() -> FText
-					{
-						const int32 Balance = Ach ? Ach->GetAchievementCoinsBalance() : 0;
-						if (Loc)
-						{
-							return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Balance));
-						}
-						return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Balance));
-					})
-					.Font(FT66Style::Tokens::FontBold(22))
-					.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+								.Text_Lambda([this, Ach, Loc]() -> FText
+								{
+									const int32 Balance = Ach ? Ach->GetAchievementCoinsBalance() : 0;
+									if (Loc)
+									{
+										return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Balance));
+									}
+									return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Balance));
+								})
+								.Font(FT66Style::Tokens::FontBold(22))
+								.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
 						]
 					]
 				]
@@ -195,18 +195,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			.AutoHeight()
 			.Padding(30.0f, 0.0f, 30.0f, 25.0f)
 			[
-				SNew(SBox).WidthOverride(120.0f).HeightOverride(45.0f)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center).VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked))
-					.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
-					[
-						SNew(STextBlock).Text(BackText)
-						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FLinearColor::White)
-					]
-				]
+				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f, 45.f)
 			]
 		];
 }

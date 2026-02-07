@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Data/T66DataTypes.h"
+#include "Styling/SlateBrush.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Input/SComboBox.h"
 
@@ -101,4 +102,17 @@ private:
 
 	// Helper to format time
 	FString FormatTime(float Seconds) const;
+
+	// Slate brushes for filter icon buttons (kept alive for SImage)
+	TSharedPtr<FSlateBrush> FilterBrushGlobal;
+	TSharedPtr<FSlateBrush> FilterBrushFriends;
+	TSharedPtr<FSlateBrush> FilterBrushStreamers;
+
+	// Streamers GIF animation (frame cycling)
+	TArray<TSharedPtr<FSlateBrush>> StreamerFrameBrushes;
+	TSharedPtr<SImage> StreamerIconImage;
+	int32 StreamerCurrentFrame = 0;
+	float StreamerFrameAccumulator = 0.0f;
+	static constexpr float StreamerFPS = 4.0f;
+	EActiveTimerReturnType TickStreamersAnimation(double InCurrentTime, float InDeltaTime);
 };

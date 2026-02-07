@@ -1158,8 +1158,23 @@ void UT66RunStateSubsystem::AddItem(FName ItemID)
 	Inventory.Add(ItemID);
 	RecomputeItemDerivedStats();
 	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=LootBag"), *ItemID.ToString()));
+	// Lab unlock: mark item as unlocked for The Lab (any run type including Lab).
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Achieve->AddLabUnlockedItem(ItemID);
+		}
+	}
 	InventoryChanged.Broadcast();
 	LogAdded.Broadcast();
+}
+
+void UT66RunStateSubsystem::ClearInventory()
+{
+	Inventory.Empty();
+	RecomputeItemDerivedStats();
+	InventoryChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::HealToFull()

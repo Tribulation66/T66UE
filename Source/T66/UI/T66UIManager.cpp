@@ -2,6 +2,7 @@
 
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
+#include "UI/Components/T66ThemeToggleWidget.h"
 #include "Blueprint/UserWidget.h"
 
 UT66UIManager::UT66UIManager()
@@ -16,6 +17,17 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 	OwningPlayer = InOwningPlayer;
 	NavigationHistory.Empty();
 	CurrentScreenType = ET66ScreenType::None;
+
+	// Create the persistent Dark/Light theme toggle (stays above screens, below modals)
+	if (OwningPlayer && !ThemeToggle)
+	{
+		ThemeToggle = CreateWidget<UT66ThemeToggleWidget>(OwningPlayer);
+		if (ThemeToggle)
+		{
+			ThemeToggle->SetUIManager(this);
+			ThemeToggle->AddToViewport(50);
+		}
+	}
 }
 
 void UT66UIManager::RegisterScreenClass(ET66ScreenType ScreenType, TSubclassOf<UT66ScreenBase> WidgetClass)
@@ -103,6 +115,12 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		CurrentScreenType = ScreenType;
 		CurrentScreen->AddToViewport(0);
 		CurrentScreen->OnScreenActivated();
+
+		// Ensure the persistent theme toggle is visible (re-add if it was removed by HideAllUI)
+		if (ThemeToggle && !ThemeToggle->IsInViewport())
+		{
+			ThemeToggle->AddToViewport(50);
+		}
 
 		OnScreenChanged.Broadcast(OldScreenType, ScreenType);
 	}
@@ -199,6 +217,12 @@ void UT66UIManager::HideAllUI()
 		CurrentScreen->OnScreenDeactivated();
 		CurrentScreen->RemoveFromParent();
 		CurrentScreen = nullptr;
+	}
+
+	// Hide the persistent theme toggle
+	if (ThemeToggle && ThemeToggle->IsInViewport())
+	{
+		ThemeToggle->RemoveFromParent();
 	}
 
 	ET66ScreenType OldScreenType = CurrentScreenType;

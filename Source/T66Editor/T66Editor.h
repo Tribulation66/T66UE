@@ -17,6 +17,8 @@ public:
 private:
 	void RegisterT66ToolsMenu();
 	void UnregisterT66ToolsMenu();
+	static void OnGameplayLevelLoaded(UWorld* LoadedWorld);
 
 	FName T66ToolsMenuName;
+	FDelegateHandle PostLoadMapHandle;
 };

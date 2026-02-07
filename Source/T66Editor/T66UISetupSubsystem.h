@@ -78,6 +78,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
 	bool CreatePlaceholderMaterial();
 
+	/**
+	 * Create The Lab level (Content/Maps/LabLevel): empty arena with PlayerStart, lighting, and GameMode.
+	 * Run from Window → T66 Tools → Create Lab Level (or T66CreateLabLevel console).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
+	bool CreateLabLevel();
+
 private:
 	/** Helper to load and modify a Blueprint */
 	UBlueprint* LoadBlueprint(const FString& AssetPath);

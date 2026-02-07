@@ -8,6 +8,7 @@
 #include "T66UIManager.generated.h"
 
 class UT66ScreenBase;
+class UT66ThemeToggleWidget;
 class UUserWidget;
 
 /**
@@ -131,4 +132,8 @@ protected:
 
 	/** Maximum history depth to prevent memory bloat */
 	static constexpr int32 MaxHistoryDepth = 10;
+
+	/** Persistent Dark/Light theme toggle (viewport Z-order 50, above screens, below modals) */
+	UPROPERTY()
+	TObjectPtr<UT66ThemeToggleWidget> ThemeToggle;
 };

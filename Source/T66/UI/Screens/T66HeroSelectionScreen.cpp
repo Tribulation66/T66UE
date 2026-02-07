@@ -186,8 +186,10 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 	if (!Box.IsValid()) return;
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	const FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
+	const FText EquippedText = NSLOCTEXT("T66.HeroSelection", "Equipped", "EQUIPPED");
 	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	const FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
+	const FButtonStyle& PrimaryButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
 		FText SkinDisplayName = Loc ? Loc->GetText_SkinName(Skin.SkinID) : FText::FromName(Skin.SkinID);
@@ -241,7 +243,20 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							SNew(STextBlock).Text(NSLOCTEXT("T66.HeroSelection", "Equipped", "Equipped")).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+							SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+							[
+								SNew(SBorder)
+								.BorderImage(&PrimaryButtonStyle.Normal)
+								.BorderBackgroundColor(FT66Style::Tokens::Accent2)
+								.HAlign(HAlign_Center).VAlign(VAlign_Center)
+								.Padding(FMargin(4.0f, 2.0f))
+								[
+									SNew(STextBlock)
+									.Text(EquippedText)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+									.Justification(ETextJustify::Center)
+								]
+							]
 						]
 					]
 				];
@@ -250,7 +265,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 		{
 			ButtonRow->AddSlot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(80.0f).HeightOverride(36.0f)
+					SNew(SBox).MinDesiredWidth(80.0f).HeightOverride(36.0f)
 					[
 						SNew(SButton)
 						.HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -341,7 +356,17 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						[
 							SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
 							[
-								SNew(STextBlock).Text(NSLOCTEXT("T66.HeroSelection", "Equipped", "Equipped")).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+								SNew(SBorder)
+								.BorderImage(&PrimaryButtonStyle.Normal)
+								.BorderBackgroundColor(FT66Style::Tokens::Accent2)
+								.HAlign(HAlign_Center).VAlign(VAlign_Center)
+								.Padding(FMargin(4.0f, 2.0f))
+								[
+									SNew(STextBlock)
+									.Text(EquippedText)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+									.Justification(ETextJustify::Center)
+								]
 							]
 						]
 					]
@@ -349,11 +374,11 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 		}
 
 		Box->AddSlot()
-			.FillHeight(1.0f)
+			.AutoHeight()
 			.Padding(0.0f, 6.0f)
 			[
 				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 				.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 				.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space3))
 				[
@@ -608,7 +633,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -695,7 +720,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.Padding(0.0f, 0.0f, 10.0f, 80.0f)
 					[
 						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 						.Padding(FMargin(FT66Style::Tokens::Space3))
 						[
 							SNew(SVerticalBox)
@@ -705,7 +730,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 							[
 								SNew(SOverlay)
-								+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+								+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
 								[
 									SNew(STextBlock).Text(SkinsText)
 									.TextStyle(&TxtHeading)
@@ -713,7 +738,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
 								[
 									SNew(SBorder)
-									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 									.Padding(FMargin(15.0f, 8.0f))
 									[
 										SAssignNew(ACBalanceTextBlock, STextBlock)
@@ -756,7 +781,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									CreateHeroPreviewWidget(HeroPreviewColor)
 								]
 							]
-							// Body Type: TYPE A and TYPE B buttons (only one selected) (right under the platform)
+							// Body Type: CHAD and STACY buttons (centered under the platform)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
 							.HAlign(HAlign_Center)
@@ -780,7 +805,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 										.ButtonStyle(&BtnNeutral)
 										[
 											SNew(STextBlock)
-											.Text(Loc ? Loc->GetText_BodyTypeA() : NSLOCTEXT("T66.HeroSelection", "BodyTypeA", "TYPE A"))
+											.Text(FText::AsCultureInvariant(TEXT("CHAD")))
 											.TextStyle(&TxtChip)
 										]
 									]
@@ -802,28 +827,28 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 										.ButtonStyle(&BtnNeutral)
 										[
 											SNew(STextBlock)
-											.Text(Loc ? Loc->GetText_BodyTypeB() : NSLOCTEXT("T66.HeroSelection", "BodyTypeB", "TYPE B"))
+											.Text(FText::AsCultureInvariant(TEXT("STACY")))
 											.TextStyle(&TxtChip)
 										]
 									]
 								]
-								+ SHorizontalBox::Slot()
-								.AutoWidth()
-								.VAlign(VAlign_Center)
-								.Padding(12.0f, 0.0f, 0.0f, 0.0f)
+							]
+							// CHOOSE COMPANION button (centered below Chad/Stacy)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.HAlign(HAlign_Center)
+							.Padding(0.0f, 8.0f, 0.0f, 0.0f)
+							[
+								SNew(SBox).MinDesiredWidth(240.0f).HeightOverride(40.0f)
 								[
-									SNew(SBox).WidthOverride(240.0f).HeightOverride(40.0f)
+									SNew(SButton)
+									.HAlign(HAlign_Center).VAlign(VAlign_Center)
+									.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked))
+									.ButtonStyle(&BtnPrimary)
+									.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
 									[
-										SNew(SButton)
-										.HAlign(HAlign_Center).VAlign(VAlign_Center)
-										.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked))
-										.ButtonStyle(&BtnPrimary)
-										.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
-										.ContentPadding(FMargin(14.f, 8.f))
-										[
-											SNew(STextBlock).Text(ChooseCompanionText)
-											.TextStyle(&TxtButton)
-										]
+										SNew(STextBlock).Text(ChooseCompanionText)
+										.TextStyle(&TxtButton)
 									]
 								]
 							]
@@ -836,7 +861,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.Padding(10.0f, 0.0f, 0.0f, 80.0f)
 					[
 						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 						.Padding(FMargin(FT66Style::Tokens::Space4))
 						[
 							SNew(SVerticalBox)
@@ -868,7 +893,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.VAlign(VAlign_Center)
 									[
 										SNew(SBorder)
-										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 										.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2))
 										[
 											SAssignNew(HeroNameWidget, STextBlock)
@@ -903,7 +928,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
 								[
 									SNew(SBorder)
-									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+									.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 									.Padding(FMargin(5.0f))
 									[
 										SNew(SBox).HeightOverride(360.0f)
@@ -989,7 +1014,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.VAlign(VAlign_Center)
 									[
 										SNew(SBorder)
-										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+										.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 										.Padding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2))
 										[
 											SNew(STextBlock)
@@ -1041,10 +1066,24 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								]
 								]
 							]
+							// The Lab button (above Enter the Tribulation)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0.0f, 10.0f, 0.0f, 4.0f)
+							[
+								SNew(SBox).HeightOverride(40.0f)
+								[
+									FT66Style::MakeButton(
+										TheLabText,
+										FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
+										ET66ButtonType::Neutral
+									)
+								]
+							]
 							// Difficulty + Enter (in the right panel)
 							+ SVerticalBox::Slot()
 							.AutoHeight()
-							.Padding(0.0f, 10.0f, 0.0f, 0.0f)
+							.Padding(0.0f, 4.0f, 0.0f, 0.0f)
 							[
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot()
@@ -1538,7 +1577,20 @@ void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 	NavigateTo(ET66ScreenType::CompanionSelection);
 }
 void UT66HeroSelectionScreen::OnHeroLoreClicked() { ShowModal(ET66ScreenType::HeroLore); }
-void UT66HeroSelectionScreen::OnTheLabClicked() { UE_LOG(LogTemp, Log, TEXT("The Lab - not implemented")); }
+void UT66HeroSelectionScreen::OnTheLabClicked()
+{
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (GI)
+	{
+		GI->SelectedHeroID = PreviewedHeroID;
+		GI->SelectedDifficulty = SelectedDifficulty;
+		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->bStageBoostPending = false;
+		GI->bIsLabLevel = true;
+	}
+	if (UIManager) UIManager->HideAllUI();
+	UGameplayStatics::OpenLevel(this, FName(TEXT("LabLevel")));
+}
 void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))

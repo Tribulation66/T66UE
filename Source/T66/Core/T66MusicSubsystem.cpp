@@ -591,7 +591,7 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadGameplayThemeSound(UWorld* World)
 
 	if (!HeroKey.IsNone())
 	{
-		const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Heroes/%s"), *HeroKey.ToString());
+		const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Heros/%s"), *HeroKey.ToString());
 		if (USoundBase* HeroTheme = TryLoadFirstSoundInFolder(Folder))
 		{
 			return HeroTheme;

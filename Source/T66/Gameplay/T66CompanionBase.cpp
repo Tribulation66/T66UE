@@ -81,7 +81,9 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 				CachedWalkAnim = WalkRaw;
 				CachedRunAnim = RunRaw;
 				CachedAlertAnim = AlertRaw;
-				LastMovementAnimState = 0;
+				// Match hero: ApplyCharacterVisual just played LoopingAnim (walk), so store Walk (1).
+				// Then when hero is Idle (0) we see a state change and play Alert.
+				LastMovementAnimState = 1;
 			}
 		}
 	}
@@ -158,22 +160,20 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (bIsPreviewMode) return;
 
-	// Animation: always match hero (same GetMovementAnimState: alert / walk / run after 1s walking).
-	if (bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->IsVisible() && (CachedAlertAnim || CachedWalkAnim || CachedRunAnim))
+	// Animation: two states only — Alert (idle) and Run (any movement). Match hero.
+	if (bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->IsVisible() && (CachedAlertAnim || CachedRunAnim || CachedWalkAnim))
 	{
 		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 		UT66HeroSpeedSubsystem* SpeedSub = GI ? GI->GetSubsystem<UT66HeroSpeedSubsystem>() : nullptr;
 		if (SpeedSub)
 		{
-			const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 1=Walk, 2=Run
+			const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 2=Run
 			if (NewState != LastMovementAnimState)
 			{
 				LastMovementAnimState = static_cast<uint8>(NewState);
 				UAnimationAsset* ToPlay = nullptr;
 				if (NewState == 0)
 					ToPlay = CachedAlertAnim;
-				else if (NewState == 1)
-					ToPlay = CachedWalkAnim;
 				else
 					ToPlay = CachedRunAnim ? CachedRunAnim : CachedWalkAnim;
 				if (ToPlay)

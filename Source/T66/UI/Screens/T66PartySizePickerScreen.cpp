@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66PartySizePickerScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66Style.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -35,15 +36,17 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 	FText TrioText = Loc ? Loc->GetText_Trio() : NSLOCTEXT("T66.PartySize", "Trio", "TRIO");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
-	auto MakePartySizeCard = [this](const FText& Title, const FText& Description, FReply (UT66PartySizePickerScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
+	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+	auto MakePartySizeCard = [this, &BtnNeutral](const FText& Title, const FText& Description, FReply (UT66PartySizePickerScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
-			.WidthOverride(200.0f)
+			.MinDesiredWidth(200.0f)
 			.HeightOverride(180.0f)
 			.Padding(FMargin(15.0f, 0.0f))
 			[
 				SNew(SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
+				.ButtonStyle(&BtnNeutral)
 				.ButtonColorAndOpacity(BgColor)
 				[
 					SNew(SVerticalBox)
@@ -60,8 +63,8 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(Title)
-							.Font(FCoreStyle::GetDefaultFontStyle("Bold", 32))
-							.ColorAndOpacity(FLinearColor::White)
+							.Font(FT66Style::Tokens::FontBold(32))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
@@ -69,8 +72,8 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(Description)
-							.Font(FCoreStyle::GetDefaultFontStyle("Regular", 14))
-							.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f))
+							.Font(FT66Style::Tokens::FontRegular(14))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						]
 					]
 				]
@@ -92,7 +95,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(TitleText)
-					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 56))
+					.Font(FT66Style::Tokens::FontBold(56))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 				// Party size cards
@@ -137,22 +140,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 			.VAlign(VAlign_Bottom)
 			.Padding(20.0f, 0.0f, 0.0f, 20.0f)
 			[
-				SNew(SBox)
-				.WidthOverride(120.0f)
-				.HeightOverride(50.0f)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleBackClicked))
-					.ButtonColorAndOpacity(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
-					[
-						SNew(STextBlock)
-						.Text(BackText)
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-						.ColorAndOpacity(FLinearColor::White)
-					]
-				]
+				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f, 50.f)
 			]
 		];
 }

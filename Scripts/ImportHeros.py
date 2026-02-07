@@ -2,7 +2,7 @@
 Import hero skeletal meshes, animations, and portraits from SourceAssets/Heros.
 
 Maps: Knight -> Hero_1, Ninja -> Hero_2, Cowboy -> Hero_3, Wizard -> Hero_4.
-For each: Default/Type A, Default/Type B, Beach/Type A, Beach/Type B (mesh + walk + alert).
+For each: Default/Type A, Default/Type B, Beach/Type A, Beach/Type B (mesh + walk + alert + run).
 Portraits: Portraits/Type A and Type B PNGs -> /Game/UI/Sprites/Heros/Hero_N/T_Hero_N_TypeA, T_Hero_N_TypeB.
 
 Run INSIDE Unreal Editor: Tools -> Execute Python Script -> Scripts/ImportHeros.py
@@ -154,6 +154,7 @@ def main():
                 mesh_fbx = _find_fbx_in_dir(src_dir, "Character_output")
                 walk_fbx = _find_fbx_in_dir(src_dir, "Walking")
                 alert_fbx = _find_fbx_in_dir(src_dir, "Alert")
+                run_fbx = _find_fbx_in_dir(src_dir, "Running")
 
                 if mesh_fbx:
                     mesh_name = f"SK_{hero_id}_{dest_sub}"
@@ -167,6 +168,10 @@ def main():
                 if alert_fbx:
                     anim_name = f"AM_{hero_id}_{dest_sub}_Alert"
                     _import_fbx_skeletal(alert_fbx, game_dest, anim_name, import_animations=True, import_mesh=False)
+                    imported += 1
+                if run_fbx:
+                    anim_name = f"AM_{hero_id}_{dest_sub}_Running"
+                    _import_fbx_skeletal(run_fbx, game_dest, anim_name, import_animations=True, import_mesh=False)
                     imported += 1
 
     unreal.log(f"=== ImportHeros: DONE (imported {imported} assets) ===")

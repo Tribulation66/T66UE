@@ -189,6 +189,42 @@ FString UT66PlayerSettingsSubsystem::GetOutputDeviceId() const
 	return SettingsObj ? SettingsObj->OutputDeviceId : FString();
 }
 
+void UT66PlayerSettingsSubsystem::SetSubtitlesAlwaysOn(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bSubtitlesAlwaysOn = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetSubtitlesAlwaysOn() const
+{
+	return SettingsObj ? SettingsObj->bSubtitlesAlwaysOn : false;
+}
+
+void UT66PlayerSettingsSubsystem::SetDisplayModeIndex(int32 Index)
+{
+	if (!SettingsObj) return;
+	SettingsObj->DisplayModeIndex = FMath::Clamp(Index, 0, 1);
+	Save();
+}
+
+int32 UT66PlayerSettingsSubsystem::GetDisplayModeIndex() const
+{
+	return SettingsObj ? SettingsObj->DisplayModeIndex : 0;
+}
+
+void UT66PlayerSettingsSubsystem::SetMonitorIndex(int32 Index)
+{
+	if (!SettingsObj) return;
+	SettingsObj->MonitorIndex = FMath::Max(0, Index);
+	Save();
+}
+
+int32 UT66PlayerSettingsSubsystem::GetMonitorIndex() const
+{
+	return SettingsObj ? SettingsObj->MonitorIndex : 0;
+}
+
 void UT66PlayerSettingsSubsystem::ApplyAudioToEngine()
 {
 	if (!SettingsObj) return;

@@ -69,8 +69,9 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		TexPool = GI0->GetSubsystem<UT66UITexturePoolSubsystem>();
 	}
 
-	// Full-screen grid: 2 columns (or 1 for very few heroes). Each cell fills equal space; 1:1 portrait.
-	const int32 Columns = FMath::Max(1, FMath::Min(2, AllHeroIDs.Num()));
+	FText TitleText = Loc ? Loc->GetText_HeroGrid() : NSLOCTEXT("T66.HeroGrid", "Title", "HERO GRID");
+
+	const int32 Columns = FMath::Max(1, FMath::Min(3, AllHeroIDs.Num()));
 	const int32 Rows = AllHeroIDs.Num() > 0 ? (AllHeroIDs.Num() + Columns - 1) / Columns : 0;
 
 	HeroPortraitBrushes.Reset();
@@ -146,41 +147,68 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		GridPanel->SetRowFill(Row, 1.0f);
 	}
 
-	// Full-screen overlay: grid fills entire screen, back button top-left
+	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
+	GridVertical->AddSlot()
+		.FillHeight(1.0f)
+		[
+			GridPanel
+		];
+
+	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+
+	// Centered modal dialog (same layout as companion grid)
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Tokens::Scrim)
+		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.85f))
 		[
-			SNew(SOverlay)
-			// Grid fills whole screen
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
+			SNew(SBox)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
 			[
-				SNew(SBox)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
+				.Padding(FMargin(30.0f, 25.0f))
 				[
-					GridPanel
-				]
-			]
-			// Back button
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Top)
-			.Padding(24.0f, 24.0f, 0.0f, 0.0f)
-			[
-				SNew(SBox).WidthOverride(120.0f).HeightOverride(44.0f)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center).VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroGridScreen::HandleCloseClicked))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-					.ContentPadding(FMargin(16.f, 10.f))
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Center)
+					.Padding(0.0f, 0.0f, 0.0f, 20.0f)
 					[
-						SNew(STextBlock).Text(CloseText)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+						SNew(STextBlock)
+						.Text(TitleText)
+						.Font(FT66Style::Tokens::FontBold(28))
+						.ColorAndOpacity(FLinearColor::White)
+					]
+					+ SVerticalBox::Slot()
+					.FillHeight(1.0f)
+					.MaxHeight(450.0f)
+					[
+						SNew(SScrollBox)
+						+ SScrollBox::Slot()
+						[
+							GridVertical
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.HAlign(HAlign_Center)
+					.Padding(0.0f, 20.0f, 0.0f, 0.0f)
+					[
+						SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(44.0f)
+						[
+							SNew(SButton)
+							.HAlign(HAlign_Center).VAlign(VAlign_Center)
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroGridScreen::HandleCloseClicked))
+							.ButtonStyle(&BtnNeutral)
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+							[
+								SNew(STextBlock).Text(CloseText)
+								.TextStyle(&TxtButton)
+							]
+						]
 					]
 				]
 			]

@@ -73,8 +73,20 @@ public:
 	UPROPERTY(SaveGame)
 	bool bMuteWhenUnfocused = false;
 
+	/** When true, subtitles/captions are shown whenever available (e.g. dialogue). Read by gameplay when a subtitle system exists. */
+	UPROPERTY(SaveGame)
+	bool bSubtitlesAlwaysOn = false;
+
 	// Stored for future use (when audio device routing is implemented).
 	UPROPERTY(SaveGame)
 	FString OutputDeviceId;
+
+	/** Display mode: 0 = Standard, 1 = Widescreen. Persisted for Settings UI; viewport/camera can read from subsystem when applied. */
+	UPROPERTY(SaveGame)
+	int32 DisplayModeIndex = 0;
+
+	/** Monitor index for game window: 0 = primary, 1+ = secondary. Applied when changing graphics (window moved to that monitor). */
+	UPROPERTY(SaveGame)
+	int32 MonitorIndex = 0;
 };
 

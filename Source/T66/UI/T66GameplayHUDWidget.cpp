@@ -2445,7 +2445,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(ImmortalityButton, SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality))
-							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 							.ContentPadding(FMargin(8.f, 4.f))
 							[
 								SAssignNew(ImmortalityButtonText, STextBlock)
@@ -2459,7 +2460,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(PowerButton, SButton)
 							.OnClicked(FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower))
-							.ButtonColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.35f, 1.f))
+							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 							.ContentPadding(FMargin(8.f, 4.f))
 							[
 								SAssignNew(PowerButtonText, STextBlock)
