@@ -2,6 +2,7 @@
 
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
+#include "UI/Style/T66Style.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
@@ -15,6 +16,14 @@ void UT66PlayerSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 {
 	Super::Initialize(Collection);
 	LoadOrCreate();
+
+	// Apply saved UI theme (FT66Style::Initialize already ran with Dark defaults at module startup;
+	// override to Light here if the player saved that preference).
+	if (SettingsObj && SettingsObj->bLightTheme)
+	{
+		FT66Style::SetTheme(ET66UITheme::Light);
+	}
+
 	ApplyAudioToEngine();
 	ApplyUnfocusedAudioToEngine();
 }
@@ -100,6 +109,19 @@ void UT66PlayerSettingsSubsystem::SetGoonerMode(bool bEnabled)
 	if (!SettingsObj) return;
 	SettingsObj->bGoonerMode = bEnabled;
 	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetLightTheme() const
+{
+	return SettingsObj ? SettingsObj->bLightTheme : false;
+}
+
+void UT66PlayerSettingsSubsystem::SetLightTheme(bool bLight)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bLightTheme = bLight;
+	FT66Style::SetTheme(bLight ? ET66UITheme::Light : ET66UITheme::Dark);
+	Save();  // broadcasts OnSettingsChanged
 }
 
 float UT66PlayerSettingsSubsystem::GetMasterVolume() const

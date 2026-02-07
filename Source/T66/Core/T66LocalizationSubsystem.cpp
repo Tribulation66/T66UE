@@ -305,6 +305,20 @@ FText UT66LocalizationSubsystem::GetText_CompanionName(FName CompanionID) const
 	return FText::FromName(CompanionID);
 }
 
+FText UT66LocalizationSubsystem::GetText_CompanionLore(FName CompanionID) const
+{
+	if (CompanionID.IsNone())                             return NSLOCTEXT("T66.CompanionLore", "NoCompanion", "Loner Style");
+	if (CompanionID == FName(TEXT("Companion_01")))       return NSLOCTEXT("T66.CompanionLore", "Companion_01", "A steadfast guardian who never leaves your side.");
+	if (CompanionID == FName(TEXT("Companion_02")))       return NSLOCTEXT("T66.CompanionLore", "Companion_02", "Born in flames, she heals through sheer willpower.");
+	if (CompanionID == FName(TEXT("Companion_03")))       return NSLOCTEXT("T66.CompanionLore", "Companion_03", "Once a wanderer, now sworn to protect the fallen.");
+	if (CompanionID == FName(TEXT("Companion_04")))       return NSLOCTEXT("T66.CompanionLore", "Companion_04", "Whispers ancient prayers that mend broken bones.");
+	if (CompanionID == FName(TEXT("Companion_05")))       return NSLOCTEXT("T66.CompanionLore", "Companion_05", "A cunning trickster with a heart of gold.");
+	if (CompanionID == FName(TEXT("Companion_06")))       return NSLOCTEXT("T66.CompanionLore", "Companion_06", "Draws strength from moonlight to shield allies.");
+	if (CompanionID == FName(TEXT("Companion_07")))       return NSLOCTEXT("T66.CompanionLore", "Companion_07", "Forged in the depths, tempered by tribulation.");
+	if (CompanionID == FName(TEXT("Companion_08")))       return NSLOCTEXT("T66.CompanionLore", "Companion_08", "The last of her kind, fighting to survive.");
+	return NSLOCTEXT("T66.CompanionLore", "Unknown", "A mysterious companion.");
+}
+
 // ========== Helper functions that use the name lookups ==========
 
 FText UT66LocalizationSubsystem::GetHeroDisplayName(const FHeroData& HeroData) const
@@ -345,7 +359,20 @@ FText UT66LocalizationSubsystem::GetCompanionDisplayName(const FCompanionData& C
 
 FText UT66LocalizationSubsystem::GetText_GameTitle() const
 {
-	return NSLOCTEXT("T66.MainMenu", "Title", "TRIBULATION 66");
+	// English: "Chadpocalypse"; other languages: "{Apocalypse} Chad" (Chad untranslated).
+	if (GetCurrentLanguage() == ET66Language::English)
+	{
+		return NSLOCTEXT("T66.MainMenu", "Title", "CHADPOCALYPSE");
+	}
+	return FText::Format(
+		NSLOCTEXT("T66.MainMenu", "GameTitleFormat", "{0} Chad"),
+		GetText_Apocalypse()
+	);
+}
+
+FText UT66LocalizationSubsystem::GetText_Apocalypse() const
+{
+	return NSLOCTEXT("T66.MainMenu", "Apocalypse", "Apocalypse");
 }
 
 FText UT66LocalizationSubsystem::GetText_NewGame() const
@@ -430,6 +457,28 @@ FText UT66LocalizationSubsystem::GetText_AchievementDescription(FName Achievemen
 FText UT66LocalizationSubsystem::GetText_Quit() const
 {
 	return NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
+}
+
+// ========== Theme ==========
+
+FText UT66LocalizationSubsystem::GetText_ThemeDark() const
+{
+	return NSLOCTEXT("T66.Theme", "Dark", "DARK");
+}
+
+FText UT66LocalizationSubsystem::GetText_ThemeLight() const
+{
+	return NSLOCTEXT("T66.Theme", "Light", "LIGHT");
+}
+
+FText UT66LocalizationSubsystem::GetText_MakeThemeDay() const
+{
+	return NSLOCTEXT("T66.Theme", "MakeThemeDay", "MAKE THEME DAY?");
+}
+
+FText UT66LocalizationSubsystem::GetText_MakeThemeNight() const
+{
+	return NSLOCTEXT("T66.Theme", "MakeThemeNight", "MAKE THEME NIGHT?");
 }
 
 // ========== Settings ==========
@@ -818,6 +867,11 @@ FText UT66LocalizationSubsystem::GetText_Friends() const
 FText UT66LocalizationSubsystem::GetText_Streamers() const
 {
 	return NSLOCTEXT("T66.Leaderboard", "Streamers", "STREAMERS");
+}
+
+FText UT66LocalizationSubsystem::GetText_Weekly() const
+{
+	return NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY");
 }
 
 FText UT66LocalizationSubsystem::GetText_SoloRuns() const

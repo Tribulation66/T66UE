@@ -38,6 +38,11 @@ public:
 	UPROPERTY(SaveGame)
 	bool bGoonerMode = false;
 
+	// ===== Theme =====
+	/** false = Dark (default), true = Light */
+	UPROPERTY(SaveGame)
+	bool bLightTheme = false;
+
 	// ===== Legacy (not surfaced in Settings UI) =====
 	// Kept for backward compatibility with existing saves / future VFX tuning.
 	UPROPERTY(SaveGame)

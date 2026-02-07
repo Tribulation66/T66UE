@@ -36,7 +36,9 @@
 | **AC balance / profile save** | `UT66AchievementsSubsystem`: `GetAchievementCoinsBalance()`, profile load/save. Skin *data* is in profile; skin *API* is in SkinSubsystem. |
 | **Hero/companion definitions** | `UT66GameInstance` (GetHeroData, GetCompanionData, GetAllHeroIDs, etc.) + DataTables `DT_Heroes`, `DT_Companions` + CSVs under `Content/Data/`. |
 | **Front-end UI obsidian 9-slice** | `FT66Style::EnsureObsidianBrushes()`, brushes `T66.Brush.ObsidianPanel`, `T66.Button.Obsidian`. Texture: `/Game/UI/Obsidian.Obsidian` (import via `Scripts/ImportSpriteTextures.py` from `SourceAssets/Images/obsidian.jpg`). |
-| **Hero speed & animation** | `UT66HeroSpeedSubsystem`: hero speed ramps (10% of max per second when moving), run threshold 50% of max. Speed 0 → **alert**, 0 < speed < threshold → **walk**, ≥ threshold → **run**. Hero drives subsystem from movement input; companions copy subsystem speed for animation only. Params: `FHeroData::MaxSpeed`, `AccelerationPercentPerSecond` (Heroes.csv). |
+| **Dark/Light theme** | `FT66Style::SetTheme(ET66UITheme)` / `GetTheme()`. Tokens are mutable (non-const); `SetTheme` swaps palette, re-inits styles. Persisted in `T66PlayerSettingsSaveGame::bLightTheme`, getter/setter in `T66PlayerSettingsSubsystem`. Toggle buttons in MainMenu bottom-left (next to globe). `ToggleActive` button style for selected theme. Old style set kept alive (`GPreviousStyleSet`) to prevent dangling pointer crashes. |
+| **Button debounce** | `FT66Style::DebounceClick(FOnClicked)` — wraps any click delegate with 150ms global cooldown. `MakeButton` uses it automatically; custom buttons should wrap with it too. Prevents double-fire, spam crashes, accidental double-nav. |
+| **Hero speed & animation** | `UT66HeroSpeedSubsystem`: speed still ramps (acceleration/deceleration unchanged). Animation is two-state only: **alert** when idle (speed 0), **run** when moving (any speed > 0). No walk state. Hero drives subsystem from movement input; companions copy same anim state. Params: `FHeroData::MaxSpeed`, `AccelerationPercentPerSecond` (Heroes.csv). |
 | **Character visuals / meshes / animations** | `UT66CharacterVisualSubsystem` (ApplyCharacterVisual, alert/walk/run). GetMovementAnimsForVisual(VisualID, OutWalk, OutRun, OutAlert). Data: `DT_CharacterVisuals` / `CharacterVisuals.csv` (RunAnimation column). |
 | **Hero selection UI** | `T66HeroSelectionScreen`: `RefreshSkinsList()`, `AddSkinRowsToBox()`, `SkinsListBoxWidget`, `ACBalanceTextBlock`, `PreviewSkinIDOverride`. Uses `UT66SkinSubsystem`. |
 | **Companion selection UI** | `T66CompanionSelectionScreen`: same pattern (SkinsListBoxWidget, RefreshSkinsList, AddSkinRowsToBox); uses `UT66SkinSubsystem`. |
@@ -116,5 +118,25 @@
 **Fonts:** Single theme with 5 options (index in T66Style.cpp: GThemeFontIndex). 0=Caesar Dressing, 1=Cinzel (default), 2=Cormorant SC, 3=Germania One, 4=Grenze. Console command **T66NextFont** cycles to next font and re-inits style. Paths under `Content/Slate/Fonts/New Fonts/`. Aztec, Almendra, Uncial removed (code and assets).
 
 **UI borders:** All T66 panel/button brushes (Bg, Panel, Panel2, Stroke, Circle, Primary/Neutral/Danger buttons) use white outline (Tokens::Border, Tokens::BorderWidth) so each element is visually distinct.
+
+**Dark/Light theme system:** Dark (default) = black bg, yellow text; Light = grey bg, white text. `ET66UITheme` enum in `T66Style.h`. `FT66Style::SetTheme()` updates mutable `Tokens::` colors, keeps old `FSlateStyleSet` alive in `GPreviousStyleSet` (prevents `ACCESS_VIOLATION` from dangling brush pointers), then re-initializes styles. `UT66PlayerSettingsSubsystem::SetLightTheme()` persists, applies theme, saves. MainMenu has "DARK"/"LIGHT" toggle buttons (next to language selector). Theme change calls `ForceRebuildSlate()` which does `RemoveFromParent()` + `AddToViewport()` to re-create the entire widget tree, ensuring instant visual update. All buttons globally debounced via `FT66Style::DebounceClick` (150ms cooldown) integrated into `MakeButton`.
+
+**Risk fixes (batch):**
+- **AC economy fix:** Removed dev hack that restored AC balance to 10,000 on every profile load (`T66AchievementsSubsystem.cpp`). 10k starting grant now only applies to fresh profiles (first creation). Players who spend AC below 10k will stay below across sessions.
+- **Leaderboard texture lifetime:** `ST66LeaderboardPanel` icon/GIF textures now load via `UT66UITexturePoolSubsystem` + `T66SlateTexture::BindSharedBrushAsync` instead of raw `LoadObject` + `SetResourceObject`. Prevents potential GC crash where Slate outlives UObject.
+- **GameMode sync load removed:** Removed redundant `LoadSynchronous()` block in `SpawnFloorIfNeeded()` for ground floor materials; the existing async fallback path in the same function handles loading and re-application.
+- **Leaderboard localization:** Dropdown display text (party size, difficulty, type) now uses the existing NSLOCTEXT-backed getter functions (`GetPartySizeText`, `GetDifficultyText`, `GetTypeText`) instead of raw `FText::FromString`. Internal keys remain English FStrings for handler mapping.
+- **Heros/Heroes path:** Fixed `T66MusicSubsystem.cpp` hero music folder from `/Game/Audio/OSTS/Heroes/` to `/Game/Audio/OSTS/Heros/` to match the established asset naming convention (`Content/Characters/Heros/`).
+
+---
+
+## Known issues / tech debt
+
+- Coliseum: `ColiseumLevel.umap` may be missing; code falls back to GameplayLevel.
+- Optional: move ID-keyed copy (achievements, hero/companion names) to String Tables for designers.
+- **Combat world scans (deferred):** `T66CombatComponent::TryFire()` uses 3x `TActorIterator<>` (GamblerBoss, BossBase, EnemyBase) per fire tick (up to 20/s). Currently only 1 combat component active (hero only), so perf is acceptable. When companion combat or higher enemy counts are added, replace with a cached enemy registry (enemies register in BeginPlay, unregister in EndPlay). Files: `T66CombatComponent.cpp:271`.
+- **WebView2 HTTP hardening (deferred):** `T66WebView2Host.cpp:304` allows both HTTP and HTTPS. Should reject plain HTTP (TikTok serves HTTPS only). Also `storage.googleapis.com` is overly broad — tighten to specific bucket prefix. Low urgency (requires network-level MITM to exploit).
+- **Heros → Heroes full rename (deferred, Red-risk):** `Content/Characters/Heros/` uses the misspelled folder name across 100+ assets, CSVs, and import scripts. Full rename is a Red-risk mass operation; one-line music subsystem fix applied for now. Do as a dedicated batch with checkpoint commit.
+- **Theme: in-game lighting (deferred):** Dark/Light theme currently only changes UI palette. Future intent: extend to change in-game lighting (day/night) — not yet implemented.
 
 **Full history:** `git log` (this file is context, not a full changelog).

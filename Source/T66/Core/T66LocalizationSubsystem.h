@@ -84,6 +84,10 @@ public:
 	// Main Menu
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|MainMenu")
 	FText GetText_GameTitle() const;
+
+	/** Word "Apocalypse" for localized title "{Apocalypse} Chad" (Chad stays in English). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|MainMenu")
+	FText GetText_Apocalypse() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|MainMenu")
 	FText GetText_NewGame() const;
@@ -128,6 +132,19 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|MainMenu")
 	FText GetText_Quit() const;
+
+	// Theme toggle
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Theme")
+	FText GetText_ThemeDark() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Theme")
+	FText GetText_ThemeLight() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Theme")
+	FText GetText_MakeThemeDay() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Theme")
+	FText GetText_MakeThemeNight() const;
 
 	// Settings (modal)
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
@@ -369,6 +386,10 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Leaderboard")
 	FText GetText_Streamers() const;
+
+	/** "WEEKLY" for leaderboard time filter (replaces "Current"). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Leaderboard")
+	FText GetText_Weekly() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Leaderboard")
 	FText GetText_SoloRuns() const;
@@ -527,6 +548,10 @@ public:
 	/** Helper that calls GetText_CompanionName with the CompanionID from FCompanionData */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
 	FText GetCompanionDisplayName(const FCompanionData& CompanionData) const;
+
+	/** One-sentence lore per companion (localized). NAME_None = "No Companion" lore. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
+	FText GetText_CompanionLore(FName CompanionID) const;
 	
 	// Common
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Common")

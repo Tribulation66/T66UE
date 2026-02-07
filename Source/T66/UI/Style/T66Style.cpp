@@ -3,53 +3,87 @@
 #include "UI/Style/T66Style.h"
 #include "T66.h"
 
-#include "Blueprint/UserWidget.h"
-#include "Core/T66UITexturePoolSubsystem.h"
-#include "UI/T66ScreenBase.h"
-#include "Engine/Texture2D.h"
-#include "HAL/PlatformFileManager.h"
+#include "HAL/IConsoleManager.h"
 #include "Misc/Paths.h"
-#include "UObject/WeakObjectPtr.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Styling/SlateTypes.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Brushes/SlateColorBrush.h"
-#include "Engine/GameInstance.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Text/STextBlock.h"
 
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
-// 9-slice brushes for obsidian texture (filled when texture loads). Margin = fixed edge size in slate units.
-static constexpr float ObsidianSliceMargin = 24.f;
-// Semi-transparent so obsidian is the visible background and the game scene shows through (borders stay visible).
-static const FLinearColor ObsidianTint(1.f, 1.f, 1.f, 0.82f);
-// Panel brush: heap-allocated so the style set can own and delete it on Shutdown (passing &static would cause the set to delete static memory and crash).
-static FSlateBrush* GObsidianPanelBrushPtr = nullptr;
-// Button brushes: static, not registered with the style set (only copied into FButtonStyle when texture loads).
-static FSlateBrush GObsidianButtonN;
-static FSlateBrush GObsidianButtonH;
-static FSlateBrush GObsidianButtonP;
-
-// --- Colors (pitch black panels/buttons, strong bold gold-yellow lettering) ---
-const FLinearColor FT66Style::Tokens::Bg(0.08f, 0.08f, 0.10f, 1.0f);         // darker grey
-const FLinearColor FT66Style::Tokens::Panel(0.0f, 0.0f, 0.0f, 1.0f);         // pitch black
-const FLinearColor FT66Style::Tokens::Panel2(0.0f, 0.0f, 0.0f, 1.0f);        // pitch black
-const FLinearColor FT66Style::Tokens::Stroke(0.18f, 0.18f, 0.20f, 1.0f);    // dark grey
-const FLinearColor FT66Style::Tokens::Scrim(0.f, 0.f, 0.f, 0.70f);
-const FLinearColor FT66Style::Tokens::Text(1.0f, 0.84f, 0.0f, 1.0f);         // strong bold gold yellow
-const FLinearColor FT66Style::Tokens::TextMuted(0.95f, 0.78f, 0.1f, 1.0f);   // bold gold (muted)
-const FLinearColor FT66Style::Tokens::Accent(0.0f, 0.0f, 0.0f, 1.0f);        // pitch black (primary button)
-const FLinearColor FT66Style::Tokens::Accent2(0.0f, 0.0f, 0.0f, 1.0f);       // pitch black (secondary button)
-const FLinearColor FT66Style::Tokens::Danger(0.95f, 0.15f, 0.15f, 1.0f);
-const FLinearColor FT66Style::Tokens::Success(0.20f, 0.80f, 0.35f, 1.0f);
+// --- Colors (defaults = Dark palette; SetTheme() overwrites at runtime) ---
+FLinearColor FT66Style::Tokens::Bg(0.08f, 0.08f, 0.10f, 1.0f);
+FLinearColor FT66Style::Tokens::Panel(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66Style::Tokens::Panel2(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66Style::Tokens::Stroke(0.18f, 0.18f, 0.20f, 1.0f);
+FLinearColor FT66Style::Tokens::Scrim(0.f, 0.f, 0.f, 0.70f);
+FLinearColor FT66Style::Tokens::Text(1.0f, 0.84f, 0.0f, 1.0f);
+FLinearColor FT66Style::Tokens::TextMuted(0.95f, 0.78f, 0.1f, 1.0f);
+FLinearColor FT66Style::Tokens::Accent(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66Style::Tokens::Accent2(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66Style::Tokens::Danger(0.95f, 0.15f, 0.15f, 1.0f);
+FLinearColor FT66Style::Tokens::Success(0.20f, 0.80f, 0.35f, 1.0f);
+FLinearColor FT66Style::Tokens::Border(1.0f, 1.0f, 1.0f, 1.0f);
+const FMargin FT66Style::Tokens::ButtonPadding(12.f, 4.f);
+const FMargin FT66Style::Tokens::ButtonPaddingPressed(12.f, 5.f, 12.f, 3.f);
 
 namespace
 {
-	// ----- Theme: change this to switch fonts for the entire project -----
-	enum class EFontTheme { Aztec, Almendra, Uncial, NewFonts };
-	static const EFontTheme GFontTheme = EFontTheme::NewFonts;
-	// 0=Caesar Dressing, 1=Cinzel, 2=Cormorant SC, 3=Germania One, 4=Grenze. Change to cycle.
-	static const int32 GThemeFontIndex = 0;
+	// Keep the most recent old style set alive so existing Slate widgets' brush/style
+	// raw pointers remain valid until the UI is rebuilt with fresh widgets.
+	// Without this, calling StyleInstance.Reset() would free the FButtonStyle and
+	// FSlateBrush objects that live Slate widgets still reference, causing access violations.
+	static TSharedPtr<FSlateStyleSet> GPreviousStyleSet;
+
+	// ----- Active UI theme -----
+	static ET66UITheme GActiveTheme = ET66UITheme::Dark;
+
+	/** Overwrite Tokens:: colors with the palette for the given theme. */
+	void ApplyThemePalette(ET66UITheme Theme)
+	{
+		using T = FT66Style::Tokens;
+		if (Theme == ET66UITheme::Light)
+		{
+			// Light: grey panels, white text, dark borders
+			T::Bg          = FLinearColor(0.70f, 0.70f, 0.73f, 1.0f);
+			T::Panel       = FLinearColor(0.45f, 0.45f, 0.48f, 1.0f);
+			T::Panel2      = FLinearColor(0.45f, 0.45f, 0.48f, 1.0f);
+			T::Stroke      = FLinearColor(0.35f, 0.35f, 0.38f, 1.0f);
+			T::Scrim       = FLinearColor(0.60f, 0.60f, 0.60f, 0.70f);
+			T::Text        = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+			T::TextMuted   = FLinearColor(0.88f, 0.88f, 0.88f, 1.0f);
+			T::Accent      = FLinearColor(0.45f, 0.45f, 0.48f, 1.0f);
+			T::Accent2     = FLinearColor(0.45f, 0.45f, 0.48f, 1.0f);
+			T::Danger      = FLinearColor(0.95f, 0.15f, 0.15f, 1.0f);
+			T::Success     = FLinearColor(0.20f, 0.80f, 0.35f, 1.0f);
+			T::Border      = FLinearColor(0.15f, 0.15f, 0.15f, 1.0f);
+		}
+		else // Dark (default)
+		{
+			// Dark: pitch black panels, gold-yellow text, white borders
+			T::Bg          = FLinearColor(0.08f, 0.08f, 0.10f, 1.0f);
+			T::Panel       = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			T::Panel2      = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			T::Stroke      = FLinearColor(0.18f, 0.18f, 0.20f, 1.0f);
+			T::Scrim       = FLinearColor(0.0f, 0.0f, 0.0f, 0.70f);
+			T::Text        = FLinearColor(1.0f, 0.84f, 0.0f, 1.0f);
+			T::TextMuted   = FLinearColor(0.95f, 0.78f, 0.1f, 1.0f);
+			T::Accent      = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			T::Accent2     = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			T::Danger      = FLinearColor(0.95f, 0.15f, 0.15f, 1.0f);
+			T::Success     = FLinearColor(0.20f, 0.80f, 0.35f, 1.0f);
+			T::Border      = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		}
+	}
+
+	// ----- Font options: 0=Caesar Dressing, 1=Cinzel, 2=Cormorant SC, 3=Germania One, 4=Grenze -----
+	static int32 GThemeFontIndex = 1;  // Cinzel (default); cycle with T66NextFont console command
+	static bool GForceBoldFont = false; // When true, use bold variant for all text (T66Bold console command)
 
 	static const TCHAR* GThemeFontPaths[] = {
 		TEXT("New Fonts/Caesar_Dressing/CaesarDressing-Regular.ttf"),   // 0 Caesar Dressing
@@ -58,24 +92,20 @@ namespace
 		TEXT("New Fonts/Germania_One/GermaniaOne-Regular.ttf"),         // 3 Germania One
 		TEXT("New Fonts/Grenze/Grenze-Regular.ttf"),                    // 4 Grenze
 	};
+	// Bold variant per font (nullptr = no bold asset, use Regular). Caesar Dressing & Germania One have no bold.
+	static const TCHAR* GThemeFontPathsBold[] = {
+		nullptr,                                                       // 0 Caesar Dressing
+		TEXT("New Fonts/Cinzel/static/Cinzel-Bold.ttf"),               // 1 Cinzel
+		TEXT("New Fonts/Cormorant_SC/CormorantSC-Bold.ttf"),            // 2 Cormorant SC
+		nullptr,                                                       // 3 Germania One
+		TEXT("New Fonts/Grenze/Grenze-Bold.ttf"),                      // 4 Grenze
+	};
 	static const int32 GThemeFontCount = UE_ARRAY_COUNT(GThemeFontPaths);
 
 	const FString& FontsDir()
 	{
 		static const FString Dir = FPaths::ProjectContentDir() / TEXT("Slate/Fonts");
 		return Dir;
-	}
-
-	// Aztec: Content/Slate/Fonts/Aztec.ttf (optional Aztec_Bold.ttf).
-	FSlateFontInfo MakeFontAztec(const TCHAR* Weight, int32 Size)
-	{
-		const FString Aztec = FontsDir() / TEXT("Aztec.ttf");
-		const FString AztecBold = FontsDir() / TEXT("Aztec_Bold.ttf");
-		const bool bWantBold = FCString::Stricmp(Weight, TEXT("Bold")) == 0;
-		const FString& Candidate = (bWantBold && FPaths::FileExists(AztecBold)) ? AztecBold : Aztec;
-		if (FPaths::FileExists(Candidate))
-			return FSlateFontInfo(Candidate, Size);
-		return FCoreStyle::GetDefaultFontStyle(Weight, Size);
 	}
 
 	// Single TTF from Content/Slate/Fonts (path relative to FontsDir).
@@ -87,24 +117,30 @@ namespace
 		return FSlateFontInfo(Path, Size);
 	}
 
-	// One theme entry point: all UI font tokens go through here.
+	// All UI font tokens use the selected font from GThemeFontPaths. Bold uses GThemeFontPathsBold when available.
 	FSlateFontInfo ThemeFont(const TCHAR* Weight, int32 Size)
 	{
-		switch (GFontTheme)
+		const int32 Idx = FMath::Clamp(GThemeFontIndex, 0, GThemeFontCount - 1);
+		const bool bWantBold = GForceBoldFont || (FCString::Stricmp(Weight, TEXT("Bold")) == 0);
+		const TCHAR* Path = GThemeFontPaths[Idx];
+		if (bWantBold && GThemeFontPathsBold[Idx] != nullptr)
 		{
-		case EFontTheme::Almendra:
-			return MakeFontFromFile(TEXT("AlmendraSC-Regular.ttf"), Size);
-		case EFontTheme::Uncial:
-			return MakeFontFromFile(TEXT("UncialAntiqua-Regular.ttf"), Size);
-		case EFontTheme::NewFonts:
-		{
-			const int32 Idx = FMath::Clamp(GThemeFontIndex, 0, GThemeFontCount - 1);
-			return MakeFontFromFile(GThemeFontPaths[Idx], Size);
+			const FString BoldPath = FontsDir() / GThemeFontPathsBold[Idx];
+			if (FPaths::FileExists(BoldPath))
+				Path = GThemeFontPathsBold[Idx];
 		}
-		case EFontTheme::Aztec:
-		default:
-			return MakeFontAztec(Weight, Size);
-		}
+		return MakeFontFromFile(Path, Size);
+	}
+
+	int32 AdvanceToNextFontIndex()
+	{
+		GThemeFontIndex = (GThemeFontIndex + 1) % GThemeFontCount;
+		return GThemeFontIndex;
+	}
+
+	void ToggleForceBoldFont()
+	{
+		GForceBoldFont = !GForceBoldFont;
 	}
 }
 
@@ -142,6 +178,48 @@ FSlateFontInfo FT66Style::Tokens::FontButton()
 	return ThemeFont(TEXT("Bold"), 16);
 }
 
+void FT66Style::CycleToNextFont()
+{
+	AdvanceToNextFontIndex();
+	if (StyleInstance.IsValid())
+	{
+		FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
+		GPreviousStyleSet = MoveTemp(StyleInstance);
+	}
+	Initialize();
+}
+
+void FT66Style::ToggleBoldFont()
+{
+	ToggleForceBoldFont();
+	if (StyleInstance.IsValid())
+	{
+		FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
+		GPreviousStyleSet = MoveTemp(StyleInstance);
+	}
+	Initialize();
+}
+
+ET66UITheme FT66Style::GetTheme()
+{
+	return GActiveTheme;
+}
+
+void FT66Style::SetTheme(ET66UITheme NewTheme)
+{
+	GActiveTheme = NewTheme;
+	ApplyThemePalette(NewTheme);
+
+	// Re-initialize the style set so new brushes/button styles use updated tokens.
+	// Keep old set alive (GPreviousStyleSet) so existing widgets' raw pointers stay valid.
+	if (StyleInstance.IsValid())
+	{
+		FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
+		GPreviousStyleSet = MoveTemp(StyleInstance);
+	}
+	Initialize();
+}
+
 FName FT66Style::GetStyleSetName()
 {
 	static const FName Name(TEXT("T66Style"));
@@ -163,29 +241,17 @@ void FT66Style::Initialize()
 
 	StyleInstance = MakeShared<FSlateStyleSet>(GetStyleSetName());
 
-	// Rounded panel brushes
-	StyleInstance->Set("T66.Brush.Bg", new FSlateRoundedBoxBrush(Tokens::Bg, Tokens::CornerRadius));
-	StyleInstance->Set("T66.Brush.Panel", new FSlateRoundedBoxBrush(Tokens::Panel, Tokens::CornerRadius));
-	StyleInstance->Set("T66.Brush.Panel2", new FSlateRoundedBoxBrush(Tokens::Panel2, Tokens::CornerRadius));
-	StyleInstance->Set("T66.Brush.Stroke", new FSlateRoundedBoxBrush(Tokens::Stroke, Tokens::CornerRadiusSmall));
+	// Rounded panel brushes with white outline so each element is clearly distinct
+	const float BorderW = Tokens::BorderWidth;
+	const FLinearColor BorderColor = Tokens::Border;
+	StyleInstance->Set("T66.Brush.Bg", new FSlateRoundedBoxBrush(Tokens::Bg, Tokens::CornerRadius, BorderColor, BorderW));
+	StyleInstance->Set("T66.Brush.Panel", new FSlateRoundedBoxBrush(Tokens::Panel, Tokens::CornerRadius, BorderColor, BorderW));
+	StyleInstance->Set("T66.Brush.Panel2", new FSlateRoundedBoxBrush(Tokens::Panel2, Tokens::CornerRadius, BorderColor, BorderW));
+	StyleInstance->Set("T66.Brush.Stroke", new FSlateRoundedBoxBrush(Tokens::Stroke, Tokens::CornerRadiusSmall, BorderColor, BorderW));
 	// Circle-ish brush (use BorderBackgroundColor for actual tint)
-	StyleInstance->Set("T66.Brush.Circle", new FSlateRoundedBoxBrush(FLinearColor::White, 110.f));
-
-	// Obsidian 9-slice brushes (heap-allocated; style set owns and deletes them on Shutdown).
-	GObsidianPanelBrushPtr = new FSlateBrush();
-	GObsidianPanelBrushPtr->DrawAs = ESlateBrushDrawType::Box;
-	GObsidianPanelBrushPtr->Tiling = ESlateBrushTileType::NoTile;
-	GObsidianPanelBrushPtr->Margin = FMargin(ObsidianSliceMargin);
-	GObsidianPanelBrushPtr->TintColor = FSlateColor(Tokens::Panel);
-	StyleInstance->Set("T66.Brush.ObsidianPanel", GObsidianPanelBrushPtr);
-
-	GObsidianButtonN = FSlateBrush();
-	GObsidianButtonN.DrawAs = ESlateBrushDrawType::Box;
-	GObsidianButtonN.Tiling = ESlateBrushTileType::NoTile;
-	GObsidianButtonN.Margin = FMargin(ObsidianSliceMargin);
-	GObsidianButtonN.TintColor = FSlateColor(Tokens::Panel);
-	GObsidianButtonH = GObsidianButtonN;
-	GObsidianButtonP = GObsidianButtonN;
+	StyleInstance->Set("T66.Brush.Circle", new FSlateRoundedBoxBrush(FLinearColor::White, 110.f, BorderColor, BorderW));
+	// Full-screen scrim overlay (no corner radius, no border)
+	StyleInstance->Set("T66.Brush.Scrim", new FSlateRoundedBoxBrush(Tokens::Scrim, 0.f));
 
 	// Text styles
 	{
@@ -228,9 +294,11 @@ void FT66Style::Initialize()
 		const FLinearColor PrimaryP = Tokens::Accent2 * 0.80f + Tokens::Panel2 * 0.20f;
 
 		FButtonStyle Primary = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(PrimaryN, Tokens::CornerRadiusSmall))
-			.SetHovered(FSlateRoundedBoxBrush(PrimaryH, Tokens::CornerRadiusSmall))
-			.SetPressed(FSlateRoundedBoxBrush(PrimaryP, Tokens::CornerRadiusSmall));
+			.SetNormal(FSlateRoundedBoxBrush(PrimaryN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetHovered(FSlateRoundedBoxBrush(PrimaryH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetPressed(FSlateRoundedBoxBrush(PrimaryP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetNormalPadding(Tokens::ButtonPadding)
+			.SetPressedPadding(Tokens::ButtonPaddingPressed);
 		StyleInstance->Set("T66.Button.Primary", Primary);
 
 		const FLinearColor NeutralN = Tokens::Panel2;
@@ -238,9 +306,11 @@ void FT66Style::Initialize()
 		const FLinearColor NeutralP = Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f);
 
 		FButtonStyle Neutral = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(NeutralN, Tokens::CornerRadiusSmall))
-			.SetHovered(FSlateRoundedBoxBrush(NeutralH, Tokens::CornerRadiusSmall))
-			.SetPressed(FSlateRoundedBoxBrush(NeutralP, Tokens::CornerRadiusSmall));
+			.SetNormal(FSlateRoundedBoxBrush(NeutralN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetHovered(FSlateRoundedBoxBrush(NeutralH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetPressed(FSlateRoundedBoxBrush(NeutralP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetNormalPadding(Tokens::ButtonPadding)
+			.SetPressedPadding(Tokens::ButtonPaddingPressed);
 		StyleInstance->Set("T66.Button.Neutral", Neutral);
 
 		const FLinearColor DangerN = Tokens::Danger * 0.55f + Tokens::Panel2 * 0.45f;
@@ -248,115 +318,119 @@ void FT66Style::Initialize()
 		const FLinearColor DangerP = Tokens::Danger * 0.80f + Tokens::Panel2 * 0.20f;
 
 		FButtonStyle Danger = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(DangerN, Tokens::CornerRadiusSmall))
-			.SetHovered(FSlateRoundedBoxBrush(DangerH, Tokens::CornerRadiusSmall))
-			.SetPressed(FSlateRoundedBoxBrush(DangerP, Tokens::CornerRadiusSmall));
+			.SetNormal(FSlateRoundedBoxBrush(DangerN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetHovered(FSlateRoundedBoxBrush(DangerH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetPressed(FSlateRoundedBoxBrush(DangerP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetNormalPadding(Tokens::ButtonPadding)
+			.SetPressedPadding(Tokens::ButtonPaddingPressed);
 		StyleInstance->Set("T66.Button.Danger", Danger);
 
-		// Placeholder until obsidian texture loads (replaced in EnsureObsidianBrushes)
-		const FLinearColor PlaceholderN = Tokens::Panel2;
-		const FLinearColor PlaceholderH = Tokens::Panel2 + FLinearColor(0.05f, 0.05f, 0.07f, 0.f);
-		const FLinearColor PlaceholderP = Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f);
-		FButtonStyle ObsidianPlaceholder = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(PlaceholderN, Tokens::CornerRadiusSmall))
-			.SetHovered(FSlateRoundedBoxBrush(PlaceholderH, Tokens::CornerRadiusSmall))
-			.SetPressed(FSlateRoundedBoxBrush(PlaceholderP, Tokens::CornerRadiusSmall));
-		StyleInstance->Set("T66.Button.Obsidian", ObsidianPlaceholder);
+		// Toggle-active: inverted look (text-colored bg, so the selected toggle stands out)
+		const FLinearColor ActiveN = Tokens::Text;
+		FLinearColor ActiveH = Tokens::Text * 0.85f; ActiveH.A = 1.0f;
+		FLinearColor ActiveP = Tokens::Text * 0.70f; ActiveP.A = 1.0f;
+
+		FButtonStyle ToggleActive = FButtonStyle()
+			.SetNormal(FSlateRoundedBoxBrush(ActiveN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetHovered(FSlateRoundedBoxBrush(ActiveH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetPressed(FSlateRoundedBoxBrush(ActiveP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetNormalPadding(Tokens::ButtonPadding)
+			.SetPressedPadding(Tokens::ButtonPaddingPressed);
+		StyleInstance->Set("T66.Button.ToggleActive", ToggleActive);
 	}
 
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleInstance);
+
+	static bool bConsoleRegistered = false;
+	if (!bConsoleRegistered)
+	{
+		IConsoleManager::Get().RegisterConsoleCommand(
+			TEXT("T66NextFont"),
+			TEXT("Cycle to the next UI font (Caesar Dressing, Cinzel, Cormorant SC, Germania One, Grenze). Reopens style so new UI uses it."),
+			FConsoleCommandDelegate::CreateStatic(&FT66Style::CycleToNextFont),
+			ECVF_Default);
+		IConsoleManager::Get().RegisterConsoleCommand(
+			TEXT("T66Bold"),
+			TEXT("Toggle force-bold: all UI text uses the bold variant of the current font (if the font has a bold asset)."),
+			FConsoleCommandDelegate::CreateStatic(&FT66Style::ToggleBoldFont),
+			ECVF_Default);
+		bConsoleRegistered = true;
+	}
 }
 
-void FT66Style::EnsureObsidianBrushes(UGameInstance* GI, UObject* Requester)
+FOnClicked FT66Style::DebounceClick(const FOnClicked& InnerDelegate)
 {
-	UE_LOG(LogT66, Log, TEXT("[Obsidian] EnsureObsidianBrushes called, GI=%p Requester=%s"), GI, Requester ? *Requester->GetName() : TEXT("null"));
-
-	if (!StyleInstance.IsValid() || !GI || !Requester)
+	// Global timestamp shared by ALL debounced buttons.
+	// Any click within 150 ms of the previous one is silently dropped.
+	// 150 ms is imperceptible for intentional clicks but prevents:
+	//   - double-fire from rapid/spam clicking
+	//   - UI rebuild crashes from overlapping widget teardowns
+	//   - accidental double-navigation
+	return FOnClicked::CreateLambda([InnerDelegate]() -> FReply
 	{
-		UE_LOG(LogT66, Warning, TEXT("[Obsidian] Early exit: StyleInstance=%d GI=%d Requester=%d"), StyleInstance.IsValid() ? 1 : 0, GI ? 1 : 0, Requester ? 1 : 0);
-		return;
-	}
-
-	UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
-	if (!TexPool)
-	{
-		UE_LOG(LogT66, Warning, TEXT("[Obsidian] TexPool is null"));
-		return;
-	}
-
-	const FSoftObjectPath ObsidianPath(TEXT("/Game/UI/Obsidian.Obsidian"));
-	const TSoftObjectPtr<UTexture2D> ObsidianSoft(ObsidianPath);
-	UE_LOG(LogT66, Log, TEXT("[Obsidian] Requesting texture: %s"), *ObsidianPath.ToString());
-
-	if (ObsidianSoft.IsNull())
-	{
-		UE_LOG(LogT66, Warning, TEXT("[Obsidian] ObsidianSoft.IsNull()"));
-		return;
-	}
-
-	if (UTexture2D* Loaded = TexPool->GetLoadedTexture(ObsidianSoft))
-	{
-		UE_LOG(LogT66, Log, TEXT("[Obsidian] Texture already loaded: %s"), Loaded ? *Loaded->GetName() : TEXT("null"));
-		if (GObsidianPanelBrushPtr)
+		static double GLastClickTime = 0.0;
+		const double Now = FPlatformTime::Seconds();
+		if (Now - GLastClickTime < 0.15)
 		{
-			GObsidianPanelBrushPtr->SetResourceObject(Loaded);
-			GObsidianPanelBrushPtr->TintColor = FSlateColor(ObsidianTint);
+			return FReply::Handled();
 		}
-		GObsidianButtonN.SetResourceObject(Loaded);
-		GObsidianButtonN.TintColor = FSlateColor(ObsidianTint);
-		GObsidianButtonH.SetResourceObject(Loaded);
-		GObsidianButtonH.TintColor = FSlateColor(ObsidianTint);
-		GObsidianButtonP.SetResourceObject(Loaded);
-		GObsidianButtonP.TintColor = FSlateColor(ObsidianTint);
-		FButtonStyle ObsidianBtn = FButtonStyle()
-			.SetNormal(GObsidianButtonN)
-			.SetHovered(GObsidianButtonH)
-			.SetPressed(GObsidianButtonP);
-		StyleInstance->Set("T66.Button.Obsidian", ObsidianBtn);
-		UE_LOG(LogT66, Log, TEXT("[Obsidian] Brushes updated (sync path). Texture=%s"), Loaded ? *Loaded->GetPathName() : TEXT("null"));
-		return;
-	}
-
-	UE_LOG(LogT66, Log, TEXT("[Obsidian] Texture not loaded yet, requesting async..."));
-	TWeakObjectPtr<UObject> RequesterWeak(Requester);
-	TexPool->RequestTexture(ObsidianSoft, Requester, FName(TEXT("Obsidian")), [RequesterWeak](UTexture2D* Loaded)
-	{
-		UE_LOG(LogT66, Log, TEXT("[Obsidian] Async callback: Loaded=%p StyleInstance=%d"), Loaded, StyleInstance.IsValid() ? 1 : 0);
-		if (!Loaded || !StyleInstance.IsValid())
-		{
-			UE_LOG(LogT66, Warning, TEXT("[Obsidian] Async callback skipped: Loaded=%d StyleInstance=%d"), Loaded ? 1 : 0, StyleInstance.IsValid() ? 1 : 0);
-			return;
-		}
-		if (GObsidianPanelBrushPtr)
-		{
-			GObsidianPanelBrushPtr->SetResourceObject(Loaded);
-			GObsidianPanelBrushPtr->TintColor = FSlateColor(ObsidianTint);
-		}
-		GObsidianButtonN.SetResourceObject(Loaded);
-		GObsidianButtonN.TintColor = FSlateColor(ObsidianTint);
-		GObsidianButtonH.SetResourceObject(Loaded);
-		GObsidianButtonH.TintColor = FSlateColor(ObsidianTint);
-		GObsidianButtonP.SetResourceObject(Loaded);
-		GObsidianButtonP.TintColor = FSlateColor(ObsidianTint);
-		FButtonStyle ObsidianBtn = FButtonStyle()
-			.SetNormal(GObsidianButtonN)
-			.SetHovered(GObsidianButtonH)
-			.SetPressed(GObsidianButtonP);
-		StyleInstance->Set("T66.Button.Obsidian", ObsidianBtn);
-		UE_LOG(LogT66, Log, TEXT("[Obsidian] Brushes updated (async). Texture=%s"), Loaded ? *Loaded->GetPathName() : TEXT("null"));
-
-		// Force full Slate rebuild so buttons get the new style (old style was replaced and would be use-after-free).
-		if (UT66ScreenBase* Screen = Cast<UT66ScreenBase>(RequesterWeak.Get()))
-		{
-			Screen->ForceRebuildSlate();
-			UE_LOG(LogT66, Log, TEXT("[Obsidian] ForceRebuildSlate on requester so buttons use new style"));
-		}
-		else if (UUserWidget* Widget = Cast<UUserWidget>(RequesterWeak.Get()))
-		{
-			Widget->InvalidateLayoutAndVolatility();
-			UE_LOG(LogT66, Log, TEXT("[Obsidian] Invalidated requester widget for repaint"));
-		}
+		GLastClickTime = Now;
+		return InnerDelegate.Execute();
 	});
+}
+
+TSharedRef<SWidget> FT66Style::MakeButton(
+	const FText& Label,
+	FOnClicked OnClicked,
+	ET66ButtonType Type,
+	float MinWidth,
+	float Height)
+{
+	FName StyleName;
+	FLinearColor BtnColor;
+	switch (Type)
+	{
+	case ET66ButtonType::Primary:
+		StyleName = "T66.Button.Primary";
+		BtnColor = Tokens::Accent2;
+		break;
+	case ET66ButtonType::Danger:
+		StyleName = "T66.Button.Danger";
+		BtnColor = Tokens::Danger;
+		break;
+	case ET66ButtonType::Success:
+		StyleName = "T66.Button.Primary";
+		BtnColor = Tokens::Success;
+		break;
+	default: // Neutral
+		StyleName = "T66.Button.Neutral";
+		BtnColor = Tokens::Panel2;
+		break;
+	}
+
+	const FButtonStyle& BtnStyle = Get().GetWidgetStyle<FButtonStyle>(StyleName);
+	const FTextBlockStyle& TxtStyle = Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+
+	// All centralized buttons get automatic debounce protection.
+	FOnClicked SafeClick = DebounceClick(OnClicked);
+
+	return SNew(SBox)
+		.MinDesiredWidth(MinWidth)
+		.HeightOverride(Height)
+		[
+			SNew(SButton)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			.OnClicked(SafeClick)
+			.ButtonStyle(&BtnStyle)
+			.ButtonColorAndOpacity(BtnColor)
+			[
+				SNew(STextBlock)
+				.Text(Label)
+				.TextStyle(&TxtStyle)
+				.Justification(ETextJustify::Center)
+			]
+		];
 }
 
 void FT66Style::Shutdown()
@@ -368,7 +442,5 @@ void FT66Style::Shutdown()
 
 	FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
 	StyleInstance.Reset();
-	// Style set owned and deleted the panel brush; avoid use-after-free (e.g. hot reload).
-	GObsidianPanelBrushPtr = nullptr;
 }
 

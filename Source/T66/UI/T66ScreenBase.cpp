@@ -45,11 +45,6 @@ TSharedRef<SWidget> UT66ScreenBase::BuildSlateUI()
 
 void UT66ScreenBase::OnScreenActivated_Implementation()
 {
-	// Ensure obsidian 9-slice is requested for front-end panels/buttons (pool deduplicates)
-	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
-	{
-		FT66Style::EnsureObsidianBrushes(GI, this);
-	}
 	RefreshScreen();
 }
 
@@ -97,14 +92,26 @@ void UT66ScreenBase::CloseModal()
 
 void UT66ScreenBase::ForceRebuildSlate()
 {
-	// Tear down any existing Slate resources so the next TakeWidget() rebuilds the tree.
+	// RemoveFromParent + AddToViewport is required because ReleaseSlateResources
+	// creates a new SObjectWidget, but the viewport's Slate overlay still holds
+	// a shared-ref to the OLD SObjectWidget. Simply calling TakeWidget() after
+	// Release leaves the viewport displaying stale widgets.
+	// RemoveFromParent detaches the old SObjectWidget from the viewport overlay,
+	// and AddToViewport re-attaches with the freshly built one.
+	const bool bWasInViewport = IsInViewport();
+	const int32 ZOrder = bIsModal ? 100 : 0;
+
+	if (bWasInViewport)
+	{
+		RemoveFromParent();
+	}
+
 	ReleaseSlateResources(true);
 
-	// Ensure layout/paint invalidation (helps the new tree apply immediately).
-	InvalidateLayoutAndVolatility();
-
-	// Rebuild now (or at least ensure the new tree exists).
-	TakeWidget();
+	if (bWasInViewport)
+	{
+		AddToViewport(ZOrder);
+	}
 }
 
 // ========== Slate UI Building Helpers ==========

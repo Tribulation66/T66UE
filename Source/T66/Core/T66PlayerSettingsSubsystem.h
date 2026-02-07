@@ -61,6 +61,15 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
 	bool GetGoonerMode() const;
 
+	// ===== Theme =====
+	/** Returns true when the Light UI theme is active (false = Dark, the default). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Theme")
+	bool GetLightTheme() const;
+
+	/** Switch between Dark (false) and Light (true) UI theme. Persists to disk and re-initializes styles. */
+	UFUNCTION(BlueprintCallable, Category = "Settings|Theme")
+	void SetLightTheme(bool bLight);
+
 	// ===== Audio =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
 	void SetMasterVolume(float NewValue01);

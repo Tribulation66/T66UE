@@ -5,12 +5,14 @@
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
+#include "Engine/Engine.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -20,6 +22,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
 #include "Styling/SlateBrush.h"
+#include "TimerManager.h"
 
 UT66MainMenuScreen::UT66MainMenuScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -58,12 +61,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	auto MakeMenuButton = [this, ButtonPadding, ButtonFontSize](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
 	{
 		const ISlateStyle& Style = FT66Style::Get();
-		const FButtonStyle& Btn = Style.GetWidgetStyle<FButtonStyle>("T66.Button.Obsidian");
+		const FButtonStyle& Btn = Style.GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
 
 		return SNew(SButton)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
-			.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
+			.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, ClickFunc)))
 			.ButtonStyle(&Btn)
 			.ContentPadding(FMargin(ButtonPadding, ButtonPadding, ButtonPadding, ButtonPadding))
 			[
@@ -81,8 +84,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	MainMenuBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
 	MainMenuBackgroundBrush->SetResourceObject(nullptr);
 
+	// Filter icons are now loaded and displayed inside the leaderboard panel (pure Slate).
+
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.ObsidianPanel"))
+		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 		[
 			SNew(SOverlay)
 			// Full-screen background image (Content/UI/MainMenu/MainMenuBackgroundV3)
@@ -114,11 +119,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					[ MakeMenuButton(AchievementsText, &UT66MainMenuScreen::HandleAchievementsClicked) ]
 				]
 			]
-			// Bottom-right: Leaderboard (taller, less wide)
+			// Right: Leaderboard panel (top aligned with NEW GAME button)
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Right)
-			.VAlign(VAlign_Bottom)
-			.Padding(0.0f, 0.0f, 40.0f, 40.0f)
+			.VAlign(VAlign_Top)
+			.Padding(0.0f, 380.0f, 40.0f, 40.0f)
 			[
 				SNew(SBox)
 				.WidthOverride(720.0f)
@@ -135,43 +140,83 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.VAlign(VAlign_Top)
 			.Padding(0.0f, 15.0f, 15.0f, 0.0f)
 			[
-				SNew(SBox)
-				.WidthOverride(100.0f)
-				.HeightOverride(40.0f)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleQuitClicked))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
-					[
-						SNew(STextBlock)
-						.Text(QuitText)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
-				]
+				FT66Style::MakeButton(QuitText, FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleQuitClicked), ET66ButtonType::Danger, 100.f, 40.f)
 			]
-			// Language button (bottom-left) - Globe icon placeholder
+			// Bottom-left row: Language button + Dark/Light theme toggle
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Bottom)
 			.Padding(15.0f, 0.0f, 0.0f, 15.0f)
 			[
-				SNew(SBox)
-				.WidthOverride(50.0f)
-				.HeightOverride(50.0f)
+				SNew(SHorizontalBox)
+				// Language globe button
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(0.0f, 0.0f, 8.0f, 0.0f)
 				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleLanguageClicked))
-					.ButtonColorAndOpacity(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
+					SNew(SBox)
+					.WidthOverride(50.0f)
+					.HeightOverride(50.0f)
 					[
-						// Globe icon placeholder - using a stylized "L" for Language
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Common", "GlobeIcon", "🌐"))
-						.Font(FT66Style::Tokens::FontBold(20))
-						.ColorAndOpacity(FLinearColor::White)
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleLanguageClicked)))
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
+						.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("T66.Common", "GlobeIcon", "\xF0\x9F\x8C\x90"))
+							.Font(FT66Style::Tokens::FontBold(20))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
+					]
+				]
+				// Dark theme button (active = inverted look when Dark is selected)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SNew(SBox)
+					.HeightOverride(50.0f)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleDarkThemeClicked)))
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
+							FT66Style::GetTheme() == ET66UITheme::Dark ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
+						.ContentPadding(FMargin(12.f, 8.f))
+						[
+							SNew(STextBlock)
+							.Text(Loc ? Loc->GetText_ThemeDark() : NSLOCTEXT("T66.Theme", "Dark", "DARK"))
+							.Font(FT66Style::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66Style::GetTheme() == ET66UITheme::Dark ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
+						]
+					]
+				]
+				// Light theme button
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SBox)
+					.HeightOverride(50.0f)
+					[
+						SNew(SButton)
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleLightThemeClicked)))
+						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
+							FT66Style::GetTheme() == ET66UITheme::Light ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
+						.ContentPadding(FMargin(12.f, 8.f))
+						[
+							SNew(STextBlock)
+							.Text(Loc ? Loc->GetText_ThemeLight() : NSLOCTEXT("T66.Theme", "Light", "LIGHT"))
+							.Font(FT66Style::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66Style::GetTheme() == ET66UITheme::Light ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
+						]
 					]
 				]
 			]
@@ -183,10 +228,9 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 	Super::OnScreenActivated_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("MainMenuScreen activated!"));
 
-	// Ensure obsidian 9-slice is loaded for buttons/panels, then request main menu background texture
+	// Request main menu background texture
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
-		FT66Style::EnsureObsidianBrushes(GI, this);
 		if (UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>())
 		{
 			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MainMenuBackgroundV3.MainMenuBackgroundV3")));
@@ -268,6 +312,82 @@ FReply UT66MainMenuScreen::HandleQuitClicked()
 {
 	OnQuitClicked();
 	return FReply::Handled();
+}
+
+FReply UT66MainMenuScreen::HandleDarkThemeClicked()
+{
+	// Ignore if already Dark or if a theme change is in flight
+	if (bThemeChangeInProgress || FT66Style::GetTheme() == ET66UITheme::Dark)
+	{
+		return FReply::Handled();
+	}
+	bThemeChangeInProgress = true;
+	PendingTheme = ET66UITheme::Dark;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(this, &UT66MainMenuScreen::ApplyPendingTheme));
+	}
+	return FReply::Handled();
+}
+
+FReply UT66MainMenuScreen::HandleLightThemeClicked()
+{
+	// Ignore if already Light or if a theme change is in flight
+	if (bThemeChangeInProgress || FT66Style::GetTheme() == ET66UITheme::Light)
+	{
+		return FReply::Handled();
+	}
+	bThemeChangeInProgress = true;
+	PendingTheme = ET66UITheme::Light;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(this, &UT66MainMenuScreen::ApplyPendingTheme));
+	}
+	return FReply::Handled();
+}
+
+void UT66MainMenuScreen::ApplyPendingTheme()
+{
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			PS->SetLightTheme(PendingTheme == ET66UITheme::Light);
+		}
+	}
+	// Safe to rebuild — no Slate event in flight, old style set kept alive by GPreviousStyleSet.
+	ForceRebuildSlate();
+
+	// Re-wire rebuilt widgets that need post-build setup
+	// (ForceRebuildSlate creates a completely fresh widget tree).
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>())
+		{
+			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MainMenuBackgroundV3.MainMenuBackgroundV3")));
+			TSharedPtr<FSlateBrush> Brush = MainMenuBackgroundBrush;
+			TSharedPtr<SImage> Image = MainMenuBackgroundImage;
+			TexPool->RequestTexture(MainMenuBgSoft, this, TEXT("MainMenuBackground"), [Brush, Image](UTexture2D* Loaded)
+			{
+				if (Brush.IsValid())
+				{
+					Brush->SetResourceObject(Loaded);
+					if (Image.IsValid())
+					{
+						Image->SetImage(Brush.Get());
+					}
+				}
+			});
+		}
+	}
+	if (LeaderboardPanel.IsValid())
+	{
+		LeaderboardPanel->SetUIManager(UIManager);
+	}
+
+	bThemeChangeInProgress = false;
 }
 
 // UFUNCTION handlers (call navigation)

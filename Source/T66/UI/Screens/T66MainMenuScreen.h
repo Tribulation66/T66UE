@@ -7,7 +7,10 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "T66MainMenuScreen.generated.h"
 
+struct FSlateBrush;
 class ST66LeaderboardPanel;
+class SImage;
+enum class ET66UITheme : uint8;
 
 /**
  * Main Menu Screen
@@ -56,6 +59,12 @@ protected:
 
 private:
 	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
+	TSharedPtr<FSlateBrush> MainMenuBackgroundBrush;
+	TSharedPtr<SImage> MainMenuBackgroundImage;
+
+	// Theme toggle: deferred + locked to prevent crashes from mid-event rebuild
+	ET66UITheme PendingTheme;
+	bool bThemeChangeInProgress = false;
 
 	// Get localization subsystem
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
@@ -67,6 +76,9 @@ private:
 	FReply HandleAchievementsClicked();
 	FReply HandleLanguageClicked();
 	FReply HandleQuitClicked();
+	FReply HandleDarkThemeClicked();
+	FReply HandleLightThemeClicked();
+	void ApplyPendingTheme();
 
 	// Handle language change to rebuild UI
 	UFUNCTION()
