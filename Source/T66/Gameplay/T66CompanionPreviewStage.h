@@ -47,11 +47,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void CapturePreview();
 
+	/** Re-copy world post process to the scene capture and apply fixed exposure (call when theme/lighting changes). */
+	void RefreshCapturePostProcess();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	void EnsureCaptureSetup();
+
 	void UpdatePreviewPawn(FName CompanionID, FName SkinID);
 	void ApplyPreviewRotation();
 	void FrameCameraToPreview();
@@ -85,7 +89,7 @@ protected:
 
 	/** Orbit camera pitch (degrees). Negative looks slightly down. */
 	UPROPERTY(Transient)
-	float OrbitPitchDegrees = 8.f;
+	float OrbitPitchDegrees = 15.f;
 
 	/** Cached orbit framing so the platform doesn't "swim" as you rotate. */
 	UPROPERTY(Transient)
@@ -106,7 +110,7 @@ protected:
 
 	/** Multiplier on the auto-framed camera distance (smaller = companion appears bigger). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float CameraDistanceMultiplier = 0.92f;
+	float CameraDistanceMultiplier = 4.5f;
 
 	/** User zoom factor applied on top of CameraDistanceMultiplier (<= 1.0 means zoom-in). */
 	UPROPERTY(Transient)

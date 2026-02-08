@@ -101,6 +101,9 @@ public:
 	/** Called by BossBase on death so GameMode can decide what happens (normal vs Coliseum) and award score. */
 	void HandleBossDefeated(AT66BossBase* Boss);
 
+	/** Apply UI theme (Dark = moonlight, Light = sun) to directional lights in the given world. Shared with frontend. */
+	static void ApplyThemeToDirectionalLightsForWorld(UWorld* World);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -134,6 +137,12 @@ protected:
 
 	/** Spawn a PlayerStart if none exists */
 	void SpawnPlayerStartIfNeeded();
+
+	/** Apply theme to this world's directional lights (calls ApplyThemeToDirectionalLightsForWorld). */
+	void ApplyThemeToDirectionalLights();
+
+	UFUNCTION()
+	void HandleSettingsChanged();
 
 	/** Lab only: one central floor ~1/4 gameplay map size so the hero doesn't fall. */
 	void SpawnLabFloorIfNeeded();

@@ -180,7 +180,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
 					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Common", "GlobeIcon", "\xF0\x9F\x8C\x90"))
+						.Text(Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "Lang"))
 						.Font(FT66Style::Tokens::FontBold(20))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]

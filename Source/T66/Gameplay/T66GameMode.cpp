@@ -37,6 +37,7 @@
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
@@ -69,6 +70,7 @@
 #include "Landscape.h"
 #include "LandscapeInfo.h"
 #include "LandscapeEdit.h"
+#include "UI/Style/T66Style.h"
 #include "T66.h"
 
 namespace
@@ -194,6 +196,14 @@ void AT66GameMode::BeginPlay()
 		EnsureLevelSetup();
 	}
 
+	if (UGameInstance* GIP = GetGameInstance())
+	{
+		if (UT66PlayerSettingsSubsystem* PS = GIP->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			PS->OnSettingsChanged.AddDynamic(this, &AT66GameMode::HandleSettingsChanged);
+		}
+	}
+
 	// Coliseum mode: only spawn owed bosses + miasma (no houses, no waves, no NPCs, no start gate/pillars).
 	if (IsColiseumStage())
 	{
@@ -292,6 +302,10 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		{
 			RunState->StageTimerChanged.RemoveDynamic(this, &AT66GameMode::HandleStageTimerChanged);
 			RunState->DifficultyChanged.RemoveDynamic(this, &AT66GameMode::HandleDifficultyChanged);
+		}
+		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			PS->OnSettingsChanged.RemoveDynamic(this, &AT66GameMode::HandleSettingsChanged);
 		}
 	}
 
@@ -2262,6 +2276,8 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	static const FName T66MoonTag(TEXT("T66Moon"));
+
 	ASkyAtmosphere* Atmosphere = nullptr;
 	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It)
 	{
@@ -2340,6 +2356,36 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		}
 	}
 
+	// Ensure we have two directional lights (sun + moon) for theme-driven day/night.
+	int32 DirLightCount = 0;
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It) { ++DirLightCount; }
+	if (DirLightCount < 2)
+	{
+		ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(
+			ADirectionalLight::StaticClass(),
+			FVector(0.f, 0.f, 1000.f),
+			FRotator(50.f, 135.f, 0.f), // ~180° from sun so moon is "up" at night
+			SpawnParams
+		);
+		if (Moon)
+		{
+			Moon->Tags.Add(T66MoonTag);
+			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Moon->GetLightComponent()))
+			{
+				LC->SetMobility(EComponentMobility::Movable);
+				LC->SetIntensity(0.f); // ApplyThemeToDirectionalLights() will set when Dark
+				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f)); // Cool moonlight
+				LC->bAtmosphereSunLight = true;
+				LC->AtmosphereSunLightIndex = 1;
+			}
+#if WITH_EDITOR
+			Moon->SetActorLabel(TEXT("DEV_Moon"));
+#endif
+			SpawnedSetupActors.Add(Moon);
+			UE_LOG(LogTemp, Log, TEXT("Spawned development moon light for dark-mode sky"));
+		}
+	}
+
 	// Spawn sky light (ambient) if needed
 	if (!SkyForCapture)
 	{
@@ -2357,7 +2403,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
 			{
 				SkyComp->SetMobility(EComponentMobility::Movable); // Dynamic so landscape stays lit without Build Lighting
-				SkyComp->SetIntensity(0.7f); // Change #1: lower ambient so sun vs shadow reads more naturally (was 1.0)
+				SkyComp->SetIntensity(0.8f); // Match frontend; consistent with final loop below
 				// Keep the sky light neutral; the blue tint should come from the actual sky capture.
 				SkyComp->SetLightColor(FLinearColor::White);
 			}
@@ -2403,6 +2449,20 @@ void AT66GameMode::SpawnLightingIfNeeded()
 #endif
 			SpawnedSetupActors.Add(SpawnedFog);
 			HeightFog = SpawnedFog;
+		}
+	}
+	else if (HeightFog)
+	{
+		// Align level-placed fog with frontend/gameplay defaults so preview and gameplay match.
+		UExponentialHeightFogComponent* FogComp = HeightFog->FindComponentByClass<UExponentialHeightFogComponent>();
+		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(HeightFog->GetRootComponent());
+		if (FogComp)
+		{
+			FogComp->SetFogDensity(0.015f);
+			FogComp->SetFogHeightFalloff(0.2f);
+			FogComp->SetFogMaxOpacity(0.6f);
+			FogComp->SetStartDistance(0.f);
+			FogComp->SetFogInscatteringColor(FLinearColor(0.7f, 0.75f, 0.85f));
 		}
 	}
 
@@ -2451,35 +2511,105 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			SpawnedSetupActors.Add(SpawnedPP);
 		}
 	}
+	else if (PPVolume)
+	{
+		// Align level-placed PP with frontend/gameplay defaults so preview and gameplay match.
+		PPVolume->bUnbound = true;
+		FPostProcessSettings& PPS = PPVolume->Settings;
+		PPS.bOverride_AutoExposureMinBrightness = true;
+		PPS.AutoExposureMinBrightness = 0.4f;
+		PPS.bOverride_AutoExposureMaxBrightness = true;
+		PPS.AutoExposureMaxBrightness = 1.2f;
+		PPS.bOverride_ColorSaturation = true;
+		PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
+	}
 
-	// Force ALL directional and sky lights in the level to Movable so everything stays lit (no baked/static).
+	// Force ALL directional and sky lights to Movable; align colors with frontend (theme sets intensities).
 	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
 	{
-		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(It->GetLightComponent()))
+		ADirectionalLight* DirLight = *It;
+		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
 		{
 			LC->SetMobility(EComponentMobility::Movable);
-			LC->SetIntensity(4.f);
 			LC->bAtmosphereSunLight = true;
-			LC->AtmosphereSunLightIndex = 0;
-		}
-		if (USceneComponent* Root = It->GetRootComponent())
-		{
-			Root->SetMobility(EComponentMobility::Movable);
-		}
-	}
-	for (TActorIterator<ASkyLight> It(World); It; ++It)
-		{
-			if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
+			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(T66MoonTag) ? 1 : 0;
+			// Align level-placed light colors with frontend so preview and gameplay match.
+			if (DirLight->Tags.Contains(T66MoonTag))
 			{
-				SC->SetMobility(EComponentMobility::Movable);
-				SC->SetIntensity(0.8f);  // Change #1: lower ambient so shadows read (was 1.2)
-				SC->RecaptureSky();
+				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
 			}
+			else
+			{
+				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
+				LC->SetIntensity(4.f);
+			}
+		}
+		if (USceneComponent* Root = DirLight->GetRootComponent())
+		{
+			Root->SetMobility(EComponentMobility::Movable);
+		}
+	}
+	ApplyThemeToDirectionalLights();
+
+	for (TActorIterator<ASkyLight> It(World); It; ++It)
+	{
+		if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
+		{
+			SC->SetMobility(EComponentMobility::Movable);
+			SC->SetIntensity(0.8f);
+			SC->RecaptureSky();
+		}
 		if (USceneComponent* Root = It->GetRootComponent())
 		{
 			Root->SetMobility(EComponentMobility::Movable);
 		}
 	}
+}
+
+void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
+{
+	if (!World) return;
+
+	static const FName T66MoonTag(TEXT("T66Moon"));
+	ADirectionalLight* SunLight = nullptr;
+	ADirectionalLight* MoonLight = nullptr;
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	{
+		ADirectionalLight* L = *It;
+		if (L->Tags.Contains(T66MoonTag))
+			MoonLight = L;
+		else
+			SunLight = L;
+	}
+	if (!SunLight || !MoonLight) return;
+
+	UDirectionalLightComponent* SunComp = Cast<UDirectionalLightComponent>(SunLight->GetLightComponent());
+	UDirectionalLightComponent* MoonComp = Cast<UDirectionalLightComponent>(MoonLight->GetLightComponent());
+	if (!SunComp || !MoonComp) return;
+
+	const ET66UITheme Theme = FT66Style::GetTheme();
+	if (Theme == ET66UITheme::Light)
+	{
+		SunComp->SetIntensity(4.f);
+		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
+		MoonComp->SetIntensity(0.f);
+	}
+	else
+	{
+		SunComp->SetIntensity(0.f);
+		MoonComp->SetIntensity(0.4f);
+		MoonComp->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
+	}
+}
+
+void AT66GameMode::ApplyThemeToDirectionalLights()
+{
+	ApplyThemeToDirectionalLightsForWorld(GetWorld());
+}
+
+void AT66GameMode::HandleSettingsChanged()
+{
+	ApplyThemeToDirectionalLights();
 }
 
 void AT66GameMode::SpawnPlayerStartIfNeeded()

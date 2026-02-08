@@ -3,6 +3,7 @@
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Components/T66ThemeToggleWidget.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Blueprint/UserWidget.h"
 
 UT66UIManager::UT66UIManager()
@@ -26,6 +27,14 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 		{
 			ThemeToggle->SetUIManager(this);
 			ThemeToggle->AddToViewport(50);
+			// Hide in gameplay; theme is changed via Settings → Gameplay tab
+			if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(OwningPlayer))
+			{
+				if (T66PC->IsGameplayLevel() && ThemeToggle->IsInViewport())
+				{
+					ThemeToggle->RemoveFromParent();
+				}
+			}
 		}
 	}
 }
@@ -121,10 +130,18 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		CurrentScreen->AddToViewport(0);
 		CurrentScreen->OnScreenActivated();
 
-		// Ensure the persistent theme toggle is visible (re-add if it was removed by HideAllUI)
+		// Ensure the persistent theme toggle is visible (re-add if it was removed by HideAllUI), but not in gameplay
 		if (ThemeToggle && !ThemeToggle->IsInViewport())
 		{
-			ThemeToggle->AddToViewport(50);
+			bool bShowToggle = true;
+			if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(OwningPlayer))
+			{
+				bShowToggle = !T66PC->IsGameplayLevel();
+			}
+			if (bShowToggle)
+			{
+				ThemeToggle->AddToViewport(50);
+			}
 		}
 
 		OnScreenChanged.Broadcast(OldScreenType, ScreenType);

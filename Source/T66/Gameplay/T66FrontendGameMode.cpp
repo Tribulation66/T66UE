@@ -1,17 +1,25 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66FrontendGameMode.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "Engine/PostProcessVolume.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
+#include "Components/ExponentialHeightFogComponent.h"
+
+static const FName T66MoonTag(TEXT("T66Moon"));
 
 static void SpawnFrontendLightingIfNeeded(UWorld* World)
 {
@@ -48,6 +56,46 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned DirectionalLight for preview (same as gameplay)"));
 		}
 	}
+
+	// Ensure two directional lights (sun + moon) for theme-driven day/night, same as gameplay.
+	int32 DirLightCount = 0;
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It) { ++DirLightCount; }
+	if (DirLightCount < 2)
+	{
+		ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(
+			ADirectionalLight::StaticClass(),
+			FVector(0.f, 0.f, 1000.f),
+			FRotator(50.f, 135.f, 0.f),
+			SpawnParams
+		);
+		if (Moon)
+		{
+			Moon->Tags.Add(T66MoonTag);
+			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Moon->GetLightComponent()))
+			{
+				LC->SetMobility(EComponentMobility::Movable);
+				LC->SetIntensity(0.f);
+				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
+				LC->bAtmosphereSunLight = true;
+				LC->AtmosphereSunLightIndex = 1;
+			}
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned moon light for theme (same as gameplay)"));
+		}
+	}
+
+	// Assign atmosphere indices and apply current theme.
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	{
+		ADirectionalLight* DirLight = *It;
+		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
+		{
+			LC->SetMobility(EComponentMobility::Movable);
+			LC->bAtmosphereSunLight = true;
+			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(T66MoonTag) ? 1 : 0;
+		}
+	}
+	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
+
 	if (!SkyLight)
 	{
 		SkyLight = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FVector(0.f, 0.f, 500.f), FRotator::ZeroRotator, SpawnParams);
@@ -56,7 +104,7 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			if (USkyLightComponent* SC = SkyLight->GetLightComponent())
 			{
 				SC->SetMobility(EComponentMobility::Movable);
-				SC->SetIntensity(0.7f);
+				SC->SetIntensity(0.8f);
 				SC->SetLightColor(FLinearColor::White);
 				SC->RecaptureSky();
 			}
@@ -67,6 +115,70 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 	{
 		if (USkyLightComponent* SC = Cast<USkyLightComponent>(SkyLight->GetLightComponent()))
 			SC->RecaptureSky();
+	}
+
+	// Exponential Height Fog (same as gameplay) for atmospheric depth.
+	AExponentialHeightFog* HeightFog = nullptr;
+	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It) { HeightFog = *It; break; }
+	if (!HeightFog)
+	{
+		HeightFog = World->SpawnActor<AExponentialHeightFog>(AExponentialHeightFog::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (HeightFog)
+		{
+			UExponentialHeightFogComponent* FogComp = HeightFog->FindComponentByClass<UExponentialHeightFogComponent>();
+			if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(HeightFog->GetRootComponent());
+			if (FogComp)
+			{
+				FogComp->SetFogDensity(0.015f);
+				FogComp->SetFogHeightFalloff(0.2f);
+				FogComp->SetFogMaxOpacity(0.6f);
+				FogComp->SetStartDistance(0.f);
+				FogComp->SetFogInscatteringColor(FLinearColor(0.7f, 0.75f, 0.85f));
+			}
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned ExponentialHeightFog (same as gameplay)"));
+		}
+	}
+
+	// PostProcessVolume (unbound) with same exposure as gameplay so frontend matches brightness.
+	APostProcessVolume* PPVolume = nullptr;
+	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+	{
+		APostProcessVolume* P = *It;
+		if (P && P->bUnbound) { PPVolume = P; break; }
+	}
+	if (!PPVolume)
+	{
+		for (TActorIterator<APostProcessVolume> It(World); It; ++It) { PPVolume = *It; break; }
+	}
+	if (!PPVolume)
+	{
+		PPVolume = World->SpawnActor<APostProcessVolume>(APostProcessVolume::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (PPVolume)
+		{
+			PPVolume->bUnbound = true;
+			FPostProcessSettings& PPS = PPVolume->Settings;
+			PPS.bOverride_AutoExposureMinBrightness = true;
+			PPS.AutoExposureMinBrightness = 0.4f;
+			PPS.bOverride_AutoExposureMaxBrightness = true;
+			PPS.AutoExposureMaxBrightness = 1.2f;
+			PPS.bOverride_ColorSaturation = true;
+			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned PostProcessVolume (same exposure as gameplay)"));
+		}
+	}
+
+	// Second pass: all SkyLights to 0.8f and RecaptureSky (match gameplay).
+	for (TActorIterator<ASkyLight> It(World); It; ++It)
+	{
+		ASkyLight* SL = *It;
+		if (USkyLightComponent* SC = Cast<USkyLightComponent>(SL->GetLightComponent()))
+		{
+			SC->SetMobility(EComponentMobility::Movable);
+			SC->SetIntensity(0.8f);
+			SC->RecaptureSky();
+		}
+		if (USceneComponent* Root = SL->GetRootComponent())
+			Root->SetMobility(EComponentMobility::Movable);
 	}
 }
 
@@ -98,8 +210,16 @@ void AT66FrontendGameMode::BeginPlay()
 	}
 
 	UWorld* World = GetWorld();
-	// Same sky and lights as gameplay level so SceneCapture2D shows real engine sky.
+	// Same sky and lights as gameplay level so SceneCapture2D shows real engine sky (sun + moon, theme applied).
 	SpawnFrontendLightingIfNeeded(World);
+
+	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
+	{
+		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			PS->OnSettingsChanged.AddDynamic(this, &AT66FrontendGameMode::HandleSettingsChanged);
+		}
+	}
 
 	// Spawn hero preview stage if not already in level (for 3D hero preview in Hero Selection)
 	if (World)
@@ -163,4 +283,40 @@ void AT66FrontendGameMode::BeginPlay()
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode BeginPlay - Menu level initialized"));
+}
+
+void AT66FrontendGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			PS->OnSettingsChanged.RemoveDynamic(this, &AT66FrontendGameMode::HandleSettingsChanged);
+		}
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void AT66FrontendGameMode::HandleSettingsChanged()
+{
+	UWorld* World = GetWorld();
+	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
+	// Re-apply world post process to preview captures so they stay in sync with theme/lighting.
+	if (World)
+	{
+		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+		{
+			if (IsValid(*It))
+			{
+				It->RefreshCapturePostProcess();
+			}
+		}
+		for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+		{
+			if (IsValid(*It))
+			{
+				It->RefreshCapturePostProcess();
+			}
+		}
+	}
 }

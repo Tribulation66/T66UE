@@ -68,6 +68,7 @@
 - Small, descriptive commits.
 - UI: **event-driven** only (no per-frame UI logic).
 - **All UI text localized** via `UT66LocalizationSubsystem::GetText_*()` or NSLOCTEXT.
+- **After C++ changes:** Close the editor, run the build command, then reopen. Do not use Live Coding / Hot Reload — the Config UObject `UT66RngTuningConfig` can trigger "Cannot replace existing object of a different class" (CDO replace crash) if the module is reloaded while the editor is running.
 
 ---
 
@@ -84,6 +85,7 @@
 
 ## Known issues / tech debt
 
+- **T66RngTuningConfig CDO crash:** If you see "Cannot replace existing object of a different class" for `Default__T66RngTuningConfig`, close the editor, build from command line, then reopen. Avoid Live Coding when changing T66 C++; full restart prevents the CDO replace crash.
 - Coliseum: `ColiseumLevel.umap` may be missing; code falls back to GameplayLevel.
 - Optional: move ID-keyed copy (achievements, hero/companion names) to String Tables for designers.
 
@@ -107,6 +109,8 @@
 ---
 
 ## Recent context (for continuity)
+
+- **Preview vs gameplay look:** Hero and companion preview SceneCaptures copy the world's unbound `APostProcessVolume::Settings` into `SceneCapture->PostProcessSettings` in `EnsureCaptureSetup()` (so the capture gets the same auto exposure and saturation as the main view). `PostProcessBlendWeight = 1.0f`. Without this copy, SceneCaptureComponent2D only uses its own (empty) post process, not the level's PP volume.
 
 - **Party Size Picker:** Only Solo and Co-op (no Duo/Trio). Co-op → Lobby (3 slots). New Game + Solo → Hero Selection; New Game + Co-op → Lobby; Load Game → Save Slots.
 - **Lobby (Bible-style):** Left = players in lobby (hero portrait + You / Waiting for player…). Right = Friends list (stub). Bottom right = Select Hero, Ready Check → popup → Enter the Tribulation. Hero Selection from Lobby has no Enter button; Back saves hero to GI.
@@ -140,6 +144,7 @@
 
 ## Known issues / tech debt
 
+- **T66RngTuningConfig CDO crash:** If you see "Cannot replace existing object of a different class" for `Default__T66RngTuningConfig`, close the editor, build from command line, then reopen. Avoid Live Coding when changing T66 C++; full restart prevents the CDO replace crash.
 - Coliseum: `ColiseumLevel.umap` may be missing; code falls back to GameplayLevel.
 - Optional: move ID-keyed copy (achievements, hero/companion names) to String Tables for designers.
 - **Combat world scans (deferred):** `T66CombatComponent::TryFire()` uses 3x `TActorIterator<>` (GamblerBoss, BossBase, EnemyBase) per fire tick (up to 20/s). Currently only 1 combat component active (hero only), so perf is acceptable. When companion combat or higher enemy counts are added, replace with a cached enemy registry (enemies register in BeginPlay, unregister in EndPlay). Files: `T66CombatComponent.cpp:271`.

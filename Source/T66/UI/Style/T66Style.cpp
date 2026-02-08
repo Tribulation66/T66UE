@@ -14,6 +14,7 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Fonts/CompositeFont.h"
 
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
@@ -134,7 +135,9 @@ namespace
 		const FString Path = FontsDir() / RelativePath;
 		if (!FPaths::FileExists(Path))
 			return FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
-		return FSlateFontInfo(Path, Size);
+		TSharedPtr<const FCompositeFont> CompositeFont = MakeShared<FStandaloneCompositeFont>(
+			NAME_None, Path, EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
+		return FSlateFontInfo(CompositeFont, static_cast<float>(Size));
 	}
 
 	// All UI font tokens use the selected font from GThemeFontPaths. Bold uses GThemeFontPathsBold when available.

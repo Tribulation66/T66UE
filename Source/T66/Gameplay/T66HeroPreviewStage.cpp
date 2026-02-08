@@ -16,6 +16,12 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Engine/PostProcessVolume.h"
+#include "EngineUtils.h"
+#include "Materials/MaterialInterface.h"
+
+/** Gameplay ground material (same as T66GameMode floor) for preview platform. */
+static const TCHAR* GPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0");
 
 AT66HeroPreviewStage::AT66HeroPreviewStage()
 {
@@ -35,8 +41,8 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 	SceneCapture->bCaptureEveryFrame = false;
 	SceneCapture->bCaptureOnMovement = false;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
-	SceneCapture->FOVAngle = 30.f;
-	SceneCapture->PostProcessBlendWeight = 0.0f;
+	SceneCapture->FOVAngle = 90.f; // Match gameplay FollowCamera FOV
+	SceneCapture->PostProcessBlendWeight = 1.0f;
 
 	PreviewPlatform = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewPlatform"));
 	PreviewPlatform->SetupAttachment(RootComponent);
@@ -55,8 +61,13 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 void AT66HeroPreviewStage::BeginPlay()
 {
 	Super::BeginPlay();
+	// Apply gameplay ground material to platform (same as gameplay level floor).
+	if (PreviewPlatform)
+	{
+		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, GPreviewGroundMaterialPath))
+			PreviewPlatform->SetMaterial(0, GroundMat);
+	}
 	EnsureCaptureSetup();
-	// Platform uses default mesh material; lighting and sky come from level (SkyAtmosphere + sun + SkyLight).
 }
 
 void AT66HeroPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -105,6 +116,47 @@ void AT66HeroPreviewStage::EnsureCaptureSetup()
 	if (RenderTarget)
 	{
 		SceneCapture->TextureTarget = RenderTarget;
+	}
+
+	// Apply world post process to capture so preview matches main view (exposure, saturation).
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		APostProcessVolume* PPVolume = nullptr;
+		for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+		{
+			if (It->bUnbound) { PPVolume = *It; break; }
+		}
+		if (!PPVolume)
+		{
+			for (TActorIterator<APostProcessVolume> It(World); It; ++It) { PPVolume = *It; break; }
+		}
+		if (PPVolume)
+		{
+			// Copy world post process as-is (same auto-exposure 0.4-1.2 range as gameplay).
+			SceneCapture->PostProcessSettings = PPVolume->Settings;
+		}
+	}
+}
+
+void AT66HeroPreviewStage::RefreshCapturePostProcess()
+{
+	if (!IsValid(this) || !SceneCapture) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
+	APostProcessVolume* PPVolume = nullptr;
+	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+	{
+		if (It->bUnbound) { PPVolume = *It; break; }
+	}
+	if (!PPVolume)
+	{
+		for (TActorIterator<APostProcessVolume> It(World); It; ++It) { PPVolume = *It; break; }
+	}
+	if (PPVolume)
+	{
+		// Copy world post process as-is (same auto-exposure 0.4-1.2 range as gameplay).
+		SceneCapture->PostProcessSettings = PPVolume->Settings;
 	}
 }
 
@@ -234,7 +286,7 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	// Fit the whole bounds sphere in view.
 	const float HalfFovRad = FMath::DegreesToRadians(SceneCapture->FOVAngle * 0.5f);
 	// Slightly "zoomed in" so the character feels large (Dota-style).
-	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier, 0.60f, 2.0f);
+	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier, 0.60f, 8.0f);
 	const float ZoomMult = FMath::Clamp(PreviewZoomMultiplier, FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f), 1.0f);
 	const float EffectiveMult = FMath::Clamp(BaseMult * ZoomMult, 0.25f, BaseMult);
 	const float Dist = (Radius / FMath::Max(0.15f, FMath::Tan(HalfFovRad))) * EffectiveMult;

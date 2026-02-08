@@ -1325,7 +1325,8 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				*PreviewSkinIDOverride.ToString(), GIPreview ? *GIPreview->SelectedHeroSkinID.ToString() : TEXT("(null GI)"), *EffectiveSkinID.ToString());
 			UE_LOG(LogTemp, Log, TEXT("[BEACH] UpdateHeroDisplay: calling SetPreviewHero HeroID=%s BodyType=%d SkinID=%s"),
 				*PreviewedHeroID.ToString(), (int32)SelectedBodyType, *EffectiveSkinID.ToString());
-			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID);
+			FName CompanionID = GIPreview ? GIPreview->SelectedCompanionID : NAME_None;
+			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, CompanionID);
 		}
 		else if (HeroPreviewColorBox.IsValid())
 		{
@@ -1353,7 +1354,8 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				? (GI && !GI->SelectedHeroSkinID.IsNone() ? GI->SelectedHeroSkinID : FName(TEXT("Default")))
 				: PreviewSkinIDOverride;
 			if (EffectiveSkinID.IsNone()) EffectiveSkinID = FName(TEXT("Default"));
-			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID);
+			FName CompanionID = GI ? GI->SelectedCompanionID : NAME_None;
+			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, CompanionID);
 		}
 		else if (HeroPreviewColorBox.IsValid())
 		{

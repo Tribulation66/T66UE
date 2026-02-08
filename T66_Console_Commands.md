@@ -39,6 +39,11 @@ Notes:
   - `2`: Cheating Certainty
 - **Defined in**: `Source/T66/Core/T66LeaderboardSubsystem.cpp`
 
+### `Pixel1` … `Pixel10`
+- **Type**: command (no arguments)
+- **What it does**: Sets **retro pixelation** level by lowering internal render resolution and scaling up. **Pixel1** = very slight (100%), **Pixel10** = strong (25%). Affects the whole frame (scene + UI). Console only; not persisted (resets on restart).
+- **Defined in**: `Source/T66/Core/T66Pixelation.cpp`
+
 ---
 
 ## Runtime (Game) — In-game Dev Console (GameplayLevel)

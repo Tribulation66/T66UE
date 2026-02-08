@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66PreviewMaterials.h"
 #include "Materials/MaterialInterface.h"
+#include "UObject/UObjectGlobals.h"
 
 #if WITH_EDITORONLY_DATA
 #include "Materials/Material.h"
@@ -152,6 +153,9 @@ UMaterialInterface* T66PreviewMaterials::GetGroundMaterial()
 UMaterialInterface* T66PreviewMaterials::GetSkyMaterial()
 {
 	if (UMaterialInterface* F = LoadObject<UMaterialInterface>(nullptr, SkyAssetPath))
+		return F;
+	// Retry with TransientPackage so packaged builds can resolve the asset
+	if (UMaterialInterface* F = LoadObject<UMaterialInterface>(GetTransientPackage(), SkyAssetPath))
 		return F;
 
 #if WITH_EDITORONLY_DATA

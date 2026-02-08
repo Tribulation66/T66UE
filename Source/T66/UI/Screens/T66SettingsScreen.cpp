@@ -463,22 +463,25 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
 				[
-					SNew(STextBlock).Text(Label)
-					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FLinearColor::White)
+					SNew(SBox).MinDesiredWidth(200.0f)
+					[
+						SNew(STextBlock).Text(Label)
+						.Font(FT66Style::Tokens::FontRegular(14))
+						.ColorAndOpacity(FLinearColor::White)
+					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f, 0.0f, 0.0f)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SBox).MinDesiredWidth(60.0f).HeightOverride(32.0f)
+						SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
 						[
 							SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked_Lambda([SetValue]() { SetValue(true); return FReply::Handled(); })
 							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
 							.ButtonColorAndOpacity_Lambda([GetValue]() { return GetValue() ? FT66Style::Tokens::Success : FT66Style::Tokens::Panel2; })
-							.ContentPadding(FMargin(8.f, 4.f))
+							.ContentPadding(FMargin(12.f, 6.f))
 							[
 								SNew(STextBlock).Text(OnText)
 								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
@@ -487,13 +490,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f, 0.0f, 0.0f)
 					[
-						SNew(SBox).MinDesiredWidth(60.0f).HeightOverride(32.0f)
+						SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
 						[
 							SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
 							.OnClicked_Lambda([SetValue]() { SetValue(false); return FReply::Handled(); })
 							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
 							.ButtonColorAndOpacity_Lambda([GetValue]() { return !GetValue() ? FT66Style::Tokens::Danger : FT66Style::Tokens::Panel2; })
-							.ContentPadding(FMargin(8.f, 4.f))
+							.ContentPadding(FMargin(12.f, 6.f))
 							[
 								SNew(STextBlock).Text(OffText)
 								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
@@ -504,10 +507,76 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			];
 	};
 
+	const FText ThemeLabel = Loc ? Loc->GetText_SettingsTheme() : NSLOCTEXT("T66.Settings", "Theme", "Theme:");
+	const FText DarkText = Loc ? Loc->GetText_ThemeDark() : NSLOCTEXT("T66.Theme", "Dark", "DARK");
+	const FText LightText = Loc ? Loc->GetText_ThemeLight() : NSLOCTEXT("T66.Theme", "Light", "LIGHT");
+
 	return SNew(SScrollBox)
 		+ SScrollBox::Slot()
 		[
 			SNew(SVerticalBox)
+			// Theme row (Dark / Light) at top
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				SNew(SBorder)
+				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+				.Padding(FMargin(15.0f, 12.0f))
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
+					[
+						SNew(STextBlock).Text(ThemeLabel)
+						.Font(FT66Style::Tokens::FontRegular(14))
+						.ColorAndOpacity(FLinearColor::White)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f, 0.0f, 0.0f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth()
+						[
+							SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
+							[
+								SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
+								.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateLambda([this, PS]()
+								{
+									if (PS) PS->SetLightTheme(false);
+									ReleaseSlateResources(true);
+									return FReply::Handled();
+								})))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
+									PS && !PS->GetLightTheme() ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
+								.ButtonColorAndOpacity_Lambda([PS]() { return (PS && !PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; })
+								.ContentPadding(FMargin(12.f, 6.f))
+								[
+									SNew(STextBlock).Text(DarkText)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+								]
+							]
+						]
+						+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f, 0.0f, 0.0f)
+						[
+							SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
+							[
+								SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
+								.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateLambda([this, PS]()
+								{
+									if (PS) PS->SetLightTheme(true);
+									ReleaseSlateResources(true);
+									return FReply::Handled();
+								})))
+								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
+									PS && PS->GetLightTheme() ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
+								.ButtonColorAndOpacity_Lambda([PS]() { return (PS && PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; })
+								.ContentPadding(FMargin(12.f, 6.f))
+								[
+									SNew(STextBlock).Text(LightText)
+									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
+								]
+							]
+						]
+					]
+				]
+			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				MakeToggleRow(
@@ -963,9 +1032,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					.ColorAndOpacity(FLinearColor::White)
 				]
 			]
-			+ SHorizontalBox::Slot().FillWidth(0.27f).Padding(4.0f, 0.0f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 			[
-				SNew(SBox).MinDesiredWidth(70.0f).HeightOverride(30.0f)
+				SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(30.0f)
 				[
 					SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
 					.OnClicked_Lambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
@@ -975,16 +1044,16 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					})
 					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
 					.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
-					.ContentPadding(FMargin(8.f, 4.f))
+					.ContentPadding(FMargin(12.f, 6.f))
 					[
 						SNew(STextBlock).Text(RebindText)
 						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
 					]
 				]
 			]
-			+ SHorizontalBox::Slot().FillWidth(0.28f).Padding(4.0f, 0.0f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 			[
-				SNew(SBox).MinDesiredWidth(70.0f).HeightOverride(30.0f)
+				SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(30.0f)
 				[
 					SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
 					.OnClicked_Lambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
@@ -1002,7 +1071,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					})
 					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
 					.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
-					.ContentPadding(FMargin(8.f, 4.f))
+					.ContentPadding(FMargin(12.f, 6.f))
 					[
 						SNew(STextBlock).Text(ClearText)
 						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))

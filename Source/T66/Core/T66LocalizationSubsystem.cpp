@@ -471,6 +471,11 @@ FText UT66LocalizationSubsystem::GetText_ThemeLight() const
 	return NSLOCTEXT("T66.Theme", "Light", "LIGHT");
 }
 
+FText UT66LocalizationSubsystem::GetText_SettingsTheme() const
+{
+	return NSLOCTEXT("T66.Settings", "Theme", "Theme:");
+}
+
 FText UT66LocalizationSubsystem::GetText_MakeThemeDay() const
 {
 	return NSLOCTEXT("T66.Theme", "MakeThemeDay", "MAKE THEME DAY?");
@@ -1369,6 +1374,11 @@ FText UT66LocalizationSubsystem::GetText_IdolTooltip(FName IdolID) const
 FText UT66LocalizationSubsystem::GetText_SelectLanguage() const
 {
 	return NSLOCTEXT("T66.LanguageSelect", "Title", "Select Language");
+}
+
+FText UT66LocalizationSubsystem::GetText_LangButton() const
+{
+	return NSLOCTEXT("T66.LanguageSelect", "LangButton", "Lang");
 }
 
 // ========== Quit Confirmation ==========

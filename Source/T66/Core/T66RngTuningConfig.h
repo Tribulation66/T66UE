@@ -58,7 +58,7 @@ struct T66_API FT66FloatRange
 	float Max = 0.f;
 };
 
-/** Config-backed RNG tuning. Uses dedicated config file to avoid CDO "replace existing object" crash (Config=Game can trigger duplicate CDO creation). */
+/** Config-backed RNG tuning. Consumed via UT66RngSubsystem::GetTuning() (subsystem owns an instance; CDO is not used to avoid hot-reload "Cannot replace existing object" crash). */
 UCLASS(Config = "T66Rng", DefaultConfig)
 class T66_API UT66RngTuningConfig : public UObject
 {

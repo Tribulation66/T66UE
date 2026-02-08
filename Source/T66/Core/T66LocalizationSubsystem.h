@@ -141,6 +141,9 @@ public:
 	FText GetText_ThemeLight() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Theme")
+	FText GetText_SettingsTheme() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Theme")
 	FText GetText_MakeThemeDay() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Theme")
@@ -715,6 +718,10 @@ public:
 	// Language Select
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|LanguageSelect")
 	FText GetText_SelectLanguage() const;
+
+	/** Short label for the main menu language button (e.g. "Lang"). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|LanguageSelect")
+	FText GetText_LangButton() const;
 	
 	// Quit Confirmation
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|QuitConfirmation")
