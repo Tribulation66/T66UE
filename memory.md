@@ -47,6 +47,7 @@
 | **Preview materials** | `T66PreviewMaterials.h/.cpp`: `GetGroundMaterial()` / `GetSkyMaterial()` / `GetStarMaterial()` — loads from `/Game/UI/Preview/` or auto-creates in editor. All use single VectorParam→output (one hop, no chains). Used by both hero + companion preview stages. |
 | **Localization** | `UT66LocalizationSubsystem::GetText_*()`. All UI strings via this or NSLOCTEXT; no hardcoded player-facing text. |
 | **Run state (hearts, gold, inventory)** | `UT66RunStateSubsystem`. |
+| **Pixelation (retro, scene only)** | `UT66PixelationSubsystem`: `SetPixelationLevel(0–10)`. Console: `Pixel0` (off), `Pixel1`–`Pixel10`. Post-process material at `Content/UI/M_PixelationPostProcess` (hand-built asset; C++ loads it). Only 3D scene pixelated; UI stays crisp. |
 | **Save/load run** | `UT66SaveSubsystem`, `UT66RunSaveGame`. Profile (AC, skins, achievements): `UT66ProfileSaveGame`, saved by AchievementsSubsystem. |
 | **The Lab** | Entry: Hero Selection "THE LAB" button (above Enter the Tribulation) → sets `UT66GameInstance::bIsLabLevel`, opens `LabLevel`. `AT66GameMode::IsLabLevel()`; Lab-only BeginPlay (floor, light, hero+companion; no waves/NPCs/gates). `UT66LabOverlayWidget`: Items panel (unlocked only), Enemies tabs (NPC/Mobs/Stage Bosses), Reset Items/Enemies, Exit. Spawn: `SpawnLabMob`, `SpawnLabBoss`, `SpawnLabTreeOfLife`; `ResetLabSpawnedActors`. Unlocks: `UT66ProfileSaveGame::LabUnlockedItemIDs`, `LabUnlockedEnemyIDs`; `UT66AchievementsSubsystem::AddLabUnlockedItem/Enemy`, `IsLabUnlockedItem/Enemy`. RunState `ClearInventory()` for Lab Reset Items. |
 
@@ -110,6 +111,7 @@
 
 ## Recent context (for continuity)
 
+- **Pixelation (post-process):** Replaced `r.ScreenPercentage`-based pixelation with a post-process material. `UT66PixelationSubsystem` adds a blendable to the level's post-process volume; material does floor(UV*PixelGridSize)/PixelGridSize and samples PostProcessInput0 with point filtering. Only the 3D scene is pixelated; UI stays crisp. **Pixel0** = off, **Pixel1**–**Pixel10** = levels. Material is a hand-built editor asset at `/Game/UI/M_PixelationPostProcess` (C++ loads it; no programmatic creation).
 - **Preview vs gameplay look:** Hero and companion preview SceneCaptures copy the world's unbound `APostProcessVolume::Settings` into `SceneCapture->PostProcessSettings` in `EnsureCaptureSetup()` (so the capture gets the same auto exposure and saturation as the main view). `PostProcessBlendWeight = 1.0f`. Without this copy, SceneCaptureComponent2D only uses its own (empty) post process, not the level's PP volume.
 
 - **Party Size Picker:** Only Solo and Co-op (no Duo/Trio). Co-op → Lobby (3 slots). New Game + Solo → Hero Selection; New Game + Co-op → Lobby; Load Game → Save Slots.

@@ -39,10 +39,15 @@ Notes:
   - `2`: Cheating Certainty
 - **Defined in**: `Source/T66/Core/T66LeaderboardSubsystem.cpp`
 
+### `Pixel0`
+- **Type**: command (no arguments)
+- **What it does**: Turns off retro pixelation (full resolution, no effect).
+- **Defined in**: `Source/T66/Core/T66Pixelation.cpp`
+
 ### `Pixel1` … `Pixel10`
 - **Type**: command (no arguments)
-- **What it does**: Sets **retro pixelation** level by lowering internal render resolution and scaling up. **Pixel1** = very slight (100%), **Pixel10** = strong (25%). Affects the whole frame (scene + UI). Console only; not persisted (resets on restart).
-- **Defined in**: `Source/T66/Core/T66Pixelation.cpp`
+- **What it does**: Sets **retro pixelation** level via a post-process material. Only the **3D scene** is pixelated; **UI and text stay crisp** at native resolution. **Pixel1** = very slight, **Pixel10** = strong. Console only; not persisted (resets on restart).
+- **Defined in**: `Source/T66/Core/T66Pixelation.cpp` (drives `UT66PixelationSubsystem`; material at `Content/UI/M_PixelationPostProcess`, hand-built asset).
 
 ---
 

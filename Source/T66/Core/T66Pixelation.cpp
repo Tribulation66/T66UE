@@ -2,40 +2,38 @@
 
 #include "HAL/IConsoleManager.h"
 #include "Engine/Engine.h"
-#include "GameFramework/GameUserSettings.h"
+#include "Core/T66PixelationSubsystem.h"
 
 namespace
 {
-	// Retro pixelation: level 1 = very slight (100%), level 10 = strong (25%).
-	// Tune these values in one place to adjust the look.
-	static const float GPixelationLevelToPercentage[10] = {
-		100.f, 90.f, 80.f, 70.f, 60.f, 50.f, 42.f, 35.f, 29.f, 25.f
-	};
-
 	static void ApplyPixelationLevel(int32 Level)
 	{
-		if (Level < 1 || Level > 10) return;
-		const float Percentage = GPixelationLevelToPercentage[Level - 1];
-
-		// Use ECVF_SetByConsole — highest user-settable priority — so the engine's
-		// internal ApplySettings (which uses SetByGameSetting) cannot overwrite us.
-		// The Scalability system may log "ignored" warnings; those are harmless and
-		// simply confirm our value is kept.
-		if (IConsoleVariable* CVarScreenPct = IConsoleManager::Get().FindConsoleVariable(TEXT("r.ScreenPercentage")))
+		UWorld* World = GEngine ? GEngine->GetCurrentPlayWorld() : nullptr;
+		if (!World)
 		{
-			CVarScreenPct->Set(Percentage, ECVF_SetByConsole);
+			World = GEngine && GEngine->GameViewport ? GEngine->GameViewport->GetWorld() : nullptr;
 		}
-		if (IConsoleVariable* CVarSecondary = IConsoleManager::Get().FindConsoleVariable(TEXT("r.SecondaryScreenPercentage.GameViewport")))
+		if (!World || !World->GetGameInstance())
 		{
-			CVarSecondary->Set(Percentage, ECVF_SetByConsole);
+			return;
+		}
+		if (UT66PixelationSubsystem* Sub = World->GetGameInstance()->GetSubsystem<UT66PixelationSubsystem>())
+		{
+			Sub->SetPixelationLevel(Level);
 		}
 	}
 }
 
+static FAutoConsoleCommand T66Pixel0Command(
+	TEXT("Pixel0"),
+	TEXT("Turn off retro pixelation (scene + UI at full res)."),
+	FConsoleCommandDelegate::CreateLambda([]() { ApplyPixelationLevel(0); })
+);
+
 #define T66_REGISTER_PIXEL_CMD(N) \
 	static FAutoConsoleCommand T66Pixel##N##Command( \
 		TEXT("Pixel" #N), \
-		TEXT("Retro pixelation level " #N " (1=very slight, 10=strong). Console only; not persisted."), \
+		TEXT("Retro pixelation level " #N " (1=very slight, 10=strong). Scene only; UI stays crisp. Console only; not persisted."), \
 		FConsoleCommandDelegate::CreateLambda([]() { ApplyPixelationLevel(N); }) \
 	);
 

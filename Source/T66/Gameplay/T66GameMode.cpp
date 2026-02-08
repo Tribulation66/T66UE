@@ -2276,7 +2276,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	static const FName T66MoonTag(TEXT("T66Moon"));
+	static const FName MoonTag(TEXT("T66Moon"));
 
 	ASkyAtmosphere* Atmosphere = nullptr;
 	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It)
@@ -2369,7 +2369,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		);
 		if (Moon)
 		{
-			Moon->Tags.Add(T66MoonTag);
+			Moon->Tags.Add(MoonTag);
 			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Moon->GetLightComponent()))
 			{
 				LC->SetMobility(EComponentMobility::Movable);
@@ -2532,9 +2532,9 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		{
 			LC->SetMobility(EComponentMobility::Movable);
 			LC->bAtmosphereSunLight = true;
-			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(T66MoonTag) ? 1 : 0;
+			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(MoonTag) ? 1 : 0;
 			// Align level-placed light colors with frontend so preview and gameplay match.
-			if (DirLight->Tags.Contains(T66MoonTag))
+			if (DirLight->Tags.Contains(MoonTag))
 			{
 				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
 			}
@@ -2570,13 +2570,13 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 {
 	if (!World) return;
 
-	static const FName T66MoonTag(TEXT("T66Moon"));
+	static const FName MoonTag(TEXT("T66Moon"));
 	ADirectionalLight* SunLight = nullptr;
 	ADirectionalLight* MoonLight = nullptr;
 	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
 	{
 		ADirectionalLight* L = *It;
-		if (L->Tags.Contains(T66MoonTag))
+		if (L->Tags.Contains(MoonTag))
 			MoonLight = L;
 		else
 			SunLight = L;
