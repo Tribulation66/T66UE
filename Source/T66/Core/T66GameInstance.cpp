@@ -1,10 +1,13 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Engine/DataTable.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
 #include "Engine/StreamableManager.h"
+#include "Engine/Texture2D.h"
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
 
@@ -66,6 +69,15 @@ void UT66GameInstance::Init()
 
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
+
+	// Preload main menu background textures so PIE and theme switch show image immediately (no white flash).
+	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
+	{
+		const TSoftObjectPtr<UTexture2D> MMDark(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMDark.MMDark")));
+		const TSoftObjectPtr<UTexture2D> MMLight(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight")));
+		TexPool->RequestTexture(MMDark, this, FName(TEXT("PreloadMMDark")), [](UTexture2D*) {});
+		TexPool->RequestTexture(MMLight, this, FName(TEXT("PreloadMMLight")), [](UTexture2D*) {});
+	}
 }
 
 void UT66GameInstance::PrimeCoreDataTablesAsync()

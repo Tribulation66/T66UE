@@ -113,6 +113,11 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 	{
 		CurrentScreen = NewScreen;
 		CurrentScreenType = ScreenType;
+		// Force Hero Selection to rebuild so co-op (Lab + Back to Lobby only) vs solo (difficulty + Enter) layout is correct on first paint. Otherwise cached tree from a previous show can display.
+		if (ScreenType == ET66ScreenType::HeroSelection)
+		{
+			CurrentScreen->ReleaseSlateResources(true);
+		}
 		CurrentScreen->AddToViewport(0);
 		CurrentScreen->OnScreenActivated();
 

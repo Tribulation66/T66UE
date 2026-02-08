@@ -412,6 +412,58 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
 	FText GetText_Trio() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
+	FText GetText_Coop() const;
+
+	// Lobby (co-op: Duo/Trio after Party Size Picker)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyTitle() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyYou() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyWaitingForPlayer() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyInviteFriend() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyContinue() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbySelectHero() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyReadyCheck() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyReadyToStart() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyFriends() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyReady() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyNotReady() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyLeaveConfirmTitle() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyLeaveConfirmMessage() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyLeaveStay() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_LobbyLeaveLeave() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Lobby")
+	FText GetText_BackToLobby() const;
 	
 	// Hero Selection
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")

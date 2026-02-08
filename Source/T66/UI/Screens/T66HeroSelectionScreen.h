@@ -85,6 +85,7 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
 	virtual void RefreshScreen_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
@@ -158,7 +159,8 @@ private:
 	FReply HandleTheLabClicked();
 	FReply HandleEnterClicked();
 	FReply HandleBackClicked();
-	
+	FReply HandleBackToLobbyClicked();
+
 	// Difficulty dropdown
 	void OnDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
 	TSharedRef<SWidget> GenerateDifficultyItem(TSharedPtr<FString> InItem);

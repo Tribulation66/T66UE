@@ -82,12 +82,34 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	MainMenuBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
 	MainMenuBackgroundBrush->SetResourceObject(nullptr);
 
+	// Use cached texture immediately if preloaded (avoids white flash on PIE and theme switch)
+	if (UGameInstance* GIPtr = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66UITexturePoolSubsystem* TexPool = GIPtr->GetSubsystem<UT66UITexturePoolSubsystem>())
+		{
+			const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMDark");
+			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
+			if (UTexture2D* Cached = TexPool->GetLoadedTexture(MainMenuBgSoft))
+			{
+				MainMenuBackgroundBrush->SetResourceObject(Cached);
+			}
+		}
+	}
+
 	// Filter icons are now loaded and displayed inside the leaderboard panel (pure Slate).
 
 	return SNew(SBorder)
 		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
 		[
 			SNew(SOverlay)
+			// Theme-colored underlay so we never show white before the image loads
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SBorder)
+				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
+			]
 			// Full-screen background image (Content/UI/MainMenu/MMDark or MMLight)
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)

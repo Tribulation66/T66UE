@@ -911,6 +911,91 @@ FText UT66LocalizationSubsystem::GetText_Trio() const
 	return NSLOCTEXT("T66.PartySize", "Trio", "TRIO");
 }
 
+FText UT66LocalizationSubsystem::GetText_Coop() const
+{
+	return NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyTitle() const
+{
+	return NSLOCTEXT("T66.Lobby", "Title", "LOBBY");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyYou() const
+{
+	return NSLOCTEXT("T66.Lobby", "You", "You");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyWaitingForPlayer() const
+{
+	return NSLOCTEXT("T66.Lobby", "WaitingForPlayer", "Waiting for player...");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyInviteFriend() const
+{
+	return NSLOCTEXT("T66.Lobby", "InviteFriend", "INVITE FRIEND");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyContinue() const
+{
+	return NSLOCTEXT("T66.Lobby", "Continue", "CONTINUE");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbySelectHero() const
+{
+	return NSLOCTEXT("T66.Lobby", "SelectHero", "SELECT HERO");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyReadyCheck() const
+{
+	return NSLOCTEXT("T66.Lobby", "ReadyCheck", "READY CHECK");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyReadyToStart() const
+{
+	return NSLOCTEXT("T66.Lobby", "ReadyToStart", "Ready to start?");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyFriends() const
+{
+	return NSLOCTEXT("T66.Lobby", "Friends", "FRIENDS");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyReady() const
+{
+	return NSLOCTEXT("T66.Lobby", "Ready", "READY");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyNotReady() const
+{
+	return NSLOCTEXT("T66.Lobby", "NotReady", "Not Ready");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyLeaveConfirmTitle() const
+{
+	return NSLOCTEXT("T66.Lobby", "LeaveConfirmTitle", "Leave lobby?");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyLeaveConfirmMessage() const
+{
+	return NSLOCTEXT("T66.Lobby", "LeaveConfirmMessage", "Are you sure you want to leave the lobby?");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyLeaveStay() const
+{
+	return NSLOCTEXT("T66.Lobby", "LeaveStay", "STAY");
+}
+
+FText UT66LocalizationSubsystem::GetText_LobbyLeaveLeave() const
+{
+	return NSLOCTEXT("T66.Lobby", "LeaveLeave", "LEAVE");
+}
+
+FText UT66LocalizationSubsystem::GetText_BackToLobby() const
+{
+	return NSLOCTEXT("T66.Lobby", "BackToLobby", "BACK TO LOBBY");
+}
+
 // ========== Hero Selection ==========
 
 FText UT66LocalizationSubsystem::GetText_SelectYourHero() const

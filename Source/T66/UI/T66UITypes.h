@@ -14,6 +14,7 @@ enum class ET66ScreenType : uint8
 	None UMETA(DisplayName = "None"),
 	MainMenu UMETA(DisplayName = "Main Menu"),
 	PartySizePicker UMETA(DisplayName = "Party Size Picker"),
+	Lobby UMETA(DisplayName = "Lobby"),
 	SaveSlots UMETA(DisplayName = "Save Slots"),
 	HeroSelection UMETA(DisplayName = "Hero Selection"),
 	CompanionSelection UMETA(DisplayName = "Companion Selection"),
@@ -29,6 +30,8 @@ enum class ET66ScreenType : uint8
 	CompanionLore UMETA(DisplayName = "Companion Lore Modal"),
 	LanguageSelect UMETA(DisplayName = "Language Select Modal"),
 	QuitConfirmation UMETA(DisplayName = "Quit Confirmation Modal"),
+	LobbyReadyCheck UMETA(DisplayName = "Lobby Ready Check Modal"),
+	LobbyBackConfirm UMETA(DisplayName = "Lobby Back Confirm Modal"),
 	AccountStatus UMETA(DisplayName = "Account Status Panel"),
 	PlayerSummaryPicker UMETA(DisplayName = "Player Summary Picker")
 };

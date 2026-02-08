@@ -32,8 +32,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 
 	FText TitleText = Loc ? Loc->GetText_SelectPartySize() : NSLOCTEXT("T66.PartySize", "Title", "SELECT PARTY SIZE");
 	FText SoloText = Loc ? Loc->GetText_Solo() : NSLOCTEXT("T66.PartySize", "Solo", "SOLO");
-	FText DuoText = Loc ? Loc->GetText_Duo() : NSLOCTEXT("T66.PartySize", "Duo", "DUO");
-	FText TrioText = Loc ? Loc->GetText_Trio() : NSLOCTEXT("T66.PartySize", "Trio", "TRIO");
+	FText CoopText = Loc ? Loc->GetText_Coop() : NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
 	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
@@ -109,7 +108,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					[
 						MakePartySizeCard(
 							SoloText,
-							FText::AsNumber(1),
+							NSLOCTEXT("T66.PartySize", "SoloDesc", "1 player"),
 							&UT66PartySizePickerScreen::HandleSoloClicked,
 							FLinearColor(0.3f, 0.5f, 0.3f, 1.0f)
 						)
@@ -117,19 +116,10 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						MakePartySizeCard(
-							DuoText,
-							FText::AsNumber(2),
-							&UT66PartySizePickerScreen::HandleDuoClicked,
+							CoopText,
+							NSLOCTEXT("T66.PartySize", "CoopDesc", "2–3 players"),
+							&UT66PartySizePickerScreen::HandleCoopClicked,
 							FLinearColor(0.3f, 0.3f, 0.5f, 1.0f)
-						)
-					]
-					+ SHorizontalBox::Slot().AutoWidth()
-					[
-						MakePartySizeCard(
-							TrioText,
-							FText::AsNumber(3),
-							&UT66PartySizePickerScreen::HandleTrioClicked,
-							FLinearColor(0.5f, 0.3f, 0.3f, 1.0f)
 						)
 					]
 				]
@@ -146,8 +136,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 }
 
 FReply UT66PartySizePickerScreen::HandleSoloClicked() { OnSoloClicked(); return FReply::Handled(); }
-FReply UT66PartySizePickerScreen::HandleDuoClicked() { OnDuoClicked(); return FReply::Handled(); }
-FReply UT66PartySizePickerScreen::HandleTrioClicked() { OnTrioClicked(); return FReply::Handled(); }
+FReply UT66PartySizePickerScreen::HandleCoopClicked() { OnCoopClicked(); return FReply::Handled(); }
 FReply UT66PartySizePickerScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
 
 void UT66PartySizePickerScreen::OnScreenActivated_Implementation()
@@ -168,7 +157,15 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 
 	if (bIsNewGame) // set from GI->bIsNewGameFlow in OnScreenActivated
 	{
-		NavigateTo(ET66ScreenType::HeroSelection);
+		if (PartySize == ET66PartySize::Solo)
+		{
+			NavigateTo(ET66ScreenType::HeroSelection);
+		}
+		else
+		{
+			// Co-op: use Trio (3 slots) for lobby; Duo/Trio only for leaderboards/saves
+			NavigateTo(ET66ScreenType::Lobby);
+		}
 	}
 	else
 	{
@@ -177,6 +174,5 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 }
 
 void UT66PartySizePickerScreen::OnSoloClicked() { SelectPartySize(ET66PartySize::Solo); }
-void UT66PartySizePickerScreen::OnDuoClicked() { SelectPartySize(ET66PartySize::Duo); }
-void UT66PartySizePickerScreen::OnTrioClicked() { SelectPartySize(ET66PartySize::Trio); }
+void UT66PartySizePickerScreen::OnCoopClicked() { SelectPartySize(ET66PartySize::Trio); } // Co-op UI → Trio lobby (3 slots)
 void UT66PartySizePickerScreen::OnBackClicked() { NavigateBack(); }

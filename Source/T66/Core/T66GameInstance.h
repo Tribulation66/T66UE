@@ -146,6 +146,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsLabLevel = false;
 
+	/** When true, Hero Selection was opened from the co-op Lobby; hide Enter the Tribulation and Back returns to Lobby. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bHeroSelectionFromLobby = false;
+
 	// ============================================
 	// DataTable Access Helpers
 	// ============================================

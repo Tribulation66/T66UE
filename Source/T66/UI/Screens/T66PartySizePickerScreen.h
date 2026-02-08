@@ -26,10 +26,7 @@ public:
 	void OnSoloClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Party Size")
-	void OnDuoClicked();
-
-	UFUNCTION(BlueprintCallable, Category = "Party Size")
-	void OnTrioClicked();
+	void OnCoopClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Party Size")
 	void OnBackClicked();
@@ -41,7 +38,6 @@ protected:
 
 private:
 	FReply HandleSoloClicked();
-	FReply HandleDuoClicked();
-	FReply HandleTrioClicked();
+	FReply HandleCoopClicked();
 	FReply HandleBackClicked();
 };

@@ -3,6 +3,7 @@
 #include "UI/Style/T66Style.h"
 #include "T66.h"
 
+#include "Engine/Texture2D.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
@@ -42,6 +43,25 @@ namespace
 
 	// ----- Active UI theme -----
 	static ET66UITheme GActiveTheme = ET66UITheme::Dark;
+
+	// Button background textures (Content/UI/Assets/ButtonDark, ButtonLight). Kept alive so brushes stay valid.
+	static TObjectPtr<UTexture2D> GButtonDarkTex = nullptr;
+	static TObjectPtr<UTexture2D> GButtonLightTex = nullptr;
+
+	static UTexture2D* GetButtonTextureForCurrentTheme()
+	{
+		return (GActiveTheme == ET66UITheme::Light) ? GButtonLightTex : GButtonDarkTex;
+	}
+
+	static FSlateBrush MakeButtonTextureBrush(UTexture2D* Tex, const FLinearColor& TintColor)
+	{
+		FSlateBrush Brush;
+		Brush.DrawAs = ESlateBrushDrawType::Box;
+		Brush.Tiling = ESlateBrushTileType::NoTile;
+		Brush.SetResourceObject(Tex);
+		Brush.TintColor = FSlateColor(TintColor);
+		return Brush;
+	}
 
 	/** Overwrite Tokens:: colors with the palette for the given theme. */
 	void ApplyThemePalette(ET66UITheme Theme)
@@ -241,6 +261,17 @@ void FT66Style::Initialize()
 
 	StyleInstance = MakeShared<FSlateStyleSet>(GetStyleSetName());
 
+	// Load button background textures once (kept in static refs so brushes stay valid)
+	if (!GButtonDarkTex)
+	{
+		GButtonDarkTex = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Assets/ButtonDark.ButtonDark"));
+	}
+	if (!GButtonLightTex)
+	{
+		GButtonLightTex = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/Assets/ButtonLight.ButtonLight"));
+	}
+	UTexture2D* const ButtonTex = GetButtonTextureForCurrentTheme();
+
 	// Rounded panel brushes with white outline so each element is clearly distinct
 	const float BorderW = Tokens::BorderWidth;
 	const FLinearColor BorderColor = Tokens::Border;
@@ -287,56 +318,92 @@ void FT66Style::Initialize()
 		StyleInstance->Set("T66.Text.Button", ButtonText);
 	}
 
-	// Button styles (use rounded box brushes; no asset dependency)
+	// Button styles: texture background (ButtonDark / ButtonLight) when loaded, else solid rounded box
 	{
 		const FLinearColor PrimaryN = Tokens::Accent2 * 0.55f + Tokens::Panel2 * 0.45f;
 		const FLinearColor PrimaryH = Tokens::Accent2 * 0.70f + Tokens::Panel2 * 0.30f;
 		const FLinearColor PrimaryP = Tokens::Accent2 * 0.80f + Tokens::Panel2 * 0.20f;
 
-		FButtonStyle Primary = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(PrimaryN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetHovered(FSlateRoundedBoxBrush(PrimaryH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetPressed(FSlateRoundedBoxBrush(PrimaryP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetNormalPadding(Tokens::ButtonPadding)
-			.SetPressedPadding(Tokens::ButtonPaddingPressed);
-		StyleInstance->Set("T66.Button.Primary", Primary);
-
 		const FLinearColor NeutralN = Tokens::Panel2;
 		const FLinearColor NeutralH = Tokens::Panel2 + FLinearColor(0.05f, 0.05f, 0.07f, 0.f);
 		const FLinearColor NeutralP = Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f);
-
-		FButtonStyle Neutral = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(NeutralN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetHovered(FSlateRoundedBoxBrush(NeutralH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetPressed(FSlateRoundedBoxBrush(NeutralP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetNormalPadding(Tokens::ButtonPadding)
-			.SetPressedPadding(Tokens::ButtonPaddingPressed);
-		StyleInstance->Set("T66.Button.Neutral", Neutral);
 
 		const FLinearColor DangerN = Tokens::Danger * 0.55f + Tokens::Panel2 * 0.45f;
 		const FLinearColor DangerH = Tokens::Danger * 0.70f + Tokens::Panel2 * 0.30f;
 		const FLinearColor DangerP = Tokens::Danger * 0.80f + Tokens::Panel2 * 0.20f;
 
-		FButtonStyle Danger = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(DangerN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetHovered(FSlateRoundedBoxBrush(DangerH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetPressed(FSlateRoundedBoxBrush(DangerP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetNormalPadding(Tokens::ButtonPadding)
-			.SetPressedPadding(Tokens::ButtonPaddingPressed);
-		StyleInstance->Set("T66.Button.Danger", Danger);
-
-		// Toggle-active: inverted look (text-colored bg, so the selected toggle stands out)
 		const FLinearColor ActiveN = Tokens::Text;
 		FLinearColor ActiveH = Tokens::Text * 0.85f; ActiveH.A = 1.0f;
 		FLinearColor ActiveP = Tokens::Text * 0.70f; ActiveP.A = 1.0f;
 
-		FButtonStyle ToggleActive = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(ActiveN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetHovered(FSlateRoundedBoxBrush(ActiveH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetPressed(FSlateRoundedBoxBrush(ActiveP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetNormalPadding(Tokens::ButtonPadding)
-			.SetPressedPadding(Tokens::ButtonPaddingPressed);
-		StyleInstance->Set("T66.Button.ToggleActive", ToggleActive);
+		if (ButtonTex)
+		{
+			FButtonStyle Primary = FButtonStyle()
+				.SetNormal(MakeButtonTextureBrush(ButtonTex, PrimaryN))
+				.SetHovered(MakeButtonTextureBrush(ButtonTex, PrimaryH))
+				.SetPressed(MakeButtonTextureBrush(ButtonTex, PrimaryP))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.Primary", Primary);
+
+			FButtonStyle Neutral = FButtonStyle()
+				.SetNormal(MakeButtonTextureBrush(ButtonTex, NeutralN))
+				.SetHovered(MakeButtonTextureBrush(ButtonTex, NeutralH))
+				.SetPressed(MakeButtonTextureBrush(ButtonTex, NeutralP))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.Neutral", Neutral);
+
+			FButtonStyle Danger = FButtonStyle()
+				.SetNormal(MakeButtonTextureBrush(ButtonTex, DangerN))
+				.SetHovered(MakeButtonTextureBrush(ButtonTex, DangerH))
+				.SetPressed(MakeButtonTextureBrush(ButtonTex, DangerP))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.Danger", Danger);
+
+			FButtonStyle ToggleActive = FButtonStyle()
+				.SetNormal(MakeButtonTextureBrush(ButtonTex, ActiveN))
+				.SetHovered(MakeButtonTextureBrush(ButtonTex, ActiveH))
+				.SetPressed(MakeButtonTextureBrush(ButtonTex, ActiveP))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.ToggleActive", ToggleActive);
+		}
+		else
+		{
+			FButtonStyle Primary = FButtonStyle()
+				.SetNormal(FSlateRoundedBoxBrush(PrimaryN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetHovered(FSlateRoundedBoxBrush(PrimaryH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetPressed(FSlateRoundedBoxBrush(PrimaryP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.Primary", Primary);
+
+			FButtonStyle Neutral = FButtonStyle()
+				.SetNormal(FSlateRoundedBoxBrush(NeutralN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetHovered(FSlateRoundedBoxBrush(NeutralH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetPressed(FSlateRoundedBoxBrush(NeutralP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.Neutral", Neutral);
+
+			FButtonStyle Danger = FButtonStyle()
+				.SetNormal(FSlateRoundedBoxBrush(DangerN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetHovered(FSlateRoundedBoxBrush(DangerH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetPressed(FSlateRoundedBoxBrush(DangerP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.Danger", Danger);
+
+			FButtonStyle ToggleActive = FButtonStyle()
+				.SetNormal(FSlateRoundedBoxBrush(ActiveN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetHovered(FSlateRoundedBoxBrush(ActiveH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetPressed(FSlateRoundedBoxBrush(ActiveP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed);
+			StyleInstance->Set("T66.Button.ToggleActive", ToggleActive);
+		}
 	}
 
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleInstance);

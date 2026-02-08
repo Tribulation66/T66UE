@@ -489,12 +489,19 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	FText HeroInfoText = Loc ? Loc->GetText_HeroInfo() : NSLOCTEXT("T66.HeroSelection", "HeroInfo", "HERO INFO");
 	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.HeroSelection", "Lore", "LORE");
 	FText TheLabText = Loc ? Loc->GetText_TheLab() : NSLOCTEXT("T66.HeroSelection", "TheLab", "THE LAB");
+	FText BackToLobbyText = Loc ? Loc->GetText_BackToLobby() : NSLOCTEXT("T66.Lobby", "BackToLobby", "BACK TO LOBBY");
 	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 	FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	(void)TheLabText; // (The Lab button removed from this screen)
+
+	bool bHideEnterFromLobby = false;
+	if (UT66GameInstance* GIFlow = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		bHideEnterFromLobby = GIFlow->bHeroSelectionFromLobby;
+	}
 
 	// Initialize difficulty dropdown options
 	DifficultyOptions.Empty();
@@ -1066,76 +1073,117 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								]
 								]
 							]
-							// The Lab button (above Enter the Tribulation)
+							// From Lobby (co-op): only THE LAB + BACK TO LOBBY. Solo: THE LAB + difficulty dropdown + ENTER THE TRIBULATION.
 							+ SVerticalBox::Slot()
 							.AutoHeight()
-							.Padding(0.0f, 10.0f, 0.0f, 4.0f)
+							.Padding(0.0f, 10.0f, 0.0f, 0.0f)
 							[
-								SNew(SBox).HeightOverride(40.0f)
-								[
-									FT66Style::MakeButton(
-										TheLabText,
-										FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
-										ET66ButtonType::Neutral
+								bHideEnterFromLobby
+									? static_cast<TSharedRef<SWidget>>(SNew(SVerticalBox)
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.Padding(0.0f, 0.0f, 0.0f, 4.0f)
+										[
+											SNew(SBox).HeightOverride(40.0f)
+											[
+												FT66Style::MakeButton(
+													TheLabText,
+													FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
+													ET66ButtonType::Neutral
+												)
+											]
+										]
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.Padding(0.0f, 4.0f, 0.0f, 0.0f)
+										[
+											SNew(SBox).HeightOverride(40.0f)
+											[
+												SNew(SButton)
+												.HAlign(HAlign_Center).VAlign(VAlign_Center)
+												.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackToLobbyClicked))
+												.ButtonStyle(&BtnDanger)
+												.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
+												.ContentPadding(FMargin(12.f, 8.f))
+												[
+													SNew(STextBlock).Text(BackToLobbyText)
+													.Font(FT66Style::Tokens::FontBold(12))
+													.ColorAndOpacity(FT66Style::Tokens::Text)
+												]
+											]
+										]
 									)
-								]
-							]
-							// Difficulty + Enter (in the right panel)
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.0f, 4.0f, 0.0f, 0.0f)
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot()
-								.FillWidth(0.42f)
-								.VAlign(VAlign_Center)
-								.Padding(0.0f, 0.0f, 8.0f, 0.0f)
-								[
-									SNew(SBox).HeightOverride(40.0f)
-									[
-										SNew(SComboBox<TSharedPtr<FString>>)
-										.OptionsSource(&DifficultyOptions)
-										.OnSelectionChanged_Lambda([this](TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo) {
-											OnDifficultyChanged(NewValue, SelectInfo);
-										})
-										.OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) -> TSharedRef<SWidget> {
-											return SNew(STextBlock)
-												.Text(FText::FromString(*InItem))
-												.Font(FT66Style::Tokens::FontRegular(12))
-												.ColorAndOpacity(FT66Style::Tokens::Text);
-										})
-										.InitiallySelectedItem(CurrentDifficultyOption)
+									: static_cast<TSharedRef<SWidget>>(SNew(SVerticalBox)
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.Padding(0.0f, 0.0f, 0.0f, 4.0f)
 										[
-											SNew(STextBlock)
-											.Text_Lambda([this, Loc]() -> FText {
-												return CurrentDifficultyOption.IsValid()
-													? FText::FromString(*CurrentDifficultyOption)
-													: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
-											})
-											.Font(FT66Style::Tokens::FontBold(12))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
+											SNew(SBox).HeightOverride(40.0f)
+											[
+												FT66Style::MakeButton(
+													TheLabText,
+													FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
+													ET66ButtonType::Neutral
+												)
+											]
 										]
-									]
-								]
-								+ SHorizontalBox::Slot()
-								.FillWidth(0.58f)
-								[
-									SNew(SBox).HeightOverride(40.0f)
-									[
-										SNew(SButton)
-										.HAlign(HAlign_Center).VAlign(VAlign_Center)
-										.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleEnterClicked))
-										.IsEnabled_Lambda([this]() { return SelectedDifficulty == ET66Difficulty::Easy; })
-										.ButtonStyle(&BtnDanger)
-										.ButtonColorAndOpacity_Lambda([this]() { return SelectedDifficulty == ET66Difficulty::Easy ? FT66Style::Tokens::Danger : FLinearColor(0.4f, 0.2f, 0.2f, 1.f); })
-										.ContentPadding(FMargin(12.f, 8.f))
+										+ SVerticalBox::Slot()
+										.AutoHeight()
+										.Padding(0.0f, 4.0f, 0.0f, 0.0f)
 										[
-											SNew(STextBlock).Text(EnterText)
-											.Font(FT66Style::Tokens::FontBold(12))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
+											SNew(SHorizontalBox)
+											+ SHorizontalBox::Slot()
+											.FillWidth(0.42f)
+											.VAlign(VAlign_Center)
+											.Padding(0.0f, 0.0f, 8.0f, 0.0f)
+											[
+												SNew(SBox).HeightOverride(40.0f)
+												[
+													SNew(SComboBox<TSharedPtr<FString>>)
+													.OptionsSource(&DifficultyOptions)
+													.OnSelectionChanged_Lambda([this](TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo) {
+														OnDifficultyChanged(NewValue, SelectInfo);
+													})
+													.OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) -> TSharedRef<SWidget> {
+														return SNew(STextBlock)
+															.Text(FText::FromString(*InItem))
+															.Font(FT66Style::Tokens::FontRegular(12))
+															.ColorAndOpacity(FT66Style::Tokens::Text);
+													})
+													.InitiallySelectedItem(CurrentDifficultyOption)
+													[
+														SNew(STextBlock)
+														.Text_Lambda([this, Loc]() -> FText {
+															return CurrentDifficultyOption.IsValid()
+																? FText::FromString(*CurrentDifficultyOption)
+																: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
+														})
+														.Font(FT66Style::Tokens::FontBold(12))
+														.ColorAndOpacity(FT66Style::Tokens::Text)
+													]
+												]
+											]
+											+ SHorizontalBox::Slot()
+											.FillWidth(0.58f)
+											[
+												SNew(SBox).HeightOverride(40.0f)
+												[
+													SNew(SButton)
+													.HAlign(HAlign_Center).VAlign(VAlign_Center)
+													.OnClicked(FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleEnterClicked))
+													.IsEnabled_Lambda([this]() { return SelectedDifficulty == ET66Difficulty::Easy; })
+													.ButtonStyle(&BtnDanger)
+													.ButtonColorAndOpacity_Lambda([this]() { return SelectedDifficulty == ET66Difficulty::Easy ? FT66Style::Tokens::Danger : FLinearColor(0.4f, 0.2f, 0.2f, 1.f); })
+													.ContentPadding(FMargin(12.f, 8.f))
+													[
+														SNew(STextBlock).Text(EnterText)
+														.Font(FT66Style::Tokens::FontBold(12))
+														.ColorAndOpacity(FT66Style::Tokens::Text)
+													]
+												]
+											]
 										]
-									]
-								]
+									)
 							]
 						]
 					]
@@ -1188,6 +1236,11 @@ FReply UT66HeroSelectionScreen::HandleLoreClicked()
 FReply UT66HeroSelectionScreen::HandleTheLabClicked() { OnTheLabClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
+FReply UT66HeroSelectionScreen::HandleBackToLobbyClicked()
+{
+	NavigateTo(ET66ScreenType::Lobby);
+	return FReply::Handled();
+}
 
 FReply UT66HeroSelectionScreen::HandleBodyTypeAClicked()
 {
@@ -1373,9 +1426,36 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 	}
 }
 
+void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
+{
+	Super::OnScreenDeactivated_Implementation();
+	// When opened from Lobby, persist current selection so Lobby can show hero portrait (and so returning from Companion Selection still shows co-op layout).
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (GI->bHeroSelectionFromLobby)
+		{
+			GI->SelectedHeroID = PreviewedHeroID;
+			GI->SelectedDifficulty = SelectedDifficulty;
+			GI->SelectedHeroBodyType = SelectedBodyType;
+			// Do not clear bHeroSelectionFromLobby here: we may be navigating to Companion Selection and will return to this screen still in co-op flow. Cleared when leaving Lobby (Lobby::OnScreenDeactivated).
+		}
+	}
+}
+
 void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
+	// Rebuild Slate so co-op vs solo layout is correct (Lab + Back to Lobby only when from Lobby; difficulty + Enter when solo). Reuse is not enough—cached tree may be from the other flow.
+	const bool bWasInViewport = IsInViewport();
+	if (bWasInViewport)
+	{
+		RemoveFromParent();
+	}
+	ReleaseSlateResources(true);
+	if (bWasInViewport)
+	{
+		AddToViewport(0);
+	}
 	PreviewSkinIDOverride = NAME_None;
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
 	{

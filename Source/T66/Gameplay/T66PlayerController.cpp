@@ -9,6 +9,9 @@
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
+#include "UI/Screens/T66LobbyScreen.h"
+#include "UI/Screens/T66LobbyReadyCheckModal.h"
+#include "UI/Screens/T66LobbyBackConfirmModal.h"
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
@@ -1780,6 +1783,18 @@ void AT66PlayerController::AutoLoadScreenClasses()
 	if (!ScreenClasses.Contains(ET66ScreenType::CompanionGrid) || ScreenClasses[ET66ScreenType::CompanionGrid] == nullptr)
 	{
 		ScreenClasses.Add(ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass());
+	}
+	if (!ScreenClasses.Contains(ET66ScreenType::Lobby) || ScreenClasses[ET66ScreenType::Lobby] == nullptr)
+	{
+		ScreenClasses.Add(ET66ScreenType::Lobby, UT66LobbyScreen::StaticClass());
+	}
+	if (!ScreenClasses.Contains(ET66ScreenType::LobbyReadyCheck) || ScreenClasses[ET66ScreenType::LobbyReadyCheck] == nullptr)
+	{
+		ScreenClasses.Add(ET66ScreenType::LobbyReadyCheck, UT66LobbyReadyCheckModal::StaticClass());
+	}
+	if (!ScreenClasses.Contains(ET66ScreenType::LobbyBackConfirm) || ScreenClasses[ET66ScreenType::LobbyBackConfirm] == nullptr)
+	{
+		ScreenClasses.Add(ET66ScreenType::LobbyBackConfirm, UT66LobbyBackConfirmModal::StaticClass());
 	}
 }
 

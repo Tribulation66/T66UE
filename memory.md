@@ -40,6 +40,7 @@
 | **Button debounce** | `FT66Style::DebounceClick(FOnClicked)` — wraps any click delegate with 150ms global cooldown. `MakeButton` uses it automatically; custom buttons should wrap with it too. Prevents double-fire, spam crashes, accidental double-nav. |
 | **Hero speed & animation** | `UT66HeroSpeedSubsystem`: speed still ramps (acceleration/deceleration unchanged). Animation is two-state only: **alert** when idle (speed 0), **run** when moving (any speed > 0). No walk state. Hero drives subsystem from movement input; companions copy same anim state. Params: `FHeroData::MaxSpeed`, `AccelerationPercentPerSecond` (Heroes.csv). |
 | **Character visuals / meshes / animations** | `UT66CharacterVisualSubsystem` (ApplyCharacterVisual, alert/walk/run). GetMovementAnimsForVisual(VisualID, OutWalk, OutRun, OutAlert). Data: `DT_CharacterVisuals` / `CharacterVisuals.csv` (RunAnimation column). |
+| **Lobby (co-op Duo/Trio)** | `UT66LobbyScreen`: party slots (You + Waiting for player…), Invite Friend (stub), Continue → Hero Selection. Reached from Party Size Picker when New Game + Duo/Trio. |
 | **Hero selection UI** | `T66HeroSelectionScreen`: `RefreshSkinsList()`, `AddSkinRowsToBox()`, `SkinsListBoxWidget`, `ACBalanceTextBlock`, `PreviewSkinIDOverride`. Uses `UT66SkinSubsystem`. |
 | **Companion selection UI** | `T66CompanionSelectionScreen`: same pattern (SkinsListBoxWidget, RefreshSkinsList, AddSkinRowsToBox); uses `UT66SkinSubsystem`. |
 | **3D hero preview** | `AT66HeroPreviewStage` (Tick → CaptureScene after pawn anim). `T66HeroBase::InitializeHero(bPreviewMode)` → alert anim in preview. |
@@ -94,7 +95,7 @@
 - **UI:** `T66UIManager`, `T66ScreenBase`; screens under `UI/Screens/` (Slate in `BuildSlateUI()`). Hero/Companion selection: skin list + AC from SkinSubsystem; refresh via `RefreshSkinsList()`.
 - **Gameplay:** `T66GameMode`, `T66HeroBase`, `T66CompanionBase`, `T66EnemyBase`, preview stages in `Gameplay/`.
 - **Data:** `Source/T66/Data/T66DataTypes.h` (FHeroData, FCompanionData, FSkinData, etc.). DataTables and CSVs in `Content/Data/`.
-- **Flow:** Frontend (MainMenu → PartySizePicker → HeroSelection → CompanionSelection → Enter) → GameplayLevel. Run state in RunStateSubsystem; death → RunSummary.
+- **Flow:** Frontend (MainMenu → PartySizePicker → [Solo: HeroSelection | Duo/Trio New Game: Lobby → HeroSelection] → CompanionSelection → Enter) → GameplayLevel. Run state in RunStateSubsystem; death → RunSummary.
 
 ---
 
@@ -106,6 +107,10 @@
 ---
 
 ## Recent context (for continuity)
+
+- **Party Size Picker:** Only Solo and Co-op (no Duo/Trio). Co-op → Lobby (3 slots). New Game + Solo → Hero Selection; New Game + Co-op → Lobby; Load Game → Save Slots.
+- **Lobby (Bible-style):** Left = players in lobby (hero portrait + You / Waiting for player…). Right = Friends list (stub). Bottom right = Select Hero, Ready Check → popup → Enter the Tribulation. Hero Selection from Lobby has no Enter button; Back saves hero to GI.
+- **Lobby (legacy note):** New Game → Co-op now opens **Lobby** (`ET66ScreenType::Lobby`, `UT66LobbyScreen`) instead of going directly to Hero Selection. Lobby shows party slots (You + “Waiting for player…” for empty slots), INVITE FRIEND (stub), CONTINUE → Hero Selection, Back → Party Size Picker. No Steam backend yet; Continue proceeds to Co-op Hero Selection without session. Localization: `GetText_LobbyTitle`, `GetText_LobbyYou`, `GetText_LobbyWaitingForPlayer`, `GetText_LobbyInviteFriend`, `GetText_LobbyContinue`.
 
 - **Map / interactable placement:** World interactables (trees, trucks, wheels, totems) and stage effect tiles use **run-level seed** (`ProceduralTerrainSeed` from GameInstance, or `FMath::Rand()` when 0) so positions change every time "Enter the Tribulation" or PIE is started. **NPCs:** same 4 corner positions; which NPC (Vendor/Gambler/Ouroboros/Saint) is at which corner is **shuffled per run**. **Plateaus:** `AT66SpawnPlateau` (flat disc) is spawned under each world interactable, each corner NPC, and each stage effect tile so they sit on flat ground even on hills. **Grass:** procedural landscape editor no longer spawns grass HISM (`bSpawnGrassAssets = false` in `T66ProceduralLandscapeEditorTool.cpp`); landscape and trees/rocks unchanged.
 
