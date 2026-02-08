@@ -10,10 +10,9 @@
 class USceneCaptureComponent2D;
 class UTextureRenderTarget2D;
 class AT66HeroBase;
+class AT66CompanionBase;
 class USceneComponent;
-class UPointLightComponent;
 class UStaticMeshComponent;
-class UMaterialInstanceDynamic;
 
 /**
  * Preview stage for the Hero Selection screen.
@@ -36,9 +35,10 @@ public:
 	 * Set the preview hero. Spawns or updates the hero pawn and captures to the render target.
 	 * Call when hero focus, body type, or skin changes.
 	 * @param SkinID Skin to show (e.g. Default, Beachgoer); used for preview-only display.
+	 * @param CompanionID If set, show this companion behind the hero (like in-game follow). NAME_None hides companion.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
-	void SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID = NAME_None);
+	void SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID = NAME_None, FName CompanionID = NAME_None);
 
 	/** Rotate preview hero by yaw delta (degrees). Intended for UI drag-rotate. */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
@@ -56,10 +56,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void CapturePreview();
 
-	/** Update preview lighting to match the current Dark/Light theme (day = sunlight, night = moonlight). */
-	UFUNCTION(BlueprintCallable, Category = "Preview")
-	void ApplyThemeLighting();
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -71,31 +67,21 @@ protected:
 	/** Spawn or update the preview hero pawn */
 	void UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType, FName SkinID);
 
+	/** Spawn/update/hide companion behind the hero. Position uses CompanionFollowOffset (same as in-game). */
+	void UpdatePreviewCompanion(FName CompanionID);
+
+	/** Update companion position/rotation to stay behind hero (call after ApplyPreviewRotation). */
+	void UpdateCompanionPlacement();
+
 	void ApplyPreviewRotation();
 	void FrameCameraToPreview();
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;
 	void ApplyShadowSettings();
 
-	/** Called when player settings change (theme toggle). */
-	UFUNCTION()
-	void OnThemeChanged();
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<USceneCaptureComponent2D> SceneCapture;
 
-	/** Optional light so the preview hero is visible */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> PreviewLight;
-
-	/** Fill light to keep shadows readable. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> FillLight;
-
-	/** Rim light for separation from background. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> RimLight;
-
-	/** Simple platform so the hero looks grounded (Dota-style). */
+	/** Simple platform so the hero looks grounded (same level lighting as gameplay). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UStaticMeshComponent> PreviewPlatform;
 
@@ -113,6 +99,14 @@ protected:
 	/** Currently displayed preview pawn */
 	UPROPERTY()
 	TObjectPtr<AT66HeroBase> PreviewPawn;
+
+	/** Optional companion shown behind the hero when a companion is selected (e.g. GI->SelectedCompanionID). */
+	UPROPERTY()
+	TObjectPtr<AT66CompanionBase> PreviewCompanionPawn;
+
+	/** Offset for companion behind hero (match AT66CompanionBase::FollowOffset: -120 back, 80 to side). */
+	UPROPERTY(EditDefaultsOnly, Category = "Preview")
+	FVector CompanionFollowOffset = FVector(-120.f, 80.f, 0.f);
 
 	/** Spawn location for the preview pawn (relative to this actor) */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
@@ -157,31 +151,4 @@ protected:
 	/** If true, disable shadow casting for preview meshes/platform. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	bool bDisablePreviewShadows = true;
-
-	/** Sky dome (inverted sphere) providing the background color. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UStaticMeshComponent> BackdropSphere;
-
-	/** Ambient light inside the sky dome for uniform sky coloring. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> AmbientSkyLight;
-
-	/** Dynamic material for ground coloring (grass tint). */
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> GroundMID;
-
-	/** Dynamic material for backdrop sphere coloring (sky tint). */
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> BackdropMID;
-
-	/** Star dot meshes (small spheres on upper hemisphere, visible in dark mode). */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> StarMeshes;
-
-	/** Position offsets for each star relative to dome center. */
-	TArray<FVector> StarOffsets;
-
-	/** Shared dynamic material for all star dots. */
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> StarMID;
 };

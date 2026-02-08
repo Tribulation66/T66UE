@@ -11,9 +11,7 @@ class USceneCaptureComponent2D;
 class UTextureRenderTarget2D;
 class AT66CompanionBase;
 class USceneComponent;
-class UPointLightComponent;
 class UStaticMeshComponent;
-class UMaterialInstanceDynamic;
 
 /**
  * Preview stage for Companion Selection screen.
@@ -49,10 +47,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void CapturePreview();
 
-	/** Update preview lighting to match the current Dark/Light theme (day = sunlight, night = moonlight). */
-	UFUNCTION(BlueprintCallable, Category = "Preview")
-	void ApplyThemeLighting();
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -64,25 +58,10 @@ protected:
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;
 	void ApplyShadowSettings();
 
-	/** Called when player settings change (theme toggle). */
-	UFUNCTION()
-	void OnThemeChanged();
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<USceneCaptureComponent2D> SceneCapture;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> PreviewLight;
-
-	/** Fill light to keep shadows readable. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> FillLight;
-
-	/** Rim light for separation from background. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> RimLight;
-
-	/** Simple floor so "ground level" is visible in preview. */
+	/** Simple floor so "ground level" is visible in preview (same level lighting as gameplay). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UStaticMeshComponent> PreviewFloor;
 
@@ -140,31 +119,4 @@ protected:
 	/** If true, disable shadow casting for preview meshes/floor. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	bool bDisablePreviewShadows = true;
-
-	/** Sky dome (inverted sphere) providing the background color. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UStaticMeshComponent> BackdropSphere;
-
-	/** Ambient light inside the sky dome for uniform sky coloring. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UPointLightComponent> AmbientSkyLight;
-
-	/** Dynamic material for floor coloring (grass tint). */
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> FloorMID;
-
-	/** Dynamic material for backdrop sphere coloring (sky tint). */
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> BackdropMID;
-
-	/** Star dot meshes (small spheres on upper hemisphere, visible in dark mode). */
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UStaticMeshComponent>> StarMeshes;
-
-	/** Position offsets for each star relative to dome center. */
-	TArray<FVector> StarOffsets;
-
-	/** Shared dynamic material for all star dots. */
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> StarMID;
 };

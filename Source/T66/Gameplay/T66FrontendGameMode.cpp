@@ -6,6 +6,69 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "EngineUtils.h"
+#include "Engine/World.h"
+#include "Components/SkyAtmosphereComponent.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/SkyLight.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/SkyLightComponent.h"
+
+static void SpawnFrontendLightingIfNeeded(UWorld* World)
+{
+	if (!World) return;
+
+	ASkyAtmosphere* Atmosphere = nullptr;
+	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It) { Atmosphere = *It; break; }
+	ADirectionalLight* Sun = nullptr;
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It) { Sun = *It; break; }
+	ASkyLight* SkyLight = nullptr;
+	for (TActorIterator<ASkyLight> It(World); It; ++It) { SkyLight = *It; break; }
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (!Atmosphere)
+	{
+		Atmosphere = World->SpawnActor<ASkyAtmosphere>(ASkyAtmosphere::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (Atmosphere) UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned SkyAtmosphere for preview (same as gameplay)"));
+	}
+	if (!Sun)
+	{
+		Sun = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector(0.f, 0.f, 1000.f), FRotator(-50.f, -45.f, 0.f), SpawnParams);
+		if (Sun)
+		{
+			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
+			{
+				LC->SetMobility(EComponentMobility::Movable);
+				LC->SetIntensity(4.f);
+				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
+				LC->bAtmosphereSunLight = true;
+				LC->AtmosphereSunLightIndex = 0;
+			}
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned DirectionalLight for preview (same as gameplay)"));
+		}
+	}
+	if (!SkyLight)
+	{
+		SkyLight = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FVector(0.f, 0.f, 500.f), FRotator::ZeroRotator, SpawnParams);
+		if (SkyLight)
+		{
+			if (USkyLightComponent* SC = SkyLight->GetLightComponent())
+			{
+				SC->SetMobility(EComponentMobility::Movable);
+				SC->SetIntensity(0.7f);
+				SC->SetLightColor(FLinearColor::White);
+				SC->RecaptureSky();
+			}
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned SkyLight for preview (same as gameplay)"));
+		}
+	}
+	else if (SkyLight && SkyLight->GetLightComponent())
+	{
+		if (USkyLightComponent* SC = Cast<USkyLightComponent>(SkyLight->GetLightComponent()))
+			SC->RecaptureSky();
+	}
+}
 
 AT66FrontendGameMode::AT66FrontendGameMode()
 {
@@ -34,8 +97,11 @@ void AT66FrontendGameMode::BeginPlay()
 		}
 	}
 
-	// Spawn hero preview stage if not already in level (for 3D hero preview in Hero Selection)
 	UWorld* World = GetWorld();
+	// Same sky and lights as gameplay level so SceneCapture2D shows real engine sky.
+	SpawnFrontendLightingIfNeeded(World);
+
+	// Spawn hero preview stage if not already in level (for 3D hero preview in Hero Selection)
 	if (World)
 	{
 		UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
