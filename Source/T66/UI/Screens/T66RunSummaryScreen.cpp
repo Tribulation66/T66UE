@@ -142,16 +142,8 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 		{
 			HeroPreviewStage->SetPreviewHero(HeroID, BodyType, SkinID);
 		}
-		if (UTextureRenderTarget2D* RT = HeroPreviewStage->GetRenderTarget())
-		{
-			if (!HeroPreviewBrush.IsValid())
-			{
-				HeroPreviewBrush = MakeShared<FSlateBrush>();
-				HeroPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
-			}
-			HeroPreviewBrush->SetResourceObject(RT);
-			HeroPreviewBrush->ImageSize = FVector2D(640.f, 640.f);
-		}
+		// Note: render target removed from preview stages (in-world preview uses main viewport).
+		// RunSummary preview deferred to follow-up; hero preview brush left empty for now.
 	}
 }
 

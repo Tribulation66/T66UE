@@ -39,9 +39,9 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 	auto MakePartySizeCard = [this, &BtnNeutral](const FText& Title, const FText& Description, FReply (UT66PartySizePickerScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
-			.MinDesiredWidth(200.0f)
-			.HeightOverride(180.0f)
-			.Padding(FMargin(15.0f, 0.0f))
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.Padding(FMargin(8.0f, 0.0f))
 			[
 				SNew(SButton)
 				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
@@ -97,32 +97,33 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 					.Font(FT66Style::Tokens::FontBold(56))
 					.ColorAndOpacity(FLinearColor::White)
 				]
-				// Party size cards
-				+ SVerticalBox::Slot()
-				.FillHeight(1.0f)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
+			// Party size cards — each fills half the screen
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.Padding(20.0f, 0.0f, 20.0f, 60.0f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(0.5f)
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth()
-					[
-						MakePartySizeCard(
-							SoloText,
-							NSLOCTEXT("T66.PartySize", "SoloDesc", "1 player"),
-							&UT66PartySizePickerScreen::HandleSoloClicked,
-							FLinearColor(0.3f, 0.5f, 0.3f, 1.0f)
-						)
-					]
-					+ SHorizontalBox::Slot().AutoWidth()
-					[
-						MakePartySizeCard(
-							CoopText,
-							NSLOCTEXT("T66.PartySize", "CoopDesc", "2–3 players"),
-							&UT66PartySizePickerScreen::HandleCoopClicked,
-							FLinearColor(0.3f, 0.3f, 0.5f, 1.0f)
-						)
-					]
+					MakePartySizeCard(
+						SoloText,
+						NSLOCTEXT("T66.PartySize", "SoloDesc", "1 player"),
+						&UT66PartySizePickerScreen::HandleSoloClicked,
+						FLinearColor(0.3f, 0.5f, 0.3f, 1.0f)
+					)
 				]
+				+ SHorizontalBox::Slot().FillWidth(0.5f)
+				[
+					MakePartySizeCard(
+						CoopText,
+						NSLOCTEXT("T66.PartySize", "CoopDesc", "2–3 players"),
+						&UT66PartySizePickerScreen::HandleCoopClicked,
+						FLinearColor(0.3f, 0.3f, 0.5f, 1.0f)
+					)
+				]
+			]
 			]
 			// Back button
 			+ SOverlay::Slot()

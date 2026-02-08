@@ -100,9 +100,6 @@ private:
 	TSharedPtr<SBorder> HeroPreviewColorBox;      // Fallback colored box when no 3D preview
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
 
-	/** Brush for 3D preview image (render target); kept alive for SImage */
-	TSharedPtr<struct FSlateBrush> HeroPreviewBrush;
-
 	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
 
@@ -115,7 +112,7 @@ private:
 	/** Find the hero preview stage in the world (FrontendLevel) */
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;
 
-	/** Build center preview widget: 3D image (render target) or colored box fallback */
+	/** Build center preview widget: transparent overlay for in-world preview, or colored box fallback */
 	TSharedRef<SWidget> CreateHeroPreviewWidget(const FLinearColor& FallbackColor);
 
 	// Placeholder skins list

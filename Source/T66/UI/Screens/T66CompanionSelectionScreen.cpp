@@ -11,6 +11,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
+#include "Gameplay/T66FrontendGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "Widgets/SCompoundWidget.h"
@@ -25,7 +26,7 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Notifications/SProgressBar.h"
-#include "Engine/TextureRenderTarget2D.h"
+// Render target removed — in-world preview uses main viewport camera with full Lumen GI.
 
 namespace
 {
@@ -34,7 +35,6 @@ namespace
 	public:
 		SLATE_BEGIN_ARGS(ST66DragRotateCompanionPreview) {}
 			SLATE_ARGUMENT(TWeakObjectPtr<AT66CompanionPreviewStage>, Stage)
-			SLATE_ARGUMENT(const FSlateBrush*, Brush)
 			SLATE_ARGUMENT(float, DegreesPerPixel)
 		SLATE_END_ARGS()
 
@@ -43,11 +43,8 @@ namespace
 			Stage = InArgs._Stage;
 			DegreesPerPixel = InArgs._DegreesPerPixel;
 			bDragging = false;
-
-			ChildSlot
-			[
-				SNew(SImage).Image(InArgs._Brush)
-			];
+			// No child content — transparent overlay for drag-rotate/zoom.
+			// The viewport renders the 3D companion directly behind this widget.
 		}
 
 		virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
@@ -507,7 +504,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+		.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+		.Padding(0)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -984,22 +982,17 @@ AT66CompanionPreviewStage* UT66CompanionSelectionScreen::GetCompanionPreviewStag
 TSharedRef<SWidget> UT66CompanionSelectionScreen::CreateCompanionPreviewWidget(const FLinearColor& FallbackColor)
 {
 	AT66CompanionPreviewStage* Stage = GetCompanionPreviewStage();
-	UTextureRenderTarget2D* RenderTarget = Stage ? Stage->GetRenderTarget() : nullptr;
-	if (RenderTarget)
+
+	if (Stage)
 	{
-		CompanionPreviewBrush = MakeShared<FSlateBrush>();
-		CompanionPreviewBrush->SetResourceObject(RenderTarget);
-		CompanionPreviewBrush->ImageSize = FVector2D(512.f, 720.f);
-		CompanionPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
-		CompanionPreviewBrush->Tiling = ESlateBrushTileType::NoTile;
-		return SNew(SScaleBox)
-			.Stretch(EStretch::ScaleToFit)
+		// In-world preview: transparent overlay for drag-rotate/zoom.
+		// The main viewport renders the companion with full Lumen GI behind the UI.
+		return SNew(SBox)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
 				SNew(ST66DragRotateCompanionPreview)
 				.Stage(Stage)
-				.Brush(CompanionPreviewBrush.Get())
 				.DegreesPerPixel(0.28f)
 			];
 	}
@@ -1189,6 +1182,11 @@ void UT66CompanionSelectionScreen::OnScreenActivated_Implementation()
 			PreviewCompanion(GI->SelectedCompanionID);
 		else
 			SelectNoCompanion();
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+			GM->PositionCameraForCompanionPreview();
 	}
 }
 

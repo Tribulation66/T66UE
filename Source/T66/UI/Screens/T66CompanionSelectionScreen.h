@@ -81,8 +81,6 @@ private:
 	TSharedPtr<SBorder> CompanionPreviewColorBox;
 	TSharedPtr<SBox> CompanionUnionBox;
 	TSharedPtr<class SProgressBar> CompanionUnionProgressBar;
-	TSharedPtr<struct FSlateBrush> CompanionPreviewBrush;
-
 	// Cached union UI state (updated on PreviewCompanion / UpdateCompanionDisplay)
 	float CompanionUnionProgress01 = 0.f;
 	int32 CompanionUnionStagesCleared = 0;

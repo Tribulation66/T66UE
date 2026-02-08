@@ -8,15 +8,12 @@
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SceneComponent.h"
-#include "Components/SceneCaptureComponent2D.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "Engine/TextureRenderTarget2D.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
-#include "Engine/PostProcessVolume.h"
 #include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 
@@ -25,24 +22,11 @@ static const TCHAR* GPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_Grou
 
 AT66HeroPreviewStage::AT66HeroPreviewStage()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickGroup = TG_PostUpdateWork; // After animation and movement so capture sees updated pose
+	PrimaryActorTick.bCanEverTick = false; // No tick needed — main viewport renders in real-time
 
 	// Root (invisible)
 	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
-
-	// Scene capture for rendering the preview
-	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCapture"));
-	SceneCapture->SetupAttachment(RootComponent);
-	SceneCapture->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	SceneCapture->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	// Capture on-demand (preview updates only when hero/rotation/zoom changes).
-	SceneCapture->bCaptureEveryFrame = false;
-	SceneCapture->bCaptureOnMovement = false;
-	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
-	SceneCapture->FOVAngle = 90.f; // Match gameplay FollowCamera FOV
-	SceneCapture->PostProcessBlendWeight = 1.0f;
 
 	PreviewPlatform = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewPlatform"));
 	PreviewPlatform->SetupAttachment(RootComponent);
@@ -67,7 +51,6 @@ void AT66HeroPreviewStage::BeginPlay()
 		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, GPreviewGroundMaterialPath))
 			PreviewPlatform->SetMaterial(0, GroundMat);
 	}
-	EnsureCaptureSetup();
 }
 
 void AT66HeroPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -80,90 +63,10 @@ void AT66HeroPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AT66HeroPreviewStage::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	// Capture every frame so the preview shows the current animated pose (we tick after the pawn).
-	if (PreviewPawn && SceneCapture && RenderTarget)
-	{
-		SceneCapture->CaptureScene();
-	}
-}
-
-void AT66HeroPreviewStage::EnsureCaptureSetup()
-{
-	if (!SceneCapture) return;
-
-	// Create render target at runtime if not set
-	if (!RenderTarget)
-	{
-		RenderTarget = NewObject<UTextureRenderTarget2D>(this, UTextureRenderTarget2D::StaticClass(), TEXT("PreviewRenderTarget"));
-		if (RenderTarget)
-		{
-			RenderTarget->RenderTargetFormat = RTF_RGBA8;
-			RenderTarget->InitAutoFormat(RenderTargetSize.X, RenderTargetSize.Y);
-			RenderTarget->UpdateResource();
-			UE_LOG(LogTemp, Log, TEXT("HeroPreviewStage: Created render target %dx%d"), RenderTargetSize.X, RenderTargetSize.Y);
-		}
-	}
-	else if (RenderTarget->SizeX != RenderTargetSize.X || RenderTarget->SizeY != RenderTargetSize.Y)
-	{
-		RenderTarget->InitAutoFormat(RenderTargetSize.X, RenderTargetSize.Y);
-		RenderTarget->UpdateResource();
-		UE_LOG(LogTemp, Log, TEXT("HeroPreviewStage: Resized render target to %dx%d"), RenderTargetSize.X, RenderTargetSize.Y);
-	}
-
-	if (RenderTarget)
-	{
-		SceneCapture->TextureTarget = RenderTarget;
-	}
-
-	// Apply world post process to capture so preview matches main view (exposure, saturation).
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		APostProcessVolume* PPVolume = nullptr;
-		for (TActorIterator<APostProcessVolume> It(World); It; ++It)
-		{
-			if (It->bUnbound) { PPVolume = *It; break; }
-		}
-		if (!PPVolume)
-		{
-			for (TActorIterator<APostProcessVolume> It(World); It; ++It) { PPVolume = *It; break; }
-		}
-		if (PPVolume)
-		{
-			// Copy world post process as-is (same auto-exposure 0.4-1.2 range as gameplay).
-			SceneCapture->PostProcessSettings = PPVolume->Settings;
-		}
-	}
-}
-
-void AT66HeroPreviewStage::RefreshCapturePostProcess()
-{
-	if (!IsValid(this) || !SceneCapture) return;
-	UWorld* World = GetWorld();
-	if (!World) return;
-	APostProcessVolume* PPVolume = nullptr;
-	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
-	{
-		if (It->bUnbound) { PPVolume = *It; break; }
-	}
-	if (!PPVolume)
-	{
-		for (TActorIterator<APostProcessVolume> It(World); It; ++It) { PPVolume = *It; break; }
-	}
-	if (PPVolume)
-	{
-		// Copy world post process as-is (same auto-exposure 0.4-1.2 range as gameplay).
-		SceneCapture->PostProcessSettings = PPVolume->Settings;
-	}
-}
-
 void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID, FName CompanionID)
 {
 	PreviewYawDegrees = 0.f;
-	OrbitPitchDegrees = 8.f;
+	OrbitPitchDegrees = 15.f;
 	PreviewZoomMultiplier = 1.0f;
 	UpdatePreviewPawn(HeroID, BodyType, SkinID.IsNone() ? FName(TEXT("Default")) : SkinID);
 	ApplyPreviewRotation();
@@ -176,21 +79,8 @@ void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, F
 	}
 	UpdatePreviewCompanion(EffectiveCompanionID);
 	UpdateCompanionPlacement();
-	ApplyShadowSettings();
 	bHasOrbitFrame = false;
 	FrameCameraToPreview();
-
-	// Drive capture from our Tick (after pawn anim) so the alert animation is visible; avoid bCaptureEveryFrame timing.
-	if (SceneCapture)
-	{
-		SceneCapture->bCaptureEveryFrame = false;
-	}
-	// Ensure we tick after the preview pawn so animation has updated before we capture.
-	if (PreviewPawn)
-	{
-		AddTickPrerequisiteActor(PreviewPawn);
-	}
-	CapturePreview();
 }
 
 void AT66HeroPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
@@ -198,7 +88,6 @@ void AT66HeroPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
 	PreviewYawDegrees = FMath::Fmod(PreviewYawDegrees + DeltaYawDegrees, 360.f);
 	ApplyPreviewRotation();
 	FrameCameraToPreview();
-	CapturePreview();
 }
 
 void AT66HeroPreviewStage::AddPreviewZoom(float WheelDelta)
@@ -209,7 +98,6 @@ void AT66HeroPreviewStage::AddPreviewZoom(float WheelDelta)
 	const float MinZ = FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f);
 	PreviewZoomMultiplier = FMath::Clamp(PreviewZoomMultiplier - (WheelDelta * StepPerWheel), MinZ, 1.0f);
 	FrameCameraToPreview();
-	CapturePreview();
 }
 
 void AT66HeroPreviewStage::AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees)
@@ -248,7 +136,6 @@ void AT66HeroPreviewStage::ApplyPreviewRotation()
 
 void AT66HeroPreviewStage::FrameCameraToPreview()
 {
-	if (!SceneCapture) return;
 	UPrimitiveComponent* Target = GetPreviewTargetComponent();
 	if (!Target) return;
 
@@ -284,8 +171,7 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	const float Radius = OrbitRadius;
 
 	// Fit the whole bounds sphere in view.
-	const float HalfFovRad = FMath::DegreesToRadians(SceneCapture->FOVAngle * 0.5f);
-	// Slightly "zoomed in" so the character feels large (Dota-style).
+	const float HalfFovRad = FMath::DegreesToRadians(CameraFOV * 0.5f);
 	const float BaseMult = FMath::Clamp(CameraDistanceMultiplier, 0.60f, 8.0f);
 	const float ZoomMult = FMath::Clamp(PreviewZoomMultiplier, FMath::Clamp(MinPreviewZoomMultiplier, 0.25f, 1.0f), 1.0f);
 	const float EffectiveMult = FMath::Clamp(BaseMult * ZoomMult, 0.25f, BaseMult);
@@ -297,53 +183,21 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 	FVector CamLoc = Center + FVector(X, 0.f, Z);
 	// Never allow the camera to dip below the "ground" plane (prevents seeing under the platform).
 	CamLoc.Z = FMath::Max(CamLoc.Z, OrbitBottomZ + 60.f);
-	SceneCapture->SetWorldLocation(CamLoc);
 
 	const FRotator LookRot = FRotationMatrix::MakeFromX(Center - CamLoc).Rotator();
-	SceneCapture->SetWorldRotation(LookRot);
+
+	// Store computed transform for the FrontendGameMode to apply to the world camera.
+	IdealCameraLocation = CamLoc;
+	IdealCameraRotation = LookRot;
 
 	if (PreviewPlatform)
 	{
-		PreviewPlatform->SetWorldLocation(FVector(Center.X + PlatformForwardOffset, Center.Y, OrbitBottomZ - 14.f));
+		// Platform top at stage ground Z so character feet align with it.
+		const float GroundZ = GetActorLocation().Z;
+		const float PlatformCenterZ = GroundZ - 2.f; // ~4 unit thick disc with scale 0.04
+		PreviewPlatform->SetWorldLocation(FVector(Center.X + PlatformForwardOffset, Center.Y, PlatformCenterZ));
 		const float S = FMath::Clamp((Radius / 50.f) * 2.5f, 2.0f, 10.0f);
 		PreviewPlatform->SetWorldScale3D(FVector(S, S, 0.04f));
-	}
-}
-
-void AT66HeroPreviewStage::ApplyShadowSettings()
-{
-	if (!bDisablePreviewShadows)
-	{
-		return;
-	}
-
-	if (PreviewPlatform)
-	{
-		PreviewPlatform->SetCastShadow(false);
-	}
-
-	if (!PreviewPawn)
-	{
-		return;
-	}
-
-	// Disable shadow casting on all primitive components of the preview pawn (skeletal mesh, placeholder mesh, etc.).
-	TInlineComponentArray<UPrimitiveComponent*> PrimComps;
-	PreviewPawn->GetComponents(PrimComps);
-	for (UPrimitiveComponent* Prim : PrimComps)
-	{
-		if (!Prim) continue;
-		Prim->SetCastShadow(false);
-	}
-	if (PreviewCompanionPawn)
-	{
-		TInlineComponentArray<UPrimitiveComponent*> CompPrims;
-		PreviewCompanionPawn->GetComponents(CompPrims);
-		for (UPrimitiveComponent* Prim : CompPrims)
-		{
-			if (!Prim) continue;
-			Prim->SetCastShadow(false);
-		}
 	}
 }
 
@@ -399,12 +253,17 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 			Cap->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 		PreviewPawn->SetActorEnableCollision(false);
-		// Keep pawn anchored at the stage origin; camera frames it dynamically.
+		// Ground: feet at stage Z so character stands on the platform.
+		const float GroundZ = GetActorLocation().Z;
 		FVector PawnLoc = GetActorLocation() + GetActorRotation().RotateVector(PreviewPawnOffset);
+		if (UCapsuleComponent* Cap = PreviewPawn->GetCapsuleComponent())
+			PawnLoc.Z = GroundZ + Cap->GetUnscaledCapsuleHalfHeight();
+		else
+			PawnLoc.Z = GroundZ;
 		PreviewPawn->SetActorLocation(PawnLoc);
 		ApplyPreviewRotation();
 
-		// Stream textures; allow alert animation to play. Force mesh to tick so scene capture sees the animation.
+		// Stream textures; allow alert animation to play.
 		if (USkeletalMeshComponent* Skel = PreviewPawn->GetMesh())
 		{
 			Skel->bForceMipStreaming = true;
@@ -449,7 +308,9 @@ void AT66HeroPreviewStage::UpdatePreviewCompanion(FName CompanionID)
 
 	if (!PreviewCompanionPawn)
 	{
+		const float GroundZ = GetActorLocation().Z;
 		FVector SpawnLoc = GetActorLocation() + GetActorRotation().RotateVector(PreviewPawnOffset);
+		SpawnLoc.Z = GroundZ; // feet at ground (companion pivot at feet)
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		PreviewCompanionPawn = World->SpawnActor<AT66CompanionBase>(AT66CompanionBase::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
@@ -500,11 +361,9 @@ void AT66HeroPreviewStage::UpdateCompanionPlacement()
 	}
 }
 
-void AT66HeroPreviewStage::CapturePreview()
+void AT66HeroPreviewStage::SetStageVisible(bool bVisible)
 {
-	if (SceneCapture && RenderTarget)
-	{
-		SceneCapture->CaptureScene();
-	}
+	SetActorHiddenInGame(!bVisible);
+	if (PreviewPawn) PreviewPawn->SetActorHiddenInGame(!bVisible);
+	if (PreviewCompanionPawn) PreviewCompanionPawn->SetActorHiddenInGame(!bVisible);
 }
-

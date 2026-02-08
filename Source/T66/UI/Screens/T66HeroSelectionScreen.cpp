@@ -11,6 +11,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66HeroPreviewStage.h"
+#include "Gameplay/T66FrontendGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "Widgets/SCompoundWidget.h"
@@ -25,9 +26,7 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/Images/SImage.h"
-#include "Engine/TextureRenderTarget2D.h"
 #include "Engine/Texture2D.h"
-#include "Styling/SlateBrush.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Input/Events.h"
 
@@ -38,7 +37,6 @@ namespace
 	public:
 		SLATE_BEGIN_ARGS(ST66DragRotatePreview) {}
 			SLATE_ARGUMENT(TWeakObjectPtr<AT66HeroPreviewStage>, Stage)
-			SLATE_ARGUMENT(const FSlateBrush*, Brush)
 			SLATE_ARGUMENT(float, DegreesPerPixel)
 		SLATE_END_ARGS()
 
@@ -47,11 +45,8 @@ namespace
 			Stage = InArgs._Stage;
 			DegreesPerPixel = InArgs._DegreesPerPixel;
 			bDragging = false;
-
-			ChildSlot
-			[
-				SNew(SImage).Image(InArgs._Brush)
-			];
+			// No child content — transparent overlay for drag-rotate/zoom.
+			// The viewport renders the 3D character directly behind this widget.
 		}
 
 		virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
@@ -640,7 +635,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
 	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
+		.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+		.Padding(0)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -1514,6 +1510,11 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 			}
 		}
 	}
+	if (UWorld* World = GetWorld())
+	{
+		if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+			GM->PositionCameraForHeroPreview();
+	}
 }
 
 void UT66HeroSelectionScreen::RefreshScreen_Implementation()
@@ -1704,26 +1705,17 @@ AT66HeroPreviewStage* UT66HeroSelectionScreen::GetHeroPreviewStage() const
 TSharedRef<SWidget> UT66HeroSelectionScreen::CreateHeroPreviewWidget(const FLinearColor& FallbackColor)
 {
 	AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage();
-	UTextureRenderTarget2D* RenderTarget = PreviewStage ? PreviewStage->GetRenderTarget() : nullptr;
 
-	if (RenderTarget)
+	if (PreviewStage)
 	{
-		// 3D preview: use render target as image
-		HeroPreviewBrush = MakeShared<FSlateBrush>();
-		HeroPreviewBrush->SetResourceObject(RenderTarget);
-		// Keep a reasonable desired size; SScaleBox below handles actual layout.
-		HeroPreviewBrush->ImageSize = FVector2D(512.f, 720.f);
-		HeroPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
-		HeroPreviewBrush->Tiling = ESlateBrushTileType::NoTile;
-
-		return SNew(SScaleBox)
-			.Stretch(EStretch::ScaleToFit)
+		// In-world preview: transparent overlay for drag-rotate/zoom.
+		// The main viewport renders the character with full Lumen GI behind the UI.
+		return SNew(SBox)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
 				SNew(ST66DragRotatePreview)
 				.Stage(PreviewStage)
-				.Brush(HeroPreviewBrush.Get())
 				.DegreesPerPixel(0.28f)
 			];
 	}

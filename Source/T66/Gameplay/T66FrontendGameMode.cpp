@@ -10,6 +10,8 @@
 #include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
@@ -18,6 +20,7 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "GameFramework/PlayerController.h"
 
 static const FName T66MoonTag(TEXT("T66Moon"));
 
@@ -210,7 +213,7 @@ void AT66FrontendGameMode::BeginPlay()
 	}
 
 	UWorld* World = GetWorld();
-	// Same sky and lights as gameplay level so SceneCapture2D shows real engine sky (sun + moon, theme applied).
+	// Same sky and lights as gameplay level — the main viewport camera renders with full Lumen GI.
 	SpawnFrontendLightingIfNeeded(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
@@ -221,42 +224,71 @@ void AT66FrontendGameMode::BeginPlay()
 		}
 	}
 
-	// Spawn hero preview stage if not already in level (for 3D hero preview in Hero Selection)
+	// Spawn preview stages at visible positions (the main camera will look at them directly).
 	if (World)
 	{
 		UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		// Both preview stages share the same platform location — we toggle visibility
+		// instead of moving the camera between two positions.
+		const FVector PreviewOrigin(100000.f, 0.f, 200.f);
+
 		bool bHasPreviewStage = false;
-		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
-		{
-			bHasPreviewStage = true;
-			break;
-		}
+		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It) { bHasPreviewStage = true; break; }
 		if (!bHasPreviewStage)
 		{
-			FActorSpawnParameters SpawnParams;
-			// Keep preview stages far from the menu camera so the player never sees them in the world.
-			const FVector PreviewOrigin(1000000.f, 0.f, 200.f);
 			World->SpawnActor<AT66HeroPreviewStage>(
 				AT66HeroPreviewStage::StaticClass(),
 				PreviewOrigin,
-				FRotator(0.f, 0.f, 0.f),
+				FRotator::ZeroRotator,
 				SpawnParams
 			);
-			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned HeroPreviewStage for 3D hero preview"));
+			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned HeroPreviewStage for in-world preview"));
 		}
 
 		bool bHasCompanionPreview = false;
 		for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It) { bHasCompanionPreview = true; break; }
 		if (!bHasCompanionPreview)
 		{
-			FActorSpawnParameters SpawnParams;
-			World->SpawnActor<AT66CompanionPreviewStage>(
+			AT66CompanionPreviewStage* CompStage = World->SpawnActor<AT66CompanionPreviewStage>(
 				AT66CompanionPreviewStage::StaticClass(),
-				FVector(1000000.f, 1000.f, 200.f),
-				FRotator(0.f, 0.f, 0.f),
+				PreviewOrigin,
+				FRotator::ZeroRotator,
 				SpawnParams
 			);
-			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage for 3D companion preview"));
+			// Start hidden — hero is shown first; companion becomes visible when its screen activates.
+			if (CompStage) CompStage->SetStageVisible(false);
+			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage (hidden) for in-world preview"));
+		}
+
+		// Spawn the world camera that views the preview characters.
+		if (!PreviewCamera)
+		{
+			PreviewCamera = World->SpawnActor<ACameraActor>(
+				ACameraActor::StaticClass(),
+				FVector(-400.f, 0.f, 350.f), // Default: looking at hero preview area
+				FRotator(-15.f, 0.f, 0.f),
+				SpawnParams
+			);
+			if (PreviewCamera)
+			{
+				if (UCameraComponent* CamComp = PreviewCamera->GetCameraComponent())
+				{
+					CamComp->SetFieldOfView(90.f); // Match gameplay FollowCamera FOV
+				}
+				UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned PreviewCamera for in-world character viewing"));
+			}
+		}
+
+		// Set the player controller to look through our camera.
+		if (PreviewCamera)
+		{
+			if (APlayerController* PC = World->GetFirstPlayerController())
+			{
+				PC->SetViewTarget(PreviewCamera);
+			}
 		}
 
 		// Pre-warm preview so the first time the UI opens it's already "styled" (no pop-in).
@@ -270,7 +302,7 @@ void AT66FrontendGameMode::BeginPlay()
 				if (!HeroID.IsNone())
 				{
 					FName SkinID = T66GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : T66GI->SelectedHeroSkinID;
-				It->SetPreviewHero(HeroID, T66GI->SelectedHeroBodyType, SkinID);
+					It->SetPreviewHero(HeroID, T66GI->SelectedHeroBodyType, SkinID);
 				}
 				break;
 			}
@@ -280,9 +312,12 @@ void AT66FrontendGameMode::BeginPlay()
 				break;
 			}
 		}
+
+		// Position camera at the hero preview by default.
+		PositionCameraForHeroPreview();
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode BeginPlay - Menu level initialized"));
+	UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode BeginPlay - Menu level initialized (in-world preview)"));
 }
 
 void AT66FrontendGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -301,22 +336,59 @@ void AT66FrontendGameMode::HandleSettingsChanged()
 {
 	UWorld* World = GetWorld();
 	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
-	// Re-apply world post process to preview captures so they stay in sync with theme/lighting.
-	if (World)
+	// No SceneCapture to refresh — the main viewport camera gets theme changes automatically via Lumen.
+}
+
+void AT66FrontendGameMode::PositionCameraForHeroPreview()
+{
+	if (!PreviewCamera) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Show hero, hide companion (they share the same platform location).
+	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(true); break; }
+	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(false); break; }
+
+	// Position camera using the hero stage's ideal transform.
+	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
 	{
-		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+		AT66HeroPreviewStage* Stage = *It;
+		const FVector CamLoc = Stage->GetIdealCameraLocation();
+		const FRotator CamRot = Stage->GetIdealCameraRotation();
+		if (!CamLoc.IsNearlyZero())
 		{
-			if (IsValid(*It))
-			{
-				It->RefreshCapturePostProcess();
-			}
+			PreviewCamera->SetActorLocation(CamLoc);
+			PreviewCamera->SetActorRotation(CamRot);
+			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Camera positioned for hero preview at (%.1f,%.1f,%.1f)"),
+				CamLoc.X, CamLoc.Y, CamLoc.Z);
 		}
-		for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+		break;
+	}
+}
+
+void AT66FrontendGameMode::PositionCameraForCompanionPreview()
+{
+	if (!PreviewCamera) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Show companion, hide hero (they share the same platform location).
+	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(true); break; }
+	for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It) { (*It)->SetStageVisible(false); break; }
+
+	// Position camera using the companion stage's ideal transform.
+	for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+	{
+		AT66CompanionPreviewStage* Stage = *It;
+		const FVector CamLoc = Stage->GetIdealCameraLocation();
+		const FRotator CamRot = Stage->GetIdealCameraRotation();
+		if (!CamLoc.IsNearlyZero())
 		{
-			if (IsValid(*It))
-			{
-				It->RefreshCapturePostProcess();
-			}
+			PreviewCamera->SetActorLocation(CamLoc);
+			PreviewCamera->SetActorRotation(CamRot);
+			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Camera positioned for companion preview at (%.1f,%.1f,%.1f)"),
+				CamLoc.X, CamLoc.Y, CamLoc.Z);
 		}
+		break;
 	}
 }

@@ -7,15 +7,14 @@
 #include "Data/T66DataTypes.h"
 #include "T66CompanionPreviewStage.generated.h"
 
-class USceneCaptureComponent2D;
-class UTextureRenderTarget2D;
 class AT66CompanionBase;
 class USceneComponent;
 class UStaticMeshComponent;
 
 /**
  * Preview stage for Companion Selection screen.
- * Renders the selected companion (sphere placeholder) to a texture.
+ * Manages the preview companion pawn and floor. The main viewport camera
+ * renders the character directly (full Lumen GI), no SceneCapture needed.
  */
 UCLASS(Blueprintable)
 class T66_API AT66CompanionPreviewStage : public AActor
@@ -24,9 +23,6 @@ class T66_API AT66CompanionPreviewStage : public AActor
 
 public:
 	AT66CompanionPreviewStage();
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Preview")
-	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
 
 	/** Set companion to display; SkinID = Default or Beachgoer for the 3D preview. */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
@@ -44,36 +40,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void AddPreviewOrbit(float DeltaYawDegrees, float DeltaPitchDegrees);
 
-	UFUNCTION(BlueprintCallable, Category = "Preview")
-	void CapturePreview();
+	/** Get the ideal camera location for viewing this preview (computed by FrameCameraToPreview). */
+	FVector GetIdealCameraLocation() const { return IdealCameraLocation; }
 
-	/** Re-copy world post process to the scene capture and apply fixed exposure (call when theme/lighting changes). */
-	void RefreshCapturePostProcess();
+	/** Get the ideal camera rotation for viewing this preview (computed by FrameCameraToPreview). */
+	FRotator GetIdealCameraRotation() const { return IdealCameraRotation; }
+
+	/** Show or hide the entire stage (floor + companion pawn). */
+	void SetStageVisible(bool bVisible);
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void Tick(float DeltaSeconds) override;
-	void EnsureCaptureSetup();
 
 	void UpdatePreviewPawn(FName CompanionID, FName SkinID);
 	void ApplyPreviewRotation();
 	void FrameCameraToPreview();
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;
-	void ApplyShadowSettings();
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<USceneCaptureComponent2D> SceneCapture;
 
 	/** Simple floor so "ground level" is visible in preview (same level lighting as gameplay). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UStaticMeshComponent> PreviewFloor;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
-	TObjectPtr<UTextureRenderTarget2D> RenderTarget;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Preview")
-	FIntPoint RenderTargetSize = FIntPoint(1024, 1440);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
 	TSubclassOf<AT66CompanionBase> CompanionPawnClass;
@@ -87,7 +74,7 @@ protected:
 	UPROPERTY(Transient)
 	float PreviewYawDegrees = 0.f;
 
-	/** Orbit camera pitch (degrees). Negative looks slightly down. */
+	/** Orbit camera pitch (degrees). Positive looks slightly down. */
 	UPROPERTY(Transient)
 	float OrbitPitchDegrees = 15.f;
 
@@ -103,6 +90,13 @@ protected:
 
 	UPROPERTY(Transient)
 	float OrbitBottomZ = 0.f;
+
+	/** Computed ideal camera transform (read by FrontendGameMode to position the world camera). */
+	UPROPERTY(Transient)
+	FVector IdealCameraLocation = FVector::ZeroVector;
+
+	UPROPERTY(Transient)
+	FRotator IdealCameraRotation = FRotator::ZeroRotator;
 
 	/** Push the floor slightly back so the companion reads "forward" on it (toward camera). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
@@ -120,7 +114,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	float MinPreviewZoomMultiplier = 0.65f;
 
-	/** If true, disable shadow casting for preview meshes/floor. */
+	/** FOV used for camera framing calculations (should match gameplay camera). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	bool bDisablePreviewShadows = true;
+	float CameraFOV = 90.f;
 };
