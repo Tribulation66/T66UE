@@ -151,6 +151,22 @@ void UT66UITexturePoolSubsystem::ClearAll()
 	LoadedTextures.Reset();
 }
 
+void UT66UITexturePoolSubsystem::EnsureTexturesLoadedSync(const TArray<FSoftObjectPath>& Paths)
+{
+	for (const FSoftObjectPath& Path : Paths)
+	{
+		if (!Path.IsValid() || LoadedTextures.Contains(Path))
+		{
+			continue;
+		}
+		TSoftObjectPtr<UTexture2D> Soft(Path);
+		if (UTexture2D* Tex = Soft.LoadSynchronous())
+		{
+			LoadedTextures.Add(Path, Tex);
+		}
+	}
+}
+
 void UT66UITexturePoolSubsystem::HandleLoaded(const FSoftObjectPath& Path)
 {
 	// Drop handle (if any).

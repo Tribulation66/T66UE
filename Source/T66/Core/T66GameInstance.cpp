@@ -70,13 +70,19 @@ void UT66GameInstance::Init()
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
 
-	// Preload main menu background textures so PIE and theme switch show image immediately (no white flash).
+	// Preload main menu background + leaderboard filter textures so they are often ready before main menu builds.
 	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
 	{
 		const TSoftObjectPtr<UTexture2D> MMDark(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMDark.MMDark")));
 		const TSoftObjectPtr<UTexture2D> MMLight(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight")));
+		const TSoftObjectPtr<UTexture2D> LBGlobal(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")));
+		const TSoftObjectPtr<UTexture2D> LBFriends(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")));
+		const TSoftObjectPtr<UTexture2D> LBStreamers(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Streamers.T_LB_Streamers")));
 		TexPool->RequestTexture(MMDark, this, FName(TEXT("PreloadMMDark")), [](UTexture2D*) {});
 		TexPool->RequestTexture(MMLight, this, FName(TEXT("PreloadMMLight")), [](UTexture2D*) {});
+		TexPool->RequestTexture(LBGlobal, this, FName(TEXT("PreloadLBGlobal")), [](UTexture2D*) {});
+		TexPool->RequestTexture(LBFriends, this, FName(TEXT("PreloadLBFriends")), [](UTexture2D*) {});
+		TexPool->RequestTexture(LBStreamers, this, FName(TEXT("PreloadLBStreamers")), [](UTexture2D*) {});
 	}
 }
 

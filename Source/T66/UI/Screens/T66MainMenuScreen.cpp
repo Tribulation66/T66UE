@@ -41,8 +41,27 @@ UT66LocalizationSubsystem* UT66MainMenuScreen::GetLocSubsystem() const
 
 TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 {
-	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+	if (TexPool)
+	{
+		// Sync-load main menu + Party Picker textures so they show immediately (no white flash).
+		// Safe loading window: we are building the main menu UI, not in gameplay. See memory.md.
+		static const TArray<FSoftObjectPath> MainMenuTexturePaths = {
+			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMDark.MMDark")),
+			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight")),
+			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")),
+			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")),
+			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Streamers.T_LB_Streamers")),
+			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")),
+			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloLight.SoloLight")),
+			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")),
+			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopLight.CoopLight"))
+		};
+		TexPool->EnsureTexturesLoadedSync(MainMenuTexturePaths);
+	}
+
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 
 	// Get localized text
@@ -72,17 +91,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	MainMenuBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
 	MainMenuBackgroundBrush->SetResourceObject(nullptr);
 
-	// Use cached texture immediately if preloaded (avoids white flash on PIE and theme switch)
-	if (UGameInstance* GIPtr = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	// Use cached texture immediately (EnsureTexturesLoadedSync above already loaded it; this sets the brush).
+	if (TexPool)
 	{
-		if (UT66UITexturePoolSubsystem* TexPool = GIPtr->GetSubsystem<UT66UITexturePoolSubsystem>())
+		const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMDark");
+		const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
+		if (UTexture2D* Cached = TexPool->GetLoadedTexture(MainMenuBgSoft))
 		{
-			const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMDark");
-			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
-			if (UTexture2D* Cached = TexPool->GetLoadedTexture(MainMenuBgSoft))
-			{
-				MainMenuBackgroundBrush->SetResourceObject(Cached);
-			}
+			MainMenuBackgroundBrush->SetResourceObject(Cached);
 		}
 	}
 
@@ -109,7 +125,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(40.0f, 380.0f, 0.0f, 0.0f)
+			.Padding(200.0f, 380.0f, 0.0f, 0.0f)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()

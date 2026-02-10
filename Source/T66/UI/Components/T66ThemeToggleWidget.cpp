@@ -31,7 +31,7 @@ TSharedRef<SWidget> UT66ThemeToggleWidget::RebuildWidget()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Top)
-		.Padding(15.0f, 15.0f, 0.0f, 0.0f)
+		.Padding(30.0f, 30.0f, 0.0f, 0.0f)
 		[
 			SNew(SHorizontalBox)
 			// Dark button

@@ -22,6 +22,13 @@
 #include "Widgets/Input/SButton.h"
 #include "Framework/Application/SlateApplication.h"
 
+namespace
+{
+	// Shared column widths so header and row columns align (Rank | Name | Score/Time).
+	constexpr float RankColumnWidth = 50.0f;   // content + padding to name
+	constexpr float ScoreColumnWidth = 82.0f; // content + padding, aligned with score digits (used for both Score and Time)
+}
+
 void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 {
 	LocSubsystem = InArgs._LocalizationSubsystem;
@@ -43,7 +50,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	DifficultyOptions.Add(MakeShared<FString>(TEXT("Final")));
 	SelectedDifficultyOption = DifficultyOptions[0];
 
-	TypeOptions.Add(MakeShared<FString>(TEXT("High Score")));
+	TypeOptions.Add(MakeShared<FString>(TEXT("Score")));
 	TypeOptions.Add(MakeShared<FString>(TEXT("Speed Run")));
 	SelectedTypeOption = TypeOptions[0];
 
@@ -223,7 +230,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.HAlign(HAlign_Center)
-			.Padding(0.0f, 0.0f, 0.0f, 12.0f)
+			.Padding(0.0f, 0.0f, 0.0f, 16.0f)
 			[
 				SNew(SHorizontalBox)
 				// Party Size dropdown
@@ -232,7 +239,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					FT66Style::MakeDropdown(FT66DropdownParams(
 						SNew(STextBlock)
 							.Text_Lambda([this]() { return GetPartySizeText(CurrentPartySize); })
-							.Font(FT66Style::Tokens::FontRegular(11))
+							.Font(FT66Style::Tokens::FontBold(16))
 							.ColorAndOpacity(FT66Style::Tokens::Text),
 						[this]()
 						{
@@ -252,7 +259,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									];
 							}
 							return Box;
-						}).SetMinWidth(90.f).SetHeight(30.f))
+						}).SetMinWidth(100.f).SetHeight(38.f))
 				]
 				// Difficulty dropdown
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
@@ -260,7 +267,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					FT66Style::MakeDropdown(FT66DropdownParams(
 						SNew(STextBlock)
 							.Text_Lambda([this]() { return GetDifficultyText(CurrentDifficulty); })
-							.Font(FT66Style::Tokens::FontRegular(11))
+							.Font(FT66Style::Tokens::FontBold(16))
 							.ColorAndOpacity(FT66Style::Tokens::Text),
 						[this]()
 						{
@@ -280,15 +287,15 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									];
 							}
 							return Box;
-						}).SetMinWidth(100.f).SetHeight(30.f))
+						}).SetMinWidth(130.f).SetHeight(38.f))
 				]
-				// Type dropdown (width fits "High Score" / "Speed Run" without truncation)
+				// Type dropdown (width fits "Score" / "Speed Run" without truncation)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
 					FT66Style::MakeDropdown(FT66DropdownParams(
 						SNew(STextBlock)
 							.Text_Lambda([this]() { return GetTypeText(CurrentType); })
-							.Font(FT66Style::Tokens::FontRegular(11))
+							.Font(FT66Style::Tokens::FontBold(16))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 							.OverflowPolicy(ETextOverflowPolicy::Clip),
 						[this]()
@@ -309,20 +316,20 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 									];
 							}
 							return Box;
-						}).SetMinWidth(120.f).SetHeight(30.f))
+						}).SetMinWidth(130.f).SetHeight(38.f))
 				]
 				// Stage dropdown (hidden — wiring kept for future use)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
 					SNew(SBox)
 					.WidthOverride(70.0f)
-					.HeightOverride(30.0f)
+					.HeightOverride(38.0f)
 					.Visibility(EVisibility::Collapsed)
 					[
 						FT66Style::MakeDropdown(FT66DropdownParams(
 							SNew(STextBlock)
 								.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::AsNumber(1); })
-								.Font(FT66Style::Tokens::FontRegular(11))
+								.Font(FT66Style::Tokens::FontBold(16))
 								.ColorAndOpacity(FT66Style::Tokens::Text),
 							[this]()
 							{
@@ -342,7 +349,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 										];
 								}
 								return Box;
-							}).SetMinWidth(70.f).SetHeight(30.f))
+							}).SetMinWidth(70.f).SetHeight(38.f))
 					]
 				]
 			]
@@ -356,55 +363,50 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				.Padding(FMargin(10.0f, 6.0f))
 				[
 					SNew(SHorizontalBox)
-					// Rank header
+					// Column 1: Rank (no header; fixed width to match row alignment)
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					.VAlign(VAlign_Center)
-					.Padding(0.0f, 0.0f, 10.0f, 0.0f)
 					[
-						SNew(SBox).WidthOverride(40.0f)
-						[
+						SNew(SBox).WidthOverride(RankColumnWidth)
+					]
+					// Column 2: Name (fills remaining space)
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					.VAlign(VAlign_Center)
+					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Leaderboard", "Rank", "RANK"))
-						.Font(FT66Style::Tokens::FontBold(10))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
+						.Font(FT66Style::Tokens::FontBold(16))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					// Column 3: Score/Time (fixed width to match row, right-aligned)
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.HAlign(HAlign_Right)
+					.VAlign(VAlign_Center)
+					[
+						SNew(SBox).WidthOverride(ScoreColumnWidth)
+						[
+							SNew(STextBlock)
+							.Text_Lambda([this]() {
+								return CurrentType == ET66LeaderboardType::HighScore
+									? NSLOCTEXT("T66.Leaderboard", "HighScore", "SCORE")
+									: NSLOCTEXT("T66.Leaderboard", "Time", "TIME"); })
+							.Font(FT66Style::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Justification(ETextJustify::Right)
+						]
 					]
 				]
-				// Name header
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				.VAlign(VAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
-					.Font(FT66Style::Tokens::FontBold(10))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				]
-				// Score/Time header (right-aligned to match row data)
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				.HAlign(HAlign_Right)
-				.VAlign(VAlign_Center)
-				.Padding(10.0f, 0.0f, 0.0f, 0.0f)
-				[
-					SNew(STextBlock)
-					.Text_Lambda([this]() {
-						return CurrentType == ET66LeaderboardType::HighScore
-							? NSLOCTEXT("T66.Leaderboard", "HighScore", "HIGH SCORE")
-							: NSLOCTEXT("T66.Leaderboard", "Time", "TIME"); })
-					.Font(FT66Style::Tokens::FontBold(10))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-					.Justification(ETextJustify::Right)
-				]
 			]
-			]
-			// Entry list: taller so 11 rows visible without scrolling
+			// Entry list: taller so 11 rows visible without scrolling (height reduced to offset larger dropdowns)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				SNew(SBox)
-				.HeightOverride(480.0f)
+				.HeightOverride(464.0f)
 				[
 					SNew(SScrollBox)
 					+ SScrollBox::Slot()
@@ -506,57 +508,55 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			NameDisplay = Entry.PlayerNames[0];
 		}
 
-		// Build the row content. Rank left, name middle, score/time right-aligned at end.
+		// Build the row content with same 3 column widths as header (Rank | Name | Score/Time).
 		const TSharedRef<SWidget> RowContents =
 			SNew(SBorder)
 			.BorderImage(RowBrush)
 			.BorderBackgroundColor(RowColor)
-			.Padding(FMargin(10.0f, 8.0f))
+			.Padding(FMargin(10.0f, 6.0f))
 			[
 				SNew(SHorizontalBox)
-				// Rank (fixed left)
+				// Column 1: Rank (fixed width to match header)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
-				.Padding(0.0f, 0.0f, 10.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(40.0f)
+					SNew(SBox).WidthOverride(RankColumnWidth)
 					[
 						SNew(STextBlock)
 						.Text(FText::Format(NSLOCTEXT("T66.Leaderboard", "RankFormat", "#{0}"), FText::AsNumber(Entry.Rank)))
-						.Font(FT66Style::Tokens::FontBold(13))
+						.Font(FT66Style::Tokens::FontBold(16))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				]
-				// Player name(s) (fills middle)
+				// Column 2: Player name(s) (fills remaining space)
 				+ SHorizontalBox::Slot()
 				.FillWidth(1.0f)
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(NameDisplay))
-					.Font(FT66Style::Tokens::FontRegular(12))
+					.Font(FT66Style::Tokens::FontRegular(16))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
-				// Score or Time (one slot, all the way right)
+				// Column 3: Score or Time (fixed width to match header, right-aligned)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.HAlign(HAlign_Right)
 				.VAlign(VAlign_Center)
-				.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(CurrentType == ET66LeaderboardType::HighScore ? 80.0f : 60.0f)
+					SNew(SBox).WidthOverride(ScoreColumnWidth)
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(CurrentType == ET66LeaderboardType::HighScore ? ScoreStr : TimeStr))
-						.Font(FT66Style::Tokens::FontRegular(11))
+						.Font(FT66Style::Tokens::FontRegular(16))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 						.Justification(ETextJustify::Right)
 					]
 				]
 			];
 
-		// Every row is a clickable button (Row style: thin border, transparent bg).
+		// Every row is a clickable button (Row style: thin border, transparent bg, HAlign_Fill).
 		// Local player row navigates to run summary; other rows are stubs for now.
 		TSharedRef<SWidget> RowWidget = FT66Style::MakeButton(
 			FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }), ET66ButtonType::Row)
@@ -567,7 +567,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 
 		EntryListBox->AddSlot()
 		.AutoHeight()
-		.Padding(0.0f, 2.0f)
+		.Padding(0.0f, 1.0f)
 		[
 			RowWidget
 		];
@@ -688,7 +688,7 @@ void ST66LeaderboardPanel::OnTypeChanged(TSharedPtr<FString> NewSelection, ESele
 	if (!NewSelection.IsValid()) return;
 	SelectedTypeOption = NewSelection;
 
-	if (*NewSelection == TEXT("High Score")) SetLeaderboardType(ET66LeaderboardType::HighScore);
+	if (*NewSelection == TEXT("Score")) SetLeaderboardType(ET66LeaderboardType::HighScore);
 	else if (*NewSelection == TEXT("Speed Run")) SetLeaderboardType(ET66LeaderboardType::SpeedRun);
 }
 
@@ -778,7 +778,7 @@ FText ST66LeaderboardPanel::GetTypeText(ET66LeaderboardType Type) const
 {
 	switch (Type)
 	{
-	case ET66LeaderboardType::HighScore: return NSLOCTEXT("T66.Leaderboard", "HighScore", "HIGH SCORE");
+	case ET66LeaderboardType::HighScore: return NSLOCTEXT("T66.Leaderboard", "HighScore", "SCORE");
 	case ET66LeaderboardType::SpeedRun: return NSLOCTEXT("T66.Leaderboard", "SpeedRun", "SPEED RUN");
 	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}

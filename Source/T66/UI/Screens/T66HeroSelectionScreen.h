@@ -160,5 +160,4 @@ private:
 
 	// Difficulty dropdown
 	void OnDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
-	TSharedRef<SWidget> GenerateDifficultyItem(TSharedPtr<FString> InItem);
 };

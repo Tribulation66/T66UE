@@ -392,7 +392,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const FText TitleText = Loc ? Loc->GetText_RunSummaryTitle() : NSLOCTEXT("T66.RunSummary", "Title", "RUN SUMMARY");
 	const FText StageHighScoreText = Loc
 		? FText::Format(Loc->GetText_RunSummaryStageReachedBountyFormat(), FText::AsNumber(StageReached), FText::AsNumber(HighScore))
-		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  High Score: %d"), StageReached, HighScore));
+		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Score: %d"), StageReached, HighScore));
 
 	auto MakeSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
 	{
@@ -975,7 +975,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						.Visibility_Lambda([this]() { return (bNewPersonalHighScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
 						.Text_Lambda([this, Loc]()
 						{
-							return Loc ? Loc->GetText_NewPersonalHighScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalHighScore", "New Personal High Score");
+							return Loc ? Loc->GetText_NewPersonalHighScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalHighScore", "New Personal Score");
 						})
 						.Font(FT66Style::Tokens::FontBold(16))
 						.ColorAndOpacity(FT66Style::Tokens::Success)

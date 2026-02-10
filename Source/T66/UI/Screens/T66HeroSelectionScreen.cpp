@@ -412,14 +412,6 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 	}
 }
 
-TSharedRef<SWidget> UT66HeroSelectionScreen::GenerateDifficultyItem(TSharedPtr<FString> InItem)
-{
-	return SNew(STextBlock)
-		.Text(FText::FromString(*InItem))
-		.Font(FT66Style::Tokens::FontRegular(12))
-		.ColorAndOpacity(FT66Style::Tokens::Text);
-}
-
 TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
@@ -713,7 +705,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 										SAssignNew(ACBalanceTextBlock, STextBlock)
 										.Text(ACBalanceText)
 										.Font(FT66Style::Tokens::FontBold(22))
-										.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f)),
+										.ColorAndOpacity(FT66Style::Tokens::Text),
 										FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
 								]
 							]
@@ -1051,31 +1043,34 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 											.VAlign(VAlign_Center)
 											.Padding(0.0f, 0.0f, 8.0f, 0.0f)
 											[
-												SNew(SBox).HeightOverride(40.0f)
-												[
-													SNew(SComboBox<TSharedPtr<FString>>)
-													.OptionsSource(&DifficultyOptions)
-													.OnSelectionChanged_Lambda([this](TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo) {
-														OnDifficultyChanged(NewValue, SelectInfo);
-													})
-													.OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) -> TSharedRef<SWidget> {
-														return SNew(STextBlock)
-															.Text(FText::FromString(*InItem))
-															.Font(FT66Style::Tokens::FontRegular(12))
-															.ColorAndOpacity(FT66Style::Tokens::Text);
-													})
-													.InitiallySelectedItem(CurrentDifficultyOption)
-													[
-														SNew(STextBlock)
+												FT66Style::MakeDropdown(FT66DropdownParams(
+													SNew(STextBlock)
 														.Text_Lambda([this, Loc]() -> FText {
 															return CurrentDifficultyOption.IsValid()
 																? FText::FromString(*CurrentDifficultyOption)
 																: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
 														})
 														.Font(FT66Style::Tokens::FontBold(12))
-														.ColorAndOpacity(FT66Style::Tokens::Text)
-													]
-												]
+														.ColorAndOpacity(FT66Style::Tokens::Text),
+													[this]()
+													{
+														TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
+														for (const TSharedPtr<FString>& Opt : DifficultyOptions)
+														{
+															if (!Opt.IsValid()) continue;
+															TSharedPtr<FString> Captured = Opt;
+															Box->AddSlot().AutoHeight()
+																[
+																	FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+																	{
+																		OnDifficultyChanged(Captured, ESelectInfo::Direct);
+																		FSlateApplication::Get().DismissAllMenus();
+																		return FReply::Handled();
+																	}), ET66ButtonType::Neutral).SetMinWidth(0.f))
+																];
+														}
+														return Box;
+													}).SetMinWidth(0.f).SetHeight(40.0f))
 											]
 											+ SHorizontalBox::Slot()
 											.FillWidth(0.58f)

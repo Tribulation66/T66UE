@@ -147,7 +147,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 									return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Balance));
 								})
 								.Font(FT66Style::Tokens::FontBold(22))
-								.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
 						,
 						FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
 					]
@@ -301,7 +301,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 							return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Achievement.RewardCoins));
 						})
 						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(bClaimed ? FLinearColor(0.6f, 0.8f, 0.6f, 1.0f) : FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()

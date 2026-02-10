@@ -7,9 +7,12 @@
 #include "Data/T66DataTypes.h"
 #include "T66PartySizePickerScreen.generated.h"
 
+struct FSlateBrush;
+class SImage;
+
 /**
  * Party Size Picker Screen
- * Three large centered panels: Solo, Duo, Trio
+ * Main menu background (MMDark/MMLight) with Solo / Co-op cards (theme-dependent images + text).
  */
 UCLASS(Blueprintable)
 class T66_API UT66PartySizePickerScreen : public UT66ScreenBase
@@ -37,6 +40,11 @@ protected:
 	void SelectPartySize(ET66PartySize PartySize);
 
 private:
+	TSharedPtr<FSlateBrush> SoloCardBrush;
+	TSharedPtr<FSlateBrush> CoopCardBrush;
+	TSharedPtr<FSlateBrush> MainMenuBackgroundBrush;
+	TSharedPtr<SImage> MainMenuBackgroundImage;
+
 	FReply HandleSoloClicked();
 	FReply HandleCoopClicked();
 	FReply HandleBackClicked();

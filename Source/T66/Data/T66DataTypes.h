@@ -712,7 +712,7 @@ enum class ET66LeaderboardTime : uint8
 UENUM(BlueprintType)
 enum class ET66LeaderboardType : uint8
 {
-	HighScore UMETA(DisplayName = "High Score"),
+	HighScore UMETA(DisplayName = "Score"),
 	SpeedRun UMETA(DisplayName = "Speed Run")
 };
 

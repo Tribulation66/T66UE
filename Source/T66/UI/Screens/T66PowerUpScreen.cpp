@@ -402,7 +402,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 							SNew(STextBlock)
 							.Text(PCsFormat)
 							.Font(FT66Style::Tokens::FontBold(22))
-							.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
 						,
 						FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
 					]

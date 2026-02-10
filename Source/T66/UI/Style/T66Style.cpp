@@ -356,6 +356,10 @@ FName FT66Style::GetStyleSetName()
 
 const ISlateStyle& FT66Style::Get()
 {
+	if (!StyleInstance.IsValid())
+	{
+		Initialize();
+	}
 	check(StyleInstance.IsValid());
 	return *StyleInstance;
 }
@@ -504,20 +508,13 @@ void FT66Style::Initialize()
 		}
 	}
 
-	// Dropdown: theme-aware (Dark = black bg + white text, Light = light bg + black text)
+	// Dropdown: use exactly the same button style as T66.Button.Neutral (texture or fallback) + small down arrow
 	{
-		const FLinearColor DropN = Tokens::Panel;
-		const FLinearColor DropH = Tokens::Panel + FLinearColor(0.05f, 0.05f, 0.05f, 0.f);
-		const FLinearColor DropP = Tokens::Panel + FLinearColor(0.08f, 0.08f, 0.08f, 0.f);
 		FComboButtonStyle DropdownStyle;
-		DropdownStyle.ButtonStyle = FButtonStyle()
-			.SetNormal(FSlateRoundedBoxBrush(DropN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetHovered(FSlateRoundedBoxBrush(DropH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetPressed(FSlateRoundedBoxBrush(DropP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
-			.SetNormalPadding(FMargin(0.f))
-			.SetPressedPadding(FMargin(0.f));
-		DropdownStyle.DownArrowImage = FSlateBrush();
-		DropdownStyle.DownArrowImage.TintColor = FSlateColor(Tokens::Text);
+		DropdownStyle.ButtonStyle = StyleInstance->GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
+		FSlateBrush ArrowBrush = FCoreStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").DownArrowImage;
+		ArrowBrush.TintColor = FSlateColor(Tokens::Text);
+		DropdownStyle.DownArrowImage = ArrowBrush;
 		DropdownStyle.MenuBorderBrush = FSlateRoundedBoxBrush(Tokens::Panel, Tokens::CornerRadiusSmall, BorderColor, BorderW);
 		DropdownStyle.MenuBorderPadding = FMargin(0.f);
 		StyleInstance->Set("T66.Dropdown.ComboButtonStyle", DropdownStyle);
@@ -638,14 +635,18 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 
 	// 6. Assemble: SBox > SButton > Content.
 	//    Width/Height of 0 means "no constraint" (FOptionalSize() = unset).
+	//    Row buttons use HAlign_Fill so custom content (e.g. column layouts) stretches to full width.
+	const EHorizontalAlignment BtnHAlign = (Params.Type == ET66ButtonType::Row) ? HAlign_Fill : HAlign_Center;
+	const EVerticalAlignment BtnVAlign = (Params.Type == ET66ButtonType::Row) ? VAlign_Fill : VAlign_Center;
+
 	return SNew(SBox)
 		.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
 		.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
 		.Visibility(Params.Visibility)
 		[
 			SNew(SButton)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			.HAlign(BtnHAlign)
+			.VAlign(BtnVAlign)
 			.OnClicked(SafeClick)
 			.ButtonStyle(&BtnStyle)
 			.ButtonColorAndOpacity(BtnColor)

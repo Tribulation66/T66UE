@@ -77,6 +77,7 @@
 - UI: **event-driven** only (no per-frame UI logic).
 - **All UI text localized** via `UT66LocalizationSubsystem::GetText_*()` or NSLOCTEXT.
 - **After C++ changes:** Close the editor, run the build command, then reopen. Do not use Live Coding / Hot Reload — the Config UObject `UT66RngTuningConfig` can trigger "Cannot replace existing object of a different class" (CDO replace crash) if the module is reloaded while the editor is running.
+- **Sync load (main menu):** The only allowed sync load is in **UT66MainMenuScreen::BuildSlateUI()**: **UT66UITexturePoolSubsystem::EnsureTexturesLoadedSync()** is called for main menu + Party Picker textures (MMDark, MMLight, T_LB_Global, T_LB_Friends, T_LB_Streamers, SoloDark, SoloLight, CoopDark, CoopLight) so the background, leaderboard filter icons, and Party Picker cards appear immediately with no white flash. This is a safe "loading window" (frontend, not gameplay); no other sync texture loads in UI.
 
 ---
 

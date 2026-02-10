@@ -1002,7 +1002,7 @@ void UT66GameplayHUDWidget::RefreshEconomy()
 		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
 	}
 
-	// High Score (Score)
+	// Score (Bounty)
 	if (ScoreText.IsValid())
 	{
 		ScoreText->SetText(FText::AsNumber(RunState->GetCurrentScore()));

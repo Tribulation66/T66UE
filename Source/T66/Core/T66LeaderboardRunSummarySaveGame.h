@@ -23,7 +23,7 @@ public:
 	UPROPERTY(SaveGame)
 	int32 SchemaVersion = 5;
 
-	/** What kind of leaderboard this run belongs to (currently HighScore only). */
+	/** What kind of leaderboard this run belongs to (currently Score/HighScore only). */
 	UPROPERTY(SaveGame)
 	ET66LeaderboardType LeaderboardType = ET66LeaderboardType::HighScore;
 
