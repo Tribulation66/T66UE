@@ -148,13 +148,13 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleBackClicked), ET66ButtonType::Neutral, 150.f, 50.f)
+							FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleBackClicked), ET66ButtonType::Neutral, 150.f)
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							FT66Style::MakeButton(ConfirmText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked), ET66ButtonType::Success, 150.f, 50.f)
+							FT66Style::MakeButton(ConfirmText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked), ET66ButtonType::Success, 150.f)
 						]
 					]
 				]

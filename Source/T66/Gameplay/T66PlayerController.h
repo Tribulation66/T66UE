@@ -19,6 +19,7 @@ class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class AT66EnemyBase;
 class UT66IdolAltarOverlayWidget;
+class UNiagaraSystem;
 class UT66VendorOverlayWidget;
 class UT66CollectorOverlayWidget;
 class AT66LootBagPickup;
@@ -212,6 +213,13 @@ private:
 	TObjectPtr<UT66CollectorOverlayWidget> CollectorOverlayWidget;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
+
+	/** Niagara system for jump VFX (same asset as slash: VFX_Attack1). */
+	UPROPERTY(EditDefaultsOnly, Category = "Game|VFX")
+	TSoftObjectPtr<UNiagaraSystem> JumpVFXNiagara;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedJumpVFXNiagara = nullptr;
 
 	FDelegateHandle OnPlayerDiedHandle;
 

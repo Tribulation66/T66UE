@@ -89,13 +89,13 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							FT66Style::MakeButton(SubmitText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleSubmitClicked), ET66ButtonType::Success, 120.f, 44.f)
+							FT66Style::MakeButton(SubmitText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleSubmitClicked), ET66ButtonType::Success, 120.f)
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							FT66Style::MakeButton(CancelText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleCancelClicked), ET66ButtonType::Neutral, 120.f, 44.f)
+							FT66Style::MakeButton(CancelText, FOnClicked::CreateUObject(this, &UT66ReportBugScreen::HandleCancelClicked), ET66ButtonType::Neutral, 120.f)
 						]
 					]
 				]

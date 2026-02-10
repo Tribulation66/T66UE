@@ -5,6 +5,7 @@
 #include "Gameplay/T66GameMode.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66DamageLogSubsystem.h"
 #include "AIController.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -235,13 +236,17 @@ void AT66BossBase::FireAtPlayer()
 	}
 }
 
-bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount)
+bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID)
 {
 	if (!bAwakened || CurrentHP <= 0) return false;
 	if (DamageAmount <= 0) return false;
-
+	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
+	{
+		DamageLog->RecordDamageDealt(SourceID, DamageAmount);
+	}
 	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
 		const bool bDied = RunState->ApplyBossDamage(DamageAmount);

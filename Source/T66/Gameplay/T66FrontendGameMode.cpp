@@ -6,6 +6,7 @@
 #include "Gameplay/T66CompanionPreviewStage.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
@@ -203,6 +204,10 @@ void AT66FrontendGameMode::BeginPlay()
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
 				RunState->ResetForNewRun();
+			}
+			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+			{
+				DamageLog->ResetForNewRun();
 			}
 			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 			{

@@ -35,47 +35,46 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 	FText CoopText = Loc ? Loc->GetText_Coop() : NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
-	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-	auto MakePartySizeCard = [this, &BtnNeutral](const FText& Title, const FText& Description, FReply (UT66PartySizePickerScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
+	auto MakePartySizeCard = [this](const FText& Title, const FText& Description, FReply (UT66PartySizePickerScreen::*ClickFunc)(), const FLinearColor& BgColor) -> TSharedRef<SWidget>
 	{
+		TSharedRef<SWidget> CardContent =
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+				[
+					SNew(STextBlock)
+					.Text(Title)
+					.Font(FT66Style::Tokens::FontBold(32))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(Description)
+					.Font(FT66Style::Tokens::FontRegular(14))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				]
+			];
+
 		return SNew(SBox)
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			.Padding(FMargin(8.0f, 0.0f))
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
-				.ButtonStyle(&BtnNeutral)
-				.ButtonColorAndOpacity(BgColor)
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.FillHeight(1.0f)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.HAlign(HAlign_Center)
-						.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-						[
-							SNew(STextBlock)
-							.Text(Title)
-							.Font(FT66Style::Tokens::FontBold(32))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.HAlign(HAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(Description)
-							.Font(FT66Style::Tokens::FontRegular(14))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						]
-					]
-				]
+				FT66Style::MakeButton(FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, ClickFunc))
+					.SetMinWidth(0.f)
+					.SetColor(BgColor)
+					.SetContent(CardContent))
 			];
 	};
 
@@ -131,7 +130,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 			.VAlign(VAlign_Bottom)
 			.Padding(20.0f, 0.0f, 0.0f, 20.0f)
 			[
-				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f, 50.f)
+				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66PartySizePickerScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f)
 			]
 		];
 }

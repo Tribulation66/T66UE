@@ -35,10 +35,7 @@ TSharedRef<SWidget> UT66LobbyReadyCheckModal::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(40.0f, 30.0f))
-				[
+				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -59,50 +56,19 @@ TSharedRef<SWidget> UT66LobbyReadyCheckModal::BuildSlateUI()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.MinDesiredWidth(200.0f)
-							.HeightOverride(56.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66LobbyReadyCheckModal::HandleReadyClicked))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
-								.ContentPadding(FMargin(18.f, 10.f))
-								[
-									SNew(STextBlock)
-									.Text(ReadyText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-									.Justification(ETextJustify::Center)
-								]
-							]
+							FT66Style::MakeButton(FT66ButtonParams(ReadyText, FOnClicked::CreateUObject(this, &UT66LobbyReadyCheckModal::HandleReadyClicked), ET66ButtonType::Success)
+								.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.MinDesiredWidth(200.0f)
-							.HeightOverride(56.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66LobbyReadyCheckModal::HandleNotReadyClicked))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
-								.ContentPadding(FMargin(18.f, 10.f))
-								[
-									SNew(STextBlock)
-									.Text(NotReadyText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-									.Justification(ETextJustify::Center)
-								]
-							]
+							FT66Style::MakeButton(FT66ButtonParams(NotReadyText, FOnClicked::CreateUObject(this, &UT66LobbyReadyCheckModal::HandleNotReadyClicked), ET66ButtonType::Danger)
+								.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
 						]
 					]
-				]
+				,
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(40.0f, 30.0f)))
 			]
 		];
 }

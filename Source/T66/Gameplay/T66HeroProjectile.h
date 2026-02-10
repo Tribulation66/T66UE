@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 Damage = 20;
 
+	/** Source ID for damage log (e.g. AutoAttack). Set by spawner before applying damage. */
+	FName DamageSourceID = NAME_None;
+
 	void SetTargetLocation(const FVector& TargetLoc);
 	void SetTargetActor(AActor* InTargetActor);
 	void SetScaleMultiplier(float InScaleMultiplier);

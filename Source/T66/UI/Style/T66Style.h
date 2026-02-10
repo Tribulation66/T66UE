@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Styling/SlateStyle.h"
 #include "Widgets/Input/SButton.h"  // FOnClicked used by MakeButton helper
+#include "Widgets/Layout/SBorder.h" // SBorder used by MakePanel OutBorder parameter
 
 /** UI color theme (Dark / Light). */
 enum class ET66UITheme : uint8
@@ -16,10 +17,125 @@ enum class ET66UITheme : uint8
 /** Button semantic types for MakeButton. */
 enum class ET66ButtonType : uint8
 {
-	Neutral,   // Default: dark panel background (Panel2)
-	Primary,   // Action/confirm: accent color   (Accent2)
-	Danger,    // Destructive/warning: red        (Danger)
-	Success,   // Positive confirm: green         (Success)
+	Neutral,       // Default: dark panel background (Panel2)
+	Primary,       // Action/confirm: accent color   (Accent2)
+	Danger,        // Destructive/warning: red        (Danger)
+	Success,       // Positive confirm: green         (Success)
+	ToggleActive,  // Active toggle state (inverted colors)
+};
+
+/**
+ * Parameters for the centralized MakeButton factory.
+ * Every button in the game should be built through this struct so that
+ * debounce, texture backgrounds, padding, and font are driven from one place.
+ *
+ * Usage (simple):
+ *   FT66Style::MakeButton(FT66ButtonParams(Label, OnClicked, ET66ButtonType::Primary).SetMinWidth(200.f))
+ *
+ * Usage (advanced):
+ *   FT66Style::MakeButton(
+ *       FT66ButtonParams(Label, OnClicked)
+ *       .SetFontSize(44)
+ *       .SetPadding(FMargin(14.f))
+ *       .SetColor(FSlateColor(SomeColor))
+ *       .SetEnabled(TAttribute<bool>::CreateLambda([](){ return ...; }))
+ *   )
+ */
+struct FT66ButtonParams
+{
+	// === Required ===
+	FText Label;
+	FOnClicked OnClicked;
+
+	// === Visual Defaults ===
+	ET66ButtonType Type = ET66ButtonType::Neutral;
+	float MinWidth      = 120.f;
+	float Height        = 0.f;            // 0 = content-driven (recommended), >0 = explicit override
+	int32 FontSize      = 0;              // 0 = use T66.Text.Button default (16pt bold)
+	FMargin Padding     = FMargin(-1.f);  // Negative = use ButtonStyle default padding
+
+	// === Dynamic State ===
+	TAttribute<bool> IsEnabled            = true;
+	TAttribute<EVisibility> Visibility    = EVisibility::Visible;
+	TAttribute<FText> DynamicLabel;       // If bound, replaces Label at runtime
+
+	// === Color Overrides ===
+	bool bHasColorOverride     = false;
+	TAttribute<FSlateColor> ColorOverride;          // Overrides ButtonColorAndOpacity
+
+	bool bHasTextColorOverride = false;
+	TAttribute<FSlateColor> TextColorOverride;      // Overrides text ColorAndOpacity
+
+	// === Custom Content ===
+	TSharedPtr<SWidget> CustomContent;               // If set, replaces text block entirely
+
+	// Constructors
+	FT66ButtonParams() = default;
+	FT66ButtonParams(const FText& InLabel, FOnClicked InOnClicked, ET66ButtonType InType = ET66ButtonType::Neutral)
+		: Label(InLabel), OnClicked(MoveTemp(InOnClicked)), Type(InType) {}
+
+	// Builder-style setters (return *this for chaining)
+	FT66ButtonParams& SetMinWidth(float W)                                { MinWidth = W; return *this; }
+	FT66ButtonParams& SetHeight(float H)                                  { Height = H; return *this; }
+	FT66ButtonParams& SetFontSize(int32 S)                                { FontSize = S; return *this; }
+	FT66ButtonParams& SetPadding(const FMargin& M)                        { Padding = M; return *this; }
+	FT66ButtonParams& SetColor(const TAttribute<FSlateColor>& C)          { ColorOverride = C; bHasColorOverride = true; return *this; }
+	FT66ButtonParams& SetColor(const FLinearColor& C)                     { ColorOverride = FSlateColor(C); bHasColorOverride = true; return *this; }
+	FT66ButtonParams& SetTextColor(const TAttribute<FSlateColor>& C)      { TextColorOverride = C; bHasTextColorOverride = true; return *this; }
+	FT66ButtonParams& SetTextColor(const FLinearColor& C)                 { TextColorOverride = FSlateColor(C); bHasTextColorOverride = true; return *this; }
+	FT66ButtonParams& SetEnabled(const TAttribute<bool>& E)               { IsEnabled = E; return *this; }
+	FT66ButtonParams& SetVisibility(const TAttribute<EVisibility>& V)     { Visibility = V; return *this; }
+	FT66ButtonParams& SetDynamicLabel(const TAttribute<FText>& L)         { DynamicLabel = L; return *this; }
+	FT66ButtonParams& SetContent(const TSharedRef<SWidget>& W)            { CustomContent = W; return *this; }
+};
+
+/** Panel semantic types for MakePanel. */
+enum class ET66PanelType : uint8
+{
+	Bg,       // Full-screen/section background
+	Panel,    // Primary content panel
+	Panel2,   // Secondary/inner panel (item tiles, inventory slots, etc.)
+};
+
+/**
+ * Parameters for the centralized MakePanel factory.
+ * Every panel in the game should be built through this struct so that
+ * texture backgrounds, padding, and borders are driven from one place.
+ *
+ * Usage (simple):
+ *   FT66Style::MakePanel(Content)
+ *
+ * Usage (advanced):
+ *   FT66Style::MakePanel(Content,
+ *       FT66PanelParams(ET66PanelType::Panel2)
+ *       .SetPadding(FMargin(8.f))
+ *       .SetVisibility(TAttribute<EVisibility>::CreateLambda([](){ return ...; }))
+ *   )
+ *
+ * Usage (SAssignNew — pass pointer to capture the SBorder):
+ *   TSharedPtr<SBorder> MyBorder;
+ *   FT66Style::MakePanel(Content, FT66PanelParams(), &MyBorder)
+ */
+struct FT66PanelParams
+{
+	ET66PanelType Type = ET66PanelType::Panel;
+	FMargin Padding    = FMargin(16.f);
+	TAttribute<EVisibility> Visibility = EVisibility::Visible;
+
+	// Color override (tints the BorderBackgroundColor)
+	bool bHasColorOverride = false;
+	TAttribute<FSlateColor> ColorOverride;
+
+	// Constructors
+	FT66PanelParams() = default;
+	FT66PanelParams(ET66PanelType InType) : Type(InType) {}
+
+	// Builder-style setters
+	FT66PanelParams& SetPadding(const FMargin& P)                        { Padding = P; return *this; }
+	FT66PanelParams& SetPadding(float P)                                  { Padding = FMargin(P); return *this; }
+	FT66PanelParams& SetColor(const TAttribute<FSlateColor>& C)          { ColorOverride = C; bHasColorOverride = true; return *this; }
+	FT66PanelParams& SetColor(const FLinearColor& C)                     { ColorOverride = FSlateColor(C); bHasColorOverride = true; return *this; }
+	FT66PanelParams& SetVisibility(const TAttribute<EVisibility>& V)     { Visibility = V; return *this; }
 };
 
 /**
@@ -88,7 +204,7 @@ public:
 		static const FMargin ButtonPadding;
 		static const FMargin ButtonPaddingPressed;
 
-		// Font: all text uses the selected font. In T66Style.cpp set GThemeFontIndex (0–4: Caesar Dressing, Cinzel, Cormorant SC, Germania One, Grenze).
+		// Font: all text uses the selected font. In T66Style.cpp set GThemeFontIndex (0–5: Caesar Dressing, Cinzel, Cormorant SC, Germania One, Grenze, Alagard).
 		static FSlateFontInfo FontRegular(int32 Size);
 		static FSlateFontInfo FontBold(int32 Size);
 		static FSlateFontInfo FontTitle();
@@ -109,16 +225,43 @@ public:
 
 	/**
 	 * Create a standard T66 themed button (SBox + SButton + STextBlock).
-	 * Type determines the ButtonStyle + ButtonColorAndOpacity.
-	 * Uses MinDesiredWidth (so text never clips) and a fixed HeightOverride.
-	 * The OnClicked delegate is automatically wrapped with DebounceClick.
+	 * All buttons in the game should use one of these overloads so behavior
+	 * (debounce, texture backgrounds, sizing, font) is driven from one place.
 	 */
+
+	/** Full params overload — handles every button variant in the game. */
+	static TSharedRef<SWidget> MakeButton(const FT66ButtonParams& Params);
+
+	/** Convenience overload for simple buttons (wraps the params version). */
 	static TSharedRef<SWidget> MakeButton(
 		const FText& Label,
 		FOnClicked OnClicked,
 		ET66ButtonType Type = ET66ButtonType::Neutral,
-		float MinWidth = 120.f,
-		float Height = 40.f);
+		float MinWidth = 120.f);
+
+	/**
+	 * Create a standard T66 themed panel (SBorder wrapping Content).
+	 * All panels/cards in the game should use this so texture backgrounds,
+	 * border styling, and padding are driven from one place.
+	 *
+	 * @param Content     Child widget placed inside the panel.
+	 * @param Params      Panel configuration (type, padding, color, visibility).
+	 * @param OutBorder   If non-null, receives the SBorder pointer for later runtime changes
+	 *                    (e.g. highlighting a selected inventory slot).
+	 */
+	static TSharedRef<SWidget> MakePanel(
+		const TSharedRef<SWidget>& Content,
+		const FT66PanelParams& Params = FT66PanelParams(),
+		TSharedPtr<SBorder>* OutBorder = nullptr);
+
+	/** Convenience overload: Panel type + padding only, no params struct. */
+	static TSharedRef<SWidget> MakePanel(
+		const TSharedRef<SWidget>& Content,
+		ET66PanelType Type,
+		FMargin Padding = FMargin(16.f));
+
+	/** Check whether panel textures are loaded. */
+	static bool HasPanelTextures();
 
 private:
 	static TSharedPtr<FSlateStyleSet> StyleInstance;

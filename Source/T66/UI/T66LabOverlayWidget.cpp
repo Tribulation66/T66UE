@@ -220,8 +220,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 							Spawn,
 							FOnClicked::CreateLambda([this, CapturedEID, CapturedTab]() { OnSpawnEnemy(CapturedEID, CapturedTab); return FReply::Handled(); }),
 							ET66ButtonType::Neutral,
-							80.f,
-							28.f
+							80.f
 						)
 					]
 				];
@@ -242,14 +241,8 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	{
 		TabRow->AddSlot().AutoWidth().Padding(2.f)
 			[
-				SNew(SButton)
-				.OnClicked_Lambda([this, Index]() { LabTabIndex = Index; ReleaseSlateResources(true); TakeWidget(); return FReply::Handled(); })
-				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-				.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-				.ContentPadding(FMargin(6.f, 2.f))
-				[
-					SNew(STextBlock).Text(Label).Font(FT66Style::Tokens::FontBold(9)).ColorAndOpacity(FT66Style::Tokens::Text)
-				]
+				FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; ReleaseSlateResources(true); TakeWidget(); return FReply::Handled(); }))
+					.SetMinWidth(0.f).SetFontSize(9).SetPadding(FMargin(6.f, 2.f)))
 			];
 	};
 	AddTab(TabItems, 0);
@@ -258,17 +251,10 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	AddTab(TabBosses, 3);
 
 	// Toggle button (like minimap): show "Lab" and expand/collapse state
-	TSharedRef<SButton> ToggleButton = SNew(SButton)
-		.OnClicked(FOnClicked::CreateLambda([this]() { OnToggleLabPanel(); return FReply::Handled(); }))
-		.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-		.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-		.ContentPadding(FMargin(8.f, 4.f))
-		[
-			SNew(STextBlock)
-			.Text(bLabPanelExpanded ? LOCTEXT("LabHide", "Lab \u25BC") : LOCTEXT("LabShow", "Lab \u25B6"))
-			.Font(FT66Style::Tokens::FontBold(10))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		];
+	TSharedRef<SWidget> ToggleButton = FT66Style::MakeButton(
+		FT66ButtonParams(bLabPanelExpanded ? LOCTEXT("LabHide", "Lab \u25BC") : LOCTEXT("LabShow", "Lab \u25B6"),
+			FOnClicked::CreateLambda([this]() { OnToggleLabPanel(); return FReply::Handled(); }))
+		.SetMinWidth(0.f).SetFontSize(10).SetPadding(FMargin(8.f, 4.f)));
 
 	// Single right-side panel: toggle + (when expanded) tabs + content + Reset + Exit
 	TSharedRef<SVerticalBox> LabPanel = SNew(SVerticalBox)

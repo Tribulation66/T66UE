@@ -23,6 +23,7 @@ enum class ET66ScreenType : uint8
 	PauseMenu UMETA(DisplayName = "Pause Menu Modal"),
 	ReportBug UMETA(DisplayName = "Report Bug Modal"),
 	RunSummary UMETA(DisplayName = "Run Summary Modal"),
+	PowerUp UMETA(DisplayName = "Power Up"),
 	// Modals (overlays on top of other screens)
 	HeroGrid UMETA(DisplayName = "Hero Grid Modal"),
 	HeroLore UMETA(DisplayName = "Hero Lore Modal"),

@@ -28,19 +28,16 @@ TSharedRef<SWidget> UT66ScreenBase::BuildSlateUI()
 {
 	// Default implementation - just a placeholder
 	// Subclasses should override this
-	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
-		.Padding(FT66Style::Tokens::Space4)
-		[
-			SNew(SBox)
+	return FT66Style::MakePanel(
+		SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.UI", "ScreenNotImplemented", "Screen Not Implemented"))
 				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
-			]
-		];
+			],
+		FT66PanelParams(ET66PanelType::Bg).SetPadding(FT66Style::Tokens::Space4));
 }
 
 void UT66ScreenBase::OnScreenActivated_Implementation()
@@ -108,6 +105,9 @@ void UT66ScreenBase::ForceRebuildSlate()
 
 	ReleaseSlateResources(true);
 
+	// Force rebuild now so the new Slate tree (with updated data) exists before we re-add.
+	TakeWidget();
+
 	if (bWasInViewport)
 	{
 		AddToViewport(ZOrder);
@@ -115,23 +115,6 @@ void UT66ScreenBase::ForceRebuildSlate()
 }
 
 // ========== Slate UI Building Helpers ==========
-
-template<typename T>
-TSharedRef<SWidget> UT66ScreenBase::MakeButton(const FText& Text, T* Object, FReply (T::*Func)(), const FLinearColor& BgColor)
-{
-	// For UObject-based classes, we need to use CreateUObject for the delegate
-	return SNew(SButton)
-		.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-		.ButtonColorAndOpacity(BgColor)
-		.ContentPadding(FMargin(18.0f, 10.0f))
-		.OnClicked(FOnClicked::CreateUObject(Object, Func))
-		[
-			SNew(STextBlock)
-			.Text(Text)
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-			.Justification(ETextJustify::Center)
-		];
-}
 
 TSharedRef<SWidget> UT66ScreenBase::MakeText(const FText& Text, int32 FontSize, const FLinearColor& Color)
 {
@@ -169,6 +152,3 @@ TSharedRef<SWidget> UT66ScreenBase::WrapInBorder(TSharedRef<SWidget> Content, co
 		];
 }
 
-// Explicit template instantiations for the button helper
-// Add more as needed for each screen class
-template TSharedRef<SWidget> UT66ScreenBase::MakeButton<UT66ScreenBase>(const FText&, UT66ScreenBase*, FReply (UT66ScreenBase::*)(), const FLinearColor&);

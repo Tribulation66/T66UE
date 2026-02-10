@@ -61,8 +61,9 @@
 | **SetupStagesDataTable.py** | When you add/change stages (DT_Stages); CreateAssets creates the DT, this can fill/setup. |
 | **GenerateStagesCsvFromStagesMd.py** | When you generate `Stages.csv` from `T66_Stages.md`. |
 | **ExtractSourceAssets.ps1** | When you need to extract source asset packs. |
+| **CreateButtonProceduralAssets.py** | When you want procedural UI buttons (glossy plate + 2-tone border + outline). Creates **M_ButtonProcedural** and 6 MIs; source of truth: **SourceAssets/Data/ButtonProcedural_MaterialInstances.json**. Run in Editor: Tools → Execute Python Script → `Scripts/CreateButtonProceduralAssets.py`. T66Style uses these MIs when present. |
 
-**Count: 14** — only when touching that content.
+**Count: 15** — only when touching that content.
 
 ### Getting run animations in-game
 
@@ -134,7 +135,7 @@ Run animations are in **SourceAssets** (`Meshy_AI_Animation_Running_withSkin.fbx
 |----------|--------|
 | **Essential** | 5 scripts + RunFullSetup.bat/.sh |
 | **Convenience** | 2 scripts + RunItemsSetup.bat |
-| **Content pipelines** | 14 |
+| **Content pipelines** | 15 |
 | **Orchestration** | 1 |
 | **Verification** | 2 |
 | **Debug** | 2 |

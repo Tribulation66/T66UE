@@ -3,6 +3,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RngSubsystem.h"
@@ -403,6 +404,26 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion, 1, 9999);
 	HeroStats.Luck = FMath::Clamp(HeroStats.Luck, 1, 9999);
 	HeroStats.Speed = FMath::Clamp(HeroStats.Speed, 1, 9999);
+
+	RefreshPowerupBonusesFromProfile();
+}
+
+void UT66RunStateSubsystem::AddPowerCrystalsEarnedThisRun(int32 Amount)
+{
+	if (Amount <= 0) return;
+	PowerCrystalsEarnedThisRun = FMath::Clamp(PowerCrystalsEarnedThisRun + Amount, 0, 2000000000);
+}
+
+void UT66RunStateSubsystem::RefreshPowerupBonusesFromProfile()
+{
+	PowerupStatBonuses = FT66HeroStatBonuses{};
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66PowerUpSubsystem* PowerUp = GI->GetSubsystem<UT66PowerUpSubsystem>())
+		{
+			PowerupStatBonuses = PowerUp->GetPowerupStatBonuses();
+		}
+	}
 }
 
 void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
@@ -1463,6 +1484,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	bThisRunSetNewPersonalBestSpeedRunTime = false;
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
+	PowerCrystalsEarnedThisRun = 0;
 
 	// Skill Rating: reset per brand new run.
 	if (UGameInstance* GI3 = GetGameInstance())

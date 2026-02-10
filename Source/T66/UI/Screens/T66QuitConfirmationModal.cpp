@@ -42,10 +42,7 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(40.0f, 30.0f))
-				[
+				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					// Title
 					+ SVerticalBox::Slot()
@@ -80,52 +77,19 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.MinDesiredWidth(320.0f)
-							.HeightOverride(56.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleStayClicked))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
-								.ContentPadding(FMargin(18.f, 10.f))
-								[
-									SNew(STextBlock)
-									.Text(StayText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-									.Justification(ETextJustify::Center)
-									.AutoWrapText(false)
-								]
-							]
+							FT66Style::MakeButton(FT66ButtonParams(StayText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleStayClicked), ET66ButtonType::Success)
+								.SetMinWidth(320.f).SetPadding(FMargin(18.f, 10.f)))
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(10.0f, 0.0f)
 						[
-							SNew(SBox)
-							.MinDesiredWidth(320.0f)
-							.HeightOverride(56.0f)
-							[
-								SNew(SButton)
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleQuitClicked))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
-								.ContentPadding(FMargin(18.f, 10.f))
-								[
-									SNew(STextBlock)
-									.Text(QuitText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-									.Justification(ETextJustify::Center)
-									.AutoWrapText(false)
-								]
-							]
+							FT66Style::MakeButton(FT66ButtonParams(QuitText, FOnClicked::CreateUObject(this, &UT66QuitConfirmationModal::HandleQuitClicked), ET66ButtonType::Danger)
+								.SetMinWidth(320.f).SetPadding(FMargin(18.f, 10.f)))
 						]
 					]
-				]
+				,
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(40.0f, 30.0f)))
 			]
 		];
 }

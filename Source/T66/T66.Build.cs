@@ -9,7 +9,7 @@ public class T66 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "NavigationSystem", "Slate", "SlateCore", "UMG", "AssetRegistry", "Landscape", "Foliage", "ApplicationCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "NavigationSystem", "Slate", "SlateCore", "UMG", "AssetRegistry", "Landscape", "Foliage", "ApplicationCore", "Niagara" });
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{

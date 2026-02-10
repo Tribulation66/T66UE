@@ -79,9 +79,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 	FText ReadyText = Loc ? Loc->GetText_LobbyReady() : NSLOCTEXT("T66.Lobby", "Ready", "READY");
 	FText NotReadyText = Loc ? Loc->GetText_LobbyNotReady() : NSLOCTEXT("T66.Lobby", "NotReady", "Not Ready");
 
-	const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-	const FButtonStyle& BtnPrimary = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
-	const FButtonStyle& BtnDanger = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger");
+	// Button styles no longer needed: all buttons go through FT66Style::MakeButton
 
 	// Local player hero portrait for left panel (slot 0)
 	if (!LocalPlayerHeroPortraitBrush.IsValid())
@@ -136,12 +134,8 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 			.AutoHeight()
 			.Padding(0.0f, 6.0f)
 			[
-				SNew(SBorder)
-				.BorderBackgroundColor(FT66Style::Tokens::Panel)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(12.0f)
-				[
-					SNew(SHorizontalBox)
+				FT66Style::MakePanel(
+				SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
 					.AutoWidth()
 					.VAlign(VAlign_Center)
@@ -199,7 +193,9 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 							.ColorAndOpacity(bIsLocal && bReadyCheckConfirmed ? FT66Style::Tokens::Success : FT66Style::Tokens::TextMuted)
 						]
 					]
-				]
+			,
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(12.0f).SetColor(FT66Style::Tokens::Panel)
+			)
 			];
 	}
 
@@ -274,7 +270,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 		.AutoHeight()
 		.Padding(0.0f, 4.0f)
 		[
-			FT66Style::MakeButton(SelectHeroText, FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleSelectHeroClicked), ET66ButtonType::Primary, 180.f, 44.f)
+			FT66Style::MakeButton(SelectHeroText, FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleSelectHeroClicked), ET66ButtonType::Primary, 180.f)
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -283,28 +279,13 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 			SNew(SBox).HeightOverride(44.0f)
 			[
 				bReadyCheckConfirmed
-					? FT66Style::MakeButton(EnterText, FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleEnterTribulationClicked), ET66ButtonType::Danger, 220.f, 44.f)
-					: SNew(SBox)
-						.MinDesiredWidth(180.f)
-						.HeightOverride(44.f)
-						[
-							SNew(SButton)
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							.ButtonStyle(&BtnNeutral)
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							.IsEnabled_Lambda([this]() {
-								UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-								return GI && GI->HasHeroSelected();
-							})
-							.OnClicked(FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleReadyCheckClicked))
-							[
-								SNew(STextBlock)
-								.Text(ReadyCheckText)
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-								.Justification(ETextJustify::Center)
-							]
-						]
+					? FT66Style::MakeButton(EnterText, FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleEnterTribulationClicked), ET66ButtonType::Danger, 220.f)
+					: StaticCastSharedRef<SWidget>(FT66Style::MakeButton(FT66ButtonParams(ReadyCheckText, FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleReadyCheckClicked))
+						.SetMinWidth(180.f)
+						.SetEnabled(TAttribute<bool>::CreateLambda([this]() {
+							UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+							return GI && GI->HasHeroSelected();
+						}))))
 			]
 		];
 
@@ -313,10 +294,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 		.FillWidth(0.35f)
 		.Padding(24.0f, 20.0f)
 		[
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(16.0f)
-			[
+			FT66Style::MakePanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -331,17 +309,16 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 				.FillHeight(1.0f)
 				[
 					PlayersBox
-				]
-			]
+				],
+				ET66PanelType::Panel,
+				FMargin(16.f)
+			)
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(0.45f)
 		.Padding(16.0f, 20.0f)
 		[
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(16.0f)
-			[
+			FT66Style::MakePanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -356,8 +333,10 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 				.FillHeight(1.0f)
 				[
 					FriendsScroll
-				]
-			]
+				],
+				ET66PanelType::Panel,
+				FMargin(16.f)
+			)
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(0.2f)
@@ -386,7 +365,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 			.VAlign(VAlign_Bottom)
 			.Padding(20.0f, 0.0f, 0.0f, 20.0f)
 			[
-				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f, 50.f)
+				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66LobbyScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f)
 			]
 		];
 

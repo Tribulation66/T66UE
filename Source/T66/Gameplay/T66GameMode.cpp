@@ -42,6 +42,7 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Engine/AssetManager.h"
@@ -187,6 +188,10 @@ void AT66GameMode::BeginPlay()
 			else
 			{
 				RunState->ResetForNewRun();
+				if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+				{
+					DamageLog->ResetForNewRun();
+				}
 			}
 		}
 	}
@@ -239,6 +244,10 @@ void AT66GameMode::BeginPlay()
 			if (UT66RunStateSubsystem* RunState = GILab->GetSubsystem<UT66RunStateSubsystem>())
 			{
 				RunState->ResetForNewRun();
+			}
+			if (UT66DamageLogSubsystem* DamageLog = GILab->GetSubsystem<UT66DamageLogSubsystem>())
+			{
+				DamageLog->ResetForNewRun();
 			}
 		}
 		if (bAutoSetupLevel)
@@ -914,6 +923,12 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		{
 			Achieve->AddLabUnlockedEnemy(Boss->BossID);
 		}
+	}
+
+	// Power Crystals: 10 per boss kill (stage boss or Coliseum).
+	if (RunState)
+	{
+		RunState->AddPowerCrystalsEarnedThisRun(10);
 	}
 
 	if (IsColiseumStage())

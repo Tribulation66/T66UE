@@ -474,14 +474,14 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 							FT66Style::MakeButton(
 								Loc ? Loc->GetText_Confirm() : NSLOCTEXT("T66.Common", "Confirm", "CONFIRM"),
 								FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnConfirm),
-								ET66ButtonType::Success, 180.f, 44.f)
+								ET66ButtonType::Success, 180.f)
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 						[
 							FT66Style::MakeButton(
 								Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"),
 								FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnBack),
-								ET66ButtonType::Neutral, 180.f, 44.f)
+								ET66ButtonType::Neutral, 180.f)
 						]
 					]
 				]

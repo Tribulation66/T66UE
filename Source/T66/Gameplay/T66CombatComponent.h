@@ -9,8 +9,10 @@
 class AT66EnemyBase;
 class AT66BossBase;
 class AT66GamblerBoss;
+class AT66VendorBoss;
 class UT66RunStateSubsystem;
 class USoundBase;
+class UNiagaraSystem;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class T66_API UT66CombatComponent : public UActorComponent
@@ -34,6 +36,10 @@ public:
 	/** Damage per shot (use high value for insta kill) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 DamagePerShot = 20;
+
+	/** Base AoE splash radius for the slash attack (scales with ProjectileScaleMultiplier). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	float SlashRadius = 300.f;
 
 protected:
 	virtual void BeginPlay() override;
@@ -61,7 +67,20 @@ protected:
 
 	bool bShotSfxWarnedMissing = false;
 
+	/** Niagara system for slash VFX (particles in arc). Asset: /Game/VFX/VFX_Attack1 */
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|VFX")
+	TSoftObjectPtr<UNiagaraSystem> SlashVFXNiagara;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedSlashVFXNiagara = nullptr;
+
 	void PlayShotSfx();
+
+	/** Apply damage to a single actor (enemy or boss), dispatching to the correct TakeDamage method. */
+	void ApplyDamageToActor(AActor* Target, int32 DamageAmount);
+
+	/** Spawn the slash VFX disc at the given world location. */
+	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
 
 	float BaseAttackRange = 0.f;
 	float BaseFireIntervalSeconds = 0.f;

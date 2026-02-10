@@ -1375,25 +1375,6 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		UltimateBorder->SetBorderBackgroundColor(RunState->IsUltimateReady() ? FLinearColor(0.15f, 0.85f, 0.25f, 0.8f) : FLinearColor(0.10f, 0.10f, 0.12f, 0.8f));
 	}
 
-	// Stats panel next to idols (always visible)
-	if (StatLineTexts.Num() >= 6)
-	{
-		// Show raw foundational stat numbers (base + level-ups + items). Speed is not shown here.
-		const int32 Dmg = RunState->GetDamageStat();
-		const int32 AtkSpd = RunState->GetAttackSpeedStat();
-		const int32 Size = RunState->GetScaleStat(); // Attack Size
-		const int32 Arm = RunState->GetArmorStat();
-		const int32 Eva = RunState->GetEvasionStat();
-		const int32 Luck = RunState->GetLuckStat();
-
-		if (StatLineTexts[0].IsValid()) StatLineTexts[0]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Dmg", "DMG: {0}"), FText::AsNumber(Dmg)));
-		if (StatLineTexts[1].IsValid()) StatLineTexts[1]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_As", "AS:  {0}"), FText::AsNumber(AtkSpd)));
-		if (StatLineTexts[2].IsValid()) StatLineTexts[2]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Scl", "SCL: {0}"), FText::AsNumber(Size)));
-		if (StatLineTexts[3].IsValid()) StatLineTexts[3]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Arm", "ARM: {0}"), FText::AsNumber(Arm)));
-		if (StatLineTexts[4].IsValid()) StatLineTexts[4]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Eva", "EVA: {0}"), FText::AsNumber(Eva)));
-		if (StatLineTexts[5].IsValid()) StatLineTexts[5]->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "Stat_Lck", "LCK: {0}"), FText::AsNumber(Luck)));
-	}
-
 	// Difficulty (Skulls): 5-slot compression with tier colors (no half-skulls).
 	{
 		const int32 Skulls = FMath::Max(0, RunState->GetDifficultySkulls());
@@ -1616,7 +1597,6 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	const EVisibility PanelVis = RunState->GetHUDPanelsVisible() ? EVisibility::Visible : EVisibility::Collapsed;
 	if (InventoryPanelBox.IsValid()) InventoryPanelBox->SetVisibility(PanelVis);
 	if (MinimapPanelBox.IsValid()) MinimapPanelBox->SetVisibility(PanelVis);
-	if (StatsPanelBox.IsValid()) StatsPanelBox->SetVisibility(PanelVis);
 
 	UpdateTikTokVisibility();
 	if (WheelSpinBox.IsValid())
@@ -1650,7 +1630,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-	StatLineTexts.SetNum(6);
 	StatusEffectDots.SetNum(3);
 	StatusEffectDotBoxes.SetNum(3);
 	WorldDialogueOptionBorders.SetNum(3);
@@ -1903,29 +1882,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		}
 	}
 
-	// Stats panel (always visible) next to idol slots
-	TSharedRef<SVerticalBox> StatsPanelRef = SNew(SVerticalBox);
-	auto MakeStatLine = [&](int32 Index) -> TSharedRef<SWidget>
-	{
-		return SAssignNew(StatLineTexts[Index], STextBlock)
-			.Text(FText::GetEmpty())
-			.Font(FT66Style::Tokens::FontBold(11))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted);
-	};
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(0) ];
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(1) ];
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(2) ];
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(3) ];
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)[ MakeStatLine(4) ];
-	StatsPanelRef->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)[ MakeStatLine(5) ];
-
-	// Wrap stats so we can hide/show them with HUD panels (and so Ultimate shifts left when collapsed).
-	TSharedRef<SWidget> StatsPanelWrapped =
-		SAssignNew(StatsPanelBox, SBox)
-		[
-			StatsPanelRef
-		];
-
 	// Inventory: 2 rows x 10 columns (20 slots total).
 	static constexpr int32 InvCols = 10;
 	static constexpr int32 InvRows = 2;
@@ -2090,10 +2046,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.Visibility(EVisibility::Collapsed)
 			.RenderTransform(FSlateRenderTransform(FVector2D(0.f, 0.f)))
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(12.f)
-				[
+				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -2134,7 +2087,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						]
 					]
-				]
+				,
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(12.f)
+			)
 			]
 		]
 		// Top-left stats (no overlap with bottom-left portrait stack)
@@ -2193,10 +2148,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.WidthOverride(GT66TikTokPanelW)
 				.HeightOverride(GT66TikTokPanelH)
 				[
-					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-					.Padding(6.f)
-					[
+					FT66Style::MakePanel(
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 						.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
@@ -2211,7 +2163,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
 							]
 						]
-					]
+					,
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f)
+				)
 				]
 			]
 		]
@@ -2227,10 +2181,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.HeightOverride(160.f)
 			.Visibility(EVisibility::Collapsed)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(10.f)
-				[
+				FT66Style::MakePanel(
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Center)
@@ -2260,7 +2211,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							.AutoWrapText(true)
 						]
 					]
-				]
+				,
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(10.f))
 			]
 		]
 
@@ -2366,12 +2318,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							]
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						StatsPanelWrapped
-					]
 				]
-				// Ultimate to the right of stat box
+				// Ultimate to the right of level ring
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(16.f, 0.f, 0.f, 0.f)
 				[
 					SNew(SBox)
@@ -2409,14 +2357,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							SNew(SBorder)
-							.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
-							.Padding(8.f)
-							[
+							FT66Style::MakePanel(
 								SAssignNew(MinimapWidget, ST66WorldMapWidget)
 								.bMinimap(true)
-								.bShowLabels(false)
-							]
+								.bShowLabels(false),
+								FT66PanelParams(ET66PanelType::Panel2).SetPadding(8.f)
+							)
 						]
 					]
 				]
@@ -2482,10 +2428,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		[
 			SAssignNew(InventoryPanelBox, SBox)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(12.f)
-				[
+				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					// Gold / Owe above items (Gold above Owe), same font size
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
@@ -2508,14 +2451,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
-						.Padding(10.f)
-						[
-							InvGridRef
-						]
+						FT66Style::MakePanel(
+							InvGridRef,
+							FT66PanelParams(ET66PanelType::Panel2).SetPadding(10.f)
+						)
 					]
-				]
+				,
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(12.f)
+			)
 			]
 		]
 		// Tutorial hint (above crosshair)
@@ -2524,11 +2467,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.VAlign(VAlign_Center)
 		.Padding(0.f, -220.f, 0.f, 0.f)
 		[
-			SAssignNew(TutorialHintBorder, SBorder)
-			.Visibility(EVisibility::Collapsed)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(FMargin(12.f, 8.f))
-			[
+			FT66Style::MakePanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 				[
@@ -2547,7 +2486,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					.Justification(ETextJustify::Center)
 				]
-			]
+			,
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 8.f)).SetVisibility(EVisibility::Collapsed),
+			&TutorialHintBorder
+		)
 		]
 		// Center crosshair (screen center; camera unchanged)
 		+ SOverlay::Slot()
@@ -2587,10 +2529,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
-					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-					.Padding(16.f)
-					[
+					FT66Style::MakePanel(
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 						[
@@ -2616,17 +2555,17 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							.WidthOverride(1100.f)
 							.HeightOverride(680.f)
 							[
-								SNew(SBorder)
-								.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel2"))
-								.Padding(10.f)
-								[
+								FT66Style::MakePanel(
 									SAssignNew(FullMapWidget, ST66WorldMapWidget)
 									.bMinimap(false)
-									.bShowLabels(true)
-								]
+									.bShowLabels(true),
+									FT66PanelParams(ET66PanelType::Panel2).SetPadding(10.f)
+								)
 							]
 						]
-					]
+					,
+					FT66PanelParams(ET66PanelType::Panel)
+				)
 				]
 			]
 		];

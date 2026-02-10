@@ -2,6 +2,7 @@
 
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LocalLeaderboardSaveGame.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -236,7 +237,7 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 		return false;
 	}
 
-	Snapshot->SchemaVersion = 4;
+	Snapshot->SchemaVersion = 5;
 	Snapshot->LeaderboardType = ET66LeaderboardType::HighScore;
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
@@ -271,6 +272,15 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 	Snapshot->EquippedIdols = RunState->GetEquippedIdols();
 	Snapshot->Inventory = RunState->GetInventory();
 	Snapshot->EventLog = RunState->GetEventLog();
+
+	if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+	{
+		const TArray<FDamageLogEntry> Sorted = DamageLog->GetDamageBySourceSorted();
+		for (const FDamageLogEntry& Entry : Sorted)
+		{
+			Snapshot->DamageBySource.Add(Entry.SourceID, Entry.TotalDamage);
+		}
+	}
 
 	const FString SlotName = MakeLocalBestBountyRunSummarySlotName(Difficulty, PartySize);
 	return UGameplayStatics::SaveGameToSlot(Snapshot, SlotName, 0);

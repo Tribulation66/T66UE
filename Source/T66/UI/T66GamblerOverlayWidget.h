@@ -10,7 +10,6 @@
 
 class STextBlock;
 class SWidgetSwitcher;
-class SButton;
 template<typename NumericType> class SSpinBox;
 class SBox;
 class SBorder;
@@ -53,10 +52,13 @@ private:
 	TSharedPtr<SImage> AngerCircleImage;
 	TSharedPtr<STextBlock> AngerText;
 
+	// Stats panel (refreshable when inventory changes)
+	TSharedPtr<SBox> StatsPanelBox;
+
 	// Inventory strip (shared with vendor)
 	static constexpr int32 InventorySlotCount = 5;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
-	TArray<TSharedPtr<SButton>> InventorySlotButtons;
+	TArray<TSharedPtr<SWidget>> InventorySlotButtons;
 	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
 	TArray<TSharedPtr<SImage>> InventorySlotIconImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotIconBrushes;
@@ -67,7 +69,7 @@ private:
 	TSharedPtr<STextBlock> SellItemNameText;
 	TSharedPtr<STextBlock> SellItemDescText;
 	TSharedPtr<STextBlock> SellItemPriceText;
-	TSharedPtr<SButton> SellItemButton;
+	TSharedPtr<SWidget> SellItemButton;
 
 	// Cheat prompt overlay
 	TSharedPtr<SBox> CheatPromptContainer;
@@ -84,20 +86,12 @@ private:
 
 	// Coin flip page
 	TSharedPtr<STextBlock> CoinFlipResultText;
-	TSharedPtr<SButton> CoinFlipHeadsButton;
-	TSharedPtr<SButton> CoinFlipTailsButton;
 
 	// RPS page
 	TSharedPtr<STextBlock> RpsResultText;
-	TSharedPtr<SButton> RpsRockButton;
-	TSharedPtr<SButton> RpsPaperButton;
-	TSharedPtr<SButton> RpsScissorsButton;
 
 	// Find-the-ball page
 	TSharedPtr<STextBlock> BallResultText;
-	TSharedPtr<SButton> BallCup1Button;
-	TSharedPtr<SButton> BallCup2Button;
-	TSharedPtr<SButton> BallCup3Button;
 
 	// Game icons (casino cards)
 	FSlateBrush GameIcon_CoinFlip;
@@ -161,6 +155,7 @@ private:
 	void RefreshTopBar();
 	void RefreshInventory();
 	void RefreshSellPanel();
+	void RefreshStatsPanel();
 	bool IsBossActive() const;
 	bool TryPayToPlay();
 	void AwardWin();

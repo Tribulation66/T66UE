@@ -135,7 +135,6 @@ protected:
 	TSharedPtr<STextBlock> LevelText;
 	TSharedPtr<SBorder> UltimateBorder;
 	TSharedPtr<STextBlock> UltimateText;
-	TSharedPtr<SBox> StatsPanelBox;
 	TArray<TSharedPtr<ST66DotWidget>> StatusEffectDots;
 	TArray<TSharedPtr<SBox>> StatusEffectDotBoxes;
 	TSharedPtr<SBorder> CurseOverlayBorder;
@@ -152,7 +151,6 @@ protected:
 	TSharedPtr<SBorder> PortraitBorder;
 	TSharedPtr<SImage> PortraitImage;
 	TSharedPtr<FSlateBrush> PortraitBrush;
-	TArray<TSharedPtr<STextBlock>> StatLineTexts;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;

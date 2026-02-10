@@ -5,6 +5,7 @@
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66VendorBoss.h"
+#include "Core/T66DamageLogSubsystem.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -185,12 +186,13 @@ bool AT66HeroProjectile::IsTargetAlive() const
 void AT66HeroProjectile::ApplyDamageToTarget(AActor* Target)
 {
 	if (!Target) return;
+	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 
 	if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
 	{
 		if (Enemy->CurrentHP > 0)
 		{
-			Enemy->TakeDamageFromHero(Damage);
+			Enemy->TakeDamageFromHero(Damage, SourceID);
 		}
 		return;
 	}
@@ -198,18 +200,18 @@ void AT66HeroProjectile::ApplyDamageToTarget(AActor* Target)
 	{
 		if (Boss->IsAwakened() && Boss->IsAlive())
 		{
-			Boss->TakeDamageFromHeroHit(Damage);
+			Boss->TakeDamageFromHeroHit(Damage, SourceID);
 		}
 		return;
 	}
 	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Target))
 	{
-		GB->TakeDamageFromHeroHit(Damage);
+		GB->TakeDamageFromHeroHit(Damage, SourceID);
 		return;
 	}
 	if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Target))
 	{
-		VB->TakeDamageFromHeroHit(Damage);
+		VB->TakeDamageFromHeroHit(Damage, SourceID);
 		return;
 	}
 }
@@ -218,6 +220,8 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor == GetOwner()) return; // ignore hero
+
+	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 
 	// If this shot has an intended target, ignore any other overlaps so it can't "hit the wrong enemy".
 	if (AActor* Intended = TargetActor.Get())
@@ -234,7 +238,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(OtherActor);
 	if (Enemy && Enemy->CurrentHP > 0)
 	{
-		Enemy->TakeDamageFromHero(Damage);
+		Enemy->TakeDamageFromHero(Damage, SourceID);
 		Destroy();
 		return;
 	}
@@ -243,7 +247,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	AT66BossBase* Boss = Cast<AT66BossBase>(OtherActor);
 	if (Boss && Boss->IsAwakened() && Boss->IsAlive())
 	{
-		Boss->TakeDamageFromHeroHit(Damage);
+		Boss->TakeDamageFromHeroHit(Damage, SourceID);
 		Destroy();
 		return;
 	}
@@ -251,7 +255,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	// Gambler boss damage per hit
 	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(OtherActor))
 	{
-		GB->TakeDamageFromHeroHit(Damage);
+		GB->TakeDamageFromHeroHit(Damage, SourceID);
 		Destroy();
 		return;
 	}
@@ -259,7 +263,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	// Vendor boss damage per hit
 	if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(OtherActor))
 	{
-		VB->TakeDamageFromHeroHit(Damage);
+		VB->TakeDamageFromHeroHit(Damage, SourceID);
 		Destroy();
 		return;
 	}

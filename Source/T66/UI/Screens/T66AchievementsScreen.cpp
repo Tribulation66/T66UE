@@ -88,35 +88,29 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	// Use dynamic lambdas so button colors update when tier changes
 	auto MakeTierButton = [this, &GetTierColor, &GetTierTextColor](const FText& Text, ET66AchievementTier Tier) -> TSharedRef<SWidget>
 	{
-		const FButtonStyle& BtnNeutral = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
 		const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
-		return SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(40.0f).Padding(FMargin(4.0f, 0.0f))
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Center).VAlign(VAlign_Center)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleTierClicked, Tier))
-				.ButtonColorAndOpacity_Lambda([this, Tier, GetTierColor]() -> FSlateColor {
+		return FT66Style::MakeButton(
+			FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleTierClicked, Tier))
+			.SetMinWidth(120.f)
+			.SetPadding(FMargin(12.f, 8.f))
+			.SetColor(TAttribute<FSlateColor>::CreateLambda([this, Tier, GetTierColor]() -> FSlateColor {
+				bool bIsSelected = (CurrentTier == Tier);
+				return GetTierColor(Tier, bIsSelected);
+			}))
+			.SetContent(
+				SNew(STextBlock).Text(Text)
+				.TextStyle(&TxtChip)
+				.ColorAndOpacity_Lambda([this, Tier, GetTierTextColor]() -> FSlateColor {
 					bool bIsSelected = (CurrentTier == Tier);
-					return GetTierColor(Tier, bIsSelected);
+					return GetTierTextColor(Tier, bIsSelected);
 				})
-				.ButtonStyle(&BtnNeutral)
-				.ContentPadding(FMargin(12.f, 8.f))
-				[
-					SNew(STextBlock).Text(Text)
-					.TextStyle(&TxtChip)
-					.ColorAndOpacity_Lambda([this, Tier, GetTierTextColor]() -> FSlateColor {
-						bool bIsSelected = (CurrentTier == Tier);
-						return GetTierTextColor(Tier, bIsSelected);
-					})
-				]
-			];
+			)
+		);
 	};
 
-	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-		[
-			SNew(SVerticalBox)
+	return FT66Style::MakePanel(
+		SNew(SVerticalBox)
 			// Header row
 			+ SVerticalBox::Slot()
 			.AutoHeight()
@@ -133,10 +127,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				// Total AC display
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-					.Padding(FMargin(15.0f, 8.0f))
-					[
+					FT66Style::MakePanel(
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
@@ -153,7 +144,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 								.Font(FT66Style::Tokens::FontBold(22))
 								.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
 						]
-					]
+				,
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
 				]
 			]
 			// Tier tabs
@@ -195,9 +187,10 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			.AutoHeight()
 			.Padding(30.0f, 0.0f, 30.0f, 25.0f)
 			[
-				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f, 45.f)
+				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f)
 			]
-		];
+		,
+		ET66PanelType::Panel);
 }
 
 void UT66AchievementsScreen::RebuildAchievementList()
@@ -305,17 +298,18 @@ void UT66AchievementsScreen::RebuildAchievementList()
 					.HAlign(HAlign_Right)
 					.Padding(0.f, 6.f, 0.f, 0.f)
 					[
-						SNew(SButton)
-						.IsEnabled(bCanClaim)
-						.Visibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed)
-						.OnClicked(FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, Achievement.AchievementID))
-						.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-						[
-							SNew(STextBlock)
-							.Text(Loc ? Loc->GetText_Claim() : NSLOCTEXT("T66.Achievements", "Claim", "CLAIM"))
-							.Font(FT66Style::Tokens::FontBold(12))
-							.ColorAndOpacity(FLinearColor::White)
-						]
+					FT66Style::MakeButton(
+						FT66ButtonParams(
+							Loc ? Loc->GetText_Claim() : NSLOCTEXT("T66.Achievements", "Claim", "CLAIM"),
+							FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, Achievement.AchievementID),
+							ET66ButtonType::Primary
+						)
+						.SetMinWidth(0.f)
+						.SetFontSize(12)
+						.SetTextColor(FLinearColor::White)
+						.SetEnabled(bCanClaim)
+						.SetVisibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed)
+					)
 					]
 				]
 			]

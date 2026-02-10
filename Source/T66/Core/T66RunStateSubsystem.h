@@ -453,22 +453,33 @@ public:
 	int32 GetSpeedStat() const { return FMath::Max(1, HeroStats.Speed); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetDamageStat() const { return FMath::Max(1, HeroStats.Damage + FMath::Max(0, ItemStatBonuses.Damage)); }
+	int32 GetDamageStat() const { return FMath::Max(1, HeroStats.Damage + FMath::Max(0, ItemStatBonuses.Damage) + FMath::Max(0, PowerupStatBonuses.Damage)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetAttackSpeedStat() const { return FMath::Max(1, HeroStats.AttackSpeed + FMath::Max(0, ItemStatBonuses.AttackSpeed)); }
+	int32 GetAttackSpeedStat() const { return FMath::Max(1, HeroStats.AttackSpeed + FMath::Max(0, ItemStatBonuses.AttackSpeed) + FMath::Max(0, PowerupStatBonuses.AttackSpeed)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackSize + FMath::Max(0, ItemStatBonuses.AttackSize)); } // Attack Size (aka Scale)
+	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackSize + FMath::Max(0, ItemStatBonuses.AttackSize) + FMath::Max(0, PowerupStatBonuses.AttackSize)); } // Attack Size (aka Scale)
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetArmorStat() const { return FMath::Max(1, HeroStats.Armor + FMath::Max(0, ItemStatBonuses.Armor)); }
+	int32 GetArmorStat() const { return FMath::Max(1, HeroStats.Armor + FMath::Max(0, ItemStatBonuses.Armor) + FMath::Max(0, PowerupStatBonuses.Armor)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetEvasionStat() const { return FMath::Max(1, HeroStats.Evasion + FMath::Max(0, ItemStatBonuses.Evasion)); }
+	int32 GetEvasionStat() const { return FMath::Max(1, HeroStats.Evasion + FMath::Max(0, ItemStatBonuses.Evasion) + FMath::Max(0, PowerupStatBonuses.Evasion)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck)); }
+	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck) + FMath::Max(0, PowerupStatBonuses.Luck)); }
+
+	// ============================================
+	// Power Crystals (earned this run; persisted at run end)
+	// ============================================
+
+	/** Power Crystals earned this run (from boss kills). Added to persistent balance when run ends. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|PowerUp")
+	int32 GetPowerCrystalsEarnedThisRun() const { return PowerCrystalsEarnedThisRun; }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
+	void AddPowerCrystalsEarnedThisRun(int32 Amount);
 
 	// ============================================
 	// Luck Rating (aggregated Luck/RNG outcomes)
@@ -742,6 +753,7 @@ private:
 	void InitializeHeroStatTuningForSelectedHero();
 	void InitializeHeroStatsForNewRun();
 	void ApplyOneHeroLevelUp();
+	void RefreshPowerupBonusesFromProfile();
 
 	UPROPERTY()
 	int32 CurrentHearts = DefaultMaxHearts;
@@ -861,12 +873,17 @@ private:
 
 	float LastDamageTime = -9999.f;
 
+	int32 PowerCrystalsEarnedThisRun = 0;
+
 	// ============================================
 	// Derived combat tuning from Inventory (recomputed on InventoryChanged)
 	// ============================================
 
 	/** Flat stat bonuses from inventory items (main stat line only, v1). */
 	FT66HeroStatBonuses ItemStatBonuses = FT66HeroStatBonuses{};
+
+	/** Power-up slice bonuses (from PowerUpSubsystem; refreshed at run start). */
+	FT66HeroStatBonuses PowerupStatBonuses = FT66HeroStatBonuses{};
 
 	float ItemPowerGivenPercent = 0.f;
 	float BonusDamagePercent = 0.f;

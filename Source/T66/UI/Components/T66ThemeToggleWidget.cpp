@@ -40,46 +40,28 @@ TSharedRef<SWidget> UT66ThemeToggleWidget::RebuildWidget()
 			.VAlign(VAlign_Center)
 			.Padding(0.0f, 0.0f, 4.0f, 0.0f)
 			[
-				SNew(SBox)
-				.HeightOverride(40.0f)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleDarkThemeClicked)))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
-						FT66Style::GetTheme() == ET66UITheme::Dark ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
-					.ContentPadding(FMargin(10.0f, 6.0f))
-					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_ThemeDark() : NSLOCTEXT("T66.Theme", "Dark", "DARK"))
-						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66Style::GetTheme() == ET66UITheme::Dark ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
-					]
-				]
+				FT66Style::MakeButton(
+					FT66ButtonParams(Loc ? Loc->GetText_ThemeDark() : NSLOCTEXT("T66.Theme", "Dark", "DARK"),
+						FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleDarkThemeClicked),
+						FT66Style::GetTheme() == ET66UITheme::Dark ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+					.SetFontSize(14)
+					.SetPadding(FMargin(10.f, 6.f))
+					.SetTextColor(FT66Style::GetTheme() == ET66UITheme::Dark ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
+					.SetMinWidth(0.f))
 			]
 			// Light button
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBox)
-				.HeightOverride(40.0f)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleLightThemeClicked)))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
-						FT66Style::GetTheme() == ET66UITheme::Light ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
-					.ContentPadding(FMargin(10.0f, 6.0f))
-					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_ThemeLight() : NSLOCTEXT("T66.Theme", "Light", "LIGHT"))
-						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66Style::GetTheme() == ET66UITheme::Light ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
-					]
-				]
+				FT66Style::MakeButton(
+					FT66ButtonParams(Loc ? Loc->GetText_ThemeLight() : NSLOCTEXT("T66.Theme", "Light", "LIGHT"),
+						FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleLightThemeClicked),
+						FT66Style::GetTheme() == ET66UITheme::Light ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+					.SetFontSize(14)
+					.SetPadding(FMargin(10.f, 6.f))
+					.SetTextColor(FT66Style::GetTheme() == ET66UITheme::Light ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
+					.SetMinWidth(0.f))
 			]
 		];
 }

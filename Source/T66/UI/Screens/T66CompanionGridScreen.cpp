@@ -122,25 +122,27 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 		GridPanel->AddSlot(Col, Row)
 			.Padding(8.0f)
 			[
-				SNew(SButton)
-				.ButtonColorAndOpacity(FLinearColor::Transparent)
-				.OnClicked_Lambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); })
-				.IsEnabled(CompanionIDCopy.IsNone() || bUnlocked)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(SpriteColor)
-					]
-					+ SOverlay::Slot()
-					[
-						PortraitBrushCopy.IsValid()
-						? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrushCopy.Get()))
-						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-					]
-				]
+				FT66Style::MakeButton(
+					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); }))
+					.SetMinWidth(0.f)
+					.SetColor(FLinearColor::Transparent)
+					.SetEnabled(CompanionIDCopy.IsNone() || bUnlocked)
+					.SetContent(
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(SpriteColor)
+						]
+						+ SOverlay::Slot()
+						[
+							PortraitBrushCopy.IsValid()
+							? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrushCopy.Get()))
+							: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+						]
+					)
+				)
 			];
 	}
 
@@ -210,18 +212,11 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 					.HAlign(HAlign_Center)
 					.Padding(0.0f, 20.0f, 0.0f, 0.0f)
 					[
-						SNew(SBox).MinDesiredWidth(120.0f).HeightOverride(44.0f)
-						[
-							SNew(SButton)
-							.HAlign(HAlign_Center).VAlign(VAlign_Center)
-							.OnClicked(FOnClicked::CreateUObject(this, &UT66CompanionGridScreen::HandleCloseClicked))
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							[
-								SNew(STextBlock).Text(CloseText)
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
-						]
+					FT66Style::MakeButton(
+						FT66ButtonParams(CloseText, FOnClicked::CreateUObject(this, &UT66CompanionGridScreen::HandleCloseClicked))
+						.SetMinWidth(120.f)
+						.SetColor(FT66Style::Tokens::Panel2)
+					)
 					]
 				]
 			]

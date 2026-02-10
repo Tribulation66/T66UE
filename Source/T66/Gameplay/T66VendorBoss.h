@@ -38,8 +38,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss")
 	int32 ProjectileDamageHearts = 1;
 
-	/** Called by hero projectile overlap; returns true if boss died. */
-	bool TakeDamageFromHeroHit(int32 DamageAmount);
+	/** Called by hero projectile overlap; returns true if boss died. DamageSourceID used for run damage log. */
+	bool TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID = NAME_None);
 
 protected:
 	virtual void BeginPlay() override;

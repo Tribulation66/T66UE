@@ -114,10 +114,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		// Reason content
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
 		[
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(FMargin(FT66Style::Tokens::Space3))
-			[
+			FT66Style::MakePanel(
 				SNew(STextBlock)
 				.Text_Lambda([this, Record, bIsRestricted]()
 				{
@@ -130,26 +127,16 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 					return FText::FromString(Reason);
 				})
 				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-				.AutoWrapText(true)
-			]
+				.AutoWrapText(true),
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space3)
+			)
 		]
 		// Run In Question
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 		[
-			SNew(SButton)
-			.IsEnabled_Lambda([this, LB]()
-			{
-				return LB && LB->HasAccountRestrictionRunSummary();
-			})
-			.OnClicked(FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleRunInQuestionClicked))
-			.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-			.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-			.ContentPadding(FMargin(18.f, 10.f))
-			[
-				SNew(STextBlock)
-				.Text(RunInQuestionText)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-			]
+			FT66Style::MakeButton(FT66ButtonParams(RunInQuestionText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleRunInQuestionClicked))
+				.SetPadding(FMargin(18.f, 10.f))
+				.SetEnabled(TAttribute<bool>::CreateLambda([this, LB]() { return LB && LB->HasAccountRestrictionRunSummary(); })))
 		]
 		// Spacer to push Back to bottom
 		+ SVerticalBox::Slot().FillHeight(1.f)
@@ -159,16 +146,8 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		// Back
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left)
 		[
-			SNew(SButton)
-			.OnClicked(FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked))
-			.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-			.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-			.ContentPadding(FMargin(18.f, 10.f))
-			[
-				SNew(STextBlock)
-				.Text(BackText)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-			]
+			FT66Style::MakeButton(FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked))
+				.SetPadding(FMargin(18.f, 10.f)))
 		];
 
 	// Right column: appeal box or locked message.
@@ -213,20 +192,9 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
 			[
-				SNew(SButton)
-				.IsEnabled_Lambda([this, LB]()
-				{
-					return LB && LB->CanSubmitAccountAppeal();
-				})
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleSubmitAppealClicked))
-				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-				.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
-				.ContentPadding(FMargin(18.f, 10.f))
-				[
-					SNew(STextBlock)
-					.Text(SubmitAppealText)
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-				]
+				FT66Style::MakeButton(FT66ButtonParams(SubmitAppealText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleSubmitAppealClicked), ET66ButtonType::Primary)
+					.SetPadding(FMargin(18.f, 10.f))
+					.SetEnabled(TAttribute<bool>::CreateLambda([this, LB]() { return LB && LB->CanSubmitAccountAppeal(); })))
 			])
 		: StaticCastSharedRef<SWidget>(
 			SNew(SVerticalBox)
@@ -246,16 +214,14 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(FT66Style::Tokens::Space3))
-				[
+				FT66Style::MakePanel(
 					SNew(STextBlock)
 					.Text(NoAppealText)
 					.Font(FT66Style::Tokens::FontBold(18))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
-					.Justification(ETextJustify::Center)
-				]
+					.Justification(ETextJustify::Center),
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space3)
+				)
 			]);
 
 	// Modal overlay: dim background + centered two-column panel.
@@ -272,10 +238,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		.VAlign(VAlign_Center)
 		.Padding(FMargin(60.f))
 		[
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(FMargin(FT66Style::Tokens::Space5))
-			[
+			FT66Style::MakePanel(
 				SNew(SVerticalBox)
 				// Title
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
@@ -307,8 +270,9 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 							RightColumn
 						]
 					]
-				]
-			]
+				],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space5)
+			)
 		];
 }
 

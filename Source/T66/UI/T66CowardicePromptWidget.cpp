@@ -60,14 +60,14 @@ TSharedRef<SWidget> UT66CowardicePromptWidget::RebuildWidget()
 						FT66Style::MakeButton(
 							Loc ? Loc->GetText_Yes() : NSLOCTEXT("T66.Common", "Yes", "YES"),
 							FOnClicked::CreateUObject(this, &UT66CowardicePromptWidget::OnYes),
-							ET66ButtonType::Danger, 140.f, 44.f)
+							ET66ButtonType::Danger, 140.f)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 					[
 						FT66Style::MakeButton(
 							Loc ? Loc->GetText_No() : NSLOCTEXT("T66.Common", "No", "NO"),
 							FOnClicked::CreateUObject(this, &UT66CowardicePromptWidget::OnNo),
-							ET66ButtonType::Neutral, 140.f, 44.f)
+							ET66ButtonType::Neutral, 140.f)
 					]
 				]
 			]

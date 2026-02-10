@@ -3,6 +3,8 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -313,66 +315,59 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		? FText::Format(Loc->GetText_RunSummaryStageReachedBountyFormat(), FText::AsNumber(StageReached), FText::AsNumber(HighScore))
 		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  High Score: %d"), StageReached, HighScore));
 
-	auto MakePanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
+	auto MakeSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
 	{
-		return SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(FMargin(FT66Style::Tokens::Space4))
+		return FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-				[
-					SNew(STextBlock)
-					.Text(Header)
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
-				]
-				+ SVerticalBox::Slot().FillHeight(1.f)
-				[
-					Body
-				]
-			];
+				SNew(STextBlock)
+				.Text(Header)
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+			]
+			+ SVerticalBox::Slot().FillHeight(1.f)
+			[
+				Body
+			],
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
+		);
 	};
 
 	auto MakeHeroPreview = [](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
 	{
 		return Brush.IsValid()
-			? StaticCastSharedRef<SWidget>(SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(0.f)
+			? StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
+				SNew(SBox)
+				.WidthOverride(420.f)
+				.HeightOverride(420.f)
 				[
-					SNew(SBox)
-					.WidthOverride(420.f)
-					.HeightOverride(420.f)
-					[
-						SNew(SImage).Image(Brush.Get())
-					]
-				])
-			: StaticCastSharedRef<SWidget>(SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(0.f)
+					SNew(SImage).Image(Brush.Get())
+				],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(0.f)
+			))
+			: StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
+				SNew(SBox)
+				.WidthOverride(420.f)
+				.HeightOverride(420.f)
 				[
-					SNew(SBox)
-					.WidthOverride(420.f)
-					.HeightOverride(420.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-						.Justification(ETextJustify::Center)
-					]
-				]);
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"))
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.Justification(ETextJustify::Center)
+				],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(0.f)
+			));
 	};
 
 	// Event log (hidden by default; opened via "EVENT LOG" button).
 	TSharedRef<SWidget> EventLogPanel =
-		MakePanel(
+		MakeSectionPanel(
 			NSLOCTEXT("T66.RunSummary", "EventLogTitle", "EVENT LOG"),
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(FMargin(FT66Style::Tokens::Space2))
-			[
-				LogListView.IsValid() ? StaticCastSharedRef<SWidget>(LogListView.ToSharedRef()) : StaticCastSharedRef<SWidget>(SNew(SSpacer))
-			]);
+			FT66Style::MakePanel(
+				LogListView.IsValid() ? StaticCastSharedRef<SWidget>(LogListView.ToSharedRef()) : StaticCastSharedRef<SWidget>(SNew(SSpacer)),
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space2)
+			)
+		);
 
 	// Proof of run UI.
 	// NOTE: Today this is local-only, so we treat the player as the owner of viewed runs.
@@ -387,29 +382,19 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(10.f, 8.f))
-				.Visibility_Lambda([this]() { return (bProofOfRunLocked && !ProofOfRunUrl.IsEmpty()) ? EVisibility::Visible : EVisibility::Collapsed; })
-				[
+				FT66Style::MakePanel(
 					SNew(SHyperlink)
 					.Text_Lambda([this]() { return FText::FromString(ProofOfRunUrl); })
-					.OnNavigate(FSimpleDelegate::CreateUObject(this, &UT66RunSummaryScreen::HandleProofLinkNavigate))
-				]
+					.OnNavigate(FSimpleDelegate::CreateUObject(this, &UT66RunSummaryScreen::HandleProofLinkNavigate)),
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(10.f, 8.f))
+						.SetVisibility(TAttribute<EVisibility>::CreateLambda([this]() { return (bProofOfRunLocked && !ProofOfRunUrl.IsEmpty()) ? EVisibility::Visible : EVisibility::Collapsed; }))
+				)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 			[
-				SNew(SButton)
-				.Visibility_Lambda([this, bIsOwnerOfViewedRun]() { return (bIsOwnerOfViewedRun && bProofOfRunLocked) ? EVisibility::Visible : EVisibility::Collapsed; })
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofEditClicked))
-				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-				.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-				.ContentPadding(FMargin(14.f, 8.f))
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.RunSummary", "Edit", "EDIT"))
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-				]
+				FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Edit", "EDIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofEditClicked))
+					.SetPadding(FMargin(14.f, 8.f))
+					.SetVisibility(TAttribute<EVisibility>::CreateLambda([this, bIsOwnerOfViewedRun]() { return (bIsOwnerOfViewedRun && bProofOfRunLocked) ? EVisibility::Visible : EVisibility::Collapsed; })))
 			]
 		]
 		// Edit view (textbox) + Confirm button
@@ -431,44 +416,24 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofConfirmClicked))
-				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-				.ButtonColorAndOpacity(FT66Style::Tokens::Success)
-				.ContentPadding(FMargin(14.f, 8.f))
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.RunSummary", "Confirm", "CONFIRM"))
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-				]
+				FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Confirm", "CONFIRM"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofConfirmClicked), ET66ButtonType::Success)
+					.SetPadding(FMargin(14.f, 8.f)))
 			]
 		];
 
 	TSharedRef<SWidget> ProofOfRunPanel =
-		MakePanel(
+		MakeSectionPanel(
 			NSLOCTEXT("T66.RunSummary", "ProofOfRunHeader", "PROOF OF RUN"),
 			ProofBody
 		);
 
 	// Cheat report UI (available to everyone).
 	TSharedRef<SWidget> ReportCheatButton =
-		SNew(SButton)
-		.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked))
-		.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
-		.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
-		.ContentPadding(FMargin(14.f, 10.f))
-		[
-			SNew(STextBlock)
-			.Text(NSLOCTEXT("T66.RunSummary", "TheyreCheating", "THEY'RE CHEATING"))
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-		];
+		FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "TheyreCheating", "THEY'RE CHEATING"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked), ET66ButtonType::Danger)
+			.SetPadding(FMargin(14.f, 10.f)));
 
 	TSharedRef<SWidget> ReportPrompt =
-		SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-		.Padding(FMargin(FT66Style::Tokens::Space3))
-		.Visibility_Lambda([this]() { return bReportPromptVisible ? EVisibility::Visible : EVisibility::Collapsed; })
-		[
+		FT66Style::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 			[
@@ -487,50 +452,22 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportSubmitClicked))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
-					.ContentPadding(FMargin(14.f, 8.f))
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.RunSummary", "Submit", "SUBMIT"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
+					FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Submit", "SUBMIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportSubmitClicked), ET66ButtonType::Primary)
+						.SetPadding(FMargin(14.f, 8.f)))
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCloseClicked))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-					.ContentPadding(FMargin(14.f, 8.f))
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.RunSummary", "Close", "CLOSE"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
+					FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "Close", "CLOSE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCloseClicked))
+						.SetPadding(FMargin(14.f, 8.f)))
 				]
 			]
-		];
+		,
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space3));
 
 	auto MakeEventLogButton = [&](const FText& Text) -> TSharedRef<SWidget>
 	{
-		return SNew(SBox)
-			.MinDesiredWidth(160.f)
-			.HeightOverride(44.f)
-			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleViewLogClicked))
-				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-				.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-				.ContentPadding(FMargin(14.f, 8.f))
-				[
-					SNew(STextBlock)
-					.Text(Text)
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-				]
-			];
+		return FT66Style::MakeButton(FT66ButtonParams(Text, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleViewLogClicked))
+			.SetMinWidth(160.f).SetPadding(FMargin(14.f, 8.f)));
 	};
 
 	// Level + stats (requested for Run Summary and saved leaderboard snapshots).
@@ -602,10 +539,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 			IdolsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(12.f, 10.f))
-				[
+				FT66Style::MakePanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
@@ -630,8 +564,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							: FText::FromName(IdolID))
 						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-				]
+					],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f))
+				)
 			];
 		}
 
@@ -666,10 +601,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 				InvBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 				[
-					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-					.Padding(FMargin(12.f, 10.f))
-					[
+					FT66Style::MakePanel(
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
@@ -692,8 +624,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							.Text(Loc ? Loc->GetText_ItemDisplayName(ItemID) : FText::FromName(ItemID))
 							.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-					]
+						],
+						FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f))
+					)
 				];
 			}
 		}
@@ -703,56 +636,23 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	TSharedRef<SWidget> ButtonsRow =
 		bViewingSavedLeaderboardRunSummary
 		? StaticCastSharedRef<SWidget>(
-			SNew(SBox).MinDesiredWidth(200.f).HeightOverride(54.f)
-			[
-				SNew(SButton)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
-				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-				.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-				.ContentPadding(FMargin(18.f, 10.f))
-				[
-					SNew(STextBlock)
-					.Text(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"))
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-				]
-			])
+			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
+				.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))))
 		: StaticCastSharedRef<SWidget>(
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				SNew(SBox).MinDesiredWidth(180.f).HeightOverride(54.f)
-				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Success)
-					.ContentPadding(FMargin(18.f, 10.f))
-					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
-				]
+				FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66ButtonType::Success)
+					.SetMinWidth(180.f).SetPadding(FMargin(18.f, 10.f)))
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				SNew(SBox).MinDesiredWidth(200.f).HeightOverride(54.f)
-				[
-					SNew(SButton)
-					.OnClicked(FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-					.ContentPadding(FMargin(18.f, 10.f))
-					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
-				]
+				FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
+					.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
 			]);
 
 	// Panels in the requested layout.
-	TSharedRef<SWidget> BaseStatsPanel = MakePanel(
+	TSharedRef<SWidget> BaseStatsPanel = MakeSectionPanel(
 		Loc ? Loc->GetText_BaseStatsHeader() : NSLOCTEXT("T66.HeroSelection", "BaseStatsHeader", "Base Stats"),
 		StatsBox
 	);
@@ -804,11 +704,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		? FText::Format(NSLOCTEXT("T66.RunSummary", "RatingOutOf100Format", "{0} / 100"), FText::AsNumber(SkillRating0To100))
 		: NSLOCTEXT("T66.RunSummary", "RatingNA", "N/A");
 
-	TSharedRef<SWidget> LuckRatingPanel = MakePanel(
+	TSharedRef<SWidget> LuckRatingPanel = MakeSectionPanel(
 		NSLOCTEXT("T66.RunSummary", "LuckRatingPanel", "LUCK RATING"),
 		MakeBigCenteredValue(LuckRatingText)
 	);
-	TSharedRef<SWidget> SkillRatingPanel = MakePanel(
+	TSharedRef<SWidget> SkillRatingPanel = MakeSectionPanel(
 		NSLOCTEXT("T66.RunSummary", "SkillRatingPanel", "SKILL RATING"),
 		MakeBigCenteredValue(SkillRatingText)
 	);
@@ -816,7 +716,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		NSLOCTEXT("T66.RunSummary", "CheatProbabilityLineFormat", "Probability of Cheating: {0}%"),
 		FText::AsNumber(0)
 	);
-	TSharedRef<SWidget> CheatProbabilityPanel = MakePanel(
+	TSharedRef<SWidget> CheatProbabilityPanel = MakeSectionPanel(
 		NSLOCTEXT("T66.RunSummary", "IntegrityPanel", "INTEGRITY"),
 		SNew(SBox)
 		.HAlign(HAlign_Center)
@@ -830,12 +730,127 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		]
 	);
 
-	TSharedRef<SWidget> InventoryPanel = MakePanel(
+	// Power Crystals: earned this run + total balance (from PowerUpSubsystem).
+	UT66PowerUpSubsystem* PowerUpSub = GI ? GI->GetSubsystem<UT66PowerUpSubsystem>() : nullptr;
+	const int32 PowerCrystalsEarned = RunState ? RunState->GetPowerCrystalsEarnedThisRun() : 0;
+	const int32 PowerCrystalsTotal = PowerUpSub ? PowerUpSub->GetPowerCrystalBalance() : 0;
+	const FText PowerCrystalsEarnedLine = FText::Format(
+		NSLOCTEXT("T66.RunSummary", "PowerCrystalsEarnedFormat", "Earned this run: {0}"),
+		FText::AsNumber(PowerCrystalsEarned)
+	);
+	const FText PowerCrystalsTotalLine = FText::Format(
+		NSLOCTEXT("T66.RunSummary", "PowerCrystalsTotalFormat", "Total: {0}"),
+		FText::AsNumber(PowerCrystalsTotal)
+	);
+	TSharedRef<SWidget> PowerCrystalsPanel = MakeSectionPanel(
+		NSLOCTEXT("T66.RunSummary", "PowerCrystalsPanel", "POWER CRYSTALS"),
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(PowerCrystalsEarnedLine)
+			.Font(FT66Style::Tokens::FontRegular(14))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(PowerCrystalsTotalLine)
+			.Font(FT66Style::Tokens::FontBold(14))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+	);
+
+	// Damage by source: from DamageLogSubsystem (live) or snapshot (SchemaVersion >= 5).
+	TArray<FDamageLogEntry> DamageBySourceSorted;
+	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && LoadedSavedSummary->SchemaVersion >= 5)
+	{
+		for (const auto& Pair : LoadedSavedSummary->DamageBySource)
+		{
+			FDamageLogEntry E;
+			E.SourceID = Pair.Key;
+			E.TotalDamage = Pair.Value;
+			DamageBySourceSorted.Add(E);
+		}
+		DamageBySourceSorted.Sort([](const FDamageLogEntry& A, const FDamageLogEntry& B) { return A.TotalDamage > B.TotalDamage; });
+	}
+	else
+	{
+		UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr;
+		if (DamageLog)
+		{
+			DamageBySourceSorted = DamageLog->GetDamageBySourceSorted();
+		}
+	}
+	auto GetDamageSourceDisplayName = [](FName SourceID) -> FText
+	{
+		if (SourceID == UT66DamageLogSubsystem::SourceID_AutoAttack) return NSLOCTEXT("T66.RunSummary", "DamageSource_AutoAttack", "Auto Attack");
+		if (SourceID == UT66DamageLogSubsystem::SourceID_Ultimate) return NSLOCTEXT("T66.RunSummary", "DamageSource_Ultimate", "Ultimate");
+		return FText::FromName(SourceID);
+	};
+	TSharedRef<SVerticalBox> DamageBySourceBox = SNew(SVerticalBox);
+	for (const FDamageLogEntry& Entry : DamageBySourceSorted)
+	{
+		DamageBySourceBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::Format(
+				NSLOCTEXT("T66.RunSummary", "DamageBySourceLineFormat", "{0}: {1}"),
+				GetDamageSourceDisplayName(Entry.SourceID),
+				FText::AsNumber(Entry.TotalDamage)))
+			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		];
+	}
+	if (DamageBySourceSorted.Num() == 0)
+	{
+		DamageBySourceBox->AddSlot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.RunSummary", "NoDamageSources", "No damage data."))
+			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+		];
+	}
+	TSharedRef<SWidget> DamageBySourcePanel = MakeSectionPanel(
+		NSLOCTEXT("T66.RunSummary", "DamageBySourcePanel", "DAMAGE BY SOURCE"),
+		DamageBySourceBox
+	);
+
+	// Achievement Coins: stubs (0 earned, 10,000 total).
+	const FText ACEarnedLine = FText::Format(
+		NSLOCTEXT("T66.RunSummary", "ACEarnedFormat", "Earned this run: {0}"),
+		FText::AsNumber(0)
+	);
+	const FText ACTotalLine = FText::Format(
+		NSLOCTEXT("T66.RunSummary", "ACTotalFormat", "Total: {0}"),
+		FText::AsNumber(10000)
+	);
+	TSharedRef<SWidget> ACPanel = MakeSectionPanel(
+		NSLOCTEXT("T66.RunSummary", "AchievementCoinsPanel", "ACHIEVEMENT COINS"),
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(ACEarnedLine)
+			.Font(FT66Style::Tokens::FontRegular(14))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(ACTotalLine)
+			.Font(FT66Style::Tokens::FontBold(14))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+	);
+
+	TSharedRef<SWidget> InventoryPanel = MakeSectionPanel(
 		NSLOCTEXT("T66.RunSummary", "InventoryPanel", "INVENTORY"),
 		SNew(SScrollBox) + SScrollBox::Slot()[InvBox]
 	);
 
-	TSharedRef<SWidget> IdolsPanel = MakePanel(
+	TSharedRef<SWidget> IdolsPanel = MakeSectionPanel(
 		NSLOCTEXT("T66.RunSummary", "IdolsPanel", "IDOLS"),
 		SNew(SScrollBox) + SScrollBox::Slot()[IdolsBox]
 	);
@@ -848,10 +863,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			// Main full-screen panel
 			+ SOverlay::Slot()
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(FT66Style::Tokens::Space6))
-				[
+				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					// Header row: title left, Event Log button right
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
@@ -939,6 +951,27 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 									CheatProbabilityPanel
 								]
 							]
+							// Power Crystals + Damage by source + Achievement Coins (right column)
+							+ SHorizontalBox::Slot().AutoWidth().Padding(18.f, 0.f, 0.f, 0.f)
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+								[
+									PowerCrystalsPanel
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+								[
+									DamageBySourcePanel
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+								[
+									ACPanel
+								]
+								+ SVerticalBox::Slot().FillHeight(1.f)
+								[
+									SNew(SSpacer)
+								]
+							]
 							// Spacer so the block stays left (leaves room for right-side log drawer).
 							+ SHorizontalBox::Slot().FillWidth(1.f)
 							[
@@ -977,8 +1010,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
 					[
 						ButtonsRow
-					]
-				]
+					],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6)
+				)
 			]
 			// Right-side drawer: event log only (toggle with button).
 			+ SOverlay::Slot()
@@ -1140,8 +1174,13 @@ void UT66RunSummaryScreen::OnRestartClicked()
 		UGameplayStatics::OpenLevel(this, FName(TEXT("FrontendLevel")));
 		return;
 	}
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState) RunState->ResetForNewRun();
+	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
+	{
+		DamageLog->ResetForNewRun();
+	}
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
 	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
@@ -1174,8 +1213,13 @@ void UT66RunSummaryScreen::OnMainMenuClicked()
 		UGameplayStatics::OpenLevel(this, FName(TEXT("FrontendLevel")));
 		return;
 	}
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState) RunState->ResetForNewRun();
+	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
+	{
+		DamageLog->ResetForNewRun();
+	}
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
 	// Use full map path for robustness in packaged builds.

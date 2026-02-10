@@ -127,14 +127,8 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	// Tab row
 	auto MakeTab = [&](const FText& Label, int32 Index) -> TSharedRef<SWidget>
 	{
-		return SNew(SButton)
-			.OnClicked_Lambda([this, Index]() { CollectorTabIndex = Index; ReleaseSlateResources(true); TakeWidget(); return FReply::Handled(); })
-			.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-			.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-			.ContentPadding(FMargin(12.f, 6.f))
-			[
-				SNew(STextBlock).Text(Label).Font(FT66Style::Tokens::FontBold(11)).ColorAndOpacity(FT66Style::Tokens::Text)
-			];
+		return FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; ReleaseSlateResources(true); TakeWidget(); return FReply::Handled(); }))
+			.SetMinWidth(0.f).SetFontSize(11).SetPadding(FMargin(12.f, 6.f)));
 	};
 
 	TSharedRef<SHorizontalBox> TabRow = SNew(SHorizontalBox)
@@ -160,8 +154,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		}
 		Scroll->AddSlot().Padding(6.f)
 			[
-				SNew(SBorder).BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel")).Padding(8.f)
-				[
+				FT66Style::MakePanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f)
 					[
@@ -179,8 +172,9 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakeButton(AddBtn, FOnClicked::CreateLambda([this, CapturedID]() { OnAddItem(CapturedID); return FReply::Handled(); }), ET66ButtonType::Primary)
 						]
-					]
-				]
+					],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(8.f)
+				)
 			];
 	};
 
@@ -188,8 +182,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	{
 		Scroll->AddSlot().Padding(6.f)
 			[
-				SNew(SBorder).BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel")).Padding(8.f)
-				[
+				FT66Style::MakePanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
@@ -200,8 +193,9 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakeButton(SpawnBtn, FOnClicked::CreateLambda([OnSpawn]() { OnSpawn(); return FReply::Handled(); }), ET66ButtonType::Neutral)
 						]
-					]
-				]
+					],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(8.f)
+				)
 			];
 	};
 
@@ -276,10 +270,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			[
 				SNew(SBox).WidthOverride(520.f)
 				[
-					SNew(SBorder)
-					.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-					.Padding(24.f)
-					[MainPanel]
+					FT66Style::MakePanel(MainPanel, FT66PanelParams(ET66PanelType::Panel).SetPadding(24.f))
 				]
 			]
 		];

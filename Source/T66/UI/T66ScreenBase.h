@@ -103,11 +103,6 @@ protected:
 
 	// ========== Slate UI Building Helpers ==========
 
-	/** Create a styled button with text that calls a member function on click */
-	template<typename T>
-	TSharedRef<SWidget> MakeButton(const FText& Text, T* Object, FReply (T::*Func)(), 
-		const FLinearColor& BgColor = FLinearColor(0.1f, 0.1f, 0.15f, 1.0f));
-
 	/** Create a text block */
 	TSharedRef<SWidget> MakeText(const FText& Text, int32 FontSize = 24, 
 		const FLinearColor& Color = FLinearColor::White);

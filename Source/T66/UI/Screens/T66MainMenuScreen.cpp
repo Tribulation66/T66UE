@@ -20,6 +20,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
+#include "Widgets/SNullWidget.h"
 #include "Styling/SlateBrush.h"
 
 UT66MainMenuScreen::UT66MainMenuScreen(const FObjectInitializer& ObjectInitializer)
@@ -47,33 +48,22 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	// Get localized text
 	FText NewGameText = Loc ? Loc->GetText_NewGame() : NSLOCTEXT("T66.MainMenu", "NewGame", "NEW GAME");
 	FText LoadGameText = Loc ? Loc->GetText_LoadGame() : NSLOCTEXT("T66.MainMenu", "LoadGame", "LOAD GAME");
-	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
+	FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
 	FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
+	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
 	FText QuitText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
 
 	// Button: 30% smaller (63 -> 44), equal padding on all 4 sides so text isn't glued to edges
-	const float ButtonPadding = 14.0f; // same on left, top, right, bottom
 	const float ButtonSpacing = 14.0f;
-	const int32 ButtonFontSize = 44;   // 63 * 0.7
 
-	auto MakeMenuButton = [this, ButtonPadding, ButtonFontSize](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
+	auto MakeMenuButton = [this](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
 	{
-		const ISlateStyle& Style = FT66Style::Get();
-		const FButtonStyle& Btn = Style.GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-
-		return SNew(SButton)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, ClickFunc)))
-			.ButtonStyle(&Btn)
-			.ContentPadding(FMargin(ButtonPadding, ButtonPadding, ButtonPadding, ButtonPadding))
-			[
-				SNew(STextBlock)
-				.Text(Text)
-				.Font(FT66Style::Tokens::FontBold(ButtonFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-				.Justification(ETextJustify::Center)
-			];
+		return FT66Style::MakeButton(
+			FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc))
+			.SetFontSize(44)
+			.SetPadding(FMargin(14.f))
+			.SetColor(BgColor)
+			.SetMinWidth(0.f));
 	};
 
 	// Background image brush (filled by texture pool when MainMenuBackground texture loads)
@@ -98,17 +88,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 	// Filter icons are now loaded and displayed inside the leaderboard panel (pure Slate).
 
-	return SNew(SBorder)
-		.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-		[
-			SNew(SOverlay)
+	return FT66Style::MakePanel(
+		SNew(SOverlay)
 			// Theme-colored underlay so we never show white before the image loads
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Bg"))
+				FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f))
 			]
 			// Full-screen background image (Content/UI/MainMenu/MMDark or MMLight)
 			+ SOverlay::Slot()
@@ -134,9 +121,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
 					[ MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, FT66Style::Tokens::Accent2) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
-					[ MakeMenuButton(SettingsText, &UT66MainMenuScreen::HandleSettingsClicked) ]
-					+ SVerticalBox::Slot().AutoHeight()
+					[ MakeMenuButton(PowerUpText, &UT66MainMenuScreen::HandlePowerUpClicked, FT66Style::Tokens::Accent2) ]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
 					[ MakeMenuButton(AchievementsText, &UT66MainMenuScreen::HandleAchievementsClicked) ]
+					+ SVerticalBox::Slot().AutoHeight()
+					[ MakeMenuButton(SettingsText, &UT66MainMenuScreen::HandleSettingsClicked) ]
 				]
 			]
 			// Right: Leaderboard panel (top aligned with NEW GAME button)
@@ -160,7 +149,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.VAlign(VAlign_Top)
 			.Padding(0.0f, 15.0f, 15.0f, 0.0f)
 			[
-				FT66Style::MakeButton(QuitText, FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleQuitClicked), ET66ButtonType::Danger, 100.f, 40.f)
+				FT66Style::MakeButton(QuitText, FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleQuitClicked), ET66ButtonType::Danger, 100.f)
 			]
 			// Bottom-left: Language button
 			+ SOverlay::Slot()
@@ -168,25 +157,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.VAlign(VAlign_Bottom)
 			.Padding(15.0f, 0.0f, 0.0f, 15.0f)
 			[
-				SNew(SBox)
-				.WidthOverride(50.0f)
-				.HeightOverride(50.0f)
-				[
-					SNew(SButton)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleLanguageClicked)))
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "Lang"))
-						.Font(FT66Style::Tokens::FontBold(20))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-				]
+				FT66Style::MakeButton(
+					FT66ButtonParams(Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "Lang"),
+						FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleLanguageClicked))
+					.SetFontSize(20)
+					.SetMinWidth(50.f).SetHeight(50.f))
 			]
-		];
+		,
+		ET66PanelType::Panel);
 }
 
 void UT66MainMenuScreen::OnScreenActivated_Implementation()
@@ -274,15 +252,21 @@ FReply UT66MainMenuScreen::HandleLoadGameClicked()
 	return FReply::Handled();
 }
 
-FReply UT66MainMenuScreen::HandleSettingsClicked()
+FReply UT66MainMenuScreen::HandlePowerUpClicked()
 {
-	OnSettingsClicked();
+	OnPowerUpClicked();
 	return FReply::Handled();
 }
 
 FReply UT66MainMenuScreen::HandleAchievementsClicked()
 {
 	OnAchievementsClicked();
+	return FReply::Handled();
+}
+
+FReply UT66MainMenuScreen::HandleSettingsClicked()
+{
+	OnSettingsClicked();
 	return FReply::Handled();
 }
 
@@ -315,6 +299,11 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 		GI->bIsNewGameFlow = false;
 	}
 	NavigateTo(ET66ScreenType::PartySizePicker);
+}
+
+void UT66MainMenuScreen::OnPowerUpClicked()
+{
+	NavigateTo(ET66ScreenType::PowerUp);
 }
 
 void UT66MainMenuScreen::OnSettingsClicked()

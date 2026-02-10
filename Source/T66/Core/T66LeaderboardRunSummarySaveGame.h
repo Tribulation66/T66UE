@@ -21,7 +21,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 4;
+	int32 SchemaVersion = 5;
 
 	/** What kind of leaderboard this run belongs to (currently HighScore only). */
 	UPROPERTY(SaveGame)
@@ -123,5 +123,9 @@ public:
 
 	UPROPERTY(SaveGame)
 	TArray<FString> EventLog;
+
+	/** Damage dealt by source this run (source ID -> total). SchemaVersion>=5. */
+	UPROPERTY(SaveGame)
+	TMap<FName, int32> DamageBySource;
 };
 

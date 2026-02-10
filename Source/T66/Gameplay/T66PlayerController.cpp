@@ -3,6 +3,9 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CombatComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
@@ -16,6 +19,7 @@
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
+#include "UI/Screens/T66PowerUpScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
@@ -33,6 +37,8 @@
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
@@ -320,6 +326,8 @@ AT66PlayerController::AT66PlayerController()
 	// Default to showing mouse cursor (will be hidden in gameplay mode)
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
+	// Same Niagara asset as slash (VFX_Attack1) for jump puffs.
+	JumpVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
 }
 
 void AT66PlayerController::ToggleDevConsole()
@@ -426,6 +434,7 @@ void AT66PlayerController::BeginPlay()
 	{
 		SetupGameplayMode();
 		SetupGameplayHUD();
+		CachedJumpVFXNiagara = JumpVFXNiagara.LoadSynchronous();
 
 		// Prewarm TikTok/WebView2 so login + CSS formatting are done before first toggle.
 		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
@@ -613,11 +622,12 @@ void AT66PlayerController::HandleUltimatePressed()
 	}
 
 	// v0 effect: deal flat damage to all active enemies.
+	const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
 	for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
 	{
 		if (AT66EnemyBase* E = *It)
 		{
-			E->TakeDamageFromHero(UT66RunStateSubsystem::UltimateDamage);
+			E->TakeDamageFromHero(UT66RunStateSubsystem::UltimateDamage, UltimateSourceID);
 		}
 	}
 }
@@ -1454,6 +1464,20 @@ void AT66PlayerController::OnPlayerDied()
 
 	SetPause(true);
 	EnsureGameplayUIManager();
+	// Persist Power Crystals earned this run before showing Run Summary.
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+		UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>();
+		if (RunState && PowerUpSub)
+		{
+			const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
+			if (Earned > 0)
+			{
+				PowerUpSub->AddPowerCrystals(Earned);
+			}
+		}
+	}
 	if (UIManager)
 	{
 		UIManager->ShowModal(ET66ScreenType::RunSummary);
@@ -1476,6 +1500,7 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	UIManager->RegisterScreenClass(ET66ScreenType::ReportBug, UT66ReportBugScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::Settings, UT66SettingsScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
 }
 
 void AT66PlayerController::HandleEscapePressed()
@@ -1682,6 +1707,24 @@ void AT66PlayerController::HandleJumpPressed()
 	if (ACharacter* MyCharacter = Cast<ACharacter>(GetPawn()))
 	{
 		MyCharacter->Jump();
+
+		// Jump VFX: spawn a few puffs at the character's feet (same Niagara as slash).
+		UWorld* World = GetWorld();
+		if (World && CachedJumpVFXNiagara)
+		{
+			const FVector FeetLoc = MyCharacter->GetActorLocation() - FVector(0.f, 0.f, 50.f);
+			const FVector4 TintWhite(1.f, 1.f, 1.f, 1.f);
+			for (int32 i = 0; i < 3; ++i)
+			{
+				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+					World, CachedJumpVFXNiagara, FeetLoc, FRotator::ZeroRotator,
+					FVector(1.f), true, true, ENCPoolMethod::None);
+				if (NC)
+				{
+					NC->SetNiagaraVariableVec4(FString(TEXT("User.Tint")), TintWhite);
+				}
+			}
+		}
 	}
 }
 
@@ -1833,6 +1876,7 @@ void AT66PlayerController::InitializeUI()
 
 	// Ensure core modal screens are available in frontend too (leaderboard row opens Run Summary).
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (!ScreenClasses.Contains(ET66ScreenType::AccountStatus) || ScreenClasses[ET66ScreenType::AccountStatus] == nullptr)
 	{

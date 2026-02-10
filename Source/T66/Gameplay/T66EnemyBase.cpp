@@ -9,6 +9,7 @@
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
@@ -399,9 +400,20 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	RunState->ApplyDamage(TouchDamageHearts);
 }
 
-bool AT66EnemyBase::TakeDamageFromHero(int32 Damage)
+bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
 {
 	if (Damage <= 0 || CurrentHP <= 0) return false;
+	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+			{
+				DamageLog->RecordDamageDealt(SourceID, Damage);
+			}
+		}
+	}
 	CurrentHP = FMath::Max(0, CurrentHP - Damage);
 	UpdateHealthBar();
 	if (CurrentHP <= 0)

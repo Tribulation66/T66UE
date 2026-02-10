@@ -2,9 +2,11 @@
 
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/T66StatsPanelSlate.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "UI/Style/T66Style.h"
@@ -31,17 +33,37 @@ AT66PlayerController* UT66PauseMenuScreen::GetT66PlayerController() const
 
 TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 {
-	UT66LocalizationSubsystem* Loc = nullptr;
-	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
-	{
-		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
-	}
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 
 	FText ResumeText = Loc ? Loc->GetText_Resume() : NSLOCTEXT("T66.PauseMenu", "Resume", "RESUME GAME");
 	FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT GAME");
 	FText RestartText = Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.PauseMenu", "Restart", "RESTART");
 	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
 	FText ReportBugText = Loc ? Loc->GetText_ReportBug() : NSLOCTEXT("T66.PauseMenu", "ReportBug", "REPORT BUG");
+
+	TSharedRef<SWidget> RightPanel = FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 0.0f, 0.0f, 24.0f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.PauseMenu", "PausedTitle", "PAUSED"))
+				.Font(FT66Style::Tokens::FontBold(36))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		[ FT66Style::MakeButton(ResumeText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleResumeClicked), ET66ButtonType::Success, 320.f) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		[ FT66Style::MakeButton(SaveAndQuitText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSaveAndQuitClicked), ET66ButtonType::Neutral, 320.f) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		[ FT66Style::MakeButton(RestartText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleRestartClicked), ET66ButtonType::Danger, 320.f) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		[ FT66Style::MakeButton(SettingsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSettingsClicked), ET66ButtonType::Neutral, 320.f) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		[ FT66Style::MakeButton(ReportBugText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleReportBugClicked), ET66ButtonType::Neutral, 320.f) ]
+		,
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6)));
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -51,28 +73,14 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6))
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 0.0f, 0.0f, 24.0f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.PauseMenu", "PausedTitle", "PAUSED"))
-						.Font(FT66Style::Tokens::FontBold(36))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
-					[ FT66Style::MakeButton(ResumeText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleResumeClicked), ET66ButtonType::Success, 320.f, 50.f) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
-					[ FT66Style::MakeButton(SaveAndQuitText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSaveAndQuitClicked), ET66ButtonType::Neutral, 320.f, 50.f) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
-					[ FT66Style::MakeButton(RestartText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleRestartClicked), ET66ButtonType::Danger, 320.f, 50.f) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
-					[ FT66Style::MakeButton(SettingsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSettingsClicked), ET66ButtonType::Neutral, 320.f, 50.f) ]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
-					[ FT66Style::MakeButton(ReportBugText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleReportBugClicked), ET66ButtonType::Neutral, 320.f, 50.f) ]
+					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc)
+				]
+				+ SHorizontalBox::Slot().AutoWidth()
+				[
+					RightPanel
 				]
 			]
 		];

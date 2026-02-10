@@ -49,6 +49,9 @@ private:
 	// Anger indicator (0..1) - circle color + optional text
 	TSharedPtr<SImage> AngerCircleImage;
 
+	// Stats panel (refreshable when inventory changes)
+	TSharedPtr<SBox> StatsPanelBox;
+
 	// Vendor stock widgets
 	TArray<TSharedPtr<STextBlock>> ItemNameTexts;
 	TArray<TSharedPtr<STextBlock>> ItemDescTexts;
@@ -57,14 +60,14 @@ private:
 	TArray<TSharedPtr<SBorder>> ItemIconBorders;
 	TArray<TSharedPtr<SImage>> ItemIconImages;
 	TArray<TSharedPtr<FSlateBrush>> ItemIconBrushes;
-	TArray<TSharedPtr<SButton>> BuyButtons;
-	TArray<TSharedPtr<SButton>> StealButtons;
+	TArray<TSharedPtr<SWidget>> BuyButtons;
+	TArray<TSharedPtr<SWidget>> StealButtons;
 	TArray<TSharedPtr<STextBlock>> BuyButtonTexts;
 
 	// Inventory strip
 	static constexpr int32 InventorySlotCount = 5;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
-	TArray<TSharedPtr<SButton>> InventorySlotButtons;
+	TArray<TSharedPtr<SWidget>> InventorySlotButtons;
 	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
 	TArray<TSharedPtr<SImage>> InventorySlotIconImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotIconBrushes;
@@ -75,7 +78,7 @@ private:
 	TSharedPtr<STextBlock> SellItemNameText;
 	TSharedPtr<STextBlock> SellItemDescText;
 	TSharedPtr<STextBlock> SellItemPriceText;
-	TSharedPtr<SButton> SellItemButton;
+	TSharedPtr<SWidget> SellItemButton;
 
 	// Loans/sell controls
 	TSharedPtr<SSpinBox<int32>> BorrowAmountSpin;
@@ -101,6 +104,7 @@ private:
 	void RefreshStock();
 	void RefreshInventory();
 	void RefreshSellPanel();
+	void RefreshStatsPanel();
 
 	FReply OnReroll();
 	FReply OnDialogueShop();

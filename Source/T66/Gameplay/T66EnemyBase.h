@@ -57,9 +57,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	TObjectPtr<AT66EnemyDirector> OwningDirector;
 
-	/** Apply damage from hero. Returns true if enemy died. */
+	/** Apply damage from hero. Returns true if enemy died. DamageSourceID used for run damage log (default: AutoAttack). */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	virtual bool TakeDamageFromHero(int32 Damage);
+	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None);
 
 	/** If true, this enemy prefers to flee from the hero (used by Leprechaun). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")

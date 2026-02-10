@@ -58,21 +58,19 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	// Use dynamic lambda for button color so it updates when tab changes
 	auto MakeTabButton = [this](const FText& Text, ET66SettingsTab Tab) -> TSharedRef<SWidget>
 	{
-		return SNew(SBox).HeightOverride(40.0f).Padding(FMargin(2.0f, 0.0f))
+		return SNew(SBox).Padding(FMargin(2.0f, 0.0f))
 			[
-				SNew(SButton)
-				.HAlign(HAlign_Center).VAlign(VAlign_Center)
-				.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleTabClicked, Tab))
-				.ButtonColorAndOpacity_Lambda([this, Tab]() -> FSlateColor {
-					bool bIsSelected = (CurrentTab == Tab);
-					return bIsSelected ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
-				})
-				.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-				.ContentPadding(FMargin(12.f, 8.f))
-				[
-					SNew(STextBlock).Text(Text)
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
-				]
+				FT66Style::MakeButton(
+					FT66ButtonParams(Text, FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleTabClicked, Tab), ET66ButtonType::Neutral)
+					.SetMinWidth(0.f)
+					.SetPadding(FMargin(12.f, 8.f))
+					.SetColor(TAttribute<FSlateColor>::CreateLambda([this, Tab]() -> FSlateColor {
+						bool bIsSelected = (CurrentTab == Tab);
+						return bIsSelected ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
+					}))
+					.SetContent(SNew(STextBlock).Text(Text)
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")))
+				)
 			];
 	};
 
@@ -88,19 +86,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 			.WidthOverride(950.0f)
 			.HeightOverride(700.0f)
 			[
-				SNew(SBorder)
-				.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-				.Padding(FMargin(0.0f))
-				[
+				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					// Tab bar + close button
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(SBorder)
-						.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-						.Padding(FMargin(15.0f, 10.0f))
-						[
+						FT66Style::MakePanel(
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
@@ -125,22 +117,18 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 							+ SHorizontalBox::Slot().FillWidth(1.0f)
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
-								SNew(SBox).WidthOverride(40.0f).HeightOverride(40.0f)
-								[
-									SNew(SButton)
-									.HAlign(HAlign_Center).VAlign(VAlign_Center)
-									.OnClicked(FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleCloseClicked))
-									.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
-									.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
-									.ContentPadding(0.f)
-									[
-										SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "CloseX", "X"))
-										.Font(FT66Style::Tokens::FontBold(18))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
-									]
-								]
-							]
-						]
+								FT66Style::MakeButton(
+								FT66ButtonParams(NSLOCTEXT("T66.Common", "CloseX", "X"), FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleCloseClicked), ET66ButtonType::Danger)
+								.SetMinWidth(40.f).SetHeight(40.f)
+								.SetPadding(FMargin(0.f))
+								.SetColor(FT66Style::Tokens::Danger)
+								.SetContent(SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "CloseX", "X"))
+									.Font(FT66Style::Tokens::FontBold(18))
+									.ColorAndOpacity(FT66Style::Tokens::Text))
+							)
+							],
+							FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 10.0f))
+						)
 					]
 					// Content area
 					+ SVerticalBox::Slot()
@@ -169,8 +157,9 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 						[
 							BuildCrashingTab()
 						]
-					]
-				]
+					],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(0.0f)
+			)
 			]
 		];
 }
@@ -475,33 +464,21 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
-						[
-							SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-							.OnClicked_Lambda([SetValue]() { SetValue(true); return FReply::Handled(); })
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity_Lambda([GetValue]() { return GetValue() ? FT66Style::Tokens::Success : FT66Style::Tokens::Panel2; })
-							.ContentPadding(FMargin(12.f, 6.f))
-							[
-								SNew(STextBlock).Text(OnText)
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
-						]
+						FT66Style::MakeButton(
+							FT66ButtonParams(OnText, FOnClicked::CreateLambda([SetValue]() { SetValue(true); return FReply::Handled(); }), ET66ButtonType::Neutral)
+							.SetMinWidth(100.f)
+							.SetPadding(FMargin(12.f, 6.f))
+							.SetColor(TAttribute<FSlateColor>::CreateLambda([GetValue]() -> FSlateColor { return GetValue() ? FT66Style::Tokens::Success : FT66Style::Tokens::Panel2; }))
+						)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f, 0.0f, 0.0f)
 					[
-						SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
-						[
-							SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-							.OnClicked_Lambda([SetValue]() { SetValue(false); return FReply::Handled(); })
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity_Lambda([GetValue]() { return !GetValue() ? FT66Style::Tokens::Danger : FT66Style::Tokens::Panel2; })
-							.ContentPadding(FMargin(12.f, 6.f))
-							[
-								SNew(STextBlock).Text(OffText)
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
-						]
+						FT66Style::MakeButton(
+							FT66ButtonParams(OffText, FOnClicked::CreateLambda([SetValue]() { SetValue(false); return FReply::Handled(); }), ET66ButtonType::Neutral)
+							.SetMinWidth(100.f)
+							.SetPadding(FMargin(12.f, 6.f))
+							.SetColor(TAttribute<FSlateColor>::CreateLambda([GetValue]() -> FSlateColor { return !GetValue() ? FT66Style::Tokens::Danger : FT66Style::Tokens::Panel2; }))
+						)
 					]
 				]
 			];
@@ -534,45 +511,31 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth()
 						[
-							SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
-							[
-								SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateLambda([this, PS]()
+							FT66Style::MakeButton(
+								FT66ButtonParams(DarkText, FOnClicked::CreateLambda([this, PS]()
 								{
 									if (PS) PS->SetLightTheme(false);
 									ReleaseSlateResources(true);
 									return FReply::Handled();
-								})))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
-									PS && !PS->GetLightTheme() ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
-								.ButtonColorAndOpacity_Lambda([PS]() { return (PS && !PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; })
-								.ContentPadding(FMargin(12.f, 6.f))
-								[
-									SNew(STextBlock).Text(DarkText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-								]
-							]
+								}), (PS && !PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+								.SetMinWidth(100.f)
+								.SetPadding(FMargin(12.f, 6.f))
+								.SetColor(TAttribute<FSlateColor>::CreateLambda([PS]() -> FSlateColor { return (PS && !PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; }))
+							)
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f, 0.0f, 0.0f)
 						[
-							SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(32.0f)
-							[
-								SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FT66Style::DebounceClick(FOnClicked::CreateLambda([this, PS]()
+							FT66Style::MakeButton(
+								FT66ButtonParams(LightText, FOnClicked::CreateLambda([this, PS]()
 								{
 									if (PS) PS->SetLightTheme(true);
 									ReleaseSlateResources(true);
 									return FReply::Handled();
-								})))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>(
-									PS && PS->GetLightTheme() ? "T66.Button.ToggleActive" : "T66.Button.Neutral"))
-								.ButtonColorAndOpacity_Lambda([PS]() { return (PS && PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; })
-								.ContentPadding(FMargin(12.f, 6.f))
-								[
-									SNew(STextBlock).Text(LightText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-								]
-							]
+								}), (PS && PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+								.SetMinWidth(100.f)
+								.SetPadding(FMargin(12.f, 6.f))
+								.SetColor(TAttribute<FSlateColor>::CreateLambda([PS]() -> FSlateColor { return (PS && PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; }))
+							)
 						]
 					]
 				]
@@ -736,14 +699,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 						const int32 MonitorIdx = i;
 						Box->AddSlot().AutoHeight()
 						[
-							SNew(SButton)
-							.OnClicked_Lambda([this, MonitorIdx]() { PendingGraphics.MonitorIndex = MonitorIdx; PendingGraphics.bDirty = true; return FReply::Handled(); })
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							[
-								SNew(STextBlock).Text(Label)
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
+							FT66Style::MakeButton(
+								FT66ButtonParams(Label, FOnClicked::CreateLambda([this, MonitorIdx]() { PendingGraphics.MonitorIndex = MonitorIdx; PendingGraphics.bDirty = true; return FReply::Handled(); }), ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetColor(FT66Style::Tokens::Panel2)
+							)
 						];
 					}
 					return Box;
@@ -769,14 +729,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							SNew(SButton)
-							.OnClicked_Lambda([this, R]() { PendingGraphics.Resolution = R; PendingGraphics.bDirty = true; return FReply::Handled(); })
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							[
-								SNew(STextBlock).Text(ResToText(R))
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
+							FT66Style::MakeButton(
+								FT66ButtonParams(ResToText(R), FOnClicked::CreateLambda([this, R]() { PendingGraphics.Resolution = R; PendingGraphics.bDirty = true; return FReply::Handled(); }), ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetColor(FT66Style::Tokens::Panel2)
+							)
 						];
 					}
 					return Box;
@@ -795,14 +752,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							SNew(SButton)
-							.OnClicked_Lambda([this, Mode]() { PendingGraphics.WindowMode = Mode; PendingGraphics.bDirty = true; return FReply::Handled(); })
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							[
-								SNew(STextBlock).Text(WindowModeToText(Mode))
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
+							FT66Style::MakeButton(
+								FT66ButtonParams(WindowModeToText(Mode), FOnClicked::CreateLambda([this, Mode]() { PendingGraphics.WindowMode = Mode; PendingGraphics.bDirty = true; return FReply::Handled(); }), ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetColor(FT66Style::Tokens::Panel2)
+							)
 						];
 					};
 					Add(EWindowMode::Windowed);
@@ -824,14 +778,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							SNew(SButton)
-							.OnClicked_Lambda([this, Mode]() { PendingGraphics.DisplayMode = Mode; PendingGraphics.bDirty = true; return FReply::Handled(); })
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							[
-								SNew(STextBlock).Text(DisplayModeToText(Mode))
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
+							FT66Style::MakeButton(
+								FT66ButtonParams(DisplayModeToText(Mode), FOnClicked::CreateLambda([this, Mode]() { PendingGraphics.DisplayMode = Mode; PendingGraphics.bDirty = true; return FReply::Handled(); }), ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetColor(FT66Style::Tokens::Panel2)
+							)
 						];
 					};
 					Add(ET66DisplayMode::Standard);
@@ -889,14 +840,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					{
 						Box->AddSlot().AutoHeight()
 						[
-							SNew(SButton)
-							.OnClicked_Lambda([this, i]() { PendingGraphics.FpsCapIndex = i; PendingGraphics.bDirty = true; return FReply::Handled(); })
-							.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-							.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-							[
-								SNew(STextBlock).Text(FpsCapToText(i))
-								.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-							]
+							FT66Style::MakeButton(
+								FT66ButtonParams(FpsCapToText(i), FOnClicked::CreateLambda([this, i]() { PendingGraphics.FpsCapIndex = i; PendingGraphics.bDirty = true; return FReply::Handled(); }), ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetColor(FT66Style::Tokens::Panel2)
+							)
 						];
 					}
 					return Box;
@@ -907,7 +855,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.0f, 15.0f, 0.0f, 0.0f)
 		[
 			FT66Style::MakeButton(Loc ? Loc->GetText_Apply() : NSLOCTEXT("T66.Settings.Fallback", "APPLY", "APPLY"),
-				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleApplyGraphicsClicked), ET66ButtonType::Success, 120.f, 40.f)
+				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleApplyGraphicsClicked), ET66ButtonType::Success, 120.f)
 		]
 	];
 
@@ -945,15 +893,15 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(6.f)
 					[
-						FT66Style::MakeButton(Loc ? Loc->GetText_Keep() : NSLOCTEXT("T66.Settings.Fallback", "KEEP", "KEEP"),
-							FOnClicked::CreateLambda([this]() { EndVideoModeConfirmPrompt(true); return FReply::Handled(); }),
-							ET66ButtonType::Success, 100.f, 36.f)
+					FT66Style::MakeButton(Loc ? Loc->GetText_Keep() : NSLOCTEXT("T66.Settings.Fallback", "KEEP", "KEEP"),
+						FOnClicked::CreateLambda([this]() { EndVideoModeConfirmPrompt(true); return FReply::Handled(); }),
+						ET66ButtonType::Success, 100.f)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(6.f)
 					[
-						FT66Style::MakeButton(Loc ? Loc->GetText_Revert() : NSLOCTEXT("T66.Settings.Fallback", "REVERT", "REVERT"),
-							FOnClicked::CreateLambda([this]() { EndVideoModeConfirmPrompt(false); return FReply::Handled(); }),
-							ET66ButtonType::Danger, 100.f, 36.f)
+					FT66Style::MakeButton(Loc ? Loc->GetText_Revert() : NSLOCTEXT("T66.Settings.Fallback", "REVERT", "REVERT"),
+						FOnClicked::CreateLambda([this]() { EndVideoModeConfirmPrompt(false); return FReply::Handled(); }),
+						ET66ButtonType::Danger, 100.f)
 					]
 				]
 			]
@@ -972,31 +920,27 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		const FText Text = (Tab == ET66ControlsDeviceTab::Controller)
 			? (Loc ? Loc->GetText_Controller() : NSLOCTEXT("T66.Settings.Fallback", "CONTROLLER", "CONTROLLER"))
 			: (Loc ? Loc->GetText_KeyboardAndMouse() : NSLOCTEXT("T66.Settings.Fallback", "KEYBOARD & MOUSE", "KEYBOARD & MOUSE"));
-		return SNew(SBox).HeightOverride(34.0f).Padding(FMargin(2.0f, 0.0f))
+		return SNew(SBox).Padding(FMargin(2.0f, 0.0f))
 		[
-			SNew(SButton)
-			.OnClicked_Lambda([this, Tab]()
-			{
-				CurrentControlsDeviceTab = Tab;
-				if (ControlsDeviceSwitcher.IsValid())
+			FT66Style::MakeButton(
+				FT66ButtonParams(Text, FOnClicked::CreateLambda([this, Tab]()
 				{
-					ControlsDeviceSwitcher->SetActiveWidgetIndex(Tab == ET66ControlsDeviceTab::Controller ? 1 : 0);
-				}
-				RefreshControlsKeyTexts();
-				return FReply::Handled();
-			})
-			.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-			.ButtonColorAndOpacity_Lambda([this, Tab]()
-			{
-				const bool bIsSelected = (CurrentControlsDeviceTab == Tab);
-				return bIsSelected ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
-			})
-			.ContentPadding(FMargin(12.f, 6.f))
-			[
-				SNew(STextBlock)
-				.Text(Text)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-			]
+					CurrentControlsDeviceTab = Tab;
+					if (ControlsDeviceSwitcher.IsValid())
+					{
+						ControlsDeviceSwitcher->SetActiveWidgetIndex(Tab == ET66ControlsDeviceTab::Controller ? 1 : 0);
+					}
+					RefreshControlsKeyTexts();
+					return FReply::Handled();
+				}), ET66ButtonType::Neutral)
+				.SetMinWidth(0.f)
+				.SetPadding(FMargin(12.f, 6.f))
+				.SetColor(TAttribute<FSlateColor>::CreateLambda([this, Tab]() -> FSlateColor
+				{
+					const bool bIsSelected = (CurrentControlsDeviceTab == Tab);
+					return bIsSelected ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
+				}))
+			)
 		];
 	};
 
@@ -1034,29 +978,21 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 			[
-				SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(30.0f)
-				[
-					SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-					.OnClicked_Lambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
+				FT66Style::MakeButton(
+					FT66ButtonParams(RebindText, FOnClicked::CreateLambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
 					{
 						return bAxis ? BeginRebindAxis(Name, Scale, bIsController, SlotIndex, OldKey, KeyText)
 							: BeginRebindAction(Name, bIsController, SlotIndex, OldKey, KeyText);
-					})
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Accent2)
-					.ContentPadding(FMargin(12.f, 6.f))
-					[
-						SNew(STextBlock).Text(RebindText)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
-				]
+					}), ET66ButtonType::Primary)
+					.SetMinWidth(100.f)
+					.SetPadding(FMargin(12.f, 6.f))
+					.SetColor(FT66Style::Tokens::Accent2)
+				)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 			[
-				SNew(SBox).MinDesiredWidth(100.0f).HeightOverride(30.0f)
-				[
-					SNew(SButton).HAlign(HAlign_Center).VAlign(VAlign_Center)
-					.OnClicked_Lambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
+				FT66Style::MakeButton(
+					FT66ButtonParams(ClearText, FOnClicked::CreateLambda([this, bAxis, Name, Scale, bIsController, SlotIndex, OldKey, KeyText]()
 					{
 						Pending = {};
 						Pending.bIsAxis = bAxis;
@@ -1068,15 +1004,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 						Pending.KeyText = KeyText;
 						ClearBindingInInputSettings();
 						return FReply::Handled();
-					})
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Danger"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Danger)
-					.ContentPadding(FMargin(12.f, 6.f))
-					[
-						SNew(STextBlock).Text(ClearText)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
-				]
+					}), ET66ButtonType::Danger)
+					.SetMinWidth(100.f)
+					.SetPadding(FMargin(12.f, 6.f))
+					.SetColor(FT66Style::Tokens::Danger)
+				)
 			];
 
 		ControlKeyTextMap.Add(RowKey, KeyText);
@@ -1238,7 +1170,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.0f, 15.0f, 0.0f, 0.0f)
 		[
 			FT66Style::MakeButton(Loc ? Loc->GetText_RestoreDefaults() : NSLOCTEXT("T66.Settings.Fallback", "Restore Defaults", "RESTORE DEFAULTS"),
-				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleRestoreDefaultsClicked), ET66ButtonType::Danger, 180.f, 40.f)
+				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleRestoreDefaultsClicked), ET66ButtonType::Danger, 180.f)
 		];
 }
 
@@ -1322,23 +1254,20 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					SNew(SButton)
-					.OnClicked_Lambda([PS]() { if (PS) PS->SetMuteWhenUnfocused(!PS->GetMuteWhenUnfocused()); return FReply::Handled(); })
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity_Lambda([PS]()
-					{
-						const bool bOn = PS ? PS->GetMuteWhenUnfocused() : false;
-						return FSlateColor(bOn ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger);
-					})
-					[
-						SNew(STextBlock)
-						.Text_Lambda([Loc, PS]()
+					FT66Style::MakeButton(
+						FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([PS]() { if (PS) PS->SetMuteWhenUnfocused(!PS->GetMuteWhenUnfocused()); return FReply::Handled(); }), ET66ButtonType::Neutral)
+						.SetMinWidth(0.f)
+						.SetColor(TAttribute<FSlateColor>::CreateLambda([PS]() -> FSlateColor
+						{
+							const bool bOn = PS ? PS->GetMuteWhenUnfocused() : false;
+							return FSlateColor(bOn ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger);
+						}))
+						.SetDynamicLabel(TAttribute<FText>::CreateLambda([Loc, PS]() -> FText
 						{
 							const bool bOn = PS ? PS->GetMuteWhenUnfocused() : false;
 							return bOn ? (Loc ? Loc->GetText_On() : NSLOCTEXT("T66.Settings", "On", "ON")) : (Loc ? Loc->GetText_Off() : NSLOCTEXT("T66.Settings", "Off", "OFF"));
-						})
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
+						}))
+					)
 				]
 			]
 		]
@@ -1367,14 +1296,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 							return SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
-									SNew(SButton)
-									.OnClicked_Lambda([PS]() { if (PS) PS->SetOutputDeviceId(FString()); return FReply::Handled(); })
-									.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-									.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-									[
-										SNew(STextBlock).Text(DefaultLabel)
-										.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-									]
+								FT66Style::MakeButton(
+									FT66ButtonParams(DefaultLabel, FOnClicked::CreateLambda([PS]() { if (PS) PS->SetOutputDeviceId(FString()); return FReply::Handled(); }), ET66ButtonType::Neutral)
+									.SetMinWidth(0.f)
+									.SetColor(FT66Style::Tokens::Panel2)
+								)
 								];
 						})
 						.ButtonContent()
@@ -1423,23 +1349,20 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
-					SNew(SButton)
-					.OnClicked_Lambda([PS]() { if (PS) PS->SetSubtitlesAlwaysOn(!PS->GetSubtitlesAlwaysOn()); return FReply::Handled(); })
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity_Lambda([PS]()
-					{
-						const bool bOn = PS ? PS->GetSubtitlesAlwaysOn() : false;
-						return FSlateColor(bOn ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger);
-					})
-					[
-						SNew(STextBlock)
-						.Text_Lambda([Loc, PS]()
+					FT66Style::MakeButton(
+						FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([PS]() { if (PS) PS->SetSubtitlesAlwaysOn(!PS->GetSubtitlesAlwaysOn()); return FReply::Handled(); }), ET66ButtonType::Neutral)
+						.SetMinWidth(0.f)
+						.SetColor(TAttribute<FSlateColor>::CreateLambda([PS]() -> FSlateColor
+						{
+							const bool bOn = PS ? PS->GetSubtitlesAlwaysOn() : false;
+							return FSlateColor(bOn ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger);
+						}))
+						.SetDynamicLabel(TAttribute<FText>::CreateLambda([Loc, PS]() -> FText
 						{
 							const bool bOn = PS ? PS->GetSubtitlesAlwaysOn() : false;
 							return bOn ? (Loc ? Loc->GetText_On() : NSLOCTEXT("T66.Settings", "On", "ON")) : (Loc ? Loc->GetText_Off() : NSLOCTEXT("T66.Settings", "Off", "OFF"));
-						})
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
+						}))
+					)
 				]
 			]
 		];
@@ -1480,7 +1403,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 15.0f, 0.0f, 20.0f)
 		[
 			FT66Style::MakeButton(Loc ? Loc->GetText_ApplySafeModeSettings() : NSLOCTEXT("T66.Settings.Fallback", "Apply Safe Mode Settings", "Apply Safe Mode Settings"),
-				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleSafeModeClicked), ET66ButtonType::Danger, 220.f, 45.f)
+				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleSafeModeClicked), ET66ButtonType::Danger, 220.f)
 		]
 		// Separator
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 20.0f)
@@ -1510,7 +1433,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
 			FT66Style::MakeButton(Loc ? Loc->GetText_ReportBug() : NSLOCTEXT("T66.ReportBug", "Title", "REPORT BUG"),
-				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleReportBugClicked), ET66ButtonType::Primary, 150.f, 45.f)
+				FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleReportBugClicked), ET66ButtonType::Primary, 150.f)
 		];
 }
 

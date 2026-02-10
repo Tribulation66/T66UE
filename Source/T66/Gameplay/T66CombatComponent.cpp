@@ -4,11 +4,16 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
 #include "Gameplay/T66HeroBase.h"
-#include "Gameplay/T66HeroProjectile.h"
+#include "Core/T66DamageLogSubsystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/OverlapResult.h"
 #include "EngineUtils.h"
 #include "Sound/SoundBase.h"
 #include "UObject/SoftObjectPath.h"
@@ -19,6 +24,8 @@ UT66CombatComponent::UT66CombatComponent()
 
 	// Optional SFX asset (must be imported to a SoundWave/SoundCue .uasset).
 	ShotSfx = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
+	// Niagara particles for slash (arc) and jump. Add User.Tint (Linear Color) in the system for color override.
+	SlashVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
 }
 
 void UT66CombatComponent::SetLockedTarget(AActor* InTarget)
@@ -52,6 +59,8 @@ void UT66CombatComponent::BeginPlay()
 
 	// Preload optional shot SFX once (avoid sync loads in combat loop).
 	CachedShotSfx = ShotSfx.LoadSynchronous();
+	// Preload Niagara slash VFX.
+	CachedSlashVFXNiagara = SlashVFXNiagara.LoadSynchronous();
 
 	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, EffectiveFireIntervalSeconds, true, EffectiveFireIntervalSeconds);
 }
@@ -183,7 +192,7 @@ void UT66CombatComponent::TryFire()
 	FVector MyLoc = OwnerActor->GetActorLocation();
 	const float RangeSq = AttackRange * AttackRange;
 
-	auto ComputeProjectileTint = [&]() -> FLinearColor
+	auto ComputeSlashTint = [&]() -> FLinearColor
 	{
 		// Default: red.
 		FLinearColor C(1.f, 0.2f, 0.2f, 1.f);
@@ -191,7 +200,7 @@ void UT66CombatComponent::TryFire()
 		{
 			return C;
 		}
-		// Use first equipped idol as the shot tint.
+		// Use first equipped idol as the slash tint.
 		for (const FName& IdolID : CachedRunState->GetEquippedIdols())
 		{
 			if (!IdolID.IsNone())
@@ -204,22 +213,40 @@ void UT66CombatComponent::TryFire()
 		return C;
 	};
 
-	auto SpawnProjectile = [&](AActor* Target) -> bool
+	// --- AoE Slash ---
+	// Finds the primary target (same priority as before), then deals damage to it
+	// plus any other enemies/bosses within SlashRadius centered on the target.
+	auto PerformSlash = [&](AActor* PrimaryTarget) -> bool
 	{
-		if (!Target) return false;
-		FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 50.f);
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = OwnerActor;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AT66HeroProjectile* Proj = World->SpawnActor<AT66HeroProjectile>(AT66HeroProjectile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-		if (!Proj)
+		if (!PrimaryTarget) return false;
+
+		const FVector SlashCenter = PrimaryTarget->GetActorLocation();
+		const float EffectiveSlashRadius = SlashRadius * ProjectileScaleMultiplier;
+
+		// 1. Always damage the primary target.
+		ApplyDamageToActor(PrimaryTarget, EffectiveDamagePerShot);
+
+		// 2. Splash: overlap sphere around the target, hit nearby enemies/bosses.
+		TArray<FOverlapResult> Overlaps;
+		FCollisionShape Shape = FCollisionShape::MakeSphere(EffectiveSlashRadius);
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(OwnerActor);       // don't hit the hero
+		Params.AddIgnoredActor(PrimaryTarget);     // already damaged above
+
+		World->OverlapMultiByChannel(Overlaps, SlashCenter, FQuat::Identity,
+			ECC_Pawn, Shape, Params);
+
+		for (const FOverlapResult& Overlap : Overlaps)
 		{
-			return false;
+			AActor* Hit = Overlap.GetActor();
+			if (Hit)
+			{
+				ApplyDamageToActor(Hit, EffectiveDamagePerShot);
+			}
 		}
-		Proj->Damage = EffectiveDamagePerShot;
-		Proj->SetScaleMultiplier(ProjectileScaleMultiplier);
-		Proj->SetTintColor(ComputeProjectileTint());
-		Proj->SetTargetActor(Target);
+
+		// 3. VFX + SFX
+		SpawnSlashVFX(SlashCenter, EffectiveSlashRadius, ComputeSlashTint());
 		PlayShotSfx();
 		return true;
 	};
@@ -235,7 +262,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (E->CurrentHP > 0)
 				{
-					(void)SpawnProjectile(Locked);
+					(void)PerformSlash(Locked);
 					return;
 				}
 				// Dead: clear lock.
@@ -245,7 +272,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (B->IsAwakened() && B->IsAlive())
 				{
-					(void)SpawnProjectile(Locked);
+					(void)PerformSlash(Locked);
 					return;
 				}
 				ClearLockedTarget();
@@ -254,7 +281,7 @@ void UT66CombatComponent::TryFire()
 			{
 				if (GB->CurrentHP > 0)
 				{
-					(void)SpawnProjectile(Locked);
+					(void)PerformSlash(Locked);
 					return;
 				}
 				ClearLockedTarget();
@@ -310,6 +337,75 @@ void UT66CombatComponent::TryFire()
 		: (ClosestBoss ? Cast<AActor>(ClosestBoss) : Cast<AActor>(ClosestEnemy));
 	if (Target)
 	{
-		(void)SpawnProjectile(Target);
+		(void)PerformSlash(Target);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ApplyDamageToActor — dispatches to the correct TakeDamage method per type.
+// ---------------------------------------------------------------------------
+void UT66CombatComponent::ApplyDamageToActor(AActor* Target, int32 DamageAmount)
+{
+	if (!Target) return;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_AutoAttack;
+
+	if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Target))
+	{
+		if (E->CurrentHP > 0)
+		{
+			E->TakeDamageFromHero(DamageAmount, SourceID);
+		}
+	}
+	else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Target))
+	{
+		if (GB->CurrentHP > 0)
+		{
+			GB->TakeDamageFromHeroHit(DamageAmount, SourceID);
+		}
+	}
+	else if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Target))
+	{
+		if (VB->CurrentHP > 0)
+		{
+			VB->TakeDamageFromHeroHit(DamageAmount, SourceID);
+		}
+	}
+	else if (AT66BossBase* B = Cast<AT66BossBase>(Target))
+	{
+		if (B->IsAwakened() && B->IsAlive())
+		{
+			B->TakeDamageFromHeroHit(DamageAmount, SourceID);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SpawnSlashVFX — spawns Niagara particles in an arc around the slash center.
+// Uses VFX_Attack1; set User.Tint (Linear Color) in the Niagara system to drive color.
+// ---------------------------------------------------------------------------
+void UT66CombatComponent::SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color)
+{
+	UWorld* World = GetWorld();
+	if (!World || !CachedSlashVFXNiagara) return;
+
+	const int32 NumParticles = 10;
+	const float ArcAngleDeg = 180.f;  // half circle
+	const float StartAngleDeg = -ArcAngleDeg * 0.5f;
+	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
+
+	for (int32 i = 0; i < NumParticles; ++i)
+	{
+		const float T = (NumParticles > 1) ? (static_cast<float>(i) / static_cast<float>(NumParticles - 1)) : 0.5f;
+		const float AngleRad = FMath::DegreesToRadians(StartAngleDeg + ArcAngleDeg * T);
+		const FVector Offset(FMath::Cos(AngleRad) * Radius, FMath::Sin(AngleRad) * Radius, 0.f);
+		const FVector SpawnLoc = Location + Offset;
+
+		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			World, CachedSlashVFXNiagara, SpawnLoc, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::None);
+		if (NC)
+		{
+			NC->SetNiagaraVariableVec4(FString(TEXT("User.Tint")), ColorVec);
+		}
 	}
 }

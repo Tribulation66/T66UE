@@ -113,8 +113,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 	auto MakeIconButton = [this, SquareIconSize](ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)(), const FString& FallbackLetter, TSharedPtr<FSlateBrush> IconBrush, TSharedPtr<SImage>* OutImagePtr = nullptr) -> TSharedRef<SWidget>
 	{
-		const FButtonStyle& ObsidianBtn = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-
 		TSharedPtr<SImage> ImgWidget;
 		TSharedRef<SWidget> Content = IconBrush.IsValid()
 			? StaticCastSharedRef<SWidget>(
@@ -130,40 +128,23 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 		if (OutImagePtr) *OutImagePtr = ImgWidget;
 
-		return SNew(SBox)
-			.WidthOverride(SquareIconSize)
-			.HeightOverride(SquareIconSize)
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Fill).VAlign(VAlign_Fill)
-				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-				.ButtonStyle(&ObsidianBtn)
-				.ContentPadding(0.0f)
-				[
-					Content
-				]
-			];
+		return FT66Style::MakeButton(
+			FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateSP(this, ClickHandler))
+			.SetMinWidth(SquareIconSize).SetHeight(SquareIconSize)
+			.SetPadding(FMargin(0.f))
+			.SetContent(Content)
+		);
 	};
 
 	auto MakeTimeButton = [this](const FText& Text, ET66LeaderboardTime Time, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
 	{
-		const FButtonStyle& ObsidianBtn = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral");
-		const FTextBlockStyle& TxtBtn = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
-		return SNew(SBox).MinDesiredWidth(160.0f).HeightOverride(44.0f)
-			[
-				SNew(SButton)
-				.HAlign(HAlign_Center).VAlign(VAlign_Center)
-				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
-				.ButtonStyle(&ObsidianBtn)
-				.ButtonColorAndOpacity_Lambda([this, Time]() -> FLinearColor {
-					return (CurrentTimeFilter == Time) ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
-				})
-				[
-					SNew(STextBlock)
-					.Text(Text)
-					.TextStyle(&TxtBtn)
-				]
-			];
+		return FT66Style::MakeButton(
+			FT66ButtonParams(Text, FOnClicked::CreateSP(this, ClickHandler))
+			.SetMinWidth(160.f)
+			.SetColor(TAttribute<FSlateColor>::CreateLambda([this, Time]() -> FSlateColor {
+				return (CurrentTimeFilter == Time) ? FSlateColor(FT66Style::Tokens::Accent2) : FSlateColor(FT66Style::Tokens::Panel2);
+			}))
+		);
 	};
 
 	FText WeeklyText = LocSubsystem ? LocSubsystem->GetText_Weekly() : NSLOCTEXT("T66.Leaderboard", "Weekly", "WEEKLY");
@@ -178,27 +159,22 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		.VAlign(VAlign_Bottom)
 		.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 		[
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(FMargin(4.0f))
-			[
+			FT66Style::MakePanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
 				[ MakeIconButton(ET66LeaderboardFilter::Global, &ST66LeaderboardPanel::HandleGlobalClicked, TEXT("G"), FilterBrushGlobal) ]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
 				[ MakeIconButton(ET66LeaderboardFilter::Friends, &ST66LeaderboardPanel::HandleFriendsClicked, TEXT("F"), FilterBrushFriends) ]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
-				[ MakeIconButton(ET66LeaderboardFilter::Streamers, &ST66LeaderboardPanel::HandleStreamersClicked, TEXT("S"), FilterBrushStreamers, &StreamerIconImage) ]
-			]
+				[ MakeIconButton(ET66LeaderboardFilter::Streamers, &ST66LeaderboardPanel::HandleStreamersClicked, TEXT("S"), FilterBrushStreamers, &StreamerIconImage) ],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(4.0f)
+			)
 		]
 		// Right: main leaderboard panel content
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.0f)
 		[
-			SNew(SBorder)
-			.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Panel"))
-			.Padding(FMargin(FT66Style::Tokens::Space3))
-			[
+			FT66Style::MakePanel(
 				SNew(SVerticalBox)
 				// Account Status button (only visible when account is restricted)
 			+ SVerticalBox::Slot()
@@ -206,19 +182,10 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			.HAlign(HAlign_Right)
 			.Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				SNew(SBox)
-				.MinDesiredWidth(160.f)
-				.HeightOverride(32.f)
-				.Visibility_Lambda([this]()
-				{
-					return (LeaderboardSubsystem && LeaderboardSubsystem->ShouldShowAccountStatusButton())
-						? EVisibility::Visible
-						: EVisibility::Collapsed;
-				})
-				[
-					SNew(SButton)
-					.IsEnabled_Lambda([this]() { return UIManager != nullptr; })
-					.OnClicked_Lambda([this]()
+			FT66Style::MakeButton(
+				FT66ButtonParams(
+					LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS"),
+					FOnClicked::CreateLambda([this]()
 					{
 						if (UIManager)
 						{
@@ -226,15 +193,18 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						}
 						return FReply::Handled();
 					})
-					.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-					.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-					.ContentPadding(FMargin(12.f, 6.f))
-					[
-						SNew(STextBlock)
-						.Text(LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-					]
-				]
+				)
+				.SetMinWidth(160.f)
+				.SetPadding(FMargin(12.f, 6.f))
+				.SetColor(FT66Style::Tokens::Panel2)
+				.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return UIManager != nullptr; }))
+				.SetVisibility(TAttribute<EVisibility>::CreateLambda([this]()
+				{
+					return (LeaderboardSubsystem && LeaderboardSubsystem->ShouldShowAccountStatusButton())
+						? EVisibility::Visible
+						: EVisibility::Collapsed;
+				}))
+			)
 			]
 			// Time toggles (Weekly | All Time) — larger buttons
 				+ SVerticalBox::Slot()
@@ -414,7 +384,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					]
 				]
 			]
-		]
+		,
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space3)
+		)
 		]
 	];
 
@@ -599,15 +571,13 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		const bool bIsLocalRowButton = Entry.bIsLocalPlayer;
 		TSharedRef<SWidget> RowWidget =
 			bIsLocalRowButton
-			? StaticCastSharedRef<SWidget>(
-				SNew(SButton)
-				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-				.ContentPadding(0.f)
-				.Cursor(bRowClickable ? EMouseCursor::Hand : EMouseCursor::Default)
-				.OnClicked_Lambda([this, Entry]() { return HandleLocalEntryClicked(Entry); })
-				[
-					RowContents
-				])
+			? FT66Style::MakeButton(
+				FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, Entry]() { return HandleLocalEntryClicked(Entry); }))
+				.SetMinWidth(0.f)
+				.SetPadding(FMargin(0.f))
+				.SetColor(FLinearColor::Transparent)
+				.SetContent(RowContents)
+			)
 			: RowContents;
 
 		EntryListBox->AddSlot()
