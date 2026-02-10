@@ -729,9 +729,13 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 Rank = 0;
 
-	/** Player display name */
+	/** Player display name (solo; also used when reading from DataTable). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	FString PlayerName;
+
+	/** For duos: 2 names; for trios: 3 names; for solo: 1 name. Empty means use PlayerName. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	TArray<FString> PlayerNames;
 
 	/** Total score for this run */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")

@@ -1116,15 +1116,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 FReply UT66HeroSelectionScreen::HandlePrevClicked()
 {
 	PreviewPreviousHero();
-	ReleaseSlateResources(true);
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
 }
 FReply UT66HeroSelectionScreen::HandleNextClicked()
 {
 	PreviewNextHero();
-	ReleaseSlateResources(true);
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
 }
 FReply UT66HeroSelectionScreen::HandleHeroGridClicked() { OnHeroGridClicked(); return FReply::Handled(); }
@@ -1148,8 +1146,7 @@ FReply UT66HeroSelectionScreen::HandleBodyTypeAClicked()
 {
 	SelectedBodyType = ET66BodyType::TypeA;
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
-	ReleaseSlateResources(true);
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
 }
 
@@ -1157,8 +1154,7 @@ FReply UT66HeroSelectionScreen::HandleBodyTypeBClicked()
 {
 	SelectedBodyType = ET66BodyType::TypeB;
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
-	ReleaseSlateResources(true);
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
 }
 
@@ -1361,16 +1357,7 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 	// Rebuild Slate so co-op vs solo layout is correct (Lab + Back to Lobby only when from Lobby; difficulty + Enter when solo). Reuse is not enough—cached tree may be from the other flow.
-	const bool bWasInViewport = IsInViewport();
-	if (bWasInViewport)
-	{
-		RemoveFromParent();
-	}
-	ReleaseSlateResources(true);
-	if (bWasInViewport)
-	{
-		AddToViewport(0);
-	}
+	FT66Style::DeferRebuild(this);
 	PreviewSkinIDOverride = NAME_None;
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
 	{
@@ -1648,7 +1635,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::CreateHeroPreviewWidget(const FLine
 
 void UT66HeroSelectionScreen::OnLanguageChanged(ET66Language NewLanguage)
 {
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 }
 
 FReply UT66HeroSelectionScreen::NativeOnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
@@ -1657,8 +1644,7 @@ FReply UT66HeroSelectionScreen::NativeOnKeyDown(const FGeometry& MyGeometry, con
 	if (InKeyEvent.GetKey() == EKeys::B)
 	{
 		SelectedBodyType = ET66BodyType::TypeB;
-		ReleaseSlateResources(true);
-		TakeWidget();
+		FT66Style::DeferRebuild(this);
 		return FReply::Handled();
 	}
 	return Super::NativeOnKeyDown(MyGeometry, InKeyEvent);

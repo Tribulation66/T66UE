@@ -14,8 +14,11 @@
 #include "Widgets/Layout/SBox.h"
 #include "Layout/Visibility.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SComboButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Fonts/CompositeFont.h"
+#include "Blueprint/UserWidget.h"
+#include "TimerManager.h"
 
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
@@ -483,6 +486,41 @@ void FT66Style::Initialize()
 			StyleInstance->Set("T66.Button.ToggleActive",
 				MakeBoxStyle(Tokens::Text, Tokens::Text * 0.85f + FLinearColor(0,0,0,0.15f), Tokens::Text * 0.70f + FLinearColor(0,0,0,0.30f)));
 		}
+
+		// Row style: transparent background, very thin border, subtle hover highlight.
+		// Used for leaderboard rows and list items that are clickable but shouldn't look like buttons.
+		{
+			constexpr float RowBorderW = 0.5f;
+			const FLinearColor RowBorderColor = Tokens::Stroke;
+			const FLinearColor RowN = FLinearColor(0.f, 0.f, 0.f, 0.f);       // transparent
+			const FLinearColor RowH = Tokens::Stroke * FLinearColor(1,1,1,0.5f); // subtle highlight
+			const FLinearColor RowP = Tokens::Stroke * FLinearColor(1,1,1,0.7f); // slightly stronger on press
+			StyleInstance->Set("T66.Button.Row", FButtonStyle()
+				.SetNormal(FSlateRoundedBoxBrush(RowN, 2.f, RowBorderColor, RowBorderW))
+				.SetHovered(FSlateRoundedBoxBrush(RowH, 2.f, RowBorderColor, RowBorderW))
+				.SetPressed(FSlateRoundedBoxBrush(RowP, 2.f, RowBorderColor, RowBorderW))
+				.SetNormalPadding(FMargin(0.f))
+				.SetPressedPadding(FMargin(0.f)));
+		}
+	}
+
+	// Dropdown: theme-aware (Dark = black bg + white text, Light = light bg + black text)
+	{
+		const FLinearColor DropN = Tokens::Panel;
+		const FLinearColor DropH = Tokens::Panel + FLinearColor(0.05f, 0.05f, 0.05f, 0.f);
+		const FLinearColor DropP = Tokens::Panel + FLinearColor(0.08f, 0.08f, 0.08f, 0.f);
+		FComboButtonStyle DropdownStyle;
+		DropdownStyle.ButtonStyle = FButtonStyle()
+			.SetNormal(FSlateRoundedBoxBrush(DropN, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetHovered(FSlateRoundedBoxBrush(DropH, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetPressed(FSlateRoundedBoxBrush(DropP, Tokens::CornerRadiusSmall, BorderColor, BorderW))
+			.SetNormalPadding(FMargin(0.f))
+			.SetPressedPadding(FMargin(0.f));
+		DropdownStyle.DownArrowImage = FSlateBrush();
+		DropdownStyle.DownArrowImage.TintColor = FSlateColor(Tokens::Text);
+		DropdownStyle.MenuBorderBrush = FSlateRoundedBoxBrush(Tokens::Panel, Tokens::CornerRadiusSmall, BorderColor, BorderW);
+		DropdownStyle.MenuBorderPadding = FMargin(0.f);
+		StyleInstance->Set("T66.Dropdown.ComboButtonStyle", DropdownStyle);
 	}
 
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleInstance);
@@ -543,6 +581,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		StyleName = "T66.Button.Primary";    DefaultBtnColor = Tokens::Success; break;
 	case ET66ButtonType::ToggleActive:
 		StyleName = "T66.Button.ToggleActive"; DefaultBtnColor = Tokens::Text;  break;
+	case ET66ButtonType::Row:
+		StyleName = "T66.Button.Row";        DefaultBtnColor = FLinearColor::Transparent; break;
 	default: // Neutral
 		StyleName = "T66.Button.Neutral";    DefaultBtnColor = Tokens::Panel2;  break;
 	}
@@ -707,6 +747,64 @@ TSharedRef<SWidget> FT66Style::MakePanel(
 	FMargin Padding)
 {
 	return MakePanel(Content, FT66PanelParams(Type).SetPadding(Padding));
+}
+
+// ---------------------------------------------------------------------------
+// GetDropdownComboButtonStyle — theme-aware combo style for dropdowns.
+// ---------------------------------------------------------------------------
+const FComboButtonStyle& FT66Style::GetDropdownComboButtonStyle()
+{
+	return Get().GetWidgetStyle<FComboButtonStyle>("T66.Dropdown.ComboButtonStyle");
+}
+
+// ---------------------------------------------------------------------------
+// MakeDropdown — themed SComboButton (Dark = black bg + white text, Light = light bg + black text).
+// ---------------------------------------------------------------------------
+TSharedRef<SWidget> FT66Style::MakeDropdown(const FT66DropdownParams& Params)
+{
+	const FComboButtonStyle& ComboStyle = GetDropdownComboButtonStyle();
+	TSharedRef<SComboButton> Combo = SNew(SComboButton)
+		.ComboButtonStyle(&ComboStyle)
+		.OnGetMenuContent_Lambda([OnGet = Params.OnGetMenuContent]() { return OnGet(); })
+		.ContentPadding(Params.Padding)
+		.ButtonContent()
+		[
+			Params.Content
+		];
+
+	return SNew(SBox)
+		.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
+		.HeightOverride(Params.Height)
+		.Visibility(Params.Visibility)
+		[
+			Combo
+		];
+}
+
+// ---------------------------------------------------------------------------
+// DeferRebuild — safe, next-tick widget rebuild for any UUserWidget.
+// ---------------------------------------------------------------------------
+void FT66Style::DeferRebuild(UUserWidget* Widget, int32 ZOrder)
+{
+	if (!Widget) return;
+	UWorld* World = Widget->GetWorld();
+	if (!World) return;
+
+	TWeakObjectPtr<UUserWidget> Weak(Widget);
+	World->GetTimerManager().SetTimerForNextTick(
+		FTimerDelegate::CreateLambda([Weak, ZOrder]()
+		{
+			UUserWidget* W = Weak.Get();
+			if (!W || !W->GetCachedWidget().IsValid()) return;
+
+			const bool bInViewport = W->IsInViewport();
+			if (bInViewport) W->RemoveFromParent();
+
+			W->ReleaseSlateResources(true);
+			W->TakeWidget();
+
+			if (bInViewport) W->AddToViewport(ZOrder);
+		}));
 }
 
 void FT66Style::Shutdown()

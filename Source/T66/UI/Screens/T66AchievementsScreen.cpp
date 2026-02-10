@@ -110,27 +110,32 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	};
 
 	return FT66Style::MakePanel(
-		SNew(SVerticalBox)
-			// Header row
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(30.0f, 25.0f, 30.0f, 20.0f)
+		SNew(SOverlay)
+			// Main content
+			+ SOverlay::Slot()
 			[
-				SNew(SHorizontalBox)
-				// Title
-				+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
+				SNew(SVerticalBox)
+				// Header row (title centered, AC display right)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(30.0f, 25.0f, 30.0f, 20.0f)
 				[
-					SNew(STextBlock).Text(AchievementsText)
-					.Font(FT66Style::Tokens::FontBold(42))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
-				// Total AC display
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					FT66Style::MakePanel(
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-						[
+					SNew(SOverlay)
+					// Centered title
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock).Text(AchievementsText)
+						.Font(FT66Style::Tokens::FontBold(42))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					// AC display (right-aligned)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Right)
+					.VAlign(VAlign_Center)
+					[
+						FT66Style::MakePanel(
 							SNew(STextBlock)
 								.Text_Lambda([this, Ach, Loc]() -> FText
 								{
@@ -143,51 +148,56 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 								})
 								.Font(FT66Style::Tokens::FontBold(22))
 								.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
-						]
-				,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
+						,
+						FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
+					]
+				]
+				// Tier tabs
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(30.0f, 0.0f, 30.0f, 15.0f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeTierButton(Loc ? Loc->GetText_AchievementTierBlack() : NSLOCTEXT("T66.Achievements", "TierBlack", "BLACK"), ET66AchievementTier::Black)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeTierButton(Loc ? Loc->GetText_AchievementTierRed() : NSLOCTEXT("T66.Achievements", "TierRed", "RED"), ET66AchievementTier::Red)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeTierButton(Loc ? Loc->GetText_AchievementTierYellow() : NSLOCTEXT("T66.Achievements", "TierYellow", "YELLOW"), ET66AchievementTier::Yellow)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeTierButton(Loc ? Loc->GetText_AchievementTierWhite() : NSLOCTEXT("T66.Achievements", "TierWhite", "WHITE"), ET66AchievementTier::White)
+					]
+				]
+				// Achievement list
+				+ SVerticalBox::Slot()
+				.FillHeight(1.0f)
+				.Padding(30.0f, 0.0f, 30.0f, 20.0f)
+				[
+					SNew(SScrollBox)
+					+ SScrollBox::Slot()
+					[
+						SAssignNew(AchievementListBox, SVerticalBox)
+					]
 				]
 			]
-			// Tier tabs
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(30.0f, 0.0f, 30.0f, 15.0f)
+			// Back button (bottom-left overlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Bottom)
+			.Padding(20.0f, 0.0f, 0.0f, 20.0f)
 			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth()
-				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierBlack() : NSLOCTEXT("T66.Achievements", "TierBlack", "BLACK"), ET66AchievementTier::Black)
-				]
-				+ SHorizontalBox::Slot().AutoWidth()
-				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierRed() : NSLOCTEXT("T66.Achievements", "TierRed", "RED"), ET66AchievementTier::Red)
-				]
-				+ SHorizontalBox::Slot().AutoWidth()
-				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierYellow() : NSLOCTEXT("T66.Achievements", "TierYellow", "YELLOW"), ET66AchievementTier::Yellow)
-				]
-				+ SHorizontalBox::Slot().AutoWidth()
-				[
-					MakeTierButton(Loc ? Loc->GetText_AchievementTierWhite() : NSLOCTEXT("T66.Achievements", "TierWhite", "WHITE"), ET66AchievementTier::White)
-				]
-			]
-			// Achievement list
-			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
-			.Padding(30.0f, 0.0f, 30.0f, 20.0f)
-			[
-				SNew(SScrollBox)
-				+ SScrollBox::Slot()
-				[
-					SAssignNew(AchievementListBox, SVerticalBox)
-				]
-			]
-			// Back button
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(30.0f, 0.0f, 30.0f, 25.0f)
-			[
-				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked), ET66ButtonType::Neutral, 120.f)
+				FT66Style::MakeButton(FT66ButtonParams(BackText,
+					FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked),
+					ET66ButtonType::Neutral)
+					.SetMinWidth(120.f)
+				)
 			]
 		,
 		ET66PanelType::Panel);
@@ -375,5 +385,5 @@ FReply UT66AchievementsScreen::HandleClaimClicked(FName AchievementID)
 
 void UT66AchievementsScreen::HandleLanguageChanged(ET66Language NewLanguage)
 {
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 }

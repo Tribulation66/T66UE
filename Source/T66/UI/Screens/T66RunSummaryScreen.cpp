@@ -17,6 +17,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/Texture2D.h"
+#include "Engine/SceneCapture2D.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "EngineUtils.h"
 #include "Widgets/Images/SImage.h"
 #include "Styling/SlateBrush.h"
@@ -144,15 +146,68 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 		{
 			HeroPreviewStage->SetPreviewHero(HeroID, BodyType, SkinID);
 		}
-		// Note: render target removed from preview stages (in-world preview uses main viewport).
-		// RunSummary preview deferred to follow-up; hero preview brush left empty for now.
+
+		// Capture hero preview to a render target for the Run Summary panel.
+		if (!HeroPreviewRT)
+		{
+			HeroPreviewRT = NewObject<UTextureRenderTarget2D>(this, NAME_None, RF_Transient);
+			if (HeroPreviewRT)
+			{
+				HeroPreviewRT->RenderTargetFormat = RTF_RGBA8;
+				HeroPreviewRT->SizeX = 512;
+				HeroPreviewRT->SizeY = 512;
+				HeroPreviewRT->UpdateResource();
+			}
+		}
+		if (HeroPreviewRT && !HeroCaptureActor)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			HeroCaptureActor = World->SpawnActor<ASceneCapture2D>(HeroPreviewStage->GetIdealCameraLocation(), HeroPreviewStage->GetIdealCameraRotation(), SpawnParams);
+			if (HeroCaptureActor)
+			{
+				USceneCaptureComponent2D* CaptureComp = HeroCaptureActor->GetCaptureComponent2D();
+				if (CaptureComp)
+				{
+					CaptureComp->TextureTarget = HeroPreviewRT;
+					CaptureComp->bCaptureEveryFrame = false;
+					CaptureComp->CaptureSource = SCS_FinalColorLDR;
+					CaptureComp->CaptureScene();
+				}
+			}
+		}
+		if (HeroCaptureActor && HeroPreviewRT)
+		{
+			USceneCaptureComponent2D* CaptureComp = HeroCaptureActor->GetCaptureComponent2D();
+			if (CaptureComp && CaptureComp->TextureTarget == HeroPreviewRT)
+			{
+				HeroCaptureActor->SetActorLocation(HeroPreviewStage->GetIdealCameraLocation());
+				HeroCaptureActor->SetActorRotation(HeroPreviewStage->GetIdealCameraRotation());
+				CaptureComp->CaptureScene();
+			}
+		}
+		if (HeroPreviewRT)
+		{
+			if (!HeroPreviewBrush.IsValid())
+			{
+				HeroPreviewBrush = MakeShared<FSlateBrush>();
+				HeroPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
+				HeroPreviewBrush->ImageSize = FVector2D(420.f, 420.f);
+			}
+			HeroPreviewBrush->SetResourceObject(HeroPreviewRT);
+		}
 	}
 }
 
 void UT66RunSummaryScreen::DestroyPreviewCaptures()
 {
-	// Keep preview stages around; they are harmless and reused by other screens if present.
 	HeroPreviewBrush.Reset();
+	if (HeroCaptureActor)
+	{
+		HeroCaptureActor->Destroy();
+		HeroCaptureActor = nullptr;
+	}
+	HeroPreviewRT = nullptr;
 }
 
 bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
@@ -163,6 +218,30 @@ bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 	if (!LB)
 	{
 		return false;
+	}
+
+	// Prefer in-memory fake snapshot (non-local leaderboard rows), then slot-based request.
+	UT66LeaderboardRunSummarySaveGame* FakeSnap = LB->ConsumePendingFakeRunSummarySnapshot();
+	if (FakeSnap)
+	{
+		bViewingSavedLeaderboardRunSummary = false;
+		LoadedSavedSummary = nullptr;
+		LoadedSavedSummarySlotName.Reset();
+		bLogVisible = false;
+		bReportPromptVisible = false;
+		ReportReasonTextBox.Reset();
+		ProofUrlTextBox.Reset();
+		ProofOfRunUrl.Reset();
+		bProofOfRunLocked = false;
+
+		LoadedSavedSummary = FakeSnap;
+		bViewingSavedLeaderboardRunSummary = true;
+		if (LoadedSavedSummary->SchemaVersion >= 3)
+		{
+			ProofOfRunUrl = LoadedSavedSummary->ProofOfRunUrl;
+			bProofOfRunLocked = LoadedSavedSummary->bProofOfRunLocked;
+		}
+		return true;
 	}
 
 	FString SlotName;
@@ -632,24 +711,24 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		}
 	}
 
-	// Buttons row (must be inside the main panel).
+	// Back button (when viewing saved run) — shown in overlay bottom-left; Restart + Main Menu stay in panel.
+	TSharedRef<SWidget> BackButton =
+		FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
+			.SetMinWidth(120.f).SetPadding(FMargin(18.f, 10.f)));
+
+	// Buttons row (Restart + Main Menu) when not viewing a saved run — kept inside the main panel.
 	TSharedRef<SWidget> ButtonsRow =
-		bViewingSavedLeaderboardRunSummary
-		? StaticCastSharedRef<SWidget>(
-			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
-				.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f))))
-		: StaticCastSharedRef<SWidget>(
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
-			[
-				FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66ButtonType::Success)
-					.SetMinWidth(180.f).SetPadding(FMargin(18.f, 10.f)))
-			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
-			[
-				FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
-					.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
-			]);
+		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
+		[
+			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66ButtonType::Success)
+				.SetMinWidth(180.f).SetPadding(FMargin(18.f, 10.f)))
+		]
+		+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
+		[
+			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
+				.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
+		];
 
 	// Panels in the requested layout.
 	TSharedRef<SWidget> BaseStatsPanel = MakeSectionPanel(
@@ -1006,13 +1085,29 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							]
 						]
 					]
-					// Buttons row (inside panel)
+					// Buttons row (Restart + Main Menu) — only when not viewing a saved run; Back is in overlay bottom-left
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
 					[
-						ButtonsRow
+						SNew(SBox)
+						.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+						[
+							ButtonsRow
+						]
 					],
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6)
 				)
+			]
+			// Back button (bottom-left) — when viewing a saved leaderboard run
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Bottom)
+			.Padding(20.f, 0.f, 0.f, 20.f)
+			[
+				SNew(SBox)
+				.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					BackButton
+				]
 			]
 			// Right-side drawer: event log only (toggle with button).
 			+ SOverlay::Slot()

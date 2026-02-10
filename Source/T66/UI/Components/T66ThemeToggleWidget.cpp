@@ -40,28 +40,26 @@ TSharedRef<SWidget> UT66ThemeToggleWidget::RebuildWidget()
 			.VAlign(VAlign_Center)
 			.Padding(0.0f, 0.0f, 4.0f, 0.0f)
 			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(Loc ? Loc->GetText_ThemeDark() : NSLOCTEXT("T66.Theme", "Dark", "DARK"),
-						FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleDarkThemeClicked),
-						FT66Style::GetTheme() == ET66UITheme::Dark ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
-					.SetFontSize(14)
-					.SetPadding(FMargin(10.f, 6.f))
-					.SetTextColor(FT66Style::GetTheme() == ET66UITheme::Dark ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
-					.SetMinWidth(0.f))
+			FT66Style::MakeButton(
+				FT66ButtonParams(Loc ? Loc->GetText_ThemeDark() : NSLOCTEXT("T66.Theme", "Dark", "DARK"),
+					FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleDarkThemeClicked),
+					FT66Style::GetTheme() == ET66UITheme::Dark ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+				.SetFontSize(14)
+				.SetPadding(FMargin(10.f, 6.f))
+				.SetMinWidth(0.f))
 			]
 			// Light button
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(Loc ? Loc->GetText_ThemeLight() : NSLOCTEXT("T66.Theme", "Light", "LIGHT"),
-						FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleLightThemeClicked),
-						FT66Style::GetTheme() == ET66UITheme::Light ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
-					.SetFontSize(14)
-					.SetPadding(FMargin(10.f, 6.f))
-					.SetTextColor(FT66Style::GetTheme() == ET66UITheme::Light ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text)
-					.SetMinWidth(0.f))
+			FT66Style::MakeButton(
+				FT66ButtonParams(Loc ? Loc->GetText_ThemeLight() : NSLOCTEXT("T66.Theme", "Light", "LIGHT"),
+					FOnClicked::CreateUObject(this, &UT66ThemeToggleWidget::HandleLightThemeClicked),
+					FT66Style::GetTheme() == ET66UITheme::Light ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+				.SetFontSize(14)
+				.SetPadding(FMargin(10.f, 6.f))
+				.SetMinWidth(0.f))
 			]
 		];
 }
@@ -69,20 +67,7 @@ TSharedRef<SWidget> UT66ThemeToggleWidget::RebuildWidget()
 // ---------------------------------------------------------------------------
 void UT66ThemeToggleWidget::ForceRebuildSlate()
 {
-	const bool bWasInViewport = IsInViewport();
-	constexpr int32 ZOrder = 50; // between screens (0) and modals (100)
-
-	if (bWasInViewport)
-	{
-		RemoveFromParent();
-	}
-
-	ReleaseSlateResources(true);
-
-	if (bWasInViewport)
-	{
-		AddToViewport(ZOrder);
-	}
+	FT66Style::DeferRebuild(this, 50); // Z-order 50: between screens (0) and modals (100)
 }
 
 // ---------------------------------------------------------------------------
@@ -94,11 +79,7 @@ FReply UT66ThemeToggleWidget::HandleDarkThemeClicked()
 	}
 	bThemeChangeInProgress = true;
 	PendingTheme = ET66UITheme::Dark;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimerForNextTick(
-			FTimerDelegate::CreateUObject(this, &UT66ThemeToggleWidget::ApplyPendingTheme));
-	}
+	ApplyPendingTheme();
 	return FReply::Handled();
 }
 
@@ -110,11 +91,7 @@ FReply UT66ThemeToggleWidget::HandleLightThemeClicked()
 	}
 	bThemeChangeInProgress = true;
 	PendingTheme = ET66UITheme::Light;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimerForNextTick(
-			FTimerDelegate::CreateUObject(this, &UT66ThemeToggleWidget::ApplyPendingTheme));
-	}
+	ApplyPendingTheme();
 	return FReply::Handled();
 }
 
@@ -134,10 +111,7 @@ void UT66ThemeToggleWidget::ApplyPendingTheme()
 	ForceRebuildSlate();
 
 	// 3. Force-rebuild the current screen so ALL widgets are recreated with new styles.
-	//    RefreshScreen() alone is not enough because some screens (e.g. CompanionSelection,
-	//    HeroSelection) override it to only update data, leaving old widgets alive with
-	//    dangling pointers to the previous FSlateStyleSet.
-	//    ForceRebuildSlate + OnScreenActivated ensures a full tear-down + re-init.
+	//    DeferRebuild handles the teardown safely on the next tick.
 	if (UIManager)
 	{
 		if (UT66ScreenBase* Screen = UIManager->GetCurrentScreen())

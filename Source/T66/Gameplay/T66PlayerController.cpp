@@ -19,6 +19,7 @@
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
+#include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66PowerUpScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
@@ -1500,6 +1501,7 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	UIManager->RegisterScreenClass(ET66ScreenType::ReportBug, UT66ReportBugScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::Settings, UT66SettingsScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, UT66PlayerSummaryPickerScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
 }
 
@@ -1874,8 +1876,9 @@ void AT66PlayerController::InitializeUI()
 		}
 	}
 
-	// Ensure core modal screens are available in frontend too (leaderboard row opens Run Summary).
+	// Ensure core modal screens are available in frontend too (leaderboard row opens Run Summary / Pick the Player).
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, UT66PlayerSummaryPickerScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (!ScreenClasses.Contains(ET66ScreenType::AccountStatus) || ScreenClasses[ET66ScreenType::AccountStatus] == nullptr)

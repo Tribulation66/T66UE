@@ -146,11 +146,7 @@ void UT66LabOverlayWidget::NativeDestruct()
 
 void UT66LabOverlayWidget::RefreshLabUI()
 {
-	if (GetCachedWidget().IsValid())
-	{
-		ReleaseSlateResources(true);
-		TakeWidget();
-	}
+	FT66Style::DeferRebuild(this);
 }
 
 TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
@@ -241,8 +237,8 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	{
 		TabRow->AddSlot().AutoWidth().Padding(2.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; ReleaseSlateResources(true); TakeWidget(); return FReply::Handled(); }))
-					.SetMinWidth(0.f).SetFontSize(9).SetPadding(FMargin(6.f, 2.f)))
+			FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }))
+				.SetMinWidth(0.f).SetFontSize(9).SetPadding(FMargin(6.f, 2.f)))
 			];
 	};
 	AddTab(TabItems, 0);

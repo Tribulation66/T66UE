@@ -63,6 +63,23 @@ public:
 	/** Consume the pending "open run summary" request (returns true if one existed). */
 	bool ConsumePendingRunSummaryRequest(FString& OutSaveSlotName);
 
+	/** Set an in-memory fake run summary (e.g. for non-local leaderboard rows). Run Summary screen consumes on activation. */
+	void SetPendingFakeRunSummarySnapshot(UT66LeaderboardRunSummarySaveGame* Snapshot);
+	/** Consume the pending fake snapshot (returns it and clears; caller / Run Summary owns it). */
+	UT66LeaderboardRunSummarySaveGame* ConsumePendingFakeRunSummarySnapshot();
+
+	/** Set 2 or 3 snapshots for the "Pick the Player" modal (duo/trio). Picker reads via GetPendingPickerSnapshots. */
+	void SetPendingPickerSnapshots(TArray<UT66LeaderboardRunSummarySaveGame*> Snapshots);
+	/** Snapshot array for the picker UI (do not modify). */
+	const TArray<TObjectPtr<UT66LeaderboardRunSummarySaveGame>>& GetPendingPickerSnapshots() const;
+	/** Clear picker snapshots (call after user selects one and you've set PendingFakeSnapshot). */
+	void ClearPendingPickerSnapshots();
+
+	/** Create a fake run summary snapshot for a leaderboard entry (random hero, idols, items; full slots). Caller owns result. */
+	UT66LeaderboardRunSummarySaveGame* CreateFakeRunSummarySnapshot(
+		ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize,
+		int32 Rank, int32 SlotIndex, const FString& PlayerDisplayName, int64 Score, float TimeSeconds) const;
+
 	// ===== Account Status (Suspension / Appeal) =====
 
 	/** True when the Main Menu should show the Account Status button. */
@@ -151,6 +168,14 @@ private:
 
 	// Transient UI "handshake": panel sets a requested slot name, RunSummaryScreen consumes it.
 	FString PendingRunSummarySlotName;
+
+	/** In-memory fake snapshot for non-local rows (consumed by Run Summary on open). */
+	UPROPERTY(Transient)
+	TObjectPtr<UT66LeaderboardRunSummarySaveGame> PendingFakeSnapshot;
+
+	/** 2 or 3 snapshots for "Pick the Player" (duo/trio); cleared when user selects one. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UT66LeaderboardRunSummarySaveGame>> PendingPickerSnapshots;
 
 	// Transient UI "handshake": a viewer-mode run summary can request reopening a modal afterwards (single-modal UI manager).
 	ET66ScreenType PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;

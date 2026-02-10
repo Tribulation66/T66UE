@@ -127,5 +127,9 @@ public:
 	/** Damage dealt by source this run (source ID -> total). SchemaVersion>=5. */
 	UPROPERTY(SaveGame)
 	TMap<FName, int32> DamageBySource;
+
+	/** Display name for this player (used by Pick the Player modal for fake snapshots; not persisted to slot). */
+	UPROPERTY(Transient)
+	FString DisplayName;
 };
 

@@ -345,6 +345,32 @@ Memory leaks and “stale callback” crashes often come from lifetime mismatche
   - If screens are cached for reuse, ensure they don’t keep binding to RunState delegates multiple times across activations.
   - Avoid “bind every time on open, never unbind” patterns.
 
+## 6.5 Widget rebuild safety (DeferRebuild -- non-negotiable)
+
+**Never call `ReleaseSlateResources`, `TakeWidget()`, or the raw `RemoveFromParent + Release + AddToViewport` dance directly.**
+Always use **`FT66Style::DeferRebuild(Widget, ZOrder)`**.
+
+**Why:** If a widget tree is torn down while Slate is still processing a click or key event on a button/widget inside that tree, Slate resumes walking freed memory and crashes (`EXCEPTION_ACCESS_VIOLATION`, dangling pointer, typically address `0xffffffffffffffff`). This applies to:
+- `FOnClicked` lambdas
+- `Handle*Clicked()` member functions returning `FReply`
+- `NativeOnKeyDown` / `NativeOnKeyUp` handlers
+- Anything that calls a rebuild indirectly (e.g. `RefreshScreen()` then `ForceRebuildSlate()`)
+
+**The rule:**
+
+    // WRONG -- crashes when called from a click handler:
+    ReleaseSlateResources(true);
+    TakeWidget();
+
+    // RIGHT -- always safe, one-frame deferred:
+    FT66Style::DeferRebuild(this);          // screens (ZOrder 0)
+    FT66Style::DeferRebuild(this, 50);      // theme toggle (ZOrder 50)
+    FT66Style::DeferRebuild(this, 100);     // modals (ZOrder 100)
+
+**Cost:** One `TFunction` push onto the timer queue (small-object-optimized, no heap alloc). Fires on the very next tick -- imperceptible delay even at 30 fps.
+
+**`ForceRebuildSlate()`** on `UT66ScreenBase` is already a thin wrapper around `DeferRebuild` -- safe to call anywhere.
+
 ---
 
 ## 7. CLI operations (Windows + Git Bash oriented)
@@ -551,7 +577,55 @@ Or in-editor: **Tools > Execute Python Script > Scripts/<ScriptName>.py**.
 
 ---
 
-## 11. Definition of “done” for any deliverable
+## 11. UI buttons and panels (texture-based, centralized)
+
+All UI buttons and panels use a **texture-first pipeline** with Python scripts for generation/import and C++ style helpers for usage. Do not add one-off `SBorder`/button setups with hardcoded brush names; use the shared factories.
+
+### Buttons
+
+1. **Source textures (optional):**  
+   Run **`Scripts/GenerateButtonTextures.py`** to generate PNGs (Normal/Hover/Pressed for Dark and Light) into **`SourceAssets/Images/Buttons/`**.  
+   Or provide your own PNGs there (same naming: `ButtonDark_N.png`, `ButtonDark_H.png`, `ButtonDark_P.png`, `ButtonLight_*`).
+
+2. **Import into Content:**  
+   In the editor: **Tools → Execute Python Script → `Scripts/ImportButtonTextures.py`**.  
+   This creates/updates **`/Game/UI/Assets/`** textures (and optionally Material Instances) used by the style.
+
+3. **Procedural fallback (optional):**  
+   **`Scripts/CreateButtonProceduralAssets.py`** builds **M_ButtonProcedural** and 6 MIs (Dark/Light × N/H/P) from **`SourceAssets/Data/ButtonProcedural_MaterialInstances.json`**.  
+   Run in editor when you change the JSON. Style uses these when available, else texture brushes, else rounded box.
+
+4. **Usage in C++:**  
+   Use **`FT66Style::MakeButton(...)`** for all primary/neutral/danger/toggle buttons.  
+   Do not construct raw button widgets with `BorderImage("T66.Brush.*")` unless the style explicitly expects it.  
+   Buttons are debounced via `FT66Style::DebounceClick` (150 ms); custom click handlers should use `DebounceClick` too.
+
+### Panels
+
+1. **Source textures:**  
+   Run **`Scripts/GeneratePanelTextures.py`** to generate **`PanelDark.png`** and **`PanelLight.png`** in **`SourceAssets/Images/Panels/`** (bevel, gloss, border; 9-slice friendly).  
+   Or add your own PNGs there with the same names.
+
+2. **Import into Content:**  
+   In the editor: **Tools → Execute Python Script → `Scripts/ImportPanelTextures.py`**.  
+   This creates/updates **`/Game/UI/Assets/PanelDark.uasset`** and **PanelLight.uasset** (used as Slate brush textures).
+
+3. **Usage in C++:**  
+   Use **`FT66Style::MakePanel(Content, Params)`** or **`MakePanel(Content, Type, Padding)`**.  
+   - **Types:** `ET66PanelType::Bg`, `Panel`, `Panel2` (map to brushes `T66.Brush.Bg`, `T66.Brush.Panel`, `T66.Brush.Panel2`).  
+   - **Params:** `FT66PanelParams` — `.SetPadding()`, `.SetColor()`, `.SetVisibility()`, optional `OutBorder` for `SAssignNew`.  
+   Do not use raw `SNew(SBorder).BorderImage("T66.Brush.Panel")` (or similar); always go through `MakePanel` so texture vs procedural fallback and theme are consistent.
+
+### Rules
+
+- **One pipeline:** New button/panel looks = new textures + re-run generate/import (or JSON + procedural script for buttons); then style picks them up automatically when assets exist.
+- **Fallback:** If panel or button textures are missing, style uses procedural/rounded brushes so the game never breaks.
+- **Theme:** Panel and button brushes respect Dark/Light theme (PanelDark/PanelLight, ButtonDark/ButtonLight or MIs).
+- Record new scripts and asset paths in `memory.md`.
+
+---
+
+## 12. Definition of “done” for any deliverable
 
 A deliverable is only “done” when:
 - It matches the relevant Bible section behaviorally.

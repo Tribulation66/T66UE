@@ -2,7 +2,9 @@
 
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UI/T66UITypes.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66SlateTextureHelpers.h"
@@ -18,7 +20,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
-#include "Widgets/Input/SComboBox.h"
+#include "Framework/Application/SlateApplication.h"
 
 void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 {
@@ -82,58 +84,45 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 
 	if (TexPool)
 	{
-		static const TSoftObjectPtr<UTexture2D> GlobalTexSoft(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_Leaderboard_Global.T_Leaderboard_Global")));
-		static const TSoftObjectPtr<UTexture2D> FriendsTexSoft(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_Leaderboard_Friends.T_Leaderboard_Friends")));
+		// Static icons imported from SourceAssets/Icons/ via Scripts/ImportLeaderboardIcons.py
+		static const TSoftObjectPtr<UTexture2D> GlobalTexSoft(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")));
+		static const TSoftObjectPtr<UTexture2D> FriendsTexSoft(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")));
+		static const TSoftObjectPtr<UTexture2D> StreamersTexSoft(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Streamers.T_LB_Streamers")));
 
 		T66SlateTexture::BindSharedBrushAsync(TexPool, GlobalTexSoft, UIManager, FilterBrushGlobal, FName("LB_Global"), /*bClearWhileLoading*/ false);
 		T66SlateTexture::BindSharedBrushAsync(TexPool, FriendsTexSoft, UIManager, FilterBrushFriends, FName("LB_Friends"), /*bClearWhileLoading*/ false);
-
-		// Streamers GIF frames (individual PNGs: T_Leaderboard_Streamers_Frame_00, _01, _02, ...)
-		StreamerFrameBrushes.Empty();
-		for (int32 i = 0; i < 10; ++i)
-		{
-			const FString FramePathStr = FString::Printf(TEXT("/Game/UI/Leaderboard/T_Leaderboard_Streamers_Frame_%02d.T_Leaderboard_Streamers_Frame_%02d"), i, i);
-			const FSoftObjectPath FramePath{FramePathStr};
-			const TSoftObjectPtr<UTexture2D> FrameSoft{FramePath};
-			TSharedPtr<FSlateBrush> FrameBrush = MakeEmptyBrush();
-			StreamerFrameBrushes.Add(FrameBrush);
-			T66SlateTexture::BindSharedBrushAsync(TexPool, FrameSoft, UIManager, FrameBrush, FName(*FString::Printf(TEXT("LB_Streamer_%d"), i)), /*bClearWhileLoading*/ false);
-		}
-
-		// Fallback single streamer texture (used if no frames loaded)
-		static const TSoftObjectPtr<UTexture2D> StreamersSoft(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_Leaderboard_Streamers.T_Leaderboard_Streamers")));
-		T66SlateTexture::BindSharedBrushAsync(TexPool, StreamersSoft, UIManager, FilterBrushStreamers, FName("LB_Streamers"), /*bClearWhileLoading*/ false);
+		T66SlateTexture::BindSharedBrushAsync(TexPool, StreamersTexSoft, UIManager, FilterBrushStreamers, FName("LB_Streamers"), /*bClearWhileLoading*/ false);
 	}
 
-	// Use the first frame as the initial Streamers brush if available
-	if (StreamerFrameBrushes.Num() > 0)
+	auto MakeIconButton = [this, SquareIconSize](ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)(), const FString& FallbackLetter, TSharedPtr<FSlateBrush> IconBrush) -> TSharedRef<SWidget>
 	{
-		FilterBrushStreamers = StreamerFrameBrushes[0];
-	}
-
-	auto MakeIconButton = [this, SquareIconSize](ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)(), const FString& FallbackLetter, TSharedPtr<FSlateBrush> IconBrush, TSharedPtr<SImage>* OutImagePtr = nullptr) -> TSharedRef<SWidget>
-	{
-		TSharedPtr<SImage> ImgWidget;
-		TSharedRef<SWidget> Content = IconBrush.IsValid()
-			? StaticCastSharedRef<SWidget>(
-				SAssignNew(ImgWidget, SImage)
-				.Image(IconBrush.Get())
-			)
-			: StaticCastSharedRef<SWidget>(
-				SNew(STextBlock)
-				.Text(FText::FromString(FallbackLetter))
-				.Font(FT66Style::Tokens::FontBold(22))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-			);
-
-		if (OutImagePtr) *OutImagePtr = ImgWidget;
-
-		return FT66Style::MakeButton(
-			FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateSP(this, ClickHandler))
-			.SetMinWidth(SquareIconSize).SetHeight(SquareIconSize)
-			.SetPadding(FMargin(0.f))
-			.SetContent(Content)
-		);
+		// Raw SButton: sprite fills the entire button area edge-to-edge (no content padding),
+		// while the surrounding MakePanel provides the border styling.
+		return SNew(SBox)
+			.WidthOverride(SquareIconSize)
+			.HeightOverride(SquareIconSize)
+			[
+				SNew(SButton)
+				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.ContentPadding(FMargin(0.f))
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				.OnClicked(FOnClicked::CreateSP(this, ClickHandler))
+				[
+					IconBrush.IsValid()
+					? StaticCastSharedRef<SWidget>(
+						SNew(SImage)
+						.Image(IconBrush.Get())
+					)
+					: StaticCastSharedRef<SWidget>(
+						SNew(STextBlock)
+						.Text(FText::FromString(FallbackLetter))
+						.Font(FT66Style::Tokens::FontBold(22))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Justification(ETextJustify::Center)
+					)
+				]
+			];
 	};
 
 	auto MakeTimeButton = [this](const FText& Text, ET66LeaderboardTime Time, FReply (ST66LeaderboardPanel::*ClickHandler)()) -> TSharedRef<SWidget>
@@ -159,16 +148,28 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 		.VAlign(VAlign_Bottom)
 		.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 		[
-			FT66Style::MakePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
-				[ MakeIconButton(ET66LeaderboardFilter::Global, &ST66LeaderboardPanel::HandleGlobalClicked, TEXT("G"), FilterBrushGlobal) ]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
-				[ MakeIconButton(ET66LeaderboardFilter::Friends, &ST66LeaderboardPanel::HandleFriendsClicked, TEXT("F"), FilterBrushFriends) ]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
-				[ MakeIconButton(ET66LeaderboardFilter::Streamers, &ST66LeaderboardPanel::HandleStreamersClicked, TEXT("S"), FilterBrushStreamers, &StreamerIconImage) ],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(4.0f)
-			)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
+			[
+				FT66Style::MakePanel(
+					MakeIconButton(ET66LeaderboardFilter::Global, &ST66LeaderboardPanel::HandleGlobalClicked, TEXT("G"), FilterBrushGlobal),
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(4.0f)
+				)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
+			[
+				FT66Style::MakePanel(
+					MakeIconButton(ET66LeaderboardFilter::Friends, &ST66LeaderboardPanel::HandleFriendsClicked, TEXT("F"), FilterBrushFriends),
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(4.0f)
+				)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 2.0f)
+			[
+				FT66Style::MakePanel(
+					MakeIconButton(ET66LeaderboardFilter::Streamers, &ST66LeaderboardPanel::HandleStreamersClicked, TEXT("S"), FilterBrushStreamers),
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(4.0f)
+				)
+			]
 		]
 		// Right: main leaderboard panel content
 		+ SHorizontalBox::Slot()
@@ -228,77 +229,120 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				// Party Size dropdown
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(90.0f).HeightOverride(30.0f)
-					[
-						SNew(SComboBox<TSharedPtr<FString>>)
-						.OptionsSource(&PartySizeOptions)
-						.OnSelectionChanged(this, &ST66LeaderboardPanel::OnPartySizeChanged)
-						.OnGenerateWidget(this, &ST66LeaderboardPanel::MakePartySizeWidget)
-						.InitiallySelectedItem(SelectedPartySizeOption)
-						[
+					FT66Style::MakeDropdown(FT66DropdownParams(
 						SNew(STextBlock)
-						.Text_Lambda([this]() { return GetPartySizeText(CurrentPartySize); })
-						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor::White)
-						]
-					]
+							.Text_Lambda([this]() { return GetPartySizeText(CurrentPartySize); })
+							.Font(FT66Style::Tokens::FontRegular(11))
+							.ColorAndOpacity(FT66Style::Tokens::Text),
+						[this]()
+						{
+							TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
+							for (const TSharedPtr<FString>& Opt : PartySizeOptions)
+							{
+								if (!Opt.IsValid()) continue;
+								TSharedPtr<FString> Captured = Opt;
+								Box->AddSlot().AutoHeight()
+									[
+										FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+										{
+											OnPartySizeChanged(Captured, ESelectInfo::Direct);
+											FSlateApplication::Get().DismissAllMenus();
+											return FReply::Handled();
+										}), ET66ButtonType::Neutral).SetMinWidth(0.f))
+									];
+							}
+							return Box;
+						}).SetMinWidth(90.f).SetHeight(30.f))
 				]
 				// Difficulty dropdown
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(100.0f).HeightOverride(30.0f)
-					[
-						SNew(SComboBox<TSharedPtr<FString>>)
-						.OptionsSource(&DifficultyOptions)
-						.OnSelectionChanged(this, &ST66LeaderboardPanel::OnDifficultyChanged)
-						.OnGenerateWidget(this, &ST66LeaderboardPanel::MakeDifficultyWidget)
-						.InitiallySelectedItem(SelectedDifficultyOption)
-						[
+					FT66Style::MakeDropdown(FT66DropdownParams(
 						SNew(STextBlock)
-						.Text_Lambda([this]() { return GetDifficultyText(CurrentDifficulty); })
-						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor::White)
-						]
-					]
+							.Text_Lambda([this]() { return GetDifficultyText(CurrentDifficulty); })
+							.Font(FT66Style::Tokens::FontRegular(11))
+							.ColorAndOpacity(FT66Style::Tokens::Text),
+						[this]()
+						{
+							TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
+							for (const TSharedPtr<FString>& Opt : DifficultyOptions)
+							{
+								if (!Opt.IsValid()) continue;
+								TSharedPtr<FString> Captured = Opt;
+								Box->AddSlot().AutoHeight()
+									[
+										FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+										{
+											OnDifficultyChanged(Captured, ESelectInfo::Direct);
+											FSlateApplication::Get().DismissAllMenus();
+											return FReply::Handled();
+										}), ET66ButtonType::Neutral).SetMinWidth(0.f))
+									];
+							}
+							return Box;
+						}).SetMinWidth(100.f).SetHeight(30.f))
 				]
 				// Type dropdown (width fits "High Score" / "Speed Run" without truncation)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).MinDesiredWidth(120.0f).WidthOverride(120.0f).HeightOverride(30.0f)
-					[
-						SNew(SComboBox<TSharedPtr<FString>>)
-						.OptionsSource(&TypeOptions)
-						.OnSelectionChanged(this, &ST66LeaderboardPanel::OnTypeChanged)
-						.OnGenerateWidget(this, &ST66LeaderboardPanel::MakeTypeWidget)
-						.InitiallySelectedItem(SelectedTypeOption)
-						[
+					FT66Style::MakeDropdown(FT66DropdownParams(
 						SNew(STextBlock)
-						.Text_Lambda([this]() { return GetTypeText(CurrentType); })
-						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor::White)
-						.OverflowPolicy(ETextOverflowPolicy::Clip)
-						]
-					]
+							.Text_Lambda([this]() { return GetTypeText(CurrentType); })
+							.Font(FT66Style::Tokens::FontRegular(11))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.OverflowPolicy(ETextOverflowPolicy::Clip),
+						[this]()
+						{
+							TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
+							for (const TSharedPtr<FString>& Opt : TypeOptions)
+							{
+								if (!Opt.IsValid()) continue;
+								TSharedPtr<FString> Captured = Opt;
+								Box->AddSlot().AutoHeight()
+									[
+										FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+										{
+											OnTypeChanged(Captured, ESelectInfo::Direct);
+											FSlateApplication::Get().DismissAllMenus();
+											return FReply::Handled();
+										}), ET66ButtonType::Neutral).SetMinWidth(0.f))
+									];
+							}
+							return Box;
+						}).SetMinWidth(120.f).SetHeight(30.f))
 				]
-				// Stage dropdown (only for Speed Run)
+				// Stage dropdown (hidden — wiring kept for future use)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
 				[
 					SNew(SBox)
 					.WidthOverride(70.0f)
 					.HeightOverride(30.0f)
-					.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::SpeedRun ? EVisibility::Visible : EVisibility::Collapsed; })
+					.Visibility(EVisibility::Collapsed)
 					[
-						SNew(SComboBox<TSharedPtr<FString>>)
-						.OptionsSource(&StageOptions)
-						.OnSelectionChanged(this, &ST66LeaderboardPanel::OnStageChanged)
-						.OnGenerateWidget(this, &ST66LeaderboardPanel::MakeStageWidget)
-						.InitiallySelectedItem(SelectedStageOption)
-						[
+						FT66Style::MakeDropdown(FT66DropdownParams(
 							SNew(STextBlock)
-							.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::AsNumber(1); })
-							.Font(FT66Style::Tokens::FontRegular(11))
-							.ColorAndOpacity(FLinearColor::White)
-						]
+								.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::AsNumber(1); })
+								.Font(FT66Style::Tokens::FontRegular(11))
+								.ColorAndOpacity(FT66Style::Tokens::Text),
+							[this]()
+							{
+								TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
+								for (const TSharedPtr<FString>& Opt : StageOptions)
+								{
+									if (!Opt.IsValid()) continue;
+									TSharedPtr<FString> Captured = Opt;
+									Box->AddSlot().AutoHeight()
+										[
+											FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
+											{
+												OnStageChanged(Captured, ESelectInfo::Direct);
+												FSlateApplication::Get().DismissAllMenus();
+												return FReply::Handled();
+											}), ET66ButtonType::Neutral).SetMinWidth(0.f))
+										];
+								}
+								return Box;
+							}).SetMinWidth(70.f).SetHeight(30.f))
 					]
 				]
 			]
@@ -320,54 +364,39 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					[
 						SNew(SBox).WidthOverride(40.0f)
 						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Leaderboard", "Rank", "RANK"))
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
-						]
-					]
-					// Name header
-					+ SHorizontalBox::Slot()
-					.FillWidth(1.0f)
-					.VAlign(VAlign_Center)
-					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
+						.Text(NSLOCTEXT("T66.Leaderboard", "Rank", "RANK"))
 						.Font(FT66Style::Tokens::FontBold(10))
-						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
-					]
-					// Score header (only show for High Score)
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					.Padding(10.0f, 0.0f)
-					[
-						SNew(SBox).WidthOverride(80.0f)
-						.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::HighScore ? EVisibility::Visible : EVisibility::Collapsed; })
-						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Leaderboard", "HighScore", "HIGH SCORE"))
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
-							.Justification(ETextJustify::Right)
-						]
-					]
-					// Time header (only show for Speed Run)
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					[
-						SNew(SBox).WidthOverride(60.0f)
-						.Visibility_Lambda([this]() { return CurrentType == ET66LeaderboardType::SpeedRun ? EVisibility::Visible : EVisibility::Collapsed; })
-						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Leaderboard", "Time", "TIME"))
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
-							.Justification(ETextJustify::Right)
-						]
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 				]
+				// Name header
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.Leaderboard", "Name", "NAME"))
+					.Font(FT66Style::Tokens::FontBold(10))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				]
+				// Score/Time header (right-aligned to match row data)
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				.HAlign(HAlign_Right)
+				.VAlign(VAlign_Center)
+				.Padding(10.0f, 0.0f, 0.0f, 0.0f)
+				[
+					SNew(STextBlock)
+					.Text_Lambda([this]() {
+						return CurrentType == ET66LeaderboardType::HighScore
+							? NSLOCTEXT("T66.Leaderboard", "HighScore", "HIGH SCORE")
+							: NSLOCTEXT("T66.Leaderboard", "Time", "TIME"); })
+					.Font(FT66Style::Tokens::FontBold(10))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Justification(ETextJustify::Right)
+				]
+			]
 			]
 			// Entry list: taller so 11 rows visible without scrolling
 			+ SVerticalBox::Slot()
@@ -391,31 +420,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	];
 
 	RebuildEntryList();
-
-	// Start Streamers GIF animation if we have multiple frames
-	if (StreamerFrameBrushes.Num() > 1 && StreamerIconImage.IsValid())
-	{
-		StreamerCurrentFrame = 0;
-		StreamerFrameAccumulator = 0.0f;
-		RegisterActiveTimer(0.0f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66LeaderboardPanel::TickStreamersAnimation));
-	}
-}
-
-EActiveTimerReturnType ST66LeaderboardPanel::TickStreamersAnimation(double /*InCurrentTime*/, float InDeltaTime)
-{
-	if (StreamerFrameBrushes.Num() <= 1 || !StreamerIconImage.IsValid())
-	{
-		return EActiveTimerReturnType::Stop;
-	}
-	StreamerFrameAccumulator += InDeltaTime;
-	const float Period = 1.0f / StreamerFPS;
-	if (StreamerFrameAccumulator >= Period)
-	{
-		StreamerFrameAccumulator -= Period;
-		StreamerCurrentFrame = (StreamerCurrentFrame + 1) % StreamerFrameBrushes.Num();
-		StreamerIconImage->SetImage(StreamerFrameBrushes[StreamerCurrentFrame].Get());
-	}
-	return EActiveTimerReturnType::Continue;
 }
 
 void ST66LeaderboardPanel::SetUIManager(UT66UIManager* InUIManager)
@@ -491,18 +495,18 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		// Format score with commas
 		FString ScoreStr = FString::Printf(TEXT("%lld"), Entry.Score);
 
-		const bool bHasLocalSummary =
-			LeaderboardSubsystem
-			&& (CurrentType == ET66LeaderboardType::HighScore)
-			&& LeaderboardSubsystem->HasLocalBestBountyRunSummary(CurrentDifficulty, CurrentPartySize);
+		// Display name(s): 1 for solo, 2 for duo, 3 for trio (joined by " · ")
+		FString NameDisplay = Entry.PlayerName;
+		if (Entry.PlayerNames.Num() > 1)
+		{
+			NameDisplay = FString::Join(Entry.PlayerNames, TEXT(" · "));
+		}
+		else if (Entry.PlayerNames.Num() == 1)
+		{
+			NameDisplay = Entry.PlayerNames[0];
+		}
 
-		const bool bRowClickable =
-			Entry.bIsLocalPlayer
-			&& (CurrentType == ET66LeaderboardType::HighScore)
-			&& (UIManager != nullptr)
-			&& bHasLocalSummary;
-
-		// Build the row content once.
+		// Build the row content. Rank left, name middle, score/time right-aligned at end.
 		const TSharedRef<SWidget> RowContents =
 			SNew(SBorder)
 			.BorderImage(RowBrush)
@@ -510,7 +514,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			.Padding(FMargin(10.0f, 8.0f))
 			[
 				SNew(SHorizontalBox)
-				// Rank
+				// Rank (fixed left)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
@@ -521,64 +525,45 @@ void ST66LeaderboardPanel::RebuildEntryList()
 						SNew(STextBlock)
 						.Text(FText::Format(NSLOCTEXT("T66.Leaderboard", "RankFormat", "#{0}"), FText::AsNumber(Entry.Rank)))
 						.Font(FT66Style::Tokens::FontBold(13))
-						.ColorAndOpacity(Entry.Rank <= 3 ? FLinearColor(1.0f, 0.85f, 0.0f, 1.0f) : FLinearColor::White)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				]
-				// Player Name
+				// Player name(s) (fills middle)
 				+ SHorizontalBox::Slot()
 				.FillWidth(1.0f)
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(FText::FromString(Entry.PlayerName))
+					.Text(FText::FromString(NameDisplay))
 					.Font(FT66Style::Tokens::FontRegular(12))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
-				// Score (only for High Score type)
+				// Score or Time (one slot, all the way right)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
+				.HAlign(HAlign_Right)
 				.VAlign(VAlign_Center)
-				.Padding(10.0f, 0.0f)
+				.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(80.0f)
-					.Visibility(CurrentType == ET66LeaderboardType::HighScore ? EVisibility::Visible : EVisibility::Collapsed)
+					SNew(SBox).WidthOverride(CurrentType == ET66LeaderboardType::HighScore ? 80.0f : 60.0f)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(ScoreStr))
+						.Text(FText::FromString(CurrentType == ET66LeaderboardType::HighScore ? ScoreStr : TimeStr))
 						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor(0.7f, 0.9f, 0.7f, 1.0f))
-						.Justification(ETextJustify::Right)
-					]
-				]
-				// Time (only for Speed Run type)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				[
-					SNew(SBox).WidthOverride(60.0f)
-					.Visibility(CurrentType == ET66LeaderboardType::SpeedRun ? EVisibility::Visible : EVisibility::Collapsed)
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(TimeStr))
-						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.9f, 1.0f))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 						.Justification(ETextJustify::Right)
 					]
 				]
 			];
 
-		// Your row should be a full-row button (even if the snapshot doesn't exist yet).
-		const bool bIsLocalRowButton = Entry.bIsLocalPlayer;
-		TSharedRef<SWidget> RowWidget =
-			bIsLocalRowButton
-			? FT66Style::MakeButton(
-				FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, Entry]() { return HandleLocalEntryClicked(Entry); }))
-				.SetMinWidth(0.f)
-				.SetPadding(FMargin(0.f))
-				.SetColor(FLinearColor::Transparent)
-				.SetContent(RowContents)
-			)
-			: RowContents;
+		// Every row is a clickable button (Row style: thin border, transparent bg).
+		// Local player row navigates to run summary; other rows are stubs for now.
+		TSharedRef<SWidget> RowWidget = FT66Style::MakeButton(
+			FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }), ET66ButtonType::Row)
+			.SetMinWidth(0.f)
+			.SetPadding(FMargin(0.f))
+			.SetContent(RowContents)
+		);
 
 		EntryListBox->AddSlot()
 		.AutoHeight()
@@ -715,59 +700,6 @@ void ST66LeaderboardPanel::OnStageChanged(TSharedPtr<FString> NewSelection, ESel
 	RefreshLeaderboard();
 }
 
-TSharedRef<SWidget> ST66LeaderboardPanel::MakePartySizeWidget(TSharedPtr<FString> InOption)
-{
-	ET66PartySize Size = ET66PartySize::Solo;
-	if (InOption.IsValid())
-	{
-		if (*InOption == TEXT("Duo")) Size = ET66PartySize::Duo;
-		else if (*InOption == TEXT("Trio")) Size = ET66PartySize::Trio;
-	}
-	return SNew(STextBlock)
-		.Text(GetPartySizeText(Size))
-		.Font(FT66Style::Tokens::FontRegular(11))
-		.ColorAndOpacity(FLinearColor::White);
-}
-
-TSharedRef<SWidget> ST66LeaderboardPanel::MakeDifficultyWidget(TSharedPtr<FString> InOption)
-{
-	ET66Difficulty Diff = ET66Difficulty::Easy;
-	if (InOption.IsValid())
-	{
-		if (*InOption == TEXT("Medium")) Diff = ET66Difficulty::Medium;
-		else if (*InOption == TEXT("Hard")) Diff = ET66Difficulty::Hard;
-		else if (*InOption == TEXT("Very Hard")) Diff = ET66Difficulty::VeryHard;
-		else if (*InOption == TEXT("Impossible")) Diff = ET66Difficulty::Impossible;
-		else if (*InOption == TEXT("Perdition")) Diff = ET66Difficulty::Perdition;
-		else if (*InOption == TEXT("Final")) Diff = ET66Difficulty::Final;
-	}
-	return SNew(STextBlock)
-		.Text(GetDifficultyText(Diff))
-		.Font(FT66Style::Tokens::FontRegular(11))
-		.ColorAndOpacity(FLinearColor::White);
-}
-
-TSharedRef<SWidget> ST66LeaderboardPanel::MakeTypeWidget(TSharedPtr<FString> InOption)
-{
-	ET66LeaderboardType Type = ET66LeaderboardType::HighScore;
-	if (InOption.IsValid() && *InOption == TEXT("Speed Run"))
-	{
-		Type = ET66LeaderboardType::SpeedRun;
-	}
-	return SNew(STextBlock)
-		.Text(GetTypeText(Type))
-		.Font(FT66Style::Tokens::FontRegular(11))
-		.ColorAndOpacity(FLinearColor::White);
-}
-
-TSharedRef<SWidget> ST66LeaderboardPanel::MakeStageWidget(TSharedPtr<FString> InOption)
-{
-	return SNew(STextBlock)
-		.Text(FText::FromString(*InOption))
-		.Font(FT66Style::Tokens::FontRegular(11))
-		.ColorAndOpacity(FLinearColor::White);
-}
-
 FText ST66LeaderboardPanel::GetFilterText(ET66LeaderboardFilter Filter) const
 {
 	if (!LocSubsystem)
@@ -850,6 +782,52 @@ FText ST66LeaderboardPanel::GetTypeText(ET66LeaderboardType Type) const
 	case ET66LeaderboardType::SpeedRun: return NSLOCTEXT("T66.Leaderboard", "SpeedRun", "SPEED RUN");
 	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
+}
+
+FReply ST66LeaderboardPanel::HandleEntryClicked(const FLeaderboardEntry& Entry)
+{
+	if (Entry.bIsLocalPlayer)
+	{
+		return HandleLocalEntryClicked(Entry);
+	}
+	if (!LeaderboardSubsystem || !UIManager)
+	{
+		return FReply::Handled();
+	}
+
+	const int32 PartyCount = (Entry.PartySize == ET66PartySize::Duo) ? 2 : (Entry.PartySize == ET66PartySize::Trio) ? 3 : 1;
+
+	if (PartyCount == 1)
+	{
+		// Solo: open Run Summary with one fake snapshot.
+		if (UT66LeaderboardRunSummarySaveGame* Snap = LeaderboardSubsystem->CreateFakeRunSummarySnapshot(
+			CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize,
+			Entry.Rank, 0, Entry.PlayerName, Entry.Score, Entry.TimeSeconds))
+		{
+			LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
+			UIManager->ShowModal(ET66ScreenType::RunSummary);
+		}
+		return FReply::Handled();
+	}
+
+	// Duo or Trio: open Pick the Player with 2 or 3 fake snapshots.
+	TArray<UT66LeaderboardRunSummarySaveGame*> Snapshots;
+	for (int32 i = 0; i < PartyCount; ++i)
+	{
+		const FString DisplayName = Entry.PlayerNames.IsValidIndex(i) ? Entry.PlayerNames[i] : Entry.PlayerName;
+		if (UT66LeaderboardRunSummarySaveGame* Snap = LeaderboardSubsystem->CreateFakeRunSummarySnapshot(
+			CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize,
+			Entry.Rank, i, DisplayName, Entry.Score, Entry.TimeSeconds))
+		{
+			Snapshots.Add(Snap);
+		}
+	}
+	if (Snapshots.Num() == PartyCount)
+	{
+		LeaderboardSubsystem->SetPendingPickerSnapshots(Snapshots);
+		UIManager->ShowModal(ET66ScreenType::PlayerSummaryPicker);
+	}
+	return FReply::Handled();
 }
 
 FReply ST66LeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry& Entry)

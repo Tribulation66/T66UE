@@ -13,6 +13,8 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/SLeafWidget.h"
 #include "Rendering/DrawElements.h"
 #include "Math/UnrealMathUtility.h"
@@ -165,7 +167,20 @@ UT66PowerUpSubsystem* UT66PowerUpScreen::GetPowerUpSubsystem() const
 
 FReply UT66PowerUpScreen::HandleBackClicked()
 {
+	if (CurrentPage > 0)
+	{
+		CurrentPage = 0;
+		if (PageSwitcher.IsValid()) PageSwitcher->SetActiveWidgetIndex(0);
+		return FReply::Handled();
+	}
 	NavigateBack();
+	return FReply::Handled();
+}
+
+FReply UT66PowerUpScreen::HandleNextClicked()
+{
+	CurrentPage = 1;
+	if (PageSwitcher.IsValid()) PageSwitcher->SetActiveWidgetIndex(1);
 	return FReply::Handled();
 }
 
@@ -254,125 +269,179 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	};
 
 	const FText RandomLabelText = NSLOCTEXT("T66.PowerUp", "Random", "RANDOM");
+	const FText NextText = NSLOCTEXT("T66.Common", "Next", "NEXT");
+	const FText PCsFormat = FText::Format(NSLOCTEXT("T66.PowerUp", "PCsFormat", "{0} PCs"), FText::AsNumber(Balance));
 
-	// One horizontal row of panels; scroll if needed
-	TSharedRef<SHorizontalBox> PanelsRow = SNew(SHorizontalBox);
-
-	for (ET66HeroStatType StatType : StatTypes)
+	// Helper: build a stat panel widget for a given stat type
+	auto MakeStatPanel = [&](ET66HeroStatType StatType) -> TSharedRef<SWidget>
 	{
 		const int32 Unlocked = PowerUp ? PowerUp->GetPowerupSlicesUnlocked(StatType) : 0;
 		const FLinearColor StatColor = GetStatColor(StatType);
 
-		PanelsRow->AddSlot()
-			.AutoWidth()
-			.Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+		return FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 			[
-				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-					[
-						SNew(STextBlock)
-						.Text(GetStatLabel(StatType))
-						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-					[
-						SNew(SBox)
-						.WidthOverride(120.f)
-						.HeightOverride(120.f)
-						[
-							SNew(ST66PowerUpWheelWidget)
-							.NumSlices(UT66PowerUpSubsystem::MaxSlicesPerStat)
-							.UnlockedCount(Unlocked)
-							.SliceColor(StatColor)
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-					[
-						FT66Style::MakeButton(
-							UnlockButtonFormat,
-							FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType),
-							ET66ButtonType::Primary,
-							140.f
-						)
-					]
-				,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4))
-			];
-	}
+				SNew(STextBlock)
+				.Text(GetStatLabel(StatType))
+				.Font(FT66Style::Tokens::FontBold(14))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+			[
+				SNew(SBox)
+				.WidthOverride(120.f)
+				.HeightOverride(120.f)
+				[
+					SNew(ST66PowerUpWheelWidget)
+					.NumSlices(UT66PowerUpSubsystem::MaxSlicesPerStat)
+					.UnlockedCount(Unlocked)
+					.SliceColor(StatColor)
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					UnlockButtonFormat,
+					FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType),
+					ET66ButtonType::Primary,
+					140.f
+				)
+			]
+		,
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4));
+	};
 
-	// Random panel: circle outline only, infinite unlocks
-	PanelsRow->AddSlot()
-		.AutoWidth()
+	// ===== Page 0: 2x3 stat grid =====
+	TSharedRef<SVerticalBox> StatsPage =
+		SNew(SVerticalBox)
+		// Row 1: Damage, Attack Speed, Attack Size
+		+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 		[
-			FT66Style::MakePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			[ MakeStatPanel(ET66HeroStatType::Damage) ]
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			[ MakeStatPanel(ET66HeroStatType::AttackSpeed) ]
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[ MakeStatPanel(ET66HeroStatType::AttackSize) ]
+		]
+		// Row 2: Armor, Evasion, Luck
+		+ SVerticalBox::Slot().FillHeight(1.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			[ MakeStatPanel(ET66HeroStatType::Armor) ]
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			[ MakeStatPanel(ET66HeroStatType::Evasion) ]
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[ MakeStatPanel(ET66HeroStatType::Luck) ]
+		];
+
+	// ===== Page 1: Random panel (full-width) =====
+	TSharedRef<SWidget> RandomPage =
+		FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f).HAlign(HAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(RandomLabelText)
+				.Font(FT66Style::Tokens::FontBold(24))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+			[
+				SNew(SBox)
+				.WidthOverride(200.f)
+				.HeightOverride(200.f)
 				[
-					SNew(STextBlock)
-					.Text(RandomLabelText)
-					.Font(FT66Style::Tokens::FontBold(14))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					SNew(ST66PowerUpCircleOutlineWidget)
 				]
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-				[
-					SNew(SBox)
-					.WidthOverride(120.f)
-					.HeightOverride(120.f)
-					[
-						SNew(ST66PowerUpCircleOutlineWidget)
-					]
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-				[
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f).HAlign(HAlign_Center)
+			[
 				FT66Style::MakeButton(
 					UnlockButtonFormat,
 					FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockRandomClicked),
 					ET66ButtonType::Primary,
-					140.f
+					180.f
 				)
-				]
-			,
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4))
-		];
+			]
+		,
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(24.f)));
+
+	// Reset page to 0 on rebuild
+	CurrentPage = 0;
 
 	return FT66Style::MakePanel(
-		SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+		SNew(SOverlay)
+			// Main content
+			+ SOverlay::Slot()
 			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				SNew(SVerticalBox)
+				// Header (title centered, PCs display right)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 				[
-					SNew(STextBlock)
-					.Text(TitleText)
-					.Font(FT66Style::Tokens::FontBold(32))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					SNew(SOverlay)
+					// Centered title
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(TitleText)
+						.Font(FT66Style::Tokens::FontBold(32))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					// PCs display (right, styled box like ACs)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Right)
+					.VAlign(VAlign_Center)
+					[
+						FT66Style::MakePanel(
+							SNew(STextBlock)
+							.Text(PCsFormat)
+							.Font(FT66Style::Tokens::FontBold(22))
+							.ColorAndOpacity(FLinearColor(1.0f, 0.9f, 0.5f, 1.0f))
+						,
+						FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
+					]
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				// Page content (switcher)
+				+ SVerticalBox::Slot().FillHeight(1.f)
 				[
-					SNew(STextBlock)
-					.Text(FText::Format(
-						NSLOCTEXT("T66.PowerUp", "BalanceFormat", "{0}: {1}"),
-						BalanceLabelText,
-						BalanceValueText
-					))
-					.Font(FT66Style::Tokens::FontBold(16))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					SAssignNew(PageSwitcher, SWidgetSwitcher)
+					.WidgetIndex(0)
+					+ SWidgetSwitcher::Slot()[ StatsPage ]
+					+ SWidgetSwitcher::Slot()[ RandomPage ]
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 20.f)
+			// Back button (bottom-left)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Bottom)
+			.Padding(20.f, 0.f, 0.f, 20.f)
 			[
-				FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleBackClicked), ET66ButtonType::Neutral, 100.f)
+				FT66Style::MakeButton(FT66ButtonParams(BackText,
+					FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleBackClicked),
+					ET66ButtonType::Neutral)
+					.SetMinWidth(120.f)
+				)
 			]
-			+ SVerticalBox::Slot().FillHeight(1.f)
+			// Next button (bottom-right, page 0 only)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Bottom)
+			.Padding(0.f, 0.f, 20.f, 20.f)
 			[
-				SNew(SScrollBox)
-				.Orientation(Orient_Horizontal)
-				+ SScrollBox::Slot()
-				.Padding(0.f, 0.f, 8.f, 0.f)
+				SNew(SBox)
+				.Visibility_Lambda([this]() { return CurrentPage == 0 ? EVisibility::Visible : EVisibility::Collapsed; })
 				[
-					PanelsRow
+					FT66Style::MakeButton(FT66ButtonParams(NextText,
+						FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleNextClicked),
+						ET66ButtonType::Neutral)
+						.SetMinWidth(120.f)
+					)
 				]
 			]
 		,

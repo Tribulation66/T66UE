@@ -191,10 +191,10 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 void UT66MainMenuScreen::RefreshScreen_Implementation()
 {
 	Super::RefreshScreen_Implementation();
-	// Force rebuild UI with current language
+	// Force rebuild UI with current language (deferred to next tick for safety)
 	ForceRebuildSlate();
 
-	// Re-request background texture (ForceRebuildSlate creates a fresh empty brush)
+	// Re-request background texture after rebuild schedules a fresh widget tree
 	RequestBackgroundTexture();
 
 	if (LeaderboardPanel.IsValid())

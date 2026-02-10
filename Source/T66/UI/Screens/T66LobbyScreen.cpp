@@ -29,8 +29,7 @@ void UT66LobbyScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 	// Rebuild so left panel shows updated hero portrait when returning from Hero Selection.
-	ReleaseSlateResources(true);
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 }
 
 void UT66LobbyScreen::OnScreenDeactivated_Implementation()
@@ -454,17 +453,8 @@ void UT66LobbyScreen::SetReadyCheckConfirmed(bool bConfirmed)
 
 void UT66LobbyScreen::RefreshScreen_Implementation()
 {
-	// Rebuild and re-attach so the viewport shows the updated widget (e.g. READY label, Enter button).
-	const bool bWasInViewport = IsInViewport();
-	if (bWasInViewport)
-	{
-		RemoveFromParent();
-	}
-	ReleaseSlateResources(true);
-	if (bWasInViewport)
-	{
-		AddToViewport(0);
-	}
+	// Rebuild via DeferRebuild so the viewport shows the updated widget (e.g. READY label, Enter button).
+	FT66Style::DeferRebuild(this);
 }
 
 void UT66LobbyScreen::OnEnterTribulationClicked()

@@ -73,6 +73,7 @@ private:
 	// Generate placeholder data
 	void GeneratePlaceholderData();
 	void RebuildEntryList();
+	FReply HandleEntryClicked(const FLeaderboardEntry& Entry);
 	FReply HandleLocalEntryClicked(const FLeaderboardEntry& Entry);
 
 	// Button handlers
@@ -88,11 +89,6 @@ private:
 	void OnTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	void OnStageChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 
-	TSharedRef<SWidget> MakePartySizeWidget(TSharedPtr<FString> InOption);
-	TSharedRef<SWidget> MakeDifficultyWidget(TSharedPtr<FString> InOption);
-	TSharedRef<SWidget> MakeTypeWidget(TSharedPtr<FString> InOption);
-	TSharedRef<SWidget> MakeStageWidget(TSharedPtr<FString> InOption);
-
 	// Get localized text
 	FText GetFilterText(ET66LeaderboardFilter Filter) const;
 	FText GetPartySizeText(ET66PartySize Size) const;
@@ -107,12 +103,4 @@ private:
 	TSharedPtr<FSlateBrush> FilterBrushGlobal;
 	TSharedPtr<FSlateBrush> FilterBrushFriends;
 	TSharedPtr<FSlateBrush> FilterBrushStreamers;
-
-	// Streamers GIF animation (frame cycling)
-	TArray<TSharedPtr<FSlateBrush>> StreamerFrameBrushes;
-	TSharedPtr<SImage> StreamerIconImage;
-	int32 StreamerCurrentFrame = 0;
-	float StreamerFrameAccumulator = 0.0f;
-	static constexpr float StreamerFPS = 4.0f;
-	EActiveTimerReturnType TickStreamersAnimation(double InCurrentTime, float InDeltaTime);
 };

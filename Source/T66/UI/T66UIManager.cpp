@@ -2,6 +2,7 @@
 
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
+#include "UI/Style/T66Style.h"
 #include "UI/Components/T66ThemeToggleWidget.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Blueprint/UserWidget.h"
@@ -125,7 +126,7 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		// Force Hero Selection to rebuild so co-op (Lab + Back to Lobby only) vs solo (difficulty + Enter) layout is correct on first paint. Otherwise cached tree from a previous show can display.
 		if (ScreenType == ET66ScreenType::HeroSelection)
 		{
-			CurrentScreen->ReleaseSlateResources(true);
+			FT66Style::DeferRebuild(CurrentScreen);
 		}
 		CurrentScreen->AddToViewport(0);
 		CurrentScreen->OnScreenActivated();

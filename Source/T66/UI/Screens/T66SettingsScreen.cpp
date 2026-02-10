@@ -79,10 +79,10 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Tokens::Scrim)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
 		[
 			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
 			.WidthOverride(950.0f)
 			.HeightOverride(700.0f)
 			[
@@ -512,29 +512,27 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 						+ SHorizontalBox::Slot().AutoWidth()
 						[
 							FT66Style::MakeButton(
-								FT66ButtonParams(DarkText, FOnClicked::CreateLambda([this, PS]()
-								{
-									if (PS) PS->SetLightTheme(false);
-									ReleaseSlateResources(true);
-									return FReply::Handled();
-								}), (PS && !PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+							FT66ButtonParams(DarkText, FOnClicked::CreateLambda([this, PS]()
+							{
+								if (PS) PS->SetLightTheme(false);
+								FT66Style::DeferRebuild(this);
+								return FReply::Handled();
+							}), (PS && !PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
 								.SetMinWidth(100.f)
 								.SetPadding(FMargin(12.f, 6.f))
-								.SetColor(TAttribute<FSlateColor>::CreateLambda([PS]() -> FSlateColor { return (PS && !PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; }))
 							)
 						]
 						+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f, 0.0f, 0.0f)
 						[
 							FT66Style::MakeButton(
-								FT66ButtonParams(LightText, FOnClicked::CreateLambda([this, PS]()
-								{
-									if (PS) PS->SetLightTheme(true);
-									ReleaseSlateResources(true);
-									return FReply::Handled();
-								}), (PS && PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+							FT66ButtonParams(LightText, FOnClicked::CreateLambda([this, PS]()
+							{
+								if (PS) PS->SetLightTheme(true);
+								FT66Style::DeferRebuild(this);
+								return FReply::Handled();
+							}), (PS && PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
 								.SetMinWidth(100.f)
 								.SetPadding(FMargin(12.f, 6.f))
-								.SetColor(TAttribute<FSlateColor>::CreateLambda([PS]() -> FSlateColor { return (PS && PS->GetLightTheme()) ? FT66Style::Tokens::Panel : FT66Style::Tokens::Text; }))
 							)
 						]
 					]
@@ -582,8 +580,21 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 
 	auto MakeDropdownRow = [this](const FText& Label, TFunction<FText()> GetCurrentValue, TFunction<TSharedRef<SWidget>()> MakeMenuContent) -> TSharedRef<SWidget>
 	{
+		TSharedRef<SWidget> TriggerContent = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center).Padding(FMargin(10.0f, 4.0f))
+			[
+				SNew(STextBlock).Text_Lambda([GetCurrentValue]() { return GetCurrentValue(); })
+				.Font(FT66Style::Tokens::FontRegular(12))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(FMargin(4.0f, 0.0f))
+			[
+				SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
+				.Font(FT66Style::Tokens::FontRegular(10))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			];
 		return SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel)
 			.Padding(FMargin(15.0f, 12.0f))
 			[
 				SNew(SHorizontalBox)
@@ -591,36 +602,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				[
 					SNew(STextBlock).Text(Label)
 					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.6f)
 				[
-					SNew(SBox).HeightOverride(32.0f)
-					[
-						SNew(SComboButton)
-						.OnGetMenuContent_Lambda([MakeMenuContent]() { return MakeMenuContent(); })
-						.ButtonContent()
-						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
-							[
-								SNew(SBorder)
-								.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
-								.Padding(FMargin(10.0f, 4.0f))
-								[
-									SNew(STextBlock).Text_Lambda([GetCurrentValue]() { return GetCurrentValue(); })
-									.Font(FT66Style::Tokens::FontRegular(12))
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-							[
-								SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
-								.Font(FT66Style::Tokens::FontRegular(10))
-								.ColorAndOpacity(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
-							]
-						]
-					]
+					FT66Style::MakeDropdown(FT66DropdownParams(TriggerContent, MakeMenuContent).SetHeight(32.0f))
 				]
 			];
 	};
@@ -1283,60 +1269,49 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_OutputDevice() : NSLOCTEXT("T66.Settings.Fallback", "Output Device", "Output Device"))
 					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.6f)
 				[
-					SNew(SBox).HeightOverride(32.0f)
-					[
-						SNew(SComboButton)
-						.OnGetMenuContent_Lambda([PS, Loc]()
+					FT66Style::MakeDropdown(FT66DropdownParams(
+						SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center).Padding(FMargin(10.0f, 4.0f))
+							[
+								SNew(STextBlock)
+								.Text_Lambda([PS, Loc]()
+								{
+									if (!PS || PS->GetOutputDeviceId().IsEmpty()) return NSLOCTEXT("T66.Settings.Fallback", "Default", "Default");
+									return FText::FromString(PS->GetOutputDeviceId());
+								})
+								.Font(FT66Style::Tokens::FontRegular(12))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(FMargin(4.0f, 0.0f))
+							[
+								SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
+								.Font(FT66Style::Tokens::FontRegular(10))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							],
+						[PS, Loc]()
 						{
 							const FText DefaultLabel = NSLOCTEXT("T66.Settings.Fallback", "Default", "Default");
 							return SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
-								FT66Style::MakeButton(
-									FT66ButtonParams(DefaultLabel, FOnClicked::CreateLambda([PS]() { if (PS) PS->SetOutputDeviceId(FString()); return FReply::Handled(); }), ET66ButtonType::Neutral)
-									.SetMinWidth(0.f)
-									.SetColor(FT66Style::Tokens::Panel2)
-								)
+									FT66Style::MakeButton(
+										FT66ButtonParams(DefaultLabel, FOnClicked::CreateLambda([PS]() { if (PS) PS->SetOutputDeviceId(FString()); return FReply::Handled(); }), ET66ButtonType::Neutral)
+										.SetMinWidth(0.f)
+										.SetColor(FT66Style::Tokens::Panel2)
+									)
 								];
-						})
-						.ButtonContent()
-						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
-							[
-								SNew(SBorder)
-								.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.18f, 1.0f))
-								.Padding(FMargin(10.0f, 4.0f))
-								[
-									SNew(STextBlock)
-									.Text_Lambda([PS, Loc]()
-									{
-										if (!PS || PS->GetOutputDeviceId().IsEmpty()) return NSLOCTEXT("T66.Settings.Fallback", "Default", "Default");
-										return FText::FromString(PS->GetOutputDeviceId());
-									})
-									.Font(FT66Style::Tokens::FontRegular(12))
-									.ColorAndOpacity(FLinearColor(0.75f, 0.75f, 0.8f, 1.0f))
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-							[
-								SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
-								.Font(FT66Style::Tokens::FontRegular(10))
-								.ColorAndOpacity(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f))
-							]
-						]
-					]
+						}).SetHeight(32.0f))
 				]
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel)
 			.Padding(FMargin(15.0f, 12.0f))
 			[
 				SNew(SHorizontalBox)
@@ -1345,7 +1320,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_SubtitlesAlwaysOn() : NSLOCTEXT("T66.Settings.Fallback", "Subtitles: always on", "Subtitles: always on"))
 					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[

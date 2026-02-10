@@ -636,6 +636,152 @@ bool UT66LeaderboardSubsystem::ConsumePendingRunSummaryRequest(FString& OutSaveS
 	return true;
 }
 
+void UT66LeaderboardSubsystem::SetPendingFakeRunSummarySnapshot(UT66LeaderboardRunSummarySaveGame* Snapshot)
+{
+	PendingFakeSnapshot = Snapshot;
+}
+
+UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::ConsumePendingFakeRunSummarySnapshot()
+{
+	UT66LeaderboardRunSummarySaveGame* Out = PendingFakeSnapshot;
+	PendingFakeSnapshot = nullptr;
+	return Out;
+}
+
+void UT66LeaderboardSubsystem::SetPendingPickerSnapshots(TArray<UT66LeaderboardRunSummarySaveGame*> Snapshots)
+{
+	PendingPickerSnapshots.Reset();
+	for (UT66LeaderboardRunSummarySaveGame* P : Snapshots)
+	{
+		if (P) PendingPickerSnapshots.Add(P);
+	}
+}
+
+const TArray<TObjectPtr<UT66LeaderboardRunSummarySaveGame>>& UT66LeaderboardSubsystem::GetPendingPickerSnapshots() const
+{
+	return PendingPickerSnapshots;
+}
+
+void UT66LeaderboardSubsystem::ClearPendingPickerSnapshots()
+{
+	PendingPickerSnapshots.Reset();
+}
+
+namespace
+{
+	// Unique placeholder names for leaderboard rows (no reuse). Index = (rank-1)*3 + slot (0..2 for trio).
+	static const TArray<FString>& GetPlaceholderNamePool()
+	{
+		static const TArray<FString> Pool = {
+			TEXT("xX_DarkSlayer_Xx"), TEXT("ProGamer2024"), TEXT("TribulationMaster"),
+			TEXT("CasualHero"), TEXT("NightmareKing"), TEXT("SilentStorm"),
+			TEXT("BlazeFury"), TEXT("IronWill"), TEXT("ShadowDancer"),
+			TEXT("SpeedRunner_99"), TEXT("VoidWalker"), TEXT("StormBringer"),
+			TEXT("FrostMage"), TEXT("PhoenixRise"), TEXT("DragonHeart"),
+			TEXT("ShadowBlade"), TEXT("CrimsonTide"), TEXT("GoldenAce"),
+			TEXT("SilverFox"), TEXT("NeonGhost"), TEXT("MysticSage"),
+			TEXT("ThunderBolt"), TEXT("IceQueen"), TEXT("FlameDancer"),
+			TEXT("StoneGuard"), TEXT("WindRider"), TEXT("EchoStar"),
+			TEXT("NovaKnight"), TEXT("RuneSmith"), TEXT("ChaosMage"),
+			TEXT("Serenity"), TEXT("ViperStrike"), TEXT("LunarPhase"),
+			TEXT("SolarFlare"), TEXT("TidalWave"), TEXT("MountainKing"),
+			TEXT("SwiftArrow"), TEXT("DarkPhoenix"), TEXT("CrystalMind"),
+			TEXT("IronFist"), TEXT("StormChaser"), TEXT("NightOwl"),
+			TEXT("DawnBreaker"), TEXT("TwilightSeeker"), TEXT("MythicOne"),
+			TEXT("Legendary_77"), TEXT("EpicGamer"), TEXT("RookieSlayer"),
+		};
+		return Pool;
+	}
+
+	void FillPlayerNamesForEntry(FLeaderboardEntry& E, int32 Rank, ET66PartySize PartySize)
+	{
+		const TArray<FString>& Pool = GetPlaceholderNamePool();
+		const int32 N = (PartySize == ET66PartySize::Duo) ? 2 : (PartySize == ET66PartySize::Trio) ? 3 : 1;
+		const int32 Start = (Rank - 1) * 3;
+		E.PlayerNames.Reset();
+		for (int32 i = 0; i < N && (Start + i) < Pool.Num(); ++i)
+		{
+			E.PlayerNames.Add(Pool[Start + i]);
+		}
+		if (E.PlayerNames.Num() > 0)
+		{
+			E.PlayerName = E.PlayerNames[0];
+		}
+	}
+}
+
+UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummarySnapshot(
+	ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize,
+	int32 Rank, int32 SlotIndex, const FString& PlayerDisplayName, int64 Score, float TimeSeconds) const
+{
+	UGameInstance* GI = GetGameInstance();
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	if (!T66GI) return nullptr;
+
+	UT66LeaderboardRunSummarySaveGame* Snapshot =
+		Cast<UT66LeaderboardRunSummarySaveGame>(UGameplayStatics::CreateSaveGameObject(UT66LeaderboardRunSummarySaveGame::StaticClass()));
+	if (!Snapshot) return nullptr;
+
+	const uint32 Seed = static_cast<uint32>((static_cast<int32>(Filter) * 1000) + (static_cast<int32>(Type) * 100) + (static_cast<int32>(Difficulty) * 10) + Rank * 3 + SlotIndex);
+	FRandomStream Rng(Seed);
+
+	TArray<FName> HeroIDs = T66GI->GetAllHeroIDs();
+	TArray<FName> CompanionIDs = T66GI->GetAllCompanionIDs();
+	UDataTable* ItemsDT = T66GI->GetItemsDataTable();
+	UDataTable* IdolsDT = T66GI->GetIdolsDataTable();
+	TArray<FName> ItemIDs = ItemsDT ? ItemsDT->GetRowNames() : TArray<FName>();
+	TArray<FName> IdolIDs = IdolsDT ? IdolsDT->GetRowNames() : TArray<FName>();
+
+	Snapshot->SchemaVersion = 5;
+	Snapshot->LeaderboardType = Type;
+	Snapshot->Difficulty = Difficulty;
+	Snapshot->PartySize = PartySize;
+	Snapshot->SavedAtUtc = FDateTime::UtcNow();
+	Snapshot->StageReached = FMath::Clamp(1 + Rng.RandRange(0, 65), 1, 66);
+	Snapshot->Bounty = (Type == ET66LeaderboardType::HighScore) ? FMath::Max(0, static_cast<int32>(Score)) : 0;
+	Snapshot->HeroID = HeroIDs.Num() > 0 ? HeroIDs[Rng.RandRange(0, HeroIDs.Num() - 1)] : NAME_None;
+	Snapshot->HeroBodyType = Rng.FRand() < 0.5f ? ET66BodyType::TypeA : ET66BodyType::TypeB;
+	Snapshot->CompanionID = CompanionIDs.Num() > 0 ? CompanionIDs[Rng.RandRange(0, CompanionIDs.Num() - 1)] : NAME_None;
+	Snapshot->CompanionBodyType = Rng.FRand() < 0.5f ? ET66BodyType::TypeA : ET66BodyType::TypeB;
+
+	Snapshot->HeroLevel = FMath::Clamp(Rng.RandRange(1, 20), 1, 99);
+	Snapshot->DamageStat = FMath::Clamp(Rng.RandRange(1, 15), 1, 99);
+	Snapshot->AttackSpeedStat = FMath::Clamp(Rng.RandRange(1, 12), 1, 99);
+	Snapshot->AttackSizeStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
+	Snapshot->ArmorStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
+	Snapshot->EvasionStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
+	Snapshot->LuckStat = FMath::Clamp(Rng.RandRange(1, 12), 1, 99);
+	Snapshot->SpeedStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
+
+	Snapshot->LuckRating0To100 = Rng.RandRange(40, 95);
+	Snapshot->LuckRatingQuantity0To100 = Rng.RandRange(40, 95);
+	Snapshot->LuckRatingQuality0To100 = Rng.RandRange(40, 95);
+	Snapshot->SkillRating0To100 = Rng.RandRange(35, 90);
+
+	Snapshot->EquippedIdols.Reset();
+	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
+	{
+		if (IdolIDs.Num() > 0)
+		{
+			Snapshot->EquippedIdols.Add(IdolIDs[Rng.RandRange(0, IdolIDs.Num() - 1)]);
+		}
+	}
+	Snapshot->Inventory.Reset();
+	for (int32 i = 0; i < UT66RunStateSubsystem::MaxInventorySlots; ++i)
+	{
+		if (ItemIDs.Num() > 0)
+		{
+			Snapshot->Inventory.Add(ItemIDs[Rng.RandRange(0, ItemIDs.Num() - 1)]);
+		}
+	}
+
+	Snapshot->EventLog.Add(FString::Printf(TEXT("[Fake] %s - Stage %d"), *PlayerDisplayName, Snapshot->StageReached));
+	Snapshot->DamageBySource.Add(NAME_None, Snapshot->Bounty > 0 ? Snapshot->Bounty : 1000);
+	Snapshot->DisplayName = PlayerDisplayName;
+
+	return Snapshot;
+}
+
 bool UT66LeaderboardSubsystem::ShouldShowAccountStatusButton() const
 {
 	if (CVarT66AccountStatusForce.GetValueOnGameThread() > 0)
@@ -753,25 +899,13 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Diffi
 
 	// Placeholder "global" Top 10 (generated from the 10th-place target).
 	const int64 Target10 = GetBountyTarget10(Difficulty, PartySize);
-	static const TArray<FString> FakeNames = {
-		TEXT("xX_DarkSlayer_Xx"),
-		TEXT("ProGamer2024"),
-		TEXT("TribulationMaster"),
-		TEXT("CasualHero"),
-		TEXT("NightmareKing"),
-		TEXT("SilentStorm"),
-		TEXT("BlazeFury"),
-		TEXT("IronWill"),
-		TEXT("ShadowDancer"),
-		TEXT("SpeedRunner_99"),
-	};
 
 	for (int32 Rank = 1; Rank <= 10; ++Rank)
 	{
 		const float Mult = 1.0f + (static_cast<float>(10 - Rank) * 0.08f); // rank1 higher, rank10 baseline
 		FLeaderboardEntry E;
 		E.Rank = Rank;
-		E.PlayerName = FakeNames[Rank - 1];
+		FillPlayerNamesForEntry(E, Rank, PartySize);
 		E.Score = static_cast<int64>(FMath::RoundToInt64(static_cast<double>(Target10) * static_cast<double>(Mult)));
 		E.TimeSeconds = 0.f;
 		E.PartySize = PartySize;
@@ -822,6 +956,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Diffi
 		if (InsertIndex < 10)
 		{
 			FLeaderboardEntry You;
+			You.PlayerNames = { LocalName };
 			You.PlayerName = LocalName;
 			You.Score = LocalBest;
 			You.TimeSeconds = 0.f;
@@ -845,6 +980,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildBountyEntries(ET66Diffi
 	{
 		FLeaderboardEntry You;
 		You.Rank = 11;
+		You.PlayerNames = { LocalName };
 		You.PlayerName = LocalName;
 		You.Score = LocalBest;
 		You.TimeSeconds = 0.f;
@@ -871,25 +1007,13 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	Stage = FMath::Clamp(Stage, 1, 66);
 
 	const float Target10 = GetSpeedRunTarget10(Difficulty, PartySize, Stage);
-	static const TArray<FString> FakeNames = {
-		TEXT("xX_DarkSlayer_Xx"),
-		TEXT("ProGamer2024"),
-		TEXT("TribulationMaster"),
-		TEXT("CasualHero"),
-		TEXT("NightmareKing"),
-		TEXT("SilentStorm"),
-		TEXT("BlazeFury"),
-		TEXT("IronWill"),
-		TEXT("ShadowDancer"),
-		TEXT("SpeedRunner_99"),
-	};
 
 	for (int32 Rank = 1; Rank <= 10; ++Rank)
 	{
 		const float Mult = 0.55f + (static_cast<float>(Rank - 1) * (0.45f / 9.f)); // rank1 fastest, rank10 baseline
 		FLeaderboardEntry E;
 		E.Rank = Rank;
-		E.PlayerName = FakeNames[Rank - 1];
+		FillPlayerNamesForEntry(E, Rank, PartySize);
 		E.Score = 0;
 		E.TimeSeconds = FMath::Max(1.f, Target10 * Mult);
 		E.StageReached = Stage;
@@ -939,6 +1063,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 		if (InsertIndex < 10)
 		{
 			FLeaderboardEntry You;
+			You.PlayerNames = { LocalName };
 			You.PlayerName = LocalName;
 			You.Score = 0;
 			You.TimeSeconds = LocalBest;
@@ -962,6 +1087,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	{
 		FLeaderboardEntry You;
 		You.Rank = 11;
+		You.PlayerNames = { LocalName };
 		You.PlayerName = LocalName;
 		You.Score = 0;
 		You.TimeSeconds = (LocalBest > 0.01f) ? LocalBest : 0.f;
@@ -991,6 +1117,10 @@ static TArray<FLeaderboardEntry> LoadEntriesFromDataTable(UDataTable* DT)
 		{
 			FLeaderboardEntry E = *Rows[i];
 			E.Rank = i + 1;
+			if (E.PlayerNames.Num() == 0 && !E.PlayerName.IsEmpty())
+			{
+				E.PlayerNames.Add(E.PlayerName);
+			}
 			Out.Add(E);
 		}
 	}
@@ -1063,6 +1193,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 			if (InsertIndex < 10)
 			{
 				FLeaderboardEntry You;
+				You.PlayerNames = { LocalName };
 				You.PlayerName = LocalName;
 				You.Score = LocalBest;
 				You.PartySize = PartySize;
@@ -1081,6 +1212,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 		{
 			FLeaderboardEntry You;
 			You.Rank = 11;
+			You.PlayerNames = { LocalName };
 			You.PlayerName = LocalName;
 			You.Score = LocalBest;
 			You.PartySize = PartySize;
@@ -1125,6 +1257,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 			if (InsertIndex < 10)
 			{
 				FLeaderboardEntry You;
+				You.PlayerNames = { LocalName };
 				You.PlayerName = LocalName;
 				You.Score = 0;
 				You.TimeSeconds = LocalBest;
@@ -1144,6 +1277,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 		{
 			FLeaderboardEntry You;
 			You.Rank = 11;
+			You.PlayerNames = { LocalName };
 			You.PlayerName = LocalName;
 			You.Score = 0;
 			You.TimeSeconds = (LocalBest > 0.01f) ? LocalBest : 0.f;

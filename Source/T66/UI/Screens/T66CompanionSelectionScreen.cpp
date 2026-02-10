@@ -1183,5 +1183,5 @@ void UT66CompanionSelectionScreen::OnBackClicked() { NavigateBack(); }
 
 void UT66CompanionSelectionScreen::OnLanguageChanged(ET66Language NewLanguage)
 {
-	TakeWidget();
+	FT66Style::DeferRebuild(this);
 }

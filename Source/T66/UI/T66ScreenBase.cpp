@@ -89,29 +89,10 @@ void UT66ScreenBase::CloseModal()
 
 void UT66ScreenBase::ForceRebuildSlate()
 {
-	// RemoveFromParent + AddToViewport is required because ReleaseSlateResources
-	// creates a new SObjectWidget, but the viewport's Slate overlay still holds
-	// a shared-ref to the OLD SObjectWidget. Simply calling TakeWidget() after
-	// Release leaves the viewport displaying stale widgets.
-	// RemoveFromParent detaches the old SObjectWidget from the viewport overlay,
-	// and AddToViewport re-attaches with the freshly built one.
-	const bool bWasInViewport = IsInViewport();
-	const int32 ZOrder = bIsModal ? 100 : 0;
-
-	if (bWasInViewport)
-	{
-		RemoveFromParent();
-	}
-
-	ReleaseSlateResources(true);
-
-	// Force rebuild now so the new Slate tree (with updated data) exists before we re-add.
-	TakeWidget();
-
-	if (bWasInViewport)
-	{
-		AddToViewport(ZOrder);
-	}
+	// Defer the rebuild to the next tick so that if this is called from a Slate
+	// click/key handler the current event finishes processing before the widget
+	// tree is torn down (prevents dangling-pointer crashes).
+	FT66Style::DeferRebuild(this, bIsModal ? 100 : 0);
 }
 
 // ========== Slate UI Building Helpers ==========

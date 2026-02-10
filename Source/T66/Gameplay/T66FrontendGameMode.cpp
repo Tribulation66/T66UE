@@ -282,6 +282,7 @@ void AT66FrontendGameMode::BeginPlay()
 				if (UCameraComponent* CamComp = PreviewCamera->GetCameraComponent())
 				{
 					CamComp->SetFieldOfView(90.f); // Match gameplay FollowCamera FOV
+					CamComp->bConstrainAspectRatio = false; // Game view fills entire screen (no letterbox bars)
 				}
 				UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned PreviewCamera for in-world character viewing"));
 			}

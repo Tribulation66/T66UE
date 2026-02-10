@@ -96,7 +96,7 @@ void UT66CollectorOverlayWidget::CloseOverlay()
 
 void UT66CollectorOverlayWidget::RefreshContent()
 {
-	if (GetCachedWidget().IsValid()) { ReleaseSlateResources(true); TakeWidget(); }
+	FT66Style::DeferRebuild(this);
 }
 
 void UT66CollectorOverlayWidget::NativeDestruct()
@@ -127,7 +127,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	// Tab row
 	auto MakeTab = [&](const FText& Label, int32 Index) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; ReleaseSlateResources(true); TakeWidget(); return FReply::Handled(); }))
+		return FT66Style::MakeButton(FT66ButtonParams(Label, FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }))
 			.SetMinWidth(0.f).SetFontSize(11).SetPadding(FMargin(12.f, 6.f)));
 	};
 

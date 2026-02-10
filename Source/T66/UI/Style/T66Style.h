@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Styling/SlateStyle.h"
+#include "Styling/SlateTypes.h"     // FComboButtonStyle for GetDropdownComboButtonStyle
 #include "Widgets/Input/SButton.h"  // FOnClicked used by MakeButton helper
 #include "Widgets/Layout/SBorder.h" // SBorder used by MakePanel OutBorder parameter
 
@@ -22,6 +23,7 @@ enum class ET66ButtonType : uint8
 	Danger,        // Destructive/warning: red        (Danger)
 	Success,       // Positive confirm: green         (Success)
 	ToggleActive,  // Active toggle state (inverted colors)
+	Row,           // Leaderboard/list row: transparent bg, thin border, content-driven layout
 };
 
 /**
@@ -136,6 +138,38 @@ struct FT66PanelParams
 	FT66PanelParams& SetColor(const TAttribute<FSlateColor>& C)          { ColorOverride = C; bHasColorOverride = true; return *this; }
 	FT66PanelParams& SetColor(const FLinearColor& C)                     { ColorOverride = FSlateColor(C); bHasColorOverride = true; return *this; }
 	FT66PanelParams& SetVisibility(const TAttribute<EVisibility>& V)     { Visibility = V; return *this; }
+};
+
+/**
+ * Parameters for the centralized MakeDropdown factory.
+ * Every dropdown (combo button) uses the same theme:
+ * Dark = black background, white text; Light = white/light background, black text.
+ *
+ * Usage (simple):
+ *   FT66Style::MakeDropdown(FT66DropdownParams(TriggerContent, OnGetMenuContent))
+ *
+ * Usage (advanced):
+ *   FT66Style::MakeDropdown(FT66DropdownParams(TriggerContent, OnGetMenuContent)
+ *       .SetMinWidth(200.f).SetHeight(32.f))
+ */
+struct FT66DropdownParams
+{
+	TSharedRef<SWidget> Content;
+	TFunction<TSharedRef<SWidget>()> OnGetMenuContent;
+
+	float MinWidth   = 0.f;
+	float Height     = 32.f;
+	FMargin Padding  = FMargin(8.f, 4.f);
+	TAttribute<EVisibility> Visibility = EVisibility::Visible;
+
+	FT66DropdownParams() = default;
+	FT66DropdownParams(const TSharedRef<SWidget>& InContent, TFunction<TSharedRef<SWidget>()> InOnGetMenuContent)
+		: Content(InContent), OnGetMenuContent(MoveTemp(InOnGetMenuContent)) {}
+
+	FT66DropdownParams& SetMinWidth(float W)      { MinWidth = W; return *this; }
+	FT66DropdownParams& SetHeight(float H)       { Height = H; return *this; }
+	FT66DropdownParams& SetPadding(const FMargin& M) { Padding = M; return *this; }
+	FT66DropdownParams& SetVisibility(const TAttribute<EVisibility>& V) { Visibility = V; return *this; }
 };
 
 /**
@@ -262,6 +296,28 @@ public:
 
 	/** Check whether panel textures are loaded. */
 	static bool HasPanelTextures();
+
+	/** Theme-aware combo style (Panel bg, Text for arrow). Use for MakeDropdown and for SComboBox::ComboButtonStyle(). Dark = black bg + white text; Light = light bg + black text. */
+	static const FComboButtonStyle& GetDropdownComboButtonStyle();
+
+	/** Build a themed dropdown (SComboButton). All dropdowns should use this or apply GetDropdownComboButtonStyle() to SComboBox. */
+	static TSharedRef<SWidget> MakeDropdown(const FT66DropdownParams& Params);
+
+	/**
+	 * Schedule a safe widget rebuild for the next tick.
+	 *
+	 * ALWAYS use this instead of calling ReleaseSlateResources / TakeWidget /
+	 * ForceRebuildSlate directly.  Deferring to the next tick ensures that
+	 * Slate has finished processing the current click/key event before the
+	 * widget tree is torn down, preventing dangling-pointer crashes.
+	 *
+	 * @param Widget   The UUserWidget whose Slate tree should be rebuilt.
+	 * @param ZOrder   Viewport Z-order to restore (0 = screens, 50 = theme toggle, 100 = modals).
+	 *
+	 * Cost: one TFunction push onto the timer queue (small-object-optimized,
+	 * no heap alloc).  Fires on the very next tick — imperceptible delay.
+	 */
+	static void DeferRebuild(UUserWidget* Widget, int32 ZOrder = 0);
 
 private:
 	static TSharedPtr<FSlateStyleSet> StyleInstance;
