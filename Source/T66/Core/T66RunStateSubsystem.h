@@ -300,6 +300,27 @@ public:
 	/** Default tint color for an idol (used for UI + enemy status visuals). */
 	static FLinearColor GetIdolColor(FName IdolID);
 
+	// ============================================================
+	// Idol stock (shop-style altar: 3 offered idols + reroll)
+	// ============================================================
+
+	static constexpr int32 IdolStockSlotCount = 3;
+
+	/** Ensure idol stock has been generated for the current stage. */
+	void EnsureIdolStock();
+
+	/** Reroll the idol stock (regenerate 3 random idols). */
+	void RerollIdolStock();
+
+	/** Returns the current idol stock IDs (3 slots). */
+	const TArray<FName>& GetIdolStockIDs() const { return IdolStockIDs; }
+
+	/** Select (equip/level-up) the idol at the given stock slot. Returns true on success. */
+	bool SelectIdolFromStock(int32 SlotIndex);
+
+	/** Whether a stock slot has already been selected this visit. */
+	bool IsIdolStockSlotSelected(int32 SlotIndex) const;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FString>& GetEventLog() const { return EventLog; }
 
@@ -684,6 +705,9 @@ public:
 	const TArray<FName>& GetVendorStockItemIDs() const { return VendorStockItemIDs; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
+	const TArray<FT66InventorySlot>& GetVendorStockSlots() const { return VendorStockSlots; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Vendor")
 	bool IsVendorStockSlotSold(int32 Index) const;
 
 	/** Attempt to buy a vendor slot; returns true if purchased. */
@@ -897,6 +921,12 @@ private:
 
 	UPROPERTY()
 	TArray<uint8> EquippedIdolLevels;
+
+	/** Idol stock: 3 offered idols (shop-style altar). */
+	TArray<FName> IdolStockIDs;
+
+	/** Whether each stock slot has been selected this visit. */
+	TArray<bool> IdolStockSelected;
 
 	UPROPERTY()
 	TArray<FString> EventLog;

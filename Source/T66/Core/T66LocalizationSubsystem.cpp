@@ -1435,6 +1435,68 @@ FText UT66LocalizationSubsystem::GetText_IdolTooltip(FName IdolID) const
 	return NSLOCTEXT("T66.IdolAltar", "IdolTooltipUnknown", "IDOL\nUnknown.");
 }
 
+FText UT66LocalizationSubsystem::GetText_IdolDisplayName(FName IdolID) const
+{
+	// Strip "Idol_" prefix for display, or return localized names.
+	if (IdolID == FName(TEXT("Idol_Curse")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Curse_Name", "CURSE");
+	if (IdolID == FName(TEXT("Idol_Lava")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Lava_Name", "LAVA");
+	if (IdolID == FName(TEXT("Idol_Poison")))    return NSLOCTEXT("T66.IdolAltar", "Idol_Poison_Name", "POISON");
+	if (IdolID == FName(TEXT("Idol_Decay")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Decay_Name", "DECAY");
+	if (IdolID == FName(TEXT("Idol_Bleed")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Bleed_Name", "BLEED");
+	if (IdolID == FName(TEXT("Idol_Acid")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Acid_Name", "ACID");
+	if (IdolID == FName(TEXT("Idol_Electric")))  return NSLOCTEXT("T66.IdolAltar", "Idol_Electric_Name", "ELECTRIC");
+	if (IdolID == FName(TEXT("Idol_Ice")))       return NSLOCTEXT("T66.IdolAltar", "Idol_Ice_Name", "ICE");
+	if (IdolID == FName(TEXT("Idol_Sound")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Sound_Name", "SOUND");
+	if (IdolID == FName(TEXT("Idol_Shadow")))    return NSLOCTEXT("T66.IdolAltar", "Idol_Shadow_Name", "SHADOW");
+	if (IdolID == FName(TEXT("Idol_Star")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Star_Name", "STAR");
+	if (IdolID == FName(TEXT("Idol_Rubber")))    return NSLOCTEXT("T66.IdolAltar", "Idol_Rubber_Name", "RUBBER");
+	if (IdolID == FName(TEXT("Idol_Fire")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Fire_Name", "FIRE");
+	if (IdolID == FName(TEXT("Idol_Earth")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Earth_Name", "EARTH");
+	if (IdolID == FName(TEXT("Idol_Water")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Water_Name", "WATER");
+	if (IdolID == FName(TEXT("Idol_Sand")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Sand_Name", "SAND");
+	if (IdolID == FName(TEXT("Idol_BlackHole"))) return NSLOCTEXT("T66.IdolAltar", "Idol_BlackHole_Name", "BLACK HOLE");
+	if (IdolID == FName(TEXT("Idol_Storm")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Storm_Name", "STORM");
+	if (IdolID == FName(TEXT("Idol_Light")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Light_Name", "LIGHT");
+	if (IdolID == FName(TEXT("Idol_Wind")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Wind_Name", "WIND");
+	if (IdolID == FName(TEXT("Idol_Steel")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Steel_Name", "STEEL");
+	if (IdolID == FName(TEXT("Idol_Wood")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Wood_Name", "WOOD");
+	if (IdolID == FName(TEXT("Idol_Bone")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Bone_Name", "BONE");
+	if (IdolID == FName(TEXT("Idol_Glass")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Glass_Name", "GLASS");
+	return FText::FromName(IdolID);
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarSelect() const
+{
+	return NSLOCTEXT("T66.IdolAltar", "Select", "SELECT");
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarMaxLevel() const
+{
+	return NSLOCTEXT("T66.IdolAltar", "MaxLevel", "Already at max level.");
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarNoEmptySlot() const
+{
+	return NSLOCTEXT("T66.IdolAltar", "NoEmptySlot", "No empty idol slot.");
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolAltarSelected() const
+{
+	return NSLOCTEXT("T66.IdolAltar", "Selected", "SELECTED");
+}
+
+FText UT66LocalizationSubsystem::GetText_IdolCategoryName(ET66AttackCategory Category) const
+{
+	switch (Category)
+	{
+		case ET66AttackCategory::Pierce: return NSLOCTEXT("T66.IdolAltar", "Category_Pierce", "Pierce");
+		case ET66AttackCategory::Bounce: return NSLOCTEXT("T66.IdolAltar", "Category_Bounce", "Bounce");
+		case ET66AttackCategory::AOE:    return NSLOCTEXT("T66.IdolAltar", "Category_AOE", "AOE");
+		case ET66AttackCategory::DOT:    return NSLOCTEXT("T66.IdolAltar", "Category_DOT", "DOT");
+		default: return FText::GetEmpty();
+	}
+}
+
 // ========== Language Select ==========
 
 FText UT66LocalizationSubsystem::GetText_SelectLanguage() const

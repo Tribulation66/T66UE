@@ -9,13 +9,12 @@
 
 class SBorder;
 class STextBlock;
-class ST66IdolDropTarget;
-class UTexture2D;
+class SImage;
+class SWidget;
+struct FSlateBrush;
 
 /**
- * Idol Altar overlay (Stage 1):
- * - 12 idol tiles around a center drop pad (4x4 outer ring, center spans 2x2)
- * - Drag idol -> drop on center pad -> press Confirm to equip into slot 1
+ * Idol Altar overlay — shop-style panel showing 3 idol cards with SELECT + REROLL.
  */
 UCLASS(Blueprintable)
 class T66_API UT66IdolAltarOverlayWidget : public UUserWidget
@@ -27,26 +26,29 @@ public:
 	virtual void NativeDestruct() override;
 
 private:
-	FName PendingSelectedIdolID = NAME_None;
+	static constexpr int32 SlotCount = 3;
 
-	TSharedPtr<ST66IdolDropTarget> CenterPadBorder;
+	// Per-slot UI references
+	TArray<TSharedPtr<STextBlock>> IdolNameTexts;
+	TArray<TSharedPtr<STextBlock>> IdolDescTexts;
+	TArray<TSharedPtr<SImage>> IdolIconImages;
+	TArray<TSharedPtr<FSlateBrush>> IdolIconBrushes;
+	TArray<TSharedPtr<SBorder>> IdolTileBorders;
+	TArray<TSharedPtr<SBorder>> IdolIconBorders;
+	TArray<TSharedPtr<SWidget>> SelectButtons;
+	TArray<TSharedPtr<STextBlock>> SelectButtonTexts;
+
 	TSharedPtr<STextBlock> StatusText;
-	TSharedPtr<STextBlock> HoverTooltipText;
 
-	/** Returns a stable brush pointer for an idol's icon (or nullptr). */
-	const FSlateBrush* GetOrCreateIdolIconBrush(FName IdolID);
-
-	/**
-	 * Slate icon brush lifetime:
-	 * - Our idol tiles pass a raw FSlateBrush* into SImage.
-	 * - If the brush storage is local to RebuildWidget(), Slate can later dereference a dangling pointer and crash.
-	 * Keep brushes (and their textures) alive for the lifetime of the overlay widget instance.
-	 */
-	TMap<FName, TSharedPtr<FSlateBrush>> IdolIconBrushes;
-
-	FReply OnConfirm();
+	// Actions
+	FReply OnSelectSlot(int32 SlotIndex);
+	FReply OnReroll();
 	FReply OnBack();
 
-	void RefreshCenterPad();
-};
+	// Refresh
+	void RefreshStock();
 
+	// Delegate binding
+	UFUNCTION()
+	void HandleIdolsChanged();
+};

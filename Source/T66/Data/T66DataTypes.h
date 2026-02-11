@@ -664,6 +664,20 @@ struct T66_API FItemData : public FTableRowBase
 	{
 		return FMath::RoundToInt(static_cast<float>(BaseSellGold) * GetRarityPriceMultiplier(Rarity));
 	}
+
+	/** UI border/tint color for an item rarity tier. */
+	static FLinearColor GetItemRarityColor(ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);
+		case ET66ItemRarity::Red:    return FLinearColor(0.90f, 0.20f, 0.20f, 1.f);
+		case ET66ItemRarity::Yellow: return FLinearColor(0.95f, 0.80f, 0.15f, 1.f);
+		case ET66ItemRarity::White:  return FLinearColor(0.92f, 0.92f, 0.96f, 1.f);
+		case ET66ItemRarity::Cursed: return FLinearColor(0.50f, 0.10f, 0.60f, 1.f);
+		default:                     return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);
+		}
+	}
 };
 
 /**

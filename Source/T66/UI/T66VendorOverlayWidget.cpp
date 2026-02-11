@@ -137,7 +137,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const TArray<FName> EmptyStock;
 	const TArray<FName>& Stock = RunState ? RunState->GetVendorStockItemIDs() : EmptyStock;
 
-	static constexpr int32 ShopSlotCount = 4;
+	static constexpr int32 ShopSlotCount = 3;
 	ItemNameTexts.SetNum(ShopSlotCount);
 	ItemDescTexts.SetNum(ShopSlotCount);
 	ItemPriceTexts.SetNum(ShopSlotCount);
@@ -159,7 +159,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	{
 		ItemIconBrushes[i] = MakeShared<FSlateBrush>();
 		ItemIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		ItemIconBrushes[i]->ImageSize = FVector2D(48.f, 48.f);
+		ItemIconBrushes[i]->ImageSize = FVector2D(200.f, 200.f);
 	}
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
 	{
@@ -168,32 +168,17 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		InventorySlotIconBrushes[i]->ImageSize = FVector2D(160.f, 160.f);
 	}
 
-	TSharedRef<SUniformGridPanel> ShopGrid = SNew(SUniformGridPanel)
-		.SlotPadding(FMargin(FT66Style::Tokens::Space4, FT66Style::Tokens::Space4));
+	TSharedRef<SHorizontalBox> ShopRow = SNew(SHorizontalBox);
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
-		// Layout (reserve the left side for TikTok):
-		// [Slot 1] [Slot 2]
-		// [Slot 0] [Slot 3]
-		int32 Col = 0;
-		int32 Row = 0;
-		switch (i)
-		{
-			case 0: Col = 0; Row = 1; break;
-			case 1: Col = 0; Row = 0; break;
-			case 2: Col = 1; Row = 0; break;
-			case 3: Col = 1; Row = 1; break;
-			default: Col = 0; Row = 0; break;
-		}
-
 		TSharedRef<SWidget> BuyBtnWidget = FT66Style::MakeButton(
 			FT66ButtonParams(
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i),
 				ET66ButtonType::Primary)
-			.SetMinWidth(200.f)
-			.SetPadding(FMargin(10.f, 8.f))
+			.SetMinWidth(100.f)
+			.SetPadding(FMargin(8.f, 6.f))
 			.SetContent(
 				SAssignNew(BuyButtonTexts[i], STextBlock)
 				.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
@@ -208,64 +193,68 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i),
 				ET66ButtonType::Danger)
-			.SetMinWidth(200.f)
-			.SetPadding(FMargin(10.f, 8.f))
+			.SetMinWidth(100.f)
+			.SetPadding(FMargin(8.f, 6.f))
 			.SetFontSize(14)
 		);
 		StealButtons[i] = StealBtnWidget;
 
-		ShopGrid->AddSlot(Col, Row)
+		ShopRow->AddSlot()
+			.FillWidth(1.f)
+			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
-			.MinDesiredWidth(320.f)
-			.MinDesiredHeight(260.f)
+			.MinDesiredWidth(220.f)
+			.MinDesiredHeight(420.f)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
+					// 1. Name at top
 					+ SVerticalBox::Slot().AutoHeight()
 					[
+						SAssignNew(ItemNameTexts[i], STextBlock)
+						.Text(FText::GetEmpty())
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					// 2. Large image below name (centered)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					[
 						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top).Padding(0.f, 0.f, FT66Style::Tokens::Space3, 0.f)
+						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
 							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(48.f)
-								.HeightOverride(48.f)
+								.WidthOverride(200.f)
+								.HeightOverride(200.f)
 								[
 									SAssignNew(ItemIconImages[i], SImage)
 									.Image(ItemIconBrushes[i].Get())
 									.ColorAndOpacity(FLinearColor::White)
-								]
-							,
+								],
 								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
 								&ItemIconBorders[i])
 						]
-						+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Top)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()
-							[
-								SAssignNew(ItemNameTexts[i], STextBlock)
-								.Text(FText::GetEmpty())
-								.TextStyle(&TextHeading)
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
-							[
-								SAssignNew(ItemDescTexts[i], STextBlock)
-								.Text(FText::GetEmpty())
-								.TextStyle(&TextBody)
-								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-								.AutoWrapText(true)
-							]
-						]
 					]
+					// 3. Two stat lines stacked
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					[
+						SAssignNew(ItemDescTexts[i], STextBlock)
+						.Text(FText::GetEmpty())
+						.TextStyle(&TextBody)
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+					// 4. Buy and Steal side by side
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+							.FillWidth(1.f)
+							.Padding(0.f, 0.f, FT66Style::Tokens::Space2, 0.f)
 						[ BuyBtnWidget ]
-						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+						+ SHorizontalBox::Slot()
+							.FillWidth(1.f)
 						[ StealBtnWidget ]
 					]
 				,
@@ -487,10 +476,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(StatsPanelBox, SBox)
 				[
-					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc)
+					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f)
 				]
 			]
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -529,13 +518,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth()
 						[
-							ShopGrid
+							ShopRow
 						]
 					]
 				,
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
 			]
-			+ SHorizontalBox::Slot().AutoWidth()
+			+ SHorizontalBox::Slot().FillWidth(1.f)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -543,8 +532,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 					[
 						SNew(SBox)
-						.WidthOverride(220.f)
-						.HeightOverride(220.f)
+						.WidthOverride(170.f)
+						.HeightOverride(170.f)
 						[
 							SAssignNew(AngerCircleImage, SImage)
 							.Image(Style.GetBrush("T66.Brush.Circle"))
@@ -807,7 +796,7 @@ void UT66VendorOverlayWidget::RefreshStatsPanel()
 	{
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
-	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc));
+	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f));
 }
 
 void UT66VendorOverlayWidget::RefreshTopBar()
@@ -885,6 +874,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FName>& Stock = RunState->GetVendorStockItemIDs();
+	const TArray<FT66InventorySlot>& StockSlots = RunState->GetVendorStockSlots();
 	const int32 SlotCount = ItemNameTexts.Num();
 	for (int32 i = 0; i < SlotCount; ++i)
 	{
@@ -892,6 +882,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 		const bool bSold = bHasItem ? RunState->IsVendorStockSlotSold(i) : true;
 		FItemData D;
 		const bool bHasData = bHasItem && GI && GI->GetItemData(Stock[i], D);
+		const ET66ItemRarity SlotRarity = StockSlots.IsValidIndex(i) ? StockSlots[i].Rarity : ET66ItemRarity::Black;
 
 		if (ItemNameTexts.IsValidIndex(i) && ItemNameTexts[i].IsValid())
 		{
@@ -935,32 +926,30 @@ void UT66VendorOverlayWidget::RefreshStock()
 					}
 				};
 
-				// New item system: display primary stat from vendor slot.
+				// Display primary stat from vendor stock slot.
 				const ET66HeroStatType MainType = D.PrimaryStatType;
-				const TArray<FT66InventorySlot>& VendorSlots = RunState->GetInventorySlots(); // unused here; use stock slots
-				// Get rolled value from vendor stock slot.
-				int32 MainValue = 0;
-				{
-					const TArray<FT66InventorySlot>& StockSlots = RunState->GetInventorySlots(); // placeholder
-					// We need the vendor stock slot data. For now, show the template primary stat name.
-					// Vendor stock slots are indexed the same as VendorStockItemIDs.
-					if (i < RunState->GetVendorStockItemIDs().Num())
-					{
-						// Best-effort: show a representative value.
-						int32 RMin = 1, RMax = 3;
-						FItemData::GetLine1RollRange(ET66ItemRarity::Black, RMin, RMax);
-						MainValue = (RMin + RMax) / 2;
-					}
-				}
+				const int32 MainValue = StockSlots.IsValidIndex(i) ? StockSlots[i].Line1RolledValue : 0;
 
-				ItemDescTexts[i]->SetText((MainValue > 0)
+				// Build description: Line 1 stat + Line 2 secondary name.
+				FText Line1 = (MainValue > 0)
 					? FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue))
-					: FText::GetEmpty());
+					: FText::GetEmpty();
+				FText Line2 = (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
+					? Loc->GetText_SecondaryStatName(D.SecondaryStatType)
+					: FText::GetEmpty();
+				if (!Line1.IsEmpty() && !Line2.IsEmpty())
+				{
+					ItemDescTexts[i]->SetText(FText::Format(NSLOCTEXT("T66.Vendor", "TwoLineDesc", "{0}\n{1}"), Line1, Line2));
+				}
+				else
+				{
+					ItemDescTexts[i]->SetText(Line1);
+				}
 			}
 		}
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
 		{
-			ItemIconBorders[i]->SetBorderBackgroundColor(bHasData ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel2);
+			ItemIconBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66Style::Tokens::Panel2);
 		}
 		if (ItemIconBrushes.IsValidIndex(i) && ItemIconBrushes[i].IsValid())
 		{
@@ -998,7 +987,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 			}
 			else
 			{
-				const int32 Price = bHasData ? D.GetBuyGoldForRarity(ET66ItemRarity::Black) : 0;
+				const int32 Price = bHasData ? D.GetBuyGoldForRarity(SlotRarity) : 0;
 				BuyButtonTexts[i]->SetText(FText::Format(
 					NSLOCTEXT("T66.Vendor", "BuyPriceFormat", "BUY ({0}g)"),
 					FText::AsNumber(Price)));
@@ -1084,6 +1073,7 @@ void UT66VendorOverlayWidget::RefreshInventory()
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FName>& Inv = RunState->GetInventory();
+	const TArray<FT66InventorySlot>& InvSlots = RunState->GetInventorySlots();
 
 	// Auto-select the first valid item so the details panel is "big" immediately.
 	if (SelectedInventoryIndex < 0)
@@ -1119,9 +1109,9 @@ void UT66VendorOverlayWidget::RefreshInventory()
 			FLinearColor Fill = FT66Style::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && GI && GI->GetItemData(Inv[i], D);
-			if (bHasData)
+			if (bHasData && InvSlots.IsValidIndex(i))
 			{
-				Fill = FT66Style::Tokens::Panel2;
+				Fill = FItemData::GetItemRarityColor(InvSlots[i].Rarity);
 			}
 
 			// If selected, tint toward accent for readability.

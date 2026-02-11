@@ -718,6 +718,30 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
 	FText GetText_IdolTooltip(FName IdolID) const;
+
+	/** Idol display name (e.g. "CURSE", "FIRE"). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolDisplayName(FName IdolID) const;
+
+	/** "SELECT" button label for idol altar. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarSelect() const;
+
+	/** "Max level." status for idol altar. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarMaxLevel() const;
+
+	/** "No empty idol slot." status for idol altar. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarNoEmptySlot() const;
+
+	/** "SELECTED" (for already-selected idol stock slot). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolAltarSelected() const;
+
+	/** Idol category display name (e.g. "DOT", "Pierce"). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
+	FText GetText_IdolCategoryName(ET66AttackCategory Category) const;
 	
 	// Language Select
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|LanguageSelect")

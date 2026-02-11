@@ -17,15 +17,29 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/SNullWidget.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
-#include "Input/DragAndDrop.h"
+
+static UT66RunStateSubsystem* GetRunState(UWorld* World)
+{
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+}
 
 void UT66IdolAltarOverlayWidget::NativeDestruct()
 {
-	// Safety: this overlay can be removed outside Back/Confirm (level change, pause flow, etc).
+	// Unbind delegate.
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66RunStateSubsystem* RunState = GetRunState(World))
+		{
+			RunState->IdolsChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
+		}
+	}
+
+	// Safety: restore gameplay input.
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
 		if (PC->IsGameplayLevel() && !PC->IsPaused())
@@ -36,524 +50,372 @@ void UT66IdolAltarOverlayWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-class FIdolDragDropOp : public FDragDropOperation
+void UT66IdolAltarOverlayWidget::HandleIdolsChanged()
 {
-public:
-	DRAG_DROP_OPERATOR_TYPE(FIdolDragDropOp, FDragDropOperation)
-
-	FName IdolID = NAME_None;
-
-	static TSharedRef<FIdolDragDropOp> New(FName InIdolID)
-	{
-		TSharedRef<FIdolDragDropOp> Op = MakeShared<FIdolDragDropOp>();
-		Op->IdolID = InIdolID;
-		Op->Construct();
-		return Op;
-	}
-};
-
-class ST66IdolTile : public SBorder
-{
-public:
-	DECLARE_DELEGATE_OneParam(FOnHoverIdol, FName /*IdolID*/);
-
-	SLATE_BEGIN_ARGS(ST66IdolTile) {}
-		SLATE_ARGUMENT(FName, IdolID)
-		SLATE_ARGUMENT(bool, bLocked)
-		SLATE_ARGUMENT(FText, ToolTipText)
-		SLATE_ARGUMENT(FLinearColor, Color)
-		SLATE_ARGUMENT(const FSlateBrush*, IconBrush)
-		SLATE_EVENT(FOnHoverIdol, OnHoverIdol)
-	SLATE_END_ARGS()
-
-	void Construct(const FArguments& InArgs)
-	{
-		IdolID = InArgs._IdolID;
-		bLocked = InArgs._bLocked;
-		OnHoverIdol = InArgs._OnHoverIdol;
-
-		SBorder::Construct(
-			SBorder::FArguments()
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(InArgs._Color)
-			.Padding(2.f)
-			.ToolTipText(InArgs._ToolTipText)
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				[
-					SNew(SImage)
-					.Image(InArgs._IconBrush)
-					.ColorAndOpacity(FLinearColor::White)
-					.Visibility(InArgs._IconBrush ? EVisibility::Visible : EVisibility::Collapsed)
-				]
-			]
-		);
-	}
-
-	virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-	{
-		if (bLocked) return FReply::Handled();
-		if (MouseEvent.GetEffectingButton() != EKeys::LeftMouseButton) return FReply::Unhandled();
-		return FReply::Handled().DetectDrag(AsShared(), EKeys::LeftMouseButton);
-	}
-
-	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-	{
-		if (bLocked) return FReply::Handled();
-		return FReply::Handled().BeginDragDrop(FIdolDragDropOp::New(IdolID));
-	}
-
-	virtual void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-	{
-		SBorder::OnMouseEnter(MyGeometry, MouseEvent);
-		OnHoverIdol.ExecuteIfBound(IdolID);
-	}
-
-	virtual void OnMouseLeave(const FPointerEvent& MouseEvent) override
-	{
-		SBorder::OnMouseLeave(MouseEvent);
-		OnHoverIdol.ExecuteIfBound(NAME_None);
-	}
-
-private:
-	FName IdolID = NAME_None;
-	bool bLocked = false;
-	FOnHoverIdol OnHoverIdol;
-};
-
-class ST66IdolDropTarget : public SBorder
-{
-public:
-	DECLARE_DELEGATE_OneParam(FOnIdolDropped, FName /*IdolID*/);
-
-	SLATE_BEGIN_ARGS(ST66IdolDropTarget) {}
-		SLATE_ARGUMENT(bool, bLocked)
-		SLATE_ARGUMENT(FLinearColor, Color)
-		SLATE_ARGUMENT(FText, ToolTipText)
-		SLATE_ARGUMENT(FText, CenterText)
-		SLATE_ARGUMENT(const FSlateBrush*, IconBrush)
-		SLATE_EVENT(FOnIdolDropped, OnIdolDropped)
-	SLATE_END_ARGS()
-
-	void Construct(const FArguments& InArgs)
-	{
-		bLocked = InArgs._bLocked;
-		OnIdolDropped = InArgs._OnIdolDropped;
-
-		SBorder::Construct(
-			SBorder::FArguments()
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(InArgs._Color)
-			.ToolTipText(InArgs._ToolTipText)
-			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SAssignNew(IconImage, SImage)
-					.Image(InArgs._IconBrush)
-					.ColorAndOpacity(FLinearColor::White)
-					.Visibility(InArgs._IconBrush ? EVisibility::Visible : EVisibility::Collapsed)
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SAssignNew(CenterTextWidget, STextBlock)
-					.Text(InArgs._CenterText)
-					.Font(FT66Style::Tokens::FontBold(14))
-					.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
-					.Justification(ETextJustify::Center)
-					.Visibility(InArgs._IconBrush ? EVisibility::Collapsed : EVisibility::Visible)
-				]
-			]
-		);
-	}
-
-	void SetIconBrush(const FSlateBrush* InBrush)
-	{
-		if (IconImage.IsValid())
-		{
-			IconImage->SetImage(InBrush);
-			IconImage->SetVisibility(InBrush ? EVisibility::Visible : EVisibility::Collapsed);
-		}
-		if (CenterTextWidget.IsValid())
-		{
-			CenterTextWidget->SetVisibility(InBrush ? EVisibility::Collapsed : EVisibility::Visible);
-		}
-	}
-
-	void SetCenterText(const FText& InText)
-	{
-		if (CenterTextWidget.IsValid())
-		{
-			CenterTextWidget->SetText(InText);
-		}
-	}
-
-	virtual FReply OnDrop(const FGeometry& MyGeometry, const FDragDropEvent& DragDropEvent) override
-	{
-		if (bLocked) return FReply::Handled();
-		TSharedPtr<FDragDropOperation> Operation = DragDropEvent.GetOperation();
-		if (Operation.IsValid() && Operation->IsOfType<FIdolDragDropOp>())
-		{
-			const TSharedPtr<FIdolDragDropOp> IdolOp = StaticCastSharedPtr<FIdolDragDropOp>(Operation);
-			OnIdolDropped.ExecuteIfBound(IdolOp->IdolID);
-		}
-		return FReply::Handled();
-	}
-
-private:
-	bool bLocked = false;
-	FOnIdolDropped OnIdolDropped;
-	TSharedPtr<SImage> IconImage;
-	TSharedPtr<STextBlock> CenterTextWidget;
-};
-
-static FText GetIdolTooltipText(UT66LocalizationSubsystem* Loc, FName IdolID)
-{
-	if (Loc)
-	{
-		return Loc->GetText_IdolTooltip(IdolID);
-	}
-	return NSLOCTEXT("T66.IdolAltar", "IdolTooltipUnknown", "IDOL\nUnknown.");
-}
-
-const FSlateBrush* UT66IdolAltarOverlayWidget::GetOrCreateIdolIconBrush(FName IdolID)
-{
-	if (IdolID.IsNone()) return nullptr;
-	if (const TSharedPtr<FSlateBrush>* Found = IdolIconBrushes.Find(IdolID))
-	{
-		return Found->Get();
-	}
-
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
-
-	FIdolData D;
-	const bool bHasData = GI && GI->GetIdolData(IdolID, D);
-	if (!bHasData || D.Icon.IsNull())
-	{
-		IdolIconBrushes.Add(IdolID, nullptr);
-		return nullptr;
-	}
-
-	TSharedPtr<FSlateBrush> B = MakeShared<FSlateBrush>();
-	B->DrawAs = ESlateBrushDrawType::Image;
-	B->ImageSize = FVector2D(64.f, 64.f);
-	IdolIconBrushes.Add(IdolID, B);
-
-	if (UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr)
-	{
-		T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, B, IdolID, /*bClearWhileLoading*/ true);
-	}
-	return B.Get();
+	RefreshStock();
 }
 
 TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 {
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-
-	// Keep icon brushes alive for the lifetime of this overlay widget instance.
-	// (They are referenced by raw pointer inside Slate widgets; if these brushes are local temporaries,
-	// Slate can dereference dangling pointers during later paint/drag operations and crash.)
-	IdolIconBrushes.Reset();
-
-	const TArray<FName>& Equipped = RunState ? RunState->GetEquippedIdols() : TArray<FName>();
-	TSet<FName> EquippedSet;
-	for (const FName& N : Equipped)
+	UWorld* World = GetWorld();
+	UT66RunStateSubsystem* RunState = GetRunState(World);
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (World)
 	{
-		if (!N.IsNone())
+		if (UGameInstance* GI = World->GetGameInstance())
 		{
-			EquippedSet.Add(N);
+			Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 		}
 	}
-	int32 FirstEmptySlot = INDEX_NONE;
-	for (int32 i = 0; i < Equipped.Num(); ++i)
+
+	// Ensure stock is generated.
+	if (RunState)
 	{
-		if (Equipped[i].IsNone())
-		{
-			FirstEmptySlot = i;
-			break;
-		}
-	}
-	const bool bHasEmptySlot = (FirstEmptySlot != INDEX_NONE);
+		RunState->EnsureIdolStock();
 
-	auto MakeIdolTile = [&](FName IdolID) -> TSharedRef<SWidget>
-	{
-		// If slots are full, only allow dragging idols that are already equipped (to level them up).
-		const bool bLocked = (!bHasEmptySlot && !EquippedSet.Contains(IdolID));
-		const FLinearColor C = UT66RunStateSubsystem::GetIdolColor(IdolID);
-		return SNew(ST66IdolTile)
-			.IdolID(IdolID)
-			.bLocked(bLocked)
-			.Color(C)
-			.IconBrush(GetOrCreateIdolIconBrush(IdolID))
-			.ToolTipText(GetIdolTooltipText(Loc, IdolID))
-			.OnHoverIdol(ST66IdolTile::FOnHoverIdol::CreateLambda([this, Loc](FName Hovered)
-			{
-				if (!HoverTooltipText.IsValid()) return;
-				if (Hovered.IsNone())
-				{
-					HoverTooltipText->SetText(Loc ? Loc->GetText_IdolAltarHoverHint() : NSLOCTEXT("T66.IdolAltar", "HoverHint", "Hover an idol to see its effect."));
-				}
-				else
-				{
-					HoverTooltipText->SetText(GetIdolTooltipText(Loc, Hovered));
-				}
-			}));
-	};
-
-	TSharedRef<SGridPanel> Grid = SNew(SGridPanel);
-
-	// Outer ring placement:
-	// Row0: 4 idols
-	// Row1: left + right idols, middle is part of center pad
-	// Row2: left + right idols, middle is part of center pad
-	// Row3: 4 idols
-	const TArray<FName>& Idols = UT66RunStateSubsystem::GetAllIdolIDs();
-	int32 idx = 0;
-
-	auto NextIdol = [&]() -> FName
-	{
-		const FName Out = (idx >= 0 && idx < Idols.Num()) ? Idols[idx] : NAME_None;
-		++idx;
-		return Out;
-	};
-
-	// Top row
-	for (int32 c = 0; c < 4; ++c)
-	{
-		Grid->AddSlot(c, 0)
-		.Padding(6.f)
-		[
-			SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
-			[
-				MakeIdolTile(NextIdol())
-			]
-		];
+		// Bind delegate (event-driven refresh).
+		RunState->IdolsChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
+		RunState->IdolsChanged.AddDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
 	}
 
-	// Row1 left/right
-	Grid->AddSlot(0, 1).Padding(6.f)
-	[
-		SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
-		[
-			MakeIdolTile(NextIdol())
-		]
-	];
-	Grid->AddSlot(3, 1).Padding(6.f)
-	[
-		SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
-		[
-			MakeIdolTile(NextIdol())
-		]
-	];
+	const ISlateStyle& Style = FT66Style::Get();
+	const FTextBlockStyle& TextTitle = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Title");
+	const FTextBlockStyle& TextHeading = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
+	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 
-	// Row2 left/right
-	Grid->AddSlot(0, 2).Padding(6.f)
-	[
-		SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
-		[
-			MakeIdolTile(NextIdol())
-		]
-	];
-	Grid->AddSlot(3, 2).Padding(6.f)
-	[
-		SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
-		[
-			MakeIdolTile(NextIdol())
-		]
-	];
+	const FText AltarTitle = Loc ? Loc->GetText_IdolAltarTitle() : NSLOCTEXT("T66.IdolAltar", "Title", "IDOL ALTAR");
+	const FText RerollText = Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.Vendor", "Reroll", "REROLL");
+	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
-	// Bottom row
-	for (int32 c = 0; c < 4; ++c)
+	// Initialize per-slot arrays.
+	IdolNameTexts.SetNum(SlotCount);
+	IdolDescTexts.SetNum(SlotCount);
+	IdolIconImages.SetNum(SlotCount);
+	IdolIconBrushes.SetNum(SlotCount);
+	IdolTileBorders.SetNum(SlotCount);
+	IdolIconBorders.SetNum(SlotCount);
+	SelectButtons.SetNum(SlotCount);
+	SelectButtonTexts.SetNum(SlotCount);
+
+	for (int32 i = 0; i < SlotCount; ++i)
 	{
-		Grid->AddSlot(c, 3)
-		.Padding(6.f)
-		[
-			SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
-			[
-				MakeIdolTile(NextIdol())
-			]
-		];
+		IdolIconBrushes[i] = MakeShared<FSlateBrush>();
+		IdolIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+		IdolIconBrushes[i]->ImageSize = FVector2D(200.f, 200.f);
 	}
 
-	// Center pad spans 2x2 at (1,1)
-	const FLinearColor CenterC = PendingSelectedIdolID.IsNone()
-		? FLinearColor(0.12f, 0.12f, 0.14f, 1.f)
-		: UT66RunStateSubsystem::GetIdolColor(PendingSelectedIdolID);
+	// Build the 3 idol card row.
+	TSharedRef<SHorizontalBox> IdolRow = SNew(SHorizontalBox);
 
-	Grid->AddSlot(1, 1)
-		.Padding(6.f)
-		.ColumnSpan(2)
-		.RowSpan(2)
+	for (int32 i = 0; i < SlotCount; ++i)
+	{
+		const FText SelectLabel = Loc ? Loc->GetText_IdolAltarSelect() : NSLOCTEXT("T66.IdolAltar", "Select", "SELECT");
+
+		TSharedRef<SWidget> SelectBtnWidget = FT66Style::MakeButton(
+			FT66ButtonParams(
+				SelectLabel,
+				FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnSelectSlot, i),
+				ET66ButtonType::Primary)
+			.SetMinWidth(160.f)
+			.SetPadding(FMargin(8.f, 6.f))
+			.SetContent(
+				SAssignNew(SelectButtonTexts[i], STextBlock)
+				.Text(SelectLabel)
+				.Font(FT66Style::Tokens::FontBold(14))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			)
+		);
+		SelectButtons[i] = SelectBtnWidget;
+
+		IdolRow->AddSlot()
+			.FillWidth(1.f)
+			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
-			.WidthOverride(64.f * 2.f + 12.f)
-			.HeightOverride(64.f * 2.f + 12.f)
+			.MinDesiredWidth(220.f)
+			.MinDesiredHeight(420.f)
 			[
-				SAssignNew(CenterPadBorder, ST66IdolDropTarget)
-				// Always allow selecting an idol; RunState will decide whether it can be applied (equip vs level-up).
-				.bLocked(false)
-				.Color(CenterC)
-				.IconBrush(GetOrCreateIdolIconBrush(PendingSelectedIdolID))
-				.ToolTipText(PendingSelectedIdolID.IsNone()
-					? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : NSLOCTEXT("T66.IdolAltar", "DropAnIdolHere", "Drop an Idol here."))
-					: GetIdolTooltipText(Loc, PendingSelectedIdolID))
-				.CenterText(Loc ? Loc->GetText_IdolAltarDropHere() : NSLOCTEXT("T66.IdolAltar", "DropHere", "DROP\nHERE"))
-				.OnIdolDropped(ST66IdolDropTarget::FOnIdolDropped::CreateLambda([this](FName IdolID)
-				{
-					PendingSelectedIdolID = IdolID;
-					RefreshCenterPad();
-				}))
-			]
-		];
-
-	return SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
-		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.f))
-				.Padding(26.f)
-				[
+				FT66Style::MakePanel(
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
+					// 1. Name at top
+					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_IdolAltarTitle() : NSLOCTEXT("T66.IdolAltar", "Title", "IDOL ALTAR"))
-						.Font(FT66Style::Tokens::FontBold(28))
-						.ColorAndOpacity(FLinearColor::White)
+						SAssignNew(IdolNameTexts[i], STextBlock)
+						.Text(FText::GetEmpty())
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
-					[
-						SNew(SBox)
-						.WidthOverride(360.f)
-						.HeightOverride(28.f)
-						[
-							SAssignNew(StatusText, STextBlock)
-							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontRegular(14))
-							.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
-							.Justification(ETextJustify::Center)
-							.WrapTextAt(360.f)
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
-					[
-						SNew(SBox)
-						.WidthOverride(360.f)
-						.HeightOverride(72.f) // fixed height prevents overlay resizing when text changes
-						[
-							SAssignNew(HoverTooltipText, STextBlock)
-							.Text(Loc ? Loc->GetText_IdolAltarHoverHint() : NSLOCTEXT("T66.IdolAltar", "HoverHint", "Hover an idol to see its effect."))
-							.Font(FT66Style::Tokens::FontRegular(14))
-							.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.9f, 1.f))
-							.Justification(ETextJustify::Center)
-							.WrapTextAt(360.f)
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-					[
-						Grid
-					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 14.f, 0.f, 0.f)
+					// 2. Large icon (centered)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
 					[
 						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
+						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							FT66Style::MakeButton(
-								Loc ? Loc->GetText_Confirm() : NSLOCTEXT("T66.Common", "Confirm", "CONFIRM"),
-								FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnConfirm),
-								ET66ButtonType::Success, 180.f)
-						]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
-						[
-							FT66Style::MakeButton(
-								Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"),
-								FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnBack),
-								ET66ButtonType::Neutral, 180.f)
+							FT66Style::MakePanel(
+								SNew(SBox)
+								.WidthOverride(200.f)
+								.HeightOverride(200.f)
+								[
+									SAssignNew(IdolIconImages[i], SImage)
+									.Image(IdolIconBrushes[i].Get())
+									.ColorAndOpacity(FLinearColor::White)
+								],
+								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
+								&IdolIconBorders[i])
 						]
 					]
-				]
+					// 3. Description (category + tooltip)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					[
+						SAssignNew(IdolDescTexts[i], STextBlock)
+						.Text(FText::GetEmpty())
+						.TextStyle(&TextBody)
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+					// 4. Select button
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					[
+						SelectBtnWidget
+					]
+				,
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4),
+					&IdolTileBorders[i])
 			]
 		];
-}
-
-void UT66IdolAltarOverlayWidget::RefreshCenterPad()
-{
-	if (!CenterPadBorder.IsValid()) return;
-	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-
-	const FLinearColor C = PendingSelectedIdolID.IsNone()
-		? FLinearColor(0.12f, 0.12f, 0.14f, 1.f)
-		: UT66RunStateSubsystem::GetIdolColor(PendingSelectedIdolID);
-
-	CenterPadBorder->SetBorderBackgroundColor(C);
-	CenterPadBorder->SetToolTipText(PendingSelectedIdolID.IsNone()
-		? (Loc ? Loc->GetText_IdolAltarDropAnIdolHere() : NSLOCTEXT("T66.IdolAltar", "DropAnIdolHere", "Drop an Idol here."))
-		: GetIdolTooltipText(Loc, PendingSelectedIdolID));
-
-	CenterPadBorder->SetIconBrush(GetOrCreateIdolIconBrush(PendingSelectedIdolID));
-	CenterPadBorder->SetCenterText(PendingSelectedIdolID.IsNone()
-		? (Loc ? Loc->GetText_IdolAltarDropHere() : NSLOCTEXT("T66.IdolAltar", "DropHere", "DROP\nHERE"))
-		: FText::GetEmpty());
-}
-
-FReply UT66IdolAltarOverlayWidget::OnConfirm()
-{
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState)
-	{
-		return FReply::Handled();
 	}
 
-	if (PendingSelectedIdolID.IsNone())
+	TSharedRef<SWidget> Root =
+		FT66Style::MakePanel(
+			SNew(SVerticalBox)
+			// Title row
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(AltarTitle)
+					.TextStyle(&TextTitle)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.f)
+				[
+					SNew(SSpacer)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(RerollText,
+							FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnReroll),
+							ET66ButtonType::Neutral)
+						.SetMinWidth(0.f)
+						.SetPadding(FMargin(16.f, 10.f))
+					)
+				]
+			]
+			// Status text
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+			[
+				SAssignNew(StatusText, STextBlock)
+				.Text(FText::GetEmpty())
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
+			// Idol cards
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+			[
+				FT66Style::MakePanel(
+					IdolRow,
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+			]
+			// Back button
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(BackText,
+						FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnBack),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(0.f)
+					.SetPadding(FMargin(20.f, 12.f))
+				)
+			]
+		,
+			FT66PanelParams(ET66PanelType::Bg).SetPadding(24.f).SetColor(FT66Style::Tokens::Bg));
+
+	RefreshStock();
+	return Root;
+}
+
+void UT66IdolAltarOverlayWidget::RefreshStock()
+{
+	UWorld* World = GetWorld();
+	UT66RunStateSubsystem* RunState = GetRunState(World);
+	if (!RunState) return;
+
+	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+
+	const TArray<FName>& Stock = RunState->GetIdolStockIDs();
+
+	for (int32 i = 0; i < SlotCount; ++i)
+	{
+		const bool bHasItem = Stock.IsValidIndex(i) && !Stock[i].IsNone();
+		const bool bSelected = RunState->IsIdolStockSlotSelected(i);
+
+		FIdolData D;
+		const bool bHasData = bHasItem && GI && GI->GetIdolData(Stock[i], D);
+
+		// Name
+		if (IdolNameTexts.IsValidIndex(i) && IdolNameTexts[i].IsValid())
+		{
+			IdolNameTexts[i]->SetText(bHasItem
+				? (Loc ? Loc->GetText_IdolDisplayName(Stock[i]) : FText::FromName(Stock[i]))
+				: NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
+		}
+
+		// Description
+		if (IdolDescTexts.IsValidIndex(i) && IdolDescTexts[i].IsValid())
+		{
+			if (bHasData && Loc)
+			{
+				const FText CatName = Loc->GetText_IdolCategoryName(D.Category);
+				const FText Tooltip = Loc->GetText_IdolTooltip(Stock[i]);
+				IdolDescTexts[i]->SetText(FText::Format(
+					NSLOCTEXT("T66.IdolAltar", "IdolCardDescFormat", "{0}\n{1}"),
+					CatName, Tooltip));
+			}
+			else
+			{
+				IdolDescTexts[i]->SetText(FText::GetEmpty());
+			}
+		}
+
+		// Icon border color (idol tint)
+		if (IdolIconBorders.IsValidIndex(i) && IdolIconBorders[i].IsValid())
+		{
+			const FLinearColor C = bHasItem ? UT66RunStateSubsystem::GetIdolColor(Stock[i]) : FT66Style::Tokens::Panel2;
+			IdolIconBorders[i]->SetBorderBackgroundColor(C);
+		}
+
+		// Icon texture (async load)
+		if (IdolIconBrushes.IsValidIndex(i) && IdolIconBrushes[i].IsValid())
+		{
+			if (bHasData && !D.Icon.IsNull() && TexPool)
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, IdolIconBrushes[i], FName(TEXT("IdolStock"), i + 1), /*bClearWhileLoading*/ true);
+			}
+			else
+			{
+				IdolIconBrushes[i]->SetResourceObject(nullptr);
+			}
+		}
+		if (IdolIconImages.IsValidIndex(i) && IdolIconImages[i].IsValid())
+		{
+			const bool bHasIcon = bHasData && !D.Icon.IsNull();
+			IdolIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
+		}
+
+		// Tile border
+		if (IdolTileBorders.IsValidIndex(i) && IdolTileBorders[i].IsValid())
+		{
+			IdolTileBorders[i]->SetBorderBackgroundColor(bSelected ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel);
+		}
+
+		// Select button
+		if (SelectButtons.IsValidIndex(i) && SelectButtons[i].IsValid())
+		{
+			SelectButtons[i]->SetEnabled(bHasItem && !bSelected);
+		}
+		if (SelectButtonTexts.IsValidIndex(i) && SelectButtonTexts[i].IsValid())
+		{
+			if (bSelected)
+			{
+				SelectButtonTexts[i]->SetText(Loc ? Loc->GetText_IdolAltarSelected() : NSLOCTEXT("T66.IdolAltar", "Selected", "SELECTED"));
+			}
+			else
+			{
+				SelectButtonTexts[i]->SetText(Loc ? Loc->GetText_IdolAltarSelect() : NSLOCTEXT("T66.IdolAltar", "Select", "SELECT"));
+			}
+		}
+	}
+}
+
+FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
+{
+	UWorld* World = GetWorld();
+	UT66RunStateSubsystem* RunState = GetRunState(World);
+	if (!RunState) return FReply::Handled();
+
+	UT66LocalizationSubsystem* Loc = nullptr;
+	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
+	{
+		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+	}
+
+	const bool bApplied = RunState->SelectIdolFromStock(SlotIndex);
+	if (bApplied)
 	{
 		if (StatusText.IsValid())
 		{
-			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-			StatusText->SetText(Loc ? Loc->GetText_IdolAltarDragFirst() : NSLOCTEXT("T66.IdolAltar", "DragFirst", "Drag an idol into the center slot first."));
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped."));
 		}
-		return FReply::Handled();
+	}
+	else
+	{
+		// Determine why it failed for a helpful message.
+		const TArray<FName>& Stock = RunState->GetIdolStockIDs();
+		const bool bAlreadySelected = RunState->IsIdolStockSlotSelected(SlotIndex);
+		if (bAlreadySelected)
+		{
+			if (StatusText.IsValid())
+			{
+				StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadyEquipped() : NSLOCTEXT("T66.IdolAltar", "AlreadyEquipped", "Already equipped."));
+			}
+		}
+		else
+		{
+			// Check if it's a max-level or no-slot situation.
+			if (StatusText.IsValid())
+			{
+				StatusText->SetText(Loc ? Loc->GetText_IdolAltarNoEmptySlot() : NSLOCTEXT("T66.IdolAltar", "NoEmptySlot", "No empty idol slot."));
+			}
+		}
 	}
 
-	const bool bApplied = RunState->SelectIdolFromAltar(PendingSelectedIdolID);
-	if (!bApplied)
+	// RefreshStock is called automatically via IdolsChanged delegate.
+	return FReply::Handled();
+}
+
+FReply UT66IdolAltarOverlayWidget::OnReroll()
+{
+	if (UWorld* World = GetWorld())
 	{
-		if (StatusText.IsValid())
+		if (UT66RunStateSubsystem* RunState = GetRunState(World))
 		{
-			UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-			StatusText->SetText(Loc ? Loc->GetText_IdolAltarAlreadySelectedStage1() : NSLOCTEXT("T66.IdolAltar", "IdolSelectFailed", "Cannot select that idol right now."));
+			RunState->RerollIdolStock();
 		}
-		return FReply::Handled();
 	}
 	if (StatusText.IsValid())
 	{
-		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-		StatusText->SetText(Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped."));
+		StatusText->SetText(FText::GetEmpty());
 	}
-
-	// Close immediately to restore gameplay input.
-	RemoveFromParent();
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-	{
-		PC->RestoreGameplayInputMode();
-	}
+	// RefreshStock is called automatically via IdolsChanged delegate.
 	return FReply::Handled();
 }
 
 FReply UT66IdolAltarOverlayWidget::OnBack()
 {
+	// Unbind delegate before closing.
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66RunStateSubsystem* RunState = GetRunState(World))
+		{
+			RunState->IdolsChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
+		}
+	}
+
 	RemoveFromParent();
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
@@ -561,4 +423,3 @@ FReply UT66IdolAltarOverlayWidget::OnBack()
 	}
 	return FReply::Handled();
 }
-

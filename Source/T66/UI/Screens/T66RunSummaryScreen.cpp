@@ -581,6 +581,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	{
 		const TArray<FName>* IdolsPtr = nullptr;
 		TArray<FName> InventoryLocal; // GetInventory() returns by value; store locally.
+		const TArray<FT66InventorySlot>* InvSlotsPtr = nullptr;
 
 		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 		{
@@ -591,6 +592,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		{
 			IdolsPtr = &RunState->GetEquippedIdols();
 			InventoryLocal = RunState->GetInventory();
+			InvSlotsPtr = &RunState->GetInventorySlots();
 		}
 
 		const TArray<FName> Empty;
@@ -660,8 +662,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		}
 		else
 		{
-			for (const FName& ItemID : Inventory)
+			for (int32 InvIdx = 0; InvIdx < Inventory.Num(); ++InvIdx)
 			{
+				const FName& ItemID = Inventory[InvIdx];
 				if (ItemID.IsNone()) continue;
 				FItemData ItemData;
 				const bool bHasItemData = GI && GI->GetItemData(ItemID, ItemData);
@@ -678,6 +681,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					}
 				}
 
+				// Use rarity color for border if slot data is available (current run).
+				const FLinearColor ItemBorderColor = (InvSlotsPtr && InvSlotsPtr->IsValidIndex(InvIdx))
+					? FItemData::GetItemRarityColor((*InvSlotsPtr)[InvIdx].Rarity)
+					: FT66Style::Tokens::Stroke;
+
 				InvBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 				[
 					FT66Style::MakePanel(
@@ -688,7 +696,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							[
 								SNew(SBorder)
 								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FT66Style::Tokens::Stroke)
+								.BorderBackgroundColor(ItemBorderColor)
 								.Padding(0.f)
 								[
 									ItemBrush.IsValid()

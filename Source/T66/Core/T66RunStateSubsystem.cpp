@@ -339,6 +339,90 @@ void UT66RunStateSubsystem::ClearEquippedIdols()
 	}
 }
 
+void UT66RunStateSubsystem::EnsureIdolStock()
+{
+	if (IdolStockIDs.Num() == IdolStockSlotCount)
+	{
+		return; // Already generated.
+	}
+	RerollIdolStock();
+}
+
+void UT66RunStateSubsystem::RerollIdolStock()
+{
+	IdolStockIDs.Empty(IdolStockSlotCount);
+	IdolStockSelected.Init(false, IdolStockSlotCount);
+
+	const TArray<FName>& AllIdols = GetAllIdolIDs();
+
+	// Build pool: exclude idols that are already equipped at max level.
+	TArray<FName> Pool;
+	Pool.Reserve(AllIdols.Num());
+	for (const FName& ID : AllIdols)
+	{
+		bool bMaxed = false;
+		for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
+		{
+			if (EquippedIdolIDs[i] == ID)
+			{
+				const int32 Lvl = (EquippedIdolLevels.IsValidIndex(i))
+					? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[i]), 1, MaxIdolLevel)
+					: 1;
+				if (Lvl >= MaxIdolLevel)
+				{
+					bMaxed = true;
+				}
+				break;
+			}
+		}
+		if (!bMaxed)
+		{
+			Pool.Add(ID);
+		}
+	}
+
+	// Shuffle and pick up to IdolStockSlotCount.
+	const int32 Count = FMath::Min(IdolStockSlotCount, Pool.Num());
+	for (int32 i = Pool.Num() - 1; i > 0; --i)
+	{
+		const int32 j = FMath::RandRange(0, i);
+		Pool.Swap(i, j);
+	}
+	for (int32 i = 0; i < Count; ++i)
+	{
+		IdolStockIDs.Add(Pool[i]);
+	}
+
+	// Pad with NAME_None if pool was too small.
+	while (IdolStockIDs.Num() < IdolStockSlotCount)
+	{
+		IdolStockIDs.Add(NAME_None);
+	}
+
+	IdolsChanged.Broadcast();
+}
+
+bool UT66RunStateSubsystem::SelectIdolFromStock(int32 SlotIndex)
+{
+	if (SlotIndex < 0 || SlotIndex >= IdolStockSlotCount) return false;
+	if (!IdolStockIDs.IsValidIndex(SlotIndex)) return false;
+	if (IdolStockIDs[SlotIndex].IsNone()) return false;
+	if (IdolStockSelected.IsValidIndex(SlotIndex) && IdolStockSelected[SlotIndex]) return false;
+
+	const bool bApplied = SelectIdolFromAltar(IdolStockIDs[SlotIndex]);
+	if (bApplied && IdolStockSelected.IsValidIndex(SlotIndex))
+	{
+		IdolStockSelected[SlotIndex] = true;
+	}
+	return bApplied;
+}
+
+bool UT66RunStateSubsystem::IsIdolStockSlotSelected(int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= IdolStockSlotCount) return false;
+	return IdolStockSelected.IsValidIndex(SlotIndex) && IdolStockSelected[SlotIndex];
+}
+
 void UT66RunStateSubsystem::TrimLogsIfNeeded()
 {
 	if (EventLog.Num() > MaxEventLogEntries)
@@ -911,11 +995,10 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		// Fallback: keep deterministic placeholder behavior.
+		// Fallback: keep deterministic placeholder behavior (3 slots).
 		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::Black, 2));
 		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_CritDamage")), ET66ItemRarity::Red, 5));
 		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_LifeSteal")), ET66ItemRarity::Yellow, 8));
-		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_MovementSpeed")), ET66ItemRarity::White, 25));
 		for (const FT66InventorySlot& S : VendorStockSlots) VendorStockItemIDs.Add(S.ItemTemplateID);
 		VendorStockSold.Init(false, VendorStockSlots.Num());
 		VendorChanged.Broadcast();
@@ -937,10 +1020,10 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	// Seed is stable per stage, but changes per reroll so the stock can refresh.
 	FRandomStream Rng(Stage * 777 + 13 + VendorStockRerollCounter * 10007);
 
-	// Rarities for the 4 stock slots: 2 black, 1 red, 1 yellow.
-	const ET66ItemRarity SlotRarities[] = { ET66ItemRarity::Black, ET66ItemRarity::Black, ET66ItemRarity::Red, ET66ItemRarity::Yellow };
+	// Rarities for the 3 stock slots: 2 black, 1 red.
+	const ET66ItemRarity SlotRarities[] = { ET66ItemRarity::Black, ET66ItemRarity::Black, ET66ItemRarity::Red };
 
-	for (int32 i = 0; i < 4; ++i)
+	for (int32 i = 0; i < 3; ++i)
 	{
 		// Pick a unique template.
 		FName Chosen = NAME_None;

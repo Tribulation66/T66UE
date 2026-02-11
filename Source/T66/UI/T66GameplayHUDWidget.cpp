@@ -1474,6 +1474,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 	// Inventory slots: item color + hover tooltip, grey when empty
 	const TArray<FName>& Inv = RunState->GetInventory();
+	const TArray<FT66InventorySlot>& InvSlots = RunState->GetInventorySlots();
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	for (int32 i = 0; i < InventorySlotBorders.Num(); ++i)
 	{
@@ -1488,7 +1489,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			FItemData D;
 			if (T66GI && T66GI->GetItemData(ItemID, D))
 			{
-				SlotColor = FT66Style::Tokens::Panel2;
+				SlotColor = InvSlots.IsValidIndex(i) ? FItemData::GetItemRarityColor(InvSlots[i].Rarity) : FT66Style::Tokens::Panel2;
 				TArray<FText> TipLines;
 				TipLines.Reserve(8);
 				TipLines.Add(Loc ? Loc->GetText_ItemDisplayName(ItemID) : FText::FromName(ItemID));

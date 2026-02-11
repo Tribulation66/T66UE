@@ -309,9 +309,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(FMargin(0.f, 0.f, 0.f, 0.f))
-				// Layout:
-				// [Game 2] [Game 3]
-				// [Game 1] [   -  ]
+				// Layout: [Game 1] [Game 2] [Game 3] — all side by side
 				+ SUniformGridPanel::Slot(0, 0)
 				[
 					MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps)
@@ -320,7 +318,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				[
 					MakeGameCard(Loc ? Loc->GetText_FindTheBall() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenFindBall), &GameIcon_FindBall)
 				]
-				+ SUniformGridPanel::Slot(0, 1)
+				+ SUniformGridPanel::Slot(2, 0)
 				[
 					MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip)
 				]
@@ -703,11 +701,11 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc)
 				]
 			]
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 			[
 				CenterPanel
 			]
-			+ SHorizontalBox::Slot().AutoWidth()
+			+ SHorizontalBox::Slot().FillWidth(1.f)
 			[
 				RightPanel
 			]
@@ -1157,6 +1155,7 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 
 	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	const TArray<FName>& Inv = RunState->GetInventory();
+	const TArray<FT66InventorySlot>& InvSlots = RunState->GetInventorySlots();
 
 	// Auto-select the first valid item so the details panel is "big" immediately.
 	if (SelectedInventoryIndex < 0)
@@ -1192,9 +1191,9 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 			FLinearColor Fill = FT66Style::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && T66GI && T66GI->GetItemData(Inv[i], D);
-			if (bHasData)
+			if (bHasData && InvSlots.IsValidIndex(i))
 			{
-				Fill = FT66Style::Tokens::Panel2;
+				Fill = FItemData::GetItemRarityColor(InvSlots[i].Rarity);
 			}
 
 			if (i == SelectedInventoryIndex)
