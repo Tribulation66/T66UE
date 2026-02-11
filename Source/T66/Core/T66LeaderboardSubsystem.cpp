@@ -254,7 +254,7 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 	Snapshot->HeroLevel = FMath::Max(1, RunState->GetHeroLevel());
 	Snapshot->DamageStat = FMath::Max(1, RunState->GetDamageStat());
 	Snapshot->AttackSpeedStat = FMath::Max(1, RunState->GetAttackSpeedStat());
-	Snapshot->AttackSizeStat = FMath::Max(1, RunState->GetScaleStat());
+	Snapshot->AttackScaleStat = FMath::Max(1, RunState->GetScaleStat());
 	Snapshot->ArmorStat = FMath::Max(1, RunState->GetArmorStat());
 	Snapshot->EvasionStat = FMath::Max(1, RunState->GetEvasionStat());
 	Snapshot->LuckStat = FMath::Max(1, RunState->GetLuckStat());
@@ -747,7 +747,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	Snapshot->HeroLevel = FMath::Clamp(Rng.RandRange(1, 20), 1, 99);
 	Snapshot->DamageStat = FMath::Clamp(Rng.RandRange(1, 15), 1, 99);
 	Snapshot->AttackSpeedStat = FMath::Clamp(Rng.RandRange(1, 12), 1, 99);
-	Snapshot->AttackSizeStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
+	Snapshot->AttackScaleStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
 	Snapshot->ArmorStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
 	Snapshot->EvasionStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
 	Snapshot->LuckStat = FMath::Clamp(Rng.RandRange(1, 12), 1, 99);

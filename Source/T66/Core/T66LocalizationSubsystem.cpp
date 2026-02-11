@@ -213,9 +213,9 @@ FText UT66LocalizationSubsystem::GetText_Stat_AttackSpeed() const
 	return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
 }
 
-FText UT66LocalizationSubsystem::GetText_Stat_AttackSize() const
+FText UT66LocalizationSubsystem::GetText_Stat_AttackScale() const
 {
-	return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+	return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
 }
 
 FText UT66LocalizationSubsystem::GetText_Stat_Armor() const
@@ -236,6 +236,47 @@ FText UT66LocalizationSubsystem::GetText_Stat_Luck() const
 FText UT66LocalizationSubsystem::GetText_Stat_Speed() const
 {
 	return NSLOCTEXT("T66.Stats", "Speed", "Speed");
+}
+
+FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType StatType) const
+{
+	switch (StatType)
+	{
+	case ET66SecondaryStatType::AoeDamage:        return NSLOCTEXT("T66.SecondaryStats", "AoeDamage", "AOE Damage");
+	case ET66SecondaryStatType::BounceDamage:      return NSLOCTEXT("T66.SecondaryStats", "BounceDamage", "Bounce Damage");
+	case ET66SecondaryStatType::PierceDamage:      return NSLOCTEXT("T66.SecondaryStats", "PierceDamage", "Pierce Damage");
+	case ET66SecondaryStatType::DotDamage:         return NSLOCTEXT("T66.SecondaryStats", "DotDamage", "DOT Damage");
+	case ET66SecondaryStatType::AoeSpeed:          return NSLOCTEXT("T66.SecondaryStats", "AoeSpeed", "AOE Speed");
+	case ET66SecondaryStatType::BounceSpeed:       return NSLOCTEXT("T66.SecondaryStats", "BounceSpeed", "Bounce Speed");
+	case ET66SecondaryStatType::PierceSpeed:       return NSLOCTEXT("T66.SecondaryStats", "PierceSpeed", "Pierce Speed");
+	case ET66SecondaryStatType::DotSpeed:          return NSLOCTEXT("T66.SecondaryStats", "DotSpeed", "DOT Speed");
+	case ET66SecondaryStatType::AoeScale:          return NSLOCTEXT("T66.SecondaryStats", "AoeScale", "AOE Scale");
+	case ET66SecondaryStatType::BounceScale:       return NSLOCTEXT("T66.SecondaryStats", "BounceScale", "Bounce Scale");
+	case ET66SecondaryStatType::PierceScale:       return NSLOCTEXT("T66.SecondaryStats", "PierceScale", "Pierce Scale");
+	case ET66SecondaryStatType::DotScale:          return NSLOCTEXT("T66.SecondaryStats", "DotScale", "DOT Scale");
+	case ET66SecondaryStatType::CritDamage:        return NSLOCTEXT("T66.SecondaryStats", "CritDamage", "Crit Damage");
+	case ET66SecondaryStatType::CritChance:        return NSLOCTEXT("T66.SecondaryStats", "CritChance", "Crit Chance");
+	case ET66SecondaryStatType::CloseRangeDamage:  return NSLOCTEXT("T66.SecondaryStats", "CloseRangeDmg", "Close Range Damage");
+	case ET66SecondaryStatType::LongRangeDamage:   return NSLOCTEXT("T66.SecondaryStats", "LongRangeDmg", "Long Range Damage");
+	case ET66SecondaryStatType::AttackRange:       return NSLOCTEXT("T66.SecondaryStats", "AttackRange", "Attack Range");
+	case ET66SecondaryStatType::Taunt:             return NSLOCTEXT("T66.SecondaryStats", "Taunt", "Taunt");
+	case ET66SecondaryStatType::ReflectDamage:     return NSLOCTEXT("T66.SecondaryStats", "ReflectDamage", "Reflect Damage");
+	case ET66SecondaryStatType::HpRegen:           return NSLOCTEXT("T66.SecondaryStats", "HpRegen", "HP Regen");
+	case ET66SecondaryStatType::Crush:             return NSLOCTEXT("T66.SecondaryStats", "Crush", "Crush");
+	case ET66SecondaryStatType::Invisibility:      return NSLOCTEXT("T66.SecondaryStats", "Invisibility", "Invisibility");
+	case ET66SecondaryStatType::CounterAttack:     return NSLOCTEXT("T66.SecondaryStats", "CounterAttack", "Counter Attack");
+	case ET66SecondaryStatType::LifeSteal:         return NSLOCTEXT("T66.SecondaryStats", "LifeSteal", "Life Steal");
+	case ET66SecondaryStatType::Assassinate:       return NSLOCTEXT("T66.SecondaryStats", "Assassinate", "Assassinate");
+	case ET66SecondaryStatType::SpinWheel:         return NSLOCTEXT("T66.SecondaryStats", "SpinWheel", "Spin Wheel");
+	case ET66SecondaryStatType::Goblin:            return NSLOCTEXT("T66.SecondaryStats", "Goblin", "Goblin");
+	case ET66SecondaryStatType::Leprechaun:        return NSLOCTEXT("T66.SecondaryStats", "Leprechaun", "Leprechaun");
+	case ET66SecondaryStatType::TreasureChest:     return NSLOCTEXT("T66.SecondaryStats", "TreasureChest", "Treasure Chest");
+	case ET66SecondaryStatType::Fountain:          return NSLOCTEXT("T66.SecondaryStats", "Fountain", "Fountain of Life");
+	case ET66SecondaryStatType::Cheating:          return NSLOCTEXT("T66.SecondaryStats", "Cheating", "Cheating");
+	case ET66SecondaryStatType::Stealing:          return NSLOCTEXT("T66.SecondaryStats", "Stealing", "Stealing");
+	case ET66SecondaryStatType::MovementSpeed:     return NSLOCTEXT("T66.SecondaryStats", "MovementSpeed", "Movement Speed");
+	default:                                       return FText::GetEmpty();
+	}
 }
 
 FText UT66LocalizationSubsystem::GetText_StatLineFormat() const
@@ -1342,30 +1383,55 @@ FText UT66LocalizationSubsystem::GetText_IdolAltarEquipped() const
 
 FText UT66LocalizationSubsystem::GetText_IdolTooltip(FName IdolID) const
 {
-	// Back-compat aliases.
-	if (IdolID == FName(TEXT("Idol_Shock"))) IdolID = FName(TEXT("Idol_Lightning"));
-	if (IdolID == FName(TEXT("Idol_Silence"))) IdolID = FName(TEXT("Idol_Darkness"));
-	if (IdolID == FName(TEXT("Idol_Mark"))) IdolID = FName(TEXT("Idol_Light"));
-	if (IdolID == FName(TEXT("Idol_Pierce"))) IdolID = FName(TEXT("Idol_Metal"));
-	if (IdolID == FName(TEXT("Idol_Split"))) IdolID = FName(TEXT("Idol_Wind"));
-	if (IdolID == FName(TEXT("Idol_Knockback"))) IdolID = FName(TEXT("Idol_Wood"));
-	if (IdolID == FName(TEXT("Idol_Ricochet"))) IdolID = FName(TEXT("Idol_Water"));
-	if (IdolID == FName(TEXT("Idol_Hex"))) IdolID = FName(TEXT("Idol_Spectral"));
-	if (IdolID == FName(TEXT("Idol_Lifesteal"))) IdolID = FName(TEXT("Idol_Poison"));
+	// Back-compat aliases (legacy → closest new idol).
+	if (IdolID == FName(TEXT("Idol_Shock")))     IdolID = FName(TEXT("Idol_Electric"));
+	if (IdolID == FName(TEXT("Idol_Silence")))    IdolID = FName(TEXT("Idol_Shadow"));
+	if (IdolID == FName(TEXT("Idol_Mark")))       IdolID = FName(TEXT("Idol_Light"));
+	if (IdolID == FName(TEXT("Idol_Pierce")))     IdolID = FName(TEXT("Idol_Steel"));
+	if (IdolID == FName(TEXT("Idol_Split")))      IdolID = FName(TEXT("Idol_Wind"));
+	if (IdolID == FName(TEXT("Idol_Knockback")))  IdolID = FName(TEXT("Idol_Wood"));
+	if (IdolID == FName(TEXT("Idol_Ricochet")))   IdolID = FName(TEXT("Idol_Rubber"));
+	if (IdolID == FName(TEXT("Idol_Hex")))        IdolID = FName(TEXT("Idol_Curse"));
+	if (IdolID == FName(TEXT("Idol_Lifesteal")))  IdolID = FName(TEXT("Idol_Bleed"));
+	if (IdolID == FName(TEXT("Idol_Lightning")))  IdolID = FName(TEXT("Idol_Electric"));
+	if (IdolID == FName(TEXT("Idol_Darkness")))   IdolID = FName(TEXT("Idol_Shadow"));
+	if (IdolID == FName(TEXT("Idol_Metal")))      IdolID = FName(TEXT("Idol_Steel"));
+	if (IdolID == FName(TEXT("Idol_Spectral")))   IdolID = FName(TEXT("Idol_Curse"));
+	if (IdolID == FName(TEXT("Idol_Frost")))      IdolID = FName(TEXT("Idol_Ice"));
+	if (IdolID == FName(TEXT("Idol_Glue")))       IdolID = FName(TEXT("Idol_Decay"));
 
-	if (IdolID == FName(TEXT("Idol_Darkness"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Darkness_Tooltip", "DARKNESS\nAn idol of shadowed power.");
-	if (IdolID == FName(TEXT("Idol_Light"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Light_Tooltip", "LIGHT\nAn idol of radiant power.");
-	if (IdolID == FName(TEXT("Idol_Lightning"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Lightning_Tooltip", "LIGHTNING\nAn idol of crackling power.");
-	if (IdolID == FName(TEXT("Idol_Metal"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Metal_Tooltip", "METAL\nAn idol of unyielding power.");
-	if (IdolID == FName(TEXT("Idol_Poison"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Poison_Tooltip", "POISON\nAn idol of venomous power.");
-	if (IdolID == FName(TEXT("Idol_Spectral"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Spectral_Tooltip", "SPECTRAL\nAn idol of unseen power.");
-	if (IdolID == FName(TEXT("Idol_Water"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Water_Tooltip", "WATER\nAn idol of flowing power.");
-	if (IdolID == FName(TEXT("Idol_Wind"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Wind_Tooltip", "WIND\nAn idol of cutting power.");
-	if (IdolID == FName(TEXT("Idol_Wood"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Wood_Tooltip", "WOOD\nAn idol of growing power.");
+	// DOT idols
+	if (IdolID == FName(TEXT("Idol_Curse")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Curse_Tooltip", "CURSE\nApplies a damaging curse over time.");
+	if (IdolID == FName(TEXT("Idol_Lava")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Lava_Tooltip", "LAVA\nBurns enemies with molten damage over time.");
+	if (IdolID == FName(TEXT("Idol_Poison")))    return NSLOCTEXT("T66.IdolAltar", "Idol_Poison_Tooltip", "POISON\nPoisons enemies with damage over time.");
+	if (IdolID == FName(TEXT("Idol_Decay")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Decay_Tooltip", "DECAY\nRots enemies with damage over time.");
+	if (IdolID == FName(TEXT("Idol_Bleed")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Bleed_Tooltip", "BLEED\nCauses enemies to bleed over time.");
+	if (IdolID == FName(TEXT("Idol_Acid")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Acid_Tooltip", "ACID\nDissolves enemies with damage over time.");
 
-	if (IdolID == FName(TEXT("Idol_Frost"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Frost_Tooltip", "FROST\nAn idol of frozen power.");
-	if (IdolID == FName(TEXT("Idol_Glue"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Glue_Tooltip", "GLUE\nAn idol of binding power.");
-	if (IdolID == FName(TEXT("Idol_Fire"))) return NSLOCTEXT("T66.IdolAltar", "Idol_Fire_Tooltip", "FIRE\nAn idol of burning power.");
+	// Bounce idols
+	if (IdolID == FName(TEXT("Idol_Electric")))  return NSLOCTEXT("T66.IdolAltar", "Idol_Electric_Tooltip", "ELECTRIC\nSends a bolt that bounces between enemies.");
+	if (IdolID == FName(TEXT("Idol_Ice")))       return NSLOCTEXT("T66.IdolAltar", "Idol_Ice_Tooltip", "ICE\nLaunches an icy shard that bounces between enemies.");
+	if (IdolID == FName(TEXT("Idol_Sound")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Sound_Tooltip", "SOUND\nEmits a sonic wave that bounces between enemies.");
+	if (IdolID == FName(TEXT("Idol_Shadow")))    return NSLOCTEXT("T66.IdolAltar", "Idol_Shadow_Tooltip", "SHADOW\nSends a shadow bolt that bounces between enemies.");
+	if (IdolID == FName(TEXT("Idol_Star")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Star_Tooltip", "STAR\nFires a star shard that bounces between enemies.");
+	if (IdolID == FName(TEXT("Idol_Rubber")))    return NSLOCTEXT("T66.IdolAltar", "Idol_Rubber_Tooltip", "RUBBER\nLaunches a projectile that bounces between enemies.");
+
+	// AOE idols
+	if (IdolID == FName(TEXT("Idol_Fire")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Fire_Tooltip", "FIRE\nCreates an explosion at the point of impact.");
+	if (IdolID == FName(TEXT("Idol_Earth")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Earth_Tooltip", "EARTH\nTriggers a shockwave at the point of impact.");
+	if (IdolID == FName(TEXT("Idol_Water")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Water_Tooltip", "WATER\nCreates a water burst at the point of impact.");
+	if (IdolID == FName(TEXT("Idol_Sand")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Sand_Tooltip", "SAND\nErupts sand at the point of impact.");
+	if (IdolID == FName(TEXT("Idol_BlackHole"))) return NSLOCTEXT("T66.IdolAltar", "Idol_BlackHole_Tooltip", "BLACK HOLE\nOpens a void at the point of impact.");
+	if (IdolID == FName(TEXT("Idol_Storm")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Storm_Tooltip", "STORM\nSummons a storm burst at the point of impact.");
+
+	// Pierce idols
+	if (IdolID == FName(TEXT("Idol_Light")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Light_Tooltip", "LIGHT\nFires a beam that pierces through enemies.");
+	if (IdolID == FName(TEXT("Idol_Wind")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Wind_Tooltip", "WIND\nSends a cutting gale that pierces through enemies.");
+	if (IdolID == FName(TEXT("Idol_Steel")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Steel_Tooltip", "STEEL\nLaunches a steel bolt that pierces through enemies.");
+	if (IdolID == FName(TEXT("Idol_Wood")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Wood_Tooltip", "WOOD\nFires a wooden spike that pierces through enemies.");
+	if (IdolID == FName(TEXT("Idol_Bone")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Bone_Tooltip", "BONE\nFires a bone spear that pierces through enemies.");
+	if (IdolID == FName(TEXT("Idol_Glass")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Glass_Tooltip", "GLASS\nSends a glass shard that pierces through enemies.");
+
 	return NSLOCTEXT("T66.IdolAltar", "IdolTooltipUnknown", "IDOL\nUnknown.");
 }
 

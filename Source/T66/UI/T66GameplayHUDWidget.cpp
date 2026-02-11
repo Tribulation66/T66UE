@@ -1488,7 +1488,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			FItemData D;
 			if (T66GI && T66GI->GetItemData(ItemID, D))
 			{
-				SlotColor = D.PlaceholderColor;
+				SlotColor = FT66Style::Tokens::Panel2;
 				TArray<FText> TipLines;
 				TipLines.Reserve(8);
 				TipLines.Add(Loc ? Loc->GetText_ItemDisplayName(ItemID) : FText::FromName(ItemID));
@@ -1508,7 +1508,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 						{
 							case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
 							case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-							case ET66HeroStatType::AttackSize: return Loc->GetText_Stat_AttackSize();
+							case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
 							case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
 							case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
 							case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
@@ -1520,7 +1520,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 					{
 						case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
 						case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-						case ET66HeroStatType::AttackSize: return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+						case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
 						case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
 						case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
 						case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
@@ -1528,25 +1528,14 @@ void UT66GameplayHUDWidget::RefreshHUD()
 					}
 				};
 
-				ET66HeroStatType MainType = D.MainStatType;
-				int32 MainValue = D.MainStatValue;
-				if (MainValue == 0)
+				const ET66HeroStatType MainType = D.PrimaryStatType;
+				int32 MainValue = 0;
+				if (RunState)
 				{
-					// Derive from legacy v0 fields until DT_Items is updated.
-					switch (D.EffectType)
+					const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+					if (i >= 0 && i < Slots.Num())
 					{
-						case ET66ItemEffectType::BonusDamagePct: MainType = ET66HeroStatType::Damage; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-						case ET66ItemEffectType::BonusAttackSpeedPct: MainType = ET66HeroStatType::AttackSpeed; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-						case ET66ItemEffectType::BonusArmorPctPoints: MainType = ET66HeroStatType::Armor; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-						case ET66ItemEffectType::BonusEvasionPctPoints: MainType = ET66HeroStatType::Evasion; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-						case ET66ItemEffectType::BonusLuckFlat: MainType = ET66HeroStatType::Luck; MainValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude)); break;
-						case ET66ItemEffectType::BonusMoveSpeedPct:
-						case ET66ItemEffectType::DashCooldownReductionPct:
-							// Speed is not an item stat; map mobility effects to Evasion for now.
-							MainType = ET66HeroStatType::Evasion;
-							MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
-							break;
-						default: break;
+						MainValue = Slots[i].Line1RolledValue;
 					}
 				}
 
@@ -1557,11 +1546,22 @@ void UT66GameplayHUDWidget::RefreshHUD()
 						StatLabel(MainType),
 						FText::AsNumber(MainValue)));
 				}
-				if (D.SellValueGold > 0)
 				{
-					TipLines.Add(FText::Format(
-						NSLOCTEXT("T66.ItemTooltip", "SellValueGold", "Sell: {0} gold"),
-						FText::AsNumber(D.SellValueGold)));
+					int32 SellValue = D.BaseSellGold;
+					if (RunState)
+					{
+						const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+						if (i >= 0 && i < Slots.Num())
+						{
+							SellValue = D.GetSellGoldForRarity(Slots[i].Rarity);
+						}
+					}
+					if (SellValue > 0)
+					{
+						TipLines.Add(FText::Format(
+							NSLOCTEXT("T66.ItemTooltip", "SellValueGold", "Sell: {0} gold"),
+							FText::AsNumber(SellValue)));
+					}
 				}
 
 				Tooltip = TipLines.Num() > 0 ? FText::Join(NSLOCTEXT("T66.Common", "NewLine", "\n"), TipLines) : FText::GetEmpty();

@@ -1194,7 +1194,7 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 			const bool bHasData = bHasItem && T66GI && T66GI->GetItemData(Inv[i], D);
 			if (bHasData)
 			{
-				Fill = D.PlaceholderColor;
+				Fill = FT66Style::Tokens::Panel2;
 			}
 
 			if (i == SelectedInventoryIndex)
@@ -1280,7 +1280,7 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 			{
 				case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
 				case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-				case ET66HeroStatType::AttackSize: return Loc->GetText_Stat_AttackSize();
+				case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
 				case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
 				case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
 				case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
@@ -1291,7 +1291,7 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 		{
 			case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
 			case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-			case ET66HeroStatType::AttackSize: return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+			case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
 			case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
 			case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
 			case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
@@ -1307,23 +1307,14 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 		}
 		else
 		{
-			ET66HeroStatType MainType = D.MainStatType;
-			int32 MainValue = D.MainStatValue;
-			if (MainValue == 0)
+			const ET66HeroStatType MainType = D.PrimaryStatType;
+			int32 MainValue = 0;
+			if (RunState)
 			{
-				switch (D.EffectType)
+				const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+				if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
 				{
-					case ET66ItemEffectType::BonusDamagePct: MainType = ET66HeroStatType::Damage; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-					case ET66ItemEffectType::BonusAttackSpeedPct: MainType = ET66HeroStatType::AttackSpeed; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-					case ET66ItemEffectType::BonusArmorPctPoints: MainType = ET66HeroStatType::Armor; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-					case ET66ItemEffectType::BonusEvasionPctPoints: MainType = ET66HeroStatType::Evasion; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-					case ET66ItemEffectType::BonusLuckFlat: MainType = ET66HeroStatType::Luck; MainValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude)); break;
-					case ET66ItemEffectType::BonusMoveSpeedPct:
-					case ET66ItemEffectType::DashCooldownReductionPct:
-						MainType = ET66HeroStatType::Evasion;
-						MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
-						break;
-					default: break;
+					MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
 				}
 			}
 
@@ -1335,7 +1326,15 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 
 	if (SellItemPriceText.IsValid())
 	{
-		const int32 SellValue = bHasData ? D.SellValueGold : 0;
+		int32 SellValue = 0;
+		if (bHasData && RunState)
+		{
+			const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+			if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
+			{
+				SellValue = D.GetSellGoldForRarity(Slots[SelectedInventoryIndex].Rarity);
+			}
+		}
 		SellItemPriceText->SetText(FText::Format(
 			NSLOCTEXT("T66.Vendor", "SellForFormat", "SELL FOR: {0}g"),
 			FText::AsNumber(SellValue)));

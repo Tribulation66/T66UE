@@ -9,7 +9,10 @@
 class UStaticMeshComponent;
 class UStaticMesh;
 
-/** Tree of Life: grants max hearts (rarity-scaled) and consumes itself. */
+/**
+ * Fountain of Life (formerly "Tree of Life"): grants max hearts (rarity-scaled) and consumes itself.
+ * Canonical in-game name: "Fountain of Life". Class alias: AT66FountainOfLifeInteractable.
+ */
 UCLASS(Blueprintable)
 class T66_API AT66TreeOfLifeInteractable : public AT66WorldInteractableBase
 {
@@ -36,7 +39,13 @@ public:
 
 	virtual bool Interact(APlayerController* PC) override;
 
+	/** Luck multiplier from items (multiplies spawn quantity/rarity for fountains). */
+	float GetLuckFountainMultiplier() const;
+
 protected:
 	virtual void ApplyRarityVisuals() override;
 };
+
+/** Canonical alias: use AT66FountainOfLifeInteractable in new code. */
+using AT66FountainOfLifeInteractable = AT66TreeOfLifeInteractable;
 

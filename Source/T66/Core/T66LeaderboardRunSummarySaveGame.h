@@ -71,7 +71,7 @@ public:
 	int32 AttackSpeedStat = 1;
 
 	UPROPERTY(SaveGame)
-	int32 AttackSizeStat = 1;
+	int32 AttackScaleStat = 1;
 
 	UPROPERTY(SaveGame)
 	int32 ArmorStat = 1;

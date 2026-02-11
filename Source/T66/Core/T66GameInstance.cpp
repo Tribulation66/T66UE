@@ -262,65 +262,29 @@ void UT66GameInstance::EnsureCachedItemIDs()
 	// Fallback (keeps game functional even if DT isn't wired yet).
 	if (CachedItemIDs.Num() == 0)
 	{
-		CachedItemIDs.Add(FName(TEXT("Item_Black_01")));
-		CachedItemIDs.Add(FName(TEXT("Item_Red_01")));
-		CachedItemIDs.Add(FName(TEXT("Item_Yellow_01")));
-		CachedItemIDs.Add(FName(TEXT("Item_White_01")));
+		CachedItemIDs.Add(FName(TEXT("Item_AoeDamage")));
+		CachedItemIDs.Add(FName(TEXT("Item_CritDamage")));
+		CachedItemIDs.Add(FName(TEXT("Item_LifeSteal")));
+		CachedItemIDs.Add(FName(TEXT("Item_MovementSpeed")));
 	}
 }
 
 void UT66GameInstance::EnsureCachedItemIDsByRarity()
 {
+	// Items are now rarity-agnostic templates. All templates go into every pool.
 	if (bCachedItemIDsByRarityInitialized)
 	{
 		return;
 	}
 	bCachedItemIDsByRarityInitialized = true;
 
-	CachedItemIDs_Black.Reset();
-	CachedItemIDs_Red.Reset();
-	CachedItemIDs_Yellow.Reset();
-	CachedItemIDs_White.Reset();
-
 	EnsureCachedItemIDs();
 
-	for (const FName& ItemID : CachedItemIDs)
-	{
-		if (ItemID.IsNone()) continue;
-
-		FItemData D;
-		if (GetItemData(ItemID, D))
-		{
-			// Canonical item list: items that exist in the game should be both lootable and purchasable.
-			// v0 rule: BuyValueGold > 0 indicates it is part of the canonical pool.
-			if (D.BuyValueGold <= 0)
-			{
-				continue;
-			}
-			switch (D.ItemRarity)
-			{
-				case ET66ItemRarity::Black: CachedItemIDs_Black.Add(ItemID); break;
-				case ET66ItemRarity::Red: CachedItemIDs_Red.Add(ItemID); break;
-				case ET66ItemRarity::Yellow: CachedItemIDs_Yellow.Add(ItemID); break;
-				case ET66ItemRarity::White: CachedItemIDs_White.Add(ItemID); break;
-				default: break;
-			}
-		}
-		else
-		{
-			// Safe fallback mapping for early project bootstraps.
-			if (ItemID == TEXT("Item_Black_01")) CachedItemIDs_Black.Add(ItemID);
-			else if (ItemID == TEXT("Item_Red_01")) CachedItemIDs_Red.Add(ItemID);
-			else if (ItemID == TEXT("Item_Yellow_01")) CachedItemIDs_Yellow.Add(ItemID);
-			else if (ItemID == TEXT("Item_White_01")) CachedItemIDs_White.Add(ItemID);
-		}
-	}
-
-	// If any pool is empty, fall back to "all items" so the game never stalls.
-	if (CachedItemIDs_Black.Num() == 0) CachedItemIDs_Black = CachedItemIDs;
-	if (CachedItemIDs_Red.Num() == 0) CachedItemIDs_Red = CachedItemIDs;
-	if (CachedItemIDs_Yellow.Num() == 0) CachedItemIDs_Yellow = CachedItemIDs;
-	if (CachedItemIDs_White.Num() == 0) CachedItemIDs_White = CachedItemIDs;
+	// All templates are valid for any rarity.
+	CachedItemIDs_Black = CachedItemIDs;
+	CachedItemIDs_Red = CachedItemIDs;
+	CachedItemIDs_Yellow = CachedItemIDs;
+	CachedItemIDs_White = CachedItemIDs;
 }
 
 FName UT66GameInstance::GetRandomItemID()
@@ -328,29 +292,16 @@ FName UT66GameInstance::GetRandomItemID()
 	EnsureCachedItemIDs();
 	if (CachedItemIDs.Num() <= 0)
 	{
-		return FName(TEXT("Item_Black_01"));
+		return FName(TEXT("Item_AoeDamage"));
 	}
 	return CachedItemIDs[FMath::RandRange(0, CachedItemIDs.Num() - 1)];
 }
 
 FName UT66GameInstance::GetRandomItemIDForLootRarity(ET66Rarity LootRarity)
 {
-	EnsureCachedItemIDsByRarity();
-	const TArray<FName>* Pool = &CachedItemIDs;
-	switch (LootRarity)
-	{
-		case ET66Rarity::Black: Pool = &CachedItemIDs_Black; break;
-		case ET66Rarity::Red: Pool = &CachedItemIDs_Red; break;
-		case ET66Rarity::Yellow: Pool = &CachedItemIDs_Yellow; break;
-		case ET66Rarity::White: Pool = &CachedItemIDs_White; break;
-		default: break;
-	}
-
-	if (!Pool || Pool->Num() <= 0)
-	{
-		return GetRandomItemID();
-	}
-	return (*Pool)[FMath::RandRange(0, Pool->Num() - 1)];
+	// Items are now rarity-agnostic templates. Just return a random template.
+	// The caller is responsible for assigning a rarity based on the loot context.
+	return GetRandomItemID();
 }
 
 UDataTable* UT66GameInstance::GetBossesDataTable()
@@ -583,11 +534,11 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 		return R;
 	};
 
-	// Default: balanced-ish, safe fallbacks.
+	// Safe defaults (used if DataTable lookup fails).
 	OutBaseStats = FT66HeroStatBlock{};
 	OutBaseStats.Damage = 2;
 	OutBaseStats.AttackSpeed = 2;
-	OutBaseStats.AttackSize = 2;
+	OutBaseStats.AttackScale = 2;
 	OutBaseStats.Armor = 2;
 	OutBaseStats.Evasion = 2;
 	OutBaseStats.Luck = 2;
@@ -596,63 +547,34 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 	OutPerLevelGains = FT66HeroPerLevelStatGains{};
 	OutPerLevelGains.Damage = Range(1, 2);
 	OutPerLevelGains.AttackSpeed = Range(1, 2);
-	OutPerLevelGains.AttackSize = Range(1, 2);
+	OutPerLevelGains.AttackScale = Range(1, 2);
 	OutPerLevelGains.Armor = Range(1, 2);
 	OutPerLevelGains.Evasion = Range(1, 2);
 	OutPerLevelGains.Luck = Range(1, 2);
 
-	const FName H = HeroID;
-	if (H.IsNone())
-	{
-		return false;
-	}
+	if (HeroID.IsNone()) return false;
 
-	// Four heroes only: Knight (armor), Ninja (evasion), Gunslinger (attack speed), Magician (luck).
-	if (H == FName(TEXT("Hero_1"))) // Knight Chad - armor bias
+	// Data-driven: read base stats and per-level gains from the Heroes DataTable.
+	FHeroData HD;
+	if (const_cast<UT66GameInstance*>(this)->GetHeroData(HeroID, HD))
 	{
-		OutBaseStats = { 3, 2, 2, 5, 1, 2, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(2, 4);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_2"))) // Ninja Chad - evasion bias
-	{
-		OutBaseStats = { 3, 3, 2, 1, 5, 2, 3 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(2, 4);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_3"))) // Gunslinger Chad - attack speed bias
-	{
-		OutBaseStats = { 2, 5, 2, 2, 2, 2, 3 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(2, 4);
-		OutPerLevelGains.AttackSize = Range(1, 2);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(1, 2);
-		return true;
-	}
-	if (H == FName(TEXT("Hero_4"))) // Magician Chad - luck bias
-	{
-		OutBaseStats = { 2, 2, 3, 1, 2, 5, 2 };
-		OutPerLevelGains.Damage = Range(1, 2);
-		OutPerLevelGains.AttackSpeed = Range(1, 2);
-		OutPerLevelGains.AttackSize = Range(1, 3);
-		OutPerLevelGains.Armor = Range(1, 2);
-		OutPerLevelGains.Evasion = Range(1, 2);
-		OutPerLevelGains.Luck = Range(2, 4);
+		OutBaseStats.Damage      = FMath::Max(1, HD.BaseDamage);
+		OutBaseStats.AttackSpeed = FMath::Max(1, HD.BaseAttackSpeed);
+		OutBaseStats.AttackScale = FMath::Max(1, HD.BaseAttackScale);
+		OutBaseStats.Armor       = FMath::Max(1, HD.BaseArmor);
+		OutBaseStats.Evasion     = FMath::Max(1, HD.BaseEvasion);
+		OutBaseStats.Luck        = FMath::Max(1, HD.BaseLuck);
+		OutBaseStats.Speed       = FMath::Max(1, HD.BaseSpeed);
+
+		OutPerLevelGains.Damage      = Range(HD.LvlDmgMin, HD.LvlDmgMax);
+		OutPerLevelGains.AttackSpeed = Range(HD.LvlAtkSpdMin, HD.LvlAtkSpdMax);
+		OutPerLevelGains.AttackScale = Range(HD.LvlAtkScaleMin, HD.LvlAtkScaleMax);
+		OutPerLevelGains.Armor       = Range(HD.LvlArmorMin, HD.LvlArmorMax);
+		OutPerLevelGains.Evasion     = Range(HD.LvlEvasionMin, HD.LvlEvasionMax);
+		OutPerLevelGains.Luck        = Range(HD.LvlLuckMin, HD.LvlLuckMax);
 		return true;
 	}
 
-	// Unknown hero: default tuning applies.
+	// DataTable row not found: defaults apply.
 	return true;
 }

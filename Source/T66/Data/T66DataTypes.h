@@ -12,6 +12,18 @@ class UAnimationAsset;
 class UTexture2D;
 
 /**
+ * Attack category (defines the fundamental behavior of a hero's primary attack and idol sources).
+ */
+UENUM(BlueprintType)
+enum class ET66AttackCategory : uint8
+{
+	Pierce UMETA(DisplayName = "Pierce"),
+	Bounce UMETA(DisplayName = "Bounce"),
+	AOE UMETA(DisplayName = "AOE"),
+	DOT UMETA(DisplayName = "DOT"),
+};
+
+/**
  * Hero data row for the Hero DataTable
  * Each row represents one selectable hero in the game
  * NOTE: Localized display names are managed by UT66LocalizationSubsystem::GetText_HeroName()
@@ -65,6 +77,208 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unlock")
 	bool bUnlockedByDefault = true;
 
+	// ============================================
+	// Attack Category
+	// ============================================
+
+	/** Primary attack category (Pierce/Bounce/AOE/DOT) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	ET66AttackCategory PrimaryCategory = ET66AttackCategory::Pierce;
+
+	// ============================================
+	// Generic Base Stats (leveled up via RNG)
+	// ============================================
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseDamage = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseAttackSpeed = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseAttackScale = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseArmor = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseEvasion = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseLuck = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseSpeed = 2;
+
+	// ============================================
+	// Per-Level Gain Ranges (generic stats only)
+	// ============================================
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlDmgMin = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlDmgMax = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlAtkSpdMin = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlAtkSpdMax = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlAtkScaleMin = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlAtkScaleMax = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlArmorMin = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlArmorMax = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlEvasionMin = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlEvasionMax = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlLuckMin = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlLuckMax = 2;
+
+	// ============================================
+	// Category-Specific Base Stats (all 4 categories; boosted by items)
+	// ============================================
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Pierce")
+	int32 BasePierceDmg = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Pierce")
+	int32 BasePierceAtkSpd = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Pierce")
+	int32 BasePierceAtkScale = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Bounce")
+	int32 BaseBounceDmg = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Bounce")
+	int32 BaseBounceAtkSpd = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Bounce")
+	int32 BaseBounceAtkScale = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|AOE")
+	int32 BaseAoeDmg = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|AOE")
+	int32 BaseAoeAtkSpd = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|AOE")
+	int32 BaseAoeAtkScale = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|DOT")
+	int32 BaseDotDmg = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|DOT")
+	int32 BaseDotAtkSpd = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|DOT")
+	int32 BaseDotAtkScale = 1;
+
+	// ============================================
+	// Primary Attack Properties
+	// ============================================
+
+	/** Seconds between auto-attacks. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
+	float BaseFireInterval = 1.f;
+
+	/** Max targeting range (UU). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
+	float BaseAttackRange = 1000.f;
+
+	/** Instant hit damage before category effect. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
+	int32 BaseHitDamage = 20;
+
+	/** Innate count for the hero's primary category effect (e.g., pierce-through count). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
+	int32 BasePierceCount = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
+	int32 BaseBounceCount = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
+	int32 BaseAoeCount = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
+	int32 BaseDotSources = 0;
+
+	// ============================================
+	// Behavior Tuning (primary attack)
+	// ============================================
+
+	/** Projectile travel speed (UU/s) for Pierce/Bounce. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
+	float ProjectileSpeed = 2000.f;
+
+	/** Damage reduction per pierce/bounce (0.15 = 15% loss per hit). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
+	float FalloffPerHit = 0.f;
+
+	/** Delay before AOE triggers after initial hit (seconds). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
+	float AoeDelay = 0.f;
+
+	/** Base AOE explosion radius (UU). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
+	float AoeRadius = 0.f;
+
+	/** Seconds between DOT ticks. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
+	float DotTickInterval = 0.f;
+
+	/** Base DOT duration (seconds). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
+	float DotDuration = 0.f;
+
+	// ============================================
+	// Secondary Stat Base Values (multiplied by item Line 2 rarity multiplier)
+	// ============================================
+
+	/** Base crit damage multiplier (e.g. 1.5 = 50% bonus on crit). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseCritDamage = 1.5f;
+
+	/** Base crit chance (0..1, e.g. 0.05 = 5%). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseCritChance = 0.05f;
+
+	/** Close range damage multiplier (1.0 = no bonus). Close = 0-10% of range. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseCloseRangeDmg = 1.0f;
+
+	/** Long range damage multiplier (1.0 = no bonus). Long = 90-100% of range. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseLongRangeDmg = 1.0f;
+
+	/** Base aggro generation multiplier (1.0 = normal). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseTaunt = 1.0f;
+
+	/** Base reflect damage fraction (0.0 = no reflect). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseReflectDmg = 0.0f;
+
+	/** Base HP regen per second (0 = none). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseHpRegen = 0.0f;
+
+	/** Base OHKO chance when reflecting (0.01 = 1%). Requires reflect to fire. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseCrushChance = 0.01f;
+
+	/** Base chance to confuse enemies on hit (0.01 = 1%). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseInvisChance = 0.01f;
+
+	/** Base counter-attack damage fraction on dodge (0.0 = none). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseCounterAttack = 0.0f;
+
+	/** Base life-steal fraction per hit (0.0 = none). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseLifeSteal = 0.0f;
+
+	/** Base OHKO chance when dodging (0.01 = 1%). Requires dodge to occur. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseAssassinateChance = 0.01f;
+
+	/** Base cheating success chance (0.05 = 5%). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseCheatChance = 0.05f;
+
+	/** Base stealing success chance (0.05 = 5%). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseStealChance = 0.05f;
+
 	FHeroData()
 		: HeroID(NAME_None)
 		, PlaceholderColor(FLinearColor::White)
@@ -88,7 +302,7 @@ struct T66_API FT66HeroStatBlock
 	int32 AttackSpeed = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
-	int32 AttackSize = 1;
+	int32 AttackScale = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 Armor = 1;
@@ -109,6 +323,7 @@ struct T66_API FT66HeroStatBonuses
 {
 	GENERATED_BODY()
 
+	// Generic stats (affect all attack categories)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 Damage = 0;
 
@@ -116,7 +331,7 @@ struct T66_API FT66HeroStatBonuses
 	int32 AttackSpeed = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
-	int32 AttackSize = 0;
+	int32 AttackScale = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 Armor = 0;
@@ -126,6 +341,35 @@ struct T66_API FT66HeroStatBonuses
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 Luck = 0;
+
+	// Category-specific stat bonuses (from items)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Pierce")
+	int32 PierceDmg = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Pierce")
+	int32 PierceAtkSpd = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Pierce")
+	int32 PierceAtkScale = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Bounce")
+	int32 BounceDmg = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Bounce")
+	int32 BounceAtkSpd = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Bounce")
+	int32 BounceAtkScale = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|AOE")
+	int32 AoeDmg = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|AOE")
+	int32 AoeAtkSpd = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|AOE")
+	int32 AoeAtkScale = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|DOT")
+	int32 DotDmg = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|DOT")
+	int32 DotAtkSpd = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|DOT")
+	int32 DotAtkScale = 0;
 };
 
 /** Random gain range (inclusive) for a stat on level up. */
@@ -162,7 +406,7 @@ struct T66_API FT66HeroPerLevelStatGains
 	FT66HeroStatGainRange AttackSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
-	FT66HeroStatGainRange AttackSize;
+	FT66HeroStatGainRange AttackScale;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	FT66HeroStatGainRange Armor;
@@ -242,16 +486,69 @@ enum class ET66ItemEffectType : uint8
 	BonusLuckFlat UMETA(DisplayName = "BonusLuckFlat"),
 };
 
-/** Foundational hero stats (excluding Speed) that items can roll as their main stat line. */
+/** Foundational hero stats that items can roll as their primary stat line (Line 1). */
 UENUM(BlueprintType)
 enum class ET66HeroStatType : uint8
 {
 	Damage UMETA(DisplayName = "Damage"),
 	AttackSpeed UMETA(DisplayName = "AttackSpeed"),
-	AttackSize UMETA(DisplayName = "AttackSize"),
+	AttackScale UMETA(DisplayName = "AttackScale"),
 	Armor UMETA(DisplayName = "Armor"),
 	Evasion UMETA(DisplayName = "Evasion"),
 	Luck UMETA(DisplayName = "Luck"),
+	Speed UMETA(DisplayName = "Speed"),
+};
+
+/**
+ * Secondary stat types (Line 2 of items).
+ * Each item template maps to exactly one secondary stat. The multiplier is derived from rarity.
+ */
+UENUM(BlueprintType)
+enum class ET66SecondaryStatType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	// Category Damage (4)
+	AoeDamage UMETA(DisplayName = "AOE Damage"),
+	BounceDamage UMETA(DisplayName = "Bounce Damage"),
+	PierceDamage UMETA(DisplayName = "Pierce Damage"),
+	DotDamage UMETA(DisplayName = "DOT Damage"),
+	// Category Speed (4)
+	AoeSpeed UMETA(DisplayName = "AOE Speed"),
+	BounceSpeed UMETA(DisplayName = "Bounce Speed"),
+	PierceSpeed UMETA(DisplayName = "Pierce Speed"),
+	DotSpeed UMETA(DisplayName = "DOT Speed"),
+	// Category Scale (4)
+	AoeScale UMETA(DisplayName = "AOE Scale"),
+	BounceScale UMETA(DisplayName = "Bounce Scale"),
+	PierceScale UMETA(DisplayName = "Pierce Scale"),
+	DotScale UMETA(DisplayName = "DOT Scale"),
+	// Crit (2)
+	CritDamage UMETA(DisplayName = "Crit Damage"),
+	CritChance UMETA(DisplayName = "Crit Chance"),
+	// Range-conditional (3)
+	CloseRangeDamage UMETA(DisplayName = "Close Range Damage"),
+	LongRangeDamage UMETA(DisplayName = "Long Range Damage"),
+	AttackRange UMETA(DisplayName = "Attack Range"),
+	// Armor-defensive (4)
+	Taunt UMETA(DisplayName = "Taunt"),
+	ReflectDamage UMETA(DisplayName = "Reflect Damage"),
+	HpRegen UMETA(DisplayName = "HP Regen"),
+	Crush UMETA(DisplayName = "Crush"),
+	// Evasion-offensive (4)
+	Invisibility UMETA(DisplayName = "Invisibility"),
+	CounterAttack UMETA(DisplayName = "Counter Attack"),
+	LifeSteal UMETA(DisplayName = "Life Steal"),
+	Assassinate UMETA(DisplayName = "Assassinate"),
+	// Luck-world (7)
+	SpinWheel UMETA(DisplayName = "Spin Wheel"),
+	Goblin UMETA(DisplayName = "Goblin"),
+	Leprechaun UMETA(DisplayName = "Leprechaun"),
+	TreasureChest UMETA(DisplayName = "Treasure Chest"),
+	Fountain UMETA(DisplayName = "Fountain"),
+	Cheating UMETA(DisplayName = "Cheating"),
+	Stealing UMETA(DisplayName = "Stealing"),
+	// Speed (1)
+	MovementSpeed UMETA(DisplayName = "Movement Speed"),
 };
 
 UENUM(BlueprintType)
@@ -273,75 +570,139 @@ enum class ET66HeroStatusEffectType : uint8
 };
 
 /**
- * Item data row for the Items DataTable (v0: 3 placeholder items)
+ * Item template data row for the Items DataTable.
+ *
+ * There are 33 unique item templates (rarity-agnostic). Each template defines:
+ *   - Line 1: a primary stat type (one of the 7 foundational stats including Speed)
+ *   - Line 2: a secondary stat type (one of 33 unique effects)
+ *
+ * Rarity and Line 1 rolled value are stored at runtime in FT66InventorySlot.
+ * Line 2 multiplier is derived from rarity: Black 1.1x, Red 1.2x, Yellow 1.5x, White 2.0x.
  */
 USTRUCT(BlueprintType)
 struct T66_API FItemData : public FTableRowBase
 {
 	GENERATED_BODY()
 
+	/** Unique template identifier (e.g. "Item_AoeDamage", "Item_CritChance"). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName ItemID;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rarity")
-	ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
-	FLinearColor PlaceholderColor = FLinearColor::White;
-
-	/** UI icon (sprite) for this item. */
+	/** UI icon (borderless sprite; rarity border applied at runtime). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
-	int32 BuyValueGold = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
-	int32 SellValueGold = 0;
-
-	/** Single additive % that increases Damage + Attack Speed + Scale equally. */
+	/** Line 1: Primary stat this item boosts (additive flat bonus, rolled at drop time). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float PowerGivenPercent = 0.f;
+	ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
 
-	/** Optional single extra effect (v0 framework). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	ET66ItemEffectType EffectType = ET66ItemEffectType::None;
+	/** Line 2: Secondary effect provided by this item (multiplied by rarity multiplier). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-	float EffectMagnitude = 0.f;
+	/** Base buy price in gold (scaled by rarity multiplier at shop time). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
+	int32 BaseBuyGold = 50;
 
-	// ============================================
-	// Item Stat Lines (v1)
-	// ============================================
-
-	/** Main stat line: one foundational stat (excluding Speed) with a flat numeric bonus. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Lines")
-	ET66HeroStatType MainStatType = ET66HeroStatType::Damage;
-
-	/** Flat points added to the chosen stat. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Lines")
-	int32 MainStatValue = 0;
-
-	/** Tooltip lines (shown under Power). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	FText EffectLine1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	FText EffectLine2;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	FText EffectLine3;
+	/** Base sell price in gold (scaled by rarity multiplier at sell time). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
+	int32 BaseSellGold = 25;
 
 	FItemData()
 		: ItemID(NAME_None)
-		, ItemRarity(ET66ItemRarity::Black)
-		, PlaceholderColor(FLinearColor::White)
-		, BuyValueGold(0)
-		, SellValueGold(0)
-		, PowerGivenPercent(0.f)
-		, EffectType(ET66ItemEffectType::None)
-		, EffectMagnitude(0.f)
 	{}
+
+	// ============================================
+	// Rarity Helpers (static)
+	// ============================================
+
+	/** Line 1 additive flat roll range per rarity. */
+	static void GetLine1RollRange(ET66ItemRarity Rarity, int32& OutMin, int32& OutMax)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  OutMin = 1;  OutMax = 3;  break;
+		case ET66ItemRarity::Red:    OutMin = 4;  OutMax = 6;  break;
+		case ET66ItemRarity::Yellow: OutMin = 7;  OutMax = 10; break;
+		case ET66ItemRarity::White:  OutMin = 20; OutMax = 30; break;
+		default:                     OutMin = 1;  OutMax = 3;  break;
+		}
+	}
+
+	/** Line 2 multiplicative scalar per rarity. */
+	static float GetLine2RarityMultiplier(ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return 1.1f;
+		case ET66ItemRarity::Red:    return 1.2f;
+		case ET66ItemRarity::Yellow: return 1.5f;
+		case ET66ItemRarity::White:  return 2.0f;
+		default:                     return 1.0f;
+		}
+	}
+
+	/** Buy price scaled by rarity. */
+	static float GetRarityPriceMultiplier(ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return 1.0f;
+		case ET66ItemRarity::Red:    return 2.0f;
+		case ET66ItemRarity::Yellow: return 4.0f;
+		case ET66ItemRarity::White:  return 8.0f;
+		default:                     return 1.0f;
+		}
+	}
+
+	int32 GetBuyGoldForRarity(ET66ItemRarity Rarity) const
+	{
+		return FMath::RoundToInt(static_cast<float>(BaseBuyGold) * GetRarityPriceMultiplier(Rarity));
+	}
+
+	int32 GetSellGoldForRarity(ET66ItemRarity Rarity) const
+	{
+		return FMath::RoundToInt(static_cast<float>(BaseSellGold) * GetRarityPriceMultiplier(Rarity));
+	}
+};
+
+/**
+ * Runtime inventory slot: stores a specific item instance with its rarity and rolled primary bonus.
+ * The item template (FItemData) is looked up by ItemTemplateID.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66InventorySlot
+{
+	GENERATED_BODY()
+
+	/** Maps to a row in the Items DataTable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	FName ItemTemplateID;
+
+	/** Rarity tier of this specific instance. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	ET66ItemRarity Rarity = ET66ItemRarity::Black;
+
+	/** Rolled Line 1 additive bonus (randomized at drop/shop time). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	int32 Line1RolledValue = 1;
+
+	FT66InventorySlot()
+		: ItemTemplateID(NAME_None)
+		, Rarity(ET66ItemRarity::Black)
+		, Line1RolledValue(1)
+	{}
+
+	FT66InventorySlot(FName InTemplateID, ET66ItemRarity InRarity, int32 InRolledValue)
+		: ItemTemplateID(InTemplateID)
+		, Rarity(InRarity)
+		, Line1RolledValue(InRolledValue)
+	{}
+
+	bool IsValid() const { return !ItemTemplateID.IsNone(); }
+
+	/** Get the Line 2 multiplier for this slot's rarity. */
+	float GetLine2Multiplier() const { return FItemData::GetLine2RarityMultiplier(Rarity); }
 };
 
 /**
@@ -450,8 +811,12 @@ struct T66_API FStageData : public FTableRowBase
 /**
  * Idol data row for the Idols DataTable.
  *
- * v0: levels are data-only (effects will be wired later).
- * CSV-friendly layout: explicit Level01..Level10 columns.
+ * Each idol is an independent attack source (fires alongside the hero's basic attack).
+ * Category determines the type of effect (Pierce/Bounce/AOE/DOT).
+ * Level determines the strength: damage scales linearly, and the category property
+ * (bounce count, pierce count, AOE radius, DOT duration) scales linearly.
+ *
+ * Formula: ValueAtLevel(L) = Base + (L - 1) * PerLevel
  */
 USTRUCT(BlueprintType)
 struct T66_API FIdolData : public FTableRowBase
@@ -461,34 +826,83 @@ struct T66_API FIdolData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName IdolID;
 
+	/** Attack category this idol source belongs to. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	ET66AttackCategory Category = ET66AttackCategory::Pierce;
+
 	/** UI icon (sprite) for this idol. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** Current design target: 10 levels per idol. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
+	/** Maximum level (10). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
 	int32 MaxLevel = 10;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level01Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level02Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level03Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level04Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level05Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level06Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level07Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level08Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level09Value = 0.f;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Levels")
-	float Level10Value = 0.f;
+	// ============================================
+	// Damage scaling (linear: Base + (Level-1) * PerLevel)
+	// ============================================
+
+	/** Base damage at level 1 (before hero stat multipliers). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
+	float BaseDamage = 8.f;
+
+	/** Additional damage per level above 1. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
+	float DamagePerLevel = 4.f;
+
+	// ============================================
+	// Category property scaling (meaning varies by category)
+	//   Pierce: enemies pierced   |  Bounce: bounce count
+	//   AOE: explosion radius (UU)|  DOT: duration (seconds)
+	// ============================================
+
+	/** Base property value at level 1. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
+	float BaseProperty = 1.f;
+
+	/** Additional property per level above 1. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
+	float PropertyPerLevel = 1.f;
+
+	// ============================================
+	// Behavior tuning (per-idol source; mirrors hero attack tuning)
+	// ============================================
+
+	/** Projectile speed (UU/s) for Pierce/Bounce idol sources. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
+	float ProjectileSpeed = 2000.f;
+
+	/** Damage falloff per pierce/bounce (0.15 = 15% loss). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
+	float FalloffPerHit = 0.f;
+
+	/** Delay before AOE triggers (seconds). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
+	float AoeDelay = 0.15f;
+
+	/** AOE explosion radius (UU). Only used by AOE category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
+	float AoeRadius = 300.f;
+
+	/** DOT tick interval (seconds). Only used by DOT category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
+	float DotTickInterval = 0.5f;
+
+	/** DOT base duration (seconds). Only used by DOT category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
+	float DotDuration = 3.f;
+
+	/** Get damage at a given level. */
+	float GetDamageAtLevel(int32 Level) const
+	{
+		return BaseDamage + FMath::Max(0, Level - 1) * DamagePerLevel;
+	}
+
+	/** Get category property value at a given level. */
+	float GetPropertyAtLevel(int32 Level) const
+	{
+		return BaseProperty + FMath::Max(0, Level - 1) * PropertyPerLevel;
+	}
 
 	FIdolData()
 		: IdolID(NAME_None)

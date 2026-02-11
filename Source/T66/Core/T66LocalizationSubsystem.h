@@ -563,7 +563,7 @@ public:
 	FText GetText_Stat_AttackSpeed() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
-	FText GetText_Stat_AttackSize() const;
+	FText GetText_Stat_AttackScale() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
 	FText GetText_Stat_Armor() const;
@@ -576,6 +576,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
 	FText GetText_Stat_Speed() const;
+
+	/** Get the display name for a secondary stat type (for item Line 2 tooltips). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_SecondaryStatName(ET66SecondaryStatType StatType) const;
 
 	/** Format string: "{0}: {1}" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")

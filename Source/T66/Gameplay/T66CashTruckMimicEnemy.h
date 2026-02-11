@@ -8,7 +8,10 @@
 
 class UStaticMeshComponent;
 
-/** Cash Truck Mimic: chases the player for 5 seconds, deals heavy touch damage, then disappears. */
+/**
+ * Chest Mimic (formerly "Cash Truck Mimic"): chases the player for 5 seconds, deals heavy touch damage, then disappears.
+ * Canonical in-game name: "Chest Mimic". Class alias: AT66ChestMimicEnemy.
+ */
 UCLASS(Blueprintable)
 class T66_API AT66CashTruckMimicEnemy : public AT66EnemyBase
 {
@@ -24,4 +27,7 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UStaticMeshComponent>> WheelMeshes;
 };
+
+/** Canonical alias: use AT66ChestMimicEnemy in new code. */
+using AT66ChestMimicEnemy = AT66CashTruckMimicEnemy;
 

@@ -1,0 +1,8 @@
+DAMAGE,ATT SPEED,SCALE,ARMOR,EVASION,LUCK,Speed
+AOE Damage,AOE Speed,AOE Scale,Taunt (Lowers Armor) ,Invis (Undetected),Spin Wheel,Movement Speed
+Bouncing Damage,Bouncing Speed,Bounce Scale,Reflect Damage ,Counter Attack,Goblin,
+Piercing Damage,Piercing Speed,Pierce Scale,HP Regen ,Life Steal,Leprachaun,
+DOT Damage,DOT Speed,DOT Scale,Crush (OHKO when reflecting),Assasinate (OHKO when dodging),Treasure Chest,
+Crit Damage,Crit Chance,Range,,,Fountain,
+Close Range Damage,,,,,Cheating ,
+Long Range Damage,,,,,Stealing,

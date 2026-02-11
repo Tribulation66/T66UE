@@ -124,6 +124,8 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
 	UT66AchievementsSubsystem* Achieve = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 
+	ItemIconBrushes.Empty();
+
 	// Tab row
 	auto MakeTab = [&](const FText& Label, int32 Index) -> TSharedRef<SWidget>
 	{
@@ -146,6 +148,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		TSharedPtr<FSlateBrush> IconBrush = MakeShared<FSlateBrush>();
 		IconBrush->DrawAs = ESlateBrushDrawType::Image;
 		IconBrush->ImageSize = FVector2D(64.f, 64.f);
+		ItemIconBrushes.Add(IconBrush);
 		FItemData ItemData;
 		if (GI && GI->GetItemData(ItemID, ItemData) && !ItemData.Icon.IsNull())
 		{
@@ -208,9 +211,10 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			FText DescText = FText::GetEmpty();
 			if (GI && GI->GetItemData(ItemID, ItemData))
 			{
-				if (!ItemData.EffectLine1.IsEmpty()) DescText = ItemData.EffectLine1;
-				if (!ItemData.EffectLine2.IsEmpty()) DescText = FText::Format(LOCTEXT("DescLine", "{0}\n{1}"), DescText, ItemData.EffectLine2);
-				if (!ItemData.EffectLine3.IsEmpty()) DescText = FText::Format(LOCTEXT("DescLine2", "{0}\n{1}"), DescText, ItemData.EffectLine3);
+				// Build description from primary + secondary stat types.
+				const FText PrimaryStat = FText::FromString(StaticEnum<ET66HeroStatType>()->GetNameStringByValue(static_cast<int64>(ItemData.PrimaryStatType)));
+				const FText SecondaryStat = FText::FromString(StaticEnum<ET66SecondaryStatType>()->GetNameStringByValue(static_cast<int64>(ItemData.SecondaryStatType)));
+				DescText = FText::Format(LOCTEXT("DescLine", "Line 1: +{0}\nLine 2: {1}"), PrimaryStat, SecondaryStat);
 			}
 			AddItemCard(ItemID, NameText, DescText);
 		}

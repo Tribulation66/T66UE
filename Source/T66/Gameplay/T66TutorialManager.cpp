@@ -259,7 +259,7 @@ FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const
 	const TArray<FStatPick> Picks = {
 		{ ET66HeroStatType::Damage,      RunState->GetDamageStat() },
 		{ ET66HeroStatType::AttackSpeed, RunState->GetAttackSpeedStat() },
-		{ ET66HeroStatType::AttackSize,  RunState->GetScaleStat() },
+		{ ET66HeroStatType::AttackScale, RunState->GetScaleStat() },
 		{ ET66HeroStatType::Armor,       RunState->GetArmorStat() },
 		{ ET66HeroStatType::Evasion,     RunState->GetEvasionStat() },
 		{ ET66HeroStatType::Luck,        RunState->GetLuckStat() },
@@ -289,9 +289,8 @@ FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const
 			if (ItemID.IsNone()) continue;
 			FItemData D;
 			if (!GI->GetItemData(ItemID, D)) continue;
-			if (D.ItemRarity != ET66ItemRarity::Black) continue;
-			if (D.BuyValueGold <= 0) continue;
-			if (D.MainStatType == BestType)
+			if (D.BaseBuyGold <= 0) continue;
+			if (D.PrimaryStatType == BestType)
 			{
 				return ItemID;
 			}

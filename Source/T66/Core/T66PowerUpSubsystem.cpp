@@ -65,7 +65,7 @@ bool UT66PowerUpSubsystem::UnlockRandomStat()
 	static const TArray<ET66HeroStatType> AllStats = {
 		ET66HeroStatType::Damage,
 		ET66HeroStatType::AttackSpeed,
-		ET66HeroStatType::AttackSize,
+		ET66HeroStatType::AttackScale,
 		ET66HeroStatType::Armor,
 		ET66HeroStatType::Evasion,
 		ET66HeroStatType::Luck
@@ -88,7 +88,7 @@ FT66HeroStatBonuses UT66PowerUpSubsystem::GetPowerupStatBonuses() const
 	if (!SaveData) return Out;
 	Out.Damage = GetSliceCountForStat(ET66HeroStatType::Damage) + GetRandomBonusForStat(ET66HeroStatType::Damage);
 	Out.AttackSpeed = GetSliceCountForStat(ET66HeroStatType::AttackSpeed) + GetRandomBonusForStat(ET66HeroStatType::AttackSpeed);
-	Out.AttackSize = GetSliceCountForStat(ET66HeroStatType::AttackSize) + GetRandomBonusForStat(ET66HeroStatType::AttackSize);
+	Out.AttackScale = GetSliceCountForStat(ET66HeroStatType::AttackScale) + GetRandomBonusForStat(ET66HeroStatType::AttackScale);
 	Out.Armor = GetSliceCountForStat(ET66HeroStatType::Armor) + GetRandomBonusForStat(ET66HeroStatType::Armor);
 	Out.Evasion = GetSliceCountForStat(ET66HeroStatType::Evasion) + GetRandomBonusForStat(ET66HeroStatType::Evasion);
 	Out.Luck = GetSliceCountForStat(ET66HeroStatType::Luck) + GetRandomBonusForStat(ET66HeroStatType::Luck);
@@ -102,7 +102,7 @@ int32 UT66PowerUpSubsystem::GetSliceCountForStat(ET66HeroStatType StatType) cons
 	{
 		case ET66HeroStatType::Damage:      return SaveData->PowerupSlicesDamage;
 		case ET66HeroStatType::AttackSpeed: return SaveData->PowerupSlicesAttackSpeed;
-		case ET66HeroStatType::AttackSize: return SaveData->PowerupSlicesAttackSize;
+		case ET66HeroStatType::AttackScale: return SaveData->PowerupSlicesAttackScale;
 		case ET66HeroStatType::Armor:      return SaveData->PowerupSlicesArmor;
 		case ET66HeroStatType::Evasion:    return SaveData->PowerupSlicesEvasion;
 		case ET66HeroStatType::Luck:       return SaveData->PowerupSlicesLuck;
@@ -118,7 +118,7 @@ void UT66PowerUpSubsystem::SetSliceCountForStat(ET66HeroStatType StatType, int32
 	{
 		case ET66HeroStatType::Damage:      SaveData->PowerupSlicesDamage = Count; break;
 		case ET66HeroStatType::AttackSpeed: SaveData->PowerupSlicesAttackSpeed = Count; break;
-		case ET66HeroStatType::AttackSize: SaveData->PowerupSlicesAttackSize = Count; break;
+		case ET66HeroStatType::AttackScale: SaveData->PowerupSlicesAttackScale = Count; break;
 		case ET66HeroStatType::Armor:      SaveData->PowerupSlicesArmor = Count; break;
 		case ET66HeroStatType::Evasion:    SaveData->PowerupSlicesEvasion = Count; break;
 		case ET66HeroStatType::Luck:       SaveData->PowerupSlicesLuck = Count; break;
@@ -133,7 +133,7 @@ int32 UT66PowerUpSubsystem::GetRandomBonusForStat(ET66HeroStatType StatType) con
 	{
 		case ET66HeroStatType::Damage:      return SaveData->RandomBonusDamage;
 		case ET66HeroStatType::AttackSpeed: return SaveData->RandomBonusAttackSpeed;
-		case ET66HeroStatType::AttackSize: return SaveData->RandomBonusAttackSize;
+		case ET66HeroStatType::AttackScale: return SaveData->RandomBonusAttackScale;
 		case ET66HeroStatType::Armor:      return SaveData->RandomBonusArmor;
 		case ET66HeroStatType::Evasion:    return SaveData->RandomBonusEvasion;
 		case ET66HeroStatType::Luck:       return SaveData->RandomBonusLuck;
@@ -148,7 +148,7 @@ void UT66PowerUpSubsystem::AddRandomBonusToStat(ET66HeroStatType StatType)
 	{
 		case ET66HeroStatType::Damage:      SaveData->RandomBonusDamage++; break;
 		case ET66HeroStatType::AttackSpeed: SaveData->RandomBonusAttackSpeed++; break;
-		case ET66HeroStatType::AttackSize: SaveData->RandomBonusAttackSize++; break;
+		case ET66HeroStatType::AttackScale: SaveData->RandomBonusAttackScale++; break;
 		case ET66HeroStatType::Armor:      SaveData->RandomBonusArmor++; break;
 		case ET66HeroStatType::Evasion:    SaveData->RandomBonusEvasion++; break;
 		case ET66HeroStatType::Luck:       SaveData->RandomBonusLuck++; break;

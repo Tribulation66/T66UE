@@ -361,6 +361,36 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		return;
 	}
 
+	// Tick armor debuff timer.
+	if (ArmorDebuffSecondsRemaining > 0.f)
+	{
+		ArmorDebuffSecondsRemaining = FMath::Max(0.f, ArmorDebuffSecondsRemaining - DeltaSeconds);
+		if (ArmorDebuffSecondsRemaining <= 0.f)
+		{
+			ArmorDebuffAmount = 0.f;
+		}
+	}
+
+	// Tick confusion timer.
+	if (bIsConfused)
+	{
+		ConfusionSecondsRemaining = FMath::Max(0.f, ConfusionSecondsRemaining - DeltaSeconds);
+		if (ConfusionSecondsRemaining <= 0.f)
+		{
+			bIsConfused = false;
+		}
+		else
+		{
+			// Confused enemies wander randomly instead of chasing.
+			const FVector WanderDir = FVector(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f).GetSafeNormal();
+			if (!WanderDir.IsNearlyZero())
+			{
+				AddMovementInput(WanderDir, 0.5f);
+			}
+			return; // Skip normal AI
+		}
+	}
+
 	FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
 	ToPlayer.Z = 0.f;
 	float Len = ToPlayer.Size();
@@ -403,6 +433,11 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
 {
 	if (Damage <= 0 || CurrentHP <= 0) return false;
+
+	// Apply enemy armor (damage reduction). Debuffs temporarily lower armor.
+	const float EffectiveArmor = FMath::Clamp(Armor - ArmorDebuffAmount, 0.f, 0.95f);
+	const int32 ReducedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Damage) * (1.f - EffectiveArmor)));
+
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 	if (UWorld* World = GetWorld())
 	{
@@ -410,11 +445,11 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
 		{
 			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
 			{
-				DamageLog->RecordDamageDealt(SourceID, Damage);
+				DamageLog->RecordDamageDealt(SourceID, ReducedDamage);
 			}
 		}
 	}
-	CurrentHP = FMath::Max(0, CurrentHP - Damage);
+	CurrentHP = FMath::Max(0, CurrentHP - ReducedDamage);
 	UpdateHealthBar();
 	if (CurrentHP <= 0)
 	{
@@ -422,6 +457,23 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
 		return true;
 	}
 	return false;
+}
+
+void AT66EnemyBase::ApplyConfusion(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 10.f);
+	if (Dur <= 0.f) return;
+	bIsConfused = true;
+	ConfusionSecondsRemaining = FMath::Max(ConfusionSecondsRemaining, Dur);
+}
+
+void AT66EnemyBase::ApplyArmorDebuff(float ReductionAmount, float DurationSeconds)
+{
+	const float Amt = FMath::Clamp(ReductionAmount, 0.f, 1.f);
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 30.f);
+	if (Amt <= 0.f || Dur <= 0.f) return;
+	ArmorDebuffAmount = FMath::Max(ArmorDebuffAmount, Amt);
+	ArmorDebuffSecondsRemaining = FMath::Max(ArmorDebuffSecondsRemaining, Dur);
 }
 
 void AT66EnemyBase::UpdateHealthBar()

@@ -233,7 +233,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		{
 			case ET66HeroStatType::Damage:      return FLinearColor(0.85f, 0.2f, 0.2f, 1.f);
 			case ET66HeroStatType::AttackSpeed: return FLinearColor(0.95f, 0.5f, 0.1f, 1.f);
-			case ET66HeroStatType::AttackSize:  return FLinearColor(0.9f, 0.85f, 0.2f, 1.f);
+			case ET66HeroStatType::AttackScale:  return FLinearColor(0.9f, 0.85f, 0.2f, 1.f);
 			case ET66HeroStatType::Armor:       return FLinearColor(0.2f, 0.5f, 0.9f, 1.f);
 			case ET66HeroStatType::Evasion:     return FLinearColor(0.2f, 0.8f, 0.4f, 1.f);
 			case ET66HeroStatType::Luck:       return FLinearColor(0.7f, 0.3f, 0.9f, 1.f);
@@ -244,7 +244,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	static const TArray<ET66HeroStatType> StatTypes = {
 		ET66HeroStatType::Damage,
 		ET66HeroStatType::AttackSpeed,
-		ET66HeroStatType::AttackSize,
+		ET66HeroStatType::AttackScale,
 		ET66HeroStatType::Armor,
 		ET66HeroStatType::Evasion,
 		ET66HeroStatType::Luck
@@ -258,7 +258,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			{
 				case ET66HeroStatType::Damage:      return Loc->GetText_Stat_Damage();
 				case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-				case ET66HeroStatType::AttackSize:  return Loc->GetText_Stat_AttackSize();
+				case ET66HeroStatType::AttackScale:  return Loc->GetText_Stat_AttackScale();
 				case ET66HeroStatType::Armor:       return Loc->GetText_Stat_Armor();
 				case ET66HeroStatType::Evasion:     return Loc->GetText_Stat_Evasion();
 				case ET66HeroStatType::Luck:        return Loc->GetText_Stat_Luck();
@@ -324,7 +324,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
 			[ MakeStatPanel(ET66HeroStatType::AttackSpeed) ]
 			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[ MakeStatPanel(ET66HeroStatType::AttackSize) ]
+			[ MakeStatPanel(ET66HeroStatType::AttackScale) ]
 		]
 		// Row 2: Armor, Evasion, Luck
 		+ SVerticalBox::Slot().FillHeight(1.f)

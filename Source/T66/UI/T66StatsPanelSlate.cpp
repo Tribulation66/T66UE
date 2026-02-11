@@ -26,7 +26,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 			case 0: return Loc->GetText_Level();
 			case 1: return Loc->GetText_Stat_Damage();
 			case 2: return Loc->GetText_Stat_AttackSpeed();
-			case 3: return Loc->GetText_Stat_AttackSize();
+			case 3: return Loc->GetText_Stat_AttackScale();
 			case 4: return Loc->GetText_Stat_Armor();
 			case 5: return Loc->GetText_Stat_Evasion();
 			case 6: return Loc->GetText_Stat_Luck();
@@ -42,7 +42,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		const int32 HeroLevel = RunState->GetHeroLevel();
 		const int32 DamageStat = RunState->GetDamageStat();
 		const int32 AttackSpeedStat = RunState->GetAttackSpeedStat();
-		const int32 AttackSizeStat = RunState->GetScaleStat();
+		const int32 AttackScaleStat = RunState->GetScaleStat();
 		const int32 ArmorStat = RunState->GetArmorStat();
 		const int32 EvasionStat = RunState->GetEvasionStat();
 		const int32 LuckStat = RunState->GetLuckStat();
@@ -62,7 +62,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		AddStatLine(GetLabel(0), HeroLevel);
 		AddStatLine(GetLabel(1), DamageStat);
 		AddStatLine(GetLabel(2), AttackSpeedStat);
-		AddStatLine(GetLabel(3), AttackSizeStat);
+		AddStatLine(GetLabel(3), AttackScaleStat);
 		AddStatLine(GetLabel(4), ArmorStat);
 		AddStatLine(GetLabel(5), EvasionStat);
 		AddStatLine(GetLabel(6), LuckStat);

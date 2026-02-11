@@ -124,51 +124,91 @@ int32 UT66RunStateSubsystem::GetLuckRating0To100() const
 
 const TArray<FName>& UT66RunStateSubsystem::GetAllIdolIDs()
 {
-	// Canonical idol IDs (sprites + UI depend on these).
-	// Back-compat: GetIdolColor/tooltip code accepts some legacy IDs, but this list is the current altar roster.
+	// 24 canonical idol IDs grouped by category:
+	//   DOT (6): Curse, Lava, Poison, Decay, Bleed, Acid
+	//   Bounce (6): Electric, Ice, Sound, Shadow, Star, Rubber
+	//   AOE (6): Fire, Earth, Water, Sand, BlackHole, Storm
+	//   Pierce (6): Light, Wind, Steel, Wood, Bone, Glass
 	static const TArray<FName> Idols = {
-		FName(TEXT("Idol_Darkness")),
-		FName(TEXT("Idol_Fire")),
-		FName(TEXT("Idol_Frost")),
-		FName(TEXT("Idol_Glue")),
-		FName(TEXT("Idol_Light")),
-		FName(TEXT("Idol_Lightning")),
-		FName(TEXT("Idol_Metal")),
+		FName(TEXT("Idol_Curse")),
+		FName(TEXT("Idol_Lava")),
 		FName(TEXT("Idol_Poison")),
-		FName(TEXT("Idol_Spectral")),
+		FName(TEXT("Idol_Decay")),
+		FName(TEXT("Idol_Bleed")),
+		FName(TEXT("Idol_Acid")),
+		FName(TEXT("Idol_Electric")),
+		FName(TEXT("Idol_Ice")),
+		FName(TEXT("Idol_Sound")),
+		FName(TEXT("Idol_Shadow")),
+		FName(TEXT("Idol_Star")),
+		FName(TEXT("Idol_Rubber")),
+		FName(TEXT("Idol_Fire")),
+		FName(TEXT("Idol_Earth")),
 		FName(TEXT("Idol_Water")),
+		FName(TEXT("Idol_Sand")),
+		FName(TEXT("Idol_BlackHole")),
+		FName(TEXT("Idol_Storm")),
+		FName(TEXT("Idol_Light")),
 		FName(TEXT("Idol_Wind")),
+		FName(TEXT("Idol_Steel")),
 		FName(TEXT("Idol_Wood")),
+		FName(TEXT("Idol_Bone")),
+		FName(TEXT("Idol_Glass")),
 	};
 	return Idols;
 }
 
 FLinearColor UT66RunStateSubsystem::GetIdolColor(FName IdolID)
 {
-	// Back-compat aliases.
-	if (IdolID == FName(TEXT("Idol_Shock"))) IdolID = FName(TEXT("Idol_Lightning"));
-	if (IdolID == FName(TEXT("Idol_Silence"))) IdolID = FName(TEXT("Idol_Darkness"));
-	if (IdolID == FName(TEXT("Idol_Mark"))) IdolID = FName(TEXT("Idol_Light"));
-	if (IdolID == FName(TEXT("Idol_Pierce"))) IdolID = FName(TEXT("Idol_Metal"));
-	if (IdolID == FName(TEXT("Idol_Split"))) IdolID = FName(TEXT("Idol_Wind"));
-	if (IdolID == FName(TEXT("Idol_Knockback"))) IdolID = FName(TEXT("Idol_Wood"));
-	if (IdolID == FName(TEXT("Idol_Ricochet"))) IdolID = FName(TEXT("Idol_Water"));
-	if (IdolID == FName(TEXT("Idol_Hex"))) IdolID = FName(TEXT("Idol_Spectral"));
-	if (IdolID == FName(TEXT("Idol_Lifesteal"))) IdolID = FName(TEXT("Idol_Poison"));
+	// Back-compat aliases (legacy → closest new idol).
+	if (IdolID == FName(TEXT("Idol_Shock")))     IdolID = FName(TEXT("Idol_Electric"));
+	if (IdolID == FName(TEXT("Idol_Silence")))    IdolID = FName(TEXT("Idol_Shadow"));
+	if (IdolID == FName(TEXT("Idol_Mark")))       IdolID = FName(TEXT("Idol_Light"));
+	if (IdolID == FName(TEXT("Idol_Pierce")))     IdolID = FName(TEXT("Idol_Steel"));
+	if (IdolID == FName(TEXT("Idol_Split")))      IdolID = FName(TEXT("Idol_Wind"));
+	if (IdolID == FName(TEXT("Idol_Knockback")))  IdolID = FName(TEXT("Idol_Wood"));
+	if (IdolID == FName(TEXT("Idol_Ricochet")))   IdolID = FName(TEXT("Idol_Rubber"));
+	if (IdolID == FName(TEXT("Idol_Hex")))        IdolID = FName(TEXT("Idol_Curse"));
+	if (IdolID == FName(TEXT("Idol_Lifesteal")))  IdolID = FName(TEXT("Idol_Bleed"));
+	if (IdolID == FName(TEXT("Idol_Lightning")))  IdolID = FName(TEXT("Idol_Electric"));
+	if (IdolID == FName(TEXT("Idol_Darkness")))   IdolID = FName(TEXT("Idol_Shadow"));
+	if (IdolID == FName(TEXT("Idol_Metal")))      IdolID = FName(TEXT("Idol_Steel"));
+	if (IdolID == FName(TEXT("Idol_Spectral")))   IdolID = FName(TEXT("Idol_Curse"));
+	if (IdolID == FName(TEXT("Idol_Frost")))      IdolID = FName(TEXT("Idol_Ice"));
+	if (IdolID == FName(TEXT("Idol_Glue")))       IdolID = FName(TEXT("Idol_Decay"));
 
-	if (IdolID == FName(TEXT("Idol_Darkness"))) return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Light"))) return FLinearColor(0.92f, 0.92f, 0.98f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Lightning"))) return FLinearColor(0.70f, 0.25f, 0.95f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Metal"))) return FLinearColor(0.55f, 0.55f, 0.75f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Poison"))) return FLinearColor(0.20f, 0.85f, 0.35f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Spectral"))) return FLinearColor(0.60f, 0.25f, 0.90f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Water"))) return FLinearColor(0.20f, 0.95f, 0.95f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Wind"))) return FLinearColor(0.95f, 0.80f, 0.20f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Wood"))) return FLinearColor(0.35f, 0.65f, 0.25f, 1.f);
+	// DOT idols
+	if (IdolID == FName(TEXT("Idol_Curse")))     return FLinearColor(0.50f, 0.10f, 0.60f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Lava")))      return FLinearColor(0.95f, 0.40f, 0.05f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Poison")))    return FLinearColor(0.20f, 0.85f, 0.35f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Decay")))     return FLinearColor(0.45f, 0.40f, 0.20f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Bleed")))     return FLinearColor(0.80f, 0.10f, 0.10f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Acid")))      return FLinearColor(0.60f, 0.90f, 0.10f, 1.f);
 
-	if (IdolID == FName(TEXT("Idol_Frost"))) return FLinearColor(0.35f, 0.75f, 1.0f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Glue"))) return FLinearColor(0.20f, 0.85f, 0.35f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Fire"))) return FLinearColor(0.95f, 0.25f, 0.10f, 1.f);
+	// Bounce idols
+	if (IdolID == FName(TEXT("Idol_Electric")))  return FLinearColor(0.70f, 0.25f, 0.95f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Ice")))       return FLinearColor(0.35f, 0.75f, 1.00f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Sound")))     return FLinearColor(0.85f, 0.75f, 0.95f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Shadow")))    return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Star")))      return FLinearColor(0.95f, 0.90f, 0.50f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Rubber")))    return FLinearColor(0.90f, 0.55f, 0.30f, 1.f);
+
+	// AOE idols
+	if (IdolID == FName(TEXT("Idol_Fire")))      return FLinearColor(0.95f, 0.25f, 0.10f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Earth")))     return FLinearColor(0.55f, 0.40f, 0.25f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Water")))     return FLinearColor(0.20f, 0.60f, 0.95f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Sand")))      return FLinearColor(0.90f, 0.85f, 0.55f, 1.f);
+	if (IdolID == FName(TEXT("Idol_BlackHole"))) return FLinearColor(0.15f, 0.05f, 0.25f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Storm")))     return FLinearColor(0.40f, 0.50f, 0.70f, 1.f);
+
+	// Pierce idols
+	if (IdolID == FName(TEXT("Idol_Light")))     return FLinearColor(0.92f, 0.92f, 0.98f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Wind")))      return FLinearColor(0.70f, 0.90f, 0.80f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Steel")))     return FLinearColor(0.55f, 0.55f, 0.75f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Wood")))      return FLinearColor(0.35f, 0.65f, 0.25f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Bone")))      return FLinearColor(0.90f, 0.88f, 0.80f, 1.f);
+	if (IdolID == FName(TEXT("Idol_Glass")))     return FLinearColor(0.85f, 0.92f, 0.95f, 1.f);
+
 	return FLinearColor(0.25f, 0.25f, 0.28f, 1.f);
 }
 
@@ -380,7 +420,7 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 	HeroPerLevelGains = FT66HeroPerLevelStatGains{};
 	HeroPerLevelGains.Damage.Min = 1;      HeroPerLevelGains.Damage.Max = 2;
 	HeroPerLevelGains.AttackSpeed.Min = 1; HeroPerLevelGains.AttackSpeed.Max = 2;
-	HeroPerLevelGains.AttackSize.Min = 1;  HeroPerLevelGains.AttackSize.Max = 2;
+	HeroPerLevelGains.AttackScale.Min = 1; HeroPerLevelGains.AttackScale.Max = 2;
 	HeroPerLevelGains.Armor.Min = 1;       HeroPerLevelGains.Armor.Max = 2;
 	HeroPerLevelGains.Evasion.Min = 1;     HeroPerLevelGains.Evasion.Max = 2;
 	HeroPerLevelGains.Luck.Min = 1;        HeroPerLevelGains.Luck.Max = 2;
@@ -394,12 +434,47 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 			HeroStats = Base;
 			HeroPerLevelGains = Gains;
 		}
+
+		// Load category-specific base stats and secondary base stats from the hero DataTable.
+		FHeroData HD;
+		if (T66GI->GetHeroData(T66GI->SelectedHeroID, HD))
+		{
+			BasePierceDmg = FMath::Max(1, HD.BasePierceDmg);
+			BasePierceAtkSpd = FMath::Max(1, HD.BasePierceAtkSpd);
+			BasePierceAtkScale = FMath::Max(1, HD.BasePierceAtkScale);
+			BaseBounceDmg = FMath::Max(1, HD.BaseBounceDmg);
+			BaseBounceAtkSpd = FMath::Max(1, HD.BaseBounceAtkSpd);
+			BaseBounceAtkScale = FMath::Max(1, HD.BaseBounceAtkScale);
+			BaseAoeDmg = FMath::Max(1, HD.BaseAoeDmg);
+			BaseAoeAtkSpd = FMath::Max(1, HD.BaseAoeAtkSpd);
+			BaseAoeAtkScale = FMath::Max(1, HD.BaseAoeAtkScale);
+			BaseDotDmg = FMath::Max(1, HD.BaseDotDmg);
+			BaseDotAtkSpd = FMath::Max(1, HD.BaseDotAtkSpd);
+			BaseDotAtkScale = FMath::Max(1, HD.BaseDotAtkScale);
+
+			// Secondary base stats
+			HeroBaseCritDamage = FMath::Max(1.f, HD.BaseCritDamage);
+			HeroBaseCritChance = FMath::Clamp(HD.BaseCritChance, 0.f, 1.f);
+			HeroBaseCloseRangeDmg = FMath::Max(0.f, HD.BaseCloseRangeDmg);
+			HeroBaseLongRangeDmg = FMath::Max(0.f, HD.BaseLongRangeDmg);
+			HeroBaseTaunt = FMath::Max(0.f, HD.BaseTaunt);
+			HeroBaseReflectDmg = FMath::Max(0.f, HD.BaseReflectDmg);
+			HeroBaseHpRegen = FMath::Max(0.f, HD.BaseHpRegen);
+			HeroBaseCrushChance = FMath::Clamp(HD.BaseCrushChance, 0.f, 1.f);
+			HeroBaseInvisChance = FMath::Clamp(HD.BaseInvisChance, 0.f, 1.f);
+			HeroBaseCounterAttack = FMath::Max(0.f, HD.BaseCounterAttack);
+			HeroBaseLifeSteal = FMath::Clamp(HD.BaseLifeSteal, 0.f, 1.f);
+			HeroBaseAssassinateChance = FMath::Clamp(HD.BaseAssassinateChance, 0.f, 1.f);
+			HeroBaseCheatChance = FMath::Clamp(HD.BaseCheatChance, 0.f, 1.f);
+			HeroBaseStealChance = FMath::Clamp(HD.BaseStealChance, 0.f, 1.f);
+			HeroBaseAttackRange = FMath::Max(100.f, HD.BaseAttackRange);
+		}
 	}
 
 	// Enforce sane minimums for gameplay safety.
 	HeroStats.Damage = FMath::Clamp(HeroStats.Damage, 1, 9999);
 	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed, 1, 9999);
-	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize, 1, 9999);
+	HeroStats.AttackScale = FMath::Clamp(HeroStats.AttackScale, 1, 9999);
 	HeroStats.Armor = FMath::Clamp(HeroStats.Armor, 1, 9999);
 	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion, 1, 9999);
 	HeroStats.Luck = FMath::Clamp(HeroStats.Luck, 1, 9999);
@@ -468,7 +543,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 	// Other foundational stats roll within the hero's per-level gain ranges.
 	HeroStats.Damage = FMath::Clamp(HeroStats.Damage + RollGainBiased(HeroPerLevelGains.Damage, FName(TEXT("LevelUp_DamageGain"))), 1, 9999);
 	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed + RollGainBiased(HeroPerLevelGains.AttackSpeed, FName(TEXT("LevelUp_AttackSpeedGain"))), 1, 9999);
-	HeroStats.AttackSize = FMath::Clamp(HeroStats.AttackSize + RollGainBiased(HeroPerLevelGains.AttackSize, FName(TEXT("LevelUp_AttackSizeGain"))), 1, 9999);
+	HeroStats.AttackScale = FMath::Clamp(HeroStats.AttackScale + RollGainBiased(HeroPerLevelGains.AttackScale, FName(TEXT("LevelUp_AttackScaleGain"))), 1, 9999);
 	HeroStats.Armor = FMath::Clamp(HeroStats.Armor + RollGainBiased(HeroPerLevelGains.Armor, FName(TEXT("LevelUp_ArmorGain"))), 1, 9999);
 	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion + RollGainBiased(HeroPerLevelGains.Evasion, FName(TEXT("LevelUp_EvasionGain"))), 1, 9999);
 	HeroStats.Luck = FMath::Clamp(HeroStats.Luck + RollGainBiased(HeroPerLevelGains.Luck, FName(TEXT("LevelUp_LuckGain"))), 1, 9999);
@@ -496,6 +571,144 @@ void UT66RunStateSubsystem::InitializeHeroStatsForNewRun()
 	}
 }
 
+// ============================================
+// Category-specific stat getters (base from hero DataTable + item bonuses)
+// ============================================
+
+int32 UT66RunStateSubsystem::GetPierceDmgStat() const      { return FMath::Max(1, BasePierceDmg + FMath::Max(0, ItemStatBonuses.PierceDmg)); }
+int32 UT66RunStateSubsystem::GetPierceAtkSpdStat() const   { return FMath::Max(1, BasePierceAtkSpd + FMath::Max(0, ItemStatBonuses.PierceAtkSpd)); }
+int32 UT66RunStateSubsystem::GetPierceAtkScaleStat() const  { return FMath::Max(1, BasePierceAtkScale + FMath::Max(0, ItemStatBonuses.PierceAtkScale)); }
+
+int32 UT66RunStateSubsystem::GetBounceDmgStat() const      { return FMath::Max(1, BaseBounceDmg + FMath::Max(0, ItemStatBonuses.BounceDmg)); }
+int32 UT66RunStateSubsystem::GetBounceAtkSpdStat() const   { return FMath::Max(1, BaseBounceAtkSpd + FMath::Max(0, ItemStatBonuses.BounceAtkSpd)); }
+int32 UT66RunStateSubsystem::GetBounceAtkScaleStat() const  { return FMath::Max(1, BaseBounceAtkScale + FMath::Max(0, ItemStatBonuses.BounceAtkScale)); }
+
+int32 UT66RunStateSubsystem::GetAoeDmgStat() const         { return FMath::Max(1, BaseAoeDmg + FMath::Max(0, ItemStatBonuses.AoeDmg)); }
+int32 UT66RunStateSubsystem::GetAoeAtkSpdStat() const      { return FMath::Max(1, BaseAoeAtkSpd + FMath::Max(0, ItemStatBonuses.AoeAtkSpd)); }
+int32 UT66RunStateSubsystem::GetAoeAtkScaleStat() const     { return FMath::Max(1, BaseAoeAtkScale + FMath::Max(0, ItemStatBonuses.AoeAtkScale)); }
+
+int32 UT66RunStateSubsystem::GetDotDmgStat() const         { return FMath::Max(1, BaseDotDmg + FMath::Max(0, ItemStatBonuses.DotDmg)); }
+int32 UT66RunStateSubsystem::GetDotAtkSpdStat() const      { return FMath::Max(1, BaseDotAtkSpd + FMath::Max(0, ItemStatBonuses.DotAtkSpd)); }
+int32 UT66RunStateSubsystem::GetDotAtkScaleStat() const     { return FMath::Max(1, BaseDotAtkScale + FMath::Max(0, ItemStatBonuses.DotAtkScale)); }
+
+// ============================================
+// Secondary stat getters (hero base * accumulated item Line 2 multipliers)
+// ============================================
+
+float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatType) const
+{
+	const float* Mult = SecondaryMultipliers.Find(StatType);
+	const float M = (Mult && *Mult > 0.f) ? *Mult : 1.f;
+
+	switch (StatType)
+	{
+	case ET66SecondaryStatType::AoeDamage:       return static_cast<float>(BaseAoeDmg) * M;
+	case ET66SecondaryStatType::BounceDamage:     return static_cast<float>(BaseBounceDmg) * M;
+	case ET66SecondaryStatType::PierceDamage:     return static_cast<float>(BasePierceDmg) * M;
+	case ET66SecondaryStatType::DotDamage:        return static_cast<float>(BaseDotDmg) * M;
+	case ET66SecondaryStatType::AoeSpeed:         return static_cast<float>(BaseAoeAtkSpd) * M;
+	case ET66SecondaryStatType::BounceSpeed:      return static_cast<float>(BaseBounceAtkSpd) * M;
+	case ET66SecondaryStatType::PierceSpeed:      return static_cast<float>(BasePierceAtkSpd) * M;
+	case ET66SecondaryStatType::DotSpeed:         return static_cast<float>(BaseDotAtkSpd) * M;
+	case ET66SecondaryStatType::AoeScale:         return static_cast<float>(BaseAoeAtkScale) * M;
+	case ET66SecondaryStatType::BounceScale:      return static_cast<float>(BaseBounceAtkScale) * M;
+	case ET66SecondaryStatType::PierceScale:      return static_cast<float>(BasePierceAtkScale) * M;
+	case ET66SecondaryStatType::DotScale:         return static_cast<float>(BaseDotAtkScale) * M;
+	case ET66SecondaryStatType::CritDamage:       return HeroBaseCritDamage * M;
+	case ET66SecondaryStatType::CritChance:       return FMath::Clamp(HeroBaseCritChance * M, 0.f, 1.f);
+	case ET66SecondaryStatType::CloseRangeDamage: return HeroBaseCloseRangeDmg * M;
+	case ET66SecondaryStatType::LongRangeDamage:  return HeroBaseLongRangeDmg * M;
+	case ET66SecondaryStatType::AttackRange:      return HeroBaseAttackRange * M;
+	case ET66SecondaryStatType::Taunt:            return HeroBaseTaunt * M;
+	case ET66SecondaryStatType::ReflectDamage:    return HeroBaseReflectDmg * M;
+	case ET66SecondaryStatType::HpRegen:          return HeroBaseHpRegen * M;
+	case ET66SecondaryStatType::Crush:            return FMath::Clamp(HeroBaseCrushChance * M, 0.f, 1.f);
+	case ET66SecondaryStatType::Invisibility:     return FMath::Clamp(HeroBaseInvisChance * M, 0.f, 1.f);
+	case ET66SecondaryStatType::CounterAttack:    return HeroBaseCounterAttack * M;
+	case ET66SecondaryStatType::LifeSteal:        return FMath::Clamp(HeroBaseLifeSteal * M, 0.f, 1.f);
+	case ET66SecondaryStatType::Assassinate:      return FMath::Clamp(HeroBaseAssassinateChance * M, 0.f, 1.f);
+	case ET66SecondaryStatType::SpinWheel:        return 1.f * M;
+	case ET66SecondaryStatType::Goblin:           return 1.f * M;
+	case ET66SecondaryStatType::Leprechaun:       return 1.f * M;
+	case ET66SecondaryStatType::TreasureChest:    return 1.f * M;
+	case ET66SecondaryStatType::Fountain:         return 1.f * M;
+	case ET66SecondaryStatType::Cheating:         return FMath::Clamp(HeroBaseCheatChance * M, 0.f, 1.f);
+	case ET66SecondaryStatType::Stealing:         return FMath::Clamp(HeroBaseStealChance * M, 0.f, 1.f);
+	case ET66SecondaryStatType::MovementSpeed:    return 1.f * M;
+	default: return 1.f;
+	}
+}
+
+float UT66RunStateSubsystem::GetAggroMultiplier() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::Taunt);
+}
+
+float UT66RunStateSubsystem::GetHpRegenPerSecond() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::HpRegen);
+}
+
+float UT66RunStateSubsystem::GetCritChance01() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::CritChance);
+}
+
+float UT66RunStateSubsystem::GetCritDamageMultiplier() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::CritDamage);
+}
+
+float UT66RunStateSubsystem::GetLifeStealFraction() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::LifeSteal);
+}
+
+float UT66RunStateSubsystem::GetReflectDamageFraction() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::ReflectDamage);
+}
+
+float UT66RunStateSubsystem::GetCrushChance01() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::Crush);
+}
+
+float UT66RunStateSubsystem::GetAssassinateChance01() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::Assassinate);
+}
+
+float UT66RunStateSubsystem::GetInvisibilityChance01() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::Invisibility);
+}
+
+float UT66RunStateSubsystem::GetCounterAttackFraction() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::CounterAttack);
+}
+
+float UT66RunStateSubsystem::GetCloseRangeThreshold() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::AttackRange) * 0.10f;
+}
+
+float UT66RunStateSubsystem::GetLongRangeThreshold() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::AttackRange) * 0.90f;
+}
+
+float UT66RunStateSubsystem::GetCloseRangeDamageMultiplier() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::CloseRangeDamage);
+}
+
+float UT66RunStateSubsystem::GetLongRangeDamageMultiplier() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::LongRangeDamage);
+}
+
 float UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier() const
 {
 	// Mapping is driven by the foundational Speed stat (not shown in the HUD stat panel).
@@ -518,7 +731,7 @@ float UT66RunStateSubsystem::GetHeroAttackSpeedMultiplier() const
 
 float UT66RunStateSubsystem::GetHeroScaleMultiplier() const
 {
-	const int32 Sz = GetScaleStat(); // Attack Size
+	const int32 Sz = GetScaleStat();
 	return 1.f + (static_cast<float>(Sz - 1) * 0.008f);
 }
 
@@ -565,6 +778,7 @@ void UT66RunStateSubsystem::ResetVendorForStage()
 	VendorAngerGold = 0;
 	VendorStockStage = 0;
 	VendorStockItemIDs.Reset();
+	VendorStockSlots.Reset();
 	VendorStockSold.Reset();
 	bVendorBoughtSomethingThisStage = false;
 	VendorChanged.Broadcast();
@@ -692,79 +906,65 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	VendorStockStage = Stage;
 	VendorStockItemIDs.Reset();
 	VendorStockSold.Reset();
+	VendorStockSlots.Reset();
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	if (!GI)
 	{
 		// Fallback: keep deterministic placeholder behavior.
-		VendorStockItemIDs = { FName(TEXT("Item_Black_01")), FName(TEXT("Item_Red_01")), FName(TEXT("Item_Yellow_01")), FName(TEXT("Item_White_01")) };
-		VendorStockSold.Init(false, VendorStockItemIDs.Num());
+		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::Black, 2));
+		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_CritDamage")), ET66ItemRarity::Red, 5));
+		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_LifeSteal")), ET66ItemRarity::Yellow, 8));
+		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_MovementSpeed")), ET66ItemRarity::White, 25));
+		for (const FT66InventorySlot& S : VendorStockSlots) VendorStockItemIDs.Add(S.ItemTemplateID);
+		VendorStockSold.Init(false, VendorStockSlots.Num());
 		VendorChanged.Broadcast();
 		return;
 	}
 
+	// Build pool of all template IDs from the Items DataTable.
 	UDataTable* ItemsDT = GI->GetItemsDataTable();
-	TArray<FName> PoolBlack;
-	TArray<FName> PoolRed;
-	TArray<FName> PoolYellow;
-
-		if (ItemsDT)
+	TArray<FName> TemplatePool;
+	if (ItemsDT)
 	{
-		const TArray<FName> RowNames = ItemsDT->GetRowNames();
-		for (const FName& ItemID : RowNames)
-		{
-			if (ItemID.IsNone()) continue;
-			FItemData D;
-			if (!GI->GetItemData(ItemID, D)) continue;
-			if (D.BuyValueGold <= 0) continue;
-
-				// Canonical pool: items can appear in shop and in loot bags.
-			switch (D.ItemRarity)
-			{
-				case ET66ItemRarity::Black:  PoolBlack.Add(ItemID); break;
-				case ET66ItemRarity::Red:    PoolRed.Add(ItemID); break;
-				case ET66ItemRarity::Yellow: PoolYellow.Add(ItemID); break;
-					case ET66ItemRarity::White:  PoolYellow.Add(ItemID); break; // v0: allow whites in the shop pool by treating them as "rare slot" candidates
-				default: break;
-			}
-		}
+		TemplatePool = ItemsDT->GetRowNames();
 	}
-
-	// Fallback if DT missing or pools empty.
-	if (PoolBlack.Num() == 0) PoolBlack = { FName(TEXT("Item_Black_01")) };
-	if (PoolRed.Num() == 0) PoolRed = { FName(TEXT("Item_Red_01")) };
-	if (PoolYellow.Num() == 0) PoolYellow = { FName(TEXT("Item_Yellow_01")) };
+	if (TemplatePool.Num() == 0)
+	{
+		TemplatePool = { FName(TEXT("Item_AoeDamage")), FName(TEXT("Item_CritDamage")), FName(TEXT("Item_LifeSteal")) };
+	}
 
 	// Seed is stable per stage, but changes per reroll so the stock can refresh.
 	FRandomStream Rng(Stage * 777 + 13 + VendorStockRerollCounter * 10007);
-	auto PickUnique = [&](const TArray<FName>& Pool) -> FName
+
+	// Rarities for the 4 stock slots: 2 black, 1 red, 1 yellow.
+	const ET66ItemRarity SlotRarities[] = { ET66ItemRarity::Black, ET66ItemRarity::Black, ET66ItemRarity::Red, ET66ItemRarity::Yellow };
+
+	for (int32 i = 0; i < 4; ++i)
 	{
-		if (Pool.Num() == 0) return NAME_None;
+		// Pick a unique template.
+		FName Chosen = NAME_None;
 		for (int32 Try = 0; Try < 40; ++Try)
 		{
-			const FName C = Pool[Rng.RandRange(0, Pool.Num() - 1)];
+			const FName C = TemplatePool[Rng.RandRange(0, TemplatePool.Num() - 1)];
 			if (!C.IsNone() && !VendorStockItemIDs.Contains(C))
 			{
-				return C;
+				Chosen = C;
+				break;
 			}
 		}
-		return Pool[0];
-	};
+		if (Chosen.IsNone()) Chosen = TemplatePool[0];
 
-	// Stock: 4 items (2 black, 1 red, 1 yellow)
-	VendorStockItemIDs.Add(PickUnique(PoolBlack));
-	VendorStockItemIDs.Add(PickUnique(PoolBlack));
-	VendorStockItemIDs.Add(PickUnique(PoolRed));
-	VendorStockItemIDs.Add(PickUnique(PoolYellow));
+		const ET66ItemRarity Rar = SlotRarities[i];
+		int32 RollMin = 1, RollMax = 3;
+		FItemData::GetLine1RollRange(Rar, RollMin, RollMax);
+		const int32 Rolled = Rng.RandRange(RollMin, RollMax);
 
-	for (int32 i = VendorStockItemIDs.Num() - 1; i >= 0; --i)
-	{
-		if (VendorStockItemIDs[i].IsNone())
-		{
-			VendorStockItemIDs.RemoveAt(i);
-		}
+		VendorStockSlots.Add(FT66InventorySlot(Chosen, Rar, Rolled));
+		VendorStockItemIDs.Add(Chosen);
 	}
-	VendorStockSold.Init(false, VendorStockItemIDs.Num());
+
+	VendorStockSold.Init(false, VendorStockSlots.Num());
 	VendorChanged.Broadcast();
 }
 
@@ -795,20 +995,22 @@ bool UT66RunStateSubsystem::IsVendorStockSlotSold(int32 Index) const
 bool UT66RunStateSubsystem::TryBuyVendorStockSlot(int32 Index)
 {
 	EnsureVendorStockForCurrentStage();
-	if (Index < 0 || Index >= VendorStockItemIDs.Num()) return false;
+	if (Index < 0 || Index >= VendorStockSlots.Num()) return false;
 	if (IsVendorStockSlotSold(Index)) return false;
 	if (!HasInventorySpace()) return false;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	FItemData D;
-	if (!GI || !GI->GetItemData(VendorStockItemIDs[Index], D)) return false;
-	if (D.BuyValueGold <= 0) return false;
-	if (!TrySpendGold(D.BuyValueGold)) return false;
+	const FT66InventorySlot& Slot = VendorStockSlots[Index];
+	if (!GI || !GI->GetItemData(Slot.ItemTemplateID, D)) return false;
+	const int32 BuyPrice = D.GetBuyGoldForRarity(Slot.Rarity);
+	if (BuyPrice <= 0) return false;
+	if (!TrySpendGold(BuyPrice)) return false;
 
-	AddItem(VendorStockItemIDs[Index]);
+	AddItemSlot(Slot);
 	VendorStockSold[Index] = true;
 	bVendorBoughtSomethingThisStage = true;
-	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("VendorPurchase=%s"), *VendorStockItemIDs[Index].ToString()));
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("VendorPurchase=%s"), *Slot.ItemTemplateID.ToString()));
 	VendorChanged.Broadcast();
 	return true;
 }
@@ -816,13 +1018,15 @@ bool UT66RunStateSubsystem::TryBuyVendorStockSlot(int32 Index)
 bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess)
 {
 	EnsureVendorStockForCurrentStage();
-	if (Index < 0 || Index >= VendorStockItemIDs.Num()) return false;
+	if (Index < 0 || Index >= VendorStockSlots.Num()) return false;
 	if (IsVendorStockSlotSold(Index)) return false;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	FItemData D;
-	if (!GI || !GI->GetItemData(VendorStockItemIDs[Index], D)) return false;
-	if (D.BuyValueGold <= 0) return false;
+	const FT66InventorySlot& StealSlot = VendorStockSlots[Index];
+	if (!GI || !GI->GetItemData(StealSlot.ItemTemplateID, D)) return false;
+	const int32 BuyPrice = D.GetBuyGoldForRarity(StealSlot.Rarity);
+	if (BuyPrice <= 0) return false;
 
 	// Determine success via central RNG. Timing window improves odds but does not guarantee success.
 	const UT66RngTuningConfig* Tuning = nullptr;
@@ -874,16 +1078,16 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 	bool bGranted = false;
 	if (LastVendorStealOutcome == ET66VendorStealOutcome::Success)
 	{
-		AddItem(VendorStockItemIDs[Index]);
+		AddItemSlot(StealSlot);
 		VendorStockSold[Index] = true;
-		AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("VendorSteal=%s"), *VendorStockItemIDs[Index].ToString()));
+		AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("VendorSteal=%s"), *StealSlot.ItemTemplateID.ToString()));
 		bGranted = true;
 		// Success: no anger increase.
 	}
 	else
 	{
 		// Failure: anger increases and the item is not granted.
-		VendorAngerGold = FMath::Clamp(VendorAngerGold + D.BuyValueGold, 0, 9999999);
+		VendorAngerGold = FMath::Clamp(VendorAngerGold + BuyPrice, 0, 9999999);
 	}
 
 	// Luck Rating tracking (quantity): vendor steal success means item granted with no anger increase.
@@ -1167,24 +1371,56 @@ int32 UT66RunStateSubsystem::PayDebt(int32 Amount)
 	return Pay;
 }
 
+TArray<FName> UT66RunStateSubsystem::GetInventory() const
+{
+	TArray<FName> Result;
+	Result.Reserve(InventorySlots.Num());
+	for (const FT66InventorySlot& Slot : InventorySlots)
+	{
+		Result.Add(Slot.ItemTemplateID);
+	}
+	return Result;
+}
+
 void UT66RunStateSubsystem::AddItem(FName ItemID)
 {
 	if (ItemID.IsNone()) return;
-	if (Inventory.Num() >= MaxInventorySlots)
+	if (InventorySlots.Num() >= MaxInventorySlots)
 	{
 		AddLogEntry(TEXT("Inventory full."));
 		LogAdded.Broadcast();
 		return;
 	}
-	Inventory.Add(ItemID);
+
+	// Auto-generate rarity and rolled value (default: Black rarity for legacy compat).
+	ET66ItemRarity Rarity = ET66ItemRarity::Black;
+	int32 RolledMin = 1, RolledMax = 3;
+	FItemData::GetLine1RollRange(Rarity, RolledMin, RolledMax);
+	FRandomStream Local(FPlatformTime::Cycles());
+	const int32 RolledValue = Local.RandRange(RolledMin, RolledMax);
+
+	FT66InventorySlot Slot(ItemID, Rarity, RolledValue);
+	AddItemSlot(Slot);
+}
+
+void UT66RunStateSubsystem::AddItemSlot(const FT66InventorySlot& Slot)
+{
+	if (!Slot.IsValid()) return;
+	if (InventorySlots.Num() >= MaxInventorySlots)
+	{
+		AddLogEntry(TEXT("Inventory full."));
+		LogAdded.Broadcast();
+		return;
+	}
+	InventorySlots.Add(Slot);
 	RecomputeItemDerivedStats();
-	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=LootBag"), *ItemID.ToString()));
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=LootBag"), *Slot.ItemTemplateID.ToString()));
 	// Lab unlock: mark item as unlocked for The Lab (any run type including Lab).
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
-			Achieve->AddLabUnlockedItem(ItemID);
+			Achieve->AddLabUnlockedItem(Slot.ItemTemplateID);
 		}
 	}
 	InventoryChanged.Broadcast();
@@ -1193,7 +1429,7 @@ void UT66RunStateSubsystem::AddItem(FName ItemID)
 
 void UT66RunStateSubsystem::ClearInventory()
 {
-	Inventory.Empty();
+	InventorySlots.Empty();
 	RecomputeItemDerivedStats();
 	InventoryChanged.Broadcast();
 }
@@ -1242,56 +1478,29 @@ void UT66RunStateSubsystem::KillPlayer()
 
 bool UT66RunStateSubsystem::SellFirstItem()
 {
-	if (Inventory.Num() == 0) return false;
-
-	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
-	if (!GI) return false;
-
-	FName ItemID = Inventory[0];
-	FItemData ItemData;
-	if (!GI->GetItemData(ItemID, ItemData))
-	{
-		Inventory.RemoveAt(0);
-		RecomputeItemDerivedStats();
-		InventoryChanged.Broadcast();
-		AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=unknown,Source=Vendor,ItemID=%s"), *ItemID.ToString()));
-		LogAdded.Broadcast();
-		return true;
-	}
-
-	CurrentGold += ItemData.SellValueGold;
-	Inventory.RemoveAt(0);
-	RecomputeItemDerivedStats();
-	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Vendor,ItemID=%s"), ItemData.SellValueGold, *ItemID.ToString()));
-	GoldChanged.Broadcast();
-	InventoryChanged.Broadcast();
-	LogAdded.Broadcast();
-	return true;
+	if (InventorySlots.Num() == 0) return false;
+	return SellInventoryItemAt(0);
 }
 
 bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 {
-	if (InventoryIndex < 0 || InventoryIndex >= Inventory.Num()) return false;
+	if (InventoryIndex < 0 || InventoryIndex >= InventorySlots.Num()) return false;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	if (!GI) return false;
 
-	const FName ItemID = Inventory[InventoryIndex];
+	const FT66InventorySlot Slot = InventorySlots[InventoryIndex];
 	FItemData ItemData;
-	if (!GI->GetItemData(ItemID, ItemData))
+	int32 SellGold = 0;
+	if (GI->GetItemData(Slot.ItemTemplateID, ItemData))
 	{
-		Inventory.RemoveAt(InventoryIndex);
-		RecomputeItemDerivedStats();
-		InventoryChanged.Broadcast();
-		AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=unknown,Source=Vendor,ItemID=%s"), *ItemID.ToString()));
-		LogAdded.Broadcast();
-		return true;
+		SellGold = ItemData.GetSellGoldForRarity(Slot.Rarity);
 	}
 
-	CurrentGold += ItemData.SellValueGold;
-	Inventory.RemoveAt(InventoryIndex);
+	CurrentGold += SellGold;
+	InventorySlots.RemoveAt(InventoryIndex);
 	RecomputeItemDerivedStats();
-	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Vendor,ItemID=%s"), ItemData.SellValueGold, *ItemID.ToString()));
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Vendor,ItemID=%s"), SellGold, *Slot.ItemTemplateID.ToString()));
 	GoldChanged.Broadcast();
 	InventoryChanged.Broadcast();
 	LogAdded.Broadcast();
@@ -1300,12 +1509,8 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 
 void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 {
-	// v1 items: a single "main stat line" that adds flat points to one foundational stat (excluding Speed).
-	// (Secondary/tertiary lines will be added later.)
-
+	// Reset all accumulators.
 	ItemStatBonuses = FT66HeroStatBonuses{};
-
-	// Legacy v0 item tuning is now ignored for gameplay. Keep values stable/safe.
 	ItemPowerGivenPercent = 0.f;
 	BonusDamagePercent = 0.f;
 	BonusAttackSpeedPercent = 0.f;
@@ -1318,80 +1523,52 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 	ItemArmorBonus01 = 0.f;
 	ItemEvasionBonus01 = 0.f;
 	ItemBonusLuckFlat = 0;
+	SecondaryMultipliers.Reset();
 
-	auto AddBonus = [&](ET66HeroStatType Type, int32 Delta)
+	auto AddPrimaryBonus = [&](ET66HeroStatType Type, int32 Delta)
 	{
 		const int32 V = FMath::Clamp(Delta, 0, 9999);
 		if (V <= 0) return;
 		switch (Type)
 		{
 			case ET66HeroStatType::Damage:      ItemStatBonuses.Damage += V; break;
-			case ET66HeroStatType::AttackSpeed: ItemStatBonuses.AttackSpeed += V; break;
-			case ET66HeroStatType::AttackSize:  ItemStatBonuses.AttackSize += V; break;
-			case ET66HeroStatType::Armor:       ItemStatBonuses.Armor += V; break;
-			case ET66HeroStatType::Evasion:     ItemStatBonuses.Evasion += V; break;
-			case ET66HeroStatType::Luck:        ItemStatBonuses.Luck += V; break;
+			case ET66HeroStatType::AttackSpeed:  ItemStatBonuses.AttackSpeed += V; break;
+			case ET66HeroStatType::AttackScale:  ItemStatBonuses.AttackScale += V; break;
+			case ET66HeroStatType::Armor:        ItemStatBonuses.Armor += V; break;
+			case ET66HeroStatType::Evasion:      ItemStatBonuses.Evasion += V; break;
+			case ET66HeroStatType::Luck:         ItemStatBonuses.Luck += V; break;
+			case ET66HeroStatType::Speed:        HeroStats.Speed = FMath::Clamp(HeroStats.Speed + V, 1, 9999); break;
 			default: break;
 		}
 	};
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
-	for (const FName& ItemID : Inventory)
+	for (const FT66InventorySlot& Slot : InventorySlots)
 	{
-		if (ItemID.IsNone()) continue;
+		if (!Slot.IsValid()) continue;
 
 		FItemData D;
-		const bool bHasRow = (GI && GI->GetItemData(ItemID, D));
+		const bool bHasRow = (GI && GI->GetItemData(Slot.ItemTemplateID, D));
+		if (!bHasRow) continue;
 
-		ET66HeroStatType StatType = bHasRow ? D.MainStatType : ET66HeroStatType::Damage;
-		int32 StatValue = bHasRow ? D.MainStatValue : 0;
+		// Line 1: Additive flat bonus to primary stat.
+		AddPrimaryBonus(D.PrimaryStatType, Slot.Line1RolledValue);
 
-		// If the DT row hasn't been updated yet, derive a reasonable single-stat bonus from the old effect fields.
-		if (bHasRow && StatValue == 0)
+		// Line 2: Multiplicative secondary stat bonus.
+		// Multiple items with the same secondary type stack multiplicatively.
+		if (D.SecondaryStatType != ET66SecondaryStatType::None)
 		{
-			switch (D.EffectType)
+			const float Mult = Slot.GetLine2Multiplier();
+			float& Accum = SecondaryMultipliers.FindOrAdd(D.SecondaryStatType);
+			if (Accum == 0.f)
 			{
-				case ET66ItemEffectType::BonusDamagePct:
-					StatType = ET66HeroStatType::Damage;
-					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
-					break;
-				case ET66ItemEffectType::BonusAttackSpeedPct:
-					StatType = ET66HeroStatType::AttackSpeed;
-					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
-					break;
-				case ET66ItemEffectType::BonusArmorPctPoints:
-					StatType = ET66HeroStatType::Armor;
-					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f);
-					break;
-				case ET66ItemEffectType::BonusEvasionPctPoints:
-					StatType = ET66HeroStatType::Evasion;
-					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f);
-					break;
-				case ET66ItemEffectType::BonusLuckFlat:
-					StatType = ET66HeroStatType::Luck;
-					StatValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude));
-					break;
-				// Speed is not an item stat; map mobility effects to Evasion as a temporary stand-in.
-				case ET66ItemEffectType::BonusMoveSpeedPct:
-				case ET66ItemEffectType::DashCooldownReductionPct:
-					StatType = ET66HeroStatType::Evasion;
-					StatValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
-					break;
-				default:
-					break;
+				Accum = Mult; // First item of this type
+			}
+			else
+			{
+				Accum *= Mult; // Stack multiplicatively
 			}
 		}
-
-		// Safe fallback if row is missing entirely.
-		if (!bHasRow && StatValue == 0)
-		{
-			if (ItemID == TEXT("Item_Black_01")) { StatType = ET66HeroStatType::Damage; StatValue = 2; }
-			else if (ItemID == TEXT("Item_Red_01")) { StatType = ET66HeroStatType::AttackSpeed; StatValue = 2; }
-			else if (ItemID == TEXT("Item_Yellow_01")) { StatType = ET66HeroStatType::Evasion; StatValue = 2; }
-			else if (ItemID == TEXT("Item_White_01")) { StatType = ET66HeroStatType::Luck; StatValue = 2; }
-		}
-
-		AddBonus(StatType, StatValue);
 	}
 }
 
@@ -1466,7 +1643,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	GamblerAnger01 = 0.f;
 	ResetVendorForStage();
 	OwedBossIDs.Empty();
-	Inventory.Empty();
+	InventorySlots.Empty();
 	RecomputeItemDerivedStats();
 	EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
 	EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);

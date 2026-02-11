@@ -9,7 +9,10 @@
 class UStaticMeshComponent;
 class UStaticMesh;
 
-/** Cash Truck: grants gold (rarity-scaled) or spawns a Mimic truck enemy. */
+/**
+ * Treasure Chest (formerly "Cash Truck"): grants gold (rarity-scaled) or spawns a Mimic.
+ * Canonical in-game name: "Chest". Class alias: AT66ChestInteractable.
+ */
 UCLASS(Blueprintable)
 class T66_API AT66CashTruckInteractable : public AT66WorldInteractableBase
 {
@@ -39,7 +42,13 @@ public:
 
 	virtual bool Interact(APlayerController* PC) override;
 
+	/** Luck multiplier from items (multiplies spawn quantity/rarity for chests). */
+	float GetLuckChestMultiplier() const;
+
 protected:
 	virtual void ApplyRarityVisuals() override;
 };
+
+/** Canonical alias: use AT66ChestInteractable in new code. */
+using AT66ChestInteractable = AT66CashTruckInteractable;
 

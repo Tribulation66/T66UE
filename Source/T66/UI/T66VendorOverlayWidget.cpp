@@ -22,6 +22,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Images/SImage.h"
@@ -158,13 +159,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	{
 		ItemIconBrushes[i] = MakeShared<FSlateBrush>();
 		ItemIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		ItemIconBrushes[i]->ImageSize = FVector2D(64.f, 64.f);
+		ItemIconBrushes[i]->ImageSize = FVector2D(48.f, 48.f);
 	}
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
 	{
 		InventorySlotIconBrushes[i] = MakeShared<FSlateBrush>();
 		InventorySlotIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		InventorySlotIconBrushes[i]->ImageSize = FVector2D(148.f, 148.f);
+		InventorySlotIconBrushes[i]->ImageSize = FVector2D(160.f, 160.f);
 	}
 
 	TSharedRef<SUniformGridPanel> ShopGrid = SNew(SUniformGridPanel)
@@ -191,8 +192,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i),
 				ET66ButtonType::Primary)
-			.SetMinWidth(260.f)
-			.SetPadding(FMargin(12.f, 10.f))
+			.SetMinWidth(200.f)
+			.SetPadding(FMargin(10.f, 8.f))
 			.SetContent(
 				SAssignNew(BuyButtonTexts[i], STextBlock)
 				.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
@@ -207,8 +208,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i),
 				ET66ButtonType::Danger)
-			.SetMinWidth(260.f)
-			.SetPadding(FMargin(12.f, 10.f))
+			.SetMinWidth(200.f)
+			.SetPadding(FMargin(10.f, 8.f))
 			.SetFontSize(14)
 		);
 		StealButtons[i] = StealBtnWidget;
@@ -216,8 +217,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		ShopGrid->AddSlot(Col, Row)
 		[
 			SNew(SBox)
-			.MinDesiredWidth(400.f)
-			.MinDesiredHeight(220.f)
+			.MinDesiredWidth(320.f)
+			.MinDesiredHeight(260.f)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -228,8 +229,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(64.f)
-								.HeightOverride(64.f)
+								.WidthOverride(48.f)
+								.HeightOverride(48.f)
 								[
 									SAssignNew(ItemIconImages[i], SImage)
 									.Image(ItemIconBrushes[i].Get())
@@ -249,15 +250,15 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								.TextStyle(&TextHeading)
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+							[
+								SAssignNew(ItemDescTexts[i], STextBlock)
+								.Text(FText::GetEmpty())
+								.TextStyle(&TextBody)
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+								.AutoWrapText(true)
+							]
 						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
-					[
-						SAssignNew(ItemDescTexts[i], STextBlock)
-						.Text(FText::GetEmpty())
-						.TextStyle(&TextBody)
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						.AutoWrapText(true)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
@@ -432,12 +433,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(12.f, 10.f)),
+					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(0.f)),
 					&InventorySlotBorders[Inv])
 			)
 		);
 		InventorySlotButtons[Inv] = SlotBtn;
-		InventoryGrid->AddSlot(Inv, 0)[SlotBtn];
+		InventoryGrid->AddSlot(Inv, 0)
+		[
+			SNew(SBox)
+			.WidthOverride(160.f)
+			.HeightOverride(160.f)
+			[
+				SlotBtn
+			]
+		];
 	}
 
 	// Pre-create sell button (needs member reference for later SetEnabled).
@@ -680,13 +689,21 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
-						InventoryGrid
+						SNew(SScrollBox)
+						.Orientation(Orient_Horizontal)
+						.ScrollBarVisibility(EVisibility::Visible)
+						+ SScrollBox::Slot()
+						[
+							InventoryGrid
+						]
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
 					[
-						// Sell details for selected item
+						// Sell details for selected item (sized to match inventory slot: 160x160)
 						SAssignNew(SellPanelContainer, SBox)
-								.Visibility(EVisibility::Visible)
+						.WidthOverride(160.f)
+						.HeightOverride(160.f)
+						.Visibility(EVisibility::Visible)
 						[
 							FT66Style::MakePanel(
 								SNew(SVerticalBox)
@@ -899,7 +916,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 						{
 							case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
 							case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-							case ET66HeroStatType::AttackSize: return Loc->GetText_Stat_AttackSize();
+							case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
 							case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
 							case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
 							case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
@@ -910,7 +927,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 					{
 						case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
 						case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-						case ET66HeroStatType::AttackSize: return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+						case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
 						case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
 						case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
 						case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
@@ -918,24 +935,21 @@ void UT66VendorOverlayWidget::RefreshStock()
 					}
 				};
 
-				ET66HeroStatType MainType = D.MainStatType;
-				int32 MainValue = D.MainStatValue;
-				if (MainValue == 0)
+				// New item system: display primary stat from vendor slot.
+				const ET66HeroStatType MainType = D.PrimaryStatType;
+				const TArray<FT66InventorySlot>& VendorSlots = RunState->GetInventorySlots(); // unused here; use stock slots
+				// Get rolled value from vendor stock slot.
+				int32 MainValue = 0;
 				{
-					// Derive from legacy v0 fields until DT_Items is updated.
-					switch (D.EffectType)
+					const TArray<FT66InventorySlot>& StockSlots = RunState->GetInventorySlots(); // placeholder
+					// We need the vendor stock slot data. For now, show the template primary stat name.
+					// Vendor stock slots are indexed the same as VendorStockItemIDs.
+					if (i < RunState->GetVendorStockItemIDs().Num())
 					{
-						case ET66ItemEffectType::BonusDamagePct: MainType = ET66HeroStatType::Damage; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-						case ET66ItemEffectType::BonusAttackSpeedPct: MainType = ET66HeroStatType::AttackSpeed; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-						case ET66ItemEffectType::BonusArmorPctPoints: MainType = ET66HeroStatType::Armor; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-						case ET66ItemEffectType::BonusEvasionPctPoints: MainType = ET66HeroStatType::Evasion; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-						case ET66ItemEffectType::BonusLuckFlat: MainType = ET66HeroStatType::Luck; MainValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude)); break;
-						case ET66ItemEffectType::BonusMoveSpeedPct:
-						case ET66ItemEffectType::DashCooldownReductionPct:
-							MainType = ET66HeroStatType::Evasion;
-							MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
-							break;
-						default: break;
+						// Best-effort: show a representative value.
+						int32 RMin = 1, RMax = 3;
+						FItemData::GetLine1RollRange(ET66ItemRarity::Black, RMin, RMax);
+						MainValue = (RMin + RMax) / 2;
 					}
 				}
 
@@ -946,7 +960,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
 		{
-			ItemIconBorders[i]->SetBorderBackgroundColor(bHasData ? D.PlaceholderColor : FT66Style::Tokens::Panel2);
+			ItemIconBorders[i]->SetBorderBackgroundColor(bHasData ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel2);
 		}
 		if (ItemIconBrushes.IsValidIndex(i) && ItemIconBrushes[i].IsValid())
 		{
@@ -984,7 +998,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 			}
 			else
 			{
-				const int32 Price = bHasData ? D.BuyValueGold : 0;
+				const int32 Price = bHasData ? D.GetBuyGoldForRarity(ET66ItemRarity::Black) : 0;
 				BuyButtonTexts[i]->SetText(FText::Format(
 					NSLOCTEXT("T66.Vendor", "BuyPriceFormat", "BUY ({0}g)"),
 					FText::AsNumber(Price)));
@@ -1107,7 +1121,7 @@ void UT66VendorOverlayWidget::RefreshInventory()
 			const bool bHasData = bHasItem && GI && GI->GetItemData(Inv[i], D);
 			if (bHasData)
 			{
-				Fill = D.PlaceholderColor;
+				Fill = FT66Style::Tokens::Panel2;
 			}
 
 			// If selected, tint toward accent for readability.
@@ -1189,7 +1203,7 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 					{
 						case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
 						case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-						case ET66HeroStatType::AttackSize: return Loc->GetText_Stat_AttackSize();
+						case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
 						case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
 						case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
 						case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
@@ -1200,7 +1214,7 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 				{
 					case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
 					case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-					case ET66HeroStatType::AttackSize: return NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size");
+					case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
 					case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
 					case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
 					case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
@@ -1208,23 +1222,15 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 				}
 			};
 
-			ET66HeroStatType MainType = D.MainStatType;
-			int32 MainValue = D.MainStatValue;
-			if (MainValue == 0)
+			const ET66HeroStatType MainType = D.PrimaryStatType;
+			// Get the rolled value from the inventory slot.
+			int32 MainValue = 0;
+			if (RunState)
 			{
-				switch (D.EffectType)
+				const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+				if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
 				{
-					case ET66ItemEffectType::BonusDamagePct: MainType = ET66HeroStatType::Damage; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-					case ET66ItemEffectType::BonusAttackSpeedPct: MainType = ET66HeroStatType::AttackSpeed; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f); break;
-					case ET66ItemEffectType::BonusArmorPctPoints: MainType = ET66HeroStatType::Armor; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-					case ET66ItemEffectType::BonusEvasionPctPoints: MainType = ET66HeroStatType::Evasion; MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 4.f); break;
-					case ET66ItemEffectType::BonusLuckFlat: MainType = ET66HeroStatType::Luck; MainValue = FMath::RoundToInt(FMath::Max(0.f, D.EffectMagnitude)); break;
-					case ET66ItemEffectType::BonusMoveSpeedPct:
-					case ET66ItemEffectType::DashCooldownReductionPct:
-						MainType = ET66HeroStatType::Evasion;
-						MainValue = FMath::CeilToInt(FMath::Max(0.f, D.EffectMagnitude) / 10.f);
-						break;
-					default: break;
+					MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
 				}
 			}
 
@@ -1235,7 +1241,15 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 	}
 	if (SellItemPriceText.IsValid())
 	{
-		const int32 SellValue = bHasData ? D.SellValueGold : 0;
+		int32 SellValue = 0;
+		if (bHasData && RunState)
+		{
+			const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+			if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
+			{
+				SellValue = D.GetSellGoldForRarity(Slots[SelectedInventoryIndex].Rarity);
+			}
+		}
 		SellItemPriceText->SetText(FText::Format(
 			NSLOCTEXT("T66.Vendor", "SellForFormat", "SELL FOR: {0}g"),
 			FText::AsNumber(SellValue)));

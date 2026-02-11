@@ -23,7 +23,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 PowerCrystalBalance = 1000;
 
-	/** Unlocked slice count (0..10) per stat: Damage, AttackSpeed, AttackSize, Armor, Evasion, Luck. */
+	/** Unlocked slice count (0..10) per stat: Damage, AttackSpeed, AttackScale, Armor, Evasion, Luck. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 PowerupSlicesDamage = 0;
 
@@ -31,7 +31,7 @@ public:
 	int32 PowerupSlicesAttackSpeed = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
-	int32 PowerupSlicesAttackSize = 0;
+	int32 PowerupSlicesAttackScale = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 PowerupSlicesArmor = 0;
@@ -48,7 +48,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 RandomBonusAttackSpeed = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
-	int32 RandomBonusAttackSize = 0;
+	int32 RandomBonusAttackScale = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 RandomBonusArmor = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")

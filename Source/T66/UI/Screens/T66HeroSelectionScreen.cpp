@@ -1210,7 +1210,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 
 			AddStatLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), BaseStats.Damage, PowerUpBonuses.Damage);
 			AddStatLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), BaseStats.AttackSpeed, PowerUpBonuses.AttackSpeed);
-			AddStatLine(Loc ? Loc->GetText_Stat_AttackSize() : NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size"), BaseStats.AttackSize, PowerUpBonuses.AttackSize);
+			AddStatLine(Loc ? Loc->GetText_Stat_AttackScale() : NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), BaseStats.AttackScale, PowerUpBonuses.AttackScale);
 			AddStatLine(Loc ? Loc->GetText_Stat_Armor() : NSLOCTEXT("T66.Stats", "Armor", "Armor"), BaseStats.Armor, PowerUpBonuses.Armor);
 			AddStatLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), BaseStats.Evasion, PowerUpBonuses.Evasion);
 			AddStatLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), BaseStats.Luck, PowerUpBonuses.Luck);

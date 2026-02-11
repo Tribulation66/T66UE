@@ -257,7 +257,11 @@ public:
 	void ToggleDevPower();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
-	const TArray<FName>& GetInventory() const { return Inventory; }
+	const TArray<FT66InventorySlot>& GetInventorySlots() const { return InventorySlots; }
+
+	/** Legacy: returns template IDs only (for backward compat with UI that expects FName array). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	TArray<FName> GetInventory() const;
 
 	/** Equipped idol slots (size=6). NAME_None means empty slot. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -409,8 +413,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void KillPlayer();
 
+	/** Add an item by template ID with auto-generated rarity and rolled value. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItem(FName ItemID);
+
+	/** Add a fully specified item slot (template + rarity + rolled value). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddItemSlot(const FT66InventorySlot& Slot);
 
 	/** Clear inventory only (e.g. Lab "Reset Items"). Recomputes stats and broadcasts. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -420,13 +429,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellFirstItem();
 
-	/** Sell a specific inventory item slot (0..Inventory.Num-1). Returns true if sold. */
+	/** Sell a specific inventory item slot (0..InventorySlots.Num-1). Returns true if sold. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellInventoryItemAt(int32 InventoryIndex);
 
 	/** True if there is space in the inventory (max 20). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
-	bool HasInventorySpace() const { return Inventory.Num() < MaxInventorySlots; }
+	bool HasInventorySpace() const { return InventorySlots.Num() < MaxInventorySlots; }
 
 	// ============================================
 	// Hero Level / Stats
@@ -448,7 +457,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|Hero")
 	void AddHeroXP(int32 Amount);
 
-	/** Foundational stat points (Damage/Attack Speed/Attack Size/Armor/Evasion/Luck + Speed). */
+	/** Foundational stat points (Damage/Attack Speed/Attack Scale/Armor/Evasion/Luck + Speed). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
 	int32 GetSpeedStat() const { return FMath::Max(1, HeroStats.Speed); }
 
@@ -459,7 +468,7 @@ public:
 	int32 GetAttackSpeedStat() const { return FMath::Max(1, HeroStats.AttackSpeed + FMath::Max(0, ItemStatBonuses.AttackSpeed) + FMath::Max(0, PowerupStatBonuses.AttackSpeed)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackSize + FMath::Max(0, ItemStatBonuses.AttackSize) + FMath::Max(0, PowerupStatBonuses.AttackSize)); } // Attack Size (aka Scale)
+	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackScale + FMath::Max(0, ItemStatBonuses.AttackScale) + FMath::Max(0, PowerupStatBonuses.AttackScale)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
 	int32 GetArmorStat() const { return FMath::Max(1, HeroStats.Armor + FMath::Max(0, ItemStatBonuses.Armor) + FMath::Max(0, PowerupStatBonuses.Armor)); }
@@ -469,6 +478,102 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
 	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck) + FMath::Max(0, PowerupStatBonuses.Luck)); }
+
+	// ============================================
+	// Category-Specific Stats (base from hero DataTable + item bonuses)
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Pierce")
+	int32 GetPierceDmgStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Pierce")
+	int32 GetPierceAtkSpdStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Pierce")
+	int32 GetPierceAtkScaleStat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Bounce")
+	int32 GetBounceDmgStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Bounce")
+	int32 GetBounceAtkSpdStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Bounce")
+	int32 GetBounceAtkScaleStat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|AOE")
+	int32 GetAoeDmgStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|AOE")
+	int32 GetAoeAtkSpdStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|AOE")
+	int32 GetAoeAtkScaleStat() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|DOT")
+	int32 GetDotDmgStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|DOT")
+	int32 GetDotAtkSpdStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|DOT")
+	int32 GetDotAtkScaleStat() const;
+
+	// ============================================
+	// Secondary Stats (from items Line 2 * hero base)
+	// ============================================
+
+	/** Get the effective value of a secondary stat (hero base * accumulated item Line 2 multipliers). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetSecondaryStatValue(ET66SecondaryStatType StatType) const;
+
+	/** Aggro multiplier (base * taunt items). Higher = enemies target this hero more. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetAggroMultiplier() const;
+
+	/** HP regen per second (base * items). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetHpRegenPerSecond() const;
+
+	/** Crit chance (0..1). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetCritChance01() const;
+
+	/** Crit damage multiplier (e.g. 1.5 = 50% bonus). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetCritDamageMultiplier() const;
+
+	/** Life steal fraction (0..1). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetLifeStealFraction() const;
+
+	/** Reflect damage fraction (0..1). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetReflectDamageFraction() const;
+
+	/** Crush OHKO chance (0..1). Only rolls when reflect fires. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetCrushChance01() const;
+
+	/** Assassinate OHKO chance (0..1). Only rolls when dodge succeeds. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetAssassinateChance01() const;
+
+	/** Invisibility (confusion) proc chance on hit (0..1). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetInvisibilityChance01() const;
+
+	/** Counter attack damage fraction on dodge. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetCounterAttackFraction() const;
+
+	/** Close range bonus threshold = 10% of attack range (UU). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetCloseRangeThreshold() const;
+
+	/** Long range bonus threshold = 90% of attack range (UU). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetLongRangeThreshold() const;
+
+	/** Close range damage multiplier. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetCloseRangeDamageMultiplier() const;
+
+	/** Long range damage multiplier. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetLongRangeDamageMultiplier() const;
 
 	// ============================================
 	// Power Crystals (earned this run; persisted at run end)
@@ -783,8 +888,9 @@ private:
 	UPROPERTY()
 	TArray<FName> OwedBossIDs;
 
+	/** Item inventory using the new slot-based system (template + rarity + rolled value). */
 	UPROPERTY()
-	TArray<FName> Inventory;
+	TArray<FT66InventorySlot> InventorySlots;
 
 	UPROPERTY()
 	TArray<FName> EquippedIdolIDs;
@@ -915,6 +1021,37 @@ private:
 	/** Current hero's per-level gain ranges (Speed is always +1 per level). */
 	FT66HeroPerLevelStatGains HeroPerLevelGains = FT66HeroPerLevelStatGains{};
 
+	/** Category-specific base stats (loaded from Heroes DataTable, not leveled). */
+	int32 BasePierceDmg = 1; int32 BasePierceAtkSpd = 1; int32 BasePierceAtkScale = 1;
+	int32 BaseBounceDmg = 1; int32 BaseBounceAtkSpd = 1; int32 BaseBounceAtkScale = 1;
+	int32 BaseAoeDmg = 1;    int32 BaseAoeAtkSpd = 1;    int32 BaseAoeAtkScale = 1;
+	int32 BaseDotDmg = 1;    int32 BaseDotAtkSpd = 1;    int32 BaseDotAtkScale = 1;
+
+	// ============================================
+	// Hero secondary base stats (loaded from Heroes DataTable, multiplied by items)
+	// ============================================
+	float HeroBaseCritDamage = 1.5f;
+	float HeroBaseCritChance = 0.05f;
+	float HeroBaseCloseRangeDmg = 1.0f;
+	float HeroBaseLongRangeDmg = 1.0f;
+	float HeroBaseTaunt = 1.0f;
+	float HeroBaseReflectDmg = 0.0f;
+	float HeroBaseHpRegen = 0.0f;
+	float HeroBaseCrushChance = 0.01f;
+	float HeroBaseInvisChance = 0.01f;
+	float HeroBaseCounterAttack = 0.0f;
+	float HeroBaseLifeSteal = 0.0f;
+	float HeroBaseAssassinateChance = 0.01f;
+	float HeroBaseCheatChance = 0.05f;
+	float HeroBaseStealChance = 0.05f;
+	float HeroBaseAttackRange = 1000.f;
+
+	// ============================================
+	// Accumulated secondary stat multipliers from items (product of Line 2 multipliers)
+	// Reset and recomputed in RecomputeItemDerivedStats()
+	// ============================================
+	TMap<ET66SecondaryStatType, float> SecondaryMultipliers;
+
 	/** Run-persistent RNG for hero stat gains (so stage reloads don't reshuffle). */
 	FRandomStream HeroStatRng;
 
@@ -935,6 +1072,7 @@ private:
 	int32 VendorStockRerollStage = 0;
 	int32 VendorStockRerollCounter = 0;
 	TArray<FName> VendorStockItemIDs;
+	TArray<FT66InventorySlot> VendorStockSlots;
 	TArray<bool> VendorStockSold;
 	bool bVendorBoughtSomethingThisStage = false;
 	ET66VendorStealOutcome LastVendorStealOutcome = ET66VendorStealOutcome::None;

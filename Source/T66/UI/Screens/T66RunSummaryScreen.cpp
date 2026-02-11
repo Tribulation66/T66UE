@@ -356,8 +356,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->AttackSpeedStat :
 		(RunState ? RunState->GetAttackSpeedStat() : 1);
 
-	const int32 AttackSizeStat =
-		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->AttackSizeStat :
+	const int32 AttackScaleStat =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->AttackScaleStat :
 		(RunState ? RunState->GetScaleStat() : 1);
 
 	const int32 ArmorStat =
@@ -568,7 +568,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddStatLine(Loc ? Loc->GetText_Level() : NSLOCTEXT("T66.Common", "Level", "LEVEL"), HeroLevel);
 		AddStatLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), DamageStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), AttackSpeedStat);
-		AddStatLine(Loc ? Loc->GetText_Stat_AttackSize() : NSLOCTEXT("T66.Stats", "AttackSize", "Attack Size"), AttackSizeStat);
+		AddStatLine(Loc ? Loc->GetText_Stat_AttackScale() : NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), AttackScaleStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_Armor() : NSLOCTEXT("T66.Stats", "Armor", "Armor"), ArmorStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), EvasionStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), LuckStat);
@@ -580,22 +580,22 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	TSharedRef<SVerticalBox> InvBox = SNew(SVerticalBox);
 	{
 		const TArray<FName>* IdolsPtr = nullptr;
-		const TArray<FName>* InventoryPtr = nullptr;
+		TArray<FName> InventoryLocal; // GetInventory() returns by value; store locally.
 
 		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 		{
 			IdolsPtr = &LoadedSavedSummary->EquippedIdols;
-			InventoryPtr = &LoadedSavedSummary->Inventory;
+			InventoryLocal = LoadedSavedSummary->Inventory;
 		}
 		else if (RunState)
 		{
 			IdolsPtr = &RunState->GetEquippedIdols();
-			InventoryPtr = &RunState->GetInventory();
+			InventoryLocal = RunState->GetInventory();
 		}
 
 		const TArray<FName> Empty;
 		const TArray<FName>& Idols = IdolsPtr ? *IdolsPtr : Empty;
-		const TArray<FName>& Inventory = InventoryPtr ? *InventoryPtr : Empty;
+		const TArray<FName>& Inventory = InventoryLocal;
 
 		for (int32 IdolSlotIndex = 0; IdolSlotIndex < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++IdolSlotIndex)
 		{
@@ -688,7 +688,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 							[
 								SNew(SBorder)
 								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(bHasItemData ? ItemData.PlaceholderColor : FT66Style::Tokens::Stroke)
+								.BorderBackgroundColor(FT66Style::Tokens::Stroke)
 								.Padding(0.f)
 								[
 									ItemBrush.IsValid()

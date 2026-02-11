@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "T66CollectorOverlayWidget.generated.h"
 
+struct FSlateBrush;
+
 /**
  * Full-screen Lab Collector UI: Items (ADD to inventory), NPCs, Enemies, Interactables (Spawn with random spread).
  * Opened when interacting with The Collector NPC in the Lab.
@@ -35,4 +37,7 @@ private:
 	/** 0=Items, 1=NPCs, 2=Enemies, 3=Interactables */
 	UPROPERTY()
 	int32 CollectorTabIndex = 0;
+
+	/** Keeps item icon brushes alive for the lifetime of the widget. */
+	TArray<TSharedPtr<FSlateBrush>> ItemIconBrushes;
 };

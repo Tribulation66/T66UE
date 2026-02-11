@@ -29,6 +29,26 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 TouchDamageHearts = 1;
 
+	/** Enemy armor: damage reduction fraction (0.0 = none, 0.5 = 50% reduction). Reduced by Taunt procs. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
+	float Armor = 0.f;
+
+	/** True if this enemy is currently confused/wandering (Invisibility proc). */
+	UPROPERTY(BlueprintReadOnly, Category = "AI")
+	bool bIsConfused = false;
+
+	/** Remaining seconds of confusion effect. */
+	UPROPERTY(BlueprintReadOnly, Category = "AI")
+	float ConfusionSecondsRemaining = 0.f;
+
+	/** Apply a confusion effect (from hero Invisibility proc). */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ApplyConfusion(float DurationSeconds);
+
+	/** Apply an armor debuff (from hero Taunt proc). Reduces armor temporarily. */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ApplyArmorDebuff(float ReductionAmount, float DurationSeconds);
+
 	/** Point value for wave budget and Bounty score (Bible 2.9) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
@@ -120,11 +140,16 @@ private:
 	int32 BaseMaxHP = 0;
 	int32 BaseTouchDamageHearts = 0;
 	int32 BasePointValue = 0;
+	float BaseArmor = 0.f;
 
 	// Persist mini-boss multipliers so difficulty changes can re-apply cleanly.
 	float MiniBossHPScalarApplied = 1.0f;
 	float MiniBossDamageScalarApplied = 1.0f;
 	float MiniBossScaleScalarApplied = 1.0f;
+
+	// Armor debuff tracking
+	float ArmorDebuffAmount = 0.f;
+	float ArmorDebuffSecondsRemaining = 0.f;
 
 protected:
 	/** True if an imported skeletal mesh was applied and placeholders should be hidden. */
