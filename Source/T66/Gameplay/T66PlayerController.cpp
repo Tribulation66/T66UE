@@ -1779,9 +1779,7 @@ void AT66PlayerController::HandleZoom(float Value)
 	{
 		const float ZoomSpeed = 25.f;
 		const float MinLength = 200.f;
-		// Keep this effectively "limitless" for development/testing.
-		// (Still clamped to avoid pathological values.)
-		const float MaxLength = 100000.f;
+		const float MaxLength = 1200.f;  // Max zoom-out (scroll wheel limit)
 		float NewLength = Hero->CameraBoom->TargetArmLength - Value * ZoomSpeed;
 		NewLength = FMath::Clamp(NewLength, MinLength, MaxLength);
 		Hero->CameraBoom->TargetArmLength = NewLength;

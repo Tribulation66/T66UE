@@ -11,14 +11,13 @@
 static const TCHAR* PixelationMaterialPath = TEXT("/Game/UI/M_PixelationPostProcess.M_PixelationPostProcess");
 static const FName ParamNamePixelGridSize(TEXT("PixelGridSize"));
 
-// Level 1 = subtle (high grid), 10 = strong (low grid). Linear: 320 down to 32.
+// Level 1 = least pixelation (high grid), 10 = most (capped at former level 1). Linear: 680 down to 320.
 int32 UT66PixelationSubsystem::LevelToPixelGridSize(int32 Level)
 {
 	if (Level <= 0) return 320;
 	Level = FMath::Clamp(Level, 1, 10);
-	// 320, 288, 256, 224, 192, 160, 128, 96, 64, 32
-	const int32 GridSizes[] = { 320, 288, 256, 224, 192, 160, 128, 96, 64, 32 };
-	return GridSizes[Level - 1];
+	// 10 -> 320 (former Pixel1), 1 -> 680; 320 + (10 - Level) * 40
+	return 320 + (10 - Level) * 40;
 }
 
 UMaterialInterface* UT66PixelationSubsystem::GetOrCreatePixelationMaterial()

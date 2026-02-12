@@ -9,8 +9,8 @@
 UENUM(BlueprintType)
 enum class ET66LandscapeSizePreset : uint8
 {
-	/** Main run map: 505x505 vertices (~50.5k x 50.5k UU), square. */
-	MainMap UMETA(DisplayName = "Main Map (500x500)"),
+	/** Main run map: 1009x1009 vertices (~100.8k x 100.8k UU), square. */
+	MainMap UMETA(DisplayName = "Main Map (100k)"),
 	/** ~1 km x 1 km (8x8 components = 505x505 vertices) */
 	Small UMETA(DisplayName = "Small (~1 km)"),
 	/** ~2–4 km (16x16 components) */
@@ -74,11 +74,11 @@ struct FT66ProceduralLandscapeParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape")
 	ET66LandscapeSizePreset SizePreset = ET66LandscapeSizePreset::MainMap;
 
-	/** World X of landscape vertex (0,0). 505x505 @ 100 UU/quad: use -25200 for map centered at 0. */
+	/** World X of landscape vertex (0,0). 1009x1009 @ 100 UU/quad: use -50400 for map centered at 0. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape")
-	float LandscapeOriginX = -25200.f;
+	float LandscapeOriginX = -50400.f;
 
 	/** World Y of landscape vertex (0,0). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape")
-	float LandscapeOriginY = -25200.f;
+	float LandscapeOriginY = -50400.f;
 };

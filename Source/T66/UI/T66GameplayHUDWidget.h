@@ -161,6 +161,7 @@ protected:
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;
 	TSharedPtr<SBox> InventoryPanelBox;
+	TSharedPtr<SBox> BottomLeftHUDBox;
 	TSharedPtr<SBox> IdolSlotsPanelBox;
 	TSharedPtr<SBox> MinimapPanelBox;
 	TSharedPtr<SBox> TikTokPlaceholderBox;

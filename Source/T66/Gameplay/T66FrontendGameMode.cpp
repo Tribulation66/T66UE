@@ -125,11 +125,11 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(HeightFog->GetRootComponent());
 			if (FogComp)
 			{
-				FogComp->SetFogDensity(0.015f);
+				FogComp->SetStartDistance(10000.f);
+				FogComp->SetFogDensity(0.4f);
 				FogComp->SetFogHeightFalloff(0.2f);
-				FogComp->SetFogMaxOpacity(0.6f);
-				FogComp->SetStartDistance(0.f);
-				FogComp->SetFogInscatteringColor(FLinearColor(0.7f, 0.75f, 0.85f));
+				FogComp->SetFogMaxOpacity(0.98f);
+				FogComp->SetFogInscatteringColor(FLinearColor(0.6f, 0.65f, 0.78f));
 			}
 			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned ExponentialHeightFog (same as gameplay)"));
 		}

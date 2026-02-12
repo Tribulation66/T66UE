@@ -225,6 +225,12 @@ public:
 		static constexpr float StrokeWidth = 1.f;
 		static constexpr float BorderWidth = 1.f;   // White outline around panels/buttons
 
+		// Vendor/Gambler shared layout (change here to update both overlays)
+		static constexpr float InventorySlotSize = 160.f;   // Inventory slots on Vendor and Gambler screens
+		static constexpr float ItemPanelIconSize = 200.f;   // Vendor shop item icon; Gambler game card icon
+		static constexpr float GameCardMinWidth = 260.f;
+		static constexpr float GameCardHeight = 200.f;
+
 		// Spacing scale (4pt baseline)
 		static constexpr float Space2 = 8.f;
 		static constexpr float Space3 = 12.f;

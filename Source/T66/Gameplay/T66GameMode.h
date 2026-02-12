@@ -283,7 +283,7 @@ private:
 	// Coliseum state (only used when bForceColiseumMode is true).
 	int32 ColiseumBossesRemaining = 0;
 	bool bColiseumExitGateSpawned = false;
-	FVector ColiseumCenter = FVector(0.f, -5200.f, 200.f);
+	FVector ColiseumCenter = FVector(-45455.f, -23636.f, 200.f);
 
 	// The Lab: actors spawned from Lab panels (for Reset Enemies).
 	UPROPERTY()

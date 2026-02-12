@@ -206,9 +206,60 @@ bool AT66HouseNPCBase::Interact(APlayerController* PC)
 	return false;
 }
 
+float AT66HouseNPCBase::GetFeetOffset() const
+{
+	if (bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->Bounds.SphereRadius > 1.f)
+	{
+		return SkeletalMesh->Bounds.BoxExtent.Z;
+	}
+	if (VisualMesh)
+	{
+		return VisualMesh->Bounds.BoxExtent.Z;
+	}
+	return 52.5f;
+}
+
 void AT66HouseNPCBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	// Gravity settling: trace down and move toward ground until resting (stops floating).
+	if (!bGravitySettled && GetWorld())
+	{
+		const float Age = GetGameTimeSinceCreation();
+		if (Age < GravitySettleDuration)
+		{
+			FHitResult Hit;
+			FCollisionQueryParams Params(SCENE_QUERY_STAT(T66HouseNPCGravitySettle), false, this);
+			const FVector Here = GetActorLocation();
+			const FVector Start = Here + FVector(0.f, 0.f, 100.f);
+			const FVector End = Here - FVector(0.f, 0.f, 5000.f);
+			if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic, Params))
+			{
+				const float FeetOffset = GetFeetOffset();
+				const float BottomZ = Here.Z - FeetOffset;
+				const float GroundZ = Hit.ImpactPoint.Z;
+				const float Gap = BottomZ - GroundZ;
+				if (Gap > GravitySettleTolerance)
+				{
+					const float Move = FMath::Min(DeltaSeconds * GravitySettleSpeed, Gap);
+					SetActorLocation(GetActorLocation() - FVector(0.f, 0.f, Move), false, nullptr, ETeleportType::TeleportPhysics);
+					ApplyVisuals();
+				}
+				else
+				{
+					// Snap to exact ground and stop
+					SetActorLocation(FVector(Here.X, Here.Y, GroundZ + FeetOffset), false, nullptr, ETeleportType::TeleportPhysics);
+					ApplyVisuals();
+					bGravitySettled = true;
+				}
+			}
+		}
+		else
+		{
+			bGravitySettled = true;
+		}
+	}
 
 	if (!bFacePlayerAlways) return;
 	if (!GetWorld()) return;

@@ -94,8 +94,7 @@ public:
 			return Pts;
 		};
 
-		// Solid black filled circle background.
-		// Uses a thick circular line (width = radius) to fill the interior.
+		// Solid black filled circle background (darker and more solid).
 		{
 			const float FillRadius = Radius * 0.5f;
 			TArray<FVector2D> FillPts;
@@ -111,13 +110,13 @@ public:
 				AllottedGeometry.ToPaintGeometry(),
 				FillPts,
 				ESlateDrawEffect::None,
-				FLinearColor(0.f, 0.f, 0.f, 1.f),
+				FLinearColor(0.02f, 0.02f, 0.02f, 1.f),
 				true,
-				Radius // thick enough to fill from center to edge
+				Radius
 			);
 		}
 
-		// Background ring (dark gold outline).
+		// Background ring (dark solid outline).
 		{
 			const TArray<FVector2D> Pts = MakeCirclePoints(NumSeg);
 			FSlateDrawElement::MakeLines(
@@ -126,7 +125,7 @@ public:
 				AllottedGeometry.ToPaintGeometry(),
 				Pts,
 				ESlateDrawEffect::None,
-				FLinearColor(0.25f, 0.22f, 0.15f, 1.f),
+				FLinearColor(0.05f, 0.05f, 0.05f, 1.f),
 				true,
 				Thickness
 			);
@@ -324,9 +323,9 @@ public:
 		bMinimap = InArgs._bMinimap;
 		bShowLabels = InArgs._bShowLabels;
 
-		// 4x map: 2x linear extent
-		FullWorldMin = FVector2D(-26000.f, -20000.f);
-		FullWorldMax = FVector2D(26000.f, 20000.f);
+		// 100k map: half-extent 50000
+		FullWorldMin = FVector2D(-50000.f, -50000.f);
+		FullWorldMax = FVector2D(50000.f, 50000.f);
 		MinimapHalfExtent = 2500.f;
 
 		// Safety: never draw markers outside the widget bounds.
@@ -624,6 +623,13 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.25f, true);
+	}
+
+	// Bottom-left HUD scale 0.8 (anchor bottom-left)
+	if (BottomLeftHUDBox.IsValid())
+	{
+		BottomLeftHUDBox->SetRenderTransformPivot(FVector2D(0.f, 1.f));
+		BottomLeftHUDBox->SetRenderTransform(FSlateRenderTransform(FTransform2D(0.8f)));
 	}
 	RefreshHUD();
 }
@@ -1922,7 +1928,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					[
 					SAssignNew(IdolBorder, SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
+					.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.25f))
 					.Padding(1.f)
 					[
 						SNew(SBorder)
@@ -1932,7 +1938,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
+							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.f))
 						]
 					]
 					]
@@ -2401,25 +2407,65 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			]
 		]
 
-		// Bottom-left portrait stack: difficulty squares (placeholder skulls) -> hearts -> portrait
+		// Bottom-left portrait stack: 20% smaller (scale 0.8); idol slots in Inventory-style panel
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Bottom)
 		.Padding(24.f, 0.f, 0.f, 24.f)
 		[
-			SNew(SVerticalBox)
-			// Core bottom-left HUD block
-			+ SVerticalBox::Slot().AutoHeight()
+			SAssignNew(BottomLeftHUDBox, SBox)
 			[
-				SNew(SHorizontalBox)
-				// 2x3 idol slots (left of portrait) — wrapped for HUD panel toggle
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom)
+				SNew(SVerticalBox)
+				// Core bottom-left HUD block
+				+ SVerticalBox::Slot().AutoHeight()
 				[
-					SAssignNew(IdolSlotsPanelBox, SBox)
+					SNew(SHorizontalBox)
+					// Idol slots: bordered panel with "Idols" title; top aligned with portrait (shorter panel)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(0.f, 92.f, 0.f, 0.f)
 					[
-						IdolSlotsRef
+						SAssignNew(IdolSlotsPanelBox, SBox)
+						[
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.30f, 0.38f, 0.35f, 0.85f))
+								.Padding(3.f)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
+									.Padding(FMargin(10.f, 4.f))
+									[
+										SNew(SVerticalBox)
+										+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 2.f)
+										[
+											SNew(STextBlock)
+											.Text(NSLOCTEXT("T66.GameplayHUD", "IdolsTitle", "Idols"))
+											.Font(FT66Style::Tokens::FontBold(16))
+											.ColorAndOpacity(FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
+											.Justification(ETextJustify::Center)
+										]
+										+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill).Padding(4.f, 0.f, 4.f, 4.f)
+										[
+											SNew(SBox)
+											.HeightOverride(1.f)
+											[
+												SNew(SBorder)
+												.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+												.BorderBackgroundColor(FLinearColor(0.45f, 0.55f, 0.50f, 0.5f))
+											]
+										]
+										+ SVerticalBox::Slot().AutoHeight()
+										[
+											IdolSlotsRef
+										]
+									]
+								]
+							]
+						]
 					]
-				]
 				// Portrait + hearts moved right
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(16.f, 0.f, 0.f, 0.f)
 				[
@@ -2562,6 +2608,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					]
 				]
 			]
+		]
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)

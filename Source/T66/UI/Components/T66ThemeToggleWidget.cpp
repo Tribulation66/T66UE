@@ -107,18 +107,12 @@ void UT66ThemeToggleWidget::ApplyPendingTheme()
 		}
 	}
 
-	// 2. Rebuild our own buttons so the active/inactive look updates
-	ForceRebuildSlate();
-
-	// 3. Force-rebuild the current screen so ALL widgets are recreated with new styles.
-	//    DeferRebuild handles the teardown safely on the next tick.
+	// 2. Rebuild ALL visible UI (theme toggle, underlying screen, modal) so every
+	//    widget gets fresh style references and nothing holds dangling pointers
+	//    to evicted old style sets.
 	if (UIManager)
 	{
-		if (UT66ScreenBase* Screen = UIManager->GetCurrentScreen())
-		{
-			Screen->ForceRebuildSlate();
-			Screen->OnScreenActivated();
-		}
+		UIManager->RebuildAllVisibleUI();
 	}
 
 	bThemeChangeInProgress = false;

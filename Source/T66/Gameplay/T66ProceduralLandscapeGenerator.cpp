@@ -430,8 +430,8 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 	}
 
 	// Hill peaks must be far enough from miasma wall so they can off-ramp without squishing. Dampen peaks that are too close.
-	static constexpr float MiasmaHalfExtent = 22000.f;
-	static constexpr float MinPeakDistanceFromWallUU = 5000.f;  // Peaks closer than this get dampened so they can slope down to the wall
+	static constexpr float MiasmaHalfExtent = 50000.f;
+	static constexpr float MinPeakDistanceFromWallUU = 11364.f;  // Peaks closer than this get dampened so they can slope down to the wall
 	for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
 	{
 		for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
@@ -453,8 +453,8 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 		}
 	}
 
-	// Constrain hills to inside miasma walls. Match T66MiasmaBoundary::SafeHalfExtent (22000). Wide blend so peaks have room to off-ramp without squishing.
-	static constexpr float MiasmaBlendMarginUU = 5000.f;  // Wide margin so hills can slope down to Z=0 at the wall
+	// Constrain hills to inside miasma walls. Match T66MiasmaBoundary::SafeHalfExtent (50000 for 100k map). Wide blend so peaks have room to off-ramp.
+	static constexpr float MiasmaBlendMarginUU = 11364.f;  // Wide margin so hills can slope down to Z=0 at the wall
 	for (int32 Jy = 0; Jy < SizeY; ++Jy)
 	{
 		for (int32 Ix = 0; Ix < SizeX; ++Ix)
@@ -504,13 +504,12 @@ void FT66ProceduralLandscapeGenerator::FloatsToLandscapeHeightData(const TArray<
 void FT66ProceduralLandscapeGenerator::GetDimensionsForPreset(ET66LandscapeSizePreset Preset, int32& OutSizeX, int32& OutSizeY)
 {
 	// UE Landscape: SectionSize=63, SectionsPerComponent=1 => (Size-1) must be multiple of 63.
-	// MainMap: 505x505 (500x500 requested; 505 = 8*63+1 is nearest valid).
-	// Small: 505x505. Large: 1009x1009.
+	// MainMap: 1009x1009 (~100.8k UU). (Size-1) multiple of 63. Small: 505. Large: 1009.
 	switch (Preset)
 	{
 	case ET66LandscapeSizePreset::MainMap:
-		OutSizeX = 8 * 63 + 1;  // 505 -> 50400 UU
-		OutSizeY = 8 * 63 + 1;  // 505
+		OutSizeX = 16 * 63 + 1;  // 1009 -> ~100800 UU
+		OutSizeY = 16 * 63 + 1;
 		break;
 	case ET66LandscapeSizePreset::Small:
 		OutSizeX = 8 * 63 + 1;  // 505
@@ -521,8 +520,8 @@ void FT66ProceduralLandscapeGenerator::GetDimensionsForPreset(ET66LandscapeSizeP
 		OutSizeY = 16 * 63 + 1;
 		break;
 	default:
-		OutSizeX = 505;
-		OutSizeY = 505;
+		OutSizeX = 1009;
+		OutSizeY = 1009;
 		break;
 	}
 }

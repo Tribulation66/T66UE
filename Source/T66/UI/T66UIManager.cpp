@@ -224,6 +224,29 @@ void UT66UIManager::GoBack()
 	}
 }
 
+void UT66UIManager::RebuildAllVisibleUI()
+{
+	// Rebuild the persistent theme toggle so its brushes point to the current style set.
+	if (ThemeToggle && ThemeToggle->IsInViewport())
+	{
+		ThemeToggle->ForceRebuildSlate();
+	}
+
+	// Rebuild the underlying screen (e.g. MainMenu) so it picks up new theme tokens.
+	if (CurrentScreen && CurrentScreen->IsInViewport())
+	{
+		CurrentScreen->ForceRebuildSlate();
+		CurrentScreen->OnScreenActivated();
+	}
+
+	// Rebuild the modal (e.g. Settings) so it picks up new theme tokens.
+	if (CurrentModal && CurrentModal->IsInViewport())
+	{
+		CurrentModal->ForceRebuildSlate();
+		CurrentModal->OnScreenActivated();
+	}
+}
+
 void UT66UIManager::HideAllUI()
 {
 	// Close modal if active

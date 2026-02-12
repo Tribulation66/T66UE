@@ -105,5 +105,19 @@ private:
 
 	UPROPERTY(Transient)
 	bool bUsingCharacterVisual = false;
+
+	/** When false, Tick applies gravity settling (trace down and move to ground) until resting. */
+	UPROPERTY(Transient)
+	bool bGravitySettled = false;
+
+	/** Max time (seconds) to run gravity settling after BeginPlay; then stop even if no hit. */
+	static constexpr float GravitySettleDuration = 2.f;
+	/** Downward speed (uu/s) when settling. */
+	static constexpr float GravitySettleSpeed = 500.f;
+	/** Consider on ground when bottom is within this distance of trace hit. */
+	static constexpr float GravitySettleTolerance = 5.f;
+
+	/** Returns half-height from actor center to feet (for ground trace). */
+	float GetFeetOffset() const;
 };
 

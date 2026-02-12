@@ -33,7 +33,7 @@ static FAutoConsoleCommand T66Pixel0Command(
 #define T66_REGISTER_PIXEL_CMD(N) \
 	static FAutoConsoleCommand T66Pixel##N##Command( \
 		TEXT("Pixel" #N), \
-		TEXT("Retro pixelation level " #N " (1=very slight, 10=strong). Scene only; UI stays crisp. Console only; not persisted."), \
+		TEXT("Retro pixelation level " #N " (1=least, 10=most; 10 = former slight). Scene only; UI stays crisp. Console only; not persisted."), \
 		FConsoleCommandDelegate::CreateLambda([]() { ApplyPixelationLevel(N); }) \
 	);
 

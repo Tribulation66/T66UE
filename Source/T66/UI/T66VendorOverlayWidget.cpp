@@ -225,8 +225,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(200.f)
-								.HeightOverride(200.f)
+								.WidthOverride(FT66Style::Tokens::ItemPanelIconSize)
+								.HeightOverride(FT66Style::Tokens::ItemPanelIconSize)
 								[
 									SAssignNew(ItemIconImages[i], SImage)
 									.Image(ItemIconBrushes[i].Get())
@@ -403,7 +403,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				FText::GetEmpty(),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, Inv),
 				ET66ButtonType::Neutral)
-			.SetMinWidth(160.f).SetHeight(160.f)
+			.SetMinWidth(FT66Style::Tokens::InventorySlotSize).SetHeight(FT66Style::Tokens::InventorySlotSize)
 			.SetPadding(FMargin(0.f))
 			.SetContent(
 				FT66Style::MakePanel(
@@ -430,8 +430,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		InventoryGrid->AddSlot(Inv, 0)
 		[
 			SNew(SBox)
-			.WidthOverride(160.f)
-			.HeightOverride(160.f)
+			.WidthOverride(FT66Style::Tokens::InventorySlotSize)
+			.HeightOverride(FT66Style::Tokens::InventorySlotSize)
 			[
 				SlotBtn
 			]

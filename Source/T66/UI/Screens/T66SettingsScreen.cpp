@@ -446,7 +446,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 		const FText OffText = Loc ? Loc->GetText_Off() : NSLOCTEXT("T66.Settings", "Off", "OFF");
 
 		return SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(15.0f, 12.0f))
 			[
 				SNew(SHorizontalBox)
@@ -456,7 +456,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 					[
 						SNew(STextBlock).Text(Label)
 						.Font(FT66Style::Tokens::FontRegular(14))
-						.ColorAndOpacity(FLinearColor::White)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f, 0.0f, 0.0f)
@@ -496,7 +496,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 				.Padding(FMargin(15.0f, 12.0f))
 				[
 					SNew(SHorizontalBox)
@@ -504,7 +504,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 					[
 						SNew(STextBlock).Text(ThemeLabel)
 						.Font(FT66Style::Tokens::FontRegular(14))
-						.ColorAndOpacity(FLinearColor::White)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f, 0.0f, 0.0f)
 					[
@@ -515,7 +515,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 							FT66ButtonParams(DarkText, FOnClicked::CreateLambda([this, PS]()
 							{
 								if (PS) PS->SetLightTheme(false);
-								FT66Style::DeferRebuild(this);
+								if (UIManager) UIManager->RebuildAllVisibleUI();
 								return FReply::Handled();
 							}), (PS && !PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
 								.SetMinWidth(100.f)
@@ -528,7 +528,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 							FT66ButtonParams(LightText, FOnClicked::CreateLambda([this, PS]()
 							{
 								if (PS) PS->SetLightTheme(true);
-								FT66Style::DeferRebuild(this);
+								if (UIManager) UIManager->RebuildAllVisibleUI();
 								return FReply::Handled();
 							}), (PS && PS->GetLightTheme()) ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
 								.SetMinWidth(100.f)
@@ -781,7 +781,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(15.0f, 12.0f))
 			[
 				SNew(SVerticalBox)
@@ -792,13 +792,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					[
 						SNew(STextBlock).Text(Loc ? Loc->GetText_BestPerformance() : NSLOCTEXT("T66.Settings.Fallback", "Best Performance", "Best Performance"))
 						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Right)
 					[
 						SNew(STextBlock).Text(Loc ? Loc->GetText_BestQuality() : NSLOCTEXT("T66.Settings.Fallback", "Best Quality", "Best Quality"))
 						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 8.0f, 0.0f, 0.0f)
@@ -856,7 +856,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 		.Padding(FMargin(30.f))
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(25.f))
 			[
 				SNew(SVerticalBox)
@@ -865,14 +865,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_KeepTheseSettingsTitle() : NSLOCTEXT("T66.Settings.Fallback", "Keep these settings?", "Keep these settings?"))
 					.Font(FT66Style::Tokens::FontBold(18))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 15.f)
 				[
 					SAssignNew(VideoModeConfirmCountdownText, STextBlock)
 					.Text(FText::GetEmpty())
 					.Font(FT66Style::Tokens::FontRegular(13))
-					.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.9f, 1.f))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 				[
@@ -953,13 +953,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 			+ SHorizontalBox::Slot().FillWidth(0.45f).VAlign(VAlign_Center).Padding(4.0f, 0.0f)
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.2f, 1.0f))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 				.Padding(FMargin(8.f, 4.f))
 				[
 					SAssignNew(KeyText, STextBlock)
 					.Text(KeyToText(OldKey))
 					.Font(FT66Style::Tokens::FontBold(12))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
@@ -1007,7 +1007,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		const FText SecondaryText = Loc ? Loc->GetText_Secondary() : NSLOCTEXT("T66.Settings.Fallback", "SECONDARY", "SECONDARY");
 
 		return SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(15.0f, 10.0f))
 			[
 				SNew(SVerticalBox)
@@ -1015,14 +1015,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 				[
 					SNew(STextBlock).Text(Label)
 					.Font(FT66Style::Tokens::FontRegular(13))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 6.f, 0.f)
 					[
-						SNew(STextBlock).Text(PrimaryText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.75f, 1.f))
+						SNew(STextBlock).Text(PrimaryText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
@@ -1034,7 +1034,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 6.f, 0.f)
 					[
-						SNew(STextBlock).Text(SecondaryText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.75f, 1.f))
+						SNew(STextBlock).Text(SecondaryText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
@@ -1058,7 +1058,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 			SAssignNew(RebindStatusText, STextBlock)
 			.Text(Loc ? Loc->GetText_RebindInstructions() : NSLOCTEXT("T66.Settings.Fallback", "RebindInstructions", "Click REBIND, then press a key/button (Esc cancels)."))
 			.Font(FT66Style::Tokens::FontRegular(12))
-			.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.85f, 1.f))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		]
 		+ SVerticalBox::Slot().FillHeight(1.0f)
 		[
@@ -1168,7 +1168,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 	auto MakeSliderRow = [this](const FText& Label, TFunction<float()> GetValue, TFunction<void(float)> SetValue) -> TSharedRef<SWidget>
 	{
 		return SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(15.0f, 12.0f))
 			[
 				SNew(SHorizontalBox)
@@ -1176,7 +1176,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 				[
 					SNew(STextBlock).Text(Label)
 					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.55f).VAlign(VAlign_Center).Padding(10.0f, 0.0f)
 				[
@@ -1193,7 +1193,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 						return FText::FromString(FString::Printf(TEXT("%d%%"), Percent));
 					})
 					.Font(FT66Style::Tokens::FontRegular(13))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 					.Justification(ETextJustify::Right)
 				]
 			];
@@ -1227,7 +1227,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 8.f)
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(15.0f, 12.0f))
 			[
 				SNew(SHorizontalBox)
@@ -1236,7 +1236,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_MuteWhenUnfocused() : NSLOCTEXT("T66.Settings.Fallback", "Mute when unfocused", "Mute when unfocused"))
 					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FLinearColor::White)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
@@ -1260,7 +1260,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(15.0f, 12.0f))
 			[
 				SNew(SHorizontalBox)
@@ -1354,13 +1354,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_CrashingChecklistHeader() : NSLOCTEXT("T66.Settings.Fallback", "CrashingChecklistHeader", "If your game is crashing, try these steps:"))
 			.Font(FT66Style::Tokens::FontBold(16))
-			.ColorAndOpacity(FLinearColor::White)
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
 		// Checklist
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 10.0f)
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(FMargin(20.0f, 15.0f))
 			[
 				SNew(SVerticalBox)
@@ -1369,7 +1369,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 					SNew(STextBlock)
 					.Text(Loc ? Loc->GetText_CrashingChecklistBody() : FText::GetEmpty())
 					.Font(FT66Style::Tokens::FontRegular(13))
-					.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.0f))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
 					.AutoWrapText(true)
 				]
 			]
@@ -1384,7 +1384,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 20.0f)
 		[
 			SNew(SBorder)
-			.BorderBackgroundColor(FLinearColor(0.2f, 0.2f, 0.25f, 1.0f))
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			[
 				SNew(SBox).HeightOverride(1.0f)
 			]
@@ -1395,14 +1395,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_StillHavingIssues() : NSLOCTEXT("T66.Settings.Fallback", "Still having issues?", "Still having issues?"))
 			.Font(FT66Style::Tokens::FontBold(14))
-			.ColorAndOpacity(FLinearColor::White)
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 10.0f)
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_ReportBugDescription() : NSLOCTEXT("T66.Settings.Fallback", "ReportBugDescription", "Report a bug to help us fix it. Your report will include basic system info."))
 			.Font(FT66Style::Tokens::FontRegular(12))
-			.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f, 1.0f))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 			.AutoWrapText(true)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)

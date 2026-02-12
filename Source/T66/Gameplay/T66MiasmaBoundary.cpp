@@ -47,7 +47,8 @@ void AT66MiasmaBoundary::SpawnWallVisuals()
 
 	const float HalfThick = WallThickness * 0.5f;
 	const float HalfHeight = WallHeight * 0.5f;
-	const FLinearColor WallColor(0.02f, 0.02f, 0.04f, 0.85f);
+	// Visible black smoke: dark grey so the boundary is clearly seen (pass-through, no collision).
+	const FLinearColor WallColor(0.14f, 0.14f, 0.16f, 1.f);
 
 	// Cube is 100uu; we scale by (length/100, thickness/100, height/100).
 	// Four walls: N/S (along X), E/W (along Y). Each runs the full extent of the opposite axis plus thickness.
@@ -85,13 +86,18 @@ void AT66MiasmaBoundary::SpawnWallVisuals()
 		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), WallLoc, FRotator::ZeroRotator, SpawnParams);
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 
+		// Set Movable before SetStaticMesh to avoid "SetStaticMesh but Mobility is Static" PIE warnings.
+		Wall->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		Wall->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Wall->GetStaticMeshComponent()->SetCollisionProfileName(FName("NoCollision"));
+		Wall->GetStaticMeshComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Wall->SetActorScale3D(W.Scale);
 		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 		{
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), WallColor);
 		}
+		Wall->GetStaticMeshComponent()->SetMobility(EComponentMobility::Static);
 	}
 }
 

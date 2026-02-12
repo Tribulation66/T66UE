@@ -21,7 +21,7 @@ class T66_API UT66PixelationSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	/** Set pixelation level: 0 = off, 1 = very slight, 10 = strong. Affects current world's post-process. */
+	/** Set pixelation level: 0 = off, 1 = least, 10 = most (10 = former slight). Affects current world's post-process. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Pixelation")
 	void SetPixelationLevel(int32 Level);
 

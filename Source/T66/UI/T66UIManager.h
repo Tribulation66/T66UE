@@ -81,10 +81,22 @@ public:
 	bool IsModalActive() const { return CurrentModal != nullptr; }
 
 	/**
+	 * Get the currently displayed modal widget (nullptr if no modal)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	UT66ScreenBase* GetCurrentModal() const { return CurrentModal; }
+
+	/**
 	 * Get the type of the currently displayed modal (None if no modal)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	ET66ScreenType GetCurrentModalType() const;
+
+	/**
+	 * Rebuild all visible UI widgets (theme toggle, current screen, current modal).
+	 * Call after a theme change to ensure no widget holds stale style pointers.
+	 */
+	void RebuildAllVisibleUI();
 
 	/**
 	 * Hide all UI (for transitioning to gameplay)

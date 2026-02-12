@@ -17,6 +17,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/Images/SImage.h"
@@ -87,16 +88,17 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 	// --- Game icons (Sprites/Games) ---
 	// Avoid sync loads; request via the central UI texture pool.
+	const float GameIconSize = FT66Style::Tokens::ItemPanelIconSize;
 	GameIcon_CoinFlip = FSlateBrush();
-	GameIcon_CoinFlip.ImageSize = FVector2D(72.f, 72.f);
+	GameIcon_CoinFlip.ImageSize = FVector2D(GameIconSize, GameIconSize);
 	GameIcon_CoinFlip.DrawAs = ESlateBrushDrawType::Image;
 
 	GameIcon_Rps = FSlateBrush();
-	GameIcon_Rps.ImageSize = FVector2D(72.f, 72.f);
+	GameIcon_Rps.ImageSize = FVector2D(GameIconSize, GameIconSize);
 	GameIcon_Rps.DrawAs = ESlateBrushDrawType::Image;
 
 	GameIcon_FindBall = FSlateBrush();
-	GameIcon_FindBall.ImageSize = FVector2D(72.f, 72.f);
+	GameIcon_FindBall.ImageSize = FVector2D(GameIconSize, GameIconSize);
 	GameIcon_FindBall.DrawAs = ESlateBrushDrawType::Image;
 
 	if (TexPool)
@@ -109,12 +111,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		T66SlateTexture::BindBrushAsync(TexPool, BallSoft, this, GameIcon_FindBall, FName(TEXT("GamblerGameIcon"), 3), /*bClearWhileLoading*/ true);
 	}
 
-	// Inventory slot icon brushes (same sizing as vendor for consistency)
+	// Inventory slot icon brushes — same as Vendor (160×160)
+	const float InvSlotSz = FT66Style::Tokens::InventorySlotSize;
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
 	{
 		InventorySlotIconBrushes[i] = MakeShared<FSlateBrush>();
 		InventorySlotIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		InventorySlotIconBrushes[i]->ImageSize = FVector2D(148.f, 148.f);
+		InventorySlotIconBrushes[i]->ImageSize = FVector2D(InvSlotSz, InvSlotSz);
 	}
 
 	auto MakeTitle = [&](const FText& Text) -> TSharedRef<SWidget>
@@ -161,130 +164,150 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FText BankTitle = Loc ? Loc->GetText_Bank() : NSLOCTEXT("T66.Vendor", "BankTitle", "BANK");
 	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
 
+	// Right panel: same as Vendor — anger 170×170, Bank in MakePanel(Panel2, Space5)
 	TSharedRef<SWidget> RightPanel =
 		FT66Style::MakePanel(
 			SNew(SVerticalBox)
-			// Anger circle (top)
+			// Anger circle (top) — 170×170 to match Vendor
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 			[
 				SNew(SBox)
-				.WidthOverride(220.f)
-				.HeightOverride(220.f)
+				.WidthOverride(170.f)
+				.HeightOverride(170.f)
 				[
 					SAssignNew(AngerCircleImage, SImage)
 					.Image(Style.GetBrush("T66.Brush.Circle"))
 					.ColorAndOpacity(FLinearColor::White)
 				]
 			]
-			// Bank (bottom)
-			+ SVerticalBox::Slot().AutoHeight()
+			// Bank (bottom, separate panel) — same wrapper as Vendor
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-				[
-					SNew(STextBlock)
-					.Text(BankTitle)
-					.TextStyle(&TextHeading)
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 					[
-						SNew(SBox)
-						.WidthOverride(110.f)
-						.HeightOverride(44.f)
+						SNew(STextBlock)
+						.Text(BankTitle)
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
-							SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
-							.MinValue(0).MaxValue(999999).Delta(10)
-							.Font(FT66Style::Tokens::FontBold(16))
-							.Value_Lambda([this]() { return BorrowAmount; })
-							.OnValueChanged_Lambda([this](int32 V) { BorrowAmount = FMath::Max(0, V); })
+							SNew(SBox)
+							.WidthOverride(110.f)
+							.HeightOverride(44.f)
+							[
+								SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
+								.MinValue(0).MaxValue(999999).Delta(10)
+								.Font(FT66Style::Tokens::FontBold(16))
+								.Value_Lambda([this]() { return BorrowAmount; })
+								.OnValueChanged_Lambda([this](int32 V) { BorrowAmount = FMath::Max(0, V); })
+							]
+						]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+						[
+							FT66Style::MakeButton(FT66ButtonParams(
+								Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Vendor", "Borrow_Button", "BORROW"),
+								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBorrowClicked),
+								ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetPadding(FMargin(16.f, 10.f)))
 						]
 					]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					FT66Style::MakeButton(FT66ButtonParams(
-						Loc ? Loc->GetText_Borrow() : FText::GetEmpty(),
-						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBorrowClicked),
-						ET66ButtonType::Neutral)
-						.SetMinWidth(0.f)
-						.SetPadding(FMargin(14.f, 8.f)))
-				]
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 					[
-						SNew(SBox)
-						.WidthOverride(110.f)
-						.HeightOverride(44.f)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
-							SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
-							.MinValue(0).MaxValue(999999).Delta(10)
-							.Font(FT66Style::Tokens::FontBold(16))
-							.Value_Lambda([this]() { return PaybackAmount; })
-							.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
+							SNew(SBox)
+							.WidthOverride(110.f)
+							.HeightOverride(44.f)
+							[
+								SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
+								.MinValue(0).MaxValue(999999).Delta(10)
+								.Font(FT66Style::Tokens::FontBold(16))
+								.Value_Lambda([this]() { return PaybackAmount; })
+								.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
+							]
+						]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
+						[
+							FT66Style::MakeButton(FT66ButtonParams(
+								Loc ? Loc->GetText_Max() : NSLOCTEXT("T66.Common", "Max", "MAX"),
+								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackMax),
+								ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetPadding(FMargin(16.f, 10.f)))
+						]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+						[
+							FT66Style::MakeButton(FT66ButtonParams(
+								Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Vendor", "Payback_Button", "PAYBACK"),
+								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackClicked),
+								ET66ButtonType::Neutral)
+								.SetMinWidth(0.f)
+								.SetPadding(FMargin(16.f, 10.f)))
 						]
 					]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-				[
-					FT66Style::MakeButton(FT66ButtonParams(
-						Loc ? Loc->GetText_Max() : FText::GetEmpty(),
-						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackMax),
-						ET66ButtonType::Neutral)
-						.SetMinWidth(0.f)
-						.SetPadding(FMargin(14.f, 8.f)))
-				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					FT66Style::MakeButton(FT66ButtonParams(
-						Loc ? Loc->GetText_Payback() : FText::GetEmpty(),
-						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackClicked),
-						ET66ButtonType::Neutral)
-						.SetMinWidth(0.f)
-						.SetPadding(FMargin(14.f, 8.f)))
-				]
-				]
+				,
+					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66Style::Tokens::Space5))
 			]
 		,
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel));
 
+	// Same layout as vendor item panel: title, icon, single "Play" button
 	auto MakeGameCard = [&](const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
 	{
+		const FText PlayText = NSLOCTEXT("T66.Gambler", "Play", "Play");
+		TSharedRef<SWidget> PlayBtn = FT66Style::MakeButton(
+			FT66ButtonParams(PlayText, OnClicked, ET66ButtonType::Primary)
+			.SetMinWidth(100.f)
+			.SetPadding(FMargin(8.f, 6.f)));
 		return SNew(SBox)
+			.MinDesiredWidth(220.f)
+			.MinDesiredHeight(420.f)
 			.Padding(FMargin(10.f, 0.f))
 			[
-				FT66Style::MakeButton(FT66ButtonParams(FText::GetEmpty(), OnClicked, ET66ButtonType::Neutral)
-					.SetMinWidth(260.f).SetHeight(160.f)
-					.SetPadding(FMargin(0.f))
-					.SetContent(
-						FT66Style::MakePanel(
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
-							[
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
+					// 1. Title at top (same as vendor item name)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(TitleText)
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.AutoWrapText(true)
+					]
+					// 2. Large image below (same as vendor item icon)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
+						[
+							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(84.f)
-								.HeightOverride(84.f)
+								.WidthOverride(FT66Style::Tokens::ItemPanelIconSize)
+								.HeightOverride(FT66Style::Tokens::ItemPanelIconSize)
 								[
 									SNew(SImage)
 									.Image(IconBrush)
 									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(TitleText)
-								.TextStyle(&TextHeading)
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-								.AutoWrapText(true)
-							]
-							+ SVerticalBox::Slot().FillHeight(1.f) [ SNew(SSpacer) ]
-						,
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66Style::Tokens::Space6))))
+								],
+								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f))
+						]
+					]
+					// 3. Single Play button (vendor has Buy + Steal)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					[
+						PlayBtn
+					]
+				,
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4))
 			];
 	};
 
@@ -553,44 +576,35 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		,
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel));
 
-	// Pre-create inventory slot buttons for centralized styling
+	// Inventory slot buttons: same structure as vendor (single panel, overlay image + dash, no inner box)
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxInventorySlots; ++i)
 	{
 		InventorySlotButtons[i] = FT66Style::MakeButton(
 			FT66ButtonParams(FText::GetEmpty(),
 				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnSelectInventorySlot, i),
 				ET66ButtonType::Neutral)
-				.SetMinWidth(0.f)
+				.SetMinWidth(FT66Style::Tokens::InventorySlotSize)
+				.SetHeight(FT66Style::Tokens::InventorySlotSize)
 				.SetPadding(FMargin(0.f))
 				.SetContent(
-					SNew(SBox)
-					.WidthOverride(160.f)
-					.HeightOverride(160.f)
-					[
-						FT66Style::MakePanel(
-							SNew(SOverlay)
-							+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-							[
-								SNew(SBox)
-								.WidthOverride(148.f)
-								.HeightOverride(148.f)
-								[
-									SAssignNew(InventorySlotIconImages[i], SImage)
-									.Image(InventorySlotIconBrushes[i].Get())
-									.ColorAndOpacity(FLinearColor::White)
-								]
-							]
-							+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-							[
-								SAssignNew(InventorySlotTexts[i], STextBlock)
-								.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-								.TextStyle(&TextChip)
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-							]
-						,
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(0.f)),
-							&InventorySlotBorders[i])
-					]
+					FT66Style::MakePanel(
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SAssignNew(InventorySlotIconImages[i], SImage)
+							.Image(InventorySlotIconBrushes[i].Get())
+							.ColorAndOpacity(FLinearColor::White)
+						]
+						+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+						[
+							SAssignNew(InventorySlotTexts[i], STextBlock)
+							.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
+							.TextStyle(&TextChip)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
+					,
+						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(0.f)),
+						&InventorySlotBorders[i])
 				));
 	}
 
@@ -602,6 +616,22 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			ET66ButtonType::Primary)
 			.SetMinWidth(0.f)
 			.SetPadding(FMargin(18.f, 10.f)));
+
+	// Inventory grid: same as Vendor — 20 slots in horizontal scroll, each 160×160
+	TSharedRef<SUniformGridPanel> GamblerInventoryGrid = SNew(SUniformGridPanel)
+		.SlotPadding(FMargin(FT66Style::Tokens::Space2, 0.f));
+	for (int32 Inv = 0; Inv < UT66RunStateSubsystem::MaxInventorySlots; ++Inv)
+	{
+		GamblerInventoryGrid->AddSlot(Inv, 0)
+		[
+			SNew(SBox)
+			.WidthOverride(FT66Style::Tokens::InventorySlotSize)
+			.HeightOverride(FT66Style::Tokens::InventorySlotSize)
+			[
+				InventorySlotButtons[Inv].ToSharedRef()
+			]
+		];
+	}
 
 	TSharedRef<SWidget> InventoryPanel =
 		FT66Style::MakePanel(
@@ -640,17 +670,19 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
-					SNew(SUniformGridPanel)
-					.SlotPadding(FMargin(FT66Style::Tokens::Space2, 0.f))
-				+ SUniformGridPanel::Slot(0, 0) [ InventorySlotButtons[0].ToSharedRef() ]
-				+ SUniformGridPanel::Slot(1, 0) [ InventorySlotButtons[1].ToSharedRef() ]
-				+ SUniformGridPanel::Slot(2, 0) [ InventorySlotButtons[2].ToSharedRef() ]
-				+ SUniformGridPanel::Slot(3, 0) [ InventorySlotButtons[3].ToSharedRef() ]
-				+ SUniformGridPanel::Slot(4, 0) [ InventorySlotButtons[4].ToSharedRef() ]
+					SNew(SScrollBox)
+					.Orientation(Orient_Horizontal)
+					.ScrollBarVisibility(EVisibility::Visible)
+					+ SScrollBox::Slot()
+					[
+						GamblerInventoryGrid
+					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
 				[
 					SAssignNew(SellPanelContainer, SBox)
+					.WidthOverride(FT66Style::Tokens::InventorySlotSize)
+					.HeightOverride(FT66Style::Tokens::InventorySlotSize)
 					.Visibility(EVisibility::Visible)
 					[
 						FT66Style::MakePanel(
