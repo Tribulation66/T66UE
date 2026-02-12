@@ -85,7 +85,7 @@ def main():
     unreal.log("")
     unreal.log("=== HERO MATERIALS ===")
     log_skeletal_mesh_materials(
-        "/Game/Characters/Heros/Hero_1/Default_TypeA/SK_Hero_1_Default_TypeA",
+        "/Game/Characters/Heroes/Hero_1/Default_TypeA/SK_Hero_1_Default_TypeA",
         "Hero_1 Default TypeA"
     )
     
@@ -105,7 +105,7 @@ def main():
     unreal.log("")
     unreal.log("=== DIRECT MATERIAL COMPARISON ===")
     log_material_info(
-        "/Game/Characters/Heros/Hero_1/Default_TypeA/Material_1",
+        "/Game/Characters/Heroes/Hero_1/Default_TypeA/Material_1",
         "Hero Material"
     )
     log_material_info(

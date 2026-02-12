@@ -122,7 +122,7 @@ def main():
             continue
 
         # Content base for this hero
-        game_hero_base = f"/Game/Characters/Heros/{hero_id}"
+        game_hero_base = f"/Game/Characters/Heroes/{hero_id}"
         game_portrait_base = f"/Game/UI/Sprites/Heros/{hero_id}"
         _ensure_game_dir(game_hero_base)
         _ensure_game_dir(game_portrait_base)
