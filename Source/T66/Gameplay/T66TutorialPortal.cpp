@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
@@ -27,7 +28,7 @@ AT66TutorialPortal::AT66TutorialPortal()
 	PortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PortalMesh"));
 	PortalMesh->SetupAttachment(RootComponent);
 	PortalMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		PortalMesh->SetStaticMesh(Cylinder);
 		PortalMesh->SetRelativeScale3D(FVector(2.0f, 2.0f, 2.5f));

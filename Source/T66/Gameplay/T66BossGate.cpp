@@ -5,6 +5,7 @@
 #include "Gameplay/T66BossBase.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -21,7 +22,7 @@ AT66BossGate::AT66BossGate()
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	RootComponent = TriggerBox;
 
-	UStaticMesh* CylinderMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	UStaticMesh* CylinderMesh = FT66VisualUtil::GetBasicShapeCylinder();
 	const float PoleRadius = 40.f;
 	const float PoleHeight = 320.f;
 	const float PoleSpacing = 100.f;

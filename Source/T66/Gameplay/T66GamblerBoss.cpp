@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66BossProjectile.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -28,12 +29,12 @@ AT66GamblerBoss::AT66GamblerBoss()
 	// capsule half-height~88, sphere half-height=50*4=200 => relative Z = 200 - 88 = 112.
 	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 112.f));
 
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		VisualMesh->SetStaticMesh(Sphere);
 		VisualMesh->SetRelativeScale3D(FVector(4.0f, 4.0f, 4.0f)); // smaller than stage boss, larger than mobs
 	}
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
+	if (UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial())
 	{
 		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, this))
 		{

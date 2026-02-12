@@ -3,6 +3,7 @@
 #include "Gameplay/T66LoanShark.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
@@ -35,7 +36,7 @@ AT66LoanShark::AT66LoanShark()
 	// Align primitive mesh to ground when capsule is grounded:
 	// capsule half-height~88, sphere half-height=50*3=150 => relative Z = 150 - 88 = 62.
 	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 62.f));
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		VisualMesh->SetStaticMesh(Sphere);
 		// Bigger than regular enemies (0.9 cyl) but smaller than boss (6.0 sphere)
@@ -43,7 +44,7 @@ AT66LoanShark::AT66LoanShark()
 	}
 
 	// Force a visible solid color material (avoids relying on engine default material params).
-	if (UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")))
+	if (UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial())
 	{
 		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, this))
 		{

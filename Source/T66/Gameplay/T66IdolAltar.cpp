@@ -7,6 +7,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
 #include "UObject/SoftObjectPath.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66IdolAltar::AT66IdolAltar()
 {
@@ -36,7 +37,7 @@ AT66IdolAltar::AT66IdolAltar()
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	VisualMesh->SetVisibility(false, true);
 
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
 		BaseRect->SetStaticMesh(Cube);
 		MidRect->SetStaticMesh(Cube);

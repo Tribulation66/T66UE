@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66CashTruckMimicEnemy.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -27,7 +28,7 @@ AT66CashTruckMimicEnemy::AT66CashTruckMimicEnemy()
 	// Replace base enemy cylinder with a truck-ish cube.
 	if (VisualMesh)
 	{
-		if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+		if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 		{
 			VisualMesh->SetStaticMesh(Cube);
 		}
@@ -48,7 +49,7 @@ AT66CashTruckMimicEnemy::AT66CashTruckMimicEnemy()
 		WheelMeshes[i]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		for (UStaticMeshComponent* W : WheelMeshes)
 		{

@@ -8,6 +8,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66BossProjectile::AT66BossProjectile()
 {
@@ -25,7 +26,7 @@ AT66BossProjectile::AT66BossProjectile()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		VisualMesh->SetStaticMesh(Sphere);
 		VisualMesh->SetRelativeScale3D(FVector(0.12f, 0.12f, 0.12f));

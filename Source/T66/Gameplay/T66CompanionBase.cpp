@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66CompanionBase.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66HeroSpeedSubsystem.h"
@@ -92,7 +93,7 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
 {
 	if (!PlaceholderMesh) return;
-	UMaterialInterface* ColorMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
+	UMaterialInterface* ColorMaterial = FT66VisualUtil::GetPlaceholderColorMaterial();
 	if (!ColorMaterial) ColorMaterial = PlaceholderMesh->GetMaterial(0);
 	if (ColorMaterial)
 	{

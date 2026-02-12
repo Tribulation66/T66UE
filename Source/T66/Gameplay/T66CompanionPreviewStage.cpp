@@ -8,6 +8,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -30,7 +31,7 @@ AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 	PreviewFloor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewFloor"));
 	PreviewFloor->SetupAttachment(RootComponent);
 	PreviewFloor->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		PreviewFloor->SetStaticMesh(Cylinder);
 		PreviewFloor->SetRelativeLocation(FVector(0.f, 0.f, -50.f));

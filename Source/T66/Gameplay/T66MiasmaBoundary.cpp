@@ -9,6 +9,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "EngineUtils.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66MiasmaBoundary::AT66MiasmaBoundary()
 {
@@ -41,7 +42,7 @@ void AT66MiasmaBoundary::SpawnWallVisuals()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube();
 	if (!CubeMesh) return;
 
 	const float HalfThick = WallThickness * 0.5f;

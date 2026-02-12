@@ -12,6 +12,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -34,7 +35,7 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 	PreviewPlatform = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PreviewPlatform"));
 	PreviewPlatform->SetupAttachment(RootComponent);
 	PreviewPlatform->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		PreviewPlatform->SetStaticMesh(Cylinder);
 		PreviewPlatform->SetRelativeScale3D(FVector(4.0f, 4.0f, 0.04f));

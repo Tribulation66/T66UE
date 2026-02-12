@@ -12,6 +12,7 @@
 #include "UObject/SoftObjectPath.h"
 #include "Engine/World.h"
 #include "CollisionQueryParams.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66CowardiceGate::AT66CowardiceGate()
 {
@@ -26,7 +27,7 @@ AT66CowardiceGate::AT66CowardiceGate()
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	RootComponent = TriggerBox;
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube();
 	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
 	GateMesh->SetStaticMesh(CubeMesh);
 	GateMesh->SetRelativeLocation(FVector(0.f, 0.f, 150.f));

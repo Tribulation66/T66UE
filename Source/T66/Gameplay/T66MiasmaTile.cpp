@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66MiasmaTile::AT66MiasmaTile()
 {
@@ -22,7 +23,7 @@ AT66MiasmaTile::AT66MiasmaTile()
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
 		VisualMesh->SetStaticMesh(Cube);
 	}

@@ -13,6 +13,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66BossBase::AT66BossBase()
 {
@@ -34,7 +35,7 @@ AT66BossBase::AT66BossBase()
 	// capsule half-height~88, sphere half-height=50*6=300 => relative Z = 300 - 88 = 212.
 	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 212.f));
 
-	if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		VisualMesh->SetStaticMesh(Sphere);
 		VisualMesh->SetRelativeScale3D(FVector(6.f, 6.f, 6.f)); // very large sphere
@@ -88,7 +89,7 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 	// Stage 1 boss: always use a simple sphere (no character visual override).
 	if (BossID == FName(TEXT("Boss_01")))
 	{
-		if (UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere")))
+		if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 		{
 			VisualMesh->SetStaticMesh(Sphere);
 			VisualMesh->SetRelativeScale3D(FVector(6.f, 6.f, 6.f));

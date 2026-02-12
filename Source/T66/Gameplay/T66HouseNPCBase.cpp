@@ -9,6 +9,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
@@ -40,7 +41,7 @@ AT66HouseNPCBase::AT66HouseNPCBase()
 	SafeZoneVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SafeZoneVisual->SetCastShadow(false);
 	// Use a flat disc on the ground to visualize the safe zone (avoids huge "bubble sphere" confusion).
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		SafeZoneVisual->SetStaticMesh(Cylinder);
 	}
@@ -48,7 +49,7 @@ AT66HouseNPCBase::AT66HouseNPCBase()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		VisualMesh->SetStaticMesh(Cylinder);
 		// About hero-sized cylinder
@@ -158,7 +159,7 @@ void AT66HouseNPCBase::ApplyNPCData(const FHouseNPCData& Data)
 
 void AT66HouseNPCBase::ApplyVisuals()
 {
-	UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
+	UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial();
 
 	if (NameText)
 	{

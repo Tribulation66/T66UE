@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66HeroSpeedSubsystem.h"
@@ -90,7 +91,7 @@ AT66HeroBase::AT66HeroBase()
 	UMaterialInterface* RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineDebugMaterials/M_Wireframe.M_Wireframe"));
 	if (!RingMat)
 	{
-		RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
+		RingMat = FT66VisualUtil::GetPlaceholderColorMaterial();
 	}
 	if (!RingMat)
 	{
@@ -498,7 +499,7 @@ void AT66HeroBase::SetPlaceholderColor(FLinearColor Color)
 	// The approach: use SetVectorParameterValue which internally creates the parameter if needed
 	
 	// First, try to load our custom placeholder material
-	UMaterialInterface* ColorMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
+	UMaterialInterface* ColorMaterial = FT66VisualUtil::GetPlaceholderColorMaterial();
 	
 	if (!ColorMaterial)
 	{

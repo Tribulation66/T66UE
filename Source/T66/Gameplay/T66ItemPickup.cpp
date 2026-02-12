@@ -8,6 +8,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66ItemPickup::AT66ItemPickup()
 {
@@ -24,7 +25,7 @@ AT66ItemPickup::AT66ItemPickup()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere();
 	if (Sphere)
 	{
 		VisualMesh->SetStaticMesh(Sphere);

@@ -8,11 +8,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 #include "UObject/SoftObjectPath.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66DifficultyTotem::AT66DifficultyTotem()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	if (UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")))
+	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
 		VisualMesh->SetStaticMesh(Cube);
 		// Tall skinny rectangle

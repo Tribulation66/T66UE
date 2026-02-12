@@ -11,6 +11,7 @@
 #include "UObject/SoftObjectPath.h"
 #include "Engine/World.h"
 #include "CollisionQueryParams.h"
+#include "Gameplay/T66VisualUtil.h"
 
 AT66StageGate::AT66StageGate()
 {
@@ -24,7 +25,7 @@ AT66StageGate::AT66StageGate()
 	RootComponent = TriggerBox;
 
 	// Big 3D rectangle (cube scaled): wide and tall
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube();
 	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
 	GateMesh->SetStaticMesh(CubeMesh);
 	GateMesh->SetRelativeLocation(FVector(0.f, 0.f, 150.f));

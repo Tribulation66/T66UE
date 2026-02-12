@@ -17,6 +17,7 @@
 #include "Gameplay/T66LoanShark.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66CowardiceGate.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66TricksterNPC.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66BossGate.h"
@@ -163,7 +164,7 @@ UStaticMesh* AT66GameMode::GetCubeMesh()
 {
 	if (!CachedCubeMesh)
 	{
-		CachedCubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+		CachedCubeMesh = FT66VisualUtil::GetBasicShapeCube();
 	}
 	return CachedCubeMesh;
 }

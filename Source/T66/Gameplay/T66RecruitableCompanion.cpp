@@ -4,6 +4,7 @@
 
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Gameplay/T66VisualUtil.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -28,7 +29,7 @@ AT66RecruitableCompanion::AT66RecruitableCompanion()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder")))
+	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
 		VisualMesh->SetStaticMesh(Cylinder);
 		// About hero-sized cylinder (placeholder).
@@ -61,7 +62,7 @@ void AT66RecruitableCompanion::ApplyPlaceholderColor(const FLinearColor& Color)
 {
 	if (!VisualMesh) return;
 
-	UMaterialInterface* ColorMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
+	UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial();
 	if (!ColorMat) ColorMat = VisualMesh->GetMaterial(0);
 	if (!ColorMat) return;
 
