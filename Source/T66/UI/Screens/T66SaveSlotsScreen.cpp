@@ -133,7 +133,8 @@ void UT66SaveSlotsScreen::OnSlotClicked(int32 SlotIndex)
 	GI->bApplyLoadedTransform = true;
 	GI->CurrentSaveSlotIndex = SlotIndex;
 
-	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	if (UIManager) UIManager->HideAllUI();
+	GI->TransitionToGameplayLevel();
 }
 
 bool UT66SaveSlotsScreen::IsSlotOccupied(int32 SlotIndex) const

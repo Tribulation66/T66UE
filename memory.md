@@ -78,6 +78,7 @@
 - **All UI text localized** via `UT66LocalizationSubsystem::GetText_*()` or NSLOCTEXT.
 - **After C++ changes:** Close the editor, run the build command, then reopen. Do not use Live Coding / Hot Reload — the Config UObject `UT66RngTuningConfig` can trigger "Cannot replace existing object of a different class" (CDO replace crash) if the module is reloaded while the editor is running.
 - **Sync load (main menu):** The only allowed sync load is in **UT66MainMenuScreen::BuildSlateUI()**: **UT66UITexturePoolSubsystem::EnsureTexturesLoadedSync()** is called for main menu + Party Picker textures (MMDark, MMLight, T_LB_Global, T_LB_Friends, T_LB_Streamers, SoloDark, SoloLight, CoopDark, CoopLight) so the background, leaderboard filter icons, and Party Picker cards appear immediately with no white flash. This is a safe "loading window" (frontend, not gameplay); no other sync texture loads in UI.
+- **Level transitions:** When transitioning to GameplayLevel from the frontend (Enter Tribulation, Load Game), use **`UT66GameInstance::TransitionToGameplayLevel()`** instead of raw `UGameplayStatics::OpenLevel`. This shows a loading screen, pre-loads heavy assets, then opens the level. In-game stage reloads (StageGate, CowardiceGate, etc.) can still use raw `OpenLevel` since assets are already warm.
 
 ---
 
@@ -175,5 +176,14 @@
 **UI panels (centralized):** All panels use **FT66Style::MakePanel()** with **ET66PanelType** (Bg, Panel, Panel2). Textures: **GeneratePanelTextures.py** → `SourceAssets/Images/Panels/PanelDark.png`, `PanelLight.png`; **ImportPanelTextures.py** (editor) → `/Game/UI/Assets/PanelDark.uasset`, `PanelLight.uasset`. Style uses 9-slice brushes when textures exist, else procedural. No raw `SBorder` + `BorderImage("T66.Brush.Panel")`; see **guidelines.md §11**.
 
 **DeferRebuild (widget rebuild safety):** **Never** call `ReleaseSlateResources`, `TakeWidget()`, or raw `RemoveFromParent + Release + AddToViewport` directly. Always use **`FT66Style::DeferRebuild(Widget, ZOrder)`** — defers rebuild to next tick so Slate finishes processing click/key events before the widget tree is torn down. `ForceRebuildSlate()` on `UT66ScreenBase` is now a thin wrapper around `DeferRebuild`. Replaced all 18+ dangerous sites across Lab/Collector overlays, HeroSelection, Settings, PowerUp, ThemeToggle, Lobby, MainMenu, Achievements, CompanionSelection, LanguageSelect, UIManager. See **guidelines.md §6.5**.
+
+**Performance / loading optimizations (batch):**
+- **Blurry UI textures fixed:** `UT66UITexturePoolSubsystem::HandleLoaded()` and `EnsureTexturesLoadedSync()` now set `Tex->bForceMiplevelsToBeResident = true` on every UI texture after load, ensuring full-resolution mips stay resident. Applies to all textures loaded via the texture pool (Party Picker, items, idols, leaderboard icons, etc.).
+- **PIE startup lag reduced:** `UT66GameInstance::Init()` now pre-warms all 9 main-menu + Party Picker textures (added SoloDark, SoloLight, CoopDark, CoopLight) so the sync fallback in `MainMenuScreen::BuildSlateUI()` is a no-op more often.
+- **PIE resolution zoom flash fixed:** Frontend UI initialization in `AT66PlayerController::BeginPlay()` is deferred by 0.1s via `SetTimer` so the PIE viewport stabilizes its resolution before the first UI frame renders. Prevents the "zoomed-in then snaps to correct size" flash.
+- **Enter Tribulation loading screen:** New `UT66LoadingScreenWidget` (Slate, `UI/T66LoadingScreenWidget.h/.cpp`). `UT66GameInstance::TransitionToGameplayLevel()` shows loading screen → pre-loads gameplay assets → opens level. Called from Hero Selection, Lobby, and Save Slots instead of raw `OpenLevel`. Loading text localized via `UT66LocalizationSubsystem::GetText_Loading()`.
+- **Gameplay asset pre-loading:** `UT66GameInstance::PreloadGameplayAssets()` async-loads engine cube mesh, ground materials, and placeholder material before `OpenLevel`, so `GameMode::BeginPlay` finds them already resident.
+- **Cached cube mesh:** `AT66GameMode::GetCubeMesh()` loads `/Engine/BasicShapes/Cube.Cube` once and caches it in a `UPROPERTY(Transient)`. All 6 previous `LoadObject<UStaticMesh>` calls replaced.
+- **Staggered spawning:** `AT66GameMode::SpawnLevelContentAfterLandscapeReady()` now runs in two phases across two frames: Phase 1 = structures + NPCs, Phase 2 (next tick) = combat systems + boss. Reduces single-frame hitch.
 
 **Full history:** `git log` (this file is context, not a full changelog).

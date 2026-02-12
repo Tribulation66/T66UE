@@ -2004,3 +2004,8 @@ FText UT66LocalizationSubsystem::GetText_FindBallResultFormat() const
 {
 	return NSLOCTEXT("T66.Gambler", "FindBallResultFormat", "Ball was under {0} — {1}");
 }
+
+FText UT66LocalizationSubsystem::GetText_Loading() const
+{
+	return NSLOCTEXT("T66.Loading", "Loading", "LOADING...");
+}

@@ -162,6 +162,7 @@ void UT66UITexturePoolSubsystem::EnsureTexturesLoadedSync(const TArray<FSoftObje
 		TSoftObjectPtr<UTexture2D> Soft(Path);
 		if (UTexture2D* Tex = Soft.LoadSynchronous())
 		{
+			Tex->bForceMiplevelsToBeResident = true;
 			LoadedTextures.Add(Path, Tex);
 		}
 	}
@@ -187,6 +188,10 @@ void UT66UITexturePoolSubsystem::HandleLoaded(const FSoftObjectPath& Path)
 
 	if (Tex)
 	{
+		// Force full-resolution mips to stay resident so UI textures are never blurry.
+		// Same pattern used by T66CharacterVisualSubsystem and preview stages.
+		Tex->bForceMiplevelsToBeResident = true;
+
 		LoadedTextures.Add(Path, Tex);
 	}
 

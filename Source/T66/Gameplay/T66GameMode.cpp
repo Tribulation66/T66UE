@@ -159,6 +159,15 @@ AT66GameMode::AT66GameMode()
 	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270"))));
 }
 
+UStaticMesh* AT66GameMode::GetCubeMesh()
+{
+	if (!CachedCubeMesh)
+	{
+		CachedCubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	}
+	return CachedCubeMesh;
+}
+
 void AT66GameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -280,26 +289,37 @@ void AT66GameMode::BeginPlay()
 
 void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
-	// Landscape and collision are ready (called next tick after BeginPlay). Spawn all ground-dependent content so traces hit terrain.
+	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
 	SpawnCornerHousesAndNPCs();
 	SpawnTricksterAndCowardiceGate();
 	SpawnWorldInteractablesForStage();
 	SpawnStageEffectTilesForStage();
 	SpawnTutorialIfNeeded();
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
+
+	// Phase 2 on next tick: spawn combat systems (enemy director, miasma, boss).
+	// Staggering across frames reduces the single-frame hitch during level entry.
 	UWorld* World = GetWorld();
 	if (World)
 	{
-		World->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	}
-	SpawnBossForCurrentStage();
-	SpawnBossGateIfNeeded();
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			UWorld* W = GetWorld();
+			if (W)
+			{
+				W->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+				MiasmaManager = W->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+				W->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+			}
+			SpawnBossForCurrentStage();
+			SpawnBossGateIfNeeded();
 
-	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Level content spawned (landscape ready)."));
+			UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 2 content spawned (combat systems + boss)."));
+		}));
+	}
 }
 
 void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -1933,7 +1953,7 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 		return;
 	}
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
 	auto HasTag = [&](FName Tag) -> bool
@@ -1984,7 +2004,7 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
 	auto HasTag = [&](FName Tag) -> bool
@@ -2025,7 +2045,7 @@ void AT66GameMode::SpawnStartAreaWallsIfNeeded()
 	}
 	return;
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
 	auto HasTag = [&](FName Tag) -> bool
@@ -2093,7 +2113,7 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
 	auto HasTag = [&](FName Tag) -> bool
@@ -2191,7 +2211,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		{ FName("T66_Floor_Boost"),     FVector(-20000.f, 10400.f, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
 	};
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
 	auto FindTaggedActor = [&](FName Tag) -> AStaticMeshActor*
@@ -2688,7 +2708,7 @@ void AT66GameMode::SpawnLabFloorIfNeeded()
 		}
 	}
 
-	UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
 	// Cube 100uu default. Scale (110, 110, 1) -> 11000 x 11000 x 100. Center at (0,0,50) so top at 100.

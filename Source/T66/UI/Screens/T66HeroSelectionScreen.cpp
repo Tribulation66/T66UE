@@ -1575,7 +1575,8 @@ void UT66HeroSelectionScreen::OnTheLabClicked()
 }
 void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 {
-	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (GI)
 	{
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
@@ -1585,7 +1586,14 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->ProceduralTerrainSeed = FMath::Rand();
 	}
 	if (UIManager) UIManager->HideAllUI();
-	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	if (GI)
+	{
+		GI->TransitionToGameplayLevel();
+	}
+	else
+	{
+		UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	}
 }
 void UT66HeroSelectionScreen::OnBackClicked() { NavigateBack(); }
 

@@ -464,9 +464,35 @@ void AT66PlayerController::BeginPlay()
 
 		if (bAutoShowInitialScreen)
 		{
-			InitializeUI();
+			// Immediately cover the viewport with a black curtain so the 3D frontend level
+			// (platform, hero) is never visible before the main menu UI is ready.
+			TSharedPtr<SBorder> BlackCurtain;
+			if (GEngine && GEngine->GameViewport)
+			{
+				SAssignNew(BlackCurtain, SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor::Black);
+				GEngine->GameViewport->AddViewportWidgetContent(
+					SNew(SWeakWidget).PossiblyNullContent(BlackCurtain), 9999);
+			}
+
+			// Defer UI init by a short delay so the PIE viewport can stabilize its resolution.
+			// Without this, the first frame renders at a transient viewport size, causing a brief
+			// "zoomed-in" flash before snapping to the correct resolution. The delay also gives
+			// GameInstance async texture preloads more time to complete, reducing sync load fallbacks.
+			FTimerHandle DeferHandle;
+			GetWorld()->GetTimerManager().SetTimer(DeferHandle, FTimerDelegate::CreateWeakLambda(this, [this, BlackCurtain]()
+			{
+				InitializeUI();
+
+				// Remove the black curtain now that the main menu is fully painted.
+				if (GEngine && GEngine->GameViewport && BlackCurtain.IsValid())
+				{
+					GEngine->GameViewport->RemoveViewportWidgetContent(BlackCurtain.ToSharedRef());
+				}
+			}), 0.1f, false);
 		}
-		UE_LOG(LogTemp, Log, TEXT("PlayerController: Frontend mode initialized"));
+		UE_LOG(LogTemp, Log, TEXT("PlayerController: Frontend mode initialized (UI deferred)"));
 	}
 }
 

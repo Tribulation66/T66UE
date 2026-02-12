@@ -13,8 +13,11 @@
 #include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 
-/** Gameplay ground material (same as T66GameMode floor) for preview floor. */
-static const TCHAR* GPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0");
+namespace
+{
+	/** Gameplay ground material (same as T66GameMode floor) for preview floor. */
+	const TCHAR* CompanionPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0");
+}
 
 AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 {
@@ -43,7 +46,7 @@ void AT66CompanionPreviewStage::BeginPlay()
 	// Apply gameplay ground material to floor (same as gameplay level floor).
 	if (PreviewFloor)
 	{
-		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, GPreviewGroundMaterialPath))
+		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, CompanionPreviewGroundMaterialPath))
 			PreviewFloor->SetMaterial(0, GroundMat);
 	}
 }

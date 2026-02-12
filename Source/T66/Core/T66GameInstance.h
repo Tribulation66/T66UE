@@ -272,6 +272,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	bool HasCompanionSelected() const { return !SelectedCompanionID.IsNone(); }
 
+	/**
+	 * Pre-load gameplay assets (engine meshes, ground materials) that would otherwise
+	 * hitch the game thread during GameplayLevel BeginPlay. Call before OpenLevel.
+	 * Invokes OnComplete once all loads have finished (or immediately if nothing to load).
+	 */
+	void PreloadGameplayAssets(TFunction<void()> OnComplete);
+
+	/** True while a PreloadGameplayAssets batch is in flight. */
+	bool IsPreloadingGameplayAssets() const { return bGameplayAssetsPreloadInFlight; }
+
+	/**
+	 * Show a loading screen, pre-load gameplay assets, then open GameplayLevel.
+	 * Call this instead of raw UGameplayStatics::OpenLevel for gameplay transitions.
+	 */
+	void TransitionToGameplayLevel();
+
 private:
 	void PrimeCoreDataTablesAsync();
 	void HandleCoreDataTablesLoaded();
@@ -339,4 +355,10 @@ private:
 	/** Cached loaded Character Visuals DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedCharacterVisualsDataTable;
+
+	// Gameplay asset pre-load tracking.
+	bool bGameplayAssetsPreloadInFlight = false;
+	TSharedPtr<FStreamableHandle> GameplayAssetsPreloadHandle;
+	TFunction<void()> GameplayAssetsPreloadCallback;
+	void HandleGameplayAssetsPreloaded();
 };

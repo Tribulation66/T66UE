@@ -1045,6 +1045,13 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_FindBallResultFormat() const; // "Ball was under {0} — {1}"
 
+	// ============================================
+	// Loading Screen
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Loading")
+	FText GetText_Loading() const;
+
 private:
 	ET66Language CurrentLanguage = ET66Language::English;
 	

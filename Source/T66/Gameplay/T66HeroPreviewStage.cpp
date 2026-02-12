@@ -17,8 +17,11 @@
 #include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 
-/** Gameplay ground material (same as T66GameMode floor) for preview platform. */
-static const TCHAR* GPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0");
+namespace
+{
+	/** Gameplay ground material (same as T66GameMode floor) for preview platform. */
+	const TCHAR* HeroPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0");
+}
 
 AT66HeroPreviewStage::AT66HeroPreviewStage()
 {
@@ -48,7 +51,7 @@ void AT66HeroPreviewStage::BeginPlay()
 	// Apply gameplay ground material to platform (same as gameplay level floor).
 	if (PreviewPlatform)
 	{
-		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, GPreviewGroundMaterialPath))
+		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, HeroPreviewGroundMaterialPath))
 			PreviewPlatform->SetMaterial(0, GroundMat);
 	}
 }

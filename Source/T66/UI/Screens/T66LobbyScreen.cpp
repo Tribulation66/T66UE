@@ -49,13 +49,21 @@ int32 UT66LobbyScreen::GetPartySlotCount() const
 
 void UT66LobbyScreen::StartRunFromLobby()
 {
-	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (GI)
 	{
 		GI->bStageBoostPending = (GI->SelectedDifficulty != ET66Difficulty::Easy);
 		GI->ProceduralTerrainSeed = FMath::Rand();
 	}
 	if (UIManager) UIManager->HideAllUI();
-	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	if (GI)
+	{
+		GI->TransitionToGameplayLevel();
+	}
+	else
+	{
+		UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	}
 }
 
 TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()

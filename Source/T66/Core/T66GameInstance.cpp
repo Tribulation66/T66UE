@@ -2,14 +2,17 @@
 
 #include "Core/T66GameInstance.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/T66LoadingScreenWidget.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/DataTable.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
+#include "Kismet/GameplayStatics.h"
 
 namespace
 {
@@ -70,7 +73,8 @@ void UT66GameInstance::Init()
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
 
-	// Preload main menu background + leaderboard filter textures so they are often ready before main menu builds.
+	// Preload all main-menu + Party Picker textures so they are often ready before BuildSlateUI's
+	// EnsureTexturesLoadedSync fallback fires. If these finish in time, the sync path becomes a no-op.
 	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
 	{
 		const TSoftObjectPtr<UTexture2D> MMDark(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMDark.MMDark")));
@@ -78,11 +82,19 @@ void UT66GameInstance::Init()
 		const TSoftObjectPtr<UTexture2D> LBGlobal(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")));
 		const TSoftObjectPtr<UTexture2D> LBFriends(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")));
 		const TSoftObjectPtr<UTexture2D> LBStreamers(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Streamers.T_LB_Streamers")));
+		const TSoftObjectPtr<UTexture2D> SoloDark(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")));
+		const TSoftObjectPtr<UTexture2D> SoloLight(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloLight.SoloLight")));
+		const TSoftObjectPtr<UTexture2D> CoopDark(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")));
+		const TSoftObjectPtr<UTexture2D> CoopLight(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopLight.CoopLight")));
 		TexPool->RequestTexture(MMDark, this, FName(TEXT("PreloadMMDark")), [](UTexture2D*) {});
 		TexPool->RequestTexture(MMLight, this, FName(TEXT("PreloadMMLight")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBGlobal, this, FName(TEXT("PreloadLBGlobal")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBFriends, this, FName(TEXT("PreloadLBFriends")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBStreamers, this, FName(TEXT("PreloadLBStreamers")), [](UTexture2D*) {});
+		TexPool->RequestTexture(SoloDark, this, FName(TEXT("PreloadSoloDark")), [](UTexture2D*) {});
+		TexPool->RequestTexture(SoloLight, this, FName(TEXT("PreloadSoloLight")), [](UTexture2D*) {});
+		TexPool->RequestTexture(CoopDark, this, FName(TEXT("PreloadCoopDark")), [](UTexture2D*) {});
+		TexPool->RequestTexture(CoopLight, this, FName(TEXT("PreloadCoopLight")), [](UTexture2D*) {});
 	}
 }
 
@@ -577,4 +589,83 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 
 	// DataTable row not found: defaults apply.
 	return true;
+}
+
+void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
+{
+	if (bGameplayAssetsPreloadInFlight)
+	{
+		// Already in flight; replace callback so the latest caller gets notified.
+		GameplayAssetsPreloadCallback = MoveTemp(OnComplete);
+		return;
+	}
+
+	TArray<FSoftObjectPath> Paths;
+	Paths.Reserve(8);
+
+	// Engine cube mesh (used ~6 times in GameMode for walls/floors/arenas).
+	Paths.Add(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
+
+	// Ground floor materials (4 rotation variants).
+	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0")));
+	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90")));
+	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180")));
+	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270")));
+
+	// Placeholder color material used during level setup.
+	Paths.Add(FSoftObjectPath(TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")));
+
+	if (Paths.Num() <= 0)
+	{
+		if (OnComplete) OnComplete();
+		return;
+	}
+
+	bGameplayAssetsPreloadInFlight = true;
+	GameplayAssetsPreloadCallback = MoveTemp(OnComplete);
+
+	GameplayAssetsPreloadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Paths,
+		FStreamableDelegate::CreateUObject(this, &UT66GameInstance::HandleGameplayAssetsPreloaded));
+
+	if (!GameplayAssetsPreloadHandle.IsValid())
+	{
+		// Failed to start; fire callback immediately.
+		HandleGameplayAssetsPreloaded();
+	}
+}
+
+void UT66GameInstance::HandleGameplayAssetsPreloaded()
+{
+	bGameplayAssetsPreloadInFlight = false;
+	GameplayAssetsPreloadHandle.Reset();
+	if (GameplayAssetsPreloadCallback)
+	{
+		TFunction<void()> Cb = MoveTemp(GameplayAssetsPreloadCallback);
+		Cb();
+	}
+}
+
+void UT66GameInstance::TransitionToGameplayLevel()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Show loading screen immediately so the player sees feedback instead of a frozen frame.
+	UT66LoadingScreenWidget* LoadingWidget = CreateWidget<UT66LoadingScreenWidget>(World, UT66LoadingScreenWidget::StaticClass());
+	if (LoadingWidget)
+	{
+		LoadingWidget->AddToViewport(9999); // On top of everything.
+	}
+
+	// Flush one frame so the loading screen renders before we start async work.
+	// Then pre-load heavy gameplay assets; once done, open the level.
+	FTimerHandle PreloadTimerHandle;
+	World->GetTimerManager().SetTimer(PreloadTimerHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		PreloadGameplayAssets([this]()
+		{
+			UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+		});
+	}), 0.05f, false); // Small delay so the loading widget paints first.
 }

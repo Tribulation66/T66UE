@@ -266,6 +266,13 @@ private:
 	// Track the current stage boss so we can safely replace it after async load.
 	TWeakObjectPtr<AT66BossBase> StageBoss;
 
+	// Cached engine primitive mesh (loaded once, reused across all spawn functions).
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> CachedCubeMesh;
+
+	/** Returns the cached /Engine/BasicShapes/Cube mesh, loading once on first call. */
+	UStaticMesh* GetCubeMesh();
+
 	// Floor material soft-load.
 	bool bGroundFloorMaterialLoadRequested = false;
 

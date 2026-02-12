@@ -116,7 +116,6 @@ protected:
 	TSharedPtr<STextBlock> ScoreText;
 	TSharedPtr<STextBlock> ScoreMultiplierText;
 	TSharedPtr<STextBlock> StageText;
-	TSharedPtr<STextBlock> TimerText;
 	TSharedPtr<STextBlock> SpeedRunText;
 	TSharedPtr<STextBlock> SpeedRunTargetText;
 	TSharedPtr<SBox> BossBarContainerBox;
@@ -134,13 +133,20 @@ protected:
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
 	TSharedPtr<SBorder> UltimateBorder;
+	TSharedPtr<SBorder> UltimateCooldownOverlay;
 	TSharedPtr<STextBlock> UltimateText;
+	TSharedPtr<SImage> UltimateImage;
+	TSharedPtr<FSlateBrush> UltimateBrush;
 	TArray<TSharedPtr<ST66DotWidget>> StatusEffectDots;
 	TArray<TSharedPtr<SBox>> StatusEffectDotBoxes;
 	TSharedPtr<SBorder> CurseOverlayBorder;
 	TSharedPtr<SBorder> FullMapOverlayBorder;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
+	TArray<TSharedPtr<SImage>> HeartImages;
+	TSharedPtr<FSlateBrush> HeartBrush;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
+	TArray<TSharedPtr<SImage>> DifficultyImages;
+	TSharedPtr<FSlateBrush> SkullBrush;
 	TSharedPtr<SButton> ImmortalityButton;
 	TSharedPtr<STextBlock> ImmortalityButtonText;
 	TSharedPtr<SButton> PowerButton;
@@ -155,6 +161,7 @@ protected:
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;
 	TSharedPtr<SBox> InventoryPanelBox;
+	TSharedPtr<SBox> IdolSlotsPanelBox;
 	TSharedPtr<SBox> MinimapPanelBox;
 	TSharedPtr<SBox> TikTokPlaceholderBox;
 	TSharedPtr<SBox> TikTokContentBox;
