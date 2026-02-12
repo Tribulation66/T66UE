@@ -3,7 +3,7 @@ Import hero skeletal meshes, animations, and portraits from SourceAssets/Heros.
 
 Maps: Knight -> Hero_1, Ninja -> Hero_2, Cowboy -> Hero_3, Wizard -> Hero_4.
 For each: Default/Type A, Default/Type B, Beach/Type A, Beach/Type B (mesh + walk + alert + run).
-Portraits: Portraits/Type A and Type B PNGs -> /Game/UI/Sprites/Heros/Hero_N/T_Hero_N_TypeA, T_Hero_N_TypeB.
+Portraits: Portraits/Type A and Type B PNGs -> /Game/UI/Sprites/Heroes/Hero_N/T_Hero_N_TypeA, T_Hero_N_TypeB.
 
 Run INSIDE Unreal Editor: Tools -> Execute Python Script -> Scripts/ImportHeros.py
 Then run: SetupCharacterVisualsDataTable.py and reimport Heroes.csv (ImportData.py or FullSetup).
@@ -123,7 +123,7 @@ def main():
 
         # Content base for this hero
         game_hero_base = f"/Game/Characters/Heroes/{hero_id}"
-        game_portrait_base = f"/Game/UI/Sprites/Heros/{hero_id}"
+        game_portrait_base = f"/Game/UI/Sprites/Heroes/{hero_id}"
         _ensure_game_dir(game_hero_base)
         _ensure_game_dir(game_portrait_base)
 

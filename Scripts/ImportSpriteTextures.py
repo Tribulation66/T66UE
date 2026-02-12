@@ -200,7 +200,7 @@ def main():
 
     # --------------------
     # Hero portraits (one per hero folder: portrait.png)
-    # Imported under /Game/UI/Sprites/Heros/<HeroID>/T_HeroPortrait_<HeroID>
+    # Imported under /Game/UI/Sprites/Heroes/<HeroID>/T_HeroPortrait_<HeroID>
     # --------------------
     heroes_map = _read_heroes_csv_display_names()
     heros_dir = os.path.join(sprites_root, "Heros")
@@ -218,7 +218,7 @@ def main():
                 else:
                     continue
 
-            dest_dir = f"/Game/UI/Sprites/Heros/{hero_id}"
+            dest_dir = f"/Game/UI/Sprites/Heroes/{hero_id}"
             asset = f"T_HeroPortrait_{_norm_asset_name(hero_id)}"
             asset_path = _import_texture(src_portrait, dest_dir, asset)
             _apply_ui_texture_settings(asset_path)
