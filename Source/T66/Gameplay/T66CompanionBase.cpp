@@ -7,6 +7,7 @@
 #include "Core/T66HeroSpeedSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -41,6 +42,16 @@ AT66CompanionBase::AT66CompanionBase()
 	SkeletalMesh->SetupAttachment(RootComponent);
 	SkeletalMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SkeletalMesh->SetVisibility(false, true);
+
+	// Character fill light (disabled — emissive + SkyLight now handle brightness).
+	CharacterFillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CharacterFillLight"));
+	CharacterFillLight->SetupAttachment(RootComponent);
+	CharacterFillLight->SetRelativeLocation(FVector(0.f, 0.f, 40.f));
+	CharacterFillLight->SetIntensity(0.0f);                            // Disabled — was causing frontend overexposure
+	CharacterFillLight->SetAttenuationRadius(300.f);
+	CharacterFillLight->SetLightColor(FLinearColor(1.f, 0.98f, 0.95f));
+	CharacterFillLight->SetCastShadows(false);
+	CharacterFillLight->SetVisibility(false);
 }
 
 void AT66CompanionBase::BeginPlay()

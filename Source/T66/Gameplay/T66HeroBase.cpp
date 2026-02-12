@@ -12,6 +12,7 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -66,6 +67,17 @@ AT66HeroBase::AT66HeroBase()
 		// Scale to reasonable character size (cylinder is 100 units tall by default)
 		PlaceholderMesh->SetRelativeScale3D(FVector(0.5f, 0.5f, 1.0f));
 	}
+
+	// ========== Character Fill Light (disabled — emissive + SkyLight now handle brightness) ==========
+	// Kept at intensity 0 so the component exists if we ever want per-character fill again.
+	CharacterFillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CharacterFillLight"));
+	CharacterFillLight->SetupAttachment(RootComponent);
+	CharacterFillLight->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
+	CharacterFillLight->SetIntensity(0.0f);                            // Disabled — was causing frontend overexposure
+	CharacterFillLight->SetAttenuationRadius(400.f);
+	CharacterFillLight->SetLightColor(FLinearColor(1.f, 0.98f, 0.95f));
+	CharacterFillLight->SetCastShadows(false);
+	CharacterFillLight->SetVisibility(false);
 
 	// ========== Combat range ring (visual) ==========
 	AttackRangeRingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("AttackRangeRingISM"));

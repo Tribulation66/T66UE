@@ -21,6 +21,7 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Engine/TextureCube.h"
 #include "GameFramework/PlayerController.h"
 
 static const FName T66MoonTag(TEXT("T66Moon"));
@@ -52,12 +53,13 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
 				LC->SetMobility(EComponentMobility::Movable);
-				LC->SetIntensity(4.f);
+				LC->SetIntensity(3.f);  // Fill light — SkyLight is primary ambient
 				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
+				LC->CastShadows = false; // Shadows disabled — replicates asset-preview look
 				LC->bAtmosphereSunLight = true;
 				LC->AtmosphereSunLightIndex = 0;
 			}
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned DirectionalLight for preview (same as gameplay)"));
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned DirectionalLight for preview (no shadows)"));
 		}
 	}
 
@@ -80,20 +82,22 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 				LC->SetMobility(EComponentMobility::Movable);
 				LC->SetIntensity(0.f);
 				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
+				LC->CastShadows = false; // Shadows disabled globally
 				LC->bAtmosphereSunLight = true;
 				LC->AtmosphereSunLightIndex = 1;
 			}
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned moon light for theme (same as gameplay)"));
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned moon light for theme (no shadows)"));
 		}
 	}
 
-	// Assign atmosphere indices and apply current theme.
+	// Assign atmosphere indices, disable shadows, and apply current theme.
 	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
 	{
 		ADirectionalLight* DirLight = *It;
 		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
 		{
 			LC->SetMobility(EComponentMobility::Movable);
+			LC->CastShadows = false; // Shadows disabled globally — replicates asset-preview look
 			LC->bAtmosphereSunLight = true;
 			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(T66MoonTag) ? 1 : 0;
 		}
@@ -105,20 +109,8 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 		SkyLight = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FVector(0.f, 0.f, 500.f), FRotator::ZeroRotator, SpawnParams);
 		if (SkyLight)
 		{
-			if (USkyLightComponent* SC = SkyLight->GetLightComponent())
-			{
-				SC->SetMobility(EComponentMobility::Movable);
-				SC->SetIntensity(0.8f);
-				SC->SetLightColor(FLinearColor::White);
-				SC->RecaptureSky();
-			}
 			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned SkyLight for preview (same as gameplay)"));
 		}
-	}
-	else if (SkyLight && SkyLight->GetLightComponent())
-	{
-		if (USkyLightComponent* SC = Cast<USkyLightComponent>(SkyLight->GetLightComponent()))
-			SC->RecaptureSky();
 	}
 
 	// Exponential Height Fog (same as gameplay) for atmospheric depth.
@@ -162,23 +154,48 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			PPVolume->bUnbound = true;
 			FPostProcessSettings& PPS = PPVolume->Settings;
 			PPS.bOverride_AutoExposureMinBrightness = true;
-			PPS.AutoExposureMinBrightness = 0.4f;
+			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure — matches asset-preview consistency
 			PPS.bOverride_AutoExposureMaxBrightness = true;
-			PPS.AutoExposureMaxBrightness = 1.2f;
+			PPS.AutoExposureMaxBrightness = 1.0f;  // Same as min = no auto-exposure variation
+			PPS.bOverride_AmbientOcclusionIntensity = true;
+			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off — eliminates dark creases on characters
 			PPS.bOverride_ColorSaturation = true;
 			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned PostProcessVolume (same exposure as gameplay)"));
+			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned PostProcessVolume (locked exposure)"));
 		}
 	}
 
-	// Second pass: all SkyLights to 0.8f and RecaptureSky (match gameplay).
+	// Configure all SkyLights: HDRI cubemap (asset-preview quality) or boosted sky capture fallback.
+	// Lumen is disabled; the SkyLight is the primary source of ambient/indirect light.
+	// Note: EnsureHDRICubemap() is called by GameMode; frontend just loads the result.
+	UTextureCube* HDRICubemap = LoadObject<UTextureCube>(nullptr, TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio"));
+
 	for (TActorIterator<ASkyLight> It(World); It; ++It)
 	{
 		ASkyLight* SL = *It;
 		if (USkyLightComponent* SC = Cast<USkyLightComponent>(SL->GetLightComponent()))
 		{
 			SC->SetMobility(EComponentMobility::Movable);
-			SC->SetIntensity(0.8f);
+
+			if (HDRICubemap)
+			{
+				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
+				SC->Cubemap = HDRICubemap;
+				SC->SetIntensity(8.0f); // Dominant ambient — overshooting intentionally for bright characters
+				SC->bLowerHemisphereIsBlack = false;
+				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f)); // Near-white underside fill
+				UE_LOG(LogTemp, Log, TEXT("Frontend: SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
+			}
+			else
+			{
+				SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
+				SC->SetIntensity(8.0f);
+				SC->bLowerHemisphereIsBlack = false;
+				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f));
+				UE_LOG(LogTemp, Log, TEXT("Frontend: SkyLight using boosted sky capture (no HDRI cubemap, intensity 8.0)"));
+			}
+
+			SC->SetLightColor(FLinearColor::White);
 			SC->RecaptureSky();
 		}
 		if (USceneComponent* Root = SL->GetRootComponent())
@@ -218,7 +235,7 @@ void AT66FrontendGameMode::BeginPlay()
 	}
 
 	UWorld* World = GetWorld();
-	// Same sky and lights as gameplay level — the main viewport camera renders with full Lumen GI.
+	// Same sky and lights as gameplay level — HDRI cubemap SkyLight for ambient (no Lumen).
 	SpawnFrontendLightingIfNeeded(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
@@ -342,7 +359,7 @@ void AT66FrontendGameMode::HandleSettingsChanged()
 {
 	UWorld* World = GetWorld();
 	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
-	// No SceneCapture to refresh — the main viewport camera gets theme changes automatically via Lumen.
+	// No SceneCapture to refresh — the main viewport camera gets theme changes automatically.
 }
 
 void AT66FrontendGameMode::PositionCameraForHeroPreview()

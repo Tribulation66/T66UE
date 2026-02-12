@@ -64,7 +64,15 @@
 #include "Engine/ExponentialHeightFog.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Engine/PostProcessVolume.h"
+#include "Engine/TextureCube.h"
+#include "Engine/Texture2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
+
+#if WITH_EDITORONLY_DATA
+#include "UObject/SavePackage.h"
+#include "Misc/PackageName.h"
+#include "Math/Float16.h"
+#endif
 #include "Materials/MaterialInterface.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
@@ -2307,6 +2315,167 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	}
 }
 
+// ============================================================================
+// HDRI Equirectangular → TextureCube conversion (editor-only, runs once)
+// ============================================================================
+#if WITH_EDITORONLY_DATA
+
+static const TCHAR* HDRIEquirectPath = TEXT("/Game/Lighting/T_HDRI_Studio.T_HDRI_Studio");
+static const TCHAR* HDRICubePackagePath = TEXT("/Game/Lighting/TC_HDRI_Studio");
+static const TCHAR* HDRICubeAssetPath = TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio");
+
+/** Map cube face + UV to a 3D direction vector (UE coordinate system: X=fwd, Y=right, Z=up). */
+static FVector CubeFaceDirection(int32 Face, float U, float V)
+{
+	const float S = 2.f * U - 1.f;
+	const float T = 2.f * V - 1.f;
+	switch (Face)
+	{
+	case 0: return FVector( 1.f,  S,   -T);    // +X
+	case 1: return FVector(-1.f, -S,   -T);    // -X
+	case 2: return FVector(-S,    1.f, -T);     // +Y
+	case 3: return FVector( S,   -1.f, -T);     // -Y
+	case 4: return FVector(-S,   -T,    1.f);   // +Z
+	case 5: return FVector(-S,    T,   -1.f);   // -Z
+	default: return FVector::ForwardVector;
+	}
+}
+
+/** Convert a 3D direction to equirectangular UV coordinates [0,1]. */
+static FVector2D DirToEquirectUV(const FVector& Dir)
+{
+	const FVector N = Dir.GetSafeNormal();
+	const float Phi   = FMath::Atan2(N.Y, N.X);                            // azimuth [-PI, PI]
+	const float Theta = FMath::Asin(FMath::Clamp(N.Z, -1.f, 1.f));        // elevation [-PI/2, PI/2]
+	return FVector2D(
+		FMath::Frac(Phi / (2.f * UE_PI) + 0.5f),
+		FMath::Clamp(0.5f - Theta / UE_PI, 0.f, 1.f)
+	);
+}
+
+/**
+ * If the HDRI Texture2D exists but no TextureCube has been created yet,
+ * sample the equirectangular map into 6 cube faces and save as a persistent asset.
+ */
+static UTextureCube* EnsureHDRICubemap()
+{
+	// Already exists?
+	UTextureCube* Existing = LoadObject<UTextureCube>(nullptr, HDRICubeAssetPath);
+	if (Existing) return Existing;
+
+	// Source equirectangular texture?
+	UTexture2D* Src = LoadObject<UTexture2D>(nullptr, HDRIEquirectPath);
+	if (!Src)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[HDRI] No equirectangular source at %s — skipping cubemap creation"), HDRIEquirectPath);
+		return nullptr;
+	}
+
+	FTextureSource& SrcSource = Src->Source;
+	if (!SrcSource.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[HDRI] Source texture has no valid FTextureSource data"));
+		return nullptr;
+	}
+
+	const int32 SrcW = SrcSource.GetSizeX();
+	const int32 SrcH = SrcSource.GetSizeY();
+	const ETextureSourceFormat SrcFmt = SrcSource.GetFormat();
+	const int32 SrcBpp = SrcSource.GetBytesPerPixel();
+
+	TArray64<uint8> SrcData;
+	SrcSource.GetMipData(SrcData, 0);
+	if (SrcData.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[HDRI] Could not read source mip data"));
+		return nullptr;
+	}
+
+	// Face size: half the equirect height, clamped for sanity.
+	const int32 FaceSize = FMath::Clamp(SrcH / 2, 64, 1024);
+	const int32 FacePixels = FaceSize * FaceSize;
+	const int32 OutBpp = 8; // RGBA16F = 4 channels × 2 bytes (FFloat16)
+
+	UE_LOG(LogTemp, Log, TEXT("[HDRI] Creating cubemap from %dx%d equirect (format %d) → %dx%d faces"), SrcW, SrcH, (int32)SrcFmt, FaceSize, FaceSize);
+
+	// Create the package and TextureCube
+	UPackage* Package = CreatePackage(HDRICubePackagePath);
+	UTextureCube* Cube = NewObject<UTextureCube>(Package, TEXT("TC_HDRI_Studio"), RF_Public | RF_Standalone);
+	Cube->Source.Init(FaceSize, FaceSize, 6, 1, TSF_RGBA16F);
+	Cube->SRGB = false;
+	Cube->CompressionSettings = TC_HDR;
+	Cube->LODGroup = TEXTUREGROUP_Skybox;
+
+	uint8* RawOut = Cube->Source.LockMip(0);
+
+	for (int32 Face = 0; Face < 6; ++Face)
+	{
+		for (int32 Y = 0; Y < FaceSize; ++Y)
+		{
+			for (int32 X = 0; X < FaceSize; ++X)
+			{
+				const float U = (X + 0.5f) / (float)FaceSize;
+				const float V = (Y + 0.5f) / (float)FaceSize;
+
+				const FVector Dir = CubeFaceDirection(Face, U, V);
+				const FVector2D EqUV = DirToEquirectUV(Dir);
+
+				// Nearest-neighbour sample from source (good enough for SkyLight ambient)
+				const int32 SrcX = FMath::Clamp((int32)(EqUV.X * SrcW), 0, SrcW - 1);
+				const int32 SrcY = FMath::Clamp((int32)(EqUV.Y * SrcH), 0, SrcH - 1);
+				const int64 SrcOff = ((int64)SrcY * SrcW + SrcX) * SrcBpp;
+
+				// Read source pixel as linear color
+				FLinearColor Color = FLinearColor::Black;
+				if (SrcFmt == TSF_RGBA16F && SrcOff + 8 <= SrcData.Num())
+				{
+					const FFloat16* H = reinterpret_cast<const FFloat16*>(&SrcData[SrcOff]);
+					Color = FLinearColor(H[0].GetFloat(), H[1].GetFloat(), H[2].GetFloat(), 1.f);
+				}
+				else if (SrcFmt == TSF_BGRA8 && SrcOff + 4 <= SrcData.Num())
+				{
+					Color.B = SrcData[SrcOff + 0] / 255.f;
+					Color.G = SrcData[SrcOff + 1] / 255.f;
+					Color.R = SrcData[SrcOff + 2] / 255.f;
+					Color.A = 1.f;
+				}
+				else if (SrcFmt == TSF_RGBA16 && SrcOff + 8 <= SrcData.Num())
+				{
+					const uint16* U16 = reinterpret_cast<const uint16*>(&SrcData[SrcOff]);
+					Color.R = U16[0] / 65535.f;
+					Color.G = U16[1] / 65535.f;
+					Color.B = U16[2] / 65535.f;
+					Color.A = 1.f;
+				}
+
+				// Write as RGBA16F
+				const int64 DstOff = ((int64)Face * FacePixels + (int64)Y * FaceSize + X) * OutBpp;
+				FFloat16* Out = reinterpret_cast<FFloat16*>(RawOut + DstOff);
+				Out[0].Set(Color.R);
+				Out[1].Set(Color.G);
+				Out[2].Set(Color.B);
+				Out[3].Set(1.f);
+			}
+		}
+	}
+
+	Cube->Source.UnlockMip(0);
+	Cube->UpdateResource();
+	Cube->PostEditChange();
+	Package->MarkPackageDirty();
+
+	// Persist to disk so it's available on next editor launch without re-generation.
+	const FString Filename = FPackageName::LongPackageNameToFilename(HDRICubePackagePath, FPackageName::GetAssetPackageExtension());
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+	UPackage::Save(Package, Cube, *Filename, SaveArgs);
+
+	UE_LOG(LogTemp, Log, TEXT("[HDRI] Saved cubemap: %s (%dx%d per face, RGBA16F)"), HDRICubeAssetPath, FaceSize, FaceSize);
+	return Cube;
+}
+
+#endif // WITH_EDITORONLY_DATA
+
 void AT66GameMode::SpawnLightingIfNeeded()
 {
 	UWorld* World = GetWorld();
@@ -2376,8 +2545,9 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
 				LightComp->SetMobility(EComponentMobility::Movable); // Dynamic lighting so landscape stays lit without Build Lighting
-				LightComp->SetIntensity(4.f);  // Stronger sun to reduce black/dark areas
+				LightComp->SetIntensity(3.f);  // Fill light — SkyLight is primary ambient
 				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
+				LightComp->CastShadows = false; // Shadows disabled — prevents dark bands on characters
 
 				// Drive SkyAtmosphere sun/sky scattering (mid-day blue sky).
 				LightComp->bAtmosphereSunLight = true;
@@ -2411,6 +2581,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 				LC->SetMobility(EComponentMobility::Movable);
 				LC->SetIntensity(0.f); // ApplyThemeToDirectionalLights() will set when Dark
 				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f)); // Cool moonlight
+				LC->CastShadows = false; // Shadows disabled globally
 				LC->bAtmosphereSunLight = true;
 				LC->AtmosphereSunLightIndex = 1;
 			}
@@ -2436,13 +2607,6 @@ void AT66GameMode::SpawnLightingIfNeeded()
 
 		if (Sky)
 		{
-			if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
-			{
-				SkyComp->SetMobility(EComponentMobility::Movable); // Dynamic so landscape stays lit without Build Lighting
-				SkyComp->SetIntensity(0.8f); // Match frontend; consistent with final loop below
-				// Keep the sky light neutral; the blue tint should come from the actual sky capture.
-				SkyComp->SetLightColor(FLinearColor::White);
-			}
 			#if WITH_EDITOR
 			Sky->SetActorLabel(TEXT("DEV_SkyLight"));
 			#endif
@@ -2536,9 +2700,11 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			SpawnedPP->bUnbound = true;
 			FPostProcessSettings& PPS = SpawnedPP->Settings;
 			PPS.bOverride_AutoExposureMinBrightness = true;
-			PPS.AutoExposureMinBrightness = 0.4f;
+			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure — matches asset-preview consistency
 			PPS.bOverride_AutoExposureMaxBrightness = true;
-			PPS.AutoExposureMaxBrightness = 1.2f;
+			PPS.AutoExposureMaxBrightness = 1.0f;  // Same as min = no auto-exposure variation
+			PPS.bOverride_AmbientOcclusionIntensity = true;
+			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off — eliminates dark creases on characters
 			PPS.bOverride_ColorSaturation = true;
 			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f); // Slight desaturation so scene isn't uniformly punchy
 #if WITH_EDITOR
@@ -2553,20 +2719,23 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		PPVolume->bUnbound = true;
 		FPostProcessSettings& PPS = PPVolume->Settings;
 		PPS.bOverride_AutoExposureMinBrightness = true;
-		PPS.AutoExposureMinBrightness = 0.4f;
+		PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure
 		PPS.bOverride_AutoExposureMaxBrightness = true;
-		PPS.AutoExposureMaxBrightness = 1.2f;
+		PPS.AutoExposureMaxBrightness = 1.0f;  // Locked exposure
+		PPS.bOverride_AmbientOcclusionIntensity = true;
+		PPS.AmbientOcclusionIntensity = 0.0f;  // AO off — eliminates dark creases on characters
 		PPS.bOverride_ColorSaturation = true;
 		PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
 	}
 
-	// Force ALL directional and sky lights to Movable; align colors with frontend (theme sets intensities).
+	// Force ALL directional and sky lights to Movable, no shadows, aligned colors (theme sets intensities).
 	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
 	{
 		ADirectionalLight* DirLight = *It;
 		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
 		{
 			LC->SetMobility(EComponentMobility::Movable);
+			LC->CastShadows = false; // Shadows disabled globally — replicates asset-preview look
 			LC->bAtmosphereSunLight = true;
 			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(MoonTag) ? 1 : 0;
 			// Align level-placed light colors with frontend so preview and gameplay match.
@@ -2577,7 +2746,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			else
 			{
 				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-				LC->SetIntensity(4.f);
+				LC->SetIntensity(3.f); // Fill light — SkyLight is primary ambient
 			}
 		}
 		if (USceneComponent* Root = DirLight->GetRootComponent())
@@ -2587,12 +2756,43 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	}
 	ApplyThemeToDirectionalLights();
 
+	// Configure all SkyLights: HDRI cubemap (asset-preview quality) or boosted sky capture fallback.
+	// Lumen is disabled; the SkyLight is the primary source of ambient/indirect light.
+
+	// In editor: auto-create the TextureCube from the equirectangular HDRI if it doesn't exist yet.
+#if WITH_EDITORONLY_DATA
+	EnsureHDRICubemap();
+#endif
+
+	UTextureCube* HDRICubemap = LoadObject<UTextureCube>(nullptr, TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio"));
+
 	for (TActorIterator<ASkyLight> It(World); It; ++It)
 	{
 		if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
 		{
 			SC->SetMobility(EComponentMobility::Movable);
-			SC->SetIntensity(0.8f);
+
+			if (HDRICubemap)
+			{
+				// Studio HDRI cubemap: replicates asset-preview lighting quality.
+				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
+				SC->Cubemap = HDRICubemap;
+				SC->SetIntensity(8.0f); // Dominant ambient — overshooting intentionally for bright characters
+				SC->bLowerHemisphereIsBlack = false;
+				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f)); // Near-white underside fill
+				UE_LOG(LogTemp, Log, TEXT("[LIGHT] SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
+			}
+			else
+			{
+				// Fallback: capture sky atmosphere with boosted intensity + lower hemisphere fill.
+				SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
+				SC->SetIntensity(8.0f);
+				SC->bLowerHemisphereIsBlack = false;
+				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f));
+				UE_LOG(LogTemp, Log, TEXT("[LIGHT] SkyLight using boosted sky capture (no HDRI cubemap found, intensity 8.0)"));
+			}
+
+			SC->SetLightColor(FLinearColor::White);
 			SC->RecaptureSky();
 		}
 		if (USceneComponent* Root = It->GetRootComponent())
@@ -2626,7 +2826,7 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 	const ET66UITheme Theme = FT66Style::GetTheme();
 	if (Theme == ET66UITheme::Light)
 	{
-		SunComp->SetIntensity(4.f);
+		SunComp->SetIntensity(3.f);  // Fill light — SkyLight is primary ambient
 		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
 		MoonComp->SetIntensity(0.f);
 	}

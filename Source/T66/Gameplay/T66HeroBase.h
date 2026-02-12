@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UInstancedStaticMeshComponent;
+class UPointLightComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
 class UT66HeroSpeedSubsystem;
@@ -84,6 +85,11 @@ public:
 	/** Visual ring showing the hero's current auto-attack range (toggle with HUD panels). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UInstancedStaticMeshComponent> AttackRangeRingISM;
+
+	/** Character fill light: soft omnidirectional light attached to the character
+	 *  so it's always visible regardless of scene lighting (no Lumen dependency). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lighting")
+	TObjectPtr<UPointLightComponent> CharacterFillLight;
 
 	// ========== Future FBX Support ==========
 	// When ready for production models:

@@ -8,6 +8,7 @@
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Modules/ModuleManager.h"
 #include "GameFramework/Character.h"
@@ -277,6 +278,11 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		return false;
 	}
 
+	// Clear any previous dynamic material overrides before setting the new mesh.
+	// Without this, MIDs from a previous hero persist in OverrideMaterials and bleed
+	// onto the next hero (e.g. Hero 1 textures appearing on Hero 2).
+	TargetMesh->EmptyOverrideMaterials();
+
 	TargetMesh->SetSkeletalMesh(Res.Mesh);
 	TargetMesh->SetRelativeRotation(Res.Row.MeshRelativeRotation);
 
@@ -355,6 +361,28 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 				*VisualID.ToString());
 		}
 #endif
+	}
+
+	// Force emissive self-illumination on all character materials so characters are
+	// always bright regardless of scene lighting (same technique Fortnite uses).
+	// Copies the diffuse texture into the emissive channel with a weight so characters
+	// "glow" from their own texture. Works for all current and future imported models.
+	{
+		const int32 NumSlots = TargetMesh->GetNumMaterials();
+		for (int32 i = 0; i < NumSlots; ++i)
+		{
+			UMaterialInstanceDynamic* MID = TargetMesh->CreateDynamicMaterialInstance(i);
+			if (MID)
+			{
+				UTexture* DiffuseTex = nullptr;
+				MID->GetTextureParameterValue(FName(TEXT("DiffuseColorMap")), DiffuseTex);
+				if (DiffuseTex)
+				{
+					MID->SetTextureParameterValue(FName(TEXT("EmissiveColorMap")), DiffuseTex);
+					MID->SetScalarParameterValue(FName(TEXT("EmissiveColorMapWeight")), 0.8f);
+				}
+			}
+		}
 	}
 
 	if (PlaceholderToHide)
