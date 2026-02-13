@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Input/Reply.h"
+#include "Styling/SlateBrush.h"
 #include "T66VendorOverlayWidget.generated.h"
 
 class STextBlock;
@@ -46,8 +47,11 @@ private:
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> StatusText;
 
-	// Anger indicator (0..1) - circle color + optional text
+	// Anger indicator (0..1) - face sprites (Happy/Neutral/Angry)
 	TSharedPtr<SImage> AngerCircleImage;
+	FSlateBrush AngerFace_Happy;
+	FSlateBrush AngerFace_Neutral;
+	FSlateBrush AngerFace_Angry;
 
 	// Stats panel (refreshable when inventory changes)
 	TSharedPtr<SBox> StatsPanelBox;

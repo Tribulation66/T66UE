@@ -18,8 +18,8 @@ class SVerticalBox;
  * Top: Hero belt carousel with HERO GRID button
  * Center: 3D preview area with CHOOSE COMPANION button
  * Left: Skins panel
- * Right: Hero info panel (name, video, description, medals, lore button)
- * Bottom: Difficulty selector, THE LAB button, ENTER THE TRIBULATION button
+ * Right: Hero info panel (name button → Lore, Demo button → Lab, video, description)
+ * Bottom: Difficulty selector, ENTER THE TRIBULATION button
  */
 UCLASS(Blueprintable)
 class T66_API UT66HeroSelectionScreen : public UT66ScreenBase

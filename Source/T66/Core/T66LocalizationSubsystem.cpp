@@ -174,10 +174,8 @@ void UT66LocalizationSubsystem::SaveLanguagePreference()
 
 FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroNames", "Hero_1", "Knight Chad");
-	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroNames", "Hero_2", "Ninja Chad");
-	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroNames", "Hero_3", "Gunslinger Chad");
-	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroNames", "Hero_4", "Magician Chad");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroNames", "Hero_1", "New Chad");
+	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroNames", "Hero_2", "Knight");
 	return FText::FromName(HeroID);
 }
 
@@ -186,18 +184,14 @@ FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 FText UT66LocalizationSubsystem::GetText_HeroDescription(FName HeroID) const
 {
 	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_1", "Sturdy frontline. Favors armor.");
-	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_2", "Swift and elusive. Favors evasion.");
-	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_3", "Quick on the draw. Favors attack speed.");
-	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_4", "Bends fortune. Favors luck.");
+	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_2", "Steadfast knight. Ready for battle.");
 	return NSLOCTEXT("T66.HeroDescriptions", "SelectHeroPrompt", "Select a hero to view their description.");
 }
 
 FText UT66LocalizationSubsystem::GetText_HeroQuote(FName HeroID) const
 {
 	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_1", "\"Hold the line.\"");
-	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_2", "\"You won't see me coming.\"");
-	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_3", "\"Quick draw.\"");
-	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_4", "\"Luck is with me.\"");
+	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_2", "\"For honor.\"");
 	return FText::GetEmpty();
 }
 
@@ -1069,6 +1063,11 @@ FText UT66LocalizationSubsystem::GetText_TheLab() const
 	return NSLOCTEXT("T66.HeroSelection", "TheLab", "THE LAB");
 }
 
+FText UT66LocalizationSubsystem::GetText_Demo() const
+{
+	return NSLOCTEXT("T66.HeroSelection", "Demo", "Demo");
+}
+
 FText UT66LocalizationSubsystem::GetText_BodyTypeA() const
 {
 	return NSLOCTEXT("T66.HeroSelection", "BodyTypeA", "TYPE A");
@@ -1873,6 +1872,51 @@ FText UT66LocalizationSubsystem::GetText_RockPaperScissors() const
 FText UT66LocalizationSubsystem::GetText_FindTheBall() const
 {
 	return NSLOCTEXT("T66.Gambler", "FindTheBall", "FIND THE BALL");
+}
+
+FText UT66LocalizationSubsystem::GetText_BlackJack() const
+{
+	return NSLOCTEXT("T66.Gambler", "BlackJack", "BLACK JACK");
+}
+
+FText UT66LocalizationSubsystem::GetText_Hit() const
+{
+	return NSLOCTEXT("T66.Gambler", "Hit", "Hit");
+}
+
+FText UT66LocalizationSubsystem::GetText_Stand() const
+{
+	return NSLOCTEXT("T66.Gambler", "Stand", "Stand");
+}
+
+FText UT66LocalizationSubsystem::GetText_Double() const
+{
+	return NSLOCTEXT("T66.Gambler", "Double", "Double");
+}
+
+FText UT66LocalizationSubsystem::GetText_Split() const
+{
+	return NSLOCTEXT("T66.Gambler", "Split", "Split");
+}
+
+FText UT66LocalizationSubsystem::GetText_Dealer() const
+{
+	return NSLOCTEXT("T66.Gambler", "Dealer", "Dealer");
+}
+
+FText UT66LocalizationSubsystem::GetText_You() const
+{
+	return NSLOCTEXT("T66.Gambler", "You", "You");
+}
+
+FText UT66LocalizationSubsystem::GetText_Bust() const
+{
+	return NSLOCTEXT("T66.Gambler", "Bust", "Bust");
+}
+
+FText UT66LocalizationSubsystem::GetText_Push() const
+{
+	return NSLOCTEXT("T66.Gambler", "Push", "Push");
 }
 
 FText UT66LocalizationSubsystem::GetText_ChooseHeadsOrTails() const

@@ -66,6 +66,16 @@ bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
 		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateHeightfield: invalid dimensions SizeX=%d SizeY=%d"), SizeX, SizeY);
 		return false;
 	}
+	if (Params.bFlatTerrain)
+	{
+		OutHeights.SetNumUninitialized(SizeX * SizeY);
+		for (int32 I = 0; I < OutHeights.Num(); ++I)
+		{
+			OutHeights[I] = 0.f;
+		}
+		UE_LOG(LogT66, Log, TEXT("[MAP] GenerateHeightfield: flat terrain (bFlatTerrain=true)"));
+		return true;
+	}
 	if (Params.HillAmplitude <= 0.f || Params.VeryLargeScaleMeters < 10.f || Params.LargeScaleMeters < 10.f || Params.MediumScaleMeters < 10.f)
 	{
 		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateHeightfield: invalid params (amplitude or scales)"));

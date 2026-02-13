@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
+#include "Styling/SlateBrush.h"
 #include "T66GameplayHUDWidget.generated.h"
 
 class UT66RunStateSubsystem;
@@ -93,6 +94,7 @@ protected:
 	UT66RunStateSubsystem* GetRunState() const;
 
 	void RefreshMapData();
+	void RefreshFPS();
 	void UpdateTikTokVisibility();
 	bool IsMediaViewerOpen() const;
 
@@ -160,6 +162,7 @@ protected:
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;
+	TSharedPtr<STextBlock> FPSText;
 	TSharedPtr<SBox> InventoryPanelBox;
 	TSharedPtr<SBox> BottomLeftHUDBox;
 	TSharedPtr<SBox> IdolSlotsPanelBox;
@@ -167,8 +170,9 @@ protected:
 	TSharedPtr<SBox> TikTokPlaceholderBox;
 	TSharedPtr<SBox> TikTokContentBox;
 	TSharedPtr<SBox> WheelSpinBox;
-	TSharedPtr<SBorder> WheelSpinDisk;
+	TSharedPtr<SImage> WheelSpinDisk;
 	TSharedPtr<STextBlock> WheelSpinText;
+	FSlateBrush WheelTextureBrush;
 	TSharedPtr<ST66WorldMapWidget> MinimapWidget;
 	TSharedPtr<ST66WorldMapWidget> FullMapWidget;
 	TSharedPtr<SBox> WorldDialogueBox;
@@ -177,6 +181,7 @@ protected:
 
 	bool bFullMapOpen = false;
 	FTimerHandle MapRefreshTimerHandle;
+	FTimerHandle FPSTimerHandle;
 	FTimerHandle TikTokOverlaySyncHandle;
 
 	// Wheel spin state

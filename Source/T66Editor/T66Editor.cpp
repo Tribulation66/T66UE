@@ -96,6 +96,7 @@ void FT66EditorModule::RegisterT66ToolsMenu()
 						return;
 					}
 					FT66ProceduralLandscapeParams Params;
+					Params.bFlatTerrain = false;  // Menu action explicitly generates hills
 					Params.Seed = FMath::Rand();
 					const bool bOk = T66ProceduralLandscapeEditor::GenerateProceduralHillsLandscape(World, Params);
 					if (!bOk)

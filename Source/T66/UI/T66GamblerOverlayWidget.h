@@ -39,7 +39,7 @@ private:
 		Casino = 1,
 		CoinFlip = 2,
 		RockPaperScissors = 3,
-		FindTheBall = 4,
+		BlackJack = 4,
 	};
 
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
@@ -48,9 +48,12 @@ private:
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> StatusText;
 
-	// Anger indicator (0..1) - circle color + optional text
+	// Anger indicator (0..1) - face sprites (Happy/Neutral/Angry)
 	TSharedPtr<SImage> AngerCircleImage;
 	TSharedPtr<STextBlock> AngerText;
+	FSlateBrush AngerFace_Happy;
+	FSlateBrush AngerFace_Neutral;
+	FSlateBrush AngerFace_Angry;
 
 	// Stats panel (refreshable when inventory changes)
 	TSharedPtr<SBox> StatsPanelBox;
@@ -86,17 +89,45 @@ private:
 
 	// Coin flip page
 	TSharedPtr<STextBlock> CoinFlipResultText;
+	TSharedPtr<SImage> CoinFlipImage;
+	FSlateBrush CoinBrush_Heads;
+	FSlateBrush CoinBrush_Tails;
+	FSlateBrush CoinBrush_Side;
+	FTimerHandle CoinSpinTimerHandle;
+	float CoinSpinElapsed = 0.f;
+	float CoinSpinDuration = 2.0f;
+	bool bCoinSpinActive = false;
+	bool bCoinSpinResultHeads = false; // final face to land on
+	void TickCoinSpin();
+	void FinishCoinSpin();
 
 	// RPS page
 	TSharedPtr<STextBlock> RpsResultText;
+	TSharedPtr<SImage> RpsHumanHandImage;
+	TSharedPtr<SImage> RpsDemonHandImage;
+	TSharedPtr<SBox> RpsHandsContainer;
+	FSlateBrush RpsBrush_HumanRock;
+	FSlateBrush RpsBrush_HumanPaper;
+	FSlateBrush RpsBrush_HumanScissors;
+	FSlateBrush RpsBrush_DemonRock;
+	FSlateBrush RpsBrush_DemonPaper;
+	FSlateBrush RpsBrush_DemonScissors;
 
-	// Find-the-ball page
-	TSharedPtr<STextBlock> BallResultText;
+	// Black Jack page
+	TSharedPtr<STextBlock> BlackJackResultText;
+	TSharedPtr<SImage> BlackJackDealerHoleCardBackImage;
+	TArray<TSharedPtr<SImage>> BlackJackDealerCardImages;
+	TArray<TSharedPtr<SImage>> BlackJackPlayerCardImages;
+	TArray<FSlateBrush> BJCardBrushes; // 53 brushes: [0..51] = face cards, [52] = card back
+	FSlateBrush BlackJackCardBackBrush;
+	void InitBJCardBrushes();
+	FSlateBrush* GetBJCardBrush(int32 CardIndex);
+	FSlateBrush* GetBJCardBackBrush();
 
 	// Game icons (casino cards)
 	FSlateBrush GameIcon_CoinFlip;
 	FSlateBrush GameIcon_Rps;
-	FSlateBrush GameIcon_FindBall;
+	FSlateBrush GameIcon_BlackJack;
 
 	int32 WinGoldAmount = 10; // used as a default gamble amount suggestion from DT
 	bool bInputLocked = false;
@@ -106,7 +137,7 @@ private:
 		None = 0,
 		CoinFlip,
 		RockPaperScissors,
-		FindTheBall,
+		BlackJack,
 	};
 
 	ERevealType PendingRevealType = ERevealType::None;
@@ -117,8 +148,18 @@ private:
 	bool bPendingCoinFlipResultHeads = false;
 	int32 PendingRpsPlayerChoice = 0;
 	int32 PendingRpsOppChoice = 0;
-	int32 PendingFindBallChosenCup = 0;
-	int32 PendingFindBallCorrectCup = 0;
+
+	// Black Jack state (replaces Find-the-Ball)
+	enum class EBlackJackPhase : uint8 { WaitingForAction, PlayerBusted, DealerPlaying, RoundOver };
+	TArray<int32> BJDeck;           // 0..51 (rank = card%13, suit = card/13)
+	TArray<int32> BJDealerHand;
+	TArray<TArray<int32>> BJPlayerHands;  // 1 or 2 hands (split)
+	int32 BJCurrentHandIndex = 0;
+	int32 BJBetAmount = 0;
+	bool BJDealerHoleRevealed = false;
+	EBlackJackPhase BJPhase = EBlackJackPhase::WaitingForAction;
+	int32 BJWinAmount = 0;         // positive=win, negative=loss, 0=push (for reveal display)
+	bool bBJPlayerBusted = false;
 
 	FTimerHandle RevealTimerHandle;
 	void RevealPendingOutcome();
@@ -137,16 +178,17 @@ private:
 
 	FReply OnOpenCoinFlip();
 	FReply OnOpenRps();
-	FReply OnOpenFindBall();
+	FReply OnOpenBlackJack();
 
 	FReply OnCoinFlipHeads();
 	FReply OnCoinFlipTails();
 	FReply OnRpsRock();
 	FReply OnRpsPaper();
 	FReply OnRpsScissors();
-	FReply OnBallCup1();
-	FReply OnBallCup2();
-	FReply OnBallCup3();
+	FReply OnBJHit();
+	FReply OnBJStand();
+	FReply OnBJDouble();
+	FReply OnBJSplit();
 
 	FReply OnCheatYes();
 	FReply OnCheatNo();
@@ -159,6 +201,7 @@ private:
 	bool IsBossActive() const;
 	bool TryPayToPlay();
 	void AwardWin();
+	void AwardWin(int32 BetAmount);
 	void SetStatus(const FText& Msg, const FLinearColor& Color = FLinearColor::White);
 
 	void ShowCheatPrompt();
@@ -167,7 +210,18 @@ private:
 
 	void ResolveCoinFlip(bool bChoseHeads);
 	void ResolveRps(int32 PlayerChoice /*0=Rock,1=Paper,2=Scissors*/);
-	void ResolveFindBall(int32 ChosenCup /*0..2*/);
+
+	void StartBlackJackRound();
+	void RefreshBlackJackCards();
+	int32 BJHandValue(const TArray<int32>& Hand) const;
+	FText BJCardToText(int32 CardIndex) const;
+	void BJDealerPlay();
+	void BJEndRound();
+	void RevealBlackJackOutcome();
+	void HandleBJHit();
+	void HandleBJStand();
+	void HandleBJDouble();
+	void HandleBJSplit();
 
 	void TeleportToVendor();
 };

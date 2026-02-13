@@ -230,6 +230,10 @@ public:
 		static constexpr float ItemPanelIconSize = 200.f;   // Vendor shop item icon; Gambler game card icon
 		static constexpr float GameCardMinWidth = 260.f;
 		static constexpr float GameCardHeight = 200.f;
+		/** Center panel width for NPC overlays (Vendor shop + Gambler casino). ~20% wider than 692. */
+		static constexpr float NPCCenterPanelTotalWidth = 830.f;
+		/** Right panel width (anger + bank) for NPC overlays — fixed size the vendor had previously. */
+		static constexpr float NPCRightPanelWidth = 280.f;
 
 		// Spacing scale (4pt baseline)
 		static constexpr float Space2 = 8.f;

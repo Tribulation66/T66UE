@@ -468,14 +468,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.HeroSelection", "Skins", "SKINS");
 	FText HeroInfoText = Loc ? Loc->GetText_HeroInfo() : NSLOCTEXT("T66.HeroSelection", "HeroInfo", "HERO INFO");
 	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.HeroSelection", "Lore", "LORE");
-	FText TheLabText = Loc ? Loc->GetText_TheLab() : NSLOCTEXT("T66.HeroSelection", "TheLab", "THE LAB");
+	FText DemoText = Loc ? Loc->GetText_Demo() : NSLOCTEXT("T66.HeroSelection", "Demo", "Demo");
 	FText BackToLobbyText = Loc ? Loc->GetText_BackToLobby() : NSLOCTEXT("T66.Lobby", "BackToLobby", "BACK TO LOBBY");
 	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 	FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
-	(void)TheLabText; // (The Lab button removed from this screen)
 
 	bool bHideEnterFromLobby = false;
 	if (UT66GameInstance* GIFlow = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
@@ -616,7 +615,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
 	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
-	return SNew(SBorder)
+	TSharedRef<SWidget> Root = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 		.Padding(0)
 		[
@@ -823,7 +822,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									SNew(STextBlock).Text(HeroInfoText)
 									.TextStyle(&TxtHeading)
 								]
-								// Hero name + Lore button on same row
+								// Hero name (button → Lore) + Demo (button → Lab) on same row
 								+ SVerticalBox::Slot()
 								.AutoHeight()
 								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
@@ -833,26 +832,27 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									.FillWidth(1.0f)
 									.VAlign(VAlign_Center)
 									[
-										FT66Style::MakePanel(
-											SAssignNew(HeroNameWidget, STextBlock)
-											.Text(Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"))
-											.TextStyle(&TxtButton)
-											.Justification(ETextJustify::Center),
-											FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
+										FT66Style::MakeButton(FT66ButtonParams(
+											Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"),
+											FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked),
+											ET66ButtonType::Neutral)
+											.SetContent(SAssignNew(HeroNameWidget, STextBlock)
+												.Text(Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"))
+												.TextStyle(&TxtButton)
+												.Justification(ETextJustify::Center))
+										)
 									]
 									+ SHorizontalBox::Slot()
 									.AutoWidth()
 									.VAlign(VAlign_Center)
 									.Padding(8.0f, 0.0f, 0.0f, 0.0f)
 									[
-									FT66Style::MakeButton(FT66ButtonParams(LoreText,
-										FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked),
-										ET66ButtonType::Neutral)
-										.SetMinWidth(110.f)
-										.SetContent(SNew(STextBlock)
-											.Text_Lambda([this, LoreText, BackText]() -> FText { return bShowingLore ? BackText : LoreText; })
-											.TextStyle(&TxtChip))
-									)
+										FT66Style::MakeButton(FT66ButtonParams(DemoText,
+											FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
+											ET66ButtonType::Neutral)
+											.SetMinWidth(110.f)
+											.SetContent(SNew(STextBlock).Text(DemoText).TextStyle(&TxtChip))
+										)
 									]
 								]
 								// Video placeholder (square-ish)
@@ -869,42 +869,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 											.Justification(ETextJustify::Center)
 									],
 									ET66PanelType::Panel, FMargin(5.0f))
-								]
-								// Medals placeholder (bigger, right below video)
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.HAlign(HAlign_Center)
-								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-								[
-									SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
-									[
-										SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
-										[
-											SNew(SBorder).BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.1f, 1.0f))
-										]
-									]
-									+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
-									[
-										SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
-										[
-											SNew(SBorder).BorderBackgroundColor(FLinearColor(0.3f, 0.1f, 0.1f, 1.0f))
-										]
-									]
-									+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
-									[
-										SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
-										[
-											SNew(SBorder).BorderBackgroundColor(FLinearColor(0.4f, 0.35f, 0.1f, 1.0f))
-										]
-									]
-									+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f)
-									[
-										SNew(SBox).WidthOverride(52.0f).HeightOverride(52.0f)
-										[
-											SNew(SBorder).BorderBackgroundColor(FLinearColor(0.9f, 0.9f, 0.9f, 1.0f))
-										]
-									]
 								]
 								// Quote + Base Stats (replaces short description here)
 								+ SVerticalBox::Slot()
@@ -986,7 +950,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 								]
 								]
 							]
-							// From Lobby (co-op): only THE LAB + BACK TO LOBBY. Solo: THE LAB + difficulty dropdown + ENTER THE TRIBULATION.
+							// From Lobby (co-op): BACK TO LOBBY only. Solo: difficulty dropdown + ENTER THE TRIBULATION.
 							+ SVerticalBox::Slot()
 							.AutoHeight()
 							.Padding(0.0f, 10.0f, 0.0f, 0.0f)
@@ -995,20 +959,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									? static_cast<TSharedRef<SWidget>>(SNew(SVerticalBox)
 										+ SVerticalBox::Slot()
 										.AutoHeight()
-										.Padding(0.0f, 0.0f, 0.0f, 4.0f)
-										[
-											SNew(SBox).HeightOverride(40.0f)
-											[
-												FT66Style::MakeButton(
-													TheLabText,
-													FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
-													ET66ButtonType::Neutral
-												)
-											]
-										]
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.Padding(0.0f, 4.0f, 0.0f, 0.0f)
+										.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 										[
 										FT66Style::MakeButton(FT66ButtonParams(BackToLobbyText,
 											FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackToLobbyClicked),
@@ -1022,20 +973,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									: static_cast<TSharedRef<SWidget>>(SNew(SVerticalBox)
 										+ SVerticalBox::Slot()
 										.AutoHeight()
-										.Padding(0.0f, 0.0f, 0.0f, 4.0f)
-										[
-											SNew(SBox).HeightOverride(40.0f)
-											[
-												FT66Style::MakeButton(
-													TheLabText,
-													FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
-													ET66ButtonType::Neutral
-												)
-											]
-										]
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.Padding(0.0f, 4.0f, 0.0f, 0.0f)
+										.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 										[
 											SNew(SHorizontalBox)
 											+ SHorizontalBox::Slot()
@@ -1106,6 +1044,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			)
 			]
 		];
+	UpdateHeroDisplay();
+	return Root;
 }
 
 FReply UT66HeroSelectionScreen::HandlePrevClicked()
@@ -1239,14 +1179,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 	}
 	else
 	{
-		if (HeroNameWidget.IsValid())
-		{
-			HeroNameWidget->SetText(Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"));
-		}
-		if (HeroDescWidget.IsValid())
-		{
-			HeroDescWidget->SetText(NSLOCTEXT("T66.HeroSelection", "SelectHeroDescriptionHint", "Select a hero to view their description."));
-		}
+		// No preview hero (should not happen; there is always a hero in the preview). Leave widgets as-is.
 		if (HeroLoreWidget.IsValid())
 		{
 			HeroLoreWidget->SetText(FText::GetEmpty());

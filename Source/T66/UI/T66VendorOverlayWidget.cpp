@@ -93,11 +93,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	UWorld* World = GetWorld();
 	UT66LocalizationSubsystem* Loc = nullptr;
+	UT66UITexturePoolSubsystem* TexPool = nullptr;
 	if (World)
 	{
 		if (UGameInstance* GI = World->GetGameInstance())
 		{
 			Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+			TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
 		}
 	}
 
@@ -126,6 +128,27 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextHeading = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
 	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+
+	// --- NPC anger face sprites ---
+	static constexpr float AngerFaceSize = 170.f;
+	auto InitFaceBrush = [](FSlateBrush& B) {
+		B = FSlateBrush();
+		B.ImageSize = FVector2D(AngerFaceSize, AngerFaceSize);
+		B.DrawAs = ESlateBrushDrawType::Image;
+	};
+	InitFaceBrush(AngerFace_Happy);
+	InitFaceBrush(AngerFace_Neutral);
+	InitFaceBrush(AngerFace_Angry);
+
+	if (TexPool)
+	{
+		const TSoftObjectPtr<UTexture2D> HappySoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/NPCs/Vendor/Happy.Happy")));
+		const TSoftObjectPtr<UTexture2D> NeutralSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/NPCs/Vendor/Neutral.Neutral")));
+		const TSoftObjectPtr<UTexture2D> AngrySoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/NPCs/Vendor/Angry.Angry")));
+		T66SlateTexture::BindBrushAsync(TexPool, HappySoft, this, AngerFace_Happy, FName(TEXT("VendorFaceHappy")), /*bClearWhileLoading*/ true);
+		T66SlateTexture::BindBrushAsync(TexPool, NeutralSoft, this, AngerFace_Neutral, FName(TEXT("VendorFaceNeutral")), /*bClearWhileLoading*/ true);
+		T66SlateTexture::BindBrushAsync(TexPool, AngrySoft, this, AngerFace_Angry, FName(TEXT("VendorFaceAngry")), /*bClearWhileLoading*/ true);
+	}
 
 	const FText VendorTitle = Loc ? Loc->GetText_Vendor() : NSLOCTEXT("T66.Vendor", "VendorTitle", "VENDOR");
 	const FText ShopTitle = Loc ? Loc->GetText_Shop() : NSLOCTEXT("T66.Vendor", "ShopTitle", "SHOP");
@@ -476,53 +499,57 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(StatsPanelBox, SBox)
 				[
-					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f)
+					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f, true)
 				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 			[
-				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				SNew(SBox)
+				.WidthOverride(FT66Style::Tokens::NPCCenterPanelTotalWidth)
+				[
+					FT66Style::MakePanel(
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 						[
-							SNew(STextBlock)
-							.Text(ShopTitle)
-							.TextStyle(&TextHeading)
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+							[
+								SNew(STextBlock)
+								.Text(ShopTitle)
+								.TextStyle(&TextHeading)
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+							+ SHorizontalBox::Slot().FillWidth(1.f)
+							[
+								SNew(SSpacer)
+							]
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+							[
+								FT66Style::MakeButton(
+									FT66ButtonParams(RerollText,
+										FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
+										ET66ButtonType::Neutral)
+									.SetMinWidth(0.f)
+									.SetPadding(FMargin(16.f, 10.f))
+									.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
+								)
+							]
 						]
-						+ SHorizontalBox::Slot().FillWidth(1.f)
+						+ SVerticalBox::Slot().FillHeight(1.f)
 						[
-							SNew(SSpacer)
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().FillWidth(1.f)
+							[
+								SNew(SSpacer)
+							]
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								ShopRow
+							]
 						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(RerollText,
-									FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
-									ET66ButtonType::Neutral)
-								.SetMinWidth(0.f)
-								.SetPadding(FMargin(16.f, 10.f))
-								.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
-							)
-						]
-					]
-					+ SVerticalBox::Slot().FillHeight(1.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().FillWidth(1.f)
-						[
-							SNew(SSpacer)
-						]
-						+ SHorizontalBox::Slot().AutoWidth()
-						[
-							ShopRow
-						]
-					]
-				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+					,
+						FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+				]
 			]
 			+ SHorizontalBox::Slot().FillWidth(1.f)
 			[
@@ -531,14 +558,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					// Anger circle (top)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 					[
-						SNew(SBox)
-						.WidthOverride(170.f)
-						.HeightOverride(170.f)
-						[
-							SAssignNew(AngerCircleImage, SImage)
-							.Image(Style.GetBrush("T66.Brush.Circle"))
-							.ColorAndOpacity(FLinearColor::White)
-						]
+				SNew(SBox)
+					.WidthOverride(170.f)
+					.HeightOverride(170.f)
+					[
+						SAssignNew(AngerCircleImage, SImage)
+						.Image(&AngerFace_Happy)
+					]
 					]
 					// Bank (bottom, separate panel)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
@@ -796,7 +822,7 @@ void UT66VendorOverlayWidget::RefreshStatsPanel()
 	{
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
-	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f));
+	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f, true));
 }
 
 void UT66VendorOverlayWidget::RefreshTopBar()
@@ -822,28 +848,23 @@ void UT66VendorOverlayWidget::RefreshTopBar()
 		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
 	}
 
-	// Anger circle color rules (discrete):
-	// 0 => white
-	// 1-50 => pink
-	// 51-99 => purple
-	// 100 => red (boss triggers)
+	// Anger face sprites: Happy (0-33%), Neutral (34-66%), Angry (67-99%), boss at 100%
 	if (AngerCircleImage.IsValid())
 	{
 		const int32 Anger = FMath::Clamp(RunState->GetVendorAngerGold(), 0, UT66RunStateSubsystem::VendorAngerThresholdGold);
-		FLinearColor C = FLinearColor::White;
-		if (Anger >= UT66RunStateSubsystem::VendorAngerThresholdGold)
+		const int32 Pct = FMath::RoundToInt((static_cast<float>(Anger) / static_cast<float>(UT66RunStateSubsystem::VendorAngerThresholdGold)) * 100.f);
+		if (Pct >= 67)
 		{
-			C = FT66Style::Tokens::Danger;
+			AngerCircleImage->SetImage(&AngerFace_Angry);
 		}
-		else if (Anger >= 51)
+		else if (Pct >= 34)
 		{
-			C = FLinearColor(0.60f, 0.25f, 0.90f, 1.f); // purple
+			AngerCircleImage->SetImage(&AngerFace_Neutral);
 		}
-		else if (Anger >= 1)
+		else
 		{
-			C = FLinearColor(0.95f, 0.35f, 0.65f, 1.f); // pink
+			AngerCircleImage->SetImage(&AngerFace_Happy);
 		}
-		AngerCircleImage->SetColorAndOpacity(FSlateColor(C));
 	}
 }
 

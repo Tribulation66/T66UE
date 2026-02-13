@@ -1587,6 +1587,48 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			}
 		}
 	}
+
+	// Always spawn one wheel right next to the hero (at hero spawn position + offset).
+	if (!IsColiseumStage() && !IsLabLevel())
+	{
+		float HeroX = -35455.f;
+		float HeroY = 0.f;
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+			const FVector Loc = (*It)->GetActorLocation();
+			HeroX = Loc.X;
+			HeroY = Loc.Y;
+			break;
+		}
+		static constexpr float HeroWheelOffset = 380.f;  // to the right of hero spawn
+		const float WheelX = HeroX + HeroWheelOffset;
+		const float WheelY = HeroY;
+		FVector WheelLoc(WheelX, WheelY, SpawnZ);
+		FVector Normal = FVector::UpVector;
+		FHitResult Hit;
+		const FVector TraceStart(WheelX, WheelY, 2000.f);
+		const FVector TraceEnd(WheelX, WheelY, -4000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+		{
+			WheelLoc = Hit.ImpactPoint;
+			Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, FVector::UpVector);
+		}
+		FActorSpawnParameters P;
+		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		const FQuat SlopeRot = FQuat::FindBetweenNormals(FVector::UpVector, Normal);
+		if (AT66WheelSpinInteractable* HeroWheel = World->SpawnActor<AT66WheelSpinInteractable>(AT66WheelSpinInteractable::StaticClass(), WheelLoc, SlopeRot.Rotator(), P))
+		{
+			const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
+			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			HeroWheel->SetRarity(R);
+			if (RunState)
+			{
+				RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), R);
+			}
+			UsedLocs.Add(WheelLoc);
+		}
+	}
+
 	for (int32 i = 0; i < CountTotems; ++i)
 	{
 		if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnOne(AT66DifficultyTotem::StaticClass())))
@@ -3122,6 +3164,14 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		}
 	}
 
+	// Hero spawn: flat spawn plane at Z=100 so hero does not fall through ground.
+	if (PawnClass && PawnClass->IsChildOf(AT66HeroBase::StaticClass()))
+	{
+		const float DefaultHalfHeight = 88.f;
+		const float SpawnGroundZ = 100.f;
+		SpawnLocation.Z = SpawnGroundZ + DefaultHalfHeight;
+	}
+
 	// Spawn parameters
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = NewPlayer;
@@ -3133,18 +3183,12 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// If it's our hero class, initialize it with hero data and body type
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(SpawnedPawn))
 	{
-		// Snap to ground so the hero is never floating or sunk.
-		if (UWorld* World = GetWorld())
-		{
-			FHitResult Hit;
-			const FVector Start = Hero->GetActorLocation() + FVector(0.f, 0.f, 2000.f);
-			const FVector End = Hero->GetActorLocation() - FVector(0.f, 0.f, 6000.f);
-			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-			{
-				const float HalfHeight = Hero->GetCapsuleComponent() ? Hero->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
-				Hero->SetActorLocation(Hit.ImpactPoint + FVector(0.f, 0.f, HalfHeight), false, nullptr, ETeleportType::TeleportPhysics);
-			}
-		}
+		// Place on flat spawn plane at Z=100 so hero does not fall through ground.
+		const float HalfHeight = Hero->GetCapsuleComponent() ? Hero->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
+		const float SpawnGroundZ = 100.f;
+		FVector FlatLoc = Hero->GetActorLocation();
+		FlatLoc.Z = SpawnGroundZ + HalfHeight;
+		Hero->SetActorLocation(FlatLoc, false, nullptr, ETeleportType::TeleportPhysics);
 
 		if (UT66GameInstance* GI = GetT66GameInstance())
 		{

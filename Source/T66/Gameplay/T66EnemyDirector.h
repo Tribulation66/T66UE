@@ -80,7 +80,7 @@ public:
 
 	/** When true, no enemy waves are spawned (timer not armed, SpawnWave no-op). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Director")
-	bool bSpawningPaused = true;
+	bool bSpawningPaused = false;
 
 	/** Called by enemy when it dies */
 	UFUNCTION(BlueprintCallable, Category = "Director")

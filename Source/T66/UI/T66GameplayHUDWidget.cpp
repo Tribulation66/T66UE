@@ -41,10 +41,12 @@
 
 namespace
 {
-	// TikTok web has a minimum layout width. Keep the original height to avoid overlapping the bottom-left HUD,
-	// but widen the panel so TikTok's layout centers properly.
-	static constexpr float GT66TikTokPanelW = 420.f;
+	// TikTok panel width: narrow enough to hide the right-side like/comment/share sidebar (video content only).
+	static constexpr float GT66TikTokPanelW = 330.f;
 	static constexpr float GT66TikTokPanelH = 600.f;
+
+	// Distance from viewport bottom to top of hearts row (matches bottom-left HUD: slot padding 24 + portrait 250 + padding 6 + hearts 48).
+	static constexpr float GT66HeartsTopOffsetFromBottom = 24.f + 250.f + 6.f + 48.f;
 }
 
 class ST66RingWidget : public SLeafWidget
@@ -623,6 +625,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.25f, true);
+		World->GetTimerManager().SetTimer(FPSTimerHandle, this, &UT66GameplayHUDWidget::RefreshFPS, 0.25f, true);
 	}
 
 	// Bottom-left HUD scale 0.8 (anchor bottom-left)
@@ -639,6 +642,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(MapRefreshTimerHandle);
+		World->GetTimerManager().ClearTimer(FPSTimerHandle);
 		World->GetTimerManager().ClearTimer(TikTokOverlaySyncHandle);
 		World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
 		World->GetTimerManager().ClearTimer(WheelResolveHandle);
@@ -881,7 +885,8 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	}
 	WheelPendingGold = PendingGold;
 
-	WheelSpinDisk->SetBorderBackgroundColor(FT66RarityUtil::GetRarityColor(WheelRarity));
+	// Tint the wheel texture by rarity color.
+	WheelSpinDisk->SetColorAndOpacity(FT66RarityUtil::GetRarityColor(WheelRarity));
 	WheelSpinText->SetText(NSLOCTEXT("T66.Wheel", "Spinning", "Spinning..."));
 
 	WheelSpinBox->SetVisibility(EVisibility::Visible);
@@ -992,6 +997,15 @@ void UT66GameplayHUDWidget::SetFullMapOpen(bool bOpen)
 void UT66GameplayHUDWidget::ToggleFullMap()
 {
 	SetFullMapOpen(!bFullMapOpen);
+}
+
+void UT66GameplayHUDWidget::RefreshFPS()
+{
+	if (!FPSText.IsValid()) return;
+	UWorld* World = GetWorld();
+	const float Delta = World ? World->GetDeltaSeconds() : 0.f;
+	const int32 FPS = (Delta > 0.f) ? FMath::RoundToInt(1.f / Delta) : 0;
+	FPSText->SetText(FText::FromString(FString::Printf(TEXT("FPS: %d"), FPS)));
 }
 
 void UT66GameplayHUDWidget::RefreshMapData()
@@ -1787,6 +1801,18 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			T66SlateTexture::BindSharedBrushAsync(TexPool, UltSoft, this, UltimateBrush, FName(TEXT("HUDUltimate")), false);
 		}
 	}
+	// Wheel spin texture
+	{
+		WheelTextureBrush = FSlateBrush();
+		WheelTextureBrush.ImageSize = FVector2D(120.f, 120.f);
+		WheelTextureBrush.DrawAs = ESlateBrushDrawType::Image;
+		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+		if (TexPool)
+		{
+			const TSoftObjectPtr<UTexture2D> WheelSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Wheel/Firefly_Gemini_Flash_Remove_background_286654.Firefly_Gemini_Flash_Remove_background_286654")));
+			T66SlateTexture::BindBrushAsync(TexPool, WheelSoft, this, WheelTextureBrush, FName(TEXT("HUDWheel")), /*bClearWhileLoading*/ true);
+		}
+	}
 	// Heart sprite brush
 	if (!HeartBrush.IsValid())
 	{
@@ -1906,10 +1932,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		StatusEffectDots[i] = Dot;
 	}
 
-	// Idol slots: 2x3 grid (placeholder for equipped idols).
+	// Idol slots: 2x3 grid; size so title + separator + grid fit inside Idols panel (HeartsRowWidth).
 	TSharedRef<SGridPanel> IdolSlotsRef = SNew(SGridPanel);
 	static constexpr float IdolSlotPad = 4.f;
-	const float IdolSlotSize = FMath::Max(18.f, (HeartsRowWidth - (IdolSlotPad * 6.f)) / 3.f); // 3 rows tall == portrait height
+	static constexpr float IdolPanelOverhead = 50.f; // title + separator + paddings
+	const float IdolGridHeight = FMath::Max(0.f, HeartsRowWidth - IdolPanelOverhead);
+	const float IdolSlotSize = FMath::Max(18.f, (IdolGridHeight / 3.f) - (IdolSlotPad * 2.f));
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		TSharedPtr<SBorder> IdolBorder;
@@ -2283,6 +2311,36 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			)
 			]
 		]
+		// TikTok placeholder (flush left edge; bottom aligned so panel sits just above hearts)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Bottom)
+		.Padding(0.f, 0.f, 0.f, GT66HeartsTopOffsetFromBottom)
+		[
+			SAssignNew(TikTokPlaceholderBox, SBox)
+			.WidthOverride(GT66TikTokPanelW)
+			.HeightOverride(GT66TikTokPanelH)
+			[
+				FT66Style::MakePanel(
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
+					.Padding(2.f)
+					[
+						// Important: no scaling here. Scaling can break browser hit-testing (click/scroll),
+						// so we anchor any native overlay to match this box's size/position.
+						SAssignNew(TikTokContentBox, SBox)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
+						]
+					]
+				,
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f)
+				)
+			]
+		]
 		// Top-left stats (no overlap with bottom-left portrait stack)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
@@ -2332,33 +2390,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.ColorAndOpacity(FLinearColor::Black)
 			.Visibility(EVisibility::Collapsed)
 		]
-			// TikTok placeholder (toggle with O). Sized like a phone and placed just under speedrun.
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-			[
-				SAssignNew(TikTokPlaceholderBox, SBox)
-				.WidthOverride(GT66TikTokPanelW)
-				.HeightOverride(GT66TikTokPanelH)
-				[
-					FT66Style::MakePanel(
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
-						.Padding(2.f)
-						[
-							// Important: no scaling here. Scaling can break browser hit-testing (click/scroll),
-							// so we anchor any native overlay to match this box's size/position.
-							SAssignNew(TikTokContentBox, SBox)
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
-							]
-						]
-					,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(6.f)
-				)
-				]
-			]
 		]
 
 		// Wheel spin HUD animation (right side)
@@ -2378,14 +2409,13 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
 					[
-						SNew(SBox)
-						.WidthOverride(120.f)
-						.HeightOverride(120.f)
-						[
-							SAssignNew(WheelSpinDisk, SBorder)
-							.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Circle"))
-							.BorderBackgroundColor(FLinearColor(0.20f, 0.20f, 0.22f, 1.f))
-						]
+					SNew(SBox)
+					.WidthOverride(120.f)
+					.HeightOverride(120.f)
+					[
+						SAssignNew(WheelSpinDisk, SImage)
+						.Image(&WheelTextureBrush)
+					]
 					]
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Center)
@@ -2424,6 +2454,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(0.f, 92.f, 0.f, 0.f)
 					[
 						SAssignNew(IdolSlotsPanelBox, SBox)
+						.HeightOverride(HeartsRowWidth)
 						[
 							SNew(SOverlay)
 							+ SOverlay::Slot()
@@ -2690,16 +2721,27 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 		]
-		// Inventory panel moved to bottom-right; larger, with Gold/Owe above it
+		// Inventory panel moved to bottom-right; FPS above it, then Gold/Owe and grid
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Bottom)
 		.Padding(24.f, 0.f, 24.f, 24.f)
 		[
-			SAssignNew(InventoryPanelBox, SBox)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				// RPG-style inventory panel: dark teal background, ornamental border, transparent slots
-				SNew(SOverlay)
+				SAssignNew(FPSText, STextBlock)
+				.Text(NSLOCTEXT("T66.GameplayHUD", "FPSDefault", "FPS: 0"))
+				.Font(FT66Style::Tokens::FontBold(14))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Justification(ETextJustify::Right)
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SAssignNew(InventoryPanelBox, SBox)
+				[
+					// RPG-style inventory panel: dark teal background, ornamental border, transparent slots
+					SNew(SOverlay)
 				// Outer border (lighter accent)
 				+ SOverlay::Slot()
 				[
@@ -2808,6 +2850,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					]
 				]
 			]
+		]
 		]
 		// Tutorial hint (above crosshair)
 		+ SOverlay::Slot()

@@ -48,6 +48,10 @@ struct FT66ProceduralLandscapeParams
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape", meta = (ClampMin = "0"))
 	float SmallScaleMeters = 18.f;
 
+	/** If true, terrain is completely flat (no hills). If false, generate procedural hills. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape")
+	bool bFlatTerrain = true;
+
 	/** If true, only very-large-scale noise (no medium). If false, mix large + medium for ~3 large + ~4 medium hills. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Landscape")
 	bool bOnlyVeryLargeHills = false;

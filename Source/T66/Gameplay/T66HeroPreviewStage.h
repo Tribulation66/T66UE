@@ -130,9 +130,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	float PlatformForwardOffset = 35.f;
 
-	/** Multiplier on the auto-framed camera distance (smaller = character appears bigger). */
+	/** Multiplier on the auto-framed camera distance (smaller = character appears bigger, more zoomed in). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float CameraDistanceMultiplier = 4.5f;
+	float CameraDistanceMultiplier = 3.0f;
 
 	/** User zoom factor applied on top of CameraDistanceMultiplier (<= 1.0 means zoom-in). */
 	UPROPERTY(Transient)

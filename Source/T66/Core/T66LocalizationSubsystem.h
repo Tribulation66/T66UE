@@ -483,6 +483,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
 	FText GetText_TheLab() const;
+	/** "Demo" button label (opens The Lab from Hero Selection). */
+	FText GetText_Demo() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
 	FText GetText_BodyTypeA() const;
@@ -963,6 +965,33 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_FindTheBall() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_BlackJack() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Hit() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Stand() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Double() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Split() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Dealer() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_You() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Bust() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Push() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_ChooseHeadsOrTails() const;
