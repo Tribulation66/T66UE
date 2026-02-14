@@ -37,6 +37,9 @@ void UT66GamblerOverlayWidget::NativeDestruct()
 	{
 		World->GetTimerManager().ClearTimer(RevealTimerHandle);
 		World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);
+		World->GetTimerManager().ClearTimer(LotteryDrawTimerHandle);
+		World->GetTimerManager().ClearTimer(PlinkoTimerHandle);
+		World->GetTimerManager().ClearTimer(BoxOpeningTimerHandle);
 	}
 	Super::NativeDestruct();
 }
@@ -67,6 +70,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
+	LotteryNumberBorders.SetNum(10);
+
 	UT66LocalizationSubsystem* Loc = nullptr;
 	UT66UITexturePoolSubsystem* TexPool = nullptr;
 	UT66RunStateSubsystem* RunState = nullptr;
@@ -88,7 +93,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
 	// --- NPC anger face sprites ---
-	static constexpr float AngerFaceSize = 170.f;
+	const float AngerFaceSize = FT66Style::Tokens::NPCAngerCircleSize;
 	auto InitFaceBrush = [](FSlateBrush& B, float Size) {
 		B = FSlateBrush();
 		B.ImageSize = FVector2D(Size, Size);
@@ -138,6 +143,26 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		T66SlateTexture::BindBrushAsync(TexPool, RpsSoft, this, GameIcon_Rps, FName(TEXT("GamblerGameIcon"), 2), /*bClearWhileLoading*/ true);
 		T66SlateTexture::BindBrushAsync(TexPool, BJSoft, this, GameIcon_BlackJack, FName(TEXT("GamblerGameIcon"), 3), /*bClearWhileLoading*/ true);
 		T66SlateTexture::BindBrushAsync(TexPool, CardBackSoft, this, BlackJackCardBackBrush, FName(TEXT("GamblerCardBack"), 1), /*bClearWhileLoading*/ true);
+	}
+
+	// More Games icons (Lottery, Plinko, Box Opening / CRATE)
+	GameIcon_Lottery = FSlateBrush();
+	GameIcon_Lottery.ImageSize = FVector2D(GameCardIconSize, GameCardIconSize);
+	GameIcon_Lottery.DrawAs = ESlateBrushDrawType::Image;
+	GameIcon_Plinko = FSlateBrush();
+	GameIcon_Plinko.ImageSize = FVector2D(GameCardIconSize, GameCardIconSize);
+	GameIcon_Plinko.DrawAs = ESlateBrushDrawType::Image;
+	GameIcon_BoxOpening = FSlateBrush();
+	GameIcon_BoxOpening.ImageSize = FVector2D(GameCardIconSize, GameCardIconSize);
+	GameIcon_BoxOpening.DrawAs = ESlateBrushDrawType::Image;
+	if (TexPool)
+	{
+		const TSoftObjectPtr<UTexture2D> LotterySoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/LOTTERY.LOTTERY")));
+		const TSoftObjectPtr<UTexture2D> PlinkoSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/PLINKO.PLINKO")));
+		const TSoftObjectPtr<UTexture2D> CrateSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/CRATE.CRATE")));
+		T66SlateTexture::BindBrushAsync(TexPool, LotterySoft, this, GameIcon_Lottery, FName(TEXT("GamblerGameIconLottery")), /*bClearWhileLoading*/ true);
+		T66SlateTexture::BindBrushAsync(TexPool, PlinkoSoft, this, GameIcon_Plinko, FName(TEXT("GamblerGameIconPlinko")), /*bClearWhileLoading*/ true);
+		T66SlateTexture::BindBrushAsync(TexPool, CrateSoft, this, GameIcon_BoxOpening, FName(TEXT("GamblerGameIconCrate")), /*bClearWhileLoading*/ true);
 	}
 
 	// --- Coin flip sprites (Heads / Tails / Side) ---
@@ -261,20 +286,26 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FText BankTitle = Loc ? Loc->GetText_Bank() : NSLOCTEXT("T66.Vendor", "BankTitle", "BANK");
 	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
 
-	// Right panel: same as Vendor — anger 170×170, Bank in MakePanel(Panel2, Space5)
+	// Right panel: gambler portrait larger than Vendor (260×260), Bank at bottom
+	static constexpr float GamblerAngerCircleSize = 260.f;
 	TSharedRef<SWidget> RightPanel =
 		FT66Style::MakePanel(
 			SNew(SVerticalBox)
-			// Anger circle (top) — 170×170 to match Vendor
+			// Gambler portrait (top) — larger than Vendor for prominence
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 			[
 				SNew(SBox)
-				.WidthOverride(170.f)
-				.HeightOverride(170.f)
+				.WidthOverride(GamblerAngerCircleSize)
+				.HeightOverride(GamblerAngerCircleSize)
 				[
 					SAssignNew(AngerCircleImage, SImage)
 					.Image(&AngerFace_Happy)
 				]
+			]
+			// Spacer to push Bank to bottom of panel
+			+ SVerticalBox::Slot().FillHeight(1.f)
+			[
+				SNew(SSpacer)
 			]
 			// Bank (bottom, separate panel) — same wrapper as Vendor
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
@@ -294,8 +325,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SNew(SBox)
-							.WidthOverride(110.f)
-							.HeightOverride(44.f)
+							.WidthOverride(FT66Style::Tokens::NPCBankSpinBoxWidth)
+							.HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
 							[
 								SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
 								.MinValue(0).MaxValue(999999).Delta(10)
@@ -320,8 +351,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 						[
 							SNew(SBox)
-							.WidthOverride(110.f)
-							.HeightOverride(44.f)
+							.WidthOverride(FT66Style::Tokens::NPCBankSpinBoxWidth)
+							.HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
 							[
 								SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
 								.MinValue(0).MaxValue(999999).Delta(10)
@@ -329,15 +360,6 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								.Value_Lambda([this]() { return PaybackAmount; })
 								.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
 							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-						[
-							FT66Style::MakeButton(FT66ButtonParams(
-								Loc ? Loc->GetText_Max() : NSLOCTEXT("T66.Common", "Max", "MAX"),
-								FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnPaybackMax),
-								ET66ButtonType::Neutral)
-								.SetMinWidth(0.f)
-								.SetPadding(FMargin(16.f, 10.f)))
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
@@ -355,10 +377,10 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		,
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel));
 
-	// Game card: icon (texture size) + Play button; panel width = texture width, no title
+	// Game card: icon + game name above Play button; tall enough so Play button fits inside panel
+	static constexpr float GameCardTotalHeight = 420.f;
 	auto MakeGameCard = [&](const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
 	{
-		(void)TitleText;
 		const FText PlayText = NSLOCTEXT("T66.Gambler", "Play", "Play");
 		TSharedRef<SWidget> PlayBtn = FT66Style::MakeButton(
 			FT66ButtonParams(PlayText, OnClicked, ET66ButtonType::Primary)
@@ -366,6 +388,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			.SetPadding(FMargin(8.f, 6.f)));
 		return SNew(SBox)
 			.WidthOverride(GameCardIconSize)
+			.HeightOverride(GameCardTotalHeight)
 			.Padding(FMargin(4.f, 0.f))
 			[
 				FT66Style::MakePanel(
@@ -388,7 +411,15 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f))
 						]
 					]
-					// 2. Play button
+					// 2. Game name above Play button
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(TitleText)
+						.TextStyle(&TextHeading)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					// 3. Play button
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
 						PlayBtn
@@ -398,45 +429,97 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			];
 	};
 
-	TSharedRef<SWidget> CardsView =
+	const FText MoreGamesText = NSLOCTEXT("T66.Gambler", "MoreGames", "More Games");
+	const FText BackToGamesText = NSLOCTEXT("T66.Gambler", "BackToGames", "Back to Games");
+	const FText LotteryText = NSLOCTEXT("T66.Gambler", "Lottery", "Lottery");
+	const FText PlinkoText = NSLOCTEXT("T66.Gambler", "Plinko", "Plinko");
+	const FText BoxOpeningText = NSLOCTEXT("T66.Gambler", "BoxOpening", "Box Opening");
+
+	TSharedRef<SWidget> MainGamesView =
 		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
-		[
-			SNew(STextBlock)
-			.Text(CasinoTitle)
-			.TextStyle(&TextTitle)
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		]
 		+ SVerticalBox::Slot().AutoHeight()
 		[
-			// Reserve left side for TikTok by pushing cards to the right.
 			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[
-				SNew(SSpacer)
-			]
+			+ SHorizontalBox::Slot().FillWidth(1.f) [ SNew(SSpacer) ]
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(FMargin(16.f, 8.f))
-				// Layout: [Game 1] [Game 2] [Game 3] — all side by side
-				+ SUniformGridPanel::Slot(0, 0)
-				[
-					MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps)
-				]
-				+ SUniformGridPanel::Slot(1, 0)
-				[
-					MakeGameCard(Loc ? Loc->GetText_BlackJack() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBlackJack), &GameIcon_BlackJack)
-				]
-				+ SUniformGridPanel::Slot(2, 0)
-				[
-					MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip)
-				]
+				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps) ]
+				+ SUniformGridPanel::Slot(1, 0) [ MakeGameCard(Loc ? Loc->GetText_BlackJack() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBlackJack), &GameIcon_BlackJack) ]
+				+ SUniformGridPanel::Slot(2, 0) [ MakeGameCard(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip) ]
 			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 28.f, 0.f, 0.f)
+		[
+			FT66Style::MakeButton(
+				FT66ButtonParams(MoreGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnMoreGamesClicked), ET66ButtonType::Neutral)
+				.SetMinWidth(0.f)
+				.SetPadding(FMargin(20.f, 12.f)))
+		];
+
+	TSharedRef<SWidget> MoreGamesView =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f) [ SNew(SSpacer) ]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				SNew(SUniformGridPanel)
+				.SlotPadding(FMargin(16.f, 8.f))
+				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) ]
+				+ SUniformGridPanel::Slot(1, 0) [ MakeGameCard(PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) ]
+				+ SUniformGridPanel::Slot(2, 0) [ MakeGameCard(BoxOpeningText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBoxOpening), &GameIcon_BoxOpening) ]
+			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+		[
+			FT66Style::MakeButton(
+				FT66ButtonParams(BackToGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBackToMainGames), ET66ButtonType::Neutral)
+				.SetMinWidth(0.f)
+				.SetPadding(FMargin(20.f, 12.f)))
+		];
+
+	TSharedRef<SWidget> CardsView =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().FillHeight(1.f)
+		[
+			SAssignNew(GameSelectionSwitcher, SWidgetSwitcher)
+			+ SWidgetSwitcher::Slot() [ MainGamesView ]
+			+ SWidgetSwitcher::Slot() [ MoreGamesView ]
 		];
 
 	TSharedRef<SWidget> CoinFlipView =
 		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
+					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				SAssignNew(CoinFlipStatusText, STextBlock)
+				.Text(FText::GetEmpty())
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this]() {
+					const int32 N = (LockedBetAmount > 0) ? LockedBetAmount : PendingBetAmount;
+					return N > 0 ? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(N)) : FText::GetEmpty();
+				})
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
+		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 10.f)
 		[
 			SNew(STextBlock)
@@ -503,6 +586,34 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 	TSharedRef<SWidget> RpsView =
 		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
+					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				SAssignNew(RpsStatusText, STextBlock)
+				.Text(FText::GetEmpty())
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this]() {
+					const int32 N = (LockedBetAmount > 0) ? LockedBetAmount : PendingBetAmount;
+					return N > 0 ? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(N)) : FText::GetEmpty();
+				})
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
+		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 10.f)
 		[
 			SNew(STextBlock)
@@ -609,24 +720,45 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		];
 	};
 	TSharedRef<SWidget> BlackJackDealerRow =
-		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
-		[ SNew(STextBlock).Text(Loc ? Loc->GetText_Dealer() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
-		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
+			SNew(STextBlock)
+			.Text_Lambda([this]() {
+				if (BJDealerHand.Num() < 2) return FText::FromString(TEXT("-"));
+				if (!BJDealerHoleRevealed)
+				{
+					const int32 c = BJDealerHand[1];
+					const int32 r = c % 13;
+					const int32 v = (r == 0) ? 11 : (r >= 9) ? 10 : (r + 1);
+					return FText::AsNumber(v);
+				}
+				return FText::AsNumber(BJHandValue(BJDealerHand));
+			})
+			.TextStyle(&TextBody)
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
+			[ SNew(STextBlock).Text(Loc ? Loc->GetText_Dealer() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)
 			[
-				SNew(SBox).WidthOverride(BJCardW).HeightOverride(BJCardH)
-				.Visibility_Lambda([this](){ return BJDealerHoleRevealed ? EVisibility::Collapsed : EVisibility::Visible; })
+				SNew(SOverlay)
+				+ SOverlay::Slot()
 				[
-					SAssignNew(BlackJackDealerHoleCardBackImage, SImage)
-					.Image(GetBJCardBackBrush())
+					SNew(SBox).WidthOverride(BJCardW).HeightOverride(BJCardH)
+					.Visibility_Lambda([this](){ return (BJDeck.Num() > 0 && !BJDealerHoleRevealed) ? EVisibility::Visible : EVisibility::Collapsed; })
+					[
+						SAssignNew(BlackJackDealerHoleCardBackImage, SImage)
+						.Image(GetBJCardBackBrush())
+					]
 				]
-			]
-			+ SOverlay::Slot()
-			[
-				MakeCardImageBox(BlackJackDealerCardImages[0])
+				+ SOverlay::Slot()
+				[
+					MakeCardImageBox(BlackJackDealerCardImages[0])
+				]
 			]
 		];
 	TSharedRef<SHorizontalBox> BlackJackDealerCardsRow = SNew(SHorizontalBox);
@@ -641,6 +773,34 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	}
 	TSharedRef<SWidget> BlackJackView =
 		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
+					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				SAssignNew(BlackJackStatusText, STextBlock)
+				.Text(FText::GetEmpty())
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this]() {
+					const int32 N = (LockedBetAmount > 0) ? LockedBetAmount : (BJBetAmount > 0 ? BJBetAmount : PendingBetAmount);
+					return N > 0 ? FText::Format(NSLOCTEXT("T66.Gambler", "WagerFormat", "Wager: {0}"), FText::AsNumber(N)) : FText::GetEmpty();
+				})
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
+		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 10.f)
 		[
 			SNew(STextBlock)
@@ -656,14 +816,29 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
-			[ SNew(STextBlock).Text(Loc ? Loc->GetText_You() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
-			+ SHorizontalBox::Slot().AutoWidth()[ BlackJackPlayerCardsRow ]
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([this]() {
+					if (BJPlayerHands.Num() == 0 || BJCurrentHandIndex >= BJPlayerHands.Num())
+						return FText::FromString(TEXT("-"));
+					return FText::AsNumber(BJHandValue(BJPlayerHands[BJCurrentHandIndex]));
+				})
+				.TextStyle(&TextBody)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_You() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+				+ SHorizontalBox::Slot().AutoWidth()[ BlackJackPlayerCardsRow ]
+			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 16.f, 0.f, 12.f)
 		[
-			SNew(SBox).HeightOverride(44.f)
+			SNew(SBox).HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
 			[
 				SAssignNew(BlackJackResultText, STextBlock)
 				.Text(Loc ? Loc->GetText_ResultDash() : FText::GetEmpty())
@@ -676,50 +851,266 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
-					Loc ? Loc->GetText_Hit() : FText::GetEmpty(),
-					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJHit),
-					ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				SNew(SBox)
+				.Visibility_Lambda([this]() { return (BJDeck.Num() == 0) ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					FT66Style::MakeButton(FT66ButtonParams(
+						NSLOCTEXT("T66.Gambler", "Deal", "Deal"),
+						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJDealClicked),
+						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
-					Loc ? Loc->GetText_Stand() : FText::GetEmpty(),
-					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJStand),
-					ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				SNew(SBox)
+				.Visibility_Lambda([this]() { return (BJDeck.Num() > 0) ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					FT66Style::MakeButton(FT66ButtonParams(
+						Loc ? Loc->GetText_Hit() : FText::GetEmpty(),
+						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJHit),
+						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
-					Loc ? Loc->GetText_Double() : FText::GetEmpty(),
-					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJDouble),
-					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				SNew(SBox)
+				.Visibility_Lambda([this]() { return (BJDeck.Num() > 0) ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					FT66Style::MakeButton(FT66ButtonParams(
+						Loc ? Loc->GetText_Stand() : FText::GetEmpty(),
+						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJStand),
+						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66ButtonParams(
-					Loc ? Loc->GetText_Split() : FText::GetEmpty(),
-					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJSplit),
-					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				SNew(SBox)
+				.Visibility_Lambda([this]() { return (BJDeck.Num() > 0) ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					FT66Style::MakeButton(FT66ButtonParams(
+						Loc ? Loc->GetText_Double() : FText::GetEmpty(),
+						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJDouble),
+						ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				]
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f)
+			[
+				SNew(SBox)
+				.Visibility_Lambda([this]() { return (BJDeck.Num() > 0) ? EVisibility::Visible : EVisibility::Collapsed; })
+				[
+					FT66Style::MakeButton(FT66ButtonParams(
+						Loc ? Loc->GetText_Split() : FText::GetEmpty(),
+						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJSplit),
+						ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
+				]
 			]
 		];
+
+	// Back button row: top-left, not wide (used by Lottery, Plinko, Box Opening)
+	auto MakeGameBackRow = [&]() -> TSharedRef<SWidget>
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
+					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
+			];
+	};
+
+	const FText LotteryDesc = NSLOCTEXT("T66.Gambler", "LotteryDesc", "Pick 5 numbers from 1–10. Five numbers are drawn at random. Payout depends on how many match.");
+	const FText YourPicksText = NSLOCTEXT("T66.Gambler", "YourPicks", "Your picks:");
+	const FText DrawnText = NSLOCTEXT("T66.Gambler", "Drawn", "Drawn:");
+
+	TSharedRef<SHorizontalBox> LotteryNumberRow = SNew(SHorizontalBox);
+	for (int32 i = 0; i < 10; ++i)
+	{
+		const int32 Num = i + 1;
+		LotteryNumberRow->AddSlot()
+			.AutoWidth()
+			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space2, 0.f, 0.f, 0.f) : FMargin(0.f))
+		[
+			FT66Style::MakePanel(
+				FT66Style::MakeButton(
+					FT66ButtonParams(FText::AsNumber(Num), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnLotteryNumberClicked, Num), ET66ButtonType::Neutral)
+					.SetMinWidth(0.f).SetPadding(FMargin(10.f, 8.f))),
+				FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
+				&LotteryNumberBorders[i])
+		];
+	}
+
+	TSharedRef<SWidget> LotteryView =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f) [ MakeGameBackRow() ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
+			[ SNew(STextBlock).Text(LotteryText).TextStyle(&TextTitle).ColorAndOpacity(FT66Style::Tokens::Text) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
+			[ SNew(STextBlock).Text(LotteryDesc).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f) [ LotteryNumberRow ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 2.f)
+			[ SAssignNew(LotteryPicksText, STextBlock).Text(YourPicksText).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 2.f)
+			[ SAssignNew(LotteryDrawnText, STextBlock).Text(DrawnText).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 0.f)
+			[ SAssignNew(LotteryResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66Style::Tokens::Text) ];
+
+	// Plinko: visual board with pin grid + ball
+	const FText PlinkoSlotsDesc = NSLOCTEXT("T66.Gambler", "PlinkoSlotsDesc", "Ball drops through pins. Payout by slot below.");
+	static constexpr float PlinkoBoardW = 280.f;
+	static constexpr float PlinkoBoardH = 220.f;
+	static constexpr float PlinkoPinSize = 8.f;
+	static constexpr float PlinkoPinSpacing = 12.f;
+	static constexpr float PlinkoRowH = 20.f;
+	static constexpr float PlinkoBallSize = 14.f;
+	static constexpr float PlinkoSlotPayouts[PlinkoSlotCount] = { 30.f, 5.f, 1.f, 0.5f, 0.25f, 0.5f, 1.f, 5.f, 30.f };
+
+	auto MakePinDot = []() -> TSharedRef<SWidget> {
+		return SNew(SBox).WidthOverride(PlinkoPinSize).HeightOverride(PlinkoPinSize)
+			[ SNew(SBorder).BorderBackgroundColor(FLinearColor(0.5f, 0.55f, 0.65f, 1.f)).Padding(0.f)[ SNew(SSpacer) ] ];
+	};
+
+	TSharedRef<SVerticalBox> PinGrid = SNew(SVerticalBox);
+	for (int32 r = 0; r < 8; ++r)
+	{
+		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox);
+		Row->AddSlot().FillWidth(1.f);
+		for (int32 j = 0; j <= r; ++j)
+		{
+			Row->AddSlot().AutoWidth().Padding(j > 0 ? FMargin(PlinkoPinSpacing * 0.5f, 0.f, PlinkoPinSpacing * 0.5f, 0.f) : FMargin(0.f))[ MakePinDot() ];
+		}
+		Row->AddSlot().FillWidth(1.f);
+		PinGrid->AddSlot().AutoHeight().HAlign(HAlign_Center)[ SNew(SBox).HeightOverride(PlinkoRowH)[ Row ] ];
+	}
+	TSharedRef<SHorizontalBox> SlotRow = SNew(SHorizontalBox);
+	for (int32 s = 0; s < PlinkoSlotCount; ++s)
+	{
+		SlotRow->AddSlot()
+			.FillWidth(1.f)
+			.Padding(2.f, 4.f)
+			[
+				SNew(SBorder)
+				.BorderBackgroundColor(FLinearColor(0.25f, 0.3f, 0.4f, 1.f))
+				.Padding(4.f)
+				[
+					SNew(STextBlock)
+					.Text(FText::AsNumber(FMath::RoundToInt(PlinkoSlotPayouts[s] * 100) / 100.0))
+					.TextStyle(&TextChip)
+					.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 1.f))
+					.Justification(ETextJustify::Center)
+				]
+			];
+	}
+	PinGrid->AddSlot().AutoHeight()[ SNew(SBox).HeightOverride(36.f)[ SlotRow ] ];
+
+	TSharedRef<SWidget> PlinkoBall = SNew(SBox).WidthOverride(PlinkoBallSize).HeightOverride(PlinkoBallSize)
+		[
+			SNew(SBorder).BorderBackgroundColor(FLinearColor(1.f, 0.85f, 0.2f, 1.f)).Padding(0.f)[ SNew(SSpacer) ]
+		];
+
+	TSharedRef<SWidget> PlinkoView =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f) [ MakeGameBackRow() ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
+			[ SNew(STextBlock).Text(PlinkoText).TextStyle(&TextTitle).ColorAndOpacity(FT66Style::Tokens::Text) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
+			[ SNew(STextBlock).Text(PlinkoSlotsDesc).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
+			[
+				SAssignNew(PlinkoBoardContainer, SBox)
+				.WidthOverride(PlinkoBoardW)
+				.HeightOverride(PlinkoBoardH)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()[ FT66Style::MakePanel(PinGrid, FT66PanelParams(ET66PanelType::Panel2).SetPadding(4.f)) ]
+					+ SOverlay::Slot()
+						.HAlign(HAlign_Left).VAlign(VAlign_Top)
+						.Padding(TAttribute<FMargin>::CreateLambda([this]() {
+							const float ColW = PlinkoBoardW / static_cast<float>(PlinkoSlotCount);
+							return FMargin(ColW * PlinkoBallSlot + (ColW - PlinkoBallSize) * 0.5f, PlinkoRow * PlinkoRowH + (PlinkoRowH - PlinkoBallSize) * 0.5f, 0.f, 0.f);
+						}))
+						[ PlinkoBall ]
+				]
+			]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 0.f)
+			[ SAssignNew(PlinkoResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66Style::Tokens::Text) ];
+
+	// Box Opening: 5 colored squares; middle one is the result when spin stops
+	const FText BoxOpeningDesc = NSLOCTEXT("T66.Gambler", "BoxOpeningDesc", "Bet then spin. Colors scroll; the one in the middle when it stops is your result.");
+
+	static constexpr float BoxSquareSize = 48.f;
+	static constexpr float BoxSquareGap = 4.f;
+	TSharedRef<SHorizontalBox> BoxStripRow = SNew(SHorizontalBox);
+	for (int32 i = 0; i < 5; ++i)
+	{
+		const int32 Idx = i;
+		BoxStripRow->AddSlot()
+			.AutoWidth()
+			.Padding(Idx > 0 ? FMargin(BoxSquareGap, 0.f, 0.f, 0.f) : FMargin(0.f))
+			[
+				SNew(SBorder)
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this, Idx]() {
+					return FSlateColor(GetBoxOpeningColor((BoxOpeningStripOffset + Idx) % BoxColorCount));
+				}))
+				.Padding(0.f)
+				[
+					SNew(SBox).WidthOverride(BoxSquareSize).HeightOverride(BoxSquareSize)[ SNew(SSpacer) ]
+				]
+			];
+	}
+
+	TSharedRef<SWidget> BoxOpeningView =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f) [ MakeGameBackRow() ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
+			[ SNew(STextBlock).Text(BoxOpeningText).TextStyle(&TextTitle).ColorAndOpacity(FT66Style::Tokens::Text) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
+			[ SNew(STextBlock).Text(BoxOpeningDesc).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true) ]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 12.f, 0.f, 4.f)
+			[
+				SNew(SBox)
+				.WidthOverride(5 * BoxSquareSize + 4 * BoxSquareGap)
+				.HeightOverride(BoxSquareSize + 8.f)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
+						[
+							SAssignNew(BoxOpeningStripContainer, SBox)[ BoxStripRow ]
+						]
+					+ SOverlay::Slot()
+						.HAlign(HAlign_Left).VAlign(VAlign_Center)
+						.Padding(2.f * (BoxSquareSize + BoxSquareGap), 0.f, 0.f, 0.f)
+						[
+							SNew(SBorder)
+							.BorderBackgroundColor(FLinearColor(1.f, 1.f, 1.f, 0.9f))
+							.Padding(2.f)
+							.Visibility(EVisibility::HitTestInvisible)
+							[
+								SNew(SBox).WidthOverride(BoxSquareSize + 2.f).HeightOverride(BoxSquareSize + 2.f)[ SNew(SSpacer) ]
+							]
+						]
+				]
+			]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 0.f)
+			[ SAssignNew(BoxOpeningResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66Style::Tokens::Text) ];
 
 	TSharedRef<SWidget> BetRow =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-		[ SNew(STextBlock).Text(Loc ? Loc->GetText_Bet() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+		[ SNew(STextBlock).Text(Loc ? Loc->GetText_BetAmount() : NSLOCTEXT("T66.Gambler", "BetAmount", "Bet Amount")).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 		[
 			SAssignNew(GambleAmountSpin, SSpinBox<int32>)
 			.MinValue(0).MaxValue(999999).Delta(10)
+			.Font(FT66Style::Tokens::FontBold(26))
 			.Value_Lambda([this]() { return GambleAmount; })
 			.OnValueChanged_Lambda([this](int32 V) { GambleAmount = FMath::Max(0, V); })
 		]
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 		[
 			FT66Style::MakeButton(FT66ButtonParams(
-				Loc ? Loc->GetText_Max() : FText::GetEmpty(),
-				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGambleMax),
+				Loc ? Loc->GetText_Bet() : NSLOCTEXT("T66.Gambler", "Bet", "Bet"),
+				FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBetClicked),
 				ET66ButtonType::Neutral)
 				.SetMinWidth(0.f)
 				.SetPadding(FMargin(14.f, 8.f)))
@@ -735,13 +1126,22 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				+ SWidgetSwitcher::Slot() [ CoinFlipView ]
 				+ SWidgetSwitcher::Slot() [ RpsView ]
 				+ SWidgetSwitcher::Slot() [ BlackJackView ]
+				+ SWidgetSwitcher::Slot() [ LotteryView ]
+				+ SWidgetSwitcher::Slot() [ PlinkoView ]
+				+ SWidgetSwitcher::Slot() [ BoxOpeningView ]
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 18.f, 0.f, 0.f)
 			[
 				SNew(SBox)
 				.Visibility_Lambda([this]() -> EVisibility
 				{
-					return (CasinoSwitcher.IsValid() && CasinoSwitcher->GetActiveWidgetIndex() != 0) ? EVisibility::Visible : EVisibility::Collapsed;
+					if (!CasinoSwitcher.IsValid()) return EVisibility::Collapsed;
+					const int32 Idx = CasinoSwitcher->GetActiveWidgetIndex();
+					if (Idx == 0) return EVisibility::Collapsed;
+					// During a Black Jack round, hide bet row until round is resolved
+					if (Idx == 3 && BJDeck.Num() > 0) return EVisibility::Collapsed;
+					// Show bet row for Lottery/Plinko/BoxOpening (4,5,6) and other game views
+					return EVisibility::Visible;
 				})
 				[
 					BetRow
@@ -897,32 +1297,58 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 	TSharedRef<SWidget> CasinoPage =
 		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().FillHeight(1.f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 		[
+			SNew(STextBlock)
+			.Text(CasinoTitle)
+			.TextStyle(&TextTitle)
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space6)
+		[
+			SNew(SBox)
+			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
+			[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 			[
 				SAssignNew(StatsPanelBox, SBox)
+				.WidthOverride(FT66Style::Tokens::NPCGamblerStatsPanelWidth)
+				.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
 				[
-					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 320.f, true)
+					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCGamblerStatsPanelWidth, true)
 				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 			[
 				SNew(SBox)
 				.WidthOverride(FT66Style::Tokens::NPCCenterPanelTotalWidth)
+				.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
 				[
 					CenterPanel
 				]
 			]
 			+ SHorizontalBox::Slot().FillWidth(1.f)
 			[
-				RightPanel
+				SNew(SSpacer)
+			]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 0.f, 0.f)
+			[
+				SNew(SBox)
+				.WidthOverride(FT66Style::Tokens::NPCRightPanelWidth)
+				[
+					RightPanel
+				]
+			]
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 		[
-			InventoryPanel
+			SNew(SBox)
+			.HeightOverride(FT66Style::Tokens::NPCGamblerInventoryPanelHeight)
+			[
+				InventoryPanel
+			]
 		];
 
 	TSharedRef<SWidget> Root =
@@ -934,15 +1360,6 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				+ SVerticalBox::Slot().AutoHeight().Padding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, FT66Style::Tokens::Space6, FT66Style::Tokens::Space2)
 				[
 					SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
-				[
-					FT66Style::MakeButton(FT66ButtonParams(
-						Loc ? Loc->GetText_Back() : FText::GetEmpty(),
-						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBack),
-						ET66ButtonType::Neutral)
-						.SetMinWidth(0.f)
-						.SetPadding(FMargin(18.f, 10.f)))
-				]
 					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 					[
 						SAssignNew(StatusText, STextBlock)
@@ -951,7 +1368,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
 				]
-				+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Fill).Padding(40.f)
+				+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Top).Padding(40.f, 16.f, 40.f, 0.f)
 				[
 					SAssignNew(PageSwitcher, SWidgetSwitcher)
 					+ SWidgetSwitcher::Slot()
@@ -959,6 +1376,18 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					+ SWidgetSwitcher::Slot()
 					[ CasinoPage ]
 				]
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Top)
+			.Padding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, 0.f, 0.f)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					Loc ? Loc->GetText_Back() : FText::GetEmpty(),
+					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBack),
+					ET66ButtonType::Neutral)
+					.SetMinWidth(0.f)
+					.SetPadding(FMargin(18.f, 10.f)))
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Center)
@@ -1053,24 +1482,73 @@ FReply UT66GamblerOverlayWidget::OnDialogueTeleport()
 	return FReply::Handled();
 }
 
-FReply UT66GamblerOverlayWidget::OnGambleMax()
+FReply UT66GamblerOverlayWidget::OnBetClicked()
 {
-	if (UWorld* World = GetWorld())
+	if (GambleAmount <= 0)
 	{
-		if (UGameInstance* GI = World->GetGameInstance())
+		UT66LocalizationSubsystem* Loc2 = nullptr;
+		if (UWorld* World = GetWorld())
 		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			if (World->GetGameInstance())
 			{
-				GambleAmount = FMath::Max(0, RunState->GetCurrentGold());
-				if (GambleAmountSpin.IsValid())
-				{
-					GambleAmountSpin->SetValue(GambleAmount);
-				}
-				SetStatus(FText::GetEmpty());
-				RefreshTopBar();
+				Loc2 = World->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>();
 			}
 		}
+		SetStatus(Loc2 ? Loc2->GetText_GambleAmountMustBePositive() : NSLOCTEXT("T66.Gambler", "GambleAmountMustBePositive", "Gamble amount must be > 0."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		return FReply::Handled();
 	}
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState || RunState->GetCurrentGold() < GambleAmount)
+	{
+		UT66LocalizationSubsystem* Loc2 = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		SetStatus(Loc2 ? Loc2->GetText_NotEnoughGold() : NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		RefreshTopBar();
+		return FReply::Handled();
+	}
+
+	// Lottery / Plinko / Box Opening: Bet starts the game (deduct and run)
+	if (CasinoSwitcher.IsValid())
+	{
+		const int32 Idx = CasinoSwitcher->GetActiveWidgetIndex();
+		if (Idx == 4)
+		{
+			if (LotterySelected.Num() != 5)
+			{
+				SetStatus(NSLOCTEXT("T66.Gambler", "Pick5Numbers", "Pick exactly 5 numbers."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+				return FReply::Handled();
+			}
+			if (!RunState->TrySpendGold(GambleAmount)) { RefreshTopBar(); return FReply::Handled(); }
+			PendingBetAmount = GambleAmount;
+			LockedBetAmount = 0;
+			RefreshTopBar();
+			StartLotteryDraw();
+			return FReply::Handled();
+		}
+		if (Idx == 5)
+		{
+			if (!RunState->TrySpendGold(GambleAmount)) { RefreshTopBar(); return FReply::Handled(); }
+			PendingBetAmount = GambleAmount;
+			LockedBetAmount = 0;
+			RefreshTopBar();
+			StartPlinkoDrop();
+			return FReply::Handled();
+		}
+		if (Idx == 6)
+		{
+			if (!RunState->TrySpendGold(GambleAmount)) { RefreshTopBar(); return FReply::Handled(); }
+			PendingBetAmount = GambleAmount;
+			LockedBetAmount = 0;
+			RefreshTopBar();
+			StartBoxOpeningSpin();
+			return FReply::Handled();
+		}
+	}
+
+	LockedBetAmount = GambleAmount;
+	SetStatus(FText::GetEmpty());
+	RefreshTopBar();
 	return FReply::Handled();
 }
 
@@ -1099,27 +1577,6 @@ FReply UT66GamblerOverlayWidget::OnBorrowClicked()
 				UT66LocalizationSubsystem* Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
 				const FText Fmt = Loc2 ? Loc2->GetText_BorrowedAmountFormat() : NSLOCTEXT("T66.Gambler", "BorrowedAmountFormat", "Borrowed {0}.");
 				SetStatus(FText::Format(Fmt, FText::AsNumber(BorrowAmount)), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
-				RefreshTopBar();
-			}
-		}
-	}
-	return FReply::Handled();
-}
-
-FReply UT66GamblerOverlayWidget::OnPaybackMax()
-{
-	if (UWorld* World = GetWorld())
-	{
-		if (UGameInstance* GI = World->GetGameInstance())
-		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				PaybackAmount = FMath::Max(0, RunState->GetCurrentDebt());
-				if (PaybackAmountSpin.IsValid())
-				{
-					PaybackAmountSpin->SetValue(PaybackAmount);
-				}
-				SetStatus(FText::GetEmpty());
 				RefreshTopBar();
 			}
 		}
@@ -1186,7 +1643,264 @@ FReply UT66GamblerOverlayWidget::OnOpenRps()
 FReply UT66GamblerOverlayWidget::OnOpenBlackJack()
 {
 	SetPage(EGamblerPage::BlackJack);
-	if (!TryPayToPlay()) return FReply::Handled();
+	return FReply::Handled();
+}
+
+FReply UT66GamblerOverlayWidget::OnGameBackToSelection()
+{
+	SetPage(EGamblerPage::Casino);
+	if (GameSelectionSwitcher.IsValid()) GameSelectionSwitcher->SetActiveWidgetIndex(0);
+	return FReply::Handled();
+}
+
+FReply UT66GamblerOverlayWidget::OnMoreGamesClicked()
+{
+	if (GameSelectionSwitcher.IsValid()) GameSelectionSwitcher->SetActiveWidgetIndex(1);
+	return FReply::Handled();
+}
+
+FReply UT66GamblerOverlayWidget::OnBackToMainGames()
+{
+	if (GameSelectionSwitcher.IsValid()) GameSelectionSwitcher->SetActiveWidgetIndex(0);
+	return FReply::Handled();
+}
+
+FReply UT66GamblerOverlayWidget::OnOpenLottery()
+{
+	SetPage(EGamblerPage::Lottery);
+	return FReply::Handled();
+}
+
+FReply UT66GamblerOverlayWidget::OnOpenPlinko()
+{
+	SetPage(EGamblerPage::Plinko);
+	return FReply::Handled();
+}
+
+FReply UT66GamblerOverlayWidget::OnOpenBoxOpening()
+{
+	SetPage(EGamblerPage::BoxOpening);
+	return FReply::Handled();
+}
+
+FReply UT66GamblerOverlayWidget::OnLotteryNumberClicked(int32 Num)
+{
+	if (Num < 1 || Num > 10) return FReply::Handled();
+	if (LotterySelected.Contains(Num))
+		LotterySelected.Remove(Num);
+	else if (LotterySelected.Num() < 5)
+		LotterySelected.Add(Num);
+	for (int32 i = 0; i < 10 && i < LotteryNumberBorders.Num(); ++i)
+	{
+		if (LotteryNumberBorders[i].IsValid())
+			LotteryNumberBorders[i]->SetBorderBackgroundColor(LotterySelected.Contains(i + 1) ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2);
+	}
+	if (LotteryPicksText.IsValid())
+	{
+		TArray<int32> Sorted(LotterySelected.Array());
+		Sorted.Sort();
+		FString Str;
+		for (int32 i = 0; i < Sorted.Num(); ++i) { if (i) Str += TEXT(", "); Str += FString::FromInt(Sorted[i]); }
+		LotteryPicksText->SetText(FText::FromString(FString::Printf(TEXT("Your picks: %s"), *Str)));
+	}
+	if (CasinoSwitcher.IsValid()) CasinoSwitcher->Invalidate(EInvalidateWidget::Layout);
+	return FReply::Handled();
+}
+
+void UT66GamblerOverlayWidget::StartLotteryDraw()
+{
+	LotteryDrawn.Reset();
+	UT66RunStateSubsystem* RunState = nullptr;
+	UT66RngSubsystem* RngSub = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+			RngSub = GI->GetSubsystem<UT66RngSubsystem>();
+		}
+	}
+	TArray<int32> Pool;
+	for (int32 i = 1; i <= 10; ++i) Pool.Add(i);
+	if (RngSub)
+	{
+		for (int32 i = Pool.Num() - 1; i > 0; --i)
+			Pool.Swap(i, RngSub->GetRunStream().RandRange(0, i));
+	}
+	else
+	{
+		for (int32 i = Pool.Num() - 1; i > 0; --i)
+			Pool.Swap(i, FMath::RandRange(0, i));
+	}
+	for (int32 i = 0; i < 5; ++i) LotteryDrawn.Add(Pool[i]);
+	LotteryRevealedCount = 0;
+	if (LotteryDrawnText.IsValid()) LotteryDrawnText->SetText(NSLOCTEXT("T66.Gambler", "Drawn", "Drawn:"));
+	if (LotteryResultText.IsValid()) LotteryResultText->SetText(FText::GetEmpty());
+	UWorld* World = GetWorld();
+	if (World) World->GetTimerManager().SetTimer(LotteryDrawTimerHandle, this, &UT66GamblerOverlayWidget::TickLotteryRevealNext, 0.6f, true, 0.1f);
+}
+
+void UT66GamblerOverlayWidget::TickLotteryRevealNext()
+{
+	UWorld* World = GetWorld();
+	if (!World || LotteryRevealedCount >= 5)
+	{
+		if (World) World->GetTimerManager().ClearTimer(LotteryDrawTimerHandle);
+		if (LotteryRevealedCount >= 5)
+		{
+			int32 Matches = 0;
+			for (int32 D : LotteryDrawn)
+				if (LotterySelected.Contains(D)) ++Matches;
+			static const float PayoutMultiplier[] = { 0.f, 0.25f, 0.5f, 1.f, 5.f, 30.f };
+			float Mult = (Matches >= 0 && Matches <= 5) ? PayoutMultiplier[Matches] : 0.f;
+			AwardPayout(PendingBetAmount, Mult);
+			if (LotteryResultText.IsValid())
+				LotteryResultText->SetText(FText::Format(
+					NSLOCTEXT("T66.Gambler", "LotteryResultFmt", "Matches: {0} — Payout: {1}x"),
+					FText::AsNumber(Matches), FText::AsNumber(FMath::RoundToInt(Mult * 100) / 100.0)));
+		}
+		return;
+	}
+	LotteryRevealedCount++;
+	FString DrawnStr = TEXT("Drawn: ");
+	for (int32 i = 0; i < LotteryRevealedCount; ++i)
+	{
+		if (i) DrawnStr += TEXT(", ");
+		DrawnStr += FString::FromInt(LotteryDrawn[i]);
+	}
+	if (LotteryDrawnText.IsValid()) LotteryDrawnText->SetText(FText::FromString(DrawnStr));
+}
+
+FLinearColor UT66GamblerOverlayWidget::GetBoxOpeningColor(int32 ColorIndex) const
+{
+	switch (ColorIndex % BoxColorCount)
+	{
+		case 0: return FLinearColor(0.15f, 0.15f, 0.15f, 1.f);   // Black
+		case 1: return FLinearColor(0.9f, 0.2f, 0.2f, 1.f);       // Red
+		case 2: return FLinearColor(0.95f, 0.85f, 0.2f, 1.f);     // Yellow
+		case 3: return FLinearColor(0.95f, 0.95f, 0.95f, 1.f);    // White
+		default: return FLinearColor(0.5f, 0.5f, 0.5f, 1.f);
+	}
+}
+
+void UT66GamblerOverlayWidget::StartPlinkoDrop()
+{
+	// 9 slots: classic plinko payouts (middle = 0.25x). Slots 0..8 left to right.
+	PlinkoBallSlot = 4;
+	PlinkoRow = 0;
+	if (PlinkoResultText.IsValid()) PlinkoResultText->SetText(FText::GetEmpty());
+	if (PlinkoBoardContainer.IsValid()) PlinkoBoardContainer->Invalidate(EInvalidateWidget::Layout);
+	UWorld* World = GetWorld();
+	if (World) World->GetTimerManager().SetTimer(PlinkoTimerHandle, this, &UT66GamblerOverlayWidget::TickPlinkoDrop, 0.12f, true, 0.05f);
+}
+
+void UT66GamblerOverlayWidget::TickPlinkoDrop()
+{
+	UWorld* World = GetWorld();
+	// 8 rows of pins; each step 50% left (-1 slot) or right (+1 slot), clamped to 0..8
+	static const float SlotPayouts[PlinkoSlotCount] = { 30.f, 5.f, 1.f, 0.5f, 0.25f, 0.5f, 1.f, 5.f, 30.f };
+	if (!World) return;
+	if (PlinkoRow >= 8)
+	{
+		World->GetTimerManager().ClearTimer(PlinkoTimerHandle);
+		float Mult = SlotPayouts[PlinkoBallSlot];
+		AwardPayout(PendingBetAmount, Mult);
+		if (PlinkoResultText.IsValid())
+			PlinkoResultText->SetText(FText::Format(
+				NSLOCTEXT("T66.Gambler", "PlinkoWinFmt", "Landed in slot {0} — {1}x — You won {2}!"),
+				FText::AsNumber(PlinkoBallSlot + 1), FText::AsNumber(Mult),
+				FText::AsNumber(FMath::RoundToInt(static_cast<float>(PendingBetAmount) * Mult))));
+		return;
+	}
+	UT66RngSubsystem* RngSub = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	bool bRight = RngSub ? (RngSub->GetRunStream().GetFraction() >= 0.5f) : (FMath::FRand() >= 0.5f);
+	if (bRight && PlinkoBallSlot < 8) PlinkoBallSlot++;
+	else if (!bRight && PlinkoBallSlot > 0) PlinkoBallSlot--;
+	PlinkoRow++;
+	if (PlinkoBoardContainer.IsValid()) PlinkoBoardContainer->Invalidate(EInvalidateWidget::Layout);
+}
+
+void UT66GamblerOverlayWidget::StartBoxOpeningSpin()
+{
+	BoxOpeningCurrentIndex = 0;
+	BoxOpeningSpinSteps = 0;
+	BoxOpeningStripOffset = 0;
+	// Weighted result: Black (0) most likely, then Red (1), Yellow (2), White (3) rarest. 0.25x, 1x, 5x, 30x
+	UT66RngSubsystem* RngSub = nullptr;
+	UWorld* World = GetWorld();
+	if (World && World->GetGameInstance())
+		RngSub = World->GetGameInstance()->GetSubsystem<UT66RngSubsystem>();
+	float R = RngSub ? RngSub->GetRunStream().GetFraction() : FMath::FRand();
+	if (R < 0.55f) BoxOpeningResultIndex = 0;
+	else if (R < 0.85f) BoxOpeningResultIndex = 1;
+	else if (R < 0.95f) BoxOpeningResultIndex = 2;
+	else BoxOpeningResultIndex = 3;
+	if (BoxOpeningResultText.IsValid()) BoxOpeningResultText->SetText(FText::GetEmpty());
+	if (BoxOpeningStripContainer.IsValid()) BoxOpeningStripContainer->Invalidate(EInvalidateWidget::Layout);
+	if (World) World->GetTimerManager().SetTimer(BoxOpeningTimerHandle, this, &UT66GamblerOverlayWidget::TickBoxOpeningSpin, 0.08f, true, 0.05f);
+}
+
+void UT66GamblerOverlayWidget::TickBoxOpeningSpin()
+{
+	UWorld* World = GetWorld();
+	static const TCHAR* ColorNames[] = { TEXT("Black"), TEXT("Red"), TEXT("Yellow"), TEXT("White") };
+	static const float Payouts[] = { 0.25f, 1.f, 5.f, 30.f };
+	if (!World) return;
+	BoxOpeningSpinSteps++;
+	// Fast spin then slow; middle of 5 boxes shows (StripOffset+2)%4. When done, set StripOffset so middle = result.
+	const int32 FastSteps = 25;
+	const int32 SlowSteps = 8;
+	if (BoxOpeningSpinSteps <= FastSteps)
+		BoxOpeningStripOffset++;
+	else if (BoxOpeningSpinSteps <= FastSteps + SlowSteps)
+		BoxOpeningStripOffset++;
+	else
+		BoxOpeningStripOffset = (BoxOpeningResultIndex + 2) % BoxColorCount;  // so (StripOffset+2)%4 == ResultIndex
+
+	if (BoxOpeningStripContainer.IsValid()) BoxOpeningStripContainer->Invalidate(EInvalidateWidget::Layout);
+
+	if (BoxOpeningSpinSteps == FastSteps + SlowSteps + 1)
+	{
+		World->GetTimerManager().ClearTimer(BoxOpeningTimerHandle);
+		float Mult = Payouts[BoxOpeningResultIndex];
+		AwardPayout(PendingBetAmount, Mult);
+		if (BoxOpeningResultText.IsValid())
+			BoxOpeningResultText->SetText(FText::Format(
+				NSLOCTEXT("T66.Gambler", "BoxResultFmt", "{0} — {1}x — Won {2}!"),
+				FText::FromString(ColorNames[BoxOpeningResultIndex]),
+				FText::AsNumber(Mult),
+				FText::AsNumber(FMath::RoundToInt(static_cast<float>(PendingBetAmount) * Mult))));
+	}
+}
+
+FReply UT66GamblerOverlayWidget::OnBJDealClicked()
+{
+	if (LockedBetAmount <= 0)
+	{
+		UT66LocalizationSubsystem* Loc2 = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			if (World->GetGameInstance())
+			{
+				Loc2 = World->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>();
+			}
+		}
+		SetStatus(Loc2 ? Loc2->GetText_BetFirst() : NSLOCTEXT("T66.Gambler", "BetFirst", "Bet First"), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		return FReply::Handled();
+	}
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState || !RunState->TrySpendGold(LockedBetAmount))
+	{
+		UT66LocalizationSubsystem* Loc2 = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		SetStatus(Loc2 ? Loc2->GetText_NotEnoughGold() : NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		RefreshTopBar();
+		return FReply::Handled();
+	}
+	BJBetAmount = LockedBetAmount;
+	LockedBetAmount = 0;
+	RefreshTopBar();
 	StartBlackJackRound();
 	return FReply::Handled();
 }
@@ -1204,6 +1918,7 @@ FReply UT66GamblerOverlayWidget::OnBJSplit() { HandleBJSplit(); return FReply::H
 void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 {
 	if (!PageSwitcher.IsValid()) return;
+	LockedBetAmount = 0; // changing game requires locking a new bet
 	// PageSwitcher now has 2 pages: Dialogue (0) and Casino (1).
 	// CasinoSwitcher contains the sub-views: Cards (0), CoinFlip (1), RPS (2), FindBall (3).
 	int32 PageIndex = 0;
@@ -1229,6 +1944,41 @@ void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 		case EGamblerPage::BlackJack:
 			PageIndex = 1;
 			CasinoIndex = 3;
+			// Reset BJ table so Deal button shows and table is empty
+			BJDeck.Reset();
+			BJDealerHand.Reset();
+			BJPlayerHands.Reset();
+			BJCurrentHandIndex = 0;
+			BJBetAmount = 0;
+			BJDealerHoleRevealed = false;
+			BJPhase = EBlackJackPhase::WaitingForAction;
+			bBJPlayerBusted = false;
+			BJWinAmount = 0;
+			RefreshBlackJackCards();
+			if (CasinoSwitcher.IsValid()) CasinoSwitcher->Invalidate(EInvalidateWidget::Layout);
+			break;
+		case EGamblerPage::Lottery:
+			PageIndex = 1;
+			CasinoIndex = 4;
+			if (UWorld* W = GetWorld()) W->GetTimerManager().ClearTimer(LotteryDrawTimerHandle);
+			LotterySelected.Reset();
+			LotteryDrawn.Reset();
+			LotteryRevealedCount = 0;
+			break;
+		case EGamblerPage::Plinko:
+			PageIndex = 1;
+			CasinoIndex = 5;
+			if (UWorld* W = GetWorld()) W->GetTimerManager().ClearTimer(PlinkoTimerHandle);
+			PlinkoBallSlot = 4;
+			PlinkoRow = 0;
+			break;
+		case EGamblerPage::BoxOpening:
+			PageIndex = 1;
+			CasinoIndex = 6;
+			if (UWorld* W = GetWorld()) W->GetTimerManager().ClearTimer(BoxOpeningTimerHandle);
+			BoxOpeningCurrentIndex = 0;
+			BoxOpeningResultIndex = 0;
+			BoxOpeningSpinSteps = 0;
 			break;
 		default:
 			PageIndex = 0;
@@ -1243,6 +1993,9 @@ void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 	}
 	bInputLocked = false;
 	SetStatus(FText::GetEmpty());
+	if (CoinFlipStatusText.IsValid()) CoinFlipStatusText->SetText(FText::GetEmpty());
+	if (RpsStatusText.IsValid()) RpsStatusText->SetText(FText::GetEmpty());
+	if (BlackJackStatusText.IsValid()) BlackJackStatusText->SetText(FText::GetEmpty());
 	RefreshTopBar();
 	RefreshInventory();
 	RefreshSellPanel();
@@ -1259,6 +2012,24 @@ void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 	if (Page == EGamblerPage::CoinFlip && CoinFlipResultText.IsValid()) CoinFlipResultText->SetText(Loc2 ? Loc2->GetText_ResultDash() : NSLOCTEXT("T66.Gambler", "ResultDash", "Result: -"));
 	if (Page == EGamblerPage::RockPaperScissors && RpsResultText.IsValid()) RpsResultText->SetText(Loc2 ? Loc2->GetText_PickOne() : NSLOCTEXT("T66.Gambler", "PickOne", "Pick one."));
 	if (Page == EGamblerPage::BlackJack && BlackJackResultText.IsValid()) BlackJackResultText->SetText(Loc2 ? Loc2->GetText_ResultDash() : NSLOCTEXT("T66.Gambler", "ResultDash", "Result: -"));
+	if (Page == EGamblerPage::Lottery)
+	{
+		for (int32 i = 0; i < 10 && i < LotteryNumberBorders.Num(); ++i)
+			if (LotteryNumberBorders[i].IsValid()) LotteryNumberBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+		if (LotteryPicksText.IsValid()) LotteryPicksText->SetText(NSLOCTEXT("T66.Gambler", "YourPicks", "Your picks:"));
+		if (LotteryDrawnText.IsValid()) LotteryDrawnText->SetText(NSLOCTEXT("T66.Gambler", "Drawn", "Drawn:"));
+		if (LotteryResultText.IsValid()) LotteryResultText->SetText(FText::GetEmpty());
+	}
+	if (Page == EGamblerPage::Plinko)
+	{
+		if (PlinkoResultText.IsValid()) PlinkoResultText->SetText(FText::GetEmpty());
+		if (PlinkoBoardContainer.IsValid()) PlinkoBoardContainer->Invalidate(EInvalidateWidget::Layout);
+	}
+	if (Page == EGamblerPage::BoxOpening)
+	{
+		if (BoxOpeningResultText.IsValid()) BoxOpeningResultText->SetText(FText::GetEmpty());
+		if (BoxOpeningStripContainer.IsValid()) BoxOpeningStripContainer->Invalidate(EInvalidateWidget::Layout);
+	}
 }
 
 void UT66GamblerOverlayWidget::OpenCasinoPage()
@@ -1445,7 +2216,7 @@ void UT66GamblerOverlayWidget::RefreshStatsPanel()
 		RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
-	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 320.f, true));
+	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCGamblerStatsPanelWidth, true));
 }
 
 void UT66GamblerOverlayWidget::RefreshSellPanel()
@@ -1528,9 +2299,26 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 				}
 			}
 
-			SellItemDescText->SetText((MainValue > 0)
-				? FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue))
-				: FText::GetEmpty());
+			FText DescLine;
+			if (MainValue > 0)
+			{
+				if (MainType == ET66HeroStatType::AttackScale && RunState)
+				{
+					const float ScaleMult = RunState->GetHeroScaleMultiplier();
+					DescLine = FText::Format(
+						NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
+						StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
+				}
+				else
+				{
+					DescLine = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
+				}
+			}
+			else
+			{
+				DescLine = FText::GetEmpty();
+			}
+			SellItemDescText->SetText(DescLine);
 		}
 	}
 
@@ -1671,9 +2459,41 @@ bool UT66GamblerOverlayWidget::TryPayToPlay()
 	return false;
 }
 
+bool UT66GamblerOverlayWidget::TryPayWithLockedBet()
+{
+	if (bInputLocked) return false;
+	if (LockedBetAmount <= 0)
+	{
+		UT66LocalizationSubsystem* Loc2 = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			if (World->GetGameInstance())
+			{
+				Loc2 = World->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>();
+			}
+		}
+		SetStatus(Loc2 ? Loc2->GetText_BetFirst() : NSLOCTEXT("T66.Gambler", "BetFirst", "Bet First"), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		return false;
+	}
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState || !RunState->TrySpendGold(LockedBetAmount))
+	{
+		UT66LocalizationSubsystem* Loc2 = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		SetStatus(Loc2 ? Loc2->GetText_NotEnoughGold() : NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		RefreshTopBar();
+		return false;
+	}
+	PendingBetAmount = LockedBetAmount;
+	LockedBetAmount = 0;
+	RefreshTopBar();
+	return true;
+}
+
 void UT66GamblerOverlayWidget::AwardWin()
 {
-	AwardWin(GambleAmount);
+	AwardWin(PendingBetAmount);
 }
 
 void UT66GamblerOverlayWidget::AwardWin(int32 BetAmount)
@@ -1692,9 +2512,25 @@ void UT66GamblerOverlayWidget::AwardWin(int32 BetAmount)
 	}
 }
 
+void UT66GamblerOverlayWidget::AwardPayout(int32 BetAmount, float Multiplier)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				const int64 Payout = FMath::RoundToInt64(static_cast<double>(BetAmount) * static_cast<double>(Multiplier));
+				RunState->AddGold(static_cast<int32>(FMath::Clamp<int64>(Payout, 0, INT32_MAX)));
+				RefreshTopBar();
+			}
+		}
+	}
+}
+
 void UT66GamblerOverlayWidget::ResolveCoinFlip(bool bChoseHeads)
 {
-	if (!TryPayToPlay()) return;
+	if (!TryPayWithLockedBet()) return;
 	bInputLocked = true;
 	PendingRevealType = ERevealType::CoinFlip;
 	bPendingCoinFlipChoseHeads = bChoseHeads;
@@ -1703,7 +2539,7 @@ void UT66GamblerOverlayWidget::ResolveCoinFlip(bool bChoseHeads)
 
 void UT66GamblerOverlayWidget::ResolveRps(int32 PlayerChoice)
 {
-	if (!TryPayToPlay()) return;
+	if (!TryPayWithLockedBet()) return;
 	bInputLocked = true;
 	PendingRevealType = ERevealType::RockPaperScissors;
 	PendingRpsPlayerChoice = FMath::Clamp(PlayerChoice, 0, 2);
@@ -1758,7 +2594,7 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 
 	if (!bCheatSuccess && RunState)
 	{
-		RunState->AddGamblerAngerFromBet(GambleAmount);
+		RunState->AddGamblerAngerFromBet(PendingBetAmount);
 		RefreshTopBar();
 
 		// If anger hit 100%, close overlay and spawn Gambler boss immediately.
@@ -1920,7 +2756,7 @@ void UT66GamblerOverlayWidget::RevealPendingOutcome()
 			}
 			const FText WinFmt = Loc2 ? Loc2->GetText_WinPlusAmountFormat() : NSLOCTEXT("T66.Gambler", "WinPlusAmountFormat", "WIN (+{0})");
 			const FText Status = bPendingWin
-				? FText::Format(WinFmt, FText::AsNumber(GambleAmount))
+				? FText::Format(WinFmt, FText::AsNumber(PendingBetAmount))
 				: (Loc2 ? Loc2->GetText_Lose() : NSLOCTEXT("T66.Gambler", "Lose", "LOSE"));
 			SetStatus(Status,
 				bPendingWin ? FLinearColor(0.3f, 1.f, 0.4f, 1.f) : FLinearColor(1.f, 0.3f, 0.3f, 1.f));
@@ -1959,7 +2795,7 @@ void UT66GamblerOverlayWidget::RevealPendingOutcome()
 			}
 			const FText WinFmt = Loc2 ? Loc2->GetText_WinPlusAmountFormat() : NSLOCTEXT("T66.Gambler", "WinPlusAmountFormat", "WIN (+{0})");
 			const FText Status = bPendingWin
-				? FText::Format(WinFmt, FText::AsNumber(GambleAmount))
+				? FText::Format(WinFmt, FText::AsNumber(PendingBetAmount))
 				: (Loc2 ? Loc2->GetText_Lose() : NSLOCTEXT("T66.Gambler", "Lose", "LOSE"));
 			SetStatus(Status,
 				bPendingWin ? FLinearColor(0.3f, 1.f, 0.4f, 1.f) : FLinearColor(1.f, 0.3f, 0.3f, 1.f));
@@ -2072,7 +2908,7 @@ void UT66GamblerOverlayWidget::StartBlackJackRound()
 	BJPlayerHands.Reset();
 	BJPlayerHands.AddDefaulted(1);
 	BJCurrentHandIndex = 0;
-	BJBetAmount = GambleAmount;
+	// BJBetAmount set by OnOpenBlackJack before calling StartBlackJackRound
 	BJDealerHoleRevealed = false;
 	bBJPlayerBusted = false;
 	BJPhase = EBlackJackPhase::WaitingForAction;
@@ -2257,6 +3093,90 @@ void UT66GamblerOverlayWidget::RevealBlackJackOutcome()
 		if (BlackJackResultText.IsValid()) BlackJackResultText->SetText(LossText);
 		SetStatus(LossText, FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 	}
+
+	// After outcome is shown, wait then animate cards being taken and reset for another round
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		World->GetTimerManager().ClearTimer(BJCardsTakenTimerHandle);
+		World->GetTimerManager().SetTimer(BJCardsTakenTimerHandle, this, &UT66GamblerOverlayWidget::StartBJCardsTakenAnimation, 2.0f, false);
+	}
+}
+
+void UT66GamblerOverlayWidget::StartBJCardsTakenAnimation()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+	World->GetTimerManager().ClearTimer(BJCardsTakenTimerHandle);
+	BJCardsTakenStep = 0;
+	World->GetTimerManager().SetTimer(BJCardsTakenTimerHandle, this, &UT66GamblerOverlayWidget::TickBJCardsTaken, 0.08f, true);
+}
+
+void UT66GamblerOverlayWidget::TickBJCardsTaken()
+{
+	constexpr int32 MaxCards = 11;
+	// Steps 0..10: hide dealer cards; steps 11..21: hide player cards
+	if (BJCardsTakenStep < MaxCards)
+	{
+		if (BlackJackDealerCardImages.IsValidIndex(BJCardsTakenStep) && BlackJackDealerCardImages[BJCardsTakenStep].IsValid())
+		{
+			BlackJackDealerCardImages[BJCardsTakenStep]->SetVisibility(EVisibility::Collapsed);
+		}
+		// Also hide dealer hole card back on step 0 if still visible
+		if (BJCardsTakenStep == 0 && BlackJackDealerHoleCardBackImage.IsValid())
+		{
+			BlackJackDealerHoleCardBackImage->SetVisibility(EVisibility::Collapsed);
+		}
+	}
+	else if (BJCardsTakenStep < MaxCards + MaxCards)
+	{
+		const int32 PlayerIdx = BJCardsTakenStep - MaxCards;
+		if (BlackJackPlayerCardImages.IsValidIndex(PlayerIdx) && BlackJackPlayerCardImages[PlayerIdx].IsValid())
+		{
+			BlackJackPlayerCardImages[PlayerIdx]->SetVisibility(EVisibility::Collapsed);
+		}
+	}
+
+	++BJCardsTakenStep;
+	if (BJCardsTakenStep >= MaxCards + MaxCards)
+	{
+		UWorld* World = GetWorld();
+		if (World) World->GetTimerManager().ClearTimer(BJCardsTakenTimerHandle);
+		ResetBlackJackForNewRound();
+	}
+	else if (CasinoSwitcher.IsValid())
+	{
+		CasinoSwitcher->Invalidate(EInvalidateWidget::Layout);
+	}
+}
+
+void UT66GamblerOverlayWidget::ResetBlackJackForNewRound()
+{
+	BJDeck.Reset();
+	BJDealerHand.Reset();
+	BJPlayerHands.Reset();
+	BJCurrentHandIndex = 0;
+	BJBetAmount = 0;
+	BJDealerHoleRevealed = false;
+	BJPhase = EBlackJackPhase::WaitingForAction;
+	bBJPlayerBusted = false;
+	BJWinAmount = 0;
+
+	UT66LocalizationSubsystem* Loc2 = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		if (World->GetGameInstance())
+		{
+			Loc2 = World->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>();
+		}
+	}
+	if (BlackJackResultText.IsValid())
+		BlackJackResultText->SetText(Loc2 ? Loc2->GetText_ResultDash() : NSLOCTEXT("T66.Gambler", "ResultDash", "Result: -"));
+	if (BlackJackStatusText.IsValid())
+		BlackJackStatusText->SetText(FText::GetEmpty());
+
+	RefreshBlackJackCards();
+	if (CasinoSwitcher.IsValid()) CasinoSwitcher->Invalidate(EInvalidateWidget::Layout);
 }
 
 void UT66GamblerOverlayWidget::HandleBJHit()
@@ -2299,8 +3219,15 @@ void UT66GamblerOverlayWidget::HandleBJDouble()
 		if (UGameInstance* GI = World->GetGameInstance())
 			RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 	}
-	if (!RunState || !RunState->TrySpendGold(GambleAmount)) return; // need to deduct one more bet
-	BJBetAmount += GambleAmount;
+	if (!RunState || !RunState->TrySpendGold(BJBetAmount))
+	{
+		UWorld* World = GetWorld();
+		UT66LocalizationSubsystem* Loc2 = (World && World->GetGameInstance()) ? World->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		SetStatus(Loc2 ? Loc2->GetText_NotEnoughGold() : NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+		RefreshTopBar();
+		return;
+	}
+	BJBetAmount += BJBetAmount;
 	RefreshTopBar();
 	if (BJDeck.Num() > 0) BJPlayerHands[BJCurrentHandIndex].Add(BJDeck.Pop());
 	RefreshBlackJackCards();
@@ -2384,6 +3311,32 @@ void UT66GamblerOverlayWidget::CloseOverlay()
 
 void UT66GamblerOverlayWidget::SetStatus(const FText& Msg, const FLinearColor& Color)
 {
+	// When a game is active, show status in that game panel instead of the top bar
+	if (CasinoSwitcher.IsValid())
+	{
+		const int32 Idx = CasinoSwitcher->GetActiveWidgetIndex();
+		if (Idx == 1 && CoinFlipStatusText.IsValid())
+		{
+			CoinFlipStatusText->SetText(Msg);
+			CoinFlipStatusText->SetColorAndOpacity(FSlateColor(Color));
+			if (StatusText.IsValid()) { StatusText->SetText(FText::GetEmpty()); }
+			return;
+		}
+		if (Idx == 2 && RpsStatusText.IsValid())
+		{
+			RpsStatusText->SetText(Msg);
+			RpsStatusText->SetColorAndOpacity(FSlateColor(Color));
+			if (StatusText.IsValid()) { StatusText->SetText(FText::GetEmpty()); }
+			return;
+		}
+		if (Idx == 3 && BlackJackStatusText.IsValid())
+		{
+			BlackJackStatusText->SetText(Msg);
+			BlackJackStatusText->SetColorAndOpacity(FSlateColor(Color));
+			if (StatusText.IsValid()) { StatusText->SetText(FText::GetEmpty()); }
+			return;
+		}
+	}
 	if (StatusText.IsValid())
 	{
 		StatusText->SetText(Msg);

@@ -58,6 +58,7 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 				LC->CastShadows = false; // Shadows disabled — replicates asset-preview look
 				LC->bAtmosphereSunLight = true;
 				LC->AtmosphereSunLightIndex = 0;
+				LC->SetForwardShadingPriority(1); // Primary for forward shading
 			}
 			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned DirectionalLight for preview (no shadows)"));
 		}
@@ -85,6 +86,7 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 				LC->CastShadows = false; // Shadows disabled globally
 				LC->bAtmosphereSunLight = true;
 				LC->AtmosphereSunLightIndex = 1;
+				LC->SetForwardShadingPriority(0); // Secondary; sun is primary for forward shading
 			}
 			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned moon light for theme (no shadows)"));
 		}
@@ -100,6 +102,7 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			LC->CastShadows = false; // Shadows disabled globally — replicates asset-preview look
 			LC->bAtmosphereSunLight = true;
 			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(T66MoonTag) ? 1 : 0;
+			LC->SetForwardShadingPriority(DirLight->Tags.Contains(T66MoonTag) ? 0 : 1); // Sun primary for forward shading
 		}
 	}
 	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);

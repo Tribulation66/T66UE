@@ -371,7 +371,7 @@ FReply UT66WheelOverlayWidget::OnSpin()
 	if (BackButton.IsValid()) BackButton->SetEnabled(false);
 
 	World->GetTimerManager().ClearTimer(SpinTickHandle);
-	World->GetTimerManager().SetTimer(SpinTickHandle, this, &UT66WheelOverlayWidget::TickSpin, 0.016f, true);
+	World->GetTimerManager().SetTimer(SpinTickHandle, this, &UT66WheelOverlayWidget::TickSpin, 0.033f, true);
 
 	return FReply::Handled();
 }

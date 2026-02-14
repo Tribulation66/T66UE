@@ -120,7 +120,7 @@ void AT66LeprechaunEnemy::RecomputeGoldFromRarity()
 	}
 }
 
-bool AT66LeprechaunEnemy::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
+bool AT66LeprechaunEnemy::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName EventType)
 {
 	// Only award gold if this hit actually applied damage to a living target.
 	if (Damage <= 0 || CurrentHP <= 0)
@@ -137,7 +137,7 @@ bool AT66LeprechaunEnemy::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
 		}
 	}
 
-	const bool bApplied = Super::TakeDamageFromHero(Damage, DamageSourceID);
+	const bool bApplied = Super::TakeDamageFromHero(Damage, DamageSourceID, EventType);
 	if (bApplied && RunState && GoldPerHit > 0)
 	{
 		RunState->AddGold(GoldPerHit);

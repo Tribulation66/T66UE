@@ -7,7 +7,7 @@
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 
 /**
- * Minimal WebView2 host for Windows-only TikTok playback.
+ * Minimal WebView2 host for Windows-only short-form video playback (TikTok, Instagram Reels, YouTube Shorts).
  *
  * Notes:
  * - Requires WebView2 Runtime installed (Edge WebView2 runtime).

@@ -118,7 +118,6 @@ private:
 
 	FReply OnBack();
 	FReply OnBorrowClicked();
-	FReply OnPaybackMax();
 	FReply OnPaybackClicked();
 	FReply OnSelectInventorySlot(int32 InventoryIndex);
 	FReply OnSellSelectedClicked();

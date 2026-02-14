@@ -6,6 +6,7 @@
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66FloatingCombatTextSubsystem.h"
 #include "AIController.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -237,7 +238,7 @@ void AT66BossBase::FireAtPlayer()
 	}
 }
 
-bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID)
+bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID, FName EventType)
 {
 	if (!bAwakened || CurrentHP <= 0) return false;
 	if (DamageAmount <= 0) return false;
@@ -247,6 +248,10 @@ bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceI
 	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
 	{
 		DamageLog->RecordDamageDealt(SourceID, DamageAmount);
+	}
+	if (UT66FloatingCombatTextSubsystem* FloatingText = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+	{
+		FloatingText->ShowDamageNumber(this, DamageAmount, EventType);
 	}
 	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{

@@ -130,7 +130,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
 
 	// --- NPC anger face sprites ---
-	static constexpr float AngerFaceSize = 170.f;
+	const float AngerFaceSize = FT66Style::Tokens::NPCAngerCircleSize;
 	auto InitFaceBrush = [](FSlateBrush& B) {
 		B = FSlateBrush();
 		B.ImageSize = FVector2D(AngerFaceSize, AngerFaceSize);
@@ -182,7 +182,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	{
 		ItemIconBrushes[i] = MakeShared<FSlateBrush>();
 		ItemIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		ItemIconBrushes[i]->ImageSize = FVector2D(200.f, 200.f);
+		ItemIconBrushes[i]->ImageSize = FVector2D(260.f, 260.f);  // Match Gambler game panel icon size
 	}
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
 	{
@@ -190,6 +190,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		InventorySlotIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
 		InventorySlotIconBrushes[i]->ImageSize = FVector2D(160.f, 160.f);
 	}
+
+	// Shop item card size matches Gambler game panels (260×260 icon).
+	static constexpr float ShopCardSize = 260.f;
+	static constexpr float ShopCardHeight = 460.f;
 
 	TSharedRef<SHorizontalBox> ShopRow = SNew(SHorizontalBox);
 
@@ -223,12 +227,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		StealButtons[i] = StealBtnWidget;
 
 		ShopRow->AddSlot()
-			.FillWidth(1.f)
+			.AutoWidth()
 			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
-			.MinDesiredWidth(220.f)
-			.MinDesiredHeight(420.f)
+			.WidthOverride(ShopCardSize)
+			.HeightOverride(ShopCardHeight)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -248,8 +252,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(FT66Style::Tokens::ItemPanelIconSize)
-								.HeightOverride(FT66Style::Tokens::ItemPanelIconSize)
+								.WidthOverride(ShopCardSize)
+								.HeightOverride(ShopCardSize)
 								[
 									SAssignNew(ItemIconImages[i], SImage)
 									.Image(ItemIconBrushes[i].Get())
@@ -401,19 +405,9 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					ET66ButtonType::Neutral)
 				.SetMinWidth(420.f)
 				.SetPadding(FMargin(18.f, 10.f))
-				.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
-			)
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f)
-		[
-			FT66Style::MakeButton(
-				FT66ButtonParams(BackText,
-					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
-					ET66ButtonType::Neutral)
-				.SetMinWidth(420.f)
-				.SetPadding(FMargin(18.f, 10.f))
-			)
-		];
+			.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
+		)
+	];
 
 	// Pre-create inventory grid (buttons use centralized MakeButton).
 	TSharedRef<SUniformGridPanel> InventoryGrid = SNew(SUniformGridPanel)
@@ -472,101 +466,65 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	);
 	SellItemButton = SellBtnWidget;
 
-	TSharedRef<SWidget> ShopPage =
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight()
+	// Build main 3-column row (Stats | Shop | Bank) as a separate widget to avoid Slate parser issues with SBox::FArguments.
+	TSharedRef<SWidget> MainRowContent = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			SAssignNew(StatsPanelBox, SBox)
+			.WidthOverride(FT66Style::Tokens::NPCVendorStatsPanelWidth)
+			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
 			[
-				SNew(STextBlock)
-				.Text(VendorTitle)
-				.TextStyle(&TextTitle)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCVendorStatsPanelWidth, true)
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 		[
-			SAssignNew(StatusText, STextBlock)
-			.Text(FText::GetEmpty())
-			.TextStyle(&TextBody)
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-		]
-		+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
-			[
-				SAssignNew(StatsPanelBox, SBox)
-				[
-					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f, true)
-				]
-			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
-			[
-				SNew(SBox)
-				.WidthOverride(FT66Style::Tokens::NPCCenterPanelTotalWidth)
-				[
-					FT66Style::MakePanel(
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
-						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(ShopTitle)
-								.TextStyle(&TextHeading)
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-							]
-							+ SHorizontalBox::Slot().FillWidth(1.f)
-							[
-								SNew(SSpacer)
-							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-							[
-								FT66Style::MakeButton(
-									FT66ButtonParams(RerollText,
-										FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
-										ET66ButtonType::Neutral)
-									.SetMinWidth(0.f)
-									.SetPadding(FMargin(16.f, 10.f))
-									.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
-								)
-							]
-						]
-						+ SVerticalBox::Slot().FillHeight(1.f)
-						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().FillWidth(1.f)
-							[
-								SNew(SSpacer)
-							]
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								ShopRow
-							]
-						]
-					,
-						FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
-				]
-			]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
+			SNew(SBox)
+			.WidthOverride(FT66Style::Tokens::NPCCenterPanelTotalWidth)
+			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
-					// Anger circle (top)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 0.f)
+					[
+						ShopRow
+					]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+					[
+						FT66Style::MakeButton(
+							FT66ButtonParams(RerollText,
+								FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
+								ET66ButtonType::Neutral)
+							.SetMinWidth(0.f)
+							.SetPadding(FMargin(16.f, 10.f))
+							.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
+						)
+					]
+				,
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+			]
+		]
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 0.f, 0.f)
+		[
+			SNew(SBox)
+			.WidthOverride(FT66Style::Tokens::NPCRightPanelWidth)
+			[
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 					[
-				SNew(SBox)
-					.WidthOverride(170.f)
-					.HeightOverride(170.f)
+						SNew(SBox)
+						.WidthOverride(260.f)
+						.HeightOverride(260.f)
+						[
+							SAssignNew(AngerCircleImage, SImage)
+							.Image(&AngerFace_Happy)
+						]
+					]
+					+ SVerticalBox::Slot().FillHeight(1.f)
 					[
-						SAssignNew(AngerCircleImage, SImage)
-						.Image(&AngerFace_Happy)
+						SNew(SSpacer)
 					]
-					]
-					// Bank (bottom, separate panel)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 					[
 						FT66Style::MakePanel(
@@ -584,8 +542,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
 									SNew(SBox)
-									.WidthOverride(110.f)
-									.HeightOverride(44.f)
+									.WidthOverride(FT66Style::Tokens::NPCBankSpinBoxWidth)
+									.HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
 									[
 										SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
@@ -612,8 +570,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
 									SNew(SBox)
-									.WidthOverride(110.f)
-									.HeightOverride(44.f)
+									.WidthOverride(FT66Style::Tokens::NPCBankSpinBoxWidth)
+									.HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
 									[
 										SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
@@ -621,17 +579,6 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										.Value_Lambda([this]() { return PaybackAmount; })
 										.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
 									]
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-								[
-									FT66Style::MakeButton(
-										FT66ButtonParams(
-											Loc ? Loc->GetText_Max() : NSLOCTEXT("T66.Common", "Max", "MAX"),
-											FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnPaybackMax),
-											ET66ButtonType::Neutral)
-										.SetMinWidth(0.f)
-										.SetPadding(FMargin(16.f, 10.f))
-									)
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
@@ -651,32 +598,53 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				,
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
 			]
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
+		];
+
+	TSharedRef<SWidget> ShopPage =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight()
 		[
-			FT66Style::MakeButton(
-				FT66ButtonParams(BackText,
-					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
-					ET66ButtonType::Neutral)
-				.SetMinWidth(0.f)
-				.SetPadding(FMargin(20.f, 12.f))
-			)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(ShopTitle)
+				.TextStyle(&TextTitle)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+		[
+			SAssignNew(StatusText, STextBlock)
+			.Text(FText::GetEmpty())
+			.TextStyle(&TextBody)
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
-			FT66Style::MakePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			SNew(SBox)
+			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
+			[
+				MainRowContent
+			]
+		]
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+		[
+			SNew(SBox)
+			.HeightOverride(FT66Style::Tokens::NPCGamblerInventoryPanelHeight)[
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SNew(STextBlock)
-						.Text(InventoryTitle)
-						.TextStyle(&TextHeading)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(18.f, 0.f, 16.f, 0.f)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+								.Text(InventoryTitle)
+								.TextStyle(&TextHeading)
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(18.f, 0.f, 16.f, 0.f)
 					[
 						SAssignNew(GoldText, STextBlock)
 						.Text(FText::Format(
@@ -753,6 +721,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				]
 			,
 				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+			]
 		];
 
 	TSharedRef<SWidget> Root =
@@ -770,7 +739,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					ShopPage
 				]
 			,
-				FT66PanelParams(ET66PanelType::Bg).SetPadding(24.f).SetColor(FT66Style::Tokens::Bg))
+				FT66PanelParams(ET66PanelType::Bg).SetPadding(FT66Style::Tokens::NPCOverlayPadding).SetColor(FT66Style::Tokens::Bg))
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(FT66Style::Tokens::NPCOverlayPadding, FT66Style::Tokens::NPCOverlayPadding, 0.f, 0.f)
+		[
+			FT66Style::MakeButton(
+				FT66ButtonParams(BackText,
+					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
+					ET66ButtonType::Neutral)
+				.SetMinWidth(0.f)
+				.SetPadding(FMargin(20.f, 12.f))
+			)
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
@@ -822,7 +804,7 @@ void UT66VendorOverlayWidget::RefreshStatsPanel()
 	{
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
-	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 220.f, true));
+	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCVendorStatsPanelWidth, true));
 }
 
 void UT66VendorOverlayWidget::RefreshTopBar()
@@ -951,10 +933,26 @@ void UT66VendorOverlayWidget::RefreshStock()
 				const ET66HeroStatType MainType = D.PrimaryStatType;
 				const int32 MainValue = StockSlots.IsValidIndex(i) ? StockSlots[i].Line1RolledValue : 0;
 
-				// Build description: Line 1 stat + Line 2 secondary name.
-				FText Line1 = (MainValue > 0)
-					? FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue))
-					: FText::GetEmpty();
+				// Build description: Line 1 stat + Line 2 secondary name. For Attack Scale also show numeric multiplier (e.g. 1.1, 1.3).
+				FText Line1;
+				if (MainValue > 0)
+				{
+					if (MainType == ET66HeroStatType::AttackScale && RunState)
+					{
+						const float ScaleMult = RunState->GetHeroScaleMultiplier();
+						Line1 = FText::Format(
+							NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
+							StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
+					}
+					else
+					{
+						Line1 = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
+					}
+				}
+				else
+				{
+					Line1 = FText::GetEmpty();
+				}
 				FText Line2 = (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
 					? Loc->GetText_SecondaryStatName(D.SecondaryStatType)
 					: FText::GetEmpty();
@@ -990,7 +988,19 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (ItemTileBorders.IsValidIndex(i) && ItemTileBorders[i].IsValid())
 		{
-			ItemTileBorders[i]->SetBorderBackgroundColor(bSold ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel);
+			// Shop item card border uses rarity color (same as inventory) when slot has an item and not sold.
+			if (bSold)
+			{
+				ItemTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+			}
+			else if (bHasData)
+			{
+				ItemTileBorders[i]->SetBorderBackgroundColor(FItemData::GetItemRarityColor(SlotRarity));
+			}
+			else
+			{
+				ItemTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel);
+			}
 		}
 		if (BuyButtons.IsValidIndex(i) && BuyButtons[i].IsValid())
 		{
@@ -1245,9 +1255,26 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 				}
 			}
 
-			SellItemDescText->SetText((MainValue > 0)
-				? FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue))
-				: FText::GetEmpty());
+			FText DescLine;
+			if (MainValue > 0)
+			{
+				if (MainType == ET66HeroStatType::AttackScale && RunState)
+				{
+					const float ScaleMult = RunState->GetHeroScaleMultiplier();
+					DescLine = FText::Format(
+						NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
+						StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
+				}
+				else
+				{
+					DescLine = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
+				}
+			}
+			else
+			{
+				DescLine = FText::GetEmpty();
+			}
+			SellItemDescText->SetText(DescLine);
 		}
 	}
 	if (SellItemPriceText.IsValid())
@@ -1299,24 +1326,6 @@ FReply UT66VendorOverlayWidget::OnBorrowClicked()
 	RunState->BorrowGold(BorrowAmount);
 	if (StatusText.IsValid()) StatusText->SetText(FText::GetEmpty());
 	RefreshTopBar();
-	return FReply::Handled();
-}
-
-FReply UT66VendorOverlayWidget::OnPaybackMax()
-{
-	if (UWorld* World = GetWorld())
-	{
-		if (UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World))
-		{
-			PaybackAmount = FMath::Max(0, RunState->GetCurrentDebt());
-			if (PaybackAmountSpin.IsValid())
-			{
-				PaybackAmountSpin->SetValue(PaybackAmount);
-			}
-			if (StatusText.IsValid()) StatusText->SetText(FText::GetEmpty());
-			RefreshTopBar();
-		}
-	}
 	return FReply::Handled();
 }
 

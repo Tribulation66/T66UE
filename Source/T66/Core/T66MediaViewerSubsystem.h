@@ -6,14 +6,23 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66MediaViewerSubsystem.generated.h"
 
+/** Which short-form video platform the media viewer is showing. */
+UENUM(BlueprintType)
+enum class ET66MediaViewerSource : uint8
+{
+	TikTok  UMETA(DisplayName = "TikTok"),
+	Shorts  UMETA(DisplayName = "Shorts"),
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnT66MediaViewerOpenChanged, bool, bIsOpen);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnT66MediaViewerSourceChanged, ET66MediaViewerSource, NewSource);
 
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 #include "Core/T66WebView2Host.h"
 #endif
 
 /**
- * Foundation for the TikTok / YouTube Shorts Media Viewer feature.
+ * Media Viewer for TikTok and YouTube Shorts.
  * Implements audio muting rule: while viewer is open, mute all other game audio and restore on close.
  */
 UCLASS()
@@ -31,22 +40,36 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MediaViewer")
 	void SetMediaViewerOpen(bool bOpen);
 
+	/** Get/set which platform is active (TikTok or Shorts). Navigates to the new URL immediately if open. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MediaViewer")
+	ET66MediaViewerSource GetMediaViewerSource() const { return ActiveSource; }
+
+	UFUNCTION(BlueprintCallable, Category = "MediaViewer")
+	void SetMediaViewerSource(ET66MediaViewerSource NewSource);
+
 	UPROPERTY(BlueprintAssignable, Category = "MediaViewer")
 	FOnT66MediaViewerOpenChanged OnMediaViewerOpenChanged;
 
-	// Windows-only TikTok/WebView2 integration (called from HUD to align the overlay with the phone panel).
+	UPROPERTY(BlueprintAssignable, Category = "MediaViewer")
+	FOnT66MediaViewerSourceChanged OnMediaViewerSourceChanged;
+
+	// Windows-only WebView2 integration (called from HUD to align the overlay with the video panel).
 	void SetTikTokWebView2ScreenRect(const FIntRect& ScreenRectPx);
 
-	// TikTok-only controls (no arbitrary browsing UI).
+	// Video controls (prev/next). TikTok: scroll-based; YouTube Shorts: keyboard ArrowDown/ArrowUp.
 	void TikTokPrev();
 	void TikTokNext();
 
-	// Pre-warm TikTok in the background so login + CSS formatting are done before first toggle.
+	// Pre-warm WebView2 in the background so login + CSS formatting are done before first toggle.
 	// Safe to call multiple times.
 	void PrewarmTikTok();
 
+	/** Return the initial URL for a given source. */
+	static const TCHAR* GetUrlForSource(ET66MediaViewerSource Source);
+
 private:
 	bool bIsOpen = false;
+	ET66MediaViewerSource ActiveSource = ET66MediaViewerSource::TikTok;
 
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 	TUniquePtr<FT66WebView2Host> TikTokWebView2;

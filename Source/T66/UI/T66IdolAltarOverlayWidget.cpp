@@ -128,12 +128,12 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 		SelectButtons[i] = SelectBtnWidget;
 
 		IdolRow->AddSlot()
-			.FillWidth(1.f)
-			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
+			.AutoWidth()
+			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space6, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
-			.MinDesiredWidth(220.f)
-			.MinDesiredHeight(420.f)
+			.WidthOverride(220.f)
+			.HeightOverride(420.f)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -188,11 +188,23 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> Root =
 		FT66Style::MakePanel(
 			SNew(SVerticalBox)
-			// Title row
+			// Top row: Back (left), Title (center)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(BackText,
+							FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnBack),
+							ET66ButtonType::Neutral)
+						.SetMinWidth(0.f)
+						.SetPadding(FMargin(20.f, 12.f))
+					)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
 					.Text(AltarTitle)
@@ -203,16 +215,6 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				[
 					SNew(SSpacer)
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					FT66Style::MakeButton(
-						FT66ButtonParams(RerollText,
-							FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnReroll),
-							ET66ButtonType::Neutral)
-						.SetMinWidth(0.f)
-						.SetPadding(FMargin(16.f, 10.f))
-					)
-				]
 			]
 			// Status text
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
@@ -222,22 +224,20 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 				.TextStyle(&TextBody)
 				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 			]
-			// Idol cards
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+			// Idol cards (each card is its own panel, spaced apart)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
 			[
-				FT66Style::MakePanel(
-					IdolRow,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+				IdolRow
 			]
-			// Back button
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 16.f, 0.f, 0.f)
+			// Reroll button (centered beneath the idol panels, larger)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
 			[
 				FT66Style::MakeButton(
-					FT66ButtonParams(BackText,
-						FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnBack),
+					FT66ButtonParams(RerollText,
+						FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnReroll),
 						ET66ButtonType::Neutral)
-					.SetMinWidth(0.f)
-					.SetPadding(FMargin(20.f, 12.f))
+					.SetMinWidth(200.f)
+					.SetPadding(FMargin(28.f, 14.f))
 				)
 			]
 		,

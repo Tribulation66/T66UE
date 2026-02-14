@@ -86,12 +86,15 @@ void AT66MiasmaManager::UpdateFromRunState()
 	EnsureSpawnedCount(Desired);
 }
 
+static constexpr int32 MaxTilesToSpawnPerFrame = 8;
+
 void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	while (SpawnedTiles.Num() < DesiredCount && SpawnedTiles.Num() < TileCenters.Num())
+	int32 SpawnedThisCall = 0;
+	while (SpawnedTiles.Num() < DesiredCount && SpawnedTiles.Num() < TileCenters.Num() && SpawnedThisCall < MaxTilesToSpawnPerFrame)
 	{
 		const FVector Loc = TileCenters[SpawnedTiles.Num()];
 		FActorSpawnParameters Params;
@@ -102,6 +105,7 @@ void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
 			Tile->TileSize = TileSize;
 			Tile->FinishSpawning(FTransform(FRotator::ZeroRotator, Loc));
 			SpawnedTiles.Add(Tile);
+			++SpawnedThisCall;
 		}
 		else
 		{

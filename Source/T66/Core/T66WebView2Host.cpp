@@ -185,14 +185,88 @@ namespace
 
 	static std::wstring ToWide(const FString& S) { return std::wstring(*S); }
 
-	static bool IsTikTokLoginFlowUrl(const FString& Url)
+	static bool IsLoginFlowUrl(const FString& Url)
 	{
 		const FString Lower = Url.ToLower();
-		// Treat any TikTok login route as "login flow" so we don't hide UI chrome needed for auth.
-		// (We specifically navigate to /login/qrcode for non-click QR login.)
-		return Lower.Contains(TEXT("/login")) || Lower.Contains(TEXT("login/qrcode"));
+		// Treat login routes as "login flow" so we don't hide UI chrome needed for auth.
+		// TikTok: /login, /login/qrcode
+		// YouTube/Google: accounts.google.com
+		return Lower.Contains(TEXT("/login"))
+			|| Lower.Contains(TEXT("accounts.google.com"));
 	}
 }
+
+// Minimal implementation of ICoreWebView2EnvironmentOptions so we can pass
+// AdditionalBrowserArguments (e.g. --disable-gpu-video-decoder) to CreateEnv.
+// WebView2 doesn't ship a CLSID for this interface, so we implement it inline.
+class FT66WebView2EnvOptions final : public ICoreWebView2EnvironmentOptions
+{
+	volatile LONG RefCount = 1;
+	std::wstring BrowserArgs;
+
+public:
+	explicit FT66WebView2EnvOptions(const wchar_t* InArgs) : BrowserArgs(InArgs ? InArgs : L"") {}
+
+	// IUnknown
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override
+	{
+		if (!ppv) return E_POINTER;
+		if (riid == __uuidof(IUnknown) || riid == __uuidof(ICoreWebView2EnvironmentOptions))
+		{
+			*ppv = static_cast<ICoreWebView2EnvironmentOptions*>(this);
+			AddRef();
+			return S_OK;
+		}
+		*ppv = nullptr;
+		return E_NOINTERFACE;
+	}
+	ULONG STDMETHODCALLTYPE AddRef() override { return static_cast<ULONG>(_InterlockedIncrement(&RefCount)); }
+	ULONG STDMETHODCALLTYPE Release() override
+	{
+		ULONG r = static_cast<ULONG>(_InterlockedDecrement(&RefCount));
+		if (r == 0) delete this;
+		return r;
+	}
+
+	// ICoreWebView2EnvironmentOptions
+	HRESULT STDMETHODCALLTYPE get_AdditionalBrowserArguments(LPWSTR* value) override
+	{
+		if (!value) return E_POINTER;
+		*value = static_cast<LPWSTR>(CoTaskMemAlloc((BrowserArgs.size() + 1) * sizeof(wchar_t)));
+		if (!*value) return E_OUTOFMEMORY;
+		wcscpy_s(*value, BrowserArgs.size() + 1, BrowserArgs.c_str());
+		return S_OK;
+	}
+	HRESULT STDMETHODCALLTYPE put_AdditionalBrowserArguments(LPCWSTR /*v*/) override { return E_NOTIMPL; }
+
+	HRESULT STDMETHODCALLTYPE get_Language(LPWSTR* value) override
+	{
+		if (!value) return E_POINTER;
+		*value = static_cast<LPWSTR>(CoTaskMemAlloc(sizeof(wchar_t)));
+		if (!*value) return E_OUTOFMEMORY;
+		(*value)[0] = L'\0';
+		return S_OK;
+	}
+	HRESULT STDMETHODCALLTYPE put_Language(LPCWSTR /*v*/) override { return E_NOTIMPL; }
+
+	HRESULT STDMETHODCALLTYPE get_TargetCompatibleBrowserVersion(LPWSTR* value) override
+	{
+		if (!value) return E_POINTER;
+		*value = static_cast<LPWSTR>(CoTaskMemAlloc(sizeof(wchar_t)));
+		if (!*value) return E_OUTOFMEMORY;
+		(*value)[0] = L'\0';
+		return S_OK;
+	}
+	HRESULT STDMETHODCALLTYPE put_TargetCompatibleBrowserVersion(LPCWSTR /*v*/) override { return E_NOTIMPL; }
+
+	HRESULT STDMETHODCALLTYPE get_AllowSingleSignOnUsingOSPrimaryAccount(BOOL* allow) override
+	{
+		if (!allow) return E_POINTER;
+		*allow = 0;
+		return S_OK;
+	}
+	HRESULT STDMETHODCALLTYPE put_AllowSingleSignOnUsingOSPrimaryAccount(BOOL /*v*/) override { return E_NOTIMPL; }
+};
 
 struct FT66WebView2Host::FImpl
 {
@@ -327,6 +401,7 @@ struct FT66WebView2Host::FImpl
 		};
 
 		return
+			// TikTok
 			IsExactOrSubdomainOf(TEXT("tiktok.com")) ||
 			IsExactOrSubdomainOf(TEXT("tiktokcdn.com")) ||
 			IsExactOrSubdomainOf(TEXT("tiktokcdn-us.com")) ||
@@ -336,6 +411,14 @@ struct FT66WebView2Host::FImpl
 			IsExactOrSubdomainOf(TEXT("ibytedtos.com")) ||
 			IsExactOrSubdomainOf(TEXT("ibyteimg.com")) ||
 			IsExactOrSubdomainOf(TEXT("byteoversea.com")) ||
+			// YouTube Shorts
+			IsExactOrSubdomainOf(TEXT("youtube.com")) ||
+			IsExactOrSubdomainOf(TEXT("googlevideo.com")) ||
+			IsExactOrSubdomainOf(TEXT("ytimg.com")) ||
+			IsExactOrSubdomainOf(TEXT("googleapis.com")) ||
+			IsExactOrSubdomainOf(TEXT("gstatic.com")) ||
+			IsExactOrSubdomainOf(TEXT("accounts.google.com")) ||
+			// Shared CDN
 			HostPort == TEXT("storage.googleapis.com");
 	}
 
@@ -355,9 +438,9 @@ struct FT66WebView2Host::FImpl
 			Rc.bottom = ScreenR.Height();
 			Ctrl->put_Bounds(Rc);
 
-			// Make TikTok fit better in the phone panel. (Best-effort; TikTok layout varies.)
-			// Shrink slightly for narrow panels so UI/video doesn't get clipped.
-			static constexpr double DesignWidthPx = 520.0;
+			// Zoom factor = panel width / DesignWidthPx. At 330px panel → zoom 1.0 (native scale).
+			// Narrower panels zoom out proportionally; never below 0.65.
+			static constexpr double DesignWidthPx = 330.0;
 			const double Target = FMath::Clamp(static_cast<double>(ScreenR.Width()) / DesignWidthPx, 0.65, 1.0);
 			if (FMath::Abs(Target - DesiredZoomFactor) > 0.001)
 			{
@@ -451,6 +534,11 @@ struct FT66WebView2Host::FImpl
 									Settings->put_IsBuiltInErrorPageEnabled(1);
 								}
 
+								// NOTE: AddScriptToExecuteOnDocumentCreated was tried here for visibility/IO
+								// overrides but it runs on ALL pages (including TikTok) and broke playback
+								// on both platforms. YouTube-specific overrides are injected in the
+								// NavigationCompleted handler where we can check the URL.
+
 								// Force an opaque background to avoid any transparency / desktop bleed artifacts.
 								ComPtr<ICoreWebView2Controller2> Ctrl2;
 								if (SUCCEEDED(Ctrl.As(&Ctrl2)) && Ctrl2)
@@ -514,49 +602,190 @@ struct FT66WebView2Host::FImpl
 
 											UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] NavCompleted '%s'"), *ShortUrl(Url));
 
-											// Best-effort: make TikTok "video-only" by hiding common chrome (nav/header/footer/sidebar).
-											// Do NOT apply this during login flows (QR page needs its UI).
-											if (!IsTikTokLoginFlowUrl(Url))
+											// Per-site CSS injection to make the video fill the viewport and hide platform chrome.
+											// Do NOT apply during login flows (QR page needs its UI).
+											if (!IsLoginFlowUrl(Url))
 											{
-												static const wchar_t* VideoOnlyScript = LR"JS(
-													(function(){
-														try{
-															var href = (window.location && window.location.href) ? window.location.href : '';
-															if (href.toLowerCase().indexOf('tiktok.com') === -1) return;
+												// Determine which platform we're on and inject the matching CSS.
+												const FString UrlLower = Url.ToLower();
 
-															function apply(){
+												if (UrlLower.Contains(TEXT("tiktok.com")))
+												{
+													static const wchar_t* TikTokVideoOnlyScript = LR"JS(
+														(function(){
+															try{
+																function apply(){
+																	try{
+																		var id='t66_video_only_css';
+																		var st=document.getElementById(id);
+																		if(!st){
+																			st=document.createElement('style');
+																			st.id=id;
+																			st.type='text/css';
+																			(document.head||document.documentElement).appendChild(st);
+																		}
+																		st.textContent =
+																			'html,body{background:#000 !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}' +
+																			'*{scrollbar-width:none !important;}' +
+																			'*::-webkit-scrollbar{width:0 !important;height:0 !important;}' +
+																			'header,nav,footer,aside,[role=\"banner\"],[role=\"navigation\"],[role=\"contentinfo\"]{display:none !important;}' +
+																			'[data-e2e*=\"nav\" i],[data-e2e*=\"header\" i],[data-e2e*=\"footer\" i],[data-e2e*=\"sidebar\" i]{display:none !important;}' +
+																			'[class*=\"SideNav\" i],[class*=\"Navbar\" i],[class*=\"Navigation\" i],[class*=\"TopNav\" i],[class*=\"BottomNav\" i]{display:none !important;}' +
+																			'main,[role=\"main\"]{width:100vw !important;max-width:100vw !important;margin:0 !important;padding:0 !important;}' +
+																			'video{background:#000 !important;object-fit:contain !important;}' +
+																			'[class*=\"Video\" i],[class*=\"Player\" i]{max-width:100vw !important;max-height:100vh !important;}';
+																	}catch(e){}
+																}
+																apply();
+																setTimeout(apply, 250);
+																setTimeout(apply, 900);
+															}catch(e){}
+														})();
+													)JS";
+													ExecuteScriptNoResult(TikTokVideoOnlyScript, TEXT("TikTokVideoOnlyCSS"));
+												}
+												else if (UrlLower.Contains(TEXT("youtube.com")))
+												{
+													// ── Fix A: Page Visibility API override ──
+													// YouTube pauses videos when the page reports as hidden.
+													// Our WS_EX_TRANSPARENT popup triggers this.
+													static const wchar_t* YouTubeVisibilityFixScript = LR"JS(
+														(function(){
+															try{
+																Object.defineProperty(document,'hidden',{value:false,configurable:true,writable:false});
+																Object.defineProperty(document,'visibilityState',{value:'visible',configurable:true,writable:false});
+																document.addEventListener('visibilitychange',function(e){e.stopImmediatePropagation();},true);
+																window.addEventListener('blur',function(e){e.stopImmediatePropagation();},true);
+															}catch(e){}
+														})();
+													)JS";
+													ExecuteScriptNoResult(YouTubeVisibilityFixScript, TEXT("YouTubeVisibilityFix"));
+
+													// ── Fix B: IntersectionObserver override ──
+													// YouTube Shorts uses IntersectionObserver to decide which video
+													// is "in view". Our CSS layout changes can cause the observer to
+													// report the video as offscreen, making YouTube hide the video
+													// surface while keeping audio alive. Override so every observed
+													// element is always reported as fully intersecting.
+													static const wchar_t* YouTubeIntersectionFixScript = LR"JS(
+														(function(){
+															try{
+																var OrigIO = window.IntersectionObserver;
+																if (!OrigIO) return;
+																window.IntersectionObserver = function(cb, opts){
+																	var wrappedCb = function(entries, observer){
+																		try{
+																			for(var i=0;i<entries.length;i++){
+																				var e=entries[i];
+																				// Force every entry to appear fully visible
+																				Object.defineProperty(e,'isIntersecting',{value:true,configurable:true});
+																				Object.defineProperty(e,'intersectionRatio',{value:1.0,configurable:true});
+																			}
+																		}catch(x){}
+																		return cb(entries, observer);
+																	};
+																	return new OrigIO(wrappedCb, opts);
+																};
+																window.IntersectionObserver.prototype = OrigIO.prototype;
+															}catch(e){}
+														})();
+													)JS";
+													ExecuteScriptNoResult(YouTubeIntersectionFixScript, TEXT("YouTubeIntersectionFix"));
+
+													// ── Fix C: CSS injection (overflow:clip instead of overflow:hidden) ──
+													// Using overflow:clip avoids breaking scroll-based detection that
+													// YouTube's IntersectionObserver relies on internally.
+													static const wchar_t* YouTubeVideoOnlyScript = LR"JS(
+														(function(){
+															try{
+																function apply(){
+																	try{
+																		var id='t66_video_only_css';
+																		var st=document.getElementById(id);
+																		if(!st){
+																			st=document.createElement('style');
+																			st.id=id;
+																			st.type='text/css';
+																			(document.head||document.documentElement).appendChild(st);
+																		}
+																		st.textContent =
+																			'html,body{background:#000 !important;margin:0 !important;padding:0 !important;overflow:clip !important;}' +
+																			'*{scrollbar-width:none !important;}' +
+																			'*::-webkit-scrollbar{width:0 !important;height:0 !important;}' +
+																			'ytd-masthead,tp-yt-app-header,#guide,#guide-button,ytd-mini-guide-renderer{display:none !important;}' +
+																			'ytd-shorts ytd-reel-video-renderer{width:100vw !important;height:100vh !important;}' +
+																			'ytd-shorts .navigation-container{display:none !important;}' +
+																			'ytd-shorts .action-container{opacity:0 !important;pointer-events:none !important;}' +
+																			'video{background:#000 !important;object-fit:contain !important;width:100% !important;height:100% !important;}' +
+																			'#shorts-container,ytd-shorts{width:100vw !important;max-width:100vw !important;margin:0 !important;padding:0 !important;}';
+																	}catch(e){}
+																}
+																apply();
+																setTimeout(apply, 500);
+																setTimeout(apply, 1500);
+																setTimeout(apply, 3000);
+															}catch(e){}
+														})();
+													)JS";
+													ExecuteScriptNoResult(YouTubeVideoOnlyScript, TEXT("YouTubeVideoOnlyCSS"));
+
+													// ── Fix D: MutationObserver to hide YouTube overlay elements ──
+													// YouTube dynamically adds overlay divs on top of the video
+													// (poster, thumbnail, cued-overlay, etc.). Watch the DOM and
+													// force any element whose class contains "overlay" to be invisible
+													// (unless it IS the video element itself).
+													static const wchar_t* YouTubeOverlayKillerScript = LR"JS(
+														(function(){
+															try{
+																function killOverlays(){
+																	try{
+																		var sels=[
+																			'ytd-shorts .overlay',
+																			'.ytp-cued-thumbnail-overlay',
+																			'.ytp-offline-slate',
+																			'#player-overlay',
+																			'.html5-video-player .ytp-pause-overlay'
+																		];
+																		for(var s=0;s<sels.length;s++){
+																			var els=document.querySelectorAll(sels[s]);
+																			for(var i=0;i<els.length;i++){
+																				var el=els[i];
+																				if(el && el.tagName!=='VIDEO'){
+																					el.style.setProperty('opacity','0','important');
+																					el.style.setProperty('pointer-events','none','important');
+																				}
+																			}
+																		}
+																	}catch(e){}
+																}
+																killOverlays();
+																// Run periodically for the first few seconds as YouTube lazy-loads elements.
+																var intv=setInterval(killOverlays, 300);
+																setTimeout(function(){clearInterval(intv);}, 8000);
+																// Also watch for dynamically added overlays via MutationObserver.
 																try{
-																	var id='t66_video_only_css';
-																	var st=document.getElementById(id);
-																	if(!st){
-																		st=document.createElement('style');
-																		st.id=id;
-																		st.type='text/css';
-																		(document.head||document.documentElement).appendChild(st);
-																	}
-																	st.textContent =
-																		'html,body{background:#000 !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}' +
-																		'*{scrollbar-width:none !important;}' +
-																		'*::-webkit-scrollbar{width:0 !important;height:0 !important;}' +
-																		'header,nav,footer,aside,[role=\"banner\"],[role=\"navigation\"],[role=\"contentinfo\"]{display:none !important;}' +
-																		'[data-e2e*=\"nav\" i],[data-e2e*=\"header\" i],[data-e2e*=\"footer\" i],[data-e2e*=\"sidebar\" i]{display:none !important;}' +
-																		'[class*=\"SideNav\" i],[class*=\"Navbar\" i],[class*=\"Navigation\" i],[class*=\"TopNav\" i],[class*=\"BottomNav\" i]{display:none !important;}' +
-																		'main,[role=\"main\"]{width:100vw !important;max-width:100vw !important;margin:0 !important;padding:0 !important;}' +
-																		// Critical: stop TikTok from cropping the video to fill; show full video with letterboxing.
-																		'video{background:#000 !important;object-fit:contain !important;}' +
-																		// Many TikTok layouts wrap the video in an element that controls sizing; make it respect viewport.
-																		'[class*=\"Video\" i],[class*=\"Player\" i]{max-width:100vw !important;max-height:100vh !important;}';
-																}catch(e){}
-															}
-
-															apply();
-															setTimeout(apply, 250);
-															setTimeout(apply, 900);
-														}catch(e){}
-													})();
-												)JS";
-
-												ExecuteScriptNoResult(VideoOnlyScript, TEXT("VideoOnlyCSS"));
+																	var mo=new MutationObserver(function(muts){
+																		for(var m=0;m<muts.length;m++){
+																			var added=muts[m].addedNodes;
+																			if(!added) continue;
+																			for(var n=0;n<added.length;n++){
+																				var node=added[n];
+																				if(!node||!node.classList) continue;
+																				var cn=node.className||'';
+																				if(typeof cn==='string' && cn.toLowerCase().indexOf('overlay')!==-1 && node.tagName!=='VIDEO'){
+																					node.style.setProperty('opacity','0','important');
+																					node.style.setProperty('pointer-events','none','important');
+																				}
+																			}
+																		}
+																	});
+																	mo.observe(document.documentElement,{childList:true,subtree:true});
+																}catch(mo_err){}
+															}catch(e){}
+														})();
+													)JS";
+													ExecuteScriptNoResult(YouTubeOverlayKillerScript, TEXT("YouTubeOverlayKiller"));
+												}
 											}
 
 											if (!Url.Contains(TEXT("login/qrcode"), ESearchCase::IgnoreCase))
@@ -699,10 +928,40 @@ struct FT66WebView2Host::FImpl
 		}
 	}
 
+	void MoveVideoYouTube(int32 Dir)
+	{
+		// YouTube Shorts: use native keyboard navigation (ArrowDown = next, ArrowUp = prev).
+		// This triggers YouTube's own transition logic reliably.
+		const TCHAR* Key = (Dir > 0) ? TEXT("ArrowDown") : TEXT("ArrowUp");
+		const int32 KeyCode = (Dir > 0) ? 40 : 38;
+		FString Script = FString::Printf(
+			TEXT("(function(){try{var e=new KeyboardEvent('keydown',{key:'%s',code:'%s',keyCode:%d,which:%d,bubbles:true,cancelable:true});document.dispatchEvent(e);}catch(x){}})();"),
+			Key, Key, KeyCode, KeyCode);
+		ExecuteScriptNoResult(*Script, Dir > 0 ? TEXT("YT_NextShort") : TEXT("YT_PrevShort"));
+	}
+
 	void MoveVideo(int32 Dir)
 	{
 		Dir = (Dir >= 0) ? 1 : -1;
 
+		// Check if we're on YouTube — if so, use keyboard events instead of TikTok scroll logic.
+		if (View)
+		{
+			LPWSTR Raw = nullptr;
+			FString CurrentUrl;
+			if (SUCCEEDED(View->get_Source(&Raw)) && Raw)
+			{
+				CurrentUrl = FString(Raw);
+				CoTaskMemFree(Raw);
+			}
+			if (CurrentUrl.ToLower().Contains(TEXT("youtube.com")))
+			{
+				MoveVideoYouTube(Dir);
+				return;
+			}
+		}
+
+		// TikTok-specific scroll + video management logic below.
 		// IMPORTANT: keep this script small enough for MSVC string literal limits.
 		// Also: avoid expensive DOM scans; rely on elementsFromPoint at viewport center when possible.
 		FString Script;

@@ -15,6 +15,7 @@ class UInstancedStaticMeshComponent;
 class UPointLightComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
+class UWidgetComponent;
 class UT66HeroSpeedSubsystem;
 class UAnimationAsset;
 
@@ -85,6 +86,10 @@ public:
 	/** Visual ring showing the hero's current auto-attack range (toggle with HUD panels). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UInstancedStaticMeshComponent> AttackRangeRingISM;
+
+	/** Auto-attack cooldown bar below the hero's feet. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
+	TObjectPtr<UWidgetComponent> CooldownBarWidgetComponent;
 
 	/** Character fill light: soft omnidirectional light attached to the character
 	 *  so it's always visible regardless of scene lighting (no Lumen dependency). */
@@ -215,6 +220,10 @@ private:
 	float BaseBrakingFrictionFactor = 2.f;
 	float BaseBrakingDecelerationWalking = 2048.f;
 	float StageSlideSecondsRemaining = 0.f;
+
+	/** When cooldown bar shows full (1), keep it at full for this long (seconds). */
+	float CooldownDisplayHoldUntil = -1.f;
+	static constexpr float CooldownBarHoldFullDuration = 0.01f;
 
 private:
 	/** Load and cache the static mesh assets */

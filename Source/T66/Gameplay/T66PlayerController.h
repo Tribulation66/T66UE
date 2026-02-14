@@ -30,6 +30,8 @@ class AT66RecruitableCompanion;
 enum class ET66Rarity : uint8;
 class SWidget;
 class SWeakWidget;
+class UInputAction;
+class UInputMappingContext;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FT66NearbyLootBagChanged);
 
@@ -187,6 +189,9 @@ protected:
 	void HandleAttackLockPressed();
 	void HandleAttackUnlockPressed();
 
+	/** Toggle mouse lock (free cursor vs camera control). Default: Right Mouse Button. */
+	void HandleToggleMouseLockPressed();
+
 	UFUNCTION()
 	void OnPlayerDied();
 
@@ -244,6 +249,18 @@ private:
 	void AutoLoadScreenClasses();
 
 	bool CanUseCombatMouseInput() const;
+
+	/** Enhanced Input: create and register gameplay mouse actions (attack lock, unlock, toggle mouse lock). */
+	void SetupGameplayEnhancedInputMappings();
+
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> IA_AttackLock = nullptr;
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> IA_AttackUnlock = nullptr;
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> IA_ToggleMouseLock = nullptr;
+	UPROPERTY(Transient)
+	TObjectPtr<UInputMappingContext> IMC_GameplayMouse = nullptr;
 
 	TWeakObjectPtr<AT66EnemyBase> LockedEnemy;
 

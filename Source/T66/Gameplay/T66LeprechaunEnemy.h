@@ -30,7 +30,7 @@ public:
 
 	void SetRarity(ET66Rarity InRarity);
 
-	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None) override;
+	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None, FName EventType = NAME_None) override;
 
 protected:
 	virtual void BeginPlay() override;

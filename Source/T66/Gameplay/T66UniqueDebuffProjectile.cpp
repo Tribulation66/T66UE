@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
@@ -91,6 +92,20 @@ void AT66UniqueDebuffProjectile::OnSphereBeginOverlap(UPrimitiveComponent* Overl
 			break;
 		default:
 			break;
+	}
+
+	if (UT66FloatingCombatTextSubsystem* FCT = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
+	{
+		FName EventType = NAME_None;
+		switch (EffectType)
+		{
+			case ET66HeroStatusEffectType::Burn:  EventType = UT66FloatingCombatTextSubsystem::EventType_Burn;  break;
+			case ET66HeroStatusEffectType::Chill: EventType = UT66FloatingCombatTextSubsystem::EventType_Chill; break;
+			case ET66HeroStatusEffectType::Curse: EventType = UT66FloatingCombatTextSubsystem::EventType_Curse; break;
+			default: break;
+		}
+		if (!EventType.IsNone())
+			FCT->ShowStatusEvent(Hero, EventType);
 	}
 
 	Destroy();

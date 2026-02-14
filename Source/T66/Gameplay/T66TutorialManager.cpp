@@ -364,6 +364,7 @@ AT66EnemyBase* AT66TutorialManager::SpawnTutorialEnemyAt(const FVector& InLocati
 
 	if (RunState)
 	{
+		Enemy->ApplyStageScaling(RunState->GetCurrentStage());
 		Enemy->ApplyDifficultyScalar(RunState->GetDifficultyScalar());
 	}
 

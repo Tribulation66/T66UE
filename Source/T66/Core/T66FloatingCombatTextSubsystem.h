@@ -1,0 +1,45 @@
+// Copyright Tribulation 66. All Rights Reserved.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Subsystems/GameInstanceSubsystem.h"
+#include "T66FloatingCombatTextSubsystem.generated.h"
+
+/**
+ * Displays floating combat text: damage numbers on the sides of enemies and
+ * status/event labels (Crit, DoT, etc.) above the head with different fonts.
+ * One subsystem for both; call from TakeDamageFromHero / TakeDamageFromHeroHit.
+ */
+UCLASS()
+class T66_API UT66FloatingCombatTextSubsystem : public UGameInstanceSubsystem
+{
+	GENERATED_BODY()
+
+public:
+	/** Well-known event types for status labels (use these when applying damage with a modifier). */
+	static const FName EventType_Crit;
+	static const FName EventType_DoT;
+
+	/** Hero-only status/event types (shown above hero head). */
+	static const FName EventType_Burn;
+	static const FName EventType_Chill;
+	static const FName EventType_Curse;
+	static const FName EventType_LevelUp;
+
+	/** Show a damage number at the target (offset to the side). Optionally show a status label above head if EventType is set. */
+	UFUNCTION(BlueprintCallable, Category = "FloatingCombatText")
+	void ShowDamageNumber(AActor* Target, int32 Amount, FName EventType = NAME_None);
+
+	/** Show only a status/event label above the target (e.g. "CRIT!", "DoT"). Uses event-specific font/color. */
+	UFUNCTION(BlueprintCallable, Category = "FloatingCombatText")
+	void ShowStatusEvent(AActor* Target, FName EventType);
+
+private:
+	/** Horizontal offset from target center for damage numbers (so they appear on the side). */
+	static constexpr float DamageNumberOffsetSide = 80.f;
+	/** Height above target for damage number and status label. */
+	static constexpr float OffsetAboveHead = 180.f;
+	/** Lifetime of each floating text actor (seconds) before it destroys itself. */
+	static constexpr float TextLifetimeSeconds = 1.2f;
+};

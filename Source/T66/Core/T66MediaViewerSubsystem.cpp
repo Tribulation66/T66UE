@@ -38,13 +38,18 @@
 #endif
 #endif
 
-namespace
+// URL map for each short-form video platform.
+const TCHAR* UT66MediaViewerSubsystem::GetUrlForSource(ET66MediaViewerSource Source)
 {
-#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
-	// Non-click login path: land directly on QR login so the user can scan and authenticate.
-	// If already logged in, TikTok typically redirects to the feed automatically.
-	static const TCHAR* GT66TikTokInitialUrl = TEXT("https://www.tiktok.com/login/qrcode");
-#endif
+	switch (Source)
+	{
+	case ET66MediaViewerSource::TikTok:
+		return TEXT("https://www.tiktok.com/login/qrcode");
+	case ET66MediaViewerSource::Shorts:
+		return TEXT("https://www.youtube.com/shorts/");
+	default:
+		return TEXT("https://www.tiktok.com/login/qrcode");
+	}
 }
 
 void UT66MediaViewerSubsystem::ToggleMediaViewer()
@@ -97,10 +102,10 @@ void UT66MediaViewerSubsystem::PrewarmTikTok()
 	{
 		bHasPrewarmedTikTok = true;
 
-		// Preload TikTok so session + CSS injection are ready before first toggle.
+		// Preload initial source so session + CSS injection are ready before first toggle.
 		if (!TikTokWebView2->HasEverNavigated())
 		{
-			TikTokWebView2->Navigate(GT66TikTokInitialUrl);
+			TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
 		}
 
 		// Keep hidden (and hard-muted) until the player opens it.
@@ -187,12 +192,12 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 				TikTokWebView2->ShowAtScreenRect(TikTokWebView2Rect);
 			}
 
-			// Only navigate on the first ever open. Subsequent toggles should simply show/hide the existing session
-			// (so we don't force a relogin mid-run).
-			if (!TikTokWebView2->HasEverNavigated())
-			{
-				TikTokWebView2->Navigate(GT66TikTokInitialUrl);
-			}
+		// Only navigate on the first ever open. Subsequent toggles should simply show/hide the existing session
+		// (so we don't force a relogin mid-run).
+		if (!TikTokWebView2->HasEverNavigated())
+		{
+			TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
+		}
 		}
 	}
 	else
@@ -248,6 +253,22 @@ void UT66MediaViewerSubsystem::TikTokNext()
 {
 }
 #endif
+
+void UT66MediaViewerSubsystem::SetMediaViewerSource(ET66MediaViewerSource NewSource)
+{
+	if (ActiveSource == NewSource) return;
+	ActiveSource = NewSource;
+
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	// Navigate to the new platform URL immediately if the WebView2 is alive.
+	if (TikTokWebView2 && TikTokWebView2->IsReady())
+	{
+		TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
+	}
+#endif
+
+	OnMediaViewerSourceChanged.Broadcast(ActiveSource);
+}
 
 void UT66MediaViewerSubsystem::ApplyMutedAudio()
 {

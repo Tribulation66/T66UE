@@ -225,15 +225,39 @@ public:
 		static constexpr float StrokeWidth = 1.f;
 		static constexpr float BorderWidth = 1.f;   // White outline around panels/buttons
 
-		// Vendor/Gambler shared layout (change here to update both overlays)
+		// Vendor/Gambler shared layout — all fixed sizes (no FillWidth/FillHeight in main row).
+		// See Tokens docs or this file for full width/height list.
 		static constexpr float InventorySlotSize = 160.f;   // Inventory slots on Vendor and Gambler screens
 		static constexpr float ItemPanelIconSize = 200.f;   // Vendor shop item icon; Gambler game card icon
 		static constexpr float GameCardMinWidth = 260.f;
 		static constexpr float GameCardHeight = 200.f;
-		/** Center panel width for NPC overlays (Vendor shop + Gambler casino). ~20% wider than 692. */
-		static constexpr float NPCCenterPanelTotalWidth = 830.f;
-		/** Right panel width (anger + bank) for NPC overlays — fixed size the vendor had previously. */
-		static constexpr float NPCRightPanelWidth = 280.f;
+		/** Center panel width for NPC overlays (Vendor shop + Gambler casino). */
+		static constexpr float NPCCenterPanelTotalWidth = 920.f;
+		/** Right panel width (anger + bank) for NPC overlays. */
+		static constexpr float NPCRightPanelWidth = 380.f;
+		/** Fixed height of the main 3-column row (Stats | Shop/Casino | Bank) on Vendor and Gambler. */
+		static constexpr float NPCMainRowHeight = 600.f;
+		/** Fixed height of the inventory panel strip at the bottom on Vendor and Gambler. */
+		static constexpr float NPCInventoryPanelHeight = 180.f;
+		/** Gambler/Casino inventory panel height (+40% vs base). */
+		static constexpr float NPCGamblerInventoryPanelHeight = 252.f;  // 180 * 1.4
+		/** Stats panel width (Vendor and Gambler); single source of truth. */
+		static constexpr float NPCStatsPanelWidth = 300.f;
+		/** Vendor stats panel width (same as NPCStatsPanelWidth). */
+		static constexpr float NPCVendorStatsPanelWidth = NPCStatsPanelWidth;
+		/** Gambler stats panel width (same as NPCStatsPanelWidth). */
+		static constexpr float NPCGamblerStatsPanelWidth = NPCStatsPanelWidth;
+		/** Vendor shop item card: width and height (each of the 3 cards). */
+		static constexpr float NPCShopCardWidth = 220.f;
+		static constexpr float NPCShopCardHeight = 420.f;
+		/** Anger face circle size (Vendor and Gambler right panel). */
+		static constexpr float NPCAngerCircleSize = 170.f;
+		/** Bank spinbox width (Borrow/Payback amount). */
+		static constexpr float NPCBankSpinBoxWidth = 110.f;
+		/** Bank spinbox height and similar single-line control height. */
+		static constexpr float NPCBankSpinBoxHeight = 44.f;
+		/** Root overlay padding (Vendor/Gambler). */
+		static constexpr float NPCOverlayPadding = 24.f;
 
 		// Spacing scale (4pt baseline)
 		static constexpr float Space2 = 8.f;

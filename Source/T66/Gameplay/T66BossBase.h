@@ -62,8 +62,8 @@ public:
 	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). */
 	void ApplyDifficultyScalar(float Scalar);
 
-	/** Called by hero projectile overlap; returns true if boss died. DamageSourceID used for run damage log (default: AutoAttack). */
-	bool TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID = NAME_None);
+	/** Called by hero projectile overlap; returns true if boss died. DamageSourceID used for run damage log (default: AutoAttack). EventType for floating text (Crit, DoT; default none). */
+	bool TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
 	bool IsAwakened() const { return bAwakened; }
 	bool IsAlive() const { return CurrentHP > 0; }

@@ -16,6 +16,8 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66MiasmaBoundary.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
@@ -38,15 +40,42 @@
 #include "Engine/Texture2D.h"
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Widgets/SToolTip.h"
 
 namespace
 {
-	// TikTok panel width: narrow enough to hide the right-side like/comment/share sidebar (video content only).
-	static constexpr float GT66TikTokPanelW = 330.f;
-	static constexpr float GT66TikTokPanelH = 600.f;
+	// Media viewer panel: original phone-panel size with tab row above.
+	static constexpr float GT66MediaPanelW = 330.f;
+	// Video area + tab row height (~30px tabs + 570px video = 600 total, matching old panel).
+	static constexpr float GT66MediaVideoH = 570.f;
+	static constexpr float GT66MediaTabRowH = 30.f;
+	static constexpr float GT66MediaPanelH = GT66MediaVideoH + GT66MediaTabRowH;
 
 	// Distance from viewport bottom to top of hearts row (matches bottom-left HUD: slot padding 24 + portrait 250 + padding 6 + hearts 48).
 	static constexpr float GT66HeartsTopOffsetFromBottom = 24.f + 250.f + 6.f + 48.f;
+
+	/** Creates a custom tooltip widget (background + text) for HUD item/idol hover. Returns null if InText is empty. */
+	static TSharedPtr<IToolTip> CreateCustomTooltip(const FText& InText)
+	{
+		if (InText.IsEmpty()) return nullptr;
+		const ISlateStyle& Style = FT66Style::Get();
+		const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+		return SNew(SToolTip)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
+				.BorderBackgroundColor(FT66Style::Tokens::Bg)
+				.Padding(FMargin(8.f, 6.f))
+				[
+					SNew(STextBlock)
+					.Text(InText)
+					.TextStyle(&TextBody)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.AutoWrapText(true)
+					.WrapTextAt(280.f)
+				]
+			];
+	}
 }
 
 class ST66RingWidget : public SLeafWidget
@@ -578,6 +607,68 @@ UT66RunStateSubsystem* UT66GameplayHUDWidget::GetRunState() const
 	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 }
 
+void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	RefreshCooldownBar();
+	RefreshSpeedRunTimers();
+}
+
+void UT66GameplayHUDWidget::RefreshCooldownBar()
+{
+	if (!CooldownBarFillBox.IsValid()) return;
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC) return;
+	APawn* Pawn = PC->GetPawn();
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(Pawn);
+	if (!Hero || !Hero->CombatComponent)
+	{
+		CooldownBarFillBox->SetWidthOverride(0.f);
+		if (CooldownTimeText.IsValid()) CooldownTimeText->SetText(FText::GetEmpty());
+		return;
+	}
+	float Pct = Hero->CombatComponent->GetAutoAttackCooldownProgress();
+	Pct = FMath::Clamp(Pct, 0.f, 1.f);
+	CooldownBarFillBox->SetWidthOverride(CooldownBarWidth * Pct);
+
+	// Show remaining time above the bar (e.g. "0.42s").
+	if (CooldownTimeText.IsValid())
+	{
+		const float Interval = Hero->CombatComponent->GetEffectiveFireInterval();
+		const float Remaining = FMath::Max(0.f, (1.f - Pct) * Interval);
+		if (Remaining > 0.01f)
+		{
+			CooldownTimeText->SetText(FText::FromString(FString::Printf(TEXT("%.2fs"), Remaining)));
+		}
+		else
+		{
+			CooldownTimeText->SetText(NSLOCTEXT("T66.GameplayHUD", "CooldownReady", "READY"));
+		}
+	}
+}
+
+void UT66GameplayHUDWidget::RefreshHeroStats()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
+	if (StatLevelText.IsValid())
+		StatLevelText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatLevel", "Lv.{0}"), FText::AsNumber(RunState->GetHeroLevel())));
+	if (StatDamageText.IsValid())
+		StatDamageText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatDmg", "Dmg: {0}"), FText::AsNumber(RunState->GetDamageStat())));
+	if (StatAttackSpeedText.IsValid())
+		StatAttackSpeedText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatAS", "AS: {0}"), FText::AsNumber(RunState->GetAttackSpeedStat())));
+	if (StatAttackScaleText.IsValid())
+		StatAttackScaleText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatScale", "Scale: {0}"), FText::AsNumber(RunState->GetScaleStat())));
+	if (StatArmorText.IsValid())
+		StatArmorText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatArmor", "Armor: {0}"), FText::AsNumber(RunState->GetArmorStat())));
+	if (StatSpeedText.IsValid())
+		StatSpeedText->SetText(FText::FromString(FString::Printf(TEXT("Speed: %.1f"), RunState->GetHeroMoveSpeedMultiplier())));
+	if (StatEvasionText.IsValid())
+		StatEvasionText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatEva", "Eva: {0}"), FText::AsNumber(RunState->GetEvasionStat())));
+	if (StatLuckText.IsValid())
+		StatLuckText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatLuck", "Luck: {0}"), FText::AsNumber(RunState->GetLuckStat())));
+}
+
 void UT66GameplayHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -624,7 +715,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	// Map/minimap refresh (lightweight, throttled timer; no per-frame UI thinking).
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.25f, true);
+		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.5f, true);
 		World->GetTimerManager().SetTimer(FPSTimerHandle, this, &UT66GameplayHUDWidget::RefreshFPS, 0.25f, true);
 	}
 
@@ -740,18 +831,20 @@ void UT66GameplayHUDWidget::SyncTikTokWebView2OverlayToPlaceholder()
 {
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 	if (!IsMediaViewerOpen()) return;
-	if (!TikTokPlaceholderBox.IsValid()) return;
+	// Use the inner video box (below tabs) so the WebView2 overlay doesn't cover the tab buttons.
+	TSharedPtr<SBox> SyncBox = MediaViewerVideoBox.IsValid() ? MediaViewerVideoBox : TikTokPlaceholderBox;
+	if (!SyncBox.IsValid()) return;
 	if (!FSlateApplication::IsInitialized()) return;
 
 	// If the widget is collapsed, geometry may be invalid. Guard against 0-size.
-	const FGeometry Geo = TikTokPlaceholderBox->GetCachedGeometry();
+	const FGeometry Geo = SyncBox->GetCachedGeometry();
 	const FVector2D LocalSize = Geo.GetLocalSize();
 	if (LocalSize.X < 4.f || LocalSize.Y < 4.f)
 	{
 		return;
 	}
 
-	const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(TikTokPlaceholderBox.ToSharedRef());
+	const TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(SyncBox.ToSharedRef());
 	if (!Window.IsValid())
 	{
 		return;
@@ -1401,6 +1494,16 @@ void UT66GameplayHUDWidget::RefreshStatusEffects()
 
 void UT66GameplayHUDWidget::RefreshHUD()
 {
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		const float Now = static_cast<float>(World->GetTimeSeconds());
+		if (LastRefreshHUDTime >= 0.f && (Now - LastRefreshHUDTime) < RefreshHUDThrottleSeconds)
+		{
+			return;
+		}
+		LastRefreshHUDTime = Now;
+	}
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -1418,6 +1521,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 	RefreshHearts();
 	RefreshStatusEffects();
+	RefreshHeroStats();
 
 	// Portrait: tier color based on MAX heart quantity (not current health).
 	if (PortraitBorder.IsValid())
@@ -1520,7 +1624,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
-	// Score multiplier color matches skull tier
+	// Score multiplier color: theme for initial/tier 0, tier color for higher tiers
 	if (ScoreMultiplierText.IsValid())
 	{
 		const int32 Skulls = FMath::Max(0, RunState->GetDifficultySkulls());
@@ -1528,11 +1632,11 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		{
 			const int32 Tier = (Skulls - 1) / 5;
 			const FLinearColor TierC = FT66RarityUtil::GetTierColor(Tier);
-			ScoreMultiplierText->SetColorAndOpacity(Tier == 0 ? FLinearColor::White : TierC);
+			ScoreMultiplierText->SetColorAndOpacity(Tier == 0 ? FT66Style::Tokens::Text : TierC);
 		}
 		else
 		{
-			ScoreMultiplierText->SetColorAndOpacity(FLinearColor::Black);
+			ScoreMultiplierText->SetColorAndOpacity(FT66Style::Tokens::Text);
 		}
 	}
 
@@ -1561,19 +1665,37 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		if (!IdolSlotBorders[i].IsValid()) continue;
 		FLinearColor C = FLinearColor(0.08f, 0.14f, 0.12f, 0.92f);
 		TSoftObjectPtr<UTexture2D> IdolIconSoft;
+		FText IdolTooltipText = FText::GetEmpty();
 		if (i < Idols.Num() && !Idols[i].IsNone())
 		{
 			C = UT66RunStateSubsystem::GetIdolColor(Idols[i]);
 			if (GIAsT66)
 			{
 				FIdolData IdolData;
-				if (GIAsT66->GetIdolData(Idols[i], IdolData) && !IdolData.Icon.IsNull())
+				if (GIAsT66->GetIdolData(Idols[i], IdolData))
 				{
-					IdolIconSoft = IdolData.Icon;
+					if (!IdolData.Icon.IsNull())
+					{
+						IdolIconSoft = IdolData.Icon;
+					}
+					// Tooltip: same as altar (category + effect description)
+					if (Loc)
+					{
+						const FText CatName = Loc->GetText_IdolCategoryName(IdolData.Category);
+						const FText Tooltip = Loc->GetText_IdolTooltip(Idols[i]);
+						IdolTooltipText = FText::Format(
+							NSLOCTEXT("T66.IdolAltar", "IdolCardDescFormat", "{0}\n{1}"),
+							CatName, Tooltip);
+					}
+					else
+					{
+						IdolTooltipText = FText::FromName(Idols[i]);
+					}
 				}
 			}
 		}
 		IdolSlotBorders[i]->SetBorderBackgroundColor(C);
+		IdolSlotBorders[i]->SetToolTip(CreateCustomTooltip(IdolTooltipText));
 
 		if (IdolSlotBrushes.IsValidIndex(i) && IdolSlotBrushes[i].IsValid())
 		{
@@ -1673,10 +1795,25 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 				if (MainValue > 0)
 				{
-					TipLines.Add(FText::Format(
-						NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"),
-						StatLabel(MainType),
-						FText::AsNumber(MainValue)));
+					if (MainType == ET66HeroStatType::AttackScale && RunState)
+					{
+						const float ScaleMult = RunState->GetHeroScaleMultiplier();
+						TipLines.Add(FText::Format(
+							NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
+							StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult))));
+					}
+					else
+					{
+						TipLines.Add(FText::Format(
+							NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"),
+							StatLabel(MainType),
+							FText::AsNumber(MainValue)));
+					}
+				}
+				// Line 2: secondary stat name (match vendor description)
+				if (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
+				{
+					TipLines.Add(Loc->GetText_SecondaryStatName(D.SecondaryStatType));
 				}
 				{
 					int32 SellValue = D.BaseSellGold;
@@ -1705,7 +1842,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			}
 		}
 		InventorySlotBorders[i]->SetBorderBackgroundColor(SlotColor);
-		InventorySlotBorders[i]->SetToolTipText(Tooltip);
+		InventorySlotBorders[i]->SetToolTip(CreateCustomTooltip(Tooltip));
 
 		if (InventorySlotBrushes.IsValidIndex(i) && InventorySlotBrushes[i].IsValid())
 		{
@@ -1725,11 +1862,12 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
-	// Panel visibility (inventory, minimap, idol slots all toggle together)
+	// Panel visibility (inventory, minimap, idol slots, portrait stat panel all toggle together)
 	const EVisibility PanelVis = RunState->GetHUDPanelsVisible() ? EVisibility::Visible : EVisibility::Collapsed;
 	if (InventoryPanelBox.IsValid()) InventoryPanelBox->SetVisibility(PanelVis);
 	if (MinimapPanelBox.IsValid()) MinimapPanelBox->SetVisibility(PanelVis);
 	if (IdolSlotsPanelBox.IsValid()) IdolSlotsPanelBox->SetVisibility(PanelVis);
+	if (PortraitStatPanelBox.IsValid()) PortraitStatPanelBox->SetVisibility(PanelVis);
 
 	UpdateTikTokVisibility();
 	if (WheelSpinBox.IsValid())
@@ -2311,29 +2449,87 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			)
 			]
 		]
-		// TikTok placeholder (flush left edge; bottom aligned so panel sits just above hearts)
+		// Media viewer panel (TikTok / Reels / Shorts) with tab buttons above the video area.
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Bottom)
-		.Padding(0.f, 0.f, 0.f, GT66HeartsTopOffsetFromBottom)
+		.Padding(16.f, 0.f, 0.f, GT66HeartsTopOffsetFromBottom)
 		[
 			SAssignNew(TikTokPlaceholderBox, SBox)
-			.WidthOverride(GT66TikTokPanelW)
-			.HeightOverride(GT66TikTokPanelH)
+			.WidthOverride(GT66MediaPanelW)
+			.HeightOverride(GT66MediaPanelH)
 			[
 				FT66Style::MakePanel(
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
-					.Padding(2.f)
+					SNew(SVerticalBox)
+					// Tab row (TikTok | Shorts)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 0.f, 0.f, 2.f)
 					[
-						// Important: no scaling here. Scaling can break browser hit-testing (click/scroll),
-						// so we anchor any native overlay to match this box's size/position.
-						SAssignNew(TikTokContentBox, SBox)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						.Padding(2.f, 0.f)
 						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
+							FT66Style::MakeButton(
+								FT66ButtonParams(
+									NSLOCTEXT("T66.MediaViewer", "Tab_TikTok", "TikTok"),
+									FOnClicked::CreateLambda([this]() -> FReply
+									{
+										if (UGameInstance* GI = GetGameInstance())
+										{
+											if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+											{
+												MV->SetMediaViewerSource(ET66MediaViewerSource::TikTok);
+											}
+										}
+										return FReply::Handled();
+									}),
+									ET66ButtonType::Neutral
+								).SetFontSize(13).SetMinWidth(80.f)
+							)
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						.Padding(2.f, 0.f)
+						[
+							FT66Style::MakeButton(
+								FT66ButtonParams(
+									NSLOCTEXT("T66.MediaViewer", "Tab_Shorts", "Shorts"),
+									FOnClicked::CreateLambda([this]() -> FReply
+									{
+										if (UGameInstance* GI = GetGameInstance())
+										{
+											if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+											{
+												MV->SetMediaViewerSource(ET66MediaViewerSource::Shorts);
+											}
+										}
+										return FReply::Handled();
+									}),
+									ET66ButtonType::Neutral
+								).SetFontSize(13).SetMinWidth(80.f)
+							)
+						]
+					]
+					// Video area (WebView2 overlay syncs to this box's geometry)
+					+ SVerticalBox::Slot()
+					.FillHeight(1.f)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
+						.Padding(2.f)
+						[
+							SAssignNew(MediaViewerVideoBox, SBox)
+							[
+								SAssignNew(TikTokContentBox, SBox)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
+								]
+							]
 						]
 					]
 				,
@@ -2341,55 +2537,57 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				)
 			]
 		]
-		// Top-left stats (no overlap with bottom-left portrait stack)
+		// Top-left stats (score + speedrun time) — themed panel and text
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Top)
 		.Padding(24.f, 24.f)
 		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight()
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			FT66Style::MakePanel(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
 				[
-				SNew(STextBlock)
-				.Text(HighScoreLabel)
-				.Font(FT66Style::Tokens::FontBold(20))
-				.ColorAndOpacity(FLinearColor::Black)
-			]
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-			[
-				SAssignNew(ScoreText, STextBlock)
-				.Text(FText::AsNumber(0))
-				.Font(FT66Style::Tokens::FontBold(20))
-				.ColorAndOpacity(FLinearColor::Black)
-			]
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
-			[
-				SAssignNew(ScoreMultiplierText, STextBlock)
-				.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreMultiplierDefault", "x1.0"))
-				.Font(FT66Style::Tokens::FontBold(20))
-				.ColorAndOpacity(FLinearColor::Black)
-			]
-		]
-		// Time (speedrun timer) below score — always same font size and black
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-		[
-			SAssignNew(SpeedRunText, STextBlock)
-			.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
-			.Font(FT66Style::Tokens::FontBold(20))
-			.ColorAndOpacity(FLinearColor::Black)
-			.Visibility(EVisibility::Collapsed)
-		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
-		[
-			SAssignNew(SpeedRunTargetText, STextBlock)
-			.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetDefault", "TO BEAT --:--.--"))
-			.Font(FT66Style::Tokens::FontBold(20))
-			.ColorAndOpacity(FLinearColor::Black)
-			.Visibility(EVisibility::Collapsed)
-		]
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(HighScoreLabel)
+						.Font(FT66Style::Tokens::FontBold(20))
+						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SAssignNew(ScoreText, STextBlock)
+						.Text(FText::AsNumber(0))
+						.Font(FT66Style::Tokens::FontBold(20))
+						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+					[
+						SAssignNew(ScoreMultiplierText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreMultiplierDefault", "x1.0"))
+						.Font(FT66Style::Tokens::FontBold(20))
+						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+				[
+					SAssignNew(SpeedRunText, STextBlock)
+					.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
+					.Font(FT66Style::Tokens::FontBold(20))
+					.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+					.Visibility(EVisibility::Collapsed)
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+				[
+					SAssignNew(SpeedRunTargetText, STextBlock)
+					.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetDefault", "TO BEAT --:--.--"))
+					.Font(FT66Style::Tokens::FontBold(20))
+					.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+					.Visibility(EVisibility::Collapsed)
+				],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(12.f)
+			)
 		]
 
 		// Wheel spin HUD animation (right side)
@@ -2505,6 +2703,43 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					[
 						StatusDotsRowRef
 					]
+					// Cooldown time text (above cooldown bar)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 2.f)
+					[
+						SAssignNew(CooldownTimeText, STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 9))
+						.ColorAndOpacity(FSlateColor(FLinearColor(0.80f, 0.80f, 0.85f, 0.90f)))
+					]
+					// Auto-attack cooldown bar (above hearts)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[
+						SNew(SBox)
+						.WidthOverride(CooldownBarWidth)
+						.HeightOverride(CooldownBarHeight)
+						[
+							SNew(SOverlay)
+							// Background track
+							+ SOverlay::Slot()
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 0.85f))
+							]
+							// Fill
+							+ SOverlay::Slot().HAlign(HAlign_Left)
+							[
+								SAssignNew(CooldownBarFillBox, SBox)
+								.WidthOverride(0.f)
+								.HeightOverride(CooldownBarHeight)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.85f, 0.85f, 0.90f, 0.95f))
+								]
+							]
+						]
+					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						HeartsRowRef
@@ -2569,6 +2804,106 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										.Font(FT66Style::Tokens::FontBold(14))
 										.ColorAndOpacity(FLinearColor(0.90f, 0.75f, 0.20f, 1.f))
 										.Justification(ETextJustify::Center)
+									]
+								]
+							]
+						]
+					]
+				]
+				// Hero stats panel (right of portrait): primary stats only, same height as portrait; toggles with T
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(12.f, 0.f, 0.f, 0.f)
+				[
+					SAssignNew(PortraitStatPanelBox, SBox)
+					.WidthOverride(120.f)
+					.HeightOverride(HeartsRowWidth)
+					[
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.30f, 0.38f, 0.35f, 0.85f))
+							.Padding(3.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
+								.Padding(FMargin(10.f, 4.f))
+								[
+									SNew(SVerticalBox)
+									+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SNew(STextBlock)
+										.Text(NSLOCTEXT("T66.GameplayHUD", "StatsTitle", "Stats"))
+										.Font(FT66Style::Tokens::FontBold(19))
+										.ColorAndOpacity(FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
+										.Justification(ETextJustify::Center)
+									]
+									+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill).Padding(4.f, 0.f, 4.f, 4.f)
+									[
+										SNew(SBox)
+										.HeightOverride(1.f)
+										[
+											SNew(SBorder)
+											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+											.BorderBackgroundColor(FLinearColor(0.45f, 0.55f, 0.50f, 0.5f))
+										]
+									]
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SAssignNew(StatLevelText, STextBlock)
+										.Text(FText::FromString(TEXT("Lv.1")))
+										.Font(FT66Style::Tokens::FontBold(15))
+										.ColorAndOpacity(FLinearColor(0.9f, 0.85f, 0.6f, 1.f))
+									]
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SAssignNew(StatDamageText, STextBlock)
+										.Text(FText::FromString(TEXT("Dmg: 0")))
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SAssignNew(StatAttackSpeedText, STextBlock)
+										.Text(FText::FromString(TEXT("AS: 0")))
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SAssignNew(StatAttackScaleText, STextBlock)
+										.Text(FText::FromString(TEXT("Scale: 0")))
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SAssignNew(StatArmorText, STextBlock)
+										.Text(FText::FromString(TEXT("Armor: 0")))
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SAssignNew(StatSpeedText, STextBlock)
+										.Text(FText::FromString(TEXT("Speed: 1.0")))
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+									[
+										SAssignNew(StatEvasionText, STextBlock)
+										.Text(FText::FromString(TEXT("Eva: 0")))
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+									+ SVerticalBox::Slot().AutoHeight()
+									[
+										SAssignNew(StatLuckText, STextBlock)
+										.Text(FText::FromString(TEXT("Luck: 0")))
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
 									]
 								]
 							]

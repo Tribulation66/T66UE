@@ -32,7 +32,7 @@ public:
 
 	void SetWinGoldAmount(int32 InAmount);
 
-private:
+	private:
 	enum class EGamblerPage : uint8
 	{
 		Dialogue = 0,
@@ -40,6 +40,9 @@ private:
 		CoinFlip = 2,
 		RockPaperScissors = 3,
 		BlackJack = 4,
+		Lottery = 5,
+		Plinko = 6,
+		BoxOpening = 7,
 	};
 
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
@@ -86,8 +89,11 @@ private:
 	int32 GambleAmount = 10;
 	int32 BorrowAmount = 0;
 	int32 PaybackAmount = 0;
+	int32 LockedBetAmount = 0;   // amount locked by Bet button; consumed when round starts
+	int32 PendingBetAmount = 0;  // amount for current round (after deduct); used for payout/anger
 
 	// Coin flip page
+	TSharedPtr<STextBlock> CoinFlipStatusText;  // in-panel status/win (replaces top bar when on this game)
 	TSharedPtr<STextBlock> CoinFlipResultText;
 	TSharedPtr<SImage> CoinFlipImage;
 	FSlateBrush CoinBrush_Heads;
@@ -102,6 +108,7 @@ private:
 	void FinishCoinSpin();
 
 	// RPS page
+	TSharedPtr<STextBlock> RpsStatusText;
 	TSharedPtr<STextBlock> RpsResultText;
 	TSharedPtr<SImage> RpsHumanHandImage;
 	TSharedPtr<SImage> RpsDemonHandImage;
@@ -114,6 +121,7 @@ private:
 	FSlateBrush RpsBrush_DemonScissors;
 
 	// Black Jack page
+	TSharedPtr<STextBlock> BlackJackStatusText;
 	TSharedPtr<STextBlock> BlackJackResultText;
 	TSharedPtr<SImage> BlackJackDealerHoleCardBackImage;
 	TArray<TSharedPtr<SImage>> BlackJackDealerCardImages;
@@ -128,6 +136,50 @@ private:
 	FSlateBrush GameIcon_CoinFlip;
 	FSlateBrush GameIcon_Rps;
 	FSlateBrush GameIcon_BlackJack;
+	// More Games (placeholder brushes until textures provided)
+	FSlateBrush GameIcon_Lottery;
+	FSlateBrush GameIcon_Plinko;
+	FSlateBrush GameIcon_BoxOpening;
+
+	TSharedPtr<SWidgetSwitcher> GameSelectionSwitcher;  // 0 = main 3 games, 1 = Lottery/Plinko/Box Opening
+
+	// Lottery: pick 5 from 1-10, then 5 drawn at random
+	TSet<int32> LotterySelected;
+	TArray<int32> LotteryDrawn;
+	int32 LotteryRevealedCount = 0;
+	FTimerHandle LotteryDrawTimerHandle;
+	TArray<TSharedPtr<SBorder>> LotteryNumberBorders;
+	TSharedPtr<STextBlock> LotteryPicksText;
+	TSharedPtr<STextBlock> LotteryDrawnText;
+	TSharedPtr<STextBlock> LotteryResultText;
+	FReply OnLotteryNumberClicked(int32 Num);
+	void StartLotteryDraw();
+	void TickLotteryRevealNext();
+
+	// Plinko: ball drops through pins, lands in slot (9 slots, middle = 0.25x)
+	static constexpr int32 PlinkoSlotCount = 9;
+	int32 PlinkoBallSlot = 0;
+	int32 PlinkoRow = 0;
+	float PlinkoBallPixelX = 0.f;
+	float PlinkoBallPixelY = 0.f;
+	FTimerHandle PlinkoTimerHandle;
+	TSharedPtr<SBox> PlinkoBoardContainer;
+	TSharedPtr<STextBlock> PlinkoResultText;
+	void StartPlinkoDrop();
+	void TickPlinkoDrop();
+
+	// Box Opening: 4 colors (Black 0.25x, Red 1x, Yellow 5x, White 30x)
+	static constexpr int32 BoxColorCount = 4;
+	int32 BoxOpeningCurrentIndex = 0;
+	int32 BoxOpeningResultIndex = 0;
+	int32 BoxOpeningSpinSteps = 0;
+	int32 BoxOpeningStripOffset = 0;  // which color is at left of visible 5; (offset+2)%4 = middle
+	FTimerHandle BoxOpeningTimerHandle;
+	TSharedPtr<SBox> BoxOpeningStripContainer;
+	TSharedPtr<STextBlock> BoxOpeningResultText;
+	void StartBoxOpeningSpin();
+	void TickBoxOpeningSpin();
+	FLinearColor GetBoxOpeningColor(int32 ColorIndex) const;
 
 	int32 WinGoldAmount = 10; // used as a default gamble amount suggestion from DT
 	bool bInputLocked = false;
@@ -164,6 +216,13 @@ private:
 	FTimerHandle RevealTimerHandle;
 	void RevealPendingOutcome();
 
+	// Black Jack: after round ends, animate cards taken then reset for new round
+	FTimerHandle BJCardsTakenTimerHandle;
+	int32 BJCardsTakenStep = 0;
+	void StartBJCardsTakenAnimation();
+	void TickBJCardsTaken();
+	void ResetBlackJackForNewRound();
+
 	FReply OnBack();
 	FReply OnDialogueGamble();
 	FReply OnDialogueTeleport();
@@ -171,14 +230,20 @@ private:
 	FReply OnSelectInventorySlot(int32 InventoryIndex);
 	FReply OnSellSelectedClicked();
 
-	FReply OnGambleMax();
+	FReply OnBetClicked();
 	FReply OnBorrowClicked();
-	FReply OnPaybackMax();
 	FReply OnPaybackClicked();
 
 	FReply OnOpenCoinFlip();
 	FReply OnOpenRps();
 	FReply OnOpenBlackJack();
+	FReply OnMoreGamesClicked();
+	FReply OnBackToMainGames();
+	FReply OnOpenLottery();
+	FReply OnOpenPlinko();
+	FReply OnOpenBoxOpening();
+	FReply OnGameBackToSelection();  // back from game to casino card selection
+	FReply OnBJDealClicked();       // lock bet then deal (Black Jack only)
 
 	FReply OnCoinFlipHeads();
 	FReply OnCoinFlipTails();
@@ -200,8 +265,11 @@ private:
 	void RefreshStatsPanel();
 	bool IsBossActive() const;
 	bool TryPayToPlay();
+	bool TryPayWithLockedBet();  // requires LockedBetAmount > 0, deducts and sets PendingBetAmount
 	void AwardWin();
 	void AwardWin(int32 BetAmount);
+	/** Award payout for Lottery/Plinko/Box: AddGold(BetAmount * Multiplier). */
+	void AwardPayout(int32 BetAmount, float Multiplier);
 	void SetStatus(const FText& Msg, const FLinearColor& Color = FLinearColor::White);
 
 	void ShowCheatPrompt();

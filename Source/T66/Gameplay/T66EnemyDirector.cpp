@@ -375,6 +375,7 @@ void AT66EnemyDirector::SpawnWave()
 
 			if (RunState)
 			{
+				Enemy->ApplyStageScaling(RunState->GetCurrentStage());
 				Enemy->ApplyDifficultyScalar(Scalar);
 			}
 			if (bIsMiniBoss)
@@ -436,6 +437,7 @@ void AT66EnemyDirector::SpawnWave()
 			Unique->OwningDirector = nullptr;
 			if (RunState)
 			{
+				Unique->ApplyStageScaling(RunState->GetCurrentStage());
 				Unique->ApplyDifficultyScalar(Scalar);
 			}
 			ActiveUniqueEnemy = Unique;

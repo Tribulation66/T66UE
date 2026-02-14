@@ -7,6 +7,7 @@
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -116,7 +117,7 @@ void AT66VendorBoss::FireAtPlayer()
 	}
 }
 
-bool AT66VendorBoss::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID)
+bool AT66VendorBoss::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID, FName EventType)
 {
 	if (DamageAmount <= 0 || CurrentHP <= 0) return false;
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
@@ -125,6 +126,10 @@ bool AT66VendorBoss::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourc
 	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
 	{
 		DamageLog->RecordDamageDealt(SourceID, DamageAmount);
+	}
+	if (UT66FloatingCombatTextSubsystem* FloatingText = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+	{
+		FloatingText->ShowDamageNumber(this, DamageAmount, EventType);
 	}
 	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{

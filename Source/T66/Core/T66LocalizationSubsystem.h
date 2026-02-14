@@ -948,6 +948,9 @@ public:
 	FText GetText_Bet() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_BetAmount() const; // "Bet Amount" label next to spinbox
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_Borrow() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
@@ -1045,6 +1048,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_NotEnoughGold() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_BetFirst() const; // "Bet First" when playing without locking bet
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_NotEnoughGoldOrNoDebt() const;

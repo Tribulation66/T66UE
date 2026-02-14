@@ -193,7 +193,7 @@ void AT66HeroProjectile::ApplyDamageToTarget(AActor* Target)
 	{
 		if (Enemy->CurrentHP > 0)
 		{
-			Enemy->TakeDamageFromHero(Damage, SourceID);
+			Enemy->TakeDamageFromHero(Damage, SourceID, NAME_None);
 		}
 		return;
 	}
@@ -201,18 +201,18 @@ void AT66HeroProjectile::ApplyDamageToTarget(AActor* Target)
 	{
 		if (Boss->IsAwakened() && Boss->IsAlive())
 		{
-			Boss->TakeDamageFromHeroHit(Damage, SourceID);
+			Boss->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		}
 		return;
 	}
 	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Target))
 	{
-		GB->TakeDamageFromHeroHit(Damage, SourceID);
+		GB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		return;
 	}
 	if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Target))
 	{
-		VB->TakeDamageFromHeroHit(Damage, SourceID);
+		VB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		return;
 	}
 }
@@ -239,7 +239,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(OtherActor);
 	if (Enemy && Enemy->CurrentHP > 0)
 	{
-		Enemy->TakeDamageFromHero(Damage, SourceID);
+		Enemy->TakeDamageFromHero(Damage, SourceID, NAME_None);
 		Destroy();
 		return;
 	}
@@ -248,7 +248,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	AT66BossBase* Boss = Cast<AT66BossBase>(OtherActor);
 	if (Boss && Boss->IsAwakened() && Boss->IsAlive())
 	{
-		Boss->TakeDamageFromHeroHit(Damage, SourceID);
+		Boss->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		Destroy();
 		return;
 	}
@@ -256,7 +256,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	// Gambler boss damage per hit
 	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(OtherActor))
 	{
-		GB->TakeDamageFromHeroHit(Damage, SourceID);
+		GB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		Destroy();
 		return;
 	}
@@ -264,7 +264,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	// Vendor boss damage per hit
 	if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(OtherActor))
 	{
-		VB->TakeDamageFromHeroHit(Damage, SourceID);
+		VB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		Destroy();
 		return;
 	}

@@ -27,6 +27,10 @@ public:
 	void ClearLockedTarget();
 	AActor* GetLockedTarget() const { return LockedTarget.Get(); }
 
+	/** Cooldown progress 0..1 (0 = just fired, 1 = ready). For UI cooldown bar below hero. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Combat")
+	float GetAutoAttackCooldownProgress() const;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	float AttackRange = 1000.f;
 
@@ -55,6 +59,11 @@ protected:
 
 	TWeakObjectPtr<AActor> LockedTarget;
 
+	/** Cached auto target; revalidate every N fires to avoid 3x TActorIterator every fire. */
+	TWeakObjectPtr<AActor> CachedAutoTarget;
+	int32 FiresSinceLastTargetRefresh = 0;
+	static constexpr int32 TargetRevalidateEveryNFires = 5;
+
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
@@ -76,11 +85,20 @@ protected:
 
 	void PlayShotSfx();
 
-	/** Apply damage to a single actor (enemy or boss), dispatching to the correct TakeDamage method. */
-	void ApplyDamageToActor(AActor* Target, int32 DamageAmount);
+	/** Apply damage to a single actor. EventType for floating text. SourceID for damage log (NAME_None = AutoAttack, or IdolID for idol/DOT). */
+	void ApplyDamageToActor(AActor* Target, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None);
 
-	/** Spawn the slash VFX disc at the given world location. */
+	/** Spawn slash VFX (arc) at the given location. */
 	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
+
+	/** Spawn pierce VFX (line) from Start to End. */
+	void SpawnPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color);
+
+	/** Spawn bounce VFX (chain of segments between positions). */
+	void SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color);
+
+	/** Spawn DOT VFX (persistent effect at target location; set lifespan to Duration). */
+	void SpawnDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color);
 
 	float BaseAttackRange = 0.f;
 	float BaseFireIntervalSeconds = 0.f;
@@ -89,4 +107,12 @@ protected:
 	float EffectiveFireIntervalSeconds = 1.f;
 	int32 EffectiveDamagePerShot = 20;
 	float ProjectileScaleMultiplier = 1.f;
+
+public:
+	/** Current fire interval (seconds) after all multipliers. For UI cooldown timer text. */
+	float GetEffectiveFireInterval() const { return EffectiveFireIntervalSeconds; }
+protected:
+
+	/** Time of last fire (for cooldown bar). */
+	float LastFireTime = -9999.f;
 };

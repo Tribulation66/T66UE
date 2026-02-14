@@ -89,9 +89,12 @@ public:
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual TSharedRef<SWidget> BuildSlateUI();
 
 	UT66RunStateSubsystem* GetRunState() const;
+	void RefreshCooldownBar();
+	void RefreshHeroStats();
 
 	void RefreshMapData();
 	void RefreshFPS();
@@ -159,6 +162,19 @@ protected:
 	TSharedPtr<SBorder> PortraitBorder;
 	TSharedPtr<SImage> PortraitImage;
 	TSharedPtr<FSlateBrush> PortraitBrush;
+	TSharedPtr<SBox> CooldownBarFillBox;
+	TSharedPtr<STextBlock> CooldownTimeText;
+	static constexpr float CooldownBarWidth = 200.f;
+	static constexpr float CooldownBarHeight = 6.f;
+	TSharedPtr<SBox> PortraitStatPanelBox;
+	TSharedPtr<STextBlock> StatLevelText;
+	TSharedPtr<STextBlock> StatDamageText;
+	TSharedPtr<STextBlock> StatAttackSpeedText;
+	TSharedPtr<STextBlock> StatAttackScaleText;
+	TSharedPtr<STextBlock> StatArmorText;
+	TSharedPtr<STextBlock> StatSpeedText;
+	TSharedPtr<STextBlock> StatEvasionText;
+	TSharedPtr<STextBlock> StatLuckText;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;
@@ -169,6 +185,7 @@ protected:
 	TSharedPtr<SBox> MinimapPanelBox;
 	TSharedPtr<SBox> TikTokPlaceholderBox;
 	TSharedPtr<SBox> TikTokContentBox;
+	TSharedPtr<SBox> MediaViewerVideoBox; // Inner video area (WebView2 syncs to this, not the full panel)
 	TSharedPtr<SBox> WheelSpinBox;
 	TSharedPtr<SImage> WheelSpinDisk;
 	TSharedPtr<STextBlock> WheelSpinText;
@@ -180,6 +197,9 @@ protected:
 	TArray<TSharedPtr<STextBlock>> WorldDialogueOptionTexts;
 
 	bool bFullMapOpen = false;
+	/** Throttle RefreshHUD to at most once per 0.25s when multiple delegates fire. */
+	float LastRefreshHUDTime = -1.f;
+	static constexpr float RefreshHUDThrottleSeconds = 0.25f;
 	FTimerHandle MapRefreshTimerHandle;
 	FTimerHandle FPSTimerHandle;
 	FTimerHandle TikTokOverlaySyncHandle;

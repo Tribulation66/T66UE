@@ -600,11 +600,13 @@ void AT66GameMode::HandleDifficultyChanged()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
 
+	const int32 Stage = RunState->GetCurrentStage();
 	const float Scalar = RunState->GetDifficultyScalar();
 	for (TActorIterator<AT66EnemyBase> It(GetWorld()); It; ++It)
 	{
 		if (AT66EnemyBase* E = *It)
 		{
+			E->ApplyStageScaling(Stage);
 			E->ApplyDifficultyScalar(Scalar);
 		}
 	}
@@ -1371,15 +1373,59 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 	// Spawn once per level (gate is a world landmark).
 	if (StartGate) return;
 
-	// Start Gate at the opening of the start-area box (east side). Scaled for 100k map.
-	const FVector SpawnLoc(-29773.f, 0.f, 0.f);
+	// Hero spawn location (match SpawnCornerHousesAndNPCs). NPCs are at Offset 600 in a cross; gate just outside (east).
+	float HeroX = -35455.f;
+	float HeroY = 0.f;
+	APawn* Pawn = Player ? Player->GetPawn() : nullptr;
+	if (Pawn)
+	{
+		const FVector Loc = Pawn->GetActorLocation();
+		HeroX = Loc.X;
+		HeroY = Loc.Y;
+	}
+	else
+	{
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+			const FVector Loc = (*It)->GetActorLocation();
+			HeroX = Loc.X;
+			HeroY = Loc.Y;
+			break;
+		}
+	}
+
+	// Gate just outside the east NPC (NPCs at ±600; gate 750 east of hero).
+	static constexpr float GateOffsetEast = 750.f;
+	FVector GateLoc(HeroX + GateOffsetEast, HeroY, 0.f);
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	{
+		GateLoc.Z = Hit.ImpactPoint.Z;
+	}
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
 	if (StartGate)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate near hero"));
+		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate near hero at (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
+	}
+
+	// Idol altar right next to the gate (north of gate).
+	if (!IdolAltar && StartGate)
+	{
+		static constexpr float AltarOffsetNorth = 350.f;
+		FVector AltarLoc(GateLoc.X, GateLoc.Y + AltarOffsetNorth, GateLoc.Z);
+		if (World->LineTraceSingleByChannel(Hit, AltarLoc + FVector(0.f, 0.f, 3000.f), AltarLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		{
+			AltarLoc.Z = Hit.ImpactPoint.Z;
+		}
+		IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), AltarLoc, FRotator::ZeroRotator, SpawnParams);
+		if (IdolAltar)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Spawned Idol Altar next to Start Gate at (%.0f, %.0f, %.0f)"), AltarLoc.X, AltarLoc.Y, AltarLoc.Z);
+		}
 	}
 }
 
@@ -2597,6 +2643,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 				// Drive SkyAtmosphere sun/sky scattering (mid-day blue sky).
 				LightComp->bAtmosphereSunLight = true;
 				LightComp->AtmosphereSunLightIndex = 0;
+				LightComp->SetForwardShadingPriority(1); // Primary for forward shading / translucency / water / volumetric fog
 			}
 			#if WITH_EDITOR
 			Sun->SetActorLabel(TEXT("DEV_Sun"));
@@ -2629,6 +2676,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 				LC->CastShadows = false; // Shadows disabled globally
 				LC->bAtmosphereSunLight = true;
 				LC->AtmosphereSunLightIndex = 1;
+				LC->SetForwardShadingPriority(0); // Secondary; sun is primary for forward shading
 			}
 #if WITH_EDITOR
 			Moon->SetActorLabel(TEXT("DEV_Moon"));
@@ -2784,6 +2832,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			LC->CastShadows = false; // Shadows disabled globally — replicates asset-preview look
 			LC->bAtmosphereSunLight = true;
 			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(MoonTag) ? 1 : 0;
+			LC->SetForwardShadingPriority(DirLight->Tags.Contains(MoonTag) ? 0 : 1); // Sun primary for forward shading
 			// Align level-placed light colors with frontend so preview and gameplay match.
 			if (DirLight->Tags.Contains(MoonTag))
 			{
@@ -2878,7 +2927,9 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 	}
 	else
 	{
-		SunComp->SetIntensity(0.f);
+		// Dark theme: keep sun on at reduced intensity so ground matches Light theme visibility; moon adds night feel.
+		SunComp->SetIntensity(2.f);
+		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
 		MoonComp->SetIntensity(0.4f);
 		MoonComp->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
 	}

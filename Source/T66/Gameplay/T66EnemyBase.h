@@ -77,9 +77,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	TObjectPtr<AT66EnemyDirector> OwningDirector;
 
-	/** Apply damage from hero. Returns true if enemy died. DamageSourceID used for run damage log (default: AutoAttack). */
+	/** Apply damage from hero. Returns true if enemy died. DamageSourceID used for run damage log (default: AutoAttack). EventType for floating text (Crit, DoT, etc.; default none). */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None);
+	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
 	/** If true, this enemy prefers to flee from the hero (used by Leprechaun). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
@@ -92,7 +92,10 @@ public:
 	/** Show/hide the lock indicator on this enemy's health bar. */
 	void SetLockedIndicator(bool bLocked);
 
-	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). */
+	/** Apply stage-based HP/Armor: stage 1 = 50 HP, 0.1 armor; each stage multiplies by 1.1. Call before ApplyDifficultyScalar. */
+	void ApplyStageScaling(int32 Stage);
+
+	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). HP/Armor are skipped if ApplyStageScaling was used. */
 	void ApplyDifficultyScalar(float Scalar);
 
 	/** Apply difficulty tier (Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...). */
@@ -132,11 +135,12 @@ protected:
 private:
 	// Safety/perf: avoid per-enemy per-frame scans for safe zones.
 	float SafeZoneCheckAccumSeconds = 0.f;
-	float SafeZoneCheckIntervalSeconds = 0.25f;
+	float SafeZoneCheckIntervalSeconds = 0.5f;
 	bool bCachedInsideSafeZone = false;
 	FVector CachedSafeZoneEscapeDir = FVector::ZeroVector;
 
 	bool bBaseTuningInitialized = false;
+	bool bStageScalingApplied = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseTouchDamageHearts = 0;
 	int32 BasePointValue = 0;

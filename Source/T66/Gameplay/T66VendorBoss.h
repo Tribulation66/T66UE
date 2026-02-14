@@ -39,7 +39,7 @@ public:
 	int32 ProjectileDamageHearts = 1;
 
 	/** Called by hero projectile overlap; returns true if boss died. DamageSourceID used for run damage log. */
-	bool TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID = NAME_None);
+	bool TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
 protected:
 	virtual void BeginPlay() override;

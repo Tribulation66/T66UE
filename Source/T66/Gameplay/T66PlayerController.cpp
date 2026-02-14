@@ -49,6 +49,10 @@
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66ItemPickup.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66CowardiceGate.h"
@@ -591,9 +595,14 @@ void AT66PlayerController::SetupInputComponent()
 		InputComponent->BindAction(TEXT("ToggleGamerMode"), IE_Pressed, this, &AT66PlayerController::HandleToggleGamerModePressed);
 		InputComponent->BindAction(TEXT("RestartRun"), IE_Pressed, this, &AT66PlayerController::HandleRestartRunPressed);
 
-		// Manual attack lock/unlock (mouse only)
-		InputComponent->BindAction(TEXT("AttackLock"), IE_Pressed, this, &AT66PlayerController::HandleAttackLockPressed);
-		InputComponent->BindAction(TEXT("AttackUnlock"), IE_Pressed, this, &AT66PlayerController::HandleAttackUnlockPressed);
+		// Manual attack lock / unlock / toggle mouse lock (Enhanced Input: LMB, RMB)
+		if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent))
+		{
+			SetupGameplayEnhancedInputMappings();
+			if (IA_AttackLock) EIC->BindAction(IA_AttackLock, ETriggerEvent::Started, this, &AT66PlayerController::HandleAttackLockPressed);
+			if (IA_AttackUnlock) EIC->BindAction(IA_AttackUnlock, ETriggerEvent::Started, this, &AT66PlayerController::HandleAttackUnlockPressed);
+			if (IA_ToggleMouseLock) EIC->BindAction(IA_ToggleMouseLock, ETriggerEvent::Started, this, &AT66PlayerController::HandleToggleMouseLockPressed);
+		}
 
 		// TikTok next/prev (hard-bound; no mouse required). Only acts while viewer is open.
 		// User preference: Q = Next, E = Previous.
@@ -654,7 +663,7 @@ void AT66PlayerController::HandleUltimatePressed()
 	{
 		if (AT66EnemyBase* E = *It)
 		{
-			E->TakeDamageFromHero(UT66RunStateSubsystem::UltimateDamage, UltimateSourceID);
+			E->TakeDamageFromHero(UT66RunStateSubsystem::UltimateDamage, UltimateSourceID, NAME_None);
 		}
 	}
 }
@@ -807,6 +816,53 @@ void AT66PlayerController::HandleAttackUnlockPressed()
 		LockedEnemy->SetLockedIndicator(false);
 	}
 	LockedEnemy.Reset();
+}
+
+void AT66PlayerController::HandleToggleMouseLockPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (!CanUseCombatMouseInput()) return;
+
+	if (bShowMouseCursor)
+	{
+		RestoreGameplayInputMode();
+	}
+	else
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+	}
+}
+
+void AT66PlayerController::SetupGameplayEnhancedInputMappings()
+{
+	if (IA_AttackLock && IA_AttackUnlock && IA_ToggleMouseLock && IMC_GameplayMouse) return;
+
+	UObject* Outer = GetTransientPackage();
+	IA_AttackLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackLock_T66")));
+	if (IA_AttackLock) IA_AttackLock->ValueType = EInputActionValueType::Boolean;
+	IA_AttackUnlock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackUnlock_T66")));
+	if (IA_AttackUnlock) IA_AttackUnlock->ValueType = EInputActionValueType::Boolean;
+	IA_ToggleMouseLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_ToggleMouseLock_T66")));
+	if (IA_ToggleMouseLock) IA_ToggleMouseLock->ValueType = EInputActionValueType::Boolean;
+
+	IMC_GameplayMouse = NewObject<UInputMappingContext>(Outer, FName(TEXT("IMC_GameplayMouse_T66")));
+	if (IMC_GameplayMouse)
+	{
+		if (IA_AttackLock) IMC_GameplayMouse->MapKey(IA_AttackLock, EKeys::LeftMouseButton);
+		if (IA_AttackUnlock) IMC_GameplayMouse->MapKey(IA_AttackUnlock, EKeys::RightMouseButton);
+		if (IA_ToggleMouseLock) IMC_GameplayMouse->MapKey(IA_ToggleMouseLock, EKeys::RightMouseButton);
+	}
+
+	if (ULocalPlayer* LP = GetLocalPlayer())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Sub = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		{
+			if (IMC_GameplayMouse) Sub->AddMappingContext(IMC_GameplayMouse, 0);
+		}
+	}
 }
 
 void AT66PlayerController::HandleDashPressed()
@@ -1749,7 +1805,7 @@ void AT66PlayerController::HandleJumpPressed()
 					FVector(1.f), true, true, ENCPoolMethod::None);
 				if (NC)
 				{
-					NC->SetNiagaraVariableVec4(FString(TEXT("User.Tint")), TintWhite);
+					NC->SetVariableVec4(FName(TEXT("User.Tint")), TintWhite);
 				}
 			}
 		}

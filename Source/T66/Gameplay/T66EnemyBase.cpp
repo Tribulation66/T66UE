@@ -10,6 +10,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
@@ -244,6 +245,27 @@ void AT66EnemyBase::BeginPlay()
 #endif
 }
 
+void AT66EnemyBase::ApplyStageScaling(int32 Stage)
+{
+	const int32 ClampedStage = FMath::Clamp(Stage, 1, 999);
+	const float Multiplier = FMath::Pow(1.1f, static_cast<float>(ClampedStage - 1));
+
+	BaseMaxHP = FMath::Max(1, FMath::RoundToInt(50.f * Multiplier));
+	BaseArmor = 0.1f * Multiplier;
+	MaxHP = BaseMaxHP;
+	Armor = FMath::Clamp(BaseArmor, 0.f, 0.95f);
+	CurrentHP = MaxHP;
+
+	if (!bBaseTuningInitialized)
+	{
+		BaseTouchDamageHearts = TouchDamageHearts;
+		BasePointValue = PointValue;
+		bBaseTuningInitialized = true;
+	}
+	bStageScalingApplied = true;
+	UpdateHealthBar();
+}
+
 void AT66EnemyBase::ApplyDifficultyScalar(float Scalar)
 {
 	if (!bBaseTuningInitialized)
@@ -251,28 +273,34 @@ void AT66EnemyBase::ApplyDifficultyScalar(float Scalar)
 		BaseMaxHP = MaxHP;
 		BaseTouchDamageHearts = TouchDamageHearts;
 		BasePointValue = PointValue;
+		BaseArmor = Armor;
 		bBaseTuningInitialized = true;
 	}
 
 	const float ClampedScalar = FMath::Clamp(Scalar, 1.0f, 99.0f);
 
-	// Preserve current HP percentage when scaling mid-fight.
-	const float PrevMax = static_cast<float>(FMath::Max(1, MaxHP));
-	const float PrevCur = static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP));
-	const float Pct = FMath::Clamp(PrevCur / PrevMax, 0.f, 1.f);
+	// When stage scaling is used, only scale touch damage and point value; HP and Armor stay stage-based.
+	if (!bStageScalingApplied)
+	{
+		const float PrevMax = static_cast<float>(FMath::Max(1, MaxHP));
+		const float PrevCur = static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP));
+		const float Pct = FMath::Clamp(PrevCur / PrevMax, 0.f, 1.f);
+		MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * ClampedScalar));
+		Armor = FMath::Clamp(static_cast<float>(BaseArmor) * ClampedScalar, 0.f, 0.95f);
+		CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(MaxHP) * Pct), 1, MaxHP);
+	}
 
-	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseMaxHP) * ClampedScalar));
 	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseTouchDamageHearts) * ClampedScalar));
 
 	// Re-apply mini-boss multipliers if this enemy was promoted.
 	if (bIsMiniBoss)
 	{
 		MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * FMath::Max(0.1f, MiniBossHPScalarApplied)));
+		CurrentHP = MaxHP;
 		TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * FMath::Max(0.1f, MiniBossDamageScalarApplied)));
 		SetActorScale3D(FVector(MiniBossScaleScalarApplied, MiniBossScaleScalarApplied, MiniBossScaleScalarApplied));
 	}
 
-	CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(MaxHP) * Pct), 1, MaxHP);
 	UpdateHealthBar();
 }
 
@@ -430,7 +458,7 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	RunState->ApplyDamage(TouchDamageHearts);
 }
 
-bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
+bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName EventType)
 {
 	if (Damage <= 0 || CurrentHP <= 0) return false;
 
@@ -446,6 +474,10 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID)
 			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
 			{
 				DamageLog->RecordDamageDealt(SourceID, ReducedDamage);
+			}
+			if (UT66FloatingCombatTextSubsystem* FloatingText = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
+			{
+				FloatingText->ShowDamageNumber(this, ReducedDamage, EventType);
 			}
 		}
 	}

@@ -1844,6 +1844,11 @@ FText UT66LocalizationSubsystem::GetText_Bet() const
 	return NSLOCTEXT("T66.Gambler", "Bet", "Bet");
 }
 
+FText UT66LocalizationSubsystem::GetText_BetAmount() const
+{
+	return NSLOCTEXT("T66.Gambler", "BetAmount", "Bet Amount");
+}
+
 FText UT66LocalizationSubsystem::GetText_Borrow() const
 {
 	return NSLOCTEXT("T66.Gambler", "Borrow", "Borrow");
@@ -2002,6 +2007,11 @@ FText UT66LocalizationSubsystem::GetText_PaybackAmountMustBePositive() const
 FText UT66LocalizationSubsystem::GetText_NotEnoughGold() const
 {
 	return NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold.");
+}
+
+FText UT66LocalizationSubsystem::GetText_BetFirst() const
+{
+	return NSLOCTEXT("T66.Gambler", "BetFirst", "Bet First");
 }
 
 FText UT66LocalizationSubsystem::GetText_NotEnoughGoldOrNoDebt() const

@@ -2,6 +2,7 @@
 
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
@@ -10,6 +11,9 @@
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Actor.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
 
 namespace
 {
@@ -210,6 +214,76 @@ FLinearColor UT66RunStateSubsystem::GetIdolColor(FName IdolID)
 	if (IdolID == FName(TEXT("Idol_Glass")))     return FLinearColor(0.85f, 0.92f, 0.95f, 1.f);
 
 	return FLinearColor(0.25f, 0.25f, 0.28f, 1.f);
+}
+
+void UT66RunStateSubsystem::SetDOTDamageApplier(TFunction<void(AActor*, int32, FName)> InApplier)
+{
+	DOTDamageApplier = MoveTemp(InApplier);
+}
+
+void UT66RunStateSubsystem::ApplyDOT(AActor* Target, float Duration, float TickInterval, float DamagePerTick, FName SourceIdolID)
+{
+	if (!Target || Duration <= 0.f || TickInterval <= 0.f || DamagePerTick <= 0.f) return;
+
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World) return;
+
+	FT66DotInstance Inst;
+	Inst.RemainingDuration = Duration;
+	Inst.TickInterval = FMath::Max(0.05f, TickInterval);
+	Inst.DamagePerTick = DamagePerTick;
+	Inst.NextTickTime = World->GetTimeSeconds() + Inst.TickInterval;
+	Inst.SourceIdolID = SourceIdolID;
+
+	TWeakObjectPtr<AActor> Key(Target);
+	ActiveDOTs.FindOrAdd(Key) = Inst;
+
+	// Start timer if not already running.
+	if (!DOTTimerHandle.IsValid())
+	{
+		World->GetTimerManager().SetTimer(DOTTimerHandle, this, &UT66RunStateSubsystem::TickDOT, DOTTickRateSeconds, true);
+	}
+}
+
+void UT66RunStateSubsystem::TickDOT()
+{
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+
+	TArray<TWeakObjectPtr<AActor>> ToRemove;
+	for (auto& Pair : ActiveDOTs)
+	{
+		if (!Pair.Key.IsValid())
+		{
+			ToRemove.Add(Pair.Key);
+			continue;
+		}
+		FT66DotInstance& Inst = Pair.Value;
+		Inst.RemainingDuration -= DOTTickRateSeconds;
+		if (Inst.RemainingDuration <= 0.f)
+		{
+			ToRemove.Add(Pair.Key);
+			continue;
+		}
+		if (Now >= Inst.NextTickTime)
+		{
+			const int32 Damage = FMath::Max(1, FMath::RoundToInt(Inst.DamagePerTick));
+			if (DOTDamageApplier)
+			{
+				DOTDamageApplier(Pair.Key.Get(), Damage, Inst.SourceIdolID);
+			}
+			Inst.NextTickTime = Now + Inst.TickInterval;
+		}
+	}
+	for (const TWeakObjectPtr<AActor>& K : ToRemove)
+	{
+		ActiveDOTs.Remove(K);
+	}
+	if (ActiveDOTs.Num() == 0 && World && DOTTimerHandle.IsValid())
+	{
+		World->GetTimerManager().ClearTimer(DOTTimerHandle);
+		DOTTimerHandle.Invalidate();
+	}
 }
 
 bool UT66RunStateSubsystem::EquipIdolInSlot(int32 SlotIndex, FName IdolID)
@@ -551,7 +625,8 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 			HeroBaseAssassinateChance = FMath::Clamp(HD.BaseAssassinateChance, 0.f, 1.f);
 			HeroBaseCheatChance = FMath::Clamp(HD.BaseCheatChance, 0.f, 1.f);
 			HeroBaseStealChance = FMath::Clamp(HD.BaseStealChance, 0.f, 1.f);
-			HeroBaseAttackRange = FMath::Max(100.f, HD.BaseAttackRange);
+			float Range = HD.BaseAttackRange;
+			HeroBaseAttackRange = FMath::Max(100.f, Range);
 		}
 	}
 
@@ -683,26 +758,32 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 {
 	const float* Mult = SecondaryMultipliers.Find(StatType);
 	const float M = (Mult && *Mult > 0.f) ? *Mult : 1.f;
+	const float DamageMult = GetHeroDamageMultiplier();
+	const float AttackSpeedMult = GetHeroAttackSpeedMultiplier();
+	const float ScaleMult = GetHeroScaleMultiplier();
 
 	switch (StatType)
 	{
-	case ET66SecondaryStatType::AoeDamage:       return static_cast<float>(BaseAoeDmg) * M;
-	case ET66SecondaryStatType::BounceDamage:     return static_cast<float>(BaseBounceDmg) * M;
-	case ET66SecondaryStatType::PierceDamage:     return static_cast<float>(BasePierceDmg) * M;
-	case ET66SecondaryStatType::DotDamage:        return static_cast<float>(BaseDotDmg) * M;
-	case ET66SecondaryStatType::AoeSpeed:         return static_cast<float>(BaseAoeAtkSpd) * M;
-	case ET66SecondaryStatType::BounceSpeed:      return static_cast<float>(BaseBounceAtkSpd) * M;
-	case ET66SecondaryStatType::PierceSpeed:      return static_cast<float>(BasePierceAtkSpd) * M;
-	case ET66SecondaryStatType::DotSpeed:         return static_cast<float>(BaseDotAtkSpd) * M;
-	case ET66SecondaryStatType::AoeScale:         return static_cast<float>(BaseAoeAtkScale) * M;
-	case ET66SecondaryStatType::BounceScale:      return static_cast<float>(BaseBounceAtkScale) * M;
-	case ET66SecondaryStatType::PierceScale:      return static_cast<float>(BasePierceAtkScale) * M;
-	case ET66SecondaryStatType::DotScale:         return static_cast<float>(BaseDotAtkScale) * M;
-	case ET66SecondaryStatType::CritDamage:       return HeroBaseCritDamage * M;
-	case ET66SecondaryStatType::CritChance:       return FMath::Clamp(HeroBaseCritChance * M, 0.f, 1.f);
-	case ET66SecondaryStatType::CloseRangeDamage: return HeroBaseCloseRangeDmg * M;
-	case ET66SecondaryStatType::LongRangeDamage:  return HeroBaseLongRangeDmg * M;
-	case ET66SecondaryStatType::AttackRange:      return HeroBaseAttackRange * M;
+	// Damage-primary-affected secondaries (base * item M * primary Damage mult)
+	case ET66SecondaryStatType::AoeDamage:       return static_cast<float>(BaseAoeDmg) * M * DamageMult;
+	case ET66SecondaryStatType::BounceDamage:     return static_cast<float>(BaseBounceDmg) * M * DamageMult;
+	case ET66SecondaryStatType::PierceDamage:     return static_cast<float>(BasePierceDmg) * M * DamageMult;
+	case ET66SecondaryStatType::DotDamage:        return static_cast<float>(BaseDotDmg) * M * DamageMult;
+	case ET66SecondaryStatType::CritDamage:       return HeroBaseCritDamage * M * DamageMult;
+	case ET66SecondaryStatType::CloseRangeDamage: return HeroBaseCloseRangeDmg * M * DamageMult;
+	case ET66SecondaryStatType::LongRangeDamage:  return HeroBaseLongRangeDmg * M * DamageMult;
+	// Attack-speed-affected (Speed secondaries + Crit Chance)
+	case ET66SecondaryStatType::AoeSpeed:         return static_cast<float>(BaseAoeAtkSpd) * M * AttackSpeedMult;
+	case ET66SecondaryStatType::BounceSpeed:      return static_cast<float>(BaseBounceAtkSpd) * M * AttackSpeedMult;
+	case ET66SecondaryStatType::PierceSpeed:     return static_cast<float>(BasePierceAtkSpd) * M * AttackSpeedMult;
+	case ET66SecondaryStatType::DotSpeed:         return static_cast<float>(BaseDotAtkSpd) * M * AttackSpeedMult;
+	case ET66SecondaryStatType::CritChance:      return FMath::Clamp(HeroBaseCritChance * M * AttackSpeedMult, 0.f, 1.f);
+	// Scale-affected (Scale secondaries + Range)
+	case ET66SecondaryStatType::AoeScale:         return static_cast<float>(BaseAoeAtkScale) * M * ScaleMult;
+	case ET66SecondaryStatType::BounceScale:      return static_cast<float>(BaseBounceAtkScale) * M * ScaleMult;
+	case ET66SecondaryStatType::PierceScale:     return static_cast<float>(BasePierceAtkScale) * M * ScaleMult;
+	case ET66SecondaryStatType::DotScale:         return static_cast<float>(BaseDotAtkScale) * M * ScaleMult;
+	case ET66SecondaryStatType::AttackRange:      return HeroBaseAttackRange * M * ScaleMult;
 	case ET66SecondaryStatType::Taunt:            return HeroBaseTaunt * M;
 	case ET66SecondaryStatType::ReflectDamage:    return HeroBaseReflectDmg * M;
 	case ET66SecondaryStatType::HpRegen:          return HeroBaseHpRegen * M;
@@ -854,6 +935,16 @@ void UT66RunStateSubsystem::AddHeroXP(int32 Amount)
 	if (bLeveled)
 	{
 		LogAdded.Broadcast();
+		UGameInstance* GI = GetGameInstance();
+		UWorld* World = GI ? GI->GetWorld() : nullptr;
+		APawn* HeroPawn = World && World->GetFirstPlayerController() ? World->GetFirstPlayerController()->GetPawn() : nullptr;
+		if (HeroPawn && GI)
+		{
+			if (UT66FloatingCombatTextSubsystem* FCT = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
+			{
+				FCT->ShowStatusEvent(HeroPawn, UT66FloatingCombatTextSubsystem::EventType_LevelUp);
+			}
+		}
 	}
 }
 
@@ -1017,8 +1108,13 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		TemplatePool = { FName(TEXT("Item_AoeDamage")), FName(TEXT("Item_CritDamage")), FName(TEXT("Item_LifeSteal")) };
 	}
 
-	// Seed is stable per stage, but changes per reroll so the stock can refresh.
-	FRandomStream Rng(Stage * 777 + 13 + VendorStockRerollCounter * 10007);
+	// Seed: per-stage and per-reroll, plus run seed so the first shop display is randomized each run.
+	int32 Seed = Stage * 777 + 13 + VendorStockRerollCounter * 10007;
+	if (UT66RngSubsystem* RngSub = GI->GetSubsystem<UT66RngSubsystem>())
+	{
+		Seed ^= RngSub->GetRunSeed();
+	}
+	FRandomStream Rng(Seed);
 
 	// Rarities for the 3 stock slots: 2 black, 1 red.
 	const ET66ItemRarity SlotRarities[] = { ET66ItemRarity::Black, ET66ItemRarity::Black, ET66ItemRarity::Red };
@@ -1730,6 +1826,15 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	RecomputeItemDerivedStats();
 	EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
 	EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+	ActiveDOTs.Empty();
+	if (UWorld* W = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr)
+	{
+		if (DOTTimerHandle.IsValid())
+		{
+			W->GetTimerManager().ClearTimer(DOTTimerHandle);
+			DOTTimerHandle.Invalidate();
+		}
+	}
 	EventLog.Empty();
 	StructuredEventLog.Empty();
 	ResetLuckRatingTracking();

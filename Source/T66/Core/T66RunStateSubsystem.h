@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66Rarity.h"
+#include "Templates/Function.h"
 #include "T66RunStateSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeartsChanged);
@@ -31,6 +32,18 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStatusEffectsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialHintChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialInputChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDevCheatsChanged);
+
+class AActor;
+
+/** Single DOT instance on one target (idol DOT damage over time). */
+struct FT66DotInstance
+{
+	float RemainingDuration = 0.f;
+	float TickInterval = 0.5f;
+	float DamagePerTick = 0.f;
+	double NextTickTime = 0.0;
+	FName SourceIdolID = NAME_None;
+};
 
 /** Result of a vendor steal attempt (used by UI feedback). */
 enum class ET66VendorStealOutcome : uint8
@@ -299,6 +312,15 @@ public:
 
 	/** Default tint color for an idol (used for UI + enemy status visuals). */
 	static FLinearColor GetIdolColor(FName IdolID);
+
+	/** Apply damage-over-time to a target (from idol DOT). Duration and TickInterval in seconds; damage applied each tick. */
+	void ApplyDOT(AActor* Target, float Duration, float TickInterval, float DamagePerTick, FName SourceIdolID);
+
+	/** Set callback to apply one tick of DOT damage (Combat sets this so RunState stays agnostic). Signature: (Target, DamageAmount, SourceIdolID). */
+	void SetDOTDamageApplier(TFunction<void(AActor*, int32, FName)> InApplier);
+
+	/** Tick DOTs (called by timer). Applies tick damage via delegate and removes expired. */
+	void TickDOT();
 
 	// ============================================================
 	// Idol stock (shop-style altar: 3 offered idols + reroll)
@@ -842,6 +864,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
 	float GetItemScaleMultiplier() const { return ItemScaleMultiplier; }
 
+	/** Hero base attack range from DataTable (before Scale multipliers). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
+	float GetHeroBaseAttackRange() const { return HeroBaseAttackRange; }
+
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ResetForNewRun();
 
@@ -921,6 +947,13 @@ private:
 
 	UPROPERTY()
 	TArray<uint8> EquippedIdolLevels;
+
+	/** Active DOTs (idol): target -> instance. Keys are weak so destroyed actors drop out. */
+	TMap<TWeakObjectPtr<AActor>, FT66DotInstance> ActiveDOTs;
+
+	TFunction<void(AActor*, int32, FName)> DOTDamageApplier;
+	FTimerHandle DOTTimerHandle;
+	static constexpr float DOTTickRateSeconds = 0.2f;
 
 	/** Idol stock: 3 offered idols (shop-style altar). */
 	TArray<FName> IdolStockIDs;
