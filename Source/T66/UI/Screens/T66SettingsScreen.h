@@ -19,6 +19,8 @@ enum class ET66SettingsTab : uint8
 	Gameplay,
 	Graphics,
 	Controls,
+	HUD,
+	MediaViewer,
 	Audio,
 	Crashing
 };
@@ -84,6 +86,8 @@ private:
 	TSharedRef<SWidget> BuildGameplayTab();
 	TSharedRef<SWidget> BuildGraphicsTab();
 	TSharedRef<SWidget> BuildControlsTab();
+	TSharedRef<SWidget> BuildHUDTab();
+	TSharedRef<SWidget> BuildMediaViewerTab();
 	TSharedRef<SWidget> BuildAudioTab();
 	TSharedRef<SWidget> BuildCrashingTab();
 

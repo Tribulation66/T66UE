@@ -32,6 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStatusEffectsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialHintChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialInputChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDevCheatsChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCowardiceGatesTakenChanged);
 
 class AActor;
 
@@ -123,6 +124,10 @@ public:
 	/** Difficulty changed (for HUD + enemy scaling). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnDifficultyChanged DifficultyChanged;
+
+	/** Cowardice gates taken count changed (for HUD clown icons). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnCowardiceGatesTakenChanged CowardiceGatesTakenChanged;
 
 	/** Gambler anger meter changed (0..1). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
@@ -229,9 +234,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void RemoveFirstOwedBoss();
 
-	/** Clear all owed bosses (used after a Coliseum clear). */
+	/** Clear all owed bosses (used after a Coliseum clear). Resets cowardice gates taken count. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ClearOwedBosses();
+
+	/** Cowardice gates taken this segment (one per gate; resets after Coliseum). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetCowardiceGatesTaken() const { return CowardiceGatesTakenCount; }
+
+	/** Add one (call when player confirms Cowardice Gate). Broadcasts CowardiceGatesTakenChanged. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddCowardiceGateTaken();
 
 	/** Add gold (e.g. gambler win). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -937,6 +950,10 @@ private:
 
 	UPROPERTY()
 	TArray<FName> OwedBossIDs;
+
+	/** Cowardice gates taken this segment (resets when ClearOwedBosses is called, i.e. after Coliseum). */
+	UPROPERTY()
+	int32 CowardiceGatesTakenCount = 0;
 
 	/** Item inventory using the new slot-based system (template + rarity + rolled value). */
 	UPROPERTY()

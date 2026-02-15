@@ -88,5 +88,27 @@ public:
 	/** Monitor index for game window: 0 = primary, 1+ = secondary. Applied when changing graphics (window moved to that monitor). */
 	UPROPERTY(SaveGame)
 	int32 MonitorIndex = 0;
+
+	// ===== HUD (which elements the HUD toggle key affects) =====
+	UPROPERTY(SaveGame)
+	bool bHudToggleAffectsInventory = true;
+
+	UPROPERTY(SaveGame)
+	bool bHudToggleAffectsMinimap = true;
+
+	UPROPERTY(SaveGame)
+	bool bHudToggleAffectsIdolSlots = true;
+
+	UPROPERTY(SaveGame)
+	bool bHudToggleAffectsPortraitStats = true;
+
+	// ===== Media Viewer (TikTok / YouTube Shorts) =====
+	/** When false, Toggle TikTok / Toggle Media Viewer do nothing. */
+	UPROPERTY(SaveGame)
+	bool bMediaViewerEnabled = true;
+
+	/** When false, exponential height fog is disabled in gameplay (default off). */
+	UPROPERTY(SaveGame)
+	bool bFogEnabled = false;
 };
 

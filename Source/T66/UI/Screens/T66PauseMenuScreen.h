@@ -31,6 +31,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
 	void OnReportBugClicked();
 
+	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
+	void OnAchievementsClicked();
+
 protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
@@ -40,6 +43,7 @@ private:
 	FReply HandleRestartClicked();
 	FReply HandleSettingsClicked();
 	FReply HandleReportBugClicked();
+	FReply HandleAchievementsClicked();
 
 	AT66PlayerController* GetT66PlayerController() const;
 };

@@ -39,4 +39,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FString LastPlayedUtc;
+
+	/** Stage reached when save was written (for slot display). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 StageReached = 1;
+
+	/** Equipped idol IDs when save was written (for slot display). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<FName> EquippedIdols;
 };

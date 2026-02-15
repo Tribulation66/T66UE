@@ -1321,7 +1321,12 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 	{
 		SelectedDifficulty = GI->SelectedDifficulty;
 		SelectedBodyType = GI->SelectedHeroBodyType;
-		if (!GI->SelectedHeroID.IsNone())
+		// Prefer current preview when valid (e.g. after theme rebuild) so display doesn't jump back to Hero 1.
+		if (!PreviewedHeroID.IsNone() && AllHeroIDs.Contains(PreviewedHeroID))
+		{
+			PreviewHero(PreviewedHeroID);
+		}
+		else if (!GI->SelectedHeroID.IsNone() && AllHeroIDs.Contains(GI->SelectedHeroID))
 		{
 			PreviewHero(GI->SelectedHeroID);
 		}

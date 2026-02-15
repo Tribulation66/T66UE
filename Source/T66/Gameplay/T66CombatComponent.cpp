@@ -195,6 +195,9 @@ void UT66CombatComponent::TryFire()
 	AActor* OwnerActor = GetOwner();
 	if (!OwnerActor) return;
 
+	UWorld* World = GetWorld();
+	if (!World) return;
+
 	// Safe zone rule: if hero is inside any NPC safe bubble, do not fire.
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OwnerActor))
 	{
@@ -203,9 +206,6 @@ void UT66CombatComponent::TryFire()
 			return;
 		}
 	}
-
-	UWorld* World = GetWorld();
-	if (!World) return;
 
 	LastFireTime = static_cast<float>(World->GetTimeSeconds());
 

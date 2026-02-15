@@ -46,7 +46,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 7;
+	int32 SaveVersion = 8;
 
 	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
@@ -91,6 +91,26 @@ public:
 	/** Optional lifetime stat: total enemies killed. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	int32 LifetimeEnemiesKilled = 0;
+
+	/** Lifetime bosses defeated (stage or Coliseum). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	int32 LifetimeBossesKilled = 0;
+
+	/** Lifetime stage clears (any companion). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	int32 LifetimeStagesCleared = 0;
+
+	/** Lifetime runs completed (reached Run Summary). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	int32 LifetimeRunsCompleted = 0;
+
+	/** Lifetime vendor purchases. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	int32 LifetimeVendorPurchases = 0;
+
+	/** Lifetime gambler wins. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	int32 LifetimeGamblerWins = 0;
 
 	/** First-time onboarding: set true once the player completes the tutorial area. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial")

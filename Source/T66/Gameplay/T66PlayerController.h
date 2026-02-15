@@ -22,6 +22,7 @@ class UT66IdolAltarOverlayWidget;
 class UNiagaraSystem;
 class UT66VendorOverlayWidget;
 class UT66CollectorOverlayWidget;
+class UT66LoadPreviewOverlayWidget;
 class AT66LootBagPickup;
 class AT66HouseNPCBase;
 class AT66VendorNPC;
@@ -111,6 +112,9 @@ public:
 
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
+
+	/** Show the load-preview overlay (frozen save preview; LOAD button unfreezes). Called by GameMode when bLoadAsPreview. */
+	void ShowLoadPreviewOverlay();
 
 	/** Wheel spin: play HUD animation + award gold (no overlay). */
 	void StartWheelSpinHUD(ET66Rarity Rarity);

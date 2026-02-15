@@ -15,6 +15,7 @@
 #include "UI/Screens/T66LobbyScreen.h"
 #include "UI/Screens/T66LobbyReadyCheckModal.h"
 #include "UI/Screens/T66LobbyBackConfirmModal.h"
+#include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
@@ -26,6 +27,7 @@
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
+#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -36,12 +38,14 @@
 #include "Gameplay/T66StageBoostGoldInteractable.h"
 #include "Gameplay/T66StageBoostLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
@@ -673,6 +677,10 @@ void AT66PlayerController::HandleToggleMediaViewerPressed()
 	if (!IsGameplayLevel()) return;
 	if (IsPaused()) return;
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	if (UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr)
+	{
+		if (!PS->GetMediaViewerEnabled()) return;
+	}
 	if (UT66MediaViewerSubsystem* MV = GI ? GI->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
 	{
 		MV->ToggleMediaViewer();
@@ -905,6 +913,11 @@ void AT66PlayerController::HandleToggleTikTokPressed()
 {
 	if (!IsGameplayLevel()) return;
 	if (IsPaused()) return;
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	if (UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr)
+	{
+		if (!PS->GetMediaViewerEnabled()) return;
+	}
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->ToggleTikTokPlaceholder();
@@ -1502,6 +1515,23 @@ void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 	}
 }
 
+void AT66PlayerController::ShowLoadPreviewOverlay()
+{
+	if (!IsGameplayLevel()) return;
+
+	UT66LoadPreviewOverlayWidget* W = CreateWidget<UT66LoadPreviewOverlayWidget>(this, UT66LoadPreviewOverlayWidget::StaticClass());
+	if (W)
+	{
+		W->AddToViewport(500); // above HUD and other overlays
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = true;
+	}
+}
+
 void AT66PlayerController::StartWheelSpinHUD(ET66Rarity Rarity)
 {
 	if (!IsGameplayLevel()) return;
@@ -1547,7 +1577,7 @@ void AT66PlayerController::OnPlayerDied()
 
 	SetPause(true);
 	EnsureGameplayUIManager();
-	// Persist Power Crystals earned this run before showing Run Summary.
+	// Persist Power Crystals and notify run completed before showing Run Summary.
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
@@ -1559,6 +1589,10 @@ void AT66PlayerController::OnPlayerDied()
 			{
 				PowerUpSub->AddPowerCrystals(Earned);
 			}
+		}
+		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Achieve->NotifyRunCompleted(RunState);
 		}
 	}
 	if (UIManager)
@@ -1580,6 +1614,7 @@ void AT66PlayerController::EnsureGameplayUIManager()
 
 	UIManager->Initialize(this);
 	UIManager->RegisterScreenClass(ET66ScreenType::PauseMenu, UT66PauseMenuScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::Achievements, UT66AchievementsScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::ReportBug, UT66ReportBugScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::Settings, UT66SettingsScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
@@ -1628,15 +1663,28 @@ void AT66PlayerController::HandleEscapePressed()
 		return;
 	}
 
-	// Debounce to avoid key repeat / rapid presses freezing or flickering
 	const float Now = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
+	const bool bPaused = IsPaused();
+
+	// Closing a sub-modal (Settings / Report Bug / Achievements) returns to Pause menu without debounce so the next Esc can unpause.
+	if (bPaused && UIManager && UIManager->IsModalActive())
+	{
+		const ET66ScreenType ClosingModal = UIManager->GetCurrentModalType();
+		if (ClosingModal == ET66ScreenType::Settings || ClosingModal == ET66ScreenType::ReportBug || ClosingModal == ET66ScreenType::Achievements)
+		{
+			UIManager->CloseModal();
+			UIManager->ShowModal(ET66ScreenType::PauseMenu);
+			return;
+		}
+	}
+
+	// Debounce only when actually toggling pause (open or full unpause)
 	if (Now - LastPauseToggleTime < PauseToggleDebounceSeconds)
 	{
 		return;
 	}
 	LastPauseToggleTime = Now;
 
-	const bool bPaused = IsPaused();
 	if (!bPaused)
 	{
 		SetPause(true);
@@ -1654,18 +1702,9 @@ void AT66PlayerController::HandleEscapePressed()
 	{
 		if (UIManager && UIManager->IsModalActive())
 		{
-			const ET66ScreenType ClosingModal = UIManager->GetCurrentModalType();
 			UIManager->CloseModal();
-			// Esc as back: Settings or Report Bug -> return to Pause Menu; Pause Menu -> unpause
-			if (ClosingModal == ET66ScreenType::Settings || ClosingModal == ET66ScreenType::ReportBug)
-			{
-				UIManager->ShowModal(ET66ScreenType::PauseMenu);
-			}
-			else
-			{
-				SetPause(false);
-				RestoreGameplayInputMode();
-			}
+			SetPause(false);
+			RestoreGameplayInputMode();
 		}
 		else
 		{

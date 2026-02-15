@@ -384,7 +384,8 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 		}
 	}
 
-	// RefreshStock is called automatically via IdolsChanged delegate.
+	// Update button labels and state immediately so SELECT → SELECTED is visible without waiting for the next tick or click.
+	RefreshStock();
 	return FReply::Handled();
 }
 

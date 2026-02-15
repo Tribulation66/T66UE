@@ -21,21 +21,35 @@
 
 namespace
 {
-	/** Wheel with N slices; first UnlockedCount slices are filled with SliceColor. Border and radial lines always visible. */
+	static FLinearColor PowerUpWedgeTierToColor(uint8 Tier)
+	{
+		switch (Tier)
+		{
+			case 1: return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);   // Black
+			case 2: return FLinearColor(0.90f, 0.20f, 0.20f, 1.f);   // Red
+			case 3: return FLinearColor(0.95f, 0.80f, 0.15f, 1.f);   // Yellow
+			case 4: return FLinearColor(0.92f, 0.92f, 0.96f, 1.f);   // White
+			default: return FLinearColor::Transparent;
+		}
+	}
+
+	/** Wheel with N slices; each wedge has a tier (0=Empty, 1=Black, 2=Red, 3=Yellow, 4=White). */
 	class ST66PowerUpWheelWidget : public SLeafWidget
 	{
 	public:
 		SLATE_BEGIN_ARGS(ST66PowerUpWheelWidget) {}
-			SLATE_ATTRIBUTE(int32, NumSlices)
-			SLATE_ATTRIBUTE(int32, UnlockedCount)
-			SLATE_ATTRIBUTE(FLinearColor, SliceColor)
+			SLATE_ARGUMENT(int32, NumSlices)
+			SLATE_ARGUMENT(TArray<uint8>, WedgeTiers)
 		SLATE_END_ARGS()
 
 		void Construct(const FArguments& InArgs)
 		{
-			NumSlices = InArgs._NumSlices.Get(10);
-			UnlockedCount = FMath::Clamp(InArgs._UnlockedCount.Get(0), 0, NumSlices);
-			SliceColor = InArgs._SliceColor.Get(FLinearColor::White);
+			NumSlices = FMath::Max(1, InArgs._NumSlices);
+			WedgeTiers = InArgs._WedgeTiers;
+			if (WedgeTiers.Num() < NumSlices)
+			{
+				WedgeTiers.SetNum(NumSlices);
+			}
 		}
 
 		virtual FVector2D ComputeDesiredSize(float) const override
@@ -50,7 +64,7 @@ namespace
 			const float MinDim = FMath::Max(2.f, FMath::Min(Size.X, Size.Y));
 			const FVector2D Center(Size.X * 0.5f, Size.Y * 0.5f);
 			const float Radius = (MinDim * 0.5f) - 2.f;
-			const float StartAngle = -PI * 0.5f; // top
+			const float StartAngle = -PI * 0.5f;
 
 			auto AngleToPoint = [&](float Angle) -> FVector2D
 			{
@@ -68,7 +82,6 @@ namespace
 			const FLinearColor BorderColor(0.25f, 0.25f, 0.28f, 1.f);
 			FSlateDrawElement::MakeLines(OutDrawElements, LayerId, AllottedGeometry.ToPaintGeometry(), CirclePts, ESlateDrawEffect::None, BorderColor, true, 2.f);
 
-			// Radial lines (slice borders)
 			for (int32 i = 0; i <= NumSlices; ++i)
 			{
 				const float A = StartAngle + (2.f * PI * static_cast<float>(i) / static_cast<float>(NumSlices));
@@ -78,9 +91,11 @@ namespace
 				FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 1, AllottedGeometry.ToPaintGeometry(), Radial, ESlateDrawEffect::None, BorderColor, false, 1.5f);
 			}
 
-			// Filled wedges for unlocked slices (draw many radii to simulate fill)
-			for (int32 s = 0; s < UnlockedCount; ++s)
+			for (int32 s = 0; s < NumSlices; ++s)
 			{
+				const uint8 Tier = WedgeTiers.IsValidIndex(s) ? FMath::Min(WedgeTiers[s], static_cast<uint8>(4)) : 0;
+				if (Tier == 0) continue;
+				const FLinearColor WedgeColor = PowerUpWedgeTierToColor(Tier);
 				const float A0 = StartAngle + (2.f * PI * static_cast<float>(s) / static_cast<float>(NumSlices));
 				const float A1 = StartAngle + (2.f * PI * static_cast<float>(s + 1) / static_cast<float>(NumSlices));
 				const int32 Sub = 8;
@@ -91,7 +106,7 @@ namespace
 					TArray<FVector2D> Rad;
 					Rad.Add(Center);
 					Rad.Add(AngleToPoint(A));
-					FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), Rad, ESlateDrawEffect::None, SliceColor, false, 4.f);
+					FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), Rad, ESlateDrawEffect::None, WedgeColor, false, 4.f);
 				}
 			}
 
@@ -100,8 +115,7 @@ namespace
 
 	private:
 		int32 NumSlices = 10;
-		int32 UnlockedCount = 0;
-		FLinearColor SliceColor = FLinearColor::White;
+		TArray<uint8> WedgeTiers;
 	};
 
 	/** Simple circle outline only (for random panel). */
@@ -187,7 +201,7 @@ FReply UT66PowerUpScreen::HandleNextClicked()
 FReply UT66PowerUpScreen::HandleUnlockClicked(ET66HeroStatType StatType)
 {
 	UT66PowerUpSubsystem* PowerUp = GetPowerUpSubsystem();
-	if (PowerUp && PowerUp->UnlockPowerupSlice(StatType))
+	if (PowerUp && PowerUp->UnlockNextWedgeUpgrade(StatType))
 	{
 		RefreshScreen();
 	}
@@ -217,12 +231,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 
 	const FText TitleText = NSLOCTEXT("T66.PowerUp", "Title", "POWER UP");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	const FText BalanceLabelText = NSLOCTEXT("T66.PowerUp", "PowerCrystals", "Power Crystals");
-	const int32 Cost = UT66PowerUpSubsystem::CrystalsPerSlice;
-	const FText UnlockButtonFormat = FText::Format(
-		NSLOCTEXT("T66.PowerUp", "UnlockPCFormat", "UNLOCK PC {0}"),
-		FText::AsNumber(Cost)
-	);
+	const FText BalanceLabelText = NSLOCTEXT("T66.PowerUp", "PowerCoupons", "Power Coupons");
 
 	const int32 Balance = PowerUp ? PowerUp->GetPowerCrystalBalance() : 0;
 	const FText BalanceValueText = FText::AsNumber(Balance);
@@ -272,11 +281,20 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	const FText NextText = NSLOCTEXT("T66.Common", "Next", "NEXT");
 	const FText PCsFormat = FText::Format(NSLOCTEXT("T66.PowerUp", "PCsFormat", "{0} PCs"), FText::AsNumber(Balance));
 
-	// Helper: build a stat panel widget for a given stat type
+	// Helper: build a stat panel widget for a given stat type (wedge tiers: 0=Empty, 1=Black, 2=Red, 3=Yellow, 4=White)
 	auto MakeStatPanel = [&](ET66HeroStatType StatType) -> TSharedRef<SWidget>
 	{
-		const int32 Unlocked = PowerUp ? PowerUp->GetPowerupSlicesUnlocked(StatType) : 0;
-		const FLinearColor StatColor = GetStatColor(StatType);
+		TArray<uint8> WedgeTiers;
+		WedgeTiers.Reserve(UT66PowerUpSubsystem::MaxSlicesPerStat);
+		for (int32 i = 0; i < UT66PowerUpSubsystem::MaxSlicesPerStat; ++i)
+		{
+			WedgeTiers.Add(static_cast<uint8>(PowerUp ? PowerUp->GetWedgeTier(StatType, i) : 0));
+		}
+		const int32 Cost = PowerUp ? PowerUp->GetCostForNextUpgrade(StatType) : 0;
+		const bool bMaxed = PowerUp && PowerUp->IsStatMaxed(StatType);
+		const FText ButtonText = bMaxed
+			? NSLOCTEXT("T66.PowerUp", "Max", "MAX")
+			: FText::Format(NSLOCTEXT("T66.PowerUp", "UnlockPCFormat", "UNLOCK {0} PC"), FText::AsNumber(Cost));
 
 		return FT66Style::MakePanel(
 			SNew(SVerticalBox)
@@ -295,17 +313,15 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				[
 					SNew(ST66PowerUpWheelWidget)
 					.NumSlices(UT66PowerUpSubsystem::MaxSlicesPerStat)
-					.UnlockedCount(Unlocked)
-					.SliceColor(StatColor)
+					.WedgeTiers(WedgeTiers)
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 			[
 				FT66Style::MakeButton(
-					UnlockButtonFormat,
-					FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType),
-					ET66ButtonType::Primary,
-					140.f
+					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType), ET66ButtonType::Primary)
+					.SetMinWidth(140.f)
+					.SetEnabled(TAttribute<bool>::CreateLambda([bMaxed, Balance, Cost]() { return !bMaxed && Balance >= Cost; }))
 				)
 			]
 		,
@@ -338,7 +354,8 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			[ MakeStatPanel(ET66HeroStatType::Luck) ]
 		];
 
-	// ===== Page 1: Random panel (full-width) =====
+	// ===== Page 1: Random panel (add one Black wedge to a random stat; cost 1 PC) =====
+	const FText RandomButtonText = NSLOCTEXT("T66.PowerUp", "UnlockRandom1PC", "UNLOCK 1 PC (RANDOM)");
 	TSharedRef<SWidget> RandomPage =
 		FT66Style::MakePanel(
 			SNew(SVerticalBox)
@@ -361,10 +378,9 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f).HAlign(HAlign_Center)
 			[
 				FT66Style::MakeButton(
-					UnlockButtonFormat,
-					FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockRandomClicked),
-					ET66ButtonType::Primary,
-					180.f
+					FT66ButtonParams(RandomButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockRandomClicked), ET66ButtonType::Primary)
+					.SetMinWidth(180.f)
+					.SetEnabled(TAttribute<bool>::CreateLambda([Balance]() { return Balance >= 1; }))
 				)
 			]
 		,

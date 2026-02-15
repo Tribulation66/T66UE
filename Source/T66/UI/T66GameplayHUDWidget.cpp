@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66GameplayHUDWidget.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
@@ -686,6 +687,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->SpeedRunTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshSpeedRunTimers);
 	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
 	RunState->DifficultyChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->CowardiceGatesTakenChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->IdolsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
@@ -703,6 +705,10 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
 		{
 			MV->OnMediaViewerOpenChanged.AddDynamic(this, &UT66GameplayHUDWidget::HandleMediaViewerOpenChanged);
+		}
+		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Ach->AchievementsUnlocked.AddDynamic(this, &UT66GameplayHUDWidget::HandleAchievementsUnlocked);
 		}
 	}
 
@@ -738,6 +744,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
 		World->GetTimerManager().ClearTimer(WheelResolveHandle);
 		World->GetTimerManager().ClearTimer(WheelCloseHandle);
+		World->GetTimerManager().ClearTimer(AchievementNotificationTimerHandle);
 	}
 
 	UT66RunStateSubsystem* RunState = GetRunState();
@@ -754,6 +761,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->SpeedRunTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshSpeedRunTimers);
 		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
 		RunState->DifficultyChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->CowardiceGatesTakenChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->IdolsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
@@ -771,6 +779,10 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
 		{
 			MV->OnMediaViewerOpenChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::HandleMediaViewerOpenChanged);
+		}
+		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Ach->AchievementsUnlocked.RemoveDynamic(this, &UT66GameplayHUDWidget::HandleAchievementsUnlocked);
 		}
 	}
 
@@ -813,6 +825,66 @@ bool UT66GameplayHUDWidget::IsMediaViewerOpen() const
 void UT66GameplayHUDWidget::HandleMediaViewerOpenChanged(bool /*bIsOpen*/)
 {
 	UpdateTikTokVisibility();
+}
+
+void UT66GameplayHUDWidget::HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs)
+{
+	AchievementNotificationQueue.Append(NewlyUnlockedIDs);
+	ShowNextAchievementNotification();
+}
+
+void UT66GameplayHUDWidget::ShowNextAchievementNotification()
+{
+	if (AchievementNotificationQueue.Num() == 0)
+	{
+		if (AchievementNotificationBox.IsValid())
+		{
+			AchievementNotificationBox->SetVisibility(EVisibility::Collapsed);
+		}
+		return;
+	}
+	UGameInstance* GI = GetGameInstance();
+	UT66AchievementsSubsystem* Ach = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	if (!Ach || !AchievementNotificationBorder.IsValid() || !AchievementNotificationTitleText.IsValid() || !AchievementNotificationBox.IsValid())
+	{
+		return;
+	}
+	const FName AchievementID = AchievementNotificationQueue[0];
+	const TArray<FAchievementData> All = Ach->GetAllAchievements();
+	const FAchievementData* Data = All.FindByPredicate([&AchievementID](const FAchievementData& A) { return A.AchievementID == AchievementID; });
+	if (!Data)
+	{
+		AchievementNotificationQueue.RemoveAt(0);
+		ShowNextAchievementNotification();
+		return;
+	}
+	auto GetTierBorderColor = [](ET66AchievementTier Tier) -> FLinearColor
+	{
+		switch (Tier)
+		{
+			case ET66AchievementTier::Black: return FLinearColor(0.15f, 0.15f, 0.15f, 1.0f);
+			case ET66AchievementTier::Red:   return FLinearColor(0.6f, 0.15f, 0.15f, 1.0f);
+			case ET66AchievementTier::Yellow: return FLinearColor(0.6f, 0.5f, 0.1f, 1.0f);
+			case ET66AchievementTier::White: return FLinearColor(0.8f, 0.8f, 0.8f, 1.0f);
+			default: return FLinearColor(0.15f, 0.15f, 0.15f, 1.0f);
+		}
+	};
+	AchievementNotificationBorder->SetBorderBackgroundColor(GetTierBorderColor(Data->Tier));
+	AchievementNotificationTitleText->SetText(Data->DisplayName);
+	AchievementNotificationBox->SetVisibility(EVisibility::Visible);
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(AchievementNotificationTimerHandle, this, &UT66GameplayHUDWidget::HideAchievementNotificationAndShowNext, AchievementNotificationDisplaySeconds, false);
+	}
+}
+
+void UT66GameplayHUDWidget::HideAchievementNotificationAndShowNext()
+{
+	if (AchievementNotificationQueue.Num() > 0)
+	{
+		AchievementNotificationQueue.RemoveAt(0);
+	}
+	ShowNextAchievementNotification();
 }
 
 void UT66GameplayHUDWidget::RequestTikTokWebView2OverlaySync()
@@ -1624,6 +1696,21 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
+	// Cowardice (clowns): show N clowns for gates taken this segment (resets after Coliseum).
+	{
+		const int32 Clowns = FMath::Max(0, RunState->GetCowardiceGatesTaken());
+		for (int32 i = 0; i < ClownImages.Num(); ++i)
+		{
+			if (!ClownImages[i].IsValid()) continue;
+			const bool bFilled = (i < Clowns);
+			ClownImages[i]->SetVisibility(bFilled ? EVisibility::Visible : EVisibility::Collapsed);
+			if (bFilled)
+			{
+				ClownImages[i]->SetColorAndOpacity(FLinearColor::White);
+			}
+		}
+	}
+
 	// Score multiplier color: theme for initial/tier 0, tier color for higher tiers
 	if (ScoreMultiplierText.IsValid())
 	{
@@ -1862,17 +1949,29 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
-	// Panel visibility (inventory, minimap, idol slots, portrait stat panel all toggle together)
-	const EVisibility PanelVis = RunState->GetHUDPanelsVisible() ? EVisibility::Visible : EVisibility::Collapsed;
-	if (InventoryPanelBox.IsValid()) InventoryPanelBox->SetVisibility(PanelVis);
-	if (MinimapPanelBox.IsValid()) MinimapPanelBox->SetVisibility(PanelVis);
-	if (IdolSlotsPanelBox.IsValid()) IdolSlotsPanelBox->SetVisibility(PanelVis);
-	if (PortraitStatPanelBox.IsValid()) PortraitStatPanelBox->SetVisibility(PanelVis);
+	// Panel visibility: each element follows HUD toggle only if enabled in Settings (HUD tab).
+	UGameInstance* GIHud = GetGameInstance();
+	UT66PlayerSettingsSubsystem* HUDPS = GIHud ? GIHud->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	const bool bPanelsVisible = RunState->GetHUDPanelsVisible();
+	auto ElemVis = [HUDPS, bPanelsVisible](bool bAffects) -> EVisibility
+	{
+		// If this element is not in the toggle set, always visible. Otherwise follow global panels state.
+		if (!HUDPS || !bAffects) return EVisibility::Visible;
+		return bPanelsVisible ? EVisibility::Visible : EVisibility::Collapsed;
+	};
+	if (InventoryPanelBox.IsValid()) InventoryPanelBox->SetVisibility(ElemVis(HUDPS ? HUDPS->GetHudToggleAffectsInventory() : true));
+	if (MinimapPanelBox.IsValid()) MinimapPanelBox->SetVisibility(ElemVis(HUDPS ? HUDPS->GetHudToggleAffectsMinimap() : true));
+	if (IdolSlotsPanelBox.IsValid()) IdolSlotsPanelBox->SetVisibility(ElemVis(HUDPS ? HUDPS->GetHudToggleAffectsIdolSlots() : true));
+	if (PortraitStatPanelBox.IsValid()) PortraitStatPanelBox->SetVisibility(ElemVis(HUDPS ? HUDPS->GetHudToggleAffectsPortraitStats() : true));
 
+	// Wheel spin panel: hide when all toggled panels would be collapsed (any one visible is enough to show wheel in its slot).
+	const bool bAnyPanelVisible = (!HUDPS || HUDPS->GetHudToggleAffectsInventory() || HUDPS->GetHudToggleAffectsMinimap() || HUDPS->GetHudToggleAffectsIdolSlots() || HUDPS->GetHudToggleAffectsPortraitStats())
+		? bPanelsVisible
+		: true;
 	UpdateTikTokVisibility();
 	if (WheelSpinBox.IsValid())
 	{
-		if (PanelVis == EVisibility::Collapsed)
+		if (!bAnyPanelVisible)
 		{
 			WheelSpinBox->SetVisibility(EVisibility::Collapsed);
 		}
@@ -1896,6 +1995,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	HeartImages.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
 	DifficultyBorders.SetNum(5);
 	DifficultyImages.SetNum(5);
+	ClownImages.SetNum(5);
 	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotImages.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotBrushes.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
@@ -1985,6 +2085,23 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			T66SlateTexture::BindSharedBrushAsync(TexPool, SkullSoft, this, SkullBrush, FName(TEXT("HUDSkull")), false);
 		}
 	}
+	// Clown sprite brush (cowardice gates taken; same size as skull).
+	if (!ClownBrush.IsValid())
+	{
+		ClownBrush = MakeShared<FSlateBrush>();
+		ClownBrush->DrawAs = ESlateBrushDrawType::Image;
+		ClownBrush->ImageSize = FVector2D(38.f, 38.f);
+		ClownBrush->Tiling = ESlateBrushTileType::NoTile;
+		ClownBrush->SetResourceObject(nullptr);
+	}
+	{
+		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+		if (TexPool)
+		{
+			const TSoftObjectPtr<UTexture2D> ClownSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/CLOWN.CLOWN")));
+			T66SlateTexture::BindSharedBrushAsync(TexPool, ClownSoft, this, ClownBrush, FName(TEXT("HUDClown")), false);
+		}
+	}
 	for (int32 i = 0; i < IdolSlotBrushes.Num(); ++i)
 	{
 		IdolSlotBrushes[i] = MakeShared<FSlateBrush>();
@@ -2022,6 +2139,28 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			];
 		DifficultyImages[i] = DiffImg;
+	}
+
+	// Cowardice row (5-slot clown sprites, below skulls; one per cowardice gate taken).
+	TSharedRef<SHorizontalBox> CowardiceRowRef = SNew(SHorizontalBox);
+	for (int32 i = 0; i < ClownImages.Num(); ++i)
+	{
+		TSharedPtr<SImage> ClownImg;
+		CowardiceRowRef->AddSlot()
+			.AutoWidth()
+			.Padding(i == 0 ? 0.f : DiffGap, 0.f, 0.f, 0.f)
+			[
+				SNew(SBox)
+				.WidthOverride(DiffSize)
+				.HeightOverride(DiffSize)
+				[
+					SAssignNew(ClownImg, SImage)
+					.Image(ClownBrush.Get())
+					.ColorAndOpacity(FLinearColor::White)
+					.Visibility(EVisibility::Collapsed)
+				]
+			];
+		ClownImages[i] = ClownImg;
 	}
 
 	// Build hearts row first (5 sprite icons). Portrait width should match this row width.
@@ -3022,6 +3161,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							DifficultyRowRef
 						]
+						// Cowardice clowns (below skulls; one per gate taken this segment)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+						[
+							CowardiceRowRef
+						]
 						// Immortality toggle (below skulls)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 						[
@@ -3186,6 +3330,47 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 		]
+		]
+		// Achievement unlock notification (above inventory, tier-colored border)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.Padding(24.f, 0.f, 24.f, 280.f)
+		[
+			SAssignNew(AchievementNotificationBox, SBox)
+			.Visibility(EVisibility::Collapsed)
+			.WidthOverride(280.f)
+			[
+				SAssignNew(AchievementNotificationBorder, SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.15f, 0.15f, 0.15f, 1.0f))
+				.Padding(3.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FT66Style::Tokens::Panel)
+					.Padding(FMargin(10.f, 8.f))
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SAssignNew(AchievementNotificationTitleText, STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66Style::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.AutoWrapText(true)
+							.WrapTextAt(256.f)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("T66.GameplayHUD", "AchievementUnlocked", "Unlocked!"))
+							.Font(FT66Style::Tokens::FontRegular(14))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+					]
+				]
+			]
 		]
 		// Tutorial hint (above crosshair)
 		+ SOverlay::Slot()

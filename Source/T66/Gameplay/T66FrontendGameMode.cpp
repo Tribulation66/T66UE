@@ -137,6 +137,17 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned ExponentialHeightFog (same as gameplay)"));
 		}
 	}
+	if (HeightFog)
+	{
+		UExponentialHeightFogComponent* FogComp = HeightFog->FindComponentByClass<UExponentialHeightFogComponent>();
+		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(HeightFog->GetRootComponent());
+		if (FogComp)
+		{
+			UGameInstance* GI = World->GetGameInstance();
+			UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+			FogComp->SetVisibility(PS && PS->GetFogEnabled());
+		}
+	}
 
 	// PostProcessVolume (unbound) with same exposure as gameplay so frontend matches brightness.
 	APostProcessVolume* PPVolume = nullptr;

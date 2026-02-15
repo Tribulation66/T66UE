@@ -4,19 +4,22 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/T66StatsPanelSlate.h"
 #include "UI/Style/T66Style.h"
+#include "Data/T66DataTypes.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/Texture2D.h"
+#include "UObject/SoftObjectPath.h"
 #include "Engine/SceneCapture2D.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "EngineUtils.h"
@@ -84,6 +87,13 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 		{
 			bNewPersonalBestTime = RunState->DidThisRunSetNewPersonalBestTime();
 		}
+
+		// Power Coupons earned popup: show only when player earned at least 1 this run (beat at least one boss).
+		bShowPowerCouponsPopup = (RunState && RunState->GetPowerCrystalsEarnedThisRun() >= 1);
+	}
+	else
+	{
+		bShowPowerCouponsPopup = false;
 	}
 
 	EnsurePreviewCaptures();
@@ -94,6 +104,7 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 	DestroyPreviewCaptures();
 	InventoryItemIconBrushes.Reset();
 	IdolIconBrushes.Reset();
+	PowerCouponSpriteBrush.Reset();
 	Super::OnScreenDeactivated_Implementation();
 }
 
@@ -192,7 +203,7 @@ void UT66RunSummaryScreen::EnsurePreviewCaptures()
 			{
 				HeroPreviewBrush = MakeShared<FSlateBrush>();
 				HeroPreviewBrush->DrawAs = ESlateBrushDrawType::Image;
-				HeroPreviewBrush->ImageSize = FVector2D(420.f, 420.f);
+				HeroPreviewBrush->ImageSize = FVector2D(520.f, 520.f);
 			}
 			HeroPreviewBrush->SetResourceObject(HeroPreviewRT);
 		}
@@ -383,6 +394,19 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	InventoryItemIconBrushes.Reset();
 	IdolIconBrushes.Reset();
 
+	// Power Coupons popup sprite (Content/UI/Sprites/PowerUp).
+	if (bShowPowerCouponsPopup && TexPool)
+	{
+		if (!PowerCouponSpriteBrush.IsValid())
+		{
+			PowerCouponSpriteBrush = MakeShared<FSlateBrush>();
+			PowerCouponSpriteBrush->DrawAs = ESlateBrushDrawType::Image;
+			PowerCouponSpriteBrush->ImageSize = FVector2D(48.f, 48.f);
+		}
+		const TSoftObjectPtr<UTexture2D> PowerUpTex(FSoftObjectPath(TEXT("/Game/UI/Sprites/PowerUp/PowerUp.PowerUp")));
+		T66SlateTexture::BindSharedBrushAsync(TexPool, PowerUpTex, this, PowerCouponSpriteBrush, FName(TEXT("PowerCouponSprite")), /*bClearWhileLoading*/ true);
+	}
+
 	RebuildLogItems();
 	SAssignNew(LogListView, SListView<TSharedPtr<FString>>)
 		.ListItemsSource(&LogItems)
@@ -393,6 +417,18 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const FText StageHighScoreText = Loc
 		? FText::Format(Loc->GetText_RunSummaryStageReachedBountyFormat(), FText::AsNumber(StageReached), FText::AsNumber(HighScore))
 		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Score: %d"), StageReached, HighScore));
+
+	// Global ranking (high score always; speed run when mode on — N/A if no time for that stage).
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	UT66PlayerSettingsSubsystem* PS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	const int32 BountyRank = (GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalBountyRank(GI->SelectedDifficulty, GI->SelectedPartySize) : 0;
+	const bool bSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
+	const int32 SpeedRunStageForRank = FMath::Max(1, StageReached - 1);
+	const int32 SpeedRunRank = (bSpeedRunMode && GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalSpeedRunRank(GI->SelectedDifficulty, GI->SelectedPartySize, SpeedRunStageForRank) : 0;
+	const FText HighScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "HighScoreRankLabel", "High Score Rank:");
+	const FText HighScoreRankValueText = (BountyRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(BountyRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
+	const FText SpeedRunRankLabelText = FText::Format(NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabelFormat", "Speed Run Rank (Stage {0}):"), FText::AsNumber(SpeedRunStageForRank));
+	const FText SpeedRunRankValueText = (SpeedRunRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(SpeedRunRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
 
 	auto MakeSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
 	{
@@ -414,11 +450,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	auto MakeHeroPreview = [](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
 	{
+		constexpr float PreviewSize = 520.f;
 		return Brush.IsValid()
 			? StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
 				SNew(SBox)
-				.WidthOverride(420.f)
-				.HeightOverride(420.f)
+				.WidthOverride(PreviewSize)
+				.HeightOverride(PreviewSize)
 				[
 					SNew(SImage).Image(Brush.Get())
 				],
@@ -426,8 +463,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			))
 			: StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
 				SNew(SBox)
-				.WidthOverride(420.f)
-				.HeightOverride(420.f)
+				.WidthOverride(PreviewSize)
+				.HeightOverride(PreviewSize)
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"))
@@ -549,14 +586,23 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.SetMinWidth(160.f).SetPadding(FMargin(14.f, 8.f)));
 	};
 
-	// Level + stats (requested for Run Summary and saved leaderboard snapshots).
-	TSharedRef<SVerticalBox> StatsBox = SNew(SVerticalBox);
+	// Stats panel: same width and content as Vendor/Gambler (primary + secondary, scroll). Header "STATS".
+	const float StatsPanelWidth = FT66Style::Tokens::NPCVendorStatsPanelWidth;
+	TSharedRef<SWidget> BaseStatsPanel = [&]() -> TSharedRef<SWidget>
 	{
+		if (RunState && !bViewingSavedLeaderboardRunSummary)
+		{
+			return T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, StatsPanelWidth, true);
+		}
+		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && LoadedSavedSummary->SecondaryStatValues.Num() > 0)
+		{
+			return T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(LoadedSavedSummary, Loc, StatsPanelWidth);
+		}
+		TSharedRef<SVerticalBox> PrimaryStatsBox = SNew(SVerticalBox);
 		const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
-
 		auto AddStatLine = [&](const FText& Label, int32 Value)
 		{
-			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			PrimaryStatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
 				SNew(STextBlock)
 				.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
@@ -564,7 +610,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			];
 		};
-
 		AddStatLine(Loc ? Loc->GetText_Level() : NSLOCTEXT("T66.Common", "Level", "LEVEL"), HeroLevel);
 		AddStatLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), DamageStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), AttackSpeedStat);
@@ -573,176 +618,205 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddStatLine(Loc ? Loc->GetText_Stat_Evasion() : NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), EvasionStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_Luck() : NSLOCTEXT("T66.Stats", "Luck", "Luck"), LuckStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_Speed() : NSLOCTEXT("T66.Stats", "Speed", "Speed"), SpeedStat);
-	}
-
-	// Build idols + inventory lists.
-	TSharedRef<SVerticalBox> IdolsBox = SNew(SVerticalBox);
-	TSharedRef<SVerticalBox> InvBox = SNew(SVerticalBox);
-	{
-		const TArray<FName>* IdolsPtr = nullptr;
-		TArray<FName> InventoryLocal; // GetInventory() returns by value; store locally.
-		const TArray<FT66InventorySlot>* InvSlotsPtr = nullptr;
-
-		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
-		{
-			IdolsPtr = &LoadedSavedSummary->EquippedIdols;
-			InventoryLocal = LoadedSavedSummary->Inventory;
-		}
-		else if (RunState)
-		{
-			IdolsPtr = &RunState->GetEquippedIdols();
-			InventoryLocal = RunState->GetInventory();
-			InvSlotsPtr = &RunState->GetInventorySlots();
-		}
-
-		const TArray<FName> Empty;
-		const TArray<FName>& Idols = IdolsPtr ? *IdolsPtr : Empty;
-		const TArray<FName>& Inventory = InventoryLocal;
-
-		for (int32 IdolSlotIndex = 0; IdolSlotIndex < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++IdolSlotIndex)
-		{
-			const FName IdolID = (Idols.IsValidIndex(IdolSlotIndex)) ? Idols[IdolSlotIndex] : NAME_None;
-			const FLinearColor IdolColor = !IdolID.IsNone() ? UT66RunStateSubsystem::GetIdolColor(IdolID) : FT66Style::Tokens::Stroke;
-			FIdolData IdolData;
-			const bool bHasIdolData = GI && !IdolID.IsNone() && GI->GetIdolData(IdolID, IdolData);
-			TSharedPtr<FSlateBrush> IdolBrush;
-			if (bHasIdolData && !IdolData.Icon.IsNull())
-			{
-				IdolBrush = MakeShared<FSlateBrush>();
-				IdolBrush->DrawAs = ESlateBrushDrawType::Image;
-				IdolBrush->ImageSize = FVector2D(18.f, 18.f);
-				IdolIconBrushes.Add(IdolBrush);
-				if (TexPool)
-				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, IdolData.Icon, this, IdolBrush, IdolID, /*bClearWhileLoading*/ true);
-				}
-			}
-
-			IdolsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
+		TSharedRef<SWidget> PrimaryContent = SNew(SBox)
+			.HeightOverride(FT66Style::Tokens::NPCStatsPanelContentHeight)
+			[
+				SNew(SScrollBox)
+				.ScrollBarVisibility(EVisibility::Visible)
+				+ SScrollBox::Slot()[PrimaryStatsBox]
+			];
+		// Header must be "STATS" (same as Vendor/Gambler), not "Base Stats", for leaderboard/saved run summaries.
+		return SNew(SBox)
+			.WidthOverride(StatsPanelWidth)
 			[
 				FT66Style::MakePanel(
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
-						SNew(SBox).WidthOverride(18.f).HeightOverride(18.f)
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.StatsPanel", "Header", "STATS"))
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+					]
+					+ SVerticalBox::Slot().AutoHeight()[PrimaryContent],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4)
+				)
+			];
+	}();
+
+	// Idols: one row, 6 columns, with simple border under hero.
+	const TArray<FName>* IdolsPtr = nullptr;
+	TArray<FName> InventoryLocal;
+	const TArray<FT66InventorySlot>* InvSlotsPtr = nullptr;
+	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+	{
+		IdolsPtr = &LoadedSavedSummary->EquippedIdols;
+		InventoryLocal = LoadedSavedSummary->Inventory;
+	}
+	else if (RunState)
+	{
+		IdolsPtr = &RunState->GetEquippedIdols();
+		InventoryLocal = RunState->GetInventory();
+		InvSlotsPtr = &RunState->GetInventorySlots();
+	}
+	const TArray<FName> Empty;
+	const TArray<FName>& Idols = IdolsPtr ? *IdolsPtr : Empty;
+
+	static constexpr float IdolSlotPad = 4.f;
+	static constexpr float IdolSlotSize = 52.f;
+	TSharedRef<SHorizontalBox> IdolSlotsRow = SNew(SHorizontalBox);
+	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
+	{
+		const FName IdolID = Idols.IsValidIndex(i) ? Idols[i] : NAME_None;
+		const FLinearColor IdolColor = !IdolID.IsNone() ? UT66RunStateSubsystem::GetIdolColor(IdolID) : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
+		FIdolData IdolData;
+		const bool bHasIdolData = GI && !IdolID.IsNone() && GI->GetIdolData(IdolID, IdolData);
+		TSharedPtr<FSlateBrush> IdolBrush;
+		if (bHasIdolData && !IdolData.Icon.IsNull())
+		{
+			IdolBrush = MakeShared<FSlateBrush>();
+			IdolBrush->DrawAs = ESlateBrushDrawType::Image;
+			IdolBrush->ImageSize = FVector2D(IdolSlotSize - 4.f, IdolSlotSize - 4.f);
+			IdolIconBrushes.Add(IdolBrush);
+			if (TexPool) T66SlateTexture::BindSharedBrushAsync(TexPool, IdolData.Icon, this, IdolBrush, IdolID, true);
+		}
+		IdolSlotsRow->AddSlot()
+			.AutoWidth()
+			.Padding(IdolSlotPad)
+			[
+				SNew(SBox).WidthOverride(IdolSlotSize).HeightOverride(IdolSlotSize)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(IdolColor)
+					.Padding(1.f)
+					[
+						IdolBrush.IsValid()
+						? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
+						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+					]
+				]
+			];
+	}
+	TSharedRef<SWidget> IdolsBorderedGrid = SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FT66Style::Tokens::Stroke)
+		.Padding(4.f)
+		[
+			IdolSlotsRow
+		];
+
+	// Inventory: slot grid (2x10), sprites only — larger slots than in-game.
+	static constexpr int32 InvCols = 10;
+	static constexpr int32 InvRows = 2;
+	static constexpr float InvSlotSize = 56.f;
+	static constexpr float InvSlotPad = 3.f;
+	const FLinearColor InvSlotBorderColor(0.45f, 0.55f, 0.50f, 0.5f);
+	InventoryItemIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	for (int32 i = 0; i < UT66RunStateSubsystem::MaxInventorySlots; ++i)
+	{
+		if (!InventoryItemIconBrushes[i].IsValid()) InventoryItemIconBrushes[i] = MakeShared<FSlateBrush>();
+		InventoryItemIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
+		InventoryItemIconBrushes[i]->ImageSize = FVector2D(InvSlotSize - 4.f, InvSlotSize - 4.f);
+		InventoryItemIconBrushes[i]->SetResourceObject(nullptr);
+	}
+	for (int32 InvIdx = 0; InvIdx < UT66RunStateSubsystem::MaxInventorySlots && InvIdx < InventoryLocal.Num(); ++InvIdx)
+	{
+		const FName ItemID = InventoryLocal[InvIdx];
+		if (ItemID.IsNone()) continue;
+		FItemData ItemData;
+		if (GI && GI->GetItemData(ItemID, ItemData) && !ItemData.Icon.IsNull() && TexPool)
+		{
+			T66SlateTexture::BindSharedBrushAsync(TexPool, ItemData.Icon, this, InventoryItemIconBrushes[InvIdx], ItemID, true);
+		}
+	}
+	TSharedRef<SVerticalBox> InvGridRef = SNew(SVerticalBox);
+	for (int32 Row = 0; Row < InvRows; ++Row)
+	{
+		TSharedRef<SHorizontalBox> RowBox = SNew(SHorizontalBox);
+		for (int32 Col = 0; Col < InvCols; ++Col)
+		{
+			const int32 SlotIndex = Row * InvCols + Col;
+			const FLinearColor SlotColor = (InvSlotsPtr && InvSlotsPtr->IsValidIndex(SlotIndex))
+				? FItemData::GetItemRarityColor((*InvSlotsPtr)[SlotIndex].Rarity)
+				: InvSlotBorderColor;
+			const bool bHasItem = InventoryLocal.IsValidIndex(SlotIndex) && !InventoryLocal[SlotIndex].IsNone();
+			TSharedPtr<FSlateBrush> SlotBrush = InventoryItemIconBrushes.IsValidIndex(SlotIndex) ? InventoryItemIconBrushes[SlotIndex] : nullptr;
+			RowBox->AddSlot()
+				.AutoWidth()
+				.Padding(InvSlotPad)
+				[
+					SNew(SBox).WidthOverride(InvSlotSize).HeightOverride(InvSlotSize)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(SlotColor)
+						.Padding(1.f)
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(IdolColor)
+							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.25f))
 							.Padding(0.f)
 							[
-								IdolBrush.IsValid()
-								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
+								(SlotBrush.IsValid() && bHasItem)
+								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
 								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
 							]
 						]
 					]
-					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center).Padding(10.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(IdolID.IsNone()
-							? NSLOCTEXT("T66.Common", "Empty", "EMPTY")
-							: FText::FromName(IdolID))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f))
-				)
-			];
-		}
-
-		if (Inventory.Num() <= 0)
-		{
-			InvBox->AddSlot().AutoHeight()
-			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.RunSummary", "NoItems", "No items."))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-			];
-		}
-		else
-		{
-			for (int32 InvIdx = 0; InvIdx < Inventory.Num(); ++InvIdx)
-			{
-				const FName& ItemID = Inventory[InvIdx];
-				if (ItemID.IsNone()) continue;
-				FItemData ItemData;
-				const bool bHasItemData = GI && GI->GetItemData(ItemID, ItemData);
-				TSharedPtr<FSlateBrush> ItemBrush;
-				if (bHasItemData && !ItemData.Icon.IsNull())
-				{
-					ItemBrush = MakeShared<FSlateBrush>();
-					ItemBrush->DrawAs = ESlateBrushDrawType::Image;
-					ItemBrush->ImageSize = FVector2D(18.f, 18.f);
-					InventoryItemIconBrushes.Add(ItemBrush);
-					if (TexPool)
-					{
-						T66SlateTexture::BindSharedBrushAsync(TexPool, ItemData.Icon, this, ItemBrush, ItemID, /*bClearWhileLoading*/ true);
-					}
-				}
-
-				// Use rarity color for border if slot data is available (current run).
-				const FLinearColor ItemBorderColor = (InvSlotsPtr && InvSlotsPtr->IsValidIndex(InvIdx))
-					? FItemData::GetItemRarityColor((*InvSlotsPtr)[InvIdx].Rarity)
-					: FT66Style::Tokens::Stroke;
-
-				InvBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-				[
-					FT66Style::MakePanel(
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-						[
-							SNew(SBox).WidthOverride(18.f).HeightOverride(18.f)
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(ItemBorderColor)
-								.Padding(0.f)
-								[
-									ItemBrush.IsValid()
-									? StaticCastSharedRef<SWidget>(SNew(SImage).Image(ItemBrush.Get()))
-									: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-								]
-							]
-						]
-						+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center).Padding(10.f, 0.f)
-						[
-							SNew(STextBlock)
-							.Text(Loc ? Loc->GetText_ItemDisplayName(ItemID) : FText::FromName(ItemID))
-							.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						],
-						FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f))
-					)
 				];
-			}
 		}
+		InvGridRef->AddSlot().AutoHeight()[RowBox];
 	}
+	TSharedRef<SWidget> InventorySlotGrid = SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FT66Style::Tokens::Stroke)
+		.Padding(4.f)
+		[
+			InvGridRef
+		];
 
 	// Back button (when viewing saved run) — shown in overlay bottom-left; Restart + Main Menu stay in panel.
 	TSharedRef<SWidget> BackButton =
 		FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked))
 			.SetMinWidth(120.f).SetPadding(FMargin(18.f, 10.f)));
 
-	// Buttons row (Restart + Main Menu) when not viewing a saved run — kept inside the main panel.
-	TSharedRef<SWidget> ButtonsRow =
-		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
+	// Retry level disclaimer and button (run not eligible for leaderboard).
+	const FText RetryIneligibleText = NSLOCTEXT("T66.RunSummary", "RetryIneligibleForLeaderboard", "This run will not be eligible for leaderboard.");
+	const FText RetryLevelButtonText = NSLOCTEXT("T66.RunSummary", "RetryLevel", "RETRY LEVEL");
+	TSharedRef<SWidget> RetryLevelBlock =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+		[
+			SNew(STextBlock)
+			.Text(RetryIneligibleText)
+			.Font(FT66Style::Tokens::FontRegular(12))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.Justification(ETextJustify::Center)
+			.AutoWrapText(true)
+		]
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			FT66Style::MakeButton(FT66ButtonParams(RetryLevelButtonText, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRetryLevelClicked), ET66ButtonType::Primary)
+				.SetMinWidth(160.f).SetPadding(FMargin(18.f, 10.f)))
+		];
+
+	// Buttons stacked vertically (Restart, Main Menu, Retry Level) — shown below Integrity when not viewing a saved run.
+	TSharedRef<SWidget> ButtonsStack =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 		[
 			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66ButtonType::Success)
 				.SetMinWidth(180.f).SetPadding(FMargin(18.f, 10.f)))
 		]
-		+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 		[
 			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
 				.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
+		]
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			RetryLevelBlock
 		];
-
-	// Panels in the requested layout.
-	TSharedRef<SWidget> BaseStatsPanel = MakeSectionPanel(
-		Loc ? Loc->GetText_BaseStatsHeader() : NSLOCTEXT("T66.HeroSelection", "BaseStatsHeader", "Base Stats"),
-		StatsBox
-	);
 
 	// Placeholder panels (wiring for calculation will come later).
 	auto MakeBigCenteredValue = [](const FText& ValueText) -> TSharedRef<SWidget>
@@ -817,56 +891,28 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		]
 	);
 
-	// Power Crystals: earned this run + total balance (from PowerUpSubsystem).
-	UT66PowerUpSubsystem* PowerUpSub = GI ? GI->GetSubsystem<UT66PowerUpSubsystem>() : nullptr;
-	const int32 PowerCrystalsEarned = RunState ? RunState->GetPowerCrystalsEarnedThisRun() : 0;
-	const int32 PowerCrystalsTotal = PowerUpSub ? PowerUpSub->GetPowerCrystalBalance() : 0;
-	const FText PowerCrystalsEarnedLine = FText::Format(
-		NSLOCTEXT("T66.RunSummary", "PowerCrystalsEarnedFormat", "Earned this run: {0}"),
-		FText::AsNumber(PowerCrystalsEarned)
-	);
-	const FText PowerCrystalsTotalLine = FText::Format(
-		NSLOCTEXT("T66.RunSummary", "PowerCrystalsTotalFormat", "Total: {0}"),
-		FText::AsNumber(PowerCrystalsTotal)
-	);
-	TSharedRef<SWidget> PowerCrystalsPanel = MakeSectionPanel(
-		NSLOCTEXT("T66.RunSummary", "PowerCrystalsPanel", "POWER CRYSTALS"),
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight()
-		[
-			SNew(STextBlock)
-			.Text(PowerCrystalsEarnedLine)
-			.Font(FT66Style::Tokens::FontRegular(14))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-		[
-			SNew(STextBlock)
-			.Text(PowerCrystalsTotalLine)
-			.Font(FT66Style::Tokens::FontBold(14))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		]
-	);
-
-	// Damage by source: from DamageLogSubsystem (live) or snapshot (SchemaVersion >= 5).
-	TArray<FDamageLogEntry> DamageBySourceSorted;
+	// Damage by source: ranked table of 7 sources (Auto Attack + 6 idols). Use real data when present, else dummy.
+	static const FName DamageSourceIds[7] =
+	{
+		UT66DamageLogSubsystem::SourceID_AutoAttack,
+		FName(TEXT("Idol_Star")),
+		FName(TEXT("Idol_Curse")),
+		FName(TEXT("Idol_Rubber")),
+		FName(TEXT("Idol_Lava")),
+		FName(TEXT("Idol_Electric")),
+		FName(TEXT("Idol_Fire"))
+	};
+	static const int32 DummyDamage[7] = { 520, 380, 290, 210, 150, 85, 42 };
+	TMap<FName, int32> DamageMap;
 	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && LoadedSavedSummary->SchemaVersion >= 5)
 	{
-		for (const auto& Pair : LoadedSavedSummary->DamageBySource)
-		{
-			FDamageLogEntry E;
-			E.SourceID = Pair.Key;
-			E.TotalDamage = Pair.Value;
-			DamageBySourceSorted.Add(E);
-		}
-		DamageBySourceSorted.Sort([](const FDamageLogEntry& A, const FDamageLogEntry& B) { return A.TotalDamage > B.TotalDamage; });
+		DamageMap = LoadedSavedSummary->DamageBySource;
 	}
-	else
+	else if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
 	{
-		UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr;
-		if (DamageLog)
+		for (const FDamageLogEntry& E : DamageLog->GetDamageBySourceSorted())
 		{
-			DamageBySourceSorted = DamageLog->GetDamageBySourceSorted();
+			DamageMap.FindOrAdd(E.SourceID) = E.TotalDamage;
 		}
 	}
 	auto GetDamageSourceDisplayName = [](FName SourceID) -> FText
@@ -875,71 +921,47 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		if (SourceID == UT66DamageLogSubsystem::SourceID_Ultimate) return NSLOCTEXT("T66.RunSummary", "DamageSource_Ultimate", "Ultimate");
 		return FText::FromName(SourceID);
 	};
-	TSharedRef<SVerticalBox> DamageBySourceBox = SNew(SVerticalBox);
-	for (const FDamageLogEntry& Entry : DamageBySourceSorted)
+	TArray<FDamageLogEntry> TableRows;
+	for (int32 i = 0; i < 7; ++i)
 	{
-		DamageBySourceBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-		[
-			SNew(STextBlock)
-			.Text(FText::Format(
-				NSLOCTEXT("T66.RunSummary", "DamageBySourceLineFormat", "{0}: {1}"),
-				GetDamageSourceDisplayName(Entry.SourceID),
-				FText::AsNumber(Entry.TotalDamage)))
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		];
+		FDamageLogEntry E;
+		E.SourceID = DamageSourceIds[i];
+		E.TotalDamage = DamageMap.Contains(E.SourceID) ? DamageMap[E.SourceID] : DummyDamage[i];
+		TableRows.Add(E);
 	}
-	if (DamageBySourceSorted.Num() == 0)
-	{
-		DamageBySourceBox->AddSlot().AutoHeight()
+	TableRows.Sort([](const FDamageLogEntry& A, const FDamageLogEntry& B) { return A.TotalDamage > B.TotalDamage; });
+	const FTextBlockStyle& BodyStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+	const FText RankHeader = NSLOCTEXT("T66.RunSummary", "DamageTableRank", "Rank");
+	const FText SourceHeader = NSLOCTEXT("T66.RunSummary", "DamageTableSource", "Source");
+	const FText DamageHeader = NSLOCTEXT("T66.RunSummary", "DamageTableDamage", "Damage");
+	TSharedRef<SVerticalBox> DamageBySourceBox = SNew(SVerticalBox);
+	DamageBySourceBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 		[
-			SNew(STextBlock)
-			.Text(NSLOCTEXT("T66.RunSummary", "NoDamageSources", "No damage data."))
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
+			[SNew(STextBlock).Text(RankHeader).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::TextMuted).Font(FT66Style::Tokens::FontBold(12))]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 80.f, 0.f)
+			[SNew(STextBlock).Text(SourceHeader).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::TextMuted).Font(FT66Style::Tokens::FontBold(12))]
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[SNew(STextBlock).Text(DamageHeader).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::TextMuted).Font(FT66Style::Tokens::FontBold(12))]
 		];
+	for (int32 Rank = 0; Rank < TableRows.Num(); ++Rank)
+	{
+		const FDamageLogEntry& Entry = TableRows[Rank];
+		DamageBySourceBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
+				[SNew(STextBlock).Text(FText::AsNumber(Rank + 1)).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::Text)]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 80.f, 0.f)
+				[SNew(STextBlock).Text(GetDamageSourceDisplayName(Entry.SourceID)).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::Text)]
+				+ SHorizontalBox::Slot().FillWidth(1.f)
+				[SNew(STextBlock).Text(FText::AsNumber(Entry.TotalDamage)).TextStyle(&BodyStyle).ColorAndOpacity(FT66Style::Tokens::Text)]
+			];
 	}
 	TSharedRef<SWidget> DamageBySourcePanel = MakeSectionPanel(
 		NSLOCTEXT("T66.RunSummary", "DamageBySourcePanel", "DAMAGE BY SOURCE"),
 		DamageBySourceBox
-	);
-
-	// Achievement Coins: stubs (0 earned, 10,000 total).
-	const FText ACEarnedLine = FText::Format(
-		NSLOCTEXT("T66.RunSummary", "ACEarnedFormat", "Earned this run: {0}"),
-		FText::AsNumber(0)
-	);
-	const FText ACTotalLine = FText::Format(
-		NSLOCTEXT("T66.RunSummary", "ACTotalFormat", "Total: {0}"),
-		FText::AsNumber(10000)
-	);
-	TSharedRef<SWidget> ACPanel = MakeSectionPanel(
-		NSLOCTEXT("T66.RunSummary", "AchievementCoinsPanel", "ACHIEVEMENT COINS"),
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight()
-		[
-			SNew(STextBlock)
-			.Text(ACEarnedLine)
-			.Font(FT66Style::Tokens::FontRegular(14))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-		[
-			SNew(STextBlock)
-			.Text(ACTotalLine)
-			.Font(FT66Style::Tokens::FontBold(14))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-		]
-	);
-
-	TSharedRef<SWidget> InventoryPanel = MakeSectionPanel(
-		NSLOCTEXT("T66.RunSummary", "InventoryPanel", "INVENTORY"),
-		SNew(SScrollBox) + SScrollBox::Slot()[InvBox]
-	);
-
-	TSharedRef<SWidget> IdolsPanel = MakeSectionPanel(
-		NSLOCTEXT("T66.RunSummary", "IdolsPanel", "IDOLS"),
-		SNew(SScrollBox) + SScrollBox::Slot()[IdolsBox]
 	);
 
 	return SNew(SBorder)
@@ -976,6 +998,52 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						.Font(FT66Style::Tokens::FontBold(18))
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
+					// Global ranking (high score + speed run when mode on) — only for current run, not when viewing saved.
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+					[
+						SNew(SBox)
+						.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot().AutoWidth()
+								[
+									SNew(STextBlock)
+									.Text(HighScoreRankLabelText)
+									.Font(FT66Style::Tokens::FontRegular(14))
+									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+								]
+								+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+								[
+									SNew(STextBlock)
+									.Text(HighScoreRankValueText)
+									.Font(FT66Style::Tokens::FontBold(14))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
+							]
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								SNew(SHorizontalBox)
+								.Visibility_Lambda([bSpeedRunMode]() { return bSpeedRunMode ? EVisibility::Visible : EVisibility::Collapsed; })
+								+ SHorizontalBox::Slot().AutoWidth()
+								[
+									SNew(STextBlock)
+									.Text(SpeedRunRankLabelText)
+									.Font(FT66Style::Tokens::FontRegular(14))
+									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+								]
+								+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+								[
+									SNew(STextBlock)
+									.Text(SpeedRunRankValueText)
+									.Font(FT66Style::Tokens::FontBold(14))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
+							]
+						]
+					]
 					// Personal best banners (only for newly-finished runs)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, -10.f, 0.f, 6.f)
 					[
@@ -999,107 +1067,55 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						.Font(FT66Style::Tokens::FontBold(16))
 						.ColorAndOpacity(FT66Style::Tokens::Success)
 					]
-					// Main content: Hero preview top-left, stats to the right, items to the right of stats
+					// Main content: Left = Luck, Skill, Integrity, Proof of Run, They're cheating. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
 					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, 18.f)
 					[
-						SNew(SVerticalBox)
-						// Top half: Hero preview + stats + ratings
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+						SNew(SHorizontalBox)
+						// Left side: Luck Rating, Skill Rating, Probability of Cheating, Proof of Run, They're cheating
+						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
 						[
-							SNew(SHorizontalBox)
-							// Left: Hero preview
-							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[LuckRatingPanel]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[SkillRatingPanel]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[CheatProbabilityPanel]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
 							[
-								MakeHeroPreview(HeroPreviewBrush)
+								SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+								[ButtonsStack]
 							]
-							// Middle: Base stats (fixed width so ratings sit immediately next to it)
-							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 							[
-								SNew(SBox)
-								.WidthOverride(420.f)
-								[
-									BaseStatsPanel
-								]
+								SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })[ProofOfRunPanel]
 							]
-							// Right: Ratings (kept tight next to Base Stats)
-							+ SHorizontalBox::Slot().AutoWidth()
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									LuckRatingPanel
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									SkillRatingPanel
-								]
-								+ SVerticalBox::Slot().FillHeight(1.f)
-								[
-									CheatProbabilityPanel
-								]
+								SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
+								[ReportCheatButton]
 							]
-							// Power Crystals + Damage by source + Achievement Coins (right column)
-							+ SHorizontalBox::Slot().AutoWidth().Padding(18.f, 0.f, 0.f, 0.f)
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									PowerCrystalsPanel
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									DamageBySourcePanel
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-								[
-									ACPanel
-								]
-								+ SVerticalBox::Slot().FillHeight(1.f)
-								[
-									SNew(SSpacer)
-								]
+								SNew(SBox).Visibility_Lambda([this]() { return bReportPromptVisible ? EVisibility::Visible : EVisibility::Collapsed; })
+								[ReportPrompt]
 							]
-							// Spacer so the block stays left (leaves room for right-side log drawer).
-							+ SHorizontalBox::Slot().FillWidth(1.f)
-							[
-								SNew(SSpacer)
-							]
+							+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SSpacer)]
 						]
-						// Bottom half: Idols + Inventory (short + tight side-by-side, leaving room below)
-						+ SVerticalBox::Slot().AutoHeight()
+						// Center: Hero preview (middle), then idols (1 row x 6), then inventory
+						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 18.f, 0.f)
-							[
-								SNew(SBox)
-								.WidthOverride(520.f)
-								.HeightOverride(250.f)
-								[
-									IdolsPanel
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								SNew(SBox)
-								.WidthOverride(620.f)
-								.HeightOverride(250.f)
-								[
-									InventoryPanel
-								]
-							]
-							+ SHorizontalBox::Slot().FillWidth(1.f)
-							[
-								SNew(SSpacer)
-							]
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
+							[MakeHeroPreview(HeroPreviewBrush)]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
+							[IdolsBorderedGrid]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+							[InventorySlotGrid]
 						]
-					]
-					// Buttons row (Restart + Main Menu) — only when not viewing a saved run; Back is in overlay bottom-left
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
-					[
-						SNew(SBox)
-						.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+						// Right: Stats, Damage by source
+						+ SHorizontalBox::Slot().AutoWidth().Padding(24.f, 0.f, 0.f, 0.f)
 						[
-							ButtonsRow
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[BaseStatsPanel]
+							+ SVerticalBox::Slot().FillHeight(1.f)[DamageBySourcePanel]
 						]
 					],
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6)
@@ -1131,36 +1147,65 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					EventLogPanel
 				]
 			]
-			// Right-side: proof + report block (compact, shown under Event Log while open).
+			// Power Coupons earned popup (only when earned >= 1 this run, not when viewing saved).
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Right)
-			.VAlign(VAlign_Top)
-			.Padding(0.f, 70.f + 620.f + 12.f, 0.f, 0.f)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
 			[
 				SNew(SBox)
-				.WidthOverride(520.f)
-				// Always present in this right-side space (not tied to the Event Log toggle).
-				.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
+				.Visibility_Lambda([this]() { return bShowPowerCouponsPopup ? EVisibility::Visible : EVisibility::Collapsed; })
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						ProofOfRunPanel
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.7f))
+					.Padding(0.f)
 					[
 						SNew(SBox)
-						.HeightOverride(44.f)
+						.WidthOverride(320.f)
+						.Padding(24.f)
 						[
-							ReportCheatButton
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-					[
-						SNew(SBox)
-						.HeightOverride(150.f)
-						[
-							ReportPrompt
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight()
+							[
+								SNew(STextBlock)
+								.Text(NSLOCTEXT("T66.RunSummary", "PowerCouponsEarnedTitle", "Power Coupons earned"))
+								.Font(FT66Style::Tokens::FontBold(18))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Justification(ETextJustify::Center)
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f)
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)
+								[
+									SNew(SBox)
+									.WidthOverride(48.f)
+									.HeightOverride(48.f)
+									[
+										SNew(SImage)
+										.Image_Lambda([this]() { return PowerCouponSpriteBrush.IsValid() ? PowerCouponSpriteBrush.Get() : FCoreStyle::Get().GetDefaultBrush(); })
+									]
+								]
+								+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+								[
+									SNew(STextBlock)
+									.Text_Lambda([this]()
+									{
+										UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance()
+											? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+										const int32 Earned = RS ? RS->GetPowerCrystalsEarnedThisRun() : 0;
+										return FText::AsNumber(Earned);
+									})
+									.Font(FT66Style::Tokens::FontBold(24))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f)
+							[
+								FT66Style::MakeButton(FT66ButtonParams(
+									NSLOCTEXT("T66.RunSummary", "PowerCouponsThankYou", "Thank You"),
+									FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandlePowerCouponsThankYouClicked)))
+							]
 						]
 					]
 				]
@@ -1216,7 +1261,7 @@ void UT66RunSummaryScreen::HandleProofLinkNavigate() const
 
 FReply UT66RunSummaryScreen::HandleReportCheatingClicked()
 {
-	bReportPromptVisible = true;
+	bReportPromptVisible = !bReportPromptVisible;
 	InvalidateLayoutAndVolatility();
 	return FReply::Handled();
 }
@@ -1247,6 +1292,29 @@ FReply UT66RunSummaryScreen::HandleReportCloseClicked()
 {
 	bReportPromptVisible = false;
 	InvalidateLayoutAndVolatility();
+	return FReply::Handled();
+}
+
+FReply UT66RunSummaryScreen::HandlePowerCouponsThankYouClicked()
+{
+	bShowPowerCouponsPopup = false;
+	InvalidateLayoutAndVolatility();
+	return FReply::Handled();
+}
+
+FReply UT66RunSummaryScreen::HandleRetryLevelClicked()
+{
+	DestroyPreviewCaptures();
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	if (T66GI)
+	{
+		T66GI->bRunIneligibleForLeaderboard = true;
+		T66GI->bIsStageTransition = true;
+	}
+	APlayerController* PC = GetOwningPlayer();
+	if (PC) PC->SetPause(false);
+	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
 	return FReply::Handled();
 }
 

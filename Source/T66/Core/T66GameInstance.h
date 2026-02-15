@@ -128,6 +128,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	bool bApplyLoadedTransform = false;
 
+	/** When true, load into gameplay level frozen; show LOAD button overlay; clicking LOAD unfreezes. Set by Save Slots Preview. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	bool bLoadAsPreview = false;
+
 	/** True if Main Menu chose New Game, false if Load Game (used by Party Size Picker) */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsNewGameFlow = true;
@@ -135,6 +139,10 @@ public:
 	/** True when advancing to next stage (reload level, keep progress). GameMode skips ResetForNewRun. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsStageTransition = false;
+
+	/** When true, this run was started via "Retry level"; do not submit to leaderboard. Cleared when starting a fresh run. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bRunIneligibleForLeaderboard = false;
 
 	/**
 	 * If true, treat the current map as Coliseum behavior (Coliseum is embedded inside GameplayLevel).

@@ -49,6 +49,8 @@ private:
 	FReply HandleReportCheatingClicked();
 	FReply HandleReportSubmitClicked();
 	FReply HandleReportCloseClicked();
+	FReply HandlePowerCouponsThankYouClicked();
+	FReply HandleRetryLevelClicked();
 
 	void HandleProofLinkNavigate() const;
 
@@ -65,6 +67,12 @@ private:
 	// Run Summary banners (set on activation for the most recent run).
 	bool bNewPersonalHighScore = false;
 	bool bNewPersonalBestTime = false;
+
+	/** When true, show "Power Coupons earned" popup (only when earned >= 1 this run, not when viewing saved). */
+	bool bShowPowerCouponsPopup = false;
+
+	/** Brush for Power Coupons sprite (Content/UI/Sprites/PowerUp). */
+	TSharedPtr<struct FSlateBrush> PowerCouponSpriteBrush;
 
 	/** True when opened from a leaderboard entry (saved snapshot instead of current run state). */
 	bool bViewingSavedLeaderboardRunSummary = false;

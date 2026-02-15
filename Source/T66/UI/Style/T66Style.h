@@ -243,6 +243,8 @@ public:
 		static constexpr float NPCGamblerInventoryPanelHeight = 252.f;  // 180 * 1.4
 		/** Stats panel width (Vendor and Gambler); single source of truth. */
 		static constexpr float NPCStatsPanelWidth = 300.f;
+		/** Fixed height of the scrollable stats content (primary + secondary); prevents panel from pushing other UI off screen. */
+		static constexpr float NPCStatsPanelContentHeight = 400.f;
 		/** Vendor stats panel width (same as NPCStatsPanelWidth). */
 		static constexpr float NPCVendorStatsPanelWidth = NPCStatsPanelWidth;
 		/** Gambler stats panel width (same as NPCStatsPanelWidth). */

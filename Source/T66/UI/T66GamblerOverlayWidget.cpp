@@ -3,6 +3,7 @@
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -2507,6 +2508,10 @@ void UT66GamblerOverlayWidget::AwardWin(int32 BetAmount)
 				const int64 Payout = static_cast<int64>(BetAmount) * 2;
 				RunState->AddGold(static_cast<int32>(FMath::Clamp<int64>(Payout, 0, INT32_MAX)));
 				RefreshTopBar();
+			}
+			if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+			{
+				Achieve->NotifyGamblerWin();
 			}
 		}
 	}

@@ -2,6 +2,7 @@
 
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66StatsPanelSlate.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -1409,6 +1410,13 @@ FReply UT66VendorOverlayWidget::OnBuySlot(int32 SlotIndex)
 	if (bBought)
 	{
 		bBoughtSomethingThisVisit = true;
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+			{
+				Achieve->NotifyVendorPurchase();
+			}
+		}
 		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "Purchased", "Purchased."));
 	}
 	else

@@ -96,10 +96,11 @@ bool AT66StageGate::AdvanceToNextStage()
 		return true;
 	}
 
-	// Companion Union: clearing stages with a companion increases Union for that companion (profile progression).
-	if (!T66GI->SelectedCompanionID.IsNone())
+	// Companion Union + achievement: clearing stages with a companion increases Union and notifies stage cleared.
+	if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 	{
-		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		Ach->NotifyStageCleared(1);
+		if (!T66GI->SelectedCompanionID.IsNone())
 		{
 			Ach->AddCompanionUnionStagesCleared(T66GI->SelectedCompanionID, 1);
 		}

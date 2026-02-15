@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "T66StatsPanelSlate.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Data/T66DataTypes.h"
@@ -171,11 +172,15 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 	}
 
 	TSharedRef<SWidget> StatsContent = bExtended
-		? TSharedRef<SWidget>(SNew(SScrollBox)
-			.ScrollBarVisibility(EVisibility::Visible)
-			+ SScrollBox::Slot()
+		? TSharedRef<SWidget>(SNew(SBox)
+			.HeightOverride(FT66Style::Tokens::NPCStatsPanelContentHeight)
 			[
-				StatsBox
+				SNew(SScrollBox)
+				.ScrollBarVisibility(EVisibility::Visible)
+				+ SScrollBox::Slot()
+				[
+					StatsBox
+				]
 			])
 		: TSharedRef<SWidget>(StatsBox);
 
@@ -186,7 +191,159 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 			.Text(HeaderText)
 			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
 		]
-		+ SVerticalBox::Slot().FillHeight(1.f)
+		+ SVerticalBox::Slot().AutoHeight()
+		[
+			StatsContent
+		];
+
+	return SNew(SBox)
+		.WidthOverride(WidthOverride)
+		[
+			FT66Style::MakePanel(
+				Content,
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4))
+		];
+}
+
+TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
+	UT66LeaderboardRunSummarySaveGame* Snapshot,
+	UT66LocalizationSubsystem* Loc,
+	float WidthOverride)
+{
+	const FText HeaderText = NSLOCTEXT("T66.StatsPanel", "Header", "STATS");
+	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
+
+	auto GetLabel = [Loc](int32 Index) -> FText
+	{
+		if (!Loc) return FText::FromString(TEXT("?"));
+		switch (Index)
+		{
+			case 0: return Loc->GetText_Level();
+			case 1: return Loc->GetText_Stat_Damage();
+			case 2: return Loc->GetText_Stat_AttackSpeed();
+			case 3: return Loc->GetText_Stat_AttackScale();
+			case 4: return Loc->GetText_Stat_Armor();
+			case 5: return Loc->GetText_Stat_Evasion();
+			case 6: return Loc->GetText_Stat_Luck();
+			case 7: return Loc->GetText_Stat_Speed();
+			default: return FText::FromString(TEXT("?"));
+		}
+	};
+
+	TSharedRef<SVerticalBox> StatsBox = SNew(SVerticalBox);
+
+	if (Snapshot)
+	{
+		auto AddStatLine = [&](const FText& Label, int32 Value)
+		{
+			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			];
+		};
+
+		auto AddStatLineFloat = [&](const FText& Label, float Value, bool bAsPercent)
+		{
+			FText ValueText = bAsPercent
+				? FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)))
+				: FText::FromString(FString::Printf(TEXT("%.1f"), Value));
+			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(STextBlock)
+				.Text(FText::Format(StatFmt, Label, ValueText))
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			];
+		};
+
+		AddStatLine(GetLabel(0), Snapshot->HeroLevel);
+		AddStatLine(GetLabel(1), Snapshot->DamageStat);
+		AddStatLine(GetLabel(2), Snapshot->AttackSpeedStat);
+		AddStatLine(GetLabel(3), Snapshot->AttackScaleStat);
+		AddStatLine(GetLabel(4), Snapshot->ArmorStat);
+		AddStatLine(GetLabel(5), Snapshot->EvasionStat);
+		AddStatLine(GetLabel(6), Snapshot->LuckStat);
+		AddStatLine(GetLabel(7), Snapshot->SpeedStat);
+
+		const bool bExtended = Snapshot->SecondaryStatValues.Num() > 0;
+		if (bExtended)
+		{
+			const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
+			const FLinearColor LineColor(0.35f, 0.38f, 0.42f, 0.9f);
+			const FTextBlockStyle& HeadingStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
+
+			auto AddHorizontalLine = [&]()
+			{
+				StatsBox->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 8.f)
+				[
+					SNew(SBox)
+					.HeightOverride(1.f)
+					[
+						SNew(SBorder)
+						.BorderImage(WhiteBrush)
+						.BorderBackgroundColor(LineColor)
+					]
+				];
+			};
+
+			auto AddCategoryHeader = [&](const FText& Text)
+			{
+				StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+				[
+					SNew(STextBlock)
+					.Text(Text)
+					.TextStyle(&HeadingStyle)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				];
+			};
+
+			for (int32 c = 0; c < NumSecondaryStatCategories; ++c)
+			{
+				const FSecondaryStatCategory& Cat = SecondaryStatCategories[c];
+				AddHorizontalLine();
+				AddCategoryHeader(Cat.Header);
+				for (int32 k = 0; k < Cat.Num; ++k)
+				{
+					const int32 i = Cat.Indices[k];
+					const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
+					const FText Label = Loc ? Loc->GetText_SecondaryStatName(SecType) : FText::FromString(TEXT("?"));
+					const float* P = Snapshot->SecondaryStatValues.Find(SecType);
+					const float Value = P ? *P : 0.f;
+					const bool bPercent = (SecType == ET66SecondaryStatType::CritChance || SecType == ET66SecondaryStatType::Crush
+						|| SecType == ET66SecondaryStatType::Invisibility || SecType == ET66SecondaryStatType::LifeSteal
+						|| SecType == ET66SecondaryStatType::Assassinate || SecType == ET66SecondaryStatType::Cheating
+						|| SecType == ET66SecondaryStatType::Stealing);
+					AddStatLineFloat(Label, Value, bPercent);
+				}
+				AddHorizontalLine();
+			}
+		}
+	}
+
+	TSharedRef<SWidget> StatsContent = Snapshot && Snapshot->SecondaryStatValues.Num() > 0
+		? TSharedRef<SWidget>(SNew(SBox)
+			.HeightOverride(FT66Style::Tokens::NPCStatsPanelContentHeight)
+			[
+				SNew(SScrollBox)
+				.ScrollBarVisibility(EVisibility::Visible)
+				+ SScrollBox::Slot()
+				[
+					StatsBox
+				]
+			])
+		: TSharedRef<SWidget>(StatsBox);
+
+	TSharedRef<SWidget> Content = SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+		[
+			SNew(STextBlock)
+			.Text(HeaderText)
+			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+		]
+		+ SVerticalBox::Slot().AutoHeight()
 		[
 			StatsContent
 		];

@@ -103,6 +103,7 @@ bool AT66CowardiceGate::ConfirmCowardice()
 	{
 		RunState->AddOwedBoss(StageData.BossID);
 	}
+	RunState->AddCowardiceGateTaken();
 
 	// Advance stage (same as StageGate) and travel.
 	const int32 NextStage = CurrentStage + 1;

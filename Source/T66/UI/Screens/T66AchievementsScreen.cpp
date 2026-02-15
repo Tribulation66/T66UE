@@ -61,7 +61,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 
 	RefreshAchievements();
 
-	// Tier button colors
+	// Tier button colors (selected = rarity; unselected = theme panel)
 	auto GetTierColor = [](ET66AchievementTier Tier, bool bSelected) -> FLinearColor
 	{
 		if (bSelected)
@@ -75,14 +75,14 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			default: return FLinearColor(0.3f, 0.3f, 0.3f, 1.0f);
 			}
 		}
-		return FLinearColor(0.1f, 0.1f, 0.15f, 1.0f);
+		return FT66Style::Tokens::Panel2;
 	};
 
 	auto GetTierTextColor = [](ET66AchievementTier Tier, bool bSelected) -> FLinearColor
 	{
 		if (bSelected && Tier == ET66AchievementTier::White)
 			return FLinearColor::Black;
-		return FLinearColor::White;
+		return FT66Style::Tokens::Text;
 	};
 
 	// Use dynamic lambdas so button colors update when tier changes
@@ -218,14 +218,13 @@ void UT66AchievementsScreen::RebuildAchievementList()
 		// Filter by current tier
 		if (Achievement.Tier != CurrentTier) continue;
 
-		// Row styling
+		// Row styling (theme-aware)
 		FLinearColor RowBg = Achievement.bIsUnlocked
-			? FLinearColor(0.1f, 0.15f, 0.1f, 1.0f)
-			: FLinearColor(0.06f, 0.06f, 0.1f, 1.0f);
-
+			? (FT66Style::Tokens::Panel2 + FLinearColor(0.02f, 0.04f, 0.02f, 0.f))
+			: FT66Style::Tokens::Panel;
 		FLinearColor ProgressColor = Achievement.bIsUnlocked
-			? FLinearColor(0.4f, 0.8f, 0.4f, 1.0f)
-			: FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
+			? FT66Style::Tokens::Success
+			: FT66Style::Tokens::TextMuted;
 
 		FString ProgressStr = FString::Printf(TEXT("%d/%d"), 
 			FMath::Min(Achievement.CurrentProgress, Achievement.RequirementCount), 
@@ -254,14 +253,14 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						SNew(STextBlock)
 						.Text(Achievement.DisplayName)
 						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FLinearColor::White)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 4.0f, 0.0f, 0.0f)
 					[
 						SNew(STextBlock)
 						.Text(Achievement.Description)
 						.Font(FT66Style::Tokens::FontRegular(11))
-						.ColorAndOpacity(FLinearColor(0.6f, 0.6f, 0.6f, 1.0f))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
 					]
 				]
@@ -316,7 +315,6 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						)
 						.SetMinWidth(0.f)
 						.SetFontSize(12)
-						.SetTextColor(FLinearColor::White)
 						.SetEnabled(bCanClaim)
 						.SetVisibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed)
 					)

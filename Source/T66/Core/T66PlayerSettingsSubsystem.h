@@ -123,6 +123,45 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Graphics")
 	int32 GetMonitorIndex() const;
 
+	// ===== HUD (which elements the HUD toggle key affects) =====
+	UFUNCTION(BlueprintCallable, Category = "Settings|HUD")
+	void SetHudToggleAffectsInventory(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|HUD")
+	bool GetHudToggleAffectsInventory() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|HUD")
+	void SetHudToggleAffectsMinimap(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|HUD")
+	bool GetHudToggleAffectsMinimap() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|HUD")
+	void SetHudToggleAffectsIdolSlots(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|HUD")
+	bool GetHudToggleAffectsIdolSlots() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|HUD")
+	void SetHudToggleAffectsPortraitStats(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|HUD")
+	bool GetHudToggleAffectsPortraitStats() const;
+
+	// ===== Media Viewer (TikTok / YouTube Shorts) =====
+	UFUNCTION(BlueprintCallable, Category = "Settings|MediaViewer")
+	void SetMediaViewerEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|MediaViewer")
+	bool GetMediaViewerEnabled() const;
+
+	/** Fog in gameplay level (exponential height fog). Default off. */
+	UFUNCTION(BlueprintCallable, Category = "Settings|Graphics")
+	void SetFogEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Graphics")
+	bool GetFogEnabled() const;
+
 	// ===== Utilities =====
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void ApplySafeModeSettings();

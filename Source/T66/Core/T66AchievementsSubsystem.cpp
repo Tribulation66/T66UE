@@ -4,6 +4,7 @@
 #include "Core/T66ProfileSaveGame.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SkinSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -22,6 +23,7 @@ void UT66AchievementsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	Collection.InitializeDependency<UT66LocalizationSubsystem>();
 	LoadOrCreateProfile();
 	RebuildDefinitions();
 
@@ -66,8 +68,13 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	}
 
 	// Enforce safe defaults.
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 7);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 8);
 	Profile->LifetimeEnemiesKilled = FMath::Max(0, Profile->LifetimeEnemiesKilled);
+	Profile->LifetimeBossesKilled = FMath::Max(0, Profile->LifetimeBossesKilled);
+	Profile->LifetimeStagesCleared = FMath::Max(0, Profile->LifetimeStagesCleared);
+	Profile->LifetimeRunsCompleted = FMath::Max(0, Profile->LifetimeRunsCompleted);
+	Profile->LifetimeVendorPurchases = FMath::Max(0, Profile->LifetimeVendorPurchases);
+	Profile->LifetimeGamblerWins = FMath::Max(0, Profile->LifetimeGamblerWins);
 
 	// Hero skins: log current state (no more auto-reset; purchases persist).
 	const FName DefaultSkin(TEXT("Default"));
@@ -176,11 +183,16 @@ bool UT66AchievementsSubsystem::HasCompletedTutorial() const
 
 void UT66AchievementsSubsystem::MarkTutorialCompleted()
 {
-	if (!Profile) return;
-	if (Profile->bHasCompletedTutorial) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile || Profile->bHasCompletedTutorial) return;
 	Profile->bHasCompletedTutorial = true;
+	TArray<FName> NewlyUnlocked;
+	FT66AchievementState* S = FindOrAddState(FName(TEXT("ACH_BLK_005")));
+	if (S && !S->bIsUnlocked) { S->CurrentProgress = 1; S->bIsUnlocked = true; NewlyUnlocked.Add(FName(TEXT("ACH_BLK_005"))); }
 	bProfileDirty = true;
 	SaveProfileIfNeeded(true);
+	AchievementsStateChanged.Broadcast();
+	if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked);
 }
 
 const FT66AchievementState* UT66AchievementsSubsystem::FindState(FName AchievementID) const
@@ -195,33 +207,45 @@ FT66AchievementState* UT66AchievementsSubsystem::FindOrAddState(FName Achievemen
 	return &Profile->AchievementStateByID.FindOrAdd(AchievementID);
 }
 
+static void AddAchievement(TArray<FAchievementData>& Out, UT66LocalizationSubsystem* Loc,
+	FName Id, ET66AchievementTier Tier, int32 RequirementCount, int32 RewardCoins)
+{
+	FAchievementData A;
+	A.AchievementID = Id;
+	A.Tier = Tier;
+	A.RequirementCount = RequirementCount;
+	A.RewardCoins = RewardCoins;
+	A.DisplayName = Loc ? Loc->GetText_AchievementName(Id) : FText::FromString(Id.ToString());
+	A.Description = Loc ? Loc->GetText_AchievementDescription(Id) : FText::FromString(Id.ToString());
+	Out.Add(A);
+}
+
 void UT66AchievementsSubsystem::RebuildDefinitions()
 {
 	CachedDefinitions.Reset();
-
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 
-	// v0: first real achievement (user request)
-	{
-		FAchievementData A;
-		A.AchievementID = FName(TEXT("ACH_BLK_001"));
-		A.Tier = ET66AchievementTier::Black;
-		A.RequirementCount = 20;
-		A.RewardCoins = 250;
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_001")), ET66AchievementTier::Black, 20, 250);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_002")), ET66AchievementTier::Black, 1, 25);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_003")), ET66AchievementTier::Black, 100, 100);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_001")), ET66AchievementTier::Red, 1000, 500);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_004")), ET66AchievementTier::Black, 1, 50);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_002")), ET66AchievementTier::Red, 10, 300);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_005")), ET66AchievementTier::Black, 1, 50);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_006")), ET66AchievementTier::Black, 1, 75);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_003")), ET66AchievementTier::Red, 10, 400);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_007")), ET66AchievementTier::Black, 1, 100);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_YEL_001")), ET66AchievementTier::Yellow, 25, 750);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_008")), ET66AchievementTier::Black, 1, 50);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_004")), ET66AchievementTier::Red, 5, 200);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_YEL_002")), ET66AchievementTier::Yellow, 20, 500);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_009")), ET66AchievementTier::Black, 1, 25);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_010")), ET66AchievementTier::Black, 1, 50);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_005")), ET66AchievementTier::Red, 1, 150);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_006")), ET66AchievementTier::Red, 1, 200);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_011")), ET66AchievementTier::Black, 5, 100);
+	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_007")), ET66AchievementTier::Red, 5, 250);
 
-		// Culture-based localization (gather/translate/compile .locres).
-		// NOTE: Loc can be null extremely early; fall back to stable NSLOCTEXT keys.
-		A.DisplayName = Loc
-			? Loc->GetText_AchievementName(A.AchievementID)
-			: NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Name", "KILL 20 ENEMIES");
-		A.Description = Loc
-			? Loc->GetText_AchievementDescription(A.AchievementID)
-			: NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Desc", "Kill 20 enemies.");
-
-		CachedDefinitions.Add(A);
-	}
-
-	// Apply runtime state from profile into cached list.
 	ApplyRuntimeStateToCachedDefinitions(CachedDefinitions);
 }
 
@@ -314,7 +338,11 @@ bool UT66AchievementsSubsystem::AddLabUnlockedItem(FName ItemID)
 	if (!Profile) return false;
 	if (Profile->LabUnlockedItemIDs.Contains(ItemID)) return false;
 	Profile->LabUnlockedItemIDs.Add(ItemID);
+	const int32 NumItems = Profile->LabUnlockedItemIDs.Num();
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_011")), NumItems, 5, &NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);
+	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 	return true;
 }
 
@@ -325,7 +353,11 @@ bool UT66AchievementsSubsystem::AddLabUnlockedEnemy(FName EnemyOrBossID)
 	if (!Profile) return false;
 	if (Profile->LabUnlockedEnemyIDs.Contains(EnemyOrBossID)) return false;
 	Profile->LabUnlockedEnemyIDs.Add(EnemyOrBossID);
+	const int32 NumEnemies = Profile->LabUnlockedEnemyIDs.Num();
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_RED_007")), NumEnemies, 5, &NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);
+	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 	return true;
 }
 
@@ -339,6 +371,21 @@ bool UT66AchievementsSubsystem::IsLabUnlockedEnemy(FName EnemyOrBossID) const
 	return Profile && Profile->LabUnlockedEnemyIDs.Contains(EnemyOrBossID);
 }
 
+// Helper: set progress from a source value (e.g. LifetimeEnemiesKilled), unlock if >= Target. Returns true if state changed.
+bool UT66AchievementsSubsystem::UpdateCountAchievement(FName AchievementID, int32 SourceValue, int32 Target, TArray<FName>* OutNewlyUnlocked)
+{
+	FT66AchievementState* S = FindOrAddState(AchievementID);
+	if (!S) return false;
+	const int32 PrevProgress = S->CurrentProgress;
+	const bool bPrevUnlocked = S->bIsUnlocked;
+	S->CurrentProgress = FMath::Min(SourceValue, Target);
+	S->bIsUnlocked = (S->CurrentProgress >= Target);
+	if (OutNewlyUnlocked && !bPrevUnlocked && S->bIsUnlocked)
+		OutNewlyUnlocked->Add(AchievementID);
+	const bool bProgressChanged = (S->CurrentProgress != PrevProgress) || (S->bIsUnlocked != bPrevUnlocked);
+	return bProgressChanged;
+}
+
 void UT66AchievementsSubsystem::NotifyEnemyKilled(int32 Count)
 {
 	if (!Profile) LoadOrCreateProfile();
@@ -348,29 +395,95 @@ void UT66AchievementsSubsystem::NotifyEnemyKilled(int32 Count)
 	if (Delta <= 0) return;
 
 	Profile->LifetimeEnemiesKilled = FMath::Clamp(Profile->LifetimeEnemiesKilled + Delta, 0, 2000000000);
+	const int32 Total = Profile->LifetimeEnemiesKilled;
 
-	// ACH_BLK_001: Kill 20 enemies (lifetime)
-	const FName AchievementID(TEXT("ACH_BLK_001"));
-	FT66AchievementState* S = FindOrAddState(AchievementID);
-	if (S)
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = false;
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_001")), Total, 20, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_002")), Total, 1, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_003")), Total, 100, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_001")), Total, 1000, &NewlyUnlocked);
+	if (bAnyChanged)
 	{
-		const int32 Target = 20;
-		const int32 PrevProgress = S->CurrentProgress;
-		const bool bPrevUnlocked = S->bIsUnlocked;
-
-		S->CurrentProgress = FMath::Clamp(S->CurrentProgress + Delta, 0, Target);
-		S->bIsUnlocked = (S->CurrentProgress >= Target);
-
-		const bool bUnlockedNow = (!bPrevUnlocked && S->bIsUnlocked);
-		const bool bProgressChanged = (S->CurrentProgress != PrevProgress) || (S->bIsUnlocked != bPrevUnlocked);
-
-		if (bProgressChanged)
-		{
-			// Save immediately when the achievement unlocks; otherwise throttle.
-			MarkDirtyAndMaybeSave(bUnlockedNow);
-			AchievementsStateChanged.Broadcast();
-		}
+		MarkDirtyAndMaybeSave(true);
+		AchievementsStateChanged.Broadcast();
+		if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked);
 	}
+}
+
+void UT66AchievementsSubsystem::NotifyBossKilled(int32 Count)
+{
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile || Count <= 0) return;
+	const int32 Delta = FMath::Clamp(Count, 0, 1000);
+	Profile->LifetimeBossesKilled = FMath::Clamp(Profile->LifetimeBossesKilled + Delta, 0, 2000000000);
+	const int32 Total = Profile->LifetimeBossesKilled;
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = false;
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_004")), Total, 1, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_002")), Total, 10, &NewlyUnlocked);
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+}
+
+void UT66AchievementsSubsystem::NotifyStageCleared(int32 Count)
+{
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile || Count <= 0) return;
+	const int32 Delta = FMath::Clamp(Count, 0, 1000);
+	Profile->LifetimeStagesCleared = FMath::Clamp(Profile->LifetimeStagesCleared + Delta, 0, 2000000000);
+	const int32 Total = Profile->LifetimeStagesCleared;
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = false;
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_006")), Total, 1, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_003")), Total, 10, &NewlyUnlocked);
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+}
+
+void UT66AchievementsSubsystem::NotifyRunCompleted(UT66RunStateSubsystem* RunState)
+{
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = 1;
+	Profile->LifetimeRunsCompleted = FMath::Clamp(Profile->LifetimeRunsCompleted + Delta, 0, 2000000000);
+	const int32 TotalRuns = Profile->LifetimeRunsCompleted;
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = false;
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_007")), TotalRuns, 1, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_YEL_001")), TotalRuns, 25, &NewlyUnlocked);
+
+	if (RunState)
+	{
+		const int32 Gold = RunState->GetCurrentGold();
+		const int32 Debt = RunState->GetCurrentDebt();
+		FT66AchievementState* SGold = FindOrAddState(FName(TEXT("ACH_RED_005")));
+		if (SGold && !SGold->bIsUnlocked && Gold >= 500) { SGold->CurrentProgress = 1; SGold->bIsUnlocked = true; bAnyChanged = true; NewlyUnlocked.Add(FName(TEXT("ACH_RED_005"))); }
+		FT66AchievementState* SDebt = FindOrAddState(FName(TEXT("ACH_RED_006")));
+		if (SDebt && !SDebt->bIsUnlocked && Debt == 0) { SDebt->CurrentProgress = 1; SDebt->bIsUnlocked = true; bAnyChanged = true; NewlyUnlocked.Add(FName(TEXT("ACH_RED_006"))); }
+	}
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+}
+
+void UT66AchievementsSubsystem::NotifyVendorPurchase()
+{
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+	Profile->LifetimeVendorPurchases = FMath::Clamp(Profile->LifetimeVendorPurchases + 1, 0, 2000000000);
+	const int32 Total = Profile->LifetimeVendorPurchases;
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_009")), Total, 1, &NewlyUnlocked);
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+}
+
+void UT66AchievementsSubsystem::NotifyGamblerWin()
+{
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+	Profile->LifetimeGamblerWins = FMath::Clamp(Profile->LifetimeGamblerWins + 1, 0, 2000000000);
+	const int32 Total = Profile->LifetimeGamblerWins;
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_010")), Total, 1, &NewlyUnlocked);
+	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 }
 
 bool UT66AchievementsSubsystem::TryClaimAchievement(FName AchievementID)
@@ -403,6 +516,11 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	Profile->AchievementCoinsBalance = 0;
 	Profile->AchievementStateByID.Reset();
 	Profile->LifetimeEnemiesKilled = 0;
+	Profile->LifetimeBossesKilled = 0;
+	Profile->LifetimeStagesCleared = 0;
+	Profile->LifetimeRunsCompleted = 0;
+	Profile->LifetimeVendorPurchases = 0;
+	Profile->LifetimeGamblerWins = 0;
 	Profile->CompanionUnionStagesClearedByID.Reset();
 
 	MarkDirtyAndMaybeSave(true);
@@ -450,11 +568,21 @@ void UT66AchievementsSubsystem::AddCompanionUnionStagesCleared(FName CompanionID
 	const int32 Next = FMath::Clamp(Prev + Delta, 0, 2000000000);
 	Profile->CompanionUnionStagesClearedByID.FindOrAdd(CompanionID) = Next;
 
-	// Save immediately when crossing a tier boundary; otherwise throttle.
+	// Union achievements: max stages cleared with any single companion
+	int32 MaxStages = 0;
+	for (const TPair<FName, int32>& Pair : Profile->CompanionUnionStagesClearedByID)
+		MaxStages = FMath::Max(MaxStages, Pair.Value);
+	TArray<FName> NewlyUnlocked;
+	bool bAnyChanged = false;
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_008")), MaxStages, 1, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_004")), MaxStages, 5, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_YEL_002")), MaxStages, 20, &NewlyUnlocked);
+
 	const bool bTierCrossed =
 		(Prev < UnionTier_GoodStages && Next >= UnionTier_GoodStages) ||
 		(Prev < UnionTier_MediumStages && Next >= UnionTier_MediumStages) ||
 		(Prev < UnionTier_HyperStages && Next >= UnionTier_HyperStages);
-	MarkDirtyAndMaybeSave(bTierCrossed);
+	if (bTierCrossed || bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+	else MarkDirtyAndMaybeSave(false);
 }
 

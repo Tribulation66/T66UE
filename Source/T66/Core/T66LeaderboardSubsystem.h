@@ -126,6 +126,14 @@ public:
 	/** Returns the 10th-place target time for this stage (used by HUD "time to beat"). */
 	bool GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const;
 
+	/** Rank (1–11) of local player's best bounty for this difficulty/party; 0 if none. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	int32 GetLocalBountyRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+
+	/** Rank (1–11) of local player's best speed run time for this stage; 0 if no time submitted. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	int32 GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
+
 	/** Debug helper: delete local leaderboard + local best run summary snapshots, then reload. */
 	void DebugClearLocalLeaderboard();
 

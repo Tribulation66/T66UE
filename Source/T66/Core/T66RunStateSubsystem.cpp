@@ -1022,16 +1022,8 @@ bool UT66RunStateSubsystem::ApplyTrueDamage(int32 Hearts)
 		{
 			return true;
 		}
-
-		// If charged, trigger last-stand instead of dying.
-		if (SurvivalCharge01 >= 1.f)
-		{
-			EnterLastStand();
-		}
-		else
-		{
-			OnPlayerDied.Broadcast();
-		}
+		// Die immediately when last heart is lost (last-stand invulnerability disabled).
+		OnPlayerDied.Broadcast();
 	}
 	return true;
 }
@@ -1461,16 +1453,8 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
 		{
 			return true;
 		}
-
-		// If charged, trigger last-stand instead of dying.
-		if (SurvivalCharge01 >= 1.f)
-		{
-			EnterLastStand();
-		}
-		else
-		{
-			OnPlayerDied.Broadcast();
-		}
+		// Die immediately when last heart is lost (last-stand invulnerability disabled).
+		OnPlayerDied.Broadcast();
 	}
 	return true;
 }
@@ -1515,7 +1499,18 @@ void UT66RunStateSubsystem::ClearOwedBosses()
 {
 	if (OwedBossIDs.Num() <= 0) return;
 	OwedBossIDs.Empty();
+	if (CowardiceGatesTakenCount != 0)
+	{
+		CowardiceGatesTakenCount = 0;
+		CowardiceGatesTakenChanged.Broadcast();
+	}
 	LogAdded.Broadcast();
+}
+
+void UT66RunStateSubsystem::AddCowardiceGateTaken()
+{
+	CowardiceGatesTakenCount = FMath::Clamp(CowardiceGatesTakenCount + 1, 0, 9999);
+	CowardiceGatesTakenChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::BorrowGold(int32 Amount)
@@ -1822,6 +1817,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	GamblerAnger01 = 0.f;
 	ResetVendorForStage();
 	OwedBossIDs.Empty();
+	CowardiceGatesTakenCount = 0;
 	InventorySlots.Empty();
 	RecomputeItemDerivedStats();
 	EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);

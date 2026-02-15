@@ -469,23 +469,51 @@ FText UT66LocalizationSubsystem::GetText_Claimed() const
 
 FText UT66LocalizationSubsystem::GetText_AchievementName(FName AchievementID) const
 {
-	// v0: first wired achievement
-	if (AchievementID == FName(TEXT("ACH_BLK_001")))
-	{
-		return NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Name", "KILL 20 ENEMIES");
-	}
-
-	// Fallback: show the ID so missing strings are obvious (and never crash).
+	if (AchievementID == FName(TEXT("ACH_BLK_001"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Name", "Kill 20 Enemies");
+	if (AchievementID == FName(TEXT("ACH_BLK_002"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_002_Name", "First Blood");
+	if (AchievementID == FName(TEXT("ACH_BLK_003"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_003_Name", "Slayer");
+	if (AchievementID == FName(TEXT("ACH_RED_001"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_001_Name", "Legion");
+	if (AchievementID == FName(TEXT("ACH_BLK_004"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_004_Name", "Boss Hunter");
+	if (AchievementID == FName(TEXT("ACH_RED_002"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_002_Name", "Boss Slayer");
+	if (AchievementID == FName(TEXT("ACH_BLK_005"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_005_Name", "First Steps");
+	if (AchievementID == FName(TEXT("ACH_BLK_006"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_006_Name", "Stage Clear");
+	if (AchievementID == FName(TEXT("ACH_RED_003"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_003_Name", "Veteran");
+	if (AchievementID == FName(TEXT("ACH_BLK_007"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_007_Name", "Run Complete");
+	if (AchievementID == FName(TEXT("ACH_YEL_001"))) return NSLOCTEXT("T66.Achievements", "ACH_YEL_001_Name", "Dedicated");
+	if (AchievementID == FName(TEXT("ACH_BLK_008"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_008_Name", "Union: First Bond");
+	if (AchievementID == FName(TEXT("ACH_RED_004"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_004_Name", "Union: Trusted");
+	if (AchievementID == FName(TEXT("ACH_YEL_002"))) return NSLOCTEXT("T66.Achievements", "ACH_YEL_002_Name", "Union: Bonded");
+	if (AchievementID == FName(TEXT("ACH_BLK_009"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_009_Name", "Shopper");
+	if (AchievementID == FName(TEXT("ACH_BLK_010"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_010_Name", "High Roller");
+	if (AchievementID == FName(TEXT("ACH_RED_005"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_005_Name", "Gold Hoarder");
+	if (AchievementID == FName(TEXT("ACH_RED_006"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_006_Name", "Debt Free");
+	if (AchievementID == FName(TEXT("ACH_BLK_011"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_011_Name", "Collector");
+	if (AchievementID == FName(TEXT("ACH_RED_007"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_007_Name", "Bestiary");
 	return FText::FromName(AchievementID);
 }
 
 FText UT66LocalizationSubsystem::GetText_AchievementDescription(FName AchievementID) const
 {
-	if (AchievementID == FName(TEXT("ACH_BLK_001")))
-	{
-		return NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Desc", "Kill 20 enemies.");
-	}
-
+	if (AchievementID == FName(TEXT("ACH_BLK_001"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_001_Desc", "Kill 20 enemies.");
+	if (AchievementID == FName(TEXT("ACH_BLK_002"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_002_Desc", "Kill 1 enemy.");
+	if (AchievementID == FName(TEXT("ACH_BLK_003"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_003_Desc", "Kill 100 enemies.");
+	if (AchievementID == FName(TEXT("ACH_RED_001"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_001_Desc", "Kill 1,000 enemies.");
+	if (AchievementID == FName(TEXT("ACH_BLK_004"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_004_Desc", "Defeat 1 stage boss.");
+	if (AchievementID == FName(TEXT("ACH_RED_002"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_002_Desc", "Defeat 10 bosses.");
+	if (AchievementID == FName(TEXT("ACH_BLK_005"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_005_Desc", "Complete the tutorial.");
+	if (AchievementID == FName(TEXT("ACH_BLK_006"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_006_Desc", "Clear 1 stage.");
+	if (AchievementID == FName(TEXT("ACH_RED_003"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_003_Desc", "Clear 10 stages.");
+	if (AchievementID == FName(TEXT("ACH_BLK_007"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_007_Desc", "Finish a run.");
+	if (AchievementID == FName(TEXT("ACH_YEL_001"))) return NSLOCTEXT("T66.Achievements", "ACH_YEL_001_Desc", "Complete 25 runs.");
+	if (AchievementID == FName(TEXT("ACH_BLK_008"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_008_Desc", "Clear 1 stage with any companion.");
+	if (AchievementID == FName(TEXT("ACH_RED_004"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_004_Desc", "Clear 5 stages with the same companion.");
+	if (AchievementID == FName(TEXT("ACH_YEL_002"))) return NSLOCTEXT("T66.Achievements", "ACH_YEL_002_Desc", "Reach Hyper Union with any companion.");
+	if (AchievementID == FName(TEXT("ACH_BLK_009"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_009_Desc", "Buy an item from the Vendor.");
+	if (AchievementID == FName(TEXT("ACH_BLK_010"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_010_Desc", "Win a gamble at the Gambler.");
+	if (AchievementID == FName(TEXT("ACH_RED_005"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_005_Desc", "Hold 500+ gold in a single run.");
+	if (AchievementID == FName(TEXT("ACH_RED_006"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_006_Desc", "Pay off all debt in a run.");
+	if (AchievementID == FName(TEXT("ACH_BLK_011"))) return NSLOCTEXT("T66.Achievements", "ACH_BLK_011_Desc", "Unlock 5 different items for The Lab.");
+	if (AchievementID == FName(TEXT("ACH_RED_007"))) return NSLOCTEXT("T66.Achievements", "ACH_RED_007_Desc", "Unlock 5 different enemies for The Lab.");
 	return FText::FromName(AchievementID);
 }
 
@@ -538,6 +566,16 @@ FText UT66LocalizationSubsystem::GetText_SettingsTabControls() const
 	return NSLOCTEXT("T66.Settings", "TabControls", "CONTROLS");
 }
 
+FText UT66LocalizationSubsystem::GetText_SettingsTabHUD() const
+{
+	return NSLOCTEXT("T66.Settings", "TabHUD", "HUD");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsTabMediaViewer() const
+{
+	return NSLOCTEXT("T66.Settings", "TabMediaViewer", "TIKTOK & SHORTS");
+}
+
 FText UT66LocalizationSubsystem::GetText_SettingsTabAudio() const
 {
 	return NSLOCTEXT("T66.Settings", "TabAudio", "AUDIO");
@@ -546,6 +584,46 @@ FText UT66LocalizationSubsystem::GetText_SettingsTabAudio() const
 FText UT66LocalizationSubsystem::GetText_SettingsTabCrashing() const
 {
 	return NSLOCTEXT("T66.Settings", "TabCrashing", "CRASHING");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsHudToggleIntro() const
+{
+	return NSLOCTEXT("T66.Settings", "HudToggleIntro", "When you press the HUD toggle key, the following elements will show or hide:");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsHudInventory() const
+{
+	return NSLOCTEXT("T66.Settings", "HudInventory", "Inventory");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsHudMinimap() const
+{
+	return NSLOCTEXT("T66.Settings", "HudMinimap", "Minimap");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsHudIdolSlots() const
+{
+	return NSLOCTEXT("T66.Settings", "HudIdolSlots", "Idol slots");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsHudPortraitStats() const
+{
+	return NSLOCTEXT("T66.Settings", "HudPortraitStats", "Portrait & stats");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsMediaViewerPrivacyBody() const
+{
+	return NSLOCTEXT("T66.Settings", "MediaViewerPrivacyBody", "The Media Viewer runs only on your computer. We do not receive or store the videos you watch or any data from TikTok or YouTube. To open it, use the key bound to \"Toggle Media Viewer\" or \"Toggle TikTok\" in the Controls tab.");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsMediaViewerEnable() const
+{
+	return NSLOCTEXT("T66.Settings", "MediaViewerEnable", "Enable Media Viewer (TikTok / YouTube Shorts)");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsFog() const
+{
+	return NSLOCTEXT("T66.Settings", "Fog", "Fog");
 }
 
 FText UT66LocalizationSubsystem::GetText_On() const

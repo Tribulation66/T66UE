@@ -21,7 +21,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 5;
+	int32 SchemaVersion = 6;
 
 	/** What kind of leaderboard this run belongs to (currently Score/HighScore only). */
 	UPROPERTY(SaveGame)
@@ -84,6 +84,10 @@ public:
 
 	UPROPERTY(SaveGame)
 	int32 SpeedStat = 1;
+
+	/** Secondary stat values (for full stats panel in Run Summary). SchemaVersion>=6. Populated for fake snapshots and when saving local best. */
+	UPROPERTY(SaveGame)
+	TMap<ET66SecondaryStatType, float> SecondaryStatValues;
 
 	// ===== Ratings (post-run) =====
 

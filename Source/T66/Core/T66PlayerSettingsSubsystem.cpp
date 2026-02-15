@@ -59,7 +59,7 @@ int32 UT66PlayerSettingsSubsystem::GetLastSettingsTabIndex() const
 void UT66PlayerSettingsSubsystem::SetLastSettingsTabIndex(int32 TabIndex)
 {
 	if (!SettingsObj) return;
-	SettingsObj->LastSettingsTabIndex = FMath::Clamp(TabIndex, 0, 4);
+	SettingsObj->LastSettingsTabIndex = FMath::Clamp(TabIndex, 0, 6);
 	Save();
 }
 
@@ -223,6 +223,78 @@ void UT66PlayerSettingsSubsystem::SetMonitorIndex(int32 Index)
 int32 UT66PlayerSettingsSubsystem::GetMonitorIndex() const
 {
 	return SettingsObj ? SettingsObj->MonitorIndex : 0;
+}
+
+void UT66PlayerSettingsSubsystem::SetHudToggleAffectsInventory(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bHudToggleAffectsInventory = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetHudToggleAffectsInventory() const
+{
+	return SettingsObj ? SettingsObj->bHudToggleAffectsInventory : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetHudToggleAffectsMinimap(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bHudToggleAffectsMinimap = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetHudToggleAffectsMinimap() const
+{
+	return SettingsObj ? SettingsObj->bHudToggleAffectsMinimap : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetHudToggleAffectsIdolSlots(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bHudToggleAffectsIdolSlots = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetHudToggleAffectsIdolSlots() const
+{
+	return SettingsObj ? SettingsObj->bHudToggleAffectsIdolSlots : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetHudToggleAffectsPortraitStats(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bHudToggleAffectsPortraitStats = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetHudToggleAffectsPortraitStats() const
+{
+	return SettingsObj ? SettingsObj->bHudToggleAffectsPortraitStats : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetMediaViewerEnabled(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bMediaViewerEnabled = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetMediaViewerEnabled() const
+{
+	return SettingsObj ? SettingsObj->bMediaViewerEnabled : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetFogEnabled(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bFogEnabled = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetFogEnabled() const
+{
+	return SettingsObj ? SettingsObj->bFogEnabled : false;
 }
 
 void UT66PlayerSettingsSubsystem::ApplyAudioToEngine()

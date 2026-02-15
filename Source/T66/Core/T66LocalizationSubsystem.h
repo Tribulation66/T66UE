@@ -160,10 +160,40 @@ public:
 	FText GetText_SettingsTabControls() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsTabHUD() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsTabMediaViewer() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
 	FText GetText_SettingsTabAudio() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
 	FText GetText_SettingsTabCrashing() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsHudToggleIntro() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsHudInventory() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsHudMinimap() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsHudIdolSlots() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsHudPortraitStats() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsMediaViewerPrivacyBody() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsMediaViewerEnable() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsFog() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
 	FText GetText_On() const;

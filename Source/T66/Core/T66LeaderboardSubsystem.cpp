@@ -237,7 +237,7 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 		return false;
 	}
 
-	Snapshot->SchemaVersion = 5;
+	Snapshot->SchemaVersion = 6;
 	Snapshot->LeaderboardType = ET66LeaderboardType::HighScore;
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
@@ -245,6 +245,13 @@ bool UT66LeaderboardSubsystem::SaveLocalBestBountyRunSummarySnapshot(ET66Difficu
 
 	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 66);
 	Snapshot->Bounty = FMath::Max(0, Bounty);
+
+	Snapshot->SecondaryStatValues.Reset();
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::MovementSpeed); ++i)
+	{
+		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
+		Snapshot->SecondaryStatValues.Add(SecType, RunState->GetSecondaryStatValue(SecType));
+	}
 
 	Snapshot->HeroID = T66GI->SelectedHeroID;
 	Snapshot->HeroBodyType = T66GI->SelectedHeroBodyType;
@@ -495,6 +502,13 @@ bool UT66LeaderboardSubsystem::GetSpeedRunTarget10Seconds(ET66Difficulty Difficu
 
 bool UT66LeaderboardSubsystem::SubmitRunBounty(int32 Bounty)
 {
+	UGameInstance* GICheck = GetGameInstance();
+	UT66GameInstance* T66GICheck = GICheck ? Cast<UT66GameInstance>(GICheck) : nullptr;
+	if (T66GICheck && T66GICheck->bRunIneligibleForLeaderboard)
+	{
+		return false;
+	}
+
 	LoadOrCreateLocalSave();
 	if (!LocalSave) return false;
 
@@ -563,6 +577,13 @@ bool UT66LeaderboardSubsystem::SubmitRunBounty(int32 Bounty)
 
 bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Seconds)
 {
+	UGameInstance* GICheck = GetGameInstance();
+	UT66GameInstance* T66GICheck = GICheck ? Cast<UT66GameInstance>(GICheck) : nullptr;
+	if (T66GICheck && T66GICheck->bRunIneligibleForLeaderboard)
+	{
+		return false;
+	}
+
 	LoadOrCreateLocalSave();
 	if (!LocalSave) return false;
 
@@ -732,7 +753,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	TArray<FName> ItemIDs = ItemsDT ? ItemsDT->GetRowNames() : TArray<FName>();
 	TArray<FName> IdolIDs = IdolsDT ? IdolsDT->GetRowNames() : TArray<FName>();
 
-	Snapshot->SchemaVersion = 5;
+	Snapshot->SchemaVersion = 6;
 	Snapshot->LeaderboardType = Type;
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
@@ -752,6 +773,71 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	Snapshot->EvasionStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
 	Snapshot->LuckStat = FMath::Clamp(Rng.RandRange(1, 12), 1, 99);
 	Snapshot->SpeedStat = FMath::Clamp(Rng.RandRange(1, 10), 1, 99);
+
+	// Plausible secondary stats for full stats panel (same categories as T66StatsPanelSlate)
+	Snapshot->SecondaryStatValues.Reset();
+	auto AddPercent = [&Rng](ET66SecondaryStatType T) { return Rng.FRandRange(0.05f, 0.45f); };
+	auto AddScalar = [&Rng](float Min, float Max) { return Rng.FRandRange(Min, Max); };
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::MovementSpeed); ++i)
+	{
+		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
+		float V = 1.f;
+		switch (SecType)
+		{
+		case ET66SecondaryStatType::CritChance:
+		case ET66SecondaryStatType::Crush:
+		case ET66SecondaryStatType::Invisibility:
+		case ET66SecondaryStatType::LifeSteal:
+		case ET66SecondaryStatType::Assassinate:
+		case ET66SecondaryStatType::Cheating:
+		case ET66SecondaryStatType::Stealing:
+			V = AddPercent(SecType);
+			break;
+		case ET66SecondaryStatType::AoeDamage:
+		case ET66SecondaryStatType::BounceDamage:
+		case ET66SecondaryStatType::PierceDamage:
+		case ET66SecondaryStatType::DotDamage:
+		case ET66SecondaryStatType::CritDamage:
+		case ET66SecondaryStatType::CloseRangeDamage:
+		case ET66SecondaryStatType::LongRangeDamage:
+			V = AddScalar(5.f, 80.f);
+			break;
+		case ET66SecondaryStatType::AoeSpeed:
+		case ET66SecondaryStatType::BounceSpeed:
+		case ET66SecondaryStatType::PierceSpeed:
+		case ET66SecondaryStatType::DotSpeed:
+			V = AddScalar(5.f, 30.f);
+			break;
+		case ET66SecondaryStatType::AoeScale:
+		case ET66SecondaryStatType::BounceScale:
+		case ET66SecondaryStatType::PierceScale:
+		case ET66SecondaryStatType::DotScale:
+			V = AddScalar(0.5f, 2.5f);
+			break;
+		case ET66SecondaryStatType::AttackRange:
+			V = AddScalar(1.f, 20.f);
+			break;
+		case ET66SecondaryStatType::Taunt:
+		case ET66SecondaryStatType::ReflectDamage:
+		case ET66SecondaryStatType::CounterAttack:
+			V = AddScalar(0.5f, 15.f);
+			break;
+		case ET66SecondaryStatType::HpRegen:
+			V = AddScalar(0.1f, 5.f);
+			break;
+		case ET66SecondaryStatType::SpinWheel:
+		case ET66SecondaryStatType::Goblin:
+		case ET66SecondaryStatType::Leprechaun:
+		case ET66SecondaryStatType::TreasureChest:
+		case ET66SecondaryStatType::Fountain:
+		case ET66SecondaryStatType::MovementSpeed:
+			V = AddScalar(0.8f, 2.f);
+			break;
+		default:
+			break;
+		}
+		Snapshot->SecondaryStatValues.Add(SecType, V);
+	}
 
 	Snapshot->LuckRating0To100 = Rng.RandRange(40, 95);
 	Snapshot->LuckRatingQuantity0To100 = Rng.RandRange(40, 95);
@@ -1099,6 +1185,33 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	}
 
 	return Out;
+}
+
+int32 UT66LeaderboardSubsystem::GetLocalBountyRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const
+{
+	const TArray<FLeaderboardEntry> Entries = BuildBountyEntries(Difficulty, PartySize);
+	for (const FLeaderboardEntry& E : Entries)
+	{
+		if (E.bIsLocalPlayer)
+		{
+			return E.Rank;
+		}
+	}
+	return 0;
+}
+
+int32 UT66LeaderboardSubsystem::GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const
+{
+	Stage = FMath::Clamp(Stage, 1, 66);
+	const TArray<FLeaderboardEntry> Entries = BuildSpeedRunEntries(Difficulty, PartySize, Stage);
+	for (const FLeaderboardEntry& E : Entries)
+	{
+		if (E.bIsLocalPlayer)
+		{
+			return (E.TimeSeconds > 0.01f) ? E.Rank : 0;
+		}
+	}
+	return 0;
 }
 
 static TArray<FLeaderboardEntry> LoadEntriesFromDataTable(UDataTable* DT)

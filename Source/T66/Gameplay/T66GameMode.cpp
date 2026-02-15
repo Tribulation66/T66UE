@@ -46,6 +46,7 @@
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -205,6 +206,7 @@ void AT66GameMode::BeginPlay()
 			}
 			else
 			{
+				T66GI->bRunIneligibleForLeaderboard = false; // Fresh run is eligible
 				RunState->ResetForNewRun();
 				if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
 				{
@@ -713,6 +715,15 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 		GI->bApplyLoadedTransform = false;
 		GI->PendingLoadedTransform = FTransform();
 	}
+
+	if (GI && GI->bLoadAsPreview && NewPlayer)
+	{
+		if (AT66PlayerController* PC = Cast<AT66PlayerController>(NewPlayer))
+		{
+			PC->SetPause(true);
+			PC->ShowLoadPreviewOverlay();
+		}
+	}
 }
 
 void AT66GameMode::SpawnBossGateIfNeeded()
@@ -947,19 +958,23 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		}
 	}
 
-	// Lab unlock: mark this boss as unlocked for The Lab.
-	if (Boss && !Boss->BossID.IsNone() && GI)
+	// Lab unlock + achievement: mark this boss as unlocked for The Lab and notify boss killed.
+	if (GI)
 	{
 		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
-			Achieve->AddLabUnlockedEnemy(Boss->BossID);
+			Achieve->NotifyBossKilled(1);
+			if (Boss && !Boss->BossID.IsNone())
+			{
+				Achieve->AddLabUnlockedEnemy(Boss->BossID);
+			}
 		}
 	}
 
-	// Power Crystals: 10 per boss kill (stage boss or Coliseum).
+	// Power Coupons: 1 per boss kill (stage boss or Coliseum).
 	if (RunState)
 	{
-		RunState->AddPowerCrystalsEarnedThisRun(10);
+		RunState->AddPowerCrystalsEarnedThisRun(1);
 	}
 
 	if (IsColiseumStage())
@@ -2757,6 +2772,19 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			FogComp->SetFogHeightFalloff(0.2f);
 			FogComp->SetFogMaxOpacity(0.98f);
 			FogComp->SetFogInscatteringColor(FLinearColor(0.6f, 0.65f, 0.78f));
+		}
+	}
+
+	// Apply player setting: fog off by default (Settings → Graphics → Fog).
+	if (HeightFog)
+	{
+		UExponentialHeightFogComponent* FogComp = HeightFog->FindComponentByClass<UExponentialHeightFogComponent>();
+		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(HeightFog->GetRootComponent());
+		if (FogComp)
+		{
+			UGameInstance* GI = World->GetGameInstance();
+			UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+			FogComp->SetVisibility(PS && PS->GetFogEnabled());
 		}
 	}
 

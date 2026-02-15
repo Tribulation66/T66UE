@@ -152,6 +152,8 @@ protected:
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
 	TArray<TSharedPtr<SImage>> DifficultyImages;
 	TSharedPtr<FSlateBrush> SkullBrush;
+	TArray<TSharedPtr<SImage>> ClownImages;
+	TSharedPtr<FSlateBrush> ClownBrush;
 	TSharedPtr<SButton> ImmortalityButton;
 	TSharedPtr<STextBlock> ImmortalityButtonText;
 	TSharedPtr<SButton> PowerButton;
@@ -217,6 +219,18 @@ protected:
 	FTimerHandle WheelSpinTickHandle;
 	FTimerHandle WheelResolveHandle;
 	FTimerHandle WheelCloseHandle;
+
+	// Achievement unlock notification (above inventory, one at a time, tier-colored border)
+	TArray<FName> AchievementNotificationQueue;
+	FTimerHandle AchievementNotificationTimerHandle;
+	TSharedPtr<SBox> AchievementNotificationBox;
+	TSharedPtr<SBorder> AchievementNotificationBorder;
+	TSharedPtr<STextBlock> AchievementNotificationTitleText;
+	static constexpr float AchievementNotificationDisplaySeconds = 3.5f;
+	UFUNCTION()
+	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);
+	void ShowNextAchievementNotification();
+	void HideAchievementNotificationAndShowNext();
 
 	// ============================================================
 	// Slate texture lifetime

@@ -11,9 +11,12 @@
 
 class UT66LocalizationSubsystem;
 class UT66ProfileSaveGame;
+class UT66RunStateSubsystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAchievementCoinsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAchievementsStateChanged);
+/** Broadcast with achievement IDs that just became unlocked (for HUD notification). */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAchievementsUnlocked, const TArray<FName>&, NewlyUnlockedIDs);
 
 /**
  * Persistent achievements + Achievement Coins (AC) wallet.
@@ -51,6 +54,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Achievements")
 	FOnAchievementsStateChanged AchievementsStateChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Achievements")
+	FOnAchievementsUnlocked AchievementsUnlocked;
 
 	/** Current AC wallet balance. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
@@ -114,6 +120,26 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void NotifyEnemyKilled(int32 Count = 1);
+
+	/** Gameplay event: a boss was defeated. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void NotifyBossKilled(int32 Count = 1);
+
+	/** Gameplay event: player cleared a stage (passed stage gate). */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void NotifyStageCleared(int32 Count = 1);
+
+	/** Gameplay event: run ended (Run Summary shown). Pass RunState for gold/debt checks. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void NotifyRunCompleted(UT66RunStateSubsystem* RunState);
+
+	/** Gameplay event: player bought an item from the Vendor. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void NotifyVendorPurchase();
+
+	/** Gameplay event: player won a gamble at the Gambler. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void NotifyGamblerWin();
 
 	// ============================================
 	// Lab unlocks (items/enemies ever obtained or killed)
@@ -202,6 +228,9 @@ private:
 
 	FT66AchievementState* FindOrAddState(FName AchievementID);
 	const FT66AchievementState* FindState(FName AchievementID) const;
+
+	/** Update progress from source value; unlock if >= Target. Returns true if state changed. If OutNewlyUnlocked, appends AchievementID when just unlocked. */
+	bool UpdateCountAchievement(FName AchievementID, int32 SourceValue, int32 Target, TArray<FName>* OutNewlyUnlocked = nullptr);
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);
