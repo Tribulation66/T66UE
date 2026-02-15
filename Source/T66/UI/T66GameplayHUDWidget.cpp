@@ -1194,8 +1194,6 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		return;
 	}
 
-	FLagScopedScope LagScope(World, TEXT("RefreshMapData (4x TActorIterator)"));
-
 	// Try multiple paths to find the player pawn — GetOwningPlayerPawn can return null
 	// if the pawn hasn't been possessed yet when the HUD widget was first created.
 	const APawn* P = GetOwningPlayerPawn();
@@ -1213,56 +1211,61 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	const FVector PL = P ? P->GetActorLocation() : FVector::ZeroVector;
 	const FVector2D PlayerXY(PL.X, PL.Y);
 
+	const float Now = static_cast<float>(World->GetTimeSeconds());
+	const bool bWorldChanged = (MapCacheWorld.Get() != World);
+	const bool bNeedsFullRefresh = bWorldChanged || (MapCacheLastRefreshTime < 0.f) || ((Now - MapCacheLastRefreshTime) >= MapCacheRefreshIntervalSeconds);
+
 	TArray<FT66MapMarker> Markers;
 	Markers.Reserve(64);
 
-	// NPCs (colored by NPCColor)
-	for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+	if (bNeedsFullRefresh)
 	{
-		const AT66HouseNPCBase* NPC = *It;
-		if (!NPC) continue;
-		const FVector L = NPC->GetActorLocation();
-		FT66MapMarker M;
-		M.WorldXY = FVector2D(L.X, L.Y);
-		M.Color = NPC->NPCColor;
-		M.Label = NPC->NPCName;
-		Markers.Add(M);
+		FLagScopedScope LagScope(World, TEXT("RefreshMapData (4x TActorIterator)"));
+		MapCacheWorld = World;
+		MapCacheLastRefreshTime = Now;
+		MapCache.Reset();
+
+		// NPCs (colored by NPCColor)
+		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+		{
+			const AT66HouseNPCBase* NPC = *It;
+			if (!NPC) continue;
+			const FVector L = NPC->GetActorLocation();
+			MapCache.Add({ const_cast<AT66HouseNPCBase*>(NPC), NPC->NPCColor, NPC->NPCName });
+		}
+		// Stage gate (bright blue)
+		for (TActorIterator<AT66StageGate> It(World); It; ++It)
+		{
+			AT66StageGate* A = *It;
+			if (!A) continue;
+			MapCache.Add({ A, FLinearColor(0.25f, 0.55f, 1.0f, 1.f), NSLOCTEXT("T66.Map", "Gate", "GATE") });
+		}
+		// Enemies (red dots)
+		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+		{
+			AT66EnemyBase* Enemy = *It;
+			if (!IsValid(Enemy)) continue;
+			MapCache.Add({ Enemy, FLinearColor(0.95f, 0.20f, 0.15f, 0.85f), FText::GetEmpty() });
+		}
+		// Miasma boundary (purple)
+		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
+		{
+			AT66MiasmaBoundary* A = *It;
+			if (!A) continue;
+			MapCache.Add({ A, FLinearColor(0.65f, 0.15f, 0.85f, 0.6f), FText::GetEmpty() });
+		}
 	}
 
-	// Stage gate (bright blue)
-	for (TActorIterator<AT66StageGate> It(World); It; ++It)
+	// Build markers from cache (positions only; cache has static Color/Label).
+	for (const FMapCacheEntry& E : MapCache)
 	{
-		const AActor* A = *It;
-		if (!A) continue;
+		AActor* A = E.Actor.Get();
+		if (!IsValid(A)) continue;
+		FT66MapMarker M;
 		const FVector L = A->GetActorLocation();
-		FT66MapMarker M;
 		M.WorldXY = FVector2D(L.X, L.Y);
-		M.Color = FLinearColor(0.25f, 0.55f, 1.0f, 1.f);
-		M.Label = NSLOCTEXT("T66.Map", "Gate", "GATE");
-		Markers.Add(M);
-	}
-
-	// Enemies (red dots, no labels on minimap to avoid clutter)
-	for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
-	{
-		const AT66EnemyBase* Enemy = *It;
-		if (!IsValid(Enemy)) continue;
-		const FVector L = Enemy->GetActorLocation();
-		FT66MapMarker M;
-		M.WorldXY = FVector2D(L.X, L.Y);
-		M.Color = FLinearColor(0.95f, 0.20f, 0.15f, 0.85f);
-		Markers.Add(M);
-	}
-
-	// Miasma boundary (purple marker)
-	for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
-	{
-		const AActor* A = *It;
-		if (!A) continue;
-		const FVector L = A->GetActorLocation();
-		FT66MapMarker M;
-		M.WorldXY = FVector2D(L.X, L.Y);
-		M.Color = FLinearColor(0.65f, 0.15f, 0.85f, 0.6f);
+		M.Color = E.Color;
+		M.Label = E.Label;
 		Markers.Add(M);
 	}
 

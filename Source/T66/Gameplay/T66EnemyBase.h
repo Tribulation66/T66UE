@@ -135,7 +135,8 @@ protected:
 private:
 	// Safety/perf: avoid per-enemy per-frame scans for safe zones.
 	float SafeZoneCheckAccumSeconds = 0.f;
-	float SafeZoneCheckIntervalSeconds = 0.5f;
+	/** Safe-zone check runs every this many seconds (perf: was 0.25, then 0.5; 1.0 reduces N×M cost). */
+	float SafeZoneCheckIntervalSeconds = 1.0f;
 	bool bCachedInsideSafeZone = false;
 	FVector CachedSafeZoneEscapeDir = FVector::ZeroVector;
 

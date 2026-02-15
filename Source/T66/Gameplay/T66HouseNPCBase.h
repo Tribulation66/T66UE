@@ -110,6 +110,11 @@ private:
 	UPROPERTY(Transient)
 	bool bGravitySettled = false;
 
+	/** Run gravity-settle trace only every N ticks to reduce LineTrace cost. */
+	UPROPERTY(Transient)
+	int32 GravitySettleTickCounter = 0;
+	static constexpr int32 GravitySettleTraceEveryNTicks = 3;
+
 	/** Max time (seconds) to run gravity settling after BeginPlay; then stop even if no hit. */
 	static constexpr float GravitySettleDuration = 2.f;
 	/** Downward speed (uu/s) when settling. */

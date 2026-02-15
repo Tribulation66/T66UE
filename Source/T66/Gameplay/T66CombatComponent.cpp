@@ -425,6 +425,13 @@ void UT66CombatComponent::TryFire()
 	}
 	if (!PrimaryTarget)
 	{
+		const float Now = static_cast<float>(World->GetTimeSeconds());
+		if (LastTargetSearchTime >= 0.f && (Now - LastTargetSearchTime) < MinTargetSearchIntervalSeconds)
+		{
+			return; // Throttle: skip this fire to avoid 3x TActorIterator more than ~4 Hz.
+		}
+		LastTargetSearchTime = Now;
+
 		AT66EnemyBase* ClosestEnemy = nullptr;
 		AT66BossBase* ClosestBoss = nullptr;
 		AT66GamblerBoss* ClosestGamblerBoss = nullptr;

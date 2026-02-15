@@ -225,11 +225,19 @@ void AT66HouseNPCBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	// Gravity settling: trace down and move toward ground until resting (stops floating).
+	// Perf: run trace only every Nth tick to reduce LineTrace cost with many NPCs.
 	if (!bGravitySettled && GetWorld())
 	{
 		const float Age = GetGameTimeSinceCreation();
 		if (Age < GravitySettleDuration)
 		{
+			++GravitySettleTickCounter;
+			if (GravitySettleTickCounter % GravitySettleTraceEveryNTicks != 0)
+			{
+				// Skip trace this tick; will retry next time.
+			}
+			else
+			{
 			FLagScopedScope LagScope(GetWorld(), TEXT("HouseNPCBase::Tick (LineTrace gravity settle)"), 2.0f);
 			FHitResult Hit;
 			FCollisionQueryParams Params(SCENE_QUERY_STAT(T66HouseNPCGravitySettle), false, this);
@@ -255,6 +263,7 @@ void AT66HouseNPCBase::Tick(float DeltaSeconds)
 					ApplyVisuals();
 					bGravitySettled = true;
 				}
+			}
 			}
 		}
 		else

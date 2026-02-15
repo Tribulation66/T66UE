@@ -62,7 +62,10 @@ protected:
 	/** Cached auto target; revalidate every N fires to avoid 3x TActorIterator every fire. */
 	TWeakObjectPtr<AActor> CachedAutoTarget;
 	int32 FiresSinceLastTargetRefresh = 0;
-	static constexpr int32 TargetRevalidateEveryNFires = 5;
+	static constexpr int32 TargetRevalidateEveryNFires = 12;
+	/** Min seconds between full target searches (3x TActorIterator); caps search at ~4 Hz. */
+	float LastTargetSearchTime = -1.f;
+	static constexpr float MinTargetSearchIntervalSeconds = 0.25f;
 
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;

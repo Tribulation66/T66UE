@@ -21,6 +21,7 @@ struct FSlateBrush;
 class ST66RingWidget;
 class ST66DotWidget;
 class ST66WorldMapWidget;
+class AActor;
 class AT66LootBagPickup;
 enum class ET66Rarity : uint8;
 
@@ -201,7 +202,15 @@ protected:
 	bool bFullMapOpen = false;
 	/** Throttle RefreshHUD to at most once per 0.25s when multiple delegates fire. */
 	float LastRefreshHUDTime = -1.f;
-	static constexpr float RefreshHUDThrottleSeconds = 0.25f;
+	static constexpr float RefreshHUDThrottleSeconds = 0.5f;
+
+	/** Map/minimap: cache actor refs + static marker data; full TActorIterator only every MapCacheRefreshIntervalSeconds. */
+	struct FMapCacheEntry { TWeakObjectPtr<AActor> Actor; FLinearColor Color; FText Label; };
+	TArray<FMapCacheEntry> MapCache;
+	float MapCacheLastRefreshTime = -1.f;
+	TWeakObjectPtr<UWorld> MapCacheWorld;
+	static constexpr float MapCacheRefreshIntervalSeconds = 1.5f;
+
 	FTimerHandle MapRefreshTimerHandle;
 	FTimerHandle FPSTimerHandle;
 	FTimerHandle TikTokOverlaySyncHandle;

@@ -210,6 +210,9 @@ void AT66CompanionBase::Tick(float DeltaTime)
 
 	FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, FollowSpeed);
 	// Keep companion grounded (actor origin = ground contact point; visuals handle their own offsets).
+	// Perf: run ground trace only every Nth tick.
+	++GroundTraceTickCounter;
+	if (GroundTraceTickCounter % GroundTraceEveryNTicks == 0)
 	{
 		FLagScopedScope LagScope(World, TEXT("CompanionBase::Tick (LineTrace ground)"), 2.0f);
 		FHitResult Hit;

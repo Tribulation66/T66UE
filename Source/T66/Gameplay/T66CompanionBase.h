@@ -99,6 +99,10 @@ protected:
 	/** Last animation state so we only call PlayAnimation on change. */
 	uint8 LastMovementAnimState = 0; // 0=Idle, 1=Walk, 2=Run
 
+	/** Run ground LineTrace only every Nth tick to reduce per-frame cost. */
+	int32 GroundTraceTickCounter = 0;
+	static constexpr int32 GroundTraceEveryNTicks = 3;
+
 	// Healing (gameplay only)
 	float HealAccumSeconds = 0.f;
 
