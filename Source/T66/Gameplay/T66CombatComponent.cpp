@@ -8,6 +8,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -197,6 +198,8 @@ void UT66CombatComponent::TryFire()
 
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	FLagScopedScope LagScope(World, TEXT("CombatComponent::TryFire (3x TActorIterator)"));
 
 	// Safe zone rule: if hero is inside any NPC safe bubble, do not fire.
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OwnerActor))

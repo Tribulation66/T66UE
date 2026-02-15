@@ -44,6 +44,7 @@
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"
@@ -543,6 +544,22 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 void AT66GameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Frame-level lag: log when a frame exceeded budget (e.g. >20ms).
+	if (DeltaTime > 0.02f)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66LagTrackerSubsystem* Lag = GI->GetSubsystem<UT66LagTrackerSubsystem>())
+			{
+				if (Lag->IsEnabled())
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[LAG] Frame: %.2fms (%.1f FPS)"), DeltaTime * 1000.f, 1.f / FMath::Max(0.001f, DeltaTime));
+				}
+			}
+		}
+	}
+
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
@@ -582,6 +599,8 @@ void AT66GameMode::HandleStageTimerChanged()
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
+
+	FLagScopedScope LagScope(GetWorld(), TEXT("HandleStageTimerChanged (Miasma+LoanShark)"));
 
 	// Perf: miasma updates are event-driven (StageTimerChanged broadcasts at most once per second).
 	if (MiasmaManager)

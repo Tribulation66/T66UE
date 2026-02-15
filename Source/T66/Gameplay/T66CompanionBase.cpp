@@ -4,6 +4,7 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66HeroSpeedSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -210,6 +211,7 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, FollowSpeed);
 	// Keep companion grounded (actor origin = ground contact point; visuals handle their own offsets).
 	{
+		FLagScopedScope LagScope(World, TEXT("CompanionBase::Tick (LineTrace ground)"), 2.0f);
 		FHitResult Hit;
 		const FVector Start = NewLoc + FVector(0.f, 0.f, 2000.f);
 		const FVector End = NewLoc - FVector(0.f, 0.f, 9000.f);

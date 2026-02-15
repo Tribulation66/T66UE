@@ -10,6 +10,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
@@ -331,6 +332,8 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		SafeZoneCheckAccumSeconds = 0.f;
 		bCachedInsideSafeZone = false;
 		CachedSafeZoneEscapeDir = FVector::ZeroVector;
+
+		FLagScopedScope LagScope(GetWorld(), TEXT("EnemyBase::SafeZoneCheck (iterator+cache)"), 3.0f);
 
 		// Cache safe-zone NPCs per-world so we don't do a full actor iterator per enemy.
 		struct FSafeNPCache

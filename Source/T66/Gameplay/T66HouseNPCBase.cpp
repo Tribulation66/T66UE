@@ -3,6 +3,7 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
 #include "Components/SphereComponent.h"
@@ -229,6 +230,7 @@ void AT66HouseNPCBase::Tick(float DeltaSeconds)
 		const float Age = GetGameTimeSinceCreation();
 		if (Age < GravitySettleDuration)
 		{
+			FLagScopedScope LagScope(GetWorld(), TEXT("HouseNPCBase::Tick (LineTrace gravity settle)"), 2.0f);
 			FHitResult Hit;
 			FCollisionQueryParams Params(SCENE_QUERY_STAT(T66HouseNPCGravitySettle), false, this);
 			const FVector Here = GetActorLocation();

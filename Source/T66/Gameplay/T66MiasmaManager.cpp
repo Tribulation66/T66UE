@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66MiasmaManager.h"
 #include "Gameplay/T66MiasmaTile.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Algo/RandomShuffle.h"
@@ -54,7 +55,10 @@ void AT66MiasmaManager::UpdateFromRunState()
 	if (bSpawningPaused) return;
 
 	UWorld* World = GetWorld();
-	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	if (!World) return;
+
+	FLagScopedScope LagScope(World, TEXT("MiasmaManager::UpdateFromRunState (EnsureSpawnedCount)"));
+	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
 

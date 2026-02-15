@@ -2,6 +2,7 @@
 
 #include "UI/T66GameplayHUDWidget.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
@@ -1192,6 +1193,8 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	{
 		return;
 	}
+
+	FLagScopedScope LagScope(World, TEXT("RefreshMapData (4x TActorIterator)"));
 
 	// Try multiple paths to find the player pawn — GetOwningPlayerPawn can return null
 	// if the pawn hasn't been possessed yet when the HUD widget was first created.
