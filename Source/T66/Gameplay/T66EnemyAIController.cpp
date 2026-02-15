@@ -3,43 +3,24 @@
 #include "Gameplay/T66EnemyAIController.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Kismet/GameplayStatics.h"
-#include "NavigationSystem.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
 
 AT66EnemyAIController::AT66EnemyAIController()
 {
+	// No per-frame tick needed; enemies use direct movement in their own Tick.
 	PrimaryActorTick.bCanEverTick = false;
 }
 
 void AT66EnemyAIController::BeginPlay()
 {
 	Super::BeginPlay();
-	GetWorld()->GetTimerManager().SetTimer(RepathTimerHandle, this, &AT66EnemyAIController::UpdateMoveToPlayer, RepathIntervalSeconds, true, 0.5f);
+	// Navmesh pathfinding removed: enemies now use direct AddMovementInput in
+	// AT66EnemyBase::Tick() which is far cheaper for a top-down game with many
+	// enemies. The timer that called SimpleMoveToActor every 0.5s per enemy has
+	// been removed to eliminate navigation system overhead.
 }
 
 void AT66EnemyAIController::UpdateMoveToPlayer()
 {
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
-	APawn* MyPawn = GetPawn();
-	if (PlayerPawn && MyPawn)
-	{
-		// Support "flee" enemies (e.g. Leprechaun) by moving away from the player.
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(MyPawn))
-		{
-			if (Enemy->bRunAwayFromPlayer)
-			{
-				FVector Away = MyPawn->GetActorLocation() - PlayerPawn->GetActorLocation();
-				Away.Z = 0.f;
-				if (!Away.Normalize())
-				{
-					Away = FVector(1.f, 0.f, 0.f);
-				}
-				const FVector TargetLoc = MyPawn->GetActorLocation() + Away * 1600.f;
-				UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, TargetLoc);
-				return;
-			}
-		}
-
-		UAIBlueprintHelperLibrary::SimpleMoveToActor(this, PlayerPawn);
-	}
+	// Intentionally empty. Direct movement is handled by AT66EnemyBase::Tick().
+	// Kept for ABI compatibility (timer handle referenced in header).
 }

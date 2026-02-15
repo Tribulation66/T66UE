@@ -45,6 +45,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"
@@ -310,26 +311,98 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
 
-	// Phase 2 on next tick: spawn combat systems (enemy director, miasma, boss).
-	// Staggering across frames reduces the single-frame hitch during level entry.
+	// [GOLD] Phase 2 is now staggered across 4 ticks to eliminate the ~1 second hitch:
+	//   Tick 1: Preload character visuals for this stage's mobs + boss (sync loads happen here, before combat)
+	//   Tick 2: Spawn miasma boundary + miasma manager (wall visuals + dynamic materials)
+	//   Tick 3: Spawn enemy director (triggers first wave — enemies are cheap now because visuals are cached)
+	//   Tick 4: Spawn boss + boss gate
 	UWorld* World = GetWorld();
 	if (World)
 	{
+		// --- Tick 1: Preload character visuals ---
 		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			UWorld* W = GetWorld();
-			if (W)
-			{
-				W->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-				MiasmaManager = W->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-				W->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-			}
-			SpawnBossForCurrentStage();
-			SpawnBossGateIfNeeded();
+			const double PreloadStart = FPlatformTime::Seconds();
 
-			UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 2 content spawned (combat systems + boss)."));
+			UGameInstance* GI = GetGameInstance();
+			UT66GameInstance* T66GI = GetT66GameInstance();
+			UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+			UT66CharacterVisualSubsystem* Visuals = GI ? GI->GetSubsystem<UT66CharacterVisualSubsystem>() : nullptr;
+
+			if (T66GI && RunState && Visuals)
+			{
+				const int32 StageNum = RunState->GetCurrentStage();
+				FStageData StageData;
+				if (T66GI->GetStageData(StageNum, StageData))
+				{
+					// Preload mob visuals (these are the ones that cause sync loads on first enemy spawn).
+					if (!StageData.EnemyA.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyA);
+					if (!StageData.EnemyB.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyB);
+					if (!StageData.EnemyC.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyC);
+					// Preload boss visual.
+					if (!StageData.BossID.IsNone()) Visuals->PreloadCharacterVisual(StageData.BossID);
+
+					UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, Boss=%s) in %.1fms"),
+						StageNum,
+						*StageData.EnemyA.ToString(), *StageData.EnemyB.ToString(), *StageData.EnemyC.ToString(),
+						*StageData.BossID.ToString(),
+						(FPlatformTime::Seconds() - PreloadStart) * 1000.0);
+				}
+				// Also preload fallback mob IDs in case DT_Stages isn't fully wired.
+				const FName FallbackA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), RunState->GetCurrentStage()));
+				const FName FallbackB = FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), RunState->GetCurrentStage()));
+				const FName FallbackC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), RunState->GetCurrentStage()));
+				Visuals->PreloadCharacterVisual(FallbackA);
+				Visuals->PreloadCharacterVisual(FallbackB);
+				Visuals->PreloadCharacterVisual(FallbackC);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Preload: total preload time %.1fms"), (FPlatformTime::Seconds() - PreloadStart) * 1000.0);
+
+			// --- Tick 2: Spawn miasma systems ---
+			if (UWorld* W2 = GetWorld())
+			{
+				W2->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+					UWorld* W = GetWorld();
+					if (W)
+					{
+						MiasmaManager = W->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+						W->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+					}
+					UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Tick2: miasma systems spawned."));
+
+					// --- Tick 3: Spawn enemy director ---
+					if (UWorld* W3 = GetWorld())
+					{
+						W3->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+						{
+							FActorSpawnParameters SpawnParams;
+							SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+							UWorld* W = GetWorld();
+							if (W)
+							{
+								W->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+							}
+							UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Tick3: enemy director spawned."));
+
+							// --- Tick 4: Spawn boss + boss gate ---
+							if (UWorld* W4 = GetWorld())
+							{
+								W4->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+								{
+									SpawnBossForCurrentStage();
+									SpawnBossGateIfNeeded();
+									UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Tick4: boss + boss gate spawned. Phase 2 complete."));
+									UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 2 content spawned (combat systems + boss)."));
+								}));
+							}
+						}));
+					}
+				}));
+			}
 		}));
 	}
 }

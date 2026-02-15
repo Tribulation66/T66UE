@@ -487,8 +487,20 @@ void FT66Style::Initialize()
 			StyleInstance->Set("T66.Button.Primary",      MakeBoxStyle(NeutralN, NeutralH, NeutralP));
 			StyleInstance->Set("T66.Button.Neutral",      MakeBoxStyle(NeutralN, NeutralH, NeutralP));
 			StyleInstance->Set("T66.Button.Danger",       MakeBoxStyle(NeutralN, NeutralH, NeutralP));
-			StyleInstance->Set("T66.Button.ToggleActive",
-				MakeBoxStyle(Tokens::Text, Tokens::Text * 0.85f + FLinearColor(0,0,0,0.15f), Tokens::Text * 0.70f + FLinearColor(0,0,0,0.30f)));
+			// ToggleActive: selected/pressed look — brighter fill + visible border so ON/OFF selection is obvious.
+			{
+				const FLinearColor ToggleN = Tokens::Text;
+				const FLinearColor ToggleH = Tokens::Text * 0.90f + FLinearColor(0,0,0,0.10f);
+				const FLinearColor ToggleP = Tokens::Text * 0.75f + FLinearColor(0,0,0,0.25f);
+				const float ToggleBorderW = 2.f;
+				const FLinearColor ToggleBorder = Tokens::Accent2.A > 0.01f ? Tokens::Accent2 : Tokens::Stroke;
+				StyleInstance->Set("T66.Button.ToggleActive", FButtonStyle()
+					.SetNormal(FSlateRoundedBoxBrush(ToggleN, Tokens::CornerRadiusSmall, ToggleBorder, ToggleBorderW))
+					.SetHovered(FSlateRoundedBoxBrush(ToggleH, Tokens::CornerRadiusSmall, ToggleBorder, ToggleBorderW))
+					.SetPressed(FSlateRoundedBoxBrush(ToggleP, Tokens::CornerRadiusSmall, ToggleBorder, ToggleBorderW))
+					.SetNormalPadding(Tokens::ButtonPadding)
+					.SetPressedPadding(Tokens::ButtonPaddingPressed));
+			}
 		}
 
 		// Row style: transparent background, very thin border, subtle hover highlight.
@@ -591,16 +603,17 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	FOnClicked SafeClick = DebounceClick(Params.OnClicked);
 
 	// 3. Button background color.
-	//    When textures are loaded, ALWAYS use white tint so the baked-in border/gloss
-	//    passes through. Color overrides only apply to the fallback (solid-brush) path.
+	//    When a color override is set (e.g. ON/OFF toggle selected state), use it so the
+	//    selected button is visually distinct. Otherwise with textures use white so the
+	//    baked-in border/gloss passes through; with fallback use the style default.
 	TAttribute<FSlateColor> BtnColor;
-	if (HasButtonTextures())
-	{
-		BtnColor = TAttribute<FSlateColor>(FSlateColor(FLinearColor::White));
-	}
-	else if (Params.bHasColorOverride)
+	if (Params.bHasColorOverride)
 	{
 		BtnColor = Params.ColorOverride;
+	}
+	else if (HasButtonTextures())
+	{
+		BtnColor = TAttribute<FSlateColor>(FSlateColor(FLinearColor::White));
 	}
 	else
 	{
@@ -773,9 +786,10 @@ TSharedRef<SWidget> FT66Style::MakeDropdown(const FT66DropdownParams& Params)
 			Params.Content
 		];
 
+	// Height 0 = no override: let the combo button size to its content so dropdowns aren't clipped.
 	return SNew(SBox)
 		.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
-		.HeightOverride(Params.Height)
+		.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
 		.Visibility(Params.Visibility)
 		[
 			Combo

@@ -151,6 +151,9 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		return *Existing;
 	}
 
+	// [GOLD] Track total sync-load time for this visual ID.
+	const double ResolveStart = FPlatformTime::Seconds();
+
 	FT66ResolvedCharacterVisual Res;
 	Res.bHasRow = false;
 
@@ -211,6 +214,17 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		{
 			Res.LoopingAnim = FindFallbackLoopingAnim(Res.Mesh->GetSkeleton());
 		}
+	}
+
+	// [GOLD] Log total resolve time (sync loads are expensive; this helps identify stage-entry hitches).
+	const double ResolveMs = (FPlatformTime::Seconds() - ResolveStart) * 1000.0;
+	if (ResolveMs > 1.0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[GOLD] ResolveVisual: %s took %.1fms (sync asset loads — consider preloading)"), *VisualID.ToString(), ResolveMs);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[GOLD] ResolveVisual: %s resolved in %.2fms (cached or no assets)"), *VisualID.ToString(), ResolveMs);
 	}
 
 	ResolvedCache.Add(VisualID, Res);

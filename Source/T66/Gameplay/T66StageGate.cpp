@@ -12,6 +12,7 @@
 #include "Engine/World.h"
 #include "CollisionQueryParams.h"
 #include "Gameplay/T66VisualUtil.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 
 AT66StageGate::AT66StageGate()
 {
@@ -40,6 +41,15 @@ AT66StageGate::AT66StageGate()
 void AT66StageGate::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// [GOLD] Register with the actor registry (replaces TActorIterator for map markers).
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterStageGate(this);
+		}
+	}
 
 	if (GateMesh && !GateMeshOverride.IsNull())
 	{
@@ -70,6 +80,19 @@ void AT66StageGate::BeginPlay()
 			SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
 		}
 	}
+}
+
+void AT66StageGate::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// [GOLD] Unregister from the actor registry.
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterStageGate(this);
+		}
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 bool AT66StageGate::AdvanceToNextStage()

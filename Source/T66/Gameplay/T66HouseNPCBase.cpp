@@ -4,6 +4,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
 #include "Components/SphereComponent.h"
@@ -74,6 +75,15 @@ AT66HouseNPCBase::AT66HouseNPCBase()
 void AT66HouseNPCBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// [GOLD] Register with the actor registry (replaces TActorIterator world scans for NPCs).
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterNPC(this);
+		}
+	}
 
 	LoadFromDataTable();
 	ApplyVisuals();
@@ -218,6 +228,19 @@ float AT66HouseNPCBase::GetFeetOffset() const
 		return VisualMesh->Bounds.BoxExtent.Z;
 	}
 	return 52.5f;
+}
+
+void AT66HouseNPCBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// [GOLD] Unregister from the actor registry.
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterNPC(this);
+		}
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66HouseNPCBase::Tick(float DeltaSeconds)

@@ -89,11 +89,23 @@ bool UT66SaveSubsystem::SaveToSlot(int32 SlotIndex, UT66RunSaveGame* SaveGameObj
 	if (SlotIndex < 0 || SlotIndex >= MaxSlots || !SaveGameObject) return false;
 
 	FString SlotName = GetSlotName(SlotIndex);
-	if (!UGameplayStatics::SaveGameToSlot(SaveGameObject, SlotName, 0))
-	{
-		return false;
-	}
 
+	// [GOLD] Async save: writes to disk on a background thread so the game thread doesn't hitch.
+	UE_LOG(LogTemp, Log, TEXT("[GOLD] AsyncSave: queuing async save for slot %s"), *SlotName);
+	UGameplayStatics::AsyncSaveGameToSlot(SaveGameObject, SlotName, 0,
+		FAsyncSaveGameToSlotDelegate::CreateLambda([SlotName](const FString& /*InSlotName*/, const int32 /*UserIndex*/, bool bSuccess)
+		{
+			if (bSuccess)
+			{
+				UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: slot %s saved successfully"), *SlotName);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[GOLD] AsyncSave: FAILED for slot %s"), *SlotName);
+			}
+		}));
+
+	// Update the index in memory immediately (metadata is tiny; write async too).
 	UpdateIndexOnSave(SlotIndex, SaveGameObject->HeroID.ToString(), SaveGameObject->MapName, SaveGameObject->LastPlayedUtc);
 	return true;
 }
@@ -102,6 +114,8 @@ UT66RunSaveGame* UT66SaveSubsystem::LoadFromSlot(int32 SlotIndex)
 {
 	if (SlotIndex < 0 || SlotIndex >= MaxSlots) return nullptr;
 
+	// Load remains synchronous because callers expect the data immediately.
+	// If needed, callers can use AsyncLoadGameFromSlot with a callback instead.
 	FString SlotName = GetSlotName(SlotIndex);
 	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
 	return Cast<UT66RunSaveGame>(Loaded);
@@ -122,6 +136,8 @@ void UT66SaveSubsystem::UpdateIndexOnSave(int32 SlotIndex, const FString& HeroDi
 	Index->SlotMeta[SlotIndex].LastPlayedUtc = LastPlayedUtc;
 	Index->SlotMeta[SlotIndex].HeroDisplayName = HeroDisplayName;
 	Index->SlotMeta[SlotIndex].MapName = MapName;
+
+	// Async index save (metadata is small, no need to block the game thread).
 	SaveIndex(Index);
 }
 
@@ -160,5 +176,8 @@ UT66SaveIndex* UT66SaveSubsystem::LoadOrCreateIndex() const
 bool UT66SaveSubsystem::SaveIndex(UT66SaveIndex* Index) const
 {
 	if (!Index) return false;
-	return UGameplayStatics::SaveGameToSlot(Index, SaveIndexSlotName, 0);
+	// [GOLD] Async index save to avoid blocking the game thread.
+	UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: queuing async save for index"));
+	UGameplayStatics::AsyncSaveGameToSlot(Index, SaveIndexSlotName, 0);
+	return true;
 }

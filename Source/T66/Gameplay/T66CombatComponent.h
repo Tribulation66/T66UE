@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Components/SphereComponent.h"
 #include "T66CombatComponent.generated.h"
 
 class AT66EnemyBase;
@@ -59,13 +60,33 @@ protected:
 
 	TWeakObjectPtr<AActor> LockedTarget;
 
-	/** Cached auto target; revalidate every N fires to avoid 3x TActorIterator every fire. */
-	TWeakObjectPtr<AActor> CachedAutoTarget;
-	int32 FiresSinceLastTargetRefresh = 0;
-	static constexpr int32 TargetRevalidateEveryNFires = 12;
-	/** Min seconds between full target searches (3x TActorIterator); caps search at ~4 Hz. */
-	float LastTargetSearchTime = -1.f;
-	static constexpr float MinTargetSearchIntervalSeconds = 0.25f;
+	// ---------------------------------------------------------------------------
+	// Overlap-based target detection: a sphere component tracks enemies in range
+	// so TryFire never needs to iterate all world actors.
+	// ---------------------------------------------------------------------------
+
+	/** Invisible sphere attached to the hero; generates overlap events for enemies entering/leaving attack range. */
+	UPROPERTY(Transient)
+	TObjectPtr<USphereComponent> RangeSphere;
+
+	/** Live set of enemies/bosses currently overlapping the range sphere. Maintained by overlap callbacks. */
+	TArray<TWeakObjectPtr<AActor>> EnemiesInRange;
+
+	UFUNCTION()
+	void OnRangeBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnRangeEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	/** Helper: find closest valid target in EnemiesInRange from a given location within MaxRangeSq.
+	 *  Optionally exclude actors already in ExcludeSet (for bounce chains). */
+	AActor* FindClosestEnemyInRange(const FVector& FromLocation, float MaxRangeSq,
+		const TSet<AActor*>* ExcludeSet = nullptr) const;
+
+	/** Returns true if an actor is a valid auto-attack target (alive enemy/boss). */
+	static bool IsValidAutoTarget(AActor* A);
 
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;

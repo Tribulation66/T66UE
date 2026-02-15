@@ -13,7 +13,9 @@
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
-#include "EngineUtils.h"
+// [GOLD] EngineUtils.h removed — TActorIterator replaced by ActorRegistry.
+#include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66EnemyPoolSubsystem.h"
 
 AT66EnemyDirector::AT66EnemyDirector()
 {
@@ -138,39 +140,13 @@ void AT66EnemyDirector::SpawnWave()
 	}
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 
-	// Cache safe-zone NPCs per-world so we don't do repeated full actor iterators during spawn waves.
-	struct FSafeNPCache
-	{
-		TWeakObjectPtr<UWorld> World;
-		double LastRefreshSeconds = -1.0;
-		TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
-	};
-	static FSafeNPCache SafeCache;
-
-	auto RefreshSafeCacheIfNeeded = [&]()
-	{
-		if (!World) return;
-		const double NowSeconds = FPlatformTime::Seconds();
-		const bool bWorldChanged = (SafeCache.World.Get() != World);
-		const bool bNeedsRefresh = bWorldChanged || (SafeCache.LastRefreshSeconds < 0.0) || ((NowSeconds - SafeCache.LastRefreshSeconds) > 2.0);
-		if (!bNeedsRefresh) return;
-
-		SafeCache.World = World;
-		SafeCache.LastRefreshSeconds = NowSeconds;
-		SafeCache.NPCs.Reset();
-		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
-		{
-			if (AT66HouseNPCBase* NPC = *It)
-			{
-				SafeCache.NPCs.Add(NPC);
-			}
-		}
-	};
+	// [GOLD] Use the actor registry for safe-zone NPC lookup (replaces TActorIterator cache).
+	UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
 
 	auto IsInAnySafeZone2D = [&](const FVector& Loc) -> bool
 	{
-		RefreshSafeCacheIfNeeded();
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : SafeCache.NPCs)
+		if (!Registry) return false;
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
 		{
 			AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
@@ -334,22 +310,51 @@ void AT66EnemyDirector::SpawnWave()
 		const bool bIsMiniBoss = bIsMob && (MiniBossIndex == i);
 		const FName MobID = bIsMob ? MobIDs[Rng.RandRange(0, MobIDs.Num() - 1)] : NAME_None;
 
+		// [GOLD] Try the enemy pool first; fall back to fresh spawn if pool is empty.
+		UT66EnemyPoolSubsystem* EnemyPool = World->GetSubsystem<UT66EnemyPoolSubsystem>();
 		AT66EnemyBase* Enemy = nullptr;
+
 		if (bIsMob)
 		{
-			// Use deferred spawn so we can set mob visuals before BeginPlay.
-			const FTransform Xform(FRotator::ZeroRotator, SpawnLoc);
-			Enemy = World->SpawnActorDeferred<AT66EnemyBase>(ClassToSpawn, Xform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			// For mobs: try pool (reuse), then deferred spawn (fresh).
+			if (EnemyPool)
+			{
+				Enemy = EnemyPool->TryAcquire(ClassToSpawn, SpawnLoc);
+			}
 			if (Enemy)
 			{
-				Enemy->OwningDirector = this;
+				// Pooled enemy: reset state and reconfigure mob visuals.
+				Enemy->ResetForReuse(SpawnLoc, this);
 				Enemy->ConfigureAsMob(MobID);
-				UGameplayStatics::FinishSpawningActor(Enemy, Xform);
+			}
+			else
+			{
+				// Pool empty or no pool: deferred spawn for first-time mob setup.
+				const FTransform Xform(FRotator::ZeroRotator, SpawnLoc);
+				Enemy = World->SpawnActorDeferred<AT66EnemyBase>(ClassToSpawn, Xform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+				if (Enemy)
+				{
+					Enemy->OwningDirector = this;
+					Enemy->ConfigureAsMob(MobID);
+					UGameplayStatics::FinishSpawningActor(Enemy, Xform);
+				}
 			}
 		}
 		else
 		{
-			Enemy = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+			// Special enemies (Leprechaun, Goblin Thief): try pool, then direct spawn.
+			if (EnemyPool)
+			{
+				Enemy = EnemyPool->TryAcquire(ClassToSpawn, SpawnLoc);
+				if (Enemy)
+				{
+					Enemy->ResetForReuse(SpawnLoc, this);
+				}
+			}
+			if (!Enemy)
+			{
+				Enemy = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+			}
 		}
 		if (Enemy)
 		{

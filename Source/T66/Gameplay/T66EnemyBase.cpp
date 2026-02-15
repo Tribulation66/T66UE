@@ -11,6 +11,8 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66EnemyPoolSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66Rarity.h"
@@ -26,7 +28,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
-#include "EngineUtils.h"
+// [GOLD] EngineUtils.h removed — no more TActorIterator in this file (using ActorRegistry instead).
 
 AT66EnemyBase::AT66EnemyBase()
 {
@@ -143,6 +145,16 @@ void AT66EnemyBase::ApplyMiniBossMultipliers(float HPScalar, float DamageScalar,
 void AT66EnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// [GOLD] Register with the central actor registry (replaces TActorIterator world scans).
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterEnemy(this);
+		}
+	}
+
 	if (!bBaseTuningInitialized)
 	{
 		BaseMaxHP = MaxHP;
@@ -246,6 +258,19 @@ void AT66EnemyBase::BeginPlay()
 #endif
 }
 
+void AT66EnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// [GOLD] Unregister from the actor registry.
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterEnemy(this);
+		}
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
 void AT66EnemyBase::ApplyStageScaling(int32 Stage)
 {
 	const int32 ClampedStage = FMath::Clamp(Stage, 1, 999);
@@ -313,12 +338,67 @@ void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
 	ApplyDifficultyScalar(Scalar);
 }
 
+void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector* NewDirector)
+{
+	UE_LOG(LogTemp, Verbose, TEXT("[GOLD] EnemyPool: ResetForReuse %s at (%.0f, %.0f, %.0f)"),
+		*GetName(), NewLocation.X, NewLocation.Y, NewLocation.Z);
+
+	// Restore base state for reuse.
+	OwningDirector = NewDirector;
+	CurrentHP = MaxHP;
+	bIsConfused = false;
+	ConfusionSecondsRemaining = 0.f;
+	ArmorDebuffAmount = 0.f;
+	ArmorDebuffSecondsRemaining = 0.f;
+	bIsMiniBoss = false;
+	MiniBossHPScalarApplied = 1.0f;
+	MiniBossDamageScalarApplied = 1.0f;
+	MiniBossScaleScalarApplied = 1.0f;
+	SetActorScale3D(FVector::OneVector);
+	LastTouchDamageTime = -9999.f;
+	CachedPlayerPawn = nullptr;
+	CachedWanderDir = FVector::ZeroVector;
+	WanderDirRefreshAccum = 0.f;
+	bCachedInsideSafeZone = false;
+	SafeZoneCheckAccumSeconds = 0.f;
+
+	SetActorLocation(NewLocation);
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->SetComponentTickEnabled(true);
+		Move->SetMovementMode(MOVE_Walking);
+	}
+
+	// Re-register with the actor registry (we unregistered when released to pool).
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterEnemy(this);
+		}
+	}
+
+	UpdateHealthBar();
+}
+
 void AT66EnemyBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	if (CurrentHP <= 0) return;
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	// [GOLD] Cache the player pawn once; re-resolve only if the weak ref went stale.
+	APawn* PlayerPawn = CachedPlayerPawn.Get();
+	if (!PlayerPawn)
+	{
+		PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+		CachedPlayerPawn = PlayerPawn;
+		UE_LOG(LogTemp, Verbose, TEXT("[GOLD] PlayerPawnCache: enemy %s resolved pawn %s"),
+			*GetName(), PlayerPawn ? *PlayerPawn->GetName() : TEXT("null"));
+	}
 	if (!PlayerPawn) return;
 
 	UCharacterMovementComponent* Move = GetCharacterMovement();
@@ -333,35 +413,11 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		bCachedInsideSafeZone = false;
 		CachedSafeZoneEscapeDir = FVector::ZeroVector;
 
-		FLagScopedScope LagScope(GetWorld(), TEXT("EnemyBase::SafeZoneCheck (iterator+cache)"), 3.0f);
+		// [GOLD] Use the actor registry instead of TActorIterator for safe-zone NPC lookup.
+		UT66ActorRegistrySubsystem* Registry = GetWorld() ? GetWorld()->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+		const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& RegisteredNPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
 
-		// Cache safe-zone NPCs per-world so we don't do a full actor iterator per enemy.
-		struct FSafeNPCache
-		{
-			TWeakObjectPtr<UWorld> World;
-			double LastRefreshSeconds = -1.0;
-			TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
-		};
-		static FSafeNPCache Cache;
-
-		const double NowSeconds = FPlatformTime::Seconds();
-		const bool bWorldChanged = (Cache.World.Get() != GetWorld());
-		const bool bNeedsRefresh = bWorldChanged || (Cache.LastRefreshSeconds < 0.0) || ((NowSeconds - Cache.LastRefreshSeconds) > 2.0);
-		if (bNeedsRefresh)
-		{
-			Cache.World = GetWorld();
-			Cache.LastRefreshSeconds = NowSeconds;
-			Cache.NPCs.Reset();
-			for (TActorIterator<AT66HouseNPCBase> It(GetWorld()); It; ++It)
-			{
-				if (AT66HouseNPCBase* NPC = *It)
-				{
-					Cache.NPCs.Add(NPC);
-				}
-			}
-		}
-
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Cache.NPCs)
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : RegisteredNPCs)
 		{
 			AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
@@ -412,11 +468,17 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		}
 		else
 		{
-			// Confused enemies wander randomly instead of chasing.
-			const FVector WanderDir = FVector(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f).GetSafeNormal();
-			if (!WanderDir.IsNearlyZero())
+			// [GOLD] Confused enemies wander randomly instead of chasing.
+			// Refresh wander direction once per second (not every frame — avoids RNG + normalize per tick).
+			WanderDirRefreshAccum += DeltaSeconds;
+			if (WanderDirRefreshAccum >= WanderDirRefreshInterval || CachedWanderDir.IsNearlyZero())
 			{
-				AddMovementInput(WanderDir, 0.5f);
+				WanderDirRefreshAccum = 0.f;
+				CachedWanderDir = FVector(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f).GetSafeNormal();
+			}
+			if (!CachedWanderDir.IsNearlyZero())
+			{
+				AddMovementInput(CachedWanderDir, 0.5f);
 			}
 			return; // Skip normal AI
 		}
@@ -581,7 +643,24 @@ void AT66EnemyBase::OnDeath()
 		}
 		if (!bDroppedBag)
 		{
-			Destroy();
+			// [GOLD] Return to enemy pool instead of destroying (reduces GC pressure).
+			if (UT66EnemyPoolSubsystem* Pool = World->GetSubsystem<UT66EnemyPoolSubsystem>())
+			{
+				// Unregister from registry before pooling.
+				if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+				{
+					Registry->UnregisterEnemy(this);
+				}
+				Pool->Release(this);
+				UE_LOG(LogTemp, Verbose, TEXT("[GOLD] EnemyPool: enemy %s returned to pool (no loot drop)"), *GetName());
+			}
+			else
+			{
+				// Fallback: deferred destruction.
+				SetActorHiddenInGame(true);
+				SetActorEnableCollision(false);
+				SetLifeSpan(0.1f);
+			}
 			return;
 		}
 
@@ -609,5 +688,21 @@ void AT66EnemyBase::OnDeath()
 		}
 	}
 
-	Destroy();
+	// [GOLD] Return to enemy pool instead of destroying.
+	if (UT66EnemyPoolSubsystem* Pool = World->GetSubsystem<UT66EnemyPoolSubsystem>())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterEnemy(this);
+		}
+		Pool->Release(this);
+		UE_LOG(LogTemp, Verbose, TEXT("[GOLD] EnemyPool: enemy %s returned to pool (after loot)"), *GetName());
+	}
+	else
+	{
+		// Fallback: deferred destruction.
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+		SetLifeSpan(0.1f);
+	}
 }

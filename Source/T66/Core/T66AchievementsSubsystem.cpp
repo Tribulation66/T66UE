@@ -301,7 +301,9 @@ void UT66AchievementsSubsystem::SaveProfileIfNeeded(bool bForce)
 
 	if (bForce || !GetWorld())
 	{
-		UGameplayStatics::SaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);
+		// [GOLD] Async save: avoid blocking the game thread during profile writes.
+		UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: queuing async achievement profile save (forced=%d)"), bForce ? 1 : 0);
+		UGameplayStatics::AsyncSaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);
 		bProfileDirty = false;
 		return;
 	}
@@ -309,7 +311,8 @@ void UT66AchievementsSubsystem::SaveProfileIfNeeded(bool bForce)
 	const float Now = static_cast<float>(GetWorld()->GetTimeSeconds());
 	if (bForce || (Now - LastProfileSaveWorldSeconds) >= SaveThrottleSeconds)
 	{
-		UGameplayStatics::SaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);
+		UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: queuing async achievement profile save (throttled)"));
+		UGameplayStatics::AsyncSaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);
 		LastProfileSaveWorldSeconds = Now;
 		bProfileDirty = false;
 	}

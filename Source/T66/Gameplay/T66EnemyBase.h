@@ -117,11 +117,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Mob")
 	void ApplyMiniBossMultipliers(float HPScalar, float DamageScalar, float ScaleScalar);
 
+	/** [GOLD] Reset this enemy for reuse from the object pool. */
+	void ResetForReuse(const FVector& NewLocation, AT66EnemyDirector* NewDirector);
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	/** Called when HP reaches 0: notify director, spawn pickup, destroy */
+	/** Called when HP reaches 0: notify director, spawn pickup, return to pool */
 	virtual void OnDeath();
 
 	UFUNCTION()
@@ -155,6 +159,14 @@ private:
 	// Armor debuff tracking
 	float ArmorDebuffAmount = 0.f;
 	float ArmorDebuffSecondsRemaining = 0.f;
+
+	/** Cached player pawn reference (avoid UGameplayStatics::GetPlayerPawn every tick per enemy). */
+	TWeakObjectPtr<APawn> CachedPlayerPawn;
+
+	/** Confusion: cached wander direction, refreshed once per second instead of every frame. */
+	FVector CachedWanderDir = FVector::ZeroVector;
+	float WanderDirRefreshAccum = 0.f;
+	static constexpr float WanderDirRefreshInterval = 1.0f;
 
 protected:
 	/** True if an imported skeletal mesh was applied and placeholders should be hidden. */

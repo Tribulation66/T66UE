@@ -3,6 +3,7 @@
 #include "UI/T66GameplayHUDWidget.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
@@ -40,7 +41,7 @@
 #include "Math/TransformCalculus2D.h"
 #include "Rendering/SlateRenderTransform.h"
 #include "Engine/Texture2D.h"
-#include "EngineUtils.h"
+// [GOLD] EngineUtils.h removed — TActorIterator replaced by ActorRegistry.
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SToolTip.h"
 
@@ -634,17 +635,25 @@ void UT66GameplayHUDWidget::RefreshCooldownBar()
 	CooldownBarFillBox->SetWidthOverride(CooldownBarWidth * Pct);
 
 	// Show remaining time above the bar (e.g. "0.42s").
+	// Perf: only reformat the text when the displayed centisecond value changes.
 	if (CooldownTimeText.IsValid())
 	{
 		const float Interval = Hero->CombatComponent->GetEffectiveFireInterval();
 		const float Remaining = FMath::Max(0.f, (1.f - Pct) * Interval);
-		if (Remaining > 0.01f)
+		const int32 RemainingCs = FMath::RoundToInt(Remaining * 100.f); // centiseconds
+		// [GOLD] HUD text cache: only reformat when centisecond value changes (avoids FString::Printf every frame).
+		static int32 LastRemainingCs = -1;
+		if (RemainingCs != LastRemainingCs)
 		{
-			CooldownTimeText->SetText(FText::FromString(FString::Printf(TEXT("%.2fs"), Remaining)));
-		}
-		else
-		{
-			CooldownTimeText->SetText(NSLOCTEXT("T66.GameplayHUD", "CooldownReady", "READY"));
+			LastRemainingCs = RemainingCs;
+			if (Remaining > 0.01f)
+			{
+				CooldownTimeText->SetText(FText::FromString(FString::Printf(TEXT("%.2fs"), Remaining)));
+			}
+			else
+			{
+				CooldownTimeText->SetText(NSLOCTEXT("T66.GameplayHUD", "CooldownReady", "READY"));
+			}
 		}
 	}
 }
@@ -1220,39 +1229,46 @@ void UT66GameplayHUDWidget::RefreshMapData()
 
 	if (bNeedsFullRefresh)
 	{
-		FLagScopedScope LagScope(World, TEXT("RefreshMapData (4x TActorIterator)"));
 		MapCacheWorld = World;
 		MapCacheLastRefreshTime = Now;
 		MapCache.Reset();
 
-		// NPCs (colored by NPCColor)
-		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+		// [GOLD] Use the actor registry instead of 4x TActorIterator (O(1) list lookup).
+		UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+		if (Registry)
 		{
-			const AT66HouseNPCBase* NPC = *It;
-			if (!NPC) continue;
-			const FVector L = NPC->GetActorLocation();
-			MapCache.Add({ const_cast<AT66HouseNPCBase*>(NPC), NPC->NPCColor, NPC->NPCName });
-		}
-		// Stage gate (bright blue)
-		for (TActorIterator<AT66StageGate> It(World); It; ++It)
-		{
-			AT66StageGate* A = *It;
-			if (!A) continue;
-			MapCache.Add({ A, FLinearColor(0.25f, 0.55f, 1.0f, 1.f), NSLOCTEXT("T66.Map", "Gate", "GATE") });
-		}
-		// Enemies (red dots)
-		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
-		{
-			AT66EnemyBase* Enemy = *It;
-			if (!IsValid(Enemy)) continue;
-			MapCache.Add({ Enemy, FLinearColor(0.95f, 0.20f, 0.15f, 0.85f), FText::GetEmpty() });
-		}
-		// Miasma boundary (purple)
-		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
-		{
-			AT66MiasmaBoundary* A = *It;
-			if (!A) continue;
-			MapCache.Add({ A, FLinearColor(0.65f, 0.15f, 0.85f, 0.6f), FText::GetEmpty() });
+			// NPCs (colored by NPCColor)
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			{
+				AT66HouseNPCBase* NPC = WeakNPC.Get();
+				if (!NPC) continue;
+				MapCache.Add({ NPC, NPC->NPCColor, NPC->NPCName });
+			}
+			// Stage gate (bright blue)
+			for (const TWeakObjectPtr<AT66StageGate>& WeakGate : Registry->GetStageGates())
+			{
+				AT66StageGate* A = WeakGate.Get();
+				if (!A) continue;
+				MapCache.Add({ A, FLinearColor(0.25f, 0.55f, 1.0f, 1.f), NSLOCTEXT("T66.Map", "Gate", "GATE") });
+			}
+			// Enemies (red dots)
+			for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+			{
+				AT66EnemyBase* Enemy = WeakEnemy.Get();
+				if (!IsValid(Enemy)) continue;
+				MapCache.Add({ Enemy, FLinearColor(0.95f, 0.20f, 0.15f, 0.85f), FText::GetEmpty() });
+			}
+			// Miasma boundary (purple)
+			for (const TWeakObjectPtr<AT66MiasmaBoundary>& WeakMiasma : Registry->GetMiasmaBoundaries())
+			{
+				AT66MiasmaBoundary* A = WeakMiasma.Get();
+				if (!A) continue;
+				MapCache.Add({ A, FLinearColor(0.65f, 0.15f, 0.85f, 0.6f), FText::GetEmpty() });
+			}
+
+			UE_LOG(LogTemp, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Miasma=%d)"),
+				Registry->GetNPCs().Num(), Registry->GetStageGates().Num(),
+				Registry->GetEnemies().Num(), Registry->GetMiasmaBoundaries().Num());
 		}
 	}
 
@@ -1376,16 +1392,23 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 		if (bShow)
 		{
 			const float Secs = FMath::Max(0.f, RunState->GetSpeedRunElapsedSeconds());
-			const int32 M = FMath::FloorToInt(Secs / 60.f);
-			const int32 S = FMath::FloorToInt(FMath::Fmod(Secs, 60.f));
-			const int32 Cs = FMath::FloorToInt(FMath::Fmod(Secs * 100.f, 100.f)); // centiseconds
-			FNumberFormattingOptions TwoDigits;
-			TwoDigits.MinimumIntegralDigits = 2;
-			SpeedRunText->SetText(FText::Format(
-				NSLOCTEXT("T66.GameplayHUD", "SpeedRunTimerFormat", "Time {0}:{1}.{2}"),
-				FText::AsNumber(M),
-				FText::AsNumber(S, &TwoDigits),
-				FText::AsNumber(Cs, &TwoDigits)));
+			// [GOLD] HUD text cache: only reformat when the displayed centisecond value changes (avoids FText::Format every frame).
+			const int32 TotalCs = FMath::FloorToInt(Secs * 100.f);
+			static int32 LastSpeedRunTotalCs = -1;
+			if (TotalCs != LastSpeedRunTotalCs)
+			{
+				LastSpeedRunTotalCs = TotalCs;
+				const int32 M = FMath::FloorToInt(Secs / 60.f);
+				const int32 S = FMath::FloorToInt(FMath::Fmod(Secs, 60.f));
+				const int32 Cs = FMath::FloorToInt(FMath::Fmod(Secs * 100.f, 100.f));
+				FNumberFormattingOptions TwoDigits;
+				TwoDigits.MinimumIntegralDigits = 2;
+				SpeedRunText->SetText(FText::Format(
+					NSLOCTEXT("T66.GameplayHUD", "SpeedRunTimerFormat", "Time {0}:{1}.{2}"),
+					FText::AsNumber(M),
+					FText::AsNumber(S, &TwoDigits),
+					FText::AsNumber(Cs, &TwoDigits)));
+			}
 		}
 	}
 

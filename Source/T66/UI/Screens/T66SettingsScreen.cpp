@@ -501,7 +501,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						FT66Style::MakeButton(
-							FT66ButtonParams(OnText, FOnClicked::CreateLambda([SetValue]() { SetValue(true); return FReply::Handled(); }), ET66ButtonType::Neutral)
+							FT66ButtonParams(OnText, FOnClicked::CreateLambda([this, SetValue]() { SetValue(true); FT66Style::DeferRebuild(this, 0); return FReply::Handled(); }), GetValue() ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
 							.SetMinWidth(100.f)
 							.SetPadding(FMargin(12.f, 6.f))
 							.SetColor(TAttribute<FSlateColor>::CreateLambda([GetValue]() -> FSlateColor { return GetValue() ? FT66Style::Tokens::Success : FT66Style::Tokens::Panel2; }))
@@ -510,7 +510,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 					+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f, 0.0f, 0.0f)
 					[
 						FT66Style::MakeButton(
-							FT66ButtonParams(OffText, FOnClicked::CreateLambda([SetValue]() { SetValue(false); return FReply::Handled(); }), ET66ButtonType::Neutral)
+							FT66ButtonParams(OffText, FOnClicked::CreateLambda([this, SetValue]() { SetValue(false); FT66Style::DeferRebuild(this, 0); return FReply::Handled(); }), !GetValue() ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
 							.SetMinWidth(100.f)
 							.SetPadding(FMargin(12.f, 6.f))
 							.SetColor(TAttribute<FSlateColor>::CreateLambda([GetValue]() -> FSlateColor { return !GetValue() ? FT66Style::Tokens::Danger : FT66Style::Tokens::Panel2; }))
@@ -643,7 +643,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.6f)
 				[
-					FT66Style::MakeDropdown(FT66DropdownParams(TriggerContent, MakeMenuContent).SetHeight(32.0f))
+					FT66Style::MakeDropdown(FT66DropdownParams(TriggerContent, MakeMenuContent).SetHeight(0))
 				]
 			];
 	};
@@ -1550,7 +1550,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 										.SetColor(FT66Style::Tokens::Panel2)
 									)
 								];
-						}).SetHeight(32.0f))
+						}).SetHeight(0))
 				]
 			]
 		]

@@ -80,6 +80,7 @@ protected:
 	/** Optional per-NPC customization beyond name/color/radius. */
 	virtual void ApplyNPCData(const FHouseNPCData& Data);
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** If true, NPC smoothly rotates in place to face the player (yaw only). */

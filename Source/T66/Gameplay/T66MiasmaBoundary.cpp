@@ -10,6 +10,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66VisualUtil.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 
 AT66MiasmaBoundary::AT66MiasmaBoundary()
 {
@@ -19,6 +20,16 @@ AT66MiasmaBoundary::AT66MiasmaBoundary()
 void AT66MiasmaBoundary::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// [GOLD] Register with the actor registry (replaces TActorIterator for map markers).
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterMiasmaBoundary(this);
+		}
+	}
+
 	SpawnWallVisuals();
 
 	// Apply damage tick when player is outside the safe rectangle.
@@ -30,6 +41,15 @@ void AT66MiasmaBoundary::BeginPlay()
 
 void AT66MiasmaBoundary::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// [GOLD] Unregister from the actor registry.
+	if (UWorld* W = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterMiasmaBoundary(this);
+		}
+	}
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(DamageTimerHandle);

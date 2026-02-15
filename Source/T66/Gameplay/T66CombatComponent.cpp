@@ -17,7 +17,6 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/OverlapResult.h"
-#include "EngineUtils.h"
 #include "Sound/SoundBase.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -41,6 +40,9 @@ void UT66CombatComponent::ClearLockedTarget()
 	LockedTarget.Reset();
 }
 
+// ---------------------------------------------------------------------------
+// BeginPlay — set up delegates, range sphere, fire timer.
+// ---------------------------------------------------------------------------
 void UT66CombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -69,7 +71,32 @@ void UT66CombatComponent::BeginPlay()
 	// Preload Niagara slash VFX.
 	CachedSlashVFXNiagara = SlashVFXNiagara.LoadSynchronous();
 
+	// --- Create the range detection sphere ---
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		RangeSphere = NewObject<USphereComponent>(Owner, TEXT("CombatRangeSphere"));
+		if (RangeSphere)
+		{
+			RangeSphere->SetupAttachment(Owner->GetRootComponent());
+			RangeSphere->SetSphereRadius(AttackRange);
+			RangeSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+			RangeSphere->SetGenerateOverlapEvents(true);
+			RangeSphere->SetHiddenInGame(true);
+			RangeSphere->SetCanEverAffectNavigation(false);
+			// No physics response — purely a query volume.
+			RangeSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
+			RangeSphere->RegisterComponent();
+
+			RangeSphere->OnComponentBeginOverlap.AddDynamic(this, &UT66CombatComponent::OnRangeBeginOverlap);
+			RangeSphere->OnComponentEndOverlap.AddDynamic(this, &UT66CombatComponent::OnRangeEndOverlap);
+		}
+	}
+
 	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, EffectiveFireIntervalSeconds, true, EffectiveFireIntervalSeconds);
+
+	UE_LOG(LogTemp, Log, TEXT("[GOLD] CombatComponent: initialized — overlap sphere (radius=%.0f), VFX pooling (AutoRelease), timer-based fire (%.2fs)"),
+		AttackRange, EffectiveFireIntervalSeconds);
 }
 
 void UT66CombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -87,7 +114,75 @@ void UT66CombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		CachedRunState->DevCheatsChanged.RemoveDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 	}
 
+	// Clean up the sphere.
+	if (RangeSphere)
+	{
+		RangeSphere->DestroyComponent();
+		RangeSphere = nullptr;
+	}
+	EnemiesInRange.Empty();
+
 	Super::EndPlay(EndPlayReason);
+}
+
+// ---------------------------------------------------------------------------
+// Overlap callbacks — maintain EnemiesInRange.
+// ---------------------------------------------------------------------------
+void UT66CombatComponent::OnRangeBeginOverlap(UPrimitiveComponent* /*OverlappedComp*/, AActor* OtherActor,
+	UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/, const FHitResult& /*SweepResult*/)
+{
+	if (!OtherActor) return;
+
+	// Only track enemies and bosses.
+	if (Cast<AT66EnemyBase>(OtherActor) || Cast<AT66BossBase>(OtherActor) || Cast<AT66GamblerBoss>(OtherActor))
+	{
+		EnemiesInRange.AddUnique(OtherActor);
+	}
+}
+
+void UT66CombatComponent::OnRangeEndOverlap(UPrimitiveComponent* /*OverlappedComp*/, AActor* OtherActor,
+	UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/)
+{
+	if (!OtherActor) return;
+	EnemiesInRange.RemoveAll([OtherActor](const TWeakObjectPtr<AActor>& Weak) { return !Weak.IsValid() || Weak.Get() == OtherActor; });
+}
+
+// ---------------------------------------------------------------------------
+// IsValidAutoTarget — returns true if the actor is alive and targetable.
+// ---------------------------------------------------------------------------
+bool UT66CombatComponent::IsValidAutoTarget(AActor* A)
+{
+	if (!A) return false;
+	if (AT66EnemyBase* E = Cast<AT66EnemyBase>(A)) return E->CurrentHP > 0;
+	if (AT66BossBase* B = Cast<AT66BossBase>(A)) return B->IsAwakened() && B->IsAlive();
+	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(A)) return GB->CurrentHP > 0;
+	return false;
+}
+
+// ---------------------------------------------------------------------------
+// FindClosestEnemyInRange — walks EnemiesInRange (small list) instead of all
+// world actors.  Returns nullptr if nothing valid is in range.
+// ---------------------------------------------------------------------------
+AActor* UT66CombatComponent::FindClosestEnemyInRange(const FVector& FromLocation, float MaxRangeSq,
+	const TSet<AActor*>* ExcludeSet) const
+{
+	AActor* Best = nullptr;
+	float BestDistSq = MaxRangeSq;
+
+	for (const TWeakObjectPtr<AActor>& Weak : EnemiesInRange)
+	{
+		AActor* A = Weak.Get();
+		if (!A) continue;
+		if (ExcludeSet && ExcludeSet->Contains(A)) continue;
+		if (!IsValidAutoTarget(A)) continue;
+		const float DistSq = FVector::DistSquared(FromLocation, A->GetActorLocation());
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			Best = A;
+		}
+	}
+	return Best;
 }
 
 void UT66CombatComponent::HandleInventoryChanged()
@@ -107,6 +202,12 @@ void UT66CombatComponent::HandleInventoryChanged()
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetOwner()))
 	{
 		Hero->RefreshAttackRangeRing();
+	}
+
+	// Update the detection sphere to match the new attack range.
+	if (RangeSphere)
+	{
+		RangeSphere->SetSphereRadius(AttackRange);
 	}
 }
 
@@ -148,6 +249,12 @@ void UT66CombatComponent::RecomputeFromRunState()
 	if (CachedRunState->GetDevPowerEnabled())
 	{
 		EffectiveDamagePerShot = 999999;
+	}
+
+	// Keep the detection sphere in sync whenever stats are recomputed.
+	if (RangeSphere)
+	{
+		RangeSphere->SetSphereRadius(AttackRange);
 	}
 }
 
@@ -191,6 +298,11 @@ float UT66CombatComponent::GetAutoAttackCooldownProgress() const
 	return FMath::Clamp(Elapsed / EffectiveFireIntervalSeconds, 0.f, 1.f);
 }
 
+// ---------------------------------------------------------------------------
+// TryFire — the hero auto-attack heartbeat.
+// Target finding now walks the small EnemiesInRange list (maintained by sphere
+// overlap events) instead of doing 3x TActorIterator over the entire world.
+// ---------------------------------------------------------------------------
 void UT66CombatComponent::TryFire()
 {
 	AActor* OwnerActor = GetOwner();
@@ -199,7 +311,7 @@ void UT66CombatComponent::TryFire()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	FLagScopedScope LagScope(World, TEXT("CombatComponent::TryFire (3x TActorIterator)"));
+	FLagScopedScope LagScope(World, TEXT("CombatComponent::TryFire"));
 
 	// Safe zone rule: if hero is inside any NPC safe bubble, do not fire.
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OwnerActor))
@@ -215,14 +327,8 @@ void UT66CombatComponent::TryFire()
 	FVector MyLoc = OwnerActor->GetActorLocation();
 	const float RangeSq = AttackRange * AttackRange;
 
-	auto IsValidAutoTarget = [](AActor* A) -> bool
-	{
-		if (!A) return false;
-		if (AT66EnemyBase* E = Cast<AT66EnemyBase>(A)) return E->CurrentHP > 0;
-		if (AT66BossBase* B = Cast<AT66BossBase>(A)) return B->IsAwakened() && B->IsAlive();
-		if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(A)) return GB->CurrentHP > 0;
-		return false;
-	};
+	// Purge stale weak pointers (destroyed actors that didn't fire EndOverlap).
+	EnemiesInRange.RemoveAll([](const TWeakObjectPtr<AActor>& Weak) { return !Weak.IsValid(); });
 
 	// Hero attack category (Pierce/Bounce/AOE/DOT) and data for Bounce/DOT params.
 	ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
@@ -335,7 +441,7 @@ void UT66CombatComponent::TryFire()
 		return true;
 	};
 
-	// --- Bounce: one projectile that bounces to nearest valid enemy each step. Each step uses AttackRange centered on the last hit enemy. ---
+	// --- Bounce: chain to nearest valid enemy each step, using EnemiesInRange. ---
 	auto PerformBounce = [&](AActor* PrimaryTarget) -> bool
 	{
 		if (!PrimaryTarget) return false;
@@ -356,17 +462,7 @@ void UT66CombatComponent::TryFire()
 		float DamageMult = 1.f - Falloff;
 		while (BouncesLeft > 0)
 		{
-			AActor* Next = nullptr;
-			float BestDistSq = BounceRangeSq;
-			auto Consider = [&](AActor* A)
-			{
-				if (!A || HitSet.Contains(A)) return;
-				const float DistSq = FVector::DistSquared(CurrentLoc, A->GetActorLocation());
-				if (DistSq < BestDistSq && IsValidAutoTarget(A)) { BestDistSq = DistSq; Next = A; }
-			};
-			for (TActorIterator<AT66EnemyBase> It(World); It; ++It) Consider(Cast<AActor>(*It));
-			for (TActorIterator<AT66BossBase> It(World); It; ++It) { AT66BossBase* B = *It; if (B && B->IsAwakened() && B->IsAlive()) Consider(Cast<AActor>(B)); }
-			for (TActorIterator<AT66GamblerBoss> It(World); It; ++It) { AT66GamblerBoss* GB = *It; if (GB && GB->CurrentHP > 0) Consider(Cast<AActor>(GB)); }
+			AActor* Next = FindClosestEnemyInRange(CurrentLoc, BounceRangeSq, &HitSet);
 			if (!Next) break;
 			Chain.Add(Next);
 			ChainPositions.Add(Next->GetActorLocation());
@@ -398,7 +494,10 @@ void UT66CombatComponent::TryFire()
 		return true;
 	};
 
-	// Resolve primary target (locked > cached > closest).
+	// ---------------------------------------------------------------------------
+	// Resolve primary target: locked > closest in EnemiesInRange.
+	// No TActorIterator — just walk the small overlap list.
+	// ---------------------------------------------------------------------------
 	AActor* PrimaryTarget = nullptr;
 	if (AActor* Locked = LockedTarget.Get())
 	{
@@ -410,55 +509,7 @@ void UT66CombatComponent::TryFire()
 	}
 	if (!PrimaryTarget)
 	{
-		AActor* Cached = CachedAutoTarget.Get();
-		if (Cached)
-		{
-			const float DistSq = FVector::DistSquared(MyLoc, Cached->GetActorLocation());
-			if (DistSq <= RangeSq && IsValidAutoTarget(Cached) && FiresSinceLastTargetRefresh < TargetRevalidateEveryNFires)
-			{
-				PrimaryTarget = Cached;
-				++FiresSinceLastTargetRefresh;
-			}
-			else
-				CachedAutoTarget.Reset();
-		}
-	}
-	if (!PrimaryTarget)
-	{
-		const float Now = static_cast<float>(World->GetTimeSeconds());
-		if (LastTargetSearchTime >= 0.f && (Now - LastTargetSearchTime) < MinTargetSearchIntervalSeconds)
-		{
-			return; // Throttle: skip this fire to avoid 3x TActorIterator more than ~4 Hz.
-		}
-		LastTargetSearchTime = Now;
-
-		AT66EnemyBase* ClosestEnemy = nullptr;
-		AT66BossBase* ClosestBoss = nullptr;
-		AT66GamblerBoss* ClosestGamblerBoss = nullptr;
-		float ClosestDistSq = RangeSq;
-		for (TActorIterator<AT66GamblerBoss> It(World); It; ++It)
-		{
-			AT66GamblerBoss* Boss = *It;
-			if (!Boss || Boss->CurrentHP <= 0) continue;
-			const float DistSq = FVector::DistSquared(MyLoc, Boss->GetActorLocation());
-			if (DistSq < ClosestDistSq) { ClosestDistSq = DistSq; ClosestGamblerBoss = Boss; }
-		}
-		for (TActorIterator<AT66BossBase> It(World); It; ++It)
-		{
-			AT66BossBase* Boss = *It;
-			if (!Boss || !Boss->IsAwakened() || !Boss->IsAlive()) continue;
-			const float DistSq = FVector::DistSquared(MyLoc, Boss->GetActorLocation());
-			if (DistSq < ClosestDistSq) { ClosestDistSq = DistSq; ClosestBoss = Boss; }
-		}
-		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
-		{
-			AT66EnemyBase* Enemy = *It;
-			if (!Enemy || Enemy->CurrentHP <= 0) continue;
-			const float DistSq = FVector::DistSquared(MyLoc, Enemy->GetActorLocation());
-			if (DistSq < ClosestDistSq) { ClosestDistSq = DistSq; ClosestEnemy = Enemy; }
-		}
-		AActor* Target = ClosestGamblerBoss ? Cast<AActor>(ClosestGamblerBoss) : (ClosestBoss ? Cast<AActor>(ClosestBoss) : Cast<AActor>(ClosestEnemy));
-		if (Target) { CachedAutoTarget = Target; FiresSinceLastTargetRefresh = 0; PrimaryTarget = Target; }
+		PrimaryTarget = FindClosestEnemyInRange(MyLoc, RangeSq);
 	}
 
 	// Hero primary attack (Pierce / Bounce / AOE / DOT; VFX white).
@@ -548,14 +599,14 @@ void UT66CombatComponent::TryFire()
 					// BounceCount = number of jumps FROM the primary target to other enemies.
 					// At level 1 (BaseProperty=1) the bolt bounces once (hits 1 extra enemy).
 					const int32 BounceCount = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtLevel(Level)));
-					const float Falloff = FMath::Clamp(IdolData.FalloffPerHit, 0.f, 0.95f);
+					const float IdolFalloff = FMath::Clamp(IdolData.FalloffPerHit, 0.f, 0.95f);
 					const float BounceRangeSq = BounceSearchRadius * BounceSearchRadius;
 
 					// Damage the primary target (auto-attack already hit it; idol adds extra damage).
 					ApplyDamageToActor(PrimaryTarget, IdolDamage, NAME_None, IdolID);
 
 					// Chain starts FROM the primary target (not from the hero).
-					// VFX will only show enemy→enemy segments so it looks like a bolt bouncing off.
+					// VFX will only show enemy->enemy segments so it looks like a bolt bouncing off.
 					TArray<FVector> ChainPositions;
 					ChainPositions.Add(PrimaryLoc);
 
@@ -563,27 +614,17 @@ void UT66CombatComponent::TryFire()
 					TSet<AActor*> HitSet;
 					HitSet.Add(PrimaryTarget);
 					int32 BouncesLeft = BounceCount;
-					float DamageMult = 1.f - Falloff;
+					float IdolDamageMult = 1.f - IdolFalloff;
 
 					while (BouncesLeft > 0)
 					{
-						AActor* Next = nullptr;
-						float BestDistSq = BounceRangeSq;
-						auto Consider = [&](AActor* A)
-						{
-							if (!A || HitSet.Contains(A)) return;
-							const float DistSq = FVector::DistSquared(CurrentLoc, A->GetActorLocation());
-							if (DistSq < BestDistSq && IsValidAutoTarget(A)) { BestDistSq = DistSq; Next = A; }
-						};
-						for (TActorIterator<AT66EnemyBase> It(World); It; ++It) Consider(Cast<AActor>(*It));
-						for (TActorIterator<AT66BossBase> It(World); It; ++It) { AT66BossBase* B = *It; if (B && B->IsAwakened() && B->IsAlive()) Consider(Cast<AActor>(B)); }
-						for (TActorIterator<AT66GamblerBoss> It(World); It; ++It) { AT66GamblerBoss* GB = *It; if (GB && GB->CurrentHP > 0) Consider(Cast<AActor>(GB)); }
+						AActor* Next = FindClosestEnemyInRange(CurrentLoc, BounceRangeSq, &HitSet);
 						if (!Next) break;
 						ChainPositions.Add(Next->GetActorLocation());
 						HitSet.Add(Next);
-						ApplyDamageToActor(Next, FMath::Max(1, FMath::RoundToInt(IdolDamage * DamageMult)), NAME_None, IdolID);
+						ApplyDamageToActor(Next, FMath::Max(1, FMath::RoundToInt(IdolDamage * IdolDamageMult)), NAME_None, IdolID);
 						CurrentLoc = Next->GetActorLocation();
-						DamageMult *= (1.f - Falloff);
+						IdolDamageMult *= (1.f - IdolFalloff);
 						--BouncesLeft;
 					}
 					SpawnBounceVFX(ChainPositions, IdolColor);
@@ -671,7 +712,7 @@ void UT66CombatComponent::SpawnSlashVFX(const FVector& Location, float Radius, c
 
 		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			World, CachedSlashVFXNiagara, SpawnLoc, FRotator::ZeroRotator,
-			FVector(ParticleScale), true, true, ENCPoolMethod::None);
+			FVector(ParticleScale), true, true, ENCPoolMethod::AutoRelease);
 		if (NC)
 		{
 			NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
@@ -698,7 +739,7 @@ void UT66CombatComponent::SpawnPierceVFX(const FVector& Start, const FVector& En
 
 		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			World, CachedSlashVFXNiagara, SpawnLoc, FRotator::ZeroRotator,
-			FVector(ParticleScale), true, true, ENCPoolMethod::None);
+			FVector(ParticleScale), true, true, ENCPoolMethod::AutoRelease);
 		if (NC)
 		{
 			NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
@@ -719,12 +760,12 @@ void UT66CombatComponent::SpawnBounceVFX(const TArray<FVector>& ChainPositions, 
 
 	for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
 	{
-		const FVector Start = ChainPositions[i];
-		const FVector End   = ChainPositions[i + 1];
-		const FVector Dir   = (End - Start).GetSafeNormal();
+		const FVector ChainStart = ChainPositions[i];
+		const FVector ChainEnd   = ChainPositions[i + 1];
+		const FVector Dir   = (ChainEnd - ChainStart).GetSafeNormal();
 		if (Dir.IsNearlyZero()) continue;
 		const FRotator Rot  = Dir.Rotation();
-		const float    Dist = FVector::Dist(Start, End);
+		const float    Dist = FVector::Dist(ChainStart, ChainEnd);
 
 		// Dense trail of red particles along the segment.
 		const int32 Num = FMath::Max(10, FMath::RoundToInt(Dist / 30.f));
@@ -732,15 +773,15 @@ void UT66CombatComponent::SpawnBounceVFX(const TArray<FVector>& ChainPositions, 
 		{
 			const float T = (Num > 1) ? (static_cast<float>(j) / static_cast<float>(Num - 1)) : 0.5f;
 			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				World, CachedSlashVFXNiagara, FMath::Lerp(Start, End, T), Rot,
-				FVector(TrailScale), true, true, ENCPoolMethod::None);
+				World, CachedSlashVFXNiagara, FMath::Lerp(ChainStart, ChainEnd, T), Rot,
+				FVector(TrailScale), true, true, ENCPoolMethod::AutoRelease);
 			if (NC) NC->SetVariableVec4(FName(TEXT("User.Tint")), RedTint);
 		}
 
 		// Larger impact burst at the START of each segment (the contact/bounce point).
 		UNiagaraComponent* Impact = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, CachedSlashVFXNiagara, Start, FRotator::ZeroRotator,
-			FVector(ImpactScale), true, true, ENCPoolMethod::None);
+			World, CachedSlashVFXNiagara, ChainStart, FRotator::ZeroRotator,
+			FVector(ImpactScale), true, true, ENCPoolMethod::AutoRelease);
 		if (Impact) Impact->SetVariableVec4(FName(TEXT("User.Tint")), RedTint);
 	}
 }
@@ -754,7 +795,7 @@ void UT66CombatComponent::SpawnDOTVFX(const FVector& Location, float Duration, f
 	const float ParticleScale = 0.25f;
 	UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		World, CachedSlashVFXNiagara, Location, FRotator::ZeroRotator,
-		FVector(ParticleScale), true, true, ENCPoolMethod::None);
+		FVector(ParticleScale), true, true, ENCPoolMethod::AutoRelease);
 	if (NC)
 	{
 		NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
