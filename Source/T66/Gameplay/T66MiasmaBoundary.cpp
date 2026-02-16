@@ -135,6 +135,6 @@ void AT66MiasmaBoundary::ApplyBoundaryDamageTick()
 	const bool bOutside = (FMath::Abs(Loc.X) > SafeHalfExtent) || (FMath::Abs(Loc.Y) > SafeHalfExtent);
 	if (bOutside)
 	{
-		RunState->ApplyDamage(1);
+		RunState->ApplyDamage(20);
 	}
 }

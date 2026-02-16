@@ -68,6 +68,17 @@ private:
 	TArray<TSharedPtr<SWidget>> StealButtons;
 	TArray<TSharedPtr<STextBlock>> BuyButtonTexts;
 
+	// Shop/Buyback tab: 0 = Shop, 1 = Buyback
+	TSharedPtr<SWidgetSwitcher> ShopBuybackSwitcher;
+	TArray<TSharedPtr<STextBlock>> BuybackNameTexts;
+	TArray<TSharedPtr<STextBlock>> BuybackDescTexts;
+	TArray<TSharedPtr<STextBlock>> BuybackPriceTexts;
+	TArray<TSharedPtr<SBorder>> BuybackTileBorders;
+	TArray<TSharedPtr<SBorder>> BuybackIconBorders;
+	TArray<TSharedPtr<SImage>> BuybackIconImages;
+	TArray<TSharedPtr<FSlateBrush>> BuybackIconBrushes;
+	TArray<TSharedPtr<SWidget>> BuybackBuyButtons;
+
 	// Inventory strip
 	static constexpr int32 InventorySlotCount = 5;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
@@ -106,6 +117,7 @@ private:
 	void RefreshAll();
 	void RefreshTopBar();
 	void RefreshStock();
+	void RefreshBuyback();
 	void RefreshInventory();
 	void RefreshSellPanel();
 	void RefreshStatsPanel();
@@ -123,6 +135,7 @@ private:
 	FReply OnSellSelectedClicked();
 
 	FReply OnBuySlot(int32 SlotIndex);
+	FReply OnBuybackSlot(int32 SlotIndex);
 	FReply OnStealSlot(int32 SlotIndex);
 
 	void ShowStealPrompt(int32 SlotIndex);
@@ -141,5 +154,8 @@ private:
 
 	UFUNCTION()
 	void HandleVendorChanged();
+
+	UFUNCTION()
+	void HandleBuybackChanged();
 };
 

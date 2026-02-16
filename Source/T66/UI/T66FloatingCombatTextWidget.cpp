@@ -67,6 +67,66 @@ void UT66FloatingCombatTextWidget::SetStatusEvent(FName EventType)
 		Size = 26;
 		Color = FLinearColor(0.2f, 1.f, 0.5f, 1.f);
 	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Taunt)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Taunt", "TAUNT!");
+		Size = 22;
+		Color = FLinearColor(0.9f, 0.6f, 0.2f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Confusion)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Confusion", "CONFUSED!");
+		Size = 20;
+		Color = FLinearColor(0.7f, 0.4f, 1.f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Invisibility)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Invisibility", "INVISIBLE!");
+		Size = 22;
+		Color = FLinearColor(0.6f, 0.8f, 1.f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Dodge)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Dodge", "DODGE!");
+		Size = 26;
+		Color = FLinearColor(0.3f, 1.f, 0.8f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_LifeSteal)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_LifeSteal", "LIFE STEAL!");
+		Size = 20;
+		Color = FLinearColor(0.9f, 0.2f, 0.5f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Reflect)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Reflect", "REFLECT!");
+		Size = 22;
+		Color = FLinearColor(1.f, 0.7f, 0.2f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Crush)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Crush", "CRUSH!");
+		Size = 24;
+		Color = FLinearColor(0.8f, 0.2f, 0.2f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_CounterAttack)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_CounterAttack", "COUNTER!");
+		Size = 22;
+		Color = FLinearColor(1.f, 0.5f, 0.1f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_CloseRange)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_CloseRange", "CLOSE RANGE!");
+		Size = 20;
+		Color = FLinearColor(1.f, 0.6f, 0.3f, 1.f);
+	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_LongRange)
+	{
+		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_LongRange", "LONG RANGE!");
+		Size = 20;
+		Color = FLinearColor(0.4f, 0.7f, 1.f, 1.f);
+	}
 	else
 	{
 		DisplayText = FText::FromName(EventType);

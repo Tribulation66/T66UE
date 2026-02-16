@@ -14,6 +14,11 @@
 #include "GameFramework/Actor.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
+#include "Core/T66DamageLogSubsystem.h"
 
 namespace
 {
@@ -542,11 +547,33 @@ void UT66RunStateSubsystem::AddDifficultySkulls(int32 DeltaSkulls)
 	DifficultyChanged.Broadcast();
 }
 
+int32 UT66RunStateSubsystem::GetHeartDisplayTier() const
+{
+	if (MaxHP <= 0.f) return 0;
+	const float T = FMath::LogX(HeartTierScale, MaxHP / DefaultMaxHP);
+	return FMath::Clamp(FMath::RoundToInt(T), 0, 4);
+}
+
+float UT66RunStateSubsystem::GetHeartSlotFill(int32 SlotIndex) const
+{
+	const int32 Tier = GetHeartDisplayTier();
+	const float HPPerHeart = HPPerRedHeart * FMath::Pow(HeartTierScale, static_cast<float>(Tier));
+	if (HPPerHeart <= 0.f || SlotIndex < 0 || SlotIndex >= 5) return 0.f;
+	const float SlotStart = static_cast<float>(SlotIndex) * HPPerHeart;
+	const float SlotEnd = SlotStart + HPPerHeart;
+	if (CurrentHP <= SlotStart) return 0.f;
+	if (CurrentHP >= SlotEnd) return 1.f;
+	return (CurrentHP - SlotStart) / HPPerHeart;
+}
+
 void UT66RunStateSubsystem::AddMaxHearts(int32 DeltaHearts)
 {
 	if (DeltaHearts <= 0) return;
-	MaxHearts = FMath::Clamp(MaxHearts + DeltaHearts, 1, 9999);
-	CurrentHearts = FMath::Clamp(CurrentHearts + DeltaHearts, 0, MaxHearts);
+	const int32 Tier = GetHeartDisplayTier();
+	const float HPPerHeart = HPPerRedHeart * FMath::Pow(HeartTierScale, static_cast<float>(Tier));
+	const float Added = HPPerHeart * static_cast<float>(DeltaHearts);
+	MaxHP = FMath::Clamp(MaxHP + Added, DefaultMaxHP, 99999.f);
+	CurrentHP = FMath::Clamp(CurrentHP + Added, 0.f, MaxHP);
 	HeartsChanged.Broadcast();
 }
 
@@ -627,6 +654,7 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 			HeroBaseStealChance = FMath::Clamp(HD.BaseStealChance, 0.f, 1.f);
 			float Range = HD.BaseAttackRange;
 			HeroBaseAttackRange = FMath::Max(100.f, Range);
+			PassiveType = HD.PassiveType;
 		}
 	}
 
@@ -786,7 +814,7 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	case ET66SecondaryStatType::AttackRange:      return HeroBaseAttackRange * M * ScaleMult;
 	case ET66SecondaryStatType::Taunt:            return HeroBaseTaunt * M;
 	case ET66SecondaryStatType::ReflectDamage:    return HeroBaseReflectDmg * M;
-	case ET66SecondaryStatType::HpRegen:          return HeroBaseHpRegen * M;
+	case ET66SecondaryStatType::HpRegen:          return FMath::Max(1.f, HeroBaseHpRegen) * M;
 	case ET66SecondaryStatType::Crush:            return FMath::Clamp(HeroBaseCrushChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::Invisibility:     return FMath::Clamp(HeroBaseInvisChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::CounterAttack:    return HeroBaseCounterAttack * M;
@@ -812,6 +840,11 @@ float UT66RunStateSubsystem::GetAggroMultiplier() const
 float UT66RunStateSubsystem::GetHpRegenPerSecond() const
 {
 	return GetSecondaryStatValue(ET66SecondaryStatType::HpRegen);
+}
+
+float UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::MovementSpeed);
 }
 
 float UT66RunStateSubsystem::GetCritChance01() const
@@ -916,6 +949,38 @@ float UT66RunStateSubsystem::GetEvasionChance01() const
 	return FMath::Clamp(Base + ItemEvasionBonus01, 0.f, 0.60f);
 }
 
+void UT66RunStateSubsystem::NotifyEnemyKilledByHero()
+{
+	if (PassiveType != ET66PassiveType::RallyingBlow) return;
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World) return;
+	const double Now = World->GetTimeSeconds();
+	RallyStacks = FMath::Min(3, RallyStacks + 1);
+	RallyTimerEndWorldTime = Now + 3.0;
+}
+
+float UT66RunStateSubsystem::GetRallyAttackSpeedMultiplier() const
+{
+	if (PassiveType != ET66PassiveType::RallyingBlow || RallyStacks <= 0) return 1.f;
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World || World->GetTimeSeconds() >= RallyTimerEndWorldTime) return 1.f;
+	return 1.f + 0.15f * static_cast<float>(RallyStacks);
+}
+
+bool UT66RunStateSubsystem::HasActiveDOT(AActor* Target) const
+{
+	if (!Target) return false;
+	TWeakObjectPtr<AActor> Key(Target);
+	const FT66DotInstance* Inst = ActiveDOTs.Find(Key);
+	return Inst && Inst->RemainingDuration > 0.f;
+}
+
+float UT66RunStateSubsystem::GetToxinStackingDamageMultiplier(AActor* Target) const
+{
+	if (PassiveType != ET66PassiveType::ToxinStacking || !Target) return 1.f;
+	return HasActiveDOT(Target) ? 1.15f : 1.f;
+}
+
 void UT66RunStateSubsystem::AddHeroXP(int32 Amount)
 {
 	if (Amount <= 0) return;
@@ -984,9 +1049,9 @@ void UT66RunStateSubsystem::ApplyStageSpeedBoost(float MoveSpeedMultiplier, floa
 	HeroProgressChanged.Broadcast(); // movement uses derived stat refresh
 }
 
-bool UT66RunStateSubsystem::ApplyTrueDamage(int32 Hearts)
+bool UT66RunStateSubsystem::ApplyTrueDamage(int32 DamageHP)
 {
-	if (Hearts <= 0) return false;
+	if (DamageHP <= 0) return false;
 	if (bInLastStand) return false;
 
 	UGameInstance* GI = GetGameInstance();
@@ -998,10 +1063,9 @@ bool UT66RunStateSubsystem::ApplyTrueDamage(int32 Hearts)
 	}
 
 	LastDamageTime = Now;
-	const int32 Reduced = FMath::Max(1, Hearts);
-	CurrentHearts = FMath::Max(0, CurrentHearts - Reduced);
+	const float Reduced = static_cast<float>(FMath::Max(1, DamageHP));
+	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
 
-	// Skill Rating tracking: any damage that actually applies counts as a hit event.
 	if (UGameInstance* GI3 = GetGameInstance())
 	{
 		if (UT66SkillRatingSubsystem* Skill = GI3->GetSubsystem<UT66SkillRatingSubsystem>())
@@ -1010,19 +1074,16 @@ bool UT66RunStateSubsystem::ApplyTrueDamage(int32 Hearts)
 		}
 	}
 
-	// Survival charge fills on real damage taken.
-	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (static_cast<float>(Reduced) * SurvivalChargePerHeart), 0.f, 1.f);
+	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (Reduced / DefaultMaxHP), 0.f, 1.f);
 	SurvivalChanged.Broadcast();
 	HeartsChanged.Broadcast();
 
-	if (CurrentHearts <= 0)
+	if (CurrentHP <= 0.f)
 	{
-		// Dev Immortality: never end the run.
 		if (bDevImmortality)
 		{
 			return true;
 		}
-		// Die immediately when last heart is lost (last-stand invulnerability disabled).
 		OnPlayerDied.Broadcast();
 	}
 	return true;
@@ -1063,11 +1124,12 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		return;
 	}
 
-	// Reset reroll counter when stage changes.
+	// Reset reroll counter and seen-counts when stage changes.
 	if (VendorStockRerollStage != Stage)
 	{
 		VendorStockRerollStage = Stage;
 		VendorStockRerollCounter = 0;
+		VendorSeenCounts.Reset();
 	}
 
 	VendorStockStage = Stage;
@@ -1108,23 +1170,45 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	}
 	FRandomStream Rng(Seed);
 
-	// Rarities for the 3 stock slots: 2 black, 1 red.
+	// Smart reroll: weight = 1/(1 + SeenCount*Decay), floor 0.05. Build weights and pick 3 unique.
+	constexpr float DecayFactor = 2.0f;
+	constexpr float WeightFloor = 0.05f;
+	TArray<float> Weights;
+	Weights.SetNumUninitialized(TemplatePool.Num());
+	for (int32 p = 0; p < TemplatePool.Num(); ++p)
+	{
+		const int32 Seen = VendorSeenCounts.FindRef(TemplatePool[p]);
+		Weights[p] = FMath::Max(WeightFloor, 1.0f / (1.0f + static_cast<float>(Seen) * DecayFactor));
+	}
+
 	const ET66ItemRarity SlotRarities[] = { ET66ItemRarity::Black, ET66ItemRarity::Black, ET66ItemRarity::Red };
 
 	for (int32 i = 0; i < 3; ++i)
 	{
-		// Pick a unique template.
-		FName Chosen = NAME_None;
-		for (int32 Try = 0; Try < 40; ++Try)
+		float TotalWeight = 0.f;
+		for (int32 p = 0; p < TemplatePool.Num(); ++p)
 		{
-			const FName C = TemplatePool[Rng.RandRange(0, TemplatePool.Num() - 1)];
-			if (!C.IsNone() && !VendorStockItemIDs.Contains(C))
-			{
-				Chosen = C;
-				break;
-			}
+			if (!VendorStockItemIDs.Contains(TemplatePool[p]))
+				TotalWeight += Weights[p];
+		}
+		if (TotalWeight <= 0.f) TotalWeight = 1.f;
+
+		FName Chosen = NAME_None;
+		float Roll = Rng.FRand() * TotalWeight;
+		for (int32 p = 0; p < TemplatePool.Num(); ++p)
+		{
+			if (VendorStockItemIDs.Contains(TemplatePool[p])) continue;
+			Roll -= Weights[p];
+			if (Roll <= 0.f) { Chosen = TemplatePool[p]; break; }
+		}
+		if (Chosen.IsNone())
+		{
+			for (int32 p = 0; p < TemplatePool.Num(); ++p)
+				if (!VendorStockItemIDs.Contains(TemplatePool[p])) { Chosen = TemplatePool[p]; break; }
 		}
 		if (Chosen.IsNone()) Chosen = TemplatePool[0];
+
+		VendorSeenCounts.FindOrAdd(Chosen)++;
 
 		const ET66ItemRarity Rar = SlotRarities[i];
 		int32 RollMin = 1, RollMax = 3;
@@ -1268,6 +1352,73 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 	return bGranted;
 }
 
+void UT66RunStateSubsystem::GenerateBuybackDisplay()
+{
+	BuybackDisplaySlots.SetNum(3);
+	const int32 PoolNum = BuybackPool.Num();
+	const int32 MaxPage = PoolNum > 0 ? FMath::Max(0, (PoolNum + 2) / 3 - 1) : 0;
+	BuybackDisplayPage = FMath::Clamp(BuybackDisplayPage, 0, MaxPage);
+	const int32 Start = BuybackDisplayPage * 3;
+	for (int32 i = 0; i < 3; ++i)
+	{
+		const int32 Idx = Start + i;
+		if (Idx < PoolNum)
+		{
+			BuybackDisplaySlots[i] = BuybackPool[Idx];
+		}
+		else
+		{
+			BuybackDisplaySlots[i] = FT66InventorySlot();
+		}
+	}
+	BuybackChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::RerollBuybackDisplay()
+{
+	const int32 PoolNum = BuybackPool.Num();
+	const int32 MaxPage = PoolNum > 0 ? FMath::Max(0, (PoolNum + 2) / 3 - 1) : 0;
+	if (MaxPage > 0)
+	{
+		BuybackDisplayPage = (BuybackDisplayPage + 1) % (MaxPage + 1);
+	}
+	GenerateBuybackDisplay();
+}
+
+bool UT66RunStateSubsystem::TryBuybackSlot(int32 DisplayIndex)
+{
+	if (DisplayIndex < 0 || DisplayIndex >= 3) return false;
+	if (!HasInventorySpace()) return false;
+
+	const int32 PoolIndex = BuybackDisplayPage * 3 + DisplayIndex;
+	if (PoolIndex < 0 || PoolIndex >= BuybackPool.Num()) return false;
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (!GI) return false;
+
+	const FT66InventorySlot Slot = BuybackPool[PoolIndex];
+	if (!Slot.IsValid()) return false;
+
+	FItemData ItemData;
+	int32 BuyPrice = 0;
+	if (GI->GetItemData(Slot.ItemTemplateID, ItemData))
+	{
+		BuyPrice = ItemData.GetSellGoldForRarity(Slot.Rarity);
+	}
+	if (BuyPrice <= 0) BuyPrice = 1;
+	if (CurrentGold < BuyPrice) return false;
+
+	CurrentGold -= BuyPrice;
+	BuybackPool.RemoveAt(PoolIndex);
+	AddItemSlot(Slot);
+	RecomputeItemDerivedStats();
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=-%d,Source=Buyback,ItemID=%s"), BuyPrice, *Slot.ItemTemplateID.ToString()));
+	GoldChanged.Broadcast();
+	InventoryChanged.Broadcast();
+	GenerateBuybackDisplay();
+	return true;
+}
+
 bool UT66RunStateSubsystem::TryActivateUltimate()
 {
 	if (UltimateCooldownRemainingSeconds > 0.f) return false;
@@ -1279,6 +1430,9 @@ bool UT66RunStateSubsystem::TryActivateUltimate()
 
 void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 {
+	// HP regen (numerical)
+	ApplyHpRegen(DeltaTime);
+
 	// Ultimate cooldown
 	if (UltimateCooldownRemainingSeconds > 0.f)
 	{
@@ -1331,7 +1485,7 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 			while (StatusBurnAccumDamage >= 1.f)
 			{
 				StatusBurnAccumDamage -= 1.f;
-				ApplyTrueDamage(1);
+				ApplyTrueDamage(5);
 			}
 		}
 		if (StatusBurnSecondsRemaining <= 0.f)
@@ -1377,7 +1531,7 @@ void UT66RunStateSubsystem::EnterLastStand()
 	// Consume the charge.
 	SurvivalCharge01 = 0.f;
 
-	// Hearts stay at 0, but the run continues.
+	// HP stays at 0, but the run continues.
 	HeartsChanged.Broadcast();
 	SurvivalChanged.Broadcast();
 }
@@ -1392,34 +1546,74 @@ void UT66RunStateSubsystem::EndLastStandAndDie()
 	// Dev Immortality: never end the run.
 	if (bDevImmortality)
 	{
-		CurrentHearts = 0;
+		CurrentHP = 0.f;
 		HeartsChanged.Broadcast();
 		return;
 	}
 
 	// Die as normal now.
-	CurrentHearts = 0;
+	CurrentHP = 0.f;
 	HeartsChanged.Broadcast();
 	OnPlayerDied.Broadcast();
 }
 
-bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
+bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 {
-	if (Hearts <= 0) return false;
+	if (DamageHP <= 0) return false;
 
 	// If we're in last-stand, we ignore damage (invincible).
 	if (bInLastStand) return false;
 
-	// Evasion: dodge the entire hit.
+	// Iron Will (New Chad): flat damage reduction before armor.
+	if (PassiveType == ET66PassiveType::IronWill)
+	{
+		const int32 FlatReduction = GetArmorStat() * 2;
+		DamageHP = FMath::Max(1, DamageHP - FlatReduction);
+	}
+
+	// Evasion: dodge the entire hit. On dodge: Assassinate (OHKO) and CounterAttack (deal fraction of would-be damage to attacker).
 	const float Evade = GetEvasionChance01();
 	if (Evade > 0.f && FMath::FRand() < Evade)
 	{
+		UWorld* DodgeWorld = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+		if (DodgeWorld)
+		{
+			if (APawn* HeroPawn = DodgeWorld->GetFirstPlayerController() ? DodgeWorld->GetFirstPlayerController()->GetPawn() : nullptr)
+			{
+				if (UT66FloatingCombatTextSubsystem* FloatingText = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+				{
+					FloatingText->ShowStatusEvent(HeroPawn, UT66FloatingCombatTextSubsystem::EventType_Dodge);
+				}
+			}
+		}
+		if (Attacker)
+		{
+			const float AssassinateChance = GetAssassinateChance01();
+			if (AssassinateChance > 0.f && FMath::FRand() < AssassinateChance)
+			{
+				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { E->TakeDamageFromHero(99999, FName(TEXT("Assassinate")), NAME_None); }
+				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { B->TakeDamageFromHeroHit(99999, FName(TEXT("Assassinate")), NAME_None); }
+			}
+			const float CounterChance = FMath::Clamp(GetCounterAttackFraction(), 0.f, 1.f);
+			if (CounterChance > 0.f && DamageHP > 0 && FMath::FRand() < CounterChance)
+			{
+				const int32 CounterDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageHP) * 0.5f));
+				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { if (E->CurrentHP > 0) E->TakeDamageFromHero(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
+				else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Attacker)) { if (GB->CurrentHP > 0) GB->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
+				else if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Attacker)) { if (VB->CurrentHP > 0) VB->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
+				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { if (B->IsAwakened() && B->IsAlive()) B->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
+				if (UT66FloatingCombatTextSubsystem* FloatingText = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+				{
+					FloatingText->ShowStatusEvent(Attacker, UT66FloatingCombatTextSubsystem::EventType_CounterAttack);
+				}
+			}
+		}
 		return false;
 	}
 
-	// Armor: reduce the hit size (still at least 1 if hit > 0).
+	// Armor: reduce the hit (still at least 1 HP if hit > 0).
 	const float Armor = GetArmorReduction01();
-	const int32 Reduced = FMath::Max(1, FMath::CeilToInt(static_cast<float>(Hearts) * (1.f - Armor)));
+	const float Reduced = static_cast<float>(FMath::Max(1, FMath::CeilToInt(static_cast<float>(DamageHP) * (1.f - Armor))));
 
 	UGameInstance* GI = GetGameInstance();
 	UWorld* World = GI ? GI->GetWorld() : nullptr;
@@ -1429,8 +1623,55 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
 		return false;
 	}
 
+	// Reflect: % chance to reflect; when it procs, 50% of reduced damage back to the attacker. Crush: chance to OHKO when reflect fires.
+	if (Attacker && Reduced > 0.f)
+	{
+		const float ReflectChance = FMath::Clamp(GetReflectDamageFraction(), 0.f, 1.f);
+		if (ReflectChance > 0.f && FMath::FRand() < ReflectChance)
+		{
+			const int32 ReflectedAmount = FMath::Max(1, FMath::RoundToInt(Reduced * 0.5f));
+			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker))
+			{
+				if (E->CurrentHP > 0) E->TakeDamageFromHero(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
+			}
+			else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Attacker))
+			{
+				if (GB->CurrentHP > 0) GB->TakeDamageFromHeroHit(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
+			}
+			else if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Attacker))
+			{
+				if (VB->CurrentHP > 0) VB->TakeDamageFromHeroHit(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
+			}
+			else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker))
+			{
+				if (B->IsAwakened() && B->IsAlive()) B->TakeDamageFromHeroHit(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
+			}
+			if (UGameInstance* ReflectGI = GetGameInstance())
+			{
+				if (UT66FloatingCombatTextSubsystem* FloatingText = ReflectGI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
+				{
+					FloatingText->ShowStatusEvent(Attacker, UT66FloatingCombatTextSubsystem::EventType_Reflect);
+				}
+			}
+
+			const float CrushChance = GetCrushChance01();
+			if (CrushChance > 0.f && FMath::FRand() < CrushChance)
+			{
+				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { E->TakeDamageFromHero(99999, FName(TEXT("Crush")), NAME_None); }
+				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { B->TakeDamageFromHeroHit(99999, FName(TEXT("Crush")), NAME_None); }
+				if (UGameInstance* CrushGI = GetGameInstance())
+				{
+						if (UT66FloatingCombatTextSubsystem* CrushFloating = CrushGI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
+					{
+						CrushFloating->ShowStatusEvent(Attacker, UT66FloatingCombatTextSubsystem::EventType_Crush);
+					}
+				}
+			}
+		}
+	}
+
 	LastDamageTime = Now;
-	CurrentHearts = FMath::Max(0, CurrentHearts - Reduced);
+	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
 
 	// Skill Rating tracking: any damage that actually applies counts as a hit event.
 	if (UGameInstance* GI3 = GetGameInstance())
@@ -1441,19 +1682,18 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 Hearts)
 		}
 	}
 
-	// Survival charge fills on real damage taken.
-	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (static_cast<float>(Reduced) * SurvivalChargePerHeart), 0.f, 1.f);
+	// Survival charge: 100 HP damage = full (5 hearts * 20 HP). So 1 HP = 0.01 charge.
+	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (Reduced / DefaultMaxHP), 0.f, 1.f);
 	SurvivalChanged.Broadcast();
 	HeartsChanged.Broadcast();
 
-	if (CurrentHearts <= 0)
+	if (CurrentHP <= 0.f)
 	{
 		// Dev Immortality: never end the run.
 		if (bDevImmortality)
 		{
 			return true;
 		}
-		// Die immediately when last heart is lost (last-stand invulnerability disabled).
 		OnPlayerDied.Broadcast();
 	}
 	return true;
@@ -1611,19 +1851,35 @@ void UT66RunStateSubsystem::ClearInventory()
 void UT66RunStateSubsystem::HealToFull()
 {
 	if (bInLastStand) return;
-	CurrentHearts = MaxHearts;
+	CurrentHP = MaxHP;
+	HeartsChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::HealHP(float Amount)
+{
+	if (bInLastStand) return;
+	if (Amount <= 0.f) return;
+
+	const float NewHP = FMath::Clamp(CurrentHP + Amount, 0.f, MaxHP);
+	if (FMath::IsNearlyEqual(NewHP, CurrentHP)) return;
+	CurrentHP = NewHP;
 	HeartsChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::HealHearts(int32 Hearts)
 {
-	if (bInLastStand) return;
 	if (Hearts <= 0) return;
+	HealHP(static_cast<float>(Hearts) * HPPerRedHeart);
+}
 
-	const int32 NewHearts = FMath::Clamp(CurrentHearts + Hearts, 0, MaxHearts);
-	if (NewHearts == CurrentHearts) return;
-	CurrentHearts = NewHearts;
-	HeartsChanged.Broadcast();
+void UT66RunStateSubsystem::ApplyHpRegen(float DeltaTime)
+{
+	if (bInLastStand) return;
+	const float Rate = GetHpRegenPerSecond();
+	if (Rate <= 0.f || DeltaTime <= 0.f) return;
+
+	const float Healed = Rate * DeltaTime;
+	HealHP(Healed);
 }
 
 void UT66RunStateSubsystem::KillPlayer()
@@ -1631,7 +1887,7 @@ void UT66RunStateSubsystem::KillPlayer()
 	// Dev Immortality: never end the run.
 	if (bDevImmortality)
 	{
-		CurrentHearts = 0;
+		CurrentHP = 0.f;
 		LastDamageTime = -9999.f;
 		HeartsChanged.Broadcast();
 		return;
@@ -1644,7 +1900,7 @@ void UT66RunStateSubsystem::KillPlayer()
 		return;
 	}
 
-	CurrentHearts = 0;
+	CurrentHP = 0.f;
 	LastDamageTime = -9999.f;
 	HeartsChanged.Broadcast();
 	OnPlayerDied.Broadcast();
@@ -1672,11 +1928,13 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 	}
 
 	CurrentGold += SellGold;
+	BuybackPool.Add(Slot);
 	InventorySlots.RemoveAt(InventoryIndex);
 	RecomputeItemDerivedStats();
 	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Vendor,ItemID=%s"), SellGold, *Slot.ItemTemplateID.ToString()));
 	GoldChanged.Broadcast();
 	InventoryChanged.Broadcast();
+	BuybackChanged.Broadcast();
 	LogAdded.Broadcast();
 	return true;
 }
@@ -1806,8 +2064,8 @@ void UT66RunStateSubsystem::ToggleDevPower()
 
 void UT66RunStateSubsystem::ResetForNewRun()
 {
-	MaxHearts = DefaultMaxHearts;
-	CurrentHearts = MaxHearts;
+	MaxHP = DefaultMaxHP;
+	CurrentHP = MaxHP;
 	CurrentGold = DefaultStartGold;
 	CurrentDebt = 0;
 	bLoanSharkPending = false;
@@ -1819,10 +2077,15 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	OwedBossIDs.Empty();
 	CowardiceGatesTakenCount = 0;
 	InventorySlots.Empty();
+	BuybackPool.Empty();
+	BuybackDisplaySlots.Empty();
+	BuybackDisplayPage = 0;
 	RecomputeItemDerivedStats();
 	EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
 	EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
 	ActiveDOTs.Empty();
+	RallyStacks = 0;
+	RallyTimerEndWorldTime = 0.0;
 	if (UWorld* W = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr)
 	{
 		if (DOTTimerHandle.IsValid())

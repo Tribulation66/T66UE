@@ -79,6 +79,38 @@ namespace
 				]
 			];
 	}
+
+	/** Creates a rich tooltip (title + description) for stat/ability hover. */
+	static TSharedPtr<IToolTip> CreateRichTooltip(const FText& Title, const FText& Description)
+	{
+		if (Title.IsEmpty() && Description.IsEmpty()) return nullptr;
+		return SNew(SToolTip)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
+				.BorderBackgroundColor(FT66Style::Tokens::Bg)
+				.Padding(FMargin(10.f, 8.f))
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+					[
+						SNew(STextBlock)
+						.Text(Title)
+						.Font(FT66Style::Tokens::FontBold(14))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(Description)
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+						.WrapTextAt(280.f)
+					]
+				]
+			];
+	}
 }
 
 class ST66RingWidget : public SLeafWidget
@@ -741,6 +773,23 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		BottomLeftHUDBox->SetRenderTransformPivot(FVector2D(0.f, 1.f));
 		BottomLeftHUDBox->SetRenderTransform(FSlateRenderTransform(FTransform2D(0.8f)));
 	}
+
+	// Passive and Ultimate ability tooltips (hero-specific)
+	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	FHeroData HD;
+	if (T66GI && T66GI->GetSelectedHeroData(HD) && Loc)
+	{
+		if (PassiveBorder.IsValid())
+		{
+			PassiveBorder->SetToolTip(CreateRichTooltip(Loc->GetText_PassiveName(HD.PassiveType), Loc->GetText_PassiveDescription(HD.PassiveType)));
+		}
+		if (UltimateBorder.IsValid())
+		{
+			UltimateBorder->SetToolTip(CreateRichTooltip(Loc->GetText_UltimateName(HD.UltimateType), Loc->GetText_UltimateDescription(HD.UltimateType)));
+		}
+	}
+
 	RefreshHUD();
 }
 
@@ -1545,17 +1594,15 @@ void UT66GameplayHUDWidget::RefreshHearts()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 
-	// Hearts: 5-slot compression with tier colors (red -> blue -> green -> ...)
-	const int32 HeartsNow = RunState->GetCurrentHearts();
-	int32 Tier = 0;
-	int32 Count = 0;
-	FT66RarityUtil::ComputeTierAndCount5(HeartsNow, Tier, Count);
+	// Hearts: 5 slots driven by numerical HP; tier from MaxHP (red/blue/green/purple/gold).
+	const int32 Tier = RunState->GetHeartDisplayTier();
 	const FLinearColor TierC = FT66RarityUtil::GetTierColor(Tier);
 	const FLinearColor EmptyC(0.25f, 0.25f, 0.28f, 0.35f);
 	for (int32 i = 0; i < HeartImages.Num(); ++i)
 	{
 		if (!HeartImages[i].IsValid()) continue;
-		const bool bFilled = (i < Count);
+		const float Fill = RunState->GetHeartSlotFill(i);
+		const bool bFilled = (Fill > 0.01f);
 		HeartImages[i]->SetColorAndOpacity(bFilled ? TierC : EmptyC);
 	}
 }
@@ -1624,13 +1671,11 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	RefreshStatusEffects();
 	RefreshHeroStats();
 
-	// Portrait: tier color based on MAX heart quantity (not current health).
+	// Portrait: tier color from MaxHP (heart display tier).
 	if (PortraitBorder.IsValid())
 	{
-		int32 Tier = 0;
-		int32 Count = 0;
-		FT66RarityUtil::ComputeTierAndCount5(RunState->GetMaxHearts(), Tier, Count);
-		PortraitBorder->SetBorderBackgroundColor(Count > 0 ? FT66RarityUtil::GetTierColor(Tier) : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
+		const int32 Tier = RunState->GetHeartDisplayTier();
+		PortraitBorder->SetBorderBackgroundColor(RunState->GetMaxHP() > 0.f ? FT66RarityUtil::GetTierColor(Tier) : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
 	}
 	TSoftObjectPtr<UTexture2D> PortraitSoft;
 	if (GIAsT66 && !GIAsT66->SelectedHeroID.IsNone())
@@ -1811,7 +1856,15 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			}
 		}
 		IdolSlotBorders[i]->SetBorderBackgroundColor(C);
-		IdolSlotBorders[i]->SetToolTip(CreateCustomTooltip(IdolTooltipText));
+		const FName CurrentIdolID = (i < Idols.Num()) ? Idols[i] : NAME_None;
+		if (!CachedIdolSlotIDs.IsValidIndex(i) || CachedIdolSlotIDs[i] != CurrentIdolID)
+		{
+			if (CachedIdolSlotIDs.IsValidIndex(i)) CachedIdolSlotIDs[i] = CurrentIdolID;
+			if (IdolSlotContainers.IsValidIndex(i) && IdolSlotContainers[i].IsValid())
+			{
+				IdolSlotContainers[i]->SetToolTip(CreateCustomTooltip(IdolTooltipText));
+			}
+		}
 
 		if (IdolSlotBrushes.IsValidIndex(i) && IdolSlotBrushes[i].IsValid())
 		{
@@ -1958,7 +2011,15 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			}
 		}
 		InventorySlotBorders[i]->SetBorderBackgroundColor(SlotColor);
-		InventorySlotBorders[i]->SetToolTip(CreateCustomTooltip(Tooltip));
+		const FName CurrentItemID = (i < Inv.Num()) ? Inv[i] : NAME_None;
+		if (!CachedInventorySlotIDs.IsValidIndex(i) || CachedInventorySlotIDs[i] != CurrentItemID)
+		{
+			if (CachedInventorySlotIDs.IsValidIndex(i)) CachedInventorySlotIDs[i] = CurrentItemID;
+			if (InventorySlotContainers.IsValidIndex(i) && InventorySlotContainers[i].IsValid())
+			{
+				InventorySlotContainers[i]->SetToolTip(CreateCustomTooltip(Tooltip));
+			}
+		}
 
 		if (InventorySlotBrushes.IsValidIndex(i) && InventorySlotBrushes[i].IsValid())
 		{
@@ -2026,12 +2087,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	DifficultyImages.SetNum(5);
 	ClownImages.SetNum(5);
 	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
+	IdolSlotContainers.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotImages.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotBrushes.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolLevelDotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots * UT66RunStateSubsystem::MaxIdolLevel);
+	CachedIdolSlotIDs.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotContainers.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	CachedInventorySlotIDs.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	StatusEffectDots.SetNum(3);
 	StatusEffectDotBoxes.SetNum(3);
 	WorldDialogueOptionBorders.SetNum(3);
@@ -2253,7 +2318,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		IdolSlotsRef->AddSlot(Col, Row)
 			.Padding(IdolSlotPad)
 			[
-				SNew(SBox)
+				SAssignNew(IdolSlotContainers[i], SBox)
 				.WidthOverride(IdolSlotSize)
 				.HeightOverride(IdolSlotSize)
 				[
@@ -2428,7 +2493,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.AutoWidth()
 				.Padding(InvSlotPad, InvSlotPad)
 				[
-					SNew(SBox)
+					SAssignNew(InventorySlotContainers[ThisSlotIndex], SBox)
 					.WidthOverride(InvSlotSize)
 					.HeightOverride(InvSlotSize)
 					[
@@ -3019,122 +3084,198 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									]
 									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
-										SAssignNew(StatLevelText, STextBlock)
-										.Text(FText::FromString(TEXT("Lv.1")))
-										.Font(FT66Style::Tokens::FontBold(15))
-										.ColorAndOpacity(FLinearColor(0.9f, 0.85f, 0.6f, 1.f))
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Level() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(0) : FText::GetEmpty()))
+										[
+											SAssignNew(StatLevelText, STextBlock)
+											.Text(FText::FromString(TEXT("Lv.1")))
+											.Font(FT66Style::Tokens::FontBold(15))
+											.ColorAndOpacity(FLinearColor(0.9f, 0.85f, 0.6f, 1.f))
+										]
 									]
 									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
-										SAssignNew(StatDamageText, STextBlock)
-										.Text(FText::FromString(TEXT("Dmg: 0")))
-										.Font(FT66Style::Tokens::FontBold(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Damage() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty()))
+										[
+											SAssignNew(StatDamageText, STextBlock)
+											.Text(FText::FromString(TEXT("Dmg: 0")))
+											.Font(FT66Style::Tokens::FontBold(14))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
 									]
 									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
-										SAssignNew(StatAttackSpeedText, STextBlock)
-										.Text(FText::FromString(TEXT("AS: 0")))
-										.Font(FT66Style::Tokens::FontBold(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_AttackSpeed() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty()))
+										[
+											SAssignNew(StatAttackSpeedText, STextBlock)
+											.Text(FText::FromString(TEXT("AS: 0")))
+											.Font(FT66Style::Tokens::FontBold(14))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
 									]
 									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
-										SAssignNew(StatAttackScaleText, STextBlock)
-										.Text(FText::FromString(TEXT("Scale: 0")))
-										.Font(FT66Style::Tokens::FontBold(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_AttackScale() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty()))
+										[
+											SAssignNew(StatAttackScaleText, STextBlock)
+											.Text(FText::FromString(TEXT("Scale: 0")))
+											.Font(FT66Style::Tokens::FontBold(14))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
 									]
 									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
-										SAssignNew(StatArmorText, STextBlock)
-										.Text(FText::FromString(TEXT("Armor: 0")))
-										.Font(FT66Style::Tokens::FontBold(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Armor() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty()))
+										[
+											SAssignNew(StatArmorText, STextBlock)
+											.Text(FText::FromString(TEXT("Armor: 0")))
+											.Font(FT66Style::Tokens::FontBold(14))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
 									]
 									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
-										SAssignNew(StatSpeedText, STextBlock)
-										.Text(FText::FromString(TEXT("Speed: 1.0")))
-										.Font(FT66Style::Tokens::FontBold(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Speed() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty()))
+										[
+											SAssignNew(StatSpeedText, STextBlock)
+											.Text(FText::FromString(TEXT("Speed: 1.0")))
+											.Font(FT66Style::Tokens::FontBold(14))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
 									]
 									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
-										SAssignNew(StatEvasionText, STextBlock)
-										.Text(FText::FromString(TEXT("Eva: 0")))
-										.Font(FT66Style::Tokens::FontBold(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Evasion() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty()))
+										[
+											SAssignNew(StatEvasionText, STextBlock)
+											.Text(FText::FromString(TEXT("Eva: 0")))
+											.Font(FT66Style::Tokens::FontBold(14))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
 									]
 									+ SVerticalBox::Slot().AutoHeight()
 									[
-										SAssignNew(StatLuckText, STextBlock)
-										.Text(FText::FromString(TEXT("Luck: 0")))
-										.Font(FT66Style::Tokens::FontBold(14))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Luck() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty()))
+										[
+											SAssignNew(StatLuckText, STextBlock)
+											.Text(FText::FromString(TEXT("Luck: 0")))
+											.Font(FT66Style::Tokens::FontBold(14))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
 									]
 								]
 							]
 						]
 					]
 				]
-				// Ultimate ability icon (to the right of portrait area)
+				// Passive icon (above) + Ultimate ability icon (to the right of portrait area)
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(16.f, 0.f, 0.f, 0.f)
 				[
 					SNew(SBox)
 					.WidthOverride(84.f)
-					.HeightOverride(84.f)
+					.HeightOverride(174.f)
 					[
-						SAssignNew(UltimateBorder, SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
-						.Padding(0.f)
+						SNew(SVerticalBox)
+						// Passive ability icon (reuses same sprite as ultimate for now)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 						[
-							SNew(SOverlay)
-							// KnightULT texture as background
-							+ SOverlay::Slot()
+							SNew(SBox)
+							.WidthOverride(84.f)
+							.HeightOverride(84.f)
 							[
-								SAssignNew(UltimateImage, SImage)
-								.Image(UltimateBrush.Get())
-								.ColorAndOpacity(FLinearColor::White)
-							]
-							// Cooldown overlay: semi-transparent black + white countdown text
-							+ SOverlay::Slot()
-							[
-								SAssignNew(UltimateCooldownOverlay, SBorder)
+								SAssignNew(PassiveBorder, SBorder)
 								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								.Visibility(EVisibility::Collapsed)
+								.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
+								.Padding(0.f)
 								[
-									SAssignNew(UltimateText, STextBlock)
-									.Text(FText::GetEmpty())
-									.Font(FT66Style::Tokens::FontBold(22))
+									SAssignNew(PassiveImage, SImage)
+									.Image(UltimateBrush.Get())
 									.ColorAndOpacity(FLinearColor::White)
-									.Justification(ETextJustify::Center)
 								]
 							]
-							// Keybind badge (top-left corner, like Dota 2's "Q" badge)
-							+ SOverlay::Slot()
-							.HAlign(HAlign_Left)
-							.VAlign(VAlign_Top)
+						]
+						// Ultimate ability icon
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(SBox)
+							.WidthOverride(84.f)
+							.HeightOverride(84.f)
 							[
-								SNew(SBox)
-								.WidthOverride(22.f)
-								.HeightOverride(22.f)
+								SAssignNew(UltimateBorder, SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
+								.Padding(0.f)
 								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.75f))
-									.HAlign(HAlign_Center)
-									.VAlign(VAlign_Center)
+									SNew(SOverlay)
+									// KnightULT texture as background
+									+ SOverlay::Slot()
 									[
-										SNew(STextBlock)
-										.Text(NSLOCTEXT("T66.GameplayHUD", "UltKeybind", "R"))
-										.Font(FT66Style::Tokens::FontBold(11))
+										SAssignNew(UltimateImage, SImage)
+										.Image(UltimateBrush.Get())
 										.ColorAndOpacity(FLinearColor::White)
-										.Justification(ETextJustify::Center)
+									]
+									// Cooldown overlay: semi-transparent black + white countdown text
+									+ SOverlay::Slot()
+									[
+										SAssignNew(UltimateCooldownOverlay, SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+										.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
+										.HAlign(HAlign_Center)
+										.VAlign(VAlign_Center)
+										.Visibility(EVisibility::Collapsed)
+										[
+											SAssignNew(UltimateText, STextBlock)
+											.Text(FText::GetEmpty())
+											.Font(FT66Style::Tokens::FontBold(22))
+											.ColorAndOpacity(FLinearColor::White)
+											.Justification(ETextJustify::Center)
+										]
+									]
+									// Keybind badge (top-left corner, like Dota 2's "Q" badge)
+									+ SOverlay::Slot()
+									.HAlign(HAlign_Left)
+									.VAlign(VAlign_Top)
+									[
+										SNew(SBox)
+										.WidthOverride(22.f)
+										.HeightOverride(22.f)
+										[
+											SNew(SBorder)
+											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+											.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.75f))
+											.HAlign(HAlign_Center)
+											.VAlign(VAlign_Center)
+											[
+												SNew(STextBlock)
+												.Text(NSLOCTEXT("T66.GameplayHUD", "UltKeybind", "R"))
+												.Font(FT66Style::Tokens::FontBold(11))
+												.ColorAndOpacity(FLinearColor::White)
+												.Justification(ETextJustify::Center)
+											]
+										]
 									]
 								]
 							]
@@ -3576,4 +3717,9 @@ void UT66GameplayHUDWidget::SetWorldDialogueScreenPosition(const FVector2D& Scre
 bool UT66GameplayHUDWidget::IsWorldDialogueVisible() const
 {
 	return WorldDialogueBox.IsValid() && WorldDialogueBox->GetVisibility() == EVisibility::Visible;
+}
+
+void UT66GameplayHUDWidget::SetInteractive(bool bInteractive)
+{
+	SetVisibility(bInteractive ? ESlateVisibility::Visible : ESlateVisibility::SelfHitTestInvisible);
 }

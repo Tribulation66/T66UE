@@ -8,6 +8,7 @@
 #include "T66BossBase.generated.h"
 
 class UStaticMeshComponent;
+class AT66BossGroundAOE;
 
 /** Boss: dormant until player proximity, then awakens, chases, and fires projectiles. */
 UCLASS(Blueprintable)
@@ -56,6 +57,30 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss")
 	int32 PointValue = 0;
 
+	/** Armor (0–1): fraction of damage reduced. Can be debuffed below 0 for bonus damage. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss")
+	float Armor = 0.f;
+
+	/** Interval between ground AOE attacks (0 = disabled). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|AOE")
+	float GroundAOEIntervalSeconds = 5.f;
+
+	/** Radius of each ground AOE zone. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|AOE")
+	float GroundAOERadius = 300.f;
+
+	/** Warning telegraph duration before AOE fires. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|AOE")
+	float GroundAOEWarningSeconds = 1.2f;
+
+	/** Base HP damage of each ground AOE hit (stage-scaled at spawn time). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|AOE")
+	int32 GroundAOEBaseDamageHP = 25;
+
+	/** Apply an armor debuff (from hero Taunt). Reduces armor temporarily. */
+	UFUNCTION(BlueprintCallable, Category = "Boss")
+	void ApplyArmorDebuff(float ReductionAmount, float DurationSeconds);
+
 	/** Initialize boss from data table (optional). */
 	void InitializeBoss(const FBossData& BossData);
 
@@ -79,13 +104,18 @@ protected:
 
 	void Awaken();
 	void FireAtPlayer();
-	void Die();
+	void SpawnGroundAOE();
+	virtual void Die();
 
 	FTimerHandle FireTimerHandle;
+	FTimerHandle AOETimerHandle;
 
 private:
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseProjectileDamageHearts = 0;
+
+	float ArmorDebuffAmount = 0.f;
+	float ArmorDebuffSecondsRemaining = 0.f;
 };
 

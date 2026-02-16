@@ -236,38 +236,23 @@ void AT66CompanionBase::Tick(float DeltaTime)
 		SetActorRotation(NewRot);
 	}
 
-	// Heal the hero over time (up to max hearts).
-	HealAccumSeconds += DeltaTime;
-	float EffectiveInterval = HealIntervalSeconds;
+	// Heal the hero over time (numerical HP/s by Union tier: 5/10/20/20).
+	float HealHPPerSecond = 5.f;
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
 		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
-			// Union tiers: Basic=10s, Good=5s, Medium=3s, Hyper=1s per heart.
-			EffectiveInterval = FMath::Clamp(Ach->GetCompanionUnionHealingIntervalSeconds(CompanionID), 0.25f, 60.f);
+			const int32 Stages = Ach->GetCompanionUnionStagesCleared(CompanionID);
+			if (Stages >= UT66AchievementsSubsystem::UnionTier_HyperStages) HealHPPerSecond = 20.f;
+			else if (Stages >= UT66AchievementsSubsystem::UnionTier_MediumStages) HealHPPerSecond = 20.f;
+			else if (Stages >= UT66AchievementsSubsystem::UnionTier_GoodStages) HealHPPerSecond = 10.f;
+			else HealHPPerSecond = 5.f;
 		}
-	}
-
-	if (HealAccumSeconds >= EffectiveInterval)
-	{
-		// Avoid drift on variable frame times; handle large deltas safely.
-		int32 Heals = 0;
-		while (HealAccumSeconds >= EffectiveInterval && Heals < 8)
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
-			HealAccumSeconds -= EffectiveInterval;
-			++Heals;
-		}
-		if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
-		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			if (RunState->GetCurrentHP() < RunState->GetMaxHP() && HealHPPerSecond > 0.f)
 			{
-				if (RunState->GetCurrentHearts() < RunState->GetMaxHearts())
-				{
-					for (int32 H = 0; H < Heals; ++H)
-					{
-						RunState->HealHearts(HealAmountHearts);
-					}
-				}
+				RunState->HealHP(HealHPPerSecond * DeltaTime);
 			}
 		}
 	}

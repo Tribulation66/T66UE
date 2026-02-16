@@ -81,6 +81,9 @@ public:
 	void SetWorldDialogueScreenPosition(const FVector2D& ScreenPos);
 	bool IsWorldDialogueVisible() const;
 
+	/** Toggle hit-test visibility so tooltips work when the mouse is free. */
+	void SetInteractive(bool bInteractive);
+
 	/** TikTok placeholder toggle (O / ToggleTikTok). */
 	void ToggleTikTokPlaceholder();
 	bool IsTikTokPlaceholderVisible() const;
@@ -138,6 +141,8 @@ protected:
 	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // 10 per idol slot
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
+	TSharedPtr<SBorder> PassiveBorder;
+	TSharedPtr<SImage> PassiveImage;
 	TSharedPtr<SBorder> UltimateBorder;
 	TSharedPtr<SBorder> UltimateCooldownOverlay;
 	TSharedPtr<STextBlock> UltimateText;
@@ -160,6 +165,7 @@ protected:
 	TSharedPtr<SButton> PowerButton;
 	TSharedPtr<STextBlock> PowerButtonText;
 	TArray<TSharedPtr<SBorder>> IdolSlotBorders;
+	TArray<TSharedPtr<SBox>> IdolSlotContainers;
 	TArray<TSharedPtr<SImage>> IdolSlotImages;
 	TArray<TSharedPtr<FSlateBrush>> IdolSlotBrushes;
 	TSharedPtr<SBorder> PortraitBorder;
@@ -179,8 +185,12 @@ protected:
 	TSharedPtr<STextBlock> StatEvasionText;
 	TSharedPtr<STextBlock> StatLuckText;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
+	TArray<TSharedPtr<SBox>> InventorySlotContainers;
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;
+	/** Cached idol/item IDs per slot so we only update tooltips when slot content changes (avoids tooltip flash from RefreshHUD). */
+	TArray<FName> CachedIdolSlotIDs;
+	TArray<FName> CachedInventorySlotIDs;
 	TSharedPtr<STextBlock> FPSText;
 	TSharedPtr<SBox> InventoryPanelBox;
 	TSharedPtr<SBox> BottomLeftHUDBox;

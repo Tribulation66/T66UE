@@ -77,6 +77,17 @@ public:
 	TSharedPtr<STextBlock> SellItemPriceText;
 	TSharedPtr<SWidget> SellItemButton;
 
+	// Casino/Buyback tab: 0 = Casino (games), 1 = Buyback
+	TSharedPtr<SWidgetSwitcher> CasinoBuybackSwitcher;
+	TArray<TSharedPtr<STextBlock>> BuybackNameTexts;
+	TArray<TSharedPtr<STextBlock>> BuybackDescTexts;
+	TArray<TSharedPtr<STextBlock>> BuybackPriceTexts;
+	TArray<TSharedPtr<SBorder>> BuybackTileBorders;
+	TArray<TSharedPtr<SBorder>> BuybackIconBorders;
+	TArray<TSharedPtr<SImage>> BuybackIconImages;
+	TArray<TSharedPtr<FSlateBrush>> BuybackIconBrushes;
+	TArray<TSharedPtr<SWidget>> BuybackBuyButtons;
+
 	// Cheat prompt overlay
 	TSharedPtr<SBox> CheatPromptContainer;
 	bool bCheatPromptVisible = false;
@@ -229,6 +240,7 @@ public:
 
 	FReply OnSelectInventorySlot(int32 InventoryIndex);
 	FReply OnSellSelectedClicked();
+	FReply OnBuybackSlot(int32 SlotIndex);
 
 	FReply OnBetClicked();
 	FReply OnBorrowClicked();
@@ -260,6 +272,7 @@ public:
 
 	void SetPage(EGamblerPage Page);
 	void RefreshTopBar();
+	void RefreshBuyback();
 	void RefreshInventory();
 	void RefreshSellPanel();
 	void RefreshStatsPanel();
@@ -292,5 +305,8 @@ public:
 	void HandleBJSplit();
 
 	void TeleportToVendor();
+
+	UFUNCTION()
+	void HandleBuybackChanged();
 };
 

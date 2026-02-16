@@ -29,7 +29,7 @@ AT66BossProjectile::AT66BossProjectile()
 	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
 		VisualMesh->SetStaticMesh(Sphere);
-		VisualMesh->SetRelativeScale3D(FVector(0.12f, 0.12f, 0.12f));
+		VisualMesh->SetRelativeScale3D(FVector(0.24f, 0.24f, 0.24f));
 	}
 	if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
 	{
@@ -68,7 +68,10 @@ void AT66BossProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState)
 	{
-		RunState->ApplyDamage(DamageHearts);
+		// Numerical damage: 10 base, +25% per stage. Pass owner (boss) as Attacker for reflect/crush.
+		const int32 Stage = FMath::Max(1, RunState->GetCurrentStage());
+		const int32 DamageHP = FMath::Max(10, FMath::RoundToInt(10.f * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
+		RunState->ApplyDamage(DamageHP, GetOwner());
 	}
 	Destroy();
 }

@@ -27,6 +27,18 @@ public:
 	static const FName EventType_Curse;
 	static const FName EventType_LevelUp;
 
+	/** Combat proc / event types (Taunt/Confusion on enemy; Invis/Dodge/LifeSteal/Close/Long on hero; Reflect/Crush/Counter on enemy). */
+	static const FName EventType_Taunt;
+	static const FName EventType_Confusion;
+	static const FName EventType_Invisibility;
+	static const FName EventType_Dodge;
+	static const FName EventType_LifeSteal;
+	static const FName EventType_Reflect;
+	static const FName EventType_Crush;
+	static const FName EventType_CounterAttack;
+	static const FName EventType_CloseRange;
+	static const FName EventType_LongRange;
+
 	/** Show a damage number at the target (offset to the side). Optionally show a status label above head if EventType is set. */
 	UFUNCTION(BlueprintCallable, Category = "FloatingCombatText")
 	void ShowDamageNumber(AActor* Target, int32 Amount, FName EventType = NAME_None);

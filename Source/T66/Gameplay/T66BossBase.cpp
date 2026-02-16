@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66BossProjectile.h"
+#include "Gameplay/T66BossGroundAOE.h"
 #include "Gameplay/T66GameMode.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -27,7 +28,10 @@ AT66BossBase::AT66BossBase()
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
 		Move->MaxWalkSpeed = 350.f;
+		Move->bOrientRotationToMovement = true;
+		Move->RotationRate = FRotator(0.f, 720.f, 0.f);
 	}
+	bUseControllerRotationYaw = false;
 
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
@@ -87,35 +91,16 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		}
 	}
 
-	// Stage 1 boss: always use a simple sphere (no character visual override).
-	if (BossID == FName(TEXT("Boss_01")))
+	// All stage bosses use the same "Boss" mesh from DT_CharacterVisuals (BossID kept for stats; visual is shared).
+	static const FName BossVisualID(TEXT("Boss"));
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
-		if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
+		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			VisualMesh->SetStaticMesh(Sphere);
-			VisualMesh->SetRelativeScale3D(FVector(6.f, 6.f, 6.f));
-		}
-		if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
-		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), BossData.PlaceholderColor);
-		}
-		if (USkeletalMeshComponent* Skel = GetMesh())
-		{
-			Skel->SetVisibility(false, true);
-		}
-	}
-	else
-	{
-		// Imported model: map BossID -> mesh (DT_CharacterVisuals).
-		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
-		{
-			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+			const bool bApplied = Visuals->ApplyCharacterVisual(BossVisualID, GetMesh(), VisualMesh, true);
+			if (!bApplied && GetMesh())
 			{
-				const bool bApplied = Visuals->ApplyCharacterVisual(BossID, GetMesh(), VisualMesh, true);
-				if (!bApplied && GetMesh())
-				{
-					GetMesh()->SetVisibility(false, true);
-				}
+				GetMesh()->SetVisibility(false, true);
 			}
 		}
 	}
@@ -183,6 +168,17 @@ void AT66BossBase::Tick(float DeltaSeconds)
 		return;
 	}
 
+	// Decay armor debuff
+	if (ArmorDebuffSecondsRemaining > 0.f)
+	{
+		ArmorDebuffSecondsRemaining -= DeltaSeconds;
+		if (ArmorDebuffSecondsRemaining <= 0.f)
+		{
+			ArmorDebuffSecondsRemaining = 0.f;
+			ArmorDebuffAmount = 0.f;
+		}
+	}
+
 	// Chase player
 	FVector ToPlayer = PlayerLoc - MyLoc;
 	ToPlayer.Z = 0.f;
@@ -192,6 +188,15 @@ void AT66BossBase::Tick(float DeltaSeconds)
 		ToPlayer /= Len;
 		AddMovementInput(ToPlayer, 1.f);
 	}
+}
+
+void AT66BossBase::ApplyArmorDebuff(float ReductionAmount, float DurationSeconds)
+{
+	const float Amt = FMath::Clamp(ReductionAmount, 0.f, 1.f);
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 30.f);
+	if (Amt <= 0.f || Dur <= 0.f) return;
+	ArmorDebuffAmount = FMath::Max(ArmorDebuffAmount, Amt);
+	ArmorDebuffSecondsRemaining = FMath::Max(ArmorDebuffSecondsRemaining, Dur);
 }
 
 void AT66BossBase::Awaken()
@@ -212,6 +217,11 @@ void AT66BossBase::Awaken()
 	if (World)
 	{
 		World->GetTimerManager().SetTimer(FireTimerHandle, this, &AT66BossBase::FireAtPlayer, FireIntervalSeconds, true, 0.25f);
+
+		if (GroundAOEIntervalSeconds > 0.f)
+		{
+			World->GetTimerManager().SetTimer(AOETimerHandle, this, &AT66BossBase::SpawnGroundAOE, GroundAOEIntervalSeconds, true, GroundAOEIntervalSeconds * 0.5f);
+		}
 	}
 }
 
@@ -242,20 +252,22 @@ bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceI
 {
 	if (!bAwakened || CurrentHP <= 0) return false;
 	if (DamageAmount <= 0) return false;
+	const float EffectiveArmor = FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
+	const int32 ReducedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageAmount) * (1.f - EffectiveArmor)));
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
 	{
-		DamageLog->RecordDamageDealt(SourceID, DamageAmount);
+		DamageLog->RecordDamageDealt(SourceID, ReducedDamage);
 	}
 	if (UT66FloatingCombatTextSubsystem* FloatingText = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
 	{
-		FloatingText->ShowDamageNumber(this, DamageAmount, EventType);
+		FloatingText->ShowDamageNumber(this, ReducedDamage, EventType);
 	}
 	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
-		const bool bDied = RunState->ApplyBossDamage(DamageAmount);
+		const bool bDied = RunState->ApplyBossDamage(ReducedDamage);
 		CurrentHP = RunState->GetBossCurrentHP();
 		if (bDied)
 		{
@@ -273,12 +285,47 @@ bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceI
 	return false;
 }
 
+void AT66BossBase::SpawnGroundAOE()
+{
+	if (!bAwakened || CurrentHP <= 0) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (!PlayerPawn) return;
+
+	FVector TargetLoc = PlayerPawn->GetActorLocation();
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(Hit, TargetLoc + FVector(0.f, 0.f, 500.f), TargetLoc - FVector(0.f, 0.f, 1000.f), ECC_WorldStatic))
+	{
+		TargetLoc = Hit.ImpactPoint + FVector(0.f, 0.f, 5.f);
+	}
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AT66BossGroundAOE* AOE = World->SpawnActor<AT66BossGroundAOE>(AT66BossGroundAOE::StaticClass(), TargetLoc, FRotator::ZeroRotator, Params);
+	if (AOE)
+	{
+		AOE->Radius = GroundAOERadius;
+		AOE->WarningDurationSeconds = GroundAOEWarningSeconds;
+
+		UGameInstance* GI = World->GetGameInstance();
+		UT66RunStateSubsystem* RS = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		const int32 Stage = RS ? FMath::Max(1, RS->GetCurrentStage()) : 1;
+		AOE->DamageHP = FMath::Max(10, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
+	}
+}
+
 void AT66BossBase::Die()
 {
 	UWorld* World = GetWorld();
 	if (World)
 	{
 		World->GetTimerManager().ClearTimer(FireTimerHandle);
+		World->GetTimerManager().ClearTimer(AOETimerHandle);
 	}
 
 	// Delegate death handling to GameMode (normal vs Coliseum).

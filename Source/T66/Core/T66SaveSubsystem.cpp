@@ -2,6 +2,7 @@
 
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66RunSaveGame.h"
+#include "Core/T66SaveMigration.h"
 #include "Kismet/GameplayStatics.h"
 
 const FString UT66SaveSubsystem::SaveIndexSlotName(TEXT("T66_SaveIndex"));
@@ -118,7 +119,12 @@ UT66RunSaveGame* UT66SaveSubsystem::LoadFromSlot(int32 SlotIndex)
 	// If needed, callers can use AsyncLoadGameFromSlot with a callback instead.
 	FString SlotName = GetSlotName(SlotIndex);
 	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
-	return Cast<UT66RunSaveGame>(Loaded);
+	UT66RunSaveGame* RunSave = Cast<UT66RunSaveGame>(Loaded);
+	if (RunSave)
+	{
+		RunSave->HeroID = T66MigrateHeroIDFromSave(RunSave->HeroID);
+	}
+	return RunSave;
 }
 
 void UT66SaveSubsystem::UpdateIndexOnSave(int32 SlotIndex, const FString& HeroDisplayName, const FString& MapName, const FString& LastPlayedUtc)

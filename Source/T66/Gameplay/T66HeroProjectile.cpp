@@ -3,8 +3,6 @@
 #include "Gameplay/T66HeroProjectile.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66GamblerBoss.h"
-#include "Gameplay/T66VendorBoss.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -173,14 +171,6 @@ bool AT66HeroProjectile::IsTargetAlive() const
 	{
 		return B->IsAwakened() && B->IsAlive();
 	}
-	if (const AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(T))
-	{
-		return GB->CurrentHP > 0;
-	}
-	if (const AT66VendorBoss* VB = Cast<AT66VendorBoss>(T))
-	{
-		return VB->CurrentHP > 0;
-	}
 	return true;
 }
 
@@ -203,16 +193,6 @@ void AT66HeroProjectile::ApplyDamageToTarget(AActor* Target)
 		{
 			Boss->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		}
-		return;
-	}
-	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Target))
-	{
-		GB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
-		return;
-	}
-	if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(Target))
-	{
-		VB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		return;
 	}
 }
@@ -244,27 +224,11 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 		return;
 	}
 
-	// Boss takes fixed 20 damage per hero projectile hit (only after awakening)
+	// Boss (stage, Gambler, Vendor) damage per hit
 	AT66BossBase* Boss = Cast<AT66BossBase>(OtherActor);
 	if (Boss && Boss->IsAwakened() && Boss->IsAlive())
 	{
 		Boss->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
-		Destroy();
-		return;
-	}
-
-	// Gambler boss damage per hit
-	if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(OtherActor))
-	{
-		GB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
-		Destroy();
-		return;
-	}
-
-	// Vendor boss damage per hit
-	if (AT66VendorBoss* VB = Cast<AT66VendorBoss>(OtherActor))
-	{
-		VB->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		Destroy();
 		return;
 	}

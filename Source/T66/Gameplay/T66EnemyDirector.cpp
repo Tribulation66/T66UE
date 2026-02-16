@@ -59,7 +59,9 @@ void AT66EnemyDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
 	}
+	PendingSpawns.Empty();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -263,6 +265,17 @@ void AT66EnemyDirector::SpawnWave()
 		}
 	}
 
+	// Spawn at 1.5x hero attack range so enemies don't appear on top of the player.
+	float EffectiveSpawnMin = SpawnMinDistance;
+	float EffectiveSpawnMax = SpawnMaxDistance;
+	if (RunState)
+	{
+		const float AttackRange = FMath::Max(400.f, RunState->GetHeroBaseAttackRange());
+		EffectiveSpawnMin = AttackRange * 1.5f;
+		EffectiveSpawnMax = EffectiveSpawnMin + 400.f;
+	}
+
+	PendingSpawns.Empty();
 	for (int32 i = 0; i < SpawnPlan.Num(); ++i)
 	{
 		FVector PlayerLoc = PlayerPawn->GetActorLocation();
@@ -271,13 +284,45 @@ void AT66EnemyDirector::SpawnWave()
 		for (int32 Try = 0; Try < 6; ++Try)
 		{
 			float Angle = FMath::RandRange(0.f, 2.f * PI);
-			float Dist = FMath::RandRange(SpawnMinDistance, SpawnMaxDistance);
+			float Dist = FMath::RandRange(EffectiveSpawnMin, EffectiveSpawnMax);
 			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
 			SpawnLoc = PlayerLoc + Offset;
 
 			if (!IsInAnySafeZone2D(SpawnLoc))
 			{
 				break;
+			}
+		}
+		// Guarantee: if still inside a safe zone, push outward past nearest NPC radius
+		if (Registry && IsInAnySafeZone2D(SpawnLoc))
+		{
+			static constexpr float SafeZonePushMargin = 50.f;
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			{
+				AT66HouseNPCBase* NPC = WeakNPC.Get();
+				if (!NPC) continue;
+				const float R = NPC->GetSafeZoneRadius();
+				FVector ToSpawnPt = SpawnLoc - NPC->GetActorLocation();
+				ToSpawnPt.Z = 0.f;
+				const float Dist2D = ToSpawnPt.Size();
+				if (Dist2D < R && Dist2D > 1.f)
+				{
+					FVector Dir = ToSpawnPt / Dist2D;
+					SpawnLoc = NPC->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
+					SpawnLoc.Z = PlayerLoc.Z;
+					break;
+				}
+				else if (Dist2D <= 1.f)
+				{
+					FVector Dir(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f);
+					Dir.Z = 0.f;
+					if (Dir.Normalize())
+					{
+						SpawnLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
+						SpawnLoc.Z = PlayerLoc.Z;
+					}
+					break;
+				}
 			}
 		}
 
@@ -296,10 +341,6 @@ void AT66EnemyDirector::SpawnWave()
 			SpawnLoc.Z = PlayerLoc.Z;
 		}
 
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-		// Pick which enemy type to spawn.
 		TSubclassOf<AT66EnemyBase> ClassToSpawn = SpawnPlan[i];
 		if (!ClassToSpawn)
 		{
@@ -307,103 +348,20 @@ void AT66EnemyDirector::SpawnWave()
 		}
 
 		const bool bIsMob = (ClassToSpawn == RegularClass);
-		const bool bIsMiniBoss = bIsMob && (MiniBossIndex == i);
+		const bool bIsMiniBossSlot = bIsMob && (MiniBossIndex == i);
 		const FName MobID = bIsMob ? MobIDs[Rng.RandRange(0, MobIDs.Num() - 1)] : NAME_None;
 
-		// [GOLD] Try the enemy pool first; fall back to fresh spawn if pool is empty.
-		UT66EnemyPoolSubsystem* EnemyPool = World->GetSubsystem<UT66EnemyPoolSubsystem>();
-		AT66EnemyBase* Enemy = nullptr;
-
-		if (bIsMob)
-		{
-			// For mobs: try pool (reuse), then deferred spawn (fresh).
-			if (EnemyPool)
-			{
-				Enemy = EnemyPool->TryAcquire(ClassToSpawn, SpawnLoc);
-			}
-			if (Enemy)
-			{
-				// Pooled enemy: reset state and reconfigure mob visuals.
-				Enemy->ResetForReuse(SpawnLoc, this);
-				Enemy->ConfigureAsMob(MobID);
-			}
-			else
-			{
-				// Pool empty or no pool: deferred spawn for first-time mob setup.
-				const FTransform Xform(FRotator::ZeroRotator, SpawnLoc);
-				Enemy = World->SpawnActorDeferred<AT66EnemyBase>(ClassToSpawn, Xform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-				if (Enemy)
-				{
-					Enemy->OwningDirector = this;
-					Enemy->ConfigureAsMob(MobID);
-					UGameplayStatics::FinishSpawningActor(Enemy, Xform);
-				}
-			}
-		}
-		else
-		{
-			// Special enemies (Leprechaun, Goblin Thief): try pool, then direct spawn.
-			if (EnemyPool)
-			{
-				Enemy = EnemyPool->TryAcquire(ClassToSpawn, SpawnLoc);
-				if (Enemy)
-				{
-					Enemy->ResetForReuse(SpawnLoc, this);
-				}
-			}
-			if (!Enemy)
-			{
-				Enemy = World->SpawnActor<AT66EnemyBase>(ClassToSpawn, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-			}
-		}
-		if (Enemy)
-		{
-			// Special enemies roll rarity and apply visuals/effects.
-			const FT66RarityWeights Weights = Tuning ? Tuning->SpecialEnemyRarityBase : FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			if (AT66LeprechaunEnemy* Lep = Cast<AT66LeprechaunEnemy>(Enemy))
-			{
-				Lep->SetRarity(R);
-				if (RunState)
-				{
-					RunState->RecordLuckQualityRarity(FName(TEXT("LeprechaunRarity")), R);
-				}
-			}
-			else if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
-			{
-				Gob->SetRarity(R);
-				if (RunState)
-				{
-					RunState->RecordLuckQualityRarity(FName(TEXT("GoblinRarity")), R);
-				}
-			}
-
-			if (RunState)
-			{
-				Enemy->ApplyStageScaling(RunState->GetCurrentStage());
-				Enemy->ApplyDifficultyScalar(Scalar);
-			}
-			if (bIsMiniBoss)
-			{
-				Enemy->ApplyMiniBossMultipliers(MiniBossHPScalar, MiniBossDamageScalar, MiniBossScale);
-				ActiveMiniBoss = Enemy;
-			}
-			AliveCount++;
-#if !UE_BUILD_SHIPPING
-			// Avoid log spam in wave loops (especially with many spawns).
-			static int32 SpawnLogsRemaining = 12;
-			if (SpawnLogsRemaining > 0)
-			{
-				--SpawnLogsRemaining;
-				UE_LOG(LogTemp, Log, TEXT("EnemyDirector: spawned enemy %d Mob=%s MiniBoss=%d at (%.0f, %.0f, %.0f)"),
-					AliveCount,
-					*MobID.ToString(),
-					bIsMiniBoss ? 1 : 0,
-					SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z);
-			}
-#endif
-		}
+		FPendingEnemySpawn Slot;
+		Slot.GroundLocation = SpawnLoc;
+		Slot.ClassToSpawn = ClassToSpawn;
+		Slot.MobID = MobID;
+		Slot.bIsMiniBoss = bIsMiniBossSlot;
+		Slot.DifficultyScalar = Scalar;
+		Slot.StageNum = RunState ? RunState->GetCurrentStage() : 1;
+		PendingSpawns.Add(Slot);
 	}
+
+	SpawnNextStaggeredBatch();
 
 	// Unique enemy: one at a time, spawned as a pressure spike.
 	if (UniqueEnemyClass && !ActiveUniqueEnemy.IsValid()
@@ -412,15 +370,47 @@ void AT66EnemyDirector::SpawnWave()
 		FVector PlayerLoc = PlayerPawn->GetActorLocation();
 		FVector SpawnLoc = PlayerLoc;
 
-		// Try a few times to avoid spawning inside safe zones.
+		// Unique enemy also spawns at 1.5x attack range (EffectiveSpawnMin/Max from wave above).
 		for (int32 Try = 0; Try < 6; ++Try)
 		{
 			float Angle = FMath::RandRange(0.f, 2.f * PI);
-			float Dist = FMath::RandRange(SpawnMinDistance, SpawnMaxDistance);
+			float Dist = FMath::RandRange(EffectiveSpawnMin, EffectiveSpawnMax);
 			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
 			SpawnLoc = PlayerLoc + Offset;
 
 			if (!IsInAnySafeZone2D(SpawnLoc)) break;
+		}
+		// Guarantee: if still inside a safe zone, push outward past nearest NPC radius
+		if (Registry && IsInAnySafeZone2D(SpawnLoc))
+		{
+			static constexpr float SafeZonePushMargin = 50.f;
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			{
+				AT66HouseNPCBase* NPC = WeakNPC.Get();
+				if (!NPC) continue;
+				const float R = NPC->GetSafeZoneRadius();
+				FVector ToSpawnPt = SpawnLoc - NPC->GetActorLocation();
+				ToSpawnPt.Z = 0.f;
+				const float Dist2D = ToSpawnPt.Size();
+				if (Dist2D < R && Dist2D > 1.f)
+				{
+					FVector Dir = ToSpawnPt / Dist2D;
+					SpawnLoc = NPC->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
+					SpawnLoc.Z = PlayerLoc.Z;
+					break;
+				}
+				else if (Dist2D <= 1.f)
+				{
+					FVector Dir(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f);
+					Dir.Z = 0.f;
+					if (Dir.Normalize())
+					{
+						SpawnLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
+						SpawnLoc.Z = PlayerLoc.Z;
+					}
+					break;
+				}
+			}
 		}
 
 		// Trace down for ground.
@@ -448,5 +438,112 @@ void AT66EnemyDirector::SpawnWave()
 			ActiveUniqueEnemy = Unique;
 			bSpawnedUniqueThisStage = true;
 		}
+	}
+}
+
+void AT66EnemyDirector::SpawnNextStaggeredBatch()
+{
+	if (PendingSpawns.Num() <= 0) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66EnemyPoolSubsystem* EnemyPool = World->GetSubsystem<UT66EnemyPoolSubsystem>();
+	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
+	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
+
+	const int32 BatchSize = FMath::Min(PendingSpawns.Num(), FMath::RandRange(1, 2));
+	for (int32 b = 0; b < BatchSize; ++b)
+	{
+		if (PendingSpawns.Num() <= 0) break;
+		FPendingEnemySpawn Slot = PendingSpawns[0];
+		PendingSpawns.RemoveAt(0);
+
+		const bool bIsMob = (Slot.ClassToSpawn == EnemyClass);
+		AT66EnemyBase* Enemy = nullptr;
+
+		if (bIsMob)
+		{
+			if (EnemyPool)
+			{
+				Enemy = EnemyPool->TryAcquire(Slot.ClassToSpawn, Slot.GroundLocation);
+			}
+			if (Enemy)
+			{
+				Enemy->ResetForReuse(Slot.GroundLocation, this);
+				Enemy->ConfigureAsMob(Slot.MobID);
+			}
+			else
+			{
+				const FTransform Xform(FRotator::ZeroRotator, Slot.GroundLocation);
+				Enemy = World->SpawnActorDeferred<AT66EnemyBase>(Slot.ClassToSpawn, Xform, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+				if (Enemy)
+				{
+					Enemy->OwningDirector = this;
+					Enemy->ConfigureAsMob(Slot.MobID);
+					UGameplayStatics::FinishSpawningActor(Enemy, Xform);
+				}
+			}
+		}
+		else
+		{
+			if (EnemyPool)
+			{
+				Enemy = EnemyPool->TryAcquire(Slot.ClassToSpawn, Slot.GroundLocation);
+				if (Enemy)
+				{
+					Enemy->ResetForReuse(Slot.GroundLocation, this);
+				}
+			}
+			if (!Enemy)
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+				Enemy = World->SpawnActor<AT66EnemyBase>(Slot.ClassToSpawn, Slot.GroundLocation, FRotator::ZeroRotator, SpawnParams);
+			}
+		}
+
+		if (Enemy)
+		{
+			const FT66RarityWeights Weights = Tuning ? Tuning->SpecialEnemyRarityBase : FT66RarityWeights{};
+			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			if (AT66LeprechaunEnemy* Lep = Cast<AT66LeprechaunEnemy>(Enemy))
+			{
+				Lep->SetRarity(R);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("LeprechaunRarity")), R);
+				}
+			}
+			else if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
+			{
+				Gob->SetRarity(R);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("GoblinRarity")), R);
+				}
+			}
+
+			if (RunState)
+			{
+				Enemy->ApplyStageScaling(Slot.StageNum);
+				Enemy->ApplyDifficultyScalar(Slot.DifficultyScalar);
+			}
+			if (Slot.bIsMiniBoss)
+			{
+				Enemy->ApplyMiniBossMultipliers(MiniBossHPScalar, MiniBossDamageScalar, MiniBossScale);
+				ActiveMiniBoss = Enemy;
+			}
+			AliveCount++;
+			Enemy->StartRiseFromGround(Slot.GroundLocation.Z);
+		}
+	}
+
+	if (PendingSpawns.Num() > 0)
+	{
+		World->GetTimerManager().SetTimer(StaggeredSpawnTimerHandle, this, &AT66EnemyDirector::SpawnNextStaggeredBatch, 0.7f, false);
 	}
 }

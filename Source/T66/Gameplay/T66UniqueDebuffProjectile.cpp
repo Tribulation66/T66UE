@@ -76,7 +76,7 @@ void AT66UniqueDebuffProjectile::OnSphereBeginOverlap(UPrimitiveComponent* Overl
 
 	if (HitDamageHearts > 0)
 	{
-		RunState->ApplyDamage(HitDamageHearts);
+		RunState->ApplyDamage(HitDamageHearts * 20);
 	}
 
 	switch (EffectType)

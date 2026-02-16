@@ -67,6 +67,11 @@ class T66_API UT66RunStateSubsystem : public UGameInstanceSubsystem
 
 public:
 	static constexpr int32 DefaultMaxHearts = 5;
+	/** HP per heart by tier: red=20, blue=25, green=31.25, purple=39.0625, gold=48.828125. */
+	static constexpr float HPPerRedHeart = 20.f;
+	static constexpr float HeartTierScale = 1.25f;
+	/** Default max HP at run start (5 red hearts). */
+	static constexpr float DefaultMaxHP = 100.f;
 	static constexpr float DefaultInvulnDurationSeconds = 0.75f;
 	static constexpr int32 DefaultStartGold = 100;
 	static constexpr int32 MaxInventorySlots = 20;
@@ -169,11 +174,29 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnDevCheatsChanged DevCheatsChanged;
 
+	/** Current HP (numerical). Hearts are visual only. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
-	int32 GetCurrentHearts() const { return CurrentHearts; }
+	float GetCurrentHP() const { return CurrentHP; }
 
+	/** Max HP (numerical). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
-	int32 GetMaxHearts() const { return MaxHearts; }
+	float GetMaxHP() const { return MaxHP; }
+
+	/** Heart display tier from MaxHP (0=red, 1=blue, 2=green, 3=purple, 4=gold). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetHeartDisplayTier() const;
+
+	/** Fill amount for one of the 5 heart slots (0..1). SlotIndex 0..4. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetHeartSlotFill(int32 SlotIndex) const;
+
+	/** Legacy: effective heart count (CurrentHP / 20) for compatibility. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetCurrentHearts() const { return FMath::RoundToInt(CurrentHP / HPPerRedHeart); }
+
+	/** Legacy: effective max heart count (MaxHP / 20). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMaxHearts() const { return FMath::RoundToInt(MaxHP / HPPerRedHeart); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentGold() const { return CurrentGold; }
@@ -453,17 +476,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddStructuredEvent(ET66RunEventType EventType, const FString& Payload);
 
-	/** Apply damage (1 heart). Returns true if damage was applied (not blocked by i-frames). */
+	/** Apply numerical damage (HP). Optional Attacker: if set and reflect > 0, reflect fraction back and optionally Crush (OHKO). Returns true if damage was applied (not blocked by i-frames). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
-	bool ApplyDamage(int32 Hearts = 1);
+	bool ApplyDamage(int32 DamageHP, AActor* Attacker = nullptr);
 
-	/** Heal to full hearts. */
+	/** Heal to full HP. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void HealToFull();
 
-	/** Heal a number of hearts (clamped by MaxHearts). */
+	/** Heal HP (clamped by MaxHP). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void HealHP(float Amount);
+
+	/** Legacy: heal hearts (1 heart = 20 HP). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void HealHearts(int32 Hearts);
+
+	/** Apply HP regen (call from Tick; DeltaTime in seconds). */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void ApplyHpRegen(float DeltaTime);
 
 	/** Instantly kill the player (bypasses i-frames). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -582,6 +613,10 @@ public:
 	/** HP regen per second (base * items). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetHpRegenPerSecond() const;
+
+	/** Movement speed secondary multiplier (1.0 = no bonus; items can add). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetMovementSpeedSecondaryMultiplier() const;
 
 	/** Crit chance (0..1). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
@@ -763,6 +798,32 @@ public:
 	bool HasBoughtFromVendorThisStage() const { return bVendorBoughtSomethingThisStage; }
 
 	// ============================================
+	// Buyback (Vendor + Gambler: items sold this run, repurchase at sell price)
+	// ============================================
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBuybackChanged);
+	UPROPERTY(BlueprintAssignable, Category = "RunState|Buyback")
+	FOnBuybackChanged BuybackChanged;
+
+	/** Refresh the 3-slot buyback display from the pool (call when opening buyback tab or after buyback/reroll). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Buyback")
+	void GenerateBuybackDisplay();
+
+	/** Cycle to next page of buyback items (same layout as shop: 3 panels + reroll). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Buyback")
+	void RerollBuybackDisplay();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Buyback")
+	int32 GetBuybackPoolSize() const { return BuybackPool.Num(); }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Buyback")
+	const TArray<FT66InventorySlot>& GetBuybackDisplaySlots() const { return BuybackDisplaySlots; }
+
+	/** Attempt to buy back a display slot (Index 0..2). Price = sell price of that item. Returns true if purchased. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Buyback")
+	bool TryBuybackSlot(int32 DisplayIndex);
+
+	// ============================================
 	// Stage Boost (Difficulty start)
 	// ============================================
 
@@ -785,6 +846,24 @@ public:
 	/** Consume ultimate if ready; returns true if it was activated. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|Ultimate")
 	bool TryActivateUltimate();
+
+	// ============================================
+	// Hero Passive
+	// ============================================
+
+	ET66PassiveType GetPassiveType() const { return PassiveType; }
+
+	/** Call when an enemy is killed by hero damage (for Rallying Blow). */
+	void NotifyEnemyKilledByHero();
+
+	/** Rallying Blow: multiplier for attack speed (1.0 + 0.15 * stacks, max 3 stacks, 3s duration). */
+	float GetRallyAttackSpeedMultiplier() const;
+
+	/** True if the actor has at least one active DOT from RunState. */
+	bool HasActiveDOT(AActor* Target) const;
+
+	/** Toxin Stacking: damage multiplier when target has active DOT (1.15 if any, else 1.0). */
+	float GetToxinStackingDamageMultiplier(AActor* Target) const;
 
 	// ============================================
 	// Survival / Last Stand
@@ -847,7 +926,7 @@ public:
 
 	/** Damage that bypasses evasion/armor (used by status effects). */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Status")
-	bool ApplyTrueDamage(int32 Hearts);
+	bool ApplyTrueDamage(int32 DamageHP);
 
 	/** Item-derived move speed multiplier (separate from hero level). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items|Derived")
@@ -924,10 +1003,10 @@ private:
 	void RefreshPowerupBonusesFromProfile();
 
 	UPROPERTY()
-	int32 CurrentHearts = DefaultMaxHearts;
+	float CurrentHP = DefaultMaxHP;
 
 	UPROPERTY()
-	int32 MaxHearts = DefaultMaxHearts;
+	float MaxHP = DefaultMaxHP;
 
 	UPROPERTY()
 	int32 CurrentGold = 0;
@@ -1138,6 +1217,10 @@ private:
 	float UltimateCooldownRemainingSeconds = 0.f;
 	int32 LastBroadcastUltimateSecond = 0;
 
+	ET66PassiveType PassiveType = ET66PassiveType::None;
+	int32 RallyStacks = 0;
+	double RallyTimerEndWorldTime = 0.0;
+
 	float SurvivalCharge01 = 0.f;
 	bool bInLastStand = false;
 	float LastStandSecondsRemaining = 0.f;
@@ -1154,6 +1237,13 @@ private:
 	TArray<FName> VendorStockItemIDs;
 	TArray<FT66InventorySlot> VendorStockSlots;
 	TArray<bool> VendorStockSold;
+
+	TArray<FT66InventorySlot> BuybackPool;
+	TArray<FT66InventorySlot> BuybackDisplaySlots;
+	int32 BuybackDisplayPage = 0;
+
+	/** Smart reroll: times each item has been shown this vendor session (reset on stage change). */
+	TMap<FName, int32> VendorSeenCounts;
 	bool bVendorBoughtSomethingThisStage = false;
 	ET66VendorStealOutcome LastVendorStealOutcome = ET66VendorStealOutcome::None;
 

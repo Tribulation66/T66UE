@@ -9,8 +9,6 @@
 
 class AT66EnemyBase;
 class AT66BossBase;
-class AT66GamblerBoss;
-class AT66VendorBoss;
 class UT66RunStateSubsystem;
 class USoundBase;
 class UNiagaraSystem;
@@ -45,6 +43,12 @@ public:
 	/** Base AoE splash radius for the slash attack (scales with ProjectileScaleMultiplier). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	float SlashRadius = 300.f;
+
+	/** Perform Knight ultimate: radial burst of 8–12 pierce lines from the hero; each line damages all enemies in path. */
+	void PerformUltimateSpearStorm(int32 UltimateDamage);
+
+	/** Perform Archer ultimate: chain to every enemy in range with no falloff; full damage each, gold bounce VFX. */
+	void PerformUltimateChainLightning(int32 UltimateDamage);
 
 protected:
 	virtual void BeginPlay() override;
@@ -110,7 +114,7 @@ protected:
 	void PlayShotSfx();
 
 	/** Apply damage to a single actor. EventType for floating text. SourceID for damage log (NAME_None = AutoAttack, or IdolID for idol/DOT). */
-	void ApplyDamageToActor(AActor* Target, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None);
+	void ApplyDamageToActor(AActor* Target, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None, FName RangeEventForHero = NAME_None);
 
 	/** Spawn slash VFX (arc) at the given location. */
 	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
@@ -139,4 +143,8 @@ protected:
 
 	/** Time of last fire (for cooldown bar). */
 	float LastFireTime = -9999.f;
+
+	/** Marksman's Focus (Archer): consecutive hits on same target stack +8% damage (max 5 stacks). */
+	TWeakObjectPtr<AActor> LastMarksmanTarget;
+	int32 MarksmanStacks = 0;
 };

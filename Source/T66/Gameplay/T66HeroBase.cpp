@@ -273,6 +273,7 @@ void AT66HeroBase::HandleHeroDerivedStatsChanged()
 
 	const float Mult = CachedRunState->GetHeroMoveSpeedMultiplier()
 		* CachedRunState->GetItemMoveSpeedMultiplier()
+		* CachedRunState->GetMovementSpeedSecondaryMultiplier()
 		* CachedRunState->GetLastStandMoveSpeedMultiplier()
 		* CachedRunState->GetStageMoveSpeedMultiplier()
 		* CachedRunState->GetStatusMoveSpeedMultiplier();
@@ -300,7 +301,7 @@ void AT66HeroBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponen
 		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 		if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 		{
-			RunState->ApplyDamage(1);
+			RunState->ApplyDamage(20);
 		}
 	}
 }

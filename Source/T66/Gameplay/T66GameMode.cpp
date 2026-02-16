@@ -339,8 +339,8 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 					if (!StageData.EnemyA.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyA);
 					if (!StageData.EnemyB.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyB);
 					if (!StageData.EnemyC.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyC);
-					// Preload boss visual.
-					if (!StageData.BossID.IsNone()) Visuals->PreloadCharacterVisual(StageData.BossID);
+					// Preload shared boss visual (all stages use "Boss" mesh).
+					Visuals->PreloadCharacterVisual(FName(TEXT("Boss")));
 
 					UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, Boss=%s) in %.1fms"),
 						StageNum,

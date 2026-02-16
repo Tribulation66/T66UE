@@ -85,6 +85,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	bool bRunAwayFromPlayer = false;
 
+	/** If distance to player exceeds this (uu), enemy is teleported to a new position near the player. 0 = disabled. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "0"))
+	float LeashMaxDistance = 3000.f;
+
+	/** Interval in seconds between leash distance checks (throttled for performance). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "0.5"))
+	float LeashCheckIntervalSeconds = 2.f;
+
 	/** Refresh health bar display (call when HP changes) */
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void UpdateHealthBar();
@@ -119,6 +127,9 @@ public:
 
 	/** [GOLD] Reset this enemy for reuse from the object pool. */
 	void ResetForReuse(const FVector& NewLocation, AT66EnemyDirector* NewDirector);
+
+	/** Start the rise-from-ground animation. Enemy is buried below TargetGroundZ and lerps up over RiseDuration. */
+	void StartRiseFromGround(float TargetGroundZ);
 
 protected:
 	virtual void BeginPlay() override;
@@ -167,6 +178,17 @@ private:
 	FVector CachedWanderDir = FVector::ZeroVector;
 	float WanderDirRefreshAccum = 0.f;
 	static constexpr float WanderDirRefreshInterval = 1.0f;
+
+	/** Leash: accumulated time between distance checks. */
+	float LeashCheckAccumSeconds = 0.f;
+
+	/** Rise-from-ground animation state. */
+	bool bRisingFromGround = false;
+	float RiseStartZ = 0.f;
+	float RiseTargetZ = 0.f;
+	float RiseElapsed = 0.f;
+	static constexpr float RiseDuration = 0.6f;
+	static constexpr float BuryDepth = 200.f;
 
 protected:
 	/** True if an imported skeletal mesh was applied and placeholders should be hidden. */

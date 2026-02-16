@@ -10,6 +10,7 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66SaveMigration.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
@@ -282,6 +283,7 @@ bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 	LoadedSavedSummary = Cast<UT66LeaderboardRunSummarySaveGame>(Loaded);
 	if (LoadedSavedSummary)
 	{
+		LoadedSavedSummary->HeroID = T66MigrateHeroIDFromSave(LoadedSavedSummary->HeroID);
 		bViewingSavedLeaderboardRunSummary = true;
 		LoadedSavedSummarySlotName = SlotName;
 

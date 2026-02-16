@@ -11,6 +11,16 @@ const FName UT66FloatingCombatTextSubsystem::EventType_Burn(TEXT("Burn"));
 const FName UT66FloatingCombatTextSubsystem::EventType_Chill(TEXT("Chill"));
 const FName UT66FloatingCombatTextSubsystem::EventType_Curse(TEXT("Curse"));
 const FName UT66FloatingCombatTextSubsystem::EventType_LevelUp(TEXT("LevelUp"));
+const FName UT66FloatingCombatTextSubsystem::EventType_Taunt(TEXT("Taunt"));
+const FName UT66FloatingCombatTextSubsystem::EventType_Confusion(TEXT("Confusion"));
+const FName UT66FloatingCombatTextSubsystem::EventType_Invisibility(TEXT("Invisibility"));
+const FName UT66FloatingCombatTextSubsystem::EventType_Dodge(TEXT("Dodge"));
+const FName UT66FloatingCombatTextSubsystem::EventType_LifeSteal(TEXT("LifeSteal"));
+const FName UT66FloatingCombatTextSubsystem::EventType_Reflect(TEXT("Reflect"));
+const FName UT66FloatingCombatTextSubsystem::EventType_Crush(TEXT("Crush"));
+const FName UT66FloatingCombatTextSubsystem::EventType_CounterAttack(TEXT("CounterAttack"));
+const FName UT66FloatingCombatTextSubsystem::EventType_CloseRange(TEXT("CloseRange"));
+const FName UT66FloatingCombatTextSubsystem::EventType_LongRange(TEXT("LongRange"));
 
 void UT66FloatingCombatTextSubsystem::ShowDamageNumber(AActor* Target, int32 Amount, FName EventType)
 {
@@ -19,26 +29,25 @@ void UT66FloatingCombatTextSubsystem::ShowDamageNumber(AActor* Target, int32 Amo
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	const FVector TargetLoc = Target->GetActorLocation();
-	// Offset to the side (alternate left/right based on hash so multiple hits don't stack in one spot).
-	const uint32 Seed = static_cast<uint32>(FMath::Abs(FDateTime::Now().GetTicks()) + GetTypeHash(Target));
-	const float Side = (Seed % 2u == 0) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
-	const FVector SpawnLoc = TargetLoc + FVector(Side, 0.f, OffsetAboveHead);
-
-	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(SpawnLoc, FRotator::ZeroRotator);
+	// Spawn at origin; attach to target so text follows them.
+	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
 	if (Actor)
 	{
+		Actor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		const uint32 Seed = static_cast<uint32>(FMath::Abs(FDateTime::Now().GetTicks()) + GetTypeHash(Target));
+		const float Side = (Seed % 2u == 0) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
+		Actor->SetActorRelativeLocation(FVector(Side, 0.f, OffsetAboveHead));
 		Actor->SetDamageNumber(Amount, EventType);
 		Actor->SetLifeSpan(TextLifetimeSeconds);
 	}
 
 	if (!EventType.IsNone())
 	{
-		// Status label above head (slightly higher than damage number).
-		const FVector StatusLoc = TargetLoc + FVector(0.f, 0.f, OffsetAboveHead + 40.f);
-		AT66FloatingCombatTextActor* StatusActor = World->SpawnActor<AT66FloatingCombatTextActor>(StatusLoc, FRotator::ZeroRotator);
+		AT66FloatingCombatTextActor* StatusActor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
 		if (StatusActor)
 		{
+			StatusActor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+			StatusActor->SetActorRelativeLocation(FVector(0.f, 0.f, OffsetAboveHead + 40.f));
 			StatusActor->SetStatusEvent(EventType);
 			StatusActor->SetLifeSpan(TextLifetimeSeconds);
 		}
@@ -52,10 +61,11 @@ void UT66FloatingCombatTextSubsystem::ShowStatusEvent(AActor* Target, FName Even
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	const FVector SpawnLoc = Target->GetActorLocation() + FVector(0.f, 0.f, OffsetAboveHead);
-	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(SpawnLoc, FRotator::ZeroRotator);
+	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
 	if (Actor)
 	{
+		Actor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		Actor->SetActorRelativeLocation(FVector(0.f, 0.f, OffsetAboveHead));
 		Actor->SetStatusEvent(EventType);
 		Actor->SetLifeSpan(TextLifetimeSeconds);
 	}

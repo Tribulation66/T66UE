@@ -88,7 +88,7 @@ void AT66MiasmaTile::ApplyMiasmaDamageTick()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState)
 	{
-		RunState->ApplyDamage(1);
+		RunState->ApplyDamage(20);
 	}
 }
 

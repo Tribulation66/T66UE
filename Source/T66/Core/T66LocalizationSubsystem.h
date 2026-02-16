@@ -617,6 +617,30 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
 	FText GetText_StatLineFormat() const;
 
+	/** Tooltip description for a primary stat (index 0=Level, 1=Damage, 2=AtkSpd, 3=AtkScale, 4=Armor, 5=Evasion, 6=Luck, 7=Speed). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_PrimaryStatDescription(int32 StatIndex) const;
+
+	/** Tooltip description for a secondary stat. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_SecondaryStatDescription(ET66SecondaryStatType StatType) const;
+
+	/** Display name for a passive ability type. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Abilities")
+	FText GetText_PassiveName(ET66PassiveType Type) const;
+
+	/** Tooltip description for a passive ability type. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Abilities")
+	FText GetText_PassiveDescription(ET66PassiveType Type) const;
+
+	/** Display name for an ultimate ability type. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Abilities")
+	FText GetText_UltimateName(ET66UltimateType Type) const;
+
+	/** Tooltip description for an ultimate ability type. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Abilities")
+	FText GetText_UltimateDescription(ET66UltimateType Type) const;
+
 	// Items (data-driven IDs; avoid per-item strings)
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
 	FText GetText_ItemRarityName(ET66ItemRarity Rarity) const;

@@ -23,6 +23,29 @@ enum class ET66AttackCategory : uint8
 	DOT UMETA(DisplayName = "DOT"),
 };
 
+/** Ultimate ability type per hero (Hero_1 uses None = flat damage to all). */
+UENUM(BlueprintType)
+enum class ET66UltimateType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	SpearStorm UMETA(DisplayName = "Spear Storm"),
+	MeteorStrike UMETA(DisplayName = "Meteor Strike"),
+	ChainLightning UMETA(DisplayName = "Chain Lightning"),
+	PlagueCloud UMETA(DisplayName = "Plague Cloud"),
+};
+
+/** Hero passive ability type (always-on innate). */
+UENUM(BlueprintType)
+enum class ET66PassiveType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	IronWill UMETA(DisplayName = "Iron Will"),
+	RallyingBlow UMETA(DisplayName = "Rallying Blow"),
+	ArcaneAmplification UMETA(DisplayName = "Arcane Amplification"),
+	MarksmanFocus UMETA(DisplayName = "Marksman's Focus"),
+	ToxinStacking UMETA(DisplayName = "Toxin Stacking"),
+};
+
 /**
  * Hero data row for the Hero DataTable
  * Each row represents one selectable hero in the game
@@ -84,6 +107,14 @@ struct T66_API FHeroData : public FTableRowBase
 	/** Primary attack category (Pierce/Bounce/AOE/DOT) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	ET66AttackCategory PrimaryCategory = ET66AttackCategory::Pierce;
+
+	/** Ultimate ability type (None = legacy flat damage to all). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	ET66UltimateType UltimateType = ET66UltimateType::None;
+
+	/** Passive ability type (always-on innate). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	ET66PassiveType PassiveType = ET66PassiveType::None;
 
 	// ============================================
 	// Generic Base Stats (leveled up via RNG)
@@ -243,9 +274,9 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
 	float BaseTaunt = 1.0f;
 
-	/** Base reflect damage fraction (0.0 = no reflect). */
+	/** Base reflect chance (0.01 = 1%). When it procs, 50% of damage is reflected. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
-	float BaseReflectDmg = 0.0f;
+	float BaseReflectDmg = 0.01f;
 
 	/** Base HP regen per second (0 = none). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
@@ -259,13 +290,13 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
 	float BaseInvisChance = 0.01f;
 
-	/** Base counter-attack damage fraction on dodge (0.0 = none). */
+	/** Base counter-attack chance on dodge (0.01 = 1%). When it procs, 50% of would-be damage is dealt to attacker. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
-	float BaseCounterAttack = 0.0f;
+	float BaseCounterAttack = 0.01f;
 
-	/** Base life-steal fraction per hit (0.0 = none). */
+	/** Base life-steal chance per hit (0.01 = 1%). When it procs, heal 10% of damage dealt. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
-	float BaseLifeSteal = 0.0f;
+	float BaseLifeSteal = 0.01f;
 
 	/** Base OHKO chance when dodging (0.01 = 1%). Requires dodge to occur. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")

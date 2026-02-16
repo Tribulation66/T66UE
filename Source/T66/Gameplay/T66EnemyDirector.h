@@ -9,6 +9,20 @@
 class AT66EnemyBase;
 class UT66RunStateSubsystem;
 
+/** One queued spawn for staggered spawning (1-2 at a time). */
+USTRUCT(BlueprintType)
+struct FPendingEnemySpawn
+{
+	GENERATED_BODY()
+
+	FVector GroundLocation = FVector::ZeroVector;
+	TSubclassOf<AT66EnemyBase> ClassToSpawn;
+	FName MobID;
+	bool bIsMiniBoss = false;
+	float DifficultyScalar = 1.f;
+	int32 StageNum = 1;
+};
+
 UCLASS(Blueprintable)
 class T66_API AT66EnemyDirector : public AActor
 {
@@ -92,12 +106,18 @@ protected:
 
 	void SpawnWave();
 
+	/** Spawns 1-2 from PendingSpawns, then re-arms timer if more remain. */
+	void SpawnNextStaggeredBatch();
+
 	UFUNCTION()
 	void HandleStageTimerChanged();
 
 	FTimerHandle SpawnTimerHandle;
+	FTimerHandle StaggeredSpawnTimerHandle;
 	int32 AliveCount = 0;
 	bool bSpawningArmed = false;
+
+	TArray<FPendingEnemySpawn> PendingSpawns;
 
 	TWeakObjectPtr<AT66EnemyBase> ActiveUniqueEnemy;
 	bool bSpawnedUniqueThisStage = false;

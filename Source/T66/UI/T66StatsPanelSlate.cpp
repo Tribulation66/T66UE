@@ -13,6 +13,38 @@
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Widgets/SToolTip.h"
+
+static TSharedPtr<IToolTip> CreateRichTooltip(const FText& Title, const FText& Description)
+{
+	if (Title.IsEmpty() && Description.IsEmpty()) return nullptr;
+	return SNew(SToolTip)
+	[
+		SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
+		.BorderBackgroundColor(FT66Style::Tokens::Bg)
+		.Padding(FMargin(10.f, 8.f))
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				SNew(STextBlock)
+				.Text(Title)
+				.Font(FT66Style::Tokens::FontBold(14))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(STextBlock)
+				.Text(Description)
+				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true)
+				.WrapTextAt(280.f)
+			]
+		]
+	];
+}
 
 /** Per-category stat indices (ET66SecondaryStatType enum values). Crit Damage under Damage, Crit Chance under Attack Speed. */
 struct FSecondaryStatCategory
@@ -83,39 +115,51 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		const int32 LuckStat = RunState->GetLuckStat();
 		const int32 SpeedStat = RunState->GetSpeedStat();
 
-		auto AddStatLine = [&](const FText& Label, int32 Value)
+		auto AddStatLine = [&](const FText& Label, int32 Value, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				SNew(STextBlock)
-				.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(0.f)
+				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				[
+					SNew(STextBlock)
+					.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			];
 		};
 
-		auto AddStatLineFloat = [&](const FText& Label, float Value, bool bAsPercent)
+		auto AddStatLineFloat = [&](const FText& Label, float Value, bool bAsPercent, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
 			FText ValueText = bAsPercent
 				? FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)))
 				: FText::FromString(FString::Printf(TEXT("%.1f"), Value));
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				SNew(STextBlock)
-				.Text(FText::Format(StatFmt, Label, ValueText))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(0.f)
+				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				[
+					SNew(STextBlock)
+					.Text(FText::Format(StatFmt, Label, ValueText))
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			];
 		};
 
-		AddStatLine(GetLabel(0), HeroLevel);
-		AddStatLine(GetLabel(1), DamageStat);
-		AddStatLine(GetLabel(2), AttackSpeedStat);
-		AddStatLine(GetLabel(3), AttackScaleStat);
-		AddStatLine(GetLabel(4), ArmorStat);
-		AddStatLine(GetLabel(5), EvasionStat);
-		AddStatLine(GetLabel(6), LuckStat);
-		AddStatLine(GetLabel(7), SpeedStat);
+		AddStatLine(GetLabel(0), HeroLevel,       GetLabel(0), Loc ? Loc->GetText_PrimaryStatDescription(0) : FText::GetEmpty());
+		AddStatLine(GetLabel(1), DamageStat,      GetLabel(1), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty());
+		AddStatLine(GetLabel(2), AttackSpeedStat, GetLabel(2), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty());
+		AddStatLine(GetLabel(3), AttackScaleStat, GetLabel(3), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty());
+		AddStatLine(GetLabel(4), ArmorStat,       GetLabel(4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
+		AddStatLine(GetLabel(5), EvasionStat,     GetLabel(5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
+		AddStatLine(GetLabel(6), LuckStat,        GetLabel(6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
+		AddStatLine(GetLabel(7), SpeedStat,       GetLabel(7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
 
 		if (bExtended)
 		{
@@ -164,7 +208,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 						|| SecType == ET66SecondaryStatType::Invisibility || SecType == ET66SecondaryStatType::LifeSteal
 						|| SecType == ET66SecondaryStatType::Assassinate || SecType == ET66SecondaryStatType::Cheating
 						|| SecType == ET66SecondaryStatType::Stealing);
-					AddStatLineFloat(Label, Value, bPercent);
+					const FText SecDesc = Loc ? Loc->GetText_SecondaryStatDescription(SecType) : FText::GetEmpty();
+					AddStatLineFloat(Label, Value, bPercent, Label, SecDesc);
 				}
 				AddHorizontalLine();
 			}
@@ -234,39 +279,51 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 
 	if (Snapshot)
 	{
-		auto AddStatLine = [&](const FText& Label, int32 Value)
+		auto AddStatLine = [&](const FText& Label, int32 Value, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				SNew(STextBlock)
-				.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(0.f)
+				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				[
+					SNew(STextBlock)
+					.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			];
 		};
 
-		auto AddStatLineFloat = [&](const FText& Label, float Value, bool bAsPercent)
+		auto AddStatLineFloat = [&](const FText& Label, float Value, bool bAsPercent, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
 			FText ValueText = bAsPercent
 				? FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)))
 				: FText::FromString(FString::Printf(TEXT("%.1f"), Value));
 			StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 			[
-				SNew(STextBlock)
-				.Text(FText::Format(StatFmt, Label, ValueText))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(0.f)
+				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				[
+					SNew(STextBlock)
+					.Text(FText::Format(StatFmt, Label, ValueText))
+					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 			];
 		};
 
-		AddStatLine(GetLabel(0), Snapshot->HeroLevel);
-		AddStatLine(GetLabel(1), Snapshot->DamageStat);
-		AddStatLine(GetLabel(2), Snapshot->AttackSpeedStat);
-		AddStatLine(GetLabel(3), Snapshot->AttackScaleStat);
-		AddStatLine(GetLabel(4), Snapshot->ArmorStat);
-		AddStatLine(GetLabel(5), Snapshot->EvasionStat);
-		AddStatLine(GetLabel(6), Snapshot->LuckStat);
-		AddStatLine(GetLabel(7), Snapshot->SpeedStat);
+		AddStatLine(GetLabel(0), Snapshot->HeroLevel,       GetLabel(0), Loc ? Loc->GetText_PrimaryStatDescription(0) : FText::GetEmpty());
+		AddStatLine(GetLabel(1), Snapshot->DamageStat,      GetLabel(1), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty());
+		AddStatLine(GetLabel(2), Snapshot->AttackSpeedStat, GetLabel(2), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty());
+		AddStatLine(GetLabel(3), Snapshot->AttackScaleStat, GetLabel(3), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty());
+		AddStatLine(GetLabel(4), Snapshot->ArmorStat,       GetLabel(4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
+		AddStatLine(GetLabel(5), Snapshot->EvasionStat,     GetLabel(5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
+		AddStatLine(GetLabel(6), Snapshot->LuckStat,        GetLabel(6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
+		AddStatLine(GetLabel(7), Snapshot->SpeedStat,       GetLabel(7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
 
 		const bool bExtended = Snapshot->SecondaryStatValues.Num() > 0;
 		if (bExtended)
@@ -316,7 +373,8 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 						|| SecType == ET66SecondaryStatType::Invisibility || SecType == ET66SecondaryStatType::LifeSteal
 						|| SecType == ET66SecondaryStatType::Assassinate || SecType == ET66SecondaryStatType::Cheating
 						|| SecType == ET66SecondaryStatType::Stealing);
-					AddStatLineFloat(Label, Value, bPercent);
+					const FText SecDesc = Loc ? Loc->GetText_SecondaryStatDescription(SecType) : FText::GetEmpty();
+					AddStatLineFloat(Label, Value, bPercent, Label, SecDesc);
 				}
 				AddHorizontalLine();
 			}

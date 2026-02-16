@@ -81,12 +81,12 @@ def main():
     unreal.log("MATERIAL DIAGNOSTICS: Hero vs Companion")
     unreal.log("=" * 60)
     
-    # Check Hero skeletal meshes and materials
+    # Check Hero skeletal meshes and materials (Hero_1 = Knight, uses Hero2 mesh path)
     unreal.log("")
     unreal.log("=== HERO MATERIALS ===")
     log_skeletal_mesh_materials(
-        "/Game/Characters/Heroes/Hero_1/Default_TypeA/SK_Hero_1_Default_TypeA",
-        "Hero_1 Default TypeA"
+        "/Game/Characters/Heroes/Hero2/KnightIdle/KnightIdle.KnightIdle",
+        "Hero_1 (Knight) TypeA"
     )
     
     # Check Companion skeletal meshes and materials
@@ -101,11 +101,11 @@ def main():
         "Companion_03 Default"
     )
     
-    # Direct material comparison
+    # Direct material comparison (Hero_1 uses Hero2 path; adjust if Knight has a material asset)
     unreal.log("")
     unreal.log("=== DIRECT MATERIAL COMPARISON ===")
     log_material_info(
-        "/Game/Characters/Heroes/Hero_1/Default_TypeA/Material_1",
+        "/Game/Characters/Heroes/Hero2/KnightIdle/Material_1",
         "Hero Material"
     )
     log_material_info(

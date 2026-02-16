@@ -62,6 +62,10 @@
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66BossGroundAOE.h"
+#include "Gameplay/T66HeroPlagueCloud.h"
+#include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Engine/OverlapResult.h"
@@ -556,6 +560,10 @@ void AT66PlayerController::RestoreGameplayInputMode()
 	bShowMouseCursor = false;
 	bEnableClickEvents = false;
 	bEnableMouseOverEvents = false;
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->SetInteractive(false);
+	}
 }
 
 void AT66PlayerController::SetupInputComponent()
@@ -654,21 +662,105 @@ void AT66PlayerController::HandleUltimatePressed()
 
 	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	if (!RunState) return;
 
 	if (!RunState->TryActivateUltimate())
-	{
 		return;
-	}
 
-	// v0 effect: deal flat damage to all active enemies.
-	const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
-	for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+	FHeroData HeroData;
+	const ET66UltimateType UltType = (T66GI && T66GI->GetSelectedHeroData(HeroData))
+		? HeroData.UltimateType
+		: ET66UltimateType::None;
+
+	const int32 UltDmg = UT66RunStateSubsystem::UltimateDamage;
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
+	UT66CombatComponent* Combat = Hero ? Hero->FindComponentByClass<UT66CombatComponent>() : nullptr;
+
+	switch (UltType)
 	{
-		if (AT66EnemyBase* E = *It)
+	case ET66UltimateType::SpearStorm:
+		if (Combat)
+			Combat->PerformUltimateSpearStorm(UltDmg);
+		else
 		{
-			E->TakeDamageFromHero(UT66RunStateSubsystem::UltimateDamage, UltimateSourceID, NAME_None);
+			const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+			for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+				if (AT66EnemyBase* E = *It)
+					E->TakeDamageFromHero(UltDmg, UltimateSourceID, NAME_None);
+			for (TActorIterator<AT66BossBase> It(World); It; ++It)
+				if (AT66BossBase* B = *It)
+					if (B->IsAwakened() && B->IsAlive())
+						B->TakeDamageFromHeroHit(UltDmg, UltimateSourceID, NAME_None);
 		}
+		break;
+	case ET66UltimateType::MeteorStrike:
+	{
+		if (Hero)
+		{
+			const FVector HeroLoc = Hero->GetActorLocation();
+			const FVector Fwd = Hero->GetActorForwardVector();
+			const FVector Right = Hero->GetActorRightVector();
+			TArray<FVector> Offsets = {
+				Fwd * 400.f,
+				Fwd * 300.f + Right * 280.f,
+				Fwd * 300.f - Right * 280.f,
+				Fwd * 200.f + Right * 350.f,
+				Fwd * 200.f - Right * 350.f
+			};
+			for (const FVector& Off : Offsets)
+			{
+				const FTransform SpawnTM(HeroLoc + Off);
+				AT66BossGroundAOE* AOE = World->SpawnActorDeferred<AT66BossGroundAOE>(AT66BossGroundAOE::StaticClass(), SpawnTM);
+				if (AOE)
+				{
+					AOE->DamageHP = UltDmg;
+					AOE->bDamageEnemies = true;
+					AOE->Radius = 280.f;
+					AOE->WarningDurationSeconds = 1.f;
+					AOE->PillarLingerSeconds = 0.6f;
+					AOE->FinishSpawning(SpawnTM);
+				}
+			}
+		}
+		break;
+	}
+	case ET66UltimateType::ChainLightning:
+		if (Combat)
+			Combat->PerformUltimateChainLightning(UltDmg);
+		else
+		{
+			const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+			for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+				if (AT66EnemyBase* E = *It)
+					E->TakeDamageFromHero(UltDmg, UltimateSourceID, NAME_None);
+			for (TActorIterator<AT66BossBase> It(World); It; ++It)
+				if (AT66BossBase* B = *It)
+					if (B->IsAwakened() && B->IsAlive())
+						B->TakeDamageFromHeroHit(UltDmg, UltimateSourceID, NAME_None);
+		}
+		break;
+	case ET66UltimateType::PlagueCloud:
+		if (Hero)
+		{
+			AT66HeroPlagueCloud* Cloud = World->SpawnActor<AT66HeroPlagueCloud>(Hero->GetActorLocation(), FRotator::ZeroRotator);
+			if (Cloud)
+				Cloud->InitFromUltimate(UltDmg);
+		}
+		break;
+	case ET66UltimateType::None:
+	default:
+	{
+		const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+			if (AT66EnemyBase* E = *It)
+				E->TakeDamageFromHero(UltDmg, UltimateSourceID, NAME_None);
+		for (TActorIterator<AT66BossBase> It(World); It; ++It)
+			if (AT66BossBase* B = *It)
+				if (B->IsAwakened() && B->IsAlive())
+					B->TakeDamageFromHeroHit(UltDmg, UltimateSourceID, NAME_None);
+		break;
+	}
 	}
 }
 
@@ -841,6 +933,10 @@ void AT66PlayerController::HandleToggleMouseLockPressed()
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
+	}
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->SetInteractive(bShowMouseCursor);
 	}
 }
 

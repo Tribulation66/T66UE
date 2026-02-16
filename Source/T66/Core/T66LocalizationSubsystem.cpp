@@ -174,8 +174,10 @@ void UT66LocalizationSubsystem::SaveLanguagePreference()
 
 FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroNames", "Hero_1", "New Chad");
-	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroNames", "Hero_2", "Knight");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroNames", "Hero_1", "Knight");
+	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroNames", "Hero_2", "Mage");
+	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroNames", "Hero_3", "Archer");
+	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroNames", "Hero_4", "Rogue");
 	return FText::FromName(HeroID);
 }
 
@@ -183,15 +185,19 @@ FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 
 FText UT66LocalizationSubsystem::GetText_HeroDescription(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_1", "Sturdy frontline. Favors armor.");
-	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_2", "Steadfast knight. Ready for battle.");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_1", "Steadfast knight. Ready for battle.");
+	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_2", "AOE specialist. High luck and scale.");
+	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_3", "Fast bouncer. Chains to multiple foes.");
+	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_4", "DOT and evasion. Poison and strike.");
 	return NSLOCTEXT("T66.HeroDescriptions", "SelectHeroPrompt", "Select a hero to view their description.");
 }
 
 FText UT66LocalizationSubsystem::GetText_HeroQuote(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_1", "\"Hold the line.\"");
-	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_2", "\"For honor.\"");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_1", "\"For honor.\"");
+	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_2", "\"By fire.\"");
+	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_3", "\"Strike true.\"");
+	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_4", "\"Embrace the venom.\"");
 	return FText::GetEmpty();
 }
 
@@ -276,6 +282,113 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType
 FText UT66LocalizationSubsystem::GetText_StatLineFormat() const
 {
 	return NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
+}
+
+FText UT66LocalizationSubsystem::GetText_PrimaryStatDescription(int32 StatIndex) const
+{
+	switch (StatIndex)
+	{
+	case 0: return NSLOCTEXT("T66.StatTooltips", "Level", "Your hero's current level. Gain XP by killing enemies to level up and improve your stats.");
+	case 1: return NSLOCTEXT("T66.StatTooltips", "Damage", "Base damage dealt by each attack. Increased by items and level-ups.");
+	case 2: return NSLOCTEXT("T66.StatTooltips", "AttackSpeed", "How quickly your hero attacks. Higher values reduce the interval between attacks.");
+	case 3: return NSLOCTEXT("T66.StatTooltips", "AttackScale", "Size multiplier for your attack hitbox. Larger scale hits more enemies per swing.");
+	case 4: return NSLOCTEXT("T66.StatTooltips", "Armor", "Reduces incoming damage from all sources. Each point subtracts flat damage before HP loss.");
+	case 5: return NSLOCTEXT("T66.StatTooltips", "Evasion", "Chance to completely dodge an incoming attack. Also unlocks evasion-based secondary stats.");
+	case 6: return NSLOCTEXT("T66.StatTooltips", "Luck", "Improves chances for rare item drops, spin-wheel bonuses, and world event spawns.");
+	case 7: return NSLOCTEXT("T66.StatTooltips", "Speed", "Hero movement speed multiplier. Higher values let you move faster across the map.");
+	default: return FText::GetEmpty();
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_SecondaryStatDescription(ET66SecondaryStatType StatType) const
+{
+	switch (StatType)
+	{
+	case ET66SecondaryStatType::AoeDamage:        return NSLOCTEXT("T66.StatTooltips", "AoeDamage", "Bonus damage for area-of-effect attacks.");
+	case ET66SecondaryStatType::BounceDamage:     return NSLOCTEXT("T66.StatTooltips", "BounceDamage", "Bonus damage for bouncing projectile attacks.");
+	case ET66SecondaryStatType::PierceDamage:     return NSLOCTEXT("T66.StatTooltips", "PierceDamage", "Bonus damage for piercing attacks that pass through enemies.");
+	case ET66SecondaryStatType::DotDamage:        return NSLOCTEXT("T66.StatTooltips", "DotDamage", "Bonus damage for damage-over-time effects.");
+	case ET66SecondaryStatType::AoeSpeed:         return NSLOCTEXT("T66.StatTooltips", "AoeSpeed", "Attack speed bonus for area-of-effect attacks.");
+	case ET66SecondaryStatType::BounceSpeed:     return NSLOCTEXT("T66.StatTooltips", "BounceSpeed", "Attack speed bonus for bouncing projectile attacks.");
+	case ET66SecondaryStatType::PierceSpeed:     return NSLOCTEXT("T66.StatTooltips", "PierceSpeed", "Attack speed bonus for piercing attacks.");
+	case ET66SecondaryStatType::DotSpeed:         return NSLOCTEXT("T66.StatTooltips", "DotSpeed", "Attack speed bonus for damage-over-time effects.");
+	case ET66SecondaryStatType::AoeScale:         return NSLOCTEXT("T66.StatTooltips", "AoeScale", "Hitbox size bonus for area-of-effect attacks.");
+	case ET66SecondaryStatType::BounceScale:     return NSLOCTEXT("T66.StatTooltips", "BounceScale", "Hitbox size bonus for bouncing projectile attacks.");
+	case ET66SecondaryStatType::PierceScale:     return NSLOCTEXT("T66.StatTooltips", "PierceScale", "Hitbox size bonus for piercing attacks.");
+	case ET66SecondaryStatType::DotScale:         return NSLOCTEXT("T66.StatTooltips", "DotScale", "Hitbox size bonus for damage-over-time effects.");
+	case ET66SecondaryStatType::CritDamage:      return NSLOCTEXT("T66.StatTooltips", "CritDamage", "Damage multiplier applied on critical hits. 1.5 = 50% bonus damage.");
+	case ET66SecondaryStatType::CritChance:       return NSLOCTEXT("T66.StatTooltips", "CritChance", "Chance for each attack to land a critical hit.");
+	case ET66SecondaryStatType::CloseRangeDamage: return NSLOCTEXT("T66.StatTooltips", "CloseRangeDmg", "Damage multiplier when attacking enemies at close range.");
+	case ET66SecondaryStatType::LongRangeDamage: return NSLOCTEXT("T66.StatTooltips", "LongRangeDmg", "Damage multiplier when attacking enemies at long range.");
+	case ET66SecondaryStatType::AttackRange:     return NSLOCTEXT("T66.StatTooltips", "AttackRange", "Maximum distance your attacks can reach.");
+	case ET66SecondaryStatType::Taunt:            return NSLOCTEXT("T66.StatTooltips", "Taunt", "Aggro generation multiplier. Higher values draw more enemy attention.");
+	case ET66SecondaryStatType::ReflectDamage:   return NSLOCTEXT("T66.StatTooltips", "ReflectDamage", "Chance to reflect incoming damage back at the attacker.");
+	case ET66SecondaryStatType::HpRegen:         return NSLOCTEXT("T66.StatTooltips", "HpRegen", "Health points regenerated per second.");
+	case ET66SecondaryStatType::Crush:           return NSLOCTEXT("T66.StatTooltips", "Crush", "Chance to instantly kill an enemy when reflecting damage.");
+	case ET66SecondaryStatType::Invisibility:    return NSLOCTEXT("T66.StatTooltips", "Invisibility", "Chance to confuse enemies on hit, making them lose track of you.");
+	case ET66SecondaryStatType::CounterAttack:   return NSLOCTEXT("T66.StatTooltips", "CounterAttack", "Chance to counter-attack when dodging an enemy's attack.");
+	case ET66SecondaryStatType::LifeSteal:       return NSLOCTEXT("T66.StatTooltips", "LifeSteal", "Chance to heal when dealing damage to enemies.");
+	case ET66SecondaryStatType::Assassinate:     return NSLOCTEXT("T66.StatTooltips", "Assassinate", "Chance to instantly kill an enemy when you dodge their attack.");
+	case ET66SecondaryStatType::SpinWheel:       return NSLOCTEXT("T66.StatTooltips", "SpinWheel", "Chance to find a bonus spin wheel on the map.");
+	case ET66SecondaryStatType::Goblin:          return NSLOCTEXT("T66.StatTooltips", "Goblin", "Chance to encounter a gold-dropping goblin.");
+	case ET66SecondaryStatType::Leprechaun:      return NSLOCTEXT("T66.StatTooltips", "Leprechaun", "Chance to encounter a leprechaun with bonus rewards.");
+	case ET66SecondaryStatType::TreasureChest:   return NSLOCTEXT("T66.StatTooltips", "TreasureChest", "Chance to find a treasure chest on the map.");
+	case ET66SecondaryStatType::Fountain:        return NSLOCTEXT("T66.StatTooltips", "Fountain", "Chance to find a Fountain of Life that restores health.");
+	case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.StatTooltips", "Cheating", "Success chance when attempting to cheat at the Gambler.");
+	case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.StatTooltips", "Stealing", "Success chance when attempting to steal from the Vendor.");
+	case ET66SecondaryStatType::MovementSpeed:   return NSLOCTEXT("T66.StatTooltips", "MovementSpeed", "Bonus movement speed multiplier from secondary stat sources.");
+	default: return FText::GetEmpty();
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PassiveName(ET66PassiveType Type) const
+{
+	switch (Type)
+	{
+	case ET66PassiveType::IronWill:              return NSLOCTEXT("T66.Abilities", "PassiveName_IronWill", "Iron Will");
+	case ET66PassiveType::RallyingBlow:          return NSLOCTEXT("T66.Abilities", "PassiveName_Rally", "Rallying Blow");
+	case ET66PassiveType::ArcaneAmplification:   return NSLOCTEXT("T66.Abilities", "PassiveName_Arcane", "Arcane Amplification");
+	case ET66PassiveType::MarksmanFocus:         return NSLOCTEXT("T66.Abilities", "PassiveName_Marksman", "Marksman's Focus");
+	case ET66PassiveType::ToxinStacking:         return NSLOCTEXT("T66.Abilities", "PassiveName_Toxin", "Toxin Stacking");
+	default: return NSLOCTEXT("T66.Abilities", "PassiveName_None", "No Passive");
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_PassiveDescription(ET66PassiveType Type) const
+{
+	switch (Type)
+	{
+	case ET66PassiveType::IronWill:              return NSLOCTEXT("T66.Abilities", "PassiveDesc_IronWill", "Reduces all incoming damage by twice your Armor stat (minimum 1 damage taken).");
+	case ET66PassiveType::RallyingBlow:          return NSLOCTEXT("T66.Abilities", "PassiveDesc_Rally", "Each enemy kill grants a stack of +15% attack speed (max 3 stacks). Stacks expire after 3 seconds without a kill.");
+	case ET66PassiveType::ArcaneAmplification:   return NSLOCTEXT("T66.Abilities", "PassiveDesc_Arcane", "AOE attacks that hit 3+ enemies deal 20% bonus damage. Hitting 5+ enemies increases the bonus to 35%.");
+	case ET66PassiveType::MarksmanFocus:         return NSLOCTEXT("T66.Abilities", "PassiveDesc_Marksman", "Consecutive attacks on the same target deal +8% damage per hit (max 5 stacks, +40%). Switching targets resets stacks.");
+	case ET66PassiveType::ToxinStacking:         return NSLOCTEXT("T66.Abilities", "PassiveDesc_Toxin", "Enemies suffering from a DOT effect take 15% bonus damage from all your attacks.");
+	default: return FText::GetEmpty();
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_UltimateName(ET66UltimateType Type) const
+{
+	switch (Type)
+	{
+	case ET66UltimateType::SpearStorm:     return NSLOCTEXT("T66.Abilities", "UltName_SpearStorm", "Spear Storm");
+	case ET66UltimateType::MeteorStrike:   return NSLOCTEXT("T66.Abilities", "UltName_MeteorStrike", "Meteor Strike");
+	case ET66UltimateType::ChainLightning: return NSLOCTEXT("T66.Abilities", "UltName_ChainLightning", "Chain Lightning");
+	case ET66UltimateType::PlagueCloud:    return NSLOCTEXT("T66.Abilities", "UltName_PlagueCloud", "Plague Cloud");
+	default: return NSLOCTEXT("T66.Abilities", "UltName_None", "Smite");
+	}
+}
+
+FText UT66LocalizationSubsystem::GetText_UltimateDescription(ET66UltimateType Type) const
+{
+	switch (Type)
+	{
+	case ET66UltimateType::SpearStorm:     return NSLOCTEXT("T66.Abilities", "UltDesc_SpearStorm", "Fires 10 piercing rays outward from the hero. Each ray damages all enemies in its path.");
+	case ET66UltimateType::MeteorStrike:   return NSLOCTEXT("T66.Abilities", "UltDesc_MeteorStrike", "Calls down 5 meteor strikes at random positions around the hero, dealing heavy AOE damage after a short delay.");
+	case ET66UltimateType::ChainLightning: return NSLOCTEXT("T66.Abilities", "UltDesc_ChainLightning", "Lightning chains to every enemy in range with no falloff, dealing full damage to each target.");
+	case ET66UltimateType::PlagueCloud:    return NSLOCTEXT("T66.Abilities", "UltDesc_PlagueCloud", "Spawns a poisonous cloud at the hero's location that deals damage over time to all enemies inside it.");
+	default: return NSLOCTEXT("T66.Abilities", "UltDesc_None", "Deals flat damage to all enemies on the field. 30-second cooldown.");
+	}
 }
 
 // ========== Items (names derived from ItemID) ==========

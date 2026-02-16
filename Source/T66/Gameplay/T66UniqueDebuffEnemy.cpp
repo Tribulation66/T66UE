@@ -4,19 +4,16 @@
 
 #include "Gameplay/T66UniqueDebuffProjectile.h"
 #include "Gameplay/T66HeroBase.h"
-#include "Gameplay/T66VisualUtil.h"
 #include "Core/T66RunStateSubsystem.h"
-#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 
 AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 {
-	// Unique enemies intentionally keep their placeholder look (no imported mesh).
-	CharacterVisualID = NAME_None;
+	// Unique enemy uses Enemy3 mesh from DT_CharacterVisuals (same as stage EnemyC).
+	CharacterVisualID = FName(TEXT("Enemy3"));
 
 	// Unique enemies do not drop loot or XP in the Bible.
 	bDropsLoot = false;
@@ -42,7 +39,7 @@ AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 
 void AT66UniqueDebuffEnemy::BeginPlay()
 {
-	// Stage-driven tuning + visuals (so each stage has its own unique enemy flavor).
+	// Stage-driven tuning (CharacterVisualID = Enemy3 set in constructor; base applies it in Super::BeginPlay).
 	int32 StageNum = 1;
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
@@ -53,18 +50,6 @@ void AT66UniqueDebuffEnemy::BeginPlay()
 	}
 	StageNum = FMath::Clamp(StageNum, 1, 66);
 
-	// Stage 1/2: replace placeholder with real assets (walk anim for stage 1; static for stage 2).
-	// NOTE: We set CharacterVisualID BEFORE Super::BeginPlay so base class can apply it immediately.
-	if (StageNum == 1)
-	{
-		CharacterVisualID = FName(TEXT("Unique_Stage01"));
-	}
-	else
-	{
-		// Keep placeholder default for other stages (and stage 2 uses a static mesh on VisualMesh).
-		CharacterVisualID = NAME_None;
-	}
-
 	Super::BeginPlay();
 
 	// Scale stats up as stages increase.
@@ -72,55 +57,6 @@ void AT66UniqueDebuffEnemy::BeginPlay()
 	CurrentHP = MaxHP;
 	FireIntervalSeconds = FMath::Clamp(1.40f - (static_cast<float>(StageNum) * 0.006f), 0.55f, 1.40f);
 	LifetimeSeconds = FMath::Clamp(10.f + (static_cast<float>(StageNum) * 0.12f), 10.f, 22.f);
-
-	// Visuals:
-	// - Stage 1 uses imported skeletal mesh via DT_CharacterVisuals (handled by Super::BeginPlay).
-	// - Stage 2 uses a static mesh (no animation) on the placeholder VisualMesh.
-	// - All other stages keep the existing placeholder "stage-driven" look.
-	if (StageNum == 2)
-	{
-		if (VisualMesh)
-		{
-			if (UStaticMesh* SM = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/Characters/Enemies/Stages/Unique_Stage02/SM_Unique_Stage02.SM_Unique_Stage02")))
-			{
-				VisualMesh->SetStaticMesh(SM);
-				VisualMesh->SetRelativeScale3D(FVector(0.85f, 0.85f, 0.85f));
-
-				// Same root cause as some skeletal meshes: FBX pivot can be far from geometry.
-				// Recenter the static mesh so it appears at the actor location.
-				const FBoxSphereBounds B = SM->GetBounds();
-				const FVector Scale = VisualMesh->GetRelativeScale3D();
-				const FVector LocalOrigin(B.Origin.X * Scale.X, B.Origin.Y * Scale.Y, B.Origin.Z * Scale.Z);
-				const FVector RotatedOrigin = VisualMesh->GetRelativeRotation().RotateVector(LocalOrigin);
-				VisualMesh->AddRelativeLocation(-RotatedOrigin);
-				// Keep default location offset (hover) and do not tint (use authored materials/textures).
-			}
-		}
-	}
-	else if (StageNum != 1)
-	{
-		UStaticMesh* Shape = nullptr;
-		switch (StageNum % 4)
-		{
-			case 1: Shape = FT66VisualUtil::GetBasicShapeSphere(); break;
-			case 2: Shape = FT66VisualUtil::GetBasicShapeCube(); break;
-			case 3: Shape = FT66VisualUtil::GetBasicShapeCylinder(); break;
-			default: Shape = FT66VisualUtil::GetBasicShapeCone(); break;
-		}
-		if (Shape)
-		{
-			VisualMesh->SetStaticMesh(Shape);
-		}
-
-		const float Hue = FMath::Fmod(static_cast<float>(StageNum) * 41.f, 360.f);
-		FLinearColor C = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 220, 245);
-		C.A = 1.f;
-		FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
-
-		// Slight size ramp over the run.
-		const float S = FMath::Lerp(0.70f, 1.05f, static_cast<float>(StageNum - 1) / 65.f);
-		VisualMesh->SetRelativeScale3D(FVector(S, S, S));
-	}
 
 	LifeRemaining = LifetimeSeconds;
 

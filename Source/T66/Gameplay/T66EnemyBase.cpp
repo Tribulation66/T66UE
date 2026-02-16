@@ -40,7 +40,10 @@ AT66EnemyBase::AT66EnemyBase()
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
 		Move->MaxWalkSpeed = 350.f;
+		Move->bOrientRotationToMovement = true;
+		Move->RotationRate = FRotator(0.f, 720.f, 0.f);
 	}
+	bUseControllerRotationYaw = false;
 
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	if (Capsule)
@@ -361,6 +364,8 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	WanderDirRefreshAccum = 0.f;
 	bCachedInsideSafeZone = false;
 	SafeZoneCheckAccumSeconds = 0.f;
+	bRisingFromGround = false;
+	RiseElapsed = 0.f;
 
 	SetActorLocation(NewLocation);
 	SetActorHiddenInGame(false);
@@ -385,10 +390,47 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	UpdateHealthBar();
 }
 
+void AT66EnemyBase::StartRiseFromGround(float TargetGroundZ)
+{
+	RiseTargetZ = TargetGroundZ;
+	RiseStartZ = TargetGroundZ - BuryDepth;
+	RiseElapsed = 0.f;
+	bRisingFromGround = true;
+
+	FVector Loc = GetActorLocation();
+	Loc.Z = RiseStartZ;
+	SetActorLocation(Loc);
+
+	if (UCapsuleComponent* Cap = GetCapsuleComponent())
+	{
+		Cap->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	}
+}
+
 void AT66EnemyBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	if (CurrentHP <= 0) return;
+
+	// Rise-from-ground animation: lerp Z up, then re-enable collision.
+	if (bRisingFromGround)
+	{
+		RiseElapsed += DeltaSeconds;
+		const float Alpha = FMath::Clamp(RiseElapsed / RiseDuration, 0.f, 1.f);
+		FVector Loc = GetActorLocation();
+		Loc.Z = FMath::Lerp(RiseStartZ, RiseTargetZ, Alpha);
+		SetActorLocation(Loc);
+
+		if (Alpha >= 1.f)
+		{
+			bRisingFromGround = false;
+			if (UCapsuleComponent* Cap = GetCapsuleComponent())
+			{
+				Cap->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+			}
+		}
+		return;
+	}
 
 	// [GOLD] Cache the player pawn once; re-resolve only if the weak ref went stale.
 	APawn* PlayerPawn = CachedPlayerPawn.Get();
@@ -446,6 +488,87 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 			AddMovementInput(CachedSafeZoneEscapeDir, 1.f);
 		}
 		return;
+	}
+
+	// Leash: if far from player, teleport to a position near the player (throttled).
+	if (LeashMaxDistance > 0.f)
+	{
+		LeashCheckAccumSeconds += DeltaSeconds;
+		if (LeashCheckAccumSeconds >= LeashCheckIntervalSeconds)
+		{
+			LeashCheckAccumSeconds = 0.f;
+			const float Dist2D = FVector::Dist2D(GetActorLocation(), PlayerPawn->GetActorLocation());
+			if (Dist2D > LeashMaxDistance)
+			{
+				UWorld* World = GetWorld();
+				UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+				auto IsInAnySafeZone2D = [&](const FVector& Loc) -> bool
+				{
+					if (!Registry) return false;
+					for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+					{
+						AT66HouseNPCBase* NPC = WeakNPC.Get();
+						if (!NPC) continue;
+						const float R = NPC->GetSafeZoneRadius();
+						if (FVector::DistSquared2D(Loc, NPC->GetActorLocation()) < (R * R)) return true;
+					}
+					return false;
+				};
+				FVector PlayerLoc = PlayerPawn->GetActorLocation();
+				static constexpr float LeashSpawnMin = 400.f;
+				static constexpr float LeashSpawnMax = 800.f;
+				FVector NewLoc = PlayerLoc;
+				for (int32 Try = 0; Try < 6; ++Try)
+				{
+					const float Angle = FMath::FRandRange(0.f, 2.f * PI);
+					const float Dist = FMath::FRandRange(LeashSpawnMin, LeashSpawnMax);
+					NewLoc = PlayerLoc + FVector(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
+					if (!IsInAnySafeZone2D(NewLoc)) break;
+				}
+				if (IsInAnySafeZone2D(NewLoc) && Registry)
+				{
+					static constexpr float SafeZonePushMargin = 50.f;
+					for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+					{
+						AT66HouseNPCBase* NPC = WeakNPC.Get();
+						if (!NPC) continue;
+						const float R = NPC->GetSafeZoneRadius();
+						FVector ToSpawn = NewLoc - NPC->GetActorLocation();
+						ToSpawn.Z = 0.f;
+						const float Dist2DToNpc = ToSpawn.Size();
+						if (Dist2DToNpc < R && Dist2DToNpc > 1.f)
+						{
+							const FVector Dir = ToSpawn / Dist2DToNpc;
+							NewLoc = NPC->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
+							NewLoc.Z = PlayerLoc.Z;
+							break;
+						}
+						if (Dist2DToNpc <= 1.f)
+						{
+							FVector Dir(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f);
+							Dir.Z = 0.f;
+							if (Dir.Normalize())
+							{
+								NewLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
+								NewLoc.Z = PlayerLoc.Z;
+							}
+							break;
+						}
+					}
+				}
+				FHitResult Hit;
+				if (World && World->LineTraceSingleByChannel(Hit, NewLoc + FVector(0.f, 0.f, 500.f), NewLoc - FVector(0.f, 0.f, 1000.f), ECC_WorldStatic))
+				{
+					static constexpr float CapsuleHalfHeight = 88.f;
+					NewLoc = Hit.ImpactPoint + FVector(0.f, 0.f, CapsuleHalfHeight);
+				}
+				else
+				{
+					NewLoc.Z = PlayerLoc.Z;
+				}
+				SetActorLocation(NewLoc);
+			}
+		}
 	}
 
 	// Tick armor debuff timer.
@@ -520,15 +643,16 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (Now - LastTouchDamageTime < TouchDamageCooldown) return;
 
 	LastTouchDamageTime = Now;
-	RunState->ApplyDamage(TouchDamageHearts);
+	const int32 DamageHP = 5;
+	RunState->ApplyDamage(DamageHP, this);
 }
 
 bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName EventType)
 {
 	if (Damage <= 0 || CurrentHP <= 0) return false;
 
-	// Apply enemy armor (damage reduction). Debuffs temporarily lower armor.
-	const float EffectiveArmor = FMath::Clamp(Armor - ArmorDebuffAmount, 0.f, 0.95f);
+	// Apply enemy armor (damage reduction). Debuffs temporarily lower armor; can go negative for bonus damage.
+	const float EffectiveArmor = FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
 	const int32 ReducedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Damage) * (1.f - EffectiveArmor)));
 
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
@@ -550,6 +674,10 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName
 	UpdateHealthBar();
 	if (CurrentHP <= 0)
 	{
+		if (UWorld* World = GetWorld())
+			if (UGameInstance* GI = World->GetGameInstance())
+				if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+					RunState->NotifyEnemyKilledByHero();
 		OnDeath();
 		return true;
 	}

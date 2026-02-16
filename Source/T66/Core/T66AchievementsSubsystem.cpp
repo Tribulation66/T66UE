@@ -5,6 +5,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SaveMigration.h"
 #include "Core/T66SkinSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -75,6 +76,41 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	Profile->LifetimeRunsCompleted = FMath::Max(0, Profile->LifetimeRunsCompleted);
 	Profile->LifetimeVendorPurchases = FMath::Max(0, Profile->LifetimeVendorPurchases);
 	Profile->LifetimeGamblerWins = FMath::Max(0, Profile->LifetimeGamblerWins);
+
+	// Migration: Hero renumbering (Hero_1 removed, Hero_2..5 -> Hero_1..4). SaveVersion 9.
+	if (Profile->SaveVersion < 9)
+	{
+		TMap<FName, FT66OwnedSkinsList> NewOwned;
+		for (const auto& Pair : Profile->OwnedHeroSkinsByHero)
+		{
+			FName NewKey = T66MigrateHeroIDFromSave(Pair.Key);
+			if (NewOwned.Contains(NewKey))
+			{
+				for (const FName& SkinID : Pair.Value.SkinIDs)
+				{
+					if (!NewOwned.Find(NewKey)->SkinIDs.Contains(SkinID))
+					{
+						NewOwned.Find(NewKey)->SkinIDs.Add(SkinID);
+					}
+				}
+			}
+			else
+			{
+				NewOwned.Add(NewKey, Pair.Value);
+			}
+		}
+		Profile->OwnedHeroSkinsByHero = MoveTemp(NewOwned);
+		TMap<FName, FName> NewEquipped;
+		for (const auto& Pair : Profile->EquippedHeroSkinIDByHero)
+		{
+			FName NewKey = T66MigrateHeroIDFromSave(Pair.Key);
+			NewEquipped.Add(NewKey, Pair.Value);
+		}
+		Profile->EquippedHeroSkinIDByHero = MoveTemp(NewEquipped);
+		Profile->SaveVersion = 9;
+		bProfileDirty = true;
+		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Applied HeroID renumber migration (SaveVersion 9)"));
+	}
 
 	// Hero skins: log current state (no more auto-reset; purchases persist).
 	const FName DefaultSkin(TEXT("Default"));

@@ -172,7 +172,7 @@ void AT66LoanShark::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (Now - LastTouchDamageTime < TouchDamageCooldown) return;
 
 	LastTouchDamageTime = Now;
-	RunState->ApplyDamage(CurrentDamageHearts);
+	RunState->ApplyDamage(CurrentDamageHearts * 20, this);
 }
 
 UT66RunStateSubsystem* AT66LoanShark::GetRunState() const

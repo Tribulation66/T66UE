@@ -1,7 +1,7 @@
 """
 Import hero skeletal meshes, animations, and portraits from SourceAssets/Heros.
 
-Maps: Knight -> Hero_1, Ninja -> Hero_2, Cowboy -> Hero_3, Wizard -> Hero_4.
+Lineup is Hero_1..4 (Knight, Mage, Archer, Rogue). Folder map: Knight -> Hero_1, Ninja -> Hero_2, Cowboy -> Hero_3, Wizard -> Hero_4.
 For each: Default/Type A, Default/Type B, Beach/Type A, Beach/Type B (mesh + walk + alert + run).
 Portraits: Portraits/Type A and Type B PNGs -> /Game/UI/Sprites/Heroes/Hero_N/T_Hero_N_TypeA, T_Hero_N_TypeB.
 
