@@ -66,6 +66,24 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 		LocalDisplayName = TEXT("DevPlayer");
 		bSteamReady = true;
 
+		// Dev-mode friend list: add a test friend so the Friends leaderboard tab has data.
+		FString DevFriends;
+		GConfig->GetString(TEXT("T66.Online"), TEXT("DevFriendIds"), DevFriends, GGameIni);
+		if (!DevFriends.IsEmpty())
+		{
+			TArray<FString> Parts;
+			DevFriends.ParseIntoArray(Parts, TEXT(","));
+			for (const FString& Part : Parts)
+			{
+				FString Trimmed = Part.TrimStartAndEnd();
+				if (!Trimmed.IsEmpty())
+				{
+					FriendSteamIds.Add(Trimmed);
+				}
+			}
+			UE_LOG(LogTemp, Log, TEXT("SteamHelper: dev friends loaded: %d IDs"), FriendSteamIds.Num());
+		}
+
 		if (UGameInstance* GI = GetGameInstance())
 		{
 			if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())

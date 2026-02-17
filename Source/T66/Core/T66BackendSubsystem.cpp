@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66SteamHelper.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
@@ -411,7 +412,7 @@ void UT66BackendSubsystem::FetchLeaderboard(
 		return;
 	}
 
-	// Build the cache key (same format as backend: type_time_party_difficulty)
+	// Build the cache key (same format as backend: type_time_party_difficulty_filter)
 	const FString Key = FString::Printf(TEXT("%s_%s_%s_%s_%s"), *Type, *Time, *Party, *Difficulty, *Filter);
 
 	// Don't fire duplicate requests for the same key
@@ -421,16 +422,52 @@ void UT66BackendSubsystem::FetchLeaderboard(
 	}
 	PendingLeaderboardFetches.Add(Key);
 
-	const FString Endpoint = FString::Printf(
-		TEXT("/api/leaderboard?type=%s&time=%s&party=%s&difficulty=%s&filter=%s"),
-		*Type, *Time, *Party, *Difficulty, *Filter);
+	// Friends filter uses a separate authenticated endpoint with friend_ids
+	if (Filter == TEXT("friends"))
+	{
+		if (!HasSteamTicket())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Backend: cannot fetch friends leaderboard — no Steam ticket."));
+			PendingLeaderboardFetches.Remove(Key);
+			return;
+		}
 
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
-	// Leaderboard endpoint is public, no auth needed
-	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, Key);
-	Request->ProcessRequest();
+		// Collect friend IDs from SteamHelper
+		FString FriendIds;
+		if (UGameInstance* GI = Cast<UGameInstance>(GetOuter()))
+		{
+			if (UT66SteamHelper* Steam = GI->GetSubsystem<UT66SteamHelper>())
+			{
+				FriendIds = FString::Join(Steam->GetFriendSteamIds(), TEXT(","));
+			}
+		}
 
-	UE_LOG(LogTemp, Log, TEXT("Backend: fetching leaderboard key=%s"), *Key);
+		// If no friend list from Steam, use the dev fallback (empty string still works — shows just self)
+		const FString Endpoint = FString::Printf(
+			TEXT("/api/leaderboard/friends?type=%s&time=%s&party=%s&difficulty=%s&friend_ids=%s"),
+			*Type, *Time, *Party, *Difficulty, *FriendIds);
+
+		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+		SetAuthHeaders(Request);
+		Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, Key);
+		Request->ProcessRequest();
+
+		UE_LOG(LogTemp, Log, TEXT("Backend: fetching friends leaderboard key=%s (friends=%d)"),
+			*Key, FriendIds.IsEmpty() ? 0 : FriendIds.Len());
+	}
+	else
+	{
+		// Global and Streamers use the public endpoint
+		const FString Endpoint = FString::Printf(
+			TEXT("/api/leaderboard?type=%s&time=%s&party=%s&difficulty=%s&filter=%s"),
+			*Type, *Time, *Party, *Difficulty, *Filter);
+
+		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+		Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, Key);
+		Request->ProcessRequest();
+
+		UE_LOG(LogTemp, Log, TEXT("Backend: fetching leaderboard key=%s"), *Key);
+	}
 }
 
 bool UT66BackendSubsystem::HasCachedLeaderboard(const FString& Key) const
@@ -557,10 +594,12 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 		Cached.Entries.Add(Entry);
 	}
 
+	const int32 NumEntries = Cached.Entries.Num();
+	const int32 TotalEntries = Cached.TotalEntries;
 	LeaderboardCache.Add(LeaderboardKey, MoveTemp(Cached));
 
 	UE_LOG(LogTemp, Log, TEXT("Backend: leaderboard fetched key=%s entries=%d total=%d"),
-		*LeaderboardKey, Cached.Entries.Num(), Cached.TotalEntries);
+		*LeaderboardKey, NumEntries, TotalEntries);
 
 	// Notify listeners
 	OnLeaderboardDataReady.Broadcast(LeaderboardKey);
