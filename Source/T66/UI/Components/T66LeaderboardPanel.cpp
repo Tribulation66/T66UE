@@ -709,8 +709,8 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 
 	RebuildEntryList();
 
-	// Fire async backend fetch if not cached yet
-	if (Backend && Backend->IsBackendConfigured() && Backend->HasSteamTicket() && !Backend->HasCachedLeaderboard(CacheKey))
+	// Fire async backend fetch if not cached yet (leaderboard endpoint is public, no auth needed)
+	if (Backend && Backend->IsBackendConfigured() && !Backend->HasCachedLeaderboard(CacheKey))
 	{
 		// Subscribe to data-ready callback (safe: subsystem outlives widget during normal gameplay)
 		if (!bBoundToBackendDelegate && Backend)
