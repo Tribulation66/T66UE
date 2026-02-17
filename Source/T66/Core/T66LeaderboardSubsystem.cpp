@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LocalLeaderboardSaveGame.h"
@@ -572,6 +573,24 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Leaderboard: submit local score. Score=%d NewBest=%s Anonymous=%s"), Score, bIsNewBest ? TEXT("true") : TEXT("false"), bAnon ? TEXT("true") : TEXT("false"));
+
+	// Fire-and-forget backend submission (online complement to local save).
+	if (UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr)
+	{
+		if (Backend->IsBackendConfigured() && Backend->HasSteamTicket())
+		{
+			UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+			const int32 StageReached = RunState ? RunState->GetCurrentStage() : 1;
+			// Score submissions send 0 for time_ms (speedrun time tracked separately).
+			const int32 TimeMs = 0;
+			const FString DisplayName = bAnon ? TEXT("ANONYMOUS") : TEXT("Player");
+			const FString HeroId = T66GI ? T66GI->SelectedHeroID.ToString() : TEXT("unknown");
+			const FString CompanionId = T66GI ? T66GI->SelectedCompanionID.ToString() : TEXT("unknown");
+
+			Backend->SubmitRunToBackend(DisplayName, Score, TimeMs, Diff, Party, StageReached, HeroId, CompanionId);
+		}
+	}
+
 	return true;
 }
 

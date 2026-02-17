@@ -9,6 +9,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66LeaderboardSubsystem.generated.h"
 
+class UT66BackendSubsystem;
+
 struct FLeaderboardEntry;
 class UT66LocalLeaderboardSaveGame;
 class UT66LeaderboardRunSummarySaveGame;
