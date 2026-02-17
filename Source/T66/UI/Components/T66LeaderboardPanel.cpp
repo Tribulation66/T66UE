@@ -433,49 +433,10 @@ void ST66LeaderboardPanel::SetUIManager(UT66UIManager* InUIManager)
 
 void ST66LeaderboardPanel::GeneratePlaceholderData()
 {
+	// Placeholder data has been replaced by backend data. This stub is kept
+	// only as a compile-time safety net; it should never be reached at runtime
+	// when the backend is configured.
 	LeaderboardEntries.Empty();
-
-	// Fake player names
-	TArray<FString> FakeNames = {
-		TEXT("xX_DarkSlayer_Xx"),
-		TEXT("ProGamer2024"),
-		TEXT("TribulationMaster"),
-		TEXT("SpeedRunner_99"),
-		TEXT("CasualHero"),
-		TEXT("NightmareKing"),
-		TEXT("SilentStorm"),
-		TEXT("BlazeFury"),
-		TEXT("IronWill"),
-		TEXT("ShadowDancer")
-	};
-
-	// Generate 10 entries with varying data based on type
-	for (int32 i = 0; i < 10; i++)
-	{
-		FLeaderboardEntry Entry;
-		Entry.Rank = i + 1;
-		Entry.PlayerName = FakeNames[i];
-		
-		if (CurrentType == ET66LeaderboardType::Score)
-		{
-			// High score placeholder (kept as fallback when subsystem isn't available).
-			Entry.Score = 2000 - (i * 140) + FMath::RandRange(-20, 20);
-			Entry.TimeSeconds = -1.0f; // Not relevant for high score
-		}
-		else
-		{
-			Entry.Score = 0; // Not relevant for speed run
-			// Speed run times - best times at top (shorter is better)
-			Entry.TimeSeconds = 900.0f + (i * 90.0f) + FMath::RandRange(-20.0f, 20.0f);
-		}
-		
-		Entry.StageReached = 66 - (i / 3);
-		Entry.HeroID = FName(TEXT("Knight"));
-		Entry.PartySize = CurrentPartySize;
-		Entry.Difficulty = CurrentDifficulty;
-		Entry.bIsLocalPlayer = (i == 7); // Pretend player is rank 8
-		LeaderboardEntries.Add(Entry);
-	}
 }
 
 void ST66LeaderboardPanel::RebuildEntryList()
@@ -729,15 +690,21 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 			}
 		}
 	}
+	else if (Backend && Backend->IsBackendConfigured())
+	{
+		// Backend is configured but no cached data yet — show empty while async fetch runs.
+		// Only add the local player's "YOU" row so the board isn't completely blank.
+		LeaderboardEntries.Empty();
+	}
 	else if (LeaderboardSubsystem)
 	{
-		// Fall back to local data
+		// No backend configured — fall back to local data (offline mode)
 		LeaderboardEntries = LeaderboardSubsystem->BuildEntriesForFilter(
 			CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize, CurrentSpeedRunStage);
 	}
 	else
 	{
-		GeneratePlaceholderData();
+		LeaderboardEntries.Empty();
 	}
 
 	RebuildEntryList();
