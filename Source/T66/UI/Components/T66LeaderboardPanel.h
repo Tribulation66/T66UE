@@ -81,6 +81,11 @@ private:
 	bool bBoundToBackendDelegate = false;
 	void OnBackendLeaderboardReady(const FString& Key);
 
+	// Backend run summary fetch
+	bool bBoundToRunSummaryDelegate = false;
+	FString PendingRunSummaryEntryId;
+	void OnBackendRunSummaryReady(const FString& EntryId);
+
 	// Button handlers
 	FReply HandleGlobalClicked();
 	FReply HandleFriendsClicked();

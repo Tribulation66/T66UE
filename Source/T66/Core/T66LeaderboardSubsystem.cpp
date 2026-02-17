@@ -581,13 +581,52 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 		{
 			UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 			const int32 StageReached = RunState ? RunState->GetCurrentStage() : 1;
-			// Score submissions send 0 for time_ms (speedrun time tracked separately).
 			const int32 TimeMs = 0;
 			const FString DisplayName = bAnon ? TEXT("ANONYMOUS") : TEXT("Player");
 			const FString HeroId = T66GI ? T66GI->SelectedHeroID.ToString() : TEXT("unknown");
 			const FString CompanionId = T66GI ? T66GI->SelectedCompanionID.ToString() : TEXT("unknown");
 
-			Backend->SubmitRunToBackend(DisplayName, Score, TimeMs, Diff, Party, StageReached, HeroId, CompanionId);
+			// Build a snapshot with full run summary data
+			UT66LeaderboardRunSummarySaveGame* BackendSnapshot = nullptr;
+			if (RunState)
+			{
+				UT66SkillRatingSubsystem* Skill = GI->GetSubsystem<UT66SkillRatingSubsystem>();
+				BackendSnapshot = NewObject<UT66LeaderboardRunSummarySaveGame>();
+				BackendSnapshot->HeroLevel = FMath::Max(1, RunState->GetHeroLevel());
+				BackendSnapshot->DamageStat = FMath::Max(1, RunState->GetDamageStat());
+				BackendSnapshot->AttackSpeedStat = FMath::Max(1, RunState->GetAttackSpeedStat());
+				BackendSnapshot->AttackScaleStat = FMath::Max(1, RunState->GetScaleStat());
+				BackendSnapshot->ArmorStat = FMath::Max(1, RunState->GetArmorStat());
+				BackendSnapshot->EvasionStat = FMath::Max(1, RunState->GetEvasionStat());
+				BackendSnapshot->LuckStat = FMath::Max(1, RunState->GetLuckStat());
+				BackendSnapshot->SpeedStat = FMath::Max(1, RunState->GetSpeedStat());
+
+				for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::MovementSpeed); ++i)
+				{
+					const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
+					BackendSnapshot->SecondaryStatValues.Add(SecType, RunState->GetSecondaryStatValue(SecType));
+				}
+
+				BackendSnapshot->LuckRating0To100 = RunState->GetLuckRating0To100();
+				BackendSnapshot->LuckRatingQuantity0To100 = RunState->GetLuckRatingQuantity0To100();
+				BackendSnapshot->LuckRatingQuality0To100 = RunState->GetLuckRatingQuality0To100();
+				BackendSnapshot->SkillRating0To100 = Skill ? Skill->GetSkillRating0To100() : -1;
+
+				BackendSnapshot->EquippedIdols = RunState->GetEquippedIdols();
+				BackendSnapshot->Inventory = RunState->GetInventory();
+				BackendSnapshot->EventLog = RunState->GetEventLog();
+
+				if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+				{
+					const TArray<FDamageLogEntry> Sorted = DamageLog->GetDamageBySourceSorted();
+					for (const FDamageLogEntry& Entry : Sorted)
+					{
+						BackendSnapshot->DamageBySource.Add(Entry.SourceID, Entry.TotalDamage);
+					}
+				}
+			}
+
+			Backend->SubmitRunToBackend(DisplayName, Score, TimeMs, Diff, Party, StageReached, HeroId, CompanionId, BackendSnapshot);
 		}
 	}
 

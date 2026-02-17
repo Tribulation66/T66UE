@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
@@ -91,7 +92,8 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 	ET66PartySize PartySize,
 	int32 StageReached,
 	const FString& HeroId,
-	const FString& CompanionId)
+	const FString& CompanionId,
+	UT66LeaderboardRunSummarySaveGame* Snapshot)
 {
 	if (!IsBackendConfigured())
 	{
@@ -116,6 +118,107 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 	RunObj->SetNumberField(TEXT("stage_reached"), StageReached);
 	RunObj->SetNumberField(TEXT("score"), Score);
 	RunObj->SetNumberField(TEXT("time_ms"), TimeMs);
+
+	// Include full run summary data when available
+	if (Snapshot)
+	{
+		RunObj->SetNumberField(TEXT("hero_level"), Snapshot->HeroLevel);
+
+		// Primary stats
+		TSharedPtr<FJsonObject> StatsObj = MakeShared<FJsonObject>();
+		StatsObj->SetNumberField(TEXT("damage"), Snapshot->DamageStat);
+		StatsObj->SetNumberField(TEXT("attack_speed"), Snapshot->AttackSpeedStat);
+		StatsObj->SetNumberField(TEXT("attack_scale"), Snapshot->AttackScaleStat);
+		StatsObj->SetNumberField(TEXT("armor"), Snapshot->ArmorStat);
+		StatsObj->SetNumberField(TEXT("evasion"), Snapshot->EvasionStat);
+		StatsObj->SetNumberField(TEXT("luck"), Snapshot->LuckStat);
+		StatsObj->SetNumberField(TEXT("speed"), Snapshot->SpeedStat);
+		RunObj->SetObjectField(TEXT("stats"), StatsObj);
+
+		// Secondary stats
+		TSharedPtr<FJsonObject> SecObj = MakeShared<FJsonObject>();
+		for (const auto& Pair : Snapshot->SecondaryStatValues)
+		{
+			FString KeyName;
+			switch (Pair.Key)
+			{
+			case ET66SecondaryStatType::AoeDamage: KeyName = TEXT("AoeDamage"); break;
+			case ET66SecondaryStatType::BounceDamage: KeyName = TEXT("BounceDamage"); break;
+			case ET66SecondaryStatType::PierceDamage: KeyName = TEXT("PierceDamage"); break;
+			case ET66SecondaryStatType::DotDamage: KeyName = TEXT("DotDamage"); break;
+			case ET66SecondaryStatType::AoeSpeed: KeyName = TEXT("AoeSpeed"); break;
+			case ET66SecondaryStatType::BounceSpeed: KeyName = TEXT("BounceSpeed"); break;
+			case ET66SecondaryStatType::PierceSpeed: KeyName = TEXT("PierceSpeed"); break;
+			case ET66SecondaryStatType::DotSpeed: KeyName = TEXT("DotSpeed"); break;
+			case ET66SecondaryStatType::AoeScale: KeyName = TEXT("AoeScale"); break;
+			case ET66SecondaryStatType::BounceScale: KeyName = TEXT("BounceScale"); break;
+			case ET66SecondaryStatType::PierceScale: KeyName = TEXT("PierceScale"); break;
+			case ET66SecondaryStatType::DotScale: KeyName = TEXT("DotScale"); break;
+			case ET66SecondaryStatType::CritDamage: KeyName = TEXT("CritDamage"); break;
+			case ET66SecondaryStatType::CritChance: KeyName = TEXT("CritChance"); break;
+			case ET66SecondaryStatType::CloseRangeDamage: KeyName = TEXT("CloseRangeDamage"); break;
+			case ET66SecondaryStatType::LongRangeDamage: KeyName = TEXT("LongRangeDamage"); break;
+			case ET66SecondaryStatType::AttackRange: KeyName = TEXT("AttackRange"); break;
+			case ET66SecondaryStatType::Taunt: KeyName = TEXT("Taunt"); break;
+			case ET66SecondaryStatType::ReflectDamage: KeyName = TEXT("ReflectDamage"); break;
+			case ET66SecondaryStatType::HpRegen: KeyName = TEXT("HpRegen"); break;
+			case ET66SecondaryStatType::Crush: KeyName = TEXT("Crush"); break;
+			case ET66SecondaryStatType::Invisibility: KeyName = TEXT("Invisibility"); break;
+			case ET66SecondaryStatType::CounterAttack: KeyName = TEXT("CounterAttack"); break;
+			case ET66SecondaryStatType::LifeSteal: KeyName = TEXT("LifeSteal"); break;
+			case ET66SecondaryStatType::Assassinate: KeyName = TEXT("Assassinate"); break;
+			case ET66SecondaryStatType::SpinWheel: KeyName = TEXT("SpinWheel"); break;
+			case ET66SecondaryStatType::Goblin: KeyName = TEXT("Goblin"); break;
+			case ET66SecondaryStatType::Leprechaun: KeyName = TEXT("Leprechaun"); break;
+			case ET66SecondaryStatType::TreasureChest: KeyName = TEXT("TreasureChest"); break;
+			case ET66SecondaryStatType::Fountain: KeyName = TEXT("Fountain"); break;
+			case ET66SecondaryStatType::Cheating: KeyName = TEXT("Cheating"); break;
+			case ET66SecondaryStatType::Stealing: KeyName = TEXT("Stealing"); break;
+			case ET66SecondaryStatType::MovementSpeed: KeyName = TEXT("MovementSpeed"); break;
+			default: continue;
+			}
+			SecObj->SetNumberField(KeyName, Pair.Value);
+		}
+		RunObj->SetObjectField(TEXT("secondary_stats"), SecObj);
+
+		// Ratings
+		if (Snapshot->LuckRating0To100 >= 0) RunObj->SetNumberField(TEXT("luck_rating"), Snapshot->LuckRating0To100);
+		if (Snapshot->LuckRatingQuantity0To100 >= 0) RunObj->SetNumberField(TEXT("luck_quantity"), Snapshot->LuckRatingQuantity0To100);
+		if (Snapshot->LuckRatingQuality0To100 >= 0) RunObj->SetNumberField(TEXT("luck_quality"), Snapshot->LuckRatingQuality0To100);
+		if (Snapshot->SkillRating0To100 >= 0) RunObj->SetNumberField(TEXT("skill_rating"), Snapshot->SkillRating0To100);
+
+		// Equipped idols
+		TArray<TSharedPtr<FJsonValue>> IdolArr;
+		for (const FName& Idol : Snapshot->EquippedIdols)
+		{
+			IdolArr.Add(MakeShared<FJsonValueString>(Idol.ToString()));
+		}
+		RunObj->SetArrayField(TEXT("equipped_idols"), IdolArr);
+
+		// Inventory
+		TArray<TSharedPtr<FJsonValue>> InvArr;
+		for (const FName& Item : Snapshot->Inventory)
+		{
+			InvArr.Add(MakeShared<FJsonValueString>(Item.ToString()));
+		}
+		RunObj->SetArrayField(TEXT("inventory"), InvArr);
+
+		// Event log
+		TArray<TSharedPtr<FJsonValue>> LogArr;
+		for (const FString& Msg : Snapshot->EventLog)
+		{
+			LogArr.Add(MakeShared<FJsonValueString>(Msg));
+		}
+		RunObj->SetArrayField(TEXT("event_log"), LogArr);
+
+		// Damage by source
+		TSharedPtr<FJsonObject> DmgObj = MakeShared<FJsonObject>();
+		for (const auto& Pair : Snapshot->DamageBySource)
+		{
+			DmgObj->SetNumberField(Pair.Key.ToString(), Pair.Value);
+		}
+		RunObj->SetObjectField(TEXT("damage_by_source"), DmgObj);
+	}
 
 	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetStringField(TEXT("display_name"), DisplayName);
@@ -448,6 +551,9 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 
 		Entry.bIsLocalPlayer = false;
 
+		Entry.EntryId = E->GetStringField(TEXT("entry_id"));
+		Entry.bHasRunSummary = E->HasField(TEXT("has_run_summary")) && E->GetBoolField(TEXT("has_run_summary"));
+
 		Cached.Entries.Add(Entry);
 	}
 
@@ -458,4 +564,231 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 
 	// Notify listeners
 	OnLeaderboardDataReady.Broadcast(LeaderboardKey);
+}
+
+// ── Fetch Run Summary ────────────────────────────────────────
+
+void UT66BackendSubsystem::FetchRunSummary(const FString& EntryId)
+{
+	if (!IsBackendConfigured() || EntryId.IsEmpty())
+	{
+		return;
+	}
+
+	if (PendingRunSummaryFetches.Contains(EntryId))
+	{
+		return;
+	}
+	PendingRunSummaryFetches.Add(EntryId);
+
+	const FString Endpoint = FString::Printf(TEXT("/api/run-summary/%s"), *EntryId);
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnRunSummaryResponseReceived, EntryId);
+	Request->ProcessRequest();
+
+	UE_LOG(LogTemp, Log, TEXT("Backend: fetching run summary for entry=%s"), *EntryId);
+}
+
+bool UT66BackendSubsystem::HasCachedRunSummary(const FString& EntryId) const
+{
+	return RunSummaryCache.Contains(EntryId);
+}
+
+UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::GetCachedRunSummary(const FString& EntryId) const
+{
+	const TObjectPtr<UT66LeaderboardRunSummarySaveGame>* Found = RunSummaryCache.Find(EntryId);
+	return Found ? Found->Get() : nullptr;
+}
+
+void UT66BackendSubsystem::OnRunSummaryResponseReceived(
+	FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EntryId)
+{
+	PendingRunSummaryFetches.Remove(EntryId);
+
+	if (!bConnectedSuccessfully || !Response.IsValid() || Response->GetResponseCode() != 200)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Backend: run-summary fetch failed for entry=%s (code=%d)"),
+			*EntryId, Response.IsValid() ? Response->GetResponseCode() : 0);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Backend: run-summary JSON parse failed for entry=%s"), *EntryId);
+		return;
+	}
+
+	UT66LeaderboardRunSummarySaveGame* Snapshot = ParseRunSummaryFromJson(Json, this);
+	if (Snapshot)
+	{
+		RunSummaryCache.Add(EntryId, Snapshot);
+		UE_LOG(LogTemp, Log, TEXT("Backend: run summary cached for entry=%s (hero=%s, score=%d)"),
+			*EntryId, *Snapshot->HeroID.ToString(), Snapshot->Score);
+		OnRunSummaryReady.Broadcast(EntryId);
+	}
+}
+
+UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::ParseRunSummaryFromJson(
+	const TSharedPtr<FJsonObject>& Json, UObject* Outer)
+{
+	if (!Json.IsValid())
+	{
+		return nullptr;
+	}
+
+	UT66LeaderboardRunSummarySaveGame* S = NewObject<UT66LeaderboardRunSummarySaveGame>(Outer);
+
+	S->SchemaVersion = Json->HasField(TEXT("schema_version")) ? static_cast<int32>(Json->GetNumberField(TEXT("schema_version"))) : 6;
+	S->StageReached = Json->HasField(TEXT("stage_reached")) ? static_cast<int32>(Json->GetNumberField(TEXT("stage_reached"))) : 1;
+	S->Score = Json->HasField(TEXT("score")) ? static_cast<int32>(Json->GetNumberField(TEXT("score"))) : 0;
+
+	const FString HeroIdStr = Json->GetStringField(TEXT("hero_id"));
+	S->HeroID = HeroIdStr.IsEmpty() ? NAME_None : FName(*HeroIdStr);
+
+	const FString CompanionIdStr = Json->GetStringField(TEXT("companion_id"));
+	S->CompanionID = CompanionIdStr.IsEmpty() ? NAME_None : FName(*CompanionIdStr);
+
+	S->HeroLevel = Json->HasField(TEXT("hero_level")) ? static_cast<int32>(Json->GetNumberField(TEXT("hero_level"))) : 1;
+
+	S->DisplayName = Json->GetStringField(TEXT("display_name"));
+
+	// Stats
+	const TSharedPtr<FJsonObject>* StatsObj = nullptr;
+	if (Json->TryGetObjectField(TEXT("stats"), StatsObj) && StatsObj && (*StatsObj).IsValid())
+	{
+		const TSharedPtr<FJsonObject>& St = *StatsObj;
+		S->DamageStat = St->HasField(TEXT("damage")) ? static_cast<int32>(St->GetNumberField(TEXT("damage"))) : 1;
+		S->AttackSpeedStat = St->HasField(TEXT("attack_speed")) ? static_cast<int32>(St->GetNumberField(TEXT("attack_speed"))) : 1;
+		S->AttackScaleStat = St->HasField(TEXT("attack_scale")) ? static_cast<int32>(St->GetNumberField(TEXT("attack_scale"))) : 1;
+		S->ArmorStat = St->HasField(TEXT("armor")) ? static_cast<int32>(St->GetNumberField(TEXT("armor"))) : 1;
+		S->EvasionStat = St->HasField(TEXT("evasion")) ? static_cast<int32>(St->GetNumberField(TEXT("evasion"))) : 1;
+		S->LuckStat = St->HasField(TEXT("luck")) ? static_cast<int32>(St->GetNumberField(TEXT("luck"))) : 1;
+		S->SpeedStat = St->HasField(TEXT("speed")) ? static_cast<int32>(St->GetNumberField(TEXT("speed"))) : 1;
+	}
+
+	// Secondary stats
+	const TSharedPtr<FJsonObject>* SecObj = nullptr;
+	if (Json->TryGetObjectField(TEXT("secondary_stats"), SecObj) && SecObj && (*SecObj).IsValid())
+	{
+		for (const auto& Pair : (*SecObj)->Values)
+		{
+			double Val = 0.0;
+			if (Pair.Value.IsValid() && Pair.Value->TryGetNumber(Val))
+			{
+				// Map JSON key name to ET66SecondaryStatType
+				const FString& Key = Pair.Key;
+				ET66SecondaryStatType StatType;
+				bool bFound = true;
+
+				if (Key == TEXT("CritChance")) StatType = ET66SecondaryStatType::CritChance;
+				else if (Key == TEXT("CritDamage")) StatType = ET66SecondaryStatType::CritDamage;
+				else if (Key == TEXT("Crush")) StatType = ET66SecondaryStatType::Crush;
+				else if (Key == TEXT("Invisibility")) StatType = ET66SecondaryStatType::Invisibility;
+				else if (Key == TEXT("LifeSteal")) StatType = ET66SecondaryStatType::LifeSteal;
+				else if (Key == TEXT("Assassinate")) StatType = ET66SecondaryStatType::Assassinate;
+				else if (Key == TEXT("Cheating")) StatType = ET66SecondaryStatType::Cheating;
+				else if (Key == TEXT("Stealing")) StatType = ET66SecondaryStatType::Stealing;
+				else if (Key == TEXT("AoeDamage")) StatType = ET66SecondaryStatType::AoeDamage;
+				else if (Key == TEXT("BounceDamage")) StatType = ET66SecondaryStatType::BounceDamage;
+				else if (Key == TEXT("PierceDamage")) StatType = ET66SecondaryStatType::PierceDamage;
+				else if (Key == TEXT("DotDamage")) StatType = ET66SecondaryStatType::DotDamage;
+				else if (Key == TEXT("CloseRangeDamage")) StatType = ET66SecondaryStatType::CloseRangeDamage;
+				else if (Key == TEXT("LongRangeDamage")) StatType = ET66SecondaryStatType::LongRangeDamage;
+				else if (Key == TEXT("AoeSpeed")) StatType = ET66SecondaryStatType::AoeSpeed;
+				else if (Key == TEXT("BounceSpeed")) StatType = ET66SecondaryStatType::BounceSpeed;
+				else if (Key == TEXT("PierceSpeed")) StatType = ET66SecondaryStatType::PierceSpeed;
+				else if (Key == TEXT("DotSpeed")) StatType = ET66SecondaryStatType::DotSpeed;
+				else if (Key == TEXT("AoeScale")) StatType = ET66SecondaryStatType::AoeScale;
+				else if (Key == TEXT("BounceScale")) StatType = ET66SecondaryStatType::BounceScale;
+				else if (Key == TEXT("PierceScale")) StatType = ET66SecondaryStatType::PierceScale;
+				else if (Key == TEXT("DotScale")) StatType = ET66SecondaryStatType::DotScale;
+				else if (Key == TEXT("AttackRange")) StatType = ET66SecondaryStatType::AttackRange;
+				else if (Key == TEXT("Taunt")) StatType = ET66SecondaryStatType::Taunt;
+				else if (Key == TEXT("ReflectDamage")) StatType = ET66SecondaryStatType::ReflectDamage;
+				else if (Key == TEXT("CounterAttack")) StatType = ET66SecondaryStatType::CounterAttack;
+				else if (Key == TEXT("HpRegen")) StatType = ET66SecondaryStatType::HpRegen;
+				else if (Key == TEXT("SpinWheel")) StatType = ET66SecondaryStatType::SpinWheel;
+				else if (Key == TEXT("Goblin")) StatType = ET66SecondaryStatType::Goblin;
+				else if (Key == TEXT("Leprechaun")) StatType = ET66SecondaryStatType::Leprechaun;
+				else if (Key == TEXT("TreasureChest")) StatType = ET66SecondaryStatType::TreasureChest;
+				else if (Key == TEXT("Fountain")) StatType = ET66SecondaryStatType::Fountain;
+				else if (Key == TEXT("MovementSpeed")) StatType = ET66SecondaryStatType::MovementSpeed;
+				else { bFound = false; }
+
+				if (bFound)
+				{
+					S->SecondaryStatValues.Add(StatType, static_cast<float>(Val));
+				}
+			}
+		}
+	}
+
+	// Ratings
+	S->LuckRating0To100 = Json->HasField(TEXT("luck_rating")) ? static_cast<int32>(Json->GetNumberField(TEXT("luck_rating"))) : -1;
+	S->LuckRatingQuantity0To100 = Json->HasField(TEXT("luck_quantity")) ? static_cast<int32>(Json->GetNumberField(TEXT("luck_quantity"))) : -1;
+	S->LuckRatingQuality0To100 = Json->HasField(TEXT("luck_quality")) ? static_cast<int32>(Json->GetNumberField(TEXT("luck_quality"))) : -1;
+	S->SkillRating0To100 = Json->HasField(TEXT("skill_rating")) ? static_cast<int32>(Json->GetNumberField(TEXT("skill_rating"))) : -1;
+
+	// Equipped idols
+	const TArray<TSharedPtr<FJsonValue>>* IdolsArr = nullptr;
+	if (Json->TryGetArrayField(TEXT("equipped_idols"), IdolsArr) && IdolsArr)
+	{
+		for (const TSharedPtr<FJsonValue>& V : *IdolsArr)
+		{
+			FString IdolStr;
+			if (V.IsValid() && V->TryGetString(IdolStr))
+			{
+				S->EquippedIdols.Add(FName(*IdolStr));
+			}
+		}
+	}
+
+	// Inventory
+	const TArray<TSharedPtr<FJsonValue>>* InvArr = nullptr;
+	if (Json->TryGetArrayField(TEXT("inventory"), InvArr) && InvArr)
+	{
+		for (const TSharedPtr<FJsonValue>& V : *InvArr)
+		{
+			FString ItemStr;
+			if (V.IsValid() && V->TryGetString(ItemStr))
+			{
+				S->Inventory.Add(FName(*ItemStr));
+			}
+		}
+	}
+
+	// Event log
+	const TArray<TSharedPtr<FJsonValue>>* LogArr = nullptr;
+	if (Json->TryGetArrayField(TEXT("event_log"), LogArr) && LogArr)
+	{
+		for (const TSharedPtr<FJsonValue>& V : *LogArr)
+		{
+			FString LogStr;
+			if (V.IsValid() && V->TryGetString(LogStr))
+			{
+				S->EventLog.Add(LogStr);
+			}
+		}
+	}
+
+	// Damage by source
+	const TSharedPtr<FJsonObject>* DmgObj = nullptr;
+	if (Json->TryGetObjectField(TEXT("damage_by_source"), DmgObj) && DmgObj && (*DmgObj).IsValid())
+	{
+		for (const auto& Pair : (*DmgObj)->Values)
+		{
+			double Val = 0.0;
+			if (Pair.Value.IsValid() && Pair.Value->TryGetNumber(Val))
+			{
+				S->DamageBySource.Add(FName(*Pair.Key), static_cast<int32>(Val));
+			}
+		}
+	}
+
+	// Proof of run
+	S->ProofOfRunUrl = Json->GetStringField(TEXT("proof_of_run_url"));
+
+	return S;
 }

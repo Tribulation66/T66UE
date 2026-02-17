@@ -582,6 +582,30 @@ void ST66LeaderboardPanel::OnBackendLeaderboardReady(const FString& Key)
 	RefreshLeaderboard();
 }
 
+void ST66LeaderboardPanel::OnBackendRunSummaryReady(const FString& EntryId)
+{
+	if (EntryId != PendingRunSummaryEntryId || !LeaderboardSubsystem || !UIManager)
+	{
+		return;
+	}
+
+	PendingRunSummaryEntryId.Empty();
+
+	UGameInstance* GI = LeaderboardSubsystem->GetGameInstance();
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (!Backend)
+	{
+		return;
+	}
+
+	UT66LeaderboardRunSummarySaveGame* Snap = Backend->GetCachedRunSummary(EntryId);
+	if (Snap)
+	{
+		LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
+		UIManager->ShowModal(ET66ScreenType::RunSummary);
+	}
+}
+
 FString ST66LeaderboardPanel::FormatTime(float Seconds) const
 {
 	if (Seconds < 0.f)
@@ -896,6 +920,38 @@ FReply ST66LeaderboardPanel::HandleEntryClicked(const FLeaderboardEntry& Entry)
 	if (!LeaderboardSubsystem || !UIManager)
 	{
 		return FReply::Handled();
+	}
+
+	// If this entry has a backend run summary, fetch it from the backend
+	if (Entry.bHasRunSummary && !Entry.EntryId.IsEmpty())
+	{
+		UGameInstance* GI = LeaderboardSubsystem->GetGameInstance();
+		UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+
+		if (Backend && Backend->IsBackendConfigured())
+		{
+			// Check if already cached
+			if (Backend->HasCachedRunSummary(Entry.EntryId))
+			{
+				UT66LeaderboardRunSummarySaveGame* Snap = Backend->GetCachedRunSummary(Entry.EntryId);
+				if (Snap)
+				{
+					LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
+					UIManager->ShowModal(ET66ScreenType::RunSummary);
+					return FReply::Handled();
+				}
+			}
+
+			// Not cached yet — fire async fetch. When it arrives we'll open via the delegate.
+			PendingRunSummaryEntryId = Entry.EntryId;
+			if (!bBoundToRunSummaryDelegate)
+			{
+				Backend->OnRunSummaryReady.AddRaw(this, &ST66LeaderboardPanel::OnBackendRunSummaryReady);
+				bBoundToRunSummaryDelegate = true;
+			}
+			Backend->FetchRunSummary(Entry.EntryId);
+			return FReply::Handled();
+		}
 	}
 
 	const int32 PartyCount = (Entry.PartySize == ET66PartySize::Duo) ? 2 : (Entry.PartySize == ET66PartySize::Trio) ? 3 : 1;

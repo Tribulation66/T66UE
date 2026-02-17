@@ -74,9 +74,9 @@ public:
 
 	/**
 	 * Submit the current run to the backend.
+	 * If Snapshot is provided, full run summary data (stats, inventory, idols, damage) is included.
 	 * Fires OnSubmitRunComplete when done.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Backend")
 	void SubmitRunToBackend(
 		const FString& DisplayName,
 		int32 Score,
@@ -85,7 +85,8 @@ public:
 		ET66PartySize PartySize,
 		int32 StageReached,
 		const FString& HeroId,
-		const FString& CompanionId);
+		const FString& CompanionId,
+		UT66LeaderboardRunSummarySaveGame* Snapshot = nullptr);
 
 	UPROPERTY(BlueprintAssignable, Category = "Backend")
 	FOnSubmitRunResponse OnSubmitRunComplete;
@@ -140,6 +141,24 @@ public:
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaderboardDataReady, const FString&);
 	FOnLeaderboardDataReady OnLeaderboardDataReady;
 
+	// ── API: Fetch Run Summary ──────────────────────────────
+
+	/**
+	 * Fetch a run summary for a leaderboard entry from the backend.
+	 * Parses the JSON into a UT66LeaderboardRunSummarySaveGame snapshot.
+	 * Fires OnRunSummaryReady when done.
+	 */
+	void FetchRunSummary(const FString& EntryId);
+
+	/** Check if a run summary is cached for the given entry ID. */
+	bool HasCachedRunSummary(const FString& EntryId) const;
+
+	/** Get the cached run summary snapshot (nullptr if not cached). Caller does NOT own the pointer. */
+	UT66LeaderboardRunSummarySaveGame* GetCachedRunSummary(const FString& EntryId) const;
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnRunSummaryReady, const FString& /*EntryId*/);
+	FOnRunSummaryReady OnRunSummaryReady;
+
 private:
 	FString BackendBaseUrl;
 	FString CachedSteamTicketHex;
@@ -151,6 +170,9 @@ private:
 	};
 	TMap<FString, FCachedLeaderboard> LeaderboardCache;
 	TSet<FString> PendingLeaderboardFetches;
+
+	TMap<FString, TObjectPtr<UT66LeaderboardRunSummarySaveGame>> RunSummaryCache;
+	TSet<FString> PendingRunSummaryFetches;
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> CreateRequest(const FString& Verb, const FString& Endpoint) const;
 	void SetAuthHeaders(TSharedRef<IHttpRequest, ESPMode::ThreadSafe>& Request) const;
@@ -164,7 +186,11 @@ private:
 	void OnAccountStatusResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnHealthResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnLeaderboardResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString LeaderboardKey);
+	void OnRunSummaryResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EntryId);
 
 	static ET66Difficulty ApiStringToDifficulty(const FString& S);
 	static ET66PartySize ApiStringToPartySize(const FString& S);
+
+	/** Parse a run-summary JSON object into a UT66LeaderboardRunSummarySaveGame. */
+	static UT66LeaderboardRunSummarySaveGame* ParseRunSummaryFromJson(const TSharedPtr<FJsonObject>& Json, UObject* Outer);
 };

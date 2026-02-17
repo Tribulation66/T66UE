@@ -1224,6 +1224,14 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	bool bIsLocalPlayer = false;
 
+	/** Backend entry UUID (used to fetch run summary from backend). Empty for local-only entries. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString EntryId;
+
+	/** True if the backend reports a run summary exists for this entry. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	bool bHasRunSummary = false;
+
 	FLeaderboardEntry()
 		: Rank(0)
 		, Score(0)
@@ -1233,6 +1241,7 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 		, Difficulty(ET66Difficulty::Easy)
 		, StageReached(0)
 		, bIsLocalPlayer(false)
+		, bHasRunSummary(false)
 	{}
 };
 
