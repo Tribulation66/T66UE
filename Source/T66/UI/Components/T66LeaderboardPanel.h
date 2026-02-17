@@ -30,6 +30,8 @@ public:
 		SLATE_ARGUMENT(UT66UIManager*, UIManager)
 	SLATE_END_ARGS()
 
+	~ST66LeaderboardPanel();
+
 	void Construct(const FArguments& InArgs);
 
 	/** Must be set after the owning screen has a valid UIManager. */

@@ -30,6 +30,27 @@ namespace
 	constexpr float ScoreColumnWidth = 82.0f; // content + padding, aligned with score digits (used for both Score and Time)
 }
 
+ST66LeaderboardPanel::~ST66LeaderboardPanel()
+{
+	// Unbind raw delegates to prevent callbacks into destroyed widget
+	if (bBoundToBackendDelegate || bBoundToRunSummaryDelegate)
+	{
+		UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+		UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+		if (Backend)
+		{
+			if (bBoundToBackendDelegate)
+			{
+				Backend->OnLeaderboardDataReady.RemoveAll(this);
+			}
+			if (bBoundToRunSummaryDelegate)
+			{
+				Backend->OnRunSummaryReady.RemoveAll(this);
+			}
+		}
+	}
+}
+
 void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 {
 	LocSubsystem = InArgs._LocalizationSubsystem;
