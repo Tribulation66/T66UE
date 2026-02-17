@@ -296,3 +296,166 @@ void UT66BackendSubsystem::OnHealthResponseReceived(FHttpRequestPtr Request, FHt
 	UE_LOG(LogTemp, Log, TEXT("Backend: health ping response code=%d body=%s"),
 		Code, *Response->GetContentAsString().Left(200));
 }
+
+// ── Fetch Leaderboard ────────────────────────────────────────
+
+void UT66BackendSubsystem::FetchLeaderboard(
+	const FString& Type, const FString& Time, const FString& Party,
+	const FString& Difficulty, const FString& Filter)
+{
+	if (!IsBackendConfigured())
+	{
+		return;
+	}
+
+	// Build the cache key (same format as backend: type_time_party_difficulty)
+	const FString Key = FString::Printf(TEXT("%s_%s_%s_%s_%s"), *Type, *Time, *Party, *Difficulty, *Filter);
+
+	// Don't fire duplicate requests for the same key
+	if (PendingLeaderboardFetches.Contains(Key))
+	{
+		return;
+	}
+	PendingLeaderboardFetches.Add(Key);
+
+	const FString Endpoint = FString::Printf(
+		TEXT("/api/leaderboard?type=%s&time=%s&party=%s&difficulty=%s&filter=%s"),
+		*Type, *Time, *Party, *Difficulty, *Filter);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
+	// Leaderboard endpoint is public, no auth needed
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, Key);
+	Request->ProcessRequest();
+
+	UE_LOG(LogTemp, Log, TEXT("Backend: fetching leaderboard key=%s"), *Key);
+}
+
+bool UT66BackendSubsystem::HasCachedLeaderboard(const FString& Key) const
+{
+	return LeaderboardCache.Contains(Key);
+}
+
+TArray<FLeaderboardEntry> UT66BackendSubsystem::GetCachedLeaderboard(const FString& Key) const
+{
+	if (const FCachedLeaderboard* Found = LeaderboardCache.Find(Key))
+	{
+		return Found->Entries;
+	}
+	return {};
+}
+
+int32 UT66BackendSubsystem::GetCachedTotalEntries(const FString& Key) const
+{
+	if (const FCachedLeaderboard* Found = LeaderboardCache.Find(Key))
+	{
+		return Found->TotalEntries;
+	}
+	return 0;
+}
+
+ET66Difficulty UT66BackendSubsystem::ApiStringToDifficulty(const FString& S)
+{
+	if (S == TEXT("easy")) return ET66Difficulty::Easy;
+	if (S == TEXT("medium")) return ET66Difficulty::Medium;
+	if (S == TEXT("hard")) return ET66Difficulty::Hard;
+	if (S == TEXT("veryhard")) return ET66Difficulty::VeryHard;
+	if (S == TEXT("impossible")) return ET66Difficulty::Impossible;
+	if (S == TEXT("perdition")) return ET66Difficulty::Perdition;
+	if (S == TEXT("final")) return ET66Difficulty::Final;
+	return ET66Difficulty::Easy;
+}
+
+ET66PartySize UT66BackendSubsystem::ApiStringToPartySize(const FString& S)
+{
+	if (S == TEXT("solo")) return ET66PartySize::Solo;
+	if (S == TEXT("duo")) return ET66PartySize::Duo;
+	if (S == TEXT("trio")) return ET66PartySize::Trio;
+	return ET66PartySize::Solo;
+}
+
+void UT66BackendSubsystem::OnLeaderboardResponseReceived(
+	FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString LeaderboardKey)
+{
+	PendingLeaderboardFetches.Remove(LeaderboardKey);
+
+	if (!bConnectedSuccessfully || !Response.IsValid() || Response->GetResponseCode() != 200)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Backend: leaderboard fetch failed for key=%s (code=%d)"),
+			*LeaderboardKey, Response.IsValid() ? Response->GetResponseCode() : 0);
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Backend: leaderboard JSON parse failed for key=%s"), *LeaderboardKey);
+		return;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* EntriesArray = nullptr;
+	if (!Json->TryGetArrayField(TEXT("entries"), EntriesArray) || !EntriesArray)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Backend: leaderboard missing entries array for key=%s"), *LeaderboardKey);
+		return;
+	}
+
+	FCachedLeaderboard Cached;
+	Cached.TotalEntries = static_cast<int32>(Json->GetNumberField(TEXT("total_entries")));
+
+	for (const TSharedPtr<FJsonValue>& Val : *EntriesArray)
+	{
+		const TSharedPtr<FJsonObject>* EntryObj = nullptr;
+		if (!Val.IsValid() || !Val->TryGetObject(EntryObj) || !EntryObj || !(*EntryObj).IsValid())
+		{
+			continue;
+		}
+
+		const TSharedPtr<FJsonObject>& E = *EntryObj;
+
+		FLeaderboardEntry Entry;
+		Entry.Rank = static_cast<int32>(E->GetNumberField(TEXT("rank")));
+		Entry.PlayerName = E->GetStringField(TEXT("display_name"));
+		Entry.PlayerNames.Add(Entry.PlayerName);
+
+		// For co-op, add party member names
+		const TArray<TSharedPtr<FJsonValue>>* PartyMembers = nullptr;
+		if (E->TryGetArrayField(TEXT("party_members"), PartyMembers) && PartyMembers)
+		{
+			Entry.PlayerNames.Reset();
+			for (const TSharedPtr<FJsonValue>& MVal : *PartyMembers)
+			{
+				const TSharedPtr<FJsonObject>* MObj = nullptr;
+				if (MVal.IsValid() && MVal->TryGetObject(MObj) && MObj && (*MObj).IsValid())
+				{
+					Entry.PlayerNames.Add((*MObj)->GetStringField(TEXT("display_name")));
+				}
+			}
+			if (Entry.PlayerNames.Num() > 0)
+			{
+				Entry.PlayerName = Entry.PlayerNames[0];
+			}
+		}
+
+		Entry.Score = static_cast<int64>(E->GetNumberField(TEXT("score")));
+		Entry.StageReached = static_cast<int32>(E->GetNumberField(TEXT("stage_reached")));
+
+		const FString HeroIdStr = E->GetStringField(TEXT("hero_id"));
+		Entry.HeroID = HeroIdStr.IsEmpty() ? NAME_None : FName(*HeroIdStr);
+
+		const FString PartySizeStr = E->GetStringField(TEXT("party_size"));
+		Entry.PartySize = ApiStringToPartySize(PartySizeStr);
+
+		Entry.bIsLocalPlayer = false;
+
+		Cached.Entries.Add(Entry);
+	}
+
+	LeaderboardCache.Add(LeaderboardKey, MoveTemp(Cached));
+
+	UE_LOG(LogTemp, Log, TEXT("Backend: leaderboard fetched key=%s entries=%d total=%d"),
+		*LeaderboardKey, Cached.Entries.Num(), Cached.TotalEntries);
+
+	// Notify listeners
+	OnLeaderboardDataReady.Broadcast(LeaderboardKey);
+}

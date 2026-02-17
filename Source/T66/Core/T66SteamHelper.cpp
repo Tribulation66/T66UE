@@ -2,42 +2,84 @@
 
 #include "Core/T66SteamHelper.h"
 #include "Core/T66BackendSubsystem.h"
+#include "Misc/ConfigCacheIni.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "steam/steam_api.h"
 THIRD_PARTY_INCLUDES_END
 
+static void T66_SetDevTicket(const TArray<FString>& Args, UWorld* World)
+{
+	if (!World) return;
+	UGameInstance* GI = World->GetGameInstance();
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (!Backend) return;
+
+	FString TicketVal = (Args.Num() > 0) ? Args[0] : TEXT("dev_player_1");
+	Backend->SetSteamTicketHex(TicketVal);
+	UE_LOG(LogTemp, Log, TEXT("SetTicket: manually set backend ticket to '%s'"), *TicketVal);
+}
+
+static FAutoConsoleCommandWithWorldAndArgs T66SetTicketCommand(
+	TEXT("setticket"),
+	TEXT("Set the backend auth ticket manually (e.g. setticket dev_player_1). For local dev without Steam."),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_SetDevTicket)
+);
+
 void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	if (!SteamAPI_Init())
+	// Try real Steam first
+	if (SteamAPI_Init())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SteamHelper: SteamAPI not initialized. Online features unavailable."));
-		return;
+		ISteamUser* SUser = SteamUser();
+		if (SUser)
+		{
+			const CSteamID LocalId = SUser->GetSteamID();
+			LocalSteamIdStr = FString::Printf(TEXT("%llu"), LocalId.ConvertToUint64());
+
+			ISteamFriends* Friends = SteamFriends();
+			if (Friends)
+			{
+				LocalDisplayName = FString(UTF8_TO_TCHAR(Friends->GetPersonaName()));
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("SteamHelper: local SteamID=%s Name=%s"), *LocalSteamIdStr, *LocalDisplayName);
+
+			CollectFriendsList();
+			ObtainTicket();
+			return;
+		}
 	}
 
-	ISteamUser* SUser = SteamUser();
-	if (!SUser)
+	// Steam not available — check for dev ticket in DefaultGame.ini [T66.Online] DevTicket
+	FString DevTicket;
+	GConfig->GetString(TEXT("T66.Online"), TEXT("DevTicket"), DevTicket, GGameIni);
+
+	if (!DevTicket.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SteamHelper: ISteamUser is null."));
-		return;
+		UE_LOG(LogTemp, Log, TEXT("SteamHelper: Steam not available. Using dev ticket '%s' from config."), *DevTicket);
+
+		TicketHex = DevTicket;
+		LocalSteamIdStr = TEXT("76561100000000001");
+		LocalDisplayName = TEXT("DevPlayer");
+		bSteamReady = true;
+
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+			{
+				Backend->SetSteamTicketHex(TicketHex);
+			}
+		}
+
+		OnSteamTicketReady.Broadcast(true, TicketHex);
 	}
-
-	// Cache local identity
-	const CSteamID LocalId = SUser->GetSteamID();
-	LocalSteamIdStr = FString::Printf(TEXT("%llu"), LocalId.ConvertToUint64());
-
-	ISteamFriends* Friends = SteamFriends();
-	if (Friends)
+	else
 	{
-		LocalDisplayName = FString(UTF8_TO_TCHAR(Friends->GetPersonaName()));
+		UE_LOG(LogTemp, Warning, TEXT("SteamHelper: Steam not available and no DevTicket configured. Online features disabled."));
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("SteamHelper: local SteamID=%s Name=%s"), *LocalSteamIdStr, *LocalDisplayName);
-
-	CollectFriendsList();
-	ObtainTicket();
 }
 
 void UT66SteamHelper::Deinitialize()

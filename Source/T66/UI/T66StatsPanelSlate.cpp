@@ -15,9 +15,8 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/SToolTip.h"
 
-static TSharedPtr<IToolTip> CreateRichTooltip(const FText& Title, const FText& Description)
+static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Description)
 {
-	if (Title.IsEmpty() && Description.IsEmpty()) return nullptr;
 	return SNew(SToolTip)
 	[
 		SNew(SBorder)
@@ -122,7 +121,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
@@ -142,7 +141,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, ValueText))
@@ -286,7 +285,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
@@ -306,7 +305,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(CreateRichTooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, ValueText))

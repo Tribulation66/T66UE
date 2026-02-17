@@ -2,6 +2,7 @@
 
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/T66UITypes.h"
@@ -574,6 +575,13 @@ void ST66LeaderboardPanel::RebuildEntryList()
 	}
 }
 
+void ST66LeaderboardPanel::OnBackendLeaderboardReady(const FString& Key)
+{
+	// Backend data arrived — refresh the panel to pick up cached entries.
+	// This runs on the game thread (HTTP callback is dispatched to game thread by FHttpModule).
+	RefreshLeaderboard();
+}
+
 FString ST66LeaderboardPanel::FormatTime(float Seconds) const
 {
 	if (Seconds < 0.f)
@@ -617,8 +625,89 @@ void ST66LeaderboardPanel::SetLeaderboardType(ET66LeaderboardType NewType)
 
 void ST66LeaderboardPanel::RefreshLeaderboard()
 {
-	if (LeaderboardSubsystem)
+	// Convert current filters to backend API strings
+	auto TypeStr = [this]() -> FString {
+		return (CurrentType == ET66LeaderboardType::Score) ? TEXT("score") : TEXT("speedrun");
+	};
+	auto TimeStr = [this]() -> FString {
+		return (CurrentTimeFilter == ET66LeaderboardTime::AllTime) ? TEXT("alltime") : TEXT("weekly");
+	};
+	auto PartyStr = [this]() -> FString {
+		switch (CurrentPartySize) {
+		case ET66PartySize::Duo: return TEXT("duo");
+		case ET66PartySize::Trio: return TEXT("trio");
+		default: return TEXT("solo");
+		}
+	};
+	auto DiffStr = [this]() -> FString {
+		switch (CurrentDifficulty) {
+		case ET66Difficulty::Medium: return TEXT("medium");
+		case ET66Difficulty::Hard: return TEXT("hard");
+		case ET66Difficulty::VeryHard: return TEXT("veryhard");
+		case ET66Difficulty::Impossible: return TEXT("impossible");
+		case ET66Difficulty::Perdition: return TEXT("perdition");
+		case ET66Difficulty::Final: return TEXT("final");
+		default: return TEXT("easy");
+		}
+	};
+	auto FilterStr = [this]() -> FString {
+		switch (CurrentFilter) {
+		case ET66LeaderboardFilter::Friends: return TEXT("friends");
+		case ET66LeaderboardFilter::Streamers: return TEXT("streamers");
+		default: return TEXT("global");
+		}
+	};
+
+	const FString CacheKey = FString::Printf(TEXT("%s_%s_%s_%s_%s"),
+		*TypeStr(), *TimeStr(), *PartyStr(), *DiffStr(), *FilterStr());
+
+	// Try to get backend data
+	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+
+	if (Backend && Backend->IsBackendConfigured() && Backend->HasCachedLeaderboard(CacheKey))
 	{
+		// Use backend data
+		LeaderboardEntries = Backend->GetCachedLeaderboard(CacheKey);
+
+		// Splice in local player's entry from local save if not already in the list
+		if (LeaderboardSubsystem)
+		{
+			TArray<FLeaderboardEntry> LocalEntries = LeaderboardSubsystem->BuildEntriesForFilter(
+				CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize, CurrentSpeedRunStage);
+
+			// Find the local player entry from local data
+			const FLeaderboardEntry* LocalYou = nullptr;
+			for (const FLeaderboardEntry& E : LocalEntries)
+			{
+				if (E.bIsLocalPlayer)
+				{
+					LocalYou = &E;
+					break;
+				}
+			}
+
+			if (LocalYou && LocalYou->Score > 0)
+			{
+				// Check if local player is already in the backend entries (by checking rank vs score)
+				bool bAlreadyInList = false;
+				for (const FLeaderboardEntry& E : LeaderboardEntries)
+				{
+					// Can't compare by SteamID from local, so skip for now; just append as rank 11
+				}
+
+				if (!bAlreadyInList)
+				{
+					FLeaderboardEntry You = *LocalYou;
+					You.Rank = 11;
+					LeaderboardEntries.Add(You);
+				}
+			}
+		}
+	}
+	else if (LeaderboardSubsystem)
+	{
+		// Fall back to local data
 		LeaderboardEntries = LeaderboardSubsystem->BuildEntriesForFilter(
 			CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize, CurrentSpeedRunStage);
 	}
@@ -626,7 +715,21 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 	{
 		GeneratePlaceholderData();
 	}
+
 	RebuildEntryList();
+
+	// Fire async backend fetch if not cached yet
+	if (Backend && Backend->IsBackendConfigured() && Backend->HasSteamTicket() && !Backend->HasCachedLeaderboard(CacheKey))
+	{
+		// Subscribe to data-ready callback (safe: subsystem outlives widget during normal gameplay)
+		if (!bBoundToBackendDelegate && Backend)
+		{
+			Backend->OnLeaderboardDataReady.AddRaw(this, &ST66LeaderboardPanel::OnBackendLeaderboardReady);
+			bBoundToBackendDelegate = true;
+		}
+
+		Backend->FetchLeaderboard(TypeStr(), TimeStr(), PartyStr(), DiffStr(), FilterStr());
+	}
 }
 
 FReply ST66LeaderboardPanel::HandleGlobalClicked()

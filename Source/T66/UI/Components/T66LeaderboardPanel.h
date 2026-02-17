@@ -10,6 +10,7 @@
 
 class UT66LocalizationSubsystem;
 class UT66LeaderboardSubsystem;
+class UT66BackendSubsystem;
 class UT66UIManager;
 
 /**
@@ -75,6 +76,10 @@ private:
 	void RebuildEntryList();
 	FReply HandleEntryClicked(const FLeaderboardEntry& Entry);
 	FReply HandleLocalEntryClicked(const FLeaderboardEntry& Entry);
+
+	// Backend async refresh
+	bool bBoundToBackendDelegate = false;
+	void OnBackendLeaderboardReady(const FString& Key);
 
 	// Button handlers
 	FReply HandleGlobalClicked();

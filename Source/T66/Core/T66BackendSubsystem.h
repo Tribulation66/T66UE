@@ -116,9 +116,41 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Backend")
 	void PingHealth();
 
+	// ── API: Fetch Leaderboard ───────────────────────────────
+
+	/**
+	 * Fetch Top 10 entries for a leaderboard key.
+	 * Parses JSON into FLeaderboardEntry and caches per key.
+	 * Fires OnLeaderboardDataReady when done.
+	 */
+	void FetchLeaderboard(
+		const FString& Type, const FString& Time, const FString& Party,
+		const FString& Difficulty, const FString& Filter = TEXT("global"));
+
+	/** Check if cached entries exist for a leaderboard key. */
+	bool HasCachedLeaderboard(const FString& Key) const;
+
+	/** Get cached entries for a leaderboard key (empty if not cached). */
+	TArray<FLeaderboardEntry> GetCachedLeaderboard(const FString& Key) const;
+
+	/** Total entries count from the last fetch for this key. */
+	int32 GetCachedTotalEntries(const FString& Key) const;
+
+	/** Non-dynamic delegate fired when leaderboard data is fetched. Param = leaderboard key. */
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaderboardDataReady, const FString&);
+	FOnLeaderboardDataReady OnLeaderboardDataReady;
+
 private:
 	FString BackendBaseUrl;
 	FString CachedSteamTicketHex;
+
+	struct FCachedLeaderboard
+	{
+		TArray<FLeaderboardEntry> Entries;
+		int32 TotalEntries = 0;
+	};
+	TMap<FString, FCachedLeaderboard> LeaderboardCache;
+	TSet<FString> PendingLeaderboardFetches;
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> CreateRequest(const FString& Verb, const FString& Endpoint) const;
 	void SetAuthHeaders(TSharedRef<IHttpRequest, ESPMode::ThreadSafe>& Request) const;
@@ -131,4 +163,8 @@ private:
 	void OnMyRankResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnAccountStatusResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnHealthResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnLeaderboardResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString LeaderboardKey);
+
+	static ET66Difficulty ApiStringToDifficulty(const FString& S);
+	static ET66PartySize ApiStringToPartySize(const FString& S);
 };
