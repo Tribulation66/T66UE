@@ -591,6 +591,12 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 		Entry.EntryId = E->GetStringField(TEXT("entry_id"));
 		Entry.bHasRunSummary = E->HasField(TEXT("has_run_summary")) && E->GetBoolField(TEXT("has_run_summary"));
 
+		FString AvUrl;
+		if (E->TryGetStringField(TEXT("avatar_url"), AvUrl))
+		{
+			Entry.AvatarUrl = AvUrl;
+		}
+
 		Cached.Entries.Add(Entry);
 	}
 

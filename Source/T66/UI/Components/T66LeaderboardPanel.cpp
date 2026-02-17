@@ -3,6 +3,7 @@
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66WebImageCache.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/T66UITypes.h"
@@ -83,6 +84,11 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	}
 	SelectedStageOption = StageOptions.Num() > 0 ? StageOptions[0] : MakeShared<FString>(TEXT("1"));
 	CurrentSpeedRunStage = 1;
+
+	// Default avatar brush (gray circle placeholder)
+	DefaultAvatarBrush = MakeShared<FSlateBrush>();
+	DefaultAvatarBrush->ImageSize = FVector2D(32.0f, 32.0f);
+	DefaultAvatarBrush->TintColor = FSlateColor(FLinearColor(0.3f, 0.3f, 0.3f, 0.5f));
 
 	RefreshLeaderboard();
 
@@ -491,7 +497,11 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			NameDisplay = Entry.PlayerNames[0];
 		}
 
-		// Build the row content with same 3 column widths as header (Rank | Name | Score/Time).
+		// Get avatar brush for this entry
+		const FSlateBrush* AvatarBrush = GetOrCreateAvatarBrush(Entry.AvatarUrl);
+		const bool bHasAvatar = !Entry.AvatarUrl.IsEmpty();
+
+		// Build the row content: Rank | Avatar | Name | Score/Time
 		const TSharedRef<SWidget> RowContents =
 			SNew(SBorder)
 			.BorderImage(RowBrush)
@@ -499,7 +509,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			.Padding(FMargin(10.0f, 6.0f))
 			[
 				SNew(SHorizontalBox)
-				// Column 1: Rank (fixed width to match header)
+				// Column 1: Rank (fixed width)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
@@ -512,7 +522,22 @@ void ST66LeaderboardPanel::RebuildEntryList()
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				]
-				// Column 2: Player name(s) (fills remaining space)
+				// Column 2: Avatar (32x32, only shown if backend provides URL)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				.Padding(0.0f, 0.0f, 6.0f, 0.0f)
+				[
+					SNew(SBox)
+					.WidthOverride(32.0f)
+					.HeightOverride(32.0f)
+					.Visibility(bHasAvatar ? EVisibility::Visible : EVisibility::Collapsed)
+					[
+						SNew(SImage)
+						.Image(AvatarBrush)
+					]
+				]
+				// Column 3: Player name(s) (fills remaining space)
 				+ SHorizontalBox::Slot()
 				.FillWidth(1.0f)
 				.VAlign(VAlign_Center)
@@ -522,7 +547,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					.Font(FT66Style::Tokens::FontRegular(16))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
-				// Column 3: Score or Time (fixed width to match header, right-aligned)
+				// Column 4: Score or Time (fixed width, right-aligned)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.HAlign(HAlign_Right)
@@ -998,4 +1023,47 @@ FReply ST66LeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry& En
 	LeaderboardSubsystem->RequestOpenLocalBestScoreRunSummary(CurrentDifficulty, CurrentPartySize);
 	UIManager->ShowModal(ET66ScreenType::RunSummary);
 	return FReply::Handled();
+}
+
+const FSlateBrush* ST66LeaderboardPanel::GetOrCreateAvatarBrush(const FString& AvatarUrl)
+{
+	if (AvatarUrl.IsEmpty())
+	{
+		return DefaultAvatarBrush.Get();
+	}
+
+	// Return cached brush if already created
+	if (TSharedPtr<FSlateBrush>* Found = AvatarBrushes.Find(AvatarUrl))
+	{
+		return Found->Get();
+	}
+
+	// Check web image cache
+	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+	UT66WebImageCache* ImageCache = GI ? GI->GetSubsystem<UT66WebImageCache>() : nullptr;
+	if (!ImageCache)
+	{
+		return DefaultAvatarBrush.Get();
+	}
+
+	if (UTexture2D* Tex = ImageCache->GetCachedImage(AvatarUrl))
+	{
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->SetResourceObject(Tex);
+		Brush->ImageSize = FVector2D(32.0f, 32.0f);
+		AvatarBrushes.Add(AvatarUrl, Brush);
+		return Brush.Get();
+	}
+
+	// Not yet downloaded — request it and return default for now
+	ImageCache->RequestImage(AvatarUrl, [this](UTexture2D* Tex)
+	{
+		// When image arrives, rebuild the entry list to show the avatar
+		if (Tex)
+		{
+			RebuildEntryList();
+		}
+	});
+
+	return DefaultAvatarBrush.Get();
 }

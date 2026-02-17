@@ -115,4 +115,13 @@ private:
 	TSharedPtr<FSlateBrush> FilterBrushGlobal;
 	TSharedPtr<FSlateBrush> FilterBrushFriends;
 	TSharedPtr<FSlateBrush> FilterBrushStreamers;
+
+	// Avatar brushes (keyed by URL, kept alive for SImage)
+	TMap<FString, TSharedPtr<FSlateBrush>> AvatarBrushes;
+
+	// Default avatar brush (used when no avatar URL or download pending)
+	TSharedPtr<FSlateBrush> DefaultAvatarBrush;
+
+	/** Create or retrieve a cached FSlateBrush for an avatar URL. */
+	const FSlateBrush* GetOrCreateAvatarBrush(const FString& AvatarUrl);
 };

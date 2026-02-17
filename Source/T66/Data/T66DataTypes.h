@@ -1232,6 +1232,10 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	bool bHasRunSummary = false;
 
+	/** Steam avatar URL from the backend (full-size 184x184). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString AvatarUrl;
+
 	FLeaderboardEntry()
 		: Rank(0)
 		, Score(0)
