@@ -1137,29 +1137,29 @@ Set in Vercel project dashboard (Settings → Environment Variables):
 
 ## 19. Implementation Phases
 
-| Phase | What | Depends on event log? |
-|---|---|---|
-| **1** | Vercel project setup (Next.js + Postgres + Drizzle schema + KV) | No |
-| **2** | Steam integration in UE5 (session tickets, identity, friends list via Steamworks) | No |
-| **3** | `POST /api/submit-run` — validate ticket, basic anti-cheat, store entry + run summary | No |
-| **4** | `GET /api/leaderboard` — serve Top 10 from Postgres with edge caching | No |
-| **5** | `GET /api/run-summary/:id` — serve run summaries for Global + Streamers | No |
-| **6** | UE5 client: replace placeholder leaderboard with real HTTP calls (FHttpModule) | No |
-| **7** | `GET /api/leaderboard/friends` + friends list from Steam client | No |
-| **8** | `GET /api/my-rank` + 11th row display | No |
-| **9** | Streamers whitelist + `/admin/streamers` + Streamers filter | No |
-| **10** | Co-op submission (multi-member submit, dedup, Player Summary Picker) | No |
-| **11** | `POST /api/report-run` + `GET /api/account-status` + `POST /api/submit-appeal` | No |
-| **12** | Admin portal pages (dashboard, appeals, reports, quarantine, accounts, audit) | No |
-| **13** | Cron jobs (weekly reset, data retention cleanup) | No |
-| **14** | `POST /api/bug-report` | No |
-| **15** | `PUT /api/proof-of-run` | No |
-| **16** | Steam Cloud save integration | No |
-| **17** | Structured event log redesign (client-side recording) | **This IS the redesign** |
-| **18** | Deep anti-cheat validation in `/api/submit-run` (server replays event log) | Yes |
-| **19** | Auto-quarantine pipeline | Yes |
+| Phase | What | Depends on event log? | Status |
+|---|---|---|---|
+| **1** | Vercel project setup (Next.js + Postgres + Drizzle schema + KV) | No | DONE |
+| **2** | Steam integration in UE5 (session tickets, identity, friends list via Steamworks) | No | DONE |
+| **3** | `POST /api/submit-run` — validate ticket, basic anti-cheat, store entry + run summary | No | DONE |
+| **4** | `GET /api/leaderboard` — serve Top 10 from Postgres with edge caching | No | DONE |
+| **5** | `GET /api/run-summary/:id` — serve run summaries for Global + Streamers | No | DONE |
+| **6** | UE5 client: replace placeholder leaderboard with real HTTP calls (FHttpModule) | No | DONE |
+| **7** | `GET /api/leaderboard/friends` + friends list from Steam client | No | DONE |
+| **8** | `GET /api/my-rank` + 11th row display | No | DONE |
+| **9** | Streamers whitelist + `/admin/streamers` + Streamers filter | No | DONE |
+| **10** | Co-op submission (multi-member submit, dedup, Player Summary Picker) | No | DONE |
+| **11** | `POST /api/report-run` + `GET /api/account-status` + `POST /api/submit-appeal` | No | DONE |
+| **12** | Admin portal pages (dashboard, appeals, reports, quarantine, accounts, audit) | No | DONE |
+| **13** | Cron jobs (weekly reset, data retention cleanup) | No | DONE |
+| **14** | `POST /api/bug-report` | No | DONE |
+| **15** | `PUT /api/proof-of-run` | No | DONE |
+| **16** | Steam Cloud save integration | No | DEFERRED |
+| **17** | Structured event log redesign (client-side recording) | **This IS the redesign** | DEFERRED |
+| **18** | Deep anti-cheat validation in `/api/submit-run` (server replays event log) | Yes | DEFERRED |
+| **19** | Auto-quarantine pipeline | Yes | DEFERRED |
 
-Phases 1–16 deliver a fully functional leaderboard system with real Steam identity, run summaries, moderation tools, and basic integrity. Phases 17–19 add the deep anti-cheat layer.
+Phases 1–15 are fully implemented and deployed. Phase 2 (Steam) and Phase 6 (UE5 HTTP client) are wired up and compiling. Phases 16–19 are deferred (Steam Cloud and deep anti-cheat require event log redesign).
 
 ---
 
