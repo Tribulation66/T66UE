@@ -468,7 +468,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void SetStageTimerActive(bool bActive);
 
-	/** Add to Bounty score (e.g. on enemy kill). */
+	/** Add to score (e.g. on enemy kill). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddScore(int32 Points);
 

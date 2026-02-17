@@ -11,7 +11,7 @@
  * Snapshot of a run intended to be opened from a leaderboard entry.
  * This is the "beginning of the system" for per-leaderboard-run summary files.
  *
- * v0 scope: local best Bounty run only (offline leaderboard).
+ * v0 scope: local best Score run only (offline leaderboard).
  */
 UCLASS()
 class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
@@ -23,9 +23,9 @@ public:
 	UPROPERTY(SaveGame)
 	int32 SchemaVersion = 6;
 
-	/** What kind of leaderboard this run belongs to (currently Score/HighScore only). */
+	/** What kind of leaderboard this run belongs to (Score or SpeedRun). */
 	UPROPERTY(SaveGame)
-	ET66LeaderboardType LeaderboardType = ET66LeaderboardType::HighScore;
+	ET66LeaderboardType LeaderboardType = ET66LeaderboardType::Score;
 
 	UPROPERTY(SaveGame)
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
@@ -43,7 +43,7 @@ public:
 	int32 StageReached = 1;
 
 	UPROPERTY(SaveGame)
-	int32 Bounty = 0;
+	int32 Score = 0;
 
 	// ===== Identity / selection =====
 

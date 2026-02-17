@@ -1913,9 +1913,9 @@ FText UT66LocalizationSubsystem::GetText_StageNumberFormat() const
 	return NSLOCTEXT("T66.GameplayHUD", "StageNumberFormat", "Stage number: {0}");
 }
 
-FText UT66LocalizationSubsystem::GetText_BountyLabel() const
+FText UT66LocalizationSubsystem::GetText_ScoreLabel() const
 {
-	return NSLOCTEXT("T66.GameplayHUD", "BountyLabel", "Score:");
+	return NSLOCTEXT("T66.GameplayHUD", "ScoreLabel", "Score:");
 }
 
 FText UT66LocalizationSubsystem::GetText_PortraitPlaceholder() const
@@ -1935,9 +1935,9 @@ FText UT66LocalizationSubsystem::GetText_RunSummaryTitle() const
 	return NSLOCTEXT("T66.RunSummary", "Title", "RUN SUMMARY");
 }
 
-FText UT66LocalizationSubsystem::GetText_RunSummaryStageReachedBountyFormat() const
+FText UT66LocalizationSubsystem::GetText_RunSummaryStageReachedScoreFormat() const
 {
-	return NSLOCTEXT("T66.RunSummary", "StageReachedBountyFormat", "Stage Reached: {0}  |  Score: {1}");
+	return NSLOCTEXT("T66.RunSummary", "StageReachedScoreFormat", "Stage Reached: {0}  |  Score: {1}");
 }
 
 FText UT66LocalizationSubsystem::GetText_RunSummaryPreviewPlaceholder() const
@@ -1950,9 +1950,9 @@ FText UT66LocalizationSubsystem::GetText_MainMenu() const
 	return NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU");
 }
 
-FText UT66LocalizationSubsystem::GetText_NewPersonalHighScore() const
+FText UT66LocalizationSubsystem::GetText_NewPersonalBestScore() const
 {
-	return NSLOCTEXT("T66.RunSummary", "NewPersonalHighScore", "New Personal Score");
+	return NSLOCTEXT("T66.RunSummary", "NewPersonalBestScore", "New Personal Score");
 }
 
 FText UT66LocalizationSubsystem::GetText_NewPersonalBestTime() const

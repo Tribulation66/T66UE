@@ -49,7 +49,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void ApplyArmorDebuff(float ReductionAmount, float DurationSeconds);
 
-	/** Point value for wave budget and Bounty score (Bible 2.9) */
+	/** Point value for wave budget and score (Bible 2.9) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
 

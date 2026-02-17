@@ -1364,7 +1364,7 @@ void UT66GameplayHUDWidget::RefreshEconomy()
 		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
 	}
 
-	// Score (Bounty)
+	// Score
 	if (ScoreText.IsValid())
 	{
 		ScoreText->SetText(FText::AsNumber(RunState->GetCurrentScore()));
@@ -2078,7 +2078,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FText StageInit = Loc ? FText::Format(Loc->GetText_StageNumberFormat(), FText::AsNumber(1)) : NSLOCTEXT("T66.GameplayHUD", "StageNumberInit", "Stage number: 1");
 	const FText GoldInit = Loc ? FText::Format(Loc->GetText_GoldFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "GoldInit", "Gold: 0");
 	const FText OweInit = Loc ? FText::Format(Loc->GetText_OweFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "OweInit", "Owe: 0");
-	const FText HighScoreLabel = Loc ? Loc->GetText_BountyLabel() : NSLOCTEXT("T66.GameplayHUD", "BountyLabel", "High Score:");
+	const FText ScoreLabelText = Loc ? Loc->GetText_ScoreLabel() : NSLOCTEXT("T66.GameplayHUD", "ScoreLabel", "Score:");
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
 
 	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
@@ -2784,7 +2784,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
 						SNew(STextBlock)
-						.Text(HighScoreLabel)
+						.Text(ScoreLabelText)
 						.Font(FT66Style::Tokens::FontBold(20))
 						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
 					]

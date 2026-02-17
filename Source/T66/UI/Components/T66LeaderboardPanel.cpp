@@ -390,8 +390,8 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 						[
 							SNew(STextBlock)
 							.Text_Lambda([this]() {
-								return CurrentType == ET66LeaderboardType::HighScore
-									? NSLOCTEXT("T66.Leaderboard", "HighScore", "SCORE")
+								return CurrentType == ET66LeaderboardType::Score
+									? NSLOCTEXT("T66.Leaderboard", "Score", "SCORE")
 									: NSLOCTEXT("T66.Leaderboard", "Time", "TIME"); })
 							.Font(FT66Style::Tokens::FontBold(16))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
@@ -455,7 +455,7 @@ void ST66LeaderboardPanel::GeneratePlaceholderData()
 		Entry.Rank = i + 1;
 		Entry.PlayerName = FakeNames[i];
 		
-		if (CurrentType == ET66LeaderboardType::HighScore)
+		if (CurrentType == ET66LeaderboardType::Score)
 		{
 			// High score placeholder (kept as fallback when subsystem isn't available).
 			Entry.Score = 2000 - (i * 140) + FMath::RandRange(-20, 20);
@@ -548,7 +548,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					SNew(SBox).WidthOverride(ScoreColumnWidth)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromString(CurrentType == ET66LeaderboardType::HighScore ? ScoreStr : TimeStr))
+						.Text(FText::FromString(CurrentType == ET66LeaderboardType::Score ? ScoreStr : TimeStr))
 						.Font(FT66Style::Tokens::FontRegular(16))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 						.Justification(ETextJustify::Right)
@@ -688,7 +688,7 @@ void ST66LeaderboardPanel::OnTypeChanged(TSharedPtr<FString> NewSelection, ESele
 	if (!NewSelection.IsValid()) return;
 	SelectedTypeOption = NewSelection;
 
-	if (*NewSelection == TEXT("Score")) SetLeaderboardType(ET66LeaderboardType::HighScore);
+	if (*NewSelection == TEXT("Score")) SetLeaderboardType(ET66LeaderboardType::Score);
 	else if (*NewSelection == TEXT("Speed Run")) SetLeaderboardType(ET66LeaderboardType::SpeedRun);
 }
 
@@ -778,7 +778,7 @@ FText ST66LeaderboardPanel::GetTypeText(ET66LeaderboardType Type) const
 {
 	switch (Type)
 	{
-	case ET66LeaderboardType::HighScore: return NSLOCTEXT("T66.Leaderboard", "HighScore", "SCORE");
+	case ET66LeaderboardType::Score: return NSLOCTEXT("T66.Leaderboard", "Score", "SCORE");
 	case ET66LeaderboardType::SpeedRun: return NSLOCTEXT("T66.Leaderboard", "SpeedRun", "SPEED RUN");
 	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
@@ -838,17 +838,17 @@ FReply ST66LeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry& En
 	}
 
 	// v0: only local-best bounty can open a run summary snapshot.
-	if (CurrentType != ET66LeaderboardType::HighScore)
+	if (CurrentType != ET66LeaderboardType::Score)
 	{
 		return FReply::Handled();
 	}
 
-	if (!LeaderboardSubsystem->HasLocalBestBountyRunSummary(CurrentDifficulty, CurrentPartySize))
+	if (!LeaderboardSubsystem->HasLocalBestScoreRunSummary(CurrentDifficulty, CurrentPartySize))
 	{
 		return FReply::Handled();
 	}
 
-	LeaderboardSubsystem->RequestOpenLocalBestBountyRunSummary(CurrentDifficulty, CurrentPartySize);
+	LeaderboardSubsystem->RequestOpenLocalBestScoreRunSummary(CurrentDifficulty, CurrentPartySize);
 	UIManager->ShowModal(ET66ScreenType::RunSummary);
 	return FReply::Handled();
 }

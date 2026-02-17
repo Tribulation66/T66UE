@@ -47,7 +47,7 @@ private:
 	ET66LeaderboardTime CurrentTimeFilter = ET66LeaderboardTime::Current;
 	ET66PartySize CurrentPartySize = ET66PartySize::Solo;
 	ET66Difficulty CurrentDifficulty = ET66Difficulty::Easy;
-	ET66LeaderboardType CurrentType = ET66LeaderboardType::HighScore;
+	ET66LeaderboardType CurrentType = ET66LeaderboardType::Score;
 
 	TArray<FLeaderboardEntry> LeaderboardEntries;
 	UT66LocalizationSubsystem* LocSubsystem = nullptr;

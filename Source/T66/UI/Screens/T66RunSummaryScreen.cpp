@@ -66,7 +66,7 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	}
 
 	// Default: banners are only relevant for a freshly-finished run (not for viewing saved leaderboard snapshots).
-	bNewPersonalHighScore = false;
+	bNewPersonalBestScore = false;
 	bNewPersonalBestTime = false;
 
 	// Foundation: submit score at run end if allowed by settings (Practice Mode blocks).
@@ -79,8 +79,8 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 		if (RunState && LB)
 		{
 			// High Score submission: subsystem only updates if it's a new personal best (and Practice Mode blocks).
-			LB->SubmitRunBounty(RunState->GetCurrentScore());
-			bNewPersonalHighScore = LB->WasLastHighScoreNewPersonalBest();
+			LB->SubmitRunScore(RunState->GetCurrentScore());
+			bNewPersonalBestScore = LB->WasLastScoreNewPersonalBest();
 		}
 
 		// Speed Run banner: if any completed stage submission during this run set a new personal best time.
@@ -353,8 +353,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached :
 		(RunState ? RunState->GetCurrentStage() : 1);
 
-	const int32 HighScore =
-		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Bounty :
+	const int32 DisplayScore =
+		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Score :
 		(RunState ? RunState->GetCurrentScore() : 0);
 
 	const int32 HeroLevel =
@@ -416,19 +416,19 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		.SelectionMode(ESelectionMode::None);
 
 	const FText TitleText = Loc ? Loc->GetText_RunSummaryTitle() : NSLOCTEXT("T66.RunSummary", "Title", "RUN SUMMARY");
-	const FText StageHighScoreText = Loc
-		? FText::Format(Loc->GetText_RunSummaryStageReachedBountyFormat(), FText::AsNumber(StageReached), FText::AsNumber(HighScore))
-		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Score: %d"), StageReached, HighScore));
+	const FText StageScoreText = Loc
+		? FText::Format(Loc->GetText_RunSummaryStageReachedScoreFormat(), FText::AsNumber(StageReached), FText::AsNumber(DisplayScore))
+		: FText::FromString(FString::Printf(TEXT("Stage Reached: %d  |  Score: %d"), StageReached, DisplayScore));
 
 	// Global ranking (high score always; speed run when mode on — N/A if no time for that stage).
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66PlayerSettingsSubsystem* PS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
-	const int32 BountyRank = (GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalBountyRank(GI->SelectedDifficulty, GI->SelectedPartySize) : 0;
+	const int32 ScoreRank = (GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalScoreRank(GI->SelectedDifficulty, GI->SelectedPartySize) : 0;
 	const bool bSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
 	const int32 SpeedRunStageForRank = FMath::Max(1, StageReached - 1);
 	const int32 SpeedRunRank = (bSpeedRunMode && GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalSpeedRunRank(GI->SelectedDifficulty, GI->SelectedPartySize, SpeedRunStageForRank) : 0;
-	const FText HighScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "HighScoreRankLabel", "High Score Rank:");
-	const FText HighScoreRankValueText = (BountyRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(BountyRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
+	const FText ScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "ScoreRankLabel", "Score Rank:");
+	const FText ScoreRankValueText = (ScoreRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(ScoreRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
 	const FText SpeedRunRankLabelText = FText::Format(NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabelFormat", "Speed Run Rank (Stage {0}):"), FText::AsNumber(SpeedRunStageForRank));
 	const FText SpeedRunRankValueText = (SpeedRunRank > 0) ? FText::Format(NSLOCTEXT("T66.RunSummary", "RankFormat", "#{0}"), FText::AsNumber(SpeedRunRank)) : NSLOCTEXT("T66.RunSummary", "RankNA", "N/A");
 
@@ -996,7 +996,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
 					[
 						SNew(STextBlock)
-						.Text(StageHighScoreText)
+						.Text(StageScoreText)
 						.Font(FT66Style::Tokens::FontBold(18))
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					]
@@ -1013,14 +1013,14 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								+ SHorizontalBox::Slot().AutoWidth()
 								[
 									SNew(STextBlock)
-									.Text(HighScoreRankLabelText)
+									.Text(ScoreRankLabelText)
 									.Font(FT66Style::Tokens::FontRegular(14))
 									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 								]
 								+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
 								[
 									SNew(STextBlock)
-									.Text(HighScoreRankValueText)
+									.Text(ScoreRankValueText)
 									.Font(FT66Style::Tokens::FontBold(14))
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
@@ -1050,10 +1050,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, -10.f, 0.f, 6.f)
 					[
 						SNew(STextBlock)
-						.Visibility_Lambda([this]() { return (bNewPersonalHighScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
+						.Visibility_Lambda([this]() { return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
 						.Text_Lambda([this, Loc]()
 						{
-							return Loc ? Loc->GetText_NewPersonalHighScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalHighScore", "New Personal Score");
+							return Loc ? Loc->GetText_NewPersonalBestScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestScore", "New Personal Score");
 						})
 						.Font(FT66Style::Tokens::FontBold(16))
 						.ColorAndOpacity(FT66Style::Tokens::Success)
@@ -1272,12 +1272,12 @@ FReply UT66RunSummaryScreen::HandleReportSubmitClicked()
 {
 	const FString Reason = ReportReasonTextBox.IsValid() ? ReportReasonTextBox->GetText().ToString() : FString();
 	const int32 StageReached = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached : 0;
-	const int32 HighScore = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Bounty : 0;
+	const int32 ReportScore = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Score : 0;
 	const FName HeroID = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID : NAME_None;
 
-	UE_LOG(LogTemp, Warning, TEXT("[CHEAT REPORT] Stage=%d HighScore=%d Hero=%s Reason=%s"),
+	UE_LOG(LogTemp, Warning, TEXT("[CHEAT REPORT] Stage=%d Score=%d Hero=%s Reason=%s"),
 		StageReached,
-		HighScore,
+		ReportScore,
 		*HeroID.ToString(),
 		*Reason);
 

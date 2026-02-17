@@ -65,7 +65,7 @@ private:
 	bool bLogVisible = false;
 
 	// Run Summary banners (set on activation for the most recent run).
-	bool bNewPersonalHighScore = false;
+	bool bNewPersonalBestScore = false;
 	bool bNewPersonalBestTime = false;
 
 	/** When true, show "Power Coupons earned" popup (only when earned >= 1 this run, not when viewing saved). */

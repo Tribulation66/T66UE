@@ -27,9 +27,9 @@ class T66_API UT66LeaderboardSubsystem : public UGameInstanceSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	/** Submit a run bounty (local best). Returns false if blocked (e.g., Practice Mode). */
+	/** Submit a run score (local best). Returns false if blocked (e.g., Practice Mode). */
 	UFUNCTION(BlueprintCallable, Category = "Leaderboard")
-	bool SubmitRunBounty(int32 Bounty);
+	bool SubmitRunScore(int32 Score);
 
 	/**
 	 * Submit a completed stage time (local best), keyed by current difficulty/party size.
@@ -38,13 +38,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Leaderboard")
 	bool SubmitStageSpeedRunTime(int32 Stage, float Seconds);
  
-	/** Returns true if a saved run summary exists for the local best bounty entry. */
+	/** Returns true if a saved run summary exists for the local best score entry. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
-	bool HasLocalBestBountyRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	bool HasLocalBestScoreRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
-	/** True if the most recent high score submit set a new personal best (for the active difficulty/party). */
+	/** True if the most recent score submit set a new personal best (for the active difficulty/party). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
-	bool WasLastHighScoreNewPersonalBest() const { return bLastHighScoreWasNewBest; }
+	bool WasLastScoreNewPersonalBest() const { return bLastScoreWasNewBest; }
 
 	/** True if the most recent speed run submit set a new personal best time (for the active difficulty/party/stage). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
@@ -55,10 +55,10 @@ public:
 	int32 GetLastSpeedRunSubmittedStage() const { return LastSpeedRunSubmittedStage; }
 
 	/**
-	 * UI helper: request opening the local-best bounty run summary.
+	 * UI helper: request opening the local-best score run summary.
 	 * `UT66RunSummaryScreen` will consume this request on activation.
 	 */
-	void RequestOpenLocalBestBountyRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize);
+	void RequestOpenLocalBestScoreRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize);
 
 	/** Consume the pending "open run summary" request (returns true if one existed). */
 	bool ConsumePendingRunSummaryRequest(FString& OutSaveSlotName);
@@ -111,24 +111,24 @@ public:
 	/** Consume the "return to modal after viewer-mode Run Summary" request. */
 	ET66ScreenType ConsumePendingReturnModalAfterViewerRunSummary();
 
-	/** Build menu entries for Bounty: Top 10 + local entry ("You") at rank 11 unless in Top 10. */
-	TArray<FLeaderboardEntry> BuildBountyEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	/** Build menu entries for Score: Top 10 + local entry ("You") at rank 11 unless in Top 10. */
+	TArray<FLeaderboardEntry> BuildScoreEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
 	/** Build menu entries for Speed Run: per-stage Top 10 + local entry ("You") at rank 11 unless in Top 10. */
 	TArray<FLeaderboardEntry> BuildSpeedRunEntries(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 
 	/**
 	 * Build leaderboard entries for the current filter (Global / Friends / Streamers).
-	 * Global uses the existing built list (Bounty or SpeedRun). Friends/Streamers load from DT_Leaderboard_Friends / DT_Leaderboard_Streamers.
+	 * Global uses the existing built list (Score or SpeedRun). Friends/Streamers load from DT_Leaderboard_Friends / DT_Leaderboard_Streamers.
 	 */
 	TArray<FLeaderboardEntry> BuildEntriesForFilter(ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 SpeedRunStage) const;
 
 	/** Returns the 10th-place target time for this stage (used by HUD "time to beat"). */
 	bool GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const;
 
-	/** Rank (1–11) of local player's best bounty for this difficulty/party; 0 if none. */
+	/** Rank (1–11) of local player's best score for this difficulty/party; 0 if none. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
-	int32 GetLocalBountyRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	int32 GetLocalScoreRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
 	/** Rank (1–11) of local player's best speed run time for this stage; 0 if no time submitted. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
@@ -139,7 +139,7 @@ public:
 
 private:
 	static constexpr const TCHAR* LocalSaveSlotName = TEXT("T66_LocalLeaderboard");
-	static constexpr const TCHAR* BountyTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_BountyTargets.DT_Leaderboard_BountyTargets");
+	static constexpr const TCHAR* ScoreTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_ScoreTargets.DT_Leaderboard_ScoreTargets");
 	static constexpr const TCHAR* SpeedRunTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets");
 	static constexpr const TCHAR* FriendsDTPath = TEXT("/Game/Data/DT_Leaderboard_Friends.DT_Leaderboard_Friends");
 	static constexpr const TCHAR* StreamersDTPath = TEXT("/Game/Data/DT_Leaderboard_Streamers.DT_Leaderboard_Streamers");
@@ -148,8 +148,8 @@ private:
 	TObjectPtr<UT66LocalLeaderboardSaveGame> LocalSave;
 
 	// Targets (placeholder "global" tuning) loaded from CSV under Content/Data if present.
-	// Bounty target is keyed by Difficulty+PartySize. Speedrun target is keyed by Difficulty+Stage (party applies as a multiplier).
-	TMap<uint64, int64> BountyTarget10ByKey;
+	// Score target is keyed by Difficulty+PartySize. Speedrun target is keyed by Difficulty+Stage (party applies as a multiplier).
+	TMap<uint64, int64> ScoreTarget10ByKey;
 	TMap<uint64, float> SpeedRunTarget10ByKey_DiffStage;
 
 	void LoadOrCreateLocalSave();
@@ -157,19 +157,19 @@ private:
 
 	static FString DifficultyKey(ET66Difficulty Difficulty);
 	static FString PartySizeKey(ET66PartySize PartySize);
-	static FString MakeLocalBestBountyRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize);
+	static FString MakeLocalBestScoreRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize);
 
-	bool SaveLocalBestBountyRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Bounty) const;
+	bool SaveLocalBestScoreRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score) const;
 
 	bool LoadTargetsFromDataTablesIfPresent();
 	void LoadTargetsFromCsv();
-	void LoadBountyTargetsFromCsv(const FString& AbsPath);
+	void LoadScoreTargetsFromCsv(const FString& AbsPath);
 	void LoadSpeedRunTargetsFromCsv(const FString& AbsPath);
 
-	static uint64 MakeBountyKey(ET66Difficulty Difficulty, ET66PartySize PartySize);
+	static uint64 MakeScoreKey(ET66Difficulty Difficulty, ET66PartySize PartySize);
 	static uint64 MakeSpeedRunKey_DiffStage(ET66Difficulty Difficulty, int32 Stage);
 
-	int64 GetBountyTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	int64 GetScoreTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 	float GetSpeedRunTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 
 	bool GetSettingsPracticeAndAnon(bool& bOutPractice, bool& bOutAnon) const;
@@ -189,7 +189,7 @@ private:
 	ET66ScreenType PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;
 
 	// ===== Last submit results (for Run Summary "New Personal Best" banners) =====
-	bool bLastHighScoreWasNewBest = false;
+	bool bLastScoreWasNewBest = false;
 	bool bLastSpeedRunWasNewBest = false;
 	int32 LastSpeedRunSubmittedStage = 0;
 };

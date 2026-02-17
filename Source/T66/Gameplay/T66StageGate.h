@@ -12,7 +12,7 @@ class UStaticMesh;
 
 /**
  * STAGE GATE: Big 3D rectangle. Interact (F) to advance to next stage (reload level,
- * keep bounty, gold, progress). Place on the far side of the map.
+ * keep score, gold, progress). Place on the far side of the map.
  */
 UCLASS(Blueprintable)
 class T66_API AT66StageGate : public AActor

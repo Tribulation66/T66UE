@@ -1166,12 +1166,12 @@ enum class ET66LeaderboardTime : uint8
 };
 
 /**
- * Leaderboard type (High Score vs Speed Run)
+ * Leaderboard type (Score vs Speed Run)
  */
 UENUM(BlueprintType)
 enum class ET66LeaderboardType : uint8
 {
-	HighScore UMETA(DisplayName = "Score"),
+	Score UMETA(DisplayName = "Score"),
 	SpeedRun UMETA(DisplayName = "Speed Run")
 };
 
@@ -1237,11 +1237,11 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 };
 
 /**
- * Leaderboard tuning row: 10th-place "Bounty" target.
- * Import `Leaderboard_BountyTargets.csv` into a DataTable using this row struct.
+ * Leaderboard tuning row: 10th-place Score target.
+ * Import `Leaderboard_ScoreTargets.csv` into a DataTable using this row struct.
  */
 USTRUCT(BlueprintType)
-struct T66_API FT66LeaderboardBountyTargetRow : public FTableRowBase
+struct T66_API FT66LeaderboardScoreTargetRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -1252,12 +1252,12 @@ struct T66_API FT66LeaderboardBountyTargetRow : public FTableRowBase
 	ET66PartySize PartySize = ET66PartySize::Solo;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
-	int64 TargetBounty10 = 0;
+	int64 TargetScore10 = 0;
 
-	FT66LeaderboardBountyTargetRow()
+	FT66LeaderboardScoreTargetRow()
 		: Difficulty(ET66Difficulty::Easy)
 		, PartySize(ET66PartySize::Solo)
-		, TargetBounty10(0)
+		, TargetScore10(0)
 	{}
 };
 

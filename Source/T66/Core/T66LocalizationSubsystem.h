@@ -929,7 +929,7 @@ public:
 	FText GetText_StageNumberFormat() const; // "Stage number: {0}"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
-	FText GetText_BountyLabel() const; // "Score:"
+	FText GetText_ScoreLabel() const; // "Score:"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
 	FText GetText_PortraitPlaceholder() const;
@@ -943,7 +943,7 @@ public:
 
 	/** "Stage Reached: {0}  |  Score: {1}" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
-	FText GetText_RunSummaryStageReachedBountyFormat() const;
+	FText GetText_RunSummaryStageReachedScoreFormat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
 	FText GetText_RunSummaryPreviewPlaceholder() const;
@@ -952,7 +952,7 @@ public:
 	FText GetText_MainMenu() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
-	FText GetText_NewPersonalHighScore() const; // "New Personal Score"
+	FText GetText_NewPersonalBestScore() const; // "New Personal Score"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|RunSummary")
 	FText GetText_NewPersonalBestTime() const; // "New Personal Best Time"

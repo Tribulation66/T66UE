@@ -8,7 +8,7 @@
 #include "T66LocalLeaderboardSaveGame.generated.h"
 
 USTRUCT(BlueprintType)
-struct T66_API FT66LocalBountyRecord
+struct T66_API FT66LocalScoreRecord
 {
 	GENERATED_BODY()
 
@@ -18,11 +18,11 @@ struct T66_API FT66LocalBountyRecord
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	ET66PartySize PartySize = ET66PartySize::Solo;
 
-	/** Best bounty (higher is better). */
+	/** Best score (higher is better). */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
-	int64 BestBounty = 0;
+	int64 BestScore = 0;
 
-	/** Whether the best bounty was submitted as anonymous. */
+	/** Whether the best score was submitted as anonymous. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	bool bSubmittedAnonymous = false;
 };
@@ -104,7 +104,7 @@ struct T66_API FT66AccountRestrictionRecord
 
 /**
  * Local (offline) leaderboard persistence.
- * Stores the local player's best bounty and per-stage speedrun times.
+ * Stores the local player's best score and per-stage speedrun times.
  */
 UCLASS()
 class T66_API UT66LocalLeaderboardSaveGame : public USaveGame
@@ -116,7 +116,7 @@ public:
 	int32 SchemaVersion = 1;
 
 	UPROPERTY(SaveGame)
-	TArray<FT66LocalBountyRecord> BountyRecords;
+	TArray<FT66LocalScoreRecord> ScoreRecords;
 
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalSpeedRunStageRecord> SpeedRunStageRecords;
