@@ -87,6 +87,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UInstancedStaticMeshComponent> AttackRangeRingISM;
 
+	/** Inner ring at 10%% of attack range (close range damage zone). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
+	TObjectPtr<UInstancedStaticMeshComponent> CloseRangeRingISM;
+
+	/** Inner ring at 90%% of attack range (long range damage zone). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
+	TObjectPtr<UInstancedStaticMeshComponent> LongRangeRingISM;
+
 	/** Auto-attack cooldown bar below the hero's feet. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UWidgetComponent> CooldownBarWidgetComponent;
@@ -224,6 +232,15 @@ private:
 	/** When cooldown bar shows full (1), keep it at full for this long (seconds). */
 	float CooldownDisplayHoldUntil = -1.f;
 	static constexpr float CooldownBarHoldFullDuration = 0.01f;
+
+	// Enemy touch damage + bounce (hero-side proximity check when collision is Block)
+	float LastEnemyTouchDamageTime = -9999.f;
+	float LastEnemyBounceTime = -9999.f;
+	static constexpr float EnemyTouchDamageCooldown = 0.5f;
+	static constexpr float EnemyBounceCooldown = 0.25f;
+	static constexpr float EnemyTouchRadius = 90.f;
+	static constexpr float EnemyBounceStrength = 420.f;
+	static constexpr float EnemyBounceZ = 120.f;
 
 private:
 	/** Load and cache the static mesh assets */

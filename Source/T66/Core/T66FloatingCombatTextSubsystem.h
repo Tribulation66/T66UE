@@ -39,9 +39,16 @@ public:
 	static const FName EventType_CloseRange;
 	static const FName EventType_LongRange;
 
+	/** Internal: used for hero damage-taken styling (red number, no status label). */
+	static const FName EventType_DamageTaken;
+
 	/** Show a damage number at the target (offset to the side). Optionally show a status label above head if EventType is set. */
 	UFUNCTION(BlueprintCallable, Category = "FloatingCombatText")
 	void ShowDamageNumber(AActor* Target, int32 Amount, FName EventType = NAME_None);
+
+	/** Show a damage-taken number at the target (red, same layout as damage dealt). Use when the hero takes damage. */
+	UFUNCTION(BlueprintCallable, Category = "FloatingCombatText")
+	void ShowDamageTaken(AActor* Target, int32 Amount);
 
 	/** Show only a status/event label above the target (e.g. "CRIT!", "DoT"). Uses event-specific font/color. */
 	UFUNCTION(BlueprintCallable, Category = "FloatingCombatText")

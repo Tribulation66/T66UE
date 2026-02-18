@@ -1066,6 +1066,20 @@ bool UT66RunStateSubsystem::ApplyTrueDamage(int32 DamageHP)
 	const float Reduced = static_cast<float>(FMath::Max(1, DamageHP));
 	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
 
+	if (World)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (APawn* HeroPawn = PC->GetPawn())
+			{
+				if (UT66FloatingCombatTextSubsystem* FCT = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+				{
+					FCT->ShowDamageTaken(HeroPawn, FMath::RoundToInt(Reduced));
+				}
+			}
+		}
+	}
+
 	if (UGameInstance* GI3 = GetGameInstance())
 	{
 		if (UT66SkillRatingSubsystem* Skill = GI3->GetSubsystem<UT66SkillRatingSubsystem>())
@@ -1672,6 +1686,20 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 	LastDamageTime = Now;
 	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
+
+	if (World)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (APawn* HeroPawn = PC->GetPawn())
+			{
+				if (UT66FloatingCombatTextSubsystem* FCT = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+				{
+					FCT->ShowDamageTaken(HeroPawn, FMath::RoundToInt(Reduced));
+				}
+			}
+		}
+	}
 
 	// Skill Rating tracking: any damage that actually applies counts as a hit event.
 	if (UGameInstance* GI3 = GetGameInstance())

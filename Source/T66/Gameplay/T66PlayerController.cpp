@@ -1254,9 +1254,14 @@ void AT66PlayerController::HandleInteractPressed()
 		UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		if (RunState && RunState->HasInventorySpace())
 		{
-			RunState->AddItem(ClosestLootBag->GetItemID());
+			const FName PickedItemID = ClosestLootBag->GetItemID();
+			RunState->AddItem(PickedItemID);
 			ClosestLootBag->ConsumeAndDestroy();
 			ClearNearbyLootBag(ClosestLootBag);
+			if (GameplayHUDWidget)
+			{
+				GameplayHUDWidget->ShowPickupItemCard(PickedItemID);
+			}
 		}
 		return;
 	}

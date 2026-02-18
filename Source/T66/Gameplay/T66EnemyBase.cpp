@@ -48,7 +48,7 @@ AT66EnemyBase::AT66EnemyBase()
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	if (Capsule)
 	{
-		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block); // no overlap with hero or other enemies
 		Capsule->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap); // so projectile overlaps and hits
 		// Allow click-to-lock trace (screen-space hit test) to hit enemies.
 		Capsule->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -426,7 +426,7 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 			bRisingFromGround = false;
 			if (UCapsuleComponent* Cap = GetCapsuleComponent())
 			{
-				Cap->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+				Cap->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 			}
 		}
 		return;

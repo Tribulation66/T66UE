@@ -67,6 +67,9 @@ public:
 	UFUNCTION()
 	void RefreshLootPrompt();
 
+	/** Show the item card popup for a just-picked-up item (above inventory, auto-hides after a few seconds). */
+	void ShowPickupItemCard(FName ItemID);
+
 	/** Full-screen map overlay (M / OpenFullMap). */
 	void SetFullMapOpen(bool bOpen);
 	bool IsFullMapOpen() const { return bFullMapOpen; }
@@ -135,6 +138,14 @@ protected:
 	TSharedPtr<SImage> LootPromptIconImage;
 	TSharedPtr<FSlateBrush> LootPromptIconBrush;
 	TSharedPtr<STextBlock> LootPromptText;
+	TSharedPtr<SBox> PickupCardBox;
+	TSharedPtr<FSlateBrush> PickupCardIconBrush;
+	TSharedPtr<SImage> PickupCardIconImage;
+	TSharedPtr<STextBlock> PickupCardNameText;
+	TSharedPtr<STextBlock> PickupCardDescText;
+	FTimerHandle PickupCardHideTimerHandle;
+	static constexpr float PickupCardDisplaySeconds = 3.f;
+	void HidePickupCard();
 	TSharedPtr<SBorder> TutorialHintBorder;
 	TSharedPtr<STextBlock> TutorialHintLine1Text;
 	TSharedPtr<STextBlock> TutorialHintLine2Text;

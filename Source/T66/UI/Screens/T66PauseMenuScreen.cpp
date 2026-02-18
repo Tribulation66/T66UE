@@ -2,7 +2,6 @@
 
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/T66UIManager.h"
-#include "UI/T66StatsPanelSlate.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
@@ -38,23 +37,26 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 {
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 
 	FText ResumeText = Loc ? Loc->GetText_Resume() : NSLOCTEXT("T66.PauseMenu", "Resume", "RESUME GAME");
 	FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT GAME");
 	FText RestartText = Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.PauseMenu", "Restart", "RESTART");
 	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
-	FText ReportBugText = Loc ? Loc->GetText_ReportBug() : NSLOCTEXT("T66.PauseMenu", "ReportBug", "REPORT BUG");
 	FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
-	FText InProgressText = NSLOCTEXT("T66.PauseMenu", "InProgress", "In progress");
+	FText InProgressText = NSLOCTEXT("T66.PauseMenu", "InProgress", "Achievements in Progress");
 
+	static constexpr float PauseButtonWidth = 280.f;
 	auto MakePauseButton = [this](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), ET66ButtonType Type) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakeButton(
-			FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), Type)
-			.SetFontSize(44)
-			.SetPadding(FMargin(14.f))
-			.SetMinWidth(0.f));
+		return SNew(SBox)
+			.WidthOverride(PauseButtonWidth)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), Type)
+					.SetFontSize(44)
+					.SetPadding(FMargin(14.f))
+					.SetMinWidth(PauseButtonWidth))
+			];
 	};
 
 	TSharedRef<SWidget> RightPanel = FT66Style::MakePanel(
@@ -74,8 +76,6 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		[ MakePauseButton(RestartText, &UT66PauseMenuScreen::HandleRestartClicked, ET66ButtonType::Danger) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
 		[ MakePauseButton(SettingsText, &UT66PauseMenuScreen::HandleSettingsClicked, ET66ButtonType::Neutral) ]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
-		[ MakePauseButton(ReportBugText, &UT66PauseMenuScreen::HandleReportBugClicked, ET66ButtonType::Neutral) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
 		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ]
 		,
@@ -167,15 +167,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
-				[
-					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCVendorStatsPanelWidth, true)
-				]
-				+ SHorizontalBox::Slot().AutoWidth()
-				[
-					RightColumn
-				]
+				RightColumn
 			]
 		];
 }
@@ -184,7 +176,6 @@ FReply UT66PauseMenuScreen::HandleResumeClicked() { OnResumeClicked(); return FR
 FReply UT66PauseMenuScreen::HandleSaveAndQuitClicked() { OnSaveAndQuitClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleRestartClicked() { OnRestartClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleSettingsClicked() { OnSettingsClicked(); return FReply::Handled(); }
-FReply UT66PauseMenuScreen::HandleReportBugClicked() { OnReportBugClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleAchievementsClicked() { OnAchievementsClicked(); return FReply::Handled(); }
 
 void UT66PauseMenuScreen::OnResumeClicked()
@@ -258,11 +249,6 @@ void UT66PauseMenuScreen::OnRestartClicked()
 void UT66PauseMenuScreen::OnSettingsClicked()
 {
 	ShowModal(ET66ScreenType::Settings);
-}
-
-void UT66PauseMenuScreen::OnReportBugClicked()
-{
-	ShowModal(ET66ScreenType::ReportBug);
 }
 
 void UT66PauseMenuScreen::OnAchievementsClicked()

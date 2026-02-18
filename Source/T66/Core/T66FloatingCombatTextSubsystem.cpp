@@ -21,6 +21,7 @@ const FName UT66FloatingCombatTextSubsystem::EventType_Crush(TEXT("Crush"));
 const FName UT66FloatingCombatTextSubsystem::EventType_CounterAttack(TEXT("CounterAttack"));
 const FName UT66FloatingCombatTextSubsystem::EventType_CloseRange(TEXT("CloseRange"));
 const FName UT66FloatingCombatTextSubsystem::EventType_LongRange(TEXT("LongRange"));
+const FName UT66FloatingCombatTextSubsystem::EventType_DamageTaken(TEXT("DamageTaken"));
 
 void UT66FloatingCombatTextSubsystem::ShowDamageNumber(AActor* Target, int32 Amount, FName EventType)
 {
@@ -51,6 +52,25 @@ void UT66FloatingCombatTextSubsystem::ShowDamageNumber(AActor* Target, int32 Amo
 			StatusActor->SetStatusEvent(EventType);
 			StatusActor->SetLifeSpan(TextLifetimeSeconds);
 		}
+	}
+}
+
+void UT66FloatingCombatTextSubsystem::ShowDamageTaken(AActor* Target, int32 Amount)
+{
+	if (!Target || Amount <= 0) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
+	if (Actor)
+	{
+		Actor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		const uint32 Seed = static_cast<uint32>(FMath::Abs(FDateTime::Now().GetTicks()) + GetTypeHash(Target));
+		const float Side = (Seed % 2u == 0) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
+		Actor->SetActorRelativeLocation(FVector(Side, 0.f, OffsetAboveHead));
+		Actor->SetDamageNumber(Amount, EventType_DamageTaken);
+		Actor->SetLifeSpan(TextLifetimeSeconds);
 	}
 }
 

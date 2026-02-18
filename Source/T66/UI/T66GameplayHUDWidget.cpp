@@ -804,6 +804,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		World->GetTimerManager().ClearTimer(WheelResolveHandle);
 		World->GetTimerManager().ClearTimer(WheelCloseHandle);
 		World->GetTimerManager().ClearTimer(AchievementNotificationTimerHandle);
+		World->GetTimerManager().ClearTimer(PickupCardHideTimerHandle);
 	}
 
 	UT66RunStateSubsystem* RunState = GetRunState();
@@ -1530,63 +1531,144 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 
 void UT66GameplayHUDWidget::RefreshLootPrompt()
 {
-	// Loot prompt: top-of-HUD, non-blocking. Accept with F, Reject with RMB.
-	if (!LootPromptBox.IsValid())
-	{
-		return;
-	}
-
-	AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer());
-	AT66LootBagPickup* Bag = PC ? PC->GetNearbyLootBag() : nullptr;
-	if (!Bag)
+	// No longer show accept/reject prompt; item is added immediately on interact, then item card popup is shown.
+	if (LootPromptBox.IsValid())
 	{
 		LootPromptBox->SetVisibility(EVisibility::Collapsed);
-		return;
 	}
+}
+
+void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID)
+{
+	if (ItemID.IsNone() || !PickupCardBox.IsValid()) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66RunStateSubsystem* RunState = GetRunState();
 
 	FItemData D;
-	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
-	const bool bHasData = T66GI && T66GI->GetItemData(Bag->GetItemID(), D);
-	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	const FText ItemNameText = Loc ? Loc->GetText_ItemDisplayName(Bag->GetItemID()) : FText::FromName(Bag->GetItemID());
+	const bool bHasData = GI && GI->GetItemData(ItemID, D);
 
-	if (LootPromptText.IsValid())
+	if (PickupCardNameText.IsValid())
 	{
-		const FText RarityText =
-			(Bag->GetLootRarity() == ET66Rarity::Black) ? NSLOCTEXT("T66.Rarity", "Black", "BLACK") :
-			(Bag->GetLootRarity() == ET66Rarity::Red) ? NSLOCTEXT("T66.Rarity", "Red", "RED") :
-			(Bag->GetLootRarity() == ET66Rarity::Yellow) ? NSLOCTEXT("T66.Rarity", "Yellow", "YELLOW") :
-			NSLOCTEXT("T66.Rarity", "White", "WHITE");
-
-		LootPromptText->SetText(FText::Format(
-			NSLOCTEXT("T66.GameplayHUD", "LootPromptFormat", "LOOT BAG ({0}): {1}   [F] {2}   [RMB] {3}"),
-			RarityText,
-			ItemNameText,
-			NSLOCTEXT("T66.GameplayHUD", "Accept", "Accept"),
-			NSLOCTEXT("T66.GameplayHUD", "Reject", "Reject")));
+		PickupCardNameText->SetText(Loc ? Loc->GetText_ItemDisplayName(ItemID) : FText::FromName(ItemID));
 	}
-	if (LootPromptIconBrush.IsValid())
+	if (PickupCardDescText.IsValid())
 	{
-		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-		if (bHasData && !D.Icon.IsNull() && TexPool)
+		if (!bHasData || !RunState)
 		{
-			T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, LootPromptIconBrush, FName(TEXT("HUDLootPrompt")), /*bClearWhileLoading*/ true);
+			PickupCardDescText->SetText(FText::GetEmpty());
 		}
 		else
 		{
-			LootPromptIconBrush->SetResourceObject(nullptr);
+			auto StatLabel = [Loc](ET66HeroStatType Type) -> FText
+			{
+				if (Loc)
+				{
+					switch (Type)
+					{
+						case ET66HeroStatType::Damage:      return Loc->GetText_Stat_Damage();
+						case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
+						case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
+						case ET66HeroStatType::Armor:      return Loc->GetText_Stat_Armor();
+						case ET66HeroStatType::Evasion:     return Loc->GetText_Stat_Evasion();
+						case ET66HeroStatType::Luck:        return Loc->GetText_Stat_Luck();
+						default: break;
+					}
+				}
+				switch (Type)
+				{
+					case ET66HeroStatType::Damage:      return NSLOCTEXT("T66.Stats", "Damage", "Damage");
+					case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
+					case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
+					case ET66HeroStatType::Armor:      return NSLOCTEXT("T66.Stats", "Armor", "Armor");
+					case ET66HeroStatType::Evasion:     return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
+					case ET66HeroStatType::Luck:        return NSLOCTEXT("T66.Stats", "Luck", "Luck");
+					default: return FText::GetEmpty();
+				}
+			};
+			const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+			int32 MainValue = 0;
+			if (Slots.Num() > 0 && Slots.Last().ItemTemplateID == ItemID)
+			{
+				MainValue = Slots.Last().Line1RolledValue;
+			}
+			FText DescLine;
+			if (MainValue > 0)
+			{
+				const ET66HeroStatType MainType = D.PrimaryStatType;
+				if (MainType == ET66HeroStatType::AttackScale && RunState)
+				{
+					const float ScaleMult = RunState->GetHeroScaleMultiplier();
+					DescLine = FText::Format(
+						NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
+						StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
+				}
+				else
+				{
+					DescLine = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
+				}
+			}
+			else
+			{
+				DescLine = FText::GetEmpty();
+			}
+			// Secondary stat line (match vendor: primary + secondary)
+			if (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
+			{
+				const FText Line2 = Loc->GetText_SecondaryStatName(D.SecondaryStatType);
+				if (!Line2.IsEmpty())
+				{
+					DescLine = DescLine.IsEmpty()
+						? Line2
+						: FText::Format(NSLOCTEXT("T66.Vendor", "TwoLineDesc", "{0}\n{1}"), DescLine, Line2);
+				}
+			}
+			PickupCardDescText->SetText(DescLine);
 		}
 	}
-	if (LootPromptIconImage.IsValid())
+	if (!PickupCardIconBrush.IsValid())
 	{
-		const bool bShow = bHasData && !D.Icon.IsNull();
-		LootPromptIconImage->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
+		PickupCardIconBrush = MakeShared<FSlateBrush>();
+		PickupCardIconBrush->DrawAs = ESlateBrushDrawType::Image;
+		PickupCardIconBrush->ImageSize = FVector2D(48.f, 48.f);
 	}
-	if (LootPromptBorder.IsValid())
+	if (bHasData && !D.Icon.IsNull())
 	{
-		LootPromptBorder->SetBorderBackgroundColor(FT66RarityUtil::GetRarityColor(Bag->GetLootRarity()) * 0.35f + FLinearColor(0.02f, 0.02f, 0.03f, 0.65f));
+		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+		if (TexPool)
+		{
+			T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, PickupCardIconBrush, FName(TEXT("HUDPickupCard")), true);
+		}
 	}
-	LootPromptBox->SetVisibility(EVisibility::Visible);
+	if (PickupCardIconImage.IsValid())
+	{
+		PickupCardIconImage->SetImage(PickupCardIconBrush.Get());
+		PickupCardIconImage->SetVisibility(bHasData && !D.Icon.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
+	}
+	PickupCardBox->SetVisibility(EVisibility::Visible);
+
+	// Auto-hide after delay
+	if (UWorld* W = GetWorld())
+	{
+		W->GetTimerManager().ClearTimer(PickupCardHideTimerHandle);
+		W->GetTimerManager().SetTimer(PickupCardHideTimerHandle, this, &UT66GameplayHUDWidget::HidePickupCard, PickupCardDisplaySeconds, false);
+	}
+}
+
+void UT66GameplayHUDWidget::HidePickupCard()
+{
+	if (PickupCardBox.IsValid())
+	{
+		PickupCardBox->SetVisibility(EVisibility::Collapsed);
+	}
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(PickupCardHideTimerHandle);
+	}
 }
 
 void UT66GameplayHUDWidget::RefreshHearts()
@@ -2877,6 +2959,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			SAssignNew(BottomLeftHUDBox, SBox)
 			[
 				SNew(SVerticalBox)
+				// FPS above idol panel
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+				[
+					SAssignNew(FPSText, STextBlock)
+					.Text(NSLOCTEXT("T66.GameplayHUD", "FPSDefault", "FPS: 0"))
+					.Font(FT66Style::Tokens::FontBold(14))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Justification(ETextJustify::Left)
+				]
 				// Core bottom-left HUD block
 				+ SVerticalBox::Slot().AutoHeight()
 				[
@@ -3370,21 +3461,13 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 		]
-		// Inventory panel moved to bottom-right; FPS above it, then Gold/Owe and grid
+		// Inventory panel bottom-right (Gold/Owe and grid); FPS is above idol panel on the left
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Bottom)
 		.Padding(24.f, 0.f, 24.f, 24.f)
 		[
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-			[
-				SAssignNew(FPSText, STextBlock)
-				.Text(NSLOCTEXT("T66.GameplayHUD", "FPSDefault", "FPS: 0"))
-				.Font(FT66Style::Tokens::FontBold(14))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				.Justification(ETextJustify::Right)
-			]
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SAssignNew(InventoryPanelBox, SBox)
@@ -3537,6 +3620,65 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							.Text(NSLOCTEXT("T66.GameplayHUD", "AchievementUnlocked", "Unlocked!"))
 							.Font(FT66Style::Tokens::FontRegular(14))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+					]
+				]
+			]
+		]
+		// Pickup item card (right side, bottom of card just above inventory)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.Padding(24.f, 0.f, 24.f, 300.f)
+		[
+			SAssignNew(PickupCardBox, SBox)
+			.Visibility(EVisibility::Collapsed)
+			.WidthOverride(280.f)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.30f, 0.38f, 0.35f, 0.85f))
+				.Padding(3.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
+					.Padding(FMargin(10.f, 8.f))
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top).Padding(0.f, 0.f, 10.f, 0.f)
+						[
+							SNew(SBox)
+							.WidthOverride(48.f)
+							.HeightOverride(48.f)
+							[
+								SAssignNew(PickupCardIconImage, SImage)
+								.Image(PickupCardIconBrush.Get())
+								.ColorAndOpacity(FLinearColor::White)
+								.Visibility(EVisibility::Collapsed)
+							]
+						]
+						+ SHorizontalBox::Slot().FillWidth(1.f)
+						[
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight()
+							[
+								SAssignNew(PickupCardNameText, STextBlock)
+								.Text(FText::GetEmpty())
+								.Font(FT66Style::Tokens::FontBold(16))
+								.ColorAndOpacity(FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
+								.AutoWrapText(true)
+								.WrapTextAt(200.f)
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+							[
+								SAssignNew(PickupCardDescText, STextBlock)
+								.Text(FText::GetEmpty())
+								.Font(FT66Style::Tokens::FontRegular(12))
+								.ColorAndOpacity(FLinearColor(0.6f, 0.7f, 0.65f, 1.f))
+								.AutoWrapText(true)
+								.WrapTextAt(200.f)
+							]
 						]
 					]
 				]

@@ -29,9 +29,6 @@ public:
 	void OnSettingsClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
-	void OnReportBugClicked();
-
-	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
 	void OnAchievementsClicked();
 
 protected:
@@ -42,7 +39,6 @@ private:
 	FReply HandleSaveAndQuitClicked();
 	FReply HandleRestartClicked();
 	FReply HandleSettingsClicked();
-	FReply HandleReportBugClicked();
 	FReply HandleAchievementsClicked();
 
 	AT66PlayerController* GetT66PlayerController() const;

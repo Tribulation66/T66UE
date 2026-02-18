@@ -21,6 +21,10 @@ void UT66FloatingCombatTextWidget::SetDamageNumber(int32 Amount, FName EventType
 		Size = 16;
 		Color = FLinearColor(0.85f, 0.5f, 1.f, 1.f); // purple for DoT
 	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_DamageTaken)
+	{
+		Color = FLinearColor(1.f, 0.2f, 0.2f, 1.f); // red for damage taken by hero
+	}
 
 	UpdateTextBlock(DisplayText, Size, Color);
 }

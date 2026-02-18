@@ -24,6 +24,9 @@
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "TimerManager.h"
+#include "Engine/World.h"
+#include "Engine/OverlapResult.h"
+#include "Engine/EngineTypes.h"
 
 AT66HeroBase::AT66HeroBase()
 {
@@ -119,6 +122,35 @@ AT66HeroBase::AT66HeroBase()
 	// Sit on the ground plane under the capsule.
 	AttackRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 2.f));
 	AttackRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
+
+	// Close range ring (10% of attack range) and long range ring (90%) — same mesh/material as outer ring.
+	CloseRangeRingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("CloseRangeRingISM"));
+	CloseRangeRingISM->SetupAttachment(RootComponent);
+	CloseRangeRingISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CloseRangeRingISM->SetGenerateOverlapEvents(false);
+	CloseRangeRingISM->CastShadow = false;
+	CloseRangeRingISM->bReceivesDecals = false;
+	CloseRangeRingISM->SetHiddenInGame(true, true);
+	CloseRangeRingISM->SetVisibility(false, true);
+	if (CubeMesh) CloseRangeRingISM->SetStaticMesh(CubeMesh);
+	else if (CylinderMesh) CloseRangeRingISM->SetStaticMesh(CylinderMesh);
+	if (RingMat) CloseRangeRingISM->SetMaterial(0, RingMat);
+	CloseRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 2.f));
+	CloseRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
+
+	LongRangeRingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LongRangeRingISM"));
+	LongRangeRingISM->SetupAttachment(RootComponent);
+	LongRangeRingISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LongRangeRingISM->SetGenerateOverlapEvents(false);
+	LongRangeRingISM->CastShadow = false;
+	LongRangeRingISM->bReceivesDecals = false;
+	LongRangeRingISM->SetHiddenInGame(true, true);
+	LongRangeRingISM->SetVisibility(false, true);
+	if (CubeMesh) LongRangeRingISM->SetStaticMesh(CubeMesh);
+	else if (CylinderMesh) LongRangeRingISM->SetStaticMesh(CylinderMesh);
+	if (RingMat) LongRangeRingISM->SetMaterial(0, RingMat);
+	LongRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 2.f));
+	LongRangeRingISM->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 
 	// ========== Auto-attack cooldown bar (below feet) ==========
 	CooldownBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("CooldownBarWidget"));
@@ -384,6 +416,57 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 			Bar->SetRangeUnits(FMath::RoundToInt(CombatComponent->AttackRange));
 		}
 	}
+
+	// Enemy touch damage + bounce: proximity check (enemies block so no overlap events; we query range and apply damage + launch).
+	if (!bIsPreviewMode)
+	{
+		UWorld* World = GetWorld();
+		UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		if (World && RunState)
+		{
+			const float Now = static_cast<float>(World->GetTimeSeconds());
+			TArray<FOverlapResult> Overlaps;
+			FCollisionQueryParams Params;
+			Params.AddIgnoredActor(this);
+			World->OverlapMultiByChannel(Overlaps, GetActorLocation(), FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(EnemyTouchRadius), Params);
+			AT66EnemyBase* ClosestEnemy = nullptr;
+			float ClosestDistSq = EnemyTouchRadius * EnemyTouchRadius;
+			for (const FOverlapResult& R : Overlaps)
+			{
+				AActor* A = R.GetActor();
+				if (!A) continue;
+				AT66EnemyBase* E = Cast<AT66EnemyBase>(A);
+				if (!E || E->CurrentHP <= 0) continue;
+				const float DistSq = FVector::DistSquared(GetActorLocation(), E->GetActorLocation());
+				if (DistSq < ClosestDistSq)
+				{
+					ClosestDistSq = DistSq;
+					ClosestEnemy = E;
+				}
+			}
+			if (ClosestEnemy && !IsInSafeZone())
+			{
+				if (Now - LastEnemyTouchDamageTime >= EnemyTouchDamageCooldown)
+				{
+					LastEnemyTouchDamageTime = Now;
+					const int32 DamageHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ClosestEnemy->TouchDamageHearts) * RunState->GetMaxHP() / 5.f));
+					RunState->ApplyDamage(DamageHP, ClosestEnemy);
+				}
+				if (Now - LastEnemyBounceTime >= EnemyBounceCooldown)
+				{
+					LastEnemyBounceTime = Now;
+					FVector Away = (GetActorLocation() - ClosestEnemy->GetActorLocation()).GetSafeNormal2D();
+					Away.Z = 0.f;
+					Away.Normalize();
+					const FVector BounceVel = Away * EnemyBounceStrength + FVector(0.f, 0.f, EnemyBounceZ);
+					if (UCharacterMovementComponent* Move = GetCharacterMovement())
+					{
+						LaunchCharacter(BounceVel, true, true);
+					}
+				}
+			}
+		}
+	}
 }
 
 void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -411,21 +494,26 @@ void AT66HeroBase::UpdateAttackRangeRing()
 		return;
 	}
 
-	// Hide in preview mode.
-	if (bIsPreviewMode)
+	auto HideAllRings = [this]()
 	{
 		AttackRangeRingISM->SetHiddenInGame(true, true);
 		AttackRangeRingISM->SetVisibility(false, true);
+		if (CloseRangeRingISM) { CloseRangeRingISM->SetHiddenInGame(true, true); CloseRangeRingISM->SetVisibility(false, true); }
+		if (LongRangeRingISM)  { LongRangeRingISM->SetHiddenInGame(true, true);  LongRangeRingISM->SetVisibility(false, true); }
 		if (CooldownBarWidgetComponent) CooldownBarWidgetComponent->SetVisibility(false);
+	};
+
+	// Hide in preview mode.
+	if (bIsPreviewMode)
+	{
+		HideAllRings();
 		return;
 	}
 
 	const bool bPanelsVisible = CachedRunState ? CachedRunState->GetHUDPanelsVisible() : true;
 	if (!bPanelsVisible)
 	{
-		AttackRangeRingISM->SetHiddenInGame(true, true);
-		AttackRangeRingISM->SetVisibility(false, true);
-		if (CooldownBarWidgetComponent) CooldownBarWidgetComponent->SetVisibility(false);
+		HideAllRings();
 		return;
 	}
 
@@ -434,38 +522,42 @@ void AT66HeroBase::UpdateAttackRangeRing()
 
 	const float Range = (CombatComponent ? CombatComponent->AttackRange : 0.f);
 	const float ClampedRange = FMath::Clamp(Range, 200.f, 50000.f);
+	const float CloseRadius = ClampedRange * 0.10f;  // close range damage zone (0–10% of range)
+	const float LongRadius  = ClampedRange * 0.90f;  // long range damage zone (90–100% of range)
 
-	// Build/update a segmented ring once per range change (instanced segments, not a filled disc).
-	AttackRangeRingISM->ClearInstances();
-
-	// Make this read like a thin circle (not blocky chunks).
-	static constexpr int32 NumSeg = 192;
-	const float Circ = 2.f * PI * ClampedRange;
-	const float SegLen = FMath::Clamp((Circ / static_cast<float>(NumSeg)) * 1.10f, 8.f, 80.f); // slight overlap
-	const float SegThick = 8.f;   // thin line thickness
-	const float SegHeight = 2.5f; // thin line height
-
-	for (int32 i = 0; i < NumSeg; ++i)
+	// Helper: build a segmented ring into an ISM at the given radius (same visual style as outer ring).
+	auto BuildRing = [this](UInstancedStaticMeshComponent* ISM, float Radius)
 	{
-		const float T = static_cast<float>(i) / static_cast<float>(NumSeg);
-		const float A = 2.f * PI * T;
-		const float X = FMath::Cos(A) * ClampedRange;
-		const float Y = FMath::Sin(A) * ClampedRange;
+		if (!ISM || Radius < 10.f) return;
+		ISM->ClearInstances();
+		static constexpr int32 NumSeg = 192;
+		const float Circ = 2.f * PI * Radius;
+		const float SegLen = FMath::Clamp((Circ / static_cast<float>(NumSeg)) * 1.10f, 4.f, 80.f);
+		const float SegThick = 8.f;
+		const float SegHeight = 2.5f;
+		for (int32 i = 0; i < NumSeg; ++i)
+		{
+			const float T = static_cast<float>(i) / static_cast<float>(NumSeg);
+			const float A = 2.f * PI * T;
+			const float X = FMath::Cos(A) * Radius;
+			const float Y = FMath::Sin(A) * Radius;
+			const float YawDeg = FMath::RadiansToDegrees(A) + 90.f;
+			const FVector Loc(X, Y, 3.f);
+			const FRotator Rot(0.f, YawDeg, 0.f);
+			const FVector Scale(SegLen / 100.f, SegThick / 100.f, SegHeight / 100.f);
+			ISM->AddInstance(FTransform(Rot, Loc, Scale), false);
+		}
+		ISM->MarkRenderStateDirty();
+	};
 
-		// Tangent-aligned segment so it reads like a continuous ring.
-		const float YawDeg = FMath::RadiansToDegrees(A) + 90.f;
-		const FVector Loc(X, Y, 3.f);
-		const FRotator Rot(0.f, YawDeg, 0.f);
-
-		// /Engine/BasicShapes/Cube: 100uu. Scale to desired world size.
-		const FVector Scale(SegLen / 100.f, SegThick / 100.f, SegHeight / 100.f);
-		const FTransform Xf(Rot, Loc, Scale);
-		AttackRangeRingISM->AddInstance(Xf, false);
-	}
-	AttackRangeRingISM->MarkRenderStateDirty();
+	BuildRing(AttackRangeRingISM, ClampedRange);
+	BuildRing(CloseRangeRingISM, CloseRadius);
+	BuildRing(LongRangeRingISM, LongRadius);
 
 	AttackRangeRingISM->SetHiddenInGame(false, true);
 	AttackRangeRingISM->SetVisibility(true, true);
+	if (CloseRangeRingISM) { CloseRangeRingISM->SetHiddenInGame(false, true); CloseRangeRingISM->SetVisibility(true, true); }
+	if (LongRangeRingISM)  { LongRangeRingISM->SetHiddenInGame(false, true);  LongRangeRingISM->SetVisibility(true, true); }
 }
 
 void AT66HeroBase::ApplyStageSlide(float DurationSeconds)
