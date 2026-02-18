@@ -133,7 +133,7 @@ public:
 
 	virtual FVector2D ComputeDesiredSize(float) const override
 	{
-		return FVector2D(44.f, 44.f);
+		return FVector2D(52.f, 52.f);
 	}
 
 	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
@@ -694,8 +694,6 @@ void UT66GameplayHUDWidget::RefreshHeroStats()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
-	if (StatLevelText.IsValid())
-		StatLevelText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatLevel", "Lv.{0}"), FText::AsNumber(RunState->GetHeroLevel())));
 	if (StatDamageText.IsValid())
 		StatDamageText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatDmg", "Dmg: {0}"), FText::AsNumber(RunState->GetDamageStat())));
 	if (StatAttackSpeedText.IsValid())
@@ -704,12 +702,12 @@ void UT66GameplayHUDWidget::RefreshHeroStats()
 		StatAttackScaleText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatScale", "Scale: {0}"), FText::AsNumber(RunState->GetScaleStat())));
 	if (StatArmorText.IsValid())
 		StatArmorText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatArmor", "Armor: {0}"), FText::AsNumber(RunState->GetArmorStat())));
-	if (StatSpeedText.IsValid())
-		StatSpeedText->SetText(FText::FromString(FString::Printf(TEXT("Speed: %.1f"), RunState->GetHeroMoveSpeedMultiplier())));
 	if (StatEvasionText.IsValid())
 		StatEvasionText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatEva", "Eva: {0}"), FText::AsNumber(RunState->GetEvasionStat())));
 	if (StatLuckText.IsValid())
 		StatLuckText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatLuck", "Luck: {0}"), FText::AsNumber(RunState->GetLuckStat())));
+	if (StatSpeedText.IsValid())
+		StatSpeedText->SetText(FText::FromString(FString::Printf(TEXT("Speed: %.1f"), RunState->GetHeroMoveSpeedMultiplier())));
 }
 
 void UT66GameplayHUDWidget::NativeConstruct()
@@ -1824,6 +1822,20 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
+	// Passive stack badge (Rallying Blow: show circle + stack count)
+	{
+		const bool bRallyingBlow = (RunState->GetPassiveType() == ET66PassiveType::RallyingBlow);
+		const int32 Stacks = RunState->GetRallyStacks();
+		if (PassiveStackBadgeBox.IsValid())
+		{
+			PassiveStackBadgeBox->SetVisibility(bRallyingBlow ? EVisibility::Visible : EVisibility::Collapsed);
+		}
+		if (PassiveStackText.IsValid())
+		{
+			PassiveStackText->SetText(FText::AsNumber(FMath::Max(0, Stacks)));
+		}
+	}
+
 	// Difficulty (Skulls): 5-slot compression with tier colors (no half-skulls).
 	{
 		const int32 Skulls = FMath::Max(0, RunState->GetDifficultySkulls());
@@ -2391,6 +2403,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	static constexpr float IdolPanelOverhead = 50.f; // title + separator + paddings
 	const float IdolGridHeight = FMath::Max(0.f, HeartsRowWidth - IdolPanelOverhead);
 	const float IdolSlotSize = FMath::Max(18.f, (IdolGridHeight / 3.f) - (IdolSlotPad * 2.f));
+	const float IdolPanelWidth = 2.f * IdolSlotSize + 4.f * IdolSlotPad + 20.f;
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		TSharedPtr<SBorder> IdolBorder;
@@ -2867,21 +2880,21 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(ScoreLabelText)
-						.Font(FT66Style::Tokens::FontBold(20))
+						.Font(FT66Style::Tokens::FontBold(18))
 						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
 						SAssignNew(ScoreText, STextBlock)
 						.Text(FText::AsNumber(0))
-						.Font(FT66Style::Tokens::FontBold(20))
+						.Font(FT66Style::Tokens::FontBold(18))
 						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 					[
 						SAssignNew(ScoreMultiplierText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreMultiplierDefault", "x1.0"))
-						.Font(FT66Style::Tokens::FontBold(20))
+						.Font(FT66Style::Tokens::FontBold(18))
 						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
 					]
 				]
@@ -2889,7 +2902,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				[
 					SAssignNew(SpeedRunText, STextBlock)
 					.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
-					.Font(FT66Style::Tokens::FontBold(20))
+					.Font(FT66Style::Tokens::FontBold(18))
 					.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
 					.Visibility(EVisibility::Collapsed)
 				]
@@ -2897,7 +2910,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				[
 					SAssignNew(SpeedRunTargetText, STextBlock)
 					.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetDefault", "TO BEAT --:--.--"))
-					.Font(FT66Style::Tokens::FontBold(20))
+					.Font(FT66Style::Tokens::FontBold(18))
 					.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
 					.Visibility(EVisibility::Collapsed)
 				],
@@ -2976,6 +2989,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(0.f, 92.f, 0.f, 0.f)
 					[
 						SAssignNew(IdolSlotsPanelBox, SBox)
+						.WidthOverride(IdolPanelWidth)
 						.HeightOverride(HeartsRowWidth)
 						[
 							SNew(SOverlay)
@@ -3109,8 +3123,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							.Padding(0.f, 2.f, 2.f, 0.f)
 							[
 								SNew(SBox)
-								.WidthOverride(42.f)
-								.HeightOverride(42.f)
+								.WidthOverride(52.f)
+								.HeightOverride(52.f)
 								[
 									SNew(SOverlay)
 									// Ring widget draws filled black circle + progress arc
@@ -3138,7 +3152,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(12.f, 0.f, 0.f, 0.f)
 				[
 					SAssignNew(PortraitStatPanelBox, SBox)
-					.WidthOverride(120.f)
+					.WidthOverride(IdolPanelWidth)
 					.HeightOverride(HeartsRowWidth)
 					[
 						SNew(SOverlay)
@@ -3159,7 +3173,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									[
 										SNew(STextBlock)
 										.Text(NSLOCTEXT("T66.GameplayHUD", "StatsTitle", "Stats"))
-										.Font(FT66Style::Tokens::FontBold(19))
+										.Font(FT66Style::Tokens::FontBold(23))
 										.ColorAndOpacity(FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
 										.Justification(ETextJustify::Center)
 									]
@@ -3178,24 +3192,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SNew(SBorder)
 										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 										.Padding(0.f)
-										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Level() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(0) : FText::GetEmpty()))
-										[
-											SAssignNew(StatLevelText, STextBlock)
-											.Text(FText::FromString(TEXT("Lv.1")))
-											.Font(FT66Style::Tokens::FontBold(15))
-											.ColorAndOpacity(FLinearColor(0.9f, 0.85f, 0.6f, 1.f))
-										]
-									]
-									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
-									[
-										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-										.Padding(0.f)
 										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Damage() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty()))
 										[
 											SAssignNew(StatDamageText, STextBlock)
 											.Text(FText::FromString(TEXT("Dmg: 0")))
-											.Font(FT66Style::Tokens::FontBold(14))
+											.Font(FT66Style::Tokens::FontBold(18))
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
 									]
@@ -3208,7 +3209,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										[
 											SAssignNew(StatAttackSpeedText, STextBlock)
 											.Text(FText::FromString(TEXT("AS: 0")))
-											.Font(FT66Style::Tokens::FontBold(14))
+											.Font(FT66Style::Tokens::FontBold(18))
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
 									]
@@ -3221,7 +3222,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										[
 											SAssignNew(StatAttackScaleText, STextBlock)
 											.Text(FText::FromString(TEXT("Scale: 0")))
-											.Font(FT66Style::Tokens::FontBold(14))
+											.Font(FT66Style::Tokens::FontBold(18))
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
 									]
@@ -3234,20 +3235,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										[
 											SAssignNew(StatArmorText, STextBlock)
 											.Text(FText::FromString(TEXT("Armor: 0")))
-											.Font(FT66Style::Tokens::FontBold(14))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-									]
-									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
-									[
-										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-										.Padding(0.f)
-										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Speed() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty()))
-										[
-											SAssignNew(StatSpeedText, STextBlock)
-											.Text(FText::FromString(TEXT("Speed: 1.0")))
-											.Font(FT66Style::Tokens::FontBold(14))
+											.Font(FT66Style::Tokens::FontBold(18))
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
 									]
@@ -3260,11 +3248,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										[
 											SAssignNew(StatEvasionText, STextBlock)
 											.Text(FText::FromString(TEXT("Eva: 0")))
-											.Font(FT66Style::Tokens::FontBold(14))
+											.Font(FT66Style::Tokens::FontBold(18))
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
 									]
-									+ SVerticalBox::Slot().AutoHeight()
+									+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 									[
 										SNew(SBorder)
 										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
@@ -3273,7 +3261,20 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										[
 											SAssignNew(StatLuckText, STextBlock)
 											.Text(FText::FromString(TEXT("Luck: 0")))
-											.Font(FT66Style::Tokens::FontBold(14))
+											.Font(FT66Style::Tokens::FontBold(18))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
+									]
+									+ SVerticalBox::Slot().AutoHeight()
+									[
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+										.Padding(0.f)
+										.ToolTip(CreateRichTooltip(Loc ? Loc->GetText_Stat_Speed() : FText::GetEmpty(), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty()))
+										[
+											SAssignNew(StatSpeedText, STextBlock)
+											.Text(FText::FromString(TEXT("Speed: 1.0")))
+											.Font(FT66Style::Tokens::FontBold(18))
 											.ColorAndOpacity(FT66Style::Tokens::Text)
 										]
 									]
@@ -3290,21 +3291,55 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.HeightOverride(174.f)
 					[
 						SNew(SVerticalBox)
-						// Passive ability icon (reuses same sprite as ultimate for now)
+						// Passive ability icon + stack badge (circle + number for Rallying Blow)
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 						[
 							SNew(SBox)
 							.WidthOverride(84.f)
 							.HeightOverride(84.f)
 							[
-								SAssignNew(PassiveBorder, SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
-								.Padding(0.f)
+								SNew(SOverlay)
+								// Passive icon (border + image)
+								+ SOverlay::Slot()
 								[
-									SAssignNew(PassiveImage, SImage)
-									.Image(UltimateBrush.Get())
-									.ColorAndOpacity(FLinearColor::White)
+									SAssignNew(PassiveBorder, SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
+									.Padding(0.f)
+									[
+										SAssignNew(PassiveImage, SImage)
+										.Image(UltimateBrush.Get())
+										.ColorAndOpacity(FLinearColor::White)
+									]
+								]
+								// Stack badge: circle background + number (bottom-right)
+								+ SOverlay::Slot()
+								.HAlign(HAlign_Right)
+								.VAlign(VAlign_Bottom)
+								.Padding(0.f, 0.f, 4.f, 4.f)
+								[
+									SAssignNew(PassiveStackBadgeBox, SBox)
+									.WidthOverride(28.f)
+									.HeightOverride(28.f)
+									[
+										SNew(SOverlay)
+										+ SOverlay::Slot()
+										[
+											SNew(SBorder)
+											.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Circle"))
+											.BorderBackgroundColor(FLinearColor(0.12f, 0.10f, 0.08f, 0.95f))
+											.Padding(0.f)
+											.HAlign(HAlign_Center)
+											.VAlign(VAlign_Center)
+											[
+												SAssignNew(PassiveStackText, STextBlock)
+												.Text(FText::AsNumber(0))
+												.Font(FT66Style::Tokens::FontBold(12))
+												.ColorAndOpacity(FLinearColor(0.95f, 0.75f, 0.25f, 1.f))
+												.Justification(ETextJustify::Center)
+											]
+										]
+									]
 								]
 							]
 						]
@@ -3761,7 +3796,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							[
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66.Map", "Title", "MAP"))
-								.Font(FT66Style::Tokens::FontBold(20))
+								.Font(FT66Style::Tokens::FontBold(18))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
 							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)

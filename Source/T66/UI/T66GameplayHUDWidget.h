@@ -154,6 +154,8 @@ protected:
 	TSharedPtr<STextBlock> LevelText;
 	TSharedPtr<SBorder> PassiveBorder;
 	TSharedPtr<SImage> PassiveImage;
+	TSharedPtr<SBox> PassiveStackBadgeBox;
+	TSharedPtr<STextBlock> PassiveStackText;
 	TSharedPtr<SBorder> UltimateBorder;
 	TSharedPtr<SBorder> UltimateCooldownOverlay;
 	TSharedPtr<STextBlock> UltimateText;
@@ -187,14 +189,13 @@ protected:
 	static constexpr float CooldownBarWidth = 200.f;
 	static constexpr float CooldownBarHeight = 6.f;
 	TSharedPtr<SBox> PortraitStatPanelBox;
-	TSharedPtr<STextBlock> StatLevelText;
 	TSharedPtr<STextBlock> StatDamageText;
 	TSharedPtr<STextBlock> StatAttackSpeedText;
 	TSharedPtr<STextBlock> StatAttackScaleText;
 	TSharedPtr<STextBlock> StatArmorText;
-	TSharedPtr<STextBlock> StatSpeedText;
 	TSharedPtr<STextBlock> StatEvasionText;
 	TSharedPtr<STextBlock> StatLuckText;
+	TSharedPtr<STextBlock> StatSpeedText;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SBox>> InventorySlotContainers;
 	TArray<TSharedPtr<SImage>> InventorySlotImages;

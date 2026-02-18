@@ -184,8 +184,8 @@ void AT66GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Procedural hills terrain: apply heightfield from GameInstance seed if level has a Landscape
-	GenerateProceduralTerrainIfNeeded();
+	// LowPolyNature environment is spawned in SpawnLevelContentAfterLandscapeReady (terrain tiles + mountains + procedural nature).
+	// GenerateProceduralTerrainIfNeeded();  // No longer used; landscape replaced by terrain tiles
 
 	// Reset run state when entering gameplay level unless this is a stage transition (keep progress)
 	UGameInstance* GI = GetGameInstance();
@@ -302,6 +302,9 @@ void AT66GameMode::BeginPlay()
 
 void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
+	// Phase 0: LowPolyNature environment (terrain tiles, mountain ring, procedural trees/hills/rocks/vegetation).
+	SpawnLowPolyNatureEnvironment();
+
 	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
 	SpawnCornerHousesAndNPCs();
 	SpawnTricksterAndCowardiceGate();
@@ -830,7 +833,12 @@ void AT66GameMode::SpawnBossGateIfNeeded()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// Between main square and boss square (pillars).
-	const FVector BossGateLoc(27273.f, 0.f, 0.f);
+	FVector BossGateLoc(27273.f, 0.f, 0.f);
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(Hit, BossGateLoc + FVector(0.f, 0.f, 3000.f), BossGateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	{
+		BossGateLoc.Z = Hit.ImpactPoint.Z;
+	}
 	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, FRotator::ZeroRotator, SpawnParams);
 }
 
@@ -850,6 +858,14 @@ bool AT66GameMode::IsLabLevel() const
 		return GI->bIsLabLevel;
 	}
 	return false;
+}
+
+bool AT66GameMode::IsDemoMapForTribulation() const
+{
+	UWorld* World = GetWorld();
+	if (!World) return false;
+	FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+	return MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase);
 }
 
 void AT66GameMode::SpawnAllOwedBossesInColiseum()
@@ -1013,9 +1029,19 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// Place right before the boss pillars (main->boss connector).
-	const FVector BossGateLoc(27273.f, 0.f, 0.f);
-	const FVector GateLoc = BossGateLoc + FVector(-800.f, 0.f, 0.f);
-	const FVector TricksterLoc = GateLoc + FVector(-250.f, 200.f, 0.f);
+	const FVector BossGateRef(27273.f, 0.f, 0.f);
+	FVector GateLoc = BossGateRef + FVector(-800.f, 0.f, 0.f);
+	FVector TricksterLoc = GateLoc + FVector(-250.f, 200.f, 0.f);
+
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	{
+		GateLoc.Z = Hit.ImpactPoint.Z;
+	}
+	if (World->LineTraceSingleByChannel(Hit, TricksterLoc + FVector(0.f, 0.f, 3000.f), TricksterLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	{
+		TricksterLoc.Z = Hit.ImpactPoint.Z;
+	}
 
 	CowardiceGate = World->SpawnActor<AT66CowardiceGate>(AT66CowardiceGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
 	TricksterNPC = World->SpawnActor<AT66TricksterNPC>(AT66TricksterNPC::StaticClass(), TricksterLoc, FRotator::ZeroRotator, SpawnParams);
@@ -1501,13 +1527,21 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 		}
 	}
 
-	// Gate just outside the east NPC (NPCs at ±600; gate 750 east of hero).
-	static constexpr float GateOffsetEast = 750.f;
+	// Gate right in front of hero (short offset). Place on ground like NPCs (trace ImpactPoint, no float).
+	static constexpr float GateOffsetEast = 200.f;
+	static constexpr float GateZOffset = 5.f; // small offset to avoid z-fight
 	FVector GateLoc(HeroX + GateOffsetEast, HeroY, 0.f);
+	float HeroZ = Pawn ? Pawn->GetActorLocation().Z : 200.f;
+	float GateGroundZ = HeroZ; // fallback if trace misses
 	FHitResult Hit;
 	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 	{
-		GateLoc.Z = Hit.ImpactPoint.Z;
+		GateGroundZ = Hit.ImpactPoint.Z;
+		GateLoc.Z = GateGroundZ + GateZOffset;
+	}
+	else
+	{
+		GateLoc.Z = GateGroundZ;
 	}
 
 	FActorSpawnParameters SpawnParams;
@@ -1519,14 +1553,18 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate near hero at (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
 	}
 
-	// Idol altar right next to the gate (north of gate).
+	// Idol altar right next to the gate (north of gate). Place on ground like NPCs.
 	if (!IdolAltar && StartGate)
 	{
 		static constexpr float AltarOffsetNorth = 350.f;
-		FVector AltarLoc(GateLoc.X, GateLoc.Y + AltarOffsetNorth, GateLoc.Z);
+		FVector AltarLoc(GateLoc.X, GateLoc.Y + AltarOffsetNorth, GateGroundZ);
 		if (World->LineTraceSingleByChannel(Hit, AltarLoc + FVector(0.f, 0.f, 3000.f), AltarLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 		{
 			AltarLoc.Z = Hit.ImpactPoint.Z;
+		}
+		else
+		{
+			AltarLoc.Z = GateGroundZ;
 		}
 		IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), AltarLoc, FRotator::ZeroRotator, SpawnParams);
 		if (IdolAltar)
@@ -1940,7 +1978,15 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	}
 
 	// Map layout: spawn the stage boss in the Boss Area square (right after pillars, inside safe zone).
-	StageData.BossSpawnLocation = FVector(35455.f, 0.f, 200.f);
+	{
+		FVector BossLoc(35455.f, 0.f, 200.f);
+		FHitResult BossHit;
+		if (World->LineTraceSingleByChannel(BossHit, BossLoc + FVector(0.f, 0.f, 3000.f), BossLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		{
+			BossLoc.Z = BossHit.ImpactPoint.Z + 100.f;
+		}
+		StageData.BossSpawnLocation = BossLoc;
+	}
 
 	// Default/fallback boss data (if DT_Bosses is not wired yet)
 	FBossData BossData;
@@ -2514,6 +2560,489 @@ void AT66GameMode::SpawnFloorIfNeeded()
 }
 
 // ============================================================================
+// LowPolyNature Environment (terrain tiles, mountain ring, procedural nature)
+// ============================================================================
+
+static const FName T66ProceduralNatureTag(TEXT("T66ProceduralNature"));
+
+static void T66_CleanupTaggedActors(UWorld* World, FName Tag)
+{
+	TArray<AActor*> ToDestroy;
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		if (It->Tags.Contains(Tag))
+		{
+			ToDestroy.Add(*It);
+		}
+	}
+	for (AActor* A : ToDestroy)
+	{
+		A->Destroy();
+	}
+}
+
+void AT66GameMode::SpawnLowPolyNatureEnvironment()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+	if (IsLabLevel() || IsColiseumStage()) return;
+
+	T66_CleanupTaggedActors(World, T66ProceduralNatureTag);
+
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0)
+		? T66GI->ProceduralTerrainSeed : FMath::Rand();
+
+	SpawnTerrainTileFloor(World);
+	SpawnMountainRing(World);
+	SpawnProceduralNature(World, RunSeed);
+
+	UE_LOG(LogTemp, Log, TEXT("[MAP] LowPolyNature environment spawned (seed=%d)"), RunSeed);
+}
+
+void AT66GameMode::SpawnTerrainTileFloor(UWorld* World)
+{
+	if (!World) return;
+
+	static const TCHAR* TerrainMeshPaths[] = {
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Terrain_04.SM_Terrain_04"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Terrain_06.SM_Terrain_06"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Terrain_08.SM_Terrain_08"),
+	};
+	static const TCHAR* NatureMatPath = TEXT("/Game/LowPolyNature/Materials/M_4SeasonNature_MAIN.M_4SeasonNature_MAIN");
+
+	UStaticMesh* TerrainMeshes[3] = {};
+	for (int32 i = 0; i < 3; ++i)
+	{
+		TerrainMeshes[i] = LoadObject<UStaticMesh>(nullptr, TerrainMeshPaths[i]);
+	}
+	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, NatureMatPath);
+
+	static constexpr float TileSpacing = 5000.f;
+	static constexpr float HalfExtent = 50000.f;
+	static constexpr float TileScale = 5.f;
+	static constexpr float FloorZ = -50.f;
+
+	FRandomStream TileRng(12345);
+	FActorSpawnParameters SP;
+	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	int32 TileCount = 0;
+	for (float X = -HalfExtent; X < HalfExtent; X += TileSpacing)
+	{
+		for (float Y = -HalfExtent; Y < HalfExtent; Y += TileSpacing)
+		{
+			const int32 MeshIdx = TileCount % 3;
+			UStaticMesh* Mesh = TerrainMeshes[MeshIdx];
+			if (!Mesh) { ++TileCount; continue; }
+
+			AStaticMeshActor* Tile = World->SpawnActor<AStaticMeshActor>(
+				AStaticMeshActor::StaticClass(),
+				FVector(X + TileSpacing * 0.5f, Y + TileSpacing * 0.5f, FloorZ),
+				FRotator(0.f, TileRng.FRandRange(0.f, 360.f), 0.f),
+				SP);
+			if (Tile)
+			{
+				Tile->Tags.Add(T66ProceduralNatureTag);
+				if (UStaticMeshComponent* SMC = Tile->GetStaticMeshComponent())
+				{
+					SMC->SetMobility(EComponentMobility::Movable);
+					SMC->SetStaticMesh(Mesh);
+					if (Mat) SMC->SetMaterial(0, Mat);
+					SMC->SetWorldScale3D(FVector(TileScale));
+					SMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					SMC->SetCollisionResponseToAllChannels(ECR_Block);
+					SMC->SetMobility(EComponentMobility::Static);
+				}
+			}
+			++TileCount;
+		}
+	}
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Spawned %d terrain tiles"), TileCount);
+}
+
+void AT66GameMode::SpawnMountainRing(UWorld* World)
+{
+	if (!World) return;
+
+	static const TCHAR* MountainMeshPaths[] = {
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_01.SM_Mountain_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_02.SM_Mountain_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_03.SM_Mountain_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_04.SM_Mountain_04"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_05.SM_Mountain_05"),
+	};
+	static const TCHAR* NatureMatPath = TEXT("/Game/LowPolyNature/Materials/M_4SeasonNature_MAIN.M_4SeasonNature_MAIN");
+
+	UStaticMesh* MountainMeshes[5] = {};
+	int32 LoadedCount = 0;
+	for (int32 i = 0; i < 5; ++i)
+	{
+		MountainMeshes[i] = LoadObject<UStaticMesh>(nullptr, MountainMeshPaths[i]);
+		if (MountainMeshes[i]) ++LoadedCount;
+	}
+	if (LoadedCount == 0) return;
+
+	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, NatureMatPath);
+
+	static constexpr int32 NumMountains = 40;
+	static constexpr float RingRadius = 52000.f;
+	static constexpr float MountainZ = -200.f;
+	static constexpr float MountainScaleMin = 3.f;
+	static constexpr float MountainScaleMax = 6.f;
+
+	FRandomStream MtnRng(99999);
+	FActorSpawnParameters SP;
+	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (int32 i = 0; i < NumMountains; ++i)
+	{
+		const float Angle = (float)i / (float)NumMountains * 360.f;
+		const float Rad = FMath::DegreesToRadians(Angle);
+		const float PosX = FMath::Cos(Rad) * RingRadius;
+		const float PosY = FMath::Sin(Rad) * RingRadius;
+
+		int32 MeshIdx = i % 5;
+		while (!MountainMeshes[MeshIdx]) MeshIdx = (MeshIdx + 1) % 5;
+
+		const float Scale = MtnRng.FRandRange(MountainScaleMin, MountainScaleMax);
+		const float Yaw = Angle + MtnRng.FRandRange(-20.f, 20.f);
+
+		AStaticMeshActor* Mtn = World->SpawnActor<AStaticMeshActor>(
+			AStaticMeshActor::StaticClass(),
+			FVector(PosX, PosY, MountainZ),
+			FRotator(0.f, Yaw, 0.f),
+			SP);
+		if (Mtn)
+		{
+			Mtn->Tags.Add(T66ProceduralNatureTag);
+			if (UStaticMeshComponent* SMC = Mtn->GetStaticMeshComponent())
+			{
+				SMC->SetMobility(EComponentMobility::Movable);
+				SMC->SetStaticMesh(MountainMeshes[MeshIdx]);
+				if (Mat) SMC->SetMaterial(0, Mat);
+				SMC->SetWorldScale3D(FVector(Scale));
+				SMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				SMC->SetCollisionResponseToAllChannels(ECR_Block);
+				SMC->SetMobility(EComponentMobility::Static);
+			}
+		}
+	}
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Spawned %d mountains in ring (radius=%.0f)"), NumMountains, RingRadius);
+}
+
+void AT66GameMode::SpawnProceduralNature(UWorld* World, int32 Seed)
+{
+	if (!World) return;
+
+	FRandomStream Rng(Seed);
+
+	static constexpr float HalfExtent = 50000.f;
+
+	// Asset paths from Map_Summer dump (Nature_Summer for trees/vegetation)
+	static const TCHAR* TreePaths[] = {
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_01.SM_Summer_Tree_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_02.SM_Summer_Tree_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_05.SM_Summer_Tree_05"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_06.SM_Summer_Tree_06"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_07.SM_Summer_Tree_07"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_08.SM_Summer_Tree_08"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_10.SM_Summer_Tree_10"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_11.SM_Summer_Tree_11"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_12.SM_Summer_Tree_12"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_13.SM_Summer_Tree_13"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_14.SM_Summer_Tree_14"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_15.SM_Summer_Tree_15"),
+	};
+	static constexpr int32 NumTreeVariants = UE_ARRAY_COUNT(TreePaths);
+
+	static const TCHAR* HillPaths[] = {
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_01.SM_Hill_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_02.SM_Hill_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_03.SM_Hill_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_04.SM_Hill_04"),
+		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_05.SM_Hill_05"),
+	};
+	static constexpr int32 NumHillVariants = UE_ARRAY_COUNT(HillPaths);
+
+	// Rocks: 01,02,03,04,05,07,08,09,10 (no 06 in Map_Summer)
+	static const TCHAR* RockPaths[] = {
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_01.SM_Rock_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_02.SM_Rock_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_03.SM_Rock_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_04.SM_Rock_04"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_05.SM_Rock_05"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_07.SM_Rock_07"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_08.SM_Rock_08"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_09.SM_Rock_09"),
+		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_10.SM_Rock_10"),
+	};
+	static constexpr int32 NumRockVariants = UE_ARRAY_COUNT(RockPaths);
+
+	// Vegetation: grass, flowers, mushrooms, logs, plants, stumps
+	static const TCHAR* VegetationPaths[] = {
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_01.SM_Summer_Grass_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_02.SM_Summer_Grass_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_03.SM_Summer_Grass_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_04.SM_Summer_Grass_04"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_05.SM_Summer_Grass_05"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_01.SM_Summer_Flower_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_02.SM_Summer_Flower_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_03.SM_Summer_Flower_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_04.SM_Summer_Flower_04"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_05.SM_Summer_Flower_05"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_06.SM_Summer_Flower_06"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_07.SM_Summer_Flower_07"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_08.SM_Summer_Flower_08"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_09.SM_Summer_Flower_09"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_10.SM_Summer_Flower_10"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Mushroom_01.SM_Summer_Mushroom_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Mushroom_02.SM_Summer_Mushroom_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Mushroom_03.SM_Summer_Mushroom_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Log_01.SM_Summer_Log_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Log_02.SM_Summer_Log_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Log_03.SM_Summer_Log_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Plant_01.SM_Summer_Plant_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Plant_02.SM_Summer_Plant_02"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Plant_03.SM_Summer_Plant_03"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Stump_01.SM_Summer_Stump_01"),
+		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Stump_02.SM_Summer_Stump_02"),
+	};
+	static constexpr int32 NumVegetationVariants = UE_ARRAY_COUNT(VegetationPaths);
+
+	static const TCHAR* NatureMatPath = TEXT("/Game/LowPolyNature/Materials/M_4SeasonNature_MAIN.M_4SeasonNature_MAIN");
+	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, NatureMatPath);
+
+	TArray<UStaticMesh*> TreeMeshes, HillMeshes, RockMeshes, VegMeshes;
+	auto LoadMeshArray = [](const TCHAR* const* Paths, int32 Count, TArray<UStaticMesh*>& Out)
+	{
+		for (int32 i = 0; i < Count; ++i)
+		{
+			if (UStaticMesh* M = LoadObject<UStaticMesh>(nullptr, Paths[i]))
+			{
+				Out.Add(M);
+			}
+		}
+	};
+	LoadMeshArray(TreePaths, NumTreeVariants, TreeMeshes);
+	LoadMeshArray(HillPaths, NumHillVariants, HillMeshes);
+	LoadMeshArray(RockPaths, NumRockVariants, RockMeshes);
+	LoadMeshArray(VegetationPaths, NumVegetationVariants, VegMeshes);
+
+	if (TreeMeshes.Num() == 0 && HillMeshes.Num() == 0 && RockMeshes.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MAP] No LowPolyNature meshes loaded — check asset paths"));
+		return;
+	}
+
+	auto IsInsideNoSpawnZone = [](const FVector& L) -> bool
+	{
+		static constexpr float StartBoxWest = -40000.f, StartBoxEast = -30909.f;
+		static constexpr float StartBoxNorth = 4545.f, StartBoxSouth = -4545.f;
+		static constexpr float StartMargin = 5000.f;
+		if (L.X >= (StartBoxWest - StartMargin) && L.X <= (StartBoxEast + StartMargin) &&
+			L.Y >= (StartBoxSouth - StartMargin) && L.Y <= (StartBoxNorth + StartMargin))
+		{
+			return true;
+		}
+		static constexpr float ArenaHalf = 9091.f;
+		static constexpr float ArenaMargin = 1500.f;
+		struct FArena2D { float X; float Y; float Half; };
+		static constexpr FArena2D Arenas[] = {
+			{ -22727.f, 34091.f, ArenaHalf },
+			{      0.f, 34091.f, ArenaHalf },
+			{      0.f, 61364.f, 9091.f },
+		};
+		for (const FArena2D& A : Arenas)
+		{
+			if (FMath::Abs(L.X - A.X) <= (A.Half + ArenaMargin) &&
+				FMath::Abs(L.Y - A.Y) <= (A.Half + ArenaMargin))
+			{
+				return true;
+			}
+		}
+		if (L.X > 40000.f) return true;
+		return false;
+	};
+
+	TArray<FVector> UsedLocs;
+
+	struct FHillZone { FVector Center; float Radius; };
+	TArray<FHillZone> HillZones;
+
+	auto IsGoodLoc = [&](const FVector& L, float MinDist) -> bool
+	{
+		if (IsInsideNoSpawnZone(L)) return false;
+		for (const FVector& U : UsedLocs)
+		{
+			if (FVector::DistSquared2D(L, U) < (MinDist * MinDist)) return false;
+		}
+		for (const FHillZone& HZ : HillZones)
+		{
+			if (FVector::DistSquared2D(L, HZ.Center) < (HZ.Radius * HZ.Radius)) return false;
+		}
+		return true;
+	};
+
+	FActorSpawnParameters SP;
+	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	auto SpawnNatureMesh = [&](UStaticMesh* Mesh, const FVector& Loc, float Scale, float Yaw, bool bBlockCollision = false) -> AStaticMeshActor*
+	{
+		AStaticMeshActor* A = World->SpawnActor<AStaticMeshActor>(
+			AStaticMeshActor::StaticClass(), Loc, FRotator(0.f, Yaw, 0.f), SP);
+		if (A)
+		{
+			A->Tags.Add(T66ProceduralNatureTag);
+			if (UStaticMeshComponent* SMC = A->GetStaticMeshComponent())
+			{
+				SMC->SetMobility(EComponentMobility::Movable);
+				SMC->SetStaticMesh(Mesh);
+				if (Mat) SMC->SetMaterial(0, Mat);
+				SMC->SetWorldScale3D(FVector(Scale));
+				if (bBlockCollision)
+				{
+					SMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					SMC->SetCollisionResponseToAllChannels(ECR_Block);
+					// Stay Movable so same-frame line traces can detect the collision
+				}
+				else
+				{
+					SMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+					SMC->SetMobility(EComponentMobility::Static);
+				}
+			}
+		}
+		return A;
+	};
+
+	// Trace helper: find the ground Z at a given XY so objects sit on the terrain surface
+	auto TraceGroundZ = [World](float X, float Y) -> float
+	{
+		FHitResult Hit;
+		const FVector Start(X, Y, 5000.f);
+		const FVector End(X, Y, -5000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		{
+			return Hit.ImpactPoint.Z;
+		}
+		return 0.f;
+	};
+
+	// Hills (10): sparse elevation — most of the map stays flat
+	static constexpr int32 NumHills = 10;
+	static constexpr float HillMinDist = 10000.f;
+	int32 HillsSpawned = 0;
+	if (HillMeshes.Num() > 0)
+	{
+		for (int32 i = 0; i < NumHills; ++i)
+		{
+			for (int32 Try = 0; Try < 30; ++Try)
+			{
+				const float X = Rng.FRandRange(-HalfExtent * 0.85f, HalfExtent * 0.8f);
+				const float Y = Rng.FRandRange(-HalfExtent * 0.85f, HalfExtent * 0.85f);
+				FVector Loc(X, Y, 0.f);
+				if (IsGoodLoc(Loc, HillMinDist))
+				{
+					Loc.Z = TraceGroundZ(X, Y) - 50.f;
+					const float Scale = Rng.FRandRange(1.5f, 3.5f);
+					const float Yaw = Rng.FRandRange(0.f, 360.f);
+					SpawnNatureMesh(HillMeshes[Rng.RandRange(0, HillMeshes.Num() - 1)], Loc, Scale, Yaw, true);
+					UsedLocs.Add(Loc);
+					HillZones.Add({ Loc, Scale * 1500.f });
+					++HillsSpawned;
+					break;
+				}
+			}
+		}
+	}
+
+	// Trees (120)
+	static constexpr int32 NumTrees = 120;
+	static constexpr float TreeMinDist = 1500.f;
+	int32 TreesSpawned = 0;
+	if (TreeMeshes.Num() > 0)
+	{
+		for (int32 i = 0; i < NumTrees; ++i)
+		{
+			for (int32 Try = 0; Try < 30; ++Try)
+			{
+				const float X = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.85f);
+				const float Y = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.92f);
+				FVector Loc(X, Y, 0.f);
+				if (IsGoodLoc(Loc, TreeMinDist))
+				{
+					Loc.Z = TraceGroundZ(X, Y);
+					const float Scale = Rng.FRandRange(2.25f, 5.25f);
+					const float Yaw = Rng.FRandRange(0.f, 360.f);
+					SpawnNatureMesh(TreeMeshes[Rng.RandRange(0, TreeMeshes.Num() - 1)], Loc, Scale, Yaw);
+					UsedLocs.Add(Loc);
+					++TreesSpawned;
+					break;
+				}
+			}
+		}
+	}
+
+	// Rocks (80)
+	static constexpr int32 NumRocks = 80;
+	static constexpr float RockMinDist = 800.f;
+	int32 RocksSpawned = 0;
+	if (RockMeshes.Num() > 0)
+	{
+		for (int32 i = 0; i < NumRocks; ++i)
+		{
+			for (int32 Try = 0; Try < 20; ++Try)
+			{
+				const float X = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.85f);
+				const float Y = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.92f);
+				FVector Loc(X, Y, 0.f);
+				if (IsGoodLoc(Loc, RockMinDist))
+				{
+					Loc.Z = TraceGroundZ(X, Y);
+					const float Scale = Rng.FRandRange(1.5f, 4.5f);
+					const float Yaw = Rng.FRandRange(0.f, 360.f);
+					SpawnNatureMesh(RockMeshes[Rng.RandRange(0, RockMeshes.Num() - 1)], Loc, Scale, Yaw);
+					UsedLocs.Add(Loc);
+					++RocksSpawned;
+					break;
+				}
+			}
+		}
+	}
+
+	// Vegetation (2000)
+	static constexpr int32 NumVegetation = 2000;
+	static constexpr float VegMinDist = 150.f;
+	int32 VegSpawned = 0;
+	if (VegMeshes.Num() > 0)
+	{
+		for (int32 i = 0; i < NumVegetation; ++i)
+		{
+			for (int32 Try = 0; Try < 15; ++Try)
+			{
+				const float X = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.85f);
+				const float Y = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.92f);
+				FVector Loc(X, Y, 0.f);
+				if (IsGoodLoc(Loc, VegMinDist))
+				{
+					Loc.Z = TraceGroundZ(X, Y);
+					const float Scale = Rng.FRandRange(2.f, 5.f);
+					const float Yaw = Rng.FRandRange(0.f, 360.f);
+					SpawnNatureMesh(VegMeshes[Rng.RandRange(0, VegMeshes.Num() - 1)], Loc, Scale, Yaw);
+					UsedLocs.Add(Loc);
+					++VegSpawned;
+					break;
+				}
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Procedural nature: %d hills, %d trees, %d rocks, %d vegetation (seed=%d)"),
+		HillsSpawned, TreesSpawned, RocksSpawned, VegSpawned, Seed);
+}
+
+// ============================================================================
 // HDRI Equirectangular → TextureCube conversion (editor-only, runs once)
 // ============================================================================
 #if WITH_EDITORONLY_DATA
@@ -3032,26 +3561,42 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 		else
 			SunLight = L;
 	}
-	if (!SunLight || !MoonLight) return;
+	if (!SunLight) return;
 
 	UDirectionalLightComponent* SunComp = Cast<UDirectionalLightComponent>(SunLight->GetLightComponent());
-	UDirectionalLightComponent* MoonComp = Cast<UDirectionalLightComponent>(MoonLight->GetLightComponent());
-	if (!SunComp || !MoonComp) return;
+	if (!SunComp) return;
+
+	// Demo map (e.g. Map_Summer): lower sun intensity so it's not as harsh
+	FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+	const bool bDemoMap = MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase);
+	const float SunIntensityLight = bDemoMap ? 2.f : 3.f;
+	const float SunIntensityDark = bDemoMap ? 1.2f : 2.f;
 
 	const ET66UITheme Theme = FT66Style::GetTheme();
 	if (Theme == ET66UITheme::Light)
 	{
-		SunComp->SetIntensity(3.f);  // Fill light — SkyLight is primary ambient
+		SunComp->SetIntensity(SunIntensityLight);  // Fill light — SkyLight is primary ambient
 		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-		MoonComp->SetIntensity(0.f);
 	}
 	else
 	{
 		// Dark theme: keep sun on at reduced intensity so ground matches Light theme visibility; moon adds night feel.
-		SunComp->SetIntensity(2.f);
+		SunComp->SetIntensity(SunIntensityDark);
 		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-		MoonComp->SetIntensity(0.4f);
-		MoonComp->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
+	}
+	if (MoonLight)
+	{
+		UDirectionalLightComponent* MoonComp = Cast<UDirectionalLightComponent>(MoonLight->GetLightComponent());
+		if (MoonComp)
+		{
+			if (Theme == ET66UITheme::Light)
+				MoonComp->SetIntensity(0.f);
+			else
+			{
+				MoonComp->SetIntensity(0.4f);
+				MoonComp->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
+			}
+		}
 	}
 }
 
@@ -3086,11 +3631,23 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		// Default spawn:
-		// - Normal stage: start area (so timer starts after passing start pillars)
+		// - Demo map (e.g. Map_Summer): origin (0, 0, DefaultSpawnHeight)
 		// - Coliseum mode: coliseum arena (timer starts immediately; no pillars)
-		const FVector SpawnLoc = IsColiseumStage()
-			? FVector(ColiseumCenter.X, ColiseumCenter.Y, DefaultSpawnHeight)
-			: FVector(-35455.f, 0.f, DefaultSpawnHeight);
+		// - Normal stage: start area (so timer starts after passing start pillars)
+		FVector SpawnLoc;
+		FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+		if (MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase))
+		{
+			SpawnLoc = FVector(0.f, 0.f, DefaultSpawnHeight);
+		}
+		else if (IsColiseumStage())
+		{
+			SpawnLoc = FVector(ColiseumCenter.X, ColiseumCenter.Y, DefaultSpawnHeight);
+		}
+		else
+		{
+			SpawnLoc = FVector(-35455.f, 0.f, DefaultSpawnHeight);
+		}
 
 		APlayerStart* Start = World->SpawnActor<APlayerStart>(
 			APlayerStart::StaticClass(),
@@ -3290,10 +3847,19 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	}
 	else
 	{
-		// No PlayerStart found - spawn at a safe default location (100k map).
-		SpawnLocation = IsColiseumStage()
-			? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)
-			: FVector(-35455.f, 0.f, 200.f);
+		// No PlayerStart found - spawn at a safe default location (100k map or demo map).
+		UWorld* World = GetWorld();
+		FString MapName = World ? UWorld::RemovePIEPrefix(World->GetMapName()) : FString();
+		if (MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase))
+		{
+			SpawnLocation = FVector(0.f, 0.f, 200.f);
+		}
+		else
+		{
+			SpawnLocation = IsColiseumStage()
+				? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)
+				: FVector(-35455.f, 0.f, 200.f);
+		}
 		UE_LOG(LogTemp, Warning, TEXT("No PlayerStart found! Spawning at default location (%.0f, %.0f, %.0f)."),
 			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
 	}
@@ -3302,6 +3868,11 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	if (IsLabLevel())
 	{
 		SpawnLocation = FVector(0.f, 0.f, 120.f);
+		SpawnRotation = FRotator::ZeroRotator;
+	}
+	else if (IsDemoMapForTribulation())
+	{
+		SpawnLocation = FVector(0.f, 0.f, 200.f);
 		SpawnRotation = FRotator::ZeroRotator;
 	}
 	else if (!IsColiseumStage())
@@ -3335,13 +3906,8 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		}
 	}
 
-	// Hero spawn: flat spawn plane at Z=100 so hero does not fall through ground.
-	if (PawnClass && PawnClass->IsChildOf(AT66HeroBase::StaticClass()))
-	{
-		const float DefaultHalfHeight = 88.f;
-		const float SpawnGroundZ = 100.f;
-		SpawnLocation.Z = SpawnGroundZ + DefaultHalfHeight;
-	}
+	// Sky-drop: spawn the hero at a comfortable altitude; gravity + Landed() handle the rest.
+	// This avoids trace-before-terrain-exists timing issues and gives a cinematic entrance.
 
 	// Spawn parameters
 	FActorSpawnParameters SpawnParams;
@@ -3354,12 +3920,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// If it's our hero class, initialize it with hero data and body type
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(SpawnedPawn))
 	{
-		// Place on flat spawn plane at Z=100 so hero does not fall through ground.
-		const float HalfHeight = Hero->GetCapsuleComponent() ? Hero->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
-		const float SpawnGroundZ = 100.f;
-		FVector FlatLoc = Hero->GetActorLocation();
-		FlatLoc.Z = SpawnGroundZ + HalfHeight;
-		Hero->SetActorLocation(FlatLoc, false, nullptr, ETeleportType::TeleportPhysics);
+		Hero->BeginSkyDrop();
 
 		if (UT66GameInstance* GI = GetT66GameInstance())
 		{

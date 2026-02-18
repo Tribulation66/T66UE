@@ -859,6 +859,9 @@ public:
 	/** Rallying Blow: multiplier for attack speed (1.0 + 0.15 * stacks, max 3 stacks, 3s duration). */
 	float GetRallyAttackSpeedMultiplier() const;
 
+	/** Rallying Blow: current stack count (0..3). For HUD stack badge. */
+	int32 GetRallyStacks() const { return RallyStacks; }
+
 	/** True if the actor has at least one active DOT from RunState. */
 	bool HasActiveDOT(AActor* Target) const;
 
