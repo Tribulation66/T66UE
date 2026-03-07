@@ -1,9 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "T66Editor.h"
-#include "T66ProceduralLandscapeEditorTool.h"
 #include "T66UISetupSubsystem.h"
-#include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Core/T66GameInstance.h"
 #include "Editor.h"
 #include "Engine/World.h"
@@ -47,13 +45,8 @@ void FT66EditorModule::OnGameplayLevelLoaded(UWorld* LoadedWorld)
 	{
 		return;
 	}
-	FT66ProceduralLandscapeParams Params;
-	UGameInstance* GI = LoadedWorld->GetGameInstance();
-	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
-	// Use seed set by "Enter the Tribulation" when present; otherwise random (e.g. PIE from GameplayLevel)
-	Params.Seed = (T66GI && T66GI->ProceduralTerrainSeed != 0) ? T66GI->ProceduralTerrainSeed : FMath::Rand();
-	const bool bOk = T66ProceduralLandscapeEditor::GenerateProceduralHillsLandscape(LoadedWorld, Params);
-	UE_LOG(LogT66Editor, Log, TEXT("[MAP] Auto-regenerated procedural hills for GameplayLevel (PIE), seed=%d, ok=%d"), Params.Seed, bOk);
+	// Landscape auto-regen disabled: GameplayLevel now uses LowPolyNature terrain tiles + mesh hills instead of Landscape.
+	UE_LOG(LogT66Editor, Log, TEXT("[MAP] GameplayLevel PIE loaded — landscape auto-regen skipped (LowPolyNature environment active)"));
 }
 
 void FT66EditorModule::RegisterT66ToolsMenu()
@@ -83,39 +76,6 @@ void FT66EditorModule::RegisterT66ToolsMenu()
 		{
 			FToolMenuSection& SubSection = SubMenu->AddSection(TEXT("T66ProceduralLandscape"));
 			SubSection.AddMenuEntry(
-				TEXT("GenerateProceduralHillsLandscape"),
-				NSLOCTEXT("T66Editor", "GenerateProceduralHills", "Generate Procedural Hills Landscape (Dev)"),
-				NSLOCTEXT("T66Editor", "GenerateProceduralHillsTooltip", "Create or update the Landscape in the current level with procedural rolling hills."),
-				FSlateIcon(),
-				FUIAction(FExecuteAction::CreateLambda([]()
-				{
-					UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
-					if (!World)
-					{
-						UE_LOG(LogT66Editor, Error, TEXT("[MAP] Generate Procedural Hills: no editor world"));
-						return;
-					}
-					FT66ProceduralLandscapeParams Params;
-					Params.bFlatTerrain = false;  // Menu action explicitly generates hills
-					Params.Seed = FMath::Rand();
-					const bool bOk = T66ProceduralLandscapeEditor::GenerateProceduralHillsLandscape(World, Params);
-					if (!bOk)
-					{
-						UE_LOG(LogT66Editor, Error, TEXT("[MAP] Generate Procedural Hills: GenerateProceduralHillsLandscape returned false"));
-					}
-				}))
-			);
-			SubSection.AddMenuEntry(
-				TEXT("SetupT66MapAssets"),
-				NSLOCTEXT("T66Editor", "SetupT66MapAssets", "Setup T66 Map Assets"),
-				NSLOCTEXT("T66Editor", "SetupT66MapAssetsTooltip", "Copy grass (Polytope), landscape/trees/rocks (Cozy Nature) into Content/T66MapAssets. Run once to consolidate."),
-				FSlateIcon(),
-				FUIAction(FExecuteAction::CreateLambda([]()
-				{
-					T66ProceduralLandscapeEditor::SetupT66MapAssets();
-				}))
-			);
-			SubSection.AddMenuEntry(
 				TEXT("CreateLabLevel"),
 				NSLOCTEXT("T66Editor", "CreateLabLevel", "Create Lab Level"),
 				NSLOCTEXT("T66Editor", "CreateLabLevelTooltip", "Create The Lab level (Content/Maps/LabLevel) with PlayerStart, lighting, and GameMode. Replaces current level."),
@@ -127,6 +87,22 @@ void FT66EditorModule::RegisterT66ToolsMenu()
 						if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
 						{
 							Sub->CreateLabLevel();
+						}
+					}
+				}))
+			);
+			SubSection.AddMenuEntry(
+				TEXT("SetupDemoMap"),
+				NSLOCTEXT("T66Editor", "SetupDemoMap", "Setup Demo Map"),
+				NSLOCTEXT("T66Editor", "SetupDemoMapTooltip", "Configure Map_Summer for gameplay: set GameMode, add PlayerStart if missing, save. Run once when using the demo map switch."),
+				FSlateIcon(),
+				FUIAction(FExecuteAction::CreateLambda([]()
+				{
+					if (GEditor)
+					{
+						if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
+						{
+							Sub->ConfigureDemoMapLevel();
 						}
 					}
 				}))

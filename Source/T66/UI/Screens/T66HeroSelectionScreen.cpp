@@ -30,6 +30,9 @@
 #include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Input/Events.h"
+#include "MediaPlayer.h"
+#include "MediaTexture.h"
+#include "FileMediaSource.h"
 
 namespace
 {
@@ -461,6 +464,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		}
 	}
 	GeneratePlaceholderSkins();
+	EnsureHeroPreviewVideoResources();
 
 	// Get localized text
 	FText HeroGridText = Loc ? Loc->GetText_HeroGrid() : NSLOCTEXT("T66.HeroSelection", "HeroGrid", "HERO GRID");
@@ -855,7 +859,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 										)
 									]
 								]
-								// Video placeholder (square-ish)
+								// Video placeholder or hero preview video (Knight = KnightClip on loop)
 								+ SVerticalBox::Slot()
 								.AutoHeight()
 								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
@@ -863,11 +867,22 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 									FT66Style::MakePanel(
 										SNew(SBox).HeightOverride(360.0f)
 										[
-											SNew(STextBlock)
-											.Text(NSLOCTEXT("T66.HeroSelection", "VideoPreview", "[VIDEO PREVIEW]"))
-											.TextStyle(&TxtBody)
-											.Justification(ETextJustify::Center)
-									],
+											SNew(SOverlay)
+											+ SOverlay::Slot()
+											[
+												SAssignNew(HeroPreviewVideoImage, SImage)
+												.Image(HeroPreviewVideoBrush.IsValid() ? HeroPreviewVideoBrush.Get() : nullptr)
+											]
+											+ SOverlay::Slot()
+											.HAlign(HAlign_Center)
+											.VAlign(VAlign_Center)
+											[
+												SAssignNew(HeroPreviewPlaceholderText, STextBlock)
+												.Text(NSLOCTEXT("T66.HeroSelection", "VideoPreview", "[VIDEO PREVIEW]"))
+												.TextStyle(&TxtBody)
+												.Justification(ETextJustify::Center)
+											]
+										],
 									ET66PanelType::Panel, FMargin(5.0f))
 								]
 								// Quote + Base Stats (replaces short description here)
@@ -1045,6 +1060,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			]
 		];
 	UpdateHeroDisplay();
+	UpdateHeroPreviewVideo();
 	return Root;
 }
 
@@ -1268,6 +1284,10 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
 {
 	Super::OnScreenDeactivated_Implementation();
+	if (HeroPreviewMediaPlayer)
+	{
+		HeroPreviewMediaPlayer->Close();
+	}
 	// When opened from Lobby, persist current selection so Lobby can show hero portrait (and so returning from Companion Selection still shows co-op layout).
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
@@ -1465,6 +1485,7 @@ void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 	FHeroData HeroData;
 	if (GetPreviewedHeroData(HeroData)) OnPreviewedHeroChanged(HeroData);
 	UpdateHeroDisplay();
+	UpdateHeroPreviewVideo();
 	UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero END"));
 }
 
@@ -1521,7 +1542,7 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedHeroBodyType = SelectedBodyType;
 		GI->bStageBoostPending = (SelectedDifficulty != ET66Difficulty::Easy);
 		// New seed each time so procedural hills terrain layout differs per run
-		GI->ProceduralTerrainSeed = FMath::Rand();
+		GI->RunSeed = FMath::Rand();
 	}
 	if (UIManager) UIManager->HideAllUI();
 	if (GI)
@@ -1572,6 +1593,66 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::CreateHeroPreviewWidget(const FLine
 		[
 			SNew(SBox)
 		];
+}
+
+void UT66HeroSelectionScreen::EnsureHeroPreviewVideoResources()
+{
+	if (HeroPreviewMediaPlayer && HeroPreviewMediaTexture && HeroPreviewVideoBrush.IsValid())
+	{
+		return;
+	}
+	HeroPreviewMediaPlayer = NewObject<UMediaPlayer>(this, UMediaPlayer::StaticClass(), NAME_None, RF_Transient);
+	if (HeroPreviewMediaPlayer)
+	{
+		HeroPreviewMediaPlayer->SetLooping(true);
+		HeroPreviewMediaPlayer->PlayOnOpen = true;
+	}
+	HeroPreviewMediaTexture = NewObject<UMediaTexture>(this, UMediaTexture::StaticClass(), NAME_None, RF_Transient);
+	if (HeroPreviewMediaTexture && HeroPreviewMediaPlayer)
+	{
+		HeroPreviewMediaTexture->SetMediaPlayer(HeroPreviewMediaPlayer);
+		HeroPreviewMediaTexture->UpdateResource();
+	}
+	HeroPreviewVideoBrush = MakeShared<FSlateBrush>();
+	HeroPreviewVideoBrush->DrawAs = ESlateBrushDrawType::Image;
+	HeroPreviewVideoBrush->Tiling = ESlateBrushTileType::NoTile;
+	HeroPreviewVideoBrush->ImageSize = FVector2D(640.0f, 360.0f);
+	if (HeroPreviewMediaTexture)
+	{
+		HeroPreviewVideoBrush->SetResourceObject(HeroPreviewMediaTexture);
+	}
+}
+
+void UT66HeroSelectionScreen::UpdateHeroPreviewVideo()
+{
+	const FName KnightHeroID(TEXT("Hero_1"));
+	const bool bIsKnight = (PreviewedHeroID == KnightHeroID);
+
+	if (HeroPreviewVideoImage.IsValid())
+	{
+		HeroPreviewVideoImage->SetVisibility(bIsKnight ? EVisibility::Visible : EVisibility::Collapsed);
+	}
+	if (HeroPreviewPlaceholderText.IsValid())
+	{
+		HeroPreviewPlaceholderText->SetVisibility(bIsKnight ? EVisibility::Collapsed : EVisibility::Visible);
+	}
+
+	if (!HeroPreviewMediaPlayer)
+	{
+		return;
+	}
+	if (bIsKnight)
+	{
+		UFileMediaSource* Source = LoadObject<UFileMediaSource>(nullptr, TEXT("/Game/Characters/Heroes/Knight/KnightClip.KnightClip"));
+		if (Source)
+		{
+			HeroPreviewMediaPlayer->OpenSource(Source);
+		}
+	}
+	else
+	{
+		HeroPreviewMediaPlayer->Close();
+	}
 }
 
 void UT66HeroSelectionScreen::OnLanguageChanged(ET66Language NewLanguage)

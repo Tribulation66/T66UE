@@ -241,21 +241,7 @@ def main():
             if asset_path:
                 imported_count += 1
 
-    # --------------------
-    # Obsidian 9-slice (front-end UI panels/buttons)
-    # SourceAssets/Images/obsidian.jpg -> /Game/UI/Obsidian
-    # --------------------
-    obsidian_src = os.path.join(proj, "SourceAssets", "Images", "obsidian.jpg")
-    if os.path.isfile(obsidian_src):
-        dest_dir = "/Game/UI"
-        _ensure_dir(dest_dir)
-        asset_path = _import_texture(obsidian_src, dest_dir, "Obsidian")
-        if asset_path:
-            _apply_ui_texture_settings(asset_path)
-            imported_count += 1
-            unreal.log("[Sprites] Imported obsidian 9-slice texture: " + asset_path)
-    else:
-        unreal.log_warning(f"[Sprites] Obsidian image not found: {obsidian_src}")
+    # Obsidian 9-slice removed: panels use FT66Style::MakePanel() with PanelDark/PanelLight; Obsidian.uasset deleted.
 
     unreal.log(f"=== ImportSpriteTextures: DONE (imported/updated {imported_count} textures) ===")
 

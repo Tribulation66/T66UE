@@ -85,6 +85,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
 	bool CreateLabLevel();
 
+	/**
+	 * Configure the demo map (Map_Summer) for gameplay: set BP_GameplayGameMode, add PlayerStart if missing, save.
+	 * Run once from Window → T66 Tools → Setup Demo Map when using the demo map switch.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
+	bool ConfigureDemoMapLevel();
+
 private:
 	/** Helper to load and modify a Blueprint */
 	UBlueprint* LoadBlueprint(const FString& AssetPath);

@@ -35,7 +35,7 @@
 | **Skin ownership / purchase / equip** | `UT66SkinSubsystem` (hero + companion). `GetSkinsForEntity()`, `PurchaseSkin()`, `SetEquippedSkin()`, `OnSkinStateChanged`. |
 | **AC balance / profile save** | `UT66AchievementsSubsystem`: `GetAchievementCoinsBalance()`, profile load/save. Skin *data* is in profile; skin *API* is in SkinSubsystem. |
 | **Hero/companion definitions** | `UT66GameInstance` (GetHeroData, GetCompanionData, GetAllHeroIDs, etc.) + DataTables `DT_Heroes`, `DT_Companions` + CSVs under `Content/Data/`. |
-| **Front-end UI obsidian 9-slice** | *(Stale — `EnsureObsidianBrushes()` was never implemented. `Content/UI/Obsidian.uasset` exists but is unused by code. Panels now use `FT66Style::MakePanel()` with texture-based dark/light brushes. Safe to delete the Obsidian asset.)* |
+| **Front-end UI panels** | Panels use **FT66Style::MakePanel()** with PanelDark/PanelLight textures only. Obsidian asset and import removed; no 9-slice Obsidian. |
 | **Dark/Light theme** | `FT66Style::SetTheme(ET66UITheme)` / `GetTheme()`. Tokens are mutable (non-const); `SetTheme` swaps palette, re-inits styles. Persisted in `T66PlayerSettingsSaveGame::bLightTheme`, getter/setter in `T66PlayerSettingsSubsystem`. Toggle buttons in MainMenu bottom-left (next to globe). `ToggleActive` button style for selected theme. Old style set kept alive (`GPreviousStyleSet`) to prevent dangling pointer crashes. |
 | **Button debounce** | `FT66Style::DebounceClick(FOnClicked)` — wraps any click delegate with 150ms global cooldown. `MakeButton` uses it automatically; custom buttons should wrap with it too. Prevents double-fire, spam crashes, accidental double-nav. |
 | **Buttons (create / style)** | **Generate:** `Scripts/GenerateButtonTextures.py` → PNGs in `SourceAssets/Images/Buttons/` (Dark/Light × N/H/P). **Import:** `Scripts/ImportButtonTextures.py` (editor) → `/Game/UI/Assets/`. **Procedural:** `Scripts/CreateButtonProceduralAssets.py` + `SourceAssets/Data/ButtonProcedural_MaterialInstances.json` → M_ButtonProcedural + 6 MIs. **Usage:** `FT66Style::MakeButton(...)` only; debounced via `DebounceClick`. See **guidelines.md §11**. |
@@ -90,6 +90,7 @@
 ## Open questions / blockers
 
 - **LabLevel map:** Create in editor before using The Lab: File → New Level → Empty Level (or duplicate FrontendLevel). Add a **PlayerStart** at (0, 0, 200). Optionally add a simple floor (plane) and Directional Light + Sky Light for a white grid-room look. World Settings → GameMode Override: use same as GameplayLevel (e.g. BP_GameplayGameMode). Save as **LabLevel** in `Content/Maps/` so the path is `/Game/Maps/LabLevel`. Code opens via `OpenLevel(this, FName(TEXT("LabLevel")))`.
+- **Demo map (Map_Summer):** To use LowPolyNature Map_Summer for "Enter the Tribulation" (and Restart Run), run **Window → T66 Tools → Setup Demo Map** once so the map has GameMode and PlayerStart; then set `bUseDemoMapForTribulation = true` in `T66GameInstance.cpp` to load it.
 - **WBP_LanguageSelect / WBP_Achievements:** Optional; C++ works without. Re-run `T66Setup` if you add Blueprint overrides.
 - **Leaderboard:** Placeholder until Steam.
 - **Nav:** Enemies use Tick toward player; no nav required. For future pathfinding, add Nav Mesh Bounds in GameplayLevel.

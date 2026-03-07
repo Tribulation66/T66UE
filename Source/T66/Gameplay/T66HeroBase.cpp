@@ -73,13 +73,12 @@ AT66HeroBase::AT66HeroBase()
 		PlaceholderMesh->SetRelativeScale3D(FVector(0.5f, 0.5f, 1.0f));
 	}
 
-	// ========== Character Fill Light (disabled — emissive + SkyLight now handle brightness) ==========
-	// Kept at intensity 0 so the component exists if we ever want per-character fill again.
+	// ========== Character Fill Light ==========
 	CharacterFillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CharacterFillLight"));
 	CharacterFillLight->SetupAttachment(RootComponent);
 	CharacterFillLight->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
-	CharacterFillLight->SetIntensity(0.0f);                            // Disabled — was causing frontend overexposure
-	CharacterFillLight->SetAttenuationRadius(400.f);
+	CharacterFillLight->SetIntensity(0.0f);
+	CharacterFillLight->SetAttenuationRadius(300.f);
 	CharacterFillLight->SetLightColor(FLinearColor(1.f, 0.98f, 0.95f));
 	CharacterFillLight->SetCastShadows(false);
 	CharacterFillLight->SetVisibility(false);
@@ -297,6 +296,37 @@ void AT66HeroBase::BeginPlay()
 	}
 }
 
+void AT66HeroBase::BeginSkyDrop()
+{
+	bIsSkyDropping = true;
+
+	FVector Loc = GetActorLocation();
+	Loc.Z += SkyDropAltitude;
+	SetActorLocation(Loc, false, nullptr, ETeleportType::TeleportPhysics);
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		DisableInput(PC);
+	}
+}
+
+void AT66HeroBase::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (bIsSkyDropping)
+	{
+		bIsSkyDropping = false;
+
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			EnableInput(PC);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("Sky-drop landing at Z=%.1f"), GetActorLocation().Z);
+	}
+}
+
 void AT66HeroBase::HandleHeroDerivedStatsChanged()
 {
 	if (!CachedRunState) return;
@@ -372,18 +402,36 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 				{
 					Movement->MaxWalkSpeed = SpeedSub->GetCurrentSpeed();
 				}
-				// Animation: two states only — Alert (idle) and Run (any movement). Companion uses same state.
-				if (GetMesh() && GetMesh()->IsVisible() && (CachedAlertAnim || CachedRunAnim || CachedWalkAnim))
+				// Hero animation: idle at zero speed, walk while moving, jump while airborne.
+				if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim))
 				{
-					const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 2=Run
-					if (static_cast<int32>(LastMovementAnimState) != NewState)
+					EMovementAnimState NewState = EMovementAnimState::Idle;
+					if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
 					{
-						LastMovementAnimState = static_cast<EMovementAnimState>(NewState);
+						NewState = EMovementAnimState::Jump;
+					}
+					else if (SpeedSub->GetMovementAnimState() != 0)
+					{
+						NewState = EMovementAnimState::Walk;
+					}
+
+					if (LastMovementAnimState != NewState)
+					{
+						LastMovementAnimState = NewState;
 						UAnimationAsset* ToPlay = nullptr;
-						if (NewState == 0)
-							ToPlay = CachedAlertAnim;
-						else
-							ToPlay = CachedRunAnim ? CachedRunAnim : CachedWalkAnim;
+						switch (NewState)
+						{
+						case EMovementAnimState::Idle:
+							ToPlay = CachedIdleAnim ? CachedIdleAnim : CachedWalkAnim;
+							break;
+						case EMovementAnimState::Jump:
+							ToPlay = CachedJumpAnim ? CachedJumpAnim : CachedWalkAnim;
+							break;
+						case EMovementAnimState::Walk:
+						default:
+							ToPlay = CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim;
+							break;
+						}
 						if (ToPlay)
 							GetMesh()->PlayAnimation(ToPlay, true);
 					}
@@ -601,12 +649,12 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
 			const FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(HeroID, InBodyType, SkinID);
-			// Hero selection preview uses alert animation so the character is non-static in the showcase.
-			const bool bUseAlertAnimation = bPreviewMode;
-			UE_LOG(LogTemp, Log, TEXT("[ANIM] HeroBase::InitializeHero HeroID=%s BodyType=%s SkinID=%s bPreviewMode=%d bUseAlertAnimation=%d VisualID=%s"),
+			// Hero selection preview uses the idle animation so the character is non-static in the showcase.
+			const bool bUseIdleAnimation = bPreviewMode;
+			UE_LOG(LogTemp, Log, TEXT("[ANIM] HeroBase::InitializeHero HeroID=%s BodyType=%s SkinID=%s bPreviewMode=%d bUseIdleAnimation=%d VisualID=%s"),
 				*HeroID.ToString(), InBodyType == ET66BodyType::TypeA ? TEXT("A") : TEXT("B"), *SkinID.ToString(),
-				bPreviewMode ? 1 : 0, bUseAlertAnimation ? 1 : 0, *VisualID.ToString());
-			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseAlertAnimation, bPreviewMode);
+				bPreviewMode ? 1 : 0, bUseIdleAnimation ? 1 : 0, *VisualID.ToString());
+			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseIdleAnimation, bPreviewMode);
 			if (!bApplied)
 			{
 				if (GetMesh())
@@ -620,15 +668,15 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			}
 			else if (!bPreviewMode)
 			{
-				// Cache alert/walk/run anims and init hero speed params (subsystem drives speed + animation state).
+				// Cache idle/walk/jump anims and init hero speed params.
 				UAnimationAsset* WalkRaw = nullptr;
-				UAnimationAsset* RunRaw = nullptr;
-				UAnimationAsset* AlertRaw = nullptr;
-				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, RunRaw, AlertRaw);
+				UAnimationAsset* JumpRaw = nullptr;
+				UAnimationAsset* IdleRaw = nullptr;
+				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, JumpRaw, IdleRaw);
 				CachedWalkAnim = WalkRaw;
-				CachedRunAnim = RunRaw;
-				CachedAlertAnim = AlertRaw;
-				// Force first Tick to play alert (speed 0); if we left Idle we wouldn't call PlayAnimation.
+				CachedJumpAnim = JumpRaw;
+				CachedIdleAnim = IdleRaw;
+				// Force first Tick to play idle (speed 0); if we left Idle we wouldn't call PlayAnimation.
 				LastMovementAnimState = EMovementAnimState::Walk;
 				if (UT66HeroSpeedSubsystem* SpeedSub = GI->GetSubsystem<UT66HeroSpeedSubsystem>())
 				{
@@ -643,42 +691,30 @@ void AT66HeroBase::SetPlaceholderColor(FLinearColor Color)
 {
 	if (!PlaceholderMesh) return;
 
-	// Store the color for later use (e.g., after mesh changes)
 	CurrentPlaceholderColor = Color;
 
-	// Create a dynamic material and set its color override
-	// The approach: use SetVectorParameterValue which internally creates the parameter if needed
-	
-	// First, try to load our custom placeholder material
+	if (PlaceholderMaterial)
+	{
+		PlaceholderMaterial->SetVectorParameterValue(FName("Color"), Color);
+		return;
+	}
+
 	UMaterialInterface* ColorMaterial = FT66VisualUtil::GetPlaceholderColorMaterial();
-	
 	if (!ColorMaterial)
 	{
-		// Use the mesh's current material as base
 		ColorMaterial = PlaceholderMesh->GetMaterial(0);
 	}
 
 	if (ColorMaterial)
 	{
-		// Create a dynamic material instance
 		PlaceholderMaterial = UMaterialInstanceDynamic::Create(ColorMaterial, this);
-		
 		if (PlaceholderMaterial)
 		{
-			// Apply the material first
 			PlaceholderMesh->SetMaterial(0, PlaceholderMaterial);
-			
-			// Set color using the parameter name that BasicShapeMaterial uses
-			// BasicShapeMaterial in UE5 uses "Color" as the parameter name
 			PlaceholderMaterial->SetVectorParameterValue(FName("Color"), Color);
-			
-			UE_LOG(LogTemp, Log, TEXT("SetPlaceholderColor: Material applied with color (%.2f, %.2f, %.2f)"), 
-				Color.R, Color.G, Color.B);
 		}
 	}
-	
-	// Additional approach: Set the mesh's custom primitive data (works with materials that read it)
-	// This is a fallback that some materials use
+
 	if (PlaceholderMesh)
 	{
 		PlaceholderMesh->SetDefaultCustomPrimitiveDataFloat(0, Color.R);
@@ -713,16 +749,11 @@ void AT66HeroBase::SetBodyType(ET66BodyType NewBodyType)
 	{
 		PlaceholderMesh->SetStaticMesh(TargetMesh);
 		PlaceholderMesh->SetRelativeScale3D(TargetScale);
-		
-		// Re-create material instance for new mesh
-		if (PlaceholderMesh->GetMaterial(0))
+
+		PlaceholderMaterial = nullptr;
+		if (!HeroData.HeroID.IsNone())
 		{
-			PlaceholderMaterial = PlaceholderMesh->CreateAndSetMaterialInstanceDynamic(0);
-			// Re-apply color if we have hero data
-			if (!HeroData.HeroID.IsNone())
-			{
-				SetPlaceholderColor(HeroData.PlaceholderColor);
-			}
+			SetPlaceholderColor(HeroData.PlaceholderColor);
 		}
 	}
 

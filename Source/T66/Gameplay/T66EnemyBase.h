@@ -8,6 +8,7 @@
 
 class UWidgetComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
 class AT66EnemyDirector;
 class AT66ItemPickup;
 
@@ -68,6 +69,9 @@ public:
 	/** Visual mapping ID used by UT66CharacterVisualSubsystem (data-driven imported mesh). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Visuals")
 	FName CharacterVisualID = FName(TEXT("RegularEnemy"));
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<UPointLightComponent> FillLight;
 
 	/** Health bar widget above head */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")

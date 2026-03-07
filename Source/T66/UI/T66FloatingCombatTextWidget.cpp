@@ -47,24 +47,6 @@ void UT66FloatingCombatTextWidget::SetStatusEvent(FName EventType)
 		Size = 18;
 		Color = FLinearColor(0.85f, 0.5f, 1.f, 1.f);
 	}
-	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Burn)
-	{
-		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Burn", "BURN!");
-		Size = 22;
-		Color = FLinearColor(0.95f, 0.25f, 0.1f, 1.f);
-	}
-	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Chill)
-	{
-		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Chill", "CHILL!");
-		Size = 22;
-		Color = FLinearColor(0.2f, 0.6f, 0.95f, 1.f);
-	}
-	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Curse)
-	{
-		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_Curse", "CURSE!");
-		Size = 22;
-		Color = FLinearColor(0.65f, 0.2f, 0.9f, 1.f);
-	}
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_LevelUp)
 	{
 		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_LevelUp", "LEVEL UP!");

@@ -543,7 +543,9 @@ bool AT66PlayerController::IsGameplayLevel() const
 	}
 	FString MapName = GetWorld()->GetMapName();
 	MapName = UWorld::RemovePIEPrefix(MapName);
-	return MapName.Contains(TEXT("Gameplay"));
+	if (MapName.Contains(TEXT("Gameplay"))) return true;
+	if (MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase)) return true;
+	return false;
 }
 
 void AT66PlayerController::SetupGameplayMode()
@@ -826,7 +828,8 @@ void AT66PlayerController::HandleRestartRunPressed()
 	if (!IsGameplayLevel()) return;
 	// Bible: host-only in co-op. v0: solo only (no co-op yet).
 	if (IsPaused()) SetPause(false);
-	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	const FName LevelToOpen = UT66GameInstance::UseDemoMapForTribulation() ? UT66GameInstance::GetDemoMapLevelNameForTribulation() : FName(TEXT("GameplayLevel"));
+	UGameplayStatics::OpenLevel(this, LevelToOpen);
 }
 
 bool AT66PlayerController::CanUseCombatMouseInput() const

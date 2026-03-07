@@ -6,6 +6,7 @@
 #include "Engine/GameInstance.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66Rarity.h"
+#include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "T66GameInstance.generated.h"
 
 class UDataTable;
@@ -96,9 +97,13 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bStageBoostPending = false;
 
-	/** Seed for procedural hills terrain. Set when entering tribulation; used when GameplayLevel loads. */
+	/** Run-level random seed (set when entering tribulation). Used for stage effect tiles, NPC shuffle, world interactables. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	int32 ProceduralTerrainSeed = 0;
+	int32 RunSeed = 0;
+
+	/** Map theme for procedural platform+ramp generation. Defaults to Farm; overridable via console command T66.Map. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	ET66MapTheme MapTheme = ET66MapTheme::Farm;
 
 	/** Selected body type for hero */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
@@ -295,6 +300,11 @@ public:
 	 * Call this instead of raw UGameplayStatics::OpenLevel for gameplay transitions.
 	 */
 	void TransitionToGameplayLevel();
+
+	/** When true, Enter the Tribulation opens the demo map instead of GameplayLevel. Flip in T66GameInstance.cpp. */
+	static bool UseDemoMapForTribulation();
+	/** Level name when UseDemoMapForTribulation() is true (e.g. Map_Summer). Used by TransitionToGameplayLevel and IsGameplayLevel. */
+	static FName GetDemoMapLevelNameForTribulation();
 
 private:
 	void PrimeCoreDataTablesAsync();

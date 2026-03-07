@@ -10,8 +10,12 @@
 
 class UT66LocalizationSubsystem;
 class AT66HeroPreviewStage;
+class UMediaPlayer;
+class UMediaTexture;
 struct FSlateBrush;
 class SVerticalBox;
+class SImage;
+class STextBlock;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
@@ -108,6 +112,24 @@ private:
 
 	/** AC balance text in skins panel; updated dynamically when purchasing skins. */
 	TSharedPtr<STextBlock> ACBalanceTextBlock;
+
+	/** Hero preview video (e.g. KnightClip): media player and texture for [VIDEO PREVIEW] area. */
+	UPROPERTY(Transient)
+	TObjectPtr<UMediaPlayer> HeroPreviewMediaPlayer;
+	UPROPERTY(Transient)
+	TObjectPtr<UMediaTexture> HeroPreviewMediaTexture;
+	/** Brush bound to HeroPreviewMediaTexture for Slate SImage; kept alive so Slate does not hold raw UObject. */
+	TSharedPtr<FSlateBrush> HeroPreviewVideoBrush;
+
+	/** Video area widgets: image shows video when Knight selected; placeholder shows "[VIDEO PREVIEW]" otherwise. */
+	TSharedPtr<SImage> HeroPreviewVideoImage;
+	TSharedPtr<STextBlock> HeroPreviewPlaceholderText;
+
+	/** Start or stop hero preview video based on PreviewedHeroID (Knight = Hero_1 uses KnightClip). */
+	void UpdateHeroPreviewVideo();
+
+	/** Create media player, texture, and brush if not yet created (called from BuildSlateUI). */
+	void EnsureHeroPreviewVideoResources();
 
 	/** Find the hero preview stage in the world (FrontendLevel) */
 	AT66HeroPreviewStage* GetHeroPreviewStage() const;

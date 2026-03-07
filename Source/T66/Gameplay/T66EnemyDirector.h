@@ -51,14 +51,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float GoblinThiefChance = 0.05f;
 
-	/** Unique enemy (flying debuff shooter). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	TSubclassOf<AT66EnemyBase> UniqueEnemyClass;
-
-	/** Chance per spawn wave to also spawn a Unique enemy (if none active). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float UniqueEnemyChancePerWave = 0.25f;
-
 	/** Chance per spawn wave to spawn a mini-boss (one of this stage's mobs, scaled up). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float MiniBossChancePerWave = 0.10f;
@@ -118,9 +110,6 @@ protected:
 	bool bSpawningArmed = false;
 
 	TArray<FPendingEnemySpawn> PendingSpawns;
-
-	TWeakObjectPtr<AT66EnemyBase> ActiveUniqueEnemy;
-	bool bSpawnedUniqueThisStage = false;
 
 	TWeakObjectPtr<AT66EnemyBase> ActiveMiniBoss;
 

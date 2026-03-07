@@ -7,10 +7,10 @@
 #include "T66HeroSpeedSubsystem.generated.h"
 
 /**
- * Hero movement speed and animation state.
+ * Hero movement speed and movement-state signaling.
  * Speed still ramps when moving (acceleration/deceleration unchanged).
- * Animation is binary: 0 = Idle (alert), 1 = Moving (run). No walk state.
- * Hero and companion both use GetMovementAnimState() so the companion always matches the hero.
+ * State is binary here: 0 = Idle, 1 = Moving.
+ * Heroes decide whether Moving means walk or jump; companions reuse it for their own visuals.
  */
 UCLASS()
 class T66_API UT66HeroSpeedSubsystem : public UGameInstanceSubsystem
@@ -37,10 +37,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|HeroSpeed")
 	float GetMaxSpeed() const { return MaxSpeed; }
 
-	/**
-	 * Animation state for hero and companion (both read this so companion always matches hero).
-	 * 0 = Idle (alert), 2 = Moving (run). No walk; speed/acceleration are unchanged but not tied to animation.
-	 */
+	/** Movement state for hero/companion visuals. 0 = Idle, 1 = Moving. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|HeroSpeed")
 	int32 GetMovementAnimState() const;
 
@@ -57,4 +54,7 @@ private:
 
 	UPROPERTY(Transient)
 	float DecelerationPerSecond = 120.f;
+
+	UPROPERTY(Transient)
+	bool bLastHasMovementInput = false;
 };

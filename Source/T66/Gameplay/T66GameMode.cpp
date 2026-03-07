@@ -24,7 +24,6 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66LeprechaunEnemy.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
-#include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66CashTruckInteractable.h"
@@ -80,9 +79,10 @@
 #include "EngineUtils.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Gameplay/T66ProceduralLandscapeGenerator.h"
+#include "ProceduralMeshComponent.h"
+#include "KismetProceduralMeshLibrary.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Landscape.h"
-#include "LandscapeInfo.h"
-#include "LandscapeEdit.h"
 #include "UI/Style/T66Style.h"
 #include "T66.h"
 
@@ -180,12 +180,12 @@ UStaticMesh* AT66GameMode::GetCubeMesh()
 	return CachedCubeMesh;
 }
 
+
 void AT66GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// LowPolyNature environment is spawned in SpawnLevelContentAfterLandscapeReady (terrain tiles + mountains + procedural nature).
-	// GenerateProceduralTerrainIfNeeded();  // No longer used; landscape replaced by terrain tiles
+	// Main flat floor is spawned in SpawnLevelContentAfterLandscapeReady (no external asset packs).
 
 	// Reset run state when entering gameplay level unless this is a stage transition (keep progress)
 	UGameInstance* GI = GetGameInstance();
@@ -302,8 +302,19 @@ void AT66GameMode::BeginPlay()
 
 void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
-	// Phase 0: LowPolyNature environment (terrain tiles, mountain ring, procedural trees/hills/rocks/vegetation).
+	// Phase 0: Main flat floor (no external asset packs).
 	SpawnLowPolyNatureEnvironment();
+
+	// Start gate: spawned here (after floor) so the ground trace hits the flat floor.
+	if (!IsColiseumStage() && !IsLabLevel())
+	{
+		UWorld* W = GetWorld();
+		AController* PC = W ? W->GetFirstPlayerController() : nullptr;
+		if (PC)
+		{
+			SpawnStartGateForPlayer(PC);
+		}
+	}
 
 	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
 	SpawnCornerHousesAndNPCs();
@@ -495,7 +506,7 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 	}
 
 	// Run-level seed so stage effect tile positions change every run/PIE (like world interactables).
-	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0) ? T66GI->ProceduralTerrainSeed : FMath::Rand();
+	const int32 RunSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
 	FRandomStream Rng(RunSeed + StageNum * 971 + 17);
 
 	// Main map square bounds (centered at 0,0). 100k map: half-extent 50000. Match miasma SafeHalfExtent.
@@ -797,10 +808,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 {
 	Super::RestartPlayer(NewPlayer);
 	SpawnCompanionForPlayer(NewPlayer);
-	if (!IsColiseumStage() && !IsLabLevel())
-	{
-		SpawnStartGateForPlayer(NewPlayer);
-	}
+	// Start gate is spawned in SpawnLevelContentAfterLandscapeReady (after floor exists) so its ground trace hits the floor.
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	APawn* Pawn = NewPlayer ? NewPlayer->GetPawn() : nullptr;
@@ -1440,7 +1448,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 
 	// Shuffle NPC assignment to corners so each run has different NPCs at each corner.
 	UT66GameInstance* T66GI = GetT66GameInstance();
-	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0) ? T66GI->ProceduralTerrainSeed : FMath::Rand();
+	const int32 RunSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
 	FRandomStream ShuffleRng(RunSeed + 991);
 	for (int32 i = NPCDefs.Num() - 1; i > 0; --i)
 	{
@@ -1598,7 +1606,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	UT66GameInstance* T66GI = GetT66GameInstance();
 
 	// Run-level seed so positions change every time "Enter the Tribulation" or PIE is started (like procedural terrain).
-	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0) ? T66GI->ProceduralTerrainSeed : FMath::Rand();
+	const int32 RunSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
 	const int32 StageNum = RunState->GetCurrentStage();
 	FRandomStream Rng(RunSeed + StageNum * 1337 + 42);
 
@@ -2103,6 +2111,34 @@ void AT66GameMode::EnsureLevelSetup()
 {
 	UE_LOG(LogTemp, Log, TEXT("Checking level setup..."));
 
+	// Destroy any Landscape or editor-placed foliage actors saved in the level (legacy from external asset packs).
+	UWorld* CleanupWorld = GetWorld();
+	if (CleanupWorld)
+	{
+		for (TActorIterator<ALandscape> It(CleanupWorld); It; ++It)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[MAP] Destroying saved Landscape actor: %s"), *It->GetName());
+			It->Destroy();
+		}
+		static const FName OldFoliageTag(TEXT("T66ProceduralFoliage"));
+		TArray<AActor*> ToDestroy;
+		for (TActorIterator<AActor> It(CleanupWorld); It; ++It)
+		{
+			if (It->Tags.Contains(OldFoliageTag))
+			{
+				ToDestroy.Add(*It);
+			}
+		}
+		for (AActor* A : ToDestroy)
+		{
+			A->Destroy();
+		}
+		if (ToDestroy.Num() > 0)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[MAP] Destroyed %d legacy foliage actors."), ToDestroy.Num());
+		}
+	}
+
 	if (IsLabLevel())
 	{
 		SpawnLabFloorIfNeeded();
@@ -2451,7 +2487,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 			}
 		}
 	};
-	DestroyTaggedIfExists(FName("T66_Floor_Main"));   // No longer used; landscape is main ground
+	// T66_Floor_Main is spawned by SpawnLowPolyNatureEnvironment(); do not destroy it here.
 	DestroyTaggedIfExists(FName("T66_Floor_Conn1"));
 	DestroyTaggedIfExists(FName("T66_Floor_Conn2"));
 	DestroyTaggedIfExists(FName("T66_Floor_Start"));
@@ -2560,20 +2596,19 @@ void AT66GameMode::SpawnFloorIfNeeded()
 }
 
 // ============================================================================
-// LowPolyNature Environment (terrain tiles, mountain ring, procedural nature)
+// Procedural platform+ramp map generation
 // ============================================================================
 
-static const FName T66ProceduralNatureTag(TEXT("T66ProceduralNature"));
+static const FName T66MapPlatformTag(TEXT("T66_Map_Platform"));
+static const FName T66MapRampTag(TEXT("T66_Map_Ramp"));
+static const FName T66FloorMainTag(TEXT("T66_Floor_Main"));
 
-static void T66_CleanupTaggedActors(UWorld* World, FName Tag)
+static void DestroyActorsWithTag(UWorld* World, FName Tag)
 {
 	TArray<AActor*> ToDestroy;
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
-		if (It->Tags.Contains(Tag))
-		{
-			ToDestroy.Add(*It);
-		}
+		if (It->Tags.Contains(Tag)) ToDestroy.Add(*It);
 	}
 	for (AActor* A : ToDestroy)
 	{
@@ -2581,465 +2616,434 @@ static void T66_CleanupTaggedActors(UWorld* World, FName Tag)
 	}
 }
 
+static uint64 T66MakeBoundaryKey(int32 A, int32 B)
+{
+	const uint32 Low = static_cast<uint32>(FMath::Min(A, B));
+	const uint32 High = static_cast<uint32>(FMath::Max(A, B));
+	return (static_cast<uint64>(Low) << 32) | static_cast<uint64>(High);
+}
+
+static void AddWallInstance(
+	UHierarchicalInstancedStaticMeshComponent* HISM,
+	bool bAlongX,
+	float BoundaryCoord,
+	float CenterPerp,
+	float LengthAlongBoundary,
+	float HighTopZ,
+	float LowTopZ,
+	float WallThickness,
+	float BottomPadding,
+	bool bHighOnPositiveSide)
+{
+	if (!HISM || LengthAlongBoundary <= 1.f || HighTopZ <= LowTopZ + 1.f)
+	{
+		return;
+	}
+
+	const float BottomZ = LowTopZ - BottomPadding;
+	const float Height = HighTopZ - BottomZ;
+	if (Height <= 1.f)
+	{
+		return;
+	}
+
+	const float CenterZ = BottomZ + Height * 0.5f;
+	FVector Loc;
+	FVector Scale;
+
+	if (bAlongX)
+	{
+		Loc = FVector(
+			BoundaryCoord + (bHighOnPositiveSide ? WallThickness * 0.5f : -WallThickness * 0.5f),
+			CenterPerp,
+			CenterZ);
+		Scale = FVector(WallThickness / 100.f, LengthAlongBoundary / 100.f, Height / 100.f);
+	}
+	else
+	{
+		Loc = FVector(
+			CenterPerp,
+			BoundaryCoord + (bHighOnPositiveSide ? WallThickness * 0.5f : -WallThickness * 0.5f),
+			CenterZ);
+		Scale = FVector(LengthAlongBoundary / 100.f, WallThickness / 100.f, Height / 100.f);
+	}
+
+	HISM->AddInstance(FTransform(FQuat::Identity, Loc, Scale), false);
+}
+
+// ---- Unit wedge geometry (100x100x100, slope LOW at -X to HIGH at +X) ----
+
+static const FVector UnitWedgeVerts[] = {
+	// Bottom face (4 verts)
+	FVector(-50, -50, -50), FVector(50, -50, -50), FVector(50, 50, -50), FVector(-50, 50, -50),
+	// Back wall X=+50 (4 verts)
+	FVector(50, -50, -50), FVector(50, -50, 50), FVector(50, 50, 50), FVector(50, 50, -50),
+	// Slope (4 verts)
+	FVector(-50, -50, -50), FVector(-50, 50, -50), FVector(50, 50, 50), FVector(50, -50, 50),
+	// Left cap Y=-50 (3 verts)
+	FVector(-50, -50, -50), FVector(50, -50, 50), FVector(50, -50, -50),
+	// Right cap Y=+50 (3 verts)
+	FVector(-50, 50, -50), FVector(50, 50, -50), FVector(50, 50, 50),
+};
+
+static const FVector UnitWedgeNormals[] = {
+	FVector(0,0,-1), FVector(0,0,-1), FVector(0,0,-1), FVector(0,0,-1),
+	FVector(1,0,0), FVector(1,0,0), FVector(1,0,0), FVector(1,0,0),
+	FVector(-0.7071f,0,0.7071f), FVector(-0.7071f,0,0.7071f), FVector(-0.7071f,0,0.7071f), FVector(-0.7071f,0,0.7071f),
+	FVector(0,-1,0), FVector(0,-1,0), FVector(0,-1,0),
+	FVector(0,1,0), FVector(0,1,0), FVector(0,1,0),
+};
+
+static const FVector2D UnitWedgeUVs[] = {
+	FVector2D(0,0), FVector2D(1,0), FVector2D(1,1), FVector2D(0,1),
+	FVector2D(0,0), FVector2D(0,1), FVector2D(1,1), FVector2D(1,0),
+	FVector2D(0,0), FVector2D(0,1), FVector2D(1,1), FVector2D(1,0),
+	FVector2D(0,0), FVector2D(1,1), FVector2D(1,0),
+	FVector2D(0,0), FVector2D(1,0), FVector2D(1,1),
+};
+
+static const int32 UnitWedgeTris[] = {
+	0,2,1, 0,3,2,       // bottom
+	4,5,6, 4,6,7,       // back wall
+	8,10,9, 8,11,10,    // slope
+	12,13,14,            // left cap
+	15,16,17,            // right cap
+};
+
+static constexpr int32 WedgeVertCount = 18;
+static constexpr int32 WedgeTriIdxCount = 24;
+
+static void AppendTransformedWedge(
+	TArray<FVector>& OutVerts, TArray<int32>& OutTris,
+	TArray<FVector>& OutNormals, TArray<FVector2D>& OutUVs,
+	const FVector& Pos, const FQuat& Rot, const FVector& Scale)
+{
+	auto AppendSide = [&](bool bReverse)
+	{
+		const int32 Base = OutVerts.Num();
+
+		for (int32 I = 0; I < WedgeVertCount; ++I)
+		{
+			FVector V = UnitWedgeVerts[I] * Scale;
+			OutVerts.Add(Pos + Rot.RotateVector(V));
+
+			const FVector& N = UnitWedgeNormals[I];
+			FVector NScaled(
+				N.X / FMath::Max(Scale.X, 0.001f),
+				N.Y / FMath::Max(Scale.Y, 0.001f),
+				N.Z / FMath::Max(Scale.Z, 0.001f));
+			const FVector FinalNormal = Rot.RotateVector(NScaled).GetSafeNormal() * (bReverse ? -1.f : 1.f);
+			OutNormals.Add(FinalNormal);
+			OutUVs.Add(UnitWedgeUVs[I]);
+		}
+
+		for (int32 I = 0; I < WedgeTriIdxCount; I += 3)
+		{
+			const int32 A = Base + UnitWedgeTris[I + 0];
+			const int32 B = Base + UnitWedgeTris[I + 1];
+			const int32 C = Base + UnitWedgeTris[I + 2];
+			if (bReverse)
+			{
+				OutTris.Add(A);
+				OutTris.Add(C);
+				OutTris.Add(B);
+			}
+			else
+			{
+				OutTris.Add(A);
+				OutTris.Add(B);
+				OutTris.Add(C);
+			}
+		}
+	};
+
+	// Duplicate the wedge with reversed winding/normals so its vertical and sloped faces
+	// remain visible from either side of the ramp opening.
+	AppendSide(false);
+	AppendSide(true);
+}
+
+static void AppendPlatformTopQuad(
+	TArray<FVector>& OutVerts,
+	TArray<int32>& OutTris,
+	TArray<FVector>& OutNormals,
+	TArray<FVector2D>& OutUVs,
+	const FVector& Center,
+	float SizeX,
+	float SizeY,
+	float Z)
+{
+	const int32 Base = OutVerts.Num();
+	const float HX = SizeX * 0.5f;
+	const float HY = SizeY * 0.5f;
+
+	OutVerts.Add(FVector(Center.X - HX, Center.Y - HY, Z));
+	OutVerts.Add(FVector(Center.X + HX, Center.Y - HY, Z));
+	OutVerts.Add(FVector(Center.X + HX, Center.Y + HY, Z));
+	OutVerts.Add(FVector(Center.X - HX, Center.Y + HY, Z));
+
+	OutNormals.Add(FVector::UpVector);
+	OutNormals.Add(FVector::UpVector);
+	OutNormals.Add(FVector::UpVector);
+	OutNormals.Add(FVector::UpVector);
+
+	OutUVs.Add(FVector2D(0.f, 0.f));
+	OutUVs.Add(FVector2D(1.f, 0.f));
+	OutUVs.Add(FVector2D(1.f, 1.f));
+	OutUVs.Add(FVector2D(0.f, 1.f));
+
+	OutTris.Add(Base + 0);
+	OutTris.Add(Base + 2);
+	OutTris.Add(Base + 1);
+	OutTris.Add(Base + 0);
+	OutTris.Add(Base + 3);
+	OutTris.Add(Base + 2);
+}
+
+// ---- Main spawn function ----
+
 void AT66GameMode::SpawnLowPolyNatureEnvironment()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
 	if (IsLabLevel() || IsColiseumStage()) return;
 
-	T66_CleanupTaggedActors(World, T66ProceduralNatureTag);
-
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	const int32 RunSeed = (T66GI && T66GI->ProceduralTerrainSeed != 0)
-		? T66GI->ProceduralTerrainSeed : FMath::Rand();
-
-	SpawnTerrainTileFloor(World);
-	SpawnMountainRing(World);
-	SpawnProceduralNature(World, RunSeed);
-
-	UE_LOG(LogTemp, Log, TEXT("[MAP] LowPolyNature environment spawned (seed=%d)"), RunSeed);
-}
-
-void AT66GameMode::SpawnTerrainTileFloor(UWorld* World)
-{
-	if (!World) return;
-
-	static const TCHAR* TerrainMeshPaths[] = {
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Terrain_04.SM_Terrain_04"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Terrain_06.SM_Terrain_06"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Terrain_08.SM_Terrain_08"),
-	};
-	static const TCHAR* NatureMatPath = TEXT("/Game/LowPolyNature/Materials/M_4SeasonNature_MAIN.M_4SeasonNature_MAIN");
-
-	UStaticMesh* TerrainMeshes[3] = {};
-	for (int32 i = 0; i < 3; ++i)
+	for (TActorIterator<AActor> It(World); It; ++It)
 	{
-		TerrainMeshes[i] = LoadObject<UStaticMesh>(nullptr, TerrainMeshPaths[i]);
-	}
-	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, NatureMatPath);
-
-	static constexpr float TileSpacing = 5000.f;
-	static constexpr float HalfExtent = 50000.f;
-	static constexpr float TileScale = 5.f;
-	static constexpr float FloorZ = -50.f;
-
-	FRandomStream TileRng(12345);
-	FActorSpawnParameters SP;
-	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	int32 TileCount = 0;
-	for (float X = -HalfExtent; X < HalfExtent; X += TileSpacing)
-	{
-		for (float Y = -HalfExtent; Y < HalfExtent; Y += TileSpacing)
-		{
-			const int32 MeshIdx = TileCount % 3;
-			UStaticMesh* Mesh = TerrainMeshes[MeshIdx];
-			if (!Mesh) { ++TileCount; continue; }
-
-			AStaticMeshActor* Tile = World->SpawnActor<AStaticMeshActor>(
-				AStaticMeshActor::StaticClass(),
-				FVector(X + TileSpacing * 0.5f, Y + TileSpacing * 0.5f, FloorZ),
-				FRotator(0.f, TileRng.FRandRange(0.f, 360.f), 0.f),
-				SP);
-			if (Tile)
-			{
-				Tile->Tags.Add(T66ProceduralNatureTag);
-				if (UStaticMeshComponent* SMC = Tile->GetStaticMeshComponent())
-				{
-					SMC->SetMobility(EComponentMobility::Movable);
-					SMC->SetStaticMesh(Mesh);
-					if (Mat) SMC->SetMaterial(0, Mat);
-					SMC->SetWorldScale3D(FVector(TileScale));
-					SMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-					SMC->SetCollisionResponseToAllChannels(ECR_Block);
-					SMC->SetMobility(EComponentMobility::Static);
-				}
-			}
-			++TileCount;
-		}
-	}
-	UE_LOG(LogTemp, Log, TEXT("[MAP] Spawned %d terrain tiles"), TileCount);
-}
-
-void AT66GameMode::SpawnMountainRing(UWorld* World)
-{
-	if (!World) return;
-
-	static const TCHAR* MountainMeshPaths[] = {
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_01.SM_Mountain_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_02.SM_Mountain_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_03.SM_Mountain_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_04.SM_Mountain_04"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Mountain_05.SM_Mountain_05"),
-	};
-	static const TCHAR* NatureMatPath = TEXT("/Game/LowPolyNature/Materials/M_4SeasonNature_MAIN.M_4SeasonNature_MAIN");
-
-	UStaticMesh* MountainMeshes[5] = {};
-	int32 LoadedCount = 0;
-	for (int32 i = 0; i < 5; ++i)
-	{
-		MountainMeshes[i] = LoadObject<UStaticMesh>(nullptr, MountainMeshPaths[i]);
-		if (MountainMeshes[i]) ++LoadedCount;
-	}
-	if (LoadedCount == 0) return;
-
-	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, NatureMatPath);
-
-	static constexpr int32 NumMountains = 40;
-	static constexpr float RingRadius = 52000.f;
-	static constexpr float MountainZ = -200.f;
-	static constexpr float MountainScaleMin = 3.f;
-	static constexpr float MountainScaleMax = 6.f;
-
-	FRandomStream MtnRng(99999);
-	FActorSpawnParameters SP;
-	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	for (int32 i = 0; i < NumMountains; ++i)
-	{
-		const float Angle = (float)i / (float)NumMountains * 360.f;
-		const float Rad = FMath::DegreesToRadians(Angle);
-		const float PosX = FMath::Cos(Rad) * RingRadius;
-		const float PosY = FMath::Sin(Rad) * RingRadius;
-
-		int32 MeshIdx = i % 5;
-		while (!MountainMeshes[MeshIdx]) MeshIdx = (MeshIdx + 1) % 5;
-
-		const float Scale = MtnRng.FRandRange(MountainScaleMin, MountainScaleMax);
-		const float Yaw = Angle + MtnRng.FRandRange(-20.f, 20.f);
-
-		AStaticMeshActor* Mtn = World->SpawnActor<AStaticMeshActor>(
-			AStaticMeshActor::StaticClass(),
-			FVector(PosX, PosY, MountainZ),
-			FRotator(0.f, Yaw, 0.f),
-			SP);
-		if (Mtn)
-		{
-			Mtn->Tags.Add(T66ProceduralNatureTag);
-			if (UStaticMeshComponent* SMC = Mtn->GetStaticMeshComponent())
-			{
-				SMC->SetMobility(EComponentMobility::Movable);
-				SMC->SetStaticMesh(MountainMeshes[MeshIdx]);
-				if (Mat) SMC->SetMaterial(0, Mat);
-				SMC->SetWorldScale3D(FVector(Scale));
-				SMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-				SMC->SetCollisionResponseToAllChannels(ECR_Block);
-				SMC->SetMobility(EComponentMobility::Static);
-			}
-		}
-	}
-	UE_LOG(LogTemp, Log, TEXT("[MAP] Spawned %d mountains in ring (radius=%.0f)"), NumMountains, RingRadius);
-}
-
-void AT66GameMode::SpawnProceduralNature(UWorld* World, int32 Seed)
-{
-	if (!World) return;
-
-	FRandomStream Rng(Seed);
-
-	static constexpr float HalfExtent = 50000.f;
-
-	// Asset paths from Map_Summer dump (Nature_Summer for trees/vegetation)
-	static const TCHAR* TreePaths[] = {
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_01.SM_Summer_Tree_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_02.SM_Summer_Tree_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_05.SM_Summer_Tree_05"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_06.SM_Summer_Tree_06"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_07.SM_Summer_Tree_07"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_08.SM_Summer_Tree_08"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_10.SM_Summer_Tree_10"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_11.SM_Summer_Tree_11"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_12.SM_Summer_Tree_12"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_13.SM_Summer_Tree_13"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_14.SM_Summer_Tree_14"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Tree_15.SM_Summer_Tree_15"),
-	};
-	static constexpr int32 NumTreeVariants = UE_ARRAY_COUNT(TreePaths);
-
-	static const TCHAR* HillPaths[] = {
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_01.SM_Hill_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_02.SM_Hill_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_03.SM_Hill_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_04.SM_Hill_04"),
-		TEXT("/Game/LowPolyNature/Meshes/Terrain/SM_Hill_05.SM_Hill_05"),
-	};
-	static constexpr int32 NumHillVariants = UE_ARRAY_COUNT(HillPaths);
-
-	// Rocks: 01,02,03,04,05,07,08,09,10 (no 06 in Map_Summer)
-	static const TCHAR* RockPaths[] = {
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_01.SM_Rock_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_02.SM_Rock_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_03.SM_Rock_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_04.SM_Rock_04"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_05.SM_Rock_05"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_07.SM_Rock_07"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_08.SM_Rock_08"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_09.SM_Rock_09"),
-		TEXT("/Game/LowPolyNature/Meshes/Rocks/SM_Rock_10.SM_Rock_10"),
-	};
-	static constexpr int32 NumRockVariants = UE_ARRAY_COUNT(RockPaths);
-
-	// Vegetation: grass, flowers, mushrooms, logs, plants, stumps
-	static const TCHAR* VegetationPaths[] = {
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_01.SM_Summer_Grass_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_02.SM_Summer_Grass_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_03.SM_Summer_Grass_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_04.SM_Summer_Grass_04"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Grass_05.SM_Summer_Grass_05"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_01.SM_Summer_Flower_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_02.SM_Summer_Flower_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_03.SM_Summer_Flower_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_04.SM_Summer_Flower_04"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_05.SM_Summer_Flower_05"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_06.SM_Summer_Flower_06"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_07.SM_Summer_Flower_07"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_08.SM_Summer_Flower_08"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_09.SM_Summer_Flower_09"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Flower_10.SM_Summer_Flower_10"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Mushroom_01.SM_Summer_Mushroom_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Mushroom_02.SM_Summer_Mushroom_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Mushroom_03.SM_Summer_Mushroom_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Log_01.SM_Summer_Log_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Log_02.SM_Summer_Log_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Log_03.SM_Summer_Log_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Plant_01.SM_Summer_Plant_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Plant_02.SM_Summer_Plant_02"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Plant_03.SM_Summer_Plant_03"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Stump_01.SM_Summer_Stump_01"),
-		TEXT("/Game/LowPolyNature/Meshes/Nature_Summer/SM_Summer_Stump_02.SM_Summer_Stump_02"),
-	};
-	static constexpr int32 NumVegetationVariants = UE_ARRAY_COUNT(VegetationPaths);
-
-	static const TCHAR* NatureMatPath = TEXT("/Game/LowPolyNature/Materials/M_4SeasonNature_MAIN.M_4SeasonNature_MAIN");
-	UMaterialInterface* Mat = LoadObject<UMaterialInterface>(nullptr, NatureMatPath);
-
-	TArray<UStaticMesh*> TreeMeshes, HillMeshes, RockMeshes, VegMeshes;
-	auto LoadMeshArray = [](const TCHAR* const* Paths, int32 Count, TArray<UStaticMesh*>& Out)
-	{
-		for (int32 i = 0; i < Count; ++i)
-		{
-			if (UStaticMesh* M = LoadObject<UStaticMesh>(nullptr, Paths[i]))
-			{
-				Out.Add(M);
-			}
-		}
-	};
-	LoadMeshArray(TreePaths, NumTreeVariants, TreeMeshes);
-	LoadMeshArray(HillPaths, NumHillVariants, HillMeshes);
-	LoadMeshArray(RockPaths, NumRockVariants, RockMeshes);
-	LoadMeshArray(VegetationPaths, NumVegetationVariants, VegMeshes);
-
-	if (TreeMeshes.Num() == 0 && HillMeshes.Num() == 0 && RockMeshes.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[MAP] No LowPolyNature meshes loaded — check asset paths"));
-		return;
+		if (It->Tags.Contains(T66MapPlatformTag)) return;
 	}
 
-	auto IsInsideNoSpawnZone = [](const FVector& L) -> bool
-	{
-		static constexpr float StartBoxWest = -40000.f, StartBoxEast = -30909.f;
-		static constexpr float StartBoxNorth = 4545.f, StartBoxSouth = -4545.f;
-		static constexpr float StartMargin = 5000.f;
-		if (L.X >= (StartBoxWest - StartMargin) && L.X <= (StartBoxEast + StartMargin) &&
-			L.Y >= (StartBoxSouth - StartMargin) && L.Y <= (StartBoxNorth + StartMargin))
-		{
-			return true;
-		}
-		static constexpr float ArenaHalf = 9091.f;
-		static constexpr float ArenaMargin = 1500.f;
-		struct FArena2D { float X; float Y; float Half; };
-		static constexpr FArena2D Arenas[] = {
-			{ -22727.f, 34091.f, ArenaHalf },
-			{      0.f, 34091.f, ArenaHalf },
-			{      0.f, 61364.f, 9091.f },
-		};
-		for (const FArena2D& A : Arenas)
-		{
-			if (FMath::Abs(L.X - A.X) <= (A.Half + ArenaMargin) &&
-				FMath::Abs(L.Y - A.Y) <= (A.Half + ArenaMargin))
-			{
-				return true;
-			}
-		}
-		if (L.X > 40000.f) return true;
-		return false;
-	};
+	UT66GameInstance* GI = GetT66GameInstance();
+	const ET66MapTheme Theme = GI ? GI->MapTheme : ET66MapTheme::Farm;
+	int32 Seed = GI ? GI->RunSeed : 0;
+	if (Seed == 0) Seed = FMath::Rand();
 
-	TArray<FVector> UsedLocs;
+	FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(Theme);
+	Preset.Seed = Seed;
 
-	struct FHillZone { FVector Center; float Radius; };
-	TArray<FHillZone> HillZones;
+	FT66ProceduralMapResult MapData = FT66ProceduralMapGenerator::Generate(Preset);
+	if (!MapData.bValid) return;
 
-	auto IsGoodLoc = [&](const FVector& L, float MinDist) -> bool
-	{
-		if (IsInsideNoSpawnZone(L)) return false;
-		for (const FVector& U : UsedLocs)
-		{
-			if (FVector::DistSquared2D(L, U) < (MinDist * MinDist)) return false;
-		}
-		for (const FHillZone& HZ : HillZones)
-		{
-			if (FVector::DistSquared2D(L, HZ.Center) < (HZ.Radius * HZ.Radius)) return false;
-		}
-		return true;
-	};
+	UStaticMesh* CubeMesh = GetCubeMesh();
+	if (!CubeMesh) return;
+
+	UMaterialInterface* FloorMat = (GroundFloorMaterials.Num() > 0) ? GroundFloorMaterials[0].Get() : nullptr;
 
 	FActorSpawnParameters SP;
 	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	auto SpawnNatureMesh = [&](UStaticMesh* Mesh, const FVector& Loc, float Scale, float Yaw, bool bBlockCollision = false) -> AStaticMeshActor*
-	{
-		AStaticMeshActor* A = World->SpawnActor<AStaticMeshActor>(
-			AStaticMeshActor::StaticClass(), Loc, FRotator(0.f, Yaw, 0.f), SP);
-		if (A)
-		{
-			A->Tags.Add(T66ProceduralNatureTag);
-			if (UStaticMeshComponent* SMC = A->GetStaticMeshComponent())
-			{
-				SMC->SetMobility(EComponentMobility::Movable);
-				SMC->SetStaticMesh(Mesh);
-				if (Mat) SMC->SetMaterial(0, Mat);
-				SMC->SetWorldScale3D(FVector(Scale));
-				if (bBlockCollision)
-				{
-					SMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-					SMC->SetCollisionResponseToAllChannels(ECR_Block);
-					// Stay Movable so same-frame line traces can detect the collision
-				}
-				else
-				{
-					SMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-					SMC->SetMobility(EComponentMobility::Static);
-				}
-			}
-		}
-		return A;
-	};
+	const float MapSize  = Preset.MapHalfExtent * 2.f;
+	const float CellSize = MapSize / FMath::Max(Preset.GridSize, 2);
 
-	// Trace helper: find the ground Z at a given XY so objects sit on the terrain surface
-	auto TraceGroundZ = [World](float X, float Y) -> float
+	// Build a lookup so walls can leave openings where a ramp exists.
+	TMap<uint64, const FT66RampEdge*> RampLookup;
+	for (const FT66RampEdge& Edge : MapData.Ramps)
 	{
-		FHitResult Hit;
-		const FVector Start(X, Y, 5000.f);
-		const FVector End(X, Y, -5000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-		{
-			return Hit.ImpactPoint.Z;
-		}
-		return 0.f;
-	};
+		RampLookup.Add(T66MakeBoundaryKey(Edge.LowerIndex, Edge.HigherIndex), &Edge);
+	}
 
-	// Hills (10): sparse elevation — most of the map stays flat
-	static constexpr int32 NumHills = 10;
-	static constexpr float HillMinDist = 10000.f;
-	int32 HillsSpawned = 0;
-	if (HillMeshes.Num() > 0)
+	// --- Top surfaces use procedural quads so they sample the same material space as ramps ---
+	AActor* TopActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
+	if (!TopActor) return;
+	TopActor->Tags.Add(T66MapPlatformTag);
+	TopActor->Tags.Add(T66FloorMainTag);
+
+	UProceduralMeshComponent* TopPMC = NewObject<UProceduralMeshComponent>(TopActor, TEXT("PlatformTops"));
+	TopActor->SetRootComponent(TopPMC);
+
+	TArray<FVector> TopVerts;
+	TArray<int32> TopTris;
+	TArray<FVector> TopNormals;
+	TArray<FVector2D> TopUVs;
+	for (const FT66PlatformNode& P : MapData.Platforms)
 	{
-		for (int32 i = 0; i < NumHills; ++i)
+		AppendPlatformTopQuad(TopVerts, TopTris, TopNormals, TopUVs, FVector(P.Position, 0.f), P.SizeX, P.SizeY, P.TopZ);
+	}
+
+	TArray<FLinearColor> EmptyColors;
+	TArray<FProcMeshTangent> TopTangents;
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(TopVerts, TopTris, TopUVs, TopNormals, TopTangents);
+	TopPMC->CreateMeshSection_LinearColor(0, TopVerts, TopTris, TopNormals, TopUVs, EmptyColors, TopTangents, true);
+	if (FloorMat) TopPMC->SetMaterial(0, FloorMat);
+	TopPMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	TopPMC->SetCollisionResponseToAllChannels(ECR_Block);
+	TopPMC->RegisterComponent();
+
+	// --- Local walls stay instanced for performance ---
+	AActor* WallActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
+	if (!WallActor) return;
+	WallActor->Tags.Add(T66MapPlatformTag);
+	WallActor->Tags.Add(T66FloorMainTag);
+
+	UHierarchicalInstancedStaticMeshComponent* WallHISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(WallActor, TEXT("PlatformWalls"));
+	WallActor->SetRootComponent(WallHISM);
+	WallHISM->SetStaticMesh(CubeMesh);
+	if (FloorMat) WallHISM->SetMaterial(0, FloorMat);
+	WallHISM->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	WallHISM->SetCollisionResponseToAllChannels(ECR_Block);
+	WallHISM->SetMobility(EComponentMobility::Static);
+	WallHISM->NumCustomDataFloats = 0;
+
+	const float WallThickness = FMath::Clamp(Preset.SurfaceThickness, 60.f, 140.f);
+	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
+
+	for (int32 R = 0; R < GridSize; ++R)
+	{
+		for (int32 C = 0; C < GridSize; ++C)
 		{
-			for (int32 Try = 0; Try < 30; ++Try)
+			const int32 Idx = R * GridSize + C;
+			const FT66PlatformNode& A = MapData.Platforms[Idx];
+
+			auto BuildBoundaryWall = [&](int32 OtherR, int32 OtherC, bool bAlongX)
 			{
-				const float X = Rng.FRandRange(-HalfExtent * 0.85f, HalfExtent * 0.8f);
-				const float Y = Rng.FRandRange(-HalfExtent * 0.85f, HalfExtent * 0.85f);
-				FVector Loc(X, Y, 0.f);
-				if (IsGoodLoc(Loc, HillMinDist))
+				if (OtherR < 0 || OtherR >= GridSize || OtherC < 0 || OtherC >= GridSize)
 				{
-					Loc.Z = TraceGroundZ(X, Y) - 50.f;
-					const float Scale = Rng.FRandRange(1.5f, 3.5f);
-					const float Yaw = Rng.FRandRange(0.f, 360.f);
-					SpawnNatureMesh(HillMeshes[Rng.RandRange(0, HillMeshes.Num() - 1)], Loc, Scale, Yaw, true);
-					UsedLocs.Add(Loc);
-					HillZones.Add({ Loc, Scale * 1500.f });
-					++HillsSpawned;
-					break;
+					return;
 				}
-			}
+
+				const int32 OtherIdx = OtherR * GridSize + OtherC;
+				const FT66PlatformNode& B = MapData.Platforms[OtherIdx];
+				if (A.TopZ <= B.TopZ + 1.f)
+				{
+					return;
+				}
+
+				const bool bHighOnPositiveSide = bAlongX ? (A.Position.X > B.Position.X) : (A.Position.Y > B.Position.Y);
+				const float BoundaryCoord = bAlongX
+					? 0.5f * (A.Position.X + B.Position.X)
+					: 0.5f * (A.Position.Y + B.Position.Y);
+				const float PerpBase = bAlongX
+					? 0.5f * (A.Position.Y + B.Position.Y)
+					: 0.5f * (A.Position.X + B.Position.X);
+
+				const FT66RampEdge* Ramp = RampLookup.FindRef(T66MakeBoundaryKey(Idx, OtherIdx));
+				if (!Ramp)
+				{
+					AddWallInstance(
+						WallHISM,
+						bAlongX,
+						BoundaryCoord,
+						PerpBase,
+						CellSize,
+						A.TopZ,
+						B.TopZ,
+						WallThickness,
+						Preset.WallBottomPadding,
+						bHighOnPositiveSide);
+					return;
+				}
+
+				const float HalfCell = CellSize * 0.5f;
+				const float OpenStart = FMath::Clamp(Ramp->PerpOffset - Ramp->Width * 0.5f, -HalfCell, HalfCell);
+				const float OpenEnd = FMath::Clamp(Ramp->PerpOffset + Ramp->Width * 0.5f, -HalfCell, HalfCell);
+
+				const float LeftLen = OpenStart + HalfCell;
+				if (LeftLen > 1.f)
+				{
+					AddWallInstance(
+						WallHISM,
+						bAlongX,
+						BoundaryCoord,
+						PerpBase + (-HalfCell + OpenStart) * 0.5f,
+						LeftLen,
+						A.TopZ,
+						B.TopZ,
+						WallThickness,
+						Preset.WallBottomPadding,
+						bHighOnPositiveSide);
+				}
+
+				const float RightLen = HalfCell - OpenEnd;
+				if (RightLen > 1.f)
+				{
+					AddWallInstance(
+						WallHISM,
+						bAlongX,
+						BoundaryCoord,
+						PerpBase + (OpenEnd + HalfCell) * 0.5f,
+						RightLen,
+						A.TopZ,
+						B.TopZ,
+						WallThickness,
+						Preset.WallBottomPadding,
+						bHighOnPositiveSide);
+				}
+			};
+
+			if (C + 1 < GridSize) BuildBoundaryWall(R, C + 1, true);
+			if (C - 1 >= 0)      BuildBoundaryWall(R, C - 1, true);
+			if (R + 1 < GridSize) BuildBoundaryWall(R + 1, C, false);
+			if (R - 1 >= 0)      BuildBoundaryWall(R - 1, C, false);
 		}
 	}
 
-	// Trees (120)
-	static constexpr int32 NumTrees = 120;
-	static constexpr float TreeMinDist = 1500.f;
-	int32 TreesSpawned = 0;
-	if (TreeMeshes.Num() > 0)
+	WallHISM->RegisterComponent();
+
+	// --- Ramps: batch variable wedges into one ProceduralMeshComponent ---
+	const float MinRampHeight = 50.f;
+
+	TArray<FVector> AllVerts;
+	TArray<int32> AllTris;
+	TArray<FVector> AllNormals;
+	TArray<FVector2D> AllUVs;
+
+	int32 RampCount = 0;
+	for (const FT66RampEdge& Edge : MapData.Ramps)
 	{
-		for (int32 i = 0; i < NumTrees; ++i)
+		const FT66PlatformNode& Lo = MapData.Platforms[Edge.LowerIndex];
+		const FT66PlatformNode& Hi = MapData.Platforms[Edge.HigherIndex];
+		const float HeightDiff = Hi.TopZ - Lo.TopZ;
+		if (HeightDiff < MinRampHeight) continue;
+
+		FVector RampPos;
+		FQuat RampRot = FQuat::Identity;
+
+		if (Edge.bAlongX)
 		{
-			for (int32 Try = 0; Try < 30; ++Try)
-			{
-				const float X = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.85f);
-				const float Y = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.92f);
-				FVector Loc(X, Y, 0.f);
-				if (IsGoodLoc(Loc, TreeMinDist))
-				{
-					Loc.Z = TraceGroundZ(X, Y);
-					const float Scale = Rng.FRandRange(2.25f, 5.25f);
-					const float Yaw = Rng.FRandRange(0.f, 360.f);
-					SpawnNatureMesh(TreeMeshes[Rng.RandRange(0, TreeMeshes.Num() - 1)], Loc, Scale, Yaw);
-					UsedLocs.Add(Loc);
-					++TreesSpawned;
-					break;
-				}
-			}
+			const bool bHigherRight = (Hi.Position.X > Lo.Position.X);
+			const float BoundaryX = (Lo.Position.X + Hi.Position.X) * 0.5f;
+			const float CenterX = bHigherRight ? (BoundaryX - Edge.Depth * 0.5f) : (BoundaryX + Edge.Depth * 0.5f);
+			const float CenterY = (Lo.Position.Y + Hi.Position.Y) * 0.5f + Edge.PerpOffset;
+			RampPos = FVector(CenterX, CenterY, Lo.TopZ + HeightDiff * 0.5f);
+			RampRot = FQuat(FRotator(0.f, bHigherRight ? 0.f : 180.f, 0.f));
+		}
+		else
+		{
+			const bool bHigherUp = (Hi.Position.Y > Lo.Position.Y);
+			const float BoundaryY = (Lo.Position.Y + Hi.Position.Y) * 0.5f;
+			const float CenterY = bHigherUp ? (BoundaryY - Edge.Depth * 0.5f) : (BoundaryY + Edge.Depth * 0.5f);
+			const float CenterX = (Lo.Position.X + Hi.Position.X) * 0.5f + Edge.PerpOffset;
+			RampPos = FVector(CenterX, CenterY, Lo.TopZ + HeightDiff * 0.5f);
+			RampRot = FQuat(FRotator(0.f, bHigherUp ? 90.f : -90.f, 0.f));
+		}
+
+		const FVector RampScale(Edge.Depth / 100.f, Edge.Width / 100.f, HeightDiff / 100.f);
+		AppendTransformedWedge(AllVerts, AllTris, AllNormals, AllUVs, RampPos, RampRot, RampScale);
+		++RampCount;
+	}
+
+	if (RampCount > 0)
+	{
+		AActor* RampActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
+		if (RampActor)
+		{
+			RampActor->Tags.Add(T66MapRampTag);
+			RampActor->Tags.Add(T66FloorMainTag);
+
+			UProceduralMeshComponent* PMC = NewObject<UProceduralMeshComponent>(RampActor, TEXT("Ramps"));
+			RampActor->SetRootComponent(PMC);
+			TArray<FProcMeshTangent> Tangents;
+			UKismetProceduralMeshLibrary::CalculateTangentsForMesh(AllVerts, AllTris, AllUVs, AllNormals, Tangents);
+			PMC->CreateMeshSection_LinearColor(0, AllVerts, AllTris, AllNormals, AllUVs, EmptyColors, Tangents, true);
+			if (FloorMat) PMC->SetMaterial(0, FloorMat);
+			PMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			PMC->SetCollisionResponseToAllChannels(ECR_Block);
+			PMC->RegisterComponent();
 		}
 	}
 
-	// Rocks (80)
-	static constexpr int32 NumRocks = 80;
-	static constexpr float RockMinDist = 800.f;
-	int32 RocksSpawned = 0;
-	if (RockMeshes.Num() > 0)
-	{
-		for (int32 i = 0; i < NumRocks; ++i)
-		{
-			for (int32 Try = 0; Try < 20; ++Try)
-			{
-				const float X = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.85f);
-				const float Y = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.92f);
-				FVector Loc(X, Y, 0.f);
-				if (IsGoodLoc(Loc, RockMinDist))
-				{
-					Loc.Z = TraceGroundZ(X, Y);
-					const float Scale = Rng.FRandRange(1.5f, 4.5f);
-					const float Yaw = Rng.FRandRange(0.f, 360.f);
-					SpawnNatureMesh(RockMeshes[Rng.RandRange(0, RockMeshes.Num() - 1)], Loc, Scale, Yaw);
-					UsedLocs.Add(Loc);
-					++RocksSpawned;
-					break;
-				}
-			}
-		}
-	}
-
-	// Vegetation (2000)
-	static constexpr int32 NumVegetation = 2000;
-	static constexpr float VegMinDist = 150.f;
-	int32 VegSpawned = 0;
-	if (VegMeshes.Num() > 0)
-	{
-		for (int32 i = 0; i < NumVegetation; ++i)
-		{
-			for (int32 Try = 0; Try < 15; ++Try)
-			{
-				const float X = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.85f);
-				const float Y = Rng.FRandRange(-HalfExtent * 0.92f, HalfExtent * 0.92f);
-				FVector Loc(X, Y, 0.f);
-				if (IsGoodLoc(Loc, VegMinDist))
-				{
-					Loc.Z = TraceGroundZ(X, Y);
-					const float Scale = Rng.FRandRange(2.f, 5.f);
-					const float Yaw = Rng.FRandRange(0.f, 360.f);
-					SpawnNatureMesh(VegMeshes[Rng.RandRange(0, VegMeshes.Num() - 1)], Loc, Scale, Yaw);
-					UsedLocs.Add(Loc);
-					++VegSpawned;
-					break;
-				}
-			}
-		}
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[MAP] Procedural nature: %d hills, %d trees, %d rocks, %d vegetation (seed=%d)"),
-		HillsSpawned, TreesSpawned, RocksSpawned, VegSpawned, Seed);
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Procedural map spawned: %d platforms, %d ramps (theme=%d, seed=%d, cell=%.0f)"),
+		MapData.Platforms.Num(), RampCount, static_cast<int32>(Theme), Seed, CellSize);
 }
 
 // ============================================================================
@@ -3779,17 +3783,63 @@ UT66GameInstance* AT66GameMode::GetT66GameInstance() const
 	return Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 }
 
-void AT66GameMode::GenerateProceduralTerrainIfNeeded()
+void AT66GameMode::RegenerateMap(ET66MapTheme Theme, int32 Seed)
 {
-#if WITH_EDITOR
-	// Landscape heights are set only by the editor tool (T66 Tools -> Generate Procedural Hills Landscape).
-	// Run that tool to create/update the landscape; at runtime we use the level as saved.
-	UE_LOG(LogT66, Verbose, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: skipped (use editor tool to update landscape)"));
-#else
-	// Runtime (packaged) build: landscape height editing is editor-only. Use level as saved or pre-generate in editor.
-	UE_LOG(LogT66, Verbose, TEXT("[MAP] GenerateProceduralTerrainIfNeeded: skipped (editor-only API in packaged build)"));
-#endif
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	DestroyActorsWithTag(World, T66MapPlatformTag);
+	DestroyActorsWithTag(World, T66MapRampTag);
+	DestroyActorsWithTag(World, T66FloorMainTag);
+
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (GI)
+	{
+		GI->MapTheme = Theme;
+		GI->RunSeed  = Seed;
+	}
+
+	SpawnLowPolyNatureEnvironment();
 }
+
+// Console command: T66.Map <Farm|Ocean|Mountain> [seed]
+static FAutoConsoleCommandWithWorldAndArgs T66MapCmd(
+	TEXT("T66.Map"),
+	TEXT("Regenerate procedural platform map. Usage: T66.Map <Farm|Ocean|Mountain> [seed]"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
+		[](const TArray<FString>& Args, UWorld* World)
+		{
+			if (!World) return;
+			AGameModeBase* GM = World->GetAuthGameMode();
+			AT66GameMode* T66GM = Cast<AT66GameMode>(GM);
+			if (!T66GM)
+			{
+				UE_LOG(LogTemp, Error, TEXT("T66.Map: no T66GameMode active"));
+				return;
+			}
+
+			ET66MapTheme Theme = ET66MapTheme::Farm;
+			if (Args.Num() >= 1)
+			{
+				const FString& ThemeStr = Args[0];
+				if (ThemeStr.Equals(TEXT("Ocean"), ESearchCase::IgnoreCase))
+					Theme = ET66MapTheme::Ocean;
+				else if (ThemeStr.Equals(TEXT("Mountain"), ESearchCase::IgnoreCase))
+					Theme = ET66MapTheme::Mountain;
+				else if (!ThemeStr.Equals(TEXT("Farm"), ESearchCase::IgnoreCase))
+					UE_LOG(LogTemp, Warning, TEXT("T66.Map: unknown theme '%s', defaulting to Farm"), *ThemeStr);
+			}
+
+			int32 Seed = FMath::Rand();
+			if (Args.Num() >= 2)
+			{
+				Seed = FCString::Atoi(*Args[1]);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("T66.Map: Regenerating map (theme=%s, seed=%d)"), *Args[0], Seed);
+			T66GM->RegenerateMap(Theme, Seed);
+		})
+);
 
 UClass* AT66GameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
 {
@@ -4004,8 +4054,6 @@ AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 		ClassToSpawn = AT66LeprechaunEnemy::StaticClass();
 	else if (CharacterVisualID == FName(TEXT("GoblinThief")))
 		ClassToSpawn = AT66GoblinThiefEnemy::StaticClass();
-	else if (CharacterVisualID == FName(TEXT("UniqueEnemy")))
-		ClassToSpawn = AT66UniqueDebuffEnemy::StaticClass();
 	else
 		ClassToSpawn = AT66EnemyBase::StaticClass();
 

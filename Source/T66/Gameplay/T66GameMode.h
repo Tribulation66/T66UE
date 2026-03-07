@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "T66GameMode.generated.h"
 
+enum class ET66MapTheme : uint8;
 class AT66HeroBase;
 class AT66CompanionBase;
 class AT66StartGate;
@@ -104,6 +105,9 @@ public:
 	/** Apply UI theme (Dark = moonlight, Light = sun) to directional lights in the given world. Shared with frontend. */
 	static void ApplyThemeToDirectionalLightsForWorld(UWorld* World);
 
+	/** Destroy existing map geometry and spawn a new procedural platform+ramp map with the given theme and seed. */
+	void RegenerateMap(ET66MapTheme Theme, int32 Seed);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -114,9 +118,6 @@ protected:
 
 	/** Get the Game Instance cast to our type */
 	UT66GameInstance* GetT66GameInstance() const;
-
-	/** Generate procedural hills terrain if level has a Landscape and GameInstance has a seed. Logs [MAP] on failure. */
-	void GenerateProceduralTerrainIfNeeded();
 
 	/** Set up basic level elements if missing (floor, lighting, player start) */
 	void EnsureLevelSetup();
@@ -180,6 +181,9 @@ protected:
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
 	void SpawnLevelContentAfterLandscapeReady();
 
+	/** Spawn procedural platform+ramp map (cubes + wedges). Replaces old flat floor. */
+	void SpawnLowPolyNatureEnvironment();
+
 	/** Spawn a flat plateau so its top surface is at TopCenterLoc (used under NPCs and world interactables). */
 	void SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc);
 
@@ -188,6 +192,8 @@ protected:
 	bool IsColiseumStage() const;
 	/** True when current level is The Lab (practice room). */
 	bool IsLabLevel() const;
+	/** True when current level is the demo map used for "Enter the Tribulation" (e.g. Map_Summer). */
+	bool IsDemoMapForTribulation() const;
 	void ResetColiseumState();
 
 	/** Called when stage timer changes (we use it to detect "timer started"). */
@@ -266,11 +272,9 @@ private:
 	// Track the current stage boss so we can safely replace it after async load.
 	TWeakObjectPtr<AT66BossBase> StageBoss;
 
-	// Cached engine primitive mesh (loaded once, reused across all spawn functions).
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> CachedCubeMesh;
 
-	/** Returns the cached /Engine/BasicShapes/Cube mesh, loading once on first call. */
 	UStaticMesh* GetCubeMesh();
 
 	// Floor material soft-load.

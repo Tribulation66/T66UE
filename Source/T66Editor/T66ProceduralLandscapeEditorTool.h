@@ -4,20 +4,8 @@
 
 #include "CoreMinimal.h"
 
-class UWorld;
-struct FT66ProceduralLandscapeParams;
-
+// Runtime procedural map generation is now handled by FT66ProceduralMapGenerator + AT66GameMode.
+// Use the console command "T66.Map <Farm|Ocean|Mountain> [seed]" to test map presets in PIE.
 namespace T66ProceduralLandscapeEditor
 {
-	/**
-	 * Generate procedural hills and create or update the Landscape in the given world.
-	 * Logs with [MAP] prefix on errors.
-	 * Returns true on success.
-	 */
-	bool GenerateProceduralHillsLandscape(UWorld* World, const FT66ProceduralLandscapeParams& Params);
-
-#if WITH_EDITOR
-	/** Copy grass (Polytope), landscape/trees/rocks (Cozy Nature) into Content/T66MapAssets. Run once to consolidate. */
-	void SetupT66MapAssets();
-#endif
 }

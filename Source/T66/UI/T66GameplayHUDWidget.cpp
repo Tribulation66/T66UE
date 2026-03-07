@@ -1689,35 +1689,6 @@ void UT66GameplayHUDWidget::RefreshHearts()
 
 void UT66GameplayHUDWidget::RefreshStatusEffects()
 {
-	UT66RunStateSubsystem* RunState = GetRunState();
-	if (!RunState) return;
-
-	// Status effect dots (above hearts)
-	const bool bBurn = RunState->HasStatusBurn();
-	const bool bChill = RunState->HasStatusChill();
-	const bool bCurse = RunState->HasStatusCurse();
-
-	auto SetDot = [&](int32 Index, bool bActive, const FLinearColor& C)
-	{
-		if (StatusEffectDotBoxes.Num() <= Index || StatusEffectDots.Num() <= Index) return;
-		if (StatusEffectDotBoxes[Index].IsValid())
-		{
-			StatusEffectDotBoxes[Index]->SetVisibility(bActive ? EVisibility::Visible : EVisibility::Collapsed);
-		}
-		if (bActive && StatusEffectDots[Index].IsValid())
-		{
-			StatusEffectDots[Index]->SetDotColor(C);
-		}
-	};
-
-	SetDot(0, bBurn, FLinearColor(0.95f, 0.25f, 0.10f, 1.f));
-	SetDot(1, bChill, FLinearColor(0.20f, 0.60f, 0.95f, 1.f));
-	SetDot(2, bCurse, FLinearColor(0.65f, 0.20f, 0.90f, 1.f));
-
-	if (CurseOverlayBorder.IsValid())
-	{
-		CurseOverlayBorder->SetVisibility(bCurse ? EVisibility::Visible : EVisibility::Collapsed);
-	}
 }
 
 void UT66GameplayHUDWidget::RefreshHUD()

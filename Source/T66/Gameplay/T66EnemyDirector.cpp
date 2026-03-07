@@ -5,7 +5,6 @@
 #include "Gameplay/T66LeprechaunEnemy.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HouseNPCBase.h"
-#include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -23,7 +22,6 @@ AT66EnemyDirector::AT66EnemyDirector()
 	EnemyClass = AT66EnemyBase::StaticClass();
 	LeprechaunClass = AT66LeprechaunEnemy::StaticClass();
 	GoblinThiefClass = AT66GoblinThiefEnemy::StaticClass();
-	UniqueEnemyClass = AT66UniqueDebuffEnemy::StaticClass();
 }
 
 void AT66EnemyDirector::BeginPlay()
@@ -92,7 +90,6 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 		if (!bSpawningArmed)
 		{
 			bSpawningArmed = true;
-			bSpawnedUniqueThisStage = false;
 			// Spawn immediately so players don't think spawns are broken, then continue on interval.
 			SpawnWave();
 			World->GetTimerManager().ClearTimer(SpawnTimerHandle);
@@ -103,7 +100,6 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 	{
 		// Timer frozen: don't spawn waves.
 		bSpawningArmed = false;
-		bSpawnedUniqueThisStage = false;
 		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
 	}
 }
@@ -165,8 +161,7 @@ void AT66EnemyDirector::SpawnWave()
 	TSubclassOf<AT66EnemyBase> RegularClass = EnemyClass;
 	if (!RegularClass
 		|| RegularClass->IsChildOf(AT66GoblinThiefEnemy::StaticClass())
-		|| RegularClass->IsChildOf(AT66LeprechaunEnemy::StaticClass())
-		|| RegularClass->IsChildOf(AT66UniqueDebuffEnemy::StaticClass()))
+		|| RegularClass->IsChildOf(AT66LeprechaunEnemy::StaticClass()))
 	{
 		static bool bWarnedEnemyClass = false;
 		if (!bWarnedEnemyClass)
@@ -265,13 +260,14 @@ void AT66EnemyDirector::SpawnWave()
 		}
 	}
 
-	// Spawn at 1.5x hero attack range so enemies don't appear on top of the player.
+	// Spawn always outside hero attack range (use scaled range so scale stat is respected).
 	float EffectiveSpawnMin = SpawnMinDistance;
 	float EffectiveSpawnMax = SpawnMaxDistance;
 	if (RunState)
 	{
-		const float AttackRange = FMath::Max(400.f, RunState->GetHeroBaseAttackRange());
-		EffectiveSpawnMin = AttackRange * 1.5f;
+		const float ActualAttackRange = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AttackRange);
+		const float AttackRange = FMath::Max(400.f, ActualAttackRange);
+		EffectiveSpawnMin = AttackRange * 1.25f;  // always outside range
 		EffectiveSpawnMax = EffectiveSpawnMin + 400.f;
 	}
 
@@ -362,83 +358,6 @@ void AT66EnemyDirector::SpawnWave()
 	}
 
 	SpawnNextStaggeredBatch();
-
-	// Unique enemy: one at a time, spawned as a pressure spike.
-	if (UniqueEnemyClass && !ActiveUniqueEnemy.IsValid()
-		&& (!bSpawnedUniqueThisStage || (Rng.FRand() < UniqueEnemyChancePerWave)))
-	{
-		FVector PlayerLoc = PlayerPawn->GetActorLocation();
-		FVector SpawnLoc = PlayerLoc;
-
-		// Unique enemy also spawns at 1.5x attack range (EffectiveSpawnMin/Max from wave above).
-		for (int32 Try = 0; Try < 6; ++Try)
-		{
-			float Angle = FMath::RandRange(0.f, 2.f * PI);
-			float Dist = FMath::RandRange(EffectiveSpawnMin, EffectiveSpawnMax);
-			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
-			SpawnLoc = PlayerLoc + Offset;
-
-			if (!IsInAnySafeZone2D(SpawnLoc)) break;
-		}
-		// Guarantee: if still inside a safe zone, push outward past nearest NPC radius
-		if (Registry && IsInAnySafeZone2D(SpawnLoc))
-		{
-			static constexpr float SafeZonePushMargin = 50.f;
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
-			{
-				AT66HouseNPCBase* NPC = WeakNPC.Get();
-				if (!NPC) continue;
-				const float R = NPC->GetSafeZoneRadius();
-				FVector ToSpawnPt = SpawnLoc - NPC->GetActorLocation();
-				ToSpawnPt.Z = 0.f;
-				const float Dist2D = ToSpawnPt.Size();
-				if (Dist2D < R && Dist2D > 1.f)
-				{
-					FVector Dir = ToSpawnPt / Dist2D;
-					SpawnLoc = NPC->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
-					SpawnLoc.Z = PlayerLoc.Z;
-					break;
-				}
-				else if (Dist2D <= 1.f)
-				{
-					FVector Dir(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f);
-					Dir.Z = 0.f;
-					if (Dir.Normalize())
-					{
-						SpawnLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
-						SpawnLoc.Z = PlayerLoc.Z;
-					}
-					break;
-				}
-			}
-		}
-
-		// Trace down for ground.
-		FHitResult Hit;
-		FVector Start = SpawnLoc + FVector(0.f, 0.f, 500.f);
-		FVector End = SpawnLoc - FVector(0.f, 0.f, 2000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-		{
-			static constexpr float EnemyCapsuleHalfHeight = 88.f;
-			SpawnLoc = Hit.ImpactPoint + FVector(0.f, 0.f, EnemyCapsuleHalfHeight);
-		}
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		AT66EnemyBase* Unique = World->SpawnActor<AT66EnemyBase>(UniqueEnemyClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-		if (Unique)
-		{
-			// Unique enemies shouldn't influence the director's AliveCount budget.
-			Unique->OwningDirector = nullptr;
-			if (RunState)
-			{
-				Unique->ApplyStageScaling(RunState->GetCurrentStage());
-				Unique->ApplyDifficultyScalar(Scalar);
-			}
-			ActiveUniqueEnemy = Unique;
-			bSpawnedUniqueThisStage = true;
-		}
-	}
 }
 
 void AT66EnemyDirector::SpawnNextStaggeredBatch()

@@ -3,39 +3,49 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gameplay/T66ProceduralLandscapeParams.h"
+
+struct FT66MapPreset;
+
+/** A single platform (cube) in the procedural map graph. */
+struct FT66PlatformNode
+{
+	FVector2D Position = FVector2D::ZeroVector;
+	float TopZ = 0.f;
+	float SizeX = 0.f;
+	float SizeY = 0.f;
+	int32 GridRow = 0;
+	int32 GridCol = 0;
+	TArray<int32> Connections;
+};
+
+/** A ramp (wedge) connecting two platforms. */
+struct FT66RampEdge
+{
+	int32 LowerIndex = -1;
+	int32 HigherIndex = -1;
+	float Width = 0.f;
+	float Depth = 0.f;
+	float PerpOffset = 0.f;
+
+	/** True when this is a cardinal-X connection (horizontal); false for cardinal-Y (vertical). */
+	bool bAlongX = true;
+};
+
+/** Output of the procedural map generator. */
+struct FT66ProceduralMapResult
+{
+	TArray<FT66PlatformNode> Platforms;
+	TArray<FT66RampEdge> Ramps;
+	bool bValid = false;
+};
 
 /**
- * Deterministic procedural rolling-hills heightfield generator.
- * Used by both editor tool and runtime (GameMode) to produce the same terrain from a seed.
+ * Grid-based procedural map generator.
+ * Produces platforms on an NxN grid with seeded elevations and ramp connections.
+ * Guarantees full graph connectivity (every platform reachable from the start area).
  */
-class T66_API FT66ProceduralLandscapeGenerator
+class T66_API FT66ProceduralMapGenerator
 {
 public:
-	/**
-	 * Generate a heightfield (floats, world Z in UU) into OutHeights.
-	 * Grid is SizeX x SizeY (vertex count). World position at (Ix,Jy) is (LandscapeOriginX + Ix*QuadSizeUU, LandscapeOriginY + Jy*QuadSizeUU).
-	 * Applies flat zones (start area, boss area) at Z=0 with smooth blend. Returns false if params or dimensions are invalid.
-	 */
-	static bool GenerateHeightfield(
-		const FT66ProceduralLandscapeParams& Params,
-		int32 SizeX,
-		int32 SizeY,
-		float QuadSizeUU,
-		TArray<float>& OutHeights);
-
-	/**
-	 * Convert float heights (world Z) to Landscape uint16 height data.
-	 * Mid = 32768, ScaleZ is the landscape scale Z (e.g. 100).
-	 */
-	static void FloatsToLandscapeHeightData(const TArray<float>& Heights, float ScaleZ, TArray<uint16>& OutHeightData);
-
-	/**
-	 * Get grid dimensions from preset. Returns (SizeX, SizeY) vertex count.
-	 * Small: 505x505, Large: 1009x1009 (or similar; must match Landscape component layout).
-	 */
-	static void GetDimensionsForPreset(ET66LandscapeSizePreset Preset, int32& OutSizeX, int32& OutSizeY);
-
-	/** Default quad size in UU per vertex step (1 m = 100 UU typical). */
-	static constexpr float DefaultQuadSizeUU = 100.f;
+	static FT66ProceduralMapResult Generate(const FT66MapPreset& Preset);
 };

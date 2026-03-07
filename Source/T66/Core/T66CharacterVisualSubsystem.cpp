@@ -8,7 +8,6 @@
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Modules/ModuleManager.h"
 #include "GameFramework/Character.h"
@@ -304,10 +303,13 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	TargetMesh->SetRelativeScale3D(Scale);
 
 	FVector RelLoc = Res.Row.MeshRelativeLocation;
-	if (Res.Row.bAutoGroundToActorOrigin)
+
+	// ACharacter owners use capsule-based alignment (below); skip bAutoGroundToActorOrigin
+	// for them so the two adjustments don't interfere at extreme scales.
+	const bool bIsCharacterOwner = Cast<ACharacter>(TargetMesh->GetOwner()) != nullptr;
+	if (Res.Row.bAutoGroundToActorOrigin && !bIsCharacterOwner)
 	{
 		const FBoxSphereBounds B = Res.Mesh->GetBounds();
-		// Account for scale (approx; bounds are in mesh space).
 		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z) * Scale.Z;
 		RelLoc.Z -= BottomZ;
 	}
@@ -324,32 +326,6 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 			const float CurrentBottom = RelLoc.Z + BottomZ;
 			const float DesiredBottom = -CapsuleHalfHeight;
 			RelLoc.Z += (DesiredBottom - CurrentBottom);
-
-			// Some non-biped FBX exports have a huge local-space bounds origin (pivot far from geometry),
-			// which effectively moves the mesh far away from the capsule (appearing "invisible" in-game).
-			// Fix: auto-center XY by subtracting the rotated bounds origin. This is gated by a small
-			// threshold so normal character meshes (with near-zero origin) are unaffected.
-			const FVector LocalOriginXY(B.Origin.X * Scale.X, B.Origin.Y * Scale.Y, 0.f);
-			const float OriginXYSize = LocalOriginXY.Size();
-			if (OriginXYSize > 1.f)
-			{
-				const FVector RotatedOriginXY = Res.Row.MeshRelativeRotation.RotateVector(LocalOriginXY);
-				RelLoc.X -= RotatedOriginXY.X;
-				RelLoc.Y -= RotatedOriginXY.Y;
-				bAppliedAutoCenterFix = true;
-
-#if !UE_BUILD_SHIPPING
-				static int32 LoggedCenterFixes = 0;
-				if (LoggedCenterFixes < 12)
-				{
-					++LoggedCenterFixes;
-					UE_LOG(LogTemp, Verbose, TEXT("[INVIS] CharacterVisuals: AutoCenteredXY VisualID=%s OriginXY=(%.1f,%.1f) RotatedXY=(%.1f,%.1f)"),
-						*VisualID.ToString(),
-						LocalOriginXY.X, LocalOriginXY.Y,
-						RotatedOriginXY.X, RotatedOriginXY.Y);
-				}
-#endif
-			}
 		}
 	}
 	TargetMesh->SetRelativeLocation(RelLoc);
@@ -375,28 +351,6 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 				*VisualID.ToString());
 		}
 #endif
-	}
-
-	// Force emissive self-illumination on all character materials so characters are
-	// always bright regardless of scene lighting (same technique Fortnite uses).
-	// Copies the diffuse texture into the emissive channel with a weight so characters
-	// "glow" from their own texture. Works for all current and future imported models.
-	{
-		const int32 NumSlots = TargetMesh->GetNumMaterials();
-		for (int32 i = 0; i < NumSlots; ++i)
-		{
-			UMaterialInstanceDynamic* MID = TargetMesh->CreateDynamicMaterialInstance(i);
-			if (MID)
-			{
-				UTexture* DiffuseTex = nullptr;
-				MID->GetTextureParameterValue(FName(TEXT("DiffuseColorMap")), DiffuseTex);
-				if (DiffuseTex)
-				{
-					MID->SetTextureParameterValue(FName(TEXT("EmissiveColorMap")), DiffuseTex);
-					MID->SetScalarParameterValue(FName(TEXT("EmissiveColorMapWeight")), 0.8f);
-				}
-			}
-		}
 	}
 
 	if (PlaceholderToHide)

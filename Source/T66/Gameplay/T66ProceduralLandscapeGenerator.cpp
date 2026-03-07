@@ -1,537 +1,765 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66ProceduralLandscapeGenerator.h"
+#include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "T66.h"
-
-#include "Math/UnrealMathUtility.h"
+#include "Math/RandomStream.h"
 
 namespace
 {
-	// Deterministic 2D value noise (hash-based). Same seed + (x,y) => same value in [0,1].
-	inline uint32 T66Hash(int32 Seed, int32 X, int32 Y)
+	int32 GridIdx(int32 Row, int32 Col, int32 GridSize)
 	{
-		uint32 H = static_cast<uint32>(Seed);
-		H = (H * 31) + static_cast<uint32>(X);
-		H = (H * 31) + static_cast<uint32>(Y);
-		H ^= (H >> 16);
-		H *= 0x85ebca6b;
-		H ^= (H >> 13);
-		H *= 0xc2b2ae35;
-		H ^= (H >> 16);
-		return H;
+		return Row * GridSize + Col;
 	}
 
-	inline float T66ValueNoise(int32 Seed, float X, float Y, float ScaleMeters)
+	float QuantizeToStep(float Value, const FT66MapPreset& Preset)
 	{
-		// Scale so wavelength ~ ScaleMeters; 1 unit in (X,Y) = 1 meter when ScaleMeters=1.
-		const float S = FMath::Max(ScaleMeters, 1.f);
-		const float Nx = X / S;
-		const float Ny = Y / S;
-		const int32 I0 = FMath::FloorToInt(Nx);
-		const int32 J0 = FMath::FloorToInt(Ny);
-		const float Fx = Nx - I0;
-		const float Fy = Ny - J0;
-		const float FxS = Fx * Fx * (3.f - 2.f * Fx);
-		const float FyS = Fy * Fy * (3.f - 2.f * Fy);
-
-		auto V = [Seed](int32 i, int32 j) {
-			return (T66Hash(Seed, i, j) % 65536u) / 65535.f;
-		};
-
-		const float V00 = V(I0, J0);
-		const float V10 = V(I0 + 1, J0);
-		const float V01 = V(I0, J0 + 1);
-		const float V11 = V(I0 + 1, J0 + 1);
-		const float Vx0 = FMath::Lerp(V00, V10, FxS);
-		const float Vx1 = FMath::Lerp(V01, V11, FxS);
-		return FMath::Lerp(Vx0, Vx1, FyS);
+		const float Step = FMath::Max(Preset.ElevationStep, 1.f);
+		return Preset.BaselineZ + FMath::RoundToFloat((Value - Preset.BaselineZ) / Step) * Step;
 	}
 
-	// Normalize to [-1, 1] for symmetric hills
-	inline float T66NoiseSigned(int32 Seed, float WorldX, float WorldY, float ScaleMeters)
+	uint64 MakeBoundaryKey(int32 A, int32 B)
 	{
-		return 2.f * T66ValueNoise(Seed, WorldX, WorldY, ScaleMeters) - 1.f;
+		const uint32 Low = static_cast<uint32>(FMath::Min(A, B));
+		const uint32 High = static_cast<uint32>(FMath::Max(A, B));
+		return (static_cast<uint64>(Low) << 32) | static_cast<uint64>(High);
 	}
-}
 
-bool FT66ProceduralLandscapeGenerator::GenerateHeightfield(
-	const FT66ProceduralLandscapeParams& Params,
-	int32 SizeX,
-	int32 SizeY,
-	float QuadSizeUU,
-	TArray<float>& OutHeights)
-{
-	if (SizeX < 2 || SizeY < 2)
+	FIntPoint TurnLeft(const FIntPoint& Dir)
 	{
-		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateHeightfield: invalid dimensions SizeX=%d SizeY=%d"), SizeX, SizeY);
-		return false;
+		return FIntPoint(-Dir.Y, Dir.X);
 	}
-	if (Params.bFlatTerrain)
+
+	FIntPoint TurnRight(const FIntPoint& Dir)
 	{
-		OutHeights.SetNumUninitialized(SizeX * SizeY);
-		for (int32 I = 0; I < OutHeights.Num(); ++I)
+		return FIntPoint(Dir.Y, -Dir.X);
+	}
+
+	struct FT66RampFootprint
+	{
+		FBox2D Box;
+	};
+
+	void InitializePlatforms(FT66ProceduralMapResult& Result, const FT66MapPreset& Preset, int32 GridSize, float CellSize)
+	{
+		Result.Platforms.SetNum(GridSize * GridSize);
+
+		for (int32 R = 0; R < GridSize; ++R)
 		{
-			OutHeights[I] = 0.f;
-		}
-		UE_LOG(LogT66, Log, TEXT("[MAP] GenerateHeightfield: flat terrain (bFlatTerrain=true)"));
-		return true;
-	}
-	if (Params.HillAmplitude <= 0.f || Params.VeryLargeScaleMeters < 10.f || Params.LargeScaleMeters < 10.f || Params.MediumScaleMeters < 10.f)
-	{
-		UE_LOG(LogT66, Error, TEXT("[MAP] GenerateHeightfield: invalid params (amplitude or scales)"));
-		return false;
-	}
-	const bool bUseSmallScale = Params.SmallScaleMeters >= 1.f;
-	const bool bOnlyVL = Params.bOnlyVeryLargeHills;
-
-	OutHeights.SetNumUninitialized(SizeX * SizeY);
-
-	const int32 Seed = Params.Seed;
-	const float A = Params.HillAmplitude;
-	const float VL = Params.VeryLargeScaleMeters;
-	const float L = Params.LargeScaleMeters;
-	const float M = Params.MediumScaleMeters;
-	const float S = bUseSmallScale ? Params.SmallScaleMeters : 0.f;
-	const float OriginX = Params.LandscapeOriginX;
-	const float OriginY = Params.LandscapeOriginY;
-
-	for (int32 Jy = 0; Jy < SizeY; ++Jy)
-	{
-		for (int32 Ix = 0; Ix < SizeX; ++Ix)
-		{
-			const float WorldX = OriginX + Ix * QuadSizeUU;
-			const float WorldY = OriginY + Jy * QuadSizeUU;
-			// Convert UU to meters (1 m = 100 UU)
-			const float WxM = WorldX / 100.f;
-			const float WyM = WorldY / 100.f;
-
-			float H;
-			if (bOnlyVL)
+			for (int32 C = 0; C < GridSize; ++C)
 			{
-				H = T66NoiseSigned(Seed, WxM, WyM, VL);  // Single octave: sparse very large hills only
+				const int32 Idx = GridIdx(R, C, GridSize);
+				FT66PlatformNode& P = Result.Platforms[Idx];
+				P.Position = FVector2D(
+					-Preset.MapHalfExtent + (C + 0.5f) * CellSize,
+					-Preset.MapHalfExtent + (R + 0.5f) * CellSize);
+				P.TopZ = Preset.BaselineZ;
+				P.SizeX = CellSize;
+				P.SizeY = CellSize;
+				P.GridRow = R;
+				P.GridCol = C;
+				P.Connections.Reset();
+			}
+		}
+	}
+
+	int32 PickFeatureLevel(FRandomStream& Rng, const FT66MapPreset& Preset, int32 FeatureIdx)
+	{
+		const int32 MinLevel = FMath::FloorToInt((Preset.ElevationMin - Preset.BaselineZ) / FMath::Max(Preset.ElevationStep, 1.f));
+		const int32 MaxLevel = FMath::CeilToInt((Preset.ElevationMax - Preset.BaselineZ) / FMath::Max(Preset.ElevationStep, 1.f));
+
+		const bool bCanGoNegative = MinLevel < 0;
+		const bool bCanGoPositive = MaxLevel > 0;
+		if (!bCanGoNegative && !bCanGoPositive)
+		{
+			return 0;
+		}
+
+		int32 Sign = 1;
+		switch (Preset.Theme)
+		{
+		case ET66MapTheme::Farm:
+			if (bCanGoNegative && bCanGoPositive)
+			{
+				Sign = (FeatureIdx % 2 == 0) ? 1 : -1;
 			}
 			else
 			{
-				// Mix: ~3 large (VL) + ~7 medium (L) + a few small hills (S when bUseSmallScale)
-				H = 0.52f * T66NoiseSigned(Seed, WxM, WyM, VL)
-					+ 0.40f * T66NoiseSigned(Seed + 1, WxM, WyM, L);
-				if (bUseSmallScale)
-				{
-					H += 0.08f * T66NoiseSigned(Seed + 3, WxM, WyM, S);
-				}
+				Sign = bCanGoPositive ? 1 : -1;
 			}
-			// Flat plateaus at tops: remap so peaks become a flat cap at full amplitude (wide, climbable)
-			const float PlateauStart = 0.42f;
-			const float PlateauTop = 1.0f;
-			if (H > PlateauStart)
-			{
-				H = FMath::Lerp(PlateauStart, PlateauTop, FMath::SmoothStep(PlateauStart, 0.78f, H));
-			}
-			H *= A;
-
-			if (Params.bCarveRiverValley)
-			{
-				// Gentle valley along X (center Y): smooth trench
-				const float HalfSizeY = (SizeY - 1) * QuadSizeUU * 0.5f;
-				const float DistFromCenterY = FMath::Abs(WorldY - HalfSizeY);
-				const float RiverHalfWidthUU = Params.RiverWidthMeters * 100.f * 0.5f;
-				if (RiverHalfWidthUU > 0.f)
-				{
-					const float T = FMath::Clamp(DistFromCenterY / RiverHalfWidthUU, 0.f, 1.f);
-					const float Falloff = 1.f - FMath::SmoothStep(0.f, 1.f, T);
-					H -= Params.RiverDepthUU * Falloff;
-				}
-			}
-
-			OutHeights[Jy * SizeX + Ix] = H;
+			break;
+		case ET66MapTheme::Ocean:
+			Sign = (!bCanGoPositive || Rng.FRand() < 0.90f) ? -1 : 1;
+			break;
+		case ET66MapTheme::Mountain:
+			Sign = (!bCanGoNegative || Rng.FRand() < 0.80f) ? 1 : -1;
+			break;
 		}
+
+		if (Sign > 0 && !bCanGoPositive)
+		{
+			Sign = -1;
+		}
+		if (Sign < 0 && !bCanGoNegative)
+		{
+			Sign = 1;
+		}
+
+		const int32 MaxAbsLevel = (Sign > 0) ? MaxLevel : FMath::Abs(MinLevel);
+		if (MaxAbsLevel <= 0)
+		{
+			return 0;
+		}
+
+		int32 Magnitude = 1;
+		if (Preset.Theme == ET66MapTheme::Farm)
+		{
+			Magnitude = Rng.RandRange(1, FMath::Min(MaxAbsLevel, 3));
+		}
+		else if (Preset.Theme == ET66MapTheme::Ocean)
+		{
+			Magnitude = Rng.RandRange(1, FMath::Min(MaxAbsLevel, 6));
+		}
+		else
+		{
+			Magnitude = Rng.RandRange(1, FMath::Min(MaxAbsLevel, 8));
+		}
+
+		return Sign * Magnitude;
 	}
 
-	// Enforce large hills spread: large-hill peaks cannot be right next to each other (within LargeHillMinSpacingUU)
-	if (!bOnlyVL && Params.LargeHillMinSpacingUU > 0.f)
+	void PaintBrush(
+		TArray<FT66PlatformNode>& Platforms,
+		TArray<float>& Dominance,
+		int32 GridSize,
+		int32 CenterR,
+		int32 CenterC,
+		int32 RadiusCells,
+		float Height,
+		float Priority)
 	{
-		TArray<float> VLOnly;
-		VLOnly.SetNumUninitialized(SizeX * SizeY);
-		for (int32 Jy = 0; Jy < SizeY; ++Jy)
+		for (int32 DR = -RadiusCells; DR <= RadiusCells; ++DR)
 		{
-			for (int32 Ix = 0; Ix < SizeX; ++Ix)
+			for (int32 DC = -RadiusCells; DC <= RadiusCells; ++DC)
 			{
-				const float WxM = (OriginX + Ix * QuadSizeUU) / 100.f;
-				const float WyM = (OriginY + Jy * QuadSizeUU) / 100.f;
-				VLOnly[Jy * SizeX + Ix] = T66NoiseSigned(Seed, WxM, WyM, VL);
-			}
-		}
-		struct FPeak { int32 Idx; float Val; float Wx; float Wy; };
-		TArray<FPeak> Peaks;
-		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
-		{
-			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
-			{
-				const int32 Idx = Jy * SizeX + Ix;
-				const float V = VLOnly[Idx];
-				if (V <= VLOnly[Idx - 1] || V <= VLOnly[Idx + 1] || V <= VLOnly[Idx - SizeX] || V <= VLOnly[Idx + SizeX] ||
-				    V <= VLOnly[Idx - SizeX - 1] || V <= VLOnly[Idx - SizeX + 1] || V <= VLOnly[Idx + SizeX - 1] || V <= VLOnly[Idx + SizeX + 1])
+				const int32 R = CenterR + DR;
+				const int32 C = CenterC + DC;
+				if (R < 0 || R >= GridSize || C < 0 || C >= GridSize)
+				{
 					continue;
-				const float Wx = OriginX + Ix * QuadSizeUU;
-				const float Wy = OriginY + Jy * QuadSizeUU;
-				Peaks.Add({ Idx, V, Wx, Wy });
-			}
-		}
-		Peaks.Sort([](const FPeak& A, const FPeak& B) { return A.Val > B.Val; });
-		const float MinSpacingSq = Params.LargeHillMinSpacingUU * Params.LargeHillMinSpacingUU;
-		for (int32 i = 0; i < Peaks.Num(); ++i)
-		{
-			const FPeak& P = Peaks[i];
-			bool bTooCloseToHigher = false;
-			for (int32 j = 0; j < i; ++j)
-			{
-				const float Dx = P.Wx - Peaks[j].Wx;
-				const float Dy = P.Wy - Peaks[j].Wy;
-				if ((Dx * Dx + Dy * Dy) < MinSpacingSq)
-				{
-					bTooCloseToHigher = true;
-					break;
 				}
-			}
-			if (bTooCloseToHigher)
-			{
-				OutHeights[P.Idx] *= 0.58f;  // gentle dampen so it becomes a shoulder, not flattened into one blob
+
+				const float Dist = FMath::Sqrt(static_cast<float>(DR * DR + DC * DC));
+				if (Dist > static_cast<float>(RadiusCells) + 0.25f)
+				{
+					continue;
+				}
+
+				const int32 Idx = GridIdx(R, C, GridSize);
+				const float Strength = Priority - Dist * 0.08f;
+				if (Strength > Dominance[Idx])
+				{
+					Platforms[Idx].TopZ = Height;
+					Dominance[Idx] = Strength;
+				}
 			}
 		}
 	}
 
-	// Smoothing passes (box blur 3x3, blend by SmoothStrength)
-	const int32 Passes = FMath::Clamp(Params.SmoothPasses, 1, 10);
-	const float Strength = FMath::Clamp(Params.SmoothStrength, 0.1f, 1.f);
-	TArray<float> Temp;
-	Temp.SetNumUninitialized(SizeX * SizeY);
-
-	for (int32 P = 0; P < Passes; ++P)
+	void GenerateLaneFeatures(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize)
 	{
-		for (int32 Jy = 0; Jy < SizeY; ++Jy)
+		FRandomStream Rng(Preset.Seed);
+		TArray<float> Dominance;
+		Dominance.Init(-1000000.f, Platforms.Num());
+
+		const int32 FeatureCount = Rng.RandRange(Preset.FeatureCountMin, Preset.FeatureCountMax);
+		TArray<FIntPoint> StartSeeds;
+		const float MinSeedSpacing = static_cast<float>(GridSize) / FMath::Clamp(FMath::Sqrt(static_cast<float>(FeatureCount)) * 0.75f, 1.f, 1000.f);
+
+		for (int32 FeatureIdx = 0; FeatureIdx < FeatureCount; ++FeatureIdx)
 		{
-			for (int32 Ix = 0; Ix < SizeX; ++Ix)
+			const int32 Level = PickFeatureLevel(Rng, Preset, FeatureIdx);
+			if (Level == 0)
 			{
-				float Sum = 0.f;
-				int32 Count = 0;
-				for (int32 dy = -1; dy <= 1; ++dy)
+				continue;
+			}
+
+			const float Height = FMath::Clamp(
+				QuantizeToStep(Preset.BaselineZ + static_cast<float>(Level) * Preset.ElevationStep, Preset),
+				Preset.ElevationMin,
+				Preset.ElevationMax);
+
+			FIntPoint Start;
+			bool bFoundStart = false;
+			for (int32 Attempt = 0; Attempt < 40 && !bFoundStart; ++Attempt)
+			{
+				const FIntPoint Candidate(
+					Rng.RandRange(0, GridSize - 1),
+					Rng.RandRange(0, GridSize - 1));
+
+				bool bFarEnough = true;
+				for (const FIntPoint& Existing : StartSeeds)
 				{
-					for (int32 dx = -1; dx <= 1; ++dx)
+					const float Dist = FVector2D::Distance(FVector2D(Candidate), FVector2D(Existing));
+					if (Dist < MinSeedSpacing)
 					{
-						const int32 Nx = FMath::Clamp(Ix + dx, 0, SizeX - 1);
-						const int32 Ny = FMath::Clamp(Jy + dy, 0, SizeY - 1);
-						Sum += OutHeights[Ny * SizeX + Nx];
-						++Count;
+						bFarEnough = false;
+						break;
 					}
 				}
-				const float Avg = Sum / Count;
-				const float Current = OutHeights[Jy * SizeX + Ix];
-				Temp[Jy * SizeX + Ix] = FMath::Lerp(Current, Avg, Strength);
+
+				if (bFarEnough)
+				{
+					Start = Candidate;
+					bFoundStart = true;
+				}
+			}
+
+			if (!bFoundStart)
+			{
+				Start = FIntPoint(Rng.RandRange(0, GridSize - 1), Rng.RandRange(0, GridSize - 1));
+			}
+			StartSeeds.Add(Start);
+
+			int32 CurR = Start.X;
+			int32 CurC = Start.Y;
+			FIntPoint Dir;
+			switch (Rng.RandRange(0, 3))
+			{
+			case 0: Dir = FIntPoint(1, 0); break;
+			case 1: Dir = FIntPoint(-1, 0); break;
+			case 2: Dir = FIntPoint(0, 1); break;
+			default: Dir = FIntPoint(0, -1); break;
+			}
+
+			const int32 Length = Rng.RandRange(Preset.FeatureLengthMinCells, Preset.FeatureLengthMaxCells);
+			const int32 Width = Rng.RandRange(Preset.FeatureWidthMinCells, Preset.FeatureWidthMaxCells);
+			const float BasePriority = 1000.f + FeatureIdx * 10.f + Rng.FRandRange(0.f, 3.f);
+
+			for (int32 StepIdx = 0; StepIdx < Length; ++StepIdx)
+			{
+				PaintBrush(Platforms, Dominance, GridSize, CurR, CurC, Width, Height, BasePriority - StepIdx * 0.01f);
+
+				if (Rng.FRand() < Preset.RoomChance)
+				{
+					PaintBrush(Platforms, Dominance, GridSize, CurR, CurC, Width + Rng.RandRange(1, 3), Height, BasePriority + 0.5f);
+				}
+
+				if (Rng.FRand() < 0.28f)
+				{
+					Dir = (Rng.FRand() < 0.5f) ? TurnLeft(Dir) : TurnRight(Dir);
+				}
+
+				if (Rng.FRand() < 0.10f)
+				{
+					const FIntPoint BranchDir = (Rng.FRand() < 0.5f) ? TurnLeft(Dir) : TurnRight(Dir);
+					const int32 BranchLength = FMath::Max(4, Length / 3 + Rng.RandRange(-3, 6));
+					int32 BranchR = CurR;
+					int32 BranchC = CurC;
+					for (int32 B = 0; B < BranchLength; ++B)
+					{
+						PaintBrush(Platforms, Dominance, GridSize, BranchR, BranchC, FMath::Max(1, Width - 1), Height, BasePriority - 5.f);
+						BranchR = FMath::Clamp(BranchR + BranchDir.X, 0, GridSize - 1);
+						BranchC = FMath::Clamp(BranchC + BranchDir.Y, 0, GridSize - 1);
+					}
+				}
+
+				if (Rng.FRand() < 0.08f)
+				{
+					// Teleport-start a continuation elsewhere to break regional coordination.
+					CurR = Rng.RandRange(0, GridSize - 1);
+					CurC = Rng.RandRange(0, GridSize - 1);
+				}
+
+				int32 NextR = CurR + Dir.X;
+				int32 NextC = CurC + Dir.Y;
+				if (NextR < 0 || NextR >= GridSize || NextC < 0 || NextC >= GridSize)
+				{
+					Dir = (Rng.FRand() < 0.5f) ? TurnLeft(Dir) : TurnRight(Dir);
+					NextR = FMath::Clamp(CurR + Dir.X, 0, GridSize - 1);
+					NextC = FMath::Clamp(CurC + Dir.Y, 0, GridSize - 1);
+				}
+
+				CurR = NextR;
+				CurC = NextC;
 			}
 		}
-		Swap(OutHeights, Temp);
 	}
 
-	// Lambda: enforce max slope (cardinal + diagonal) so hills never exceed MaxSlopeDegrees.
-	// Diagonal neighbors use max delta = MaxDH * sqrt(2) so diagonal slopes are also capped.
-	const auto EnforceSlopeLimit = [&OutHeights, SizeX, SizeY, QuadSizeUU](
-		float MaxSlopeDegrees, int32 MaxIterations) -> void
+	void RemoveTinyIslands(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize)
 	{
-		if (MaxSlopeDegrees <= 0.f || MaxSlopeDegrees >= 90.f) return;
-		const float MaxSlope = FMath::Tan(FMath::DegreesToRadians(MaxSlopeDegrees));
-		const float MaxDH = MaxSlope * QuadSizeUU;
-		const float MaxDHDiag = MaxDH * 1.41421356f;  // sqrt(2) for diagonal step
-		for (int32 Iter = 0; Iter < MaxIterations; ++Iter)
+		TArray<float> NewHeights;
+		NewHeights.SetNum(Platforms.Num());
+
+		for (int32 R = 0; R < GridSize; ++R)
+		{
+			for (int32 C = 0; C < GridSize; ++C)
+			{
+				const int32 Idx = GridIdx(R, C, GridSize);
+				const float H = Platforms[Idx].TopZ;
+				NewHeights[Idx] = H;
+
+				int32 SameCount = 0;
+				int32 BaselineCount = 0;
+				for (const FIntPoint Off : { FIntPoint(-1, 0), FIntPoint(1, 0), FIntPoint(0, -1), FIntPoint(0, 1) })
+				{
+					const int32 NR = R + Off.X;
+					const int32 NC = C + Off.Y;
+					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize)
+					{
+						continue;
+					}
+
+					const float NH = Platforms[GridIdx(NR, NC, GridSize)].TopZ;
+					if (FMath::IsNearlyEqual(NH, H))
+					{
+						++SameCount;
+					}
+					if (FMath::IsNearlyEqual(NH, Preset.BaselineZ))
+					{
+						++BaselineCount;
+					}
+				}
+
+				if (!FMath::IsNearlyEqual(H, Preset.BaselineZ) && SameCount == 0 && BaselineCount >= 2)
+				{
+					NewHeights[Idx] = Preset.BaselineZ;
+				}
+			}
+		}
+
+		for (int32 I = 0; I < Platforms.Num(); ++I)
+		{
+			Platforms[I].TopZ = NewHeights[I];
+		}
+	}
+
+	void ClampAdjacency(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize, int32 MaxIter = 24)
+	{
+		const float MaxDelta = FMath::Max(Preset.ElevationStep, 1.f) * FMath::Max(Preset.MaxAdjacentSteps, 1);
+		for (int32 Iter = 0; Iter < MaxIter; ++Iter)
 		{
 			bool bChanged = false;
-			// Forward pass
-			for (int32 Jy = 0; Jy < SizeY; ++Jy)
+
+			for (int32 R = 0; R < GridSize; ++R)
 			{
-				for (int32 Ix = 0; Ix < SizeX; ++Ix)
+				for (int32 C = 0; C < GridSize; ++C)
 				{
-					const int32 Idx = Jy * SizeX + Ix;
-					float H = OutHeights[Idx];
-					// Cardinal
-					if (Ix > 0)
+					const int32 Idx = GridIdx(R, C, GridSize);
+					float NewH = Platforms[Idx].TopZ;
+
+					for (const FIntPoint Off : { FIntPoint(-1, 0), FIntPoint(1, 0), FIntPoint(0, -1), FIntPoint(0, 1) })
 					{
-						const float HL = OutHeights[Idx - 1];
-						if (H > HL + MaxDH) { H = HL + MaxDH; bChanged = true; }
-						else if (H < HL - MaxDH) { H = HL - MaxDH; bChanged = true; }
+						const int32 NR = R + Off.X;
+						const int32 NC = C + Off.Y;
+						if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize)
+						{
+							continue;
+						}
+
+						const float NeighborH = Platforms[GridIdx(NR, NC, GridSize)].TopZ;
+						if (NewH > NeighborH + MaxDelta)
+						{
+							NewH = NeighborH + MaxDelta;
+						}
+						else if (NewH < NeighborH - MaxDelta)
+						{
+							NewH = NeighborH - MaxDelta;
+						}
 					}
-					if (Jy > 0)
+
+					NewH = QuantizeToStep(FMath::Clamp(NewH, Preset.ElevationMin, Preset.ElevationMax), Preset);
+					if (!FMath::IsNearlyEqual(NewH, Platforms[Idx].TopZ))
 					{
-						const float HT = OutHeights[Idx - SizeX];
-						if (H > HT + MaxDH) { H = HT + MaxDH; bChanged = true; }
-						else if (H < HT - MaxDH) { H = HT - MaxDH; bChanged = true; }
+						Platforms[Idx].TopZ = NewH;
+						bChanged = true;
 					}
-					// Diagonal (so diagonal slopes never exceed limit)
-					if (Ix > 0 && Jy > 0)
-					{
-						const float HTL = OutHeights[Idx - SizeX - 1];
-						if (H > HTL + MaxDHDiag) { H = HTL + MaxDHDiag; bChanged = true; }
-						else if (H < HTL - MaxDHDiag) { H = HTL - MaxDHDiag; bChanged = true; }
-					}
-					if (Ix < SizeX - 1 && Jy > 0)
-					{
-						const float HTR = OutHeights[Idx - SizeX + 1];
-						if (H > HTR + MaxDHDiag) { H = HTR + MaxDHDiag; bChanged = true; }
-						else if (H < HTR - MaxDHDiag) { H = HTR - MaxDHDiag; bChanged = true; }
-					}
-					OutHeights[Idx] = H;
 				}
 			}
-			// Backward pass
-			for (int32 Jy = SizeY - 1; Jy >= 0; --Jy)
+
+			if (!bChanged)
 			{
-				for (int32 Ix = SizeX - 1; Ix >= 0; --Ix)
+				break;
+			}
+		}
+	}
+
+	void BuildNeighborConnections(FT66ProceduralMapResult& Result, int32 GridSize)
+	{
+		for (int32 R = 0; R < GridSize; ++R)
+		{
+			for (int32 C = 0; C < GridSize; ++C)
+			{
+				const int32 Idx = GridIdx(R, C, GridSize);
+				if (C + 1 < GridSize)
 				{
-					const int32 Idx = Jy * SizeX + Ix;
-					float H = OutHeights[Idx];
-					if (Ix < SizeX - 1)
-					{
-						const float HR = OutHeights[Idx + 1];
-						if (H > HR + MaxDH) { H = HR + MaxDH; bChanged = true; }
-						else if (H < HR - MaxDH) { H = HR - MaxDH; bChanged = true; }
-					}
-					if (Jy < SizeY - 1)
-					{
-						const float HB = OutHeights[Idx + SizeX];
-						if (H > HB + MaxDH) { H = HB + MaxDH; bChanged = true; }
-						else if (H < HB - MaxDH) { H = HB - MaxDH; bChanged = true; }
-					}
-					if (Ix < SizeX - 1 && Jy < SizeY - 1)
-					{
-						const float HBR = OutHeights[Idx + SizeX + 1];
-						if (H > HBR + MaxDHDiag) { H = HBR + MaxDHDiag; bChanged = true; }
-						else if (H < HBR - MaxDHDiag) { H = HBR - MaxDHDiag; bChanged = true; }
-					}
-					if (Ix > 0 && Jy < SizeY - 1)
-					{
-						const float HBL = OutHeights[Idx + SizeX - 1];
-						if (H > HBL + MaxDHDiag) { H = HBL + MaxDHDiag; bChanged = true; }
-						else if (H < HBL - MaxDHDiag) { H = HBL - MaxDHDiag; bChanged = true; }
-					}
-					OutHeights[Idx] = H;
+					const int32 Right = GridIdx(R, C + 1, GridSize);
+					Result.Platforms[Idx].Connections.AddUnique(Right);
+					Result.Platforms[Right].Connections.AddUnique(Idx);
+				}
+				if (R + 1 < GridSize)
+				{
+					const int32 Up = GridIdx(R + 1, C, GridSize);
+					Result.Platforms[Idx].Connections.AddUnique(Up);
+					Result.Platforms[Up].Connections.AddUnique(Idx);
 				}
 			}
-			if (!bChanged) break;
-		}
-	};
-
-	// First slope limit after smoothing (base terrain is climbable)
-	if (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
-	{
-		EnforceSlopeLimit(Params.MaxSlopeDegrees, 8);
-	}
-
-	// Flatten hill tops: at each local maximum, set the 3x3 neighborhood to the peak height so the hill itself has a flat top (no platform actor).
-	{
-		Temp = OutHeights;
-		const int32 R = 1;  // 3x3 neighborhood (R=1 -> -1..1)
-		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
-		{
-			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
-			{
-				const int32 Idx = Jy * SizeX + Ix;
-				const float V = Temp[Idx];
-				if (V <= Temp[Idx - 1] || V <= Temp[Idx + 1] || V <= Temp[Idx - SizeX] || V <= Temp[Idx + SizeX] ||
-				    V <= Temp[Idx - SizeX - 1] || V <= Temp[Idx - SizeX + 1] || V <= Temp[Idx + SizeX - 1] || V <= Temp[Idx + SizeX + 1])
-					continue;
-				float PeakH = V;
-				for (int32 dy = -R; dy <= R; ++dy)
-					for (int32 dx = -R; dx <= R; ++dx)
-						PeakH = FMath::Max(PeakH, Temp[FMath::Clamp(Jy + dy, 0, SizeY - 1) * SizeX + FMath::Clamp(Ix + dx, 0, SizeX - 1)]);
-				for (int32 dy = -R; dy <= R; ++dy)
-					for (int32 dx = -R; dx <= R; ++dx)
-					{
-						const int32 Oi = FMath::Clamp(Jy + dy, 0, SizeY - 1) * SizeX + FMath::Clamp(Ix + dx, 0, SizeX - 1);
-						OutHeights[Oi] = FMath::Max(OutHeights[Oi], PeakH);
-					}
-			}
 		}
 	}
 
-	// [SLOPES] Verification: log terrain max slope and per-hill pass/fail
+	void AddRampForBoundary(
+		FT66ProceduralMapResult& Result,
+		const FT66MapPreset& Preset,
+		float CellSize,
+		int32 AIdx,
+		int32 BIdx,
+		bool bAlongX,
+		FRandomStream& Rng,
+		TSet<uint64>& Used)
 	{
-		const float MaxSlopeLimit = (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
-			? FMath::Tan(FMath::DegreesToRadians(Params.MaxSlopeDegrees)) : 1.f;
-		float TerrainMaxSlope = 0.f;
-		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+		const uint64 Key = MakeBoundaryKey(AIdx, BIdx);
+		if (Used.Contains(Key))
 		{
-			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
-			{
-				const int32 Idx = Jy * SizeX + Ix;
-				const float H = OutHeights[Idx];
-				const float Sx = FMath::Max(FMath::Abs(H - OutHeights[Idx - 1]), FMath::Abs(H - OutHeights[Idx + 1])) / QuadSizeUU;
-				const float Sy = FMath::Max(FMath::Abs(H - OutHeights[Idx - SizeX]), FMath::Abs(H - OutHeights[Idx + SizeX])) / QuadSizeUU;
-				TerrainMaxSlope = FMath::Max(TerrainMaxSlope, FMath::Max(Sx, Sy));
-			}
+			return;
 		}
-		const bool bWithinLimit = TerrainMaxSlope <= (MaxSlopeLimit + 0.001f);
-		UE_LOG(LogT66, Log, TEXT("[SLOPES] Terrain max slope: %.4f (limit tan(%.1f)=%.4f). %s"),
-			TerrainMaxSlope, Params.MaxSlopeDegrees, MaxSlopeLimit, bWithinLimit ? TEXT("All within limit") : TEXT("EXCEEDED limit"));
 
-		// Find hills (local maxima) and check each
-		TArray<int32> HillPeakIndices;
-		for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+		const FT66PlatformNode& A = Result.Platforms[AIdx];
+		const FT66PlatformNode& B = Result.Platforms[BIdx];
+		const float HeightDiff = FMath::Abs(A.TopZ - B.TopZ);
+		if (HeightDiff < 50.f)
 		{
-			for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
-			{
-				const int32 Idx = Jy * SizeX + Ix;
-				const float V = OutHeights[Idx];
-				if (V <= OutHeights[Idx - 1] || V <= OutHeights[Idx + 1] || V <= OutHeights[Idx - SizeX] || V <= OutHeights[Idx + SizeX] ||
-				    V <= OutHeights[Idx - SizeX - 1] || V <= OutHeights[Idx - SizeX + 1] || V <= OutHeights[Idx + SizeX - 1] || V <= OutHeights[Idx + SizeX + 1])
-					continue;
-				HillPeakIndices.Add(Idx);
-			}
+			return;
 		}
-		for (int32 i = 0; i < HillPeakIndices.Num(); ++i)
-		{
-			const int32 Idx = HillPeakIndices[i];
-			const int32 Ix = Idx % SizeX;
-			const int32 Jy = Idx / SizeX;
-			const float H = OutHeights[Idx];
-			float PeakSlope = 0.f;
-			if (Ix > 0) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx - 1]) / QuadSizeUU);
-			if (Ix < SizeX - 1) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx + 1]) / QuadSizeUU);
-			if (Jy > 0) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx - SizeX]) / QuadSizeUU);
-			if (Jy < SizeY - 1) PeakSlope = FMath::Max(PeakSlope, FMath::Abs(H - OutHeights[Idx + SizeX]) / QuadSizeUU);
-			const bool bPasses = PeakSlope <= (MaxSlopeLimit + 0.001f);
-			UE_LOG(LogT66, Log, TEXT("[SLOPES] Hill %d %s (peak slope %.4f)"), i + 1, bPasses ? TEXT("passes check") : TEXT("FAILS"), PeakSlope);
-		}
-		UE_LOG(LogT66, Log, TEXT("[SLOPES] Total hills checked: %d"), HillPeakIndices.Num());
+
+		FT66RampEdge Edge;
+		Edge.LowerIndex = (A.TopZ <= B.TopZ) ? AIdx : BIdx;
+		Edge.HigherIndex = (A.TopZ <= B.TopZ) ? BIdx : AIdx;
+		Edge.bAlongX = bAlongX;
+
+		const float HeightDrivenDepth = HeightDiff * FMath::Max(Preset.RampRunPerRise, 1.f);
+		Edge.Depth = FMath::Clamp(
+			HeightDrivenDepth * Rng.FRandRange(0.95f, 1.20f),
+			Preset.RampDepthMin,
+			Preset.RampDepthMax);
+
+		const float HeightAlpha = FMath::Clamp(
+			HeightDiff / FMath::Max(FMath::Abs(Preset.ElevationMax - Preset.ElevationMin), 1.f),
+			0.f,
+			1.f);
+		const float WidthAlpha = FMath::Lerp(Preset.RampWidthMinAlpha, Preset.RampWidthMaxAlpha, 0.35f + HeightAlpha * 0.65f);
+		Edge.Width = FMath::Clamp(
+			CellSize * WidthAlpha * Rng.FRandRange(0.90f, 1.05f),
+			CellSize * 0.35f,
+			CellSize * 1.00f);
+
+		const float MaxOffset = FMath::Max((CellSize - Edge.Width) * 0.5f, 0.f);
+		Edge.PerpOffset = (MaxOffset > KINDA_SMALL_NUMBER)
+			? Rng.FRandRange(-MaxOffset * 0.9f, MaxOffset * 0.9f)
+			: 0.f;
+
+		Result.Ramps.Add(Edge);
+		Used.Add(Key);
 	}
 
-	// Flat zones at world Z=0 with smooth blend into hills (start area and boss area)
-	static constexpr float StartMinX = -17600.f, StartMaxX = -13600.f, StartMinY = -2000.f, StartMaxY = 2000.f;
-	static constexpr float BossMinX = 13600.f, BossMaxX = 17600.f, BossMinY = -2000.f, BossMaxY = 2000.f;
-	const float BlendRadiusUU = 2500.f;  // UU over which to blend from flat to hills (wider = gentler slope)
-	const auto BlendTowardFlat = [BlendRadiusUU](float WorldVal, float ZoneMin, float ZoneMax) -> float
+	FBox2D BuildRampFootprint(
+		const FT66ProceduralMapResult& Result,
+		const FT66RampEdge& Edge,
+		float Padding)
 	{
-		const float DistOut = FMath::Max(ZoneMin - WorldVal, FMath::Max(WorldVal - ZoneMax, 0.f));
-		const float T = FMath::Clamp(1.f - DistOut / BlendRadiusUU, 0.f, 1.f);
-		return FMath::SmoothStep(0.f, 1.f, T); // smoother transition at the edge
-	};
+		const FT66PlatformNode& Lo = Result.Platforms[Edge.LowerIndex];
+		const FT66PlatformNode& Hi = Result.Platforms[Edge.HigherIndex];
+		const FVector2D Mid = 0.5f * (Lo.Position + Hi.Position);
+		const float HalfDepth = Edge.Depth * 0.5f + Padding;
+		const float HalfWidth = Edge.Width * 0.5f + Padding;
 
-	for (int32 Jy = 0; Jy < SizeY; ++Jy)
-	{
-		for (int32 Ix = 0; Ix < SizeX; ++Ix)
+		FVector2D Min;
+		FVector2D Max;
+		if (Edge.bAlongX)
 		{
-			const float WorldX = OriginX + Ix * QuadSizeUU;
-			const float WorldY = OriginY + Jy * QuadSizeUU;
-			const int32 Idx = Jy * SizeX + Ix;
-			float H = OutHeights[Idx];
-
-			const float StartBlendX = BlendTowardFlat(WorldX, StartMinX, StartMaxX);
-			const float StartBlendY = BlendTowardFlat(WorldY, StartMinY, StartMaxY);
-			const float StartBlend = StartBlendX * StartBlendY;
-
-			const float BossBlendX = BlendTowardFlat(WorldX, BossMinX, BossMaxX);
-			const float BossBlendY = BlendTowardFlat(WorldY, BossMinY, BossMaxY);
-			const float BossBlend = BossBlendX * BossBlendY;
-
-			const float FlatBlend = FMath::Max(StartBlend, BossBlend);
-			if (FlatBlend > 0.f)
-			{
-				H = FMath::Lerp(H, 0.f, FlatBlend);
-			}
-			OutHeights[Idx] = H;
+			Min = FVector2D(Mid.X - HalfDepth, Mid.Y + Edge.PerpOffset - HalfWidth);
+			Max = FVector2D(Mid.X + HalfDepth, Mid.Y + Edge.PerpOffset + HalfWidth);
 		}
+		else
+		{
+			Min = FVector2D(Mid.X + Edge.PerpOffset - HalfWidth, Mid.Y - HalfDepth);
+			Max = FVector2D(Mid.X + Edge.PerpOffset + HalfWidth, Mid.Y + HalfDepth);
+		}
+		return FBox2D(Min, Max);
 	}
 
-	// Hill peaks must be far enough from miasma wall so they can off-ramp without squishing. Dampen peaks that are too close.
-	static constexpr float MiasmaHalfExtent = 50000.f;
-	static constexpr float MinPeakDistanceFromWallUU = 11364.f;  // Peaks closer than this get dampened so they can slope down to the wall
-	for (int32 Jy = 1; Jy < SizeY - 1; ++Jy)
+	bool DoesRampOverlapAny(
+		const FT66ProceduralMapResult& Result,
+		const FT66RampEdge& Candidate,
+		const TArray<FT66RampFootprint>& Accepted,
+		float Padding)
 	{
-		for (int32 Ix = 1; Ix < SizeX - 1; ++Ix)
+		const FBox2D CandidateBox = BuildRampFootprint(Result, Candidate, Padding);
+		for (const FT66RampFootprint& Existing : Accepted)
 		{
-			const int32 Idx = Jy * SizeX + Ix;
-			const float H = OutHeights[Idx];
-			const float WorldX = OriginX + Ix * QuadSizeUU;
-			const float WorldY = OriginY + Jy * QuadSizeUU;
-			const float DistToWallX = MiasmaHalfExtent - FMath::Abs(WorldX);
-			const float DistToWallY = MiasmaHalfExtent - FMath::Abs(WorldY);
-			const float DistToWall = FMath::Min(DistToWallX, DistToWallY);
-			if (DistToWall >= MinPeakDistanceFromWallUU) continue;
-			// Local maximum check (peak)
-			if (H <= OutHeights[Idx - 1] || H <= OutHeights[Idx + 1] || H <= OutHeights[Idx - SizeX] || H <= OutHeights[Idx + SizeX])
+			if (CandidateBox.Intersect(Existing.Box))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void BuildRamps(FT66ProceduralMapResult& Result, const FT66MapPreset& Preset, int32 GridSize, float CellSize)
+	{
+		FRandomStream Rng(Preset.Seed ^ 0x4D617A65);
+		TSet<uint64> Used;
+		TArray<FT66RampFootprint> AcceptedFootprints;
+		const float RampPadding = CellSize * 0.18f;
+		const int32 MaxTotalRamps = 20;
+		TArray<bool> Visited;
+		Visited.Init(false, Result.Platforms.Num());
+		const float MaxJumpEscapeHeight = FMath::Max(250.f, Preset.ElevationStep * 0.75f);
+
+		struct FBoundaryCandidate
+		{
+			int32 AIdx = -1;
+			int32 BIdx = -1;
+			bool bAlongX = true;
+			float Score = 0.f;
+		};
+
+		struct FComponentInfo
+		{
+			TArray<int32> Cells;
+			TArray<FBoundaryCandidate> Candidates;
+			float Height = 0.f;
+			bool bTrappedLow = false;
+			float Priority = 0.f;
+		};
+
+		TArray<FComponentInfo> Components;
+
+		for (int32 StartIdx = 0; StartIdx < Result.Platforms.Num(); ++StartIdx)
+		{
+			if (Visited[StartIdx])
+			{
 				continue;
-			// Peak too close to wall: dampen so it can off-ramp in the remaining distance
-			const float T = FMath::Clamp(DistToWall / MinPeakDistanceFromWallUU, 0.f, 1.f);
-			OutHeights[Idx] = FMath::Lerp(H * 0.35f, H, T * T);
-		}
-	}
+			}
 
-	// Constrain hills to inside miasma walls. Match T66MiasmaBoundary::SafeHalfExtent (50000 for 100k map). Wide blend so peaks have room to off-ramp.
-	static constexpr float MiasmaBlendMarginUU = 11364.f;  // Wide margin so hills can slope down to Z=0 at the wall
-	for (int32 Jy = 0; Jy < SizeY; ++Jy)
-	{
-		for (int32 Ix = 0; Ix < SizeX; ++Ix)
+			const float Height = Result.Platforms[StartIdx].TopZ;
+			if (FMath::IsNearlyEqual(Height, Preset.BaselineZ))
+			{
+				Visited[StartIdx] = true;
+				continue;
+			}
+
+			TArray<int32> Queue;
+			TArray<int32> Component;
+			Queue.Add(StartIdx);
+			Visited[StartIdx] = true;
+
+			for (int32 Head = 0; Head < Queue.Num(); ++Head)
+			{
+				const int32 Cur = Queue[Head];
+				Component.Add(Cur);
+				const FT66PlatformNode& P = Result.Platforms[Cur];
+
+				auto TryNeighbor = [&](int32 NR, int32 NC)
+				{
+					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize)
+					{
+						return;
+					}
+
+					const int32 NIdx = GridIdx(NR, NC, GridSize);
+					if (Visited[NIdx])
+					{
+						return;
+					}
+
+					if (FMath::IsNearlyEqual(Result.Platforms[NIdx].TopZ, Height))
+					{
+						Visited[NIdx] = true;
+						Queue.Add(NIdx);
+					}
+				};
+
+				TryNeighbor(P.GridRow - 1, P.GridCol);
+				TryNeighbor(P.GridRow + 1, P.GridCol);
+				TryNeighbor(P.GridRow, P.GridCol - 1);
+				TryNeighbor(P.GridRow, P.GridCol + 1);
+			}
+
+			TArray<FBoundaryCandidate> Candidates;
+			TSet<uint64> SeenBoundaries;
+			bool bHasJumpableHigherExit = false;
+
+			for (int32 Idx : Component)
+			{
+				const FT66PlatformNode& P = Result.Platforms[Idx];
+
+				auto AddCandidate = [&](int32 NR, int32 NC, bool bAlongX)
+				{
+					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize)
+					{
+						return;
+					}
+
+					const int32 NIdx = GridIdx(NR, NC, GridSize);
+					if (FMath::IsNearlyEqual(Result.Platforms[NIdx].TopZ, Height))
+					{
+						return;
+					}
+
+					const uint64 Key = MakeBoundaryKey(Idx, NIdx);
+					if (SeenBoundaries.Contains(Key) || Used.Contains(Key))
+					{
+						return;
+					}
+					SeenBoundaries.Add(Key);
+
+					const float NeighborH = Result.Platforms[NIdx].TopZ;
+					const float HeightDiff = FMath::Abs(Height - NeighborH);
+					if (NeighborH > Height && HeightDiff <= MaxJumpEscapeHeight)
+					{
+						bHasJumpableHigherExit = true;
+					}
+					float Score = HeightDiff;
+					if (FMath::IsNearlyEqual(NeighborH, Preset.BaselineZ))
+					{
+						Score += 100000.f;
+					}
+					if (NeighborH > Height)
+					{
+						Score += 25000.f;
+					}
+					if (Height < Preset.BaselineZ && NeighborH > Height)
+					{
+						Score += 15000.f;
+					}
+
+					FBoundaryCandidate Candidate;
+					Candidate.AIdx = Idx;
+					Candidate.BIdx = NIdx;
+					Candidate.bAlongX = bAlongX;
+					Candidate.Score = Score + Rng.FRandRange(0.f, 100.f);
+					Candidates.Add(Candidate);
+				};
+
+				AddCandidate(P.GridRow, P.GridCol - 1, true);
+				AddCandidate(P.GridRow, P.GridCol + 1, true);
+				AddCandidate(P.GridRow - 1, P.GridCol, false);
+				AddCandidate(P.GridRow + 1, P.GridCol, false);
+			}
+
+			Candidates.Sort([](const FBoundaryCandidate& A, const FBoundaryCandidate& B)
+			{
+				return A.Score > B.Score;
+			});
+
+			FComponentInfo Info;
+			Info.Cells = MoveTemp(Component);
+			Info.Candidates = MoveTemp(Candidates);
+			Info.Height = Height;
+			Info.bTrappedLow = (Height < Preset.BaselineZ && !bHasJumpableHigherExit);
+			Info.Priority = 0.f;
+			if (Info.bTrappedLow)
+			{
+				Info.Priority += 1000000.f;
+			}
+			if (Height > Preset.BaselineZ)
+			{
+				Info.Priority += 500000.f;
+			}
+			Info.Priority += FMath::Abs(Height - Preset.BaselineZ);
+			Info.Priority += static_cast<float>(Info.Cells.Num()) * 10.f;
+			Components.Add(MoveTemp(Info));
+		}
+
+		Components.Sort([](const FComponentInfo& A, const FComponentInfo& B)
 		{
-			const float WorldX = OriginX + Ix * QuadSizeUU;
-			const float WorldY = OriginY + Jy * QuadSizeUU;
-			const int32 Idx = Jy * SizeX + Ix;
-			const float DistInX = MiasmaHalfExtent - FMath::Abs(WorldX);
-			const float DistInY = MiasmaHalfExtent - FMath::Abs(WorldY);
-			const float Tx = FMath::Clamp(DistInX / MiasmaBlendMarginUU, 0.f, 1.f);
-			const float Ty = FMath::Clamp(DistInY / MiasmaBlendMarginUU, 0.f, 1.f);
-			const float Mask = FMath::Min(Tx, Ty);
-			const float SmoothedMask = Mask * Mask * (3.f - 2.f * Mask);
-			OutHeights[Idx] *= SmoothedMask;
+			return A.Priority > B.Priority;
+		});
+
+		for (const FComponentInfo& ComponentInfo : Components)
+		{
+			if (Result.Ramps.Num() >= MaxTotalRamps)
+			{
+				break;
+			}
+
+			for (const FBoundaryCandidate& CandidateInfo : ComponentInfo.Candidates)
+			{
+				const int32 PrevNum = Result.Ramps.Num();
+				AddRampForBoundary(Result, Preset, CellSize, CandidateInfo.AIdx, CandidateInfo.BIdx, CandidateInfo.bAlongX, Rng, Used);
+				if (Result.Ramps.Num() == PrevNum)
+				{
+					continue;
+				}
+
+				const FT66RampEdge Candidate = Result.Ramps.Last();
+				if (DoesRampOverlapAny(Result, Candidate, AcceptedFootprints, RampPadding))
+				{
+					Result.Ramps.Pop();
+					Used.Remove(MakeBoundaryKey(CandidateInfo.AIdx, CandidateInfo.BIdx));
+					continue;
+				}
+
+				AcceptedFootprints.Add({ BuildRampFootprint(Result, Candidate, RampPadding) });
+				break;
+			}
+		}
+	}
+}
+
+FT66ProceduralMapResult FT66ProceduralMapGenerator::Generate(const FT66MapPreset& Preset)
+{
+	FT66ProceduralMapResult Result;
+
+	const int32 GridSize = FMath::Clamp(Preset.GridSize, 2, 128);
+	const float MapSize = Preset.MapHalfExtent * 2.f;
+	const float CellSize = MapSize / static_cast<float>(GridSize);
+
+	InitializePlatforms(Result, Preset, GridSize, CellSize);
+	GenerateLaneFeatures(Result.Platforms, Preset, GridSize);
+	RemoveTinyIslands(Result.Platforms, Preset, GridSize);
+	ClampAdjacency(Result.Platforms, Preset, GridSize);
+	BuildNeighborConnections(Result, GridSize);
+	BuildRamps(Result, Preset, GridSize, CellSize);
+
+	float MinZ = TNumericLimits<float>::Max();
+	float MaxZ = TNumericLimits<float>::Lowest();
+	int32 BaselineCount = 0;
+	int32 PositiveCount = 0;
+	int32 NegativeCount = 0;
+	for (const FT66PlatformNode& P : Result.Platforms)
+	{
+		MinZ = FMath::Min(MinZ, P.TopZ);
+		MaxZ = FMath::Max(MaxZ, P.TopZ);
+		if (FMath::IsNearlyEqual(P.TopZ, Preset.BaselineZ))
+		{
+			++BaselineCount;
+		}
+		else if (P.TopZ > Preset.BaselineZ)
+		{
+			++PositiveCount;
+		}
+		else
+		{
+			++NegativeCount;
 		}
 	}
 
-	// Z=0 is the lowest point: clamp so no geometry below 0 (flat zones stay at 0; prevents spawn under ground)
-	for (float& Hi : OutHeights)
-	{
-		Hi = FMath::Max(0.f, Hi);
-	}
+	UE_LOG(LogT66, Log,
+		TEXT("[MAP] Generated %d platforms, %d ramps (grid %dx%d, cell %.0f, theme %d, seed %d). Baseline=%d, Pos=%d, Neg=%d, Z range [%.0f, %.0f]"),
+		Result.Platforms.Num(),
+		Result.Ramps.Num(),
+		GridSize,
+		GridSize,
+		CellSize,
+		static_cast<int32>(Preset.Theme),
+		Preset.Seed,
+		BaselineCount,
+		PositiveCount,
+		NegativeCount,
+		MinZ,
+		MaxZ);
 
-	// Final slope guardrail: flat-zone blend, peak dampening, and miasma mask can re-introduce steep slopes.
-	// Enforce max slope one last time so the output is guaranteed never to exceed MaxSlopeDegrees.
-	if (Params.MaxSlopeDegrees > 0.f && Params.MaxSlopeDegrees < 90.f)
-	{
-		EnforceSlopeLimit(Params.MaxSlopeDegrees, 16);
-	}
-
-	return true;
-}
-
-void FT66ProceduralLandscapeGenerator::FloatsToLandscapeHeightData(const TArray<float>& Heights, float ScaleZ, TArray<uint16>& OutHeightData)
-{
-	OutHeightData.SetNumUninitialized(Heights.Num());
-	if (ScaleZ < 1.f) ScaleZ = 100.f;
-	for (int32 I = 0; I < Heights.Num(); ++I)
-	{
-		// Landscape: WorldZ = (height - 32768) * ScaleZ / 128  =>  height = 32768 + WorldZ * 128 / ScaleZ
-		const float WorldZ = Heights[I];
-		const int32 H = 32768 + FMath::RoundToInt(WorldZ * 128.f / ScaleZ);
-		OutHeightData[I] = static_cast<uint16>(FMath::Clamp(H, 0, 65535));
-	}
-}
-
-void FT66ProceduralLandscapeGenerator::GetDimensionsForPreset(ET66LandscapeSizePreset Preset, int32& OutSizeX, int32& OutSizeY)
-{
-	// UE Landscape: SectionSize=63, SectionsPerComponent=1 => (Size-1) must be multiple of 63.
-	// MainMap: 1009x1009 (~100.8k UU). (Size-1) multiple of 63. Small: 505. Large: 1009.
-	switch (Preset)
-	{
-	case ET66LandscapeSizePreset::MainMap:
-		OutSizeX = 16 * 63 + 1;  // 1009 -> ~100800 UU
-		OutSizeY = 16 * 63 + 1;
-		break;
-	case ET66LandscapeSizePreset::Small:
-		OutSizeX = 8 * 63 + 1;  // 505
-		OutSizeY = 8 * 63 + 1;
-		break;
-	case ET66LandscapeSizePreset::Large:
-		OutSizeX = 16 * 63 + 1; // 1009
-		OutSizeY = 16 * 63 + 1;
-		break;
-	default:
-		OutSizeX = 1009;
-		OutSizeY = 1009;
-		break;
-	}
+	Result.bValid = true;
+	return Result;
 }

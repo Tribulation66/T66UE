@@ -23,6 +23,7 @@
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -74,6 +75,15 @@ AT66EnemyBase::AT66EnemyBase()
 	HealthBarWidget->SetDrawAtDesiredSize(true);
 	// Height includes space for lock indicator above the bar.
 	HealthBarWidget->SetDrawSize(FVector2D(120.f, 28.f));
+
+	FillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FillLight"));
+	FillLight->SetupAttachment(RootComponent);
+	FillLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+	FillLight->SetIntensity(0.0f);
+	FillLight->SetAttenuationRadius(250.f);
+	FillLight->SetLightColor(FLinearColor(1.f, 0.98f, 0.95f));
+	FillLight->SetCastShadows(false);
+	FillLight->SetVisibility(false);
 
 	// Prepare built-in SkeletalMeshComponent for imported models.
 	if (USkeletalMeshComponent* Skel = GetMesh())

@@ -1,25 +1,22 @@
 """
-Import hero skeletal meshes, animations, and portraits from SourceAssets/Heros.
+Import the final hero roster from SourceAssets/Heros.
 
-Lineup is Hero_1..4 (Knight, Mage, Archer, Rogue). Folder map: Knight -> Hero_1, Ninja -> Hero_2, Cowboy -> Hero_3, Wizard -> Hero_4.
-For each: Default/Type A, Default/Type B, Beach/Type A, Beach/Type B (mesh + walk + alert + run).
-Portraits: Portraits/Type A and Type B PNGs -> /Game/UI/Sprites/Heroes/Hero_N/T_Hero_N_TypeA, T_Hero_N_TypeB.
+Expected source layout:
+  SourceAssets/Heros/<order>_<HeroName>/
+    <HeroName>Idle.fbx
+    <HeroName>Walk.fbx
+    <HeroName>Jump.fbx
 
-Run INSIDE Unreal Editor: Tools -> Execute Python Script -> Scripts/ImportHeros.py
-Then run: SetupCharacterVisualsDataTable.py and reimport Heroes.csv (ImportData.py or FullSetup).
+Uses the legacy FBX pipeline (FbxImportUI) — same as ImportCompanions.py —
+so that materials expose DiffuseColorMap for emissive fill lighting.
 
-Walking/Alert FBX are imported as animation-only (import_mesh=False) to avoid bind pose/smoothing warnings. You may still see one warning per Character mesh; the engine auto-fixes bind poses and the import succeeds.
+Run INSIDE Unreal Editor:
+  Tools -> Execute Python Script -> Scripts/ImportHeros.py
 """
 
 import os
+import re
 import unreal
-
-HERO_FOLDER_MAP = [
-    ("Knight", "Hero_1"),
-    ("Ninja", "Hero_2"),
-    ("Cowboy", "Hero_3"),
-    ("Wizard", "Hero_4"),
-]
 
 
 def _proj_dir():
@@ -34,27 +31,80 @@ def _ensure_game_dir(game_path):
         unreal.EditorAssetLibrary.make_directory(game_path)
 
 
-def _find_fbx_in_dir(root_dir, name_part):
-    """Find first FBX under root_dir whose filename contains name_part (e.g. 'Character_output', 'Walking')."""
-    for dirpath, _, files in os.walk(root_dir):
-        for fn in files:
-            if not fn.lower().endswith(".fbx"):
-                continue
-            if name_part.lower() in fn.lower():
-                return os.path.join(dirpath, fn)
+def _delete_dir_if_exists(game_dir):
+    try:
+        if unreal.EditorAssetLibrary.does_directory_exist(game_dir):
+            unreal.EditorAssetLibrary.delete_directory(game_dir)
+    except Exception:
+        pass
+
+
+def _parse_hero_folders(heros_root):
+    heroes = []
+    for name in os.listdir(heros_root):
+        full = os.path.join(heros_root, name)
+        if not os.path.isdir(full):
+            continue
+        match = re.match(r"^(\d+)_([^\\/]+)$", name)
+        if not match:
+            unreal.log_warning(f"[ImportHeros] Skip malformed folder name: {name}")
+            continue
+        order = int(match.group(1))
+        hero_name = match.group(2)
+        hero_id = f"Hero_{order}"
+        heroes.append((order, hero_name, hero_id, full))
+    heroes.sort(key=lambda item: item[0])
+    return heroes
+
+
+def _find_action_fbx(hero_dir, hero_name, action):
+    expected = f"{hero_name}{action}".lower()
+    for fn in os.listdir(hero_dir):
+        if not fn.lower().endswith(".fbx"):
+            continue
+        stem = os.path.splitext(fn)[0].lower()
+        if stem == expected:
+            return os.path.join(hero_dir, fn)
     return None
 
 
-def _find_first_png(root_dir):
-    for dirpath, _, files in os.walk(root_dir):
-        for fn in files:
-            if fn.lower().endswith(".png"):
-                return os.path.join(dirpath, fn)
-    return None
+def _load_asset(path):
+    try:
+        return unreal.EditorAssetLibrary.load_asset(path)
+    except Exception:
+        return None
 
 
-def _import_fbx_skeletal(fbx_path, dest_dir, dest_name, import_animations=True, import_mesh=True):
-    """Import FBX as skeletal mesh and/or animation. Use import_mesh=False for animation-only FBX to avoid bind pose/smoothing warnings."""
+def _asset_class_name(asset):
+    try:
+        return asset.get_class().get_name()
+    except Exception:
+        return ""
+
+
+def _rename_asset(old_path, new_path):
+    if not old_path or old_path == new_path:
+        return new_path
+    if unreal.EditorAssetLibrary.does_asset_exist(new_path):
+        unreal.EditorAssetLibrary.delete_asset(new_path)
+    if unreal.EditorAssetLibrary.rename_asset(old_path, new_path):
+        return new_path
+    unreal.log_warning(f"[ImportHeros] Failed to rename: {old_path} -> {new_path}")
+    return old_path
+
+
+def _find_of_class(imported_paths, target_classes):
+    for path in imported_paths or []:
+        clean = str(path).split(".")[0]
+        asset = _load_asset(clean)
+        if asset and _asset_class_name(asset) in target_classes:
+            return clean, asset
+    return None, None
+
+
+def _import_fbx(fbx_path, dest_dir, dest_name,
+                import_animations=True, import_mesh=True, skeleton=None):
+    """Legacy FBX import (FbxImportUI) — same pipeline as ImportCompanions.py."""
     _ensure_game_dir(dest_dir)
     task = unreal.AssetImportTask()
     task.automated = True
@@ -64,6 +114,7 @@ def _import_fbx_skeletal(fbx_path, dest_dir, dest_name, import_animations=True, 
     task.filename = fbx_path
     task.destination_path = dest_dir
     task.destination_name = dest_name
+
     opts = unreal.FbxImportUI()
     opts.import_mesh = bool(import_mesh)
     opts.import_textures = bool(import_mesh)
@@ -74,35 +125,23 @@ def _import_fbx_skeletal(fbx_path, dest_dir, dest_name, import_animations=True, 
         opts.set_editor_property("create_physics_asset", False)
     except Exception:
         pass
+    if skeleton is not None:
+        try:
+            opts.set_editor_property("skeleton", skeleton)
+        except Exception:
+            pass
+    if not import_mesh and import_animations:
+        try:
+            opts.set_editor_property("mesh_type_to_import",
+                                     unreal.FBXImportType.FBXIT_ANIMATION)
+            opts.set_editor_property("original_import_type",
+                                     unreal.FBXImportType.FBXIT_ANIMATION)
+        except Exception:
+            pass
+
     task.options = opts
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
     return list(task.imported_object_paths or [])
-
-
-def _import_texture(png_path, dest_dir, dest_name):
-    _ensure_game_dir(dest_dir)
-    task = unreal.AssetImportTask()
-    task.automated = True
-    task.save = True
-    task.replace_existing = True
-    task.filename = png_path
-    task.destination_path = dest_dir
-    task.destination_name = dest_name
-    unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
-    return list(task.imported_object_paths or [])
-
-
-def _resolve_type_folder(base_path, skin, body_type):
-    """base_path = Heros/Knight, skin = Default|Beach, body_type = Type A|Type B."""
-    type_dir = os.path.join(base_path, skin, body_type)
-    if not os.path.isdir(type_dir):
-        return None
-    # Type A: e.g. Def_Knight_TA or Beach_Knight_TA (one subfolder with fbxs).
-    # Type B: e.g. Def_Knight_TB/Meshy_AI_biped (fbxs inside).
-    for root, dirs, files in os.walk(type_dir):
-        if _find_fbx_in_dir(root, "Character_output"):
-            return root
-    return None
 
 
 def main():
@@ -112,69 +151,90 @@ def main():
         unreal.log_error("[ImportHeros] SourceAssets/Heros not found")
         return
 
-    unreal.log("=== ImportHeros: START ===")
-    imported = 0
+    hero_entries = _parse_hero_folders(heros_root)
+    if not hero_entries:
+        unreal.log_error("[ImportHeros] No valid hero folders found")
+        return
 
-    for folder_name, hero_id in HERO_FOLDER_MAP:
-        base_path = os.path.join(heros_root, folder_name)
-        if not os.path.isdir(base_path):
-            unreal.log_warning(f"[ImportHeros] Skip {folder_name}: not found")
+    unreal.log("=== ImportHeros: START (legacy FBX pipeline) ===")
+    success_count = 0
+
+    for order, hero_name, hero_id, hero_dir in hero_entries:
+        idle_fbx = _find_action_fbx(hero_dir, hero_name, "Idle")
+        walk_fbx = _find_action_fbx(hero_dir, hero_name, "Walk")
+        jump_fbx = _find_action_fbx(hero_dir, hero_name, "Jump")
+
+        if not idle_fbx or not walk_fbx or not jump_fbx:
+            unreal.log_warning(
+                f"[ImportHeros] Skip {hero_id} ({hero_name}): missing Idle/Walk/Jump FBX"
+            )
             continue
 
-        # Content base for this hero
-        game_hero_base = f"/Game/Characters/Heroes/{hero_id}"
-        game_portrait_base = f"/Game/UI/Sprites/Heroes/{hero_id}"
-        _ensure_game_dir(game_hero_base)
-        _ensure_game_dir(game_portrait_base)
+        dest_dir = f"/Game/Characters/Heroes/{hero_id}/TypeA"
+        mesh_name = f"SK_{hero_id}_TypeA"
+        idle_anim_name = f"AM_{hero_id}_TypeA_Idle"
+        walk_anim_name = f"AM_{hero_id}_TypeA_Walk"
+        jump_anim_name = f"AM_{hero_id}_TypeA_Jump"
 
-        # Portraits
-        for slot, body in [("TypeA", "Type A"), ("TypeB", "Type B")]:
-            port_dir = os.path.join(base_path, "Portraits", body)
-            if os.path.isdir(port_dir):
-                png = _find_first_png(port_dir)
-                if png:
-                    dest_name = f"T_{hero_id}_{slot}"
-                    _import_texture(png, game_portrait_base, dest_name)
-                    unreal.log(f"[ImportHeros] Portrait {hero_id} {slot}: {png} -> {game_portrait_base}/{dest_name}")
-                    imported += 1
+        unreal.log(f"[ImportHeros] === {hero_id} ({hero_name}) ===")
 
-        # Skins: Default, Beach. Body: Type A, Type B.
-        for skin in ["Default", "Beach"]:
-            skin_key = "Default" if skin == "Default" else "Beachgoer"
-            for body_type, slot in [("Type A", "TypeA"), ("Type B", "TypeB")]:
-                src_dir = _resolve_type_folder(base_path, skin, body_type)
-                if not src_dir:
-                    unreal.log_warning(f"[ImportHeros] No source for {hero_id} {skin} {slot}: {base_path}")
-                    continue
+        # Clean destination to remove old Interchange-created materials
+        _delete_dir_if_exists(dest_dir)
+        _ensure_game_dir(dest_dir)
 
-                dest_sub = f"{skin}_{slot}"  # Default_TypeA, Default_TypeB, Beach_TypeA, Beach_TypeB
-                game_dest = f"{game_hero_base}/{dest_sub}"
-                _ensure_game_dir(game_dest)
+        # ---- Step 1: Mesh + materials + textures from idle FBX (no animation) ----
+        mesh_paths = _import_fbx(idle_fbx, dest_dir, mesh_name,
+                                  import_animations=False, import_mesh=True)
+        unreal.log(f"[ImportHeros]   Mesh import: {len(mesh_paths)} assets")
 
-                mesh_fbx = _find_fbx_in_dir(src_dir, "Character_output")
-                walk_fbx = _find_fbx_in_dir(src_dir, "Walking")
-                alert_fbx = _find_fbx_in_dir(src_dir, "Alert")
-                run_fbx = _find_fbx_in_dir(src_dir, "Running")
+        skeleton = None
+        mesh_asset = _load_asset(f"{dest_dir}/{mesh_name}")
+        if mesh_asset:
+            try:
+                skeleton = mesh_asset.get_editor_property("skeleton")
+            except Exception:
+                pass
+        if not skeleton:
+            unreal.log_error(f"[ImportHeros]   FAILED: no Skeleton for {hero_id}")
+            continue
 
-                if mesh_fbx:
-                    mesh_name = f"SK_{hero_id}_{dest_sub}"
-                    _import_fbx_skeletal(mesh_fbx, game_dest, mesh_name, import_animations=False, import_mesh=True)
-                    unreal.log(f"[ImportHeros] Mesh {hero_id} {dest_sub}: {mesh_fbx}")
-                    imported += 1
-                if walk_fbx:
-                    anim_name = f"AM_{hero_id}_{dest_sub}_Walking"
-                    _import_fbx_skeletal(walk_fbx, game_dest, anim_name, import_animations=True, import_mesh=False)
-                    imported += 1
-                if alert_fbx:
-                    anim_name = f"AM_{hero_id}_{dest_sub}_Alert"
-                    _import_fbx_skeletal(alert_fbx, game_dest, anim_name, import_animations=True, import_mesh=False)
-                    imported += 1
-                if run_fbx:
-                    anim_name = f"AM_{hero_id}_{dest_sub}_Running"
-                    _import_fbx_skeletal(run_fbx, game_dest, anim_name, import_animations=True, import_mesh=False)
-                    imported += 1
+        # ---- Step 2: Idle animation (anim-only, reuses skeleton) ----
+        idle_paths = _import_fbx(idle_fbx, dest_dir, idle_anim_name,
+                                  import_animations=True, import_mesh=False,
+                                  skeleton=skeleton)
+        idle_anim, _ = _find_of_class(idle_paths, {"AnimSequence", "AnimationAsset"})
+        if idle_anim:
+            _rename_asset(idle_anim, f"{dest_dir}/{idle_anim_name}")
+            unreal.log(f"[ImportHeros]   Idle anim: OK")
+        else:
+            unreal.log_warning(f"[ImportHeros]   Idle anim: FAILED")
 
-    unreal.log(f"=== ImportHeros: DONE (imported {imported} assets) ===")
+        # ---- Step 3: Walk animation (anim-only) ----
+        walk_paths = _import_fbx(walk_fbx, dest_dir, walk_anim_name,
+                                  import_animations=True, import_mesh=False,
+                                  skeleton=skeleton)
+        walk_anim, _ = _find_of_class(walk_paths, {"AnimSequence", "AnimationAsset"})
+        if walk_anim:
+            _rename_asset(walk_anim, f"{dest_dir}/{walk_anim_name}")
+            unreal.log(f"[ImportHeros]   Walk anim: OK")
+        else:
+            unreal.log_warning(f"[ImportHeros]   Walk anim: FAILED")
+
+        # ---- Step 4: Jump animation (anim-only) ----
+        jump_paths = _import_fbx(jump_fbx, dest_dir, jump_anim_name,
+                                  import_animations=True, import_mesh=False,
+                                  skeleton=skeleton)
+        jump_anim, _ = _find_of_class(jump_paths, {"AnimSequence", "AnimationAsset"})
+        if jump_anim:
+            _rename_asset(jump_anim, f"{dest_dir}/{jump_anim_name}")
+            unreal.log(f"[ImportHeros]   Jump anim: OK")
+        else:
+            unreal.log_warning(f"[ImportHeros]   Jump anim: FAILED")
+
+        success_count += 1
+        unreal.log(f"[ImportHeros]   {hero_id} done.")
+
+    unreal.log(f"=== ImportHeros: DONE ({success_count}/{len(hero_entries)} heroes) ===")
 
 
 if __name__ == "__main__":

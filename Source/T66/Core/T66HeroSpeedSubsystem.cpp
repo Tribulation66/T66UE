@@ -12,6 +12,7 @@ void UT66HeroSpeedSubsystem::SetParams(float InMaxSpeed, float AccelerationPerce
 
 void UT66HeroSpeedSubsystem::Update(float DeltaTime, bool bHasMovementInput)
 {
+	bLastHasMovementInput = bHasMovementInput;
 	const float Delta = FMath::Clamp(DeltaTime, 0.f, 0.5f);
 	if (bHasMovementInput)
 	{
@@ -28,8 +29,9 @@ void UT66HeroSpeedSubsystem::Update(float DeltaTime, bool bHasMovementInput)
 
 int32 UT66HeroSpeedSubsystem::GetMovementAnimState() const
 {
-	// Two states only: 0 = Idle (alert), 2 = Moving (run). Speed/acceleration unchanged, not tied to animation.
-	if (CurrentSpeed <= 0.f)
-		return 0; // Idle (alert)
-	return 2; // Moving (run)
+	// Visual state switches to idle instantly when input stops (no waiting for deceleration).
+	// Speed still decelerates smoothly for gameplay feel.
+	if (!bLastHasMovementInput)
+		return 0; // Idle
+	return 1; // Moving
 }

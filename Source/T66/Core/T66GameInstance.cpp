@@ -16,6 +16,10 @@
 
 namespace
 {
+	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
+	static const bool bUseDemoMapForTribulation = false;  // GameplayLevel uses LowPolyNature procedural env
+	static const TCHAR* DemoMapLevelNameForTribulation = TEXT("Map_Summer");
+
 	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
 	// Do this once on boot (no per-frame work).
 	void ApplyCrispRenderingDefaults()
@@ -646,6 +650,16 @@ void UT66GameInstance::HandleGameplayAssetsPreloaded()
 	}
 }
 
+bool UT66GameInstance::UseDemoMapForTribulation()
+{
+	return bUseDemoMapForTribulation;
+}
+
+FName UT66GameInstance::GetDemoMapLevelNameForTribulation()
+{
+	return FName(DemoMapLevelNameForTribulation);
+}
+
 void UT66GameInstance::TransitionToGameplayLevel()
 {
 	UWorld* World = GetWorld();
@@ -665,7 +679,8 @@ void UT66GameInstance::TransitionToGameplayLevel()
 	{
 		PreloadGameplayAssets([this]()
 		{
-			UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+			const FName LevelToOpen = UseDemoMapForTribulation() ? GetDemoMapLevelNameForTribulation() : FName(TEXT("GameplayLevel"));
+			UGameplayStatics::OpenLevel(this, LevelToOpen);
 		});
 	}), 0.05f, false); // Small delay so the loading widget paints first.
 }

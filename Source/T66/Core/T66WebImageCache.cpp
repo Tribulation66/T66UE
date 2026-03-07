@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66WebImageCache.h"
+#include "Async/Async.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
@@ -72,30 +73,32 @@ void UT66WebImageCache::RequestImage(const FString& Url, TFunction<void(UTexture
 
 void UT66WebImageCache::OnDownloadComplete(const FString& Url, const TArray<uint8>& Data, bool bSuccess)
 {
-	PendingDownloads.Remove(Url);
-
-	UTexture2D* Texture = nullptr;
-	if (bSuccess && Data.Num() > 0)
+	// HTTP completion runs on a worker thread; Slate/UI and texture creation must run on game thread.
+	AsyncTask(ENamedThreads::GameThread, [this, Url, Data, bSuccess]()
 	{
-		Texture = CreateTextureFromData(Data, Url);
-		if (Texture)
-		{
-			CachedTextures.Add(Url, Texture);
-		}
-	}
+		PendingDownloads.Remove(Url);
 
-	// Notify waiters
-	if (TArray<TFunction<void(UTexture2D*)>>* WaiterList = Waiters.Find(Url))
-	{
-		for (auto& Cb : *WaiterList)
+		UTexture2D* Texture = nullptr;
+		if (bSuccess && Data.Num() > 0)
 		{
-			if (Cb) Cb(Texture);
+			Texture = CreateTextureFromData(Data, Url);
+			if (Texture)
+			{
+				CachedTextures.Add(Url, Texture);
+			}
 		}
-		Waiters.Remove(Url);
-	}
 
-	// Broadcast for raw listeners
-	OnWebImageReady.Broadcast(Url, Texture);
+		if (TArray<TFunction<void(UTexture2D*)>>* WaiterList = Waiters.Find(Url))
+		{
+			for (auto& Cb : *WaiterList)
+			{
+				if (Cb) Cb(Texture);
+			}
+			Waiters.Remove(Url);
+		}
+
+		OnWebImageReady.Broadcast(Url, Texture);
+	});
 }
 
 UTexture2D* UT66WebImageCache::CreateTextureFromData(const TArray<uint8>& Data, const FString& Url)

@@ -53,7 +53,7 @@ void UT66LobbyScreen::StartRunFromLobby()
 	if (GI)
 	{
 		GI->bStageBoostPending = (GI->SelectedDifficulty != ET66Difficulty::Easy);
-		GI->ProceduralTerrainSeed = FMath::Rand();
+		GI->RunSeed = FMath::Rand();
 	}
 	if (UIManager) UIManager->HideAllUI();
 	if (GI)

@@ -116,7 +116,7 @@ public:
 	 * @param InHeroData The hero's data from the DataTable
 	 * @param InBodyType The selected body type (A or B)
 	 * @param InSkinID Skin ID (e.g. Default, Beachgoer)
-	 * @param bPreviewMode If true, use alert animation (hero selection preview); otherwise use walk
+	 * @param bPreviewMode If true, use the idle animation for hero selection preview
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	void InitializeHero(const FHeroData& InHeroData, ET66BodyType InBodyType = ET66BodyType::TypeA, FName InSkinID = NAME_None, bool bPreviewMode = false);
@@ -154,10 +154,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Movement|StageEffects")
 	void ApplyStageSlide(float DurationSeconds);
 
+	/** Begin the sky-drop entrance: hero falls from a high altitude and input is re-enabled on landing. */
+	void BeginSkyDrop();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Landed(const FHitResult& Hit) override;
 
 	UFUNCTION()
 	void HandleHeroDerivedStatsChanged();
@@ -198,18 +202,18 @@ private:
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
-	/** Cached alert/walk/run anims (gameplay: alert when stopped, walk when moving slow, run when above threshold). */
+	/** Cached idle/walk/jump anims for the current hero visual. */
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimationAsset> CachedAlertAnim = nullptr;
+	TObjectPtr<UAnimationAsset> CachedIdleAnim = nullptr;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedWalkAnim = nullptr;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimationAsset> CachedRunAnim = nullptr;
+	TObjectPtr<UAnimationAsset> CachedJumpAnim = nullptr;
 
 	/** Last animation state so we only call PlayAnimation on change. */
-	enum class EMovementAnimState : uint8 { Idle, Walk, Run };
+	enum class EMovementAnimState : uint8 { Idle, Walk, Jump };
 	EMovementAnimState LastMovementAnimState = EMovementAnimState::Idle;
 
 	float BaseMaxWalkSpeed = 1200.f;
@@ -228,6 +232,10 @@ private:
 	float BaseBrakingFrictionFactor = 2.f;
 	float BaseBrakingDecelerationWalking = 2048.f;
 	float StageSlideSecondsRemaining = 0.f;
+
+	/** Sky-drop entrance: hero falls from altitude; input disabled until landing. */
+	bool bIsSkyDropping = false;
+	static constexpr float SkyDropAltitude = 5000.f;
 
 	/** When cooldown bar shows full (1), keep it at full for this long (seconds). */
 	float CooldownDisplayHoldUntil = -1.f;

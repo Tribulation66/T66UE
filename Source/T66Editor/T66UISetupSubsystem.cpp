@@ -32,6 +32,7 @@
 #include "Components/SkyLightComponent.h"
 #include "Misc/PackageName.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 
 // Console command for running setup
 static FAutoConsoleCommand T66SetupCommand(
@@ -253,6 +254,69 @@ bool UT66UISetupSubsystem::ConfigureGameplayLevel()
 			UE_LOG(LogT66Editor, Log, TEXT("Saved GameplayLevel with GameMode override"));
 		}
 		return true;
+	}
+
+	return false;
+}
+
+bool UT66UISetupSubsystem::ConfigureDemoMapLevel()
+{
+	const FString LevelPath = TEXT("/Game/LowPolyNature/Maps/Map_Summer");
+	UWorld* World = LoadObject<UWorld>(nullptr, *LevelPath);
+
+	if (!World)
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load demo map at %s"), *LevelPath);
+		return false;
+	}
+
+	const FString GameModePath = TEXT("/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode_C");
+	UClass* GameModeClass = LoadClass<AGameModeBase>(nullptr, *GameModePath);
+
+	if (!GameModeClass)
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load BP_GameplayGameMode at %s"), *GameModePath);
+		return false;
+	}
+
+	if (!World->GetWorldSettings())
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("Demo map has no WorldSettings"));
+		return false;
+	}
+
+	World->GetWorldSettings()->DefaultGameMode = GameModeClass;
+	World->GetWorldSettings()->MarkPackageDirty();
+
+	// Add PlayerStart if none exists
+	bool bHasPlayerStart = false;
+	for (TActorIterator<APlayerStart> It(World); It; ++It)
+	{
+		bHasPlayerStart = true;
+		break;
+	}
+	if (!bHasPlayerStart)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.OverrideLevel = World->PersistentLevel;
+		World->SpawnActor<APlayerStart>(APlayerStart::StaticClass(), FVector(0.f, 0.f, 200.f), FRotator::ZeroRotator, SpawnParams);
+		World->MarkPackageDirty();
+		UE_LOG(LogT66Editor, Log, TEXT("Added PlayerStart to demo map at (0, 0, 200)"));
+	}
+
+	UPackage* Package = World->GetOutermost();
+	if (Package)
+	{
+		FSavePackageArgs SaveArgs;
+		SaveArgs.TopLevelFlags = RF_Standalone;
+		FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetMapPackageExtension());
+		if (UPackage::SavePackage(Package, World, *PackageFileName, SaveArgs))
+		{
+			UE_LOG(LogT66Editor, Log, TEXT("Saved demo map (Map_Summer) with GameMode and PlayerStart"));
+			return true;
+		}
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to save demo map package"));
 	}
 
 	return false;

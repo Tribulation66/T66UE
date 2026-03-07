@@ -17,7 +17,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Images/SImage.h"
@@ -166,7 +165,9 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 			FT66ButtonParams(Text, FOnClicked::CreateSP(this, ClickHandler))
 			.SetMinWidth(160.f)
 			.SetColor(TAttribute<FSlateColor>::CreateLambda([this, Time]() -> FSlateColor {
-				return (CurrentTimeFilter == Time) ? FSlateColor(FT66Style::Tokens::Accent2) : FSlateColor(FT66Style::Tokens::Panel2);
+				// Selected time filter: dark green highlight
+				const FLinearColor DarkGreen(0.0f, 0.27f, 0.13f, 1.0f);
+				return (CurrentTimeFilter == Time) ? FSlateColor(DarkGreen) : FSlateColor(FT66Style::Tokens::Panel2);
 			}))
 		);
 	};
@@ -428,20 +429,12 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					]
 				]
 			]
-			// Entry list: taller so 11 rows visible without scrolling (height reduced to offset larger dropdowns)
+			// Entry list: height fits content (no empty space below 11 rows)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.0f, 0.0f, 0.0f, 8.0f)
 			[
-				SNew(SBox)
-				.HeightOverride(464.0f)
-				[
-					SNew(SScrollBox)
-					+ SScrollBox::Slot()
-					[
-						SAssignNew(EntryListBox, SVerticalBox)
-					]
-				]
+				SAssignNew(EntryListBox, SVerticalBox)
 			]
 		,
 		FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space3)
@@ -474,7 +467,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 
 	for (const FLeaderboardEntry& Entry : LeaderboardEntries)
 	{
-		// No solid row background so obsidian panel texture shows through; local player gets subtle tint
+		// No solid row background so panel texture shows through; local player gets subtle tint
 		const FSlateBrush* RowBrush = FCoreStyle::Get().GetBrush("NoBorder");
 		FLinearColor RowColor = Entry.bIsLocalPlayer 
 			? FLinearColor(0.2f, 0.4f, 0.3f, 0.35f)
@@ -868,9 +861,9 @@ FText ST66LeaderboardPanel::GetPartySizeText(ET66PartySize Size) const
 	{
 		switch (Size)
 		{
-		case ET66PartySize::Solo: return NSLOCTEXT("T66.PartySize", "Solo", "SOLO");
-		case ET66PartySize::Duo: return NSLOCTEXT("T66.PartySize", "Duo", "DUO");
-		case ET66PartySize::Trio: return NSLOCTEXT("T66.PartySize", "Trio", "TRIO");
+		case ET66PartySize::Solo: return NSLOCTEXT("T66.PartySize", "Solo", "Solo");
+		case ET66PartySize::Duo: return NSLOCTEXT("T66.PartySize", "Duo", "Duo");
+		case ET66PartySize::Trio: return NSLOCTEXT("T66.PartySize", "Trio", "Trio");
 		default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 		}
 	}
@@ -918,8 +911,8 @@ FText ST66LeaderboardPanel::GetTypeText(ET66LeaderboardType Type) const
 {
 	switch (Type)
 	{
-	case ET66LeaderboardType::Score: return NSLOCTEXT("T66.Leaderboard", "Score", "SCORE");
-	case ET66LeaderboardType::SpeedRun: return NSLOCTEXT("T66.Leaderboard", "SpeedRun", "SPEED RUN");
+	case ET66LeaderboardType::Score: return NSLOCTEXT("T66.Leaderboard", "Score", "Score");
+	case ET66LeaderboardType::SpeedRun: return NSLOCTEXT("T66.Leaderboard", "SpeedRun", "Speed Run");
 	default: return NSLOCTEXT("T66.Common", "Unknown", "UNKNOWN");
 	}
 }
@@ -1055,13 +1048,16 @@ const FSlateBrush* ST66LeaderboardPanel::GetOrCreateAvatarBrush(const FString& A
 		return Brush.Get();
 	}
 
-	// Not yet downloaded — request it and return default for now
-	ImageCache->RequestImage(AvatarUrl, [this](UTexture2D* Tex)
+	// Not yet downloaded — request it and return default for now (callback runs on game thread; weak ref in case panel was destroyed)
+	TWeakPtr<ST66LeaderboardPanel> WeakPanel = StaticCastSharedRef<ST66LeaderboardPanel>(AsShared());
+	ImageCache->RequestImage(AvatarUrl, [WeakPanel](UTexture2D* Tex)
 	{
-		// When image arrives, rebuild the entry list to show the avatar
 		if (Tex)
 		{
-			RebuildEntryList();
+			if (TSharedPtr<ST66LeaderboardPanel> Pin = WeakPanel.Pin())
+			{
+				Pin->RebuildEntryList();
+			}
 		}
 	});
 

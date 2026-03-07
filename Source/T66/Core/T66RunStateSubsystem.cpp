@@ -1049,86 +1049,14 @@ void UT66RunStateSubsystem::ApplyStageSpeedBoost(float MoveSpeedMultiplier, floa
 	HeroProgressChanged.Broadcast(); // movement uses derived stat refresh
 }
 
-bool UT66RunStateSubsystem::ApplyTrueDamage(int32 DamageHP)
+bool UT66RunStateSubsystem::ApplyTrueDamage(int32 /*DamageHP*/)
 {
-	if (DamageHP <= 0) return false;
-	if (bInLastStand) return false;
-
-	UGameInstance* GI = GetGameInstance();
-	UWorld* World = GI ? GI->GetWorld() : nullptr;
-	const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
-	if (Now - LastDamageTime < InvulnDurationSeconds)
-	{
-		return false;
-	}
-
-	LastDamageTime = Now;
-	const float Reduced = static_cast<float>(FMath::Max(1, DamageHP));
-	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
-
-	if (World)
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			if (APawn* HeroPawn = PC->GetPawn())
-			{
-				if (UT66FloatingCombatTextSubsystem* FCT = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
-				{
-					FCT->ShowDamageTaken(HeroPawn, FMath::RoundToInt(Reduced));
-				}
-			}
-		}
-	}
-
-	if (UGameInstance* GI3 = GetGameInstance())
-	{
-		if (UT66SkillRatingSubsystem* Skill = GI3->GetSubsystem<UT66SkillRatingSubsystem>())
-		{
-			Skill->NotifyDamageTaken();
-		}
-	}
-
-	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (Reduced / DefaultMaxHP), 0.f, 1.f);
-	SurvivalChanged.Broadcast();
-	HeartsChanged.Broadcast();
-
-	if (CurrentHP <= 0.f)
-	{
-		if (bDevImmortality)
-		{
-			return true;
-		}
-		OnPlayerDied.Broadcast();
-	}
-	return true;
+	return false;
 }
 
-void UT66RunStateSubsystem::ApplyStatusBurn(float DurationSeconds, float DamagePerSecond)
-{
-	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 30.f);
-	if (Dur <= 0.f) return;
-	StatusBurnSecondsRemaining = FMath::Max(StatusBurnSecondsRemaining, Dur);
-	StatusBurnDamagePerSecond = FMath::Max(0.f, DamagePerSecond);
-	StatusEffectsChanged.Broadcast();
-}
-
-void UT66RunStateSubsystem::ApplyStatusChill(float DurationSeconds, float MoveSpeedMultiplier)
-{
-	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 30.f);
-	if (Dur <= 0.f) return;
-	StatusChillSecondsRemaining = FMath::Max(StatusChillSecondsRemaining, Dur);
-	StatusChillMoveSpeedMultiplier = FMath::Clamp(MoveSpeedMultiplier, 0.1f, 1.f);
-	StatusEffectsChanged.Broadcast();
-	HeroProgressChanged.Broadcast(); // movement updates
-}
-
-void UT66RunStateSubsystem::ApplyStatusCurse(float DurationSeconds)
-{
-	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 30.f);
-	if (Dur <= 0.f) return;
-	StatusCurseSecondsRemaining = FMath::Max(StatusCurseSecondsRemaining, Dur);
-	StatusEffectsChanged.Broadcast();
-}
+void UT66RunStateSubsystem::ApplyStatusBurn(float /*DurationSeconds*/, float /*DamagePerSecond*/) {}
+void UT66RunStateSubsystem::ApplyStatusChill(float /*DurationSeconds*/, float /*MoveSpeedMultiplier*/) {}
+void UT66RunStateSubsystem::ApplyStatusCurse(float /*DurationSeconds*/) {}
 
 void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 {
@@ -1486,54 +1414,7 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 		}
 	}
 
-	// Status effects timers
-	bool bStatusChanged = false;
-
-	if (StatusBurnSecondsRemaining > 0.f)
-	{
-		StatusBurnSecondsRemaining = FMath::Max(0.f, StatusBurnSecondsRemaining - DeltaTime);
-		// DoT tick
-		if (StatusBurnDamagePerSecond > 0.f)
-		{
-			StatusBurnAccumDamage += StatusBurnDamagePerSecond * DeltaTime;
-			while (StatusBurnAccumDamage >= 1.f)
-			{
-				StatusBurnAccumDamage -= 1.f;
-				ApplyTrueDamage(5);
-			}
-		}
-		if (StatusBurnSecondsRemaining <= 0.f)
-		{
-			StatusBurnDamagePerSecond = 0.f;
-			StatusBurnAccumDamage = 0.f;
-			bStatusChanged = true;
-		}
-	}
-
-	if (StatusChillSecondsRemaining > 0.f)
-	{
-		StatusChillSecondsRemaining = FMath::Max(0.f, StatusChillSecondsRemaining - DeltaTime);
-		if (StatusChillSecondsRemaining <= 0.f)
-		{
-			StatusChillMoveSpeedMultiplier = 1.f;
-			HeroProgressChanged.Broadcast();
-			bStatusChanged = true;
-		}
-	}
-
-	if (StatusCurseSecondsRemaining > 0.f)
-	{
-		StatusCurseSecondsRemaining = FMath::Max(0.f, StatusCurseSecondsRemaining - DeltaTime);
-		if (StatusCurseSecondsRemaining <= 0.f)
-		{
-			bStatusChanged = true;
-		}
-	}
-
-	if (bStatusChanged)
-	{
-		StatusEffectsChanged.Broadcast();
-	}
+	// Status effects removed — enemies no longer apply Burn/Chill/Curse.
 }
 
 void UT66RunStateSubsystem::EnterLastStand()

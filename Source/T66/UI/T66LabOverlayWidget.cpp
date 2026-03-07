@@ -166,7 +166,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	TArray<FName> EnemyIDs = GetUnlockedEnemyIDs();
 
 	static const FName TreeOfLifeID(TEXT("TreeOfLife"));
-	static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("Leprechaun")), FName(TEXT("GoblinThief")), FName(TEXT("UniqueEnemy")) };
+	static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("Leprechaun")), FName(TEXT("GoblinThief")) };
 	TArray<FName> NPCList;
 	NPCList.Add(TreeOfLifeID);
 	TArray<FName> MobsList;
