@@ -53,6 +53,13 @@ AT66HeroBase::AT66HeroBase()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false; // Camera doesn't rotate independently
 
+	// Hide skeletal mesh until ApplyCharacterVisual applies the correct animation,
+	// preventing the default rest pose (face-down) from flashing for a frame.
+	if (GetMesh())
+	{
+		GetMesh()->SetVisibility(false, true);
+	}
+
 	// ========== Placeholder Mesh Setup ==========
 	
 	PlaceholderMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderMesh"));
@@ -666,7 +673,14 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 					PlaceholderMesh->SetVisibility(true, true);
 				}
 			}
-			else if (!bPreviewMode)
+			else
+			{
+				if (GetMesh())
+				{
+					GetMesh()->SetVisibility(true, true);
+				}
+			}
+			if (bApplied && !bPreviewMode)
 			{
 				// Cache idle/walk/jump anims and init hero speed params.
 				UAnimationAsset* WalkRaw = nullptr;

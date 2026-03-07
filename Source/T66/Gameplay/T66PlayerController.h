@@ -223,14 +223,24 @@ private:
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
 
-	/** Niagara system for jump VFX (same asset as slash: VFX_Attack1). */
+	/** Niagara system for jump VFX (legacy round ball: VFX_Attack1). */
 	UPROPERTY(EditDefaultsOnly, Category = "Game|VFX")
 	TSoftObjectPtr<UNiagaraSystem> JumpVFXNiagara;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraSystem> CachedJumpVFXNiagara = nullptr;
 
+	/** Retro pixel Niagara system for jump puffs and death burst. */
+	UPROPERTY(EditDefaultsOnly, Category = "Game|VFX")
+	TSoftObjectPtr<UNiagaraSystem> PixelVFXNiagara;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedPixelVFXNiagara = nullptr;
+
+	UNiagaraSystem* GetActiveJumpVFXSystem() const;
+
 	FDelegateHandle OnPlayerDiedHandle;
+	FTimerHandle DeathVFXTimerHandle;
 
 	void SetupGameplayHUD();
 	bool bUIInitialized = false;

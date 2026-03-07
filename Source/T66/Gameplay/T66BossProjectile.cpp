@@ -4,16 +4,22 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Components/SphereComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Gameplay/T66VisualUtil.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
+
+static UNiagaraSystem* LoadPixelVFX_Proj()
+{
+	UNiagaraSystem* Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+	if (!Sys)
+		Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+	return Sys;
+}
 
 AT66BossProjectile::AT66BossProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
-	// Safety: prevent unbounded projectile buildup if a projectile never overlaps anything.
+	PrimaryActorTick.bCanEverTick = true;
 	InitialLifeSpan = 6.0f;
 
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
@@ -22,19 +28,6 @@ AT66BossProjectile::AT66BossProjectile()
 	CollisionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	RootComponent = CollisionSphere;
-
-	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
-	VisualMesh->SetupAttachment(RootComponent);
-	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
-	{
-		VisualMesh->SetStaticMesh(Sphere);
-		VisualMesh->SetRelativeScale3D(FVector(0.24f, 0.24f, 0.24f));
-	}
-	if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.9f, 0.1f, 0.1f, 1.f));
-	}
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->InitialSpeed = 900.f;
@@ -47,6 +40,36 @@ void AT66BossProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AT66BossProjectile::OnSphereOverlap);
+	CachedPixelVFX = LoadPixelVFX_Proj();
+}
+
+void AT66BossProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!CachedPixelVFX || !GetWorld()) return;
+
+	VFXAccum += DeltaSeconds;
+	static constexpr float TrailInterval = 0.04f;
+	if (VFXAccum < TrailInterval) return;
+	VFXAccum -= TrailInterval;
+
+	const FVector Loc = GetActorLocation();
+	static constexpr int32 TrailParticles = 2;
+	for (int32 i = 0; i < TrailParticles; ++i)
+	{
+		const FVector Jitter(FMath::FRandRange(-8.f, 8.f), FMath::FRandRange(-8.f, 8.f), FMath::FRandRange(-8.f, 8.f));
+		const float R = FMath::FRandRange(0.7f, 1.f);
+
+		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), CachedPixelVFX, Loc + Jitter, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+		if (NC)
+		{
+			NC->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(R, 0.1f, 0.1f, 1.f));
+			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
+		}
+	}
 }
 
 void AT66BossProjectile::SetTargetLocation(const FVector& TargetLoc, float Speed)
@@ -68,11 +91,9 @@ void AT66BossProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState)
 	{
-		// Numerical damage: 10 base, +25% per stage. Pass owner (boss) as Attacker for reflect/crush.
 		const int32 Stage = FMath::Max(1, RunState->GetCurrentStage());
 		const int32 DamageHP = FMath::Max(10, FMath::RoundToInt(10.f * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
 		RunState->ApplyDamage(DamageHP, GetOwner());
 	}
 	Destroy();
 }
-

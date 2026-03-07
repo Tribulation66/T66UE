@@ -7,10 +7,10 @@
 #include "T66BossProjectile.generated.h"
 
 class USphereComponent;
-class UStaticMeshComponent;
 class UProjectileMovementComponent;
+class UNiagaraSystem;
 
-/** Boss projectile: damages hero on overlap (1 heart) */
+/** Boss projectile: damages hero on overlap (1 heart). Visual: pixel particle trail. */
 UCLASS(Blueprintable)
 class T66_API AT66BossProjectile : public AActor
 {
@@ -22,9 +22,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
 	TObjectPtr<USphereComponent> CollisionSphere;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
-	TObjectPtr<UStaticMeshComponent> VisualMesh;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
@@ -35,9 +32,13 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-};
 
+private:
+	float VFXAccum = 0.f;
+	UNiagaraSystem* CachedPixelVFX = nullptr;
+};

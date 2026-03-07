@@ -951,12 +951,21 @@ float UT66RunStateSubsystem::GetEvasionChance01() const
 
 void UT66RunStateSubsystem::NotifyEnemyKilledByHero()
 {
-	if (PassiveType != ET66PassiveType::RallyingBlow) return;
 	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
 	if (!World) return;
 	const double Now = World->GetTimeSeconds();
-	RallyStacks = FMath::Min(3, RallyStacks + 1);
-	RallyTimerEndWorldTime = Now + 3.0;
+
+	if (PassiveType == ET66PassiveType::RallyingBlow)
+	{
+		RallyStacks = FMath::Min(3, RallyStacks + 1);
+		RallyTimerEndWorldTime = Now + 3.0;
+	}
+
+	if (PassiveType == ET66PassiveType::ChaosTheory)
+	{
+		ChaosTheoryBounceStacks = FMath::Min(3, ChaosTheoryBounceStacks + 1);
+		ChaosTheoryTimerEndWorldTime = Now + 5.0;
+	}
 }
 
 float UT66RunStateSubsystem::GetRallyAttackSpeedMultiplier() const
@@ -979,6 +988,86 @@ float UT66RunStateSubsystem::GetToxinStackingDamageMultiplier(AActor* Target) co
 {
 	if (PassiveType != ET66PassiveType::ToxinStacking || !Target) return 1.f;
 	return HasActiveDOT(Target) ? 1.15f : 1.f;
+}
+
+// ---------------------------------------------------------------------------
+// New passive implementations
+// ---------------------------------------------------------------------------
+
+float UT66RunStateSubsystem::GetQuickDrawDamageMultiplier() const
+{
+	if (PassiveType != ET66PassiveType::QuickDraw) return 1.f;
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World) return 1.f;
+	const double Now = World->GetTimeSeconds();
+	return (Now - LastAttackFireWorldTime >= 2.0) ? 2.f : 1.f;
+}
+
+void UT66RunStateSubsystem::NotifyAttackFired()
+{
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World) return;
+	LastAttackFireWorldTime = World->GetTimeSeconds();
+	if (PassiveType == ET66PassiveType::Overclock)
+		OverclockAttackCounter++;
+}
+
+bool UT66RunStateSubsystem::RollHeadshot() const
+{
+	if (PassiveType != ET66PassiveType::Headshot) return false;
+	return FMath::FRand() < 0.15f;
+}
+
+bool UT66RunStateSubsystem::ShouldOverclockDouble() const
+{
+	if (PassiveType != ET66PassiveType::Overclock) return false;
+	return (OverclockAttackCounter % 8) == 0 && OverclockAttackCounter > 0;
+}
+
+int32 UT66RunStateSubsystem::GetChaosTheoryBonusBounceCount() const
+{
+	if (PassiveType != ET66PassiveType::ChaosTheory || ChaosTheoryBounceStacks <= 0) return 0;
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World || World->GetTimeSeconds() >= ChaosTheoryTimerEndWorldTime) return 0;
+	return ChaosTheoryBounceStacks;
+}
+
+float UT66RunStateSubsystem::GetEnduranceAttackSpeedMultiplier() const
+{
+	if (PassiveType != ET66PassiveType::Endurance) return 1.f;
+	return (CurrentHP > 0.f && CurrentHP <= MaxHP * 0.3f) ? 2.f : 1.f;
+}
+
+float UT66RunStateSubsystem::GetEnduranceDamageMultiplier() const
+{
+	if (PassiveType != ET66PassiveType::Endurance) return 1.f;
+	return (CurrentHP > 0.f && CurrentHP <= MaxHP * 0.3f) ? 1.25f : 1.f;
+}
+
+float UT66RunStateSubsystem::GetBrawlersFuryDamageMultiplier() const
+{
+	if (PassiveType != ET66PassiveType::BrawlersFury) return 1.f;
+	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
+	if (!World) return 1.f;
+	return (World->GetTimeSeconds() < BrawlersFuryEndWorldTime) ? 1.3f : 1.f;
+}
+
+float UT66RunStateSubsystem::GetTreasureHunterGoldMultiplier() const
+{
+	return (PassiveType == ET66PassiveType::TreasureHunter) ? 1.25f : 1.f;
+}
+
+void UT66RunStateSubsystem::NotifyEvasionProc()
+{
+	if (PassiveType == ET66PassiveType::Evasive)
+		bEvasiveNextAttackBonusDOT = true;
+}
+
+bool UT66RunStateSubsystem::ConsumeEvasiveBonusDOT()
+{
+	if (PassiveType != ET66PassiveType::Evasive || !bEvasiveNextAttackBonusDOT) return false;
+	bEvasiveNextAttackBonusDOT = false;
+	return true;
 }
 
 void UT66RunStateSubsystem::AddHeroXP(int32 Amount)
@@ -1459,11 +1548,17 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	// If we're in last-stand, we ignore damage (invincible).
 	if (bInLastStand) return false;
 
-	// Iron Will (New Chad): flat damage reduction before armor.
+	// Iron Will: flat damage reduction before armor.
 	if (PassiveType == ET66PassiveType::IronWill)
 	{
 		const int32 FlatReduction = GetArmorStat() * 2;
 		DamageHP = FMath::Max(1, DamageHP - FlatReduction);
+	}
+
+	// Unflinching: permanent 15% damage reduction.
+	if (PassiveType == ET66PassiveType::Unflinching)
+	{
+		DamageHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageHP) * 0.85f));
 	}
 
 	// Evasion: dodge the entire hit. On dodge: Assassinate (OHKO) and CounterAttack (deal fraction of would-be damage to attacker).
@@ -1503,6 +1598,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 				}
 			}
 		}
+		NotifyEvasionProc();
 		return false;
 	}
 
@@ -1567,6 +1663,12 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 	LastDamageTime = Now;
 	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
+
+	// BrawlersFury: taking damage triggers +30% damage dealt for 3s.
+	if (PassiveType == ET66PassiveType::BrawlersFury && World)
+	{
+		BrawlersFuryEndWorldTime = World->GetTimeSeconds() + 3.0;
+	}
 
 	if (World)
 	{

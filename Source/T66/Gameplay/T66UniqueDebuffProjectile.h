@@ -8,8 +8,8 @@
 #include "T66UniqueDebuffProjectile.generated.h"
 
 class USphereComponent;
-class UStaticMeshComponent;
 class UProjectileMovementComponent;
+class UNiagaraSystem;
 
 /** Fast straight projectile fired by a Unique enemy. Disappears on hit and applies a hero status effect. */
 UCLASS(Blueprintable)
@@ -22,9 +22,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
 	TObjectPtr<USphereComponent> Sphere;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
-	TObjectPtr<UStaticMeshComponent> VisualMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
@@ -40,9 +37,14 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION()
 	void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-};
 
+private:
+	float VFXAccum = 0.f;
+	UNiagaraSystem* CachedPixelVFX = nullptr;
+	FLinearColor TrailColor = FLinearColor(0.9f, 0.2f, 0.2f, 1.f);
+};

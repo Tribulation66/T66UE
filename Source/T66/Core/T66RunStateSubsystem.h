@@ -853,7 +853,7 @@ public:
 
 	ET66PassiveType GetPassiveType() const { return PassiveType; }
 
-	/** Call when an enemy is killed by hero damage (for Rallying Blow). */
+	/** Call when an enemy is killed by hero damage (for Rallying Blow / ChaosTheory). */
 	void NotifyEnemyKilledByHero();
 
 	/** Rallying Blow: multiplier for attack speed (1.0 + 0.15 * stacks, max 3 stacks, 3s duration). */
@@ -867,6 +867,43 @@ public:
 
 	/** Toxin Stacking: damage multiplier when target has active DOT (1.15 if any, else 1.0). */
 	float GetToxinStackingDamageMultiplier(AActor* Target) const;
+
+	// --- New passive queries ---
+
+	/** QuickDraw: returns damage multiplier for next shot (2.0 if idle for 2s+, else 1.0). */
+	float GetQuickDrawDamageMultiplier() const;
+	void NotifyAttackFired();
+
+	/** Headshot: returns true if this hit should headshot (15% chance, 3× damage). */
+	bool RollHeadshot() const;
+
+	/** Overclock: returns true if this attack should fire twice. Caller should call NotifyAttackFired(). */
+	bool ShouldOverclockDouble() const;
+
+	/** ChaosTheory: bonus bounce count from kill stacks. */
+	int32 GetChaosTheoryBonusBounceCount() const;
+
+	/** Endurance: returns atk speed mult (2.0 if below 30% HP, else 1.0). */
+	float GetEnduranceAttackSpeedMultiplier() const;
+	/** Endurance: returns damage mult (1.25 if below 30% HP, else 1.0). */
+	float GetEnduranceDamageMultiplier() const;
+
+	/** BrawlersFury: returns damage mult (1.3 for 3s after taking damage, else 1.0). */
+	float GetBrawlersFuryDamageMultiplier() const;
+
+	/** Unflinching: true if this hero has Unflinching passive (15% damage reduction + confusion immune). */
+	bool HasUnflinching() const { return PassiveType == ET66PassiveType::Unflinching; }
+
+	/** TreasureHunter: gold multiplier for enemy kills (1.25 if active, else 1.0). */
+	float GetTreasureHunterGoldMultiplier() const;
+
+	/** Evasive: mark that next attack should apply bonus DOT. */
+	void NotifyEvasionProc();
+	/** Evasive: consume and return true if next attack should apply bonus DOT. */
+	bool ConsumeEvasiveBonusDOT();
+
+	/** Frostbite: true if this hero has Frostbite passive (DOT slows enemies). */
+	bool HasFrostbite() const { return PassiveType == ET66PassiveType::Frostbite; }
 
 	// ============================================
 	// Survival / Last Stand
@@ -1223,6 +1260,22 @@ private:
 	ET66PassiveType PassiveType = ET66PassiveType::None;
 	int32 RallyStacks = 0;
 	double RallyTimerEndWorldTime = 0.0;
+
+	// QuickDraw
+	double LastAttackFireWorldTime = -9999.0;
+
+	// Overclock
+	int32 OverclockAttackCounter = 0;
+
+	// ChaosTheory
+	int32 ChaosTheoryBounceStacks = 0;
+	double ChaosTheoryTimerEndWorldTime = 0.0;
+
+	// BrawlersFury
+	double BrawlersFuryEndWorldTime = 0.0;
+
+	// Evasive
+	bool bEvasiveNextAttackBonusDOT = false;
 
 	float SurvivalCharge01 = 0.f;
 	bool bInLastStand = false;

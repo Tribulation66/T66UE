@@ -68,6 +68,7 @@
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
 #include "Engine/GameViewportClient.h"
@@ -339,8 +340,8 @@ AT66PlayerController::AT66PlayerController()
 	// Default to showing mouse cursor (will be hidden in gameplay mode)
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
-	// Same Niagara asset as slash (VFX_Attack1) for jump puffs.
 	JumpVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
+	PixelVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
 }
 
 void AT66PlayerController::ToggleDevConsole()
@@ -448,6 +449,7 @@ void AT66PlayerController::BeginPlay()
 		SetupGameplayMode();
 		SetupGameplayHUD();
 		CachedJumpVFXNiagara = JumpVFXNiagara.LoadSynchronous();
+		CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
 
 		// Prewarm TikTok/WebView2 so login + CSS formatting are done before first toggle.
 		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
@@ -510,13 +512,22 @@ void AT66PlayerController::BeginPlay()
 
 void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// Unbind from long-lived RunState delegates.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(DeathVFXTimerHandle);
+	}
+
 	if (UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
 		RunState->OnPlayerDied.RemoveDynamic(this, &AT66PlayerController::OnPlayerDied);
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+UNiagaraSystem* AT66PlayerController::GetActiveJumpVFXSystem() const
+{
+	return CachedPixelVFXNiagara ? CachedPixelVFXNiagara : CachedJumpVFXNiagara;
 }
 
 bool AT66PlayerController::IsFrontendLevel() const
@@ -749,6 +760,42 @@ void AT66PlayerController::HandleUltimatePressed()
 			if (Cloud)
 				Cloud->InitFromUltimate(UltDmg);
 		}
+		break;
+	case ET66UltimateType::PrecisionStrike:
+		if (Combat) Combat->PerformUltimatePrecisionStrike(UltDmg);
+		break;
+	case ET66UltimateType::FanTheHammer:
+		if (Combat) Combat->PerformUltimateFanTheHammer(UltDmg);
+		break;
+	case ET66UltimateType::Deadeye:
+		if (Combat) Combat->PerformUltimateDeadeye(UltDmg);
+		break;
+	case ET66UltimateType::Discharge:
+		if (Combat) Combat->PerformUltimateDischarge(UltDmg);
+		break;
+	case ET66UltimateType::Juiced:
+		if (Combat) Combat->PerformUltimateJuiced();
+		break;
+	case ET66UltimateType::DeathSpiral:
+		if (Combat) Combat->PerformUltimateDeathSpiral(UltDmg);
+		break;
+	case ET66UltimateType::Shockwave:
+		if (Combat) Combat->PerformUltimateShockwave(UltDmg);
+		break;
+	case ET66UltimateType::TidalWave:
+		if (Combat) Combat->PerformUltimateTidalWave(UltDmg);
+		break;
+	case ET66UltimateType::GoldRush:
+		if (Combat) Combat->PerformUltimateGoldRush(UltDmg);
+		break;
+	case ET66UltimateType::MiasmaBomb:
+		if (Combat) Combat->PerformUltimateMiasmaBomb(UltDmg);
+		break;
+	case ET66UltimateType::RabidFrenzy:
+		if (Combat) Combat->PerformUltimateRabidFrenzy();
+		break;
+	case ET66UltimateType::Blizzard:
+		if (Combat) Combat->PerformUltimateBlizzard(UltDmg);
 		break;
 	case ET66UltimateType::None:
 	default:
@@ -1666,8 +1713,6 @@ void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
 
 void AT66PlayerController::OnPlayerDied()
 {
-	// Hard rule: if TikTok/media viewer is open, force-close it on death.
-	// This ensures the overlay is hidden and audio cannot continue during the run summary.
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
@@ -1679,34 +1724,65 @@ void AT66PlayerController::OnPlayerDied()
 		}
 	}
 
-	SetPause(true);
-	EnsureGameplayUIManager();
-	// Persist Power Crystals and notify run completed before showing Run Summary.
-	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	// Spawn death VFX (red pixel burst) at hero location before pausing.
+	if (APawn* HeroPawn = GetPawn())
 	{
-		UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
-		UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>();
-		if (RunState && PowerUpSub)
+		const FVector DeathLoc = HeroPawn->GetActorLocation();
+		if (UT66CombatComponent* Combat = HeroPawn->FindComponentByClass<UT66CombatComponent>())
 		{
-			const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
-			if (Earned > 0)
+			Combat->SpawnDeathVFX(DeathLoc);
+		}
+		HeroPawn->SetActorHiddenInGame(true);
+	}
+
+	// Brief delay so the death particles are visible before the game pauses.
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		World->GetTimerManager().SetTimer(DeathVFXTimerHandle, [this]()
+		{
+			SetPause(true);
+			EnsureGameplayUIManager();
+			if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 			{
-				PowerUpSub->AddPowerCrystals(Earned);
+				UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+				UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>();
+				if (RunState && PowerUpSub)
+				{
+					const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
+					if (Earned > 0)
+					{
+						PowerUpSub->AddPowerCrystals(Earned);
+					}
+				}
+				if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+				{
+					Achieve->NotifyRunCompleted(RunState);
+				}
 			}
-		}
-		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
-		{
-			Achieve->NotifyRunCompleted(RunState);
-		}
+			if (UIManager)
+			{
+				UIManager->ShowModal(ET66ScreenType::RunSummary);
+			}
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}, 0.5f, false);
 	}
-	if (UIManager)
+	else
 	{
-		UIManager->ShowModal(ET66ScreenType::RunSummary);
+		SetPause(true);
+		EnsureGameplayUIManager();
+		if (UIManager)
+		{
+			UIManager->ShowModal(ET66ScreenType::RunSummary);
+		}
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
 	}
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputMode);
-	bShowMouseCursor = true;
 }
 
 void AT66PlayerController::EnsureGameplayUIManager()
@@ -1933,22 +2009,33 @@ void AT66PlayerController::HandleJumpPressed()
 	
 	if (ACharacter* MyCharacter = Cast<ACharacter>(GetPawn()))
 	{
+		UCharacterMovementComponent* CMC = MyCharacter->GetCharacterMovement();
+		const int32 JumpCurrent = MyCharacter->JumpCurrentCount;
+		const int32 JumpMax = MyCharacter->JumpMaxCount;
+		const bool bOnGround = CMC ? CMC->IsMovingOnGround() : false;
+		const bool bFalling = CMC ? CMC->IsFalling() : false;
+		const FString MoveMode = CMC ? StaticEnum<EMovementMode>()->GetNameStringByValue(static_cast<int64>(CMC->MovementMode)) : TEXT("N/A");
+		UE_LOG(LogTemp, Warning, TEXT("[JUMP] Space pressed: JumpCount=%d/%d OnGround=%d Falling=%d MoveMode=%s Z=%.1f"),
+			JumpCurrent, JumpMax, bOnGround ? 1 : 0, bFalling ? 1 : 0, *MoveMode, MyCharacter->GetActorLocation().Z);
+
 		MyCharacter->Jump();
 
-		// Jump VFX: spawn a few puffs at the character's feet (same Niagara as slash).
 		UWorld* World = GetWorld();
-		if (World && CachedJumpVFXNiagara)
+		UNiagaraSystem* JumpVFX = GetActiveJumpVFXSystem();
+		if (World && JumpVFX)
 		{
 			const FVector FeetLoc = MyCharacter->GetActorLocation() - FVector(0.f, 0.f, 50.f);
-			const FVector4 TintWhite(1.f, 1.f, 1.f, 1.f);
-			for (int32 i = 0; i < 3; ++i)
+			const FVector4 TintWhite(1.f, 1.f, 1.f, 0.8f);
+			for (int32 i = 0; i < 6; ++i)
 			{
+				const FVector Offset(FMath::FRandRange(-30.f, 30.f), FMath::FRandRange(-30.f, 30.f), 0.f);
 				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-					World, CachedJumpVFXNiagara, FeetLoc, FRotator::ZeroRotator,
-					FVector(1.f), true, true, ENCPoolMethod::None);
+					World, JumpVFX, FeetLoc + Offset, FRotator::ZeroRotator,
+					FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
 				if (NC)
 				{
 					NC->SetVariableVec4(FName(TEXT("User.Tint")), TintWhite);
+					NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
 				}
 			}
 		}

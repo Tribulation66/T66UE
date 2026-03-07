@@ -3,13 +3,20 @@
 #include "Gameplay/T66HeroPlagueCloud.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66VisualUtil.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Components/SphereComponent.h"
-#include "Components/StaticMeshComponent.h"
-#include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "TimerManager.h"
+
+static UNiagaraSystem* LoadPixelVFX()
+{
+	UNiagaraSystem* Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+	if (!Sys)
+		Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+	return Sys;
+}
 
 AT66HeroPlagueCloud::AT66HeroPlagueCloud()
 {
@@ -23,12 +30,6 @@ AT66HeroPlagueCloud::AT66HeroPlagueCloud()
 	DamageZone->SetGenerateOverlapEvents(true);
 	RootComponent = DamageZone;
 
-	CloudMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CloudMesh"));
-	CloudMesh->SetupAttachment(RootComponent);
-	CloudMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (UStaticMesh* Cyl = FT66VisualUtil::GetBasicShapeCylinder())
-		CloudMesh->SetStaticMesh(Cyl);
-
 	InitialLifeSpan = 10.f;
 }
 
@@ -37,20 +38,43 @@ void AT66HeroPlagueCloud::BeginPlay()
 	Super::BeginPlay();
 
 	DamageZone->SetSphereRadius(Radius);
-
-	const float DiscScale = (Radius * 2.f) / 100.f;
-	CloudMesh->SetRelativeScale3D(FVector(DiscScale, DiscScale, 4.f));
-	CloudMesh->SetRelativeLocation(FVector(0.f, 0.f, 150.f));
-
-	if (UMaterialInstanceDynamic* Mat = CloudMesh->CreateAndSetMaterialInstanceDynamic(0))
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.2f, 0.7f, 0.2f, 0.5f));
-
-	// Timers started in InitFromUltimate so damage uses the correct UltimateDamage
+	CachedPixelVFX = LoadPixelVFX();
 }
 
 void AT66HeroPlagueCloud::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (!CachedPixelVFX || !GetWorld()) return;
+
+	VFXAccum += DeltaSeconds;
+	static constexpr float SpawnInterval = 0.08f;
+	if (VFXAccum < SpawnInterval) return;
+	VFXAccum -= SpawnInterval;
+
+	const FVector Origin = GetActorLocation();
+	static constexpr int32 ParticlesPerBatch = 6;
+	for (int32 i = 0; i < ParticlesPerBatch; ++i)
+	{
+		const float Angle = FMath::FRandRange(0.f, 2.f * PI);
+		const float Dist = FMath::FRandRange(0.f, Radius);
+		const float Z = FMath::FRandRange(30.f, 200.f);
+		const FVector Loc(Origin.X + FMath::Cos(Angle) * Dist,
+		                  Origin.Y + FMath::Sin(Angle) * Dist,
+		                  Origin.Z + Z);
+
+		const float G = FMath::FRandRange(0.5f, 0.85f);
+		const FVector4 Tint(0.15f, G, 0.1f, 0.7f);
+
+		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), CachedPixelVFX, Loc, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+		if (NC)
+		{
+			NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
+			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
+		}
+	}
 }
 
 void AT66HeroPlagueCloud::InitFromUltimate(int32 UltimateDamage)
@@ -91,7 +115,6 @@ void AT66HeroPlagueCloud::InitFromUltimate(int32 UltimateDamage)
 
 void AT66HeroPlagueCloud::ApplyTickDamage()
 {
-	// Handled in timer lambda in InitFromUltimate
 }
 
 void AT66HeroPlagueCloud::DestroySelf()

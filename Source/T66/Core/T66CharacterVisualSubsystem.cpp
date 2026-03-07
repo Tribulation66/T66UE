@@ -314,18 +314,21 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		RelLoc.Z -= BottomZ;
 	}
 
-	// Default for ACharacter: keep mesh bottom aligned to capsule bottom (ground contact).
-	bool bAppliedAutoCenterFix = false;
+	// Default for ACharacter: place mesh origin (feet pivot) at capsule bottom (ground contact).
+	// Standard game-ready character meshes have their pivot at the feet (Z=0 in mesh local space).
+	// Previous bounds-based approach was incorrect: it used the bounding box bottom, which can
+	// extend below the feet due to root bone offsets or extra geometry.
 	if (ACharacter* OwnerChar = Cast<ACharacter>(TargetMesh->GetOwner()))
 	{
 		if (UCapsuleComponent* Cap = OwnerChar->GetCapsuleComponent())
 		{
 			const float CapsuleHalfHeight = Cap->GetScaledCapsuleHalfHeight();
+			RelLoc.Z = Res.Row.MeshRelativeLocation.Z - CapsuleHalfHeight;
+
 			const FBoxSphereBounds B = Res.Mesh->GetBounds();
-			const float BottomZ = (B.Origin.Z - B.BoxExtent.Z) * Scale.Z;
-			const float CurrentBottom = RelLoc.Z + BottomZ;
-			const float DesiredBottom = -CapsuleHalfHeight;
-			RelLoc.Z += (DesiredBottom - CurrentBottom);
+			UE_LOG(LogTemp, Warning, TEXT("[MESH ALIGN] %s: Pivot-at-feet approach. RelZ=%.2f CapsuleHH=%.2f | Bounds Origin.Z=%.2f Extent.Z=%.2f Scale=%.2f MeshHeight=%.2f"),
+				*VisualID.ToString(), RelLoc.Z, CapsuleHalfHeight,
+				B.Origin.Z, B.BoxExtent.Z, Scale.Z, B.BoxExtent.Z * 2.f * Scale.Z);
 		}
 	}
 	TargetMesh->SetRelativeLocation(RelLoc);
@@ -441,7 +444,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 					RelLoc.X, RelLoc.Y, RelLoc.Z,
 					Res.Row.MeshRelativeRotation.Pitch, Res.Row.MeshRelativeRotation.Yaw, Res.Row.MeshRelativeRotation.Roll,
 					Scale.X, Scale.Y, Scale.Z,
-					bAppliedAutoCenterFix ? 1 : 0
+					1
 				);
 			}
 #endif

@@ -3970,7 +3970,6 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// If it's our hero class, initialize it with hero data and body type
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(SpawnedPawn))
 	{
-		Hero->BeginSkyDrop();
 
 		if (UT66GameInstance* GI = GetT66GameInstance())
 		{

@@ -50,6 +50,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void ApplyArmorDebuff(float ReductionAmount, float DurationSeconds);
 
+	/** Apply a move speed slow (from Frostbite passive). Multiplier is applied for DurationSeconds. */
+	void ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds);
+
 	/** Point value for wave budget and score (Bible 2.9) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
@@ -174,6 +177,11 @@ private:
 	// Armor debuff tracking
 	float ArmorDebuffAmount = 0.f;
 	float ArmorDebuffSecondsRemaining = 0.f;
+
+	// Move slow tracking (Frostbite passive)
+	float MoveSlowMultiplier = 1.f;
+	float MoveSlowSecondsRemaining = 0.f;
+	float BaseMaxWalkSpeed = 350.f;
 
 	/** Cached player pawn reference (avoid UGameplayStatics::GetPlayerPawn every tick per enemy). */
 	TWeakObjectPtr<APawn> CachedPlayerPawn;

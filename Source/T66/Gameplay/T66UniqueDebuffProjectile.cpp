@@ -3,17 +3,25 @@
 #include "Gameplay/T66UniqueDebuffProjectile.h"
 
 #include "Components/SphereComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Gameplay/T66HeroBase.h"
-#include "Gameplay/T66VisualUtil.h"
-#include "Engine/StaticMesh.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
+
+static UNiagaraSystem* LoadPixelVFX_Debuff()
+{
+	UNiagaraSystem* Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+	if (!Sys)
+		Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+	return Sys;
+}
 
 AT66UniqueDebuffProjectile::AT66UniqueDebuffProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	Sphere->InitSphereRadius(16.f);
@@ -22,15 +30,6 @@ AT66UniqueDebuffProjectile::AT66UniqueDebuffProjectile()
 	Sphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Sphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 	RootComponent = Sphere;
-
-	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
-	VisualMesh->SetupAttachment(RootComponent);
-	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	VisualMesh->SetRelativeScale3D(FVector(0.25f, 0.25f, 0.25f));
-	if (UStaticMesh* SphereMesh = FT66VisualUtil::GetBasicShapeSphere())
-	{
-		VisualMesh->SetStaticMesh(SphereMesh);
-	}
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->UpdatedComponent = RootComponent;
@@ -51,16 +50,43 @@ void AT66UniqueDebuffProjectile::BeginPlay()
 		Sphere->OnComponentBeginOverlap.AddDynamic(this, &AT66UniqueDebuffProjectile::OnSphereBeginOverlap);
 	}
 
-	// Color by effect type.
-	FLinearColor C(0.9f, 0.2f, 0.2f, 1.f);
 	switch (EffectType)
 	{
-		case ET66HeroStatusEffectType::Burn:  C = FLinearColor(0.95f, 0.25f, 0.10f, 1.f); break;
-		case ET66HeroStatusEffectType::Chill: C = FLinearColor(0.20f, 0.60f, 0.95f, 1.f); break;
-		case ET66HeroStatusEffectType::Curse: C = FLinearColor(0.65f, 0.20f, 0.90f, 1.f); break;
+		case ET66HeroStatusEffectType::Burn:  TrailColor = FLinearColor(0.95f, 0.25f, 0.10f, 1.f); break;
+		case ET66HeroStatusEffectType::Chill: TrailColor = FLinearColor(0.20f, 0.60f, 0.95f, 1.f); break;
+		case ET66HeroStatusEffectType::Curse: TrailColor = FLinearColor(0.65f, 0.20f, 0.90f, 1.f); break;
 		default: break;
 	}
-	FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
+
+	CachedPixelVFX = LoadPixelVFX_Debuff();
+}
+
+void AT66UniqueDebuffProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!CachedPixelVFX || !GetWorld()) return;
+
+	VFXAccum += DeltaSeconds;
+	static constexpr float TrailInterval = 0.04f;
+	if (VFXAccum < TrailInterval) return;
+	VFXAccum -= TrailInterval;
+
+	const FVector Loc = GetActorLocation();
+	static constexpr int32 TrailParticles = 2;
+	for (int32 i = 0; i < TrailParticles; ++i)
+	{
+		const FVector Jitter(FMath::FRandRange(-6.f, 6.f), FMath::FRandRange(-6.f, 6.f), FMath::FRandRange(-6.f, 6.f));
+
+		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), CachedPixelVFX, Loc + Jitter, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+		if (NC)
+		{
+			NC->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(TrailColor.R, TrailColor.G, TrailColor.B, TrailColor.A));
+			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
+		}
+	}
 }
 
 void AT66UniqueDebuffProjectile::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -82,7 +108,7 @@ void AT66UniqueDebuffProjectile::OnSphereBeginOverlap(UPrimitiveComponent* Overl
 	switch (EffectType)
 	{
 		case ET66HeroStatusEffectType::Burn:
-			RunState->ApplyStatusBurn(EffectDurationSeconds, 0.6f); // ~1 heart every ~1.7s
+			RunState->ApplyStatusBurn(EffectDurationSeconds, 0.6f);
 			break;
 		case ET66HeroStatusEffectType::Chill:
 			RunState->ApplyStatusChill(EffectDurationSeconds, 0.60f);
@@ -110,4 +136,3 @@ void AT66UniqueDebuffProjectile::OnSphereBeginOverlap(UPrimitiveComponent* Overl
 
 	Destroy();
 }
-

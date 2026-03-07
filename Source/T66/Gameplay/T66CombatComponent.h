@@ -44,11 +44,26 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	float SlashRadius = 300.f;
 
-	/** Perform Knight ultimate: radial burst of 8–12 pierce lines from the hero; each line damages all enemies in path. */
-	void PerformUltimateSpearStorm(int32 UltimateDamage);
+	/** Spawn death VFX: burst of red pixel particles at the given location. */
+	void SpawnDeathVFX(const FVector& Location);
 
-	/** Perform Archer ultimate: chain to every enemy in range with no falloff; full damage each, gold bounce VFX. */
+	/** Static: spawn a death burst at a world location (for enemies/bosses that don't own a CombatComponent). */
+	static void SpawnDeathBurstAtLocation(UWorld* World, const FVector& Location, int32 NumParticles = 20, float BurstRadius = 80.f);
+
+	void PerformUltimateSpearStorm(int32 UltimateDamage);
 	void PerformUltimateChainLightning(int32 UltimateDamage);
+	void PerformUltimatePrecisionStrike(int32 UltimateDamage);
+	void PerformUltimateFanTheHammer(int32 UltimateDamage);
+	void PerformUltimateDeadeye(int32 UltimateDamage);
+	void PerformUltimateDischarge(int32 UltimateDamage);
+	void PerformUltimateJuiced();
+	void PerformUltimateDeathSpiral(int32 UltimateDamage);
+	void PerformUltimateShockwave(int32 UltimateDamage);
+	void PerformUltimateTidalWave(int32 UltimateDamage);
+	void PerformUltimateGoldRush(int32 UltimateDamage);
+	void PerformUltimateMiasmaBomb(int32 UltimateDamage);
+	void PerformUltimateRabidFrenzy();
+	void PerformUltimateBlizzard(int32 UltimateDamage);
 
 protected:
 	virtual void BeginPlay() override;
@@ -104,29 +119,38 @@ protected:
 
 	bool bShotSfxWarnedMissing = false;
 
-	/** Niagara system for slash VFX (particles in arc). Asset: /Game/VFX/VFX_Attack1 */
+	/** Legacy Niagara system (round ball). Asset: /Game/VFX/VFX_Attack1 */
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|VFX")
 	TSoftObjectPtr<UNiagaraSystem> SlashVFXNiagara;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraSystem> CachedSlashVFXNiagara = nullptr;
 
+	/** Retro pixel Niagara system (square particle). Asset: /Game/VFX/NS_PixelParticle */
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|VFX")
+	TSoftObjectPtr<UNiagaraSystem> PixelVFXNiagara;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraSystem> CachedPixelVFXNiagara = nullptr;
+
+	/** Returns the active VFX system: pixel if available, otherwise legacy. */
+	UNiagaraSystem* GetActiveVFXSystem() const;
+
 	void PlayShotSfx();
 
 	/** Apply damage to a single actor. EventType for floating text. SourceID for damage log (NAME_None = AutoAttack, or IdolID for idol/DOT). */
 	void ApplyDamageToActor(AActor* Target, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None, FName RangeEventForHero = NAME_None);
 
-	/** Spawn slash VFX (arc) at the given location. */
 	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
-
-	/** Spawn pierce VFX (line) from Start to End. */
 	void SpawnPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color);
-
-	/** Spawn bounce VFX (chain of segments between positions). */
 	void SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color);
-
-	/** Spawn DOT VFX (persistent effect at target location; set lifespan to Duration). */
 	void SpawnDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color);
+
+	/** Hero-specific VFX variants: spawn unique pixel patterns based on HeroID. */
+	void SpawnHeroSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color, const FName& HeroID);
+	void SpawnHeroPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color, const FName& HeroID);
+	void SpawnHeroBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color, const FName& HeroID);
+	void SpawnHeroDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color, const FName& HeroID);
 
 	float BaseAttackRange = 0.f;
 	float BaseFireIntervalSeconds = 0.f;
@@ -144,7 +168,13 @@ protected:
 	/** Time of last fire (for cooldown bar). */
 	float LastFireTime = -9999.f;
 
-	/** Marksman's Focus (Archer): consecutive hits on same target stack +8% damage (max 5 stacks). */
+	/** Marksman's Focus: consecutive hits on same target stack +8% damage (max 5 stacks). */
 	TWeakObjectPtr<AActor> LastMarksmanTarget;
 	int32 MarksmanStacks = 0;
+
+	// Timed ultimate buffs
+	float DeadeyeEndTime = -1.f;
+	float JuicedEndTime = -1.f;
+	int32 JuicedBonusBounce = 0;
+	float RabidFrenzyEndTime = -1.f;
 };

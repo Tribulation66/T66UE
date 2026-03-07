@@ -24,10 +24,9 @@ UT66CombatComponent::UT66CombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// Optional SFX asset (must be imported to a SoundWave/SoundCue .uasset).
 	ShotSfx = TSoftObjectPtr<USoundBase>(FSoftObjectPath(TEXT("/Game/Audio/SFX/Shot.Shot")));
-	// Niagara particles for slash (arc) and jump. Add User.Tint (Linear Color) in the system for color override.
 	SlashVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1")));
+	PixelVFXNiagara = TSoftObjectPtr<UNiagaraSystem>(FSoftObjectPath(TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle")));
 }
 
 void UT66CombatComponent::SetLockedTarget(AActor* InTarget)
@@ -66,10 +65,17 @@ void UT66CombatComponent::BeginPlay()
 
 	RecomputeFromRunState();
 
-	// Preload optional shot SFX once (avoid sync loads in combat loop).
 	CachedShotSfx = ShotSfx.LoadSynchronous();
-	// Preload Niagara slash VFX.
 	CachedSlashVFXNiagara = SlashVFXNiagara.LoadSynchronous();
+	CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
+	if (CachedPixelVFXNiagara)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[VFX] Pixel particle system loaded: NS_PixelParticle"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[VFX] NS_PixelParticle not found; falling back to VFX_Attack1. Run CreatePixelParticleNiagara.py + configure in editor."));
+	}
 
 	// --- Create the range detection sphere ---
 	AActor* Owner = GetOwner();
@@ -226,8 +232,8 @@ void UT66CombatComponent::RecomputeFromRunState()
 	const float DamageMult = CachedRunState->GetItemDamageMultiplier();
 	const float ScaleMult = CachedRunState->GetItemScaleMultiplier();
 
-	const float HeroAttackSpeedMult = CachedRunState->GetHeroAttackSpeedMultiplier() * CachedRunState->GetLastStandAttackSpeedMultiplier() * CachedRunState->GetRallyAttackSpeedMultiplier();
-	const float HeroDamageMult = CachedRunState->GetHeroDamageMultiplier();
+	const float HeroAttackSpeedMult = CachedRunState->GetHeroAttackSpeedMultiplier() * CachedRunState->GetLastStandAttackSpeedMultiplier() * CachedRunState->GetRallyAttackSpeedMultiplier() * CachedRunState->GetEnduranceAttackSpeedMultiplier();
+	const float HeroDamageMult = CachedRunState->GetHeroDamageMultiplier() * CachedRunState->GetEnduranceDamageMultiplier() * CachedRunState->GetBrawlersFuryDamageMultiplier();
 	const float HeroScaleMult = CachedRunState->GetHeroScaleMultiplier();
 
 	const float TotalAttackSpeed = AttackSpeedMult * HeroAttackSpeedMult;
@@ -371,8 +377,10 @@ void UT66CombatComponent::TryFire()
 	ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
 	FHeroData HeroDataForPrimary;
 	bool bHaveHeroData = false;
+	FName CurrentHeroID = NAME_None;
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OwnerActor))
 	{
+		CurrentHeroID = Hero->HeroID;
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(World->GetGameInstance()))
 		{
 			FHeroData HeroDataOut;
@@ -430,7 +438,7 @@ void UT66CombatComponent::TryFire()
 		}
 
 		const FVector VFXEnd = TargetLoc + Dir * (LineLength * 0.5f);
-		SpawnPierceVFX(TargetLoc, VFXEnd, FLinearColor::White);
+		SpawnHeroPierceVFX(TargetLoc, VFXEnd, FLinearColor::White, CurrentHeroID);
 		PlayShotSfx();
 		return true;
 	};
@@ -479,7 +487,7 @@ void UT66CombatComponent::TryFire()
 			}
 		}
 
-		SpawnSlashVFX(SlashCenter, EffectiveSlashRadius, FLinearColor::White);
+		SpawnHeroSlashVFX(SlashCenter, EffectiveSlashRadius, FLinearColor::White, CurrentHeroID);
 		PlayShotSfx();
 		return true;
 	};
@@ -488,7 +496,11 @@ void UT66CombatComponent::TryFire()
 	auto PerformBounce = [&](AActor* PrimaryTarget, float PrimaryDamageMult) -> bool
 	{
 		if (!PrimaryTarget) return false;
-		const int32 BounceCount = FMath::Max(1, bHaveHeroData ? HeroDataForPrimary.BaseBounceCount : 1);
+		const int32 BaseBounce = FMath::Max(1, bHaveHeroData ? HeroDataForPrimary.BaseBounceCount : 1);
+		const int32 ChaosBonus = CachedRunState ? CachedRunState->GetChaosTheoryBonusBounceCount() : 0;
+		const float TimeNow = static_cast<float>(World->GetTimeSeconds());
+		const int32 JuicedBonus = (JuicedEndTime > TimeNow) ? JuicedBonusBounce : 0;
+		const int32 BounceCount = BaseBounce + ChaosBonus + JuicedBonus;
 		const float Falloff = FMath::Clamp(bHaveHeroData ? HeroDataForPrimary.FalloffPerHit : 0.f, 0.f, 0.95f);
 		const float BounceRangeSq = AttackRange * AttackRange;
 		const FVector PrimaryLoc = PrimaryTarget->GetActorLocation();
@@ -521,11 +533,20 @@ void UT66CombatComponent::TryFire()
 			const int32 RangeDmg = GetRangeMultipliedDamage(BounceDmg, Next, &RangeEvent);
 			const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 			ApplyDamageToActor(Next, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
+			// StaticCharge: 20% chance to confuse bounced targets.
+			if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::StaticCharge)
+			{
+				if (FMath::FRand() < 0.2f)
+				{
+					if (AT66EnemyBase* BounceEnemy = Cast<AT66EnemyBase>(Next))
+						BounceEnemy->ApplyConfusion(1.5f);
+				}
+			}
 			CurrentLoc = Next->GetActorLocation();
 			DamageMult *= (1.f - Falloff);
 			--BouncesLeft;
 		}
-		SpawnBounceVFX(ChainPositions, FLinearColor::White);
+		SpawnHeroBounceVFX(ChainPositions, FLinearColor::White, CurrentHeroID);
 		PlayShotSfx();
 		return true;
 	};
@@ -547,7 +568,13 @@ void UT66CombatComponent::TryFire()
 			ApplyDamageToActor(PrimaryTarget, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
 		}
 		CachedRunState->ApplyDOT(PrimaryTarget, Duration, TickInterval, DamagePerTick, NAME_None);
-		SpawnDOTVFX(PrimaryTarget->GetActorLocation(), Duration, 80.f, FLinearColor::White);
+		// Frostbite: DOT attacks slow enemy move speed by 30%.
+		if (CachedRunState->HasFrostbite())
+		{
+			if (AT66EnemyBase* DotEnemy = Cast<AT66EnemyBase>(PrimaryTarget))
+				DotEnemy->ApplyMoveSlow(0.7f, Duration);
+		}
+		SpawnHeroDOTVFX(PrimaryTarget->GetActorLocation(), Duration, 80.f, FLinearColor::White, CurrentHeroID);
 		PlayShotSfx();
 		return true;
 	};
@@ -570,7 +597,7 @@ void UT66CombatComponent::TryFire()
 		PrimaryTarget = FindClosestEnemyInRange(MyLoc, RangeSq);
 	}
 
-	// Marksman's Focus (Archer): consecutive hits on same target stack +8% damage (max 5).
+	// Marksman's Focus: consecutive hits on same target stack +8% damage (max 5).
 	float PrimaryDamageMultiplier = 1.f;
 	if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::MarksmanFocus && PrimaryTarget)
 	{
@@ -582,6 +609,25 @@ void UT66CombatComponent::TryFire()
 		PrimaryDamageMultiplier = 1.f + 0.08f * static_cast<float>(MarksmanStacks);
 	}
 
+	// QuickDraw: first attack after 2s idle = 2× damage.
+	if (CachedRunState)
+		PrimaryDamageMultiplier *= CachedRunState->GetQuickDrawDamageMultiplier();
+
+	// Deadeye ultimate buff: 2× damage while active.
+	const float Now = static_cast<float>(World->GetTimeSeconds());
+	if (DeadeyeEndTime > Now)
+		PrimaryDamageMultiplier *= 2.f;
+
+	// RabidFrenzy: every hit applies a short DOT (handled after the attack switch below).
+
+	// Headshot: 15% chance for 3× damage (multiplicative with crit).
+	if (CachedRunState && CachedRunState->RollHeadshot())
+		PrimaryDamageMultiplier *= 3.f;
+
+	// Notify RunState that an attack was fired (for Overclock counter, QuickDraw timer).
+	if (CachedRunState)
+		CachedRunState->NotifyAttackFired();
+
 	// Hero primary attack (Pierce / Bounce / AOE / DOT; VFX white).
 	if (PrimaryTarget)
 	{
@@ -592,6 +638,37 @@ void UT66CombatComponent::TryFire()
 		case ET66AttackCategory::AOE:   (void)PerformSlash(PrimaryTarget, PrimaryDamageMultiplier); break;
 		case ET66AttackCategory::DOT:   (void)PerformDOT(PrimaryTarget, PrimaryDamageMultiplier); break;
 		default: (void)PerformSlash(PrimaryTarget, PrimaryDamageMultiplier); break;
+		}
+
+		// Overclock: every 8th attack fires a second time immediately.
+		if (CachedRunState && CachedRunState->ShouldOverclockDouble())
+		{
+			switch (AttackCategory)
+			{
+			case ET66AttackCategory::Pierce: (void)PerformPierce(PrimaryTarget, 1.f); break;
+			case ET66AttackCategory::Bounce: (void)PerformBounce(PrimaryTarget, 1.f); break;
+			case ET66AttackCategory::AOE:   (void)PerformSlash(PrimaryTarget, 1.f); break;
+			case ET66AttackCategory::DOT:   (void)PerformDOT(PrimaryTarget, 1.f); break;
+			default: break;
+			}
+		}
+
+		// Evasive: if flagged, apply bonus 3s DOT to the primary target (50% of hit damage).
+		if (CachedRunState && CachedRunState->ConsumeEvasiveBonusDOT() && PrimaryTarget)
+		{
+			const float BonusDotDamage = static_cast<float>(EffectiveDamagePerShot) * 0.5f;
+			const float EvasiveTicks = 6.f;
+			CachedRunState->ApplyDOT(PrimaryTarget, 3.f, 0.5f, BonusDotDamage / EvasiveTicks, NAME_None);
+			SpawnDOTVFX(PrimaryTarget->GetActorLocation(), 3.f, 60.f, FLinearColor(0.6f, 0.2f, 0.8f));
+		}
+
+		// RabidFrenzy ultimate buff: every hit applies a short DOT.
+		if (RabidFrenzyEndTime > Now && CachedRunState && PrimaryTarget)
+		{
+			const float FrenzyDotDmg = static_cast<float>(EffectiveDamagePerShot) * 0.3f;
+			const float FrenzyTicks = 4.f;
+			CachedRunState->ApplyDOT(PrimaryTarget, 2.f, 0.5f, FrenzyDotDmg / FrenzyTicks, NAME_None);
+			SpawnDOTVFX(PrimaryTarget->GetActorLocation(), 2.f, 50.f, FLinearColor(0.9f, 0.3f, 0.1f));
 		}
 
 		// Idol attacks: one per equipped idol, each with unique color.
@@ -829,20 +906,106 @@ void UT66CombatComponent::ApplyDamageToActor(AActor* Target, int32 DamageAmount,
 }
 
 // ---------------------------------------------------------------------------
-// SpawnSlashVFX — spawns Niagara particles in a tight arc (many, small, clumped).
-// Uses VFX_Attack1; set User.Tint (Linear Color) in the Niagara system to drive color.
+UNiagaraSystem* UT66CombatComponent::GetActiveVFXSystem() const
+{
+	return CachedPixelVFXNiagara ? CachedPixelVFXNiagara : CachedSlashVFXNiagara;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: find NS_PixelParticle (or VFX_Attack1 fallback) from any world.
+// ---------------------------------------------------------------------------
+static UNiagaraSystem* FindPixelVFXSystem()
+{
+	UNiagaraSystem* Pixel = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+	if (Pixel) return Pixel;
+	return LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+}
+
+// ---------------------------------------------------------------------------
+// SpawnDeathBurstAtLocation — static, usable from enemies/bosses without a
+// CombatComponent. Loads the VFX system on first call and caches it.
+// ---------------------------------------------------------------------------
+void UT66CombatComponent::SpawnDeathBurstAtLocation(UWorld* World, const FVector& Location, int32 NumParticles, float BurstRadius)
+{
+	if (!World) return;
+	static TWeakObjectPtr<UNiagaraSystem> CachedVFX;
+	UNiagaraSystem* VFX = CachedVFX.Get();
+	if (!VFX)
+	{
+		VFX = FindPixelVFXSystem();
+		CachedVFX = VFX;
+	}
+	if (!VFX) return;
+
+	for (int32 i = 0; i < NumParticles; ++i)
+	{
+		const FVector RandDir = FMath::VRand();
+		const FVector Biased(RandDir.X, RandDir.Y, FMath::Abs(RandDir.Z) * 0.5f + 0.5f);
+		const FVector SpawnLoc = Location + Biased.GetSafeNormal() * FMath::FRandRange(5.f, BurstRadius);
+
+		const float R = FMath::FRandRange(0.65f, 0.95f);
+		const float G = FMath::FRandRange(0.02f, 0.10f);
+		const float B = FMath::FRandRange(0.02f, 0.08f);
+		const FVector4 Tint(R, G, B, 1.f);
+
+		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			World, VFX, SpawnLoc, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+		if (NC)
+		{
+			NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
+			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SpawnDeathVFX — hero death: larger red burst.
+// ---------------------------------------------------------------------------
+void UT66CombatComponent::SpawnDeathVFX(const FVector& Location)
+{
+	UWorld* World = GetWorld();
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX) return;
+
+	constexpr int32 NumParticles = 48;
+	constexpr float BurstRadius = 150.f;
+
+	for (int32 i = 0; i < NumParticles; ++i)
+	{
+		const FVector RandDir = FMath::VRand();
+		const FVector Biased(RandDir.X, RandDir.Y, FMath::Abs(RandDir.Z) * 0.5f + 0.5f);
+		const FVector SpawnLoc = Location + Biased.GetSafeNormal() * FMath::FRandRange(5.f, BurstRadius);
+
+		const float R = FMath::FRandRange(0.65f, 0.95f);
+		const float G = FMath::FRandRange(0.02f, 0.10f);
+		const float B = FMath::FRandRange(0.02f, 0.08f);
+		const FVector4 Tint(R, G, B, 1.f);
+
+		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			World, VFX, SpawnLoc, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+		if (NC)
+		{
+			NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
+			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(4.0, 4.0));
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SpawnSlashVFX — crescent arc of tiny pixel particles.
 // ---------------------------------------------------------------------------
 void UT66CombatComponent::SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color)
 {
 	UWorld* World = GetWorld();
-	if (!World || !CachedSlashVFXNiagara) return;
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX) return;
 
-	const int32 NumParticles = 32;
-	const float ArcAngleDeg = 180.f;
-	const float StartAngleDeg = -ArcAngleDeg * 0.5f;
-	// Tighter spread: use 0.45f of radius so particles clump in the blade shape.
-	const float SpreadScale = 0.45f;
-	const float ParticleScale = 0.4f;
+	constexpr int32 NumParticles = 24;
+	constexpr float ArcAngleDeg = 120.f;
+	constexpr float StartAngleDeg = -ArcAngleDeg * 0.5f;
+	constexpr float SpreadScale = 0.35f;
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
 
 	for (int32 i = 0; i < NumParticles; ++i)
@@ -853,25 +1016,26 @@ void UT66CombatComponent::SpawnSlashVFX(const FVector& Location, float Radius, c
 		const FVector SpawnLoc = Location + Offset;
 
 		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, CachedSlashVFXNiagara, SpawnLoc, FRotator::ZeroRotator,
-			FVector(ParticleScale), true, true, ENCPoolMethod::AutoRelease);
+			World, VFX, SpawnLoc, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
 		if (NC)
 		{
 			NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
+			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5));
 		}
 	}
 }
 
 // ---------------------------------------------------------------------------
-// SpawnPierceVFX — spawns Niagara particles along a straight line (pierce attack).
+// SpawnPierceVFX — clean straight line of evenly spaced tiny pixels.
 // ---------------------------------------------------------------------------
 void UT66CombatComponent::SpawnPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color)
 {
 	UWorld* World = GetWorld();
-	if (!World || !CachedSlashVFXNiagara) return;
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX) return;
 
-	const int32 NumParticles = 28;
-	const float ParticleScale = 0.35f;
+	constexpr int32 NumParticles = 40;
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
 
 	for (int32 i = 0; i < NumParticles; ++i)
@@ -880,25 +1044,23 @@ void UT66CombatComponent::SpawnPierceVFX(const FVector& Start, const FVector& En
 		const FVector SpawnLoc = FMath::Lerp(Start, End, T);
 
 		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, CachedSlashVFXNiagara, SpawnLoc, FRotator::ZeroRotator,
-			FVector(ParticleScale), true, true, ENCPoolMethod::AutoRelease);
+			World, VFX, SpawnLoc, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
 		if (NC)
 		{
 			NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
+			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
 		}
 	}
 }
 
-void UT66CombatComponent::SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& /*Color*/)
+void UT66CombatComponent::SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color)
 {
 	UWorld* World = GetWorld();
-	if (!World || !CachedSlashVFXNiagara || ChainPositions.Num() < 2) return;
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX || ChainPositions.Num() < 2) return;
 
-	// All bounce idols use a bright-red bolt so the bounce is unmistakable.
-	static const FVector4 RedTint(1.f, 0.1f, 0.1f, 1.f);
-
-	const float TrailScale  = 0.6f;   // per-particle along the trail
-	const float ImpactScale = 1.0f;   // burst at each contact point
+	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
 
 	for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
 	{
@@ -909,41 +1071,344 @@ void UT66CombatComponent::SpawnBounceVFX(const TArray<FVector>& ChainPositions, 
 		const FRotator Rot  = Dir.Rotation();
 		const float    Dist = FVector::Dist(ChainStart, ChainEnd);
 
-		// Dense trail of red particles along the segment.
-		const int32 Num = FMath::Max(10, FMath::RoundToInt(Dist / 30.f));
+		const int32 Num = FMath::Max(8, FMath::RoundToInt(Dist / 20.f));
 		for (int32 j = 0; j < Num; ++j)
 		{
 			const float T = (Num > 1) ? (static_cast<float>(j) / static_cast<float>(Num - 1)) : 0.5f;
 			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				World, CachedSlashVFXNiagara, FMath::Lerp(ChainStart, ChainEnd, T), Rot,
-				FVector(TrailScale), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) NC->SetVariableVec4(FName(TEXT("User.Tint")), RedTint);
+				World, VFX, FMath::Lerp(ChainStart, ChainEnd, T), Rot,
+				FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC)
+			{
+				NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
+				NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
+			}
 		}
 
-		// Larger impact burst at the START of each segment (the contact/bounce point).
+		// Slightly larger impact pixel at each bounce point.
 		UNiagaraComponent* Impact = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, CachedSlashVFXNiagara, ChainStart, FRotator::ZeroRotator,
-			FVector(ImpactScale), true, true, ENCPoolMethod::AutoRelease);
-		if (Impact) Impact->SetVariableVec4(FName(TEXT("User.Tint")), RedTint);
+			World, VFX, ChainStart, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+		if (Impact)
+		{
+			Impact->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
+			Impact->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.5, 3.5));
+		}
 	}
 }
 
 void UT66CombatComponent::SpawnDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color)
 {
 	UWorld* World = GetWorld();
-	if (!World || !CachedSlashVFXNiagara) return;
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX) return;
 
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
-	const float ParticleScale = 0.25f;
 	UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		World, CachedSlashVFXNiagara, Location, FRotator::ZeroRotator,
-		FVector(ParticleScale), true, true, ENCPoolMethod::AutoRelease);
+		World, VFX, Location, FRotator::ZeroRotator,
+		FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
 	if (NC)
 	{
 		NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
+		NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
 		NC->SetAutoDestroy(true);
 		if (AActor* Owner = NC->GetOwner())
 			Owner->SetLifeSpan(FMath::Max(0.1f, Duration));
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Hero-specific VFX: unique pixel shapes per HeroID.
+// ---------------------------------------------------------------------------
+
+void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color, const FName& HeroID)
+{
+	UWorld* World = GetWorld();
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX) return;
+
+	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
+	const FVector Dir = (End - Start).GetSafeNormal();
+	const float Length = FVector::Dist(Start, End);
+
+	if (HeroID == FName(TEXT("Hero_1")))
+	{
+		// Arthur: Wide fan — 20 pixels in 160° arc
+		constexpr int32 N = 20;
+		constexpr float ArcDeg = 160.f;
+		const float R = Length * 0.4f;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float T = (N > 1) ? (static_cast<float>(i) / static_cast<float>(N - 1)) : 0.5f;
+			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
+			const FVector Offset = Dir.RotateAngleAxis(FMath::RadiansToDegrees(Angle), FVector::UpVector) * R;
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Start + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_5")))
+	{
+		// George: Tight needle — 48 pixels in a very narrow line
+		constexpr int32 N = 48;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(Start, End, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_8")))
+	{
+		// Billy: Short shotgun burst — 16 pixels in a 45° cone
+		constexpr int32 N = 16;
+		constexpr float ConeDeg = 45.f;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float T = (N > 1) ? (static_cast<float>(i) / static_cast<float>(N - 1)) : 0.5f;
+			const float Angle = -ConeDeg * 0.5f + ConeDeg * T;
+			const FVector ShotDir = Dir.RotateAngleAxis(Angle, FVector::UpVector);
+			const float Dist = FMath::FRandRange(Length * 0.2f, Length * 0.6f);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Start + ShotDir * Dist, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_11")))
+	{
+		// Shroud: Twin lines — two parallel lines, 8 pixels each
+		const FVector Right = FVector::CrossProduct(FVector::UpVector, Dir).GetSafeNormal() * 30.f;
+		constexpr int32 N = 8;
+		for (int32 Line = 0; Line < 2; ++Line)
+		{
+			const FVector Offset = (Line == 0) ? Right : -Right;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(Start + Offset, End + Offset, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+			}
+		}
+	}
+	else
+	{
+		SpawnPierceVFX(Start, End, Color);
+	}
+}
+
+void UT66CombatComponent::SpawnHeroSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color, const FName& HeroID)
+{
+	UWorld* World = GetWorld();
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX) return;
+
+	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
+
+	if (HeroID == FName(TEXT("Hero_3")))
+	{
+		// Lu Bu: Wide cleave — 28 pixels in full 180° arc
+		constexpr int32 N = 28;
+		constexpr float ArcDeg = 180.f;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
+			const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_4")))
+	{
+		// Mike: Tight burst — 16 pixels in a small 90° cone
+		constexpr int32 N = 16;
+		constexpr float ArcDeg = 90.f;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
+			const float R = Radius * 0.25f * FMath::FRandRange(0.5f, 1.f);
+			const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, 0.f);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0)); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_10")))
+	{
+		// Dog: Ring slam — 32 pixels in a full 360° ring around target
+		constexpr int32 N = 32;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
+			const FVector Offset(FMath::Cos(Angle) * Radius * 0.35f, FMath::Sin(Angle) * Radius * 0.35f, 0.f);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_15")))
+	{
+		// Asmon: Double arc — inner 12 + outer 12 at 120° and 150°
+		constexpr int32 N = 12;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+			const float InnerAngle = FMath::DegreesToRadians(-60.f + 120.f * T);
+			const FVector InnerOff(FMath::Cos(InnerAngle) * Radius * 0.25f, FMath::Sin(InnerAngle) * Radius * 0.25f, 0.f);
+			UNiagaraComponent* NC1 = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + InnerOff, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC1) { NC1->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC1->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+
+			const float OuterAngle = FMath::DegreesToRadians(-75.f + 150.f * T);
+			const FVector OuterOff(FMath::Cos(OuterAngle) * Radius * 0.4f, FMath::Sin(OuterAngle) * Radius * 0.4f, 0.f);
+			UNiagaraComponent* NC2 = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + OuterOff, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC2) { NC2->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(0.95f, 0.85f, 0.1f, 1.f)); NC2->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); }
+		}
+	}
+	else
+	{
+		SpawnSlashVFX(Location, Radius, Color);
+	}
+}
+
+void UT66CombatComponent::SpawnHeroBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color, const FName& HeroID)
+{
+	UWorld* World = GetWorld();
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX || ChainPositions.Num() < 2) return;
+
+	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
+
+	if (HeroID == FName(TEXT("Hero_6")))
+	{
+		// Zeus: Long chain — dense trail (1 pixel per 15u)
+		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+		{
+			const FVector A = ChainPositions[i];
+			const FVector B = ChainPositions[i + 1];
+			const float Dist = FVector::Dist(A, B);
+			const int32 N = FMath::Max(4, FMath::RoundToInt(Dist / 15.f));
+			for (int32 j = 0; j < N; ++j)
+			{
+				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+			}
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_7")))
+	{
+		// Robo: Heavy bolts — fewer, larger pixels (3.5px)
+		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+		{
+			const FVector A = ChainPositions[i];
+			const FVector B = ChainPositions[i + 1];
+			const float Dist = FVector::Dist(A, B);
+			const int32 N = FMath::Max(3, FMath::RoundToInt(Dist / 60.f));
+			for (int32 j = 0; j < N; ++j)
+			{
+				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.5, 3.5)); }
+			}
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_12")))
+	{
+		// xQc: Scatter bounce — fast, tiny (1.5px) with random offset
+		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+		{
+			const FVector A = ChainPositions[i];
+			const FVector B = ChainPositions[i + 1];
+			const float Dist = FVector::Dist(A, B);
+			const int32 N = FMath::Max(6, FMath::RoundToInt(Dist / 15.f));
+			for (int32 j = 0; j < N; ++j)
+			{
+				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+				const FVector Jitter(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
+				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T) + Jitter, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+			}
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_9")))
+	{
+		// Rabbit: Quick ricochet — very small (1.5px), sparse
+		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+		{
+			const FVector A = ChainPositions[i];
+			const FVector B = ChainPositions[i + 1];
+			const float Dist = FVector::Dist(A, B);
+			const int32 N = FMath::Max(4, FMath::RoundToInt(Dist / 25.f));
+			for (int32 j = 0; j < N; ++j)
+			{
+				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+			}
+		}
+	}
+	else
+	{
+		SpawnBounceVFX(ChainPositions, Color);
+	}
+}
+
+void UT66CombatComponent::SpawnHeroDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color, const FName& HeroID)
+{
+	UWorld* World = GetWorld();
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
+	if (!World || !VFX) return;
+
+	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
+
+	if (HeroID == FName(TEXT("Hero_2")))
+	{
+		// Merlin: Spiral orb — 12 pixels in a tight spiral
+		constexpr int32 N = 12;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float T = static_cast<float>(i) / static_cast<float>(N);
+			const float Angle = T * 4.f * PI;
+			const float R = Radius * 0.3f * T;
+			const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, T * 30.f);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); NC->SetAutoDestroy(true); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_13")))
+	{
+		// Moist: Drip trail — 8 pixels falling vertically
+		constexpr int32 N = 8;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const FVector Offset(FMath::FRandRange(-15.f, 15.f), FMath::FRandRange(-15.f, 15.f), -static_cast<float>(i) * 12.f);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); NC->SetAutoDestroy(true); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_14")))
+	{
+		// North: Frost ring — 16 pixels expanding outward
+		constexpr int32 N = 16;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
+			const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(0.5f, 0.8f, 1.f, 1.f)); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); NC->SetAutoDestroy(true); }
+		}
+	}
+	else if (HeroID == FName(TEXT("Hero_16")))
+	{
+		// Forsen: Stubborn pulse — 6 pixels in a small cluster
+		constexpr int32 N = 6;
+		for (int32 i = 0; i < N; ++i)
+		{
+			const FVector Offset(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); NC->SetAutoDestroy(true); }
+		}
+	}
+	else
+	{
+		SpawnDOTVFX(Location, Duration, Radius, Color);
 	}
 }
 
@@ -987,7 +1452,7 @@ void UT66CombatComponent::PerformUltimateSpearStorm(int32 UltimateDamage)
 				ApplyDamageToActor(A, UltimateDamage, NAME_None, SourceID);
 			}
 		}
-		if (CachedSlashVFXNiagara)
+		if (GetActiveVFXSystem())
 			SpawnPierceVFX(Start, End, FLinearColor(0.9f, 0.85f, 0.3f, 1.f));
 	}
 }
@@ -1040,6 +1505,347 @@ void UT66CombatComponent::PerformUltimateChainLightning(int32 UltimateDamage)
 		ChainPositions.Add(CurrentLoc);
 	}
 
-	if (ChainPositions.Num() >= 2 && CachedSlashVFXNiagara)
+	if (ChainPositions.Num() >= 2 && GetActiveVFXSystem())
 		SpawnBounceVFX(ChainPositions, FLinearColor(1.f, 0.85f, 0.2f, 1.f));
+}
+
+void UT66CombatComponent::PerformUltimatePrecisionStrike(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const FVector Forward = OwnerActor->GetActorRotation().Vector();
+	const float LineLength = AttackRange;
+	const float TubeRadius = 100.f;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+	const FVector End = HeroLoc + Forward * LineLength;
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByChannel(Overlaps, HeroLoc + Forward * (LineLength * 0.5f), FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(LineLength * 0.5f), Params);
+
+	for (const FOverlapResult& O : Overlaps)
+	{
+		AActor* A = O.GetActor();
+		if (!A || !IsValidAutoTarget(A)) continue;
+		const float DistSq = FMath::PointDistToSegmentSquared(A->GetActorLocation(), HeroLoc, End);
+		if (DistSq <= TubeRadius * TubeRadius)
+			ApplyDamageToActor(A, UltimateDamage * 5, NAME_None, SourceID);
+	}
+	SpawnPierceVFX(HeroLoc, End, FLinearColor(0.95f, 0.95f, 1.f));
+}
+
+void UT66CombatComponent::PerformUltimateFanTheHammer(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const FVector Forward = OwnerActor->GetActorRotation().Vector();
+	const float LineLength = AttackRange;
+	const float TubeRadius = 80.f;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+	constexpr int32 NumShots = 6;
+	constexpr float ConeAngleDeg = 60.f;
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	World->OverlapMultiByChannel(Overlaps, HeroLoc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(LineLength), Params);
+
+	TSet<AActor*> AlreadyHit;
+	for (int32 i = 0; i < NumShots; ++i)
+	{
+		const float AngleOff = -ConeAngleDeg * 0.5f + ConeAngleDeg * (static_cast<float>(i) / static_cast<float>(NumShots - 1));
+		const FVector Dir = Forward.RotateAngleAxis(AngleOff, FVector::UpVector);
+		const FVector End = HeroLoc + Dir * LineLength;
+
+		for (const FOverlapResult& O : Overlaps)
+		{
+			AActor* A = O.GetActor();
+			if (!A || !IsValidAutoTarget(A)) continue;
+			const float DistSq = FMath::PointDistToSegmentSquared(A->GetActorLocation(), HeroLoc, End);
+			if (DistSq <= TubeRadius * TubeRadius && !AlreadyHit.Contains(A))
+			{
+				AlreadyHit.Add(A);
+				ApplyDamageToActor(A, UltimateDamage, NAME_None, SourceID);
+			}
+		}
+		SpawnPierceVFX(HeroLoc, End, FLinearColor(0.9f, 0.7f, 0.2f));
+	}
+}
+
+void UT66CombatComponent::PerformUltimateDeadeye(int32 UltimateDamage)
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+	DeadeyeEndTime = static_cast<float>(World->GetTimeSeconds()) + 4.f;
+}
+
+void UT66CombatComponent::PerformUltimateDischarge(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const float Range = AttackRange;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	World->OverlapMultiByChannel(Overlaps, HeroLoc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Range), Params);
+
+	TArray<FVector> Positions;
+	Positions.Add(HeroLoc);
+	for (const FOverlapResult& O : Overlaps)
+	{
+		AActor* A = O.GetActor();
+		if (A && IsValidAutoTarget(A))
+		{
+			ApplyDamageToActor(A, UltimateDamage, NAME_None, SourceID);
+			Positions.Add(A->GetActorLocation());
+		}
+	}
+	if (Positions.Num() >= 2 && GetActiveVFXSystem())
+		SpawnBounceVFX(Positions, FLinearColor(0.5f, 0.8f, 1.f));
+}
+
+void UT66CombatComponent::PerformUltimateJuiced()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+	JuicedEndTime = static_cast<float>(World->GetTimeSeconds()) + 5.f;
+	JuicedBonusBounce = 5;
+}
+
+void UT66CombatComponent::PerformUltimateDeathSpiral(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const FVector Forward = OwnerActor->GetActorRotation().Vector();
+	const float LineLength = 1000.f;
+	const float TubeRadius = 80.f;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+	constexpr int32 NumRays = 12;
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	World->OverlapMultiByChannel(Overlaps, HeroLoc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(LineLength), Params);
+
+	TSet<AActor*> AlreadyHit;
+	for (int32 i = 0; i < NumRays; ++i)
+	{
+		const float AngleDeg = (360.f / NumRays) * static_cast<float>(i);
+		const FVector Dir = Forward.RotateAngleAxis(AngleDeg, FVector::UpVector);
+		const FVector End = HeroLoc + Dir * LineLength;
+
+		for (const FOverlapResult& O : Overlaps)
+		{
+			AActor* A = O.GetActor();
+			if (!A || !IsValidAutoTarget(A) || AlreadyHit.Contains(A)) continue;
+			const float DistSq = FMath::PointDistToSegmentSquared(A->GetActorLocation(), HeroLoc, End);
+			if (DistSq <= TubeRadius * TubeRadius)
+			{
+				AlreadyHit.Add(A);
+				ApplyDamageToActor(A, UltimateDamage, NAME_None, SourceID);
+			}
+		}
+		SpawnBounceVFX({HeroLoc, End}, FLinearColor(0.4f, 0.1f, 0.6f));
+	}
+}
+
+void UT66CombatComponent::PerformUltimateShockwave(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const float Radius = AttackRange * 2.f;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	World->OverlapMultiByChannel(Overlaps, HeroLoc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Radius), Params);
+
+	for (const FOverlapResult& O : Overlaps)
+	{
+		AActor* A = O.GetActor();
+		if (A && IsValidAutoTarget(A))
+			ApplyDamageToActor(A, UltimateDamage, NAME_None, SourceID);
+	}
+	SpawnSlashVFX(HeroLoc, Radius, FLinearColor(0.9f, 0.5f, 0.1f));
+}
+
+void UT66CombatComponent::PerformUltimateTidalWave(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const FVector Forward = OwnerActor->GetActorRotation().Vector();
+	const FVector Right = FVector::CrossProduct(FVector::UpVector, Forward).GetSafeNormal();
+	const float LineLength = AttackRange;
+	const float TubeRadius = 80.f;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+	constexpr int32 NumLines = 5;
+	const float Spacing = 120.f;
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	World->OverlapMultiByChannel(Overlaps, HeroLoc + Forward * (LineLength * 0.5f), FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(LineLength), Params);
+
+	TSet<AActor*> AlreadyHit;
+	for (int32 i = 0; i < NumLines; ++i)
+	{
+		const float Offset = (static_cast<float>(i) - static_cast<float>(NumLines - 1) * 0.5f) * Spacing;
+		const FVector Start = HeroLoc + Right * Offset;
+		const FVector End = Start + Forward * LineLength;
+
+		for (const FOverlapResult& O : Overlaps)
+		{
+			AActor* A = O.GetActor();
+			if (!A || !IsValidAutoTarget(A) || AlreadyHit.Contains(A)) continue;
+			const float DistSq = FMath::PointDistToSegmentSquared(A->GetActorLocation(), Start, End);
+			if (DistSq <= TubeRadius * TubeRadius)
+			{
+				AlreadyHit.Add(A);
+				ApplyDamageToActor(A, UltimateDamage, NAME_None, SourceID);
+			}
+		}
+		SpawnPierceVFX(Start, End, FLinearColor(0.3f, 0.6f, 0.9f));
+	}
+}
+
+void UT66CombatComponent::PerformUltimateGoldRush(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const float Range = AttackRange;
+	const float ExplosionRadius = 250.f;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	World->OverlapMultiByChannel(Overlaps, HeroLoc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Range), Params);
+
+	TArray<AActor*> Targets;
+	for (const FOverlapResult& O : Overlaps)
+	{
+		AActor* A = O.GetActor();
+		if (A && IsValidAutoTarget(A))
+			Targets.Add(A);
+	}
+
+	const int32 MaxExplosions = FMath::Min(8, Targets.Num());
+	TSet<AActor*> AlreadyHit;
+	for (int32 i = 0; i < MaxExplosions; ++i)
+	{
+		const FVector Center = Targets[i]->GetActorLocation();
+		if (!AlreadyHit.Contains(Targets[i]))
+		{
+			AlreadyHit.Add(Targets[i]);
+			ApplyDamageToActor(Targets[i], UltimateDamage, NAME_None, SourceID);
+		}
+		for (const FOverlapResult& O : Overlaps)
+		{
+			AActor* A = O.GetActor();
+			if (A && IsValidAutoTarget(A) && !AlreadyHit.Contains(A))
+			{
+				if (FVector::DistSquared(A->GetActorLocation(), Center) <= ExplosionRadius * ExplosionRadius)
+				{
+					AlreadyHit.Add(A);
+					ApplyDamageToActor(A, UltimateDamage, NAME_None, SourceID);
+				}
+			}
+		}
+		SpawnSlashVFX(Center, ExplosionRadius, FLinearColor(0.95f, 0.85f, 0.1f));
+	}
+}
+
+void UT66CombatComponent::PerformUltimateMiasmaBomb(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World || !CachedRunState) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const float Range = AttackRange;
+
+	AActor* NearestTarget = FindClosestEnemyInRange(HeroLoc, Range * Range);
+	const FVector Center = NearestTarget ? NearestTarget->GetActorLocation() : (HeroLoc + OwnerActor->GetActorRotation().Vector() * 500.f);
+	const float Radius = 600.f;
+	const float Duration = 5.f;
+	const float TickInterval = 0.5f;
+	const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
+	const float DmgPerTick = static_cast<float>(UltimateDamage) / static_cast<float>(Ticks);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByChannel(Overlaps, Center, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Radius), Params);
+
+	for (const FOverlapResult& O : Overlaps)
+	{
+		AActor* A = O.GetActor();
+		if (A && IsValidAutoTarget(A))
+			CachedRunState->ApplyDOT(A, Duration, TickInterval, DmgPerTick, NAME_None);
+	}
+	SpawnDOTVFX(Center, Duration, Radius, FLinearColor(0.5f, 0.9f, 0.2f));
+}
+
+void UT66CombatComponent::PerformUltimateRabidFrenzy()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+	RabidFrenzyEndTime = static_cast<float>(World->GetTimeSeconds()) + 4.f;
+}
+
+void UT66CombatComponent::PerformUltimateBlizzard(int32 UltimateDamage)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World || !CachedRunState) return;
+
+	const FVector HeroLoc = OwnerActor->GetActorLocation();
+	const float Range = AttackRange;
+	const float Duration = 6.f;
+	const float TickInterval = 0.5f;
+	const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
+	const float DmgPerTick = static_cast<float>(UltimateDamage) / static_cast<float>(Ticks);
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByChannel(Overlaps, HeroLoc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Range), Params);
+
+	for (const FOverlapResult& O : Overlaps)
+	{
+		AActor* A = O.GetActor();
+		if (A && IsValidAutoTarget(A))
+		{
+			CachedRunState->ApplyDOT(A, Duration, TickInterval, DmgPerTick, NAME_None);
+			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(A))
+				E->ApplyMoveSlow(0.6f, Duration);
+		}
+	}
+	SpawnSlashVFX(HeroLoc, Range * 0.5f, FLinearColor(0.5f, 0.8f, 1.f));
 }

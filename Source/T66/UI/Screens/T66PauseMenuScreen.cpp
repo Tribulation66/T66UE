@@ -45,43 +45,43 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
 	FText InProgressText = NSLOCTEXT("T66.PauseMenu", "InProgress", "Achievements in Progress");
 
-	static constexpr float PauseButtonWidth = 280.f;
 	auto MakePauseButton = [this](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), ET66ButtonType Type) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
-			.WidthOverride(PauseButtonWidth)
+			.HAlign(HAlign_Fill)
+			.Padding(FMargin(0.f, 6.f))
 			[
 				FT66Style::MakeButton(
 					FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), Type)
-					.SetFontSize(44)
-					.SetPadding(FMargin(14.f))
-					.SetMinWidth(PauseButtonWidth))
+					.SetFontSize(52)
+					.SetPadding(FMargin(18.f)))
 			];
 	};
 
-	TSharedRef<SWidget> RightPanel = FT66Style::MakePanel(
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 0.0f, 0.0f, 24.0f)
-			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.PauseMenu", "PausedTitle", "PAUSED"))
-				.Font(FT66Style::Tokens::FontBold(36))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
-			]
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+	// ===== Right half: PAUSED title + menu buttons =====
+	TSharedRef<SWidget> RightHalf = FT66Style::MakePanel(
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 0.0f, 0.0f, 24.0f)
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.PauseMenu", "PausedTitle", "PAUSED"))
+			.Font(FT66Style::Tokens::FontBold(48))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(ResumeText, &UT66PauseMenuScreen::HandleResumeClicked, ET66ButtonType::Success) ]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(SaveAndQuitText, &UT66PauseMenuScreen::HandleSaveAndQuitClicked, ET66ButtonType::Neutral) ]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(RestartText, &UT66PauseMenuScreen::HandleRestartClicked, ET66ButtonType::Danger) ]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(SettingsText, &UT66PauseMenuScreen::HandleSettingsClicked, ET66ButtonType::Neutral) ]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.0f, 6.0f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ]
 		,
 		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6)));
 
-	// Achievements in progress: >1% completion, sorted by closest to complete
+	// ===== Left half: Achievements in progress =====
 	TArray<FAchievementData> InProgressList;
 	if (UT66AchievementsSubsystem* Ach = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
 	{
@@ -104,70 +104,67 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	for (const FAchievementData& A : InProgressList)
 	{
 		const FString ProgressStr = FString::Printf(TEXT("%d/%d"), FMath::Min(A.CurrentProgress, A.RequirementCount), A.RequirementCount);
-		InProgressBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+		InProgressBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 		[
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FT66Style::Tokens::Panel)
-			.Padding(FMargin(8.f, 6.f))
+			.Padding(FMargin(10.f, 8.f))
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
 					.Text(A.DisplayName)
-					.Font(FT66Style::Tokens::FontBold(12))
+					.Font(FT66Style::Tokens::FontBold(18))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 					.AutoWrapText(true)
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(ProgressStr))
-					.Font(FT66Style::Tokens::FontRegular(11))
+					.Font(FT66Style::Tokens::FontRegular(16))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]
 			]
 		];
 	}
 
-	TSharedRef<SWidget> RightColumn = SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight()
+	TSharedRef<SWidget> LeftHalf = FT66Style::MakePanel(
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 		[
-			RightPanel
+			SNew(STextBlock)
+			.Text(InProgressText)
+			.Font(FT66Style::Tokens::FontBold(22))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
-		+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 12.f, 0.f, 0.f)
+		+ SVerticalBox::Slot().FillHeight(1.f)
 		[
-			FT66Style::MakePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-				[
-					SNew(STextBlock)
-					.Text(InProgressText)
-					.Font(FT66Style::Tokens::FontBold(16))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
-				+ SVerticalBox::Slot().FillHeight(1.f)
-				[
-					SNew(SScrollBox)
-					+ SScrollBox::Slot()
-					[
-						InProgressBox
-					]
-				],
-				FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(FT66Style::Tokens::Space4)))
-		];
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				InProgressBox
+			]
+		],
+		FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(FT66Style::Tokens::Space4)));
 
+	// ===== Full-screen 50/50 horizontal split =====
 	const FLinearColor ScrimOpaque(FT66Style::Tokens::Scrim.R, FT66Style::Tokens::Scrim.G, FT66Style::Tokens::Scrim.B, 1.0f);
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(ScrimOpaque)
+		.Padding(FMargin(40.f, 40.f))
 		[
-			SNew(SBox)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 			[
-				RightColumn
+				LeftHalf
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
+			[
+				RightHalf
 			]
 		];
 }

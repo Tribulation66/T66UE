@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66BossProjectile.h"
 #include "Gameplay/T66BossGroundAOE.h"
 #include "Gameplay/T66GameMode.h"
@@ -326,9 +327,9 @@ void AT66BossBase::Die()
 	{
 		World->GetTimerManager().ClearTimer(FireTimerHandle);
 		World->GetTimerManager().ClearTimer(AOETimerHandle);
+		UT66CombatComponent::SpawnDeathBurstAtLocation(World, GetActorLocation(), 32, 120.f);
 	}
 
-	// Delegate death handling to GameMode (normal vs Coliseum).
 	if (AT66GameMode* GM = World ? World->GetAuthGameMode<AT66GameMode>() : nullptr)
 	{
 		GM->HandleBossDefeated(this);

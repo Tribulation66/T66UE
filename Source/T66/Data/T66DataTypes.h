@@ -32,6 +32,18 @@ enum class ET66UltimateType : uint8
 	MeteorStrike UMETA(DisplayName = "Meteor Strike"),
 	ChainLightning UMETA(DisplayName = "Chain Lightning"),
 	PlagueCloud UMETA(DisplayName = "Plague Cloud"),
+	PrecisionStrike UMETA(DisplayName = "Precision Strike"),
+	FanTheHammer UMETA(DisplayName = "Fan the Hammer"),
+	Deadeye UMETA(DisplayName = "Deadeye"),
+	Discharge UMETA(DisplayName = "Discharge"),
+	Juiced UMETA(DisplayName = "Juiced"),
+	DeathSpiral UMETA(DisplayName = "Death Spiral"),
+	Shockwave UMETA(DisplayName = "Shockwave"),
+	TidalWave UMETA(DisplayName = "Tidal Wave"),
+	GoldRush UMETA(DisplayName = "Gold Rush"),
+	MiasmaBomb UMETA(DisplayName = "Miasma Bomb"),
+	RabidFrenzy UMETA(DisplayName = "Rabid Frenzy"),
+	Blizzard UMETA(DisplayName = "Blizzard"),
 };
 
 /** Hero passive ability type (always-on innate). */
@@ -44,6 +56,17 @@ enum class ET66PassiveType : uint8
 	ArcaneAmplification UMETA(DisplayName = "Arcane Amplification"),
 	MarksmanFocus UMETA(DisplayName = "Marksman's Focus"),
 	ToxinStacking UMETA(DisplayName = "Toxin Stacking"),
+	QuickDraw UMETA(DisplayName = "Quick Draw"),
+	Headshot UMETA(DisplayName = "Headshot"),
+	StaticCharge UMETA(DisplayName = "Static Charge"),
+	Overclock UMETA(DisplayName = "Overclock"),
+	ChaosTheory UMETA(DisplayName = "Chaos Theory"),
+	Endurance UMETA(DisplayName = "Endurance"),
+	BrawlersFury UMETA(DisplayName = "Brawler's Fury"),
+	Unflinching UMETA(DisplayName = "Unflinching"),
+	TreasureHunter UMETA(DisplayName = "Treasure Hunter"),
+	Evasive UMETA(DisplayName = "Evasive"),
+	Frostbite UMETA(DisplayName = "Frostbite"),
 };
 
 /**

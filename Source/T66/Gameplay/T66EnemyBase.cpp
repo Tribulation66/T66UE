@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
 #include "Gameplay/T66LootBagPickup.h"
@@ -167,6 +168,9 @@ void AT66EnemyBase::BeginPlay()
 			Registry->RegisterEnemy(this);
 		}
 	}
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+		BaseMaxWalkSpeed = Move->MaxWalkSpeed;
 
 	if (!bBaseTuningInitialized)
 	{
@@ -591,6 +595,17 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		}
 	}
 
+	if (MoveSlowSecondsRemaining > 0.f)
+	{
+		MoveSlowSecondsRemaining = FMath::Max(0.f, MoveSlowSecondsRemaining - DeltaSeconds);
+		if (MoveSlowSecondsRemaining <= 0.f)
+		{
+			MoveSlowMultiplier = 1.f;
+		}
+	}
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		MoveComp->MaxWalkSpeed = BaseMaxWalkSpeed * MoveSlowMultiplier;
+
 	// Tick confusion timer.
 	if (bIsConfused)
 	{
@@ -685,9 +700,12 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName
 	if (CurrentHP <= 0)
 	{
 		if (UWorld* World = GetWorld())
+		{
 			if (UGameInstance* GI = World->GetGameInstance())
 				if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 					RunState->NotifyEnemyKilledByHero();
+			UT66CombatComponent::SpawnDeathBurstAtLocation(World, GetActorLocation(), 16, 60.f);
+		}
 		OnDeath();
 		return true;
 	}
@@ -709,6 +727,15 @@ void AT66EnemyBase::ApplyArmorDebuff(float ReductionAmount, float DurationSecond
 	if (Amt <= 0.f || Dur <= 0.f) return;
 	ArmorDebuffAmount = FMath::Max(ArmorDebuffAmount, Amt);
 	ArmorDebuffSecondsRemaining = FMath::Max(ArmorDebuffSecondsRemaining, Dur);
+}
+
+void AT66EnemyBase::ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds)
+{
+	const float Mult = FMath::Clamp(SpeedMultiplier, 0.1f, 1.f);
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 30.f);
+	if (Dur <= 0.f) return;
+	MoveSlowMultiplier = FMath::Min(MoveSlowMultiplier, Mult);
+	MoveSlowSecondsRemaining = FMath::Max(MoveSlowSecondsRemaining, Dur);
 }
 
 void AT66EnemyBase::UpdateHealthBar()
@@ -737,7 +764,8 @@ void AT66EnemyBase::OnDeath()
 	if (RunState)
 	{
 		const float Scalar = RunState->GetDifficultyScalar();
-		const int32 AwardPoints = FMath::Max(0, FMath::RoundToInt(static_cast<float>(PointValue) * Scalar));
+		const float TreasureMult = RunState->GetTreasureHunterGoldMultiplier();
+		const int32 AwardPoints = FMath::Max(0, FMath::RoundToInt(static_cast<float>(PointValue) * Scalar * TreasureMult));
 		RunState->AddScore(AwardPoints);
 		RunState->AddHeroXP(XPValue);
 		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("PointValue=%d"), AwardPoints));
