@@ -441,7 +441,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FRunEvent>& GetStructuredEventLog() const { return StructuredEventLog; }
 
-	/** Set current stage (1–66). */
+	/** Set current stage (1–33). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void SetCurrentStage(int32 Stage);
 

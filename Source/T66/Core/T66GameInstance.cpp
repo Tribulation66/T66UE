@@ -81,7 +81,7 @@ void UT66GameInstance::Init()
 	// EnsureTexturesLoadedSync fallback fires. If these finish in time, the sync path becomes a no-op.
 	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
 	{
-		const TSoftObjectPtr<UTexture2D> MMDark(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMDark.MMDark")));
+		const TSoftObjectPtr<UTexture2D> MMRed(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
 		const TSoftObjectPtr<UTexture2D> MMLight(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight")));
 		const TSoftObjectPtr<UTexture2D> LBGlobal(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")));
 		const TSoftObjectPtr<UTexture2D> LBFriends(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")));
@@ -90,7 +90,7 @@ void UT66GameInstance::Init()
 		const TSoftObjectPtr<UTexture2D> SoloLight(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloLight.SoloLight")));
 		const TSoftObjectPtr<UTexture2D> CoopDark(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")));
 		const TSoftObjectPtr<UTexture2D> CoopLight(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopLight.CoopLight")));
-		TexPool->RequestTexture(MMDark, this, FName(TEXT("PreloadMMDark")), [](UTexture2D*) {});
+		TexPool->RequestTexture(MMRed, this, FName(TEXT("PreloadMMRed")), [](UTexture2D*) {});
 		TexPool->RequestTexture(MMLight, this, FName(TEXT("PreloadMMLight")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBGlobal, this, FName(TEXT("PreloadLBGlobal")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBFriends, this, FName(TEXT("PreloadLBFriends")), [](UTexture2D*) {});

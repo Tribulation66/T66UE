@@ -109,7 +109,7 @@ bool AT66StageGate::AdvanceToNextStage()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	if (!T66GI) return false;
 
-	// Special: Coliseum mode stage gate returns to the checkpoint stage (do NOT increment).
+	// Special: Coliseum mode stage gate returns to the difficulty boss stage (do NOT increment).
 	if (T66GI->bForceColiseumMode)
 	{
 		T66GI->bForceColiseumMode = false;
@@ -137,9 +137,9 @@ bool AT66StageGate::AdvanceToNextStage()
 
 	T66GI->bIsStageTransition = true;
 
-	// Coliseum rule: before checkpoint stages (5/10/15...), route to Coliseum mode if there are owed bosses.
-	const bool bIsCheckpointStage = (NextStage % 5) == 0;
-	if (bIsCheckpointStage && RunState->GetOwedBossIDs().Num() > 0)
+	// Coliseum rule: before entering a difficulty boss stage (5, 10, 15, 20, 25, 30, 33), route to Coliseum if there are owed bosses.
+	const bool bIsDifficultyBossStage = (NextStage == 5 || NextStage == 10 || NextStage == 15 || NextStage == 20 || NextStage == 25 || NextStage == 30 || NextStage == 33);
+	if (bIsDifficultyBossStage && RunState->GetOwedBossIDs().Num() > 0)
 	{
 		T66GI->bIsStageTransition = true;
 		T66GI->bForceColiseumMode = true;

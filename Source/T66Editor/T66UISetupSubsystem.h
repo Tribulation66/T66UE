@@ -79,6 +79,13 @@ public:
 	bool CreatePlaceholderMaterial();
 
 	/**
+	 * Create the posterize post-process material (full-screen color banding).
+	 * Loaded at runtime by T66PosterizeSubsystem.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
+	bool CreatePosterizeMaterial();
+
+	/**
 	 * Create The Lab level (Content/Maps/LabLevel): empty arena with PlayerStart, lighting, and GameMode.
 	 * Run from Window → T66 Tools → Create Lab Level (or T66CreateLabLevel console).
 	 */

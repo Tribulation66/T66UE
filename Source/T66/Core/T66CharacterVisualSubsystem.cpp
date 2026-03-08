@@ -163,7 +163,28 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		return Res;
 	}
 
-	if (FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(VisualID, TEXT("ResolveVisual")))
+	FT66CharacterVisualRow* Row = DT->FindRow<FT66CharacterVisualRow>(VisualID, TEXT("ResolveVisual"));
+	if (!Row)
+	{
+#if !UE_BUILD_SHIPPING
+		static int32 LoggedMisses = 0;
+		if (LoggedMisses < 8)
+		{
+			++LoggedMisses;
+			TArray<FName> AllRows = DT->GetRowNames();
+			FString RowList;
+			for (int32 i = 0; i < FMath::Min(AllRows.Num(), 10); ++i)
+			{
+				if (i > 0) RowList += TEXT(", ");
+				RowList += AllRows[i].ToString();
+			}
+			if (AllRows.Num() > 10) RowList += FString::Printf(TEXT("... +%d more"), AllRows.Num() - 10);
+			UE_LOG(LogTemp, Error, TEXT("[MESH] ResolveVisual: NO ROW for VisualID='%s' in DT_CharacterVisuals (%d rows). First rows: [%s]. Reimport via ImportData.py!"),
+				*VisualID.ToString(), AllRows.Num(), *RowList);
+		}
+#endif
+	}
+	if (Row)
 	{
 		Res.Row = *Row;
 		Res.bHasRow = true;

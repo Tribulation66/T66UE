@@ -70,7 +70,7 @@ private:
 	TSharedPtr<FString> SelectedTypeOption;
 	TSharedPtr<FString> SelectedStageOption;
 
-	// Only used for Speed Run leaderboard (stage 1..10).
+	// Only used for Speed Run leaderboard (stage 1..5 per difficulty).
 	int32 CurrentSpeedRunStage = 1;
 
 	// Generate placeholder data

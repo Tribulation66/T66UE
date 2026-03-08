@@ -64,17 +64,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float MiniBossDamageScalar = 2.0f;
 
-	/** Spawn interval in seconds */
+	/** Seconds between spawn ticks (continuous spawning). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float SpawnIntervalSeconds = 20.f;
+	float SpawnIntervalSeconds = 2.f;
 
-	/** Enemies per spawn wave */
+	/** Enemies spawned per tick. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	int32 EnemiesPerWave = 3;
+	int32 EnemiesPerWave = 1;
 
-	/** Max alive enemies */
+	/** Max alive enemies (hard cap to protect FPS). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	int32 MaxAliveEnemies = 12;
+	int32 MaxAliveEnemies = 50;
 
 	/** Min distance from player to spawn (uu) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")

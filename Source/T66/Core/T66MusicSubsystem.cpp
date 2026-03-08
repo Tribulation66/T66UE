@@ -611,10 +611,9 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
 	const FName BossID = RunState->GetActiveBossID();
 	if (BossID.IsNone()) return nullptr;
 
-	const int32 Stage = RunState->GetCurrentStage();
-
-	// Categorize by stage number + explicit special boss IDs.
 	const FString BossIdStr = BossID.ToString();
+	// Only special bosses (Vendor/Gambler/Ouroboros) get automatic folder-based music here.
+	// All other boss music is assigned individually per boss.
 	const bool bSpecial =
 		BossID == FName(TEXT("VendorBoss")) ||
 		BossID == FName(TEXT("GamblerBoss")) ||
@@ -623,28 +622,12 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
 		BossIdStr.Contains(TEXT("Gambler"), ESearchCase::IgnoreCase) ||
 		BossIdStr.Contains(TEXT("Ouroboros"), ESearchCase::IgnoreCase);
 
-	const bool bEspada = (!bSpecial) && (Stage > 0) && ((Stage % 10) == 5);
-	const bool bDifficultyBoss = (!bSpecial) && (Stage > 0) && ((Stage % 10) == 0);
-
-	// Stage bosses: no special music.
-	if (!bSpecial && !bEspada && !bDifficultyBoss)
+	if (!bSpecial)
 	{
 		return nullptr;
 	}
 
-	FString Folder;
-	if (bSpecial)
-	{
-		Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Special/%s"), *BossID.ToString());
-	}
-	else if (bEspada)
-	{
-		Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Espadas/%s"), *BossID.ToString());
-	}
-	else
-	{
-		Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Difficulty/%s"), *BossID.ToString());
-	}
+	FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Special/%s"), *BossID.ToString());
 
 	if (USoundBase* BossTheme = TryLoadFirstSoundInFolder(Folder))
 	{

@@ -38,7 +38,7 @@ struct T66_API FT66LocalSpeedRunStageRecord
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	ET66PartySize PartySize = ET66PartySize::Solo;
 
-	/** Stage number (1..10 used for the menu leaderboard; can store more for future use). */
+	/** Stage number (1..5 used for the menu leaderboard per difficulty; can store more for future use). */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 Stage = 1;
 

@@ -215,6 +215,8 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 		if (USceneComponent* Root = SL->GetRootComponent())
 			Root->SetMobility(EComponentMobility::Movable);
 	}
+
+	AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(World);
 }
 
 AT66FrontendGameMode::AT66FrontendGameMode()
@@ -269,7 +271,7 @@ void AT66FrontendGameMode::BeginPlay()
 
 		// Both preview stages share the same platform location — we toggle visibility
 		// instead of moving the camera between two positions.
-		const FVector PreviewOrigin(100000.f, 0.f, 200.f);
+		const FVector PreviewOrigin(100000.f, 0.f, 0.f);
 
 		bool bHasPreviewStage = false;
 		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It) { bHasPreviewStage = true; break; }
@@ -373,7 +375,7 @@ void AT66FrontendGameMode::HandleSettingsChanged()
 {
 	UWorld* World = GetWorld();
 	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
-	// No SceneCapture to refresh — the main viewport camera gets theme changes automatically.
+	AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(World);
 }
 
 void AT66FrontendGameMode::PositionCameraForHeroPreview()

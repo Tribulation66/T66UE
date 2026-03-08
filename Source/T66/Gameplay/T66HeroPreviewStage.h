@@ -126,13 +126,13 @@ protected:
 	UPROPERTY(Transient)
 	FRotator IdealCameraRotation = FRotator::ZeroRotator;
 
-	/** Push the platform slightly back so the hero reads "forward" on it (toward camera). */
+	/** Fine-tune the platform's backward offset after the automatic edge placement. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float PlatformForwardOffset = 35.f;
+	float PlatformForwardOffset = 0.f;
 
 	/** Multiplier on the auto-framed camera distance (smaller = character appears bigger, more zoomed in). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float CameraDistanceMultiplier = 3.0f;
+	float CameraDistanceMultiplier = 2.2f;
 
 	/** User zoom factor applied on top of CameraDistanceMultiplier (<= 1.0 means zoom-in). */
 	UPROPERTY(Transient)

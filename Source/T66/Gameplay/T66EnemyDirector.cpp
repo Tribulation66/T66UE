@@ -90,10 +90,9 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 		if (!bSpawningArmed)
 		{
 			bSpawningArmed = true;
-			// Spawn immediately so players don't think spawns are broken, then continue on interval.
 			SpawnWave();
 			World->GetTimerManager().ClearTimer(SpawnTimerHandle);
-			World->GetTimerManager().SetTimer(SpawnTimerHandle, this, &AT66EnemyDirector::SpawnWave, SpawnIntervalSeconds, true, 2.f);
+			World->GetTimerManager().SetTimer(SpawnTimerHandle, this, &AT66EnemyDirector::SpawnWave, SpawnIntervalSeconds, true);
 		}
 	}
 	else
@@ -189,6 +188,16 @@ void AT66EnemyDirector::SpawnWave()
 		}
 	}
 	const TArray<FName> MobIDs = { MobA, MobB, MobC };
+
+#if !UE_BUILD_SHIPPING
+	static int32 LoggedMobWaves = 0;
+	if (LoggedMobWaves < 3)
+	{
+		++LoggedMobWaves;
+		UE_LOG(LogTemp, Warning, TEXT("[SPAWN] SpawnWave Stage=%d MobIDs: A=%s  B=%s  C=%s (generic fallback would be Mob_StageXX_X — if you see that, reimport DT_Stages)"),
+			StageNum, *MobA.ToString(), *MobB.ToString(), *MobC.ToString());
+	}
+#endif
 
 	// ================================
 	// Special mobs (Goblin Thief / Leprechaun) — per-wave counts (Luck-affected)
@@ -374,10 +383,8 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 
-	const int32 BatchSize = FMath::Min(PendingSpawns.Num(), FMath::RandRange(1, 2));
-	for (int32 b = 0; b < BatchSize; ++b)
+	while (PendingSpawns.Num() > 0)
 	{
-		if (PendingSpawns.Num() <= 0) break;
 		FPendingEnemySpawn Slot = PendingSpawns[0];
 		PendingSpawns.RemoveAt(0);
 
@@ -459,10 +466,5 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 			AliveCount++;
 			Enemy->StartRiseFromGround(Slot.GroundLocation.Z);
 		}
-	}
-
-	if (PendingSpawns.Num() > 0)
-	{
-		World->GetTimerManager().SetTimer(StaggeredSpawnTimerHandle, this, &AT66EnemyDirector::SpawnNextStaggeredBatch, 0.7f, false);
 	}
 }

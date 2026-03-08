@@ -35,7 +35,7 @@ public:
 
 	/**
 	 * Submit a completed stage time (local best), keyed by current difficulty/party size.
-	 * Stage is expected to be 1..10 for the menu leaderboard, but we store any stage for future use.
+	 * Stage is expected to be 1..5 for the menu leaderboard (stages per difficulty), but we store any stage for future use.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Leaderboard")
 	bool SubmitStageSpeedRunTime(int32 Stage, float Seconds);

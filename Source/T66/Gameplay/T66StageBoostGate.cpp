@@ -49,8 +49,8 @@ bool AT66StageBoostGate::EnterChosenStage()
 
 	RunState->SetInStageBoost(false);
 
-	// Start at the chosen stage number (e.g. 11/21/31...). Clamp to [1..66].
-	RunState->SetCurrentStage(FMath::Clamp(TargetStage, 1, 66));
+	// Start at the chosen stage number (e.g. 6/11/16...). Clamp to [1..33].
+	RunState->SetCurrentStage(FMath::Clamp(TargetStage, 1, 33));
 
 	// New stage load should be treated as a stage transition (keep progress).
 	T66GI->bIsStageTransition = true;

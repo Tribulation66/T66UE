@@ -48,7 +48,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		// Sync-load main menu + Party Picker textures so they show immediately (no white flash).
 		// Safe loading window: we are building the main menu UI, not in gameplay. See memory.md.
 		static const TArray<FSoftObjectPath> MainMenuTexturePaths = {
-			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMDark.MMDark")),
+			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")),
 			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight")),
 			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")),
 			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")),
@@ -94,7 +94,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	// Use cached texture immediately (EnsureTexturesLoadedSync above already loaded it; this sets the brush).
 	if (TexPool)
 	{
-		const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMDark");
+		const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMRed");
 		const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
 		if (UTexture2D* Cached = TexPool->GetLoadedTexture(MainMenuBgSoft))
 		{
@@ -113,7 +113,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f))
 			]
-			// Full-screen background image (Content/UI/MainMenu/MMDark or MMLight)
+			// Full-screen background image (Content/UI/MainMenu/MMRed or MMLight)
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
@@ -236,7 +236,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 	{
 		if (UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>())
 		{
-			const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMDark");
+			const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMRed");
 			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
 			TSharedPtr<FSlateBrush> Brush = MainMenuBackgroundBrush;
 			TSharedPtr<SImage> Image = MainMenuBackgroundImage;

@@ -77,7 +77,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	SelectedTypeOption = TypeOptions[0];
 
 	// Speed run stage dropdown (only shown when Speed Run type is selected).
-	for (int32 S = 1; S <= 10; ++S)
+	for (int32 S = 1; S <= 5; ++S)
 	{
 		StageOptions.Add(MakeShared<FString>(FString::FromInt(S)));
 	}
@@ -829,7 +829,7 @@ void ST66LeaderboardPanel::OnStageChanged(TSharedPtr<FString> NewSelection, ESel
 {
 	if (!NewSelection.IsValid()) return;
 	SelectedStageOption = NewSelection;
-	CurrentSpeedRunStage = FMath::Clamp(FCString::Atoi(**NewSelection), 1, 10);
+	CurrentSpeedRunStage = FMath::Clamp(FCString::Atoi(**NewSelection), 1, 5);
 	RefreshLeaderboard();
 }
 

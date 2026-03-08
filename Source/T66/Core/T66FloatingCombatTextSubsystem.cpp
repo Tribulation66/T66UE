@@ -30,7 +30,6 @@ void UT66FloatingCombatTextSubsystem::ShowDamageNumber(AActor* Target, int32 Amo
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Spawn at origin; attach to target so text follows them.
 	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
 	if (Actor)
 	{
@@ -38,20 +37,8 @@ void UT66FloatingCombatTextSubsystem::ShowDamageNumber(AActor* Target, int32 Amo
 		const uint32 Seed = static_cast<uint32>(FMath::Abs(FDateTime::Now().GetTicks()) + GetTypeHash(Target));
 		const float Side = (Seed % 2u == 0) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
 		Actor->SetActorRelativeLocation(FVector(Side, 0.f, OffsetAboveHead));
-		Actor->SetDamageNumber(Amount, EventType);
+		Actor->SetDamageNumber(Amount, NAME_None);
 		Actor->SetLifeSpan(TextLifetimeSeconds);
-	}
-
-	if (!EventType.IsNone())
-	{
-		AT66FloatingCombatTextActor* StatusActor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
-		if (StatusActor)
-		{
-			StatusActor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-			StatusActor->SetActorRelativeLocation(FVector(0.f, 0.f, OffsetAboveHead + 40.f));
-			StatusActor->SetStatusEvent(EventType);
-			StatusActor->SetLifeSpan(TextLifetimeSeconds);
-		}
 	}
 }
 
@@ -76,17 +63,6 @@ void UT66FloatingCombatTextSubsystem::ShowDamageTaken(AActor* Target, int32 Amou
 
 void UT66FloatingCombatTextSubsystem::ShowStatusEvent(AActor* Target, FName EventType)
 {
-	if (!Target || EventType.IsNone()) return;
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
-	if (Actor)
-	{
-		Actor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		Actor->SetActorRelativeLocation(FVector(0.f, 0.f, OffsetAboveHead));
-		Actor->SetStatusEvent(EventType);
-		Actor->SetLifeSpan(TextLifetimeSeconds);
-	}
+	// All status event notifications disabled; only hero damage taken (ShowDamageTaken) remains active.
+	return;
 }

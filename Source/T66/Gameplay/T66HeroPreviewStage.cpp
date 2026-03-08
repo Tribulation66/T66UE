@@ -196,11 +196,22 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 
 	if (PreviewPlatform)
 	{
-		// Platform top at stage ground Z so character feet align with it.
+		// Place the platform relative to the hero's feet, not the bounds center.
+		// That keeps the hero visually near the south/front edge even as auto-framing recenters the camera.
 		const float GroundZ = GetActorLocation().Z;
 		const float PlatformCenterZ = GroundZ - 2.f; // ~4 unit thick disc with scale 0.04
-		PreviewPlatform->SetWorldLocation(FVector(Center.X + PlatformForwardOffset, Center.Y, PlatformCenterZ));
 		const float S = FMath::Clamp((Radius / 50.f) * 2.5f, 2.0f, 10.0f);
+		const float PlatformRadius = 50.f * S;
+		float HeroFeetX = Center.X;
+		float HeroFeetY = Center.Y;
+		if (PreviewPawn)
+		{
+			const FVector HeroLoc = PreviewPawn->GetActorLocation();
+			HeroFeetX = HeroLoc.X;
+			HeroFeetY = HeroLoc.Y;
+		}
+		const float RearBias = (PlatformRadius * 0.55f) + PlatformForwardOffset;
+		PreviewPlatform->SetWorldLocation(FVector(HeroFeetX + RearBias, HeroFeetY, PlatformCenterZ));
 		PreviewPlatform->SetWorldScale3D(FVector(S, S, 0.04f));
 	}
 }

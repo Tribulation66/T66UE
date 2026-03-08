@@ -1149,7 +1149,7 @@ void UT66RunStateSubsystem::ApplyStatusCurse(float /*DurationSeconds*/) {}
 
 void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 {
-	const int32 Stage = FMath::Clamp(CurrentStage, 1, 66);
+	const int32 Stage = FMath::Clamp(CurrentStage, 1, 33);
 	if (VendorStockStage == Stage && VendorStockItemIDs.Num() > 0 && VendorStockSold.Num() == VendorStockItemIDs.Num())
 	{
 		return;
@@ -1256,7 +1256,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 
 void UT66RunStateSubsystem::RerollVendorStockForCurrentStage()
 {
-	const int32 Stage = FMath::Clamp(CurrentStage, 1, 66);
+	const int32 Stage = FMath::Clamp(CurrentStage, 1, 33);
 	if (VendorStockRerollStage != Stage)
 	{
 		VendorStockRerollStage = Stage;
@@ -2193,11 +2193,11 @@ void UT66RunStateSubsystem::ResetForNewRun()
 
 void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 {
-	const int32 NewStage = FMath::Clamp(Stage, 1, 66);
+	const int32 NewStage = FMath::Clamp(Stage, 1, 33);
 	if (CurrentStage == NewStage) return;
 
 	// If Speed Run Mode is enabled, record the stage completion time for the stage we're leaving.
-	// This is used for the main menu Speed Run leaderboard (stage 1..10).
+	// This is used for the main menu Speed Run leaderboard (stage 1..5 per difficulty).
 	{
 		UGameInstance* GI = GetGameInstance();
 		UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
@@ -2205,7 +2205,7 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 		if (bSpeedRunMode)
 		{
 			const int32 CompletedStage = CurrentStage;
-			if (CompletedStage >= 1 && CompletedStage <= 10)
+			if (CompletedStage >= 1 && CompletedStage <= 5)
 			{
 				UWorld* World = GetWorld();
 				const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;

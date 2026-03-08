@@ -164,7 +164,7 @@ This creates `.env.local` with all the production variables. The seed script and
 - **Score:** higher is better → sort `DESC`.
 - **SpeedRun:** stored as milliseconds, lower is better → sort `ASC`.
 
-**SpeedRun keys are only generated** when the player completes all stages of a difficulty (10 stages for Easy–Perdition, 6 for Final). Incomplete runs → N/A for SpeedRun.
+**SpeedRun keys are only generated** when the player completes all stages of a difficulty (5 stages for Easy–Perdition, 3 for Final). Incomplete runs → N/A for SpeedRun.
 
 **SpeedRun split times:** Top 15 entries store `stage_splits_ms` (JSONB array of cumulative ms per stage) for pacing display.
 
@@ -434,9 +434,9 @@ Available at `https://t66-backend.vercel.app/admin`. Password-protected (env var
 
 The seed script (`scripts/seed.mjs`) populates the database with test data:
 
-- **840 fake global entries** (10 per key × 84 keys), each with unique fake Steam IDs
+- **840 fake global entries** (10 per key × 84 keys for Score; 5 per SpeedRun key for Easy–Perdition, 3 for Final), each with unique fake Steam IDs
 - **84 real profile entries** (1 per key for Steam ID `76561198369499700`)
-- Display names: `G_Weekly_Solo_Easy_Score_1` through `G_AllTime_Trio_Final_SpeedRun_10`
+- Display names: `G_Weekly_Solo_Easy_Score_1` through `G_AllTime_Trio_Final_SpeedRun_3` (Speed Run stages: 5 per difficulty for Easy–Perdition, 3 for Final)
 - Real Steam profile name + avatar fetched live from Steam API
 - Streamer whitelist entry for the real profile
 - Full run summaries with realistic items, idols, stats, damage sources

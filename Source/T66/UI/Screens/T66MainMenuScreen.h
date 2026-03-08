@@ -75,7 +75,7 @@ private:
 	FReply HandleLanguageClicked();
 	FReply HandleQuitClicked();
 
-	/** Load the correct background texture (MMDark / MMLight) into the background brush. */
+	/** Load the correct background texture (MMRed / MMLight) into the background brush. */
 	void RequestBackgroundTexture();
 
 	// Handle language change to rebuild UI

@@ -836,7 +836,7 @@ struct T66_API FStageData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** Stage number (1..66) */
+	/** Stage number (1..33) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
 	int32 StageNumber = 1;
 
@@ -1239,7 +1239,7 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
 
-	/** Stage reached (1-66) */
+	/** Stage reached (1-33) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 StageReached = 0;
 

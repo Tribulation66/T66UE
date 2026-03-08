@@ -8,8 +8,8 @@
 
 /**
  * Hero movement speed and movement-state signaling.
- * Speed still ramps when moving (acceleration/deceleration unchanged).
- * State is binary here: 0 = Idle, 1 = Moving.
+ * No acceleration: speed is always MaxSpeed when moving, 0 when idle.
+ * State is binary: 0 = Idle, 1 = Moving.
  * Heroes decide whether Moving means walk or jump; companions reuse it for their own visuals.
  */
 UCLASS()
@@ -18,9 +18,6 @@ class T66_API UT66HeroSpeedSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	/** When moving, speed is at least this fraction of max (so base speed feels higher). */
-	static constexpr float BaseSpeedFraction = 0.2f;
-
 	/** Set movement params from hero data (call when hero spawns or initializes). */
 	UFUNCTION(BlueprintCallable, Category = "T66|HeroSpeed")
 	void SetParams(float InMaxSpeed, float AccelerationPercentPerSecond = 10.f);
@@ -29,7 +26,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66|HeroSpeed")
 	void Update(float DeltaTime, bool bHasMovementInput);
 
-	/** Current speed (0 to MaxSpeed). Used for hero MaxWalkSpeed. */
+	/** Current speed (MaxSpeed when moving, 0 when idle). Used for hero MaxWalkSpeed. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|HeroSpeed")
 	float GetCurrentSpeed() const { return CurrentSpeed; }
 
@@ -47,13 +44,6 @@ private:
 
 	UPROPERTY(Transient)
 	float MaxSpeed = 1200.f;
-
-	/** Units per second added when moving. */
-	UPROPERTY(Transient)
-	float AccelerationPerSecond = 120.f;
-
-	UPROPERTY(Transient)
-	float DecelerationPerSecond = 120.f;
 
 	UPROPERTY(Transient)
 	bool bLastHasMovementInput = false;

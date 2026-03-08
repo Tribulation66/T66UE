@@ -244,7 +244,7 @@ bool UT66LeaderboardSubsystem::SaveLocalBestScoreRunSummarySnapshot(ET66Difficul
 	Snapshot->PartySize = PartySize;
 	Snapshot->SavedAtUtc = FDateTime::UtcNow();
 
-	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 66);
+	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 33);
 	Snapshot->Score = FMath::Max(0, Score);
 
 	Snapshot->SecondaryStatValues.Reset();
@@ -483,7 +483,7 @@ float UT66LeaderboardSubsystem::GetSpeedRunTarget10(ET66Difficulty Difficulty, E
 	{
 		// Fallback tuning: stage-based, difficulty-based, and scaled slightly by party size.
 		const int32 DiffIndex = FMath::Clamp(static_cast<int32>(Difficulty), 0, 999);
-		const int32 S = FMath::Clamp(Stage, 1, 66);
+		const int32 S = FMath::Clamp(Stage, 1, 33);
 		Base = 35.f + (static_cast<float>(S) * 12.f) + (static_cast<float>(DiffIndex) * 6.f);
 	}
 
@@ -645,7 +645,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	LoadOrCreateLocalSave();
 	if (!LocalSave) return false;
 
-	Stage = FMath::Clamp(Stage, 1, 66);
+	Stage = FMath::Clamp(Stage, 1, 33);
 	Seconds = FMath::Max(0.f, Seconds);
 	if (Seconds <= 0.01f) return false;
 	bLastSpeedRunWasNewBest = false;
@@ -816,7 +816,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
 	Snapshot->SavedAtUtc = FDateTime::UtcNow();
-	Snapshot->StageReached = FMath::Clamp(1 + Rng.RandRange(0, 65), 1, 66);
+	Snapshot->StageReached = FMath::Clamp(1 + Rng.RandRange(0, 32), 1, 33);
 	Snapshot->Score = (Type == ET66LeaderboardType::Score) ? FMath::Max(0, static_cast<int32>(Score)) : 0;
 	Snapshot->HeroID = HeroIDs.Num() > 0 ? HeroIDs[Rng.RandRange(0, HeroIDs.Num() - 1)] : NAME_None;
 	Snapshot->HeroBodyType = Rng.FRand() < 0.5f ? ET66BodyType::TypeA : ET66BodyType::TypeB;
@@ -1148,7 +1148,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	TArray<FLeaderboardEntry> Out;
 	Out.Reserve(11);
 
-	Stage = FMath::Clamp(Stage, 1, 66);
+	Stage = FMath::Clamp(Stage, 1, 33);
 
 	const float Target10 = GetSpeedRunTarget10(Difficulty, PartySize, Stage);
 
@@ -1260,7 +1260,7 @@ int32 UT66LeaderboardSubsystem::GetLocalScoreRank(ET66Difficulty Difficulty, ET6
 
 int32 UT66LeaderboardSubsystem::GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const
 {
-	Stage = FMath::Clamp(Stage, 1, 66);
+	Stage = FMath::Clamp(Stage, 1, 33);
 	const TArray<FLeaderboardEntry> Entries = BuildSpeedRunEntries(Difficulty, PartySize, Stage);
 	for (const FLeaderboardEntry& E : Entries)
 	{
@@ -1394,7 +1394,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 	}
 	else // SpeedRun
 	{
-		int32 Stage = FMath::Clamp(SpeedRunStage, 1, 66);
+		int32 Stage = FMath::Clamp(SpeedRunStage, 1, 33);
 		float LocalBest = 0.f;
 		bool bLocalAnonStored = false;
 		if (LocalSave)

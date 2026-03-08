@@ -1472,7 +1472,7 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 		{
 			float TargetSeconds = 0.f;
 			const int32 Stage = RunState->GetCurrentStage();
-			const bool bHasTarget = (Stage >= 1 && Stage <= 10) && LB->GetSpeedRunTarget10Seconds(GIAsT66->SelectedDifficulty, GIAsT66->SelectedPartySize, Stage, TargetSeconds);
+			const bool bHasTarget = (Stage >= 1 && Stage <= 5) && LB->GetSpeedRunTarget10Seconds(GIAsT66->SelectedDifficulty, GIAsT66->SelectedPartySize, Stage, TargetSeconds);
 			if (!bHasTarget)
 			{
 				SpeedRunTargetText->SetVisibility(EVisibility::Collapsed);

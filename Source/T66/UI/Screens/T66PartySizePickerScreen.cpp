@@ -77,14 +77,14 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 		}
 	}
 
-	// Main menu background (MMDark / MMLight) — same as main menu
+	// Main menu background (MMRed / MMLight) — same as main menu
 	MainMenuBackgroundBrush = MakeShared<FSlateBrush>();
 	MainMenuBackgroundBrush->DrawAs = ESlateBrushDrawType::Box;
 	MainMenuBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
 	MainMenuBackgroundBrush->SetResourceObject(nullptr);
 	if (TexPool)
 	{
-		const FString BgAssetName = bLight ? TEXT("MMLight") : TEXT("MMDark");
+		const FString BgAssetName = bLight ? TEXT("MMLight") : TEXT("MMRed");
 		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
 		if (UTexture2D* Cached = TexPool->GetLoadedTexture(BgSoft))
 		{
@@ -157,7 +157,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 		[
 			FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f))
 		]
-		// Main menu background image (MMDark / MMLight)
+		// Main menu background image (MMRed / MMLight)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)

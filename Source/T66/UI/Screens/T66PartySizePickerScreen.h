@@ -12,7 +12,7 @@ class SImage;
 
 /**
  * Party Size Picker Screen
- * Main menu background (MMDark/MMLight) with Solo / Co-op cards (theme-dependent images + text).
+ * Main menu background (MMRed/MMLight) with Solo / Co-op cards (theme-dependent images + text).
  */
 UCLASS(Blueprintable)
 class T66_API UT66PartySizePickerScreen : public UT66ScreenBase

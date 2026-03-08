@@ -102,8 +102,11 @@ public:
 	/** Called by BossBase on death so GameMode can decide what happens (normal vs Coliseum) and award score. */
 	void HandleBossDefeated(AT66BossBase* Boss);
 
-	/** Apply UI theme (Dark = moonlight, Light = sun) to directional lights in the given world. Shared with frontend. */
+	/** Apply UI theme (Dark = blood-red moon, Light = sun) to directional lights in the given world. Shared with frontend. */
 	static void ApplyThemeToDirectionalLightsForWorld(UWorld* World);
+
+	/** Apply UI theme to SkyAtmosphere, SkyLight, fog, PostProcess color grading, and posterize. Shared with frontend. */
+	static void ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World);
 
 	/** Destroy existing map geometry and spawn a new procedural platform+ramp map with the given theme and seed. */
 	void RegenerateMap(ET66MapTheme Theme, int32 Seed);
@@ -141,6 +144,9 @@ protected:
 
 	/** Apply theme to this world's directional lights (calls ApplyThemeToDirectionalLightsForWorld). */
 	void ApplyThemeToDirectionalLights();
+
+	/** Apply theme to this world's atmosphere, sky, fog, PP, posterize (calls ApplyThemeToAtmosphereAndLightingForWorld). */
+	void ApplyThemeToAtmosphereAndLighting();
 
 	UFUNCTION()
 	void HandleSettingsChanged();

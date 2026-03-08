@@ -67,9 +67,9 @@ Leaderboard results are protected through a trusted-write model. Players never d
 
 Submission Timing: A run does not submit continuously. Instead, it submits at major checkpoints so each segment is meaningful and comparable.
 
-• Stage 10 / 20 / 30 / 40 / 50 / 60: Submits the cleared segment result for that difficulty checkpoint.
+• Stage 5 / 10 / 15 / 20 / 25 / 30: Submits the cleared segment result for that difficulty.
 
-• Stage 66: Submits the Final segment completion result.
+• Stage 33: Submits the Final segment completion result.
 
 ### 1.3.3 LEADERBOARD ELIGIBILITY (ONLINE VS OFFLINE)
 
@@ -307,7 +307,7 @@ On the edge of the hero info panel is a small book-shaped icon button. Pressing 
 
 Difficulty Selection: Instead of choosing a starting chapter, the hero selection includes a difficulty selector that matches the leaderboard difficulties: Easy, Medium, Hard, Very Hard, Impossible, Perdition, Final. The selected difficulty is clearly highlighted.
 
-Catch-Up Stage (Starting Above Easy): If the player starts a New Game on a higher difficulty, they first enter a short catch-up stage with a Mega Piñata in the center. The Mega Piñata scales in size based on the starting difficulty (harder start = bigger piñata). Interacting with it awards Gold only (no items). For items, a one-hit enemy called Present Man appears (a stack of wrapped presents whose size also scales with difficulty). Present Man dies in one blow and drops all presents at once (a burst of Loot Bags / item rolls). Overall reward target remains roughly equivalent to playing through Stages 1-10.
+Catch-Up Stage (Starting Above Easy): If the player starts a New Game on a higher difficulty, they first enter a short catch-up stage with a Mega Piñata in the center. The Mega Piñata scales in size based on the starting difficulty (harder start = bigger piñata). Interacting with it awards Gold only (no items). For items, a one-hit enemy called Present Man appears (a stack of wrapped presents whose size also scales with difficulty). Present Man dies in one blow and drops all presents at once (a burst of Loot Bags / item rolls). Overall reward target remains roughly equivalent to playing through Stages 1-5 (first difficulty block).
 
 Navigation: A Back button returns to the Party Size Picker. A THE LAB button opens the Practice Lab (testing room) using your currently selected hero + companion loadout, and exiting the Lab returns you back to this Hero Selection screen. A large ENTER THE TRIBULATION button starts the run.
 
@@ -704,9 +704,9 @@ Map Theme: In Solo, the map theme is driven by the chosen Hero. In Co-op, the ru
 
 Boss Encounter Trigger (Locked): There is no Summoning Stone. Stage bosses spawn into their arena when the map is generated and are already present in their area from the start (visible from a distance). The boss fight begins when the player enters Boss Quarters and the boss becomes active.
 
-Normal Stage Layout (Not ending in 5 or 0): Start Area → Central Map (main arena + corner houses) → Boss Quarters (boss already present). Entering Boss Quarters activates the boss fight; the Trickster can appear with a short animation and brings the Cowardice Gate.
+Normal Stage Layout (non–difficulty-boss stages): Start Area → Central Map (main arena + corner houses) → Boss Quarters (boss already present). Entering Boss Quarters activates the boss fight; the Trickster can appear with a short animation and brings the Cowardice Gate.
 
-Corner Landmarks (4 Houses): Normal stages contain the four corner houses (Vendor, Gambler, Ouroboros, Saint) placed in the combat map. Boss-only checkpoint stages (stages ending in 5 or 0) do NOT include the four corner houses and are only Start Area + Boss Quarters.
+Corner Landmarks (4 Houses): Normal stages contain the four corner houses (Vendor, Gambler, Ouroboros, Saint) placed in the combat map. Difficulty boss stages (5, 10, 15, 20, 25, 30, 33) do NOT include the four corner houses and are only Start Area + Boss Quarters.
 
 Indestructible Geometry: The major map layout (buildings, ridges, rivers, and landmark structures) is indestructible so navigation and sightlines stay stable. No destructible buildings or objects exist in the game. All props and set-dressing remain intact at all times.
 
@@ -738,19 +738,19 @@ Wallet + Combat Readouts: The player’s wallet is shown near the wanted poster 
 
 Boss HP Tier Colors (by difficulty segment):
 
-• Easy (Stages 1-10): Red
+• Easy (Stages 1-5): Red
 
-• Medium (Stages 11-20): Purple -> Red
+• Medium (Stages 6-10): Purple -> Red
 
-• Hard (Stages 21-30): Blue -> Purple -> Red
+• Hard (Stages 11-15): Blue -> Purple -> Red
 
-• Very Hard (Stages 31-40): Green -> Blue -> Purple -> Red
+• Very Hard (Stages 16-20): Green -> Blue -> Purple -> Red
 
-• Impossible (Stages 41-50): Yellow -> Green -> Blue -> Purple -> Red
+• Impossible (Stages 21-25): Yellow -> Green -> Blue -> Purple -> Red
 
-• Perdition (Stages 51-60): Orange -> Yellow -> Green -> Blue -> Purple -> Red
+• Perdition (Stages 26-30): Orange -> Yellow -> Green -> Blue -> Purple -> Red
 
-• Final (Stages 61-66): White -> Orange -> Yellow -> Green -> Blue -> Purple -> Red
+• Final (Stages 31-33): White -> Orange -> Yellow -> Green -> Blue -> Purple -> Red
 
 Toggleable Panels (Fixed Positions): Several informational panels can be shown or hidden. These panels are not draggable. They have fixed default positions and fixed sizes, except for the Mini Map and Media Viewer which support a small set of size presets. Each panel includes a Toggle Lock button that prevents it from being affected by the global HUD toggle input.
 
@@ -1000,21 +1000,21 @@ Skulls (Burden) affect future spawns only. When a wave begins, the wave director
 
 Normal Stage Boss Encounter: In normal stages, the Boss Quarters arena is reached after the wave phase; entering the arena automatically starts the boss fight (boss becomes active; it was already spawned at map generation).
 
-Boss-Only Checkpoint Stages (Locked): Stages ending in 5 or 0 are checkpoint boss stages. The map is Start Area + Boss Quarters only, and the boss is already present at map generation (visible from the Start Area). These stages spawn no normal waves and contain no corner houses.
+Difficulty Boss Stages (Locked): Stages 5, 10, 15, 20, 25, 30, and 33 are difficulty boss stages. The map is Start Area + Boss Quarters only, and the boss is already present at map generation (visible from the Start Area). These stages spawn no normal waves and contain no corner houses. The Cowardice Gate cannot be used on these stages (the difficulty boss cannot be skipped). If the player has owed bosses from earlier skips, they are routed to the Coliseum before entering the difficulty boss stage.
 
-Cowardice Gate (Skip Option): In normal stages, the Trickster spawns at the entrance to the boss approach path and brings the Cowardice Gate with him. In boss-only checkpoint stages, the Cowardice Gate is pre-placed at map generation at the boundary between the Start Area and the Boss Quarters. Using the gate skips forward and marks the skipped boss as owed.
+Cowardice Gate (Skip Option): In normal (non–difficulty-boss) stages, the Trickster spawns at the entrance to the boss approach path and brings the Cowardice Gate with him. In difficulty boss stages, the Cowardice Gate is not available. Using the gate on other stages skips forward and marks the skipped boss as owed; owed bosses must be cleared in the Coliseum before the next difficulty boss stage.
 
 Skipped Boss Arena Rounds (Boss Catch-Up): Before entering a boss arena for an owed boss, the Boss Quarters is treated as a clean encounter space (no enemies carry over). On entry, the owed boss fight begins immediately.
 
-At key checkpoints (Stage 10, 20, 30, 40, 50, and 60), the stage boss is an Epic Boss drawn from the Lesser Key of Solomon. The Epic Boss lineup is fixed by checkpoint: Stage 10 = Bael; Stage 20 = King Paimon; Stage 30 = Asmodeus; Stage 40 = Astaroth; Stage 50 = Belphegor; Stage 60 = Belial.
+At difficulty boss stages (Stage 5, 10, 15, 20, 25, 30, and 33), the stage boss is an Epic Boss drawn from the Lesser Key of Solomon. The Epic Boss lineup is fixed by difficulty boss stage: Stage 5 = Bael; Stage 10 = King Paimon; Stage 15 = Asmodeus; Stage 20 = Astaroth; Stage 25 = Belphegor; Stage 30 = Belial; Stage 33 = final boss.
 
-After a boss is killed, the immediate combat threat ends and a stage-exit gate appears that leads to the next stage. Players leave through the stage-exit gate to proceed to the next stage or difficulty checkpoint. Players can stay indefinitely after the boss is dead (timer is gone and miasma has receded) and leave through the gate whenever they choose.
+After a boss is killed, the immediate combat threat ends and a stage-exit gate appears that leads to the next stage. Players leave through the stage-exit gate to proceed to the next stage or difficulty boss stage. Players can stay indefinitely after the boss is dead (timer is gone and miasma has receded) and leave through the gate whenever they choose.
 
 Co-op Stage Exit: If any one player enters the stage-exit gate, it force-pulls all players into the next stage.
 
 Downed Transition Rule: If a player is downed/dead when the force-pull happens, they are pulled forward but arrive in the next stage still downed (they must be revived by teammates).
 
-Heat + Flow State (Ultra Instinct) (Locked): Heat is built by taking damage and by successfully dodging attacks (confirmed by attacks that would have hit but were avoided during dodge i-frames; touch damage counts). Heat can build slowly during normal wave combat and regular stage bosses, but Flow State can only trigger during checkpoint boss fights. Trigger: If Heat is full and the player takes a hit that would remove their last heart during a checkpoint boss fight, Flow State triggers instead of death. Flow State rules: the player is set to 0 hearts and receives 30 seconds to defeat the boss. If the boss dies before the timer ends, the player survives and regains 1 heart; if time expires, the player dies. Flow State can trigger at most once per boss fight, and at most twice per difficulty segment total (one use reserved for the stage-5 checkpoint boss and one use reserved for the stage-10 checkpoint boss). During Flow State, the boss switches to a cowardice pattern: it actively runs away while attacking to create distance. Flow State swaps to a unique portrait and music override for the hero.
+Heat + Flow State (Ultra Instinct) (Locked): Heat is built by taking damage and by successfully dodging attacks (confirmed by attacks that would have hit but were avoided during dodge i-frames; touch damage counts). Heat can build slowly during normal wave combat and regular stage bosses, but Flow State can only trigger during difficulty boss fights (stages 5, 10, 15, 20, 25, 30, 33). Trigger: If Heat is full and the player takes a hit that would remove their last heart during a difficulty boss fight, Flow State triggers instead of death. Flow State rules: the player is set to 0 hearts and receives 30 seconds to defeat the boss. If the boss dies before the timer ends, the player survives and regains 1 heart; if time expires, the player dies. Flow State can trigger at most once per boss fight, and at most twice per difficulty segment total. During Flow State, the boss switches to a cowardice pattern: it actively runs away while attacking to create distance. Flow State swaps to a unique portrait and music override for the hero.
 
 ## 2.10 WORLD INTERACTABLES (SYSTEM)
 
@@ -1235,7 +1235,7 @@ Danger Signaling (Locked): The Red House visually broadcasts danger via menacing
 
 (A dangerous in-run landmark that acts as a living environmental threat.)
 
-Spawn Restriction (Locked): Ouroboros does not appear until Medium difficulty and onward (Stages 11+). Ouroboros occupies its house zone as a persistent, high-threat landmark. The area around Ouroboros is ringed with “DO NOT ENTER” danger signs and skull warnings.
+Spawn Restriction (Locked): Ouroboros does not appear until Medium difficulty and onward (Stages 6+). Ouroboros occupies its house zone as a persistent, high-threat landmark. The area around Ouroboros is ringed with “DO NOT ENTER” danger signs and skull warnings.
 
 Safe bubble rule: Ouroboros is surrounded by the same no-enemy bubble system as the other NPCs (enemies cannot enter). The bubble is visually marked as a dangerous perimeter rather than a comforting shelter.
 
@@ -1255,9 +1255,9 @@ Dialogue: Interacting with the Saint opens a dialogue. Saint line: “You have n
 
 Saint Beam Aura: If enemies enter the Saint’s aura, the Saint kills them with a continuous beam of light. If the player is caught in the beam path, the player is killed as well. Enemies killed by the Saint count toward wave-clear conditions, but grant no score and cannot drop loot bags or items.
 
-Kromer Ending: When the player beats the final boss at Stage 66, they obtain exactly one kromer. The Saint appears and can finally accept the kromer. Giving the kromer completes the run and beats the game.
+Kromer Ending: When the player beats the final boss at Stage 33, they obtain exactly one kromer. The Saint appears and can finally accept the kromer. Giving the kromer completes the run and beats the game.
 
-The White House is a calm, high-contrast landmark in the stage that contains the Saint. In normal stages, the Saint does not provide run-altering offerings; the interaction is purely flavor (“You have no kromer.” → “...”). The Saint’s primary gameplay function is the Saint Beam Aura and the Stage 66 kromer ending.
+The White House is a calm, high-contrast landmark in the stage that contains the Saint. In normal stages, the Saint does not provide run-altering offerings; the interaction is purely flavor (“You have no kromer.” → “...”). The Saint’s primary gameplay function is the Saint Beam Aura and the Stage 33 kromer ending.
 
 ## 2.18 TRICKSTER (COWARDICE GATE ANNOUNCER)
 
@@ -1355,9 +1355,9 @@ The Run Summary Page is the standard post-run results screen shown after every r
 
 The page is divided into three clear vertical regions: Left, Center, and Right. This layout makes it possible to understand the run’s build, outcomes, and legitimacy at a glance, while still allowing deep inspection for leaderboard integrity.
 
-Checkpoint Clear Rule: After beating a difficulty checkpoint boss and choosing Continue, the Bounty score and Speedrun timer reset for the next difficulty segment. The Run Summary also includes Save and Quit options that return to the Main Menu (tooltip: “Takes you to the Main Menu”).
+Difficulty Clear Rule: After beating a difficulty boss stage (5, 10, 15, 20, 25, 30, or 33) and choosing Continue, the Bounty score and Speedrun timer reset for the next difficulty segment. The Run Summary also includes Save and Quit options that return to the Main Menu (tooltip: “Takes you to the Main Menu”).
 
-Left Region (Run Identity + Rankings): The left side stacks the run’s identity in descending order: Hero portrait + name, Companion portrait + name, Stage reached, Bounty value (Score), and Time elapsed. Below that are the weekly global rankings for Bounty and Speedrun. If the run did not clear the required difficulty checkpoint, the Speedrun rank is blank while the Bounty rank may still be shown.
+Left Region (Run Identity + Rankings): The left side stacks the run’s identity in descending order: Hero portrait + name, Companion portrait + name, Stage reached, Bounty value (Score), and Time elapsed. Below that are the weekly global rankings for Bounty and Speedrun. If the run did not clear the required difficulty boss stage, the Speedrun rank is blank while the Bounty rank may still be shown.
 
 Left Region (Ratings + Logs): Below rankings are the Luck Rating and Dodge Rating, plus the detailed run log. These are exposed for deeper validation and scoring analysis when needed.
 
@@ -1405,9 +1405,9 @@ Still Open / To Be Decided (tunable math + content details):
 
 # 6. APPENDICES
 
-## 6.1 STAGES (1–66)
+## 6.1 STAGES (1–33)
 
-Stages Appendix has been moved to a separate file to keep the main Bible lightweight: TRIBULATION 66 – BIBLE STAGES (v1.0).
+Stages Appendix has been moved to a separate file to keep the main Bible lightweight: TRIBULATION 66 – BIBLE STAGES (v1.0). There are 33 stages total (5 per difficulty for Easy–Perdition, 3 for Final).
 
 ## 6.2 HEROES
 
@@ -1825,12 +1825,12 @@ Reward per achievement: 1000 AC
 
 | ID | Achievement | Requirement | Progress Display | Reward |
 | --- | --- | --- | --- | --- |
-| ACH_WHI_001 | Kromer Salvation | Beat Stage 66 and give the kromer to the Saint. | 1/1 (lifetime) | 1000 AC |
-| ACH_WHI_002 | Betrayal Proof | Beat Stage 66 with NO COMPANION equipped. | 1/1 (lifetime) | 1000 AC |
-| ACH_WHI_003 | Final Difficulty Conqueror | Beat Stage 66 on Final difficulty. | 1/1 (lifetime) | 1000 AC |
-| ACH_WHI_004 | Unscathed To The End | Beat Stage 66 without taking damage at any point in the run. | 1/1 (in one run) | 1000 AC |
-| ACH_WHI_005 | 66-Stage Marathon | Clear Stages 1-66 in one continuous run without Save and Quit. | 66/66 (in one run) | 1000 AC |
-| ACH_WHI_006 | The Devil's Speedrun | Summon and kill the Stage 66 boss within 66 seconds. | 1/1 (in one stage) | 1000 AC |
+| ACH_WHI_001 | Kromer Salvation | Beat Stage 33 and give the kromer to the Saint. | 1/1 (lifetime) | 1000 AC |
+| ACH_WHI_002 | Betrayal Proof | Beat Stage 33 with NO COMPANION equipped. | 1/1 (lifetime) | 1000 AC |
+| ACH_WHI_003 | Final Difficulty Conqueror | Beat Stage 33 on Final difficulty. | 1/1 (lifetime) | 1000 AC |
+| ACH_WHI_004 | Unscathed To The End | Beat Stage 33 without taking damage at any point in the run. | 1/1 (in one run) | 1000 AC |
+| ACH_WHI_005 | 33-Stage Marathon | Clear Stages 1-33 in one continuous run without Save and Quit. | 33/33 (in one run) | 1000 AC |
+| ACH_WHI_006 | The Devil's Speedrun | Summon and kill the Stage 33 boss within 66 seconds. | 1/1 (in one stage) | 1000 AC |
 | ACH_WHI_007 | White Lightning | Trigger 12 different White Mode Events in a single run. | 12/12 (in one run) | 1000 AC |
 | ACH_WHI_008 | Jackpot Apocalypse | Hit 6 jackpots in one run and destroy every jackpot Slot Machine. | 6/6 (in one run) | 1000 AC |
 | ACH_WHI_009 | House Dominance | In one run, defeat Vendor Boss, Gambler Boss, and Loan Shark. | 3/3 (in one run) | 1000 AC |
