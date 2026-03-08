@@ -24,7 +24,6 @@
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/PointLightComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -77,15 +76,6 @@ AT66EnemyBase::AT66EnemyBase()
 	// Height includes space for lock indicator above the bar.
 	HealthBarWidget->SetDrawSize(FVector2D(120.f, 28.f));
 
-	FillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FillLight"));
-	FillLight->SetupAttachment(RootComponent);
-	FillLight->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-	FillLight->SetIntensity(0.0f);
-	FillLight->SetAttenuationRadius(250.f);
-	FillLight->SetLightColor(FLinearColor(1.f, 0.98f, 0.95f));
-	FillLight->SetCastShadows(false);
-	FillLight->SetVisibility(false);
-
 	// Prepare built-in SkeletalMeshComponent for imported models.
 	if (USkeletalMeshComponent* Skel = GetMesh())
 	{
@@ -97,8 +87,6 @@ AT66EnemyBase::AT66EnemyBase()
 void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 {
 	MobID = InMobID;
-	// Stage mobs can optionally map MobID -> imported skeletal mesh via DT_CharacterVisuals.
-	// If no row exists, we safely fall back to placeholder visuals.
 	CharacterVisualID = MobID;
 
 	if (!VisualMesh) return;
@@ -120,7 +108,6 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 		VisualMesh->SetStaticMesh(StaticShapeMesh);
 	}
 
-	// Hue derived from hash; keep saturation/value high for clarity.
 	const float Hue01 = static_cast<float>((H / 7u) % 360u) / 360.f;
 	const FLinearColor C = FLinearColor::MakeFromHSV8(
 		static_cast<uint8>(Hue01 * 255.f),
@@ -129,13 +116,41 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 	);
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, C);
 
-	// Reasonable default scale per shape.
 	switch (Shape)
 	{
-		case 1: VisualMesh->SetRelativeScale3D(FVector(0.75f, 0.75f, 0.75f)); break; // cube
-		case 2: VisualMesh->SetRelativeScale3D(FVector(0.70f, 0.70f, 0.95f)); break; // cylinder
-		case 3: VisualMesh->SetRelativeScale3D(FVector(0.80f, 0.80f, 0.95f)); break; // cone
-		default: VisualMesh->SetRelativeScale3D(FVector(0.85f, 0.85f, 0.85f)); break; // sphere
+		case 1: VisualMesh->SetRelativeScale3D(FVector(0.75f, 0.75f, 0.75f)); break;
+		case 2: VisualMesh->SetRelativeScale3D(FVector(0.70f, 0.70f, 0.95f)); break;
+		case 3: VisualMesh->SetRelativeScale3D(FVector(0.80f, 0.80f, 0.95f)); break;
+		default: VisualMesh->SetRelativeScale3D(FVector(0.85f, 0.85f, 0.85f)); break;
+	}
+
+	// Re-apply character visual for pooled (reused) actors whose BeginPlay already ran.
+	if (HasActorBegunPlay() && !CharacterVisualID.IsNone() && CharacterVisualID != FName(TEXT("RegularEnemy")))
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+				{
+					bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true);
+					if (USkeletalMeshComponent* Skel = GetMesh())
+					{
+						if (!bUsingCharacterVisual || !Skel->GetSkeletalMeshAsset())
+						{
+							bUsingCharacterVisual = false;
+							Skel->SetHiddenInGame(true, true);
+							Skel->SetVisibility(false, true);
+							if (VisualMesh)
+							{
+								VisualMesh->SetHiddenInGame(false, true);
+								VisualMesh->SetVisibility(true, true);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -182,15 +197,11 @@ void AT66EnemyBase::BeginPlay()
 	// Ensure HP is valid on spawn (in case difficulty scaled before BeginPlay).
 	CurrentHP = FMath::Clamp(CurrentHP, 1, MaxHP);
 
-	// Ensure the widget exists and is the correct class.
 	if (HealthBarWidget)
 	{
-		HealthBarWidget->SetWidgetClass(UT66EnemyHealthBarWidget::StaticClass());
-		HealthBarWidget->InitWidget();
-		HealthBarWidget->SetHiddenInGame(false, true);
-		HealthBarWidget->SetVisibility(true, true);
+		HealthBarWidget->SetHiddenInGame(true, true);
+		HealthBarWidget->SetVisibility(false, true);
 	}
-	UpdateHealthBar();
 
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	if (Capsule)
@@ -668,7 +679,7 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (Now - LastTouchDamageTime < TouchDamageCooldown) return;
 
 	LastTouchDamageTime = Now;
-	const int32 DamageHP = 5;
+	const int32 DamageHP = 20;
 	RunState->ApplyDamage(DamageHP, this);
 }
 

@@ -38,6 +38,8 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66PosterizeSubsystem.h"
+#include "Gameplay/T66EclipseActor.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
@@ -1882,7 +1884,7 @@ void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
 
 	// Difficulty index: Easy=0, Medium=1, Hard=2, ...
 	const int32 DiffIndex = FMath::Max(0, static_cast<int32>(T66GI->SelectedDifficulty));
-	const int32 StartStage = FMath::Clamp(1 + (DiffIndex * 10), 1, 66);
+	const int32 StartStage = FMath::Clamp(1 + (DiffIndex * 5), 1, 33);
 
 	// Tuned v0 amounts (increase with difficulty step).
 	const int32 GoldAmount = 200 * DiffIndex;          // Medium=200, Hard=400, ...
@@ -2000,9 +2002,9 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	FBossData BossData;
 	BossData.BossID = StageData.BossID;
 	{
-		// Stage-scaled fallback so all 66 stages work even if DT_Bosses isn't reimported yet.
-		const int32 S = FMath::Clamp(StageNum, 1, 66);
-		const float T = static_cast<float>(S - 1) / 65.f; // 0..1
+		// Stage-scaled fallback so all 33 stages work even if DT_Bosses isn't reimported yet.
+		const int32 S = FMath::Clamp(StageNum, 1, 33);
+		const float T = static_cast<float>(S - 1) / 32.f; // 0..1
 
 		// Bosses are intended to be 1000+ HP always (BossBase will clamp too).
 		BossData.MaxHP = 1000 + (S * 250);
@@ -3548,6 +3550,8 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			Root->SetMobility(EComponentMobility::Movable);
 		}
 	}
+
+	ApplyThemeToAtmosphereAndLighting();
 }
 
 void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
@@ -3579,14 +3583,16 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 	const ET66UITheme Theme = FT66Style::GetTheme();
 	if (Theme == ET66UITheme::Light)
 	{
-		SunComp->SetIntensity(SunIntensityLight);  // Fill light — SkyLight is primary ambient
+		SunComp->SetIntensity(SunIntensityLight);
 		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
+		SunComp->bAtmosphereSunLight = true;
+		SunComp->AtmosphereSunLightIndex = 0;
 	}
 	else
 	{
-		// Dark theme: keep sun on at reduced intensity so ground matches Light theme visibility; moon adds night feel.
-		SunComp->SetIntensity(SunIntensityDark);
-		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
+		// Dark theme: Eclipse Sun — sun off, eclipsed sun (moon light) is the primary light.
+		SunComp->SetIntensity(0.f);
+		SunComp->bAtmosphereSunLight = false;
 	}
 	if (MoonLight)
 	{
@@ -3594,12 +3600,25 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 		if (MoonComp)
 		{
 			if (Theme == ET66UITheme::Light)
-				MoonComp->SetIntensity(0.f);
-			else
 			{
-				MoonComp->SetIntensity(0.4f);
+				MoonComp->SetIntensity(0.f);
 				MoonComp->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
+				MoonComp->bAtmosphereSunLight = true;
+				MoonComp->AtmosphereSunLightIndex = 1;
+				MoonComp->SetAtmosphereSunDiskColorScale(FLinearColor(1.f, 1.f, 1.f));
+				MoonLight->SetActorRotation(FRotator(50.f, 135.f, 0.f));
 			}
+		else
+		{
+			// Eclipse dusk: dimmed sun, warm white light, no shadows, hide built-in sun disk
+			MoonComp->SetIntensity(5.0f);
+			MoonComp->SetLightColor(FLinearColor(1.0f, 0.95f, 0.9f));
+			MoonComp->bAtmosphereSunLight = true;
+			MoonComp->AtmosphereSunLightIndex = 0;
+			MoonComp->SetAtmosphereSunDiskColorScale(FLinearColor(0.f, 0.f, 0.f));
+			MoonComp->SetCastShadows(false);
+			MoonLight->SetActorRotation(FRotator(-50.f, 135.f, 0.f));
+		}
 		}
 	}
 }
@@ -3609,9 +3628,163 @@ void AT66GameMode::ApplyThemeToDirectionalLights()
 	ApplyThemeToDirectionalLightsForWorld(GetWorld());
 }
 
+void AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World)
+{
+	if (!World) return;
+
+	const ET66UITheme Theme = FT66Style::GetTheme();
+	const bool bDark = (Theme == ET66UITheme::Dark);
+
+	// --- SkyAtmosphere: red Rayleigh scattering for blood-red sky in Dark mode ---
+	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It)
+	{
+		USkyAtmosphereComponent* Atmos = It->FindComponentByClass<USkyAtmosphereComponent>();
+		if (!Atmos) continue;
+
+		if (bDark)
+		{
+			Atmos->RayleighScattering = FLinearColor(0.028f, 0.005f, 0.004f);
+			Atmos->RayleighScatteringScale = 0.8f;
+			Atmos->MieScatteringScale = 0.01f;
+			Atmos->MultiScatteringFactor = 0.5f;
+		}
+		else
+		{
+			Atmos->RayleighScattering = FLinearColor(0.005802f, 0.013558f, 0.033100f);
+			Atmos->RayleighScatteringScale = 1.0f;
+			Atmos->MieScatteringScale = 0.003996f;
+			Atmos->MultiScatteringFactor = 1.0f;
+		}
+		Atmos->MarkRenderStateDirty();
+		break;
+	}
+
+	// --- SkyLight: captured scene with red tint in Dark, HDRI cubemap in Light ---
+	for (TActorIterator<ASkyLight> It(World); It; ++It)
+	{
+		USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent());
+		if (!SC) continue;
+
+		if (bDark)
+		{
+			SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
+			SC->Cubemap = nullptr;
+			SC->SetIntensity(4.0f);
+			SC->SetLightColor(FLinearColor(0.25f, 0.2f, 0.25f));
+			SC->bLowerHemisphereIsBlack = false;
+			SC->SetLowerHemisphereColor(FLinearColor(0.12f, 0.1f, 0.12f));
+		}
+		else
+		{
+			UTextureCube* HDRICubemap = LoadObject<UTextureCube>(nullptr, TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio"));
+			if (HDRICubemap)
+			{
+				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
+				SC->Cubemap = HDRICubemap;
+			}
+			else
+			{
+				SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
+			}
+			SC->SetIntensity(8.0f);
+			SC->SetLightColor(FLinearColor::White);
+			SC->bLowerHemisphereIsBlack = false;
+			SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f));
+		}
+		SC->RecaptureSky();
+		break;
+	}
+
+	// --- ExponentialHeightFog: black inscattering in Dark (moon color dominates) ---
+	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
+	{
+		UExponentialHeightFogComponent* FogComp = It->FindComponentByClass<UExponentialHeightFogComponent>();
+		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(It->GetRootComponent());
+		if (!FogComp) continue;
+
+		if (bDark)
+		{
+			FogComp->SetFogInscatteringColor(FLinearColor(0.0f, 0.0f, 0.0f));
+		}
+		else
+		{
+			FogComp->SetFogInscatteringColor(FLinearColor(0.6f, 0.65f, 0.78f));
+		}
+		break;
+	}
+
+	// --- PostProcess color grading: neutral in Dark (red comes from sky, not color grade) ---
+	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+	{
+		if (!It->bUnbound) continue;
+		FPostProcessSettings& PPS = It->Settings;
+
+		if (bDark)
+		{
+			PPS.bOverride_ColorSaturation = true;
+			PPS.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.f);
+			PPS.bOverride_ColorGamma = false;
+			PPS.bOverride_ColorGain = false;
+
+			PPS.bOverride_BloomIntensity = true;
+			PPS.BloomIntensity = 0.0f;
+			PPS.bOverride_BloomThreshold = true;
+			PPS.BloomThreshold = 10.0f;
+		}
+		else
+		{
+			PPS.bOverride_ColorSaturation = true;
+			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
+			PPS.bOverride_ColorGamma = false;
+			PPS.bOverride_ColorGain = false;
+
+			PPS.bOverride_BloomIntensity = false;
+			PPS.bOverride_BloomThreshold = false;
+		}
+		break;
+	}
+
+	// --- Posterize: on in Dark, off in Light ---
+	if (UGameInstance* GI = World->GetGameInstance())
+	{
+		if (UT66PosterizeSubsystem* Post = GI->GetSubsystem<UT66PosterizeSubsystem>())
+		{
+			Post->SetEnabled(bDark);
+		}
+	}
+
+	// --- Eclipse corona: visible in Dark, destroyed in Light ---
+	{
+		AT66EclipseActor* ExistingEclipse = nullptr;
+		for (TActorIterator<AT66EclipseActor> It(World); It; ++It)
+		{
+			ExistingEclipse = *It;
+			break;
+		}
+
+		if (bDark && !ExistingEclipse)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			World->SpawnActor<AT66EclipseActor>(AT66EclipseActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		}
+		else if (!bDark && ExistingEclipse)
+		{
+			ExistingEclipse->Destroy();
+		}
+	}
+
+}
+
+void AT66GameMode::ApplyThemeToAtmosphereAndLighting()
+{
+	ApplyThemeToAtmosphereAndLightingForWorld(GetWorld());
+}
+
 void AT66GameMode::HandleSettingsChanged()
 {
 	ApplyThemeToDirectionalLights();
+	ApplyThemeToAtmosphereAndLighting();
 }
 
 void AT66GameMode::SpawnPlayerStartIfNeeded()
@@ -3966,6 +4139,26 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 	// Spawn the pawn
 	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(PawnClass, SpawnLocation, SpawnRotation, SpawnParams);
+
+	// Snap the spawned pawn down onto walkable ground at its intended XY.
+	// This avoids bad spawns when the fallback Z is below or above the actual terrain/platform.
+	if (SpawnedPawn)
+	{
+		FHitResult GroundHit;
+		const FVector TraceStart = SpawnLocation + FVector(0.f, 0.f, 5000.f);
+		const FVector TraceEnd = SpawnLocation - FVector(0.f, 0.f, 5000.f);
+		if (GetWorld()->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic) ||
+			GetWorld()->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_Visibility))
+		{
+			float HalfHeight = 88.f;
+			if (const UCapsuleComponent* Capsule = SpawnedPawn->FindComponentByClass<UCapsuleComponent>())
+			{
+				HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+			}
+			const FVector GroundedLoc = GroundHit.ImpactPoint + FVector(0.f, 0.f, HalfHeight + 5.f);
+			SpawnedPawn->SetActorLocation(GroundedLoc, false, nullptr, ETeleportType::TeleportPhysics);
+		}
+	}
 
 	// If it's our hero class, initialize it with hero data and body type
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(SpawnedPawn))

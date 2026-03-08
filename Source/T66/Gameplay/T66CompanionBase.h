@@ -10,7 +10,6 @@
 class UStaticMeshComponent;
 class USceneComponent;
 class USkeletalMeshComponent;
-class UPointLightComponent;
 class UAnimationAsset;
 class UT66HeroSpeedSubsystem;
 
@@ -38,10 +37,6 @@ public:
 	/** Imported skeletal mesh visual (optional; driven by DT_CharacterVisuals). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
-
-	/** Character fill light: soft omnidirectional light for consistent visibility. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lighting")
-	TObjectPtr<UPointLightComponent> CharacterFillLight;
 
 	/** Initialize with data and optional skin (Default if None). VisualID = GetCompanionVisualID(CompanionID, SkinID). */
 	UFUNCTION(BlueprintCallable, Category = "Companion")

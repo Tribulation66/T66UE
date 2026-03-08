@@ -12,7 +12,6 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/PointLightComponent.h"
 #include "Components/WidgetComponent.h"
 #include "UI/T66HeroCooldownBarWidget.h"
 #include "Kismet/GameplayStatics.h"
@@ -41,7 +40,7 @@ AT66HeroBase::AT66HeroBase()
 	// Create spring arm (camera boom)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f; // Distance behind the character
+	CameraBoom->TargetArmLength = 2400.0f;
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // Offset up from center
 	CameraBoom->bUsePawnControlRotation = true; // Rotate arm based on controller (mouse look)
 	CameraBoom->bDoCollisionTest = true; // Pull camera in when hitting walls
@@ -79,16 +78,6 @@ AT66HeroBase::AT66HeroBase()
 		// Scale to reasonable character size (cylinder is 100 units tall by default)
 		PlaceholderMesh->SetRelativeScale3D(FVector(0.5f, 0.5f, 1.0f));
 	}
-
-	// ========== Character Fill Light ==========
-	CharacterFillLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CharacterFillLight"));
-	CharacterFillLight->SetupAttachment(RootComponent);
-	CharacterFillLight->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
-	CharacterFillLight->SetIntensity(0.0f);
-	CharacterFillLight->SetAttenuationRadius(300.f);
-	CharacterFillLight->SetLightColor(FLinearColor(1.f, 0.98f, 0.95f));
-	CharacterFillLight->SetCastShadows(false);
-	CharacterFillLight->SetVisibility(false);
 
 	// ========== Combat range ring (visual) ==========
 	AttackRangeRingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("AttackRangeRingISM"));
@@ -172,14 +161,16 @@ AT66HeroBase::AT66HeroBase()
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
 		Movement->MaxWalkSpeed = 1200.f;
-		Movement->BrakingDecelerationWalking = 2048.f;
-		Movement->JumpZVelocity = 500.f;
-		Movement->AirControl = 0.35f;
-		Movement->GravityScale = 1.5f;
+		Movement->MaxAcceleration = 99999.f;
+		Movement->BrakingDecelerationWalking = 99999.f;
+		Movement->GroundFriction = 8.f;
+		Movement->BrakingFrictionFactor = 2.f;
+		Movement->JumpZVelocity = 1400.f;
+		Movement->AirControl = 0.65f;
+		Movement->GravityScale = 2.5f;
 		
-		// Don't rotate character to match controller - only camera rotates
-		Movement->bOrientRotationToMovement = true; // Character rotates to face movement direction
-		Movement->RotationRate = FRotator(0.f, 540.f, 0.f);
+		Movement->bOrientRotationToMovement = true;
+		Movement->RotationRate = FRotator(0.f, 99999.f, 0.f);
 	}
 
 	// Double jump
@@ -251,12 +242,6 @@ void AT66HeroBase::BeginPlay()
 	if (PlaceholderMesh && PlaceholderMesh->GetMaterial(0))
 	{
 		PlaceholderMaterial = PlaceholderMesh->CreateAndSetMaterialInstanceDynamic(0);
-	}
-
-	// Touch damage: overlap with enemy applies 1 heart (RunState handles i-frames)
-	if (GetCapsuleComponent() && !bIsPreviewMode)
-	{
-		GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AT66HeroBase::OnCapsuleBeginOverlap);
 	}
 
 	// Debug: Log camera status
@@ -361,19 +346,6 @@ void AT66HeroBase::RefreshAttackRangeRing()
 	UpdateAttackRangeRing();
 }
 
-void AT66HeroBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (bIsPreviewMode || !OtherActor) return;
-	if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(OtherActor))
-	{
-		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-		if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
-		{
-			RunState->ApplyDamage(20);
-		}
-	}
-}
 
 void AT66HeroBase::Tick(float DeltaSeconds)
 {
@@ -394,7 +366,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		}
 	}
 
-	// Hero speed: ramp from input (10% of max per second); drive MaxWalkSpeed and animation state.
+	// Hero speed: instant max when moving, 0 when idle; drive MaxWalkSpeed and animation state.
 	if (!bIsPreviewMode)
 	{
 		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
@@ -501,12 +473,6 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 			}
 			if (ClosestEnemy && !IsInSafeZone())
 			{
-				if (Now - LastEnemyTouchDamageTime >= EnemyTouchDamageCooldown)
-				{
-					LastEnemyTouchDamageTime = Now;
-					const int32 DamageHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ClosestEnemy->TouchDamageHearts) * RunState->GetMaxHP() / 5.f));
-					RunState->ApplyDamage(DamageHP, ClosestEnemy);
-				}
 				if (Now - LastEnemyBounceTime >= EnemyBounceCooldown)
 				{
 					LastEnemyBounceTime = Now;
@@ -532,11 +498,6 @@ void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		CachedRunState->SurvivalChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 		CachedRunState->InventoryChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 		CachedRunState->PanelVisibilityChanged.RemoveDynamic(this, &AT66HeroBase::HandleHUDPanelVisibilityChanged);
-	}
-
-	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
-	{
-		Capsule->OnComponentBeginOverlap.RemoveDynamic(this, &AT66HeroBase::OnCapsuleBeginOverlap);
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -615,6 +576,21 @@ void AT66HeroBase::UpdateAttackRangeRing()
 	if (LongRangeRingISM)  { LongRangeRingISM->SetHiddenInGame(false, true);  LongRangeRingISM->SetVisibility(true, true); }
 }
 
+void AT66HeroBase::OnJumped_Implementation()
+{
+	Super::OnJumped_Implementation();
+	if (JumpCurrentCount > 1)
+	{
+		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+		{
+			FVector Vel = Movement->Velocity;
+			if (Vel.Z < 0.f)
+				Vel.Z = 0.f;
+			Movement->Velocity = Vel;
+		}
+	}
+}
+
 void AT66HeroBase::ApplyStageSlide(float DurationSeconds)
 {
 	if (DurationSeconds <= 0.f) return;
@@ -690,6 +666,11 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 				CachedWalkAnim = WalkRaw;
 				CachedJumpAnim = JumpRaw;
 				CachedIdleAnim = IdleRaw;
+				// Arthur (Hero_1): no jump animation -- walk anim plays while airborne.
+				if (InHeroData.HeroID == FName(TEXT("Hero_1")))
+				{
+					CachedJumpAnim = nullptr;
+				}
 				// Force first Tick to play idle (speed 0); if we left Idle we wouldn't call PlayAnimation.
 				LastMovementAnimState = EMovementAnimState::Walk;
 				if (UT66HeroSpeedSubsystem* SpeedSub = GI->GetSubsystem<UT66HeroSpeedSubsystem>())

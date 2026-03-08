@@ -12,7 +12,6 @@ class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UInstancedStaticMeshComponent;
-class UPointLightComponent;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
 class UWidgetComponent;
@@ -99,11 +98,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UWidgetComponent> CooldownBarWidgetComponent;
 
-	/** Character fill light: soft omnidirectional light attached to the character
-	 *  so it's always visible regardless of scene lighting (no Lumen dependency). */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lighting")
-	TObjectPtr<UPointLightComponent> CharacterFillLight;
-
 	// ========== Future FBX Support ==========
 	// When ready for production models:
 	// - Add SkeletalMeshComponent here
@@ -162,17 +156,13 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Landed(const FHitResult& Hit) override;
+	virtual void OnJumped_Implementation() override;
 
 	UFUNCTION()
 	void HandleHeroDerivedStatsChanged();
 
 	UFUNCTION()
 	void HandleHUDPanelVisibilityChanged();
-
-	/** Touch damage: when enemy overlaps capsule, apply 1 heart damage (RunState i-frames apply) */
-	UFUNCTION()
-	void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 private:
 
@@ -230,7 +220,7 @@ private:
 	// Stage slide tuning/state
 	float BaseGroundFriction = 8.f;
 	float BaseBrakingFrictionFactor = 2.f;
-	float BaseBrakingDecelerationWalking = 2048.f;
+	float BaseBrakingDecelerationWalking = 99999.f;
 	float StageSlideSecondsRemaining = 0.f;
 
 	/** Sky-drop entrance: hero falls from altitude; input disabled until landing. */
