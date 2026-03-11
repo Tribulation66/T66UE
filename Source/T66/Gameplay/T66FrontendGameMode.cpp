@@ -274,7 +274,13 @@ void AT66FrontendGameMode::BeginPlay()
 		const FVector PreviewOrigin(100000.f, 0.f, 0.f);
 
 		bool bHasPreviewStage = false;
-		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It) { bHasPreviewStage = true; break; }
+		for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+		{
+			bHasPreviewStage = true;
+			It->SetActorLocation(PreviewOrigin);
+			It->ResetFramingCache();
+			break;
+		}
 		if (!bHasPreviewStage)
 		{
 			World->SpawnActor<AT66HeroPreviewStage>(
@@ -287,7 +293,13 @@ void AT66FrontendGameMode::BeginPlay()
 		}
 
 		bool bHasCompanionPreview = false;
-		for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It) { bHasCompanionPreview = true; break; }
+		for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
+		{
+			bHasCompanionPreview = true;
+			It->SetActorLocation(PreviewOrigin);
+			It->ResetFramingCache();
+			break;
+		}
 		if (!bHasCompanionPreview)
 		{
 			AT66CompanionPreviewStage* CompStage = World->SpawnActor<AT66CompanionPreviewStage>(

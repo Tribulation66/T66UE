@@ -94,6 +94,9 @@ public:
 	/** Wheel spin: show HUD animation + award gold (no overlay). */
 	void StartWheelSpin(ET66Rarity WheelRarity);
 
+	/** Crate open: show CS:GO-style item reveal overlay. */
+	void StartCrateOpen();
+
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;

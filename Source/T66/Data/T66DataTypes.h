@@ -8,6 +8,7 @@
 
 class AActor;
 class USkeletalMesh;
+class UStaticMesh;
 class UAnimationAsset;
 class UTexture2D;
 
@@ -1428,4 +1429,32 @@ struct T66_API FSkinData : public FTableRowBase
 		, bIsEquipped(false)
 		, bIsDefault(false)
 	{}
+};
+
+/** Row for DT_Props: defines one scatter-able prop type. */
+USTRUCT(BlueprintType)
+struct T66_API FT66PropRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	int32 CountMin = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	int32 CountMax = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	FVector ScaleMin = FVector(0.8f, 0.8f, 0.8f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	FVector ScaleMax = FVector(1.2f, 1.2f, 1.2f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	bool bRandomYawRotation = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	float MinDistanceBetween = 600.f;
 };

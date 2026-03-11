@@ -34,6 +34,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interactable")
 	bool bConsumed = false;
 
+	/** Per-rarity imported mesh overrides. If populated, TryApplyImportedMesh() picks by current Rarity. */
+	UPROPERTY(EditDefaultsOnly, Category = "Interactable|Meshes")
+	TMap<ET66Rarity, TSoftObjectPtr<UStaticMesh>> RarityMeshes;
+
+	/** Single imported mesh for interactables that don't use rarity variants. */
+	UPROPERTY(EditDefaultsOnly, Category = "Interactable|Meshes")
+	TSoftObjectPtr<UStaticMesh> SingleMesh;
+
 	/** Assign rarity and refresh visuals. */
 	void SetRarity(ET66Rarity InRarity);
 
@@ -42,5 +50,9 @@ public:
 
 protected:
 	virtual void ApplyRarityVisuals();
+
+	/** Load & apply the appropriate imported mesh (rarity-specific or single).
+	 *  Returns true if a mesh was applied; false means subclass should fall back to primitives. */
+	bool TryApplyImportedMesh();
 };
 

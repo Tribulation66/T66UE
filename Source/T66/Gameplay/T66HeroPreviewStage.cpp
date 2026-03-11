@@ -382,3 +382,8 @@ void AT66HeroPreviewStage::SetStageVisible(bool bVisible)
 	if (PreviewPawn) PreviewPawn->SetActorHiddenInGame(!bVisible);
 	if (PreviewCompanionPawn) PreviewCompanionPawn->SetActorHiddenInGame(!bVisible);
 }
+
+void AT66HeroPreviewStage::ResetFramingCache()
+{
+	bHasOrbitFrame = false;
+}

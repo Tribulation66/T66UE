@@ -119,6 +119,9 @@ public:
 	/** Wheel spin: play HUD animation + award gold (no overlay). */
 	void StartWheelSpinHUD(ET66Rarity Rarity);
 
+	/** Crate open: play CS:GO-style item reveal HUD animation. */
+	void StartCrateOpenHUD();
+
 	/** Loot proximity: HUD prompt + accept/reject input. */
 	void SetNearbyLootBag(AT66LootBagPickup* LootBag);
 	void ClearNearbyLootBag(AT66LootBagPickup* LootBag);

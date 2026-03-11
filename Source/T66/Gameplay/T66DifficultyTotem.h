@@ -30,9 +30,5 @@ private:
 	/** Extra stacked visual segments (do not affect collision/interaction). */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UStaticMeshComponent>> StackedVisualSegments;
-
-	/** Optional imported totem mesh (if null/unloaded, uses cube). */
-	UPROPERTY(EditDefaultsOnly, Category = "Visuals")
-	TSoftObjectPtr<UStaticMesh> TotemMeshOverride;
 };
 

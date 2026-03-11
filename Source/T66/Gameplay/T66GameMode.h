@@ -282,9 +282,12 @@ private:
 	TObjectPtr<UStaticMesh> CachedCubeMesh;
 
 	UStaticMesh* GetCubeMesh();
+	bool TrySnapActorToTerrain(AActor* Actor) const;
+	void SnapPlayersToTerrain();
 
 	// Floor material soft-load.
 	bool bGroundFloorMaterialLoadRequested = false;
+	bool bTerrainCollisionReady = false;
 
 	// Coliseum: async-load boss classes before spawning.
 	bool bColiseumBossesAsyncLoadInFlight = false;

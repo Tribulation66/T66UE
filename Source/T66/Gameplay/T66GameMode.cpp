@@ -28,6 +28,7 @@
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66CashTruckInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
+#include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66StageBoostGate.h"
 #include "Gameplay/T66StageBoostGoldInteractable.h"
 #include "Gameplay/T66StageBoostLootInteractable.h"
@@ -48,6 +49,7 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
+#include "Core/T66PropSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/AssetManager.h"
@@ -62,6 +64,8 @@
 #include "Components/SkyLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SceneComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
@@ -84,6 +88,8 @@
 #include "ProceduralMeshComponent.h"
 #include "KismetProceduralMeshLibrary.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Landscape.h"
 #include "UI/Style/T66Style.h"
 #include "T66.h"
@@ -322,6 +328,18 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	SpawnCornerHousesAndNPCs();
 	SpawnTricksterAndCowardiceGate();
 	SpawnWorldInteractablesForStage();
+
+	// Scatter decorative props.
+	if (UGameInstance* PropGI = GetGameInstance())
+	{
+		if (UT66PropSubsystem* PropSub = PropGI->GetSubsystem<UT66PropSubsystem>())
+		{
+			UT66GameInstance* T66GI_Props = GetT66GameInstance();
+			const int32 PropSeed = (T66GI_Props && T66GI_Props->RunSeed != 0) ? T66GI_Props->RunSeed : FMath::Rand();
+			PropSub->SpawnPropsForStage(GetWorld(), PropSeed);
+		}
+	}
+
 	SpawnStageEffectTilesForStage();
 	SpawnTutorialIfNeeded();
 
@@ -1830,6 +1848,12 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		}
 	}
 
+	const int32 CountCrates = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->CratesPerStage, Rng) : Rng.RandRange(1, 3);
+	for (int32 i = 0; i < CountCrates; ++i)
+	{
+		SpawnOne(AT66CrateInteractable::StaticClass());
+	}
+
 	for (int32 i = 0; i < CountTotems; ++i)
 	{
 		if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnOne(AT66DifficultyTotem::StaticClass())))
@@ -2153,9 +2177,9 @@ void AT66GameMode::EnsureLevelSetup()
 	SpawnFloorIfNeeded();
 	SpawnColiseumArenaIfNeeded();
 	SpawnTutorialArenaIfNeeded();
-	TryApplyGroundFloorMaterialToAllFloors();
 	SpawnStartAreaWallsIfNeeded();
 	SpawnBossAreaWallsIfNeeded();
+	TryApplyGroundFloorMaterialToAllFloors();
 	SpawnLightingIfNeeded();
 	SpawnPlayerStartIfNeeded();
 }
@@ -2227,6 +2251,28 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 				if (M) Mat = M;
 			}
 			SMC->SetMaterial(0, Mat);
+		}
+	}
+
+	// Also apply to non-StaticMeshActor floor-tagged actors (HISM walls, ProceduralMesh tops/ramps).
+	UMaterialInterface* FallbackMat = GroundFloorMaterials[0].Get();
+	if (FallbackMat)
+	{
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* A = *It;
+			if (!A || Cast<AStaticMeshActor>(A)) continue;
+			if (!T66_HasAnyFloorTag(A)) continue;
+
+			TArray<UMeshComponent*> MeshComps;
+			A->GetComponents<UMeshComponent>(MeshComps);
+			for (UMeshComponent* MC : MeshComps)
+			{
+				if (MC)
+				{
+					MC->SetMaterial(0, FallbackMat);
+				}
+			}
 		}
 	}
 }
@@ -2415,6 +2461,16 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 		return false;
 	};
 
+	// Force synchronous load of ground materials so walls get the same Unlit atlas as platform walls.
+	for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
+	{
+		if (!GroundFloorMaterials[i].IsNull() && !GroundFloorMaterials[i].Get())
+		{
+			GroundFloorMaterials[i].LoadSynchronous();
+		}
+	}
+	UMaterialInterface* FloorMat = (GroundFloorMaterials.Num() > 0) ? GroundFloorMaterials[0].Get() : nullptr;
+
 	// Boss area: right after the boss pillars, inside safe zone. Scaled for 100k map.
 	static constexpr float FloorTopZ = 0.f;
 	static constexpr float WallHeightShort = 80.f;
@@ -2422,7 +2478,6 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 	const float WallZ = FloorTopZ + (WallHeightShort * 0.5f);
 	const float Thick = WallThickness / 100.f;
 	const float Tall = WallHeightShort / 100.f;
-	const FLinearColor Red(0.75f, 0.12f, 0.12f, 1.f);
 
 	const float BoxWestX = 30909.f;
 	const float BoxEastX = 40000.f;
@@ -2448,13 +2503,14 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 		AStaticMeshActor* Wall = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Spec.Location, FRotator::ZeroRotator, SpawnParams);
 		if (!Wall || !Wall->GetStaticMeshComponent()) continue;
 		Wall->Tags.Add(Spec.Tag);
+		Wall->Tags.Add(FName("T66_Floor_Main"));
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Movable);
 		Wall->GetStaticMeshComponent()->SetStaticMesh(CubeMesh);
 		Wall->SetActorScale3D(Spec.Scale);
 		T66_SetStaticMeshActorMobility(Wall, EComponentMobility::Static);
-		if (UMaterialInstanceDynamic* Mat = Wall->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
+		if (FloorMat)
 		{
-			Mat->SetVectorParameterValue(TEXT("BaseColor"), Red);
+			Wall->GetStaticMeshComponent()->SetMaterial(0, FloorMat);
 		}
 		SpawnedSetupActors.Add(Wall);
 	}
@@ -2625,8 +2681,97 @@ static uint64 T66MakeBoundaryKey(int32 A, int32 B)
 	return (static_cast<uint64>(Low) << 32) | static_cast<uint64>(High);
 }
 
-static void AddWallInstance(
-	UHierarchicalInstancedStaticMeshComponent* HISM,
+static void T66ConfigureTerrainCollisionComponent(UPrimitiveComponent* Component)
+{
+	if (!Component) return;
+
+	Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Component->SetCollisionObjectType(ECC_WorldStatic);
+	Component->SetCollisionResponseToAllChannels(ECR_Block);
+	Component->SetGenerateOverlapEvents(false);
+	Component->SetCanEverAffectNavigation(false);
+	Component->SetVisibility(false, true);
+	Component->SetHiddenInGame(true, true);
+}
+
+static bool T66BuildRampCollisionTransform(
+	const FT66ProceduralMapResult& MapData,
+	const FT66RampEdge& Edge,
+	float Thickness,
+	FTransform& OutTransform,
+	FVector& OutBoxExtent)
+{
+	if (!MapData.Platforms.IsValidIndex(Edge.LowerIndex) || !MapData.Platforms.IsValidIndex(Edge.HigherIndex))
+	{
+		return false;
+	}
+
+	const FT66PlatformNode& Lo = MapData.Platforms[Edge.LowerIndex];
+	const FT66PlatformNode& Hi = MapData.Platforms[Edge.HigherIndex];
+	const float HeightDiff = Hi.TopZ - Lo.TopZ;
+	if (HeightDiff <= KINDA_SMALL_NUMBER || Edge.Depth <= KINDA_SMALL_NUMBER || Edge.Width <= KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	FVector RampPos = FVector::ZeroVector;
+	FQuat RampYaw = FQuat::Identity;
+	if (Edge.bAlongX)
+	{
+		const bool bHigherRight = (Hi.Position.X > Lo.Position.X);
+		const float BoundaryX = (Lo.Position.X + Hi.Position.X) * 0.5f;
+		const float CenterX = bHigherRight ? (BoundaryX - Edge.Depth * 0.5f) : (BoundaryX + Edge.Depth * 0.5f);
+		const float CenterY = (Lo.Position.Y + Hi.Position.Y) * 0.5f + Edge.PerpOffset;
+		RampPos = FVector(CenterX, CenterY, Lo.TopZ + HeightDiff * 0.5f);
+		RampYaw = FQuat(FRotator(0.f, bHigherRight ? 0.f : 180.f, 0.f));
+	}
+	else
+	{
+		const bool bHigherUp = (Hi.Position.Y > Lo.Position.Y);
+		const float BoundaryY = (Lo.Position.Y + Hi.Position.Y) * 0.5f;
+		const float CenterY = bHigherUp ? (BoundaryY - Edge.Depth * 0.5f) : (BoundaryY + Edge.Depth * 0.5f);
+		const float CenterX = (Lo.Position.X + Hi.Position.X) * 0.5f + Edge.PerpOffset;
+		RampPos = FVector(CenterX, CenterY, Lo.TopZ + HeightDiff * 0.5f);
+		RampYaw = FQuat(FRotator(0.f, bHigherUp ? 90.f : -90.f, 0.f));
+	}
+
+	const FVector HorizontalDir = RampYaw.GetForwardVector();
+	const FVector SideDir = RampYaw.GetRightVector();
+	const FVector Tangent = (HorizontalDir * Edge.Depth + FVector::UpVector * HeightDiff).GetSafeNormal();
+	FVector Normal = FVector::CrossProduct(Tangent, SideDir).GetSafeNormal();
+	if (Normal.Z < 0.f)
+	{
+		Normal *= -1.f;
+	}
+
+	const float SurfaceLength = FMath::Sqrt(FMath::Square(Edge.Depth) + FMath::Square(HeightDiff));
+	OutTransform = FTransform(
+		FRotationMatrix::MakeFromXZ(Tangent, Normal).ToQuat(),
+		RampPos - Normal * (Thickness * 0.5f));
+	OutBoxExtent = FVector(
+		SurfaceLength * 0.5f + 40.f,
+		Edge.Width * 0.5f + 30.f,
+		Thickness * 0.5f);
+	return true;
+}
+
+static void AppendBoxFace(
+	TArray<FVector>& V, TArray<int32>& T, TArray<FVector>& N, TArray<FVector2D>& UV,
+	const FVector& V0, const FVector& V1, const FVector& V2, const FVector& V3,
+	const FVector& Normal)
+{
+	const int32 Base = V.Num();
+	V.Add(V0); V.Add(V1); V.Add(V2); V.Add(V3);
+	N.Add(Normal); N.Add(Normal); N.Add(Normal); N.Add(Normal);
+	UV.Add(FVector2D(0, 0)); UV.Add(FVector2D(1, 0));
+	UV.Add(FVector2D(1, 1)); UV.Add(FVector2D(0, 1));
+	T.Add(Base); T.Add(Base + 1); T.Add(Base + 2);
+	T.Add(Base); T.Add(Base + 2); T.Add(Base + 3);
+}
+
+static void AppendWallBox(
+	TArray<FVector>& TopV, TArray<int32>& TopT, TArray<FVector>& TopN, TArray<FVector2D>& TopUV,
+	TArray<FVector>& SideV, TArray<int32>& SideT, TArray<FVector>& SideN, TArray<FVector2D>& SideUV,
 	bool bAlongX,
 	float BoundaryCoord,
 	float CenterPerp,
@@ -2637,40 +2782,57 @@ static void AddWallInstance(
 	float BottomPadding,
 	bool bHighOnPositiveSide)
 {
-	if (!HISM || LengthAlongBoundary <= 1.f || HighTopZ <= LowTopZ + 1.f)
-	{
-		return;
-	}
+	if (LengthAlongBoundary <= 1.f || HighTopZ <= LowTopZ + 1.f) return;
 
 	const float BottomZ = LowTopZ - BottomPadding;
 	const float Height = HighTopZ - BottomZ;
-	if (Height <= 1.f)
-	{
-		return;
-	}
+	if (Height <= 1.f) return;
 
 	const float CenterZ = BottomZ + Height * 0.5f;
-	FVector Loc;
-	FVector Scale;
+	FVector Center;
+	FVector HE;
 
 	if (bAlongX)
 	{
-		Loc = FVector(
+		Center = FVector(
 			BoundaryCoord + (bHighOnPositiveSide ? WallThickness * 0.5f : -WallThickness * 0.5f),
 			CenterPerp,
 			CenterZ);
-		Scale = FVector(WallThickness / 100.f, LengthAlongBoundary / 100.f, Height / 100.f);
+		HE = FVector(WallThickness * 0.5f, LengthAlongBoundary * 0.5f, Height * 0.5f);
 	}
 	else
 	{
-		Loc = FVector(
+		Center = FVector(
 			CenterPerp,
 			BoundaryCoord + (bHighOnPositiveSide ? WallThickness * 0.5f : -WallThickness * 0.5f),
 			CenterZ);
-		Scale = FVector(LengthAlongBoundary / 100.f, WallThickness / 100.f, Height / 100.f);
+		HE = FVector(LengthAlongBoundary * 0.5f, WallThickness * 0.5f, Height * 0.5f);
 	}
 
-	HISM->AddInstance(FTransform(FQuat::Identity, Loc, Scale), false);
+	const FVector C = Center;
+	const float hx = HE.X, hy = HE.Y, hz = HE.Z;
+
+	// Side faces → brown material
+	AppendBoxFace(SideV, SideT, SideN, SideUV,
+		C + FVector(hx, -hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, hy, hz), C + FVector(hx, -hy, hz),
+		FVector(1, 0, 0));
+	AppendBoxFace(SideV, SideT, SideN, SideUV,
+		C + FVector(-hx, hy, -hz), C + FVector(-hx, -hy, -hz), C + FVector(-hx, -hy, hz), C + FVector(-hx, hy, hz),
+		FVector(-1, 0, 0));
+	AppendBoxFace(SideV, SideT, SideN, SideUV,
+		C + FVector(hx, hy, -hz), C + FVector(-hx, hy, -hz), C + FVector(-hx, hy, hz), C + FVector(hx, hy, hz),
+		FVector(0, 1, 0));
+	AppendBoxFace(SideV, SideT, SideN, SideUV,
+		C + FVector(-hx, -hy, -hz), C + FVector(hx, -hy, -hz), C + FVector(hx, -hy, hz), C + FVector(-hx, -hy, hz),
+		FVector(0, -1, 0));
+	AppendBoxFace(SideV, SideT, SideN, SideUV,
+		C + FVector(-hx, hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, -hy, -hz), C + FVector(-hx, -hy, -hz),
+		FVector(0, 0, -1));
+
+	// Top face → ground atlas material
+	AppendBoxFace(TopV, TopT, TopN, TopUV,
+		C + FVector(-hx, -hy, hz), C + FVector(hx, -hy, hz), C + FVector(hx, hy, hz), C + FVector(-hx, hy, hz),
+		FVector(0, 0, 1));
 }
 
 // ---- Unit wedge geometry (100x100x100, slope LOW at -X to HIGH at +X) ----
@@ -2715,52 +2877,93 @@ static const int32 UnitWedgeTris[] = {
 static constexpr int32 WedgeVertCount = 18;
 static constexpr int32 WedgeTriIdxCount = 24;
 
+// Slope face is verts 8-11, tri indices 12-17 in the unit wedge.
+static constexpr int32 WedgeSlopeVertStart = 8;
+static constexpr int32 WedgeSlopeVertEnd   = 12;
+static constexpr int32 WedgeSlopeTriStart  = 12;
+static constexpr int32 WedgeSlopeTriEnd    = 18;
+
 static void AppendTransformedWedge(
-	TArray<FVector>& OutVerts, TArray<int32>& OutTris,
-	TArray<FVector>& OutNormals, TArray<FVector2D>& OutUVs,
+	TArray<FVector>& SlopeV, TArray<int32>& SlopeT, TArray<FVector>& SlopeN, TArray<FVector2D>& SlopeUV,
+	TArray<FVector>& SideV, TArray<int32>& SideT, TArray<FVector>& SideN, TArray<FVector2D>& SideUV,
 	const FVector& Pos, const FQuat& Rot, const FVector& Scale)
 {
 	auto AppendSide = [&](bool bReverse)
 	{
-		const int32 Base = OutVerts.Num();
+		// Transform all verts/normals once, then distribute to slope vs side arrays.
+		TArray<FVector> TransV;
+		TArray<FVector> TransN;
+		TransV.SetNum(WedgeVertCount);
+		TransN.SetNum(WedgeVertCount);
 
 		for (int32 I = 0; I < WedgeVertCount; ++I)
 		{
-			FVector V = UnitWedgeVerts[I] * Scale;
-			OutVerts.Add(Pos + Rot.RotateVector(V));
-
+			TransV[I] = Pos + Rot.RotateVector(UnitWedgeVerts[I] * Scale);
 			const FVector& N = UnitWedgeNormals[I];
 			FVector NScaled(
 				N.X / FMath::Max(Scale.X, 0.001f),
 				N.Y / FMath::Max(Scale.Y, 0.001f),
 				N.Z / FMath::Max(Scale.Z, 0.001f));
-			const FVector FinalNormal = Rot.RotateVector(NScaled).GetSafeNormal() * (bReverse ? -1.f : 1.f);
-			OutNormals.Add(FinalNormal);
-			OutUVs.Add(UnitWedgeUVs[I]);
+			TransN[I] = Rot.RotateVector(NScaled).GetSafeNormal() * (bReverse ? -1.f : 1.f);
 		}
 
-		for (int32 I = 0; I < WedgeTriIdxCount; I += 3)
+		// Slope triangles → FloorMat arrays
 		{
-			const int32 A = Base + UnitWedgeTris[I + 0];
-			const int32 B = Base + UnitWedgeTris[I + 1];
-			const int32 C = Base + UnitWedgeTris[I + 2];
-			if (bReverse)
+			TMap<int32, int32> Remap;
+			for (int32 I = WedgeSlopeTriStart; I < WedgeSlopeTriEnd; I += 3)
 			{
-				OutTris.Add(A);
-				OutTris.Add(C);
-				OutTris.Add(B);
+				int32 Idx[3] = { UnitWedgeTris[I], UnitWedgeTris[I+1], UnitWedgeTris[I+2] };
+				int32 Mapped[3];
+				for (int32 J = 0; J < 3; ++J)
+				{
+					if (int32* Found = Remap.Find(Idx[J]))
+					{
+						Mapped[J] = *Found;
+					}
+					else
+					{
+						Mapped[J] = SlopeV.Num();
+						Remap.Add(Idx[J], Mapped[J]);
+						SlopeV.Add(TransV[Idx[J]]);
+						SlopeN.Add(TransN[Idx[J]]);
+						SlopeUV.Add(UnitWedgeUVs[Idx[J]]);
+					}
+				}
+				if (bReverse) { SlopeT.Add(Mapped[0]); SlopeT.Add(Mapped[2]); SlopeT.Add(Mapped[1]); }
+				else          { SlopeT.Add(Mapped[0]); SlopeT.Add(Mapped[1]); SlopeT.Add(Mapped[2]); }
 			}
-			else
+		}
+
+		// Non-slope triangles → brown side arrays
+		{
+			TMap<int32, int32> Remap;
+			for (int32 I = 0; I < WedgeTriIdxCount; I += 3)
 			{
-				OutTris.Add(A);
-				OutTris.Add(B);
-				OutTris.Add(C);
+				if (I >= WedgeSlopeTriStart && I < WedgeSlopeTriEnd) continue;
+
+				int32 Idx[3] = { UnitWedgeTris[I], UnitWedgeTris[I+1], UnitWedgeTris[I+2] };
+				int32 Mapped[3];
+				for (int32 J = 0; J < 3; ++J)
+				{
+					if (int32* Found = Remap.Find(Idx[J]))
+					{
+						Mapped[J] = *Found;
+					}
+					else
+					{
+						Mapped[J] = SideV.Num();
+						Remap.Add(Idx[J], Mapped[J]);
+						SideV.Add(TransV[Idx[J]]);
+						SideN.Add(TransN[Idx[J]]);
+						SideUV.Add(UnitWedgeUVs[Idx[J]]);
+					}
+				}
+				if (bReverse) { SideT.Add(Mapped[0]); SideT.Add(Mapped[2]); SideT.Add(Mapped[1]); }
+				else          { SideT.Add(Mapped[0]); SideT.Add(Mapped[1]); SideT.Add(Mapped[2]); }
 			}
 		}
 	};
 
-	// Duplicate the wedge with reversed winding/normals so its vertical and sloped faces
-	// remain visible from either side of the ramp opening.
 	AppendSide(false);
 	AppendSide(true);
 }
@@ -2815,6 +3018,8 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		if (It->Tags.Contains(T66MapPlatformTag)) return;
 	}
 
+	bTerrainCollisionReady = false;
+
 	UT66GameInstance* GI = GetT66GameInstance();
 	const ET66MapTheme Theme = GI ? GI->MapTheme : ET66MapTheme::Farm;
 	int32 Seed = GI ? GI->RunSeed : 0;
@@ -2829,7 +3034,18 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
+	// Force synchronous load so FloorMat is never null (avoids engine BasicShapeMaterial on HISM walls).
+	for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
+	{
+		if (!GroundFloorMaterials[i].IsNull() && !GroundFloorMaterials[i].Get())
+		{
+			GroundFloorMaterials[i].LoadSynchronous();
+			UE_LOG(LogTemp, Warning, TEXT("[FloorMat] LoadSynchronous slot %d -> %s"), i,
+				GroundFloorMaterials[i].Get() ? *GroundFloorMaterials[i].Get()->GetPathName() : TEXT("STILL NULL"));
+		}
+	}
 	UMaterialInterface* FloorMat = (GroundFloorMaterials.Num() > 0) ? GroundFloorMaterials[0].Get() : nullptr;
+	UE_LOG(LogTemp, Warning, TEXT("[FloorMat] FloorMat=%s"), FloorMat ? *FloorMat->GetPathName() : TEXT("NULL"));
 
 	FActorSpawnParameters SP;
 	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -2867,27 +3083,28 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(TopVerts, TopTris, TopUVs, TopNormals, TopTangents);
 	TopPMC->CreateMeshSection_LinearColor(0, TopVerts, TopTris, TopNormals, TopUVs, EmptyColors, TopTangents, true);
 	if (FloorMat) TopPMC->SetMaterial(0, FloorMat);
-	TopPMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	TopPMC->SetCollisionResponseToAllChannels(ECR_Block);
+	TopPMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TopPMC->RegisterComponent();
 
-	// --- Local walls stay instanced for performance ---
-	AActor* WallActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
-	if (!WallActor) return;
-	WallActor->Tags.Add(T66MapPlatformTag);
-	WallActor->Tags.Add(T66FloorMainTag);
-
-	UHierarchicalInstancedStaticMeshComponent* WallHISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(WallActor, TEXT("PlatformWalls"));
-	WallActor->SetRootComponent(WallHISM);
-	WallHISM->SetStaticMesh(CubeMesh);
-	if (FloorMat) WallHISM->SetMaterial(0, FloorMat);
-	WallHISM->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	WallHISM->SetCollisionResponseToAllChannels(ECR_Block);
-	WallHISM->SetMobility(EComponentMobility::Static);
-	WallHISM->NumCustomDataFloats = 0;
-
+	// --- Wall sides as procedural mesh (same approach as tops/ramps — no engine default material) ---
 	const float WallThickness = FMath::Clamp(Preset.SurfaceThickness, 60.f, 140.f);
 	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
+
+	// Brown side material: Unlit solid color for wall sides and ramp undersides.
+	UMaterialInstanceDynamic* BrownSideMat = nullptr;
+	{
+		UMaterialInterface* EnvUnlit = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+		if (EnvUnlit)
+		{
+			BrownSideMat = UMaterialInstanceDynamic::Create(EnvUnlit, GetTransientPackage());
+			BrownSideMat->SetVectorParameterValue(FName("Tint"), FLinearColor(0.35f, 0.2f, 0.08f, 1.f));
+		}
+	}
+
+	TArray<FVector> WallTopV, WallSideV;
+	TArray<int32> WallTopT, WallSideT;
+	TArray<FVector> WallTopN, WallSideN;
+	TArray<FVector2D> WallTopUV, WallSideUV;
 
 	for (int32 R = 0; R < GridSize; ++R)
 	{
@@ -2921,8 +3138,9 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				const FT66RampEdge* Ramp = RampLookup.FindRef(T66MakeBoundaryKey(Idx, OtherIdx));
 				if (!Ramp)
 				{
-					AddWallInstance(
-						WallHISM,
+					AppendWallBox(
+						WallTopV, WallTopT, WallTopN, WallTopUV,
+						WallSideV, WallSideT, WallSideN, WallSideUV,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase,
@@ -2942,8 +3160,9 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				const float LeftLen = OpenStart + HalfCell;
 				if (LeftLen > 1.f)
 				{
-					AddWallInstance(
-						WallHISM,
+					AppendWallBox(
+						WallTopV, WallTopT, WallTopN, WallTopUV,
+						WallSideV, WallSideT, WallSideN, WallSideUV,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase + (-HalfCell + OpenStart) * 0.5f,
@@ -2958,8 +3177,9 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				const float RightLen = HalfCell - OpenEnd;
 				if (RightLen > 1.f)
 				{
-					AddWallInstance(
-						WallHISM,
+					AppendWallBox(
+						WallTopV, WallTopT, WallTopN, WallTopUV,
+						WallSideV, WallSideT, WallSideN, WallSideUV,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase + (OpenEnd + HalfCell) * 0.5f,
@@ -2979,15 +3199,44 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		}
 	}
 
-	WallHISM->RegisterComponent();
+	if (WallTopV.Num() > 0 || WallSideV.Num() > 0)
+	{
+		AActor* WallActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
+		if (WallActor)
+		{
+			WallActor->Tags.Add(T66MapPlatformTag);
+			WallActor->Tags.Add(T66FloorMainTag);
 
-	// --- Ramps: batch variable wedges into one ProceduralMeshComponent ---
+			UProceduralMeshComponent* WallPMC = NewObject<UProceduralMeshComponent>(WallActor, TEXT("PlatformWalls"));
+			WallActor->SetRootComponent(WallPMC);
+
+			if (WallTopV.Num() > 0)
+			{
+				TArray<FProcMeshTangent> Tan;
+				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(WallTopV, WallTopT, WallTopUV, WallTopN, Tan);
+				WallPMC->CreateMeshSection_LinearColor(0, WallTopV, WallTopT, WallTopN, WallTopUV, EmptyColors, Tan, true);
+				if (FloorMat) WallPMC->SetMaterial(0, FloorMat);
+			}
+			if (WallSideV.Num() > 0)
+			{
+				TArray<FProcMeshTangent> Tan;
+				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(WallSideV, WallSideT, WallSideUV, WallSideN, Tan);
+				WallPMC->CreateMeshSection_LinearColor(1, WallSideV, WallSideT, WallSideN, WallSideUV, EmptyColors, Tan, true);
+				if (BrownSideMat) WallPMC->SetMaterial(1, BrownSideMat);
+			}
+
+			WallPMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			WallPMC->RegisterComponent();
+		}
+	}
+
+	// --- Ramps: slope surface (FloorMat) + sides/underside (brown) ---
 	const float MinRampHeight = 50.f;
 
-	TArray<FVector> AllVerts;
-	TArray<int32> AllTris;
-	TArray<FVector> AllNormals;
-	TArray<FVector2D> AllUVs;
+	TArray<FVector> RampSlopeV, RampSideV;
+	TArray<int32> RampSlopeT, RampSideT;
+	TArray<FVector> RampSlopeN, RampSideN;
+	TArray<FVector2D> RampSlopeUV, RampSideUV;
 
 	int32 RampCount = 0;
 	for (const FT66RampEdge& Edge : MapData.Ramps)
@@ -3020,7 +3269,10 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		}
 
 		const FVector RampScale(Edge.Depth / 100.f, Edge.Width / 100.f, HeightDiff / 100.f);
-		AppendTransformedWedge(AllVerts, AllTris, AllNormals, AllUVs, RampPos, RampRot, RampScale);
+		AppendTransformedWedge(
+			RampSlopeV, RampSlopeT, RampSlopeN, RampSlopeUV,
+			RampSideV, RampSideT, RampSideN, RampSideUV,
+			RampPos, RampRot, RampScale);
 		++RampCount;
 	}
 
@@ -3034,14 +3286,81 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 
 			UProceduralMeshComponent* PMC = NewObject<UProceduralMeshComponent>(RampActor, TEXT("Ramps"));
 			RampActor->SetRootComponent(PMC);
-			TArray<FProcMeshTangent> Tangents;
-			UKismetProceduralMeshLibrary::CalculateTangentsForMesh(AllVerts, AllTris, AllUVs, AllNormals, Tangents);
-			PMC->CreateMeshSection_LinearColor(0, AllVerts, AllTris, AllNormals, AllUVs, EmptyColors, Tangents, true);
-			if (FloorMat) PMC->SetMaterial(0, FloorMat);
-			PMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			PMC->SetCollisionResponseToAllChannels(ECR_Block);
+
+			if (RampSlopeV.Num() > 0)
+			{
+				TArray<FProcMeshTangent> Tan;
+				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(RampSlopeV, RampSlopeT, RampSlopeUV, RampSlopeN, Tan);
+				PMC->CreateMeshSection_LinearColor(0, RampSlopeV, RampSlopeT, RampSlopeN, RampSlopeUV, EmptyColors, Tan, true);
+				if (FloorMat) PMC->SetMaterial(0, FloorMat);
+			}
+			if (RampSideV.Num() > 0)
+			{
+				TArray<FProcMeshTangent> Tan;
+				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(RampSideV, RampSideT, RampSideUV, RampSideN, Tan);
+				PMC->CreateMeshSection_LinearColor(1, RampSideV, RampSideT, RampSideN, RampSideUV, EmptyColors, Tan, true);
+				if (BrownSideMat) PMC->SetMaterial(1, BrownSideMat);
+			}
+
+			PMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			PMC->RegisterComponent();
 		}
+	}
+
+	bool bBuiltCollisionLayer = false;
+	AActor* CollisionActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
+	if (CollisionActor)
+	{
+		bBuiltCollisionLayer = true;
+		CollisionActor->Tags.Add(T66FloorMainTag);
+		CollisionActor->SetActorHiddenInGame(true);
+
+		USceneComponent* CollisionRoot = NewObject<USceneComponent>(CollisionActor, TEXT("TerrainCollisionRoot"));
+		CollisionActor->AddInstanceComponent(CollisionRoot);
+		CollisionActor->SetRootComponent(CollisionRoot);
+		CollisionRoot->RegisterComponent();
+
+		const float PlatformCollisionThickness = FMath::Max(Preset.SurfaceThickness + 240.f, 600.f);
+		for (int32 Index = 0; Index < MapData.Platforms.Num(); ++Index)
+		{
+			const FT66PlatformNode& P = MapData.Platforms[Index];
+			UBoxComponent* Box = NewObject<UBoxComponent>(CollisionActor, *FString::Printf(TEXT("PlatformCollision_%d"), Index));
+			CollisionActor->AddInstanceComponent(Box);
+			Box->SetupAttachment(CollisionRoot);
+			Box->SetRelativeLocation(FVector(P.Position, P.TopZ - PlatformCollisionThickness * 0.5f));
+			Box->SetBoxExtent(FVector(P.SizeX * 0.5f, P.SizeY * 0.5f, PlatformCollisionThickness * 0.5f));
+			T66ConfigureTerrainCollisionComponent(Box);
+			Box->RegisterComponent();
+		}
+
+		const float RampCollisionThickness = FMath::Clamp(Preset.SurfaceThickness, 80.f, 140.f);
+		for (int32 Index = 0; Index < MapData.Ramps.Num(); ++Index)
+		{
+			FTransform RampTransform;
+			FVector RampExtent = FVector::ZeroVector;
+			if (!T66BuildRampCollisionTransform(MapData, MapData.Ramps[Index], RampCollisionThickness, RampTransform, RampExtent))
+			{
+				continue;
+			}
+
+			UBoxComponent* Box = NewObject<UBoxComponent>(CollisionActor, *FString::Printf(TEXT("RampCollision_%d"), Index));
+			CollisionActor->AddInstanceComponent(Box);
+			Box->SetupAttachment(CollisionRoot);
+			Box->SetRelativeTransform(RampTransform);
+			Box->SetBoxExtent(RampExtent);
+			T66ConfigureTerrainCollisionComponent(Box);
+			Box->RegisterComponent();
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[MAP] Failed to spawn terrain collision actor; floor collision will be missing."));
+	}
+
+	bTerrainCollisionReady = bBuiltCollisionLayer;
+	if (bTerrainCollisionReady)
+	{
+		SnapPlayersToTerrain();
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[MAP] Procedural map spawned: %d platforms, %d ramps (theme=%d, seed=%d, cell=%.0f)"),
@@ -3956,10 +4275,87 @@ UT66GameInstance* AT66GameMode::GetT66GameInstance() const
 	return Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 }
 
+bool AT66GameMode::TrySnapActorToTerrain(AActor* Actor) const
+{
+	UWorld* World = GetWorld();
+	if (!World || !Actor)
+	{
+		return false;
+	}
+
+	FHitResult GroundHit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(T66SnapActorToTerrain), false, Actor);
+	const FVector ActorLoc = Actor->GetActorLocation();
+	const FVector TraceStart = ActorLoc + FVector(0.f, 0.f, 8000.f);
+	const FVector TraceEnd = ActorLoc - FVector(0.f, 0.f, 16000.f);
+	if (!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, Params) &&
+		!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_Visibility, Params))
+	{
+		return false;
+	}
+
+	float HalfHeight = 0.f;
+	if (const UCapsuleComponent* Capsule = Actor->FindComponentByClass<UCapsuleComponent>())
+	{
+		HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+	}
+
+	const FVector GroundedLoc = GroundHit.ImpactPoint + FVector(0.f, 0.f, HalfHeight + 5.f);
+	Actor->SetActorLocation(GroundedLoc, false, nullptr, ETeleportType::TeleportPhysics);
+	return true;
+}
+
+void AT66GameMode::SnapPlayersToTerrain()
+{
+	UWorld* World = GetWorld();
+	if (!World || !bTerrainCollisionReady)
+	{
+		return;
+	}
+
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+		if (!Pawn)
+		{
+			continue;
+		}
+
+		const bool bSnapped = TrySnapActorToTerrain(Pawn);
+		if (!bSnapped)
+		{
+			continue;
+		}
+
+		if (ACharacter* Character = Cast<ACharacter>(Pawn))
+		{
+			if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+			{
+				Movement->StopMovementImmediately();
+				if (Movement->MovementMode == MOVE_None)
+				{
+					Movement->SetMovementMode(MOVE_Walking);
+				}
+			}
+		}
+	}
+}
+
 void AT66GameMode::RegenerateMap(ET66MapTheme Theme, int32 Seed)
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66PropSubsystem* PropSub = GI->GetSubsystem<UT66PropSubsystem>())
+		{
+			PropSub->ClearProps();
+		}
+	}
+
+	bTerrainCollisionReady = false;
 
 	DestroyActorsWithTag(World, T66MapPlatformTag);
 	DestroyActorsWithTag(World, T66MapRampTag);
@@ -4140,23 +4536,23 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// Spawn the pawn
 	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(PawnClass, SpawnLocation, SpawnRotation, SpawnParams);
 
-	// Snap the spawned pawn down onto walkable ground at its intended XY.
-	// This avoids bad spawns when the fallback Z is below or above the actual terrain/platform.
 	if (SpawnedPawn)
 	{
-		FHitResult GroundHit;
-		const FVector TraceStart = SpawnLocation + FVector(0.f, 0.f, 5000.f);
-		const FVector TraceEnd = SpawnLocation - FVector(0.f, 0.f, 5000.f);
-		if (GetWorld()->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic) ||
-			GetWorld()->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_Visibility))
+		const bool bNeedsProceduralTerrain = !IsLabLevel() && !IsColiseumStage();
+		if (bTerrainCollisionReady)
 		{
-			float HalfHeight = 88.f;
-			if (const UCapsuleComponent* Capsule = SpawnedPawn->FindComponentByClass<UCapsuleComponent>())
+			TrySnapActorToTerrain(SpawnedPawn);
+		}
+		else if (bNeedsProceduralTerrain)
+		{
+			if (ACharacter* Character = Cast<ACharacter>(SpawnedPawn))
 			{
-				HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+				if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->SetMovementMode(MOVE_None);
+				}
 			}
-			const FVector GroundedLoc = GroundHit.ImpactPoint + FVector(0.f, 0.f, HalfHeight + 5.f);
-			SpawnedPawn->SetActorLocation(GroundedLoc, false, nullptr, ETeleportType::TeleportPhysics);
 		}
 	}
 
@@ -4330,6 +4726,8 @@ AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 		ClassToSpawn = AT66WheelSpinInteractable::StaticClass();
 	else if (InteractableID == FName(TEXT("IdolAltar")))
 		ClassToSpawn = AT66IdolAltar::StaticClass();
+	else if (InteractableID == FName(TEXT("Crate")))
+		ClassToSpawn = AT66CrateInteractable::StaticClass();
 	if (!ClassToSpawn) return nullptr;
 
 	FActorSpawnParameters SpawnParams;

@@ -57,65 +57,26 @@ AT66CashTruckInteractable::AT66CashTruckInteractable()
 		}
 	}
 
-	ApplyRarityVisuals();
+	RarityMeshes.Add(ET66Rarity::Black, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/Black/ChestBlack.ChestBlack"))));
+	RarityMeshes.Add(ET66Rarity::Red, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/Red/ChestRed.ChestRed"))));
+	RarityMeshes.Add(ET66Rarity::Yellow, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/Yellow/ChestYellow.ChestYellow"))));
+	RarityMeshes.Add(ET66Rarity::White, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/White/ChestWhite.ChestWhite"))));
 
-	// Default expected import locations (safe if missing).
-	// Note: per-color subfolders avoid material/texture name collisions (Material_001, Image_0...).
-	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/Black/SM_CashTruck_Black.SM_CashTruck_Black")));
-	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/Red/SM_CashTruck_Red.SM_CashTruck_Red")));
-	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/Yellow/SM_CashTruck_Yellow.SM_CashTruck_Yellow")));
-	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trucks/White/SM_CashTruck_White.SM_CashTruck_White")));
+	ApplyRarityVisuals();
 }
 
 void AT66CashTruckInteractable::ApplyRarityVisuals()
 {
-	auto PickMesh = [&]() -> const TSoftObjectPtr<UStaticMesh>&
+	if (TryApplyImportedMesh())
 	{
-		switch (Rarity)
-		{
-			case ET66Rarity::Black: return MeshBlack;
-			case ET66Rarity::Red: return MeshRed;
-			case ET66Rarity::Yellow: return MeshYellow;
-			case ET66Rarity::White: return MeshWhite;
-			default: return MeshBlack;
-		}
-	};
-
-	UStaticMesh* M = nullptr;
-	const TSoftObjectPtr<UStaticMesh>& Ptr = PickMesh();
-	if (!Ptr.IsNull())
-	{
-		M = Ptr.Get();
-		if (!M)
-		{
-			M = Ptr.LoadSynchronous();
-		}
-	}
-
-	if (M && VisualMesh)
-	{
-		// Ensure we don't keep any placeholder tint material from a prior fallback.
-		VisualMesh->EmptyOverrideMaterials();
-		VisualMesh->SetStaticMesh(M);
-		VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
-		VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
-		// Ground to actor origin using bounds (handles pivots already at the base).
-		const FBoxSphereBounds B = M->GetBounds();
-		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z);
-		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ));
-
-		// Hide placeholder wheels (imported mesh usually includes them).
 		for (UStaticMeshComponent* W : WheelMeshes)
 		{
 			if (W) W->SetVisibility(false, true);
 		}
 		return;
 	}
-
-	// Make rarity obvious: tint the truck body.
 	const FLinearColor BodyC = bIsMimic ? FLinearColor(0.35f, 0.10f, 0.55f, 1.f) : FT66RarityUtil::GetRarityColor(Rarity);
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, BodyC);
-
 	const FLinearColor WheelC = bIsMimic ? FLinearColor(0.05f, 0.05f, 0.05f, 1.f) : FLinearColor(0.15f, 0.15f, 0.18f, 1.f);
 	for (UStaticMeshComponent* W : WheelMeshes)
 	{

@@ -27,19 +27,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truck")
 	bool bIsMimic = false;
 
-	/** Optional rarity meshes (when imported). If null/unloaded, we fall back to primitive shapes. */
-	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshBlack;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshRed;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshYellow;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Truck|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshWhite;
-
 	virtual bool Interact(APlayerController* PC) override;
 
 	/** Luck multiplier from items (multiplies spawn quantity/rarity for chests). */

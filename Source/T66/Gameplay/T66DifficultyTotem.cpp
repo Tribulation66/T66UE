@@ -22,25 +22,14 @@ AT66DifficultyTotem::AT66DifficultyTotem()
 		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	}
 
-	// Default expected import location (safe if missing).
-	TotemMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/SM_DifficultyTotem.SM_DifficultyTotem")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Totem.Totem")));
 }
 
 void AT66DifficultyTotem::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Swap to imported mesh if present (and keep scale consistent for stacking).
-	if (VisualMesh && !TotemMeshOverride.IsNull())
-	{
-		if (UStaticMesh* M = TotemMeshOverride.LoadSynchronous())
-		{
-			// Ensure we don't keep any placeholder tint material from a prior fallback.
-			VisualMesh->EmptyOverrideMaterials();
-			VisualMesh->SetStaticMesh(M);
-			VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
-		}
-	}
+	TryApplyImportedMesh();
 
 	// Ensure newly spawned totems match current run interaction growth.
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);

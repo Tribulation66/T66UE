@@ -31,9 +31,11 @@
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
+#include "UI/T66CrateOverlayWidget.h"
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Gameplay/T66CashTruckInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
+#include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66StageBoostGate.h"
 #include "Gameplay/T66StageBoostGoldInteractable.h"
 #include "Gameplay/T66StageBoostLootInteractable.h"
@@ -1134,6 +1136,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66TreeOfLifeInteractable* ClosestTree = nullptr;
 	AT66CashTruckInteractable* ClosestTruck = nullptr;
 	AT66WheelSpinInteractable* ClosestWheel = nullptr;
+	AT66CrateInteractable* ClosestCrate = nullptr;
 	AT66StageBoostGate* ClosestBoostGate = nullptr;
 	AT66StageBoostGoldInteractable* ClosestBoostGold = nullptr;
 	AT66StageBoostLootInteractable* ClosestBoostLoot = nullptr;
@@ -1149,6 +1152,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestTreeDistSq = InteractRadius * InteractRadius;
 	float ClosestTruckDistSq = InteractRadius * InteractRadius;
 	float ClosestWheelDistSq = InteractRadius * InteractRadius;
+	float ClosestCrateDistSq = InteractRadius * InteractRadius;
 	float ClosestBoostGateDistSq = InteractRadius * InteractRadius;
 	float ClosestBoostGoldDistSq = InteractRadius * InteractRadius;
 	float ClosestBoostLootDistSq = InteractRadius * InteractRadius;
@@ -1205,6 +1209,10 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66WheelSpinInteractable* W = Cast<AT66WheelSpinInteractable>(A))
 		{
 			if (DistSq < ClosestWheelDistSq) { ClosestWheelDistSq = DistSq; ClosestWheel = W; }
+		}
+		else if (AT66CrateInteractable* CR = Cast<AT66CrateInteractable>(A))
+		{
+			if (DistSq < ClosestCrateDistSq) { ClosestCrateDistSq = DistSq; ClosestCrate = CR; }
 		}
 		else if (AT66StageBoostGate* BG = Cast<AT66StageBoostGate>(A))
 		{
@@ -1286,6 +1294,10 @@ void AT66PlayerController::HandleInteractPressed()
 		return;
 	}
 	if (ClosestWheel && ClosestWheel->Interact(this))
+	{
+		return;
+	}
+	if (ClosestCrate && ClosestCrate->Interact(this))
 	{
 		return;
 	}
@@ -1690,6 +1702,16 @@ void AT66PlayerController::StartWheelSpinHUD(ET66Rarity Rarity)
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->StartWheelSpin(Rarity);
+	}
+}
+
+void AT66PlayerController::StartCrateOpenHUD()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->StartCrateOpen();
 	}
 }
 

@@ -25,20 +25,14 @@ namespace
 		return (static_cast<uint64>(Low) << 32) | static_cast<uint64>(High);
 	}
 
-	FIntPoint TurnLeft(const FIntPoint& Dir)
-	{
-		return FIntPoint(-Dir.Y, Dir.X);
-	}
-
-	FIntPoint TurnRight(const FIntPoint& Dir)
-	{
-		return FIntPoint(Dir.Y, -Dir.X);
-	}
-
 	struct FT66RampFootprint
 	{
 		FBox2D Box;
 	};
+
+	// ========================================================================
+	// Platform initialization
+	// ========================================================================
 
 	void InitializePlatforms(FT66ProceduralMapResult& Result, const FT66MapPreset& Preset, int32 GridSize, float CellSize)
 	{
@@ -63,144 +57,48 @@ namespace
 		}
 	}
 
-	int32 PickFeatureLevel(FRandomStream& Rng, const FT66MapPreset& Preset, int32 FeatureIdx)
-	{
-		const int32 MinLevel = FMath::FloorToInt((Preset.ElevationMin - Preset.BaselineZ) / FMath::Max(Preset.ElevationStep, 1.f));
-		const int32 MaxLevel = FMath::CeilToInt((Preset.ElevationMax - Preset.BaselineZ) / FMath::Max(Preset.ElevationStep, 1.f));
+	// ========================================================================
+	// Region-based height assignment (replaces lane features)
+	// ========================================================================
 
-		const bool bCanGoNegative = MinLevel < 0;
-		const bool bCanGoPositive = MaxLevel > 0;
-		if (!bCanGoNegative && !bCanGoPositive)
-		{
-			return 0;
-		}
-
-		int32 Sign = 1;
-		switch (Preset.Theme)
-		{
-		case ET66MapTheme::Farm:
-			if (bCanGoNegative && bCanGoPositive)
-			{
-				Sign = (FeatureIdx % 2 == 0) ? 1 : -1;
-			}
-			else
-			{
-				Sign = bCanGoPositive ? 1 : -1;
-			}
-			break;
-		case ET66MapTheme::Ocean:
-			Sign = (!bCanGoPositive || Rng.FRand() < 0.90f) ? -1 : 1;
-			break;
-		case ET66MapTheme::Mountain:
-			Sign = (!bCanGoNegative || Rng.FRand() < 0.80f) ? 1 : -1;
-			break;
-		}
-
-		if (Sign > 0 && !bCanGoPositive)
-		{
-			Sign = -1;
-		}
-		if (Sign < 0 && !bCanGoNegative)
-		{
-			Sign = 1;
-		}
-
-		const int32 MaxAbsLevel = (Sign > 0) ? MaxLevel : FMath::Abs(MinLevel);
-		if (MaxAbsLevel <= 0)
-		{
-			return 0;
-		}
-
-		int32 Magnitude = 1;
-		if (Preset.Theme == ET66MapTheme::Farm)
-		{
-			Magnitude = Rng.RandRange(1, FMath::Min(MaxAbsLevel, 3));
-		}
-		else if (Preset.Theme == ET66MapTheme::Ocean)
-		{
-			Magnitude = Rng.RandRange(1, FMath::Min(MaxAbsLevel, 6));
-		}
-		else
-		{
-			Magnitude = Rng.RandRange(1, FMath::Min(MaxAbsLevel, 8));
-		}
-
-		return Sign * Magnitude;
-	}
-
-	void PaintBrush(
-		TArray<FT66PlatformNode>& Platforms,
-		TArray<float>& Dominance,
-		int32 GridSize,
-		int32 CenterR,
-		int32 CenterC,
-		int32 RadiusCells,
-		float Height,
-		float Priority)
-	{
-		for (int32 DR = -RadiusCells; DR <= RadiusCells; ++DR)
-		{
-			for (int32 DC = -RadiusCells; DC <= RadiusCells; ++DC)
-			{
-				const int32 R = CenterR + DR;
-				const int32 C = CenterC + DC;
-				if (R < 0 || R >= GridSize || C < 0 || C >= GridSize)
-				{
-					continue;
-				}
-
-				const float Dist = FMath::Sqrt(static_cast<float>(DR * DR + DC * DC));
-				if (Dist > static_cast<float>(RadiusCells) + 0.25f)
-				{
-					continue;
-				}
-
-				const int32 Idx = GridIdx(R, C, GridSize);
-				const float Strength = Priority - Dist * 0.08f;
-				if (Strength > Dominance[Idx])
-				{
-					Platforms[Idx].TopZ = Height;
-					Dominance[Idx] = Strength;
-				}
-			}
-		}
-	}
-
-	void GenerateLaneFeatures(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize)
+	void GenerateRegionHeights(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize)
 	{
 		FRandomStream Rng(Preset.Seed);
-		TArray<float> Dominance;
-		Dominance.Init(-1000000.f, Platforms.Num());
 
-		const int32 FeatureCount = Rng.RandRange(Preset.FeatureCountMin, Preset.FeatureCountMax);
-		TArray<FIntPoint> StartSeeds;
-		const float MinSeedSpacing = static_cast<float>(GridSize) / FMath::Clamp(FMath::Sqrt(static_cast<float>(FeatureCount)) * 0.75f, 1.f, 1000.f);
+		const TArray<float> HeightLevels = { -1400.f, -700.f, 0.f, 700.f, 1400.f };
+		const int32 NumHeightLevels = HeightLevels.Num();
 
-		for (int32 FeatureIdx = 0; FeatureIdx < FeatureCount; ++FeatureIdx)
+		const int32 SeedCount = Rng.RandRange(Preset.RegionSeedCountMin, Preset.RegionSeedCountMax);
+
+		struct FSeedInfo
 		{
-			const int32 Level = PickFeatureLevel(Rng, Preset, FeatureIdx);
-			if (Level == 0)
-			{
-				continue;
-			}
+			int32 Row;
+			int32 Col;
+			float Height;
+		};
 
-			const float Height = FMath::Clamp(
-				QuantizeToStep(Preset.BaselineZ + static_cast<float>(Level) * Preset.ElevationStep, Preset),
-				Preset.ElevationMin,
-				Preset.ElevationMax);
+		TArray<FSeedInfo> Seeds;
+		Seeds.Reserve(SeedCount);
 
-			FIntPoint Start;
-			bool bFoundStart = false;
-			for (int32 Attempt = 0; Attempt < 40 && !bFoundStart; ++Attempt)
+		const float MinSeedSpacing = static_cast<float>(GridSize) * 0.28f;
+
+		for (int32 I = 0; I < SeedCount; ++I)
+		{
+			FIntPoint Cell;
+			bool bFound = false;
+
+			for (int32 Attempt = 0; Attempt < 60 && !bFound; ++Attempt)
 			{
 				const FIntPoint Candidate(
-					Rng.RandRange(0, GridSize - 1),
-					Rng.RandRange(0, GridSize - 1));
+					Rng.RandRange(1, GridSize - 2),
+					Rng.RandRange(1, GridSize - 2));
 
 				bool bFarEnough = true;
-				for (const FIntPoint& Existing : StartSeeds)
+				for (const FSeedInfo& Existing : Seeds)
 				{
-					const float Dist = FVector2D::Distance(FVector2D(Candidate), FVector2D(Existing));
+					const float Dist = FVector2D::Distance(
+						FVector2D(Candidate.X, Candidate.Y),
+						FVector2D(Existing.Row, Existing.Col));
 					if (Dist < MinSeedSpacing)
 					{
 						bFarEnough = false;
@@ -210,129 +108,110 @@ namespace
 
 				if (bFarEnough)
 				{
-					Start = Candidate;
-					bFoundStart = true;
+					Cell = Candidate;
+					bFound = true;
 				}
 			}
 
-			if (!bFoundStart)
+			if (!bFound)
 			{
-				Start = FIntPoint(Rng.RandRange(0, GridSize - 1), Rng.RandRange(0, GridSize - 1));
-			}
-			StartSeeds.Add(Start);
-
-			int32 CurR = Start.X;
-			int32 CurC = Start.Y;
-			FIntPoint Dir;
-			switch (Rng.RandRange(0, 3))
-			{
-			case 0: Dir = FIntPoint(1, 0); break;
-			case 1: Dir = FIntPoint(-1, 0); break;
-			case 2: Dir = FIntPoint(0, 1); break;
-			default: Dir = FIntPoint(0, -1); break;
+				Cell = FIntPoint(Rng.RandRange(1, GridSize - 2), Rng.RandRange(1, GridSize - 2));
 			}
 
-			const int32 Length = Rng.RandRange(Preset.FeatureLengthMinCells, Preset.FeatureLengthMaxCells);
-			const int32 Width = Rng.RandRange(Preset.FeatureWidthMinCells, Preset.FeatureWidthMaxCells);
-			const float BasePriority = 1000.f + FeatureIdx * 10.f + Rng.FRandRange(0.f, 3.f);
+			Seeds.Add({ Cell.X, Cell.Y, 0.f });
+		}
 
-			for (int32 StepIdx = 0; StepIdx < Length; ++StepIdx)
+		// Assign heights: ensure >= 3 distinct levels, no more than 2 seeds share a height.
+		TArray<int32> HeightUsage;
+		HeightUsage.Init(0, NumHeightLevels);
+		TSet<int32> UsedLevelIndices;
+
+		// First pass: assign heights trying to maximize variety.
+		for (int32 I = 0; I < Seeds.Num(); ++I)
+		{
+			TArray<int32> Available;
+			for (int32 L = 0; L < NumHeightLevels; ++L)
 			{
-				PaintBrush(Platforms, Dominance, GridSize, CurR, CurC, Width, Height, BasePriority - StepIdx * 0.01f);
-
-				if (Rng.FRand() < Preset.RoomChance)
+				if (HeightUsage[L] < 2)
 				{
-					PaintBrush(Platforms, Dominance, GridSize, CurR, CurC, Width + Rng.RandRange(1, 3), Height, BasePriority + 0.5f);
+					Available.Add(L);
 				}
+			}
 
-				if (Rng.FRand() < 0.28f)
+			// If we haven't hit 3 distinct levels yet and can pick a new one, prefer unused levels.
+			if (UsedLevelIndices.Num() < 3)
+			{
+				TArray<int32> Unused;
+				for (int32 L : Available)
 				{
-					Dir = (Rng.FRand() < 0.5f) ? TurnLeft(Dir) : TurnRight(Dir);
-				}
-
-				if (Rng.FRand() < 0.10f)
-				{
-					const FIntPoint BranchDir = (Rng.FRand() < 0.5f) ? TurnLeft(Dir) : TurnRight(Dir);
-					const int32 BranchLength = FMath::Max(4, Length / 3 + Rng.RandRange(-3, 6));
-					int32 BranchR = CurR;
-					int32 BranchC = CurC;
-					for (int32 B = 0; B < BranchLength; ++B)
+					if (!UsedLevelIndices.Contains(L))
 					{
-						PaintBrush(Platforms, Dominance, GridSize, BranchR, BranchC, FMath::Max(1, Width - 1), Height, BasePriority - 5.f);
-						BranchR = FMath::Clamp(BranchR + BranchDir.X, 0, GridSize - 1);
-						BranchC = FMath::Clamp(BranchC + BranchDir.Y, 0, GridSize - 1);
+						Unused.Add(L);
 					}
 				}
-
-				if (Rng.FRand() < 0.08f)
+				if (Unused.Num() > 0)
 				{
-					// Teleport-start a continuation elsewhere to break regional coordination.
-					CurR = Rng.RandRange(0, GridSize - 1);
-					CurC = Rng.RandRange(0, GridSize - 1);
+					Available = MoveTemp(Unused);
 				}
-
-				int32 NextR = CurR + Dir.X;
-				int32 NextC = CurC + Dir.Y;
-				if (NextR < 0 || NextR >= GridSize || NextC < 0 || NextC >= GridSize)
-				{
-					Dir = (Rng.FRand() < 0.5f) ? TurnLeft(Dir) : TurnRight(Dir);
-					NextR = FMath::Clamp(CurR + Dir.X, 0, GridSize - 1);
-					NextC = FMath::Clamp(CurC + Dir.Y, 0, GridSize - 1);
-				}
-
-				CurR = NextR;
-				CurC = NextC;
 			}
+
+			if (Available.Num() == 0)
+			{
+				Available.Add(Rng.RandRange(0, NumHeightLevels - 1));
+			}
+
+			const int32 ChosenIdx = Available[Rng.RandRange(0, Available.Num() - 1)];
+			Seeds[I].Height = HeightLevels[ChosenIdx];
+			HeightUsage[ChosenIdx]++;
+			UsedLevelIndices.Add(ChosenIdx);
 		}
-	}
 
-	void RemoveTinyIslands(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize)
-	{
-		TArray<float> NewHeights;
-		NewHeights.SetNum(Platforms.Num());
-
+		// Flood-fill: assign every cell to the closest seed (Euclidean distance).
 		for (int32 R = 0; R < GridSize; ++R)
 		{
 			for (int32 C = 0; C < GridSize; ++C)
 			{
-				const int32 Idx = GridIdx(R, C, GridSize);
-				const float H = Platforms[Idx].TopZ;
-				NewHeights[Idx] = H;
+				float BestDist = TNumericLimits<float>::Max();
+				float BestHeight = Preset.BaselineZ;
 
-				int32 SameCount = 0;
-				int32 BaselineCount = 0;
-				for (const FIntPoint Off : { FIntPoint(-1, 0), FIntPoint(1, 0), FIntPoint(0, -1), FIntPoint(0, 1) })
+				for (const FSeedInfo& S : Seeds)
 				{
-					const int32 NR = R + Off.X;
-					const int32 NC = C + Off.Y;
-					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize)
+					const float DR = static_cast<float>(R - S.Row);
+					const float DC = static_cast<float>(C - S.Col);
+					const float Dist = FMath::Sqrt(DR * DR + DC * DC);
+					if (Dist < BestDist)
 					{
-						continue;
-					}
-
-					const float NH = Platforms[GridIdx(NR, NC, GridSize)].TopZ;
-					if (FMath::IsNearlyEqual(NH, H))
-					{
-						++SameCount;
-					}
-					if (FMath::IsNearlyEqual(NH, Preset.BaselineZ))
-					{
-						++BaselineCount;
+						BestDist = Dist;
+						BestHeight = S.Height;
 					}
 				}
 
-				if (!FMath::IsNearlyEqual(H, Preset.BaselineZ) && SameCount == 0 && BaselineCount >= 2)
+				Platforms[GridIdx(R, C, GridSize)].TopZ = BestHeight;
+			}
+		}
+	}
+
+	// ========================================================================
+	// Outer ring: force boundary cells to max height for natural bowl/arena
+	// ========================================================================
+
+	void ForceOuterRingToMaxHeight(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize)
+	{
+		for (int32 R = 0; R < GridSize; ++R)
+		{
+			for (int32 C = 0; C < GridSize; ++C)
+			{
+				if (R == 0 || R == GridSize - 1 || C == 0 || C == GridSize - 1)
 				{
-					NewHeights[Idx] = Preset.BaselineZ;
+					Platforms[GridIdx(R, C, GridSize)].TopZ = Preset.ElevationMax;
 				}
 			}
 		}
-
-		for (int32 I = 0; I < Platforms.Num(); ++I)
-		{
-			Platforms[I].TopZ = NewHeights[I];
-		}
 	}
+
+	// ========================================================================
+	// Adjacency clamping
+	// ========================================================================
 
 	void ClampAdjacency(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset, int32 GridSize, int32 MaxIter = 24)
 	{
@@ -384,6 +263,10 @@ namespace
 		}
 	}
 
+	// ========================================================================
+	// Neighbor connections (grid adjacency)
+	// ========================================================================
+
 	void BuildNeighborConnections(FT66ProceduralMapResult& Result, int32 GridSize)
 	{
 		for (int32 R = 0; R < GridSize; ++R)
@@ -406,6 +289,10 @@ namespace
 			}
 		}
 	}
+
+	// ========================================================================
+	// Ramp creation helper
+	// ========================================================================
 
 	void AddRampForBoundary(
 		FT66ProceduralMapResult& Result,
@@ -447,10 +334,10 @@ namespace
 			0.f,
 			1.f);
 		const float WidthAlpha = FMath::Lerp(Preset.RampWidthMinAlpha, Preset.RampWidthMaxAlpha, 0.35f + HeightAlpha * 0.65f);
-		Edge.Width = FMath::Clamp(
-			CellSize * WidthAlpha * Rng.FRandRange(0.90f, 1.05f),
-			CellSize * 0.35f,
-			CellSize * 1.00f);
+	Edge.Width = FMath::Clamp(
+		CellSize * WidthAlpha * Rng.FRandRange(0.90f, 1.05f),
+		CellSize * 0.10f,
+		CellSize * 0.45f);
 
 		const float MaxOffset = FMath::Max((CellSize - Edge.Width) * 0.5f, 0.f);
 		Edge.PerpOffset = (MaxOffset > KINDA_SMALL_NUMBER)
@@ -504,77 +391,62 @@ namespace
 		return false;
 	}
 
+	// ========================================================================
+	// Region-aware ramp builder with multi-ramp boundaries and connectivity
+	// ========================================================================
+
 	void BuildRamps(FT66ProceduralMapResult& Result, const FT66MapPreset& Preset, int32 GridSize, float CellSize)
 	{
 		FRandomStream Rng(Preset.Seed ^ 0x4D617A65);
 		TSet<uint64> Used;
 		TArray<FT66RampFootprint> AcceptedFootprints;
-		const float RampPadding = CellSize * 0.18f;
-		const int32 MaxTotalRamps = 20;
-		TArray<bool> Visited;
-		Visited.Init(false, Result.Platforms.Num());
-		const float MaxJumpEscapeHeight = FMath::Max(250.f, Preset.ElevationStep * 0.75f);
+		const float RampPadding = CellSize * 0.05f;
+		const int32 MaxTotalRamps = 100;
 
-		struct FBoundaryCandidate
-		{
-			int32 AIdx = -1;
-			int32 BIdx = -1;
-			bool bAlongX = true;
-			float Score = 0.f;
-		};
+		// --- Phase 1: discover connected components (regions) of same-height cells ---
 
-		struct FComponentInfo
+		TArray<int32> RegionID;
+		RegionID.Init(-1, Result.Platforms.Num());
+		int32 NumRegions = 0;
+
+		struct FRegionInfo
 		{
 			TArray<int32> Cells;
-			TArray<FBoundaryCandidate> Candidates;
 			float Height = 0.f;
-			bool bTrappedLow = false;
-			float Priority = 0.f;
 		};
-
-		TArray<FComponentInfo> Components;
+		TArray<FRegionInfo> Regions;
 
 		for (int32 StartIdx = 0; StartIdx < Result.Platforms.Num(); ++StartIdx)
 		{
-			if (Visited[StartIdx])
+			if (RegionID[StartIdx] >= 0)
 			{
 				continue;
 			}
 
 			const float Height = Result.Platforms[StartIdx].TopZ;
-			if (FMath::IsNearlyEqual(Height, Preset.BaselineZ))
-			{
-				Visited[StartIdx] = true;
-				continue;
-			}
+			const int32 ThisRegion = NumRegions++;
 
 			TArray<int32> Queue;
-			TArray<int32> Component;
 			Queue.Add(StartIdx);
-			Visited[StartIdx] = true;
+			RegionID[StartIdx] = ThisRegion;
+
+			FRegionInfo Info;
+			Info.Height = Height;
 
 			for (int32 Head = 0; Head < Queue.Num(); ++Head)
 			{
 				const int32 Cur = Queue[Head];
-				Component.Add(Cur);
+				Info.Cells.Add(Cur);
 				const FT66PlatformNode& P = Result.Platforms[Cur];
 
 				auto TryNeighbor = [&](int32 NR, int32 NC)
 				{
-					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize)
-					{
-						return;
-					}
-
+					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize) return;
 					const int32 NIdx = GridIdx(NR, NC, GridSize);
-					if (Visited[NIdx])
-					{
-						return;
-					}
-
+					if (RegionID[NIdx] >= 0) return;
 					if (FMath::IsNearlyEqual(Result.Platforms[NIdx].TopZ, Height))
 					{
-						Visited[NIdx] = true;
+						RegionID[NIdx] = ThisRegion;
 						Queue.Add(NIdx);
 					}
 				};
@@ -585,122 +457,239 @@ namespace
 				TryNeighbor(P.GridRow, P.GridCol + 1);
 			}
 
-			TArray<FBoundaryCandidate> Candidates;
-			TSet<uint64> SeenBoundaries;
-			bool bHasJumpableHigherExit = false;
-
-			for (int32 Idx : Component)
-			{
-				const FT66PlatformNode& P = Result.Platforms[Idx];
-
-				auto AddCandidate = [&](int32 NR, int32 NC, bool bAlongX)
-				{
-					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize)
-					{
-						return;
-					}
-
-					const int32 NIdx = GridIdx(NR, NC, GridSize);
-					if (FMath::IsNearlyEqual(Result.Platforms[NIdx].TopZ, Height))
-					{
-						return;
-					}
-
-					const uint64 Key = MakeBoundaryKey(Idx, NIdx);
-					if (SeenBoundaries.Contains(Key) || Used.Contains(Key))
-					{
-						return;
-					}
-					SeenBoundaries.Add(Key);
-
-					const float NeighborH = Result.Platforms[NIdx].TopZ;
-					const float HeightDiff = FMath::Abs(Height - NeighborH);
-					if (NeighborH > Height && HeightDiff <= MaxJumpEscapeHeight)
-					{
-						bHasJumpableHigherExit = true;
-					}
-					float Score = HeightDiff;
-					if (FMath::IsNearlyEqual(NeighborH, Preset.BaselineZ))
-					{
-						Score += 100000.f;
-					}
-					if (NeighborH > Height)
-					{
-						Score += 25000.f;
-					}
-					if (Height < Preset.BaselineZ && NeighborH > Height)
-					{
-						Score += 15000.f;
-					}
-
-					FBoundaryCandidate Candidate;
-					Candidate.AIdx = Idx;
-					Candidate.BIdx = NIdx;
-					Candidate.bAlongX = bAlongX;
-					Candidate.Score = Score + Rng.FRandRange(0.f, 100.f);
-					Candidates.Add(Candidate);
-				};
-
-				AddCandidate(P.GridRow, P.GridCol - 1, true);
-				AddCandidate(P.GridRow, P.GridCol + 1, true);
-				AddCandidate(P.GridRow - 1, P.GridCol, false);
-				AddCandidate(P.GridRow + 1, P.GridCol, false);
-			}
-
-			Candidates.Sort([](const FBoundaryCandidate& A, const FBoundaryCandidate& B)
-			{
-				return A.Score > B.Score;
-			});
-
-			FComponentInfo Info;
-			Info.Cells = MoveTemp(Component);
-			Info.Candidates = MoveTemp(Candidates);
-			Info.Height = Height;
-			Info.bTrappedLow = (Height < Preset.BaselineZ && !bHasJumpableHigherExit);
-			Info.Priority = 0.f;
-			if (Info.bTrappedLow)
-			{
-				Info.Priority += 1000000.f;
-			}
-			if (Height > Preset.BaselineZ)
-			{
-				Info.Priority += 500000.f;
-			}
-			Info.Priority += FMath::Abs(Height - Preset.BaselineZ);
-			Info.Priority += static_cast<float>(Info.Cells.Num()) * 10.f;
-			Components.Add(MoveTemp(Info));
+			Regions.Add(MoveTemp(Info));
 		}
 
-		Components.Sort([](const FComponentInfo& A, const FComponentInfo& B)
+		// --- Phase 2: for each pair of adjacent regions, count shared boundary edges ---
+
+		struct FRegionBoundary
+		{
+			int32 RegionA = -1;
+			int32 RegionB = -1;
+			TArray<TPair<int32, int32>> CellPairs; // (AIdx, BIdx)
+			bool bAlongX = true;
+		};
+
+		TMap<uint64, FRegionBoundary> BoundaryMap;
+
+		for (int32 R = 0; R < GridSize; ++R)
+		{
+			for (int32 C = 0; C < GridSize; ++C)
+			{
+				const int32 Idx = GridIdx(R, C, GridSize);
+				const int32 MyRegion = RegionID[Idx];
+
+				auto CheckNeighbor = [&](int32 NR, int32 NC, bool bAlongX)
+				{
+					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize) return;
+					const int32 NIdx = GridIdx(NR, NC, GridSize);
+					const int32 OtherRegion = RegionID[NIdx];
+					if (MyRegion == OtherRegion) return;
+					if (FMath::Abs(Result.Platforms[Idx].TopZ - Result.Platforms[NIdx].TopZ) < 50.f) return;
+
+					const uint64 PairKey = MakeBoundaryKey(MyRegion, OtherRegion);
+					FRegionBoundary& Boundary = BoundaryMap.FindOrAdd(PairKey);
+					if (Boundary.RegionA < 0)
+					{
+						Boundary.RegionA = FMath::Min(MyRegion, OtherRegion);
+						Boundary.RegionB = FMath::Max(MyRegion, OtherRegion);
+						Boundary.bAlongX = bAlongX;
+					}
+					Boundary.CellPairs.Add(TPair<int32, int32>(Idx, NIdx));
+				};
+
+				if (C + 1 < GridSize) CheckNeighbor(R, C + 1, true);
+				if (R + 1 < GridSize) CheckNeighbor(R + 1, C, false);
+			}
+		}
+
+		// --- Phase 3: place ramps per boundary (1 for 1-2 edges, 2 for 3-4, 3 for 5+) ---
+
+		struct FBoundarySortEntry
+		{
+			uint64 Key;
+			float Priority;
+		};
+		TArray<FBoundarySortEntry> SortedBoundaries;
+		SortedBoundaries.Reserve(BoundaryMap.Num());
+
+		for (auto& Pair : BoundaryMap)
+		{
+			const FRegionBoundary& B = Pair.Value;
+			float Priority = 0.f;
+			const float HA = Regions[B.RegionA].Height;
+			const float HB = Regions[B.RegionB].Height;
+			const float HeightDiff = FMath::Abs(HA - HB);
+
+			// Favor trapped-low regions (below baseline with no easy escape).
+			if (HA < 0.f || HB < 0.f) Priority += 50000.f;
+			Priority += HeightDiff;
+			Priority += static_cast<float>(B.CellPairs.Num()) * 100.f;
+			Priority += Rng.FRandRange(0.f, 50.f);
+
+			SortedBoundaries.Add({ Pair.Key, Priority });
+		}
+
+		SortedBoundaries.Sort([](const FBoundarySortEntry& A, const FBoundarySortEntry& B)
 		{
 			return A.Priority > B.Priority;
 		});
 
-		for (const FComponentInfo& ComponentInfo : Components)
+		for (const FBoundarySortEntry& Entry : SortedBoundaries)
 		{
-			if (Result.Ramps.Num() >= MaxTotalRamps)
+			if (Result.Ramps.Num() >= MaxTotalRamps) break;
+
+			FRegionBoundary& Boundary = BoundaryMap[Entry.Key];
+			const int32 SharedEdges = Boundary.CellPairs.Num();
+			int32 DesiredRamps = 1;
+			if (SharedEdges >= 5) DesiredRamps = 3;
+			else if (SharedEdges >= 3) DesiredRamps = 2;
+
+			// Shuffle cell pairs for variety.
+			for (int32 I = Boundary.CellPairs.Num() - 1; I > 0; --I)
 			{
-				break;
+				const int32 J = Rng.RandRange(0, I);
+				Boundary.CellPairs.Swap(I, J);
 			}
 
-			for (const FBoundaryCandidate& CandidateInfo : ComponentInfo.Candidates)
+			int32 PlacedForBoundary = 0;
+			for (const auto& CellPair : Boundary.CellPairs)
 			{
-				const int32 PrevNum = Result.Ramps.Num();
-				AddRampForBoundary(Result, Preset, CellSize, CandidateInfo.AIdx, CandidateInfo.BIdx, CandidateInfo.bAlongX, Rng, Used);
-				if (Result.Ramps.Num() == PrevNum)
-				{
-					continue;
-				}
+				if (PlacedForBoundary >= DesiredRamps) break;
+				if (Result.Ramps.Num() >= MaxTotalRamps) break;
 
-				const FT66RampEdge Candidate = Result.Ramps.Last();
+				const int32 AIdx = CellPair.Key;
+				const int32 BIdx = CellPair.Value;
+				const FT66PlatformNode& PA = Result.Platforms[AIdx];
+				const FT66PlatformNode& PB = Result.Platforms[BIdx];
+				const bool bAlongX = (PA.GridRow == PB.GridRow);
+
+				const int32 PrevNum = Result.Ramps.Num();
+				AddRampForBoundary(Result, Preset, CellSize, AIdx, BIdx, bAlongX, Rng, Used);
+				if (Result.Ramps.Num() == PrevNum) continue;
+
+				const FT66RampEdge& Candidate = Result.Ramps.Last();
 				if (DoesRampOverlapAny(Result, Candidate, AcceptedFootprints, RampPadding))
 				{
 					Result.Ramps.Pop();
-					Used.Remove(MakeBoundaryKey(CandidateInfo.AIdx, CandidateInfo.BIdx));
+					Used.Remove(MakeBoundaryKey(AIdx, BIdx));
 					continue;
 				}
 
 				AcceptedFootprints.Add({ BuildRampFootprint(Result, Candidate, RampPadding) });
+				++PlacedForBoundary;
+			}
+		}
+
+		// --- Phase 4: connectivity check — ensure every region is reachable ---
+
+		auto BuildRegionGraph = [&]() -> TArray<TSet<int32>>
+		{
+			TArray<TSet<int32>> Adj;
+			Adj.SetNum(NumRegions);
+			for (const FT66RampEdge& Edge : Result.Ramps)
+			{
+				const int32 RA = RegionID[Edge.LowerIndex];
+				const int32 RB = RegionID[Edge.HigherIndex];
+				if (RA != RB)
+				{
+					Adj[RA].Add(RB);
+					Adj[RB].Add(RA);
+				}
+			}
+			// Same-height neighbors are implicitly connected (walkable).
+			for (int32 R = 0; R < GridSize; ++R)
+			{
+				for (int32 C = 0; C < GridSize; ++C)
+				{
+					const int32 Idx = GridIdx(R, C, GridSize);
+					const int32 MyReg = RegionID[Idx];
+					auto LinkIfSameHeight = [&](int32 NR, int32 NC)
+					{
+						if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize) return;
+						const int32 NIdx = GridIdx(NR, NC, GridSize);
+						const int32 OtherReg = RegionID[NIdx];
+						if (MyReg != OtherReg && FMath::Abs(Result.Platforms[Idx].TopZ - Result.Platforms[NIdx].TopZ) < 50.f)
+						{
+							Adj[MyReg].Add(OtherReg);
+							Adj[OtherReg].Add(MyReg);
+						}
+					};
+					if (C + 1 < GridSize) LinkIfSameHeight(R, C + 1);
+					if (R + 1 < GridSize) LinkIfSameHeight(R + 1, C);
+				}
+			}
+			return Adj;
+		};
+
+		for (int32 ConnPass = 0; ConnPass < 20; ++ConnPass)
+		{
+			TArray<TSet<int32>> RegionAdj = BuildRegionGraph();
+
+			// BFS from region 0 to find all reachable regions.
+			TArray<bool> Reachable;
+			Reachable.Init(false, NumRegions);
+			TArray<int32> BFS;
+			BFS.Add(0);
+			Reachable[0] = true;
+			for (int32 Head = 0; Head < BFS.Num(); ++Head)
+			{
+				for (int32 Neighbor : RegionAdj[BFS[Head]])
+				{
+					if (!Reachable[Neighbor])
+					{
+						Reachable[Neighbor] = true;
+						BFS.Add(Neighbor);
+					}
+				}
+			}
+
+			// Find first unreachable region.
+			int32 DisconnectedRegion = -1;
+			for (int32 I = 0; I < NumRegions; ++I)
+			{
+				if (!Reachable[I])
+				{
+					DisconnectedRegion = I;
+					break;
+				}
+			}
+
+			if (DisconnectedRegion < 0) break;
+
+			// Force a ramp from the disconnected region to any reachable neighbor.
+			bool bFixed = false;
+			for (int32 CellIdx : Regions[DisconnectedRegion].Cells)
+			{
+				if (bFixed) break;
+				const FT66PlatformNode& P = Result.Platforms[CellIdx];
+				auto TryForceRamp = [&](int32 NR, int32 NC)
+				{
+					if (bFixed) return;
+					if (NR < 0 || NR >= GridSize || NC < 0 || NC >= GridSize) return;
+					const int32 NIdx = GridIdx(NR, NC, GridSize);
+					const int32 NReg = RegionID[NIdx];
+					if (NReg == DisconnectedRegion) return;
+					if (!Reachable[NReg]) return;
+
+					const bool bAlongX = (P.GridRow == Result.Platforms[NIdx].GridRow);
+					AddRampForBoundary(Result, Preset, CellSize, CellIdx, NIdx, bAlongX, Rng, Used);
+					if (Result.Ramps.Num() > 0)
+					{
+						AcceptedFootprints.Add({ BuildRampFootprint(Result, Result.Ramps.Last(), RampPadding) });
+						bFixed = true;
+					}
+				};
+				TryForceRamp(P.GridRow - 1, P.GridCol);
+				TryForceRamp(P.GridRow + 1, P.GridCol);
+				TryForceRamp(P.GridRow, P.GridCol - 1);
+				TryForceRamp(P.GridRow, P.GridCol + 1);
+			}
+
+			if (!bFixed)
+			{
+				UE_LOG(LogT66, Warning, TEXT("[MAP] Could not force-connect region %d (height %.0f, %d cells)"),
+					DisconnectedRegion, Regions[DisconnectedRegion].Height, Regions[DisconnectedRegion].Cells.Num());
 				break;
 			}
 		}
@@ -716,8 +705,8 @@ FT66ProceduralMapResult FT66ProceduralMapGenerator::Generate(const FT66MapPreset
 	const float CellSize = MapSize / static_cast<float>(GridSize);
 
 	InitializePlatforms(Result, Preset, GridSize, CellSize);
-	GenerateLaneFeatures(Result.Platforms, Preset, GridSize);
-	RemoveTinyIslands(Result.Platforms, Preset, GridSize);
+	GenerateRegionHeights(Result.Platforms, Preset, GridSize);
+	ForceOuterRingToMaxHeight(Result.Platforms, Preset, GridSize);
 	ClampAdjacency(Result.Platforms, Preset, GridSize);
 	BuildNeighborConnections(Result, GridSize);
 	BuildRamps(Result, Preset, GridSize, CellSize);

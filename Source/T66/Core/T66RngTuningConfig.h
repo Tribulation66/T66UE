@@ -157,6 +157,9 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float TruckMimicChance = 0.20f;
 
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
+	FT66IntRange CratesPerStage = { 1, 3 };
+
 	// ================================
 	// Wheel payouts (rarity + payout range)
 	// ================================

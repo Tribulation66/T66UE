@@ -24,19 +24,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tree")
 	TObjectPtr<UStaticMeshComponent> CrownMesh;
 
-	/** Optional rarity meshes (when imported). If null/unloaded, we fall back to primitive shapes. */
-	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshBlack;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshRed;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshYellow;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Tree|Meshes")
-	TSoftObjectPtr<UStaticMesh> MeshWhite;
-
 	virtual bool Interact(APlayerController* PC) override;
 
 	/** Luck multiplier from items (multiplies spawn quantity/rarity for fountains). */

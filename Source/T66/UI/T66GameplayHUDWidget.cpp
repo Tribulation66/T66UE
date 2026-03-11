@@ -24,6 +24,7 @@
 #include "Gameplay/T66MiasmaBoundary.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
+#include "UI/T66CrateOverlayWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "Widgets/Layout/SBox.h"
@@ -1119,6 +1120,29 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 
 	// 30Hz is plenty for a simple HUD spin and reduces timer overhead on low-end CPUs.
 	World->GetTimerManager().SetTimer(WheelSpinTickHandle, this, &UT66GameplayHUDWidget::TickWheelSpin, 0.033f, true);
+}
+
+void UT66GameplayHUDWidget::StartCrateOpen()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC) return;
+
+	UT66CrateOverlayWidget* Overlay = CreateWidget<UT66CrateOverlayWidget>(PC, UT66CrateOverlayWidget::StaticClass());
+	if (Overlay)
+	{
+		Overlay->AddToViewport(100);
+
+		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC))
+		{
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			T66PC->SetInputMode(InputMode);
+			T66PC->bShowMouseCursor = true;
+		}
+	}
 }
 
 void UT66GameplayHUDWidget::TickWheelSpin()

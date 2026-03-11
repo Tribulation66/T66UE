@@ -49,6 +49,9 @@ public:
 	/** Show or hide the entire stage (floor + companion pawn). */
 	void SetStageVisible(bool bVisible);
 
+	/** Clear cached orbit framing so next FrameCameraToPreview recalculates (e.g. after stage was moved). */
+	void ResetFramingCache();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

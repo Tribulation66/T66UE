@@ -227,6 +227,15 @@ private:
 	bool bIsSkyDropping = false;
 	static constexpr float SkyDropAltitude = 5000.f;
 
+	FVector LastSafeGroundLocation = FVector::ZeroVector;
+	FRotator LastSafeGroundRotation = FRotator::ZeroRotator;
+	bool bHasLastSafeGroundTransform = false;
+	float ContinuousFallSeconds = 0.f;
+	float LastTerrainRecoveryTime = -9999.f;
+	static constexpr float TerrainRecoveryCooldown = 1.0f;
+	static constexpr float TerrainRecoveryFallSeconds = 2.0f;
+	static constexpr float TerrainRecoveryMissingGroundDistance = 2500.f;
+
 	/** When cooldown bar shows full (1), keep it at full for this long (seconds). */
 	float CooldownDisplayHoldUntil = -1.f;
 	static constexpr float CooldownBarHoldFullDuration = 0.01f;

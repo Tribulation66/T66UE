@@ -40,7 +40,7 @@ AT66HeroBase::AT66HeroBase()
 	// Create spring arm (camera boom)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 2400.0f;
+	CameraBoom->TargetArmLength = 1200.0f;
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // Offset up from center
 	CameraBoom->bUsePawnControlRotation = true; // Rotate arm based on controller (mouse look)
 	CameraBoom->bDoCollisionTest = true; // Pull camera in when hitting walls
@@ -350,6 +350,66 @@ void AT66HeroBase::RefreshAttackRangeRing()
 void AT66HeroBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (!bIsPreviewMode)
+	{
+		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+		{
+			auto TraceGround = [this](float UpDistance, float DownDistance, FHitResult& OutHit) -> bool
+			{
+				UWorld* World = GetWorld();
+				if (!World)
+				{
+					return false;
+				}
+
+				FCollisionQueryParams Params(SCENE_QUERY_STAT(T66HeroGroundProbe), false, this);
+				const FVector ActorLoc = GetActorLocation();
+				const FVector TraceStart = ActorLoc + FVector(0.f, 0.f, UpDistance);
+				const FVector TraceEnd = ActorLoc - FVector(0.f, 0.f, DownDistance);
+				return World->LineTraceSingleByChannel(OutHit, TraceStart, TraceEnd, ECC_WorldStatic, Params) ||
+					World->LineTraceSingleByChannel(OutHit, TraceStart, TraceEnd, ECC_Visibility, Params);
+			};
+
+			if (!Movement->IsFalling())
+			{
+				ContinuousFallSeconds = 0.f;
+
+				FHitResult GroundHit;
+				if (TraceGround(250.f, 600.f, GroundHit))
+				{
+					const float HalfHeight = GetCapsuleComponent() ? GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
+					LastSafeGroundLocation = GroundHit.ImpactPoint + FVector(0.f, 0.f, HalfHeight + 5.f);
+					LastSafeGroundRotation = GetActorRotation();
+					bHasLastSafeGroundTransform = true;
+				}
+			}
+			else
+			{
+				ContinuousFallSeconds += DeltaSeconds;
+
+				FHitResult GroundHit;
+				const bool bGroundWithinRecoveryRange = TraceGround(100.f, TerrainRecoveryMissingGroundDistance, GroundHit);
+				const float Now = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
+				const bool bCanRecover = bHasLastSafeGroundTransform
+					&& !bIsSkyDropping
+					&& !bGroundWithinRecoveryRange
+					&& (Now - LastTerrainRecoveryTime) >= TerrainRecoveryCooldown;
+				const bool bFellFarBelowSafeGround = GetActorLocation().Z < (LastSafeGroundLocation.Z - 5000.f);
+				const bool bFellOutOfWorld = GetActorLocation().Z < -10000.f;
+				if (bCanRecover
+					&& (ContinuousFallSeconds >= TerrainRecoveryFallSeconds || bFellFarBelowSafeGround || bFellOutOfWorld))
+				{
+					SetActorLocation(LastSafeGroundLocation, false, nullptr, ETeleportType::TeleportPhysics);
+					SetActorRotation(LastSafeGroundRotation, ETeleportType::TeleportPhysics);
+					Movement->StopMovementImmediately();
+					Movement->SetMovementMode(MOVE_Walking);
+					ContinuousFallSeconds = 0.f;
+					LastTerrainRecoveryTime = Now;
+				}
+			}
+		}
+	}
 
 	// Stage slide: temporary low-friction movement.
 	if (StageSlideSecondsRemaining > 0.f)

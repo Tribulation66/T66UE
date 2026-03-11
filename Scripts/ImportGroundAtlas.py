@@ -120,18 +120,64 @@ def _create_or_load_material(dest_game_dir: str, asset_name: str) -> unreal.Mate
     return unreal.AssetToolsHelpers.get_asset_tools().create_asset(asset_name, dest_game_dir, unreal.Material, factory)
 
 
-# Minimal graph that compiles on SM6: TexCoord * TilingScale -> Texture. No ComponentMask/OneMinus/Append.
+def _force_unlit(mat: unreal.Material):
+    """Force a material to Unlit shading model with verification."""
+    mat_name = mat.get_name()
+
+    # Read the current shading model.
+    try:
+        before = mat.get_editor_property("shading_model")
+        unreal.log(f"[GroundAtlas] {mat_name} shading_model BEFORE = {before}")
+    except Exception as e:
+        unreal.log_warning(f"[GroundAtlas] {mat_name} could not read shading_model: {e}")
+        before = None
+
+    # Attempt 1: set_editor_property
+    try:
+        mat.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    except Exception as e:
+        unreal.log_warning(f"[GroundAtlas] {mat_name} set_editor_property(shading_model) failed: {e}")
+
+    # Verify it stuck.
+    try:
+        after = mat.get_editor_property("shading_model")
+        unreal.log(f"[GroundAtlas] {mat_name} shading_model AFTER set_editor_property = {after}")
+    except Exception:
+        after = None
+
+    if after != unreal.MaterialShadingModel.MSM_UNLIT:
+        # Attempt 2: use integer value directly (MSM_UNLIT = 0 in the enum).
+        try:
+            mat.set_editor_property("shading_model", 0)
+            after2 = mat.get_editor_property("shading_model")
+            unreal.log(f"[GroundAtlas] {mat_name} shading_model AFTER int(0) = {after2}")
+        except Exception as e2:
+            unreal.log_warning(f"[GroundAtlas] {mat_name} int fallback also failed: {e2}")
+
+    # Two-sided
+    try:
+        mat.set_editor_property("two_sided", True)
+    except Exception as e:
+        unreal.log_warning(f"[GroundAtlas] {mat_name} set two_sided failed: {e}")
+
+
+# Unlit graph: TexCoord * TilingScale -> Texture -> EmissiveColor. Two-sided.
 def _build_simple_material_graph(mat: unreal.Material, atlas_tex: unreal.Texture2D, _rotation_deg: int):
     mel = unreal.MaterialEditingLibrary
 
     try:
         mel.delete_all_material_expressions(mat)
     except Exception:
-        for e in mel.get_material_expressions(mat) or []:
-            try:
-                mel.delete_material_expression(mat, e)
-            except Exception:
-                pass
+        try:
+            for e in mat.get_editor_property("expressions") or []:
+                try:
+                    mel.delete_material_expression(mat, e)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    _force_unlit(mat)
 
     tex_coord = mel.create_material_expression(mat, unreal.MaterialExpressionTextureCoordinate, -300, -60)
     tiling = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -300, 80)
@@ -146,27 +192,40 @@ def _build_simple_material_graph(mat: unreal.Material, atlas_tex: unreal.Texture
     tex_sample.set_editor_property("parameter_name", "GroundAtlas")
     mel.connect_material_expressions(mul, "", tex_sample, "UVs")
 
-    rough = mel.create_material_expression(mat, unreal.MaterialExpressionScalarParameter, -100, 120)
-    rough.set_editor_property("parameter_name", "Roughness")
-    rough.set_editor_property("default_value", 0.9)
+    mel.connect_material_property(tex_sample, "RGB", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
-    mel.connect_material_property(tex_sample, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
-    mel.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
+    # Verify final shading model before recompile.
+    try:
+        final_sm = mat.get_editor_property("shading_model")
+        unreal.log(f"[GroundAtlas] {mat.get_name()} shading_model FINAL (pre-recompile) = {final_sm}")
+    except Exception:
+        pass
+
     try:
         mel.recompile_material(mat)
+    except Exception:
+        pass
+
+    # Verify shading model survived recompile.
+    try:
+        post_sm = mat.get_editor_property("shading_model")
+        unreal.log(f"[GroundAtlas] {mat.get_name()} shading_model POST-RECOMPILE = {post_sm}")
+        if post_sm != unreal.MaterialShadingModel.MSM_UNLIT:
+            unreal.log_error(f"[GroundAtlas] {mat.get_name()} IS STILL LIT AFTER RECOMPILE!")
     except Exception:
         pass
 
 
 def main():
     proj = _proj_dir()
-    src = os.path.join(proj, "SourceAssets", "Ground", "GroundAtlas_2x2_1024.png")
-    if not os.path.isfile(src):
-        unreal.log_error(f"[GroundAtlas] Missing source PNG: {src}")
-        return
-
     dest_dir = "/Game/World/Ground"
     tex_asset_name = "T_GroundAtlas_2x2_1024"
+
+    src = os.path.join(proj, "SourceAssets", "Ground", "GroundAtlas_2x2_1024.png")
+    existing_tex_check = f"{dest_dir}/{tex_asset_name}"
+    if not os.path.isfile(src) and not unreal.EditorAssetLibrary.does_asset_exist(existing_tex_check):
+        unreal.log_error(f"[GroundAtlas] Missing source PNG and no existing texture asset: {src}")
+        return
     mat_variants = [
         ("M_GroundAtlas_2x2_R0", 0),
         ("M_GroundAtlas_2x2_R90", 90),

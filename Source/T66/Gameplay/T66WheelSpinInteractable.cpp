@@ -38,61 +38,22 @@ AT66WheelSpinInteractable::AT66WheelSpinInteractable()
 		WheelMesh->SetRelativeLocation(FVector(0.f, 0.f, 95.f));
 	}
 
-	// Default expected import locations (safe if missing).
-	// Note: per-color subfolders avoid material/texture name collisions (Material_001, Image_0...).
-	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/Black/SM_Wheel_Black.SM_Wheel_Black")));
-	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/Red/SM_Wheel_Red.SM_Wheel_Red")));
-	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/Yellow/SM_Wheel_Yellow.SM_Wheel_Yellow")));
-	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/White/SM_Wheel_White.SM_Wheel_White")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Wheels/Wheel.Wheel")));
 
 	ApplyRarityVisuals();
 }
 
 void AT66WheelSpinInteractable::ApplyRarityVisuals()
 {
-	auto PickMesh = [&]() -> const TSoftObjectPtr<UStaticMesh>&
+	if (TryApplyImportedMesh())
 	{
-		switch (Rarity)
+		if (SphereBase) SphereBase->SetVisibility(false, true);
+		if (WheelMesh && WheelMesh != VisualMesh)
 		{
-			case ET66Rarity::Black: return MeshBlack;
-			case ET66Rarity::Red: return MeshRed;
-			case ET66Rarity::Yellow: return MeshYellow;
-			case ET66Rarity::White: return MeshWhite;
-			default: return MeshBlack;
-		}
-	};
-
-	UStaticMesh* M = nullptr;
-	const TSoftObjectPtr<UStaticMesh>& Ptr = PickMesh();
-	if (!Ptr.IsNull())
-	{
-		M = Ptr.Get();
-		if (!M)
-		{
-			M = Ptr.LoadSynchronous();
-		}
-	}
-
-	if (M && WheelMesh)
-	{
-		// Imported mesh: use as-authored and hide the sphere base.
-		WheelMesh->EmptyOverrideMaterials();
-		WheelMesh->SetStaticMesh(M);
-		WheelMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
-		WheelMesh->SetRelativeRotation(FRotator::ZeroRotator);
-		// Ground to actor origin using bounds (handles pivots already at the base).
-		const FBoxSphereBounds B = M->GetBounds();
-		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z);
-		WheelMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ));
-
-		if (SphereBase)
-		{
-			SphereBase->SetVisibility(false, true);
+			WheelMesh->SetVisibility(false, true);
 		}
 		return;
 	}
-
-	// Fallback: primitives + rarity tint.
 	const FLinearColor R = FT66RarityUtil::GetRarityColor(Rarity);
 	FT66VisualUtil::ApplyT66Color(SphereBase, this, FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
 	FT66VisualUtil::ApplyT66Color(WheelMesh, this, R);
