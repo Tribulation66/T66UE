@@ -171,6 +171,7 @@ protected:
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
 	void SpawnWorldInteractablesForStage();
+	void SpawnModelShowcaseRow();
 	void SpawnStageBoostPlatformAndInteractables();
 	void SpawnStageEffectTilesForStage();
 	void SpawnColiseumArenaIfNeeded();
@@ -228,7 +229,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabTreeOfLife();
 
-	/** Spawn an interactable in the Lab (TreeOfLife, CashTruck, WheelSpin, IdolAltar). Returns spawned actor or null. */
+	/** Spawn an interactable in the Lab (TreeOfLife, Chest, WheelSpin, IdolAltar, Crate). Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabInteractable(FName InteractableID);
 

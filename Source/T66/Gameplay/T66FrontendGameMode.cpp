@@ -8,6 +8,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66RetroFXSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
@@ -53,9 +54,9 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
 				LC->SetMobility(EComponentMobility::Movable);
-				LC->SetIntensity(3.f);  // Fill light — SkyLight is primary ambient
+				LC->SetIntensity(3.f);  // Fill light ??? SkyLight is primary ambient
 				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-				LC->CastShadows = false; // Shadows disabled — replicates asset-preview look
+				LC->CastShadows = false; // Shadows disabled ??? replicates asset-preview look
 				LC->bAtmosphereSunLight = true;
 				LC->AtmosphereSunLightIndex = 0;
 				LC->SetForwardShadingPriority(1); // Primary for forward shading
@@ -99,7 +100,7 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
 		{
 			LC->SetMobility(EComponentMobility::Movable);
-			LC->CastShadows = false; // Shadows disabled globally — replicates asset-preview look
+			LC->CastShadows = false; // Shadows disabled globally ??? replicates asset-preview look
 			LC->bAtmosphereSunLight = true;
 			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(T66MoonTag) ? 1 : 0;
 			LC->SetForwardShadingPriority(DirLight->Tags.Contains(T66MoonTag) ? 0 : 1); // Sun primary for forward shading
@@ -168,11 +169,11 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			PPVolume->bUnbound = true;
 			FPostProcessSettings& PPS = PPVolume->Settings;
 			PPS.bOverride_AutoExposureMinBrightness = true;
-			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure — matches asset-preview consistency
+			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure ??? matches asset-preview consistency
 			PPS.bOverride_AutoExposureMaxBrightness = true;
 			PPS.AutoExposureMaxBrightness = 1.0f;  // Same as min = no auto-exposure variation
 			PPS.bOverride_AmbientOcclusionIntensity = true;
-			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off — eliminates dark creases on characters
+			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off ??? eliminates dark creases on characters
 			PPS.bOverride_ColorSaturation = true;
 			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
 			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned PostProcessVolume (locked exposure)"));
@@ -195,7 +196,7 @@ static void SpawnFrontendLightingIfNeeded(UWorld* World)
 			{
 				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
 				SC->Cubemap = HDRICubemap;
-				SC->SetIntensity(8.0f); // Dominant ambient — overshooting intentionally for bright characters
+				SC->SetIntensity(8.0f); // Dominant ambient ??? overshooting intentionally for bright characters
 				SC->bLowerHemisphereIsBlack = false;
 				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f)); // Near-white underside fill
 				UE_LOG(LogTemp, Log, TEXT("Frontend: SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
@@ -251,7 +252,7 @@ void AT66FrontendGameMode::BeginPlay()
 	}
 
 	UWorld* World = GetWorld();
-	// Same sky and lights as gameplay level — HDRI cubemap SkyLight for ambient (no Lumen).
+	// Same sky and lights as gameplay level ??? HDRI cubemap SkyLight for ambient (no Lumen).
 	SpawnFrontendLightingIfNeeded(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
@@ -261,6 +262,7 @@ void AT66FrontendGameMode::BeginPlay()
 			PS->OnSettingsChanged.AddDynamic(this, &AT66FrontendGameMode::HandleSettingsChanged);
 		}
 	}
+	HandleSettingsChanged();
 
 	// Spawn preview stages at visible positions (the main camera will look at them directly).
 	if (World)
@@ -269,7 +271,7 @@ void AT66FrontendGameMode::BeginPlay()
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		// Both preview stages share the same platform location — we toggle visibility
+		// Both preview stages share the same platform location ??? we toggle visibility
 		// instead of moving the camera between two positions.
 		const FVector PreviewOrigin(100000.f, 0.f, 0.f);
 
@@ -308,7 +310,7 @@ void AT66FrontendGameMode::BeginPlay()
 				FRotator::ZeroRotator,
 				SpawnParams
 			);
-			// Start hidden — hero is shown first; companion becomes visible when its screen activates.
+			// Start hidden ??? hero is shown first; companion becomes visible when its screen activates.
 			if (CompStage) CompStage->SetStageVisible(false);
 			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage (hidden) for in-world preview"));
 		}
@@ -388,6 +390,14 @@ void AT66FrontendGameMode::HandleSettingsChanged()
 	UWorld* World = GetWorld();
 	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
 	AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(World);
+
+	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
+	{
+		if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
+		{
+			RetroFX->ApplyCurrentSettings(World);
+		}
+	}
 }
 
 void AT66FrontendGameMode::PositionCameraForHeroPreview()
@@ -443,3 +453,5 @@ void AT66FrontendGameMode::PositionCameraForCompanionPreview()
 		break;
 	}
 }
+
+

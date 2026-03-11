@@ -26,7 +26,7 @@
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66TreeOfLifeInteractable.h"
-#include "Gameplay/T66CashTruckInteractable.h"
+#include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66StageBoostGate.h"
@@ -38,6 +38,7 @@
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66RetroFXSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PosterizeSubsystem.h"
 #include "Gameplay/T66EclipseActor.h"
@@ -54,6 +55,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Engine/Texture.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "GameFramework/PlayerStart.h"
@@ -238,6 +240,7 @@ void AT66GameMode::BeginPlay()
 			PS->OnSettingsChanged.AddDynamic(this, &AT66GameMode::HandleSettingsChanged);
 		}
 	}
+	HandleSettingsChanged();
 
 	// Coliseum mode: only spawn owed bosses + miasma (no houses, no waves, no NPCs, no start gate/pillars).
 	if (IsColiseumStage())
@@ -328,6 +331,7 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	SpawnCornerHousesAndNPCs();
 	SpawnTricksterAndCowardiceGate();
 	SpawnWorldInteractablesForStage();
+	SpawnModelShowcaseRow();
 
 	// Scatter decorative props.
 	if (UGameInstance* PropGI = GetGameInstance())
@@ -348,7 +352,7 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	// [GOLD] Phase 2 is now staggered across 4 ticks to eliminate the ~1 second hitch:
 	//   Tick 1: Preload character visuals for this stage's mobs + boss (sync loads happen here, before combat)
 	//   Tick 2: Spawn miasma boundary + miasma manager (wall visuals + dynamic materials)
-	//   Tick 3: Spawn enemy director (triggers first wave — enemies are cheap now because visuals are cached)
+	//   Tick 3: Spawn enemy director (triggers first wave ??? enemies are cheap now because visuals are cached)
 	//   Tick 4: Spawn boss + boss gate
 	UWorld* World = GetWorld();
 	if (World)
@@ -1479,7 +1483,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	// Find closest flat surface to a reference point (flat = normal nearly vertical). Search in rings outward.
 	auto FindClosestFlatSurface = [World](float RefX, float RefY) -> FVector
 	{
-		static constexpr float MinNormalZ = 0.92f;   // ~22° max slope
+		static constexpr float MinNormalZ = 0.92f;   // ~22?? max slope
 		static constexpr float SearchRadiusMax = 1200.f;
 		static constexpr float RadiusStep = 120.f;
 		static constexpr int32 NumAngles = 16;
@@ -1742,9 +1746,9 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 
-	// Luck-affected counts (trees/trucks/wheels) use central tuning. Locations are still stage-seeded (not luck-affected).
+	// Luck-affected counts use central tuning. Locations are still stage-seeded (not luck-affected).
 	const int32 CountTrees = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TreesPerStage, Rng) : Rng.RandRange(2, 5);
-	const int32 CountTrucks = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TrucksPerStage, Rng) : Rng.RandRange(2, 5);
+	const int32 CountChests = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->ChestsPerStage, Rng) : Rng.RandRange(2, 5);
 	const int32 CountWheels = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->WheelsPerStage, Rng) : Rng.RandRange(2, 5);
 
 	// Luck Rating tracking (quantity).
@@ -1752,12 +1756,12 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	{
 		const int32 TreesMin = (Tuning ? Tuning->TreesPerStage.Min : 2);
 		const int32 TreesMax = (Tuning ? Tuning->TreesPerStage.Max : 5);
-		const int32 TrucksMin = (Tuning ? Tuning->TrucksPerStage.Min : 2);
-		const int32 TrucksMax = (Tuning ? Tuning->TrucksPerStage.Max : 5);
+		const int32 ChestsMin = (Tuning ? Tuning->ChestsPerStage.Min : 2);
+		const int32 ChestsMax = (Tuning ? Tuning->ChestsPerStage.Max : 5);
 		const int32 WheelsMin = (Tuning ? Tuning->WheelsPerStage.Min : 2);
 		const int32 WheelsMax = (Tuning ? Tuning->WheelsPerStage.Max : 5);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("TreesPerStage")), CountTrees, TreesMin, TreesMax);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("TrucksPerStage")), CountTrucks, TrucksMin, TrucksMax);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestsPerStage")), CountChests, ChestsMin, ChestsMax);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("WheelsPerStage")), CountWheels, WheelsMin, WheelsMax);
 	}
 
@@ -1777,19 +1781,19 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			}
 		}
 	}
-	for (int32 i = 0; i < CountTrucks; ++i)
+	for (int32 i = 0; i < CountChests; ++i)
 	{
-		if (AT66CashTruckInteractable* Truck = Cast<AT66CashTruckInteractable>(SpawnOne(AT66CashTruckInteractable::StaticClass())))
+		if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnOne(AT66ChestInteractable::StaticClass())))
 		{
-			const float MimicChance = Tuning ? FMath::Clamp(Tuning->TruckMimicChance, 0.f, 1.f) : 0.20f;
-			Truck->bIsMimic = (Rng.GetFraction() < MimicChance); // explicitly not luck-affected
+			const float MimicChance = Tuning ? FMath::Clamp(Tuning->ChestMimicChance, 0.f, 1.f) : 0.20f;
+			Chest->bIsMimic = (Rng.GetFraction() < MimicChance);
 
 			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
 			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			Truck->SetRarity(R);
+			Chest->SetRarity(R);
 			if (RunState)
 			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("TruckRarity")), R);
+				RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), R);
 			}
 		}
 	}
@@ -1862,6 +1866,78 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			Totem->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
 		}
 	}
+}
+
+void AT66GameMode::SpawnModelShowcaseRow()
+{
+	if (IsColiseumStage() || IsLabLevel()) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	constexpr float ShowcaseX = -32955.f;
+	constexpr float Spacing = 800.f;
+
+	static const TCHAR* MeshPaths[] = {
+		TEXT("/Game/World/Interactables/Chests/Black/ChestBlack.ChestBlack"),
+		TEXT("/Game/World/Interactables/Chests/Red/ChestRed.ChestRed"),
+		TEXT("/Game/World/Interactables/Chests/White/ChestWhite.ChestWhite"),
+		TEXT("/Game/World/Interactables/Chests/Yellow/ChestYellow.ChestYellow"),
+		TEXT("/Game/World/Interactables/Crate.Crate"),
+		TEXT("/Game/World/Interactables/Totem.Totem"),
+		TEXT("/Game/World/Interactables/Wheels/Wheel.Wheel"),
+		TEXT("/Game/World/Props/Barn.Barn"),
+		TEXT("/Game/World/Props/Hay.Hay"),
+		TEXT("/Game/World/Props/Hay2.Hay2"),
+		TEXT("/Game/World/Props/Tree.Tree"),
+		TEXT("/Game/World/Props/Tree2.Tree2"),
+	};
+
+	const int32 Count = UE_ARRAY_COUNT(MeshPaths);
+	const float TotalWidth = (Count - 1) * Spacing;
+	const float StartY = -TotalWidth * 0.5f;
+
+	FActorSpawnParameters SP;
+	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (int32 i = 0; i < Count; ++i)
+	{
+		UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, MeshPaths[i]);
+		if (!Mesh)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Showcase] Mesh not found: %s"), MeshPaths[i]);
+			continue;
+		}
+
+		const float Y = StartY + i * Spacing;
+
+		// Ground trace to find terrain surface
+		FVector SpawnLoc(ShowcaseX, Y, 220.f);
+		FHitResult Hit;
+		const FVector TraceStart(ShowcaseX, Y, 2000.f);
+		const FVector TraceEnd(ShowcaseX, Y, -4000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+		{
+			SpawnLoc = Hit.ImpactPoint;
+		}
+
+		// Offset so the mesh bottom sits on the ground
+		const FBoxSphereBounds B = Mesh->GetBounds();
+		const float MeshBottomZ = B.Origin.Z - B.BoxExtent.Z;
+		SpawnLoc.Z -= MeshBottomZ;
+
+		AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SP);
+		if (!Actor) continue;
+
+		UStaticMeshComponent* SMC = Actor->GetStaticMeshComponent();
+		if (SMC)
+		{
+			SMC->SetMobility(EComponentMobility::Movable);
+			SMC->SetStaticMesh(Mesh);
+			SMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[Showcase] Spawned %d model showcase actors in front of PlayerStart."), Count);
 }
 
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
@@ -2812,7 +2888,7 @@ static void AppendWallBox(
 	const FVector C = Center;
 	const float hx = HE.X, hy = HE.Y, hz = HE.Z;
 
-	// Side faces → brown material
+	// Side faces ??? brown material
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(hx, -hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, hy, hz), C + FVector(hx, -hy, hz),
 		FVector(1, 0, 0));
@@ -2829,7 +2905,7 @@ static void AppendWallBox(
 		C + FVector(-hx, hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, -hy, -hz), C + FVector(-hx, -hy, -hz),
 		FVector(0, 0, -1));
 
-	// Top face → ground atlas material
+	// Top face ??? ground atlas material
 	AppendBoxFace(TopV, TopT, TopN, TopUV,
 		C + FVector(-hx, -hy, hz), C + FVector(hx, -hy, hz), C + FVector(hx, hy, hz), C + FVector(-hx, hy, hz),
 		FVector(0, 0, 1));
@@ -2907,7 +2983,7 @@ static void AppendTransformedWedge(
 			TransN[I] = Rot.RotateVector(NScaled).GetSafeNormal() * (bReverse ? -1.f : 1.f);
 		}
 
-		// Slope triangles → FloorMat arrays
+		// Slope triangles ??? FloorMat arrays
 		{
 			TMap<int32, int32> Remap;
 			for (int32 I = WedgeSlopeTriStart; I < WedgeSlopeTriEnd; I += 3)
@@ -2934,7 +3010,7 @@ static void AppendTransformedWedge(
 			}
 		}
 
-		// Non-slope triangles → brown side arrays
+		// Non-slope triangles ??? brown side arrays
 		{
 			TMap<int32, int32> Remap;
 			for (int32 I = 0; I < WedgeTriIdxCount; I += 3)
@@ -3086,7 +3162,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	TopPMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TopPMC->RegisterComponent();
 
-	// --- Wall sides as procedural mesh (same approach as tops/ramps — no engine default material) ---
+	// --- Wall sides as procedural mesh (same approach as tops/ramps ??? no engine default material) ---
 	const float WallThickness = FMath::Clamp(Preset.SurfaceThickness, 60.f, 140.f);
 	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
 
@@ -3094,10 +3170,22 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	UMaterialInstanceDynamic* BrownSideMat = nullptr;
 	{
 		UMaterialInterface* EnvUnlit = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+		UTexture* WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+		if (!WhiteTexture)
+		{
+			WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+		}
 		if (EnvUnlit)
 		{
 			BrownSideMat = UMaterialInstanceDynamic::Create(EnvUnlit, GetTransientPackage());
-			BrownSideMat->SetVectorParameterValue(FName("Tint"), FLinearColor(0.35f, 0.2f, 0.08f, 1.f));
+			if (BrownSideMat && WhiteTexture)
+			{
+				BrownSideMat->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
+			}
+			if (BrownSideMat)
+			{
+				BrownSideMat->SetVectorParameterValue(FName("Tint"), FLinearColor(0.35f, 0.2f, 0.08f, 1.f));
+			}
 		}
 	}
 
@@ -3368,7 +3456,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 }
 
 // ============================================================================
-// HDRI Equirectangular → TextureCube conversion (editor-only, runs once)
+// HDRI Equirectangular ??? TextureCube conversion (editor-only, runs once)
 // ============================================================================
 #if WITH_EDITORONLY_DATA
 
@@ -3419,7 +3507,7 @@ static UTextureCube* EnsureHDRICubemap()
 	UTexture2D* Src = LoadObject<UTexture2D>(nullptr, HDRIEquirectPath);
 	if (!Src)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[HDRI] No equirectangular source at %s — skipping cubemap creation"), HDRIEquirectPath);
+		UE_LOG(LogTemp, Log, TEXT("[HDRI] No equirectangular source at %s ??? skipping cubemap creation"), HDRIEquirectPath);
 		return nullptr;
 	}
 
@@ -3446,9 +3534,9 @@ static UTextureCube* EnsureHDRICubemap()
 	// Face size: half the equirect height, clamped for sanity.
 	const int32 FaceSize = FMath::Clamp(SrcH / 2, 64, 1024);
 	const int32 FacePixels = FaceSize * FaceSize;
-	const int32 OutBpp = 8; // RGBA16F = 4 channels × 2 bytes (FFloat16)
+	const int32 OutBpp = 8; // RGBA16F = 4 channels ?? 2 bytes (FFloat16)
 
-	UE_LOG(LogTemp, Log, TEXT("[HDRI] Creating cubemap from %dx%d equirect (format %d) → %dx%d faces"), SrcW, SrcH, (int32)SrcFmt, FaceSize, FaceSize);
+	UE_LOG(LogTemp, Log, TEXT("[HDRI] Creating cubemap from %dx%d equirect (format %d) ??? %dx%d faces"), SrcW, SrcH, (int32)SrcFmt, FaceSize, FaceSize);
 
 	// Create the package and TextureCube
 	UPackage* Package = CreatePackage(HDRICubePackagePath);
@@ -3597,9 +3685,9 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
 				LightComp->SetMobility(EComponentMobility::Movable); // Dynamic lighting so landscape stays lit without Build Lighting
-				LightComp->SetIntensity(3.f);  // Fill light — SkyLight is primary ambient
+				LightComp->SetIntensity(3.f);  // Fill light ??? SkyLight is primary ambient
 				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
-				LightComp->CastShadows = false; // Shadows disabled — prevents dark bands on characters
+				LightComp->CastShadows = false; // Shadows disabled ??? prevents dark bands on characters
 
 				// Drive SkyAtmosphere sun/sky scattering (mid-day blue sky).
 				LightComp->bAtmosphereSunLight = true;
@@ -3623,7 +3711,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(
 			ADirectionalLight::StaticClass(),
 			FVector(0.f, 0.f, 1000.f),
-			FRotator(50.f, 135.f, 0.f), // ~180° from sun so moon is "up" at night
+			FRotator(50.f, 135.f, 0.f), // ~180?? from sun so moon is "up" at night
 			SpawnParams
 		);
 		if (Moon)
@@ -3721,7 +3809,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		}
 	}
 
-	// Apply player setting: fog off by default (Settings → Graphics → Fog).
+	// Apply player setting: fog off by default (Settings ??? Graphics ??? Fog).
 	if (HeightFog)
 	{
 		UExponentialHeightFogComponent* FogComp = HeightFog->FindComponentByClass<UExponentialHeightFogComponent>();
@@ -3768,11 +3856,11 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			SpawnedPP->bUnbound = true;
 			FPostProcessSettings& PPS = SpawnedPP->Settings;
 			PPS.bOverride_AutoExposureMinBrightness = true;
-			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure — matches asset-preview consistency
+			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure ??? matches asset-preview consistency
 			PPS.bOverride_AutoExposureMaxBrightness = true;
 			PPS.AutoExposureMaxBrightness = 1.0f;  // Same as min = no auto-exposure variation
 			PPS.bOverride_AmbientOcclusionIntensity = true;
-			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off — eliminates dark creases on characters
+			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off ??? eliminates dark creases on characters
 			PPS.bOverride_ColorSaturation = true;
 			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f); // Slight desaturation so scene isn't uniformly punchy
 #if WITH_EDITOR
@@ -3791,7 +3879,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		PPS.bOverride_AutoExposureMaxBrightness = true;
 		PPS.AutoExposureMaxBrightness = 1.0f;  // Locked exposure
 		PPS.bOverride_AmbientOcclusionIntensity = true;
-		PPS.AmbientOcclusionIntensity = 0.0f;  // AO off — eliminates dark creases on characters
+		PPS.AmbientOcclusionIntensity = 0.0f;  // AO off ??? eliminates dark creases on characters
 		PPS.bOverride_ColorSaturation = true;
 		PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
 	}
@@ -3803,7 +3891,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
 		{
 			LC->SetMobility(EComponentMobility::Movable);
-			LC->CastShadows = false; // Shadows disabled globally — replicates asset-preview look
+			LC->CastShadows = false; // Shadows disabled globally ??? replicates asset-preview look
 			LC->bAtmosphereSunLight = true;
 			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(MoonTag) ? 1 : 0;
 			LC->SetForwardShadingPriority(DirLight->Tags.Contains(MoonTag) ? 0 : 1); // Sun primary for forward shading
@@ -3815,7 +3903,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			else
 			{
 				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-				LC->SetIntensity(3.f); // Fill light — SkyLight is primary ambient
+				LC->SetIntensity(3.f); // Fill light ??? SkyLight is primary ambient
 			}
 		}
 		if (USceneComponent* Root = DirLight->GetRootComponent())
@@ -3846,7 +3934,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 				// Studio HDRI cubemap: replicates asset-preview lighting quality.
 				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
 				SC->Cubemap = HDRICubemap;
-				SC->SetIntensity(8.0f); // Dominant ambient — overshooting intentionally for bright characters
+				SC->SetIntensity(8.0f); // Dominant ambient ??? overshooting intentionally for bright characters
 				SC->bLowerHemisphereIsBlack = false;
 				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f)); // Near-white underside fill
 				UE_LOG(LogTemp, Log, TEXT("[LIGHT] SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
@@ -3909,7 +3997,7 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 	}
 	else
 	{
-		// Dark theme: Eclipse Sun — sun off, eclipsed sun (moon light) is the primary light.
+		// Dark theme: Eclipse Sun ??? sun off, eclipsed sun (moon light) is the primary light.
 		SunComp->SetIntensity(0.f);
 		SunComp->bAtmosphereSunLight = false;
 	}
@@ -4104,6 +4192,14 @@ void AT66GameMode::HandleSettingsChanged()
 {
 	ApplyThemeToDirectionalLights();
 	ApplyThemeToAtmosphereAndLighting();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
+		{
+			RetroFX->ApplyCurrentSettings(GetWorld());
+		}
+	}
 }
 
 void AT66GameMode::SpawnPlayerStartIfNeeded()
@@ -4720,8 +4816,8 @@ AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 	UClass* ClassToSpawn = nullptr;
 	if (InteractableID == FName(TEXT("TreeOfLife")))
 		ClassToSpawn = AT66TreeOfLifeInteractable::StaticClass();
-	else if (InteractableID == FName(TEXT("CashTruck")))
-		ClassToSpawn = AT66CashTruckInteractable::StaticClass();
+	else if (InteractableID == FName(TEXT("Chest")))
+		ClassToSpawn = AT66ChestInteractable::StaticClass();
 	else if (InteractableID == FName(TEXT("WheelSpin")))
 		ClassToSpawn = AT66WheelSpinInteractable::StaticClass();
 	else if (InteractableID == FName(TEXT("IdolAltar")))
@@ -4753,3 +4849,6 @@ void AT66GameMode::ResetLabSpawnedActors()
 	}
 	LabSpawnedActors.Empty();
 }
+
+
+

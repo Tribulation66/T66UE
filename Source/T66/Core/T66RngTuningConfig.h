@@ -145,7 +145,7 @@ public:
 	FT66IntRange TreesPerStage = { 2, 5 };
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
-	FT66IntRange TrucksPerStage = { 2, 5 };
+	FT66IntRange ChestsPerStage = { 2, 5 };
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66IntRange WheelsPerStage = { 2, 5 };
@@ -153,9 +153,9 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66RarityWeights InteractableRarityBase;
 
-	/** Truck mimic chance is explicitly NOT luck-affected (per your spec). */
+	/** Chest mimic chance is explicitly NOT luck-affected. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float TruckMimicChance = 0.20f;
+	float ChestMimicChance = 0.20f;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66IntRange CratesPerStage = { 1, 3 };

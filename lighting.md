@@ -42,12 +42,16 @@ This is exactly what Megabonk does: characters and world geometry are Unlit, the
 
 ### Master materials
 
-All material instances in the project must inherit from one of two Unlit master materials:
+All material instances in the project must inherit from one of these Unlit master materials:
 
-| Master Material | Asset Path | Use For |
-|---|---|---|
-| **M_Character_Unlit** | `/Game/Materials/M_Character_Unlit` | Heroes, enemies, companions, NPCs, any character/creature mesh |
-| **M_Environment_Unlit** | `/Game/Materials/M_Environment_Unlit` | Ground, terrain, structures, ramps, props, map geometry, interactables, everything else |
+| Master Material | Asset Path | Texture Param | Use For |
+|---|---|---|---|
+| **M_Character_Unlit** | `/Game/Materials/M_Character_Unlit` | `DiffuseColorMap` | Heroes, enemies, companions, NPCs — any character/creature (FBX imports) |
+| **M_Environment_Unlit** | `/Game/Materials/M_Environment_Unlit` | `DiffuseColorMap` | Ground, terrain, structures, ramps, procedural geometry, solid-color surfaces |
+| **M_FBX_Unlit** | `/Game/Materials/M_FBX_Unlit` | `DiffuseColorMap` | Alternate character master — mirrors `FBXLegacyPhongSurfaceMaterial` param layout |
+| **M_GLB_Unlit** | `/Game/Materials/M_GLB_Unlit` | `BaseColorTexture` | Props and interactables imported via GLB (Interchange uses different param names) |
+
+> **Why two different texture parameter names?** FBX imports create MICs with `DiffuseColorMap`. GLB imports create MICs with `BaseColorTexture`. The master materials must match the parameter name used by the import pipeline so textures carry over during reparenting.
 
 ### M_Character_Unlit
 
@@ -243,52 +247,109 @@ Since all game materials are Unlit, the lighting stack exists **solely to render
 **Cause:** `CoronaIntensity` was 15.0, causing massive bloom bleed.
 **Solution:** Reduced `CoronaIntensity` to 3.0, set `BloomIntensity` to 0.0 in the post-process volume, and raised `BloomThreshold` to 10.0.
 
+### Problem: Newly imported FBX characters appeared completely black
+
+**Cause:** UE5's Interchange pipeline created MICs parented to `FBXLegacyPhongSurfaceMaterial` but **did not bind the textures** to the `DiffuseColorMap` parameter. The textures existed as separate `Texture2D` assets in the same directory (`Image_0`, `Image_0_003`, etc.) but the MICs' `DiffuseColorMap` was empty. Combined with the dim eclipse lighting (designed for Unlit materials), a Lit material with no texture rendered as pure black.
+**Solution:** Created `Scripts/MakeCharacterMaterialsUnlit.py` with smart texture discovery — when `DiffuseColorMap` is empty, the script searches the same directory for `Texture2D` assets matching the MIC's naming convention (`Material_0_003` → `Image_0_003`), then reparents to `M_Character_Unlit` and sets the texture.
+
+### Problem: GLB-imported props had wrong material (grey/untextured)
+
+**Cause:** GLB imports use a different engine parent (`MI_Default_Opaque` → `M_Default` at `/InterchangeAssets/gltf/M_Default`) and a different texture parameter name (`BaseColorTexture` instead of `DiffuseColorMap`). Early conversion scripts assumed `DiffuseColorMap` for everything, so GLB textures were lost during reparenting. Additionally, `M_Default` is an engine material and cannot be modified in-place.
+**Solution:** Created `M_GLB_Unlit` with `BaseColorTexture` as its parameter, and `Scripts/MakeGLBImportsUnlit.py` to reparent GLB MICs specifically.
+
+### Problem: Engine materials cannot be modified
+
+**Cause:** Both `FBXLegacyPhongSurfaceMaterial` (FBX imports) and `M_Default` (GLB imports) are engine-level materials. MICs inherit their shading model from their parent, and there is no per-MIC shading model override. Attempting to modify engine materials either fails silently or breaks on engine updates.
+**Solution:** Create project-specific Unlit master materials (`M_Character_Unlit`, `M_GLB_Unlit`) that mirror the engine material's parameter layout but use Unlit shading. Reparent MICs to these project materials instead of modifying the engine materials.
+
 ---
 
-## 7. Importing New Models — Required Steps
+## 7. Importing New Characters (FBX)
 
-When importing any new mesh (FBX, GLB, OBJ) from Blender, Mixamo, TRELLIS, or any other source:
+### The two-step workflow
 
-### The problem
+1. **Import** — use `Scripts/ImportSkeletalMeshes.py` (vanilla Interchange import, no material changes)
+2. **Convert** — run `Scripts/MakeCharacterMaterialsUnlit.py` to make materials Unlit
 
-UE5 auto-generates `MaterialInstanceConstant` assets using `FBXLegacyPhongSurfaceMaterial` (a **Lit** material) as the parent. These will have directional shading, which breaks the Unlit visual style.
+These are always separate steps. Import first, verify the mesh/animations look correct, then convert materials.
 
-### Required post-import steps
+### What happens during FBX import
 
-1. **Identify the auto-generated material instances.** They will be in the same directory as the imported mesh, typically named after the mesh or its material slots.
+UE5's Interchange pipeline creates:
+- A `SkeletalMesh` asset
+- `MaterialInstanceConstant` (MIC) assets named like `Material_0`, `Material_0_003`, etc.
+- `Texture2D` assets named like `Image_0`, `Image_0_003`, etc.
 
-2. **Reparent to the correct Unlit master material:**
-   - **Characters/creatures** → set parent to `M_Character_Unlit`
-   - **Everything else** (environment, props, interactables) → set parent to `M_Environment_Unlit`
+The MICs are parented to `FBXLegacyPhongSurfaceMaterial` — an **engine material** that is Lit. You cannot modify engine materials, so the MICs must be reparented to a project Unlit material.
 
-3. **Set the texture parameter:**
-   - Find the `DiffuseColorMap` (or equivalent) texture the auto-generated MIC was using
-   - After reparenting, set `DiffuseColorMap` on the new parent to the same texture
-   - For solid-color materials with no texture, set the `Tint` parameter on `M_Environment_Unlit`
+### The texture binding problem
 
-4. **Save the material instance.**
+The Interchange pipeline sometimes **fails to bind textures** to the MICs it creates. The `DiffuseColorMap` parameter on the MIC is left empty, even though the corresponding texture assets exist in the same directory. This causes the character to render completely black (no texture + dim eclipse lighting = black).
 
-### Batch conversion scripts
+### How MakeCharacterMaterialsUnlit.py solves this
 
-For bulk operations, use the Python editor scripts:
+The script has smart texture discovery:
 
-| Script | Purpose |
-|---|---|
-| `Scripts/ConvertCharacterMaterialsToUnlit.py` | Reparents character MICs to `M_Character_Unlit` |
-| `Scripts/ConvertEnvironmentMaterialsToUnlit.py` | Reparents environment MICs to `M_Environment_Unlit` |
-| `Scripts/ConvertAllMaterialsToUnlit.py` | Converts both MICs and base Materials across the entire project |
+1. Scans all MICs under `/Game/Characters/` (Heroes, Companions, Enemies, NPCs)
+2. Skips anything already parented to `M_Character_Unlit` or `M_FBX_Unlit`
+3. For MICs parented to `FBXLegacyPhongSurfaceMaterial`:
+   - **First** tries reading `DiffuseColorMap` from the MIC (works for imports that bound textures)
+   - **If empty**, searches the same directory for `Texture2D` assets and matches by naming convention: `Material_0_003` → `Image_0_003`
+   - **Fallback**: if only one texture exists in the directory, uses that
+4. Reparents to `M_Character_Unlit`
+5. Sets `DiffuseColorMap` to the found texture
+6. Saves
 
-Run in-editor: **Tools > Execute Python Script** > select the script.
+Safe to re-run any time. Run after every character import.
 
-### Rules
+### Step-by-step for importing a new character
+
+1. Place your `.fbx` file(s) in `SourceAssets/Import/`
+2. Edit `Scripts/ImportSkeletalMeshes.py` — update the `IMPORTS` list with your new entry
+3. Run `ImportSkeletalMeshes.py` in the editor
+4. Verify the mesh imported correctly (check Content Browser for the assets)
+5. Run `Scripts/MakeCharacterMaterialsUnlit.py` to convert materials to Unlit
+6. Check the log — every MIC should show `Converted` with a texture name
+7. Play the game and verify the character displays textures correctly from all angles
+
+---
+
+## 8. Importing New Props / Interactables (GLB)
+
+### The workflow
+
+Props and interactables imported via GLB use a different material pipeline:
+- Parent material: `MI_Default_Opaque` → `M_Default` (engine material at `/InterchangeAssets/gltf/M_Default`)
+- Texture parameter: `BaseColorTexture` (not `DiffuseColorMap`)
+
+After importing GLB assets, run `Scripts/MakeGLBImportsUnlit.py`. It:
+1. Creates `M_GLB_Unlit` if it doesn't exist (Unlit, `BaseColorTexture` → Emissive Color)
+2. Finds all MICs parented to `MI_Default_Opaque` or `M_Default`
+3. Reads `BaseColorTexture` before reparenting, reparents to `M_GLB_Unlit`, re-sets it after
+4. Saves
+
+### Why two separate scripts?
+
+FBX and GLB imports use different parent materials and different texture parameter names. Mixing them in one script would be fragile. Keep them separate:
+
+| Import Format | Parent Material (engine) | Texture Param | Conversion Script |
+|---|---|---|---|
+| FBX (characters) | `FBXLegacyPhongSurfaceMaterial` | `DiffuseColorMap` | `MakeCharacterMaterialsUnlit.py` |
+| GLB (props/interactables) | `MI_Default_Opaque` / `M_Default` | `BaseColorTexture` | `MakeGLBImportsUnlit.py` |
+
+---
+
+## 9. Rules
 
 - **Never** use `DefaultLit`, `Lit`, or any other shading model
-- **Never** leave `FBXLegacyPhongSurfaceMaterial` as a parent material
+- **Never** leave `FBXLegacyPhongSurfaceMaterial` or `M_Default` as a parent material on shipped assets
 - **Never** add `UPointLightComponent` fill lights to characters
 - **Never** set `EmissiveColorMapWeight` as a lighting workaround
-- If a material needs to be visible from both sides, ensure `Two Sided = true` (both master materials have this enabled by default)
+- **Never** try to modify engine materials in-place — they're read-only and changes break on engine updates
+- If a material needs to be visible from both sides, ensure `Two Sided = true` (all master materials have this enabled by default)
+- Always run the appropriate conversion script **after** importing, as a separate step
 
-### Creating materials from scratch
+### Creating materials from scratch in C++
 
 If you need a new solid-color material at runtime (e.g., for a procedurally spawned prop):
 
@@ -302,29 +363,38 @@ MeshComponent->SetMaterial(0, MID);
 
 ---
 
-## 8. Relevant Source Files
+## 10. Relevant Source Files
+
+### C++ source
 
 | File | Role |
 |---|---|
 | `Source/T66/Gameplay/T66GameMode.cpp` | All Dark/Light theme lighting values, procedural map generation (platform tops, walls, ramps), ground atlas material loading |
-| `Source/T66/Gameplay/T66VisualUtil.cpp` | `EnsureAllWorldMeshesUnlit()`, `ApplyT66Color()`, `EnsureUnlitMaterials()` |
+| `Source/T66/Gameplay/T66VisualUtil.cpp` | `EnsureAllWorldMeshesUnlit()` (log-only safety net), `ApplyT66Color()`, `EnsureUnlitMaterials()` |
 | `Source/T66/Gameplay/T66EclipseActor.cpp` | Eclipse billboard positioning, camera orientation, corona material parameter control |
+
+### Python scripts (run in-editor via Tools > Execute Python Script)
+
+| Script | Purpose |
+|---|---|
+| `Scripts/ImportSkeletalMeshes.py` | Vanilla FBX import for characters (mesh + skeleton + anims + textures). No material changes. |
+| `Scripts/MakeCharacterMaterialsUnlit.py` | **Central character Unlit script.** Smart texture discovery + reparent FBX MICs to `M_Character_Unlit`. Run after every character import. |
+| `Scripts/MakeGLBImportsUnlit.py` | Reparent GLB-imported MICs to `M_GLB_Unlit`. Run after every prop/interactable GLB import. |
 | `Scripts/ImportGroundAtlas.py` | Generates the 4 Unlit ground atlas materials from source PNG |
-| `Scripts/CreatePosterizePostProcess.py` | Creates `M_PosterizePostProcess` with depth-based sky masking |
-| `Scripts/CreateEclipseCoronaMaterial.py` | Creates `M_EclipseCorona` with procedural radial gradient ring |
-| `Scripts/CreateCharacterUnlitMaterial.py` | Creates `M_Character_Unlit` master material |
-| `Scripts/CreateEnvironmentUnlitMaterial.py` | Creates `M_Environment_Unlit` master material |
-| `Scripts/ConvertCharacterMaterialsToUnlit.py` | Batch reparents character MICs |
-| `Scripts/ConvertEnvironmentMaterialsToUnlit.py` | Batch reparents environment MICs |
-| `Scripts/ConvertAllMaterialsToUnlit.py` | Full-project material conversion (MICs + base Materials) |
+| `Scripts/ImportStaticMeshes.py` | Vanilla static mesh import |
+| `Scripts/FlattenInterchangeAssets.py` | Flattens nested Interchange directory structure after import |
 
 ---
 
-## 9. Quick Reference Cheat Sheet
+## 11. Quick Reference Cheat Sheet
 
-**"My new character model has dark sides"** → Reparent its material instance to `M_Character_Unlit`.
+**"My new FBX character is completely black"** → Run `Scripts/MakeCharacterMaterialsUnlit.py`. The script finds unbound textures by directory search and reparents to `M_Character_Unlit`.
 
-**"My new prop has dark faces"** → Reparent its material instance to `M_Environment_Unlit`.
+**"My new GLB prop is grey/untextured"** → Run `Scripts/MakeGLBImportsUnlit.py`. It reparents to `M_GLB_Unlit` with the correct `BaseColorTexture` param.
+
+**"My new character model has dark sides"** → Same fix — run `MakeCharacterMaterialsUnlit.py`.
+
+**"My new prop has dark faces"** → Run `MakeGLBImportsUnlit.py` for GLB imports, or manually reparent to `M_Environment_Unlit` for other formats.
 
 **"A procedural mesh is grey/dark"** → Make sure you're calling `SetMaterial()` with either `FloorMat` or an MID of `M_Environment_Unlit`, not using `CreateAndSetMaterialInstanceDynamic(0)` from an engine material.
 

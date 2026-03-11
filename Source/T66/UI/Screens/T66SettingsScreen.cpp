@@ -140,6 +140,10 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 							[
 								MakeTabButton(Loc ? Loc->GetText_SettingsTabCrashing() : NSLOCTEXT("T66.Settings", "TabCrashing", "CRASHING"), ET66SettingsTab::Crashing)
 							]
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								MakeTabButton(NSLOCTEXT("T66.Settings", "TabRetroFX", "RETRO FX"), ET66SettingsTab::RetroFX)
+							]
 							+ SHorizontalBox::Slot().FillWidth(1.0f)
 							+ SHorizontalBox::Slot().AutoWidth()
 							[
@@ -190,6 +194,10 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 						+ SWidgetSwitcher::Slot()
 						[
 							BuildCrashingTab()
+						]
+						+ SWidgetSwitcher::Slot()
+						[
+							BuildRetroFXTab()
 						]
 					],
 				FT66PanelParams(ET66PanelType::Panel).SetPadding(0.0f)
@@ -626,7 +634,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGraphicsTab()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(FMargin(4.0f, 0.0f))
 			[
-				SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
+				SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "???"))
 				.Font(FT66Style::Tokens::FontRegular(20))
 				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 			];
@@ -1534,7 +1542,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 							]
 							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(FMargin(4.0f, 0.0f))
 							[
-								SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "▼"))
+								SNew(STextBlock).Text(NSLOCTEXT("T66.Common", "DropdownArrow", "???"))
 								.Font(FT66Style::Tokens::FontRegular(20))
 								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 							],
@@ -1589,6 +1597,325 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildAudioTab()
 		];
 }
 
+TSharedRef<SWidget> UT66SettingsScreen::BuildRetroFXTab()
+{
+	InitializeRetroFXFromUserSettingsIfNeeded();
+
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	const FText OnText = Loc ? Loc->GetText_On() : NSLOCTEXT("T66.Settings", "On", "ON");
+	const FText OffText = Loc ? Loc->GetText_Off() : NSLOCTEXT("T66.Settings", "Off", "OFF");
+
+	auto MakeSectionHeader = [](const FText& Text) -> TSharedRef<SWidget>
+	{
+		return SNew(STextBlock)
+			.Text(Text)
+			.Font(FT66Style::Tokens::FontBold(28))
+			.ColorAndOpacity(FT66Style::Tokens::Accent2);
+	};
+
+	auto MakeSliderRow = [](const FText& Label, const FText& Description, TFunction<float()> GetPercent, TFunction<void(float)> SetPercent) -> TSharedRef<SWidget>
+	{
+		return SNew(SBorder)
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+			.Padding(FMargin(15.0f, 12.0f))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(0.46f).VAlign(VAlign_Center)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(Label)
+						.Font(FT66Style::Tokens::FontRegular(28))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 4.0f, 18.0f, 0.0f)
+					[
+						SNew(STextBlock)
+						.Text(Description)
+						.Font(FT66Style::Tokens::FontRegular(20))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+				]
+				+ SHorizontalBox::Slot().FillWidth(0.44f).VAlign(VAlign_Center).Padding(10.0f, 0.0f)
+				[
+					SNew(SSlider)
+					.Value_Lambda([GetPercent]() { return FMath::Clamp(GetPercent(), 0.0f, 100.0f) / 100.0f; })
+					.OnValueChanged_Lambda([SetPercent](float V) { SetPercent(FMath::Clamp(V * 100.0f, 0.0f, 100.0f)); })
+				]
+				+ SHorizontalBox::Slot().FillWidth(0.10f).VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text_Lambda([GetPercent]()
+					{
+						return FText::FromString(FString::Printf(TEXT("%d"), FMath::RoundToInt(FMath::Clamp(GetPercent(), 0.0f, 100.0f))));
+					})
+					.Font(FT66Style::Tokens::FontRegular(24))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Right)
+				]
+			];
+	};
+
+	auto MakeToggleRow = [this, OnText, OffText](const FText& Label, const FText& Description, TFunction<bool()> GetValue, TFunction<void(bool)> SetValue) -> TSharedRef<SWidget>
+	{
+		return SNew(SBorder)
+			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+			.Padding(FMargin(15.0f, 12.0f))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(Label)
+						.Font(FT66Style::Tokens::FontRegular(28))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 4.0f, 18.0f, 0.0f)
+					[
+						SNew(STextBlock)
+						.Text(Description)
+						.Font(FT66Style::Tokens::FontRegular(20))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f, 0.0f, 0.0f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						FT66Style::MakeButton(
+							FT66ButtonParams(OnText, FOnClicked::CreateLambda([this, SetValue]() { SetValue(true); FT66Style::DeferRebuild(this, 0); return FReply::Handled(); }), GetValue() ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+							.SetMinWidth(100.f)
+							.SetPadding(FMargin(12.f, 6.f))
+							.SetColor(TAttribute<FSlateColor>::CreateLambda([GetValue]() -> FSlateColor { return GetValue() ? FT66Style::Tokens::Success : FT66Style::Tokens::Panel2; }))
+						)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f, 0.0f, 0.0f)
+					[
+						FT66Style::MakeButton(
+							FT66ButtonParams(OffText, FOnClicked::CreateLambda([this, SetValue]() { SetValue(false); FT66Style::DeferRebuild(this, 0); return FReply::Handled(); }), !GetValue() ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+							.SetMinWidth(100.f)
+							.SetPadding(FMargin(12.f, 6.f))
+							.SetColor(TAttribute<FSlateColor>::CreateLambda([GetValue]() -> FSlateColor { return !GetValue() ? FT66Style::Tokens::Danger : FT66Style::Tokens::Panel2; }))
+						)
+					]
+				]
+			];
+	};
+
+	return SNew(SScrollBox)
+		+ SScrollBox::Slot()
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.Settings", "RetroFXHeader", "Retro FX"))
+				.Font(FT66Style::Tokens::FontBold(32))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 14.0f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.Settings", "RetroFXBodyExpanded", "This panel drives the currently wired UE5RFX screen-space stack and the shared retro geometry controls feeding T66's world and character unlit materials. Values run from 0 to 100 so you can iterate fast without recompiling materials."))
+				.Font(FT66Style::Tokens::FontRegular(22))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 18.0f)
+			[
+				SNew(STextBlock)
+				.Text(bRetroFXDirty ? NSLOCTEXT("T66.Settings", "RetroFXPendingDirty", "Pending changes have not been applied yet.") : NSLOCTEXT("T66.Settings", "RetroFXPendingClean", "Pending values match the saved Retro FX profile."))
+				.Font(FT66Style::Tokens::FontRegular(20))
+				.ColorAndOpacity(bRetroFXDirty ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::TextMuted)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 10.0f)
+			[
+				MakeSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionPS1", "PS1 Stack"))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1BlendLabel", "PS1 Master Blend"), NSLOCTEXT("T66.Settings", "RetroFXPs1BlendBody", "Overall blend weight for the UE5RFX PS1 post-process stack."), [this]() { return PendingRetroFXSettings.PS1BlendPercent; }, [this](float V) { PendingRetroFXSettings.PS1BlendPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1DitherLabel", "PS1 Dithering"), NSLOCTEXT("T66.Settings", "RetroFXPs1DitherBody", "0 disables dithering. Higher values push more of the PS1 dither pattern."), [this]() { return PendingRetroFXSettings.PS1DitheringPercent; }, [this](float V) { PendingRetroFXSettings.PS1DitheringPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1BayerLabel", "PS1 Bayer Dithering"), NSLOCTEXT("T66.Settings", "RetroFXPs1BayerBody", "0 disables Bayer dithering. Higher values push the Bayer variant harder."), [this]() { return PendingRetroFXSettings.PS1BayerDitheringPercent; }, [this](float V) { PendingRetroFXSettings.PS1BayerDitheringPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1LutLabel", "PS1 Color LUT"), NSLOCTEXT("T66.Settings", "RetroFXPs1LutBody", "0 disables the LUT path. Any non-zero value enables it."), [this]() { return PendingRetroFXSettings.PS1ColorLUTPercent; }, [this](float V) { PendingRetroFXSettings.PS1ColorLUTPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1ColorBoostLabel", "PS1 Color Boost"), NSLOCTEXT("T66.Settings", "RetroFXPs1ColorBoostBody", "Higher values push the PS1 stack toward a more aggressive, boosted palette."), [this]() { return PendingRetroFXSettings.PS1ColorBoostPercent; }, [this](float V) { PendingRetroFXSettings.PS1ColorBoostPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1FogLabel", "PS1 Fog Enable"), NSLOCTEXT("T66.Settings", "RetroFXPs1FogBody", "0 disables the fog path. Any non-zero value enables UE5RFX fog."), [this]() { return PendingRetroFXSettings.PS1FogPercent; }, [this](float V) { PendingRetroFXSettings.PS1FogPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1FogDensityLabel", "PS1 Fog Density"), NSLOCTEXT("T66.Settings", "RetroFXPs1FogDensityBody", "Controls how thick the UE5RFX fog becomes once fog is enabled."), [this]() { return PendingRetroFXSettings.PS1FogDensityPercent; }, [this](float V) { PendingRetroFXSettings.PS1FogDensityPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1FogStartLabel", "PS1 Fog Start Distance"), NSLOCTEXT("T66.Settings", "RetroFXPs1FogStartBody", "Higher values pull the fog closer to the camera for a heavier retro atmosphere."), [this]() { return PendingRetroFXSettings.PS1FogStartDistancePercent; }, [this](float V) { PendingRetroFXSettings.PS1FogStartDistancePercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1FogFalloffLabel", "PS1 Fog Falloff"), NSLOCTEXT("T66.Settings", "RetroFXPs1FogFalloffBody", "Higher values tighten the fog falloff distance for a denser wall of haze."), [this]() { return PendingRetroFXSettings.PS1FogFallOffDistancePercent; }, [this](float V) { PendingRetroFXSettings.PS1FogFallOffDistancePercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPs1SceneDepthLabel", "PS1 Scene Depth Fog"), NSLOCTEXT("T66.Settings", "RetroFXPs1SceneDepthBody", "0 disables scene-depth driven fog shaping. Any non-zero value enables it."), [this]() { return PendingRetroFXSettings.PS1SceneDepthFogPercent; }, [this](float V) { PendingRetroFXSettings.PS1SceneDepthFogPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 6.0f, 0.0f, 10.0f)
+			[
+				MakeSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionResolution", "Shared Resolution"))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXResSizeLabel", "Fake Resolution Size Switch"), NSLOCTEXT("T66.Settings", "RetroFXResSizeBody", "0 disables the fake screen-size switch. Any non-zero value enables it."), [this]() { return PendingRetroFXSettings.FakeResolutionSwitchSizePercent; }, [this](float V) { PendingRetroFXSettings.FakeResolutionSwitchSizePercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXResUVLabel", "Fake Resolution UV Switch"), NSLOCTEXT("T66.Settings", "RetroFXResUVBody", "0 disables the fake UV resolution switch. Any non-zero value enables it."), [this]() { return PendingRetroFXSettings.FakeResolutionSwitchUVPercent; }, [this](float V) { PendingRetroFXSettings.FakeResolutionSwitchUVPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXTargetResLabel", "Target Resolution Height"), NSLOCTEXT("T66.Settings", "RetroFXTargetResBody", "Higher values drive the target height lower, which makes the scene feel more aggressively low-res."), [this]() { return PendingRetroFXSettings.TargetResolutionHeightPercent; }, [this](float V) { PendingRetroFXSettings.TargetResolutionHeightPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 6.0f, 0.0f, 10.0f)
+			[
+				MakeSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionWorldGeometry", "World Geometry"))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXWorldVertexSnapLabel", "World Vertex Snap Strength"), NSLOCTEXT("T66.Settings", "RetroFXWorldVertexSnapBody", "Strength for geometry snapping on world and environment materials patched into the retro stack."), [this]() { return PendingRetroFXSettings.WorldVertexSnapPercent; }, [this](float V) { PendingRetroFXSettings.WorldVertexSnapPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXWorldVertexSnapResLabel", "World Vertex Snap Resolution"), NSLOCTEXT("T66.Settings", "RetroFXWorldVertexSnapResBody", "Higher values lower the target snap resolution, making the world wobble and step more aggressively."), [this]() { return PendingRetroFXSettings.WorldVertexSnapResolutionPercent; }, [this](float V) { PendingRetroFXSettings.WorldVertexSnapResolutionPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXWorldVertexNoiseLabel", "World Vertex Noise"), NSLOCTEXT("T66.Settings", "RetroFXWorldVertexNoiseBody", "Adds extra world-position noise on top of snapping for rougher retro surfaces."), [this]() { return PendingRetroFXSettings.WorldVertexNoisePercent; }, [this](float V) { PendingRetroFXSettings.WorldVertexNoisePercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXWorldAffineBlendLabel", "World Affine Blend"), NSLOCTEXT("T66.Settings", "RetroFXWorldAffineBlendBody", "Blends world UVs into the affine mapping path. 0 keeps stable UVs, 100 fully commits to the retro perspective error."), [this]() { return PendingRetroFXSettings.WorldAffineBlendPercent; }, [this](float V) { PendingRetroFXSettings.WorldAffineBlendPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXWorldAffineD1Label", "World Affine Distance 1"), NSLOCTEXT("T66.Settings", "RetroFXWorldAffineD1Body", "Near-distance threshold for world affine mapping. 50 matches the imported sample default."), [this]() { return PendingRetroFXSettings.WorldAffineDistance1Percent; }, [this](float V) { PendingRetroFXSettings.WorldAffineDistance1Percent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXWorldAffineD2Label", "World Affine Distance 2"), NSLOCTEXT("T66.Settings", "RetroFXWorldAffineD2Body", "Mid-distance threshold for world affine mapping. 50 matches the imported sample default."), [this]() { return PendingRetroFXSettings.WorldAffineDistance2Percent; }, [this](float V) { PendingRetroFXSettings.WorldAffineDistance2Percent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXWorldAffineD3Label", "World Affine Distance 3"), NSLOCTEXT("T66.Settings", "RetroFXWorldAffineD3Body", "Far-distance threshold for world affine mapping. 50 matches the imported sample default."), [this]() { return PendingRetroFXSettings.WorldAffineDistance3Percent; }, [this](float V) { PendingRetroFXSettings.WorldAffineDistance3Percent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 6.0f, 0.0f, 10.0f)
+			[
+				MakeSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionCharacterGeometry", "Character Geometry"))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapLabel", "Character Vertex Snap Strength"), NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapBody", "Strength for geometry snapping on character-facing unlit materials."), [this]() { return PendingRetroFXSettings.CharacterVertexSnapPercent; }, [this](float V) { PendingRetroFXSettings.CharacterVertexSnapPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapResLabel", "Character Vertex Snap Resolution"), NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexSnapResBody", "Higher values lower the target snap resolution, making hero and enemy geometry wobble more aggressively."), [this]() { return PendingRetroFXSettings.CharacterVertexSnapResolutionPercent; }, [this](float V) { PendingRetroFXSettings.CharacterVertexSnapResolutionPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexNoiseLabel", "Character Vertex Noise"), NSLOCTEXT("T66.Settings", "RetroFXCharacterVertexNoiseBody", "Adds extra character-space noise on top of snapping. Keep it lower if you want readable combat silhouettes."), [this]() { return PendingRetroFXSettings.CharacterVertexNoisePercent; }, [this](float V) { PendingRetroFXSettings.CharacterVertexNoisePercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineBlendLabel", "Character Affine Blend"), NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineBlendBody", "Blends character UVs into the affine mapping path. Push this carefully to avoid readability loss in combat."), [this]() { return PendingRetroFXSettings.CharacterAffineBlendPercent; }, [this](float V) { PendingRetroFXSettings.CharacterAffineBlendPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineD1Label", "Character Affine Distance 1"), NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineD1Body", "Near-distance threshold for character affine mapping. 50 matches the imported sample default."), [this]() { return PendingRetroFXSettings.CharacterAffineDistance1Percent; }, [this](float V) { PendingRetroFXSettings.CharacterAffineDistance1Percent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineD2Label", "Character Affine Distance 2"), NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineD2Body", "Mid-distance threshold for character affine mapping. 50 matches the imported sample default."), [this]() { return PendingRetroFXSettings.CharacterAffineDistance2Percent; }, [this](float V) { PendingRetroFXSettings.CharacterAffineDistance2Percent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineD3Label", "Character Affine Distance 3"), NSLOCTEXT("T66.Settings", "RetroFXCharacterAffineD3Body", "Far-distance threshold for character affine mapping. 50 matches the imported sample default."), [this]() { return PendingRetroFXSettings.CharacterAffineDistance3Percent; }, [this](float V) { PendingRetroFXSettings.CharacterAffineDistance3Percent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 6.0f, 0.0f, 10.0f)
+			[
+				MakeSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionN64", "N64 Blur"))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXN64BlendLabel", "N64 Blur Blend"), NSLOCTEXT("T66.Settings", "RetroFXN64BlendBody", "Overall blend weight for the UE5RFX N64 blur material."), [this]() { return PendingRetroFXSettings.N64BlurBlendPercent; }, [this](float V) { PendingRetroFXSettings.N64BlurBlendPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXN64StepsLabel", "N64 Blur Steps"), NSLOCTEXT("T66.Settings", "RetroFXN64StepsBody", "Higher values increase the blur sample count in the N64 pass."), [this]() { return PendingRetroFXSettings.N64BlurStepsPercent; }, [this](float V) { PendingRetroFXSettings.N64BlurStepsPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXN64LowResLabel", "N64 Low Fake Resolution"), NSLOCTEXT("T66.Settings", "RetroFXN64LowResBody", "0 disables the N64 low-fake-resolution path. Any non-zero value enables it."), [this]() { return PendingRetroFXSettings.N64LowFakeResolutionPercent; }, [this](float V) { PendingRetroFXSettings.N64LowFakeResolutionPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
+			[
+				MakeToggleRow(NSLOCTEXT("T66.Settings", "RetroFXN64ReplaceTMLabel", "N64 Replace Tonemapper"), NSLOCTEXT("T66.Settings", "RetroFXN64ReplaceTMBody", "Switch between the standard N64 blur material and the replace-tonemapper variant."), [this]() { return PendingRetroFXSettings.bUseUE5RFXN64BlurReplaceTonemapper; }, [this](bool bValue) { PendingRetroFXSettings.bUseUE5RFXN64BlurReplaceTonemapper = bValue; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 6.0f, 0.0f, 10.0f)
+			[
+				MakeSectionHeader(NSLOCTEXT("T66.Settings", "RetroFXSectionCRT", "CRT And Pixelation"))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXCRTBlendLabel", "CRT Blend"), NSLOCTEXT("T66.Settings", "RetroFXCRTBlendBody", "Overall blend weight for the UE5RFX CRT pass."), [this]() { return PendingRetroFXSettings.CRTBlendPercent; }, [this](float V) { PendingRetroFXSettings.CRTBlendPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 18.0f)
+			[
+				MakeSliderRow(NSLOCTEXT("T66.Settings", "RetroFXPixelationLabel", "T66 Pixelation"), NSLOCTEXT("T66.Settings", "RetroFXPixelationBody", "Drives the existing T66 pixelation subsystem from 0 to full strength."), [this]() { return PendingRetroFXSettings.T66PixelationPercent; }, [this](float V) { PendingRetroFXSettings.T66PixelationPercent = V; bRetroFXDirty = true; })
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth()
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(NSLOCTEXT("T66.Settings", "RetroFXResetDefaults", "RESET TO DEFAULTS"), FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleResetRetroFXClicked), ET66ButtonType::Neutral)
+						.SetMinWidth(220.f)
+					)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(8.0f, 0.0f, 0.0f, 0.0f)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(NSLOCTEXT("T66.Settings", "RetroFXApply", "APPLY"), FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleApplyRetroFXClicked), bRetroFXDirty ? ET66ButtonType::Primary : ET66ButtonType::Neutral)
+						.SetMinWidth(180.f)
+						.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor
+						{
+							return bRetroFXDirty ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2;
+						}))
+					)
+				]
+			]
+		];
+}
 TSharedRef<SWidget> UT66SettingsScreen::BuildCrashingTab()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
@@ -1799,6 +2126,20 @@ FReply UT66SettingsScreen::HandleSafeModeClicked()
 	return FReply::Handled();
 }
 
+FReply UT66SettingsScreen::HandleApplyRetroFXClicked()
+{
+	ApplyPendingRetroFX();
+	FT66Style::DeferRebuild(this, 0);
+	return FReply::Handled();
+}
+
+FReply UT66SettingsScreen::HandleResetRetroFXClicked()
+{
+	ResetPendingRetroFXToDefaults();
+	FT66Style::DeferRebuild(this, 0);
+	return FReply::Handled();
+}
+
 void UT66SettingsScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
@@ -1809,7 +2150,7 @@ void UT66SettingsScreen::OnScreenActivated_Implementation()
 	{
 		TabIdx = PS->GetLastSettingsTabIndex();
 	}
-	CurrentTab = static_cast<ET66SettingsTab>(FMath::Clamp(TabIdx, 0, 6));
+	CurrentTab = static_cast<ET66SettingsTab>(FMath::Clamp(TabIdx, 0, 7));
 	OnTabChanged(CurrentTab);
 	if (ContentSwitcher.IsValid())
 	{
@@ -2062,3 +2403,41 @@ void UT66SettingsScreen::EndVideoModeConfirmPrompt(bool bKeepNewSettings)
 		}
 	}
 }
+
+void UT66SettingsScreen::InitializeRetroFXFromUserSettingsIfNeeded()
+{
+	if (bRetroFXInitialized) return;
+	bRetroFXInitialized = true;
+
+	if (UT66PlayerSettingsSubsystem* PS = GetPlayerSettings())
+	{
+		PendingRetroFXSettings = PS->GetRetroFXSettings();
+	}
+	else
+	{
+		PendingRetroFXSettings = FT66RetroFXSettings();
+	}
+
+	bRetroFXDirty = false;
+}
+
+void UT66SettingsScreen::ApplyPendingRetroFX()
+{
+	InitializeRetroFXFromUserSettingsIfNeeded();
+
+	if (UT66PlayerSettingsSubsystem* PS = GetPlayerSettings())
+	{
+		PS->SetRetroFXSettings(PendingRetroFXSettings);
+		bRetroFXDirty = false;
+	}
+}
+
+void UT66SettingsScreen::ResetPendingRetroFXToDefaults()
+{
+	InitializeRetroFXFromUserSettingsIfNeeded();
+	PendingRetroFXSettings = FT66RetroFXSettings();
+	bRetroFXDirty = true;
+}
+
+
+

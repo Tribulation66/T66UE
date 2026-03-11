@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Core/T66RetroFXSettings.h"
 #include "T66PlayerSettingsSubsystem.generated.h"
 
 class UT66PlayerSettingsSaveGame;
@@ -162,6 +163,16 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Graphics")
 	bool GetFogEnabled() const;
 
+	// ===== Retro FX =====
+	UFUNCTION(BlueprintCallable, Category = "Settings|RetroFX")
+	void SetRetroFXSettings(const FT66RetroFXSettings& NewSettings);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|RetroFX")
+	FT66RetroFXSettings GetRetroFXSettings() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|RetroFX")
+	void ResetRetroFXSettingsToDefaults();
+
 	// ===== Utilities =====
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void ApplySafeModeSettings();
@@ -181,4 +192,5 @@ private:
 
 	void ApplyClassVolumesIfPresent();
 };
+
 

@@ -13,7 +13,6 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/Input/SButton.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
 #include "Engine/World.h"
@@ -80,7 +79,7 @@ void UT66CrateOverlayWidget::NativeDestruct()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ScrollTickHandle);
-		World->GetTimerManager().ClearTimer(ResolveHandle);
+		World->GetTimerManager().ClearTimer(StartHandle);
 		World->GetTimerManager().ClearTimer(CloseHandle);
 	}
 
@@ -126,7 +125,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 			];
 	}
 
-	return SNew(SBorder)
+	TSharedRef<SWidget> Root = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.9f))
 		[
@@ -151,7 +150,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 					[
 						SAssignNew(StatusText, STextBlock)
-						.Text(NSLOCTEXT("T66.Crate", "PressOpen", "Press OPEN to reveal an item."))
+						.Text(NSLOCTEXT("T66.Crate", "Opening", "Opening..."))
 						.Font(FT66Style::Tokens::FontRegular(14))
 						.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
 					]
@@ -187,45 +186,17 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 							]
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
-						[
-							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(44.f)
-							[
-								SAssignNew(OpenButton, SButton)
-								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66CrateOverlayWidget::OnOpen))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Success)
-								[
-									SNew(STextBlock)
-									.Text(NSLOCTEXT("T66.Crate", "Open", "OPEN"))
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-								]
-							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
-						[
-							SNew(SBox).MinDesiredWidth(180.f).HeightOverride(44.f)
-							[
-								SAssignNew(BackButton, SButton)
-								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.OnClicked(FOnClicked::CreateUObject(this, &UT66CrateOverlayWidget::OnBack))
-								.ButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-								.ButtonColorAndOpacity(FT66Style::Tokens::Panel2)
-								[
-									SNew(STextBlock)
-									.Text(NSLOCTEXT("T66.Crate", "Back", "BACK"))
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button"))
-								]
-							]
-						]
-					]
 				]
 			]
 		];
+
+	// Auto-start the scrolling animation after a brief delay
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(StartHandle, this, &UT66CrateOverlayWidget::StartScrolling, 0.3f, false);
+	}
+
+	return Root;
 }
 
 void UT66CrateOverlayWidget::TickScroll()
@@ -277,9 +248,6 @@ void UT66CrateOverlayWidget::ResolveOpen()
 			FText::FromName(WinnerItemID));
 		StatusText->SetText(Msg);
 	}
-	if (OpenButton.IsValid()) OpenButton->SetEnabled(true);
-	if (BackButton.IsValid()) BackButton->SetEnabled(true);
-
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(CloseHandle, this, &UT66CrateOverlayWidget::CloseAfterResolve, 1.2f, false);
@@ -295,38 +263,17 @@ void UT66CrateOverlayWidget::CloseAfterResolve()
 	}
 }
 
-FReply UT66CrateOverlayWidget::OnOpen()
+void UT66CrateOverlayWidget::StartScrolling()
 {
-	if (bScrolling) return FReply::Handled();
+	if (bScrolling) return;
 	UWorld* World = GetWorld();
-	if (!World) return FReply::Handled();
-
-	if (StatusText.IsValid())
-	{
-		StatusText->SetText(NSLOCTEXT("T66.Crate", "Opening", "Opening..."));
-	}
+	if (!World) return;
 
 	bScrolling = true;
 	ScrollElapsed = 0.f;
 	CurrentScrollOffset = 0.f;
 	LastTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
 
-	if (OpenButton.IsValid()) OpenButton->SetEnabled(false);
-	if (BackButton.IsValid()) BackButton->SetEnabled(false);
-
 	World->GetTimerManager().ClearTimer(ScrollTickHandle);
 	World->GetTimerManager().SetTimer(ScrollTickHandle, this, &UT66CrateOverlayWidget::TickScroll, 0.016f, true);
-
-	return FReply::Handled();
-}
-
-FReply UT66CrateOverlayWidget::OnBack()
-{
-	if (bScrolling) return FReply::Handled();
-	RemoveFromParent();
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-	{
-		PC->RestoreGameplayInputMode();
-	}
-	return FReply::Handled();
 }

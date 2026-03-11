@@ -142,6 +142,11 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				Rot.Yaw += Rng.FRandRange(0.f, 360.f);
 			}
 
+			// Offset spawn Z so the mesh bottom sits on the ground surface
+			const FBoxSphereBounds MeshBounds = Mesh->GetBounds();
+			const float MeshBottomZ = MeshBounds.Origin.Z - MeshBounds.BoxExtent.Z;
+			Loc.Z -= MeshBottomZ;
+
 			AStaticMeshActor* PropActor = World->SpawnActor<AStaticMeshActor>(
 				AStaticMeshActor::StaticClass(), Loc, Rot, SP);
 			if (!PropActor) continue;
@@ -149,9 +154,9 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 			UStaticMeshComponent* SMC = PropActor->GetStaticMeshComponent();
 			if (SMC)
 			{
+				SMC->SetMobility(EComponentMobility::Movable);
 				SMC->SetStaticMesh(Mesh);
 				SMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-				SMC->SetMobility(EComponentMobility::Movable);
 
 				const FVector Scale(
 					Rng.FRandRange(Row->ScaleMin.X, Row->ScaleMax.X),

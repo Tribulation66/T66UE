@@ -33,7 +33,7 @@
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Gameplay/T66TreeOfLifeInteractable.h"
-#include "Gameplay/T66CashTruckInteractable.h"
+#include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66StageBoostGate.h"
@@ -1134,7 +1134,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66TutorialPortal* ClosestTutorialPortal = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
 	AT66TreeOfLifeInteractable* ClosestTree = nullptr;
-	AT66CashTruckInteractable* ClosestTruck = nullptr;
+	AT66ChestInteractable* ClosestChest = nullptr;
 	AT66WheelSpinInteractable* ClosestWheel = nullptr;
 	AT66CrateInteractable* ClosestCrate = nullptr;
 	AT66StageBoostGate* ClosestBoostGate = nullptr;
@@ -1150,7 +1150,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestTutorialPortalDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
 	float ClosestTreeDistSq = InteractRadius * InteractRadius;
-	float ClosestTruckDistSq = InteractRadius * InteractRadius;
+	float ClosestChestDistSq = InteractRadius * InteractRadius;
 	float ClosestWheelDistSq = InteractRadius * InteractRadius;
 	float ClosestCrateDistSq = InteractRadius * InteractRadius;
 	float ClosestBoostGateDistSq = InteractRadius * InteractRadius;
@@ -1202,9 +1202,9 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestTreeDistSq) { ClosestTreeDistSq = DistSq; ClosestTree = Tree; }
 		}
-		else if (AT66CashTruckInteractable* Truck = Cast<AT66CashTruckInteractable>(A))
+		else if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(A))
 		{
-			if (DistSq < ClosestTruckDistSq) { ClosestTruckDistSq = DistSq; ClosestTruck = Truck; }
+			if (DistSq < ClosestChestDistSq) { ClosestChestDistSq = DistSq; ClosestChest = Chest; }
 		}
 		else if (AT66WheelSpinInteractable* W = Cast<AT66WheelSpinInteractable>(A))
 		{
@@ -1284,12 +1284,12 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 		return;
 	}
-	// World interactables (Tree/Truck/Wheel)
+	// World interactables (Tree/Chest/Wheel)
 	if (ClosestTree && ClosestTree->Interact(this))
 	{
 		return;
 	}
-	if (ClosestTruck && ClosestTruck->Interact(this))
+	if (ClosestChest && ClosestChest->Interact(this))
 	{
 		return;
 	}

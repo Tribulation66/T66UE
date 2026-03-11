@@ -5,12 +5,10 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Core/T66Rarity.h"
-#include "Input/Reply.h"
 #include "T66CrateOverlayWidget.generated.h"
 
 class STextBlock;
 class SBorder;
-class SButton;
 
 /** CS:GO-style crate opening overlay: scrolling item strip that decelerates to a stop. */
 UCLASS(Blueprintable)
@@ -36,11 +34,9 @@ private:
 
 	TSharedPtr<SBorder> StripContainer;
 	TSharedPtr<STextBlock> StatusText;
-	TSharedPtr<SButton> OpenButton;
-	TSharedPtr<SButton> BackButton;
 
 	FTimerHandle ScrollTickHandle;
-	FTimerHandle ResolveHandle;
+	FTimerHandle StartHandle;
 	FTimerHandle CloseHandle;
 
 	bool bScrolling = false;
@@ -55,10 +51,8 @@ private:
 	static constexpr int32 WinnerPosition = 35;
 
 	void GenerateStrip();
+	void StartScrolling();
 	void TickScroll();
 	void ResolveOpen();
 	void CloseAfterResolve();
-
-	FReply OnOpen();
-	FReply OnBack();
 };

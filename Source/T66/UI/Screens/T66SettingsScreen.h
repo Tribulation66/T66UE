@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
+#include "Core/T66RetroFXSettings.h"
 #include "UI/T66ScreenBase.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "T66SettingsScreen.generated.h"
@@ -22,7 +23,8 @@ enum class ET66SettingsTab : uint8
 	HUD,
 	MediaViewer,
 	Audio,
-	Crashing
+	Crashing,
+	RetroFX
 };
 
 UENUM()
@@ -90,6 +92,7 @@ private:
 	TSharedRef<SWidget> BuildMediaViewerTab();
 	TSharedRef<SWidget> BuildAudioTab();
 	TSharedRef<SWidget> BuildCrashingTab();
+	TSharedRef<SWidget> BuildRetroFXTab();
 
 	// Click handlers
 	FReply HandleCloseClicked();
@@ -98,6 +101,8 @@ private:
 	FReply HandleRestoreDefaultsClicked();
 	FReply HandleReportBugClicked();
 	FReply HandleSafeModeClicked();
+	FReply HandleApplyRetroFXClicked();
+	FReply HandleResetRetroFXClicked();
 
 	// ===== Keybinding capture =====
 	struct FPendingRebind
@@ -191,4 +196,13 @@ private:
 	void ApplyPendingGraphics(bool bForceConfirmPrompt);
 	void StartVideoModeConfirmPrompt();
 	void EndVideoModeConfirmPrompt(bool bKeepNewSettings);
+
+	// ===== Retro FX staging =====
+	FT66RetroFXSettings PendingRetroFXSettings;
+	bool bRetroFXInitialized = false;
+	bool bRetroFXDirty = false;
+
+	void InitializeRetroFXFromUserSettingsIfNeeded();
+	void ApplyPendingRetroFX();
+	void ResetPendingRetroFXToDefaults();
 };

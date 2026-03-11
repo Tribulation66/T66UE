@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
+#include "Core/T66RetroFXSettings.h"
 #include "T66PlayerSettingsSaveGame.generated.h"
 
 /**
@@ -18,7 +19,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 2;
+	int32 SchemaVersion = 4;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -110,5 +111,9 @@ public:
 	/** When false, exponential height fog is disabled in gameplay (default off). */
 	UPROPERTY(SaveGame)
 	bool bFogEnabled = false;
+
+	// ===== Retro FX =====
+	UPROPERTY(SaveGame)
+	FT66RetroFXSettings RetroFXSettings;
 };
 

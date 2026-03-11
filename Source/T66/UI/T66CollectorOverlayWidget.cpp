@@ -242,7 +242,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	else
 	{
 		AddSpawnCard(LOCTEXT("TreeOfLifeName", "Tree of Life"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("TreeOfLife"))); });
-		AddSpawnCard(LOCTEXT("CashTruck", "Cash Truck"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("CashTruck"))); });
+		AddSpawnCard(LOCTEXT("Chest", "Chest"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Chest"))); });
 		AddSpawnCard(LOCTEXT("WheelSpin", "Wheel Spin"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("WheelSpin"))); });
 		AddSpawnCard(LOCTEXT("IdolAltar", "Idol Altar"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("IdolAltar"))); });
 	}

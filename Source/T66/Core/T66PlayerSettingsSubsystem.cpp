@@ -59,7 +59,7 @@ int32 UT66PlayerSettingsSubsystem::GetLastSettingsTabIndex() const
 void UT66PlayerSettingsSubsystem::SetLastSettingsTabIndex(int32 TabIndex)
 {
 	if (!SettingsObj) return;
-	SettingsObj->LastSettingsTabIndex = FMath::Clamp(TabIndex, 0, 6);
+	SettingsObj->LastSettingsTabIndex = FMath::Clamp(TabIndex, 0, 7);
 	Save();
 }
 
@@ -297,6 +297,26 @@ bool UT66PlayerSettingsSubsystem::GetFogEnabled() const
 	return SettingsObj ? SettingsObj->bFogEnabled : false;
 }
 
+void UT66PlayerSettingsSubsystem::SetRetroFXSettings(const FT66RetroFXSettings& NewSettings)
+{
+	if (!SettingsObj) return;
+	SettingsObj->RetroFXSettings = NewSettings;
+	Save();
+}
+
+FT66RetroFXSettings UT66PlayerSettingsSubsystem::GetRetroFXSettings() const
+{
+	static const FT66RetroFXSettings DefaultSettings;
+	return SettingsObj ? SettingsObj->RetroFXSettings : DefaultSettings;
+}
+
+void UT66PlayerSettingsSubsystem::ResetRetroFXSettingsToDefaults()
+{
+	if (!SettingsObj) return;
+	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
+	Save();
+}
+
 void UT66PlayerSettingsSubsystem::ApplyAudioToEngine()
 {
 	if (!SettingsObj) return;
@@ -339,6 +359,7 @@ void UT66PlayerSettingsSubsystem::ApplySafeModeSettings()
 
 	// Gameplay-side stability toggles.
 	SettingsObj->bIntenseVisuals = false;
+	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
 
 	// Audio: keep user master, but enforce mute-unfocused off for stability/debug.
 	SettingsObj->bMuteWhenUnfocused = false;
@@ -375,3 +396,6 @@ void UT66PlayerSettingsSubsystem::ApplyClassVolumesIfPresent()
 		Sfx->Properties.Volume = FMath::Clamp(SettingsObj->SfxVolume, 0.0f, 1.0f);
 	}
 }
+
+
+

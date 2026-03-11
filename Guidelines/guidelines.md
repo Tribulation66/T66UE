@@ -28,7 +28,9 @@ When a change-set adds/changes player-facing text, complete **as part of the sam
 
 This document is the operating manual for an AI agent (Cursor or any CLI-capable agent) working inside the **T66** Unreal project. It defines **how** to make changes safely, deterministically, and in a way that stays performant on low-end PCs—while remaining easy for LLMs to extend without breaking the game.
 
-**Required companion file:** `memory.md` — **agent context** (quick reference: where to look, current state, guardrails). Use it for continuity; full change history lives in **git log**.
+**Required companion files:**
+- `memory.md` — **agent context** (quick reference: where to look, current state, guardrails). Use it for continuity; full change history lives in **git log**.
+- `ImportingGuidelines.md` — **asset import pipeline** (GLB import workflow, Interchange flattening, material handling rules, destination paths, grounding). Must be followed when importing any 3D models.
 
 ---
 
