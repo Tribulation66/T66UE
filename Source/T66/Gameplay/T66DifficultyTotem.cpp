@@ -85,13 +85,16 @@ void AT66DifficultyTotem::ApplyGrowthFromInteractionCount(int32 InteractionCount
 	const FVector BaseScale = VisualMesh->GetRelativeScale3D();
 	const FRotator BaseRot = VisualMesh->GetRelativeRotation();
 
-	// Compute segment height from mesh bounds * scale.
-	const float UnscaledHalfHeight = Mesh->GetBounds().BoxExtent.Z;
-	const float SegmentHalfHeight = FMath::Max(1.f, UnscaledHalfHeight * FMath::Abs(BaseScale.Z));
-	const float SegmentHeight = SegmentHalfHeight * 2.f;
+	// Stack from the mesh's authored bottom/top so off-center pivots still ground correctly.
+	const FBoxSphereBounds Bounds = Mesh->GetBounds();
+	const float ScaleZ = FMath::Abs(BaseScale.Z);
+	const float SegmentBottomZ = Bounds.Origin.Z - Bounds.BoxExtent.Z;
+	const float SegmentTopZ = Bounds.Origin.Z + Bounds.BoxExtent.Z;
+	const float BaseSegmentCenterZ = -SegmentBottomZ * ScaleZ;
+	const float SegmentHeight = FMath::Max(2.f, (SegmentTopZ - SegmentBottomZ) * ScaleZ);
 
 	// Plant base segment.
-	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, SegmentHalfHeight));
+	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, BaseSegmentCenterZ));
 
 	// Ensure we have DesiredSegments-1 extra components.
 	const int32 WantExtras = FMath::Max(0, DesiredSegments - 1);
@@ -127,7 +130,7 @@ void AT66DifficultyTotem::ApplyGrowthFromInteractionCount(int32 InteractionCount
 
 		// Segment index: 1..DesiredSegments-1
 		const int32 SegmentIndex = i + 1;
-		const float Z = SegmentHalfHeight + SegmentHeight * static_cast<float>(SegmentIndex);
+		const float Z = BaseSegmentCenterZ + SegmentHeight * static_cast<float>(SegmentIndex);
 		Seg->SetRelativeLocation(FVector(0.f, 0.f, Z));
 	}
 }

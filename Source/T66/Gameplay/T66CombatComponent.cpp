@@ -684,13 +684,13 @@ void UT66CombatComponent::TryFire()
 			{
 				const FName IdolID = Idols[Slot];
 				if (IdolID.IsNone()) continue;
-				const int32 Level = CachedRunState->GetEquippedIdolLevelInSlot(Slot);
+				const ET66ItemRarity IdolRarity = CachedRunState->GetEquippedIdolRarityInSlot(Slot);
 				FIdolData IdolData;
 				if (!GI->GetIdolData(IdolID, IdolData)) continue;
 
 				FLinearColor IdolColor = UT66RunStateSubsystem::GetIdolColor(IdolID);
 				IdolColor.A = 1.f;
-				const int32 IdolDamage = FMath::Max(1, FMath::RoundToInt(IdolData.GetDamageAtLevel(Level)));
+				const int32 IdolDamage = FMath::Max(1, FMath::RoundToInt(IdolData.GetDamageAtRarity(IdolRarity)));
 				const FVector PrimaryLoc = PrimaryTarget->GetActorLocation();
 
 				switch (IdolData.Category)
@@ -730,7 +730,7 @@ void UT66CombatComponent::TryFire()
 				}
 				case ET66AttackCategory::AOE:
 				{
-					const float Radius = FMath::Max(50.f, IdolData.GetPropertyAtLevel(Level));
+					const float Radius = FMath::Max(50.f, IdolData.GetPropertyAtRarity(IdolRarity));
 					{
 						FName RangeEvent;
 						const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, PrimaryTarget, &RangeEvent);
@@ -758,8 +758,8 @@ void UT66CombatComponent::TryFire()
 				case ET66AttackCategory::Bounce:
 				{
 					// BounceCount = number of jumps FROM the primary target to other enemies.
-					// At level 1 (BaseProperty=1) the bolt bounces once (hits 1 extra enemy).
-					const int32 BounceCount = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtLevel(Level)));
+					// At Black rarity (BaseProperty=1) the bolt bounces once (hits 1 extra enemy).
+					const int32 BounceCount = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity)));
 					const float IdolFalloff = FMath::Clamp(IdolData.FalloffPerHit, 0.f, 0.95f);
 					const float BounceRangeSq = BounceSearchRadius * BounceSearchRadius;
 
@@ -802,7 +802,7 @@ void UT66CombatComponent::TryFire()
 				}
 				case ET66AttackCategory::DOT:
 				{
-					const float Duration = FMath::Max(0.5f, IdolData.GetPropertyAtLevel(Level));
+					const float Duration = FMath::Max(0.5f, IdolData.GetPropertyAtRarity(IdolRarity));
 					const float TickInterval = FMath::Max(0.1f, IdolData.DotTickInterval);
 					const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
 					const float DamagePerTick = static_cast<float>(IdolDamage) / static_cast<float>(Ticks);
@@ -921,6 +921,120 @@ static UNiagaraSystem* FindPixelVFXSystem()
 	return LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
 }
 
+static FVector4 T66MakeBloodTint(bool bBrightCore)
+{
+	if (bBrightCore)
+	{
+		return FVector4(
+			FMath::FRandRange(0.80f, 1.00f),
+			FMath::FRandRange(0.01f, 0.05f),
+			FMath::FRandRange(0.01f, 0.04f),
+			1.f);
+	}
+
+	return FVector4(
+		FMath::FRandRange(0.35f, 0.72f),
+		FMath::FRandRange(0.00f, 0.03f),
+		FMath::FRandRange(0.00f, 0.03f),
+		1.f);
+}
+
+static void T66ApplyPixelVFXParams(UNiagaraComponent* NiagaraComponent, const FVector4& Tint, const FVector2D& SpriteSize)
+{
+	if (!NiagaraComponent)
+	{
+		return;
+	}
+
+	const FLinearColor TintColor(Tint.X, Tint.Y, Tint.Z, Tint.W);
+	NiagaraComponent->SetVariableLinearColor(FName(TEXT("User.Tint")), TintColor);
+	NiagaraComponent->SetVariableLinearColor(FName(TEXT("User.Color")), TintColor);
+	NiagaraComponent->SetVariableVec2(FName(TEXT("User.SpriteSize")), SpriteSize);
+}
+
+static void T66SpawnBloodSpray(
+	UWorld* World,
+	UNiagaraSystem* VFX,
+	const FVector& Location,
+	int32 PixelCount,
+	float BurstRadius,
+	float CoreRadiusScale)
+{
+	if (!World || !VFX)
+	{
+		return;
+	}
+
+	const int32 TotalPixels = FMath::Max(PixelCount, 24);
+	const int32 CoreCount = FMath::Max(8, FMath::RoundToInt(static_cast<float>(TotalPixels) * 0.25f));
+	const int32 JetCount = FMath::Clamp(FMath::RoundToInt(static_cast<float>(TotalPixels) / 8.f), 4, 10);
+	const int32 SprayCount = FMath::Max(12, TotalPixels - CoreCount);
+	const float CoreRadius = BurstRadius * CoreRadiusScale;
+
+	for (int32 i = 0; i < CoreCount; ++i)
+	{
+		const FVector Offset = FMath::VRand() * FMath::FRandRange(0.f, CoreRadius);
+		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			World, VFX, Location + Offset, FRotator::ZeroRotator,
+			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+		T66ApplyPixelVFXParams(
+			NC,
+			T66MakeBloodTint(true),
+			FVector2D(FMath::FRandRange(4.0f, 6.0f), FMath::FRandRange(4.0f, 6.0f)));
+	}
+
+	int32 Remaining = SprayCount;
+	for (int32 JetIndex = 0; JetIndex < JetCount; ++JetIndex)
+	{
+		const int32 JetsLeft = JetCount - JetIndex;
+		const int32 JetPixels = FMath::Max(2, Remaining / FMath::Max(1, JetsLeft));
+		Remaining -= JetPixels;
+
+		FVector Dir(
+			FMath::FRandRange(-1.0f, 1.0f),
+			FMath::FRandRange(-1.0f, 1.0f),
+			FMath::FRandRange(-0.25f, 0.45f));
+		Dir = Dir.GetSafeNormal();
+		if (Dir.IsNearlyZero())
+		{
+			Dir = FVector::ForwardVector;
+		}
+
+		FVector Right = FVector::CrossProduct(Dir, FVector::UpVector).GetSafeNormal();
+		if (Right.IsNearlyZero())
+		{
+			Right = FVector::RightVector;
+		}
+		const FVector Upish = FVector::CrossProduct(Right, Dir).GetSafeNormal();
+		const float JetLength = FMath::FRandRange(BurstRadius * 0.30f, BurstRadius * 0.95f);
+
+		for (int32 PixelIndex = 0; PixelIndex < JetPixels; ++PixelIndex)
+		{
+			const float T = FMath::Clamp(
+				(static_cast<float>(PixelIndex) + FMath::FRandRange(0.15f, 0.95f)) / static_cast<float>(JetPixels),
+				0.f, 1.f);
+			const float Along = JetLength * FMath::Pow(T, 0.72f);
+			const float Jitter = FMath::Lerp(BurstRadius * 0.02f, BurstRadius * 0.10f, T);
+			const FVector Offset =
+				Dir * Along +
+				Right * FMath::FRandRange(-Jitter, Jitter) +
+				Upish * FMath::FRandRange(-Jitter * 0.35f, Jitter * 0.35f);
+
+			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				World, VFX, Location + Offset, FRotator::ZeroRotator,
+				FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+
+			const bool bCoreStreak = T < 0.25f;
+			T66ApplyPixelVFXParams(
+				NC,
+				T66MakeBloodTint(bCoreStreak),
+				bCoreStreak
+					? FVector2D(FMath::FRandRange(3.5f, 5.0f), FMath::FRandRange(3.5f, 5.0f))
+					: FVector2D(FMath::FRandRange(2.0f, 3.8f), FMath::FRandRange(2.0f, 3.8f)));
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // SpawnDeathBurstAtLocation — static, usable from enemies/bosses without a
 // CombatComponent. Loads the VFX system on first call and caches it.
@@ -928,35 +1042,16 @@ static UNiagaraSystem* FindPixelVFXSystem()
 void UT66CombatComponent::SpawnDeathBurstAtLocation(UWorld* World, const FVector& Location, int32 NumParticles, float BurstRadius)
 {
 	if (!World) return;
-	static TWeakObjectPtr<UNiagaraSystem> CachedVFX;
-	UNiagaraSystem* VFX = CachedVFX.Get();
-	if (!VFX)
+	static TWeakObjectPtr<UNiagaraSystem> CachedBloodBurstVFX;
+	UNiagaraSystem* BloodBurstVFX = CachedBloodBurstVFX.Get();
+	if (!BloodBurstVFX)
 	{
-		VFX = FindPixelVFXSystem();
-		CachedVFX = VFX;
+		BloodBurstVFX = FindPixelVFXSystem();
+		CachedBloodBurstVFX = BloodBurstVFX;
 	}
-	if (!VFX) return;
+	if (!BloodBurstVFX) return;
 
-	for (int32 i = 0; i < NumParticles; ++i)
-	{
-		const FVector RandDir = FMath::VRand();
-		const FVector Biased(RandDir.X, RandDir.Y, FMath::Abs(RandDir.Z) * 0.5f + 0.5f);
-		const FVector SpawnLoc = Location + Biased.GetSafeNormal() * FMath::FRandRange(5.f, BurstRadius);
-
-		const float R = FMath::FRandRange(0.65f, 0.95f);
-		const float G = FMath::FRandRange(0.02f, 0.10f);
-		const float B = FMath::FRandRange(0.02f, 0.08f);
-		const FVector4 Tint(R, G, B, 1.f);
-
-		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, VFX, SpawnLoc, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		if (NC)
-		{
-			NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
-			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
-		}
-	}
+	T66SpawnBloodSpray(World, BloodBurstVFX, Location, FMath::Max(NumParticles * 3, 42), BurstRadius, 0.08f);
 }
 
 // ---------------------------------------------------------------------------
@@ -965,32 +1060,12 @@ void UT66CombatComponent::SpawnDeathBurstAtLocation(UWorld* World, const FVector
 void UT66CombatComponent::SpawnDeathVFX(const FVector& Location)
 {
 	UWorld* World = GetWorld();
+	if (!World) return;
+
 	UNiagaraSystem* VFX = GetActiveVFXSystem();
-	if (!World || !VFX) return;
+	if (!VFX) return;
 
-	constexpr int32 NumParticles = 48;
-	constexpr float BurstRadius = 150.f;
-
-	for (int32 i = 0; i < NumParticles; ++i)
-	{
-		const FVector RandDir = FMath::VRand();
-		const FVector Biased(RandDir.X, RandDir.Y, FMath::Abs(RandDir.Z) * 0.5f + 0.5f);
-		const FVector SpawnLoc = Location + Biased.GetSafeNormal() * FMath::FRandRange(5.f, BurstRadius);
-
-		const float R = FMath::FRandRange(0.65f, 0.95f);
-		const float G = FMath::FRandRange(0.02f, 0.10f);
-		const float B = FMath::FRandRange(0.02f, 0.08f);
-		const FVector4 Tint(R, G, B, 1.f);
-
-		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, VFX, SpawnLoc, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		if (NC)
-		{
-			NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
-			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(4.0, 4.0));
-		}
-	}
+	T66SpawnBloodSpray(World, VFX, Location, 84, 150.f, 0.09f);
 }
 
 // ---------------------------------------------------------------------------

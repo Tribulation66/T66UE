@@ -102,24 +102,16 @@ public:
 	FT66RarityWeights LootBagRarityBase;
 
 	// ================================
-	// Specials (Goblin Thief / Leprechaun) per-wave
+	// Specials (Goblin Thief) per-wave
 	// ================================
 
 	/** Chance a wave includes Goblin Thief spawns (before count roll). */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GoblinWaveChanceBase = 0.10f;
 
-	/** Chance a wave includes Leprechaun spawns (before count roll). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float LeprechaunWaveChanceBase = 0.10f;
-
 	/** Count range for Goblins when they spawn in a wave. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials")
 	FT66IntRange GoblinCountPerWave = { 1, 3 };
-
-	/** Count range for Leprechauns when they spawn in a wave. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials")
-	FT66IntRange LeprechaunCountPerWave = { 1, 3 };
 
 	/** Baseline rarity distribution for special enemies (their variant rarity). */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials")
@@ -179,4 +171,3 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Wheel")
 	FT66FloatRange WheelGoldRange_White = { 500.f, 1500.f };
 };
-

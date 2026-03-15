@@ -56,6 +56,7 @@ AT66HouseNPCBase::AT66HouseNPCBase()
 		VisualMesh->SetStaticMesh(Cylinder);
 		// About hero-sized cylinder
 		VisualMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 1.05f));
+		FT66VisualUtil::GroundMeshToActorOrigin(VisualMesh);
 	}
 
 	NameText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameText"));
@@ -87,24 +88,8 @@ void AT66HouseNPCBase::BeginPlay()
 
 	LoadFromDataTable();
 	ApplyVisuals();
-
-	// Snap NPC cylinder to the ground so it doesn't float/sink. Ignore self so the trace hits terrain, not our own collision.
-	// NOTE: We purposely use VisualMesh bounds (not full actor bounds) because SafeZoneVisual is pinned to Z=5.
-	if (UWorld* World = GetWorld())
-	{
-		FHitResult Hit;
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(T66HouseNPCGroundSnap), false, this);
-		const FVector Here = GetActorLocation();
-		const FVector Start = Here + FVector(0.f, 0.f, 2000.f);
-		const FVector End = Here - FVector(0.f, 0.f, 6000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic, Params))
-		{
-			const float HalfHeight = (VisualMesh ? VisualMesh->Bounds.BoxExtent.Z : 52.5f);
-			SetActorLocation(Hit.ImpactPoint + FVector(0.f, 0.f, HalfHeight), false, nullptr, ETeleportType::TeleportPhysics);
-			// Re-apply so SafeZoneVisual's world Z=5 is updated after the move.
-			ApplyVisuals();
-		}
-	}
+	FT66VisualUtil::SnapToGround(this, GetWorld());
+	ApplyVisuals();
 
 	SafeZoneSphere->OnComponentBeginOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneBeginOverlap);
 	SafeZoneSphere->OnComponentEndOverlap.AddDynamic(this, &AT66HouseNPCBase::OnSafeZoneEndOverlap);
@@ -123,30 +108,9 @@ void AT66HouseNPCBase::BeginPlay()
 		}
 	}
 
-	// If we're using a skeletal mesh, re-snap so the character's feet are on the ground. Skeleton origin is usually at pelvis/center, so we must raise by the mesh bottom offset.
-	if (bUsingCharacterVisual)
-	{
-		if (UWorld* World = GetWorld())
-		{
-			FHitResult Hit;
-			FCollisionQueryParams Params(SCENE_QUERY_STAT(T66HouseNPCGroundSnapSkeletal), false, this);
-			const FVector Here = GetActorLocation();
-			const FVector Start = Here + FVector(0.f, 0.f, 2000.f);
-			const FVector End = Here - FVector(0.f, 0.f, 6000.f);
-			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic, Params))
-			{
-				// Raise so the bottom of the character (not the actor origin) is on the ground. Use skeletal mesh bounds half-height or a safe default.
-				float GroundOffset = 95.f;
-				if (SkeletalMesh && SkeletalMesh->Bounds.SphereRadius > 1.f)
-				{
-					GroundOffset = SkeletalMesh->Bounds.BoxExtent.Z;
-				}
-				const FVector Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, FVector::UpVector);
-				SetActorLocation(Hit.ImpactPoint + Normal * GroundOffset, false, nullptr, ETeleportType::TeleportPhysics);
-				ApplyVisuals();
-			}
-		}
-	}
+	FT66VisualUtil::SnapToGround(this, GetWorld());
+	ApplyVisuals();
+	bGravitySettled = true;
 }
 
 void AT66HouseNPCBase::LoadFromDataTable()
@@ -184,8 +148,9 @@ void AT66HouseNPCBase::ApplyVisuals()
 	{
 		const float ScaleXY = SafeZoneRadius / 50.f; // cylinder radius ~50
 		SafeZoneVisual->SetRelativeScale3D(FVector(ScaleXY, ScaleXY, 0.03f)); // thin sheet
-		// Put the disc at ground-ish (world Z ~ 5) so it's always visible even if NPC is spawned above ground.
-		SafeZoneVisual->SetWorldLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 5.f));
+		FT66VisualUtil::GroundMeshToActorOrigin(SafeZoneVisual);
+		const FVector DiscLoc = SafeZoneVisual->GetRelativeLocation();
+		SafeZoneVisual->SetRelativeLocation(FVector(DiscLoc.X, DiscLoc.Y, DiscLoc.Z + 2.f));
 
 		if (ColorMat)
 		{

@@ -93,11 +93,11 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
 
-	/** If true, the next GameplayLevel load should spawn into the Stage Boost platform first. */
+	/** If true, the next GameplayLevel load should spawn into the Stage Catch Up platform first. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	bool bStageBoostPending = false;
+	bool bStageCatchUpPending = false;
 
-	/** Run-level random seed (set when entering tribulation). Used for stage effect tiles, NPC shuffle, world interactables. */
+	/** Run-level random seed (set when entering tribulation). Used for stage effects, NPC shuffle, world interactables. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	int32 RunSeed = 0;
 

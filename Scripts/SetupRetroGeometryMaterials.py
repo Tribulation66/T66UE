@@ -107,11 +107,19 @@ def ensure_geometry_collection():
     return collection
 
 
-def set_material_flags(material):
+def set_material_flags(material, spec):
     material.set_editor_property('shading_model', unreal.MaterialShadingModel.MSM_UNLIT)
     material.set_editor_property('blend_mode', unreal.BlendMode.BLEND_OPAQUE)
     material.set_editor_property('two_sided', True)
     material.set_editor_property('use_material_attributes', False)
+    material.set_editor_property(
+        'used_with_skeletal_mesh',
+        spec['builder'] in ('character', 'fbx'),
+    )
+    material.set_editor_property(
+        'used_with_instanced_static_meshes',
+        spec['builder'] in ('environment', 'glb'),
+    )
 
 
 def create_texcoord(material, x, y):
@@ -254,8 +262,16 @@ def rebuild_fbx_material(material, collection, group_prefix):
 def rebuild_glb_material(material, collection, group_prefix):
     uv = build_affine_uv(material, collection, group_prefix, -120)
     texture = create_texture_parameter(material, 'BaseColorTexture', -700, -120)
+    tint = create_vector_parameter(material, 'Tint', (1.0, 1.0, 1.0, 1.0), -700, 20)
+    brightness = create_scalar_parameter(material, 'Brightness', 1.0, -700, 160)
+    tint_mul = create_multiply(material, -360, -40)
+    bright_mul = create_multiply(material, -80, -20)
     connect(uv, '', texture, 'UVs')
-    mel.connect_material_property(texture, 'RGB', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    connect(texture, 'RGB', tint_mul, 'A')
+    connect(tint, '', tint_mul, 'B')
+    connect(tint_mul, '', bright_mul, 'A')
+    connect(brightness, '', bright_mul, 'B')
+    mel.connect_material_property(bright_mul, '', unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     build_geometry_nodes(material, collection, group_prefix)
 
 
@@ -263,7 +279,7 @@ def rebuild_material(spec, collection):
     material = load_asset(spec['path'])
     log(f'Rebuilding {spec["path"]}')
     mel.delete_all_material_expressions(material)
-    set_material_flags(material)
+    set_material_flags(material, spec)
 
     if spec['builder'] == 'character':
         rebuild_character_material(material, collection, spec['group'])

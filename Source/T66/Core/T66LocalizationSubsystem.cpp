@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Internationalization/Internationalization.h"
@@ -311,6 +312,7 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType
 	case ET66SecondaryStatType::Cheating:          return NSLOCTEXT("T66.SecondaryStats", "Cheating", "Cheating");
 	case ET66SecondaryStatType::Stealing:          return NSLOCTEXT("T66.SecondaryStats", "Stealing", "Stealing");
 	case ET66SecondaryStatType::MovementSpeed:     return NSLOCTEXT("T66.SecondaryStats", "MovementSpeed", "Movement Speed");
+	case ET66SecondaryStatType::LootCrate:         return NSLOCTEXT("T66.SecondaryStats", "LootCrate", "Loot Crate");
 	default:                                       return FText::GetEmpty();
 	}
 }
@@ -369,10 +371,11 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatDescription(ET66SecondaryS
 	case ET66SecondaryStatType::Goblin:          return NSLOCTEXT("T66.StatTooltips", "Goblin", "Chance to encounter a gold-dropping goblin.");
 	case ET66SecondaryStatType::Leprechaun:      return NSLOCTEXT("T66.StatTooltips", "Leprechaun", "Chance to encounter a leprechaun with bonus rewards.");
 	case ET66SecondaryStatType::TreasureChest:   return NSLOCTEXT("T66.StatTooltips", "TreasureChest", "Chance to find a treasure chest on the map.");
-	case ET66SecondaryStatType::Fountain:        return NSLOCTEXT("T66.StatTooltips", "Fountain", "Chance to find a Fountain of Life that restores health.");
+	case ET66SecondaryStatType::Fountain:        return NSLOCTEXT("T66.StatTooltips", "Fountain", "Chance to find a Fountain of Life that fully heals you and grants +1 max heart.");
 	case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.StatTooltips", "Cheating", "Success chance when attempting to cheat at the Gambler.");
 	case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.StatTooltips", "Stealing", "Success chance when attempting to steal from the Vendor.");
 	case ET66SecondaryStatType::MovementSpeed:   return NSLOCTEXT("T66.StatTooltips", "MovementSpeed", "Bonus movement speed multiplier from secondary stat sources.");
+	case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.StatTooltips", "LootCrate", "Improves the odds of higher-rarity rewards when opening a crate.");
 	default: return FText::GetEmpty();
 	}
 }
@@ -437,7 +440,6 @@ FText UT66LocalizationSubsystem::GetText_ItemRarityName(ET66ItemRarity Rarity) c
 		case ET66ItemRarity::Red: return NSLOCTEXT("T66.Items", "RarityRed", "Red");
 		case ET66ItemRarity::Yellow: return NSLOCTEXT("T66.Items", "RarityYellow", "Yellow");
 		case ET66ItemRarity::White: return NSLOCTEXT("T66.Items", "RarityWhite", "White");
-		case ET66ItemRarity::Cursed: return NSLOCTEXT("T66.Items", "RarityCursed", "Cursed");
 		default: break;
 	}
 	return FText::GetEmpty();
@@ -450,6 +452,15 @@ FText UT66LocalizationSubsystem::GetText_ItemNameFormat() const
 
 FText UT66LocalizationSubsystem::GetText_ItemDisplayName(FName ItemID) const
 {
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		FItemData ItemData;
+		if (T66GI->GetItemData(ItemID, ItemData))
+		{
+			return GetText_SecondaryStatName(ItemData.SecondaryStatType);
+		}
+	}
+
 	const FString S = ItemID.ToString();
 
 	// Canonical IDs: Item_<Color>_<Number>
@@ -467,7 +478,6 @@ FText UT66LocalizationSubsystem::GetText_ItemDisplayName(FName ItemID) const
 			else if (ColorStr.Equals(TEXT("Red"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::Red;
 			else if (ColorStr.Equals(TEXT("Yellow"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::Yellow;
 			else if (ColorStr.Equals(TEXT("White"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::White;
-			else if (ColorStr.Equals(TEXT("Cursed"), ESearchCase::IgnoreCase)) R = ET66ItemRarity::Cursed;
 
 			const int32 Index = FMath::Max(0, FCString::Atoi(*NumStr));
 			if (Index > 0)
@@ -1698,7 +1708,7 @@ FText UT66LocalizationSubsystem::GetText_IdolAltarSelect() const
 
 FText UT66LocalizationSubsystem::GetText_IdolAltarMaxLevel() const
 {
-	return NSLOCTEXT("T66.IdolAltar", "MaxLevel", "Already at max level.");
+	return NSLOCTEXT("T66.IdolAltar", "MaxLevel", "Already at max rarity.");
 }
 
 FText UT66LocalizationSubsystem::GetText_IdolAltarNoEmptySlot() const

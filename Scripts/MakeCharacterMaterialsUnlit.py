@@ -1,5 +1,5 @@
 """
-Central script to make ALL character materials Unlit.
+Central script to make character materials Unlit.
 
 Scans /Game/Characters/ for MaterialInstanceConstant assets still parented
 to FBXLegacyPhongSurfaceMaterial (Lit) and reparents them to M_Character_Unlit.
@@ -22,6 +22,9 @@ LOG = "[CharUnlit]"
 
 MASTER_PATH = "/Game/Materials/M_Character_Unlit"
 TEXTURE_PARAM = "DiffuseColorMap"
+ALT_MASTER_PATHS = [
+    "/Game/Materials/M_FBX_Unlit",
+]
 
 SCAN_DIRS = [
     "/Game/Characters/Heroes/",
@@ -48,6 +51,37 @@ def _get_parent_name(mic):
     except Exception:
         pass
     return ""
+
+
+def _ensure_master_usage_flags():
+    for material_path in [MASTER_PATH] + ALT_MASTER_PATHS:
+        material = unreal.EditorAssetLibrary.load_asset(material_path)
+        if not material or not isinstance(material, unreal.Material):
+            continue
+
+        changed = False
+        for prop, value in [
+            ("shading_model", unreal.MaterialShadingModel.MSM_UNLIT),
+            ("two_sided", True),
+            ("used_with_skeletal_mesh", True),
+        ]:
+            try:
+                current = material.get_editor_property(prop)
+                if current != value:
+                    material.set_editor_property(prop, value)
+                    changed = True
+            except Exception:
+                continue
+
+        if changed:
+            try:
+                unreal.MaterialEditingLibrary.recompile_material(material)
+            except Exception:
+                pass
+            try:
+                unreal.EditorAssetLibrary.save_asset(material_path)
+            except Exception:
+                pass
 
 
 def _get_texture_from_mic(mic):
@@ -113,28 +147,42 @@ def _get_asset_directory(asset_path):
     return clean
 
 
-def main():
-    unreal.log("=" * 60)
-    unreal.log(f"{LOG} MakeCharacterMaterialsUnlit START")
-    unreal.log("=" * 60)
+def _list_assets_for_scan_roots(scan_roots):
+    roots = scan_roots or SCAN_DIRS
+    all_paths = []
+    seen = set()
 
+    for root in roots:
+        if not root:
+            continue
+        try:
+            paths = unreal.EditorAssetLibrary.list_assets(
+                root, recursive=True, include_folder=False)
+        except Exception:
+            continue
+        for path in paths:
+            if path not in seen:
+                seen.add(path)
+                all_paths.append(path)
+    return all_paths
+
+
+def convert_character_materials_unlit(scan_roots=None):
+    _ensure_master_usage_flags()
     master = unreal.EditorAssetLibrary.load_asset(MASTER_PATH)
     if not master:
         unreal.log_error(f"{LOG} M_Character_Unlit not found at {MASTER_PATH}")
         unreal.log_error(f"{LOG} Cannot proceed — create the master material first.")
-        return
-    unreal.log(f"{LOG} Loaded master: {MASTER_PATH}")
+        return {
+            "converted": 0,
+            "already_ok": 0,
+            "skipped": 0,
+            "no_texture": 0,
+            "errors": 1,
+            "no_tex_list": [],
+        }
 
-    all_mic_paths = []
-    for scan_dir in SCAN_DIRS:
-        try:
-            paths = unreal.EditorAssetLibrary.list_assets(
-                scan_dir, recursive=True, include_folder=False)
-            all_mic_paths.extend(paths)
-        except Exception:
-            pass
-
-    unreal.log(f"{LOG} Found {len(all_mic_paths)} total assets under /Game/Characters/")
+    all_mic_paths = _list_assets_for_scan_roots(scan_roots)
 
     converted = 0
     already_ok = 0
@@ -216,19 +264,40 @@ def main():
         converted += 1
         unreal.log(f"  [{mic_name}] Converted (was: {parent_name}) — texture: {tex_name}")
 
+    return {
+        "converted": converted,
+        "already_ok": already_ok,
+        "skipped": skipped,
+        "no_texture": no_texture,
+        "errors": errors,
+        "no_tex_list": no_tex_list,
+    }
+
+
+def main():
+    unreal.log("=" * 60)
+    unreal.log(f"{LOG} MakeCharacterMaterialsUnlit START")
+    unreal.log("=" * 60)
+
+    unreal.log(f"{LOG} Loaded master: {MASTER_PATH}")
+
+    all_mic_paths = _list_assets_for_scan_roots(None)
+    unreal.log(f"{LOG} Found {len(all_mic_paths)} total assets under /Game/Characters/")
+    results = convert_character_materials_unlit()
+
     unreal.log("")
     unreal.log("=" * 60)
     unreal.log(f"{LOG} RESULTS:")
-    unreal.log(f"  Converted:       {converted}")
-    unreal.log(f"  Already Unlit:   {already_ok}")
-    unreal.log(f"  Skipped:         {skipped} (different parent)")
-    unreal.log(f"  No texture:      {no_texture}")
-    unreal.log(f"  Errors:          {errors}")
+    unreal.log(f"  Converted:       {results['converted']}")
+    unreal.log(f"  Already Unlit:   {results['already_ok']}")
+    unreal.log(f"  Skipped:         {results['skipped']} (different parent)")
+    unreal.log(f"  No texture:      {results['no_texture']}")
+    unreal.log(f"  Errors:          {results['errors']}")
 
-    if no_tex_list:
+    if results["no_tex_list"]:
         unreal.log("")
         unreal.log_warning(f"{LOG} MICs with no texture found (need manual review):")
-        for path in no_tex_list:
+        for path in results["no_tex_list"]:
             unreal.log_warning(f"  -> {path}")
 
     unreal.log("=" * 60)

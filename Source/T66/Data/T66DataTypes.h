@@ -525,7 +525,6 @@ enum class ET66ItemRarity : uint8
 	Red UMETA(DisplayName = "Red"),
 	Yellow UMETA(DisplayName = "Yellow"),
 	White UMETA(DisplayName = "White"),
-	Cursed UMETA(DisplayName = "Cursed"),
 };
 
 UENUM(BlueprintType)
@@ -594,17 +593,29 @@ enum class ET66SecondaryStatType : uint8
 	CounterAttack UMETA(DisplayName = "Counter Attack"),
 	LifeSteal UMETA(DisplayName = "Life Steal"),
 	Assassinate UMETA(DisplayName = "Assassinate"),
-	// Luck-world (7)
+	// Luck-world live (5) + compatibility (2)
 	SpinWheel UMETA(DisplayName = "Spin Wheel"),
-	Goblin UMETA(DisplayName = "Goblin"),
-	Leprechaun UMETA(DisplayName = "Leprechaun"),
+	Goblin UMETA(Hidden),
+	Leprechaun UMETA(Hidden),
 	TreasureChest UMETA(DisplayName = "Treasure Chest"),
 	Fountain UMETA(DisplayName = "Fountain"),
 	Cheating UMETA(DisplayName = "Cheating"),
 	Stealing UMETA(DisplayName = "Stealing"),
 	// Speed (1)
 	MovementSpeed UMETA(DisplayName = "Movement Speed"),
+	// Luck-world (crate rewards)
+	LootCrate UMETA(DisplayName = "Loot Crate"),
 };
+
+FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType)
+{
+	return StatType == ET66SecondaryStatType::Goblin || StatType == ET66SecondaryStatType::Leprechaun;
+}
+
+FORCEINLINE bool T66IsLiveSecondaryStatType(ET66SecondaryStatType StatType)
+{
+	return StatType != ET66SecondaryStatType::None && !T66IsDeprecatedSecondaryStatType(StatType);
+}
 
 UENUM(BlueprintType)
 enum class ET66StageEffectType : uint8
@@ -627,9 +638,9 @@ enum class ET66HeroStatusEffectType : uint8
 /**
  * Item template data row for the Items DataTable.
  *
- * There are 33 unique item templates (rarity-agnostic). Each template defines:
+ * There are 32 live item templates (rarity-agnostic). Each template defines:
  *   - Line 1: a primary stat type (one of the 7 foundational stats including Speed)
- *   - Line 2: a secondary stat type (one of 33 unique effects)
+ *   - Line 2: a secondary stat type (one of 32 live effects)
  *
  * Rarity and Line 1 rolled value are stored at runtime in FT66InventorySlot.
  * Line 2 multiplier is derived from rarity: Black 1.1x, Red 1.2x, Yellow 1.5x, White 2.0x.
@@ -643,9 +654,22 @@ struct T66_API FItemData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName ItemID;
 
-	/** UI icon (borderless sprite; rarity border applied at runtime). */
+	/** Default/fallback UI icon. Uses the black rarity sprite when rarity-specific icons are available. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Icon;
+
+	/** Rarity-specific icons (black/red/yellow/white). Falls back to Icon when unset. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> BlackIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> RedIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> YellowIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> WhiteIcon;
 
 	/** Line 1: Primary stat this item boosts (additive flat bonus, rolled at drop time). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
@@ -720,6 +744,23 @@ struct T66_API FItemData : public FTableRowBase
 		return FMath::RoundToInt(static_cast<float>(BaseSellGold) * GetRarityPriceMultiplier(Rarity));
 	}
 
+	TSoftObjectPtr<UTexture2D> GetIconForRarity(ET66ItemRarity Rarity) const
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:
+			return !BlackIcon.IsNull() ? BlackIcon : Icon;
+		case ET66ItemRarity::Red:
+			return !RedIcon.IsNull() ? RedIcon : (!BlackIcon.IsNull() ? BlackIcon : Icon);
+		case ET66ItemRarity::Yellow:
+			return !YellowIcon.IsNull() ? YellowIcon : (!RedIcon.IsNull() ? RedIcon : (!BlackIcon.IsNull() ? BlackIcon : Icon));
+		case ET66ItemRarity::White:
+			return !WhiteIcon.IsNull() ? WhiteIcon : (!YellowIcon.IsNull() ? YellowIcon : (!RedIcon.IsNull() ? RedIcon : (!BlackIcon.IsNull() ? BlackIcon : Icon)));
+		default:
+			return !BlackIcon.IsNull() ? BlackIcon : Icon;
+		}
+	}
+
 	/** UI border/tint color for an item rarity tier. */
 	static FLinearColor GetItemRarityColor(ET66ItemRarity Rarity)
 	{
@@ -729,7 +770,6 @@ struct T66_API FItemData : public FTableRowBase
 		case ET66ItemRarity::Red:    return FLinearColor(0.90f, 0.20f, 0.20f, 1.f);
 		case ET66ItemRarity::Yellow: return FLinearColor(0.95f, 0.80f, 0.15f, 1.f);
 		case ET66ItemRarity::White:  return FLinearColor(0.92f, 0.92f, 0.96f, 1.f);
-		case ET66ItemRarity::Cursed: return FLinearColor(0.50f, 0.10f, 0.60f, 1.f);
 		default:                     return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);
 		}
 	}
@@ -903,6 +943,19 @@ struct T66_API FIdolData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Icon;
 
+	/** Rarity-specific icons (black/red/yellow/white). Falls back to Icon when unset. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> BlackIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> RedIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> YellowIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> WhiteIcon;
+
 	/** Maximum level (10). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
 	int32 MaxLevel = 10;
@@ -961,6 +1014,49 @@ struct T66_API FIdolData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
 	float DotDuration = 3.f;
 
+	static int32 GetRarityStepIndex(ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return 0;
+		case ET66ItemRarity::Red:    return 1;
+		case ET66ItemRarity::Yellow: return 2;
+		case ET66ItemRarity::White:  return 3;
+		default:                     return 0;
+		}
+	}
+
+	int32 GetLegacyLevelForRarity(ET66ItemRarity Rarity) const
+	{
+		const int32 ClampedMaxLevel = FMath::Max(1, MaxLevel);
+		if (ClampedMaxLevel <= 1)
+		{
+			return 1;
+		}
+
+		const float MaxOffset = static_cast<float>(ClampedMaxLevel - 1);
+		const float StepOffset = MaxOffset / 3.f;
+		const float TargetOffset = static_cast<float>(GetRarityStepIndex(Rarity)) * StepOffset;
+		return 1 + FMath::RoundToInt(TargetOffset);
+	}
+
+	TSoftObjectPtr<UTexture2D> GetIconForRarity(ET66ItemRarity Rarity) const
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:
+			return !BlackIcon.IsNull() ? BlackIcon : Icon;
+		case ET66ItemRarity::Red:
+			return !RedIcon.IsNull() ? RedIcon : (!BlackIcon.IsNull() ? BlackIcon : Icon);
+		case ET66ItemRarity::Yellow:
+			return !YellowIcon.IsNull() ? YellowIcon : (!RedIcon.IsNull() ? RedIcon : (!BlackIcon.IsNull() ? BlackIcon : Icon));
+		case ET66ItemRarity::White:
+			return !WhiteIcon.IsNull() ? WhiteIcon : (!YellowIcon.IsNull() ? YellowIcon : (!RedIcon.IsNull() ? RedIcon : (!BlackIcon.IsNull() ? BlackIcon : Icon)));
+		default:
+			return !BlackIcon.IsNull() ? BlackIcon : Icon;
+		}
+	}
+
 	/** Get damage at a given level. */
 	float GetDamageAtLevel(int32 Level) const
 	{
@@ -971,6 +1067,16 @@ struct T66_API FIdolData : public FTableRowBase
 	float GetPropertyAtLevel(int32 Level) const
 	{
 		return BaseProperty + FMath::Max(0, Level - 1) * PropertyPerLevel;
+	}
+
+	float GetDamageAtRarity(ET66ItemRarity Rarity) const
+	{
+		return GetDamageAtLevel(GetLegacyLevelForRarity(Rarity));
+	}
+
+	float GetPropertyAtRarity(ET66ItemRarity Rarity) const
+	{
+		return GetPropertyAtLevel(GetLegacyLevelForRarity(Rarity));
 	}
 
 	FIdolData()
@@ -1457,4 +1563,8 @@ struct T66_API FT66PropRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
 	float MinDistanceBetween = 600.f;
+
+	/** Optional world-space placement adjustment applied after ground snapping. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Props")
+	float PlacementZOffset = 0.f;
 };

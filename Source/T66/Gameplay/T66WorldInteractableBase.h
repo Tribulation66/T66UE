@@ -49,6 +49,7 @@ public:
 	virtual bool Interact(APlayerController* PC) PURE_VIRTUAL(AT66WorldInteractableBase::Interact, return false;);
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void ApplyRarityVisuals();
 
 	/** Load & apply the appropriate imported mesh (rarity-specific or single).

@@ -2,7 +2,6 @@
 
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyBase.h"
-#include "Gameplay/T66LeprechaunEnemy.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Core/T66Rarity.h"
@@ -20,7 +19,6 @@ AT66EnemyDirector::AT66EnemyDirector()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	EnemyClass = AT66EnemyBase::StaticClass();
-	LeprechaunClass = AT66LeprechaunEnemy::StaticClass();
 	GoblinThiefClass = AT66GoblinThiefEnemy::StaticClass();
 }
 
@@ -159,8 +157,7 @@ void AT66EnemyDirector::SpawnWave()
 	// Robust fallback: if EnemyClass is unset or misconfigured to a special enemy, use base enemy for the "regular" slot.
 	TSubclassOf<AT66EnemyBase> RegularClass = EnemyClass;
 	if (!RegularClass
-		|| RegularClass->IsChildOf(AT66GoblinThiefEnemy::StaticClass())
-		|| RegularClass->IsChildOf(AT66LeprechaunEnemy::StaticClass()))
+		|| RegularClass->IsChildOf(AT66GoblinThiefEnemy::StaticClass()))
 	{
 		static bool bWarnedEnemyClass = false;
 		if (!bWarnedEnemyClass)
@@ -200,46 +197,33 @@ void AT66EnemyDirector::SpawnWave()
 #endif
 
 	// ================================
-	// Special mobs (Goblin Thief / Leprechaun) — per-wave counts (Luck-affected)
+	// Special mobs (Goblin Thief) — per-wave counts (Luck-affected)
 	// ================================
 	int32 GobToSpawn = 0;
-	int32 LepToSpawn = 0;
 	if (Tuning)
 	{
-		// Each special has its own "wave appears" chance, then a count roll.
 		const float GobChance = RngSub ? RngSub->BiasChance01(Tuning->GoblinWaveChanceBase) : FMath::Clamp(Tuning->GoblinWaveChanceBase, 0.f, 1.f);
-		const float LepChance = RngSub ? RngSub->BiasChance01(Tuning->LeprechaunWaveChanceBase) : FMath::Clamp(Tuning->LeprechaunWaveChanceBase, 0.f, 1.f);
 
 		if (GoblinThiefClass && (Rng.GetFraction() < GobChance))
 		{
 			GobToSpawn = RngSub ? RngSub->RollIntRangeBiased(Tuning->GoblinCountPerWave, Rng) : Rng.RandRange(Tuning->GoblinCountPerWave.Min, Tuning->GoblinCountPerWave.Max);
 		}
-		if (LeprechaunClass && (Rng.GetFraction() < LepChance))
-		{
-			LepToSpawn = RngSub ? RngSub->RollIntRangeBiased(Tuning->LeprechaunCountPerWave, Rng) : Rng.RandRange(Tuning->LeprechaunCountPerWave.Min, Tuning->LeprechaunCountPerWave.Max);
-		}
 
 		GobToSpawn = FMath::Max(0, GobToSpawn);
-		LepToSpawn = FMath::Max(0, LepToSpawn);
-
-		// Fit specials into the wave budget (they replace regular spawns, not add extra).
 		GobToSpawn = FMath::Clamp(GobToSpawn, 0, ToSpawn);
-		LepToSpawn = FMath::Clamp(LepToSpawn, 0, ToSpawn - GobToSpawn);
 	}
 
-	// Luck Rating tracking (quantity): per-wave special mob counts (including 0 when not present).
+	// Luck Rating tracking (quantity): per-wave special mob counts.
 	if (RunState && Tuning)
 	{
 		RunState->RecordLuckQuantityRoll(FName(TEXT("GoblinCountPerWave")), GobToSpawn, 0, Tuning->GoblinCountPerWave.Max);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("LeprechaunCountPerWave")), LepToSpawn, 0, Tuning->LeprechaunCountPerWave.Max);
 	}
 
 	// Build the exact spawn plan for this wave.
-	const int32 MobToSpawn = FMath::Max(0, ToSpawn - GobToSpawn - LepToSpawn);
+	const int32 MobToSpawn = FMath::Max(0, ToSpawn - GobToSpawn);
 	TArray<TSubclassOf<AT66EnemyBase>> SpawnPlan;
 	SpawnPlan.Reserve(ToSpawn);
 	for (int32 i = 0; i < MobToSpawn; ++i) SpawnPlan.Add(RegularClass);
-	for (int32 i = 0; i < LepToSpawn; ++i) SpawnPlan.Add(LeprechaunClass);
 	for (int32 i = 0; i < GobToSpawn; ++i) SpawnPlan.Add(GoblinThiefClass);
 
 	// Shuffle plan so specials aren't always in the same slots (this shuffle is not luck-affected; it uses the wave RNG only).
@@ -436,15 +420,7 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 		{
 			const FT66RarityWeights Weights = Tuning ? Tuning->SpecialEnemyRarityBase : FT66RarityWeights{};
 			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			if (AT66LeprechaunEnemy* Lep = Cast<AT66LeprechaunEnemy>(Enemy))
-			{
-				Lep->SetRarity(R);
-				if (RunState)
-				{
-					RunState->RecordLuckQualityRarity(FName(TEXT("LeprechaunRarity")), R);
-				}
-			}
-			else if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
+			if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
 			{
 				Gob->SetRarity(R);
 				if (RunState)

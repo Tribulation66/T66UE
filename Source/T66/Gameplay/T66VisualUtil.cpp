@@ -2,12 +2,14 @@
 
 #include "Gameplay/T66VisualUtil.h"
 
+#include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/MeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/Actor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
@@ -141,6 +143,112 @@ UStaticMesh* FT66VisualUtil::GetBasicShapeCone()
 		Cached = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cone.Cone"));
 	}
 	return Cached.Get();
+}
+
+void FT66VisualUtil::GroundMeshToActorOrigin(UStaticMeshComponent* MeshComponent, UStaticMesh* Mesh)
+{
+	if (!MeshComponent)
+	{
+		return;
+	}
+
+	UStaticMesh* ResolvedMesh = Mesh;
+	if (!ResolvedMesh)
+	{
+		ResolvedMesh = MeshComponent->GetStaticMesh();
+	}
+	if (!ResolvedMesh)
+	{
+		return;
+	}
+
+	const FBoxSphereBounds Bounds = ResolvedMesh->GetBounds();
+	const float ScaleZ = FMath::Abs(MeshComponent->GetRelativeScale3D().Z);
+	const float BottomZ = (Bounds.Origin.Z - Bounds.BoxExtent.Z) * ScaleZ;
+	const FVector RelativeLocation = MeshComponent->GetRelativeLocation();
+	MeshComponent->SetRelativeLocation(FVector(RelativeLocation.X, RelativeLocation.Y, -BottomZ));
+}
+
+static bool T66ShouldUseComponentForGrounding(const UPrimitiveComponent* Primitive)
+{
+	if (!Primitive || !Primitive->IsRegistered())
+	{
+		return false;
+	}
+
+	const ECollisionEnabled::Type CollisionEnabled = Primitive->GetCollisionEnabled();
+	const bool bIsVisible = Primitive->IsVisible();
+	const bool bHasSolidCollision =
+		CollisionEnabled == ECollisionEnabled::QueryAndPhysics ||
+		CollisionEnabled == ECollisionEnabled::PhysicsOnly;
+
+	return bIsVisible || bHasSolidCollision;
+}
+
+static bool T66TryGetActorGroundingBottomZ(const AActor* Actor, float& OutBottomZ)
+{
+	if (!Actor)
+	{
+		return false;
+	}
+
+	TInlineComponentArray<UPrimitiveComponent*> PrimitiveComponents;
+	Actor->GetComponents(PrimitiveComponents);
+
+	bool bFoundBottom = false;
+	float BottomZ = 0.f;
+
+	for (const UPrimitiveComponent* Primitive : PrimitiveComponents)
+	{
+		if (!T66ShouldUseComponentForGrounding(Primitive))
+		{
+			continue;
+		}
+
+		const FBoxSphereBounds Bounds = Primitive->CalcBounds(Primitive->GetComponentTransform());
+		const float ComponentBottomZ = Bounds.Origin.Z - Bounds.BoxExtent.Z;
+		if (!bFoundBottom || ComponentBottomZ < BottomZ)
+		{
+			bFoundBottom = true;
+			BottomZ = ComponentBottomZ;
+		}
+	}
+
+	if (!bFoundBottom)
+	{
+		return false;
+	}
+
+	OutBottomZ = BottomZ;
+	return true;
+}
+
+void FT66VisualUtil::SnapToGround(AActor* Actor, UWorld* World)
+{
+	if (!Actor || !World) return;
+
+	const FVector Here = Actor->GetActorLocation();
+	const FVector Start = FVector(Here.X, Here.Y, Here.Z + 8000.f);
+	const FVector End   = FVector(Here.X, Here.Y, Here.Z - 16000.f);
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(T66SnapToGround), false, Actor);
+
+	FHitResult Hit;
+	if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic, Params) &&
+		!World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	{
+		return;
+	}
+
+	float CurrentBottomZ = 0.f;
+	if (!T66TryGetActorGroundingBottomZ(Actor, CurrentBottomZ))
+	{
+		Actor->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
+		return;
+	}
+
+	const float DeltaZ = Hit.ImpactPoint.Z - CurrentBottomZ;
+	Actor->AddActorWorldOffset(FVector(0.f, 0.f, DeltaZ), false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 static bool IsEngineMaterial(UMaterialInterface* Mat)

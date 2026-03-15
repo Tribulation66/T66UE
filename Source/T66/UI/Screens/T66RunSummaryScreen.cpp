@@ -647,21 +647,26 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	// Idols: one row, 6 columns, with simple border under hero.
 	const TArray<FName>* IdolsPtr = nullptr;
+	const TArray<uint8>* IdolTiersPtr = nullptr;
 	TArray<FName> InventoryLocal;
 	const TArray<FT66InventorySlot>* InvSlotsPtr = nullptr;
 	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 	{
 		IdolsPtr = &LoadedSavedSummary->EquippedIdols;
+		IdolTiersPtr = &LoadedSavedSummary->EquippedIdolTiers;
 		InventoryLocal = LoadedSavedSummary->Inventory;
 	}
 	else if (RunState)
 	{
 		IdolsPtr = &RunState->GetEquippedIdols();
+		IdolTiersPtr = &RunState->GetEquippedIdolTierValues();
 		InventoryLocal = RunState->GetInventory();
 		InvSlotsPtr = &RunState->GetInventorySlots();
 	}
 	const TArray<FName> Empty;
 	const TArray<FName>& Idols = IdolsPtr ? *IdolsPtr : Empty;
+	const TArray<uint8> EmptyIdolTiers;
+	const TArray<uint8>& IdolTiers = IdolTiersPtr ? *IdolTiersPtr : EmptyIdolTiers;
 
 	static constexpr float IdolSlotPad = 4.f;
 	static constexpr float IdolSlotSize = 52.f;
@@ -669,17 +674,25 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		const FName IdolID = Idols.IsValidIndex(i) ? Idols[i] : NAME_None;
-		const FLinearColor IdolColor = !IdolID.IsNone() ? UT66RunStateSubsystem::GetIdolColor(IdolID) : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
+		const int32 IdolTierValue = IdolTiers.IsValidIndex(i)
+			? FMath::Clamp(static_cast<int32>(IdolTiers[i]), 1, UT66RunStateSubsystem::MaxIdolLevel)
+			: 1;
+		const FLinearColor IdolColor = !IdolID.IsNone()
+			? FItemData::GetItemRarityColor(UT66RunStateSubsystem::IdolTierValueToRarity(IdolTierValue))
+			: FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
 		FIdolData IdolData;
 		const bool bHasIdolData = GI && !IdolID.IsNone() && GI->GetIdolData(IdolID, IdolData);
 		TSharedPtr<FSlateBrush> IdolBrush;
-		if (bHasIdolData && !IdolData.Icon.IsNull())
+		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasIdolData
+			? IdolData.GetIconForRarity(UT66RunStateSubsystem::IdolTierValueToRarity(IdolTierValue))
+			: TSoftObjectPtr<UTexture2D>();
+		if (!IdolIconSoft.IsNull())
 		{
 			IdolBrush = MakeShared<FSlateBrush>();
 			IdolBrush->DrawAs = ESlateBrushDrawType::Image;
 			IdolBrush->ImageSize = FVector2D(IdolSlotSize - 4.f, IdolSlotSize - 4.f);
 			IdolIconBrushes.Add(IdolBrush);
-			if (TexPool) T66SlateTexture::BindSharedBrushAsync(TexPool, IdolData.Icon, this, IdolBrush, IdolID, true);
+			if (TexPool) T66SlateTexture::BindSharedBrushAsync(TexPool, IdolIconSoft, this, IdolBrush, IdolID, true);
 		}
 		IdolSlotsRow->AddSlot()
 			.AutoWidth()
@@ -726,9 +739,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		const FName ItemID = InventoryLocal[InvIdx];
 		if (ItemID.IsNone()) continue;
 		FItemData ItemData;
-		if (GI && GI->GetItemData(ItemID, ItemData) && !ItemData.Icon.IsNull() && TexPool)
+		const ET66ItemRarity SlotRarity = (InvSlotsPtr && InvSlotsPtr->IsValidIndex(InvIdx)) ? (*InvSlotsPtr)[InvIdx].Rarity : ET66ItemRarity::Black;
+		const bool bHasData = GI && GI->GetItemData(ItemID, ItemData);
+		const TSoftObjectPtr<UTexture2D> ItemIconSoft = bHasData ? ItemData.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
+		if (!ItemIconSoft.IsNull() && TexPool)
 		{
-			T66SlateTexture::BindSharedBrushAsync(TexPool, ItemData.Icon, this, InventoryItemIconBrushes[InvIdx], ItemID, true);
+			T66SlateTexture::BindSharedBrushAsync(TexPool, ItemIconSoft, this, InventoryItemIconBrushes[InvIdx], ItemID, true);
 		}
 	}
 	TSharedRef<SVerticalBox> InvGridRef = SNew(SVerticalBox);

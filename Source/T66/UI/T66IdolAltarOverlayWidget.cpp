@@ -28,6 +28,14 @@ static UT66RunStateSubsystem* GetRunState(UWorld* World)
 	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 }
 
+static FText GetItemRarityDisplayText(ET66ItemRarity Rarity)
+{
+	const UEnum* RarityEnum = StaticEnum<ET66ItemRarity>();
+	return RarityEnum
+		? RarityEnum->GetDisplayNameTextByValue(static_cast<int64>(Rarity))
+		: FText::GetEmpty();
+}
+
 void UT66IdolAltarOverlayWidget::NativeDestruct()
 {
 	// Unbind delegate.
@@ -262,16 +270,21 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 	for (int32 i = 0; i < SlotCount; ++i)
 	{
 		const bool bHasItem = Stock.IsValidIndex(i) && !Stock[i].IsNone();
+		const ET66ItemRarity OfferedRarity = RunState->GetIdolStockRarityInSlot(i);
 		const bool bSelected = RunState->IsIdolStockSlotSelected(i);
 
 		FIdolData D;
 		const bool bHasData = bHasItem && GI && GI->GetIdolData(Stock[i], D);
+		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasData ? D.GetIconForRarity(OfferedRarity) : TSoftObjectPtr<UTexture2D>();
 
 		// Name
 		if (IdolNameTexts.IsValidIndex(i) && IdolNameTexts[i].IsValid())
 		{
 			IdolNameTexts[i]->SetText(bHasItem
-				? (Loc ? Loc->GetText_IdolDisplayName(Stock[i]) : FText::FromName(Stock[i]))
+				? FText::Format(
+					NSLOCTEXT("T66.IdolAltar", "IdolNameWithRarity", "{0} [{1}]"),
+					Loc ? Loc->GetText_IdolDisplayName(Stock[i]) : FText::FromName(Stock[i]),
+					GetItemRarityDisplayText(OfferedRarity))
 				: NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
 		}
 
@@ -292,19 +305,19 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 			}
 		}
 
-		// Icon border color (idol tint)
+		// Icon border color (rarity tint)
 		if (IdolIconBorders.IsValidIndex(i) && IdolIconBorders[i].IsValid())
 		{
-			const FLinearColor C = bHasItem ? UT66RunStateSubsystem::GetIdolColor(Stock[i]) : FT66Style::Tokens::Panel2;
+			const FLinearColor C = bHasItem ? FItemData::GetItemRarityColor(OfferedRarity) : FT66Style::Tokens::Panel2;
 			IdolIconBorders[i]->SetBorderBackgroundColor(C);
 		}
 
 		// Icon texture (async load)
 		if (IdolIconBrushes.IsValidIndex(i) && IdolIconBrushes[i].IsValid())
 		{
-			if (bHasData && !D.Icon.IsNull() && TexPool)
+			if (!IdolIconSoft.IsNull() && TexPool)
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, IdolIconBrushes[i], FName(TEXT("IdolStock"), i + 1), /*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, IdolIconSoft, this, IdolIconBrushes[i], FName(TEXT("IdolStock"), i + 1), /*bClearWhileLoading*/ true);
 			}
 			else
 			{
@@ -313,7 +326,7 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		}
 		if (IdolIconImages.IsValidIndex(i) && IdolIconImages[i].IsValid())
 		{
-			const bool bHasIcon = bHasData && !D.Icon.IsNull();
+			const bool bHasIcon = !IdolIconSoft.IsNull();
 			IdolIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 		}
 
@@ -354,18 +367,25 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 
+	const TArray<FName>& EquippedBefore = RunState->GetEquippedIdols();
+	const TArray<FName>& Stock = RunState->GetIdolStockIDs();
+	const FName OfferedIdolID = Stock.IsValidIndex(SlotIndex) ? Stock[SlotIndex] : NAME_None;
+	const bool bWasUpgrade = EquippedBefore.Contains(OfferedIdolID);
+
 	const bool bApplied = RunState->SelectIdolFromStock(SlotIndex);
 	if (bApplied)
 	{
 		if (StatusText.IsValid())
 		{
-			StatusText->SetText(Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped."));
+			StatusText->SetText(
+				bWasUpgrade
+					? NSLOCTEXT("T66.IdolAltar", "Upgraded", "Upgraded.")
+					: (Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped.")));
 		}
 	}
 	else
 	{
 		// Determine why it failed for a helpful message.
-		const TArray<FName>& Stock = RunState->GetIdolStockIDs();
 		const bool bAlreadySelected = RunState->IsIdolStockSlotSelected(SlotIndex);
 		if (bAlreadySelected)
 		{
@@ -376,10 +396,25 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 		}
 		else
 		{
-			// Check if it's a max-level or no-slot situation.
+			bool bAtMaxRarity = false;
+			if (!OfferedIdolID.IsNone())
+			{
+				const TArray<FName>& Equipped = RunState->GetEquippedIdols();
+				for (int32 i = 0; i < Equipped.Num(); ++i)
+				{
+					if (Equipped[i] == OfferedIdolID && RunState->GetEquippedIdolRarityInSlot(i) == ET66ItemRarity::White)
+					{
+						bAtMaxRarity = true;
+						break;
+					}
+				}
+			}
 			if (StatusText.IsValid())
 			{
-				StatusText->SetText(Loc ? Loc->GetText_IdolAltarNoEmptySlot() : NSLOCTEXT("T66.IdolAltar", "NoEmptySlot", "No empty idol slot."));
+				StatusText->SetText(
+					bAtMaxRarity
+						? (Loc ? Loc->GetText_IdolAltarMaxLevel() : NSLOCTEXT("T66.IdolAltar", "MaxLevel", "Already at max rarity."))
+						: (Loc ? Loc->GetText_IdolAltarNoEmptySlot() : NSLOCTEXT("T66.IdolAltar", "NoEmptySlot", "No empty idol slot.")));
 			}
 		}
 	}

@@ -29,6 +29,12 @@ AT66WorldInteractableBase::AT66WorldInteractableBase()
 	ApplyRarityVisuals();
 }
 
+void AT66WorldInteractableBase::BeginPlay()
+{
+	Super::BeginPlay();
+	FT66VisualUtil::SnapToGround(this, GetWorld());
+}
+
 void AT66WorldInteractableBase::SetRarity(ET66Rarity InRarity)
 {
 	Rarity = InRarity;
@@ -69,9 +75,10 @@ bool AT66WorldInteractableBase::TryApplyImportedMesh()
 	VisualMesh->SetStaticMesh(M);
 	VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 	VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
-	const FBoxSphereBounds B = M->GetBounds();
-	const float BottomZ = (B.Origin.Z - B.BoxExtent.Z);
-	VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, -BottomZ));
+	FT66VisualUtil::GroundMeshToActorOrigin(VisualMesh, M);
+	if (HasActorBegunPlay())
+	{
+		FT66VisualUtil::SnapToGround(this, GetWorld());
+	}
 	return true;
 }
-

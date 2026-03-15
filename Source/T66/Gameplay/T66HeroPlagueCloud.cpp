@@ -37,7 +37,10 @@ void AT66HeroPlagueCloud::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DamageZone->SetSphereRadius(Radius);
+	if (DamageZone)
+	{
+		DamageZone->SetSphereRadius(Radius);
+	}
 	CachedPixelVFX = LoadPixelVFX();
 }
 
@@ -85,25 +88,43 @@ void AT66HeroPlagueCloud::InitFromUltimate(int32 UltimateDamage)
 	const int32 TickDamage = FMath::Max(1, FMath::RoundToInt(DamagePerTick));
 
 	UWorld* World = GetWorld();
-	if (World)
+	if (World && DamageZone)
 	{
+		const TWeakObjectPtr<AT66HeroPlagueCloud> WeakThis(this);
 		FTimerDelegate TickDelegate;
-		TickDelegate.BindLambda([this, TickDamage]()
+		TickDelegate.BindLambda([WeakThis, TickDamage]()
 		{
-			DamageZone->UpdateOverlaps();
+			AT66HeroPlagueCloud* Cloud = WeakThis.Get();
+			if (!IsValid(Cloud))
+			{
+				return;
+			}
+
+			USphereComponent* Zone = Cloud->DamageZone;
+			if (!IsValid(Zone) || !IsValid(Cloud->GetWorld()))
+			{
+				return;
+			}
+
+			Zone->UpdateOverlaps();
 			TArray<AActor*> Overlapping;
-			DamageZone->GetOverlappingActors(Overlapping);
+			Zone->GetOverlappingActors(Overlapping);
 			const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
 			for (AActor* Actor : Overlapping)
 			{
+				if (!IsValid(Actor))
+				{
+					continue;
+				}
+
 				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Actor))
 				{
-					if (E->CurrentHP > 0)
+					if (IsValid(E) && E->CurrentHP > 0)
 						E->TakeDamageFromHero(TickDamage, SourceID, NAME_None);
 				}
 				else if (AT66BossBase* B = Cast<AT66BossBase>(Actor))
 				{
-					if (B->IsAwakened() && B->IsAlive())
+					if (IsValid(B) && B->IsAwakened() && B->IsAlive())
 						B->TakeDamageFromHeroHit(TickDamage, SourceID, NAME_None);
 				}
 			}
@@ -113,6 +134,17 @@ void AT66HeroPlagueCloud::InitFromUltimate(int32 UltimateDamage)
 	}
 }
 
+void AT66HeroPlagueCloud::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(TickTimerHandle);
+		World->GetTimerManager().ClearTimer(DestroyTimerHandle);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void AT66HeroPlagueCloud::ApplyTickDamage()
 {
 }
@@ -120,6 +152,9 @@ void AT66HeroPlagueCloud::ApplyTickDamage()
 void AT66HeroPlagueCloud::DestroySelf()
 {
 	if (UWorld* World = GetWorld())
+	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
+		World->GetTimerManager().ClearTimer(DestroyTimerHandle);
+	}
 	Destroy();
 }

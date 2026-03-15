@@ -11,6 +11,8 @@
 
 AT66TreeOfLifeInteractable::AT66TreeOfLifeInteractable()
 {
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Fountain/Fountain.Fountain")));
+
 	// Trunk: cylinder
 	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{
@@ -30,11 +32,6 @@ AT66TreeOfLifeInteractable::AT66TreeOfLifeInteractable()
 		CrownMesh->SetRelativeLocation(FVector(0.f, 0.f, 260.f));
 	}
 
-	RarityMeshes.Add(ET66Rarity::Black, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/Black/SM_Tree_Black.SM_Tree_Black"))));
-	RarityMeshes.Add(ET66Rarity::Red, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/Red/SM_Tree_Red.SM_Tree_Red"))));
-	RarityMeshes.Add(ET66Rarity::Yellow, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/Yellow/SM_Tree_Yellow.SM_Tree_Yellow"))));
-	RarityMeshes.Add(ET66Rarity::White, TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Trees/White/SM_Tree_White.SM_Tree_White"))));
-
 	ApplyRarityVisuals();
 }
 
@@ -45,9 +42,10 @@ void AT66TreeOfLifeInteractable::ApplyRarityVisuals()
 		if (CrownMesh) CrownMesh->SetVisibility(false, true);
 		return;
 	}
-	const FLinearColor R = FT66RarityUtil::GetRarityColor(Rarity);
-	FT66VisualUtil::ApplyT66Color(VisualMesh, this, R);
-	FT66VisualUtil::ApplyT66Color(CrownMesh, this, R);
+
+	const FLinearColor FountainColor(0.20f, 0.80f, 1.00f, 1.0f);
+	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FountainColor);
+	FT66VisualUtil::ApplyT66Color(CrownMesh, this, FountainColor);
 }
 
 bool AT66TreeOfLifeInteractable::Interact(APlayerController* PC)
@@ -58,17 +56,8 @@ bool AT66TreeOfLifeInteractable::Interact(APlayerController* PC)
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return false;
 
-	int32 DeltaHearts = 1;
-	switch (Rarity)
-	{
-	case ET66Rarity::Black:  DeltaHearts = 1; break;
-	case ET66Rarity::Red:    DeltaHearts = 3; break;
-	case ET66Rarity::Yellow: DeltaHearts = 5; break;
-	case ET66Rarity::White:  DeltaHearts = 10; break;
-	default:                 DeltaHearts = 1; break;
-	}
-
-	RunState->AddMaxHearts(DeltaHearts);
+	RunState->AddMaxHearts(1);
+	RunState->HealToFull();
 	bConsumed = true;
 	Destroy();
 	return true;

@@ -32,13 +32,13 @@
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
-#include "Gameplay/T66TreeOfLifeInteractable.h"
+#include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66StageBoostGate.h"
-#include "Gameplay/T66StageBoostGoldInteractable.h"
-#include "Gameplay/T66StageBoostLootInteractable.h"
+#include "Gameplay/T66StageCatchUpGate.h"
+#include "Gameplay/T66StageCatchUpGoldInteractable.h"
+#include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -53,6 +53,21 @@
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
+
+namespace
+{
+	static ET66ItemRarity LootRarityToItemRarity(ET66Rarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Black:  return ET66ItemRarity::Black;
+		case ET66Rarity::Red:    return ET66ItemRarity::Red;
+		case ET66Rarity::Yellow: return ET66ItemRarity::Yellow;
+		case ET66Rarity::White:  return ET66ItemRarity::White;
+		default:                 return ET66ItemRarity::Black;
+		}
+	}
+}
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66ItemPickup.h"
 #include "EnhancedInputComponent.h"
@@ -1133,13 +1148,13 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66LootBagPickup* ClosestLootBag = nullptr;
 	AT66TutorialPortal* ClosestTutorialPortal = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
-	AT66TreeOfLifeInteractable* ClosestTree = nullptr;
+	AT66FountainOfLifeInteractable* ClosestFountain = nullptr;
 	AT66ChestInteractable* ClosestChest = nullptr;
 	AT66WheelSpinInteractable* ClosestWheel = nullptr;
 	AT66CrateInteractable* ClosestCrate = nullptr;
-	AT66StageBoostGate* ClosestBoostGate = nullptr;
-	AT66StageBoostGoldInteractable* ClosestBoostGold = nullptr;
-	AT66StageBoostLootInteractable* ClosestBoostLoot = nullptr;
+	AT66StageCatchUpGate* ClosestCatchUpGate = nullptr;
+	AT66StageCatchUpGoldInteractable* ClosestCatchUpGold = nullptr;
+	AT66StageCatchUpLootInteractable* ClosestCatchUpLoot = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
 	float ClosestTotemDistSq = InteractRadius * InteractRadius;
@@ -1149,13 +1164,13 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
 	float ClosestTutorialPortalDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
-	float ClosestTreeDistSq = InteractRadius * InteractRadius;
+	float ClosestFountainDistSq = InteractRadius * InteractRadius;
 	float ClosestChestDistSq = InteractRadius * InteractRadius;
 	float ClosestWheelDistSq = InteractRadius * InteractRadius;
 	float ClosestCrateDistSq = InteractRadius * InteractRadius;
-	float ClosestBoostGateDistSq = InteractRadius * InteractRadius;
-	float ClosestBoostGoldDistSq = InteractRadius * InteractRadius;
-	float ClosestBoostLootDistSq = InteractRadius * InteractRadius;
+	float ClosestCatchUpGateDistSq = InteractRadius * InteractRadius;
+	float ClosestCatchUpGoldDistSq = InteractRadius * InteractRadius;
+	float ClosestCatchUpLootDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
 	{
@@ -1198,9 +1213,9 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestIdolAltarDistSq) { ClosestIdolAltarDistSq = DistSq; ClosestIdolAltar = Altar; }
 		}
-		else if (AT66TreeOfLifeInteractable* Tree = Cast<AT66TreeOfLifeInteractable>(A))
+		else if (AT66FountainOfLifeInteractable* Fountain = Cast<AT66FountainOfLifeInteractable>(A))
 		{
-			if (DistSq < ClosestTreeDistSq) { ClosestTreeDistSq = DistSq; ClosestTree = Tree; }
+			if (DistSq < ClosestFountainDistSq) { ClosestFountainDistSq = DistSq; ClosestFountain = Fountain; }
 		}
 		else if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(A))
 		{
@@ -1214,17 +1229,17 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestCrateDistSq) { ClosestCrateDistSq = DistSq; ClosestCrate = CR; }
 		}
-		else if (AT66StageBoostGate* BG = Cast<AT66StageBoostGate>(A))
+		else if (AT66StageCatchUpGate* CUG = Cast<AT66StageCatchUpGate>(A))
 		{
-			if (DistSq < ClosestBoostGateDistSq) { ClosestBoostGateDistSq = DistSq; ClosestBoostGate = BG; }
+			if (DistSq < ClosestCatchUpGateDistSq) { ClosestCatchUpGateDistSq = DistSq; ClosestCatchUpGate = CUG; }
 		}
-		else if (AT66StageBoostGoldInteractable* BoostGold = Cast<AT66StageBoostGoldInteractable>(A))
+		else if (AT66StageCatchUpGoldInteractable* CUGold = Cast<AT66StageCatchUpGoldInteractable>(A))
 		{
-			if (DistSq < ClosestBoostGoldDistSq) { ClosestBoostGoldDistSq = DistSq; ClosestBoostGold = BoostGold; }
+			if (DistSq < ClosestCatchUpGoldDistSq) { ClosestCatchUpGoldDistSq = DistSq; ClosestCatchUpGold = CUGold; }
 		}
-		else if (AT66StageBoostLootInteractable* L = Cast<AT66StageBoostLootInteractable>(A))
+		else if (AT66StageCatchUpLootInteractable* L = Cast<AT66StageCatchUpLootInteractable>(A))
 		{
-			if (DistSq < ClosestBoostLootDistSq) { ClosestBoostLootDistSq = DistSq; ClosestBoostLoot = L; }
+			if (DistSq < ClosestCatchUpLootDistSq) { ClosestCatchUpLootDistSq = DistSq; ClosestCatchUpLoot = L; }
 		}
 	}
 
@@ -1246,8 +1261,8 @@ void AT66PlayerController::HandleInteractPressed()
 		return;
 	}
 
-	// Stage Boost gate (F) enters the chosen difficulty start stage
-	if (ClosestBoostGate && ClosestBoostGate->EnterChosenStage())
+	// Stage Catch Up gate (F) enters the chosen difficulty start stage
+	if (ClosestCatchUpGate && ClosestCatchUpGate->EnterChosenStage())
 	{
 		return;
 	}
@@ -1284,8 +1299,8 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 		return;
 	}
-	// World interactables (Tree/Chest/Wheel)
-	if (ClosestTree && ClosestTree->Interact(this))
+	// World interactables (Fountain/Chest/Wheel)
+	if (ClosestFountain && ClosestFountain->Interact(this))
 	{
 		return;
 	}
@@ -1302,12 +1317,12 @@ void AT66PlayerController::HandleInteractPressed()
 		return;
 	}
 
-	// Stage Boost interactables (Gold/Loot)
-	if (ClosestBoostGold && ClosestBoostGold->Interact(this))
+	// Stage Catch Up interactables (Gold/Loot)
+	if (ClosestCatchUpGold && ClosestCatchUpGold->Interact(this))
 	{
 		return;
 	}
-	if (ClosestBoostLoot && ClosestBoostLoot->Interact(this))
+	if (ClosestCatchUpLoot && ClosestCatchUpLoot->Interact(this))
 	{
 		return;
 	}
@@ -1317,12 +1332,13 @@ void AT66PlayerController::HandleInteractPressed()
 		if (RunState && RunState->HasInventorySpace())
 		{
 			const FName PickedItemID = ClosestLootBag->GetItemID();
-			RunState->AddItem(PickedItemID);
+			const ET66ItemRarity PickedItemRarity = LootRarityToItemRarity(ClosestLootBag->GetLootRarity());
+			RunState->AddItemWithRarity(PickedItemID, PickedItemRarity);
 			ClosestLootBag->ConsumeAndDestroy();
 			ClearNearbyLootBag(ClosestLootBag);
 			if (GameplayHUDWidget)
 			{
-				GameplayHUDWidget->ShowPickupItemCard(PickedItemID);
+				GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
 			}
 		}
 		return;

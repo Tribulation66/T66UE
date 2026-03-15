@@ -652,6 +652,8 @@ All material instances must inherit from one of these Unlit master materials:
 | Master Material | Location | Use For |
 |---|---|---|
 | M_Character_Unlit | /Game/Materials/M_Character_Unlit | Heroes, enemies, companions, NPCs, any character/creature |
+| M_FBX_Unlit | /Game/Materials/M_FBX_Unlit | Alternate FBX-compatible character master when the imported param layout matches it better |
+| M_GLB_Unlit | /Game/Materials/M_GLB_Unlit | Props and interactables imported through GLB |
 | M_Environment_Unlit | /Game/Materials/M_Environment_Unlit | Ground, terrain, structures, ramps, props, map geometry, everything else |
 
 ### Creating New Material Instances
@@ -659,21 +661,25 @@ All material instances must inherit from one of these Unlit master materials:
 When adding any new asset to the game:
 
 1. Create a MaterialInstanceConstant
-2. Set its parent to the appropriate master material (M_Character_Unlit or M_Environment_Unlit)
-3. Set the `DiffuseColorMap` parameter to your texture
+2. Set its parent to the appropriate master material
+3. Set the matching texture parameter (`DiffuseColorMap` for FBX/character/environment paths, `BaseColorTexture` for GLB paths)
 4. Adjust `Brightness` if needed (default 1.0)
 5. For environment materials, optionally set `Tint` for color variation
-6. **Never** use DefaultLit, Lit, or any other shading model
-7. **Never** use FBXLegacyPhongSurfaceMaterial or any other Lit parent material
+6. For GLB atlas-style props that smear colors in-game, prefer importer-driven texture overrides (for example `BaseColorTexture` with `TMGS_NO_MIPMAPS`) instead of ad-hoc manual editor tweaks
+7. **Never** use DefaultLit, Lit, or any other shading model
+8. **Never** use FBXLegacyPhongSurfaceMaterial or any other Lit parent material
 
 ### Importing New Assets (FBX/GLB)
 
 When importing meshes from Blender, Mixamo, TRELLIS, or any other source:
-- UE5 will auto-generate material instances using FBXLegacyPhongSurfaceMaterial (Lit) as the parent
-- **You must reparent these** to M_Character_Unlit or M_Environment_Unlit after import
-- Use the batch conversion scripts in `Scripts/` if converting multiple materials at once:
-  - `ConvertCharacterMaterialsToUnlit.py` — for character materials
-  - `ConvertEnvironmentMaterialsToUnlit.py` — for everything else
+- Use the project importers, not raw manual import, whenever possible:
+  - `Scripts/ImportSkeletalMeshes.py` imports FBX assets and immediately runs the character unlit conversion for that folder
+  - `Scripts/ImportStaticMeshes.py` imports GLB assets, flattens Interchange output, and immediately runs the GLB unlit conversion for that folder
+- Character master materials must keep `used_with_skeletal_mesh = true`; otherwise imported skeletal meshes can render black even when the parent/material parameter wiring is otherwise correct
+- Static-mesh import manifests may carry per-entry `Brightness` / `Tint` material overrides and per-texture parameter overrides for GLB repairs
+- Repair / re-run tools:
+  - `Scripts/MakeCharacterMaterialsUnlit.py` — for already-imported FBX character folders
+  - `Scripts/MakeGLBImportsUnlit.py` — for already-imported GLB prop/interactable folders
 
 ### What the Lighting System Does
 

@@ -35,17 +35,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	TSubclassOf<AT66EnemyBase> EnemyClass;
 
-	/** Special: Leprechaun (runs away, grants gold on hit) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	TSubclassOf<AT66EnemyBase> LeprechaunClass;
-
 	/** Special: Goblin Thief (steals gold on touch) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	TSubclassOf<AT66EnemyBase> GoblinThiefClass;
-
-	/** Chance per spawned enemy to be a Leprechaun */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float LeprechaunChance = 0.05f;
 
 	/** Chance per spawned enemy to be a Goblin Thief */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")

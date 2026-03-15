@@ -59,7 +59,7 @@ static const int32 CatAttackScale[]    = { 9, 10, 11, 12 };
 static const int32 CatRange[]         = { 15, 16, 17 };      // Close Range, Long Range, Attack Range
 static const int32 CatArmor[]         = { 18, 19, 20, 21 };
 static const int32 CatEvasion[]       = { 22, 23, 24, 25 };
-static const int32 CatLuck[]          = { 26, 27, 28, 29, 30, 31, 32 };
+static const int32 CatLuck[]          = { 26, 29, 30, 31, 32, 34 };
 static const int32 CatMovement[]      = { 33 };
 
 static const FSecondaryStatCategory SecondaryStatCategories[] =

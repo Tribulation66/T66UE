@@ -1,16 +1,22 @@
 """
-Import static mesh GLBs into the project. Vanilla import — no material manipulation.
+Import static mesh GLBs into the project and immediately convert imported GLB
+materials to the project's Unlit pipeline.
 
 Update the IMPORTS list below before each run, then execute in Unreal Editor:
   Tools -> Execute Python Script -> Scripts/ImportStaticMeshes.py
   or from Output Log:
   py "C:/UE/T66/Scripts/ImportStaticMeshes.py"
-
-After importing, run MakeAllMaterialsUnlit.py as a separate step.
 """
 
 import os
+import sys
 import unreal
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.append(SCRIPT_DIR)
+
+import MakeGLBImportsUnlit
 
 # ======================================================================
 # IMPORT MANIFEST — edit this before each import run.
@@ -23,24 +29,82 @@ import unreal
 # ======================================================================
 
 IMPORTS = [
-    # --- Interactables: Chests (4 rarity variants) ---
-    ("Interactables/ChestBlack.glb",  "/Game/World/Interactables/Chests/Black",   "ChestBlack"),
-    ("Interactables/ChestRed.glb",    "/Game/World/Interactables/Chests/Red",     "ChestRed"),
-    ("Interactables/ChestWhite.glb",  "/Game/World/Interactables/Chests/White",   "ChestWhite"),
-    ("Interactables/ChestYellow.glb", "/Game/World/Interactables/Chests/Yellow",  "ChestYellow"),
-
-    # --- Interactables: single-mesh ---
-    ("Interactables/Crate.glb",  "/Game/World/Interactables",        "Crate"),
-    ("Interactables/Totem.glb",  "/Game/World/Interactables",        "Totem"),
-    ("Interactables/Wheel.glb",  "/Game/World/Interactables/Wheels", "Wheel"),
-
     # --- Props ---
-    ("Props/Barn.glb",  "/Game/World/Props", "Barn"),
-    ("Props/Hay.glb",   "/Game/World/Props", "Hay"),
-    ("Props/Hay2.glb",  "/Game/World/Props", "Hay2"),
-    ("Props/Tree.glb",  "/Game/World/Props", "Tree"),
-    ("Props/Tree2.glb", "/Game/World/Props", "Tree2"),
+    (
+        "Props/Tree2.glb",
+        "/Game/World/Props",
+        "Tree2",
+        {},
+        {
+            "BaseColorTexture": {
+                "mip_gen_settings": unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS,
+                "never_stream": True,
+            },
+        },
+    ),
+    ("Props/Grass.glb",   "/Game/World/Props",              "Grass"),
+    ("Props/Rock.glb",    "/Game/World/Props",              "Rock"),
+    ("Props/Boulder.glb", "/Game/World/Props",              "Boulder"),
+    ("Props/Bush.glb",    "/Game/World/Props",              "Bush"),
+
+    # --- Fountain of Life ---
+    ("Interactables/Fountain.glb", "/Game/World/Interactables/Fountain", "Fountain"),
+
+    # --- Loot Bags ---
+    (
+        "Interactables/BlackBag.glb",
+        "/Game/World/LootBags/Black",
+        "SM_LootBag_Black",
+        {},
+        {},
+        {},
+        {"mode": "dest_dir"},
+    ),
+    (
+        "Interactables/RedBag.glb",
+        "/Game/World/LootBags/Red",
+        "SM_LootBag_Red",
+        {},
+        {},
+        {},
+        {"mode": "dest_dir"},
+    ),
+    (
+        "Interactables/YellowBag.glb",
+        "/Game/World/LootBags/Yellow",
+        "SM_LootBag_Yellow",
+        {},
+        {},
+        {},
+        {"mode": "dest_dir"},
+    ),
+    (
+        "Interactables/WhiteBag.glb",
+        "/Game/World/LootBags/White",
+        "SM_LootBag_White",
+        {},
+        {},
+        {},
+        {"mode": "dest_dir"},
+    ),
 ]
+
+DEFAULT_STATIC_MESH_BUILD_SETTINGS = {
+    "use_full_precision_u_vs": True,
+    "use_backwards_compatible_f16_trunc_u_vs": False,
+    "generate_lightmap_u_vs": False,
+    "recompute_normals": False,
+    "recompute_tangents": False,
+}
+
+DEFAULT_GLB_MATERIAL_OVERRIDES = {
+    "brightness": 1.0,
+    "tint": (1.0, 1.0, 1.0, 1.0),
+}
+
+DEFAULT_IMPORT_CLEANUP = {
+    "mode": "asset_subtree",
+}
 
 
 def _get_project_dir():
@@ -55,8 +119,117 @@ def _ensure_game_dir(game_path):
         unreal.EditorAssetLibrary.make_directory(game_path)
 
 
+def _delete_asset_if_exists(asset_path):
+    if not unreal.EditorAssetLibrary.does_asset_exist(asset_path):
+        return False
+    return bool(unreal.EditorAssetLibrary.delete_asset(asset_path))
+
+
+def _delete_directory_if_exists(directory_path):
+    if not unreal.EditorAssetLibrary.does_directory_exist(directory_path):
+        return False
+    return bool(unreal.EditorAssetLibrary.delete_directory(directory_path))
+
+
+def _cleanup_existing_import_artifacts(dest_dir, dest_name, cleanup_overrides):
+    cleanup = dict(DEFAULT_IMPORT_CLEANUP)
+    cleanup.update(dict(cleanup_overrides or {}))
+
+    mode = str(cleanup.get("mode") or "asset_subtree")
+    expected_path = f"{dest_dir}/{dest_name}"
+
+    if mode == "none":
+        unreal.log(f"    [CLEAN] Skipped cleanup for {dest_name}")
+        return True
+
+    if mode == "dest_dir":
+        deleted_dir = _delete_directory_if_exists(dest_dir)
+        _ensure_game_dir(dest_dir)
+        unreal.log(
+            f"    [CLEAN] {dest_name}: mode=dest_dir deleted_dir={deleted_dir}")
+        return True
+
+    deleted_asset = _delete_asset_if_exists(expected_path)
+    deleted_dir = _delete_directory_if_exists(expected_path)
+    unreal.log(
+        f"    [CLEAN] {dest_name}: mode=asset_subtree "
+        f"deleted_asset={deleted_asset} deleted_dir={deleted_dir}")
+    return True
+
+
+def _normalize_import_entry(entry):
+    if isinstance(entry, dict):
+        return (
+            entry["source"],
+            entry["dest"],
+            entry["name"],
+            dict(entry.get("material_overrides") or {}),
+            dict(entry.get("texture_parameter_overrides") or {}),
+            dict(entry.get("mesh_build_settings_overrides") or {}),
+            dict(entry.get("cleanup") or {}),
+        )
+
+    if len(entry) >= 7:
+        (
+            source,
+            dest_dir,
+            dest_name,
+            material_overrides,
+            texture_parameter_overrides,
+            mesh_build_settings_overrides,
+            cleanup_overrides,
+        ) = entry[:7]
+        return (
+            source,
+            dest_dir,
+            dest_name,
+            dict(material_overrides or {}),
+            dict(texture_parameter_overrides or {}),
+            dict(mesh_build_settings_overrides or {}),
+            dict(cleanup_overrides or {}),
+        )
+
+    if len(entry) >= 6:
+        (
+            source,
+            dest_dir,
+            dest_name,
+            material_overrides,
+            texture_parameter_overrides,
+            mesh_build_settings_overrides,
+        ) = entry[:6]
+        return (
+            source,
+            dest_dir,
+            dest_name,
+            dict(material_overrides or {}),
+            dict(texture_parameter_overrides or {}),
+            dict(mesh_build_settings_overrides or {}),
+            {},
+        )
+
+    if len(entry) == 5:
+        source, dest_dir, dest_name, material_overrides, texture_parameter_overrides = entry[:5]
+        return (
+            source,
+            dest_dir,
+            dest_name,
+            dict(material_overrides or {}),
+            dict(texture_parameter_overrides or {}),
+            {},
+            {},
+        )
+
+    if len(entry) == 4:
+        source, dest_dir, dest_name, material_overrides = entry
+        return source, dest_dir, dest_name, dict(material_overrides or {}), {}, {}, {}
+
+    source, dest_dir, dest_name = entry
+    return source, dest_dir, dest_name, {}, {}, {}, {}
+
+
 def import_glb(source_path, dest_dir, dest_name):
-    """Vanilla GLB import via Interchange pipeline. No material manipulation."""
+    """GLB import via Interchange pipeline."""
     _ensure_game_dir(dest_dir)
 
     task = unreal.AssetImportTask()
@@ -142,6 +315,292 @@ def _cleanup_empty_interchange_dirs(dest_dir, dest_name):
             pass
 
 
+def _existing_scan_roots(dest_dir, dest_name):
+    roots = []
+    materials_root = f"{dest_dir}/{dest_name}/Materials"
+    if unreal.EditorAssetLibrary.does_directory_exist(materials_root):
+        roots.append(materials_root)
+    if unreal.EditorAssetLibrary.does_directory_exist(dest_dir):
+        roots.append(dest_dir)
+    return roots
+
+
+def _find_candidate_materials(dest_dir, dest_name):
+    candidates = []
+    seen = set()
+
+    materials_root = f"{dest_dir}/{dest_name}/Materials"
+    roots = []
+    if unreal.EditorAssetLibrary.does_directory_exist(materials_root):
+        roots.append((materials_root, True))
+    if unreal.EditorAssetLibrary.does_directory_exist(dest_dir):
+        roots.append((dest_dir, True))
+
+    for root, recursive in roots:
+        try:
+            asset_paths = unreal.EditorAssetLibrary.list_assets(
+                root, recursive=recursive, include_folder=False)
+        except Exception:
+            continue
+
+        for asset_path in asset_paths:
+            asset = unreal.EditorAssetLibrary.load_asset(asset_path)
+            if not asset or not isinstance(asset, unreal.MaterialInterface):
+                continue
+            if not hasattr(asset, "get_editor_property"):
+                continue
+            try:
+                asset.get_editor_property("parent")
+            except Exception:
+                continue
+            asset_key = asset.get_path_name()
+            if asset_key in seen:
+                continue
+            seen.add(asset_key)
+            candidates.append(asset)
+
+        if candidates:
+            break
+
+    candidates.sort(key=lambda asset: asset.get_name())
+    return candidates
+
+
+def _bind_materials_to_flattened_mesh(mesh_path, dest_dir, dest_name):
+    mesh = unreal.EditorAssetLibrary.load_asset(mesh_path)
+    if not mesh or not isinstance(mesh, unreal.StaticMesh):
+        unreal.log_warning(f"    [BIND] StaticMesh not found at {mesh_path}")
+        return False
+
+    materials = _find_candidate_materials(dest_dir, dest_name)
+    if not materials:
+        unreal.log_warning(f"    [BIND] No candidate material instances found for {dest_name}")
+        return False
+
+    slots = list(mesh.get_editor_property("static_materials") or [])
+    if not slots:
+        unreal.log_warning(f"    [BIND] No static material slots found on {mesh_path}")
+        return False
+
+    mesh.modify()
+
+    for index, slot in enumerate(slots):
+        material = materials[min(index, len(materials) - 1)]
+        try:
+            slot.set_editor_property("material_interface", material)
+        except Exception:
+            try:
+                mesh.set_material(index, material)
+            except Exception as exc:
+                unreal.log_warning(f"    [BIND] Failed slot {index} on {mesh_path}: {exc}")
+                return False
+
+    try:
+        mesh.set_editor_property("static_materials", slots)
+    except Exception:
+        pass
+
+    try:
+        mesh.post_edit_change()
+    except Exception:
+        pass
+
+    try:
+        unreal.EditorAssetLibrary.save_asset(mesh_path)
+    except Exception:
+        pass
+
+    unreal.log(
+        f"    [BIND] Assigned {len(materials)} material candidate(s) to {mesh_path}")
+    return True
+
+
+def _apply_material_overrides(dest_dir, dest_name, material_overrides):
+    materials = _find_candidate_materials(dest_dir, dest_name)
+    if not materials:
+        unreal.log_warning(f"    [OVERRIDE] No candidate materials found for {dest_name}")
+        return False
+
+    resolved_overrides = dict(DEFAULT_GLB_MATERIAL_OVERRIDES)
+    resolved_overrides.update(dict(material_overrides or {}))
+
+    tint_value = resolved_overrides.get("tint")
+    tint = None
+    if isinstance(tint_value, (tuple, list)) and len(tint_value) >= 4:
+        tint = unreal.LinearColor(
+            float(tint_value[0]),
+            float(tint_value[1]),
+            float(tint_value[2]),
+            float(tint_value[3]),
+        )
+
+    for material in materials:
+        try:
+            if "brightness" in resolved_overrides:
+                unreal.MaterialEditingLibrary.set_material_instance_scalar_parameter_value(
+                    material, "Brightness", float(resolved_overrides["brightness"]))
+            if tint is not None:
+                unreal.MaterialEditingLibrary.set_material_instance_vector_parameter_value(
+                    material, "Tint", tint)
+            unreal.EditorAssetLibrary.save_loaded_asset(material)
+        except Exception as exc:
+            unreal.log_warning(f"    [OVERRIDE] Failed on {material.get_name()}: {exc}")
+            return False
+
+    unreal.log(f"    [OVERRIDE] Applied material overrides to {dest_name}: {resolved_overrides}")
+    return True
+
+
+def _apply_texture_parameter_overrides(dest_dir, dest_name, texture_parameter_overrides):
+    if not texture_parameter_overrides:
+        return False
+
+    materials = _find_candidate_materials(dest_dir, dest_name)
+    if not materials:
+        unreal.log_warning(f"    [TEX OVERRIDE] No candidate materials found for {dest_name}")
+        return False
+
+    touched_paths = set()
+    applied = False
+
+    for material in materials:
+        for parameter_name, overrides in texture_parameter_overrides.items():
+            try:
+                texture = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(
+                    material, parameter_name)
+                if isinstance(texture, (tuple, list)):
+                    texture = texture[-1] if texture else None
+            except Exception:
+                texture = None
+
+            if not texture:
+                continue
+
+            texture_path = texture.get_path_name()
+            if texture_path in touched_paths:
+                continue
+
+            changed = False
+            for prop_name, value in dict(overrides or {}).items():
+                try:
+                    texture.set_editor_property(prop_name, value)
+                    changed = True
+                except Exception as exc:
+                    unreal.log_warning(
+                        f"    [TEX OVERRIDE] Failed {texture.get_name()}.{prop_name} on {dest_name}: {exc}")
+
+            if not changed:
+                continue
+
+            touched_paths.add(texture_path)
+            applied = True
+
+            try:
+                texture.post_edit_change()
+            except Exception:
+                pass
+
+            try:
+                unreal.EditorAssetLibrary.save_asset(texture_path)
+            except Exception:
+                pass
+
+    if applied:
+        unreal.log(
+            f"    [TEX OVERRIDE] Applied texture parameter overrides to {dest_name}: "
+            f"{list(texture_parameter_overrides.keys())}")
+    else:
+        unreal.log_warning(f"    [TEX OVERRIDE] No matching textures found for {dest_name}")
+    return applied
+
+
+def _get_lod_build_settings_accessors():
+    try:
+        subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
+    except Exception:
+        subsystem = None
+
+    if subsystem:
+        return subsystem.get_lod_build_settings, subsystem.set_lod_build_settings
+
+    return None, None
+
+
+def _apply_static_mesh_build_settings(mesh_path, mesh_build_settings_overrides):
+    overrides = dict(DEFAULT_STATIC_MESH_BUILD_SETTINGS)
+    overrides.update(dict(mesh_build_settings_overrides or {}))
+    if not overrides:
+        return False
+
+    mesh = unreal.EditorAssetLibrary.load_asset(mesh_path)
+    if not mesh or not isinstance(mesh, unreal.StaticMesh):
+        unreal.log_warning(f"    [BUILD] StaticMesh not found at {mesh_path}")
+        return False
+
+    try:
+        lod_count = int(mesh.get_num_lods())
+    except Exception:
+        try:
+            lod_count = int(unreal.EditorStaticMeshLibrary.get_lod_count(mesh))
+        except Exception:
+            lod_count = 1
+
+    if lod_count <= 0:
+        lod_count = 1
+
+    get_build_settings, set_build_settings = _get_lod_build_settings_accessors()
+    if not get_build_settings or not set_build_settings:
+        unreal.log_warning(
+            f"    [BUILD] StaticMeshEditorSubsystem unavailable; run this script in UnrealEditor.exe, "
+            f"not UnrealEditor-Cmd.exe, to apply mesh build settings on {mesh_path}")
+        return False
+    applied = False
+
+    for lod_index in range(lod_count):
+        try:
+            build_settings = get_build_settings(mesh, lod_index)
+        except Exception as exc:
+            unreal.log_warning(f"    [BUILD] Failed to read LOD {lod_index} settings on {mesh_path}: {exc}")
+            return False
+
+        changed = False
+        for prop_name, value in overrides.items():
+            try:
+                current = build_settings.get_editor_property(prop_name)
+                if current != value:
+                    build_settings.set_editor_property(prop_name, value)
+                    changed = True
+            except Exception as exc:
+                unreal.log_warning(
+                    f"    [BUILD] Failed to set {prop_name} on {mesh_path} LOD {lod_index}: {exc}")
+                return False
+
+        if not changed:
+            continue
+
+        try:
+            set_build_settings(mesh, lod_index, build_settings)
+            applied = True
+        except Exception as exc:
+            unreal.log_warning(f"    [BUILD] Failed to write LOD {lod_index} settings on {mesh_path}: {exc}")
+            return False
+
+    if applied:
+        try:
+            mesh.modify()
+        except Exception:
+            pass
+        try:
+            unreal.EditorAssetLibrary.save_loaded_asset(mesh)
+        except Exception:
+            pass
+        unreal.log(f"    [BUILD] Applied mesh build settings to {mesh_path}: {overrides}")
+    else:
+        unreal.log(f"    [BUILD] Mesh build settings already correct on {mesh_path}")
+
+    return True
+
+
 def main():
     proj = _get_project_dir()
     import_root = os.path.join(proj, "SourceAssets", "Import").replace("\\", "/")
@@ -156,7 +615,16 @@ def main():
     fail_count = 0
     skip_count = 0
 
-    for relative_path, dest_dir, dest_name in IMPORTS:
+    for entry in IMPORTS:
+        (
+            relative_path,
+            dest_dir,
+            dest_name,
+            material_overrides,
+            texture_parameter_overrides,
+            mesh_build_settings_overrides,
+            cleanup_overrides,
+        ) = _normalize_import_entry(entry)
         source = os.path.join(import_root, relative_path).replace("\\", "/")
 
         if not os.path.isfile(source):
@@ -165,6 +633,7 @@ def main():
             continue
 
         try:
+            _cleanup_existing_import_artifacts(dest_dir, dest_name, cleanup_overrides)
             imported = import_glb(source, dest_dir, dest_name)
             asset_count = len(imported)
             unreal.log(f"  [OK] {dest_name} -> {dest_dir} ({asset_count} assets)")
@@ -177,6 +646,20 @@ def main():
             else:
                 unreal.log_warning(f"    [WARN] Could not locate StaticMesh for {dest_name}")
 
+            scan_roots = _existing_scan_roots(dest_dir, dest_name)
+            unlit_results = MakeGLBImportsUnlit.convert_glb_imports_unlit(scan_roots)
+            unreal.log(
+                "    [UNLIT] converted={converted} already_ok={already_ok} "
+                "skipped={skipped} no_texture={no_texture} errors={errors}".format(**unlit_results)
+            )
+
+            if final_path:
+                _bind_materials_to_flattened_mesh(final_path, dest_dir, dest_name)
+                _apply_static_mesh_build_settings(final_path, mesh_build_settings_overrides)
+                _apply_material_overrides(dest_dir, dest_name, material_overrides)
+                _apply_texture_parameter_overrides(
+                    dest_dir, dest_name, texture_parameter_overrides)
+
             success_count += 1
         except Exception as e:
             unreal.log_error(f"  [FAIL] {dest_name} — {e}")
@@ -186,8 +669,6 @@ def main():
     unreal.log("=" * 60)
     unreal.log(f"[ImportStaticMeshes] DONE — success={success_count}, skipped={skip_count}, failed={fail_count}")
     unreal.log("=" * 60)
-    if success_count > 0:
-        unreal.log("[ImportStaticMeshes] Next step: run MakeAllMaterialsUnlit.py to convert materials to Unlit")
 
 
 if __name__ == "__main__":

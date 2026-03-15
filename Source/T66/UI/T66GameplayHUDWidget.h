@@ -23,6 +23,7 @@ class ST66DotWidget;
 class ST66WorldMapWidget;
 class AActor;
 class AT66LootBagPickup;
+enum class ET66ItemRarity : uint8;
 enum class ET66Rarity : uint8;
 
 /**
@@ -68,7 +69,7 @@ public:
 	void RefreshLootPrompt();
 
 	/** Show the item card popup for a just-picked-up item (above inventory, auto-hides after a few seconds). */
-	void ShowPickupItemCard(FName ItemID);
+	void ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity);
 
 	/** Full-screen map overlay (M / OpenFullMap). */
 	void SetFullMapOpen(bool bOpen);
@@ -152,7 +153,7 @@ protected:
 	TSharedPtr<SBorder> TutorialHintBorder;
 	TSharedPtr<STextBlock> TutorialHintLine1Text;
 	TSharedPtr<STextBlock> TutorialHintLine2Text;
-	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // 10 per idol slot
+	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // legacy; rarity is now shown via sprite + border color
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
 	TSharedPtr<SBorder> PassiveBorder;

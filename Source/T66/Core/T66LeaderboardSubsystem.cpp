@@ -248,9 +248,13 @@ bool UT66LeaderboardSubsystem::SaveLocalBestScoreRunSummarySnapshot(ET66Difficul
 	Snapshot->Score = FMath::Max(0, Score);
 
 	Snapshot->SecondaryStatValues.Reset();
-	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::MovementSpeed); ++i)
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::LootCrate); ++i)
 	{
 		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
+		if (!T66IsLiveSecondaryStatType(SecType))
+		{
+			continue;
+		}
 		Snapshot->SecondaryStatValues.Add(SecType, RunState->GetSecondaryStatValue(SecType));
 	}
 
@@ -278,6 +282,7 @@ bool UT66LeaderboardSubsystem::SaveLocalBestScoreRunSummarySnapshot(ET66Difficul
 	Snapshot->bProofOfRunLocked = false;
 
 	Snapshot->EquippedIdols = RunState->GetEquippedIdols();
+	Snapshot->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
 	Snapshot->Inventory = RunState->GetInventory();
 	Snapshot->EventLog = RunState->GetEventLog();
 
@@ -601,9 +606,13 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 				BackendSnapshot->LuckStat = FMath::Max(1, RunState->GetLuckStat());
 				BackendSnapshot->SpeedStat = FMath::Max(1, RunState->GetSpeedStat());
 
-				for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::MovementSpeed); ++i)
+				for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::LootCrate); ++i)
 				{
 					const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
+					if (!T66IsLiveSecondaryStatType(SecType))
+					{
+						continue;
+					}
 					BackendSnapshot->SecondaryStatValues.Add(SecType, RunState->GetSecondaryStatValue(SecType));
 				}
 
@@ -613,6 +622,7 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 				BackendSnapshot->SkillRating0To100 = Skill ? Skill->GetSkillRating0To100() : -1;
 
 				BackendSnapshot->EquippedIdols = RunState->GetEquippedIdols();
+				BackendSnapshot->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
 				BackendSnapshot->Inventory = RunState->GetInventory();
 				BackendSnapshot->EventLog = RunState->GetEventLog();
 
@@ -836,9 +846,13 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	Snapshot->SecondaryStatValues.Reset();
 	auto AddPercent = [&Rng](ET66SecondaryStatType T) { return Rng.FRandRange(0.05f, 0.45f); };
 	auto AddScalar = [&Rng](float Min, float Max) { return Rng.FRandRange(Min, Max); };
-	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::MovementSpeed); ++i)
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::LootCrate); ++i)
 	{
 		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
+		if (!T66IsLiveSecondaryStatType(SecType))
+		{
+			continue;
+		}
 		float V = 1.f;
 		switch (SecType)
 		{
@@ -884,11 +898,10 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 			V = AddScalar(0.1f, 5.f);
 			break;
 		case ET66SecondaryStatType::SpinWheel:
-		case ET66SecondaryStatType::Goblin:
-		case ET66SecondaryStatType::Leprechaun:
 		case ET66SecondaryStatType::TreasureChest:
 		case ET66SecondaryStatType::Fountain:
 		case ET66SecondaryStatType::MovementSpeed:
+		case ET66SecondaryStatType::LootCrate:
 			V = AddScalar(0.8f, 2.f);
 			break;
 		default:
@@ -903,11 +916,13 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	Snapshot->SkillRating0To100 = Rng.RandRange(35, 90);
 
 	Snapshot->EquippedIdols.Reset();
+	Snapshot->EquippedIdolTiers.Reset();
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		if (IdolIDs.Num() > 0)
 		{
 			Snapshot->EquippedIdols.Add(IdolIDs[Rng.RandRange(0, IdolIDs.Num() - 1)]);
+			Snapshot->EquippedIdolTiers.Add(static_cast<uint8>(Rng.RandRange(1, UT66RunStateSubsystem::MaxIdolLevel)));
 		}
 	}
 	Snapshot->Inventory.Reset();

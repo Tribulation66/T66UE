@@ -22,17 +22,16 @@
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66EnemyBase.h"
-#include "Gameplay/T66LeprechaunEnemy.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66TreeOfLifeInteractable.h"
+#include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66StageBoostGate.h"
-#include "Gameplay/T66StageBoostGoldInteractable.h"
-#include "Gameplay/T66StageBoostLootInteractable.h"
-#include "Gameplay/T66StageEffectTile.h"
+#include "Gameplay/T66StageCatchUpGate.h"
+#include "Gameplay/T66StageCatchUpGoldInteractable.h"
+#include "Gameplay/T66StageCatchUpLootInteractable.h"
+#include "Gameplay/T66StageEffects.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
 #include "Gameplay/T66TutorialManager.h"
@@ -77,6 +76,8 @@
 #include "Engine/TextureCube.h"
 #include "Engine/Texture2D.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "ImageUtils.h"
+#include "Misc/Paths.h"
 
 #if WITH_EDITORONLY_DATA
 #include "UObject/SavePackage.h"
@@ -95,6 +96,7 @@
 #include "Landscape.h"
 #include "UI/Style/T66Style.h"
 #include "T66.h"
+#include <initializer_list>
 
 namespace
 {
@@ -161,6 +163,43 @@ namespace
 		}
 		return false;
 	}
+
+	struct FT66MeshSectionBuffers
+	{
+		TArray<FVector> Verts;
+		TArray<int32> Tris;
+		TArray<FVector> Normals;
+		TArray<FVector2D> UVs;
+
+		bool HasGeometry() const
+		{
+			return Verts.Num() > 0 && Tris.Num() > 0;
+		}
+	};
+
+	static int32 T66PickCellVariant(int32 Seed, int32 Row, int32 Col, int32 VariantCount)
+	{
+		if (VariantCount <= 1)
+		{
+			return 0;
+		}
+
+		uint32 Hash = GetTypeHash(FIntPoint(Row, Col));
+		Hash = HashCombineFast(Hash, GetTypeHash(Seed));
+		return static_cast<int32>(Hash % static_cast<uint32>(VariantCount));
+	}
+
+	static int32 T66PickBoundaryVariant(int32 Seed, int32 AIndex, int32 BIndex, int32 VariantCount)
+	{
+		if (VariantCount <= 1)
+		{
+			return 0;
+		}
+
+		uint32 Hash = GetTypeHash(FIntPoint(FMath::Min(AIndex, BIndex), FMath::Max(AIndex, BIndex)));
+		Hash = HashCombineFast(Hash, GetTypeHash(Seed));
+		return static_cast<int32>(Hash % static_cast<uint32>(VariantCount));
+	}
 }
 
 AT66GameMode::AT66GameMode()
@@ -173,12 +212,16 @@ AT66GameMode::AT66GameMode()
 	// Coliseum arena lives inside GameplayLevel, off to the side (walled off). Scaled for 100k map.
 	ColiseumCenter = FVector(-45455.f, -23636.f, 200.f);
 
-	// Default ground materials (4 rotation variants); pick one per floor by position
+	// Default ground materials (4 rotation variants); used as a fallback for non-procedural floors.
 	GroundFloorMaterials.Empty();
 	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0"))));
 	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90"))));
 	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180"))));
 	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270"))));
+
+	CliffSideMaterials.Empty();
+	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_Cliff2.MI_Cliff2"))));
+	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_Cliff3.MI_Cliff3"))));
 }
 
 UStaticMesh* AT66GameMode::GetCubeMesh()
@@ -292,13 +335,13 @@ void AT66GameMode::BeginPlay()
 	}
 
 	UT66GameInstance* GIAsT66 = GetT66GameInstance();
-	const bool bStageBoost = (GIAsT66 && GIAsT66->bStageBoostPending);
+	const bool bStageCatchUp = (GIAsT66 && GIAsT66->bStageCatchUpPending);
 
-	// Stage Boost: spawn a separate platform and skip normal stage content.
-	if (bStageBoost)
+	// Stage Catch Up: spawn a separate platform and skip normal stage content.
+	if (bStageCatchUp)
 	{
-		SpawnStageBoostPlatformAndInteractables();
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - StageBoost"));
+		SpawnStageCatchUpPlatformAndInteractables();
+		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - StageCatchUp"));
 		return;
 	}
 
@@ -344,7 +387,7 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 		}
 	}
 
-	SpawnStageEffectTilesForStage();
+	SpawnStageEffectsForStage();
 	SpawnTutorialIfNeeded();
 
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
@@ -476,7 +519,7 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!RunState || !T66GI) return;
-	if (T66GI->bStageBoostPending) return;
+	if (T66GI->bStageCatchUpPending) return;
 
 	// v0 per your request: stage 1 always shows tutorial prompts.
 	if (RunState->GetCurrentStage() != 1) return;
@@ -496,7 +539,7 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 	}
 }
 
-void AT66GameMode::SpawnStageEffectTilesForStage()
+void AT66GameMode::SpawnStageEffectsForStage()
 {
 	if (IsColiseumStage()) return;
 
@@ -507,45 +550,26 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!RunState || !T66GI) return;
-	if (T66GI->bStageBoostPending) return;
+	if (T66GI->bStageCatchUpPending) return;
+
+	// Stage effects are per-difficulty. Easy = Shroom; other difficulties have none yet.
+	if (T66GI->SelectedDifficulty != ET66Difficulty::Easy) return;
 
 	const int32 StageNum = RunState->GetCurrentStage();
 
-	// Stage data (optional); fall back to deterministic mapping.
-	FStageData StageData;
-	const bool bHasDT = T66GI->GetStageData(StageNum, StageData);
-	ET66StageEffectType EffectType = bHasDT ? StageData.StageEffectType : ET66StageEffectType::None;
-	FLinearColor EffectColor = bHasDT ? StageData.StageEffectColor : FLinearColor::White;
-	float Strength = bHasDT ? StageData.StageEffectStrength : 1.f;
-
-	if (EffectType == ET66StageEffectType::None)
-	{
-		const int32 Mod = StageNum % 3;
-		EffectType = (Mod == 1) ? ET66StageEffectType::Speed : (Mod == 2) ? ET66StageEffectType::Launch : ET66StageEffectType::Slide;
-		// Unique-ish color per stage (HSV wheel).
-		const float Hue = FMath::Fmod(static_cast<float>(StageNum) * 37.f, 360.f);
-		EffectColor = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 210, 240);
-		EffectColor.A = 1.f;
-		Strength = 1.f;
-	}
-
-	// Run-level seed so stage effect tile positions change every run/PIE (like world interactables).
 	const int32 RunSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
 	FRandomStream Rng(RunSeed + StageNum * 971 + 17);
 
-	// Main map square bounds (centered at 0,0). 100k map: half-extent 50000. Match miasma SafeHalfExtent.
 	static constexpr float MainHalfExtent = 50000.f;
 	static constexpr float SpawnZ = 40.f;
-	static constexpr float MinDistBetweenTiles = 420.f;
+	static constexpr float MinDistBetween = 420.f;
 	static constexpr float SafeBubbleMargin = 350.f;
-	static constexpr int32 TileCount = 12;
+	static constexpr int32 ShroomCount = 12;
 
 	TArray<FVector> UsedLocs;
 
-	// No-spawn zones: keep gameplay spawns out of start box (inside main) and special arenas.
 	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
-		// Start area: square inside main map (scaled for 100k).
 		static constexpr float StartBoxWest = -40000.f, StartBoxEast = -30909.f;
 		static constexpr float StartBoxNorth = 4545.f, StartBoxSouth = -4545.f;
 		static constexpr float StartMargin = 455.f;
@@ -555,15 +579,14 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 			return true;
 		}
 
-		// Boost, Coliseum, Tutorial arenas (scaled for 100k map).
 		static constexpr float ArenaHalf = 9091.f;
 		static constexpr float ArenaMargin = 682.f;
 		static constexpr float TutorialArenaHalf = 9091.f;
 		struct FArena2D { float X; float Y; float Half; };
 		static constexpr FArena2D Arenas[] = {
-			{ -22727.f, 34091.f, ArenaHalf }, // Boost
+			{ -22727.f, 34091.f, ArenaHalf }, // Catch Up
 			{      0.f, 34091.f, ArenaHalf },  // Coliseum
-			{      0.f, 61364.f, TutorialArenaHalf }, // Tutorial (north of main)
+			{      0.f, 61364.f, TutorialArenaHalf }, // Tutorial
 		};
 		for (const FArena2D& A : Arenas)
 		{
@@ -578,32 +601,23 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 
 	auto IsGoodLoc = [&](const FVector& L) -> bool
 	{
-		if (IsInsideNoSpawnZone(L))
-		{
-			return false;
-		}
+		if (IsInsideNoSpawnZone(L)) return false;
 		for (const FVector& U : UsedLocs)
 		{
-			if (FVector::DistSquared2D(L, U) < (MinDistBetweenTiles * MinDistBetweenTiles))
-			{
-				return false;
-			}
+			if (FVector::DistSquared2D(L, U) < (MinDistBetween * MinDistBetween)) return false;
 		}
 		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
 		{
 			const AT66HouseNPCBase* NPC = *It;
 			if (!NPC) continue;
 			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
-			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R))
-			{
-				return false;
-			}
+			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R)) return false;
 		}
 		return true;
 	};
 
-	struct FStageTileSpawnHit { FVector Loc; FVector Normal; };
-	auto FindSpawnLoc = [&]() -> FStageTileSpawnHit
+	struct FStageEffectSpawnHit { FVector Loc; FVector Normal; };
+	auto FindSpawnLoc = [&]() -> FStageEffectSpawnHit
 	{
 		const FVector Up = FVector::UpVector;
 		for (int32 Try = 0; Try < 80; ++Try)
@@ -622,10 +636,7 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 				Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, Up);
 			}
 
-			if (IsGoodLoc(Loc))
-			{
-				return { Loc, Normal };
-			}
+			if (IsGoodLoc(Loc)) return { Loc, Normal };
 		}
 		return { FVector(0.f, 0.f, SpawnZ), Up };
 	};
@@ -633,21 +644,13 @@ void AT66GameMode::SpawnStageEffectTilesForStage()
 	FActorSpawnParameters P;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Stage effect tile mesh: relative Z=6, scale Z=0.06 (cube half 50*0.06=3), so mesh bottom is 3 UU below mesh center = 3 UU above root. Offset spawn so tile bottom sits on surface.
-	static constexpr float StageEffectTileMeshBottomOffset = 3.f;
-	for (int32 i = 0; i < TileCount; ++i)
+	for (int32 i = 0; i < ShroomCount; ++i)
 	{
-		const FStageTileSpawnHit Th = FindSpawnLoc();
-		const FQuat SlopeRot = FQuat::FindBetweenNormals(FVector::UpVector, Th.Normal);
-		const FVector TileLoc = Th.Loc - StageEffectTileMeshBottomOffset * Th.Normal;
-		AT66StageEffectTile* Tile = World->SpawnActor<AT66StageEffectTile>(AT66StageEffectTile::StaticClass(), TileLoc, SlopeRot.Rotator(), P);
-		if (Tile)
+		const FStageEffectSpawnHit Th = FindSpawnLoc();
+		AT66Shroom* Shroom = World->SpawnActor<AT66Shroom>(AT66Shroom::StaticClass(), Th.Loc, FRotator::ZeroRotator, P);
+		if (Shroom)
 		{
-			Tile->EffectType = EffectType;
-			Tile->EffectColor = EffectColor;
-			Tile->Strength = Strength;
-			Tile->ApplyVisuals();
-			UsedLocs.Add(TileLoc);
+			UsedLocs.Add(Th.Loc);
 		}
 	}
 }
@@ -1192,11 +1195,19 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	ClearMiasma();
 	SpawnStageGateAtLocation(Location);
 
-	// Idol Altar unlock: after bosses of stages ending in 5 or 0 (i.e. Stage % 5 == 0),
-	// spawn an altar near the boss death so the player can pick an idol before leaving.
+	// Idol altar cadence for the 33-stage structure:
+	// - spawn after most cleared stages
+	// - skip checkpoint / difficulty-ending stages (5,10,15,20,25,30)
+	// - skip the final segment entirely (31,32,33)
 	if (RunState)
 	{
-		SpawnIdolAltarAtLocation(Location);
+		const int32 ClearedStage = RunState->GetCurrentStage();
+		const bool bIsCheckpointStage = (ClearedStage > 0) && ((ClearedStage % 5) == 0);
+		const bool bIsFinalSegmentStage = (ClearedStage >= 31);
+		if (!bIsCheckpointStage && !bIsFinalSegmentStage)
+		{
+			SpawnIdolAltarAtLocation(Location);
+		}
 	}
 }
 
@@ -1585,25 +1596,6 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate near hero at (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
 	}
 
-	// Idol altar right next to the gate (north of gate). Place on ground like NPCs.
-	if (!IdolAltar && StartGate)
-	{
-		static constexpr float AltarOffsetNorth = 350.f;
-		FVector AltarLoc(GateLoc.X, GateLoc.Y + AltarOffsetNorth, GateGroundZ);
-		if (World->LineTraceSingleByChannel(Hit, AltarLoc + FVector(0.f, 0.f, 3000.f), AltarLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
-		{
-			AltarLoc.Z = Hit.ImpactPoint.Z;
-		}
-		else
-		{
-			AltarLoc.Z = GateGroundZ;
-		}
-		IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), AltarLoc, FRotator::ZeroRotator, SpawnParams);
-		if (IdolAltar)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Spawned Idol Altar next to Start Gate at (%.0f, %.0f, %.0f)"), AltarLoc.X, AltarLoc.Y, AltarLoc.Z);
-		}
-	}
 }
 
 void AT66GameMode::SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc)
@@ -1700,32 +1692,30 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		return true;
 	};
 
-	struct FSpawnHitResult { FVector Loc; FVector Normal; };
+	struct FSpawnHitResult { FVector Loc; };
 	auto FindSpawnLoc = [&]() -> FSpawnHitResult
 	{
-		const FVector Up = FVector::UpVector;
 		for (int32 Try = 0; Try < 40; ++Try)
 		{
 			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 			FVector Loc(X, Y, SpawnZ);
-			FVector Normal = Up;
 
 			FHitResult Hit;
-			const FVector Start = Loc + FVector(0.f, 0.f, 1000.f);
-			const FVector End = Loc - FVector(0.f, 0.f, 4000.f);
-			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+			const FVector Start = Loc + FVector(0.f, 0.f, 8000.f);
+			const FVector End = Loc - FVector(0.f, 0.f, 16000.f);
+			if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 			{
-				Loc = Hit.ImpactPoint;
-				Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, Up);
+				continue;
 			}
+			Loc = Hit.ImpactPoint;
 
 			if (IsGoodLoc(Loc))
 			{
-				return { Loc, Normal };
+				return { Loc };
 			}
 		}
-		return { FVector(0.f, 0.f, SpawnZ), Up };
+		return { FVector(0.f, 0.f, SpawnZ) };
 	};
 
 	auto SpawnOne = [&](UClass* Cls) -> AActor*
@@ -1733,8 +1723,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		FActorSpawnParameters P;
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		const FSpawnHitResult HitResult = FindSpawnLoc();
-		const FQuat SlopeRot = FQuat::FindBetweenNormals(FVector::UpVector, HitResult.Normal);
-		AActor* A = World->SpawnActor<AActor>(Cls, HitResult.Loc, SlopeRot.Rotator(), P);
+		AActor* A = World->SpawnActor<AActor>(Cls, HitResult.Loc, FRotator::ZeroRotator, P);
 		if (A) UsedLocs.Add(HitResult.Loc);
 		return A;
 	};
@@ -1747,20 +1736,20 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 
 	// Luck-affected counts use central tuning. Locations are still stage-seeded (not luck-affected).
-	const int32 CountTrees = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TreesPerStage, Rng) : Rng.RandRange(2, 5);
+	const int32 CountFountains = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TreesPerStage, Rng) : Rng.RandRange(2, 5);
 	const int32 CountChests = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->ChestsPerStage, Rng) : Rng.RandRange(2, 5);
 	const int32 CountWheels = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->WheelsPerStage, Rng) : Rng.RandRange(2, 5);
 
 	// Luck Rating tracking (quantity).
 	if (RunState)
 	{
-		const int32 TreesMin = (Tuning ? Tuning->TreesPerStage.Min : 2);
-		const int32 TreesMax = (Tuning ? Tuning->TreesPerStage.Max : 5);
+		const int32 FountainsMin = (Tuning ? Tuning->TreesPerStage.Min : 2);
+		const int32 FountainsMax = (Tuning ? Tuning->TreesPerStage.Max : 5);
 		const int32 ChestsMin = (Tuning ? Tuning->ChestsPerStage.Min : 2);
 		const int32 ChestsMax = (Tuning ? Tuning->ChestsPerStage.Max : 5);
 		const int32 WheelsMin = (Tuning ? Tuning->WheelsPerStage.Min : 2);
 		const int32 WheelsMax = (Tuning ? Tuning->WheelsPerStage.Max : 5);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("TreesPerStage")), CountTrees, TreesMin, TreesMax);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("FountainsPerStage")), CountFountains, FountainsMin, FountainsMax);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestsPerStage")), CountChests, ChestsMin, ChestsMax);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("WheelsPerStage")), CountWheels, WheelsMin, WheelsMax);
 	}
@@ -1768,17 +1757,11 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	// Not luck-affected (for now).
 	const int32 CountTotems = Rng.RandRange(2, 5);
 
-	for (int32 i = 0; i < CountTrees; ++i)
+	for (int32 i = 0; i < CountFountains; ++i)
 	{
-		if (AT66TreeOfLifeInteractable* Tree = Cast<AT66TreeOfLifeInteractable>(SpawnOne(AT66TreeOfLifeInteractable::StaticClass())))
+		if (AT66FountainOfLifeInteractable* Fountain = Cast<AT66FountainOfLifeInteractable>(SpawnOne(AT66FountainOfLifeInteractable::StaticClass())))
 		{
-			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			Tree->SetRarity(R);
-			if (RunState)
-			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("TreeRarity")), R);
-			}
+			Fountain->SetRarity(ET66Rarity::Black);
 		}
 	}
 	for (int32 i = 0; i < CountChests; ++i)
@@ -1827,19 +1810,16 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		const float WheelX = HeroX + HeroWheelOffset;
 		const float WheelY = HeroY;
 		FVector WheelLoc(WheelX, WheelY, SpawnZ);
-		FVector Normal = FVector::UpVector;
 		FHitResult Hit;
-		const FVector TraceStart(WheelX, WheelY, 2000.f);
-		const FVector TraceEnd(WheelX, WheelY, -4000.f);
+		const FVector TraceStart(WheelX, WheelY, 8000.f);
+		const FVector TraceEnd(WheelX, WheelY, -16000.f);
 		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
 		{
 			WheelLoc = Hit.ImpactPoint;
-			Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, FVector::UpVector);
 		}
 		FActorSpawnParameters P;
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		const FQuat SlopeRot = FQuat::FindBetweenNormals(FVector::UpVector, Normal);
-		if (AT66WheelSpinInteractable* HeroWheel = World->SpawnActor<AT66WheelSpinInteractable>(AT66WheelSpinInteractable::StaticClass(), WheelLoc, SlopeRot.Rotator(), P))
+		if (AT66WheelSpinInteractable* HeroWheel = World->SpawnActor<AT66WheelSpinInteractable>(AT66WheelSpinInteractable::StaticClass(), WheelLoc, FRotator::ZeroRotator, P))
 		{
 			const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
 			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
@@ -1875,6 +1855,7 @@ void AT66GameMode::SpawnModelShowcaseRow()
 	if (!World) return;
 
 	constexpr float ShowcaseX = -32955.f;
+	constexpr float BagShowcaseX = -34205.f;
 	constexpr float Spacing = 800.f;
 
 	static const TCHAR* MeshPaths[] = {
@@ -1891,6 +1872,12 @@ void AT66GameMode::SpawnModelShowcaseRow()
 		TEXT("/Game/World/Props/Tree.Tree"),
 		TEXT("/Game/World/Props/Tree2.Tree2"),
 	};
+	static const TCHAR* BagMeshPaths[] = {
+		TEXT("/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black"),
+		TEXT("/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red"),
+		TEXT("/Game/World/LootBags/White/SM_LootBag_White.SM_LootBag_White"),
+		TEXT("/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow"),
+	};
 
 	const int32 Count = UE_ARRAY_COUNT(MeshPaths);
 	const float TotalWidth = (Count - 1) * Spacing;
@@ -1899,22 +1886,20 @@ void AT66GameMode::SpawnModelShowcaseRow()
 	FActorSpawnParameters SP;
 	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	for (int32 i = 0; i < Count; ++i)
+	auto SpawnShowcaseMesh = [&](const TCHAR* MeshPath, const FVector& TraceAnchor)
 	{
-		UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, MeshPaths[i]);
+		UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, MeshPath);
 		if (!Mesh)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[Showcase] Mesh not found: %s"), MeshPaths[i]);
-			continue;
+			UE_LOG(LogTemp, Warning, TEXT("[Showcase] Mesh not found: %s"), MeshPath);
+			return;
 		}
 
-		const float Y = StartY + i * Spacing;
-
 		// Ground trace to find terrain surface
-		FVector SpawnLoc(ShowcaseX, Y, 220.f);
+		FVector SpawnLoc(TraceAnchor.X, TraceAnchor.Y, 220.f);
 		FHitResult Hit;
-		const FVector TraceStart(ShowcaseX, Y, 2000.f);
-		const FVector TraceEnd(ShowcaseX, Y, -4000.f);
+		const FVector TraceStart(TraceAnchor.X, TraceAnchor.Y, 2000.f);
+		const FVector TraceEnd(TraceAnchor.X, TraceAnchor.Y, -4000.f);
 		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
 		{
 			SpawnLoc = Hit.ImpactPoint;
@@ -1926,7 +1911,7 @@ void AT66GameMode::SpawnModelShowcaseRow()
 		SpawnLoc.Z -= MeshBottomZ;
 
 		AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SP);
-		if (!Actor) continue;
+		if (!Actor) return;
 
 		UStaticMeshComponent* SMC = Actor->GetStaticMeshComponent();
 		if (SMC)
@@ -1935,9 +1920,22 @@ void AT66GameMode::SpawnModelShowcaseRow()
 			SMC->SetStaticMesh(Mesh);
 			SMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
+	};
+
+	for (int32 i = 0; i < Count; ++i)
+	{
+		const float Y = StartY + i * Spacing;
+		SpawnShowcaseMesh(MeshPaths[i], FVector(ShowcaseX, Y, 0.f));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[Showcase] Spawned %d model showcase actors in front of PlayerStart."), Count);
+	const int32 BagCount = UE_ARRAY_COUNT(BagMeshPaths);
+	for (int32 i = 0; i < BagCount; ++i)
+	{
+		const float Y = StartY + i * Spacing;
+		SpawnShowcaseMesh(BagMeshPaths[i], FVector(BagShowcaseX, Y, 0.f));
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[Showcase] Spawned %d showcase actors including %d loot bags."), Count + BagCount, BagCount);
 }
 
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
@@ -1971,7 +1969,7 @@ void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
 	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 }
 
-void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
+void AT66GameMode::SpawnStageCatchUpPlatformAndInteractables()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -1980,26 +1978,23 @@ void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
 	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!T66GI || !RunState) return;
 
-	RunState->SetInStageBoost(true);
+	RunState->SetInStageCatchUp(true);
 
 	// Difficulty index: Easy=0, Medium=1, Hard=2, ...
 	const int32 DiffIndex = FMath::Max(0, static_cast<int32>(T66GI->SelectedDifficulty));
 	const int32 StartStage = FMath::Clamp(1 + (DiffIndex * 5), 1, 33);
 
-	// Tuned v0 amounts (increase with difficulty step).
-	const int32 GoldAmount = 200 * DiffIndex;          // Medium=200, Hard=400, ...
-	const int32 LootBags = 2 + (DiffIndex * 2);        // Medium=4, Hard=6, ...
+	const int32 GoldAmount = 200 * DiffIndex;
+	const int32 LootBags = 2 + (DiffIndex * 2);
 
-	// Place boost interactables on the main floor (no separate platform; hard rule: no overlapping grounds).
 	const FVector PlatformCenter(-45455.f, 23636.f, -50.f);
 
-	// Spawn interactables
 	{
 		FActorSpawnParameters P;
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		AT66StageBoostGoldInteractable* Gold = World->SpawnActor<AT66StageBoostGoldInteractable>(
-			AT66StageBoostGoldInteractable::StaticClass(),
+		AT66StageCatchUpGoldInteractable* Gold = World->SpawnActor<AT66StageCatchUpGoldInteractable>(
+			AT66StageCatchUpGoldInteractable::StaticClass(),
 			PlatformCenter + FVector(-260.f, -120.f, 120.f),
 			FRotator::ZeroRotator,
 			P);
@@ -2008,8 +2003,8 @@ void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
 			Gold->GoldAmount = GoldAmount;
 		}
 
-		AT66StageBoostLootInteractable* Loot = World->SpawnActor<AT66StageBoostLootInteractable>(
-			AT66StageBoostLootInteractable::StaticClass(),
+		AT66StageCatchUpLootInteractable* Loot = World->SpawnActor<AT66StageCatchUpLootInteractable>(
+			AT66StageCatchUpLootInteractable::StaticClass(),
 			PlatformCenter + FVector(-260.f, 220.f, 120.f),
 			FRotator::ZeroRotator,
 			P);
@@ -2018,8 +2013,8 @@ void AT66GameMode::SpawnStageBoostPlatformAndInteractables()
 			Loot->LootBagCount = LootBags;
 		}
 
-		AT66StageBoostGate* Gate = World->SpawnActor<AT66StageBoostGate>(
-			AT66StageBoostGate::StaticClass(),
+		AT66StageCatchUpGate* Gate = World->SpawnActor<AT66StageCatchUpGate>(
+			AT66StageCatchUpGate::StaticClass(),
 			PlatformCenter + FVector(520.f, 0.f, 200.f),
 			FRotator::ZeroRotator,
 			P);
@@ -2362,9 +2357,9 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 	if (!World) return;
 
 	UT66GameInstance* T66GI = GetT66GameInstance();
-	if (T66GI && T66GI->bStageBoostPending)
+	if (T66GI && T66GI->bStageCatchUpPending)
 	{
-		// Keep the boost platform area clean; tutorial arena not needed there.
+		// Keep the catch up platform area clean; tutorial arena not needed there.
 		return;
 	}
 
@@ -2631,7 +2626,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	constexpr float IslandFloorZ = -50.f;
 	const TArray<FFloorSpec> Floors = {
 		{ FName("T66_Floor_Coliseum"), FVector(ColiseumCenter.X, ColiseumCenter.Y, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
-		{ FName("T66_Floor_Boost"),     FVector(-45455.f, 23636.f, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
+		{ FName("T66_Floor_CatchUp"),   FVector(-45455.f, 23636.f, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
 	};
 
 	UStaticMesh* CubeMesh = GetCubeMesh();
@@ -2846,7 +2841,6 @@ static void AppendBoxFace(
 }
 
 static void AppendWallBox(
-	TArray<FVector>& TopV, TArray<int32>& TopT, TArray<FVector>& TopN, TArray<FVector2D>& TopUV,
 	TArray<FVector>& SideV, TArray<int32>& SideT, TArray<FVector>& SideN, TArray<FVector2D>& SideUV,
 	bool bAlongX,
 	float BoundaryCoord,
@@ -2904,11 +2898,6 @@ static void AppendWallBox(
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(-hx, hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, -hy, -hz), C + FVector(-hx, -hy, -hz),
 		FVector(0, 0, -1));
-
-	// Top face ??? ground atlas material
-	AppendBoxFace(TopV, TopT, TopN, TopUV,
-		C + FVector(-hx, -hy, hz), C + FVector(hx, -hy, hz), C + FVector(hx, hy, hz), C + FVector(-hx, hy, hz),
-		FVector(0, 0, 1));
 }
 
 // ---- Unit wedge geometry (100x100x100, slope LOW at -X to HIGH at +X) ----
@@ -3110,24 +3099,114 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
-	// Force synchronous load so FloorMat is never null (avoids engine BasicShapeMaterial on HISM walls).
-	for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
+	TArray<UMaterialInterface*> LoadedGroundMaterials;
+	LoadedGroundMaterials.Reserve(GroundFloorMaterials.Num());
+	for (int32 i = 0; i < GroundFloorMaterials.Num(); ++i)
 	{
 		if (!GroundFloorMaterials[i].IsNull() && !GroundFloorMaterials[i].Get())
 		{
 			GroundFloorMaterials[i].LoadSynchronous();
-			UE_LOG(LogTemp, Warning, TEXT("[FloorMat] LoadSynchronous slot %d -> %s"), i,
-				GroundFloorMaterials[i].Get() ? *GroundFloorMaterials[i].Get()->GetPathName() : TEXT("STILL NULL"));
+		}
+		if (UMaterialInterface* Mat = GroundFloorMaterials[i].Get())
+		{
+			LoadedGroundMaterials.Add(Mat);
 		}
 	}
-	UMaterialInterface* FloorMat = (GroundFloorMaterials.Num() > 0) ? GroundFloorMaterials[0].Get() : nullptr;
-	UE_LOG(LogTemp, Warning, TEXT("[FloorMat] FloorMat=%s"), FloorMat ? *FloorMat->GetPathName() : TEXT("NULL"));
+
+	TArray<UMaterialInterface*> LoadedCliffMaterials;
+	LoadedCliffMaterials.Reserve(CliffSideMaterials.Num());
+	for (int32 i = 0; i < CliffSideMaterials.Num(); ++i)
+	{
+		if (!CliffSideMaterials[i].IsNull() && !CliffSideMaterials[i].Get())
+		{
+			CliffSideMaterials[i].LoadSynchronous();
+		}
+		if (UMaterialInterface* Mat = CliffSideMaterials[i].Get())
+		{
+			LoadedCliffMaterials.Add(Mat);
+		}
+	}
+
+	UMaterialInterface* EnvUnlitBase = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+	auto LoadTerrainMaterialsFromSource = [&](const TCHAR* Prefix, std::initializer_list<int32> Indices, TArray<UMaterialInterface*>& OutMaterials)
+	{
+		if (!EnvUnlitBase)
+		{
+			return;
+		}
+
+		const FString SourceDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("SourceAssets/Import"));
+		for (int32 Index : Indices)
+		{
+			const FString Filename = SourceDir / FString::Printf(TEXT("%s%d.png"), Prefix, Index);
+			if (!FPaths::FileExists(Filename))
+			{
+				continue;
+			}
+
+			UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(Filename);
+			if (!Texture)
+			{
+				continue;
+			}
+
+			Texture->SRGB = true;
+			Texture->LODGroup = TEXTUREGROUP_World;
+			Texture->UpdateResource();
+
+			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EnvUnlitBase, this);
+			if (!MID)
+			{
+				continue;
+			}
+
+			MID->SetTextureParameterValue(TEXT("DiffuseColorMap"), Texture);
+			MID->SetVectorParameterValue(FName("Tint"), FLinearColor::White);
+			MID->SetScalarParameterValue(FName("Brightness"), 1.f);
+			OutMaterials.Add(MID);
+		}
+	};
+	auto LoadTerrainMaterialAssets = [&](const TCHAR* AssetDir, const TCHAR* AssetPrefix, std::initializer_list<int32> Indices, TArray<UMaterialInterface*>& OutMaterials)
+	{
+		for (int32 Index : Indices)
+		{
+			const FString AssetPath = FString::Printf(TEXT("%s/%s%d.%s%d"), AssetDir, AssetPrefix, Index, AssetPrefix, Index);
+			if (UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, *AssetPath))
+			{
+				OutMaterials.Add(Material);
+			}
+		}
+	};
+
+	TArray<UMaterialInterface*> TerrainGroundMaterials;
+	LoadTerrainMaterialsFromSource(TEXT("Grass"), { 1, 2, 3, 4 }, TerrainGroundMaterials);
+	if (TerrainGroundMaterials.Num() == 0)
+	{
+		LoadTerrainMaterialAssets(TEXT("/Game/World/Ground"), TEXT("MI_Grass"), { 1, 2, 3, 4 }, TerrainGroundMaterials);
+	}
+	if (TerrainGroundMaterials.Num() == 0)
+	{
+		TerrainGroundMaterials = LoadedGroundMaterials;
+	}
+
+	TArray<UMaterialInterface*> TerrainCliffMaterials;
+	LoadTerrainMaterialsFromSource(TEXT("Cliff"), { 2, 3 }, TerrainCliffMaterials);
+	if (TerrainCliffMaterials.Num() == 0)
+	{
+		LoadTerrainMaterialAssets(TEXT("/Game/World/Cliffs"), TEXT("MI_Cliff"), { 2, 3 }, TerrainCliffMaterials);
+	}
+	if (TerrainCliffMaterials.Num() == 0)
+	{
+		TerrainCliffMaterials = LoadedCliffMaterials;
+	}
 
 	FActorSpawnParameters SP;
 	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	const float MapSize  = Preset.MapHalfExtent * 2.f;
 	const float CellSize = MapSize / FMath::Max(Preset.GridSize, 2);
+	const int32 GroundVariantCount = FMath::Max(TerrainGroundMaterials.Num(), 1);
+	const int32 CliffVariantCount = FMath::Max(TerrainCliffMaterials.Num(), 1);
 
 	// Build a lookup so walls can leave openings where a ramp exists.
 	TMap<uint64, const FT66RampEdge*> RampLookup;
@@ -3136,7 +3215,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		RampLookup.Add(T66MakeBoundaryKey(Edge.LowerIndex, Edge.HigherIndex), &Edge);
 	}
 
-	// --- Top surfaces use procedural quads so they sample the same material space as ramps ---
+	// --- Top surfaces use procedural quads bucketed by seeded grass material ---
 	AActor* TopActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
 	if (!TopActor) return;
 	TopActor->Tags.Add(T66MapPlatformTag);
@@ -3145,20 +3224,39 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	UProceduralMeshComponent* TopPMC = NewObject<UProceduralMeshComponent>(TopActor, TEXT("PlatformTops"));
 	TopActor->SetRootComponent(TopPMC);
 
-	TArray<FVector> TopVerts;
-	TArray<int32> TopTris;
-	TArray<FVector> TopNormals;
-	TArray<FVector2D> TopUVs;
+	TArray<FT66MeshSectionBuffers> TopSections;
+	TopSections.SetNum(GroundVariantCount);
 	for (const FT66PlatformNode& P : MapData.Platforms)
 	{
-		AppendPlatformTopQuad(TopVerts, TopTris, TopNormals, TopUVs, FVector(P.Position, 0.f), P.SizeX, P.SizeY, P.TopZ);
+		const int32 Bucket = T66PickCellVariant(Preset.Seed, P.GridRow, P.GridCol, GroundVariantCount);
+		FT66MeshSectionBuffers& Section = TopSections[Bucket];
+		AppendPlatformTopQuad(Section.Verts, Section.Tris, Section.Normals, Section.UVs, FVector(P.Position, 0.f), P.SizeX, P.SizeY, P.TopZ);
 	}
 
 	TArray<FLinearColor> EmptyColors;
-	TArray<FProcMeshTangent> TopTangents;
-	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(TopVerts, TopTris, TopUVs, TopNormals, TopTangents);
-	TopPMC->CreateMeshSection_LinearColor(0, TopVerts, TopTris, TopNormals, TopUVs, EmptyColors, TopTangents, true);
-	if (FloorMat) TopPMC->SetMaterial(0, FloorMat);
+	auto CreateMeshSection = [&](UProceduralMeshComponent* PMC, int32 SectionIndex, const FT66MeshSectionBuffers& Buffers, UMaterialInterface* Material)
+	{
+		TArray<FVector> Normals = Buffers.Normals;
+		TArray<FProcMeshTangent> Tangents;
+		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Buffers.Verts, Buffers.Tris, Buffers.UVs, Normals, Tangents);
+		PMC->CreateMeshSection_LinearColor(SectionIndex, Buffers.Verts, Buffers.Tris, Normals, Buffers.UVs, EmptyColors, Tangents, true);
+		if (Material)
+		{
+			PMC->SetMaterial(SectionIndex, Material);
+		}
+	};
+
+	int32 TopSectionIndex = 0;
+	for (int32 Bucket = 0; Bucket < TopSections.Num(); ++Bucket)
+	{
+		if (!TopSections[Bucket].HasGeometry())
+		{
+			continue;
+		}
+
+		UMaterialInterface* Material = TerrainGroundMaterials.IsValidIndex(Bucket) ? TerrainGroundMaterials[Bucket] : nullptr;
+		CreateMeshSection(TopPMC, TopSectionIndex++, TopSections[Bucket], Material);
+	}
 	TopPMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TopPMC->RegisterComponent();
 
@@ -3169,15 +3267,14 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	// Brown side material: Unlit solid color for wall sides and ramp undersides.
 	UMaterialInstanceDynamic* BrownSideMat = nullptr;
 	{
-		UMaterialInterface* EnvUnlit = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
 		UTexture* WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
 		if (!WhiteTexture)
 		{
 			WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
 		}
-		if (EnvUnlit)
+		if (EnvUnlitBase)
 		{
-			BrownSideMat = UMaterialInstanceDynamic::Create(EnvUnlit, GetTransientPackage());
+			BrownSideMat = UMaterialInstanceDynamic::Create(EnvUnlitBase, GetTransientPackage());
 			if (BrownSideMat && WhiteTexture)
 			{
 				BrownSideMat->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
@@ -3189,10 +3286,8 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		}
 	}
 
-	TArray<FVector> WallTopV, WallSideV;
-	TArray<int32> WallTopT, WallSideT;
-	TArray<FVector> WallTopN, WallSideN;
-	TArray<FVector2D> WallTopUV, WallSideUV;
+	TArray<FT66MeshSectionBuffers> WallSideSections;
+	WallSideSections.SetNum(CliffVariantCount);
 
 	for (int32 R = 0; R < GridSize; ++R)
 	{
@@ -3222,13 +3317,14 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				const float PerpBase = bAlongX
 					? 0.5f * (A.Position.Y + B.Position.Y)
 					: 0.5f * (A.Position.X + B.Position.X);
+				const int32 CliffBucket = T66PickBoundaryVariant(Preset.Seed, Idx, OtherIdx, CliffVariantCount);
+				FT66MeshSectionBuffers& WallSideSection = WallSideSections[CliffBucket];
 
 				const FT66RampEdge* Ramp = RampLookup.FindRef(T66MakeBoundaryKey(Idx, OtherIdx));
 				if (!Ramp)
 				{
 					AppendWallBox(
-						WallTopV, WallTopT, WallTopN, WallTopUV,
-						WallSideV, WallSideT, WallSideN, WallSideUV,
+						WallSideSection.Verts, WallSideSection.Tris, WallSideSection.Normals, WallSideSection.UVs,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase,
@@ -3249,8 +3345,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				if (LeftLen > 1.f)
 				{
 					AppendWallBox(
-						WallTopV, WallTopT, WallTopN, WallTopUV,
-						WallSideV, WallSideT, WallSideN, WallSideUV,
+						WallSideSection.Verts, WallSideSection.Tris, WallSideSection.Normals, WallSideSection.UVs,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase + (-HalfCell + OpenStart) * 0.5f,
@@ -3266,8 +3361,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				if (RightLen > 1.f)
 				{
 					AppendWallBox(
-						WallTopV, WallTopT, WallTopN, WallTopUV,
-						WallSideV, WallSideT, WallSideN, WallSideUV,
+						WallSideSection.Verts, WallSideSection.Tris, WallSideSection.Normals, WallSideSection.UVs,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase + (OpenEnd + HalfCell) * 0.5f,
@@ -3287,7 +3381,13 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		}
 	}
 
-	if (WallTopV.Num() > 0 || WallSideV.Num() > 0)
+	bool bHasWallGeometry = false;
+	for (const FT66MeshSectionBuffers& Section : WallSideSections)
+	{
+		bHasWallGeometry |= Section.HasGeometry();
+	}
+
+	if (bHasWallGeometry)
 	{
 		AActor* WallActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
 		if (WallActor)
@@ -3298,19 +3398,16 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 			UProceduralMeshComponent* WallPMC = NewObject<UProceduralMeshComponent>(WallActor, TEXT("PlatformWalls"));
 			WallActor->SetRootComponent(WallPMC);
 
-			if (WallTopV.Num() > 0)
+			int32 SectionIndex = 0;
+			for (int32 Bucket = 0; Bucket < WallSideSections.Num(); ++Bucket)
 			{
-				TArray<FProcMeshTangent> Tan;
-				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(WallTopV, WallTopT, WallTopUV, WallTopN, Tan);
-				WallPMC->CreateMeshSection_LinearColor(0, WallTopV, WallTopT, WallTopN, WallTopUV, EmptyColors, Tan, true);
-				if (FloorMat) WallPMC->SetMaterial(0, FloorMat);
-			}
-			if (WallSideV.Num() > 0)
-			{
-				TArray<FProcMeshTangent> Tan;
-				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(WallSideV, WallSideT, WallSideUV, WallSideN, Tan);
-				WallPMC->CreateMeshSection_LinearColor(1, WallSideV, WallSideT, WallSideN, WallSideUV, EmptyColors, Tan, true);
-				if (BrownSideMat) WallPMC->SetMaterial(1, BrownSideMat);
+				if (!WallSideSections[Bucket].HasGeometry())
+				{
+					continue;
+				}
+
+				UMaterialInterface* Material = TerrainCliffMaterials.IsValidIndex(Bucket) ? TerrainCliffMaterials[Bucket] : BrownSideMat;
+				CreateMeshSection(WallPMC, SectionIndex++, WallSideSections[Bucket], Material);
 			}
 
 			WallPMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -3318,13 +3415,13 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		}
 	}
 
-	// --- Ramps: slope surface (FloorMat) + sides/underside (brown) ---
+	// --- Ramps: slope surface uses grass buckets; side faces use cliff buckets ---
 	const float MinRampHeight = 50.f;
 
-	TArray<FVector> RampSlopeV, RampSideV;
-	TArray<int32> RampSlopeT, RampSideT;
-	TArray<FVector> RampSlopeN, RampSideN;
-	TArray<FVector2D> RampSlopeUV, RampSideUV;
+	TArray<FT66MeshSectionBuffers> RampSlopeSections;
+	TArray<FT66MeshSectionBuffers> RampSideSections;
+	RampSlopeSections.SetNum(GroundVariantCount);
+	RampSideSections.SetNum(CliffVariantCount);
 
 	int32 RampCount = 0;
 	for (const FT66RampEdge& Edge : MapData.Ramps)
@@ -3357,9 +3454,11 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		}
 
 		const FVector RampScale(Edge.Depth / 100.f, Edge.Width / 100.f, HeightDiff / 100.f);
+		const int32 GroundBucket = T66PickBoundaryVariant(Preset.Seed, Edge.LowerIndex, Edge.HigherIndex, GroundVariantCount);
+		const int32 CliffBucket = T66PickBoundaryVariant(Preset.Seed ^ 0x4C494646, Edge.LowerIndex, Edge.HigherIndex, CliffVariantCount);
 		AppendTransformedWedge(
-			RampSlopeV, RampSlopeT, RampSlopeN, RampSlopeUV,
-			RampSideV, RampSideT, RampSideN, RampSideUV,
+			RampSlopeSections[GroundBucket].Verts, RampSlopeSections[GroundBucket].Tris, RampSlopeSections[GroundBucket].Normals, RampSlopeSections[GroundBucket].UVs,
+			RampSideSections[CliffBucket].Verts, RampSideSections[CliffBucket].Tris, RampSideSections[CliffBucket].Normals, RampSideSections[CliffBucket].UVs,
 			RampPos, RampRot, RampScale);
 		++RampCount;
 	}
@@ -3375,19 +3474,26 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 			UProceduralMeshComponent* PMC = NewObject<UProceduralMeshComponent>(RampActor, TEXT("Ramps"));
 			RampActor->SetRootComponent(PMC);
 
-			if (RampSlopeV.Num() > 0)
+			int32 SectionIndex = 0;
+			for (int32 Bucket = 0; Bucket < RampSlopeSections.Num(); ++Bucket)
 			{
-				TArray<FProcMeshTangent> Tan;
-				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(RampSlopeV, RampSlopeT, RampSlopeUV, RampSlopeN, Tan);
-				PMC->CreateMeshSection_LinearColor(0, RampSlopeV, RampSlopeT, RampSlopeN, RampSlopeUV, EmptyColors, Tan, true);
-				if (FloorMat) PMC->SetMaterial(0, FloorMat);
+				if (!RampSlopeSections[Bucket].HasGeometry())
+				{
+					continue;
+				}
+
+				UMaterialInterface* Material = TerrainGroundMaterials.IsValidIndex(Bucket) ? TerrainGroundMaterials[Bucket] : nullptr;
+				CreateMeshSection(PMC, SectionIndex++, RampSlopeSections[Bucket], Material);
 			}
-			if (RampSideV.Num() > 0)
+			for (int32 Bucket = 0; Bucket < RampSideSections.Num(); ++Bucket)
 			{
-				TArray<FProcMeshTangent> Tan;
-				UKismetProceduralMeshLibrary::CalculateTangentsForMesh(RampSideV, RampSideT, RampSideUV, RampSideN, Tan);
-				PMC->CreateMeshSection_LinearColor(1, RampSideV, RampSideT, RampSideN, RampSideUV, EmptyColors, Tan, true);
-				if (BrownSideMat) PMC->SetMaterial(1, BrownSideMat);
+				if (!RampSideSections[Bucket].HasGeometry())
+				{
+					continue;
+				}
+
+				UMaterialInterface* Material = TerrainCliffMaterials.IsValidIndex(Bucket) ? TerrainCliffMaterials[Bucket] : BrownSideMat;
+				CreateMeshSection(PMC, SectionIndex++, RampSideSections[Bucket], Material);
 			}
 
 			PMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -4597,9 +4703,9 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 		if (UT66GameInstance* T66GI = GetT66GameInstance())
 		{
-			if (T66GI->bStageBoostPending)
-			{
-				SpawnLocation = FVector(-45455.f, 23636.f, 200.f);
+		if (T66GI->bStageCatchUpPending)
+		{
+			SpawnLocation = FVector(-45455.f, 23636.f, 200.f);
 			}
 			else if (bForceSpawnInTutorialArea)
 			{
@@ -4734,9 +4840,7 @@ AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 	if (!World) return nullptr;
 
 	TSubclassOf<AT66EnemyBase> ClassToSpawn;
-	if (CharacterVisualID == FName(TEXT("Leprechaun")))
-		ClassToSpawn = AT66LeprechaunEnemy::StaticClass();
-	else if (CharacterVisualID == FName(TEXT("GoblinThief")))
+	if (CharacterVisualID == FName(TEXT("GoblinThief")))
 		ClassToSpawn = AT66GoblinThiefEnemy::StaticClass();
 	else
 		ClassToSpawn = AT66EnemyBase::StaticClass();
@@ -4789,7 +4893,7 @@ AActor* AT66GameMode::SpawnLabBoss(FName BossID)
 	return Boss;
 }
 
-AActor* AT66GameMode::SpawnLabTreeOfLife()
+AActor* AT66GameMode::SpawnLabFountainOfLife()
 {
 	if (!IsLabLevel()) return nullptr;
 	UWorld* World = GetWorld();
@@ -4799,12 +4903,13 @@ AActor* AT66GameMode::SpawnLabTreeOfLife()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	FVector Loc = GetRandomLabSpawnLocation();
 	FRotator Rot = FRotator::ZeroRotator;
-	AT66TreeOfLifeInteractable* Tree = World->SpawnActor<AT66TreeOfLifeInteractable>(AT66TreeOfLifeInteractable::StaticClass(), Loc, Rot, SpawnParams);
-	if (Tree)
+	AT66FountainOfLifeInteractable* Fountain = World->SpawnActor<AT66FountainOfLifeInteractable>(AT66FountainOfLifeInteractable::StaticClass(), Loc, Rot, SpawnParams);
+	if (Fountain)
 	{
-		LabSpawnedActors.Add(Tree);
+		Fountain->SetRarity(ET66Rarity::Black);
+		LabSpawnedActors.Add(Fountain);
 	}
-	return Tree;
+	return Fountain;
 }
 
 AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
@@ -4814,8 +4919,8 @@ AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 	if (!World) return nullptr;
 
 	UClass* ClassToSpawn = nullptr;
-	if (InteractableID == FName(TEXT("TreeOfLife")))
-		ClassToSpawn = AT66TreeOfLifeInteractable::StaticClass();
+	if (InteractableID == FName(TEXT("Fountain")))
+		ClassToSpawn = AT66FountainOfLifeInteractable::StaticClass();
 	else if (InteractableID == FName(TEXT("Chest")))
 		ClassToSpawn = AT66ChestInteractable::StaticClass();
 	else if (InteractableID == FName(TEXT("WheelSpin")))
@@ -4849,6 +4954,3 @@ void AT66GameMode::ResetLabSpawnedActors()
 	}
 	LabSpawnedActors.Empty();
 }
-
-
-

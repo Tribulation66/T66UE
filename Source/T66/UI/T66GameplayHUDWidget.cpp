@@ -1434,9 +1434,9 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 	// Stage number
 	if (StageText.IsValid())
 	{
-		if (RunState->IsInStageBoost())
+		if (RunState->IsInStageCatchUp())
 		{
-			StageText->SetText(NSLOCTEXT("T66.GameplayHUD", "StageBoost", "Stage: Boost"));
+			StageText->SetText(NSLOCTEXT("T66.GameplayHUD", "StageCatchUp", "Stage: Catch Up"));
 		}
 		else
 		{
@@ -1488,7 +1488,7 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 	if (SpeedRunTargetText.IsValid())
 	{
 		const bool bShow = PS ? PS->GetSpeedRunMode() : false;
-		if (!bShow || !LB || !GIAsT66 || RunState->IsInStageBoost())
+		if (!bShow || !LB || !GIAsT66 || RunState->IsInStageCatchUp())
 		{
 			SpeedRunTargetText->SetVisibility(EVisibility::Collapsed);
 		}
@@ -1560,7 +1560,7 @@ void UT66GameplayHUDWidget::RefreshLootPrompt()
 	}
 }
 
-void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID)
+void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity)
 {
 	if (ItemID.IsNone() || !PickupCardBox.IsValid()) return;
 
@@ -1658,18 +1658,19 @@ void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID)
 		PickupCardIconBrush->DrawAs = ESlateBrushDrawType::Image;
 		PickupCardIconBrush->ImageSize = FVector2D(48.f, 48.f);
 	}
-	if (bHasData && !D.Icon.IsNull())
+	const TSoftObjectPtr<UTexture2D> PickupIconSoft = bHasData ? D.GetIconForRarity(ItemRarity) : TSoftObjectPtr<UTexture2D>();
+	if (!PickupIconSoft.IsNull())
 	{
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (TexPool)
 		{
-			T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, PickupCardIconBrush, FName(TEXT("HUDPickupCard")), true);
+			T66SlateTexture::BindSharedBrushAsync(TexPool, PickupIconSoft, this, PickupCardIconBrush, FName(TEXT("HUDPickupCard")), true);
 		}
 	}
 	if (PickupCardIconImage.IsValid())
 	{
 		PickupCardIconImage->SetImage(PickupCardIconBrush.Get());
-		PickupCardIconImage->SetVisibility(bHasData && !D.Icon.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
+		PickupCardIconImage->SetVisibility(!PickupIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 	PickupCardBox->SetVisibility(EVisibility::Visible);
 
@@ -1908,7 +1909,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		PowerButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.95f, 0.80f, 0.20f, 1.f) : FT66Style::Tokens::Text);
 	}
 
-	// Idol slots (3): colored if equipped, dark teal if empty (matches inventory style)
+	// Idol slots (6): rarity-colored when equipped, dark teal when empty.
 	const TArray<FName>& Idols = RunState->GetEquippedIdols();
 	for (int32 i = 0; i < IdolSlotBorders.Num(); ++i)
 	{
@@ -1918,24 +1919,26 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		FText IdolTooltipText = FText::GetEmpty();
 		if (i < Idols.Num() && !Idols[i].IsNone())
 		{
-			C = UT66RunStateSubsystem::GetIdolColor(Idols[i]);
+			const ET66ItemRarity IdolRarity = RunState->GetEquippedIdolRarityInSlot(i);
+			C = FItemData::GetItemRarityColor(IdolRarity);
 			if (GIAsT66)
 			{
 				FIdolData IdolData;
 				if (GIAsT66->GetIdolData(Idols[i], IdolData))
 				{
-					if (!IdolData.Icon.IsNull())
-					{
-						IdolIconSoft = IdolData.Icon;
-					}
+					IdolIconSoft = IdolData.GetIconForRarity(IdolRarity);
 					// Tooltip: same as altar (category + effect description)
 					if (Loc)
 					{
+						const UEnum* RarityEnum = StaticEnum<ET66ItemRarity>();
+						const FText RarityText = RarityEnum
+							? RarityEnum->GetDisplayNameTextByValue(static_cast<int64>(IdolRarity))
+							: FText::GetEmpty();
 						const FText CatName = Loc->GetText_IdolCategoryName(IdolData.Category);
 						const FText Tooltip = Loc->GetText_IdolTooltip(Idols[i]);
 						IdolTooltipText = FText::Format(
-							NSLOCTEXT("T66.IdolAltar", "IdolCardDescFormat", "{0}\n{1}"),
-							CatName, Tooltip);
+							NSLOCTEXT("T66.IdolAltar", "IdolCardDescWithRarityFormat", "{0}\n{1}\n{2}"),
+							RarityText, CatName, Tooltip);
 					}
 					else
 					{
@@ -1945,14 +1948,9 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			}
 		}
 		IdolSlotBorders[i]->SetBorderBackgroundColor(C);
-		const FName CurrentIdolID = (i < Idols.Num()) ? Idols[i] : NAME_None;
-		if (!CachedIdolSlotIDs.IsValidIndex(i) || CachedIdolSlotIDs[i] != CurrentIdolID)
+		if (IdolSlotContainers.IsValidIndex(i) && IdolSlotContainers[i].IsValid())
 		{
-			if (CachedIdolSlotIDs.IsValidIndex(i)) CachedIdolSlotIDs[i] = CurrentIdolID;
-			if (IdolSlotContainers.IsValidIndex(i) && IdolSlotContainers[i].IsValid())
-			{
-				IdolSlotContainers[i]->SetToolTip(CreateCustomTooltip(IdolTooltipText));
-			}
+			IdolSlotContainers[i]->SetToolTip(CreateCustomTooltip(IdolTooltipText));
 		}
 
 		if (IdolSlotBrushes.IsValidIndex(i) && IdolSlotBrushes[i].IsValid())
@@ -1970,16 +1968,6 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		if (IdolSlotImages.IsValidIndex(i) && IdolSlotImages[i].IsValid())
 		{
 			IdolSlotImages[i]->SetVisibility(!IdolIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
-		}
-
-		// Idol level dots (10 max): show one yellow dot per level.
-		const int32 Level = RunState->GetEquippedIdolLevelInSlot(i);
-		for (int32 d = 0; d < UT66RunStateSubsystem::MaxIdolLevel; ++d)
-		{
-			const int32 FlatIdx = (i * UT66RunStateSubsystem::MaxIdolLevel) + d;
-			if (!IdolLevelDotBorders.IsValidIndex(FlatIdx) || !IdolLevelDotBorders[FlatIdx].IsValid()) continue;
-			const bool bShow = (Level > 0) && (d < Level);
-			IdolLevelDotBorders[FlatIdx]->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 	}
 
@@ -2006,10 +1994,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				TipLines.Add(Loc ? Loc->GetText_ItemDisplayName(ItemID) : FText::FromName(ItemID));
 
 				// Icon (optional). Do NOT sync-load in gameplay UI; request via the UI texture pool.
-				if (!D.Icon.IsNull())
-				{
-					SlotIconSoft = D.Icon;
-				}
+				const ET66ItemRarity SlotRarity = InvSlots.IsValidIndex(i) ? InvSlots[i].Rarity : ET66ItemRarity::Black;
+				SlotIconSoft = D.GetIconForRarity(SlotRarity);
 
 				// Main stat line (v1): one foundational stat (excluding Speed), flat numeric bonus.
 				auto StatLabel = [&](ET66HeroStatType Type) -> FText
@@ -2179,7 +2165,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	IdolSlotContainers.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotImages.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	IdolSlotBrushes.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
-	IdolLevelDotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots * UT66RunStateSubsystem::MaxIdolLevel);
+	IdolLevelDotBorders.Empty();
 	CachedIdolSlotIDs.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotContainers.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
@@ -2402,7 +2388,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		TSharedPtr<SBorder> IdolBorder;
-		TSharedPtr<SBorder> Dots[UT66RunStateSubsystem::MaxIdolLevel];
 		const int32 Row = i / 2;
 		const int32 Col = i % 2;
 		IdolSlotsRef->AddSlot(Col, Row)
@@ -2438,122 +2423,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.ColorAndOpacity(FLinearColor::White)
 						.Visibility(EVisibility::Collapsed)
 					]
-					// Idol level dots (2 rows x 5 cols, bottom-centered)
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Bottom)
-					.Padding(0.f, 0.f, 0.f, 4.f)
-					[
-						SNew(SUniformGridPanel)
-						.SlotPadding(FMargin(1.f, 1.f))
-						+ SUniformGridPanel::Slot(0, 0)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[0], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(1, 0)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[1], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(2, 0)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[2], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(3, 0)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[3], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(4, 0)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[4], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(0, 1)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[5], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(1, 1)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[6], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(2, 1)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[7], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(3, 1)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[8], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-						+ SUniformGridPanel::Slot(4, 1)
-						[
-							SNew(SBox).WidthOverride(6.f).HeightOverride(6.f)
-							[
-								SAssignNew(Dots[9], SBorder)
-								.Visibility(EVisibility::Collapsed)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(0.95f, 0.80f, 0.20f, 1.f))
-							]
-						]
-					]
 				]
 			];
 		IdolSlotBorders[i] = IdolBorder;
-		for (int32 d = 0; d < UT66RunStateSubsystem::MaxIdolLevel; ++d)
-		{
-			IdolLevelDotBorders[(i * UT66RunStateSubsystem::MaxIdolLevel) + d] = Dots[d];
-		}
 	}
 
 	// Inventory: 2 rows x 10 columns (20 slots total). RPG-style with transparent slots and thin borders.

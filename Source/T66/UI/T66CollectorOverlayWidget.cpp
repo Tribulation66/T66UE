@@ -57,7 +57,7 @@ void UT66CollectorOverlayWidget::OnSpawnNPC(FName NPCID)
 {
 	AT66GameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AT66GameMode>() : nullptr;
 	if (!GM) return;
-	if (NPCID == FName(TEXT("TreeOfLife"))) GM->SpawnLabTreeOfLife();
+	if (NPCID == FName(TEXT("Fountain"))) GM->SpawnLabFountainOfLife();
 	RefreshContent();
 }
 
@@ -150,10 +150,11 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		IconBrush->ImageSize = FVector2D(64.f, 64.f);
 		ItemIconBrushes.Add(IconBrush);
 		FItemData ItemData;
-		if (GI && GI->GetItemData(ItemID, ItemData) && !ItemData.Icon.IsNull())
+		if (GI && GI->GetItemData(ItemID, ItemData))
 		{
+			const TSoftObjectPtr<UTexture2D> ItemIconSoft = ItemData.GetIconForRarity(ET66ItemRarity::Black);
 			UT66UITexturePoolSubsystem* Pool = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-			if (Pool) T66SlateTexture::BindSharedBrushAsync(Pool, ItemData.Icon, this, IconBrush, ItemID, true);
+			if (Pool && !ItemIconSoft.IsNull()) T66SlateTexture::BindSharedBrushAsync(Pool, ItemIconSoft, this, IconBrush, ItemID, true);
 		}
 		Scroll->AddSlot().Padding(6.f)
 			[
@@ -222,14 +223,14 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	else if (CollectorTabIndex == 1)
 	{
 		AddSpawnCard(
-			LOCTEXT("TreeOfLifeName", "Tree of Life"),
-			LOCTEXT("TreeOfLifeDesc", "NPC: Tree of Life."),
-			[this]() { OnSpawnNPC(FName(TEXT("TreeOfLife"))); }
+			LOCTEXT("FountainOfLifeName", "Fountain of Life"),
+			LOCTEXT("FountainOfLifeDesc", "NPC: Fountain of Life."),
+			[this]() { OnSpawnNPC(FName(TEXT("Fountain"))); }
 		);
 	}
 	else if (CollectorTabIndex == 2)
 	{
-		static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("Leprechaun")), FName(TEXT("GoblinThief")) };
+		static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("GoblinThief")) };
 		TArray<FName> EnemyIDs = GetUnlockedEnemyIDs();
 		for (const FName& M : MobIDs)
 			if (EnemyIDs.Contains(M))
@@ -241,7 +242,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	}
 	else
 	{
-		AddSpawnCard(LOCTEXT("TreeOfLifeName", "Tree of Life"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("TreeOfLife"))); });
+		AddSpawnCard(LOCTEXT("FountainOfLifeInteractableName", "Fountain of Life"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Fountain"))); });
 		AddSpawnCard(LOCTEXT("Chest", "Chest"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Chest"))); });
 		AddSpawnCard(LOCTEXT("WheelSpin", "Wheel Spin"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("WheelSpin"))); });
 		AddSpawnCard(LOCTEXT("IdolAltar", "Idol Altar"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("IdolAltar"))); });

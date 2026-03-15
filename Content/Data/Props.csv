@@ -1,6 +1,10 @@
----,Mesh,CountMin,CountMax,ScaleMin,ScaleMax,bRandomYawRotation,MinDistanceBetween
-Barn,"/Game/World/Props/Barn.Barn",1,2,"(X=0.9,Y=0.9,Z=0.9)","(X=1.1,Y=1.1,Z=1.1)",true,1200.0
-Tree,"/Game/World/Props/Tree.Tree",3,6,"(X=0.8,Y=0.8,Z=0.8)","(X=1.2,Y=1.2,Z=1.2)",true,600.0
-Tree2,"/Game/World/Props/Tree2.Tree2",3,6,"(X=0.8,Y=0.8,Z=0.8)","(X=1.2,Y=1.2,Z=1.2)",true,600.0
-Hay,"/Game/World/Props/Hay.Hay",4,8,"(X=0.7,Y=0.7,Z=0.7)","(X=1.0,Y=1.0,Z=1.0)",true,400.0
-Hay2,"/Game/World/Props/Hay2.Hay2",4,8,"(X=0.7,Y=0.7,Z=0.7)","(X=1.0,Y=1.0,Z=1.0)",true,400.0
+---,Mesh,CountMin,CountMax,ScaleMin,ScaleMax,bRandomYawRotation,MinDistanceBetween,PlacementZOffset
+Barn,"/Game/World/Props/Barn.Barn",1,2,"(X=0.9,Y=0.9,Z=0.9)","(X=1.1,Y=1.1,Z=1.1)",true,1200.0,0.0
+Tree,"/Game/World/Props/Tree.Tree",40,60,"(X=0.8,Y=0.8,Z=0.8)","(X=1.2,Y=1.2,Z=1.2)",true,600.0,0.0
+Tree2,"/Game/World/Props/Tree2.Tree2",40,60,"(X=0.8,Y=0.8,Z=0.8)","(X=1.2,Y=1.2,Z=1.2)",true,600.0,0.0
+Hay,"/Game/World/Props/Hay.Hay",8,16,"(X=0.7,Y=0.7,Z=0.7)","(X=1.0,Y=1.0,Z=1.0)",true,400.0,0.0
+Hay2,"/Game/World/Props/Hay2.Hay2",8,16,"(X=0.7,Y=0.7,Z=0.7)","(X=1.0,Y=1.0,Z=1.0)",true,400.0,0.0
+Rock,"/Game/World/Props/Rock.Rock",50,100,"(X=0.8,Y=0.8,Z=0.8)","(X=1.3,Y=1.3,Z=1.3)",true,600.0,0.0
+Grass,"/Game/World/Props/Grass.Grass",200,300,"(X=0.6,Y=0.6,Z=0.6)","(X=1.0,Y=1.0,Z=1.0)",true,120.0,0.0
+Bush,"/Game/World/Props/Bush.Bush",32,52,"(X=0.8,Y=0.8,Z=0.8)","(X=1.15,Y=1.15,Z=1.15)",true,500.0,0.0
+Boulder,"/Game/World/Props/Boulder.Boulder",24,40,"(X=0.9,Y=0.9,Z=0.9)","(X=1.35,Y=1.35,Z=1.35)",true,700.0,0.0

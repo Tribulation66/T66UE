@@ -10,7 +10,7 @@ class UStaticMeshComponent;
 class UStaticMesh;
 
 /**
- * Fountain of Life (formerly "Tree of Life"): grants max hearts (rarity-scaled) and consumes itself.
+ * Fountain of Life (formerly "Tree of Life"): fully heals, grants +1 max heart, and consumes itself.
  * Canonical in-game name: "Fountain of Life". Class alias: AT66FountainOfLifeInteractable.
  */
 UCLASS(Blueprintable)
@@ -21,12 +21,12 @@ class T66_API AT66TreeOfLifeInteractable : public AT66WorldInteractableBase
 public:
 	AT66TreeOfLifeInteractable();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tree")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Fountain")
 	TObjectPtr<UStaticMeshComponent> CrownMesh;
 
 	virtual bool Interact(APlayerController* PC) override;
 
-	/** Luck multiplier from items (multiplies spawn quantity/rarity for fountains). */
+	/** Luck multiplier from items (multiplies spawn quantity for fountains). */
 	float GetLuckFountainMultiplier() const;
 
 protected:

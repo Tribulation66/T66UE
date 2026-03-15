@@ -31,6 +31,7 @@ private:
 	TArray<FCrateItemEntry> StripItems;
 	int32 WinnerIndex = 0;
 	FName WinnerItemID;
+	ET66Rarity WinnerRarity = ET66Rarity::Black;
 
 	TSharedPtr<SBorder> StripContainer;
 	TSharedPtr<STextBlock> StatusText;

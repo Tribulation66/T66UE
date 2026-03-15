@@ -18,6 +18,33 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 
+namespace
+{
+	static ET66ItemRarity LootRarityToItemRarity(ET66Rarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Black:  return ET66ItemRarity::Black;
+		case ET66Rarity::Red:    return ET66ItemRarity::Red;
+		case ET66Rarity::Yellow: return ET66ItemRarity::Yellow;
+		case ET66Rarity::White:  return ET66ItemRarity::White;
+		default:                 return ET66ItemRarity::Black;
+		}
+	}
+
+	static FT66RarityWeights ApplyLootCrateBias(const FT66RarityWeights& BaseWeights, float LootCrateMultiplier)
+	{
+		const float Bias = FMath::Clamp(LootCrateMultiplier, 1.f, 3.f);
+
+		FT66RarityWeights Result;
+		Result.Black = BaseWeights.Black / Bias;
+		Result.Red = BaseWeights.Red * FMath::Sqrt(Bias);
+		Result.Yellow = BaseWeights.Yellow * Bias;
+		Result.White = BaseWeights.White * Bias * Bias;
+		return Result;
+	}
+}
+
 void UT66CrateOverlayWidget::GenerateStrip()
 {
 	StripItems.Empty();
@@ -40,6 +67,10 @@ void UT66CrateOverlayWidget::GenerateStrip()
 	CrateWeights.Red = 0.20f;
 	CrateWeights.Yellow = 0.08f;
 	CrateWeights.White = 0.02f;
+	if (RunState)
+	{
+		CrateWeights = ApplyLootCrateBias(CrateWeights, RunState->GetLootCrateRewardMultiplier());
+	}
 
 	const ET66Rarity WinRarity = (RngSub) ? RngSub->RollRarityWeighted(CrateWeights, Rng) : ET66Rarity::Black;
 	WinnerItemID = T66GI ? T66GI->GetRandomItemIDForLootRarity(WinRarity) : FName(TEXT("Unknown"));
@@ -51,6 +82,7 @@ void UT66CrateOverlayWidget::GenerateStrip()
 		{
 			Entry.ItemID = WinnerItemID;
 			Entry.Rarity = WinRarity;
+			WinnerRarity = WinRarity;
 			WinnerIndex = i;
 		}
 		else
@@ -97,6 +129,9 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 {
 	GenerateStrip();
 
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+
 	TSharedPtr<SHorizontalBox> StripRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < StripItems.Num(); ++i)
 	{
@@ -116,7 +151,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					.VAlign(VAlign_Center)
 					[
 						SNew(STextBlock)
-						.Text(FText::FromName(Entry.ItemID))
+						.Text(Loc ? Loc->GetText_ItemDisplayName(Entry.ItemID) : FText::FromName(Entry.ItemID))
 						.Font(FT66Style::Tokens::FontRegular(9))
 						.ColorAndOpacity(FLinearColor::White)
 						.Justification(ETextJustify::Center)
@@ -236,16 +271,18 @@ void UT66CrateOverlayWidget::ResolveOpen()
 
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	if (RunState && !WinnerItemID.IsNone())
 	{
-		RunState->AddItem(WinnerItemID);
+		RunState->RecordLuckQualityRarity(FName(TEXT("CrateRewardRarity")), WinnerRarity);
+		RunState->AddItemWithRarity(WinnerItemID, LootRarityToItemRarity(WinnerRarity));
 	}
 
 	if (StatusText.IsValid())
 	{
 		const FText Msg = FText::Format(
 			NSLOCTEXT("T66.Crate", "YouGotFormat", "You received: {0}!"),
-			FText::FromName(WinnerItemID));
+			Loc ? Loc->GetText_ItemDisplayName(WinnerItemID) : FText::FromName(WinnerItemID));
 		StatusText->SetText(Msg);
 	}
 	if (UWorld* World = GetWorld())

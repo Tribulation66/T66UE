@@ -1129,9 +1129,10 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (ItemIconBrushes.IsValidIndex(i) && ItemIconBrushes[i].IsValid())
 		{
-			if (bHasData && !D.Icon.IsNull() && TexPool)
+			const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
+			if (!SlotIconSoft.IsNull() && TexPool)
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, ItemIconBrushes[i], FName(TEXT("VendorStock"), i + 1), /*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, ItemIconBrushes[i], FName(TEXT("VendorStock"), i + 1), /*bClearWhileLoading*/ true);
 			}
 			else
 			{
@@ -1140,7 +1141,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (ItemIconImages.IsValidIndex(i) && ItemIconImages[i].IsValid())
 		{
-			const bool bHasIcon = bHasData && !D.Icon.IsNull();
+			const bool bHasIcon = bHasData && !D.GetIconForRarity(SlotRarity).IsNull();
 			ItemIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 		}
 		if (ItemTileBorders.IsValidIndex(i) && ItemTileBorders[i].IsValid())
@@ -1287,9 +1288,10 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackIconBrushes.IsValidIndex(i) && BuybackIconBrushes[i].IsValid())
 		{
-			if (bHasData && !D.Icon.IsNull() && TexPool)
+			const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
+			if (!SlotIconSoft.IsNull() && TexPool)
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, BuybackIconBrushes[i], FName(TEXT("VendorBuyback"), i + 1), /*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, BuybackIconBrushes[i], FName(TEXT("VendorBuyback"), i + 1), /*bClearWhileLoading*/ true);
 			}
 			else
 			{
@@ -1298,7 +1300,7 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackIconImages.IsValidIndex(i) && BuybackIconImages[i].IsValid())
 		{
-			const bool bHasIcon = bHasData && !D.Icon.IsNull();
+			const bool bHasIcon = bHasData && !D.GetIconForRarity(SlotRarity).IsNull();
 			BuybackIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 		}
 		if (BuybackTileBorders.IsValidIndex(i) && BuybackTileBorders[i].IsValid())
@@ -1441,9 +1443,11 @@ void UT66VendorOverlayWidget::RefreshInventory()
 
 			if (InventorySlotIconBrushes.IsValidIndex(i) && InventorySlotIconBrushes[i].IsValid())
 			{
-				if (bHasData && !D.Icon.IsNull() && TexPool)
+				const ET66ItemRarity SlotRarity = (bHasData && InvSlots.IsValidIndex(i)) ? InvSlots[i].Rarity : ET66ItemRarity::Black;
+				const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
+				if (!SlotIconSoft.IsNull() && TexPool)
 				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, InventorySlotIconBrushes[i], FName(TEXT("VendorInv"), i + 1), /*bClearWhileLoading*/ true);
+					T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, InventorySlotIconBrushes[i], FName(TEXT("VendorInv"), i + 1), /*bClearWhileLoading*/ true);
 				}
 				else
 				{
@@ -1452,7 +1456,8 @@ void UT66VendorOverlayWidget::RefreshInventory()
 			}
 			if (InventorySlotIconImages.IsValidIndex(i) && InventorySlotIconImages[i].IsValid())
 			{
-				const bool bHasIcon = bHasData && !D.Icon.IsNull();
+				const ET66ItemRarity SlotRarity = (bHasData && InvSlots.IsValidIndex(i)) ? InvSlots[i].Rarity : ET66ItemRarity::Black;
+				const bool bHasIcon = bHasData && !D.GetIconForRarity(SlotRarity).IsNull();
 				InventorySlotIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 			}
 		}
@@ -1880,4 +1885,3 @@ void UT66VendorOverlayWidget::TriggerVendorBossIfAngry()
 	// Close UI immediately when boss triggers.
 	CloseOverlay();
 }
-

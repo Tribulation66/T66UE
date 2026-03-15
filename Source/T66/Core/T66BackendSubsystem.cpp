@@ -176,6 +176,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 			case ET66SecondaryStatType::Cheating: KeyName = TEXT("Cheating"); break;
 			case ET66SecondaryStatType::Stealing: KeyName = TEXT("Stealing"); break;
 			case ET66SecondaryStatType::MovementSpeed: KeyName = TEXT("MovementSpeed"); break;
+			case ET66SecondaryStatType::LootCrate: KeyName = TEXT("LootCrate"); break;
 			default: continue;
 			}
 			SecObj->SetNumberField(KeyName, Pair.Value);
@@ -760,6 +761,7 @@ UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::ParseRunSummaryFromJson
 				else if (Key == TEXT("TreasureChest")) StatType = ET66SecondaryStatType::TreasureChest;
 				else if (Key == TEXT("Fountain")) StatType = ET66SecondaryStatType::Fountain;
 				else if (Key == TEXT("MovementSpeed")) StatType = ET66SecondaryStatType::MovementSpeed;
+				else if (Key == TEXT("LootCrate")) StatType = ET66SecondaryStatType::LootCrate;
 				else { bFound = false; }
 
 				if (bFound)

@@ -266,12 +266,12 @@ Since all game materials are Unlit, the lighting stack exists **solely to render
 
 ## 7. Importing New Characters (FBX)
 
-### The two-step workflow
+### The current workflow
 
-1. **Import** — use `Scripts/ImportSkeletalMeshes.py` (vanilla Interchange import, no material changes)
-2. **Convert** — run `Scripts/MakeCharacterMaterialsUnlit.py` to make materials Unlit
+1. **Import** — use `Scripts/ImportSkeletalMeshes.py`
+2. **Auto-convert** — the importer immediately runs `Scripts/MakeCharacterMaterialsUnlit.py` logic on the imported destination folder
 
-These are always separate steps. Import first, verify the mesh/animations look correct, then convert materials.
+The helper script still exists as a repair/re-run tool, but the normal workflow is now integrated into the importer.
 
 ### What happens during FBX import
 
@@ -300,7 +300,7 @@ The script has smart texture discovery:
 5. Sets `DiffuseColorMap` to the found texture
 6. Saves
 
-Safe to re-run any time. Run after every character import.
+Safe to re-run any time. Use it when an already-imported character folder needs repair or a manual import bypassed the project importer.
 
 ### Step-by-step for importing a new character
 
@@ -308,9 +308,10 @@ Safe to re-run any time. Run after every character import.
 2. Edit `Scripts/ImportSkeletalMeshes.py` — update the `IMPORTS` list with your new entry
 3. Run `ImportSkeletalMeshes.py` in the editor
 4. Verify the mesh imported correctly (check Content Browser for the assets)
-5. Run `Scripts/MakeCharacterMaterialsUnlit.py` to convert materials to Unlit
-6. Check the log — every MIC should show `Converted` with a texture name
-7. Play the game and verify the character displays textures correctly from all angles
+5. Check the import log — the unlit pass should run automatically and report converted/already-ok counts
+6. If the visual is data-driven, update `Content/Data/CharacterVisuals.csv`
+7. Run `Scripts/SetupCharacterVisualsDataTable.py`
+8. Play the game and verify the character displays textures correctly from all angles
 
 ---
 
@@ -322,20 +323,22 @@ Props and interactables imported via GLB use a different material pipeline:
 - Parent material: `MI_Default_Opaque` → `M_Default` (engine material at `/InterchangeAssets/gltf/M_Default`)
 - Texture parameter: `BaseColorTexture` (not `DiffuseColorMap`)
 
-After importing GLB assets, run `Scripts/MakeGLBImportsUnlit.py`. It:
-1. Creates `M_GLB_Unlit` if it doesn't exist (Unlit, `BaseColorTexture` → Emissive Color)
+`Scripts/ImportStaticMeshes.py` now imports the GLB and immediately runs the GLB unlit conversion on that import root. The repair script is still available if needed. The GLB conversion pass:
+1. Creates or safely recreates `M_GLB_Unlit` if it doesn't exist or is missing required params/flags (Unlit, `BaseColorTexture * Tint * Brightness` → Emissive Color, `used_with_instanced_static_meshes = true`)
 2. Finds all MICs parented to `MI_Default_Opaque` or `M_Default`
 3. Reads `BaseColorTexture` before reparenting, reparents to `M_GLB_Unlit`, re-sets it after
-4. Saves
+4. Re-applies the gameplay static-mesh build policy for GLB assets: full-precision UVs, no generated lightmap UVs, preserve imported normals/tangents
+5. Optionally applies per-entry material overrides (`Brightness`, `Tint`) and texture-parameter overrides from the import manifest
+5. Saves
 
 ### Why two separate scripts?
 
-FBX and GLB imports use different parent materials and different texture parameter names. Mixing them in one script would be fragile. Keep them separate:
+FBX and GLB imports use different parent materials and different texture parameter names. The project keeps two dedicated conversion helpers, but the importers call the correct one automatically:
 
 | Import Format | Parent Material (engine) | Texture Param | Conversion Script |
 |---|---|---|---|
-| FBX (characters) | `FBXLegacyPhongSurfaceMaterial` | `DiffuseColorMap` | `MakeCharacterMaterialsUnlit.py` |
-| GLB (props/interactables) | `MI_Default_Opaque` / `M_Default` | `BaseColorTexture` | `MakeGLBImportsUnlit.py` |
+| FBX (characters) | `FBXLegacyPhongSurfaceMaterial` | `DiffuseColorMap` | `ImportSkeletalMeshes.py` → `MakeCharacterMaterialsUnlit.py` |
+| GLB (props/interactables) | `MI_Default_Opaque` / `M_Default` | `BaseColorTexture` | `ImportStaticMeshes.py` → `MakeGLBImportsUnlit.py` |
 
 ---
 
@@ -347,7 +350,9 @@ FBX and GLB imports use different parent materials and different texture paramet
 - **Never** set `EmissiveColorMapWeight` as a lighting workaround
 - **Never** try to modify engine materials in-place — they're read-only and changes break on engine updates
 - If a material needs to be visible from both sides, ensure `Two Sided = true` (all master materials have this enabled by default)
-- Always run the appropriate conversion script **after** importing, as a separate step
+- Always use the project importers so the unlit pass happens during import
+- If an asset was imported manually or before this workflow existed, run the matching repair script on that folder
+- If a GLB atlas smears colors at gameplay distance, fix it in the importer manifest with a texture-parameter override (for example `BaseColorTexture` → `TMGS_NO_MIPMAPS`) so the repair path can reproduce it
 
 ### Creating materials from scratch in C++
 
@@ -377,24 +382,26 @@ MeshComponent->SetMaterial(0, MID);
 
 | Script | Purpose |
 |---|---|
-| `Scripts/ImportSkeletalMeshes.py` | Vanilla FBX import for characters (mesh + skeleton + anims + textures). No material changes. |
-| `Scripts/MakeCharacterMaterialsUnlit.py` | **Central character Unlit script.** Smart texture discovery + reparent FBX MICs to `M_Character_Unlit`. Run after every character import. |
-| `Scripts/MakeGLBImportsUnlit.py` | Reparent GLB-imported MICs to `M_GLB_Unlit`. Run after every prop/interactable GLB import. |
+| `Scripts/ImportSkeletalMeshes.py` | FBX importer for characters. Imports assets and immediately runs the FBX unlit conversion for that destination folder. |
+| `Scripts/MakeCharacterMaterialsUnlit.py` | Repair/re-run tool for FBX character materials already in the project. |
+| `Scripts/MakeGLBImportsUnlit.py` | Repair/re-run tool for GLB prop/interactable materials already in the project. |
 | `Scripts/ImportGroundAtlas.py` | Generates the 4 Unlit ground atlas materials from source PNG |
-| `Scripts/ImportStaticMeshes.py` | Vanilla static mesh import |
+| `Scripts/ImportStaticMeshes.py` | GLB importer for props/interactables. Imports, flattens Interchange output, and immediately runs the GLB unlit conversion. |
 | `Scripts/FlattenInterchangeAssets.py` | Flattens nested Interchange directory structure after import |
 
 ---
 
 ## 11. Quick Reference Cheat Sheet
 
-**"My new FBX character is completely black"** → Run `Scripts/MakeCharacterMaterialsUnlit.py`. The script finds unbound textures by directory search and reparents to `M_Character_Unlit`.
+**"My new FBX character is completely black"** → First import through `Scripts/ImportSkeletalMeshes.py`. If the asset already exists or was imported manually, run `Scripts/MakeCharacterMaterialsUnlit.py`. The usual root cause is the character master losing `used_with_skeletal_mesh = true`; the repair script now re-enforces that flag.
 
-**"My new GLB prop is grey/untextured"** → Run `Scripts/MakeGLBImportsUnlit.py`. It reparents to `M_GLB_Unlit` with the correct `BaseColorTexture` param.
+**"My new GLB prop is grey/untextured"** → First import through `Scripts/ImportStaticMeshes.py`. If the asset already exists or was imported manually, run `Scripts/MakeGLBImportsUnlit.py`.
 
-**"My new character model has dark sides"** → Same fix — run `MakeCharacterMaterialsUnlit.py`.
+**"My new character model has dark sides"** → Same fix path: use the project importer or re-run `MakeCharacterMaterialsUnlit.py` on the existing folder.
 
-**"My new prop has dark faces"** → Run `MakeGLBImportsUnlit.py` for GLB imports, or manually reparent to `M_Environment_Unlit` for other formats.
+**"My new prop has dark faces or muddy atlas colors"** → Use the GLB importer or re-run `MakeGLBImportsUnlit.py` for GLB imports. If the source atlas smears at distance, add a texture-parameter override in `ImportStaticMeshes.py` (for example `BaseColorTexture` no-mips) so the fix survives reimport/repair.
+
+**"My GLB looks correct in Blender but muddy in Unreal"** → First suspect stale Unreal import artifacts before blaming the source file. A clean raw GLB import may be correct while an existing gameplay destination still points at old nested textures/materials from a previous import. The project fix is to run `ImportStaticMeshes.py`, which now deletes the old GLB subtree before reimporting. After that, if fidelity is still off, check the GLB mesh build settings path: gameplay GLBs preserve source mesh data with full-precision UVs and disabled generated lightmap UVs, and those writes must run through `UnrealEditor.exe -ExecutePythonScript=...`; `UnrealEditor-Cmd.exe` does not reliably expose `StaticMeshEditorSubsystem` for them.
 
 **"A procedural mesh is grey/dark"** → Make sure you're calling `SetMaterial()` with either `FloorMat` or an MID of `M_Environment_Unlit`, not using `CreateAndSetMaterialInstanceDynamic(0)` from an engine material.
 

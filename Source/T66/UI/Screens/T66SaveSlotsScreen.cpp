@@ -111,6 +111,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		FText HeroNameText = bOccupied && Loc ? Loc->GetText_HeroName(Loaded ? Loaded->HeroID : FName(*HeroDisplayName)) : EmptyText;
 		int32 StageNum = Loaded ? Loaded->StageReached : 1;
 		const TArray<FName>& Idols = Loaded ? Loaded->EquippedIdols : TArray<FName>();
+		const TArray<uint8>& IdolTiers = Loaded ? Loaded->EquippedIdolTiers : TArray<uint8>();
 
 		if (bOccupied && Loaded && TexPool && GI)
 		{
@@ -128,9 +129,15 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			for (int32 k = 0; k < FMath::Min(Idols.Num(), UT66RunStateSubsystem::MaxEquippedIdolSlots); ++k)
 			{
 				FIdolData IdolData;
-				if (GI->GetIdolData(Idols[k], IdolData) && !IdolData.Icon.IsNull())
+				const int32 TierValue = IdolTiers.IsValidIndex(k)
+					? FMath::Clamp(static_cast<int32>(IdolTiers[k]), 1, UT66RunStateSubsystem::MaxIdolLevel)
+					: 1;
+				const TSoftObjectPtr<UTexture2D> IdolIconSoft = GI->GetIdolData(Idols[k], IdolData)
+					? IdolData.GetIconForRarity(UT66RunStateSubsystem::IdolTierValueToRarity(TierValue))
+					: TSoftObjectPtr<UTexture2D>();
+				if (!IdolIconSoft.IsNull())
 				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, IdolData.Icon, this,
+					T66SlateTexture::BindSharedBrushAsync(TexPool, IdolIconSoft, this,
 						SlotIdolBrushes[LocalIndex][k], FName(TEXT("SaveSlotIdol"), SlotIndex * 10 + k), true);
 				}
 			}

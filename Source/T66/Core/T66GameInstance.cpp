@@ -16,6 +16,15 @@
 
 namespace
 {
+	static FName NormalizeLegacyItemID(FName ItemID)
+	{
+		if (ItemID == FName(TEXT("Item_Goblin")))
+		{
+			return FName(TEXT("Item_LootCrate"));
+		}
+		return ItemID;
+	}
+
 	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
 	static const bool bUseDemoMapForTribulation = false;  // GameplayLevel uses LowPolyNature procedural env
 	static const TCHAR* DemoMapLevelNameForTribulation = TEXT("Map_Summer");
@@ -397,7 +406,8 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 	{
 		return false;
 	}
-	FItemData* FoundRow = DataTable->FindRow<FItemData>(ItemID, TEXT("GetItemData"));
+	const FName NormalizedItemID = NormalizeLegacyItemID(ItemID);
+	FItemData* FoundRow = DataTable->FindRow<FItemData>(NormalizedItemID, TEXT("GetItemData"));
 	if (FoundRow)
 	{
 		OutItemData = *FoundRow;

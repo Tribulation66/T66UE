@@ -14,7 +14,7 @@ class T66_API UT66RunSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 1;
+	int32 SaveVersion = 2;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName HeroID;
@@ -47,4 +47,8 @@ public:
 	/** Equipped idol IDs when save was written (for slot display). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	TArray<FName> EquippedIdols;
+
+	/** Equipped idol tier values aligned with EquippedIdols (0 empty, 1 black .. 4 white). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<uint8> EquippedIdolTiers;
 };

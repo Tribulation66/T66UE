@@ -223,6 +223,7 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 	{
 		SaveObj->StageReached = RunState->GetCurrentStage();
 		SaveObj->EquippedIdols = RunState->GetEquippedIdols();
+		SaveObj->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
 	}
 
 	if (APawn* Pawn = PC->GetPawn())

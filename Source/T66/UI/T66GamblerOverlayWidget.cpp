@@ -2357,9 +2357,10 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackIconBrushes.IsValidIndex(i) && BuybackIconBrushes[i].IsValid())
 		{
-			if (bHasData && !D.Icon.IsNull() && TexPool)
+			const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
+			if (!SlotIconSoft.IsNull() && TexPool)
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, BuybackIconBrushes[i], FName(TEXT("GamblerBuyback"), i + 1), /*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, BuybackIconBrushes[i], FName(TEXT("GamblerBuyback"), i + 1), /*bClearWhileLoading*/ true);
 			}
 			else
 			{
@@ -2368,7 +2369,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackIconImages.IsValidIndex(i) && BuybackIconImages[i].IsValid())
 		{
-			const bool bHasIcon = bHasData && !D.Icon.IsNull();
+			const bool bHasIcon = bHasData && !D.GetIconForRarity(SlotRarity).IsNull();
 			BuybackIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 		}
 		if (BuybackTileBorders.IsValidIndex(i) && BuybackTileBorders[i].IsValid())
@@ -2502,9 +2503,11 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 
 			if (InventorySlotIconBrushes.IsValidIndex(i) && InventorySlotIconBrushes[i].IsValid())
 			{
-				if (bHasData && !D.Icon.IsNull() && TexPool)
+				const ET66ItemRarity SlotRarity = (bHasData && InvSlots.IsValidIndex(i)) ? InvSlots[i].Rarity : ET66ItemRarity::Black;
+				const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
+				if (!SlotIconSoft.IsNull() && TexPool)
 				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, D.Icon, this, InventorySlotIconBrushes[i], FName(TEXT("GamblerInv"), i + 1), /*bClearWhileLoading*/ true);
+					T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, InventorySlotIconBrushes[i], FName(TEXT("GamblerInv"), i + 1), /*bClearWhileLoading*/ true);
 				}
 				else
 				{
@@ -2513,7 +2516,8 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 			}
 			if (InventorySlotIconImages.IsValidIndex(i) && InventorySlotIconImages[i].IsValid())
 			{
-				const bool bHasIcon = bHasData && !D.Icon.IsNull();
+				const ET66ItemRarity SlotRarity = (bHasData && InvSlots.IsValidIndex(i)) ? InvSlots[i].Rarity : ET66ItemRarity::Black;
+				const bool bHasIcon = bHasData && !D.GetIconForRarity(SlotRarity).IsNull();
 				InventorySlotIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 			}
 		}
@@ -3669,4 +3673,3 @@ void UT66GamblerOverlayWidget::HandleBuybackChanged()
 	RefreshTopBar();
 	RefreshBuyback();
 }
-

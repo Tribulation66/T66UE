@@ -138,7 +138,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnGamblerAngerChanged GamblerAngerChanged;
 
-	/** Equipped idols changed (slot 0..2). */
+	/** Equipped idols changed. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnIdolsChanged IdolsChanged;
 
@@ -316,12 +316,24 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FName>& GetEquippedIdols() const { return EquippedIdolIDs; }
 
-	/** Idol max level (level-up by selecting same idol again). */
-	static constexpr int32 MaxIdolLevel = 10;
+	/** Idol rarity tiers: black, red, yellow, white. */
+	static constexpr int32 MaxIdolLevel = 4;
 
-	/** Equipped idol level for a specific slot (0..5). Returns 0 when empty. */
+	/** Equipped idol rarity tier for a specific slot (0 empty, 1 black .. 4 white). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetEquippedIdolLevelInSlot(int32 SlotIndex) const;
+
+	/** Equipped idol rarity for a specific slot. Empty/invalid slots fall back to Black. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	ET66ItemRarity GetEquippedIdolRarityInSlot(int32 SlotIndex) const;
+
+	/** Raw idol tier values aligned with EquippedIdolIDs (0 empty, 1 black .. 4 white). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	const TArray<uint8>& GetEquippedIdolTierValues() const { return EquippedIdolLevels; }
+
+	/** Convert between stored idol tier values and the shared item rarity enum. */
+	static ET66ItemRarity IdolTierValueToRarity(int32 TierValue);
+	static int32 IdolRarityToTierValue(ET66ItemRarity Rarity);
 
 	/** Equip an idol into a specific slot (0..5). Returns true if changed. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -333,8 +345,8 @@ public:
 
 	/**
 	 * Idol altar selection:
-	 * - if idol is already equipped, increase its level up to MaxIdolLevel
-	 * - otherwise, equip into first empty slot at level 1
+	 * - if idol is already equipped, increase its rarity up to White
+	 * - otherwise, equip into first empty slot at Black rarity
 	 */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SelectIdolFromAltar(FName IdolID);
@@ -372,6 +384,12 @@ public:
 
 	/** Returns the current idol stock IDs (3 slots). */
 	const TArray<FName>& GetIdolStockIDs() const { return IdolStockIDs; }
+
+	/** Returns the current idol stock tier value (0 empty, 1 black .. 4 white). */
+	int32 GetIdolStockTierValue(int32 SlotIndex) const;
+
+	/** Returns the current idol stock rarity. Empty/invalid slots fall back to Black. */
+	ET66ItemRarity GetIdolStockRarityInSlot(int32 SlotIndex) const;
 
 	/** Select (equip/level-up) the idol at the given stock slot. Returns true on success. */
 	bool SelectIdolFromStock(int32 SlotIndex);
@@ -504,6 +522,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItem(FName ItemID);
 
+	/** Add an item by template ID with an explicit rarity and auto-generated rolled value. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void AddItemWithRarity(FName ItemID, ET66ItemRarity Rarity);
+
 	/** Add a fully specified item slot (template + rarity + rolled value). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItemSlot(const FT66InventorySlot& Slot);
@@ -617,6 +639,10 @@ public:
 	/** Movement speed secondary multiplier (1.0 = no bonus; items can add). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetMovementSpeedSecondaryMultiplier() const;
+
+	/** Crate reward rarity multiplier (1.0 = no bonus; higher shifts crate rewards upward). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetLootCrateRewardMultiplier() const;
 
 	/** Crit chance (0..1). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
@@ -824,14 +850,14 @@ public:
 	bool TryBuybackSlot(int32 DisplayIndex);
 
 	// ============================================
-	// Stage Boost (Difficulty start)
+	// Stage Catch Up (Difficulty start)
 	// ============================================
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|StageBoost")
-	bool IsInStageBoost() const { return bInStageBoost; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|StageCatchUp")
+	bool IsInStageCatchUp() const { return bInStageCatchUp; }
 
-	UFUNCTION(BlueprintCallable, Category = "RunState|StageBoost")
-	void SetInStageBoost(bool bInBoost);
+	UFUNCTION(BlueprintCallable, Category = "RunState|StageCatchUp")
+	void SetInStageCatchUp(bool bInCatchUp);
 
 	// ============================================
 	// Ultimate
@@ -1094,8 +1120,14 @@ private:
 	/** Idol stock: 3 offered idols (shop-style altar). */
 	TArray<FName> IdolStockIDs;
 
+	/** Idol stock tier values (0 empty, 1 black .. 4 white). */
+	TArray<uint8> IdolStockTierValues;
+
 	/** Whether each stock slot has been selected this visit. */
 	TArray<bool> IdolStockSelected;
+
+	/** Stage number the current idol stock was generated for. */
+	int32 IdolStockStage = INDEX_NONE;
 
 	UPROPERTY()
 	TArray<FString> EventLog;
@@ -1307,7 +1339,7 @@ private:
 	TMap<FName, FT66LuckAccumulator> LuckQuantityByCategory;
 	TMap<FName, FT66LuckAccumulator> LuckQualityByCategory;
 
-	bool bInStageBoost = false;
+	bool bInStageCatchUp = false;
 
 	// Stage effects
 	float StageMoveSpeedMultiplier = 1.f;

@@ -7,8 +7,9 @@
 
 /**
  * Persistent local settings for the Retro FX experimentation tab.
- * Values are stored as 0..100 strengths so the settings screen can stage
- * them directly without additional UI-side conversions.
+ * Scalar values are stored as 0..100 strengths so the settings screen can
+ * stage them directly. Binary options use dedicated bools where appropriate,
+ * while legacy on/off scalar paths still remain 0..100 for compatibility.
  */
 USTRUCT(BlueprintType)
 struct T66_API FT66RetroFXSettings
@@ -46,6 +47,9 @@ struct T66_API FT66RetroFXSettings
 	float PS1SceneDepthFogPercent = 100.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
+	bool bUseRealLowResolution = false;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float FakeResolutionSwitchSizePercent = 100.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
@@ -73,6 +77,9 @@ struct T66_API FT66RetroFXSettings
 	float T66PixelationPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
+	bool bEnableWorldGeometry = false;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	float WorldVertexSnapPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
@@ -92,6 +99,9 @@ struct T66_API FT66RetroFXSettings
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	float WorldAffineDistance3Percent = 50.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
+	bool bEnableCharacterGeometry = false;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|Geometry")
 	float CharacterVertexSnapPercent = 0.0f;

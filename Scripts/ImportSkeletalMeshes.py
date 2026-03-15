@@ -1,30 +1,44 @@
 """
-Import skeletal mesh FBXs into the project. Vanilla import — no material manipulation.
+Import skeletal mesh FBXs into the project and immediately convert imported
+character materials to the project's Unlit pipeline.
 Each FBX goes to its own subdirectory. NO renaming, NO moving.
 
 Update the IMPORTS list below before each run, then execute in Unreal Editor:
   py "C:/UE/T66/Scripts/ImportSkeletalMeshes.py"
-
-After importing, run MakeAllMaterialsUnlit.py as a separate step.
 """
 
 import os
+import sys
 import unreal
 
-CLEANUP_DIRS = [
-    "/Game/Characters/Heroes/Mage",
-]
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.append(SCRIPT_DIR)
+
+import MakeCharacterMaterialsUnlit
+
+CLEANUP_DIRS = []
 
 IMPORTS = [
     {
-        "source": "ArthurIdle.fbx",
-        "dest": "/Game/Characters/Heroes/Hero_1/TypeA/Idle",
-        "name": "ArthurIdle",
+        "source": "Enemies/BlackGoblinRun.fbx",
+        "dest": "/Game/Characters/Enemies/GoblinThief/Black",
+        "name": "BlackGoblinRun",
     },
     {
-        "source": "ArthurWalk.fbx",
-        "dest": "/Game/Characters/Heroes/Hero_1/TypeA/Walk",
-        "name": "ArthurWalk",
+        "source": "Enemies/RedGoblinRun.fbx",
+        "dest": "/Game/Characters/Enemies/GoblinThief/Red",
+        "name": "RedGoblinRun",
+    },
+    {
+        "source": "Enemies/YellowGoblinRun.fbx",
+        "dest": "/Game/Characters/Enemies/GoblinThief/Yellow",
+        "name": "YellowGoblinRun",
+    },
+    {
+        "source": "Enemies/WhiteGoblinRun.fbx",
+        "dest": "/Game/Characters/Enemies/GoblinThief/White",
+        "name": "WhiteGoblinRun",
     },
 ]
 
@@ -87,10 +101,16 @@ def main():
                 pass
             unreal.log(f"    {p}  [{cls}]{extra}")
 
+        unlit_results = MakeCharacterMaterialsUnlit.convert_character_materials_unlit([dest])
+        unreal.log(
+            "    [UNLIT] converted={converted} already_ok={already_ok} "
+            "skipped={skipped} no_texture={no_texture} errors={errors}".format(**unlit_results)
+        )
+
     unreal.log("")
     unreal.log("=" * 60)
     unreal.log("[ImportSkeletalMeshes] DONE")
-    unreal.log("Next: run MakeAllMaterialsUnlit.py, then reload DT_CharacterVisuals.")
+    unreal.log("Next: update CharacterVisuals.csv and run SetupCharacterVisualsDataTable.py.")
     unreal.log("=" * 60)
 
 

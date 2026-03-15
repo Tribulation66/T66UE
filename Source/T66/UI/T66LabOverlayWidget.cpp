@@ -95,9 +95,9 @@ void UT66LabOverlayWidget::OnSpawnEnemy(FName EnemyID, int32 TabIndex)
 {
 	AT66GameMode* GM = GetLabGameMode();
 	if (!GM) return;
-	if (TabIndex == 1 && EnemyID == FName(TEXT("TreeOfLife")))
+	if (TabIndex == 1 && EnemyID == FName(TEXT("Fountain")))
 	{
-		GM->SpawnLabTreeOfLife();
+		GM->SpawnLabFountainOfLife();
 	}
 	else if (TabIndex == 2)
 	{
@@ -165,10 +165,10 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 	TArray<FName> ItemIDs = GetUnlockedItemIDs();
 	TArray<FName> EnemyIDs = GetUnlockedEnemyIDs();
 
-	static const FName TreeOfLifeID(TEXT("TreeOfLife"));
-	static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("Leprechaun")), FName(TEXT("GoblinThief")) };
+	static const FName FountainID(TEXT("Fountain"));
+	static const TArray<FName> MobIDs = { FName(TEXT("RegularEnemy")), FName(TEXT("GoblinThief")) };
 	TArray<FName> NPCList;
-	NPCList.Add(TreeOfLifeID);
+	NPCList.Add(FountainID);
 	TArray<FName> MobsList;
 	for (const FName& M : MobIDs) { if (EnemyIDs.Contains(M)) MobsList.Add(M); }
 	TArray<FName> BossList;
@@ -202,13 +202,16 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 		{
 			FName CapturedEID = EID;
 			int32 CapturedTab = TabIdx;
+			const FText EntryLabel = (EID == FName(TEXT("Fountain")))
+				? LOCTEXT("LabFountainName", "Fountain of Life")
+				: FText::FromName(EID);
 			Box->AddSlot()
 				.Padding(2.f)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
-						SNew(STextBlock).Text(FText::FromName(EID)).Font(FT66Style::Tokens::FontRegular(11)).ColorAndOpacity(FT66Style::Tokens::Text)
+						SNew(STextBlock).Text(EntryLabel).Font(FT66Style::Tokens::FontRegular(11)).ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[

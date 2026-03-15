@@ -72,8 +72,7 @@ void AT66IdolAltar::BeginPlay()
 		{
 			VisualMesh->SetStaticMesh(M);
 			VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
-			const float HalfHeight = FMath::Max(1.f, M->GetBounds().BoxExtent.Z);
-			VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, HalfHeight));
+			FT66VisualUtil::GroundMeshToActorOrigin(VisualMesh, M);
 			VisualMesh->SetVisibility(true, true);
 
 			// Hide placeholder stack.
@@ -83,18 +82,7 @@ void AT66IdolAltar::BeginPlay()
 		}
 	}
 
-	// Robust: snap the altar to ground so it's never floating.
-	if (UWorld* World = GetWorld())
-	{
-		FHitResult Hit;
-		const FVector Here = GetActorLocation();
-		const FVector Start = Here + FVector(0.f, 0.f, 2000.f);
-		const FVector End = Here - FVector(0.f, 0.f, 9000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-		{
-			SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
-		}
-	}
+	FT66VisualUtil::SnapToGround(this, GetWorld());
 }
 
 void AT66IdolAltar::ApplyVisuals()

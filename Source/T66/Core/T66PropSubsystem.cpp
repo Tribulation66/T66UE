@@ -84,7 +84,6 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 		for (int32 i = 0; i < Count; ++i)
 		{
 			FVector Loc(0.f, 0.f, SpawnZ);
-			FVector Normal = FVector::UpVector;
 			bool bFound = false;
 			for (int32 Try = 0; Try < 40; ++Try)
 			{
@@ -118,13 +117,13 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				if (bInNPCSafe) continue;
 
 				FHitResult Hit;
-				const FVector Start = Loc + FVector(0.f, 0.f, 1000.f);
-				const FVector End = Loc - FVector(0.f, 0.f, 4000.f);
-				if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+				const FVector Start = Loc + FVector(0.f, 0.f, 8000.f);
+				const FVector End = Loc - FVector(0.f, 0.f, 16000.f);
+				if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 				{
-					Loc = Hit.ImpactPoint;
-					Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, FVector::UpVector);
+					continue;
 				}
+				Loc = Hit.ImpactPoint;
 
 				bFound = true;
 				break;
@@ -135,17 +134,16 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 
 			FActorSpawnParameters SP;
 			SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			const FQuat SlopeRot = FQuat::FindBetweenNormals(FVector::UpVector, Normal);
-			FRotator Rot = SlopeRot.Rotator();
+			FRotator Rot = FRotator::ZeroRotator;
 			if (Row->bRandomYawRotation)
 			{
 				Rot.Yaw += Rng.FRandRange(0.f, 360.f);
 			}
 
-			// Offset spawn Z so the mesh bottom sits on the ground surface
-			const FBoxSphereBounds MeshBounds = Mesh->GetBounds();
-			const float MeshBottomZ = MeshBounds.Origin.Z - MeshBounds.BoxExtent.Z;
-			Loc.Z -= MeshBottomZ;
+			const FVector Scale(
+				Rng.FRandRange(Row->ScaleMin.X, Row->ScaleMax.X),
+				Rng.FRandRange(Row->ScaleMin.Y, Row->ScaleMax.Y),
+				Rng.FRandRange(Row->ScaleMin.Z, Row->ScaleMax.Z));
 
 			AStaticMeshActor* PropActor = World->SpawnActor<AStaticMeshActor>(
 				AStaticMeshActor::StaticClass(), Loc, Rot, SP);
@@ -156,13 +154,20 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 			{
 				SMC->SetMobility(EComponentMobility::Movable);
 				SMC->SetStaticMesh(Mesh);
-				SMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-				const FVector Scale(
-					Rng.FRandRange(Row->ScaleMin.X, Row->ScaleMax.X),
-					Rng.FRandRange(Row->ScaleMin.Y, Row->ScaleMax.Y),
-					Rng.FRandRange(Row->ScaleMin.Z, Row->ScaleMax.Z));
+				SMC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				SMC->SetCollisionProfileName(TEXT("BlockAll"));
 				PropActor->SetActorScale3D(Scale);
+				FT66VisualUtil::GroundMeshToActorOrigin(SMC, Mesh);
+			}
+
+			FT66VisualUtil::SnapToGround(PropActor, World);
+			if (!FMath::IsNearlyZero(Row->PlacementZOffset))
+			{
+				PropActor->AddActorWorldOffset(
+					FVector(0.f, 0.f, Row->PlacementZOffset * Scale.Z),
+					false,
+					nullptr,
+					ETeleportType::TeleportPhysics);
 			}
 
 			SpawnedProps.Add(PropActor);

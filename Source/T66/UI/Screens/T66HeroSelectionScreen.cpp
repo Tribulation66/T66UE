@@ -1513,7 +1513,7 @@ void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
-		GI->bStageBoostPending = (SelectedDifficulty != ET66Difficulty::Easy);
+		GI->bStageCatchUpPending = (SelectedDifficulty != ET66Difficulty::Easy);
 	}
 	NavigateTo(ET66ScreenType::CompanionSelection);
 }
@@ -1526,7 +1526,7 @@ void UT66HeroSelectionScreen::OnTheLabClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
-		GI->bStageBoostPending = false;
+		GI->bStageCatchUpPending = false;
 		GI->bIsLabLevel = true;
 	}
 	if (UIManager) UIManager->HideAllUI();
@@ -1540,8 +1540,8 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
-		GI->bStageBoostPending = (SelectedDifficulty != ET66Difficulty::Easy);
-		// New seed each time so procedural hills terrain layout differs per run
+		GI->bStageCatchUpPending = (SelectedDifficulty != ET66Difficulty::Easy);
+		// New seed each time so procedural terrain layout differs per run
 		GI->RunSeed = FMath::Rand();
 	}
 	if (UIManager) UIManager->HideAllUI();

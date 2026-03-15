@@ -18,10 +18,10 @@ class AT66CowardiceGate;
 class AT66TricksterNPC;
 class AT66BossGate;
 class AT66IdolAltar;
-class AT66StageBoostGate;
-class AT66StageBoostGoldInteractable;
-class AT66StageBoostLootInteractable;
-class AT66StageEffectTile;
+class AT66StageCatchUpGate;
+class AT66StageCatchUpGoldInteractable;
+class AT66StageCatchUpLootInteractable;
+class AT66Shroom;
 class AT66SpawnPlateau;
 class AT66TutorialManager;
 class UT66GameInstance;
@@ -63,6 +63,10 @@ public:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	TArray<TSoftObjectPtr<UMaterialInterface>> GroundFloorMaterials;
+
+	/** Cliff material variants used for terrain walls and ramp side faces. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
+	TArray<TSoftObjectPtr<UMaterialInterface>> CliffSideMaterials;
 
 	/** Default spawn height when no PlayerStart exists */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
@@ -172,8 +176,8 @@ protected:
 	void SpawnBossGateIfNeeded();
 	void SpawnWorldInteractablesForStage();
 	void SpawnModelShowcaseRow();
-	void SpawnStageBoostPlatformAndInteractables();
-	void SpawnStageEffectTilesForStage();
+	void SpawnStageCatchUpPlatformAndInteractables();
+	void SpawnStageEffectsForStage();
 	void SpawnColiseumArenaIfNeeded();
 	void SpawnTutorialArenaIfNeeded();
 	void SpawnAllOwedBossesInColiseum();
@@ -217,7 +221,7 @@ public:
 	// The Lab: spawn / reset (only used when IsLabLevel())
 	// ============================================
 
-	/** Spawn one mob in the Lab (CharacterVisualID: RegularEnemy, Leprechaun, GoblinThief, UniqueEnemy). Returns spawned actor or null. */
+	/** Spawn one mob in the Lab (CharacterVisualID: RegularEnemy, GoblinThief, UniqueEnemy). Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabMob(FName CharacterVisualID);
 
@@ -225,11 +229,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabBoss(FName BossID);
 
-	/** Spawn Tree of Life in the Lab (NPC tab). Returns spawned actor or null. */
+	/** Spawn Fountain of Life in the Lab (NPC tab). Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
-	AActor* SpawnLabTreeOfLife();
+	AActor* SpawnLabFountainOfLife();
 
-	/** Spawn an interactable in the Lab (TreeOfLife, Chest, WheelSpin, IdolAltar, Crate). Returns spawned actor or null. */
+	/** Spawn an interactable in the Lab (Fountain, Chest, WheelSpin, IdolAltar, Crate). Returns spawned actor or null. */
 	UFUNCTION(BlueprintCallable, Category = "Lab")
 	AActor* SpawnLabInteractable(FName InteractableID);
 

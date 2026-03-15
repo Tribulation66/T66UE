@@ -84,7 +84,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
-	/** If true, this enemy prefers to flee from the hero (used by Leprechaun). */
+	/** If true, this enemy prefers to flee from the hero instead of closing distance. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	bool bRunAwayFromPlayer = false;
 

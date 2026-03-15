@@ -347,6 +347,35 @@ int32 UT66RunStateSubsystem::GetEquippedIdolLevelInSlot(int32 SlotIndex) const
 	return FMath::Clamp(static_cast<int32>(EquippedIdolLevels[SlotIndex]), 1, MaxIdolLevel);
 }
 
+ET66ItemRarity UT66RunStateSubsystem::IdolTierValueToRarity(int32 TierValue)
+{
+	switch (FMath::Clamp(TierValue, 1, MaxIdolLevel))
+	{
+	case 1: return ET66ItemRarity::Black;
+	case 2: return ET66ItemRarity::Red;
+	case 3: return ET66ItemRarity::Yellow;
+	case 4: return ET66ItemRarity::White;
+	default: return ET66ItemRarity::Black;
+	}
+}
+
+int32 UT66RunStateSubsystem::IdolRarityToTierValue(ET66ItemRarity Rarity)
+{
+	switch (Rarity)
+	{
+	case ET66ItemRarity::Black:  return 1;
+	case ET66ItemRarity::Red:    return 2;
+	case ET66ItemRarity::Yellow: return 3;
+	case ET66ItemRarity::White:  return 4;
+	default:                     return 1;
+	}
+}
+
+ET66ItemRarity UT66RunStateSubsystem::GetEquippedIdolRarityInSlot(int32 SlotIndex) const
+{
+	return IdolTierValueToRarity(GetEquippedIdolLevelInSlot(SlotIndex));
+}
+
 bool UT66RunStateSubsystem::SelectIdolFromAltar(FName IdolID)
 {
 	if (IdolID.IsNone()) return false;
@@ -360,7 +389,7 @@ bool UT66RunStateSubsystem::SelectIdolFromAltar(FName IdolID)
 		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
 	}
 
-	// If already equipped, level it up.
+	// If already equipped, upgrade it to the next rarity tier.
 	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
 	{
 		if (EquippedIdolIDs[i] == IdolID)
@@ -374,7 +403,7 @@ bool UT66RunStateSubsystem::SelectIdolFromAltar(FName IdolID)
 		}
 	}
 
-	// Otherwise, equip into first empty slot (level 1).
+	// Otherwise, equip into the first empty slot at Black rarity.
 	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
 	{
 		if (EquippedIdolIDs[i].IsNone())
@@ -420,43 +449,73 @@ void UT66RunStateSubsystem::ClearEquippedIdols()
 
 void UT66RunStateSubsystem::EnsureIdolStock()
 {
-	if (IdolStockIDs.Num() == IdolStockSlotCount)
+	if (IdolStockStage == CurrentStage
+		&& IdolStockIDs.Num() == IdolStockSlotCount
+		&& IdolStockTierValues.Num() == IdolStockSlotCount)
 	{
-		return; // Already generated.
+		return;
 	}
 	RerollIdolStock();
 }
 
 void UT66RunStateSubsystem::RerollIdolStock()
 {
+	struct FIdolStockOffer
+	{
+		FName IdolID = NAME_None;
+		uint8 TierValue = 0;
+	};
+
+	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+	}
+	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+	}
+
 	IdolStockIDs.Empty(IdolStockSlotCount);
+	IdolStockTierValues.Empty(IdolStockSlotCount);
 	IdolStockSelected.Init(false, IdolStockSlotCount);
+	IdolStockStage = CurrentStage;
 
 	const TArray<FName>& AllIdols = GetAllIdolIDs();
+	const bool bHasEmptySlot = EquippedIdolIDs.Contains(NAME_None);
 
-	// Build pool: exclude idols that are already equipped at max level.
-	TArray<FName> Pool;
+	// Build pool:
+	// - owned idols offer the next rarity upgrade
+	// - unowned idols offer Black, but only if there is an empty slot to equip them
+	TArray<FIdolStockOffer> Pool;
 	Pool.Reserve(AllIdols.Num());
 	for (const FName& ID : AllIdols)
 	{
-		bool bMaxed = false;
+		int32 OwnedTierValue = 0;
 		for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
 		{
 			if (EquippedIdolIDs[i] == ID)
 			{
-				const int32 Lvl = (EquippedIdolLevels.IsValidIndex(i))
+				OwnedTierValue = (EquippedIdolLevels.IsValidIndex(i))
 					? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[i]), 1, MaxIdolLevel)
 					: 1;
-				if (Lvl >= MaxIdolLevel)
-				{
-					bMaxed = true;
-				}
 				break;
 			}
 		}
-		if (!bMaxed)
+
+		if (OwnedTierValue > 0)
 		{
-			Pool.Add(ID);
+			if (OwnedTierValue < MaxIdolLevel)
+			{
+				FIdolStockOffer& Offer = Pool.AddDefaulted_GetRef();
+				Offer.IdolID = ID;
+				Offer.TierValue = static_cast<uint8>(OwnedTierValue + 1);
+			}
+		}
+		else if (bHasEmptySlot)
+		{
+			FIdolStockOffer& Offer = Pool.AddDefaulted_GetRef();
+			Offer.IdolID = ID;
+			Offer.TierValue = 1;
 		}
 	}
 
@@ -469,29 +528,97 @@ void UT66RunStateSubsystem::RerollIdolStock()
 	}
 	for (int32 i = 0; i < Count; ++i)
 	{
-		IdolStockIDs.Add(Pool[i]);
+		IdolStockIDs.Add(Pool[i].IdolID);
+		IdolStockTierValues.Add(Pool[i].TierValue);
 	}
 
 	// Pad with NAME_None if pool was too small.
 	while (IdolStockIDs.Num() < IdolStockSlotCount)
 	{
 		IdolStockIDs.Add(NAME_None);
+		IdolStockTierValues.Add(0);
 	}
 
 	IdolsChanged.Broadcast();
 }
 
+int32 UT66RunStateSubsystem::GetIdolStockTierValue(int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= IdolStockSlotCount) return 0;
+	if (!IdolStockTierValues.IsValidIndex(SlotIndex)) return 0;
+	return FMath::Clamp(static_cast<int32>(IdolStockTierValues[SlotIndex]), 0, MaxIdolLevel);
+}
+
+ET66ItemRarity UT66RunStateSubsystem::GetIdolStockRarityInSlot(int32 SlotIndex) const
+{
+	return IdolTierValueToRarity(FMath::Max(1, GetIdolStockTierValue(SlotIndex)));
+}
+
 bool UT66RunStateSubsystem::SelectIdolFromStock(int32 SlotIndex)
 {
 	if (SlotIndex < 0 || SlotIndex >= IdolStockSlotCount) return false;
+	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+	}
+	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+	{
+		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+	}
 	if (!IdolStockIDs.IsValidIndex(SlotIndex)) return false;
 	if (IdolStockIDs[SlotIndex].IsNone()) return false;
+	if (!IdolStockTierValues.IsValidIndex(SlotIndex) || IdolStockTierValues[SlotIndex] <= 0) return false;
 	if (IdolStockSelected.IsValidIndex(SlotIndex) && IdolStockSelected[SlotIndex]) return false;
 
-	const bool bApplied = SelectIdolFromAltar(IdolStockIDs[SlotIndex]);
+	const FName OfferedIdolID = IdolStockIDs[SlotIndex];
+	const int32 OfferedTierValue = FMath::Clamp(static_cast<int32>(IdolStockTierValues[SlotIndex]), 1, MaxIdolLevel);
+
+	bool bApplied = false;
+	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
+	{
+		if (EquippedIdolIDs[i] != OfferedIdolID)
+		{
+			continue;
+		}
+
+		const int32 CurTierValue = (EquippedIdolLevels.IsValidIndex(i))
+			? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[i]), 1, MaxIdolLevel)
+			: 1;
+		if (OfferedTierValue != CurTierValue + 1)
+		{
+			return false;
+		}
+
+		EquippedIdolLevels[i] = static_cast<uint8>(OfferedTierValue);
+		bApplied = true;
+		break;
+	}
+
+	if (!bApplied)
+	{
+		if (OfferedTierValue != 1)
+		{
+			return false;
+		}
+
+		for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
+		{
+			if (!EquippedIdolIDs[i].IsNone())
+			{
+				continue;
+			}
+
+			EquippedIdolIDs[i] = OfferedIdolID;
+			EquippedIdolLevels[i] = 1;
+			bApplied = true;
+			break;
+		}
+	}
+
 	if (bApplied && IdolStockSelected.IsValidIndex(SlotIndex))
 	{
 		IdolStockSelected[SlotIndex] = true;
+		IdolsChanged.Broadcast();
 	}
 	return bApplied;
 }
@@ -828,6 +955,7 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	case ET66SecondaryStatType::Cheating:         return FMath::Clamp(HeroBaseCheatChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::Stealing:         return FMath::Clamp(HeroBaseStealChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::MovementSpeed:    return 1.f * M;
+	case ET66SecondaryStatType::LootCrate:        return 1.f * M;
 	default: return 1.f;
 	}
 }
@@ -845,6 +973,11 @@ float UT66RunStateSubsystem::GetHpRegenPerSecond() const
 float UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier() const
 {
 	return GetSecondaryStatValue(ET66SecondaryStatType::MovementSpeed);
+}
+
+float UT66RunStateSubsystem::GetLootCrateRewardMultiplier() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::LootCrate);
 }
 
 float UT66RunStateSubsystem::GetCritChance01() const
@@ -1120,10 +1253,10 @@ void UT66RunStateSubsystem::ResetVendorAnger()
 	VendorChanged.Broadcast();
 }
 
-void UT66RunStateSubsystem::SetInStageBoost(bool bInBoost)
+void UT66RunStateSubsystem::SetInStageCatchUp(bool bInCatchUp)
 {
-	if (bInStageBoost == bInBoost) return;
-	bInStageBoost = bInBoost;
+	if (bInStageCatchUp == bInCatchUp) return;
+	bInStageCatchUp = bInCatchUp;
 	StageChanged.Broadcast();
 }
 
@@ -1809,6 +1942,11 @@ TArray<FName> UT66RunStateSubsystem::GetInventory() const
 
 void UT66RunStateSubsystem::AddItem(FName ItemID)
 {
+	AddItemWithRarity(ItemID, ET66ItemRarity::Black);
+}
+
+void UT66RunStateSubsystem::AddItemWithRarity(FName ItemID, ET66ItemRarity Rarity)
+{
 	if (ItemID.IsNone()) return;
 	if (InventorySlots.Num() >= MaxInventorySlots)
 	{
@@ -1817,8 +1955,7 @@ void UT66RunStateSubsystem::AddItem(FName ItemID)
 		return;
 	}
 
-	// Auto-generate rarity and rolled value (default: Black rarity for legacy compat).
-	ET66ItemRarity Rarity = ET66ItemRarity::Black;
+	// Auto-generate the Line 1 roll for the provided rarity.
 	int32 RolledMin = 1, RolledMax = 3;
 	FItemData::GetLine1RollRange(Rarity, RolledMin, RolledMax);
 	FRandomStream Local(FPlatformTime::Cycles());
@@ -2094,6 +2231,10 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	RecomputeItemDerivedStats();
 	EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
 	EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+	IdolStockIDs.Empty();
+	IdolStockTierValues.Empty();
+	IdolStockSelected.Empty();
+	IdolStockStage = INDEX_NONE;
 	ActiveDOTs.Empty();
 	RallyStacks = 0;
 	RallyTimerEndWorldTime = 0.0;
@@ -2150,7 +2291,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 		const int32 DiffIndex = static_cast<int32>(T66GI->SelectedDifficulty);
 		const int32 Steps = FMath::Clamp(DiffIndex, 0, 999);
 		HeroLevel = FMath::Clamp(DefaultHeroLevel + (Steps * 10), 1, 9999);
-		bInStageBoost = T66GI->bStageBoostPending;
+		bInStageCatchUp = T66GI->bStageCatchUpPending;
 	}
 	InitializeHeroStatsForNewRun();
 
@@ -2238,6 +2379,10 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 	// Bible: gambler anger resets at end of every stage.
 	ResetGamblerAnger();
 	ResetVendorForStage();
+	IdolStockIDs.Empty();
+	IdolStockTierValues.Empty();
+	IdolStockSelected.Empty();
+	IdolStockStage = INDEX_NONE;
 	StageChanged.Broadcast();
 }
 

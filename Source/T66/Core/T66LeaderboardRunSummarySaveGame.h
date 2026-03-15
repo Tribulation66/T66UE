@@ -123,6 +123,9 @@ public:
 	TArray<FName> EquippedIdols;
 
 	UPROPERTY(SaveGame)
+	TArray<uint8> EquippedIdolTiers;
+
+	UPROPERTY(SaveGame)
 	TArray<FName> Inventory;
 
 	UPROPERTY(SaveGame)
