@@ -101,15 +101,23 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 		}
 
 		TSharedPtr<FSlateBrush> PortraitBrush;
-		if (!CompanionID.IsNone() && GI && GI->GetCompanionData(CompanionID, Data) && !Data.Portrait.IsNull())
+		if (!CompanionID.IsNone() && GI && GI->GetCompanionData(CompanionID, Data))
 		{
-			PortraitBrush = MakeShared<FSlateBrush>();
-			PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
-			PortraitBrush->ImageSize = FVector2D(256.f, 256.f);
-			CompanionPortraitBrushes.Add(PortraitBrush);
-			if (TexPool)
+			TSoftObjectPtr<UTexture2D> PortraitSoft = !Data.SelectionPortrait.IsNull() ? Data.SelectionPortrait : Data.Portrait;
+			if (PortraitSoft.IsNull())
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, Data.Portrait, this, PortraitBrush, CompanionID, /*bClearWhileLoading*/ true);
+				CompanionPortraitBrushes.Add(nullptr);
+			}
+			else
+			{
+				PortraitBrush = MakeShared<FSlateBrush>();
+				PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
+				PortraitBrush->ImageSize = FVector2D(256.f, 256.f);
+				CompanionPortraitBrushes.Add(PortraitBrush);
+				if (TexPool)
+				{
+					T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, PortraitBrush, CompanionID, /*bClearWhileLoading*/ true);
+				}
 			}
 		}
 		else

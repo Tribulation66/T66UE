@@ -28,6 +28,7 @@ public:
 	/** Canonical source IDs for damage (use these when recording). */
 	static const FName SourceID_AutoAttack;
 	static const FName SourceID_Ultimate;
+	static constexpr double RollingDPSWindowSeconds = 5.0;
 
 	/** Record damage dealt from a given source this run. */
 	UFUNCTION(BlueprintCallable, Category = "DamageLog")
@@ -37,10 +38,26 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "DamageLog")
 	TArray<FDamageLogEntry> GetDamageBySourceSorted() const;
 
+	/** Rolling DPS over the last few seconds (used by the gameplay HUD meter). */
+	UFUNCTION(BlueprintCallable, Category = "DamageLog")
+	float GetRollingDPS();
+
 	/** Clear log for a new run. Call wherever RunState->ResetForNewRun() is called. */
 	UFUNCTION(BlueprintCallable, Category = "DamageLog")
 	void ResetForNewRun();
 
 private:
+	struct FRecentDamageSample
+	{
+		double TimeSeconds = 0.0;
+		int32 Amount = 0;
+	};
+
+	double GetCurrentWorldTimeSeconds() const;
+	void TrimRecentDamageSamples(double NowSeconds);
+
 	TMap<FName, int32> DamageBySource;
+	TArray<FRecentDamageSample> RecentDamageSamples;
+	int32 RecentDamageSampleHeadIndex = 0;
+	int32 RecentDamageInWindow = 0;
 };

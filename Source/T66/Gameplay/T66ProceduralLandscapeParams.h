@@ -34,7 +34,7 @@ struct FT66MapPreset
 	float ElevationBias = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "2", ClampMax = "128"))
-	int32 GridSize = 10;
+	int32 GridSize = 20;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float BaselineZ = 0.f;
@@ -93,7 +93,7 @@ struct FT66MapPreset
 			P.ElevationMin        = -1400.f;
 			P.ElevationMax        = 1400.f;
 			P.ElevationBias       = 0.f;
-			P.GridSize            = 10;
+			P.GridSize            = 20;
 			P.BaselineZ           = 0.f;
 			P.SurfaceThickness    = 120.f;
 			P.WallBottomPadding   = 80.f;
@@ -112,7 +112,7 @@ struct FT66MapPreset
 			P.ElevationMin        = -1400.f;
 			P.ElevationMax        = 1400.f;
 			P.ElevationBias       = -0.3f;
-			P.GridSize            = 10;
+			P.GridSize            = 20;
 			P.BaselineZ           = 0.f;
 			P.SurfaceThickness    = 140.f;
 			P.WallBottomPadding   = 120.f;
@@ -131,7 +131,7 @@ struct FT66MapPreset
 			P.ElevationMin        = -1400.f;
 			P.ElevationMax        = 1400.f;
 			P.ElevationBias       = 0.2f;
-			P.GridSize            = 10;
+			P.GridSize            = 20;
 			P.BaselineZ           = 0.f;
 			P.SurfaceThickness    = 140.f;
 			P.WallBottomPadding   = 120.f;

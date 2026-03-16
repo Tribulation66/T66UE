@@ -100,13 +100,29 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TSoftClassPtr<APawn> HeroClass;
 
-	/** Hero portrait texture for UI (Type A; used in carousel and grid) */
+	/** Hero half portrait texture for UI (Type A; used in selection/default hero UI) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Portrait;
 
-	/** Hero portrait texture for Type B (used in HUD when Type B body is selected) */
+	/** Hero half portrait texture for Type B (used in selection/default hero UI) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> PortraitTypeB;
+
+	/** Hero low-health portrait texture for Type A (used at 1 or fewer hearts). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> PortraitLow;
+
+	/** Hero full-health portrait texture for Type A (used at 5 or more hearts). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> PortraitFull;
+
+	/** Hero low-health portrait texture for Type B (used at 1 or fewer hearts). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> PortraitTypeBLow;
+
+	/** Hero full-health portrait texture for Type B (used at 5 or more hearts). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> PortraitTypeBFull;
 
 	/** Map theme associated with this hero (for Solo runs) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
@@ -506,6 +522,10 @@ struct T66_API FCompanionData : public FTableRowBase
 	/** Companion portrait texture for UI (optional) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Portrait;
+
+	/** Companion portrait texture used by companion-selection UI (optional; falls back to Portrait). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> SelectionPortrait;
 
 	/** Whether this companion is unlocked by default */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Unlock")

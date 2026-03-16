@@ -20,8 +20,8 @@
 
 namespace
 {
-	/** Gameplay ground material (same as T66GameMode floor) for preview platform. */
-	const TCHAR* HeroPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0");
+	/** Gameplay ground material for preview platform. */
+	const TCHAR* HeroPreviewGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
 }
 
 AT66HeroPreviewStage::AT66HeroPreviewStage()

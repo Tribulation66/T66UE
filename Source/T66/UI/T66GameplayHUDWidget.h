@@ -9,6 +9,7 @@
 #include "T66GameplayHUDWidget.generated.h"
 
 class UT66RunStateSubsystem;
+class UT66DamageLogSubsystem;
 class UT66PlayerSettingsSubsystem;
 class UT66MediaViewerSubsystem;
 class STextBlock;
@@ -104,7 +105,9 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI();
 
 	UT66RunStateSubsystem* GetRunState() const;
+	UT66DamageLogSubsystem* GetDamageLog() const;
 	void RefreshCooldownBar();
+	void RefreshDPS();
 	void RefreshHeroStats();
 
 	void RefreshMapData();
@@ -131,6 +134,7 @@ protected:
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> ScoreText;
 	TSharedPtr<STextBlock> ScoreMultiplierText;
+	TSharedPtr<STextBlock> DPSText;
 	TSharedPtr<STextBlock> StageText;
 	TSharedPtr<STextBlock> SpeedRunText;
 	TSharedPtr<STextBlock> SpeedRunTargetText;

@@ -10,7 +10,15 @@
 #include "T66GameInstance.generated.h"
 
 class UDataTable;
+class UTexture2D;
 struct FStreamableHandle;
+
+enum class ET66HeroPortraitVariant : uint8
+{
+	Low,
+	Half,
+	Full
+};
 
 /**
  * Game Instance for Tribulation 66
@@ -259,6 +267,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	bool GetSelectedCompanionData(FCompanionData& OutCompanionData);
 
+	/** Resolve a hero portrait for a body type + portrait state (low / half / full). */
+	TSoftObjectPtr<UTexture2D> ResolveHeroPortrait(FName HeroID, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) const;
+
+	/** Resolve a hero portrait from already-loaded hero data for a body type + portrait state. */
+	TSoftObjectPtr<UTexture2D> ResolveHeroPortrait(const FHeroData& HeroData, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) const;
+
 	// ============================================
 	// Hero Stats (Foundational + Level-up gains)
 	// ============================================
@@ -301,6 +315,9 @@ public:
 	 */
 	void TransitionToGameplayLevel();
 
+	/** Warm hero-selection portraits + visuals asynchronously so first open does not hitch. */
+	void PrimeHeroSelectionAssetsAsync();
+
 	/** When true, Enter the Tribulation opens the demo map instead of GameplayLevel. Flip in T66GameInstance.cpp. */
 	static bool UseDemoMapForTribulation();
 	/** Level name when UseDemoMapForTribulation() is true (e.g. Map_Summer). Used by TransitionToGameplayLevel and IsGameplayLevel. */
@@ -309,10 +326,15 @@ public:
 private:
 	void PrimeCoreDataTablesAsync();
 	void HandleCoreDataTablesLoaded();
+	void HandleHeroSelectionAssetsLoaded();
 
 	bool bCoreDataTablesLoadRequested = false;
 	bool bCoreDataTablesLoaded = false;
 	TSharedPtr<FStreamableHandle> CoreDataTablesLoadHandle;
+
+	bool bHeroSelectionAssetsLoadRequested = false;
+	bool bHeroSelectionAssetsLoaded = false;
+	TSharedPtr<FStreamableHandle> HeroSelectionAssetsLoadHandle;
 
 	void EnsureCachedItemIDs();
 	void EnsureCachedItemIDsByRarity();

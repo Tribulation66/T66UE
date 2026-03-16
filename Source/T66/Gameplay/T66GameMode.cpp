@@ -116,8 +116,9 @@ namespace
 
 	static bool T66_IsCompanionUnlockStage(int32 StageNum)
 	{
-		// Per design: companions unlock only for stages 1..60 excluding checkpoint stages (ending in 0/5).
-		return StageNum >= 1 && StageNum <= 60 && (StageNum % 5) != 0;
+		// Per design: 24 total companions unlock on every non-boss stage in 1..30.
+		// Stages 31..33 never unlock companions.
+		return StageNum >= 1 && StageNum <= 30 && (StageNum % 5) != 0;
 	}
 
 	static int32 T66_CompanionIndexForStage(int32 StageNum)
@@ -135,7 +136,7 @@ namespace
 				++Count;
 			}
 		}
-		return Count; // 1..48
+		return Count; // 1..24
 	}
 
 	static FName T66_CompanionIDForStage(int32 StageNum)
@@ -177,6 +178,11 @@ namespace
 		}
 	};
 
+	static int32 T66PickQuarterTurns(uint32 Hash)
+	{
+		return static_cast<int32>(Hash & 3u);
+	}
+
 	static int32 T66PickCellVariant(int32 Seed, int32 Row, int32 Col, int32 VariantCount)
 	{
 		if (VariantCount <= 1)
@@ -187,6 +193,13 @@ namespace
 		uint32 Hash = GetTypeHash(FIntPoint(Row, Col));
 		Hash = HashCombineFast(Hash, GetTypeHash(Seed));
 		return static_cast<int32>(Hash % static_cast<uint32>(VariantCount));
+	}
+
+	static int32 T66PickCellQuarterTurns(int32 Seed, int32 Row, int32 Col)
+	{
+		uint32 Hash = GetTypeHash(FIntPoint(Row, Col));
+		Hash = HashCombineFast(Hash, GetTypeHash(Seed));
+		return T66PickQuarterTurns(Hash);
 	}
 
 	static int32 T66PickBoundaryVariant(int32 Seed, int32 AIndex, int32 BIndex, int32 VariantCount)
@@ -200,6 +213,36 @@ namespace
 		Hash = HashCombineFast(Hash, GetTypeHash(Seed));
 		return static_cast<int32>(Hash % static_cast<uint32>(VariantCount));
 	}
+
+	static int32 T66PickBoundaryQuarterTurns(int32 Seed, int32 AIndex, int32 BIndex)
+	{
+		uint32 Hash = GetTypeHash(FIntPoint(FMath::Min(AIndex, BIndex), FMath::Max(AIndex, BIndex)));
+		Hash = HashCombineFast(Hash, GetTypeHash(Seed));
+		return T66PickQuarterTurns(Hash);
+	}
+
+	static FVector2D T66RotateUnitUV(const FVector2D& UV, int32 QuarterTurns)
+	{
+		switch (QuarterTurns & 3)
+		{
+		case 1:
+			return FVector2D(1.f - UV.Y, UV.X);
+		case 2:
+			return FVector2D(1.f - UV.X, 1.f - UV.Y);
+		case 3:
+			return FVector2D(UV.Y, 1.f - UV.X);
+		default:
+			return UV;
+		}
+	}
+
+	static void T66AppendRotatedQuadUVs(TArray<FVector2D>& UVs, int32 QuarterTurns)
+	{
+		UVs.Add(T66RotateUnitUV(FVector2D(0.f, 0.f), QuarterTurns));
+		UVs.Add(T66RotateUnitUV(FVector2D(1.f, 0.f), QuarterTurns));
+		UVs.Add(T66RotateUnitUV(FVector2D(1.f, 1.f), QuarterTurns));
+		UVs.Add(T66RotateUnitUV(FVector2D(0.f, 1.f), QuarterTurns));
+	}
 }
 
 AT66GameMode::AT66GameMode()
@@ -212,16 +255,19 @@ AT66GameMode::AT66GameMode()
 	// Coliseum arena lives inside GameplayLevel, off to the side (walled off). Scaled for 100k map.
 	ColiseumCenter = FVector(-45455.f, -23636.f, 200.f);
 
-	// Default ground materials (4 rotation variants); used as a fallback for non-procedural floors.
+	// Default terrain materials; used as a fallback for runtime floors and terrain when source files are absent.
 	GroundFloorMaterials.Empty();
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0"))));
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90"))));
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180"))));
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile2.MI_GroundTile2"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile3.MI_GroundTile3"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile4.MI_GroundTile4"))));
+	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile5.MI_GroundTile5"))));
 
 	CliffSideMaterials.Empty();
-	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_Cliff2.MI_Cliff2"))));
-	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_Cliff3.MI_Cliff3"))));
+	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1"))));
+	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile2.MI_HillTile2"))));
+	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile3.MI_HillTile3"))));
+	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile4.MI_HillTile4"))));
 }
 
 UStaticMesh* AT66GameMode::GetCubeMesh()
@@ -2260,14 +2306,15 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	if (GroundFloorMaterials.Num() < 4)
+	const int32 GroundVariantCount = GroundFloorMaterials.Num();
+	if (GroundVariantCount == 0)
 	{
 		return;
 	}
 
-	// Check if all 4 materials are loaded
+	// Check if all configured materials are loaded
 	bool bAllLoaded = true;
-	for (int32 i = 0; i < 4; ++i)
+	for (int32 i = 0; i < GroundVariantCount; ++i)
 	{
 		if (!GroundFloorMaterials[i].Get())
 		{
@@ -2282,7 +2329,7 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 		{
 			bGroundFloorMaterialLoadRequested = true;
 			TArray<FSoftObjectPath> Paths;
-			for (int32 i = 0; i < 4 && i < GroundFloorMaterials.Num(); ++i)
+			for (int32 i = 0; i < GroundVariantCount; ++i)
 			{
 				if (!GroundFloorMaterials[i].IsNull())
 				{
@@ -2315,7 +2362,10 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 			UMaterialInterface* Mat = GroundFloorMaterials[0].Get();  // fallback
 			const FVector Loc = A->GetActorLocation();
 			const float Seed = Loc.X * 0.000123f + Loc.Y * 0.000456f;
-			const int32 Idx = FMath::Clamp(FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * 4.f), 0, 3);
+			const int32 Idx = FMath::Clamp(
+				FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * static_cast<float>(GroundVariantCount)),
+				0,
+				GroundVariantCount - 1);
 			if (Idx < GroundFloorMaterials.Num())
 			{
 				UMaterialInterface* M = GroundFloorMaterials[Idx].Get();
@@ -2533,7 +2583,7 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 	};
 
 	// Force synchronous load of ground materials so walls get the same Unlit atlas as platform walls.
-	for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
+	for (int32 i = 0; i < GroundFloorMaterials.Num(); ++i)
 	{
 		if (!GroundFloorMaterials[i].IsNull() && !GroundFloorMaterials[i].Get())
 		{
@@ -2666,12 +2716,16 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		Floor->SetActorScale3D(Spec.Scale);
 		T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 
-		// Pick one of 4 ground material variants by floor position (deterministic variety)
+		// Pick one of the available ground material variants by floor position (deterministic variety).
 		UMaterialInterface* GroundMat = nullptr;
-		if (GroundFloorMaterials.Num() >= 4)
+		const int32 GroundVariantCount = GroundFloorMaterials.Num();
+		if (GroundVariantCount > 0)
 		{
 			const float Seed = Spec.Location.X * 0.000123f + Spec.Location.Y * 0.000456f;
-			const int32 Idx = FMath::Clamp(FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * 4.f), 0, 3);
+			const int32 Idx = FMath::Clamp(
+				FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * static_cast<float>(GroundVariantCount)),
+				0,
+				GroundVariantCount - 1);
 			GroundMat = GroundFloorMaterials[Idx].Get();
 		}
 		if (GroundMat)
@@ -2684,7 +2738,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 			if (!bGroundFloorMaterialLoadRequested)
 			{
 				bool bAnyToLoad = false;
-				for (int32 i = 0; i < GroundFloorMaterials.Num() && i < 4; ++i)
+				for (int32 i = 0; i < GroundFloorMaterials.Num(); ++i)
 				{
 					if (!GroundFloorMaterials[i].IsNull()) bAnyToLoad = true;
 				}
@@ -2692,7 +2746,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 				{
 					bGroundFloorMaterialLoadRequested = true;
 					TArray<FSoftObjectPath> Paths;
-					for (int32 i = 0; i < 4 && i < GroundFloorMaterials.Num(); ++i)
+					for (int32 i = 0; i < GroundFloorMaterials.Num(); ++i)
 					{
 						if (!GroundFloorMaterials[i].IsNull())
 						{
@@ -2829,13 +2883,13 @@ static bool T66BuildRampCollisionTransform(
 static void AppendBoxFace(
 	TArray<FVector>& V, TArray<int32>& T, TArray<FVector>& N, TArray<FVector2D>& UV,
 	const FVector& V0, const FVector& V1, const FVector& V2, const FVector& V3,
-	const FVector& Normal)
+	const FVector& Normal,
+	int32 UVQuarterTurns)
 {
 	const int32 Base = V.Num();
 	V.Add(V0); V.Add(V1); V.Add(V2); V.Add(V3);
 	N.Add(Normal); N.Add(Normal); N.Add(Normal); N.Add(Normal);
-	UV.Add(FVector2D(0, 0)); UV.Add(FVector2D(1, 0));
-	UV.Add(FVector2D(1, 1)); UV.Add(FVector2D(0, 1));
+	T66AppendRotatedQuadUVs(UV, UVQuarterTurns);
 	T.Add(Base); T.Add(Base + 1); T.Add(Base + 2);
 	T.Add(Base); T.Add(Base + 2); T.Add(Base + 3);
 }
@@ -2850,7 +2904,8 @@ static void AppendWallBox(
 	float LowTopZ,
 	float WallThickness,
 	float BottomPadding,
-	bool bHighOnPositiveSide)
+	bool bHighOnPositiveSide,
+	int32 UVQuarterTurns)
 {
 	if (LengthAlongBoundary <= 1.f || HighTopZ <= LowTopZ + 1.f) return;
 
@@ -2885,19 +2940,19 @@ static void AppendWallBox(
 	// Side faces ??? brown material
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(hx, -hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, hy, hz), C + FVector(hx, -hy, hz),
-		FVector(1, 0, 0));
+		FVector(1, 0, 0), UVQuarterTurns);
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(-hx, hy, -hz), C + FVector(-hx, -hy, -hz), C + FVector(-hx, -hy, hz), C + FVector(-hx, hy, hz),
-		FVector(-1, 0, 0));
+		FVector(-1, 0, 0), UVQuarterTurns);
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(hx, hy, -hz), C + FVector(-hx, hy, -hz), C + FVector(-hx, hy, hz), C + FVector(hx, hy, hz),
-		FVector(0, 1, 0));
+		FVector(0, 1, 0), UVQuarterTurns);
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(-hx, -hy, -hz), C + FVector(hx, -hy, -hz), C + FVector(hx, -hy, hz), C + FVector(-hx, -hy, hz),
-		FVector(0, -1, 0));
+		FVector(0, -1, 0), UVQuarterTurns);
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(-hx, hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, -hy, -hz), C + FVector(-hx, -hy, -hz),
-		FVector(0, 0, -1));
+		FVector(0, 0, -1), UVQuarterTurns);
 }
 
 // ---- Unit wedge geometry (100x100x100, slope LOW at -X to HIGH at +X) ----
@@ -2951,7 +3006,9 @@ static constexpr int32 WedgeSlopeTriEnd    = 18;
 static void AppendTransformedWedge(
 	TArray<FVector>& SlopeV, TArray<int32>& SlopeT, TArray<FVector>& SlopeN, TArray<FVector2D>& SlopeUV,
 	TArray<FVector>& SideV, TArray<int32>& SideT, TArray<FVector>& SideN, TArray<FVector2D>& SideUV,
-	const FVector& Pos, const FQuat& Rot, const FVector& Scale)
+	const FVector& Pos, const FQuat& Rot, const FVector& Scale,
+	int32 SlopeUVQuarterTurns,
+	int32 SideUVQuarterTurns)
 {
 	auto AppendSide = [&](bool bReverse)
 	{
@@ -2991,7 +3048,7 @@ static void AppendTransformedWedge(
 						Remap.Add(Idx[J], Mapped[J]);
 						SlopeV.Add(TransV[Idx[J]]);
 						SlopeN.Add(TransN[Idx[J]]);
-						SlopeUV.Add(UnitWedgeUVs[Idx[J]]);
+						SlopeUV.Add(T66RotateUnitUV(UnitWedgeUVs[Idx[J]], SlopeUVQuarterTurns));
 					}
 				}
 				if (bReverse) { SlopeT.Add(Mapped[0]); SlopeT.Add(Mapped[2]); SlopeT.Add(Mapped[1]); }
@@ -3020,7 +3077,7 @@ static void AppendTransformedWedge(
 						Remap.Add(Idx[J], Mapped[J]);
 						SideV.Add(TransV[Idx[J]]);
 						SideN.Add(TransN[Idx[J]]);
-						SideUV.Add(UnitWedgeUVs[Idx[J]]);
+						SideUV.Add(T66RotateUnitUV(UnitWedgeUVs[Idx[J]], SideUVQuarterTurns));
 					}
 				}
 				if (bReverse) { SideT.Add(Mapped[0]); SideT.Add(Mapped[2]); SideT.Add(Mapped[1]); }
@@ -3041,7 +3098,8 @@ static void AppendPlatformTopQuad(
 	const FVector& Center,
 	float SizeX,
 	float SizeY,
-	float Z)
+	float Z,
+	int32 UVQuarterTurns)
 {
 	const int32 Base = OutVerts.Num();
 	const float HX = SizeX * 0.5f;
@@ -3057,10 +3115,7 @@ static void AppendPlatformTopQuad(
 	OutNormals.Add(FVector::UpVector);
 	OutNormals.Add(FVector::UpVector);
 
-	OutUVs.Add(FVector2D(0.f, 0.f));
-	OutUVs.Add(FVector2D(1.f, 0.f));
-	OutUVs.Add(FVector2D(1.f, 1.f));
-	OutUVs.Add(FVector2D(0.f, 1.f));
+	T66AppendRotatedQuadUVs(OutUVs, UVQuarterTurns);
 
 	OutTris.Add(Base + 0);
 	OutTris.Add(Base + 2);
@@ -3179,7 +3234,15 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	};
 
 	TArray<UMaterialInterface*> TerrainGroundMaterials;
-	LoadTerrainMaterialsFromSource(TEXT("Grass"), { 1, 2, 3, 4 }, TerrainGroundMaterials);
+	LoadTerrainMaterialsFromSource(TEXT("GroundTile"), { 1, 2, 3, 4, 5 }, TerrainGroundMaterials);
+	if (TerrainGroundMaterials.Num() == 0)
+	{
+		LoadTerrainMaterialAssets(TEXT("/Game/World/Ground"), TEXT("MI_GroundTile"), { 1, 2, 3, 4, 5 }, TerrainGroundMaterials);
+	}
+	if (TerrainGroundMaterials.Num() == 0)
+	{
+		LoadTerrainMaterialsFromSource(TEXT("Grass"), { 1, 2, 3, 4 }, TerrainGroundMaterials);
+	}
 	if (TerrainGroundMaterials.Num() == 0)
 	{
 		LoadTerrainMaterialAssets(TEXT("/Game/World/Ground"), TEXT("MI_Grass"), { 1, 2, 3, 4 }, TerrainGroundMaterials);
@@ -3190,7 +3253,15 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	}
 
 	TArray<UMaterialInterface*> TerrainCliffMaterials;
-	LoadTerrainMaterialsFromSource(TEXT("Cliff"), { 2, 3 }, TerrainCliffMaterials);
+	LoadTerrainMaterialsFromSource(TEXT("HillTile"), { 1, 2, 3, 4 }, TerrainCliffMaterials);
+	if (TerrainCliffMaterials.Num() == 0)
+	{
+		LoadTerrainMaterialAssets(TEXT("/Game/World/Cliffs"), TEXT("MI_HillTile"), { 1, 2, 3, 4 }, TerrainCliffMaterials);
+	}
+	if (TerrainCliffMaterials.Num() == 0)
+	{
+		LoadTerrainMaterialsFromSource(TEXT("Cliff"), { 2, 3 }, TerrainCliffMaterials);
+	}
 	if (TerrainCliffMaterials.Num() == 0)
 	{
 		LoadTerrainMaterialAssets(TEXT("/Game/World/Cliffs"), TEXT("MI_Cliff"), { 2, 3 }, TerrainCliffMaterials);
@@ -3229,8 +3300,9 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	for (const FT66PlatformNode& P : MapData.Platforms)
 	{
 		const int32 Bucket = T66PickCellVariant(Preset.Seed, P.GridRow, P.GridCol, GroundVariantCount);
+		const int32 QuarterTurns = T66PickCellQuarterTurns(Preset.Seed ^ 0x47524E44, P.GridRow, P.GridCol);
 		FT66MeshSectionBuffers& Section = TopSections[Bucket];
-		AppendPlatformTopQuad(Section.Verts, Section.Tris, Section.Normals, Section.UVs, FVector(P.Position, 0.f), P.SizeX, P.SizeY, P.TopZ);
+		AppendPlatformTopQuad(Section.Verts, Section.Tris, Section.Normals, Section.UVs, FVector(P.Position, 0.f), P.SizeX, P.SizeY, P.TopZ, QuarterTurns);
 	}
 
 	TArray<FLinearColor> EmptyColors;
@@ -3318,6 +3390,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 					? 0.5f * (A.Position.Y + B.Position.Y)
 					: 0.5f * (A.Position.X + B.Position.X);
 				const int32 CliffBucket = T66PickBoundaryVariant(Preset.Seed, Idx, OtherIdx, CliffVariantCount);
+				const int32 CliffQuarterTurns = T66PickBoundaryQuarterTurns(Preset.Seed ^ 0x48494C4C, Idx, OtherIdx);
 				FT66MeshSectionBuffers& WallSideSection = WallSideSections[CliffBucket];
 
 				const FT66RampEdge* Ramp = RampLookup.FindRef(T66MakeBoundaryKey(Idx, OtherIdx));
@@ -3333,7 +3406,8 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 						B.TopZ,
 						WallThickness,
 						Preset.WallBottomPadding,
-						bHighOnPositiveSide);
+						bHighOnPositiveSide,
+						CliffQuarterTurns);
 					return;
 				}
 
@@ -3354,7 +3428,8 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 						B.TopZ,
 						WallThickness,
 						Preset.WallBottomPadding,
-						bHighOnPositiveSide);
+						bHighOnPositiveSide,
+						CliffQuarterTurns);
 				}
 
 				const float RightLen = HalfCell - OpenEnd;
@@ -3370,7 +3445,8 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 						B.TopZ,
 						WallThickness,
 						Preset.WallBottomPadding,
-						bHighOnPositiveSide);
+						bHighOnPositiveSide,
+						CliffQuarterTurns);
 				}
 			};
 
@@ -3456,10 +3532,12 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		const FVector RampScale(Edge.Depth / 100.f, Edge.Width / 100.f, HeightDiff / 100.f);
 		const int32 GroundBucket = T66PickBoundaryVariant(Preset.Seed, Edge.LowerIndex, Edge.HigherIndex, GroundVariantCount);
 		const int32 CliffBucket = T66PickBoundaryVariant(Preset.Seed ^ 0x4C494646, Edge.LowerIndex, Edge.HigherIndex, CliffVariantCount);
+		const int32 GroundQuarterTurns = T66PickBoundaryQuarterTurns(Preset.Seed ^ 0x534C4F50, Edge.LowerIndex, Edge.HigherIndex);
+		const int32 CliffQuarterTurns = T66PickBoundaryQuarterTurns(Preset.Seed ^ 0x53494445, Edge.LowerIndex, Edge.HigherIndex);
 		AppendTransformedWedge(
 			RampSlopeSections[GroundBucket].Verts, RampSlopeSections[GroundBucket].Tris, RampSlopeSections[GroundBucket].Normals, RampSlopeSections[GroundBucket].UVs,
 			RampSideSections[CliffBucket].Verts, RampSideSections[CliffBucket].Tris, RampSideSections[CliffBucket].Normals, RampSideSections[CliffBucket].UVs,
-			RampPos, RampRot, RampScale);
+			RampPos, RampRot, RampScale, GroundQuarterTurns, CliffQuarterTurns);
 		++RampCount;
 	}
 

@@ -57,14 +57,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	bool bAutoSetupLevel = true;
 
-	/**
-	 * Four ground material variants (0°, 90°, 180°, 270° rotation). One is picked per floor
-	 * based on floor position for deterministic variety. All must be loaded for grass texture.
-	 */
+	/** Ground material variants used by runtime floors and as a fallback for terrain tops. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	TArray<TSoftObjectPtr<UMaterialInterface>> GroundFloorMaterials;
 
-	/** Cliff material variants used for terrain walls and ramp side faces. */
+	/** Hill-side material variants used for terrain walls and ramp side faces. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	TArray<TSoftObjectPtr<UMaterialInterface>> CliffSideMaterials;
 

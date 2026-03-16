@@ -5,6 +5,7 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -57,6 +58,25 @@ namespace
 
 	// Distance from viewport bottom to top of hearts row (matches bottom-left HUD: slot padding 24 + portrait 250 + padding 6 + hearts 48).
 	static constexpr float GT66HeartsTopOffsetFromBottom = 24.f + 250.f + 6.f + 48.f;
+
+	// DPS meter reuses the same tier ladder as hearts/skulls, with broad thresholds so the color
+	// changes are meaningful across early and late runs.
+	static int32 GetDPSTierIndex(int32 DPS)
+	{
+		if (DPS <= 0) return -1;
+		if (DPS >= 2000) return 5;
+		if (DPS >= 1000) return 4;
+		if (DPS >= 500) return 3;
+		if (DPS >= 250) return 2;
+		if (DPS >= 100) return 1;
+		return 0;
+	}
+
+	static FLinearColor GetDPSColor(int32 DPS)
+	{
+		const int32 Tier = GetDPSTierIndex(DPS);
+		return Tier >= 0 ? FT66RarityUtil::GetTierColor(Tier) : FT66Style::Tokens::TextMuted;
+	}
 
 	/** Creates a custom tooltip widget (background + text) for HUD item/idol hover. Returns null if InText is empty. */
 	static TSharedPtr<IToolTip> CreateCustomTooltip(const FText& InText)
@@ -643,10 +663,17 @@ UT66RunStateSubsystem* UT66GameplayHUDWidget::GetRunState() const
 	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 }
 
+UT66DamageLogSubsystem* UT66GameplayHUDWidget::GetDamageLog() const
+{
+	UGameInstance* GI = GetGameInstance();
+	return GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr;
+}
+
 void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 	RefreshCooldownBar();
+	RefreshDPS();
 	RefreshSpeedRunTimers();
 }
 
@@ -709,6 +736,19 @@ void UT66GameplayHUDWidget::RefreshHeroStats()
 		StatLuckText->SetText(FText::Format(NSLOCTEXT("T66.GameplayHUD", "StatLuck", "Luck: {0}"), FText::AsNumber(RunState->GetLuckStat())));
 	if (StatSpeedText.IsValid())
 		StatSpeedText->SetText(FText::FromString(FString::Printf(TEXT("Speed: %.1f"), RunState->GetHeroMoveSpeedMultiplier())));
+}
+
+void UT66GameplayHUDWidget::RefreshDPS()
+{
+	if (!DPSText.IsValid()) return;
+
+	UT66DamageLogSubsystem* DamageLog = GetDamageLog();
+	const int32 DisplayDPS = DamageLog ? FMath::RoundToInt(FMath::Max(0.f, DamageLog->GetRollingDPS())) : 0;
+
+	DPSText->SetText(FText::Format(
+		NSLOCTEXT("T66.GameplayHUD", "DPSFormat", "DPS {0}"),
+		FText::AsNumber(DisplayDPS)));
+	DPSText->SetColorAndOpacity(FSlateColor(GetDPSColor(DisplayDPS)));
 }
 
 void UT66GameplayHUDWidget::NativeConstruct()
@@ -1742,6 +1782,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	RefreshSpeedRunTimers();
 	RefreshBossBar();
 	RefreshLootPrompt();
+	RefreshDPS();
 
 	RefreshHearts();
 	RefreshStatusEffects();
@@ -1759,15 +1800,20 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		FHeroData HeroData;
 		if (GIAsT66->GetHeroData(GIAsT66->SelectedHeroID, HeroData))
 		{
-			const bool bUseTypeB = (GIAsT66->SelectedHeroBodyType == ET66BodyType::TypeB);
-			if (bUseTypeB && !HeroData.PortraitTypeB.IsNull())
+			ET66HeroPortraitVariant PortraitVariant = ET66HeroPortraitVariant::Half;
+			if (RunState)
 			{
-				PortraitSoft = HeroData.PortraitTypeB;
+				const int32 HeartsRemaining = RunState->GetCurrentHearts();
+				if (HeartsRemaining <= 1)
+				{
+					PortraitVariant = ET66HeroPortraitVariant::Low;
+				}
+				else if (HeartsRemaining >= 5)
+				{
+					PortraitVariant = ET66HeroPortraitVariant::Full;
+				}
 			}
-			else if (!HeroData.Portrait.IsNull())
-			{
-				PortraitSoft = HeroData.Portrait;
-			}
+			PortraitSoft = GIAsT66->ResolveHeroPortrait(HeroData, GIAsT66->SelectedHeroBodyType, PortraitVariant);
 		}
 	}
 	const bool bHasPortraitRef = !PortraitSoft.IsNull();
@@ -2764,6 +2810,13 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.Font(FT66Style::Tokens::FontBold(18))
 						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
 					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+				[
+					SAssignNew(DPSText, STextBlock)
+					.Text(NSLOCTEXT("T66.GameplayHUD", "DPSDefault", "DPS 0"))
+					.Font(FT66Style::Tokens::FontBold(18))
+					.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 				[

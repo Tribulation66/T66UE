@@ -171,6 +171,99 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedCharacterVisualsDataTable) CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
 
 	bCoreDataTablesLoaded = true;
+	PrimeHeroSelectionAssetsAsync();
+}
+
+void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
+{
+	if (bHeroSelectionAssetsLoadRequested)
+	{
+		return;
+	}
+
+	if (!CachedHeroDataTable && !HeroDataTable.IsNull())
+	{
+		CachedHeroDataTable = HeroDataTable.Get();
+	}
+	if (!CachedCharacterVisualsDataTable && !CharacterVisualsDataTable.IsNull())
+	{
+		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
+	}
+
+	if (!CachedHeroDataTable || !CachedCharacterVisualsDataTable)
+	{
+		PrimeCoreDataTablesAsync();
+		return;
+	}
+
+	TArray<FSoftObjectPath> Paths;
+	Paths.Reserve(256);
+
+	auto AddPath = [&](const FSoftObjectPath& Path)
+	{
+		if (!Path.IsNull())
+		{
+			Paths.AddUnique(Path);
+		}
+	};
+
+	TArray<FHeroData*> HeroRows;
+	CachedHeroDataTable->GetAllRows(TEXT("PrimeHeroSelectionAssetsAsync"), HeroRows);
+	for (const FHeroData* HeroRow : HeroRows)
+	{
+		if (!HeroRow)
+		{
+			continue;
+		}
+
+		AddPath(HeroRow->Portrait.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitTypeB.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitLow.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitFull.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitTypeBLow.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitTypeBFull.ToSoftObjectPath());
+	}
+
+	for (const FName& RowName : CachedCharacterVisualsDataTable->GetRowNames())
+	{
+		if (!RowName.ToString().StartsWith(TEXT("Hero_")))
+		{
+			continue;
+		}
+
+		const FT66CharacterVisualRow* VisualRow = CachedCharacterVisualsDataTable->FindRow<FT66CharacterVisualRow>(RowName, TEXT("PrimeHeroSelectionAssetsAsync"));
+		if (!VisualRow)
+		{
+			continue;
+		}
+
+		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
+		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+	}
+
+	bHeroSelectionAssetsLoadRequested = true;
+	if (Paths.Num() <= 0)
+	{
+		bHeroSelectionAssetsLoaded = true;
+		return;
+	}
+
+	HeroSelectionAssetsLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Paths,
+		FStreamableDelegate::CreateUObject(this, &UT66GameInstance::HandleHeroSelectionAssetsLoaded));
+
+	if (!HeroSelectionAssetsLoadHandle.IsValid())
+	{
+		HandleHeroSelectionAssetsLoaded();
+	}
+}
+
+void UT66GameInstance::HandleHeroSelectionAssetsLoaded()
+{
+	bHeroSelectionAssetsLoaded = true;
+	HeroSelectionAssetsLoadHandle.Reset();
 }
 
 UDataTable* UT66GameInstance::GetHeroDataTable()
@@ -538,6 +631,52 @@ bool UT66GameInstance::GetSelectedCompanionData(FCompanionData& OutCompanionData
 		return false;
 	}
 	return GetCompanionData(SelectedCompanionID, OutCompanionData);
+}
+
+TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(FName HeroID, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) const
+{
+	FHeroData HeroData;
+	if (!const_cast<UT66GameInstance*>(this)->GetHeroData(HeroID, HeroData))
+	{
+		return TSoftObjectPtr<UTexture2D>();
+	}
+	return ResolveHeroPortrait(HeroData, BodyType, Variant);
+}
+
+TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(const FHeroData& HeroData, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) const
+{
+	const bool bUseTypeB = (BodyType == ET66BodyType::TypeB);
+
+	const TSoftObjectPtr<UTexture2D>& Half = bUseTypeB && !HeroData.PortraitTypeB.IsNull()
+		? HeroData.PortraitTypeB
+		: HeroData.Portrait;
+
+	const TSoftObjectPtr<UTexture2D>& Low = bUseTypeB
+		? HeroData.PortraitTypeBLow
+		: HeroData.PortraitLow;
+
+	const TSoftObjectPtr<UTexture2D>& Full = bUseTypeB
+		? HeroData.PortraitTypeBFull
+		: HeroData.PortraitFull;
+
+	switch (Variant)
+	{
+	case ET66HeroPortraitVariant::Low:
+		if (!Low.IsNull()) return Low;
+		if (!Half.IsNull()) return Half;
+		return Full;
+
+	case ET66HeroPortraitVariant::Full:
+		if (!Full.IsNull()) return Full;
+		if (!Half.IsNull()) return Half;
+		return Low;
+
+	case ET66HeroPortraitVariant::Half:
+	default:
+		if (!Half.IsNull()) return Half;
+		if (!Full.IsNull()) return Full;
+		return Low;
+	}
 }
 
 void UT66GameInstance::ClearSelections()

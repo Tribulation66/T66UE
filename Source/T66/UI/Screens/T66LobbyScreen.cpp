@@ -99,9 +99,9 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 	{
 		FHeroData HeroData;
 		TSoftObjectPtr<UTexture2D> HeroPortraitSoft;
-		if (T66GI->GetHeroData(T66GI->SelectedHeroID, HeroData) && !HeroData.Portrait.IsNull())
+		if (T66GI->GetHeroData(T66GI->SelectedHeroID, HeroData))
 		{
-			HeroPortraitSoft = HeroData.Portrait;
+			HeroPortraitSoft = T66GI->ResolveHeroPortrait(HeroData, T66GI->SelectedHeroBodyType, ET66HeroPortraitVariant::Half);
 		}
 		T66SlateTexture::BindSharedBrushAsync(
 			T66GI->GetSubsystem<UT66UITexturePoolSubsystem>(),

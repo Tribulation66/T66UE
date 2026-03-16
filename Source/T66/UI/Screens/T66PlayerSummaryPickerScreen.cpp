@@ -78,8 +78,7 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 			FHeroData HeroData;
 			if (T66GI->GetHeroData(Snap->HeroID, HeroData))
 			{
-				TSoftObjectPtr<UTexture2D> PortraitSoft = (Snap->HeroBodyType == ET66BodyType::TypeB && !HeroData.PortraitTypeB.IsNull())
-					? HeroData.PortraitTypeB : HeroData.Portrait;
+				TSoftObjectPtr<UTexture2D> PortraitSoft = T66GI->ResolveHeroPortrait(HeroData, Snap->HeroBodyType, ET66HeroPortraitVariant::Half);
 				if (!PortraitSoft.IsNull())
 				{
 					T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, Brush,

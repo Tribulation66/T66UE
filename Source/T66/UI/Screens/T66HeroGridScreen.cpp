@@ -89,7 +89,8 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		if (GI && GI->GetHeroData(HeroID, HeroData))
 		{
 			SpriteColor = HeroData.PlaceholderColor;
-			if (!HeroData.Portrait.IsNull())
+			const TSoftObjectPtr<UTexture2D> PortraitSoft = GI->ResolveHeroPortrait(HeroData, GI->SelectedHeroBodyType, ET66HeroPortraitVariant::Half);
+			if (!PortraitSoft.IsNull())
 			{
 				PortraitBrush = MakeShared<FSlateBrush>();
 				PortraitBrush->DrawAs = ESlateBrushDrawType::Image;
@@ -97,7 +98,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 				HeroPortraitBrushes.Add(PortraitBrush);
 				if (TexPool)
 				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, HeroData.Portrait, this, PortraitBrush, HeroID, /*bClearWhileLoading*/ true);
+					T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, PortraitBrush, HeroID, /*bClearWhileLoading*/ true);
 				}
 			}
 		}

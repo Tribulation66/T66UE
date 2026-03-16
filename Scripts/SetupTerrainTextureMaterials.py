@@ -9,47 +9,24 @@ Or headless:
 """
 
 import os
+import re
 import unreal
 
 LOG = "[TerrainSetup]"
 MASTER_PATH = "/Game/Materials/M_Environment_Unlit"
 
-TERRAIN_IMPORTS = [
+TERRAIN_SETS = [
     {
-        "source": "Grass1.png",
+        "source_prefix": "GroundTile",
         "dest_dir": "/Game/World/Ground",
-        "texture_name": "T_Grass1",
-        "material_name": "MI_Grass1",
+        "texture_prefix": "T_GroundTile",
+        "material_prefix": "MI_GroundTile",
     },
     {
-        "source": "Grass2.png",
-        "dest_dir": "/Game/World/Ground",
-        "texture_name": "T_Grass2",
-        "material_name": "MI_Grass2",
-    },
-    {
-        "source": "Grass3.png",
-        "dest_dir": "/Game/World/Ground",
-        "texture_name": "T_Grass3",
-        "material_name": "MI_Grass3",
-    },
-    {
-        "source": "Grass4.png",
-        "dest_dir": "/Game/World/Ground",
-        "texture_name": "T_Grass4",
-        "material_name": "MI_Grass4",
-    },
-    {
-        "source": "Cliff2.png",
+        "source_prefix": "HillTile",
         "dest_dir": "/Game/World/Cliffs",
-        "texture_name": "T_Cliff2",
-        "material_name": "MI_Cliff2",
-    },
-    {
-        "source": "Cliff3.png",
-        "dest_dir": "/Game/World/Cliffs",
-        "texture_name": "T_Cliff3",
-        "material_name": "MI_Cliff3",
+        "texture_prefix": "T_HillTile",
+        "material_prefix": "MI_HillTile",
     },
 ]
 
@@ -73,6 +50,32 @@ def get_project_dir():
 def ensure_directory(path):
     if not unreal.EditorAssetLibrary.does_directory_exist(path):
         unreal.EditorAssetLibrary.make_directory(path)
+
+
+def discover_terrain_imports(import_dir):
+    entries = []
+    filenames = os.listdir(import_dir) if os.path.isdir(import_dir) else []
+
+    for terrain_set in TERRAIN_SETS:
+        pattern = re.compile(rf"^{re.escape(terrain_set['source_prefix'])}(\d+)\.png$", re.IGNORECASE)
+        matches = []
+        for filename in filenames:
+            match = pattern.match(filename)
+            if match:
+                matches.append((int(match.group(1)), filename))
+
+        matches.sort(key=lambda item: item[0])
+        for index, filename in matches:
+            entries.append(
+                {
+                    "source": filename,
+                    "dest_dir": terrain_set["dest_dir"],
+                    "texture_name": f"{terrain_set['texture_prefix']}{index}",
+                    "material_name": f"{terrain_set['material_prefix']}{index}",
+                }
+            )
+
+    return entries
 
 
 def import_texture(source_path, dest_dir, dest_name):
@@ -141,6 +144,7 @@ def setup_material_instance(asset_path, parent, texture):
 def main():
     project_dir = get_project_dir()
     import_dir = os.path.join(project_dir, "SourceAssets", "Import").replace("\\", "/")
+    terrain_imports = discover_terrain_imports(import_dir)
 
     master = unreal.EditorAssetLibrary.load_asset(MASTER_PATH)
     if not master:
@@ -150,7 +154,11 @@ def main():
     log("START")
     log(f"Import root: {import_dir}")
 
-    for entry in TERRAIN_IMPORTS:
+    if not terrain_imports:
+        warn("No GroundTile*.png or HillTile*.png files found in SourceAssets/Import.")
+        return
+
+    for entry in terrain_imports:
         source_path = os.path.join(import_dir, entry["source"]).replace("\\", "/")
         if not os.path.isfile(source_path):
             warn(f"Missing source file: {source_path}")

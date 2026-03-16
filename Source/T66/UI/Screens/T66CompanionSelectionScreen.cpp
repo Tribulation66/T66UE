@@ -1046,9 +1046,9 @@ void UT66CompanionSelectionScreen::RefreshCompanionCarouselPortraits()
 			if (!CompanionID.IsNone())
 			{
 				FCompanionData D;
-				if (GI->GetCompanionData(CompanionID, D) && !D.Portrait.IsNull())
+				if (GI->GetCompanionData(CompanionID, D))
 				{
-					PortraitSoft = D.Portrait;
+					PortraitSoft = !D.SelectionPortrait.IsNull() ? D.SelectionPortrait : D.Portrait;
 				}
 			}
 			const float BoxSize = (Offset == 0) ? 60.f : 45.f;

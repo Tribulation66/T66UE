@@ -6,7 +6,6 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66SkinSubsystem.h"
-#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
@@ -1096,6 +1095,10 @@ FReply UT66HeroSelectionScreen::HandleBackToLobbyClicked()
 FReply UT66HeroSelectionScreen::HandleBodyTypeAClicked()
 {
 	SelectedBodyType = ET66BodyType::TypeA;
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		GI->SelectedHeroBodyType = SelectedBodyType;
+	}
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
 	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
@@ -1104,6 +1107,10 @@ FReply UT66HeroSelectionScreen::HandleBodyTypeAClicked()
 FReply UT66HeroSelectionScreen::HandleBodyTypeBClicked()
 {
 	SelectedBodyType = ET66BodyType::TypeB;
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		GI->SelectedHeroBodyType = SelectedBodyType;
+	}
 	UpdateHeroDisplay(); // Update 3D preview immediately for this hero
 	FT66Style::DeferRebuild(this);
 	return FReply::Handled();
@@ -1261,9 +1268,9 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 			if (!HeroID.IsNone())
 			{
 				FHeroData D;
-				if (GI->GetHeroData(HeroID, D) && !D.Portrait.IsNull())
+				if (GI->GetHeroData(HeroID, D))
 				{
-					PortraitSoft = D.Portrait;
+					PortraitSoft = GI->ResolveHeroPortrait(D, SelectedBodyType, ET66HeroPortraitVariant::Half);
 				}
 			}
 
@@ -1313,28 +1320,10 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 	}
 	RefreshHeroList();
 
-	// Preload all hero visuals (mesh + alert anim) so switching heroes shows them fully loaded.
 	if (UT66GameInstance* GIPreload = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (UT66CharacterVisualSubsystem* Visuals = GIPreload->GetSubsystem<UT66CharacterVisualSubsystem>())
-		{
-			const FName SkinIDs[] = { FName(TEXT("Default")), FName(TEXT("Beachgoer")) };
-			for (const FName& HeroID : AllHeroIDs)
-			{
-				for (int32 BodyIdx = 0; BodyIdx < 2; ++BodyIdx)
-				{
-					const ET66BodyType BodyType = (BodyIdx == 0) ? ET66BodyType::TypeA : ET66BodyType::TypeB;
-					for (const FName& SkinID : SkinIDs)
-					{
-						const FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(HeroID, BodyType, SkinID);
-						if (!VisualID.IsNone())
-						{
-							Visuals->PreloadCharacterVisual(VisualID);
-						}
-					}
-				}
-			}
-		}
+		// Keep the first-open path responsive; the full hero-selection warmup runs asynchronously.
+		GIPreload->PrimeHeroSelectionAssetsAsync();
 	}
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))

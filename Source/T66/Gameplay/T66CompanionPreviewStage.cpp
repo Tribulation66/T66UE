@@ -16,8 +16,8 @@
 
 namespace
 {
-	/** Gameplay ground material (same as T66GameMode floor) for preview floor. */
-	const TCHAR* CompanionPreviewGroundMaterialPath = TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0");
+	/** Gameplay ground material for preview floor. */
+	const TCHAR* CompanionPreviewGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
 }
 
 AT66CompanionPreviewStage::AT66CompanionPreviewStage()
