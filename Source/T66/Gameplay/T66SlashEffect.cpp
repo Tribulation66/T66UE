@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66SlashEffect.h"
+#include "Core/T66PixelVFXSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -58,25 +59,22 @@ void AT66SlashEffect::BeginPlay()
 	const int32 NumParticles = FMath::Clamp(FMath::RoundToInt(EffectRadius / 16.f), 24, 72);
 	const FVector Center = GetActorLocation() + FVector(0.f, 0.f, 4.f);
 	const FVector2D SpriteSize(2.5f, 2.5f);
+	UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>();
 
 	for (int32 Index = 0; Index < NumParticles; ++Index)
 	{
 		const float Angle = (2.f * PI * static_cast<float>(Index)) / static_cast<float>(NumParticles);
 		const FVector Offset(FMath::Cos(Angle) * RingRadius, FMath::Sin(Angle) * RingRadius, 0.f);
-		if (UNiagaraComponent* Niagara = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World,
-			PixelVFXSystem,
-			Center + Offset,
-			FRotator::ZeroRotator,
-			FVector(1.f),
-			true,
-			true,
-			ENCPoolMethod::AutoRelease))
+		if (PixelVFX)
 		{
-			Niagara->SetVariableLinearColor(FName(TEXT("User.Tint")), PixelColor);
-			Niagara->SetVariableLinearColor(FName(TEXT("User.Color")), PixelColor);
-			Niagara->SetVariableVec2(FName(TEXT("User.SpriteSize")), SpriteSize);
-			Niagara->SetAutoDestroy(true);
+			PixelVFX->SpawnPixelAtLocation(
+				Center + Offset,
+				PixelColor,
+				SpriteSize,
+				ET66PixelVFXPriority::Medium,
+				FRotator::ZeroRotator,
+				FVector(1.f),
+				PixelVFXSystem);
 		}
 	}
 }

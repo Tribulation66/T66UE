@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66BossProjectile.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -56,18 +57,21 @@ void AT66BossProjectile::Tick(float DeltaSeconds)
 
 	const FVector Loc = GetActorLocation();
 	static constexpr int32 TrailParticles = 2;
+	UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
 	for (int32 i = 0; i < TrailParticles; ++i)
 	{
 		const FVector Jitter(FMath::FRandRange(-8.f, 8.f), FMath::FRandRange(-8.f, 8.f), FMath::FRandRange(-8.f, 8.f));
 		const float R = FMath::FRandRange(0.7f, 1.f);
-
-		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(), CachedPixelVFX, Loc + Jitter, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		if (NC)
+		if (PixelVFX)
 		{
-			NC->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(R, 0.1f, 0.1f, 1.f));
-			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
+			PixelVFX->SpawnPixelAtLocation(
+				Loc + Jitter,
+				FLinearColor(R, 0.1f, 0.1f, 1.f),
+				FVector2D(3.0f, 3.0f),
+				ET66PixelVFXPriority::Low,
+				FRotator::ZeroRotator,
+				FVector(1.f),
+				CachedPixelVFX);
 		}
 	}
 }

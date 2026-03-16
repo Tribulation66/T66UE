@@ -17,6 +17,9 @@ class T66_API AT66FloatingCombatTextActor : public AActor
 public:
 	AT66FloatingCombatTextActor();
 
+	void ActivateForTarget(AActor* Target, const FVector& RelativeLocation);
+	void DeactivateForPool();
+
 	/** Set content to a damage number. Call after spawn, before lifespan expires. */
 	void SetDamageNumber(int32 Amount, FName EventType = NAME_None);
 

@@ -41,9 +41,11 @@
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
@@ -53,6 +55,8 @@
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
+#include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66BossBase.h"
 
 namespace
 {
@@ -67,6 +71,40 @@ namespace
 		default:                 return ET66ItemRarity::Black;
 		}
 	}
+
+	static void ApplyUltimateDamageToRegisteredTargets(UWorld* World, int32 DamageAmount)
+	{
+		if (!World)
+		{
+			return;
+		}
+
+		const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+		UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+		if (!Registry)
+		{
+			return;
+		}
+
+		for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+		{
+			if (AT66EnemyBase* Enemy = WeakEnemy.Get())
+			{
+				Enemy->TakeDamageFromHero(DamageAmount, UltimateSourceID, NAME_None);
+			}
+		}
+
+		for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+		{
+			if (AT66BossBase* Boss = WeakBoss.Get())
+			{
+				if (Boss->IsAwakened() && Boss->IsAlive())
+				{
+					Boss->TakeDamageFromHeroHit(DamageAmount, UltimateSourceID, NAME_None);
+				}
+			}
+		}
+	}
 }
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66ItemPickup.h"
@@ -78,8 +116,6 @@ namespace
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66DifficultyTotem.h"
-#include "Gameplay/T66EnemyBase.h"
-#include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66BossGroundAOE.h"
 #include "Gameplay/T66HeroPlagueCloud.h"
 #include "Data/T66DataTypes.h"
@@ -100,8 +136,6 @@ namespace
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 #include "Styling/CoreStyle.h"
-#include "EngineUtils.h"
-
 #if !UE_BUILD_SHIPPING
 namespace
 {
@@ -714,14 +748,7 @@ void AT66PlayerController::HandleUltimatePressed()
 			Combat->PerformUltimateSpearStorm(UltDmg);
 		else
 		{
-			const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
-			for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
-				if (AT66EnemyBase* E = *It)
-					E->TakeDamageFromHero(UltDmg, UltimateSourceID, NAME_None);
-			for (TActorIterator<AT66BossBase> It(World); It; ++It)
-				if (AT66BossBase* B = *It)
-					if (B->IsAwakened() && B->IsAlive())
-						B->TakeDamageFromHeroHit(UltDmg, UltimateSourceID, NAME_None);
+			ApplyUltimateDamageToRegisteredTargets(World, UltDmg);
 		}
 		break;
 	case ET66UltimateType::MeteorStrike:
@@ -760,14 +787,7 @@ void AT66PlayerController::HandleUltimatePressed()
 			Combat->PerformUltimateChainLightning(UltDmg);
 		else
 		{
-			const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
-			for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
-				if (AT66EnemyBase* E = *It)
-					E->TakeDamageFromHero(UltDmg, UltimateSourceID, NAME_None);
-			for (TActorIterator<AT66BossBase> It(World); It; ++It)
-				if (AT66BossBase* B = *It)
-					if (B->IsAwakened() && B->IsAlive())
-						B->TakeDamageFromHeroHit(UltDmg, UltimateSourceID, NAME_None);
+			ApplyUltimateDamageToRegisteredTargets(World, UltDmg);
 		}
 		break;
 	case ET66UltimateType::PlagueCloud:
@@ -817,14 +837,7 @@ void AT66PlayerController::HandleUltimatePressed()
 	case ET66UltimateType::None:
 	default:
 	{
-		const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
-		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
-			if (AT66EnemyBase* E = *It)
-				E->TakeDamageFromHero(UltDmg, UltimateSourceID, NAME_None);
-		for (TActorIterator<AT66BossBase> It(World); It; ++It)
-			if (AT66BossBase* B = *It)
-				if (B->IsAwakened() && B->IsAlive())
-					B->TakeDamageFromHeroHit(UltDmg, UltimateSourceID, NAME_None);
+		ApplyUltimateDamageToRegisteredTargets(World, UltDmg);
 		break;
 	}
 	}
@@ -1660,13 +1673,18 @@ void AT66PlayerController::TeleportToNPC(FName NPCID)
 	if (!PlayerPawn) return;
 
 	AT66HouseNPCBase* Target = nullptr;
-	for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 	{
-		AT66HouseNPCBase* N = *It;
-		if (N && N->NPCID == NPCID)
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
 		{
-			Target = N;
-			break;
+			if (AT66HouseNPCBase* N = WeakNPC.Get())
+			{
+				if (N->NPCID == NPCID)
+				{
+					Target = N;
+					break;
+				}
+			}
 		}
 	}
 	if (!Target) return;
@@ -2060,22 +2078,26 @@ void AT66PlayerController::HandleJumpPressed()
 
 		UWorld* World = GetWorld();
 		UNiagaraSystem* JumpVFX = GetActiveJumpVFXSystem();
-		if (World && JumpVFX)
-		{
-			const FVector FeetLoc = MyCharacter->GetActorLocation() - FVector(0.f, 0.f, 50.f);
-			const FVector4 TintWhite(1.f, 1.f, 1.f, 0.8f);
-			for (int32 i = 0; i < 6; ++i)
-			{
-				const FVector Offset(FMath::FRandRange(-30.f, 30.f), FMath::FRandRange(-30.f, 30.f), 0.f);
-				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-					World, JumpVFX, FeetLoc + Offset, FRotator::ZeroRotator,
-					FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-				if (NC)
-				{
-					NC->SetVariableVec4(FName(TEXT("User.Tint")), TintWhite);
-					NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
-				}
-			}
+ 		if (World && JumpVFX)
+ 		{
+ 			const FVector FeetLoc = MyCharacter->GetActorLocation() - FVector(0.f, 0.f, 50.f);
+ 			const FVector4 TintWhite(1.f, 1.f, 1.f, 0.8f);
+ 			UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>();
+ 			for (int32 i = 0; i < 6; ++i)
+ 			{
+ 				const FVector Offset(FMath::FRandRange(-30.f, 30.f), FMath::FRandRange(-30.f, 30.f), 0.f);
+ 				if (PixelVFX)
+ 				{
+ 					PixelVFX->SpawnPixelAtLocation(
+ 						FeetLoc + Offset,
+ 						FLinearColor(TintWhite.X, TintWhite.Y, TintWhite.Z, TintWhite.W),
+ 						FVector2D(2.0f, 2.0f),
+ 						ET66PixelVFXPriority::Low,
+ 						FRotator::ZeroRotator,
+ 						FVector(1.f),
+ 						JumpVFX);
+ 				}
+ 			}
 		}
 	}
 }

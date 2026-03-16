@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66GameInstance.h"
+#include "Data/T66DataTypes.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
 #include "Styling/SlateBrush.h"
@@ -43,6 +45,9 @@ public:
 	/** Call when RunState changes (hearts, gold, inventory, panel visibility). */
 	UFUNCTION()
 	void RefreshHUD();
+
+	UFUNCTION()
+	void MarkHUDDirty();
 
 	// Targeted refreshes (avoid calling full RefreshHUD for every tiny change).
 	UFUNCTION()
@@ -230,9 +235,19 @@ protected:
 	TArray<TSharedPtr<STextBlock>> WorldDialogueOptionTexts;
 
 	bool bFullMapOpen = false;
-	/** Throttle RefreshHUD to at most once per 0.25s when multiple delegates fire. */
-	float LastRefreshHUDTime = -1.f;
-	static constexpr float RefreshHUDThrottleSeconds = 0.5f;
+	bool bHUDDirty = false;
+	float DPSRefreshAccumSeconds = 0.f;
+	static constexpr float DPSRefreshIntervalSeconds = 0.2f;
+	int32 LastDisplayedCooldownBarWidthPx = -1;
+	int32 LastDisplayedCooldownRemainingCs = -1;
+	int32 LastDisplayedDPS = -1;
+	FLinearColor LastDisplayedDPSColor = FLinearColor::Transparent;
+	int32 LastDisplayedSpeedRunTotalCs = -1;
+	bool bPortraitStateInitialized = false;
+	bool bLastPortraitHasRef = false;
+	FName LastPortraitHeroID = NAME_None;
+	ET66BodyType LastPortraitBodyType = ET66BodyType::TypeA;
+	ET66HeroPortraitVariant LastPortraitVariant = ET66HeroPortraitVariant::Half;
 
 	/** Map/minimap: cache actor refs + static marker data; full TActorIterator only every MapCacheRefreshIntervalSeconds. */
 	struct FMapCacheEntry { TWeakObjectPtr<AActor> Actor; FLinearColor Color; FText Label; };

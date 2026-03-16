@@ -87,6 +87,7 @@ void AT66StartGate::TryTriggerForActor(AActor* OtherActor)
 	if (!RunState) return;
 
 	bTriggered = true;
+	SetActorTickEnabled(false);
 	RunState->SetStageTimerActive(true);
 	RunState->AddStructuredEvent(ET66RunEventType::StageEntered, FString::Printf(TEXT("Stage=%d"), RunState->GetCurrentStage()));
 }

@@ -47,6 +47,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PropSubsystem.h"
@@ -652,9 +653,11 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		{
 			if (FVector::DistSquared2D(L, U) < (MinDistBetween * MinDistBetween)) return false;
 		}
-		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+		UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+		const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
 		{
-			const AT66HouseNPCBase* NPC = *It;
+			const AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
 			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
 			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R)) return false;
@@ -783,9 +786,11 @@ void AT66GameMode::HandleDifficultyChanged()
 
 	const int32 Stage = RunState->GetCurrentStage();
 	const float Scalar = RunState->GetDifficultyScalar();
-	for (TActorIterator<AT66EnemyBase> It(GetWorld()); It; ++It)
+	UT66ActorRegistrySubsystem* Registry = GetWorld() ? GetWorld()->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+	const TArray<TWeakObjectPtr<AT66EnemyBase>>& Enemies = Registry ? Registry->GetEnemies() : TArray<TWeakObjectPtr<AT66EnemyBase>>();
+	for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Enemies)
 	{
-		if (AT66EnemyBase* E = *It)
+		if (AT66EnemyBase* E = WeakEnemy.Get())
 		{
 			E->ApplyStageScaling(Stage);
 			E->ApplyDifficultyScalar(Scalar);
@@ -793,9 +798,10 @@ void AT66GameMode::HandleDifficultyChanged()
 	}
 
 	// Bosses: scale HP + projectile damage (count unchanged).
-	for (TActorIterator<AT66BossBase> It(GetWorld()); It; ++It)
+	const TArray<TWeakObjectPtr<AT66BossBase>>& Bosses = Registry ? Registry->GetBosses() : TArray<TWeakObjectPtr<AT66BossBase>>();
+	for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Bosses)
 	{
-		if (AT66BossBase* B = *It)
+		if (AT66BossBase* B = WeakBoss.Get())
 		{
 			B->ApplyDifficultyScalar(Scalar);
 		}
@@ -841,9 +847,11 @@ void AT66GameMode::TrySpawnLoanSharkIfNeeded()
 		SpawnLoc = PlayerLoc + Offset;
 
 		bool bInSafe = false;
-		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+		UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+		const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
 		{
-			AT66HouseNPCBase* NPC = *It;
+			AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
 			const float R = NPC->GetSafeZoneRadius();
 			if (FVector::DistSquared2D(SpawnLoc, NPC->GetActorLocation()) < (R * R))
@@ -1725,9 +1733,11 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				return false;
 			}
 		}
-		for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+		UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+		const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
 		{
-			const AT66HouseNPCBase* NPC = *It;
+			const AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
 			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
 			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R))

@@ -7,9 +7,9 @@
 #include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
 #include "Components/StaticMeshComponent.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66HouseNPCBase.h"
-#include "EngineUtils.h"
 #include "UObject/SoftObjectPath.h"
 
 UDataTable* UT66PropSubsystem::GetPropsDataTable() const
@@ -105,10 +105,14 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				if (bTooClose) continue;
 
 				bool bInNPCSafe = false;
-				for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
+				UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+				const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
+				for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
 				{
-					const float R = (*It)->GetSafeZoneRadius() + SafeBubbleMargin;
-					if (FVector::DistSquared2D(Loc, (*It)->GetActorLocation()) < (R * R))
+					const AT66HouseNPCBase* NPC = WeakNPC.Get();
+					if (!NPC) continue;
+					const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
+					if (FVector::DistSquared2D(Loc, NPC->GetActorLocation()) < (R * R))
 					{
 						bInNPCSafe = true;
 						break;

@@ -7,6 +7,7 @@
 #include "T66ActorRegistrySubsystem.generated.h"
 
 class AT66EnemyBase;
+class AT66BossBase;
 class AT66HouseNPCBase;
 class AT66StageGate;
 class AT66MiasmaBoundary;
@@ -27,6 +28,11 @@ public:
 	void UnregisterEnemy(AT66EnemyBase* Enemy);
 	const TArray<TWeakObjectPtr<AT66EnemyBase>>& GetEnemies() const { return Enemies; }
 
+	// --------------- Bosses ---------------
+	void RegisterBoss(AT66BossBase* Boss);
+	void UnregisterBoss(AT66BossBase* Boss);
+	const TArray<TWeakObjectPtr<AT66BossBase>>& GetBosses() const { return Bosses; }
+
 	// --------------- House NPCs ---------------
 	void RegisterNPC(AT66HouseNPCBase* NPC);
 	void UnregisterNPC(AT66HouseNPCBase* NPC);
@@ -44,6 +50,7 @@ public:
 
 private:
 	TArray<TWeakObjectPtr<AT66EnemyBase>> Enemies;
+	TArray<TWeakObjectPtr<AT66BossBase>> Bosses;
 	TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
 	TArray<TWeakObjectPtr<AT66StageGate>> StageGates;
 	TArray<TWeakObjectPtr<AT66MiasmaBoundary>> MiasmaBoundaries;

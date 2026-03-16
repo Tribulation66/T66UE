@@ -12,6 +12,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -50,17 +51,21 @@ void UT66CombatComponent::BeginPlay()
 	BaseFireIntervalSeconds = FireIntervalSeconds;
 	BaseDamagePerShot = DamagePerShot;
 
-	CachedRunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (CachedRunState)
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
-		CachedRunState->InventoryChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
-		CachedRunState->HeroProgressChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
-		CachedRunState->SurvivalChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
-		CachedRunState->DevCheatsChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
-		CachedRunState->SetDOTDamageApplier([this](AActor* Target, int32 Damage, FName SourceIdolID)
+		CachedRunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+		CachedFloatingCombatText = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>();
+		if (CachedRunState)
 		{
-			ApplyDamageToActor(Target, Damage, NAME_None, SourceIdolID);
-		});
+			CachedRunState->InventoryChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+			CachedRunState->HeroProgressChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+			CachedRunState->SurvivalChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+			CachedRunState->DevCheatsChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
+			CachedRunState->SetDOTDamageApplier([this](AActor* Target, int32 Damage, FName SourceIdolID)
+			{
+				ApplyDamageToActor(Target, Damage, NAME_None, SourceIdolID);
+			});
+		}
 	}
 
 	RecomputeFromRunState();
@@ -222,10 +227,33 @@ void UT66CombatComponent::RecomputeFromRunState()
 	EffectiveFireIntervalSeconds = BaseFireIntervalSeconds;
 	EffectiveDamagePerShot = BaseDamagePerShot;
 	ProjectileScaleMultiplier = 1.f;
+	bHasCachedHeroData = false;
+	CachedHeroData = FHeroData{};
+	CachedIdolSlots.Reset();
 
 	if (!CachedRunState)
 	{
 		return;
+	}
+
+	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	if (GI)
+	{
+		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetOwner()))
+		{
+			bHasCachedHeroData = GI->GetHeroData(Hero->HeroID, CachedHeroData);
+		}
+
+		const TArray<FName>& Idols = CachedRunState->GetEquippedIdols();
+		CachedIdolSlots.Reserve(Idols.Num());
+		for (int32 Slot = 0; Slot < Idols.Num(); ++Slot)
+		{
+			FCachedIdolSlot Entry;
+			Entry.IdolID = Idols[Slot];
+			Entry.Rarity = CachedRunState->GetEquippedIdolRarityInSlot(Slot);
+			Entry.bValid = !Entry.IdolID.IsNone() && GI->GetIdolData(Entry.IdolID, Entry.IdolData);
+			CachedIdolSlots.Add(MoveTemp(Entry));
+		}
 	}
 
 	const float AttackSpeedMult = CachedRunState->GetItemAttackSpeedMultiplier();
@@ -370,26 +398,133 @@ void UT66CombatComponent::TryFire()
 
 	const float RangeSq = AttackRange * AttackRange;
 
+	bool bHasCachedPierceTargets = false;
+	AActor* CachedPiercePrimaryTarget = nullptr;
+	float CachedPierceLineLength = 0.f;
+	float CachedPierceRadius = 0.f;
+	FVector CachedPierceDirection = FVector::ForwardVector;
+	TArray<AActor*> CachedPierceTargets;
+
+	bool bHasCachedSlashTargets = false;
+	AActor* CachedSlashPrimaryTarget = nullptr;
+	float CachedSlashRadius = 0.f;
+	TArray<AActor*> CachedSlashTargets;
+
+	auto BuildPierceTargets = [&](AActor* QueryPrimaryTarget, float LineLength, float PierceRadius, TArray<AActor*>& OutTargets, FVector& OutDir)
+	{
+		if (!QueryPrimaryTarget)
+		{
+			OutTargets.Reset();
+			OutDir = FVector::ForwardVector;
+			return;
+		}
+
+		if (bHasCachedPierceTargets
+			&& CachedPiercePrimaryTarget == QueryPrimaryTarget
+			&& FMath::IsNearlyEqual(CachedPierceLineLength, LineLength)
+			&& FMath::IsNearlyEqual(CachedPierceRadius, PierceRadius))
+		{
+			OutTargets = CachedPierceTargets;
+			OutDir = CachedPierceDirection;
+			return;
+		}
+
+		const FVector TargetLoc = QueryPrimaryTarget->GetActorLocation();
+		OutDir = (TargetLoc - MyLoc).GetSafeNormal();
+		const float HalfLen = FMath::Max(1.f, (LineLength * 0.5f) - PierceRadius);
+		const FVector MidPoint = MyLoc + OutDir * (LineLength * 0.5f);
+		const FQuat Rot = FQuat::FindBetween(FVector::UpVector, OutDir);
+		const FCollisionShape Cap = FCollisionShape::MakeCapsule(PierceRadius, HalfLen);
+
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(OwnerActor);
+
+		TArray<FOverlapResult> Overlaps;
+		World->OverlapMultiByChannel(Overlaps, MidPoint, Rot, ECC_Pawn, Cap, Params);
+
+		OutTargets.Reset();
+		OutTargets.Add(QueryPrimaryTarget);
+		for (const FOverlapResult& O : Overlaps)
+		{
+			AActor* A = O.GetActor();
+			if (A && A != QueryPrimaryTarget && (Cast<AT66EnemyBase>(A) || Cast<AT66BossBase>(A)))
+			{
+				OutTargets.AddUnique(A);
+			}
+		}
+		OutTargets.Sort([&MyLoc](const AActor& A, const AActor& B)
+		{
+			return FVector::DistSquared(MyLoc, A.GetActorLocation()) < FVector::DistSquared(MyLoc, B.GetActorLocation());
+		});
+
+		bHasCachedPierceTargets = true;
+		CachedPiercePrimaryTarget = QueryPrimaryTarget;
+		CachedPierceLineLength = LineLength;
+		CachedPierceRadius = PierceRadius;
+		CachedPierceDirection = OutDir;
+		CachedPierceTargets = OutTargets;
+	};
+
+	auto BuildSlashTargets = [&](AActor* QueryPrimaryTarget, float Radius, TArray<AActor*>& OutTargets)
+	{
+		if (!QueryPrimaryTarget)
+		{
+			OutTargets.Reset();
+			return;
+		}
+
+		if (bHasCachedSlashTargets
+			&& CachedSlashPrimaryTarget == QueryPrimaryTarget
+			&& FMath::IsNearlyEqual(CachedSlashRadius, Radius))
+		{
+			OutTargets = CachedSlashTargets;
+			return;
+		}
+
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(OwnerActor);
+		Params.AddIgnoredActor(QueryPrimaryTarget);
+
+		TArray<FOverlapResult> Overlaps;
+		World->OverlapMultiByChannel(
+			Overlaps,
+			QueryPrimaryTarget->GetActorLocation(),
+			FQuat::Identity,
+			ECC_Pawn,
+			FCollisionShape::MakeSphere(Radius),
+			Params);
+
+		OutTargets.Reset();
+		OutTargets.Add(QueryPrimaryTarget);
+		for (const FOverlapResult& Overlap : Overlaps)
+		{
+			if (AActor* Hit = Overlap.GetActor())
+			{
+				OutTargets.AddUnique(Hit);
+			}
+		}
+
+		bHasCachedSlashTargets = true;
+		CachedSlashPrimaryTarget = QueryPrimaryTarget;
+		CachedSlashRadius = Radius;
+		CachedSlashTargets = OutTargets;
+	};
+
 	// Purge stale weak pointers (destroyed actors that didn't fire EndOverlap).
 	EnemiesInRange.RemoveAll([](const TWeakObjectPtr<AActor>& Weak) { return !Weak.IsValid(); });
 
 	// Hero attack category (Pierce/Bounce/AOE/DOT) and data for Bounce/DOT params.
 	ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
 	FHeroData HeroDataForPrimary;
-	bool bHaveHeroData = false;
+	bool bHaveHeroData = bHasCachedHeroData;
 	FName CurrentHeroID = NAME_None;
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OwnerActor))
 	{
 		CurrentHeroID = Hero->HeroID;
-		if (UT66GameInstance* GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+		if (bHasCachedHeroData)
 		{
-			FHeroData HeroDataOut;
-			if (GI->GetHeroData(Hero->HeroID, HeroDataOut))
-			{
-				AttackCategory = HeroDataOut.PrimaryCategory;
-				HeroDataForPrimary = HeroDataOut;
-				bHaveHeroData = true;
-			}
+			AttackCategory = CachedHeroData.PrimaryCategory;
+			HeroDataForPrimary = CachedHeroData;
 		}
 	}
 
@@ -399,32 +534,11 @@ void UT66CombatComponent::TryFire()
 		if (!PrimaryTarget) return false;
 
 		const FVector TargetLoc = PrimaryTarget->GetActorLocation();
-		const FVector Dir = (TargetLoc - MyLoc).GetSafeNormal();
 		const float LineLength = AttackRange;
 		const float PierceRadius = 80.f * ProjectileScaleMultiplier;
-		const float HalfLen = FMath::Max(1.f, (LineLength * 0.5f) - PierceRadius);
-		const FVector MidPoint = MyLoc + Dir * (LineLength * 0.5f);
-		const FQuat Rot = FQuat::FindBetween(FVector::UpVector, Dir);
-		const FCollisionShape Cap = FCollisionShape::MakeCapsule(PierceRadius, HalfLen);
-
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(OwnerActor);
-
-		TArray<FOverlapResult> Overlaps;
-		World->OverlapMultiByChannel(Overlaps, MidPoint, Rot, ECC_Pawn, Cap, Params);
-
+		FVector Dir = FVector::ForwardVector;
 		TArray<AActor*> InLine;
-		InLine.Add(PrimaryTarget);
-		for (const FOverlapResult& O : Overlaps)
-		{
-			AActor* A = O.GetActor();
-			if (A && A != PrimaryTarget && (Cast<AT66EnemyBase>(A) || Cast<AT66BossBase>(A)))
-				InLine.AddUnique(A);
-		}
-		InLine.Sort([&MyLoc](const AActor& A, const AActor& B)
-		{
-			return FVector::DistSquared(MyLoc, A.GetActorLocation()) < FVector::DistSquared(MyLoc, B.GetActorLocation());
-		});
+		BuildPierceTargets(PrimaryTarget, LineLength, PierceRadius, InLine, Dir);
 
 		for (int32 i = 0; i < InLine.Num(); ++i)
 		{
@@ -451,14 +565,10 @@ void UT66CombatComponent::TryFire()
 		const FVector SlashCenter = PrimaryTarget->GetActorLocation();
 		const float EffectiveSlashRadius = SlashRadius * ProjectileScaleMultiplier;
 
-		TArray<FOverlapResult> Overlaps;
-		FCollisionShape Shape = FCollisionShape::MakeSphere(EffectiveSlashRadius);
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(OwnerActor);
-		Params.AddIgnoredActor(PrimaryTarget);
-		World->OverlapMultiByChannel(Overlaps, SlashCenter, FQuat::Identity, ECC_Pawn, Shape, Params);
+		TArray<AActor*> SlashTargets;
+		BuildSlashTargets(PrimaryTarget, EffectiveSlashRadius, SlashTargets);
 
-		const int32 HitCount = 1 + Overlaps.Num();
+		const int32 HitCount = SlashTargets.Num();
 		float ArcaneMult = 1.f;
 		if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::ArcaneAmplification)
 		{
@@ -475,9 +585,9 @@ void UT66CombatComponent::TryFire()
 		}
 
 		const int32 SplashDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * ArcaneMult));
-		for (const FOverlapResult& Overlap : Overlaps)
+		for (int32 TargetIndex = 1; TargetIndex < SlashTargets.Num(); ++TargetIndex)
 		{
-			AActor* Hit = Overlap.GetActor();
+			AActor* Hit = SlashTargets[TargetIndex];
 			if (Hit)
 			{
 				FName RangeEvent;
@@ -672,21 +782,18 @@ void UT66CombatComponent::TryFire()
 		}
 
 		// Idol attacks: one per equipped idol, each with unique color.
-		UT66GameInstance* GI = Cast<UT66GameInstance>(World->GetGameInstance());
-		if (CachedRunState && GI)
+		if (CachedRunState)
 		{
-			const TArray<FName>& Idols = CachedRunState->GetEquippedIdols();
 			const float IdolRange = AttackRange;
 			// Bounce search radius = hero attack range, centered on the last hit enemy each step.
 			const float BounceSearchRadius = IdolRange;
 
-			for (int32 Slot = 0; Slot < Idols.Num(); ++Slot)
+			for (const FCachedIdolSlot& CachedIdolSlot : CachedIdolSlots)
 			{
-				const FName IdolID = Idols[Slot];
-				if (IdolID.IsNone()) continue;
-				const ET66ItemRarity IdolRarity = CachedRunState->GetEquippedIdolRarityInSlot(Slot);
-				FIdolData IdolData;
-				if (!GI->GetIdolData(IdolID, IdolData)) continue;
+				if (!CachedIdolSlot.bValid || CachedIdolSlot.IdolID.IsNone()) continue;
+				const FName IdolID = CachedIdolSlot.IdolID;
+				const ET66ItemRarity IdolRarity = CachedIdolSlot.Rarity;
+				const FIdolData& IdolData = CachedIdolSlot.IdolData;
 
 				FLinearColor IdolColor = UT66RunStateSubsystem::GetIdolColor(IdolID);
 				IdolColor.A = 1.f;
@@ -697,25 +804,11 @@ void UT66CombatComponent::TryFire()
 				{
 				case ET66AttackCategory::Pierce:
 				{
-					const FVector Dir = (PrimaryLoc - MyLoc).GetSafeNormal();
 					const float LineLength = IdolRange;
 					const float PierceRadius = 60.f;
-					const float HalfLen = FMath::Max(1.f, (LineLength * 0.5f) - PierceRadius);
-					const FVector MidPoint = MyLoc + Dir * (LineLength * 0.5f);
-					const FQuat Rot = FQuat::FindBetween(FVector::UpVector, Dir);
-					FCollisionQueryParams Params;
-					Params.AddIgnoredActor(OwnerActor);
-					TArray<FOverlapResult> Overlaps;
-					World->OverlapMultiByChannel(Overlaps, MidPoint, Rot, ECC_Pawn, FCollisionShape::MakeCapsule(PierceRadius, HalfLen), Params);
+					FVector Dir = FVector::ForwardVector;
 					TArray<AActor*> InLine;
-					InLine.Add(PrimaryTarget);
-					for (const FOverlapResult& O : Overlaps)
-					{
-						AActor* A = O.GetActor();
-						if (A && A != PrimaryTarget && (Cast<AT66EnemyBase>(A) || Cast<AT66BossBase>(A)))
-							InLine.AddUnique(A);
-					}
-					InLine.Sort([&MyLoc](const AActor& a, const AActor& b) { return FVector::DistSquared(MyLoc, a.GetActorLocation()) < FVector::DistSquared(MyLoc, b.GetActorLocation()); });
+					BuildPierceTargets(PrimaryTarget, LineLength, PierceRadius, InLine, Dir);
 					for (int32 i = 0; i < InLine.Num(); ++i)
 					{
 						const float Mult = FMath::Max(0.1f, 1.f - 0.1f * static_cast<float>(i));
@@ -737,14 +830,11 @@ void UT66CombatComponent::TryFire()
 						const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 						ApplyDamageToActor(PrimaryTarget, Resolved.Key, Resolved.Value, IdolID, RangeEvent);
 					}
-					FCollisionQueryParams Params;
-					Params.AddIgnoredActor(OwnerActor);
-					Params.AddIgnoredActor(PrimaryTarget);
-					TArray<FOverlapResult> Overlaps;
-					World->OverlapMultiByChannel(Overlaps, PrimaryLoc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Radius), Params);
-					for (const FOverlapResult& O : Overlaps)
+					TArray<AActor*> SlashTargets;
+					BuildSlashTargets(PrimaryTarget, Radius, SlashTargets);
+					for (int32 TargetIndex = 1; TargetIndex < SlashTargets.Num(); ++TargetIndex)
 					{
-						if (AActor* Hit = O.GetActor())
+						if (AActor* Hit = SlashTargets[TargetIndex])
 						{
 							FName RangeEvent;
 							const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, Hit, &RangeEvent);
@@ -832,8 +922,7 @@ void UT66CombatComponent::ApplyDamageToActor(AActor* Target, int32 DamageAmount,
 			DamageAmount = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageAmount) * ToxinMult));
 	}
 	const FName ResolvedSource = SourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : SourceID;
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66FloatingCombatTextSubsystem* FloatingText = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr;
+	UT66FloatingCombatTextSubsystem* FloatingText = CachedFloatingCombatText;
 	AActor* Hero = GetOwner();
 
 	if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Target))
@@ -952,6 +1041,51 @@ static void T66ApplyPixelVFXParams(UNiagaraComponent* NiagaraComponent, const FV
 	NiagaraComponent->SetVariableVec2(FName(TEXT("User.SpriteSize")), SpriteSize);
 }
 
+static UNiagaraComponent* T66SpawnBudgetedPixel(
+	UWorld* World,
+	UNiagaraSystem* VFX,
+	const FVector& Location,
+	const FVector4& Tint,
+	const FVector2D& SpriteSize,
+	ET66PixelVFXPriority Priority,
+	const FRotator& Rotation = FRotator::ZeroRotator,
+	bool bAutoDestroy = true)
+{
+	if (!World || !VFX)
+	{
+		return nullptr;
+	}
+
+	if (UT66PixelVFXSubsystem* PixelVFX = World->GetSubsystem<UT66PixelVFXSubsystem>())
+	{
+		return PixelVFX->SpawnPixelAtLocation(
+			Location,
+			FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
+			SpriteSize,
+			Priority,
+			Rotation,
+			FVector(1.f),
+			VFX,
+			bAutoDestroy);
+	}
+
+	UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		World,
+		VFX,
+		Location,
+		Rotation,
+		FVector(1.f),
+		true,
+		true,
+		ENCPoolMethod::AutoRelease);
+	T66ApplyPixelVFXParams(NiagaraComponent, Tint, SpriteSize);
+	if (NiagaraComponent)
+	{
+		NiagaraComponent->SetAutoDestroy(bAutoDestroy);
+	}
+	return NiagaraComponent;
+}
+
 static void T66SpawnBloodSpray(
 	UWorld* World,
 	UNiagaraSystem* VFX,
@@ -974,13 +1108,13 @@ static void T66SpawnBloodSpray(
 	for (int32 i = 0; i < CoreCount; ++i)
 	{
 		const FVector Offset = FMath::VRand() * FMath::FRandRange(0.f, CoreRadius);
-		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, VFX, Location + Offset, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		T66ApplyPixelVFXParams(
-			NC,
+		T66SpawnBudgetedPixel(
+			World,
+			VFX,
+			Location + Offset,
 			T66MakeBloodTint(true),
-			FVector2D(FMath::FRandRange(4.0f, 6.0f), FMath::FRandRange(4.0f, 6.0f)));
+			FVector2D(FMath::FRandRange(4.0f, 6.0f), FMath::FRandRange(4.0f, 6.0f)),
+			ET66PixelVFXPriority::High);
 	}
 
 	int32 Remaining = SprayCount;
@@ -1020,17 +1154,16 @@ static void T66SpawnBloodSpray(
 				Right * FMath::FRandRange(-Jitter, Jitter) +
 				Upish * FMath::FRandRange(-Jitter * 0.35f, Jitter * 0.35f);
 
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				World, VFX, Location + Offset, FRotator::ZeroRotator,
-				FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-
 			const bool bCoreStreak = T < 0.25f;
-			T66ApplyPixelVFXParams(
-				NC,
+			T66SpawnBudgetedPixel(
+				World,
+				VFX,
+				Location + Offset,
 				T66MakeBloodTint(bCoreStreak),
 				bCoreStreak
 					? FVector2D(FMath::FRandRange(3.5f, 5.0f), FMath::FRandRange(3.5f, 5.0f))
-					: FVector2D(FMath::FRandRange(2.0f, 3.8f), FMath::FRandRange(2.0f, 3.8f)));
+					: FVector2D(FMath::FRandRange(2.0f, 3.8f), FMath::FRandRange(2.0f, 3.8f)),
+				ET66PixelVFXPriority::High);
 		}
 	}
 }
@@ -1089,15 +1222,7 @@ void UT66CombatComponent::SpawnSlashVFX(const FVector& Location, float Radius, c
 		const float AngleRad = FMath::DegreesToRadians(StartAngleDeg + ArcAngleDeg * T);
 		const FVector Offset(FMath::Cos(AngleRad) * Radius * SpreadScale, FMath::Sin(AngleRad) * Radius * SpreadScale, 0.f);
 		const FVector SpawnLoc = Location + Offset;
-
-		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, VFX, SpawnLoc, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		if (NC)
-		{
-			NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
-			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5));
-		}
+		T66SpawnBudgetedPixel(World, VFX, SpawnLoc, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium);
 	}
 }
 
@@ -1117,15 +1242,7 @@ void UT66CombatComponent::SpawnPierceVFX(const FVector& Start, const FVector& En
 	{
 		const float T = (NumParticles > 1) ? (static_cast<float>(i) / static_cast<float>(NumParticles - 1)) : 0.5f;
 		const FVector SpawnLoc = FMath::Lerp(Start, End, T);
-
-		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, VFX, SpawnLoc, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		if (NC)
-		{
-			NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
-			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
-		}
+		T66SpawnBudgetedPixel(World, VFX, SpawnLoc, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
 	}
 }
 
@@ -1150,25 +1267,18 @@ void UT66CombatComponent::SpawnBounceVFX(const TArray<FVector>& ChainPositions, 
 		for (int32 j = 0; j < Num; ++j)
 		{
 			const float T = (Num > 1) ? (static_cast<float>(j) / static_cast<float>(Num - 1)) : 0.5f;
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				World, VFX, FMath::Lerp(ChainStart, ChainEnd, T), Rot,
-				FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC)
-			{
-				NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
-				NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
-			}
+			T66SpawnBudgetedPixel(
+				World,
+				VFX,
+				FMath::Lerp(ChainStart, ChainEnd, T),
+				ColorVec,
+				FVector2D(2.0f, 2.0f),
+				ET66PixelVFXPriority::Medium,
+				Rot);
 		}
 
 		// Slightly larger impact pixel at each bounce point.
-		UNiagaraComponent* Impact = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			World, VFX, ChainStart, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		if (Impact)
-		{
-			Impact->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
-			Impact->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.5, 3.5));
-		}
+		T66SpawnBudgetedPixel(World, VFX, ChainStart, ColorVec, FVector2D(3.5f, 3.5f), ET66PixelVFXPriority::High);
 	}
 }
 
@@ -1179,14 +1289,17 @@ void UT66CombatComponent::SpawnDOTVFX(const FVector& Location, float Duration, f
 	if (!World || !VFX) return;
 
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
-	UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		World, VFX, Location, FRotator::ZeroRotator,
-		FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
+	UNiagaraComponent* NC = T66SpawnBudgetedPixel(
+		World,
+		VFX,
+		Location,
+		ColorVec,
+		FVector2D(2.0f, 2.0f),
+		ET66PixelVFXPriority::Medium,
+		FRotator::ZeroRotator,
+		true);
 	if (NC)
 	{
-		NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec);
-		NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0));
-		NC->SetAutoDestroy(true);
 		if (AActor* Owner = NC->GetOwner())
 			Owner->SetLifeSpan(FMath::Max(0.1f, Duration));
 	}
@@ -1217,8 +1330,7 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 			const float T = (N > 1) ? (static_cast<float>(i) / static_cast<float>(N - 1)) : 0.5f;
 			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
 			const FVector Offset = Dir.RotateAngleAxis(FMath::RadiansToDegrees(Angle), FVector::UpVector) * R;
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Start + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); }
+			T66SpawnBudgetedPixel(World, VFX, Start + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_5")))
@@ -1228,8 +1340,7 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 		for (int32 i = 0; i < N; ++i)
 		{
 			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(Start, End, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+			T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(Start, End, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_8")))
@@ -1243,8 +1354,7 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 			const float Angle = -ConeDeg * 0.5f + ConeDeg * T;
 			const FVector ShotDir = Dir.RotateAngleAxis(Angle, FVector::UpVector);
 			const float Dist = FMath::FRandRange(Length * 0.2f, Length * 0.6f);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Start + ShotDir * Dist, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+			T66SpawnBudgetedPixel(World, VFX, Start + ShotDir * Dist, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_11")))
@@ -1258,8 +1368,7 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 			for (int32 i = 0; i < N; ++i)
 			{
 				const float T = static_cast<float>(i) / static_cast<float>(N - 1);
-				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(Start + Offset, End + Offset, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(Start + Offset, End + Offset, T), ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
 			}
 		}
 	}
@@ -1287,8 +1396,7 @@ void UT66CombatComponent::SpawnHeroSlashVFX(const FVector& Location, float Radiu
 			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
 			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
 			const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); }
+			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_4")))
@@ -1302,8 +1410,7 @@ void UT66CombatComponent::SpawnHeroSlashVFX(const FVector& Location, float Radiu
 			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
 			const float R = Radius * 0.25f * FMath::FRandRange(0.5f, 1.f);
 			const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, 0.f);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0)); }
+			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(3.0f, 3.0f), ET66PixelVFXPriority::Medium);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_10")))
@@ -1314,8 +1421,7 @@ void UT66CombatComponent::SpawnHeroSlashVFX(const FVector& Location, float Radiu
 		{
 			const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
 			const FVector Offset(FMath::Cos(Angle) * Radius * 0.35f, FMath::Sin(Angle) * Radius * 0.35f, 0.f);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_15")))
@@ -1327,13 +1433,11 @@ void UT66CombatComponent::SpawnHeroSlashVFX(const FVector& Location, float Radiu
 			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
 			const float InnerAngle = FMath::DegreesToRadians(-60.f + 120.f * T);
 			const FVector InnerOff(FMath::Cos(InnerAngle) * Radius * 0.25f, FMath::Sin(InnerAngle) * Radius * 0.25f, 0.f);
-			UNiagaraComponent* NC1 = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + InnerOff, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC1) { NC1->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC1->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); }
+			T66SpawnBudgetedPixel(World, VFX, Location + InnerOff, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
 
 			const float OuterAngle = FMath::DegreesToRadians(-75.f + 150.f * T);
 			const FVector OuterOff(FMath::Cos(OuterAngle) * Radius * 0.4f, FMath::Sin(OuterAngle) * Radius * 0.4f, 0.f);
-			UNiagaraComponent* NC2 = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + OuterOff, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC2) { NC2->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(0.95f, 0.85f, 0.1f, 1.f)); NC2->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); }
+			T66SpawnBudgetedPixel(World, VFX, Location + OuterOff, FVector4(0.95f, 0.85f, 0.1f, 1.f), FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium);
 		}
 	}
 	else
@@ -1362,8 +1466,7 @@ void UT66CombatComponent::SpawnHeroBounceVFX(const TArray<FVector>& ChainPositio
 			for (int32 j = 0; j < N; ++j)
 			{
 				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
 			}
 		}
 	}
@@ -1379,8 +1482,7 @@ void UT66CombatComponent::SpawnHeroBounceVFX(const TArray<FVector>& ChainPositio
 			for (int32 j = 0; j < N; ++j)
 			{
 				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.5, 3.5)); }
+				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(3.5f, 3.5f), ET66PixelVFXPriority::Medium);
 			}
 		}
 	}
@@ -1397,8 +1499,7 @@ void UT66CombatComponent::SpawnHeroBounceVFX(const TArray<FVector>& ChainPositio
 			{
 				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
 				const FVector Jitter(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
-				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T) + Jitter, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T) + Jitter, ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
 			}
 		}
 	}
@@ -1414,8 +1515,7 @@ void UT66CombatComponent::SpawnHeroBounceVFX(const TArray<FVector>& ChainPositio
 			for (int32 j = 0; j < N; ++j)
 			{
 				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-				UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, FMath::Lerp(A, B, T), FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-				if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(1.5, 1.5)); }
+				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
 			}
 		}
 	}
@@ -1443,8 +1543,7 @@ void UT66CombatComponent::SpawnHeroDOTVFX(const FVector& Location, float Duratio
 			const float Angle = T * 4.f * PI;
 			const float R = Radius * 0.3f * T;
 			const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, T * 30.f);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); NC->SetAutoDestroy(true); }
+			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_13")))
@@ -1454,8 +1553,7 @@ void UT66CombatComponent::SpawnHeroDOTVFX(const FVector& Location, float Duratio
 		for (int32 i = 0; i < N; ++i)
 		{
 			const FVector Offset(FMath::FRandRange(-15.f, 15.f), FMath::FRandRange(-15.f, 15.f), -static_cast<float>(i) * 12.f);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); NC->SetAutoDestroy(true); }
+			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_14")))
@@ -1466,8 +1564,7 @@ void UT66CombatComponent::SpawnHeroDOTVFX(const FVector& Location, float Duratio
 		{
 			const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
 			const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(0.5f, 0.8f, 1.f, 1.f)); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.0, 2.0)); NC->SetAutoDestroy(true); }
+			T66SpawnBudgetedPixel(World, VFX, Location + Offset, FVector4(0.5f, 0.8f, 1.f, 1.f), FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
 		}
 	}
 	else if (HeroID == FName(TEXT("Hero_16")))
@@ -1477,8 +1574,7 @@ void UT66CombatComponent::SpawnHeroDOTVFX(const FVector& Location, float Duratio
 		for (int32 i = 0; i < N; ++i)
 		{
 			const FVector Offset(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, VFX, Location + Offset, FRotator::ZeroRotator, FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC) { NC->SetVariableVec4(FName(TEXT("User.Tint")), ColorVec); NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(2.5, 2.5)); NC->SetAutoDestroy(true); }
+			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
 		}
 	}
 	else

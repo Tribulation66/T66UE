@@ -669,12 +669,28 @@ UT66DamageLogSubsystem* UT66GameplayHUDWidget::GetDamageLog() const
 	return GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr;
 }
 
+void UT66GameplayHUDWidget::MarkHUDDirty()
+{
+	bHUDDirty = true;
+}
+
 void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (bHUDDirty)
+	{
+		RefreshHUD();
+	}
+
 	RefreshCooldownBar();
-	RefreshDPS();
 	RefreshSpeedRunTimers();
+	DPSRefreshAccumSeconds += InDeltaTime;
+	if (DPSRefreshAccumSeconds >= DPSRefreshIntervalSeconds)
+	{
+		DPSRefreshAccumSeconds = 0.f;
+		RefreshDPS();
+	}
 }
 
 void UT66GameplayHUDWidget::RefreshCooldownBar()
@@ -686,13 +702,26 @@ void UT66GameplayHUDWidget::RefreshCooldownBar()
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(Pawn);
 	if (!Hero || !Hero->CombatComponent)
 	{
-		CooldownBarFillBox->SetWidthOverride(0.f);
-		if (CooldownTimeText.IsValid()) CooldownTimeText->SetText(FText::GetEmpty());
+		if (LastDisplayedCooldownBarWidthPx != 0)
+		{
+			LastDisplayedCooldownBarWidthPx = 0;
+			CooldownBarFillBox->SetWidthOverride(0.f);
+		}
+		if (CooldownTimeText.IsValid() && LastDisplayedCooldownRemainingCs != -1)
+		{
+			LastDisplayedCooldownRemainingCs = -1;
+			CooldownTimeText->SetText(FText::GetEmpty());
+		}
 		return;
 	}
 	float Pct = Hero->CombatComponent->GetAutoAttackCooldownProgress();
 	Pct = FMath::Clamp(Pct, 0.f, 1.f);
-	CooldownBarFillBox->SetWidthOverride(CooldownBarWidth * Pct);
+	const int32 WidthPx = FMath::RoundToInt(CooldownBarWidth * Pct);
+	if (WidthPx != LastDisplayedCooldownBarWidthPx)
+	{
+		LastDisplayedCooldownBarWidthPx = WidthPx;
+		CooldownBarFillBox->SetWidthOverride(static_cast<float>(WidthPx));
+	}
 
 	// Show remaining time above the bar (e.g. "0.42s").
 	// Perf: only reformat the text when the displayed centisecond value changes.
@@ -701,11 +730,9 @@ void UT66GameplayHUDWidget::RefreshCooldownBar()
 		const float Interval = Hero->CombatComponent->GetEffectiveFireInterval();
 		const float Remaining = FMath::Max(0.f, (1.f - Pct) * Interval);
 		const int32 RemainingCs = FMath::RoundToInt(Remaining * 100.f); // centiseconds
-		// [GOLD] HUD text cache: only reformat when centisecond value changes (avoids FString::Printf every frame).
-		static int32 LastRemainingCs = -1;
-		if (RemainingCs != LastRemainingCs)
+		if (RemainingCs != LastDisplayedCooldownRemainingCs)
 		{
-			LastRemainingCs = RemainingCs;
+			LastDisplayedCooldownRemainingCs = RemainingCs;
 			if (Remaining > 0.01f)
 			{
 				CooldownTimeText->SetText(FText::FromString(FString::Printf(TEXT("%.2fs"), Remaining)));
@@ -744,11 +771,16 @@ void UT66GameplayHUDWidget::RefreshDPS()
 
 	UT66DamageLogSubsystem* DamageLog = GetDamageLog();
 	const int32 DisplayDPS = DamageLog ? FMath::RoundToInt(FMath::Max(0.f, DamageLog->GetRollingDPS())) : 0;
-
-	DPSText->SetText(FText::Format(
-		NSLOCTEXT("T66.GameplayHUD", "DPSFormat", "DPS {0}"),
-		FText::AsNumber(DisplayDPS)));
-	DPSText->SetColorAndOpacity(FSlateColor(GetDPSColor(DisplayDPS)));
+	const FLinearColor DPSColor = GetDPSColor(DisplayDPS);
+	if (DisplayDPS != LastDisplayedDPS || !LastDisplayedDPSColor.Equals(DPSColor))
+	{
+		LastDisplayedDPS = DisplayDPS;
+		LastDisplayedDPSColor = DPSColor;
+		DPSText->SetText(FText::Format(
+			NSLOCTEXT("T66.GameplayHUD", "DPSFormat", "DPS {0}"),
+			FText::AsNumber(DisplayDPS)));
+		DPSText->SetColorAndOpacity(FSlateColor(DPSColor));
+	}
 }
 
 void UT66GameplayHUDWidget::NativeConstruct()
@@ -760,28 +792,28 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->HeartsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHearts);
 	RunState->GoldChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 	RunState->DebtChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
-	RunState->InventoryChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->PanelVisibilityChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->InventoryChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->PanelVisibilityChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->ScoreChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
-	RunState->StageChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->StageChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->StageTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStageAndTimer);
 	RunState->SpeedRunTimerChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshSpeedRunTimers);
 	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
-	RunState->DifficultyChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->CowardiceGatesTakenChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->IdolsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->DifficultyChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->CowardiceGatesTakenChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->IdolsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
-	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
-			PS->OnSettingsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+			PS->OnSettingsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		}
 		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
 		{
@@ -829,6 +861,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		}
 	}
 
+	MarkHUDDirty();
 	RefreshHUD();
 }
 
@@ -852,28 +885,28 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->HeartsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHearts);
 		RunState->GoldChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 		RunState->DebtChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
-		RunState->InventoryChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->PanelVisibilityChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->InventoryChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->PanelVisibilityChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
-		RunState->StageChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->StageChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshStageAndTimer);
 		RunState->SpeedRunTimerChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshSpeedRunTimers);
 		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
-		RunState->DifficultyChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->CowardiceGatesTakenChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->IdolsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
-		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->DifficultyChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->CowardiceGatesTakenChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->IdolsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
-		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->StatusEffectsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	}
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
-			PS->OnSettingsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHUD);
+			PS->OnSettingsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		}
 		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
 		{
@@ -1500,16 +1533,19 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 	if (SpeedRunText.IsValid())
 	{
 		const bool bShow = PS ? PS->GetSpeedRunMode() : false;
-		SpeedRunText->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
+		const EVisibility DesiredVisibility = bShow ? EVisibility::Visible : EVisibility::Collapsed;
+		if (SpeedRunText->GetVisibility() != DesiredVisibility)
+		{
+			SpeedRunText->SetVisibility(DesiredVisibility);
+		}
 		if (bShow)
 		{
 			const float Secs = FMath::Max(0.f, RunState->GetSpeedRunElapsedSeconds());
 			// [GOLD] HUD text cache: only reformat when the displayed centisecond value changes (avoids FText::Format every frame).
 			const int32 TotalCs = FMath::FloorToInt(Secs * 100.f);
-			static int32 LastSpeedRunTotalCs = -1;
-			if (TotalCs != LastSpeedRunTotalCs)
+			if (TotalCs != LastDisplayedSpeedRunTotalCs)
 			{
-				LastSpeedRunTotalCs = TotalCs;
+				LastDisplayedSpeedRunTotalCs = TotalCs;
 				const int32 M = FMath::FloorToInt(Secs / 60.f);
 				const int32 S = FMath::FloorToInt(FMath::Fmod(Secs, 60.f));
 				const int32 Cs = FMath::FloorToInt(FMath::Fmod(Secs * 100.f, 100.f));
@@ -1521,6 +1557,10 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 					FText::AsNumber(S, &TwoDigits),
 					FText::AsNumber(Cs, &TwoDigits)));
 			}
+		}
+		else
+		{
+			LastDisplayedSpeedRunTotalCs = -1;
 		}
 	}
 
@@ -1758,16 +1798,7 @@ void UT66GameplayHUDWidget::RefreshStatusEffects()
 
 void UT66GameplayHUDWidget::RefreshHUD()
 {
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		const float Now = static_cast<float>(World->GetTimeSeconds());
-		if (LastRefreshHUDTime >= 0.f && (Now - LastRefreshHUDTime) < RefreshHUDThrottleSeconds)
-		{
-			return;
-		}
-		LastRefreshHUDTime = Now;
-	}
+	bHUDDirty = false;
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -1794,45 +1825,62 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		const int32 Tier = RunState->GetHeartDisplayTier();
 		PortraitBorder->SetBorderBackgroundColor(RunState->GetMaxHP() > 0.f ? FT66RarityUtil::GetTierColor(Tier) : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
 	}
-	TSoftObjectPtr<UTexture2D> PortraitSoft;
-	if (GIAsT66 && !GIAsT66->SelectedHeroID.IsNone())
+	const FName DesiredPortraitHeroID = GIAsT66 ? GIAsT66->SelectedHeroID : NAME_None;
+	const ET66BodyType DesiredPortraitBodyType = GIAsT66 ? GIAsT66->SelectedHeroBodyType : ET66BodyType::TypeA;
+	ET66HeroPortraitVariant DesiredPortraitVariant = ET66HeroPortraitVariant::Half;
+	const int32 HeartsRemaining = RunState->GetCurrentHearts();
+	if (HeartsRemaining <= 1)
 	{
-		FHeroData HeroData;
-		if (GIAsT66->GetHeroData(GIAsT66->SelectedHeroID, HeroData))
-		{
-			ET66HeroPortraitVariant PortraitVariant = ET66HeroPortraitVariant::Half;
-			if (RunState)
-			{
-				const int32 HeartsRemaining = RunState->GetCurrentHearts();
-				if (HeartsRemaining <= 1)
-				{
-					PortraitVariant = ET66HeroPortraitVariant::Low;
-				}
-				else if (HeartsRemaining >= 5)
-				{
-					PortraitVariant = ET66HeroPortraitVariant::Full;
-				}
-			}
-			PortraitSoft = GIAsT66->ResolveHeroPortrait(HeroData, GIAsT66->SelectedHeroBodyType, PortraitVariant);
-		}
+		DesiredPortraitVariant = ET66HeroPortraitVariant::Low;
 	}
-	const bool bHasPortraitRef = !PortraitSoft.IsNull();
-
-	if (PortraitBrush.IsValid())
+	else if (HeartsRemaining >= 5)
 	{
-		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-		if (PortraitSoft.IsNull() || !TexPool)
+		DesiredPortraitVariant = ET66HeroPortraitVariant::Full;
+	}
+
+	const bool bPortraitStateChanged = !bPortraitStateInitialized
+		|| LastPortraitHeroID != DesiredPortraitHeroID
+		|| LastPortraitBodyType != DesiredPortraitBodyType
+		|| LastPortraitVariant != DesiredPortraitVariant;
+
+	if (bPortraitStateChanged)
+	{
+		bPortraitStateInitialized = true;
+		LastPortraitHeroID = DesiredPortraitHeroID;
+		LastPortraitBodyType = DesiredPortraitBodyType;
+		LastPortraitVariant = DesiredPortraitVariant;
+
+		TSoftObjectPtr<UTexture2D> PortraitSoft;
+		if (GIAsT66 && !DesiredPortraitHeroID.IsNone())
 		{
-			PortraitBrush->SetResourceObject(nullptr);
+			FHeroData HeroData;
+			if (GIAsT66->GetHeroData(DesiredPortraitHeroID, HeroData))
+			{
+				PortraitSoft = GIAsT66->ResolveHeroPortrait(HeroData, DesiredPortraitBodyType, DesiredPortraitVariant);
+			}
 		}
-		else
+
+		bLastPortraitHasRef = !PortraitSoft.IsNull();
+		if (PortraitBrush.IsValid())
 		{
-			T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, PortraitBrush, FName(TEXT("HUDPortrait")), /*bClearWhileLoading*/ true);
+			UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+			if (PortraitSoft.IsNull() || !TexPool)
+			{
+				PortraitBrush->SetResourceObject(nullptr);
+			}
+			else
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, PortraitBrush, FName(TEXT("HUDPortrait")), /*bClearWhileLoading*/ true);
+			}
 		}
 	}
 	if (PortraitImage.IsValid())
 	{
-		PortraitImage->SetVisibility(bHasPortraitRef ? EVisibility::Visible : EVisibility::Collapsed);
+		const EVisibility DesiredVisibility = bLastPortraitHasRef ? EVisibility::Visible : EVisibility::Collapsed;
+		if (PortraitImage->GetVisibility() != DesiredVisibility)
+		{
+			PortraitImage->SetVisibility(DesiredVisibility);
+		}
 	}
 
 	// Hero level + XP progress ring

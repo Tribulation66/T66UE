@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66FloatingCombatTextSubsystem.h"
+#include "Core/T66FloatingCombatTextPoolSubsystem.h"
 #include "Gameplay/T66FloatingCombatTextActor.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -30,15 +31,15 @@ void UT66FloatingCombatTextSubsystem::ShowDamageNumber(AActor* Target, int32 Amo
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
+	UT66FloatingCombatTextPoolSubsystem* Pool = World->GetSubsystem<UT66FloatingCombatTextPoolSubsystem>();
+	if (!Pool) return;
+
+	++DamageNumberSequence;
+	const float Side = (((GetTypeHash(Target) + DamageNumberSequence) & 1u) == 0u) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
+	AT66FloatingCombatTextActor* Actor = Pool->AcquireActor(Target, FVector(Side, 0.f, OffsetAboveHead), TextLifetimeSeconds);
 	if (Actor)
 	{
-		Actor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		const uint32 Seed = static_cast<uint32>(FMath::Abs(FDateTime::Now().GetTicks()) + GetTypeHash(Target));
-		const float Side = (Seed % 2u == 0) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
-		Actor->SetActorRelativeLocation(FVector(Side, 0.f, OffsetAboveHead));
-		Actor->SetDamageNumber(Amount, NAME_None);
-		Actor->SetLifeSpan(TextLifetimeSeconds);
+		Actor->SetDamageNumber(Amount, EventType);
 	}
 }
 
@@ -49,15 +50,15 @@ void UT66FloatingCombatTextSubsystem::ShowDamageTaken(AActor* Target, int32 Amou
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	AT66FloatingCombatTextActor* Actor = World->SpawnActor<AT66FloatingCombatTextActor>(FVector::ZeroVector, FRotator::ZeroRotator);
+	UT66FloatingCombatTextPoolSubsystem* Pool = World->GetSubsystem<UT66FloatingCombatTextPoolSubsystem>();
+	if (!Pool) return;
+
+	++DamageNumberSequence;
+	const float Side = (((GetTypeHash(Target) + DamageNumberSequence) & 1u) == 0u) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
+	AT66FloatingCombatTextActor* Actor = Pool->AcquireActor(Target, FVector(Side, 0.f, OffsetAboveHead), TextLifetimeSeconds);
 	if (Actor)
 	{
-		Actor->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-		const uint32 Seed = static_cast<uint32>(FMath::Abs(FDateTime::Now().GetTicks()) + GetTypeHash(Target));
-		const float Side = (Seed % 2u == 0) ? DamageNumberOffsetSide : -DamageNumberOffsetSide;
-		Actor->SetActorRelativeLocation(FVector(Side, 0.f, OffsetAboveHead));
 		Actor->SetDamageNumber(Amount, EventType_DamageTaken);
-		Actor->SetLifeSpan(TextLifetimeSeconds);
 	}
 }
 

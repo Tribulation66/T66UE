@@ -5,11 +5,13 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Components/SphereComponent.h"
+#include "Data/T66DataTypes.h"
 #include "T66CombatComponent.generated.h"
 
 class AT66EnemyBase;
 class AT66BossBase;
 class UT66RunStateSubsystem;
+class UT66FloatingCombatTextSubsystem;
 class USoundBase;
 class UNiagaraSystem;
 
@@ -109,6 +111,22 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66FloatingCombatTextSubsystem> CachedFloatingCombatText = nullptr;
+
+	bool bHasCachedHeroData = false;
+	FHeroData CachedHeroData;
+
+	struct FCachedIdolSlot
+	{
+		FName IdolID = NAME_None;
+		FIdolData IdolData;
+		ET66ItemRarity Rarity = ET66ItemRarity::Black;
+		bool bValid = false;
+	};
+
+	TArray<FCachedIdolSlot> CachedIdolSlots;
 
 	// Auto-attack sound effect (optional).
 	UPROPERTY()

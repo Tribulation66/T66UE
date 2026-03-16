@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Core/T66PixelVFXSubsystem.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Gameplay/T66HeroBase.h"
@@ -139,13 +140,15 @@ void AT66Shroom::OnSideTriggerOverlap(UPrimitiveComponent* OverlappedComponent, 
 void AT66Shroom::SpawnPixelBurst(const FVector& Location, const FLinearColor& Color) const
 {
 	if (!CachedPixelVFX || !GetWorld()) return;
-
-	UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		GetWorld(), CachedPixelVFX, Location, FRotator::ZeroRotator,
-		FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-	if (NC)
+	if (UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>())
 	{
-		NC->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(Color.R, Color.G, Color.B, 1.f));
-		NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(4.0, 4.0));
+		PixelVFX->SpawnPixelAtLocation(
+			Location,
+			FLinearColor(Color.R, Color.G, Color.B, 1.f),
+			FVector2D(4.0f, 4.0f),
+			ET66PixelVFXPriority::Medium,
+			FRotator::ZeroRotator,
+			FVector(1.f),
+			CachedPixelVFX);
 	}
 }

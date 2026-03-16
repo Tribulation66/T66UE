@@ -4,6 +4,7 @@
 #include "UI/T66FloatingCombatTextWidget.h"
 #include "Components/WidgetComponent.h"
 #include "Components/SceneComponent.h"
+#include "GameFramework/Actor.h"
 
 AT66FloatingCombatTextActor::AT66FloatingCombatTextActor()
 {
@@ -19,6 +20,40 @@ AT66FloatingCombatTextActor::AT66FloatingCombatTextActor()
 	WidgetComponent->SetDrawSize(FVector2D(200.f, 40.f));
 	WidgetComponent->SetWidgetClass(UT66FloatingCombatTextWidget::StaticClass());
 	WidgetComponent->InitWidget();
+}
+
+void AT66FloatingCombatTextActor::ActivateForTarget(AActor* Target, const FVector& RelativeLocation)
+{
+	if (!IsValid(Target))
+	{
+		return;
+	}
+
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(false);
+	if (WidgetComponent)
+	{
+		WidgetComponent->SetVisibility(true, true);
+		if (!WidgetComponent->GetUserWidgetObject())
+		{
+			WidgetComponent->InitWidget();
+		}
+	}
+
+	AttachToActor(Target, FAttachmentTransformRules::KeepRelativeTransform);
+	SetActorRelativeLocation(RelativeLocation);
+}
+
+void AT66FloatingCombatTextActor::DeactivateForPool()
+{
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorLocation(FVector(0.f, 0.f, -50000.f));
+	if (WidgetComponent)
+	{
+		WidgetComponent->SetVisibility(false, true);
+	}
 }
 
 void AT66FloatingCombatTextActor::SetDamageNumber(int32 Amount, FName EventType)

@@ -3,12 +3,12 @@
 #include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
-#include "EngineUtils.h"
 
 AT66BossGate::AT66BossGate()
 {
@@ -75,16 +75,20 @@ void AT66BossGate::TryTriggerForActor(AActor* OtherActor)
 	if (!Cast<AT66HeroBase>(OtherActor)) return;
 
 	bTriggered = true;
+	SetActorTickEnabled(false);
 
 	// Awaken the stage boss immediately once the player passes the boss pillars.
 	UWorld* World = GetWorld();
 	if (!World) return;
-	for (TActorIterator<AT66BossBase> It(World); It; ++It)
+	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 	{
-		if (AT66BossBase* Boss = *It)
+		for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
 		{
-			Boss->ForceAwaken();
-			break;
+			if (AT66BossBase* Boss = WeakBoss.Get())
+			{
+				Boss->ForceAwaken();
+				break;
+			}
 		}
 	}
 }

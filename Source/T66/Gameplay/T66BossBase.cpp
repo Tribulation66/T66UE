@@ -9,6 +9,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "AIController.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -146,8 +147,30 @@ void AT66BossBase::ApplyDifficultyScalar(float Scalar)
 void AT66BossBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->RegisterBoss(this);
+		}
+	}
+
 	bAwakened = false;
 	CurrentHP = 0;
+}
+
+void AT66BossBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterBoss(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66BossBase::Tick(float DeltaSeconds)

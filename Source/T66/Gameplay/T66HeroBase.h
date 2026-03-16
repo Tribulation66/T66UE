@@ -192,6 +192,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UT66HeroSpeedSubsystem> CachedHeroSpeedSubsystem = nullptr;
+
 	/** Cached idle/walk/jump anims for the current hero visual. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedIdleAnim = nullptr;
@@ -232,9 +235,12 @@ private:
 	bool bHasLastSafeGroundTransform = false;
 	float ContinuousFallSeconds = 0.f;
 	float LastTerrainRecoveryTime = -9999.f;
+	float GroundTraceAccumSeconds = 0.f;
 	static constexpr float TerrainRecoveryCooldown = 1.0f;
 	static constexpr float TerrainRecoveryFallSeconds = 2.0f;
 	static constexpr float TerrainRecoveryMissingGroundDistance = 2500.f;
+	static constexpr float GroundTraceIntervalGrounded = 0.075f;
+	static constexpr float GroundTraceIntervalFalling = 0.066f;
 
 	/** When cooldown bar shows full (1), keep it at full for this long (seconds). */
 	float CooldownDisplayHoldUntil = -1.f;
@@ -243,11 +249,13 @@ private:
 	// Enemy touch damage + bounce (hero-side proximity check when collision is Block)
 	float LastEnemyTouchDamageTime = -9999.f;
 	float LastEnemyBounceTime = -9999.f;
+	float EnemyTouchCheckAccumSeconds = 0.f;
 	static constexpr float EnemyTouchDamageCooldown = 0.5f;
 	static constexpr float EnemyBounceCooldown = 0.25f;
 	static constexpr float EnemyTouchRadius = 90.f;
 	static constexpr float EnemyBounceStrength = 420.f;
 	static constexpr float EnemyBounceZ = 120.f;
+	static constexpr float EnemyTouchCheckInterval = 0.10f;
 
 private:
 	/** Load and cache the static mesh assets */

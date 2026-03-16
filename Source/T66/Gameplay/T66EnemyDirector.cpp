@@ -367,10 +367,11 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 
-	while (PendingSpawns.Num() > 0)
+	int32 ProcessedCount = 0;
+	while (ProcessedCount < PendingSpawns.Num())
 	{
-		FPendingEnemySpawn Slot = PendingSpawns[0];
-		PendingSpawns.RemoveAt(0);
+		const FPendingEnemySpawn Slot = PendingSpawns[ProcessedCount];
+		++ProcessedCount;
 
 		const bool bIsMob = (Slot.ClassToSpawn == EnemyClass);
 		AT66EnemyBase* Enemy = nullptr;
@@ -442,5 +443,10 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 			AliveCount++;
 			Enemy->StartRiseFromGround(Slot.GroundLocation.Z);
 		}
+	}
+
+	if (ProcessedCount > 0)
+	{
+		PendingSpawns.RemoveAt(0, ProcessedCount, EAllowShrinking::No);
 	}
 }

@@ -4,6 +4,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Components/SphereComponent.h"
@@ -74,6 +75,7 @@ void AT66BossGroundAOE::Tick(float DeltaSeconds)
 		const FLinearColor BaseColor = bDamageEnemies
 			? FLinearColor(0.2f, 0.3f, 0.9f, 0.6f)
 			: FLinearColor(0.9f, 0.1f, 0.05f, 0.6f);
+		UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
 
 		static constexpr int32 RingParticles = 8;
 		for (int32 i = 0; i < RingParticles; ++i)
@@ -86,14 +88,16 @@ void AT66BossGroundAOE::Tick(float DeltaSeconds)
 				Origin.Z + 5.f);
 
 			const FVector4 Tint(BaseColor.R, BaseColor.G, BaseColor.B, BaseColor.A);
-
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), CachedPixelVFX, Loc, FRotator::ZeroRotator,
-				FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC)
+			if (PixelVFX)
 			{
-				NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
-				NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
+				PixelVFX->SpawnPixelAtLocation(
+					Loc,
+					FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
+					FVector2D(3.0f, 3.0f),
+					ET66PixelVFXPriority::Low,
+					FRotator::ZeroRotator,
+					FVector(1.f),
+					CachedPixelVFX);
 			}
 		}
 	}
@@ -107,6 +111,7 @@ void AT66BossGroundAOE::Tick(float DeltaSeconds)
 		const FLinearColor PillarColor = bDamageEnemies
 			? FLinearColor(0.4f, 0.2f, 0.9f, 0.9f)
 			: FLinearColor(1.f, 0.15f, 0.05f, 0.9f);
+		UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
 
 		static constexpr int32 PillarParticles = 10;
 		for (int32 i = 0; i < PillarParticles; ++i)
@@ -120,14 +125,16 @@ void AT66BossGroundAOE::Tick(float DeltaSeconds)
 				Origin.Z + Z);
 
 			const FVector4 Tint(PillarColor.R, PillarColor.G, PillarColor.B, PillarColor.A);
-
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), CachedPixelVFX, Loc, FRotator::ZeroRotator,
-				FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC)
+			if (PixelVFX)
 			{
-				NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
-				NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(4.0, 4.0));
+				PixelVFX->SpawnPixelAtLocation(
+					Loc,
+					FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
+					FVector2D(4.0f, 4.0f),
+					ET66PixelVFXPriority::Low,
+					FRotator::ZeroRotator,
+					FVector(1.f),
+					CachedPixelVFX);
 			}
 		}
 	}
@@ -188,6 +195,7 @@ void AT66BossGroundAOE::ActivateDamage()
 		const FLinearColor PillarColor = bDamageEnemies
 			? FLinearColor(0.4f, 0.2f, 0.9f, 1.f)
 			: FLinearColor(1.f, 0.15f, 0.05f, 1.f);
+		UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
 
 		for (int32 i = 0; i < 30; ++i)
 		{
@@ -198,14 +206,16 @@ void AT66BossGroundAOE::ActivateDamage()
 				Origin.X + FMath::Cos(Angle) * Dist,
 				Origin.Y + FMath::Sin(Angle) * Dist,
 				Origin.Z + Z);
-
-			UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), CachedPixelVFX, Loc, FRotator::ZeroRotator,
-				FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-			if (NC)
+			if (PixelVFX)
 			{
-				NC->SetVariableVec4(FName(TEXT("User.Tint")), FVector4(PillarColor.R, PillarColor.G, PillarColor.B, 1.f));
-				NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(4.0, 4.0));
+				PixelVFX->SpawnPixelAtLocation(
+					Loc,
+					FLinearColor(PillarColor.R, PillarColor.G, PillarColor.B, 1.f),
+					FVector2D(4.0f, 4.0f),
+					ET66PixelVFXPriority::Medium,
+					FRotator::ZeroRotator,
+					FVector(1.f),
+					CachedPixelVFX);
 			}
 		}
 	}

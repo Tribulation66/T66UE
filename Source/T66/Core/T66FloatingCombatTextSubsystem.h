@@ -61,4 +61,6 @@ private:
 	static constexpr float OffsetAboveHead = 180.f;
 	/** Lifetime of each floating text actor (seconds) before it destroys itself. */
 	static constexpr float TextLifetimeSeconds = 1.2f;
+
+	uint32 DamageNumberSequence = 0;
 };

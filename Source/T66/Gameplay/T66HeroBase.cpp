@@ -259,13 +259,17 @@ void AT66HeroBase::BeginPlay()
 	}
 
 	// Cache run state for derived stats (level + last-stand).
-	CachedRunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (CachedRunState)
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
-		CachedRunState->HeroProgressChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
-		CachedRunState->SurvivalChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
-		CachedRunState->InventoryChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
-		CachedRunState->PanelVisibilityChanged.AddDynamic(this, &AT66HeroBase::HandleHUDPanelVisibilityChanged);
+		CachedRunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+		CachedHeroSpeedSubsystem = GI->GetSubsystem<UT66HeroSpeedSubsystem>();
+		if (CachedRunState)
+		{
+			CachedRunState->HeroProgressChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+			CachedRunState->SurvivalChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+			CachedRunState->InventoryChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
+			CachedRunState->PanelVisibilityChanged.AddDynamic(this, &AT66HeroBase::HandleHUDPanelVisibilityChanged);
+		}
 	}
 
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -371,41 +375,56 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 					World->LineTraceSingleByChannel(OutHit, TraceStart, TraceEnd, ECC_Visibility, Params);
 			};
 
-			if (!Movement->IsFalling())
+			const bool bIsFalling = Movement->IsFalling();
+			const bool bForceRecoveryTrace = bIsFalling
+				&& (GetActorLocation().Z < (LastSafeGroundLocation.Z - 5000.f) || GetActorLocation().Z < -10000.f);
+			GroundTraceAccumSeconds += DeltaSeconds;
+			const float GroundTraceInterval = bIsFalling ? GroundTraceIntervalFalling : GroundTraceIntervalGrounded;
+			const bool bShouldTraceGround = bForceRecoveryTrace || GroundTraceAccumSeconds >= GroundTraceInterval;
+
+			if (!bIsFalling)
 			{
 				ContinuousFallSeconds = 0.f;
 
-				FHitResult GroundHit;
-				if (TraceGround(250.f, 600.f, GroundHit))
+				if (bShouldTraceGround)
 				{
-					const float HalfHeight = GetCapsuleComponent() ? GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
-					LastSafeGroundLocation = GroundHit.ImpactPoint + FVector(0.f, 0.f, HalfHeight + 5.f);
-					LastSafeGroundRotation = GetActorRotation();
-					bHasLastSafeGroundTransform = true;
+					GroundTraceAccumSeconds = 0.f;
+					FHitResult GroundHit;
+					if (TraceGround(250.f, 600.f, GroundHit))
+					{
+						const float HalfHeight = GetCapsuleComponent() ? GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
+						LastSafeGroundLocation = GroundHit.ImpactPoint + FVector(0.f, 0.f, HalfHeight + 5.f);
+						LastSafeGroundRotation = GetActorRotation();
+						bHasLastSafeGroundTransform = true;
+					}
 				}
 			}
 			else
 			{
 				ContinuousFallSeconds += DeltaSeconds;
 
-				FHitResult GroundHit;
-				const bool bGroundWithinRecoveryRange = TraceGround(100.f, TerrainRecoveryMissingGroundDistance, GroundHit);
 				const float Now = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
-				const bool bCanRecover = bHasLastSafeGroundTransform
-					&& !bIsSkyDropping
-					&& !bGroundWithinRecoveryRange
-					&& (Now - LastTerrainRecoveryTime) >= TerrainRecoveryCooldown;
 				const bool bFellFarBelowSafeGround = GetActorLocation().Z < (LastSafeGroundLocation.Z - 5000.f);
 				const bool bFellOutOfWorld = GetActorLocation().Z < -10000.f;
-				if (bCanRecover
-					&& (ContinuousFallSeconds >= TerrainRecoveryFallSeconds || bFellFarBelowSafeGround || bFellOutOfWorld))
+				if (bShouldTraceGround)
 				{
-					SetActorLocation(LastSafeGroundLocation, false, nullptr, ETeleportType::TeleportPhysics);
-					SetActorRotation(LastSafeGroundRotation, ETeleportType::TeleportPhysics);
-					Movement->StopMovementImmediately();
-					Movement->SetMovementMode(MOVE_Walking);
-					ContinuousFallSeconds = 0.f;
-					LastTerrainRecoveryTime = Now;
+					GroundTraceAccumSeconds = 0.f;
+					FHitResult GroundHit;
+					const bool bGroundWithinRecoveryRange = TraceGround(100.f, TerrainRecoveryMissingGroundDistance, GroundHit);
+					const bool bCanRecover = bHasLastSafeGroundTransform
+						&& !bIsSkyDropping
+						&& !bGroundWithinRecoveryRange
+						&& (Now - LastTerrainRecoveryTime) >= TerrainRecoveryCooldown;
+					if (bCanRecover
+						&& (ContinuousFallSeconds >= TerrainRecoveryFallSeconds || bFellFarBelowSafeGround || bFellOutOfWorld))
+					{
+						SetActorLocation(LastSafeGroundLocation, false, nullptr, ETeleportType::TeleportPhysics);
+						SetActorRotation(LastSafeGroundRotation, ETeleportType::TeleportPhysics);
+						Movement->StopMovementImmediately();
+						Movement->SetMovementMode(MOVE_Walking);
+						ContinuousFallSeconds = 0.f;
+						LastTerrainRecoveryTime = Now;
+					}
 				}
 			}
 		}
@@ -429,51 +448,48 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	// Hero speed: instant max when moving, 0 when idle; drive MaxWalkSpeed and animation state.
 	if (!bIsPreviewMode)
 	{
-		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		if (CachedHeroSpeedSubsystem)
 		{
-			if (UT66HeroSpeedSubsystem* SpeedSub = GI->GetSubsystem<UT66HeroSpeedSubsystem>())
+			// Movement input: use last movement input (set by controller when it calls AddMovementInput).
+			const FVector LastInput = GetLastMovementInputVector();
+			const bool bHasMovementInput = LastInput.SizeSquared() > 0.01f;
+			CachedHeroSpeedSubsystem->Update(DeltaSeconds, bHasMovementInput);
+			if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 			{
-				// Movement input: use last movement input (set by controller when it calls AddMovementInput).
-				const FVector LastInput = GetLastMovementInputVector();
-				const bool bHasMovementInput = LastInput.SizeSquared() > 0.01f;
-				SpeedSub->Update(DeltaSeconds, bHasMovementInput);
-				if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+				Movement->MaxWalkSpeed = CachedHeroSpeedSubsystem->GetCurrentSpeed();
+			}
+			// Hero animation: idle at zero speed, walk while moving, jump while airborne.
+			if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim))
+			{
+				EMovementAnimState NewState = EMovementAnimState::Idle;
+				if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
 				{
-					Movement->MaxWalkSpeed = SpeedSub->GetCurrentSpeed();
+					NewState = EMovementAnimState::Jump;
 				}
-				// Hero animation: idle at zero speed, walk while moving, jump while airborne.
-				if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim))
+				else if (CachedHeroSpeedSubsystem->GetMovementAnimState() != 0)
 				{
-					EMovementAnimState NewState = EMovementAnimState::Idle;
-					if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
-					{
-						NewState = EMovementAnimState::Jump;
-					}
-					else if (SpeedSub->GetMovementAnimState() != 0)
-					{
-						NewState = EMovementAnimState::Walk;
-					}
+					NewState = EMovementAnimState::Walk;
+				}
 
-					if (LastMovementAnimState != NewState)
+				if (LastMovementAnimState != NewState)
+				{
+					LastMovementAnimState = NewState;
+					UAnimationAsset* ToPlay = nullptr;
+					switch (NewState)
 					{
-						LastMovementAnimState = NewState;
-						UAnimationAsset* ToPlay = nullptr;
-						switch (NewState)
-						{
-						case EMovementAnimState::Idle:
-							ToPlay = CachedIdleAnim ? CachedIdleAnim : CachedWalkAnim;
-							break;
-						case EMovementAnimState::Jump:
-							ToPlay = CachedJumpAnim ? CachedJumpAnim : CachedWalkAnim;
-							break;
-						case EMovementAnimState::Walk:
-						default:
-							ToPlay = CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim;
-							break;
-						}
-						if (ToPlay)
-							GetMesh()->PlayAnimation(ToPlay, true);
+					case EMovementAnimState::Idle:
+						ToPlay = CachedIdleAnim ? CachedIdleAnim : CachedWalkAnim;
+						break;
+					case EMovementAnimState::Jump:
+						ToPlay = CachedJumpAnim ? CachedJumpAnim : CachedWalkAnim;
+						break;
+					case EMovementAnimState::Walk:
+					default:
+						ToPlay = CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim;
+						break;
 					}
+					if (ToPlay)
+						GetMesh()->PlayAnimation(ToPlay, true);
 				}
 			}
 		}
@@ -508,41 +524,46 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	if (!bIsPreviewMode)
 	{
 		UWorld* World = GetWorld();
-		UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		EnemyTouchCheckAccumSeconds += DeltaSeconds;
+		UT66RunStateSubsystem* RunState = CachedRunState;
 		if (World && RunState)
 		{
-			const float Now = static_cast<float>(World->GetTimeSeconds());
-			TArray<FOverlapResult> Overlaps;
-			FCollisionQueryParams Params;
-			Params.AddIgnoredActor(this);
-			World->OverlapMultiByChannel(Overlaps, GetActorLocation(), FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(EnemyTouchRadius), Params);
-			AT66EnemyBase* ClosestEnemy = nullptr;
-			float ClosestDistSq = EnemyTouchRadius * EnemyTouchRadius;
-			for (const FOverlapResult& R : Overlaps)
+			if (EnemyTouchCheckAccumSeconds >= EnemyTouchCheckInterval)
 			{
-				AActor* A = R.GetActor();
-				if (!A) continue;
-				AT66EnemyBase* E = Cast<AT66EnemyBase>(A);
-				if (!E || E->CurrentHP <= 0) continue;
-				const float DistSq = FVector::DistSquared(GetActorLocation(), E->GetActorLocation());
-				if (DistSq < ClosestDistSq)
+				EnemyTouchCheckAccumSeconds = 0.f;
+				const float Now = static_cast<float>(World->GetTimeSeconds());
+				TArray<FOverlapResult> Overlaps;
+				FCollisionQueryParams Params;
+				Params.AddIgnoredActor(this);
+				World->OverlapMultiByChannel(Overlaps, GetActorLocation(), FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(EnemyTouchRadius), Params);
+				AT66EnemyBase* ClosestEnemy = nullptr;
+				float ClosestDistSq = EnemyTouchRadius * EnemyTouchRadius;
+				for (const FOverlapResult& R : Overlaps)
 				{
-					ClosestDistSq = DistSq;
-					ClosestEnemy = E;
-				}
-			}
-			if (ClosestEnemy && !IsInSafeZone())
-			{
-				if (Now - LastEnemyBounceTime >= EnemyBounceCooldown)
-				{
-					LastEnemyBounceTime = Now;
-					FVector Away = (GetActorLocation() - ClosestEnemy->GetActorLocation()).GetSafeNormal2D();
-					Away.Z = 0.f;
-					Away.Normalize();
-					const FVector BounceVel = Away * EnemyBounceStrength + FVector(0.f, 0.f, EnemyBounceZ);
-					if (UCharacterMovementComponent* Move = GetCharacterMovement())
+					AActor* A = R.GetActor();
+					if (!A) continue;
+					AT66EnemyBase* E = Cast<AT66EnemyBase>(A);
+					if (!E || E->CurrentHP <= 0) continue;
+					const float DistSq = FVector::DistSquared(GetActorLocation(), E->GetActorLocation());
+					if (DistSq < ClosestDistSq)
 					{
-						LaunchCharacter(BounceVel, true, true);
+						ClosestDistSq = DistSq;
+						ClosestEnemy = E;
+					}
+				}
+				if (ClosestEnemy && !IsInSafeZone())
+				{
+					if (Now - LastEnemyBounceTime >= EnemyBounceCooldown)
+					{
+						LastEnemyBounceTime = Now;
+						FVector Away = (GetActorLocation() - ClosestEnemy->GetActorLocation()).GetSafeNormal2D();
+						Away.Z = 0.f;
+						Away.Normalize();
+						const FVector BounceVel = Away * EnemyBounceStrength + FVector(0.f, 0.f, EnemyBounceZ);
+						if (UCharacterMovementComponent* Move = GetCharacterMovement())
+						{
+							LaunchCharacter(BounceVel, true, true);
+						}
 					}
 				}
 			}

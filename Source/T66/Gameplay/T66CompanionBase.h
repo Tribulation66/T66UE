@@ -12,6 +12,9 @@ class USceneComponent;
 class USkeletalMeshComponent;
 class UAnimationAsset;
 class UT66HeroSpeedSubsystem;
+class UT66AchievementsSubsystem;
+class UT66RunStateSubsystem;
+class APawn;
 
 /**
  * Base class for companions. Uses a sphere mesh (placeholder).
@@ -66,6 +69,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(VisibleAnywhere, Category = "Visuals")
 	TObjectPtr<USceneComponent> Root;
@@ -98,6 +102,18 @@ protected:
 	int32 GroundTraceTickCounter = 0;
 	static constexpr int32 GroundTraceEveryNTicks = 3;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UT66HeroSpeedSubsystem> CachedHeroSpeedSubsystem = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66AchievementsSubsystem> CachedAchievementsSubsystem = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66RunStateSubsystem> CachedRunStateSubsystem = nullptr;
+
+	TWeakObjectPtr<APawn> CachedHeroPawn;
+	int32 CachedUnionStagesCleared = 0;
+
 	// Healing (gameplay only)
 	float HealAccumSeconds = 0.f;
 
@@ -106,4 +122,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Healing")
 	int32 HealAmountHearts = 1;
+
+	UFUNCTION()
+	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);
 };

@@ -4,6 +4,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66VisualUtil.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
@@ -13,7 +14,6 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
-#include "EngineUtils.h"
 
 AT66LoanShark::AT66LoanShark()
 {
@@ -95,35 +95,10 @@ void AT66LoanShark::Tick(float DeltaSeconds)
 	if (!PlayerPawn) return;
 
 	// Safe zone rule: cannot enter NPC safe bubbles. If inside, run away.
-	// Perf: use cached NPC list refreshed every 2s (avoid TActorIterator every frame).
-	struct FSafeNPCache
-	{
-		TWeakObjectPtr<UWorld> World;
-		double LastRefreshSeconds = -1.0;
-		TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
-	};
-	static FSafeNPCache Cache;
 	UWorld* World = GetWorld();
-	const double NowSeconds = FPlatformTime::Seconds();
-	const bool bWorldChanged = (Cache.World.Get() != World);
-	const bool bNeedsRefresh = bWorldChanged || (Cache.LastRefreshSeconds < 0.0) || ((NowSeconds - Cache.LastRefreshSeconds) > 2.0);
-	if (bNeedsRefresh)
-	{
-		Cache.World = World;
-		Cache.LastRefreshSeconds = NowSeconds;
-		Cache.NPCs.Reset();
-		if (World)
-		{
-			for (TActorIterator<AT66HouseNPCBase> It(World); It; ++It)
-			{
-				if (AT66HouseNPCBase* NPC = *It)
-				{
-					Cache.NPCs.Add(NPC);
-				}
-			}
-		}
-	}
-	for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Cache.NPCs)
+	UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+	const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
+	for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
 	{
 		AT66HouseNPCBase* NPC = WeakNPC.Get();
 		if (!NPC) continue;

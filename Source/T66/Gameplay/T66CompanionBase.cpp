@@ -53,12 +53,46 @@ void AT66CompanionBase::BeginPlay()
 	{
 		PlaceholderMaterial = PlaceholderMesh->CreateAndSetMaterialInstanceDynamic(0);
 	}
+
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		CachedHeroSpeedSubsystem = GI->GetSubsystem<UT66HeroSpeedSubsystem>();
+		CachedAchievementsSubsystem = GI->GetSubsystem<UT66AchievementsSubsystem>();
+		CachedRunStateSubsystem = GI->GetSubsystem<UT66RunStateSubsystem>();
+		if (CachedAchievementsSubsystem)
+		{
+			CachedUnionStagesCleared = CachedAchievementsSubsystem->GetCompanionUnionStagesCleared(CompanionID);
+			CachedAchievementsSubsystem->AchievementsUnlocked.AddDynamic(this, &AT66CompanionBase::HandleAchievementsUnlocked);
+		}
+	}
+}
+
+void AT66CompanionBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (CachedAchievementsSubsystem)
+	{
+		CachedAchievementsSubsystem->AchievementsUnlocked.RemoveDynamic(this, &AT66CompanionBase::HandleAchievementsUnlocked);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void AT66CompanionBase::HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs)
+{
+	if (CachedAchievementsSubsystem)
+	{
+		CachedUnionStagesCleared = CachedAchievementsSubsystem->GetCompanionUnionStagesCleared(CompanionID);
+	}
 }
 
 void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName SkinID)
 {
 	CompanionID = InData.CompanionID;
 	CompanionData = InData;
+	if (CachedAchievementsSubsystem)
+	{
+		CachedUnionStagesCleared = CachedAchievementsSubsystem->GetCompanionUnionStagesCleared(CompanionID);
+	}
 	SetPlaceholderColor(InData.PlaceholderColor);
 
 	// VisualID = Companion_01 or Companion_01_Beachgoer (from DT_CharacterVisuals).
@@ -167,11 +201,9 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	// Animation: two states only — Alert (idle) and Run (any movement). Match hero.
 	if (bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->IsVisible() && (CachedAlertAnim || CachedRunAnim || CachedWalkAnim))
 	{
-		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-		UT66HeroSpeedSubsystem* SpeedSub = GI ? GI->GetSubsystem<UT66HeroSpeedSubsystem>() : nullptr;
-		if (SpeedSub)
+		if (CachedHeroSpeedSubsystem)
 		{
-			const int32 NewState = SpeedSub->GetMovementAnimState(); // 0=Idle, 2=Run
+			const int32 NewState = CachedHeroSpeedSubsystem->GetMovementAnimState(); // 0=Idle, 2=Run
 			if (NewState != LastMovementAnimState)
 			{
 				LastMovementAnimState = static_cast<uint8>(NewState);
@@ -189,9 +221,15 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	// Follow the player's pawn (hero)
 	UWorld* World = GetWorld();
 	if (!World) return;
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (!PC) return;
-	APawn* Hero = PC->GetPawn();
+	APawn* Hero = CachedHeroPawn.Get();
+	if (!Hero)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			Hero = PC->GetPawn();
+			CachedHeroPawn = Hero;
+		}
+	}
 	if (!Hero) return;
 
 	// Target: hero location + offset in hero's local space (behind and to the side)
@@ -229,22 +267,18 @@ void AT66CompanionBase::Tick(float DeltaTime)
 
 	// Heal the hero over time (numerical HP/s by Union tier: 5/10/20/20).
 	float HealHPPerSecond = 5.f;
-	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	if (CachedAchievementsSubsystem)
 	{
-		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		const int32 Stages = CachedUnionStagesCleared;
+		if (Stages >= UT66AchievementsSubsystem::UnionTier_HyperStages) HealHPPerSecond = 20.f;
+		else if (Stages >= UT66AchievementsSubsystem::UnionTier_MediumStages) HealHPPerSecond = 20.f;
+		else if (Stages >= UT66AchievementsSubsystem::UnionTier_GoodStages) HealHPPerSecond = 10.f;
+	}
+	if (CachedRunStateSubsystem)
+	{
+		if (CachedRunStateSubsystem->GetCurrentHP() < CachedRunStateSubsystem->GetMaxHP() && HealHPPerSecond > 0.f)
 		{
-			const int32 Stages = Ach->GetCompanionUnionStagesCleared(CompanionID);
-			if (Stages >= UT66AchievementsSubsystem::UnionTier_HyperStages) HealHPPerSecond = 20.f;
-			else if (Stages >= UT66AchievementsSubsystem::UnionTier_MediumStages) HealHPPerSecond = 20.f;
-			else if (Stages >= UT66AchievementsSubsystem::UnionTier_GoodStages) HealHPPerSecond = 10.f;
-			else HealHPPerSecond = 5.f;
-		}
-		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			if (RunState->GetCurrentHP() < RunState->GetMaxHP() && HealHPPerSecond > 0.f)
-			{
-				RunState->HealHP(HealHPPerSecond * DeltaTime);
-			}
+			CachedRunStateSubsystem->HealHP(HealHPPerSecond * DeltaTime);
 		}
 	}
 }

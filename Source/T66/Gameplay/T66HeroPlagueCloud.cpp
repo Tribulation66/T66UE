@@ -4,6 +4,7 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66PixelVFXSubsystem.h"
 #include "Components/SphereComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -57,6 +58,7 @@ void AT66HeroPlagueCloud::Tick(float DeltaSeconds)
 
 	const FVector Origin = GetActorLocation();
 	static constexpr int32 ParticlesPerBatch = 6;
+	UT66PixelVFXSubsystem* PixelVFX = GetWorld()->GetSubsystem<UT66PixelVFXSubsystem>();
 	for (int32 i = 0; i < ParticlesPerBatch; ++i)
 	{
 		const float Angle = FMath::FRandRange(0.f, 2.f * PI);
@@ -68,14 +70,16 @@ void AT66HeroPlagueCloud::Tick(float DeltaSeconds)
 
 		const float G = FMath::FRandRange(0.5f, 0.85f);
 		const FVector4 Tint(0.15f, G, 0.1f, 0.7f);
-
-		UNiagaraComponent* NC = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(), CachedPixelVFX, Loc, FRotator::ZeroRotator,
-			FVector(1.f), true, true, ENCPoolMethod::AutoRelease);
-		if (NC)
+		if (PixelVFX)
 		{
-			NC->SetVariableVec4(FName(TEXT("User.Tint")), Tint);
-			NC->SetVariableVec2(FName(TEXT("User.SpriteSize")), FVector2D(3.0, 3.0));
+			PixelVFX->SpawnPixelAtLocation(
+				Loc,
+				FLinearColor(Tint.X, Tint.Y, Tint.Z, Tint.W),
+				FVector2D(3.0f, 3.0f),
+				ET66PixelVFXPriority::Low,
+				FRotator::ZeroRotator,
+				FVector(1.f),
+				CachedPixelVFX);
 		}
 	}
 }
