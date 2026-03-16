@@ -561,24 +561,88 @@ void UT66RetroFXSubsystem::ApplyGeometryCollection(const FT66RetroFXSettings& Se
 		return;
 	}
 
-	const float WorldNoiseAmount = PercentToRange(Settings.WorldVertexNoisePercent, 0.0f, 8.0f);
-	const float CharacterNoiseAmount = PercentToRange(Settings.CharacterVertexNoisePercent, 0.0f, 8.0f);
+	static constexpr float SafeDisabledSnapStrength = 0.001f;
+	static constexpr float DefaultSnapTargetResolution = 600.0f;
+	static constexpr float DefaultAffineDistance1 = 400.0f;
+	static constexpr float DefaultAffineDistance2 = 1200.0f;
+	static constexpr float DefaultAffineDistance3 = 1800.0f;
 
-	Instance->SetScalarParameterValue(TEXT("WorldVertexSnapStrength"), PercentToRange(Settings.WorldVertexSnapPercent, 0.0f, 4.0f));
-	Instance->SetScalarParameterValue(TEXT("WorldVertexSnapTargetResolution"), PercentToInverseRange(Settings.WorldVertexSnapResolutionPercent, 1080.0f, 120.0f));
+	const bool bEnableWorldGeometry = HasWorldGeometryEnabled(Settings);
+	const bool bEnableCharacterGeometry = HasCharacterGeometryEnabled(Settings);
+
+	const float WorldNoiseAmount = bEnableWorldGeometry
+		? PercentToRange(Settings.WorldVertexNoisePercent, 0.0f, 8.0f)
+		: 0.0f;
+	const float CharacterNoiseAmount = bEnableCharacterGeometry
+		? PercentToRange(Settings.CharacterVertexNoisePercent, 0.0f, 8.0f)
+		: 0.0f;
+	const float WorldVertexSnapStrength = bEnableWorldGeometry
+		? FMath::Max(PercentToRange(Settings.WorldVertexSnapPercent, 0.0f, 4.0f), SafeDisabledSnapStrength)
+		: SafeDisabledSnapStrength;
+	const float CharacterVertexSnapStrength = bEnableCharacterGeometry
+		? FMath::Max(PercentToRange(Settings.CharacterVertexSnapPercent, 0.0f, 4.0f), SafeDisabledSnapStrength)
+		: SafeDisabledSnapStrength;
+	const float WorldAffineBlend = bEnableWorldGeometry
+		? PercentToUnit(Settings.WorldAffineBlendPercent)
+		: 0.0f;
+	const float CharacterAffineBlend = bEnableCharacterGeometry
+		? PercentToUnit(Settings.CharacterAffineBlendPercent)
+		: 0.0f;
+	const float WorldSnapTargetResolution = bEnableWorldGeometry
+		? PercentToInverseRange(Settings.WorldVertexSnapResolutionPercent, 1080.0f, 120.0f)
+		: DefaultSnapTargetResolution;
+	const float CharacterSnapTargetResolution = bEnableCharacterGeometry
+		? PercentToInverseRange(Settings.CharacterVertexSnapResolutionPercent, 1080.0f, 120.0f)
+		: DefaultSnapTargetResolution;
+	const float WorldAffineDistance1 = bEnableWorldGeometry
+		? PercentToRange(Settings.WorldAffineDistance1Percent, 100.0f, 700.0f)
+		: DefaultAffineDistance1;
+	const float WorldAffineDistance2 = bEnableWorldGeometry
+		? PercentToRange(Settings.WorldAffineDistance2Percent, 300.0f, 2100.0f)
+		: DefaultAffineDistance2;
+	const float WorldAffineDistance3 = bEnableWorldGeometry
+		? PercentToRange(Settings.WorldAffineDistance3Percent, 600.0f, 3000.0f)
+		: DefaultAffineDistance3;
+	const float CharacterAffineDistance1 = bEnableCharacterGeometry
+		? PercentToRange(Settings.CharacterAffineDistance1Percent, 100.0f, 700.0f)
+		: DefaultAffineDistance1;
+	const float CharacterAffineDistance2 = bEnableCharacterGeometry
+		? PercentToRange(Settings.CharacterAffineDistance2Percent, 300.0f, 2100.0f)
+		: DefaultAffineDistance2;
+	const float CharacterAffineDistance3 = bEnableCharacterGeometry
+		? PercentToRange(Settings.CharacterAffineDistance3Percent, 600.0f, 3000.0f)
+		: DefaultAffineDistance3;
+
+	Instance->SetScalarParameterValue(TEXT("WorldGeometryEnable"), bEnableWorldGeometry ? 1.0f : 0.0f);
+	Instance->SetScalarParameterValue(TEXT("WorldVertexSnapStrength"), WorldVertexSnapStrength);
+	Instance->SetScalarParameterValue(TEXT("WorldVertexSnapTargetResolution"), WorldSnapTargetResolution);
 	Instance->SetVectorParameterValue(TEXT("WorldVertexNoiseOffset"), FLinearColor(WorldNoiseAmount, WorldNoiseAmount, WorldNoiseAmount, 0.0f));
-	Instance->SetScalarParameterValue(TEXT("WorldAffineBlend"), PercentToUnit(Settings.WorldAffineBlendPercent));
-	Instance->SetScalarParameterValue(TEXT("WorldAffineDistance1"), PercentToRange(Settings.WorldAffineDistance1Percent, 100.0f, 700.0f));
-	Instance->SetScalarParameterValue(TEXT("WorldAffineDistance2"), PercentToRange(Settings.WorldAffineDistance2Percent, 300.0f, 2100.0f));
-	Instance->SetScalarParameterValue(TEXT("WorldAffineDistance3"), PercentToRange(Settings.WorldAffineDistance3Percent, 600.0f, 3000.0f));
+	Instance->SetScalarParameterValue(TEXT("WorldAffineBlend"), WorldAffineBlend);
+	Instance->SetScalarParameterValue(TEXT("WorldAffineDistance1"), WorldAffineDistance1);
+	Instance->SetScalarParameterValue(TEXT("WorldAffineDistance2"), WorldAffineDistance2);
+	Instance->SetScalarParameterValue(TEXT("WorldAffineDistance3"), WorldAffineDistance3);
 
-	Instance->SetScalarParameterValue(TEXT("CharacterVertexSnapStrength"), PercentToRange(Settings.CharacterVertexSnapPercent, 0.0f, 4.0f));
-	Instance->SetScalarParameterValue(TEXT("CharacterVertexSnapTargetResolution"), PercentToInverseRange(Settings.CharacterVertexSnapResolutionPercent, 1080.0f, 120.0f));
+	Instance->SetScalarParameterValue(TEXT("CharacterGeometryEnable"), bEnableCharacterGeometry ? 1.0f : 0.0f);
+	Instance->SetScalarParameterValue(TEXT("CharacterVertexSnapStrength"), CharacterVertexSnapStrength);
+	Instance->SetScalarParameterValue(TEXT("CharacterVertexSnapTargetResolution"), CharacterSnapTargetResolution);
 	Instance->SetVectorParameterValue(TEXT("CharacterVertexNoiseOffset"), FLinearColor(CharacterNoiseAmount, CharacterNoiseAmount, CharacterNoiseAmount, 0.0f));
-	Instance->SetScalarParameterValue(TEXT("CharacterAffineBlend"), PercentToUnit(Settings.CharacterAffineBlendPercent));
-	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance1"), PercentToRange(Settings.CharacterAffineDistance1Percent, 100.0f, 700.0f));
-	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance2"), PercentToRange(Settings.CharacterAffineDistance2Percent, 300.0f, 2100.0f));
-	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance3"), PercentToRange(Settings.CharacterAffineDistance3Percent, 600.0f, 3000.0f));
+	Instance->SetScalarParameterValue(TEXT("CharacterAffineBlend"), CharacterAffineBlend);
+	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance1"), CharacterAffineDistance1);
+	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance2"), CharacterAffineDistance2);
+	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance3"), CharacterAffineDistance3);
+
+	UE_LOG(LogT66RetroFXRuntime, Log,
+		TEXT("ApplyGeometryCollection: WorldEnabled=%s Snap=%.3f SnapRes=%.3f Noise=%.3f Affine=%.3f CharacterEnabled=%s Snap=%.3f SnapRes=%.3f Noise=%.3f Affine=%.3f"),
+		bEnableWorldGeometry ? TEXT("true") : TEXT("false"),
+		WorldVertexSnapStrength,
+		WorldSnapTargetResolution,
+		WorldNoiseAmount,
+		WorldAffineBlend,
+		bEnableCharacterGeometry ? TEXT("true") : TEXT("false"),
+		CharacterVertexSnapStrength,
+		CharacterSnapTargetResolution,
+		CharacterNoiseAmount,
+		CharacterAffineBlend);
 }
 
 void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Settings, UWorld* World)
@@ -588,7 +652,6 @@ void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Set
 
 	bWorldGeometryActive = bEnableWorldGeometry;
 	bCharacterGeometryActive = bEnableCharacterGeometry;
-
 	UpdateGeometrySpawnBinding(World, bEnableWorldGeometry || bEnableCharacterGeometry);
 
 	if (!bEnableWorldGeometry && !bEnableCharacterGeometry)
@@ -601,6 +664,12 @@ void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Set
 	RefreshWorldGeometryMaterials(World, bEnableWorldGeometry, bEnableCharacterGeometry);
 	RestoreManagedMaterials(!bEnableWorldGeometry, !bEnableCharacterGeometry);
 	CleanupManagedSlots();
+
+	UE_LOG(LogT66RetroFXRuntime, Log,
+		TEXT("ApplyGeometryMaterials: runtime swapping enabled World=%s Character=%s ManagedSlots=%d"),
+		bEnableWorldGeometry ? TEXT("true") : TEXT("false"),
+		bEnableCharacterGeometry ? TEXT("true") : TEXT("false"),
+		ManagedGeometrySlots.Num());
 }
 
 void UT66RetroFXSubsystem::RefreshWorldGeometryMaterials(UWorld* World, bool bEnableWorldGeometry, bool bEnableCharacterGeometry)
