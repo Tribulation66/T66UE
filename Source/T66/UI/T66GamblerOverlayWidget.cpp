@@ -41,6 +41,7 @@ void UT66GamblerOverlayWidget::NativeDestruct()
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
 				RunState->BuybackChanged.RemoveDynamic(this, &UT66GamblerOverlayWidget::HandleBuybackChanged);
+				RunState->BossChanged.RemoveDynamic(this, &UT66GamblerOverlayWidget::HandleBossChanged);
 			}
 		}
 		World->GetTimerManager().ClearTimer(RevealTimerHandle);
@@ -93,10 +94,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			if (RunState)
 			{
 				RunState->BuybackChanged.RemoveDynamic(this, &UT66GamblerOverlayWidget::HandleBuybackChanged);
+				RunState->BossChanged.RemoveDynamic(this, &UT66GamblerOverlayWidget::HandleBossChanged);
 				RunState->BuybackChanged.AddDynamic(this, &UT66GamblerOverlayWidget::HandleBuybackChanged);
+				RunState->BossChanged.AddDynamic(this, &UT66GamblerOverlayWidget::HandleBossChanged);
+				bCachedBossActive = RunState->GetBossActive();
 			}
 		}
 	}
+	LiveStatsPanel = MakeShared<T66StatsPanelSlate::FT66LiveStatsPanel>();
 
 	const ISlateStyle& Style = FT66Style::Get();
 
@@ -291,7 +296,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				ET66ButtonType::Neutral)
 				.SetMinWidth(420.f)
 				.SetPadding(FMargin(18.f, 10.f))
-				.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); })))
+				.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !bCachedBossActive; })))
 		];
 
 	// --- Casino layout: left content switcher + right panel + bottom inventory ---
@@ -1018,9 +1023,12 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	}
 	PinGrid->AddSlot().AutoHeight()[ SNew(SBox).HeightOverride(36.f)[ SlotRow ] ];
 
-	TSharedRef<SWidget> PlinkoBall = SNew(SBox).WidthOverride(PlinkoBallSize).HeightOverride(PlinkoBallSize)
+	TSharedRef<SWidget> PlinkoBall =
+		SAssignNew(PlinkoBallWidget, SBorder)
+		.BorderBackgroundColor(FLinearColor(1.f, 0.85f, 0.2f, 1.f))
+		.Padding(0.f)
 		[
-			SNew(SBorder).BorderBackgroundColor(FLinearColor(1.f, 0.85f, 0.2f, 1.f)).Padding(0.f)[ SNew(SSpacer) ]
+			SNew(SBox).WidthOverride(PlinkoBallSize).HeightOverride(PlinkoBallSize)[ SNew(SSpacer) ]
 		];
 
 	TSharedRef<SWidget> PlinkoView =
@@ -1040,10 +1048,6 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					+ SOverlay::Slot()[ FT66Style::MakePanel(PinGrid, FT66PanelParams(ET66PanelType::Panel2).SetPadding(4.f)) ]
 					+ SOverlay::Slot()
 						.HAlign(HAlign_Left).VAlign(VAlign_Top)
-						.Padding(TAttribute<FMargin>::CreateLambda([this]() {
-							const float ColW = PlinkoBoardW / static_cast<float>(PlinkoSlotCount);
-							return FMargin(ColW * PlinkoBallSlot + (ColW - PlinkoBallSize) * 0.5f, PlinkoRow * PlinkoRowH + (PlinkoRowH - PlinkoBallSize) * 0.5f, 0.f, 0.f);
-						}))
 						[ PlinkoBall ]
 				]
 			]
@@ -1482,7 +1486,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.WidthOverride(FT66Style::Tokens::NPCGamblerStatsPanelWidth)
 				.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
 				[
-					T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCGamblerStatsPanelWidth, true)
+					T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), FT66Style::Tokens::NPCGamblerStatsPanelWidth, true)
 				]
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
@@ -1955,7 +1959,7 @@ void UT66GamblerOverlayWidget::StartPlinkoDrop()
 	PlinkoBallSlot = 4;
 	PlinkoRow = 0;
 	if (PlinkoResultText.IsValid()) PlinkoResultText->SetText(FText::GetEmpty());
-	if (PlinkoBoardContainer.IsValid()) PlinkoBoardContainer->Invalidate(EInvalidateWidget::Layout);
+	UpdatePlinkoBallVisual();
 	UWorld* World = GetWorld();
 	if (World) World->GetTimerManager().SetTimer(PlinkoTimerHandle, this, &UT66GamblerOverlayWidget::TickPlinkoDrop, 0.12f, true, 0.05f);
 }
@@ -1983,7 +1987,7 @@ void UT66GamblerOverlayWidget::TickPlinkoDrop()
 	if (bRight && PlinkoBallSlot < 8) PlinkoBallSlot++;
 	else if (!bRight && PlinkoBallSlot > 0) PlinkoBallSlot--;
 	PlinkoRow++;
-	if (PlinkoBoardContainer.IsValid()) PlinkoBoardContainer->Invalidate(EInvalidateWidget::Layout);
+	UpdatePlinkoBallVisual();
 }
 
 void UT66GamblerOverlayWidget::StartBoxOpeningSpin()
@@ -2189,7 +2193,7 @@ void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 	if (Page == EGamblerPage::Plinko)
 	{
 		if (PlinkoResultText.IsValid()) PlinkoResultText->SetText(FText::GetEmpty());
-		if (PlinkoBoardContainer.IsValid()) PlinkoBoardContainer->Invalidate(EInvalidateWidget::Layout);
+		UpdatePlinkoBallVisual();
 	}
 	if (Page == EGamblerPage::BoxOpening)
 	{
@@ -2527,7 +2531,7 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 
 void UT66GamblerOverlayWidget::RefreshStatsPanel()
 {
-	if (!StatsPanelBox.IsValid()) return;
+	if (!LiveStatsPanel.IsValid()) return;
 	UWorld* World = GetWorld();
 	UT66RunStateSubsystem* RunState = nullptr;
 	UT66LocalizationSubsystem* Loc = nullptr;
@@ -2536,7 +2540,7 @@ void UT66GamblerOverlayWidget::RefreshStatsPanel()
 		RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
-	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCGamblerStatsPanelWidth, true));
+	LiveStatsPanel->Update(RunState, Loc);
 }
 
 void UT66GamblerOverlayWidget::RefreshSellPanel()
@@ -2729,17 +2733,7 @@ void UT66GamblerOverlayWidget::TriggerGamblerBossIfAngry()
 
 bool UT66GamblerOverlayWidget::IsBossActive() const
 {
-	if (UWorld* World = GetWorld())
-	{
-		if (UGameInstance* GI = World->GetGameInstance())
-		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				return RunState->GetBossActive();
-			}
-		}
-	}
-	return false;
+	return bCachedBossActive;
 }
 
 bool UT66GamblerOverlayWidget::TryPayToPlay()
@@ -3672,4 +3666,41 @@ void UT66GamblerOverlayWidget::HandleBuybackChanged()
 {
 	RefreshTopBar();
 	RefreshBuyback();
+}
+
+void UT66GamblerOverlayWidget::HandleBossChanged()
+{
+	bCachedBossActive = false;
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				bCachedBossActive = RunState->GetBossActive();
+			}
+		}
+	}
+
+	RefreshInventory();
+	RefreshSellPanel();
+}
+
+void UT66GamblerOverlayWidget::UpdatePlinkoBallVisual()
+{
+	if (!PlinkoBallWidget.IsValid())
+	{
+		return;
+	}
+
+	static constexpr float PlinkoBoardW = 280.f;
+	static constexpr float PlinkoRowH = 20.f;
+	static constexpr float PlinkoBallSize = 14.f;
+
+	const float ColW = PlinkoBoardW / static_cast<float>(PlinkoSlotCount);
+	const FVector2D BallOffset(
+		ColW * static_cast<float>(PlinkoBallSlot) + (ColW - PlinkoBallSize) * 0.5f,
+		static_cast<float>(PlinkoRow) * PlinkoRowH + (PlinkoRowH - PlinkoBallSize) * 0.5f);
+
+	PlinkoBallWidget->SetRenderTransform(FSlateRenderTransform(BallOffset));
 }

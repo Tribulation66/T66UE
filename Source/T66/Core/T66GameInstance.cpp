@@ -1,6 +1,8 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66LoadingScreenWidget.h"
 #include "UI/Style/T66Style.h"
@@ -242,6 +244,8 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
 	}
+
+	AddPath(FSoftObjectPath(TEXT("/Game/Characters/Heroes/Knight/KnightClip.KnightClip")));
 
 	bHeroSelectionAssetsLoadRequested = true;
 	if (Paths.Num() <= 0)
@@ -754,19 +758,68 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	}
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(8);
+	Paths.Reserve(32);
+	GameplayPreloadVisualIDs.Reset();
+
+	auto AddPath = [&Paths](const FSoftObjectPath& Path)
+	{
+		if (!Path.IsNull())
+		{
+			Paths.AddUnique(Path);
+		}
+	};
+
+	auto AddVisualAssets = [this, &AddPath](FName VisualID)
+	{
+		if (VisualID.IsNone())
+		{
+			return;
+		}
+
+		UDataTable* VisualsDT = GetCharacterVisualsDataTable();
+		const FT66CharacterVisualRow* VisualRow = VisualsDT ? VisualsDT->FindRow<FT66CharacterVisualRow>(VisualID, TEXT("PreloadGameplayAssets")) : nullptr;
+		if (!VisualRow)
+		{
+			return;
+		}
+
+		GameplayPreloadVisualIDs.AddUnique(VisualID);
+		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
+		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+	};
 
 	// Engine cube mesh (used ~6 times in GameMode for walls/floors/arenas).
-	Paths.Add(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
+	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
 
 	// Ground floor materials (4 rotation variants).
-	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0")));
-	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90")));
-	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180")));
-	Paths.Add(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270")));
 
 	// Placeholder color material used during level setup.
-	Paths.Add(FSoftObjectPath(TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")));
+	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")));
+
+	AddVisualAssets(UT66CharacterVisualSubsystem::GetHeroVisualID(
+		SelectedHeroID,
+		SelectedHeroBodyType,
+		SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : SelectedHeroSkinID));
+
+	AddVisualAssets(UT66CharacterVisualSubsystem::GetCompanionVisualID(SelectedCompanionID, FName(TEXT("Default"))));
+
+	if (UT66RunStateSubsystem* RunState = GetSubsystem<UT66RunStateSubsystem>())
+	{
+		FStageData StageData;
+		if (GetStageData(RunState->GetCurrentStage(), StageData))
+		{
+			AddVisualAssets(StageData.EnemyA);
+			AddVisualAssets(StageData.EnemyB);
+			AddVisualAssets(StageData.EnemyC);
+		}
+		AddVisualAssets(FName(TEXT("Boss")));
+	}
 
 	if (Paths.Num() <= 0)
 	{
@@ -792,6 +845,14 @@ void UT66GameInstance::HandleGameplayAssetsPreloaded()
 {
 	bGameplayAssetsPreloadInFlight = false;
 	GameplayAssetsPreloadHandle.Reset();
+	if (UT66CharacterVisualSubsystem* Visuals = GetSubsystem<UT66CharacterVisualSubsystem>())
+	{
+		for (const FName VisualID : GameplayPreloadVisualIDs)
+		{
+			Visuals->PreloadCharacterVisual(VisualID);
+		}
+	}
+	GameplayPreloadVisualIDs.Reset();
 	if (GameplayAssetsPreloadCallback)
 	{
 		TFunction<void()> Cb = MoveTemp(GameplayAssetsPreloadCallback);

@@ -58,6 +58,7 @@ void UT66VendorOverlayWidget::NativeDestruct()
 				RunState->InventoryChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleInventoryChanged);
 				RunState->VendorChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleVendorChanged);
 				RunState->BuybackChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleBuybackChanged);
+				RunState->BossChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleBossChanged);
 			}
 		}
 	}
@@ -111,6 +112,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	{
 		RunState->EnsureVendorStockForCurrentStage();
 		bBoughtSomethingThisVisit = RunState->HasBoughtFromVendorThisStage();
+		bCachedBossActive = RunState->GetBossActive();
 
 		// Bind live updates (event-driven UI).
 		RunState->GoldChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleGoldOrDebtChanged);
@@ -118,12 +120,14 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		RunState->InventoryChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleInventoryChanged);
 		RunState->VendorChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleVendorChanged);
 		RunState->BuybackChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleBuybackChanged);
+		RunState->BossChanged.RemoveDynamic(this, &UT66VendorOverlayWidget::HandleBossChanged);
 
 		RunState->GoldChanged.AddDynamic(this, &UT66VendorOverlayWidget::HandleGoldOrDebtChanged);
 		RunState->DebtChanged.AddDynamic(this, &UT66VendorOverlayWidget::HandleGoldOrDebtChanged);
 		RunState->InventoryChanged.AddDynamic(this, &UT66VendorOverlayWidget::HandleInventoryChanged);
 		RunState->VendorChanged.AddDynamic(this, &UT66VendorOverlayWidget::HandleVendorChanged);
 		RunState->BuybackChanged.AddDynamic(this, &UT66VendorOverlayWidget::HandleBuybackChanged);
+		RunState->BossChanged.AddDynamic(this, &UT66VendorOverlayWidget::HandleBossChanged);
 	}
 
 	const ISlateStyle& Style = FT66Style::Get();
@@ -160,6 +164,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
 	const FText RerollText = Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.Vendor", "Reroll", "REROLL");
+	LiveStatsPanel = MakeShared<T66StatsPanelSlate::FT66LiveStatsPanel>();
 
 	const TArray<FName> EmptyStock;
 	const TArray<FName>& Stock = RunState ? RunState->GetVendorStockItemIDs() : EmptyStock;
@@ -487,7 +492,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					ET66ButtonType::Primary)
 				.SetMinWidth(420.f)
 				.SetPadding(FMargin(18.f, 10.f))
-				.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
+				.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !bCachedBossActive; }))
 			)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f)
@@ -498,7 +503,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					ET66ButtonType::Neutral)
 				.SetMinWidth(420.f)
 				.SetPadding(FMargin(18.f, 10.f))
-			.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
+			.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !bCachedBossActive; }))
 		)
 	];
 
@@ -567,7 +572,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.WidthOverride(FT66Style::Tokens::NPCVendorStatsPanelWidth)
 			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
 			[
-				T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCVendorStatsPanelWidth, true)
+				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), FT66Style::Tokens::NPCVendorStatsPanelWidth, true)
 			]
 		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
@@ -621,7 +626,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 										ET66ButtonType::Neutral)
 									.SetMinWidth(0.f)
 									.SetPadding(FMargin(16.f, 10.f))
-									.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !IsBossActive(); }))
+									.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !bCachedBossActive; }))
 								)
 							]
 						]
@@ -953,7 +958,7 @@ void UT66VendorOverlayWidget::RefreshAll()
 
 void UT66VendorOverlayWidget::RefreshStatsPanel()
 {
-	if (!StatsPanelBox.IsValid()) return;
+	if (!LiveStatsPanel.IsValid()) return;
 	UWorld* World = GetWorld();
 	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
 	UT66LocalizationSubsystem* Loc = nullptr;
@@ -961,7 +966,7 @@ void UT66VendorOverlayWidget::RefreshStatsPanel()
 	{
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
-	StatsPanelBox->SetContent(T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, FT66Style::Tokens::NPCVendorStatsPanelWidth, true));
+	LiveStatsPanel->Update(RunState, Loc);
 }
 
 void UT66VendorOverlayWidget::RefreshTopBar()
@@ -1844,14 +1849,23 @@ FReply UT66VendorOverlayWidget::OnStealStop()
 
 bool UT66VendorOverlayWidget::IsBossActive() const
 {
+	return bCachedBossActive;
+}
+
+void UT66VendorOverlayWidget::HandleBossChanged()
+{
+	bCachedBossActive = false;
 	if (UWorld* World = GetWorld())
 	{
 		if (UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World))
 		{
-			return RunState->GetBossActive();
+			bCachedBossActive = RunState->GetBossActive();
 		}
 	}
-	return false;
+
+	RefreshStock();
+	RefreshInventory();
+	RefreshSellPanel();
 }
 
 void UT66VendorOverlayWidget::TriggerVendorBossIfAngry()

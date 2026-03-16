@@ -220,6 +220,8 @@ void AT66BossGroundAOE::ActivateDamage()
 		}
 	}
 
+	SetActorTickEnabled(false);
+
 	UWorld* World = GetWorld();
 	if (World)
 	{

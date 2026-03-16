@@ -12,10 +12,13 @@ class UT66LocalizationSubsystem;
 class AT66HeroPreviewStage;
 class UMediaPlayer;
 class UMediaTexture;
+class UFileMediaSource;
 struct FSlateBrush;
+struct FStreamableHandle;
 class SVerticalBox;
 class SImage;
 class STextBlock;
+class SBorder;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
@@ -106,6 +109,8 @@ private:
 
 	/** Brushes for the 5-slot hero carousel portraits (prev2..next2). */
 	TArray<TSharedPtr<struct FSlateBrush>> HeroCarouselPortraitBrushes;
+	TArray<FLinearColor> HeroCarouselSlotColors;
+	TArray<EVisibility> HeroCarouselSlotVisibility;
 
 	/** Skins list container; refreshed in place when Equip/Buy changes so buttons toggle without full rebuild. */
 	TSharedPtr<SVerticalBox> SkinsListBoxWidget;
@@ -118,8 +123,12 @@ private:
 	TObjectPtr<UMediaPlayer> HeroPreviewMediaPlayer;
 	UPROPERTY(Transient)
 	TObjectPtr<UMediaTexture> HeroPreviewMediaTexture;
+	UPROPERTY(Transient)
+	TObjectPtr<UFileMediaSource> KnightPreviewMediaSource;
 	/** Brush bound to HeroPreviewMediaTexture for Slate SImage; kept alive so Slate does not hold raw UObject. */
 	TSharedPtr<FSlateBrush> HeroPreviewVideoBrush;
+	TSharedPtr<FStreamableHandle> KnightPreviewMediaSourceHandle;
+	TSoftObjectPtr<UFileMediaSource> KnightPreviewMediaSourceAsset;
 
 	/** Video area widgets: image shows video when Knight selected; placeholder shows "[VIDEO PREVIEW]" otherwise. */
 	TSharedPtr<SImage> HeroPreviewVideoImage;
@@ -127,6 +136,8 @@ private:
 
 	/** Start or stop hero preview video based on PreviewedHeroID (Knight = Hero_1 uses KnightClip). */
 	void UpdateHeroPreviewVideo();
+	void RequestKnightPreviewMediaSource();
+	void HandleKnightPreviewMediaSourceLoaded();
 
 	/** Create media player, texture, and brush if not yet created (called from BuildSlateUI). */
 	void EnsureHeroPreviewVideoResources();

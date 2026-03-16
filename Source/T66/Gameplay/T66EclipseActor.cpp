@@ -16,7 +16,7 @@ static const TCHAR* EclipseMaterialPath = TEXT("/Game/Lighting/M_EclipseCorona.M
 AT66EclipseActor::AT66EclipseActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickInterval = 0.0f;
+	PrimaryActorTick.TickInterval = 0.066f;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
@@ -102,7 +102,11 @@ void AT66EclipseActor::OrientTowardCamera()
 
 	if (!ToCamera.IsNearlyZero())
 	{
-		SetActorRotation(ToCamera.Rotation());
+		const FRotator DesiredRotation = ToCamera.Rotation();
+		if (!GetActorRotation().Equals(DesiredRotation, 0.1f))
+		{
+			SetActorRotation(DesiredRotation);
+		}
 	}
 }
 

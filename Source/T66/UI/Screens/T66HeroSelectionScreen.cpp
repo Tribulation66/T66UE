@@ -29,6 +29,8 @@
 #include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Input/Events.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "MediaPlayer.h"
 #include "MediaTexture.h"
 #include "FileMediaSource.h"
@@ -115,6 +117,7 @@ UT66HeroSelectionScreen::UT66HeroSelectionScreen(const FObjectInitializer& Objec
 {
 	ScreenType = ET66ScreenType::HeroSelection;
 	bIsModal = false;
+	KnightPreviewMediaSourceAsset = TSoftObjectPtr<UFileMediaSource>(FSoftObjectPath(TEXT("/Game/Characters/Heroes/Knight/KnightClip.KnightClip")));
 }
 
 UT66LocalizationSubsystem* UT66HeroSelectionScreen::GetLocSubsystem() const
@@ -538,6 +541,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 
 	// Ensure we have stable brushes for the 5 visible slots.
 	HeroCarouselPortraitBrushes.SetNum(5);
+	HeroCarouselSlotColors.SetNum(5);
+	HeroCarouselSlotVisibility.SetNum(5);
 	for (int32 i = 0; i < HeroCarouselPortraitBrushes.Num(); ++i)
 	{
 		if (!HeroCarouselPortraitBrushes[i].IsValid())
@@ -571,24 +576,11 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				[
 					SNew(SBorder)
-					.BorderBackgroundColor_Lambda([this, Offset, Opacity]() -> FSlateColor
+					.BorderBackgroundColor_Lambda([this, SlotIdx]() -> FSlateColor
 					{
-						if (AllHeroIDs.Num() <= 0)
-						{
-							return FLinearColor(0.2f, 0.2f, 0.25f, 1.0f);
-						}
-
-						const int32 HeroIdx = (CurrentHeroIndex + Offset + AllHeroIDs.Num()) % AllHeroIDs.Num();
-						FLinearColor SpriteColor(0.2f, 0.2f, 0.25f, 1.0f);
-						if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
-						{
-							FHeroData HeroData;
-							if (GI->GetHeroData(AllHeroIDs[HeroIdx], HeroData))
-							{
-								SpriteColor = HeroData.PlaceholderColor;
-							}
-						}
-						return SpriteColor * Opacity;
+						return HeroCarouselSlotColors.IsValidIndex(SlotIdx)
+							? FSlateColor(HeroCarouselSlotColors[SlotIdx])
+							: FSlateColor(FLinearColor(0.2f, 0.2f, 0.25f, 1.0f));
 					})
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				]
@@ -601,11 +593,9 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					})
 					.Visibility_Lambda([this, SlotIdx]() -> EVisibility
 					{
-						if (!HeroCarouselPortraitBrushes.IsValidIndex(SlotIdx) || !HeroCarouselPortraitBrushes[SlotIdx].IsValid())
-						{
-							return EVisibility::Collapsed;
-						}
-						return HeroCarouselPortraitBrushes[SlotIdx]->GetResourceObject() ? EVisibility::Visible : EVisibility::Collapsed;
+						return HeroCarouselSlotVisibility.IsValidIndex(SlotIdx)
+							? HeroCarouselSlotVisibility[SlotIdx]
+							: EVisibility::Collapsed;
 					})
 					.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity))
 				]
@@ -1231,6 +1221,8 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 {
 	if (AllHeroIDs.Num() <= 0)
 	{
+		HeroCarouselSlotColors.Init(FLinearColor(0.2f, 0.2f, 0.25f, 1.0f), 5);
+		HeroCarouselSlotVisibility.Init(EVisibility::Collapsed, 5);
 		for (TSharedPtr<FSlateBrush>& B : HeroCarouselPortraitBrushes)
 		{
 			if (B.IsValid()) B->SetResourceObject(nullptr);
@@ -1240,6 +1232,8 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 
 	// Ensure 5 stable slots.
 	HeroCarouselPortraitBrushes.SetNum(5);
+	HeroCarouselSlotColors.SetNum(5);
+	HeroCarouselSlotVisibility.SetNum(5);
 	for (int32 i = 0; i < HeroCarouselPortraitBrushes.Num(); ++i)
 	{
 		if (!HeroCarouselPortraitBrushes[i].IsValid())
@@ -1263,6 +1257,7 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 
 			const int32 HeroIdx = (CurrentHeroIndex + Offset + AllHeroIDs.Num()) % AllHeroIDs.Num();
 			const FName HeroID = AllHeroIDs.IsValidIndex(HeroIdx) ? AllHeroIDs[HeroIdx] : NAME_None;
+			FLinearColor SlotColor(0.2f, 0.2f, 0.25f, 1.0f);
 
 			TSoftObjectPtr<UTexture2D> PortraitSoft;
 			if (!HeroID.IsNone())
@@ -1270,11 +1265,14 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 				FHeroData D;
 				if (GI->GetHeroData(HeroID, D))
 				{
+					SlotColor = D.PlaceholderColor;
 					PortraitSoft = GI->ResolveHeroPortrait(D, SelectedBodyType, ET66HeroPortraitVariant::Half);
 				}
 			}
 
 			const float BoxSize = (Offset == 0) ? 60.f : 45.f;
+			HeroCarouselSlotColors[SlotIdx] = SlotColor * ((Offset == 0) ? 1.0f : 0.6f);
+			HeroCarouselSlotVisibility[SlotIdx] = PortraitSoft.IsNull() ? EVisibility::Hidden : EVisibility::Visible;
 			if (PortraitSoft.IsNull() || !TexPool)
 			{
 				HeroCarouselPortraitBrushes[SlotIdx]->SetResourceObject(nullptr);
@@ -1295,6 +1293,7 @@ void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
 	{
 		HeroPreviewMediaPlayer->Close();
 	}
+	KnightPreviewMediaSourceHandle.Reset();
 	// When opened from Lobby, persist current selection so Lobby can show hero portrait (and so returning from Companion Selection still shows co-op layout).
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
@@ -1325,6 +1324,7 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 		// Keep the first-open path responsive; the full hero-selection warmup runs asynchronously.
 		GIPreload->PrimeHeroSelectionAssetsAsync();
 	}
+	RequestKnightPreviewMediaSource();
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
@@ -1616,14 +1616,15 @@ void UT66HeroSelectionScreen::UpdateHeroPreviewVideo()
 {
 	const FName KnightHeroID(TEXT("Hero_1"));
 	const bool bIsKnight = (PreviewedHeroID == KnightHeroID);
+	const bool bHasKnightPreview = (KnightPreviewMediaSource != nullptr);
 
 	if (HeroPreviewVideoImage.IsValid())
 	{
-		HeroPreviewVideoImage->SetVisibility(bIsKnight ? EVisibility::Visible : EVisibility::Collapsed);
+		HeroPreviewVideoImage->SetVisibility(bIsKnight && bHasKnightPreview ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 	if (HeroPreviewPlaceholderText.IsValid())
 	{
-		HeroPreviewPlaceholderText->SetVisibility(bIsKnight ? EVisibility::Collapsed : EVisibility::Visible);
+		HeroPreviewPlaceholderText->SetVisibility(bIsKnight && bHasKnightPreview ? EVisibility::Collapsed : EVisibility::Visible);
 	}
 
 	if (!HeroPreviewMediaPlayer)
@@ -1632,16 +1633,52 @@ void UT66HeroSelectionScreen::UpdateHeroPreviewVideo()
 	}
 	if (bIsKnight)
 	{
-		UFileMediaSource* Source = LoadObject<UFileMediaSource>(nullptr, TEXT("/Game/Characters/Heroes/Knight/KnightClip.KnightClip"));
-		if (Source)
+		if (!KnightPreviewMediaSource)
 		{
-			HeroPreviewMediaPlayer->OpenSource(Source);
+			RequestKnightPreviewMediaSource();
+			HeroPreviewMediaPlayer->Close();
+			return;
+		}
+		if (!HeroPreviewMediaPlayer->IsPlaying())
+		{
+			HeroPreviewMediaPlayer->OpenSource(KnightPreviewMediaSource);
 		}
 	}
 	else
 	{
 		HeroPreviewMediaPlayer->Close();
 	}
+}
+
+void UT66HeroSelectionScreen::RequestKnightPreviewMediaSource()
+{
+	if (KnightPreviewMediaSource || KnightPreviewMediaSourceHandle.IsValid() || KnightPreviewMediaSourceAsset.IsNull())
+	{
+		return;
+	}
+
+	KnightPreviewMediaSource = KnightPreviewMediaSourceAsset.Get();
+	if (KnightPreviewMediaSource)
+	{
+		HandleKnightPreviewMediaSourceLoaded();
+		return;
+	}
+
+	KnightPreviewMediaSourceHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		KnightPreviewMediaSourceAsset.ToSoftObjectPath(),
+		FStreamableDelegate::CreateUObject(this, &UT66HeroSelectionScreen::HandleKnightPreviewMediaSourceLoaded));
+
+	if (!KnightPreviewMediaSourceHandle.IsValid())
+	{
+		HandleKnightPreviewMediaSourceLoaded();
+	}
+}
+
+void UT66HeroSelectionScreen::HandleKnightPreviewMediaSourceLoaded()
+{
+	KnightPreviewMediaSourceHandle.Reset();
+	KnightPreviewMediaSource = KnightPreviewMediaSourceAsset.Get();
+	UpdateHeroPreviewVideo();
 }
 
 void UT66HeroSelectionScreen::OnLanguageChanged(ET66Language NewLanguage)

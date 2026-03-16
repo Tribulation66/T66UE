@@ -335,6 +335,7 @@ private:
 	bool bHeroSelectionAssetsLoadRequested = false;
 	bool bHeroSelectionAssetsLoaded = false;
 	TSharedPtr<FStreamableHandle> HeroSelectionAssetsLoadHandle;
+	TArray<FName> GameplayPreloadVisualIDs;
 
 	void EnsureCachedItemIDs();
 	void EnsureCachedItemIDsByRarity();

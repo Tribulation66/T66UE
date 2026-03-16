@@ -1454,7 +1454,7 @@ void AT66PlayerController::OpenWorldDialogueVendor(AT66VendorNPC* Vendor)
 
 	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
 	UpdateWorldDialoguePosition();
-	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.05f, true);
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.1f, true);
 }
 
 void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
@@ -1482,7 +1482,7 @@ void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
 
 	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
 	UpdateWorldDialoguePosition();
-	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.05f, true);
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.1f, true);
 }
 
 void AT66PlayerController::OpenWorldDialogueCompanion(AT66RecruitableCompanion* Companion)
@@ -1509,7 +1509,7 @@ void AT66PlayerController::OpenWorldDialogueCompanion(AT66RecruitableCompanion* 
 
 	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
 	UpdateWorldDialoguePosition();
-	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.05f, true);
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.1f, true);
 }
 
 void AT66PlayerController::CloseWorldDialogue()

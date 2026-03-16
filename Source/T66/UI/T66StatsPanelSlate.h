@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/T66DataTypes.h"
 
 class UT66RunStateSubsystem;
 class UT66LocalizationSubsystem;
@@ -14,10 +15,27 @@ class UT66LeaderboardRunSummarySaveGame;
  */
 namespace T66StatsPanelSlate
 {
+	struct FT66LiveStatsPanel
+	{
+		TArray<TSharedPtr<class STextBlock>> PrimaryLines;
+		TMap<ET66SecondaryStatType, TSharedPtr<class STextBlock>> SecondaryLines;
+
+		void Reset();
+		void Update(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc) const;
+	};
+
 	/** Build the standard stats panel: header + Level + 8 primary stats; if bExtended, also all secondary stats in a scrollable list. Returns a fixed-width panel; if RunState is null, returns an empty placeholder. */
 	TSharedRef<class SWidget> MakeEssentialStatsPanel(
 		UT66RunStateSubsystem* RunState,
 		UT66LocalizationSubsystem* Loc,
+		float WidthOverride = 320.f,
+		bool bExtended = false);
+
+	/** Build the standard stats panel with stable text widgets that can be updated in place. */
+	TSharedRef<class SWidget> MakeLiveEssentialStatsPanel(
+		UT66RunStateSubsystem* RunState,
+		UT66LocalizationSubsystem* Loc,
+		const TSharedRef<FT66LiveStatsPanel>& LivePanel,
 		float WidthOverride = 320.f,
 		bool bExtended = false);
 

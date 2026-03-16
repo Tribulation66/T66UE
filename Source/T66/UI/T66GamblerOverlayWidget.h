@@ -14,6 +14,7 @@ template<typename NumericType> class SSpinBox;
 class SBox;
 class SBorder;
 class SImage;
+namespace T66StatsPanelSlate { struct FT66LiveStatsPanel; }
 
 /** Full-screen, non-pausing Gambler UI (dialogue -> casino -> minigames). */
 UCLASS(Blueprintable)
@@ -60,6 +61,7 @@ public:
 
 	// Stats panel (refreshable when inventory changes)
 	TSharedPtr<SBox> StatsPanelBox;
+	TSharedPtr<T66StatsPanelSlate::FT66LiveStatsPanel> LiveStatsPanel;
 
 	// Inventory strip (shared with vendor)
 	static constexpr int32 InventorySlotCount = 5;
@@ -175,9 +177,11 @@ public:
 	float PlinkoBallPixelY = 0.f;
 	FTimerHandle PlinkoTimerHandle;
 	TSharedPtr<SBox> PlinkoBoardContainer;
+	TSharedPtr<SBorder> PlinkoBallWidget;
 	TSharedPtr<STextBlock> PlinkoResultText;
 	void StartPlinkoDrop();
 	void TickPlinkoDrop();
+	void UpdatePlinkoBallVisual();
 
 	// Box Opening: 4 colors (Black 0.25x, Red 1x, Yellow 5x, White 30x)
 	static constexpr int32 BoxColorCount = 4;
@@ -308,5 +312,9 @@ public:
 
 	UFUNCTION()
 	void HandleBuybackChanged();
-};
 
+	UFUNCTION()
+	void HandleBossChanged();
+
+	bool bCachedBossActive = false;
+};

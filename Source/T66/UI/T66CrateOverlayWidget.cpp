@@ -312,5 +312,5 @@ void UT66CrateOverlayWidget::StartScrolling()
 	LastTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
 
 	World->GetTimerManager().ClearTimer(ScrollTickHandle);
-	World->GetTimerManager().SetTimer(ScrollTickHandle, this, &UT66CrateOverlayWidget::TickScroll, 0.016f, true);
+	World->GetTimerManager().SetTimer(ScrollTickHandle, this, &UT66CrateOverlayWidget::TickScroll, 0.033f, true);
 }

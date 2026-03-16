@@ -17,6 +17,7 @@ class SImage;
 class SUniformGridPanel;
 class SWidgetSwitcher;
 struct FSlateBrush;
+namespace T66StatsPanelSlate { struct FT66LiveStatsPanel; }
 
 /** Full-screen, non-pausing Vendor shop UI (buy + steal + loans). */
 UCLASS(Blueprintable)
@@ -55,6 +56,7 @@ private:
 
 	// Stats panel (refreshable when inventory changes)
 	TSharedPtr<SBox> StatsPanelBox;
+	TSharedPtr<T66StatsPanelSlate::FT66LiveStatsPanel> LiveStatsPanel;
 
 	// Vendor stock widgets
 	TArray<TSharedPtr<STextBlock>> ItemNameTexts;
@@ -113,6 +115,7 @@ private:
 
 	// Per-visit gating: must buy once before any stealing.
 	bool bBoughtSomethingThisVisit = false;
+	bool bCachedBossActive = false;
 
 	void RefreshAll();
 	void RefreshTopBar();
@@ -157,5 +160,7 @@ private:
 
 	UFUNCTION()
 	void HandleBuybackChanged();
-};
 
+	UFUNCTION()
+	void HandleBossChanged();
+};

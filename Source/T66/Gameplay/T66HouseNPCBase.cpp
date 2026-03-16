@@ -111,6 +111,15 @@ void AT66HouseNPCBase::BeginPlay()
 	FT66VisualUtil::SnapToGround(this, GetWorld());
 	ApplyVisuals();
 	bGravitySettled = true;
+
+	if (bFacePlayerAlways)
+	{
+		SetActorTickInterval(0.15f);
+	}
+	else
+	{
+		SetActorTickEnabled(false);
+	}
 }
 
 void AT66HouseNPCBase::LoadFromDataTable()
@@ -212,6 +221,8 @@ void AT66HouseNPCBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	const bool bWasGravitySettled = bGravitySettled;
+
 	// Gravity settling: trace down and move toward ground until resting (stops floating).
 	// Perf: run trace only every Nth tick to reduce LineTrace cost with many NPCs.
 	if (!bGravitySettled && GetWorld())
@@ -257,6 +268,19 @@ void AT66HouseNPCBase::Tick(float DeltaSeconds)
 		else
 		{
 			bGravitySettled = true;
+		}
+	}
+
+	if (!bWasGravitySettled && bGravitySettled)
+	{
+		if (bFacePlayerAlways)
+		{
+			SetActorTickInterval(0.15f);
+		}
+		else
+		{
+			SetActorTickEnabled(false);
+			return;
 		}
 	}
 
