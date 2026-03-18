@@ -46,6 +46,9 @@ public:
 	/** Get the ideal camera rotation for viewing this preview (computed by FrameCameraToPreview). */
 	FRotator GetIdealCameraRotation() const { return IdealCameraRotation; }
 
+	/** Update preview dressing for the active difficulty. */
+	void SetPreviewDifficulty(ET66Difficulty Difficulty);
+
 	/** Show or hide the entire stage (floor + companion pawn). */
 	void SetStageVisible(bool bVisible);
 
@@ -59,11 +62,15 @@ protected:
 	void UpdatePreviewPawn(FName CompanionID, FName SkinID);
 	void ApplyPreviewRotation();
 	void FrameCameraToPreview();
+	void RefreshPreviewEnvironment();
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;
 
 	/** Simple floor so "ground level" is visible in preview (same level lighting as gameplay). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UStaticMeshComponent> PreviewFloor;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> EasyPreviewProps;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
 	TSubclassOf<AT66CompanionBase> CompanionPawnClass;
@@ -101,13 +108,23 @@ protected:
 	UPROPERTY(Transient)
 	FRotator IdealCameraRotation = FRotator::ZeroRotator;
 
+	UPROPERTY(Transient)
+	ET66Difficulty PreviewDifficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(Transient)
+	bool bStageVisible = true;
+
 	/** Push the floor slightly back so the companion reads "forward" on it (toward camera). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	float FloorForwardOffset = 35.f;
 
-	/** Multiplier on the auto-framed camera distance (smaller = companion appears bigger). */
+	/** Minimum visual scale so the floor fills the entire preview view and hides the void. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
-	float CameraDistanceMultiplier = 4.5f;
+	float MinGroundScale = 90.f;
+
+	/** Multiplier on the auto-framed camera distance (match hero preview closer framing). */
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
+	float CameraDistanceMultiplier = 2.2f;
 
 	/** User zoom factor applied on top of CameraDistanceMultiplier (<= 1.0 means zoom-in). */
 	UPROPERTY(Transient)

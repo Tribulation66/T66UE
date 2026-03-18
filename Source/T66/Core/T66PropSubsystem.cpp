@@ -10,6 +10,8 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66PilotableTractor.h"
+#include "Core/T66GameplayLayout.h"
 #include "UObject/SoftObjectPath.h"
 
 UDataTable* UT66PropSubsystem::GetPropsDataTable() const
@@ -40,11 +42,7 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 
 	auto IsInsideNoSpawnZone = [](const FVector& L) -> bool
 	{
-		static constexpr float StartBoxWest = -40000.f, StartBoxEast = -30909.f;
-		static constexpr float StartBoxNorth = 4545.f, StartBoxSouth = -4545.f;
-		static constexpr float StartMargin = 455.f;
-		if (L.X >= (StartBoxWest - StartMargin) && L.X <= (StartBoxEast + StartMargin) &&
-		    L.Y >= (StartBoxSouth - StartMargin) && L.Y <= (StartBoxNorth + StartMargin))
+		if (T66GameplayLayout::IsInsideReservedTraversalZone2D(L, 455.f))
 		{
 			return true;
 		}
@@ -75,8 +73,10 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 		if (!Row) continue;
 		if (Row->Mesh.IsNull()) continue;
 
+		const bool bSpawnPilotableTractor = (RowName == FName(TEXT("Tractor")));
+
 		UStaticMesh* Mesh = Row->Mesh.LoadSynchronous();
-		if (!Mesh) continue;
+		if (!Mesh && !bSpawnPilotableTractor) continue;
 
 		const int32 Count = Rng.RandRange(Row->CountMin, Row->CountMax);
 		const float MinDist = Row->MinDistanceBetween;
@@ -127,6 +127,10 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				{
 					continue;
 				}
+				if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+				{
+					continue;
+				}
 				Loc = Hit.ImpactPoint;
 
 				bFound = true;
@@ -148,6 +152,27 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				Rng.FRandRange(Row->ScaleMin.X, Row->ScaleMax.X),
 				Rng.FRandRange(Row->ScaleMin.Y, Row->ScaleMax.Y),
 				Rng.FRandRange(Row->ScaleMin.Z, Row->ScaleMax.Z));
+
+			if (bSpawnPilotableTractor)
+			{
+				AT66PilotableTractor* Tractor = World->SpawnActor<AT66PilotableTractor>(
+					AT66PilotableTractor::StaticClass(), Loc, Rot, SP);
+				if (!Tractor) continue;
+
+				Tractor->SetActorScale3D(Scale);
+				FT66VisualUtil::SnapToGround(Tractor, World);
+				if (!FMath::IsNearlyZero(Row->PlacementZOffset))
+				{
+					Tractor->AddActorWorldOffset(
+						FVector(0.f, 0.f, Row->PlacementZOffset * Scale.Z),
+						false,
+						nullptr,
+						ETeleportType::TeleportPhysics);
+				}
+
+				SpawnedProps.Add(Tractor);
+				continue;
+			}
 
 			AStaticMeshActor* PropActor = World->SpawnActor<AStaticMeshActor>(
 				AStaticMeshActor::StaticClass(), Loc, Rot, SP);

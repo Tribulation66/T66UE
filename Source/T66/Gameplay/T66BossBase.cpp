@@ -276,7 +276,7 @@ bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceI
 {
 	if (!bAwakened || CurrentHP <= 0) return false;
 	if (DamageAmount <= 0) return false;
-	const float EffectiveArmor = FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
+	const float EffectiveArmor = GetEffectiveArmor();
 	const int32 ReducedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageAmount) * (1.f - EffectiveArmor)));
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 	UWorld* World = GetWorld();
@@ -307,6 +307,11 @@ bool AT66BossBase::TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceI
 	}
 
 	return false;
+}
+
+float AT66BossBase::GetEffectiveArmor() const
+{
+	return FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
 }
 
 void AT66BossBase::SpawnGroundAOE()

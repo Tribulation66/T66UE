@@ -93,23 +93,17 @@ void UT66GameInstance::Init()
 	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
 	{
 		const TSoftObjectPtr<UTexture2D> MMRed(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
-		const TSoftObjectPtr<UTexture2D> MMLight(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight")));
 		const TSoftObjectPtr<UTexture2D> LBGlobal(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")));
 		const TSoftObjectPtr<UTexture2D> LBFriends(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")));
 		const TSoftObjectPtr<UTexture2D> LBStreamers(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Streamers.T_LB_Streamers")));
 		const TSoftObjectPtr<UTexture2D> SoloDark(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")));
-		const TSoftObjectPtr<UTexture2D> SoloLight(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloLight.SoloLight")));
 		const TSoftObjectPtr<UTexture2D> CoopDark(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")));
-		const TSoftObjectPtr<UTexture2D> CoopLight(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopLight.CoopLight")));
 		TexPool->RequestTexture(MMRed, this, FName(TEXT("PreloadMMRed")), [](UTexture2D*) {});
-		TexPool->RequestTexture(MMLight, this, FName(TEXT("PreloadMMLight")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBGlobal, this, FName(TEXT("PreloadLBGlobal")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBFriends, this, FName(TEXT("PreloadLBFriends")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBStreamers, this, FName(TEXT("PreloadLBStreamers")), [](UTexture2D*) {});
 		TexPool->RequestTexture(SoloDark, this, FName(TEXT("PreloadSoloDark")), [](UTexture2D*) {});
-		TexPool->RequestTexture(SoloLight, this, FName(TEXT("PreloadSoloLight")), [](UTexture2D*) {});
 		TexPool->RequestTexture(CoopDark, this, FName(TEXT("PreloadCoopDark")), [](UTexture2D*) {});
-		TexPool->RequestTexture(CoopLight, this, FName(TEXT("PreloadCoopLight")), [](UTexture2D*) {});
 	}
 }
 
@@ -330,6 +324,10 @@ bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
 	if (FoundRow)
 	{
 		OutHeroData = *FoundRow;
+		if (HeroID == FName(TEXT("Hero_1")))
+		{
+			OutHeroData.UltimateType = ET66UltimateType::ScopedSniper;
+		}
 		return true;
 	}
 	return false;

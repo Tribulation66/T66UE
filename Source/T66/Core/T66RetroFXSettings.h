@@ -17,6 +17,9 @@ struct T66_API FT66RetroFXSettings
 	GENERATED_BODY()
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
+	bool bEnableRetroFXMaster = true;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float PS1BlendPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
@@ -71,7 +74,13 @@ struct T66_API FT66RetroFXSettings
 	bool bUseUE5RFXN64BlurReplaceTonemapper = false;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float CRTBlendPercent = 0.0f;
+	float ChromaticAberrationPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
+	float ChromaticDistortionPercent = 0.0f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
+	bool bInvertChromaticDistortion = false;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float T66PixelationPercent = 0.0f;

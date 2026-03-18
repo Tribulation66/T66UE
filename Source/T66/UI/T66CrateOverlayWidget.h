@@ -7,6 +7,7 @@
 #include "Core/T66Rarity.h"
 #include "T66CrateOverlayWidget.generated.h"
 
+class UT66GameplayHUDWidget;
 class STextBlock;
 class SBorder;
 
@@ -19,6 +20,8 @@ class T66_API UT66CrateOverlayWidget : public UUserWidget
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeDestruct() override;
+	void SetPresentationHost(UT66GameplayHUDWidget* InPresentationHost);
+	void RequestSkip();
 
 private:
 	struct FCrateItemEntry
@@ -32,28 +35,29 @@ private:
 	int32 WinnerIndex = 0;
 	FName WinnerItemID;
 	ET66Rarity WinnerRarity = ET66Rarity::Black;
+	TWeakObjectPtr<UT66GameplayHUDWidget> PresentationHost;
 
 	TSharedPtr<SBorder> StripContainer;
-	TSharedPtr<STextBlock> StatusText;
+	TSharedPtr<STextBlock> SkipText;
 
 	FTimerHandle ScrollTickHandle;
 	FTimerHandle StartHandle;
-	FTimerHandle CloseHandle;
 
 	bool bScrolling = false;
+	bool bResolved = false;
 	float ScrollElapsed = 0.f;
 	float ScrollDuration = 3.0f;
 	float LastTickTimeSeconds = 0.f;
 	float TotalScrollDistance = 0.f;
 	float CurrentScrollOffset = 0.f;
 
-	static constexpr float ItemTileWidth = 90.f;
-	static constexpr int32 StripItemCount = 40;
-	static constexpr int32 WinnerPosition = 35;
+	static constexpr float ItemTileWidth = 72.f;
+	static constexpr int32 StripItemCount = 34;
+	static constexpr int32 WinnerPosition = 29;
 
 	void GenerateStrip();
 	void StartScrolling();
 	void TickScroll();
+	void UpdateSkipText();
 	void ResolveOpen();
-	void CloseAfterResolve();
 };

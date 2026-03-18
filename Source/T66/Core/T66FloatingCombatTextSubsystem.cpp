@@ -64,6 +64,17 @@ void UT66FloatingCombatTextSubsystem::ShowDamageTaken(AActor* Target, int32 Amou
 
 void UT66FloatingCombatTextSubsystem::ShowStatusEvent(AActor* Target, FName EventType)
 {
-	// All status event notifications disabled; only hero damage taken (ShowDamageTaken) remains active.
-	return;
+	if (!Target || EventType != EventType_LevelUp) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UT66FloatingCombatTextPoolSubsystem* Pool = World->GetSubsystem<UT66FloatingCombatTextPoolSubsystem>();
+	if (!Pool) return;
+
+	AT66FloatingCombatTextActor* Actor = Pool->AcquireActor(Target, FVector(0.f, 0.f, OffsetAboveHead + 50.f), 1.8f);
+	if (Actor)
+	{
+		Actor->SetStatusEvent(EventType);
+	}
 }

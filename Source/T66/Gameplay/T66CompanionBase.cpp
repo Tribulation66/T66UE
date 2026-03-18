@@ -43,11 +43,15 @@ AT66CompanionBase::AT66CompanionBase()
 	SkeletalMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SkeletalMesh->SetVisibility(false, true);
 
+	ApplyCompanionScale();
 }
 
 void AT66CompanionBase::BeginPlay()
 {
 	Super::BeginPlay();
+	ApplyCompanionScale();
+	bHasCachedGroundZ = false;
+	CachedGroundZ = GetActorLocation().Z;
 
 	if (PlaceholderMesh && PlaceholderMesh->GetMaterial(0))
 	{
@@ -89,6 +93,9 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 {
 	CompanionID = InData.CompanionID;
 	CompanionData = InData;
+	ApplyCompanionScale();
+	bHasCachedGroundZ = false;
+	GroundTraceTickCounter = 0;
 	if (CachedAchievementsSubsystem)
 	{
 		CachedUnionStagesCleared = CachedAchievementsSubsystem->GetCompanionUnionStagesCleared(CompanionID);
@@ -237,20 +244,40 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	FVector OffsetWorld = HeroYaw.RotateVector(FollowOffset);
 	FVector TargetLoc = Hero->GetActorLocation() + OffsetWorld;
 
-	FVector NewLoc = FMath::VInterpTo(GetActorLocation(), TargetLoc, DeltaTime, FollowSpeed);
-	// Keep companion grounded (actor origin = ground contact point; visuals handle their own offsets).
-	// Perf: run ground trace only every Nth tick.
+	const FVector CurrentLoc = GetActorLocation();
+	const FVector CurrentPlanar(CurrentLoc.X, CurrentLoc.Y, 0.f);
+	const FVector TargetPlanar(TargetLoc.X, TargetLoc.Y, 0.f);
+	const FVector NewPlanar = FMath::VInterpTo(CurrentPlanar, TargetPlanar, DeltaTime, FollowSpeed);
+
+	FVector NewLoc = CurrentLoc;
+	NewLoc.X = NewPlanar.X;
+	NewLoc.Y = NewPlanar.Y;
+
+	// Keep companion grounded. Only follow the hero in X/Y; the old path interpolated Z
+	// toward the hero's capsule center and then snapped back to the trace result, which
+	// caused the visible up/down bob in gameplay.
 	++GroundTraceTickCounter;
-	if (GroundTraceTickCounter % GroundTraceEveryNTicks == 0)
+	if (!bHasCachedGroundZ || GroundTraceTickCounter % GroundTraceEveryNTicks == 0)
 	{
 		FLagScopedScope LagScope(World, TEXT("CompanionBase::Tick (LineTrace ground)"), 2.0f);
 		FHitResult Hit;
-		const FVector Start = NewLoc + FVector(0.f, 0.f, 2000.f);
-		const FVector End = NewLoc - FVector(0.f, 0.f, 9000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		const FVector TraceOrigin(NewLoc.X, NewLoc.Y, CurrentLoc.Z);
+		const FVector Start = TraceOrigin + FVector(0.f, 0.f, 2000.f);
+		const FVector End = TraceOrigin - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic) ||
+			World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility))
 		{
-			NewLoc.Z = Hit.ImpactPoint.Z;
+			CachedGroundZ = Hit.ImpactPoint.Z;
+			bHasCachedGroundZ = true;
 		}
+	}
+
+	NewLoc.Z = bHasCachedGroundZ
+		? FMath::FInterpTo(CurrentLoc.Z, CachedGroundZ, DeltaTime, GroundFollowSpeed)
+		: CurrentLoc.Z;
+	if (bHasCachedGroundZ && FMath::IsNearlyEqual(NewLoc.Z, CachedGroundZ, 0.5f))
+	{
+		NewLoc.Z = CachedGroundZ;
 	}
 	SetActorLocation(NewLoc, false, nullptr, ETeleportType::TeleportPhysics);
 
@@ -281,4 +308,9 @@ void AT66CompanionBase::Tick(float DeltaTime)
 			CachedRunStateSubsystem->HealHP(HealHPPerSecond * DeltaTime);
 		}
 	}
+}
+
+void AT66CompanionBase::ApplyCompanionScale()
+{
+	SetActorScale3D(FVector(FMath::Max(0.1f, CompanionActorScale)));
 }

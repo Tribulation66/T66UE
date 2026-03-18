@@ -19,7 +19,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 4;
+	int32 SchemaVersion = 6;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -39,8 +39,8 @@ public:
 	UPROPERTY(SaveGame)
 	bool bGoonerMode = false;
 
-	// ===== Theme =====
-	/** false = Dark (default), true = Light */
+	// ===== Legacy Theme =====
+	/** Retained only to clear old saves; the game now always runs the dark UI theme. */
 	UPROPERTY(SaveGame)
 	bool bLightTheme = false;
 
@@ -108,9 +108,13 @@ public:
 	UPROPERTY(SaveGame)
 	bool bMediaViewerEnabled = true;
 
-	/** When false, exponential height fog is disabled in gameplay (default off). */
+	/** When false, exponential height fog is disabled in gameplay. */
 	UPROPERTY(SaveGame)
-	bool bFogEnabled = false;
+	bool bFogEnabled = true;
+
+	/** Native gameplay fog intensity from 0..100. 0 disables fog entirely, 100 is intentionally very heavy. */
+	UPROPERTY(SaveGame)
+	float FogIntensityPercent = 55.0f;
 
 	// ===== Retro FX =====
 	UPROPERTY(SaveGame)

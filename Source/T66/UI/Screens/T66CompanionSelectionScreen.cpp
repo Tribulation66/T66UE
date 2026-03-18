@@ -11,6 +11,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
+#include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66FrontendGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
@@ -92,6 +93,13 @@ namespace
 			if (Stage.IsValid())
 			{
 				Stage->AddPreviewZoom(MouseEvent.GetWheelDelta());
+				if (UWorld* World = Stage->GetWorld())
+				{
+					if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+					{
+						GM->PositionCameraForCompanionPreview();
+					}
+				}
 				return FReply::Handled();
 			}
 			return FReply::Unhandled();
@@ -918,7 +926,18 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 
 	if (AT66CompanionPreviewStage* Stage = GetCompanionPreviewStage())
 	{
+		if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			Stage->SetPreviewDifficulty(GI->SelectedDifficulty);
+		}
 		Stage->SetPreviewCompanion(PreviewedCompanionID, EffectiveSkin);
+		if (UWorld* World = GetWorld())
+		{
+			if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+			{
+				GM->PositionCameraForCompanionPreview();
+			}
+		}
 	}
 	else if (CompanionPreviewColorBox.IsValid())
 	{
@@ -1176,6 +1195,23 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->SelectedCompanionID = PreviewedCompanionID;
+
+		if (UWorld* World = GetWorld())
+		{
+			FName EffectiveHeroSkinID = GI->SelectedHeroSkinID;
+			if (EffectiveHeroSkinID.IsNone())
+			{
+				EffectiveHeroSkinID = FName(TEXT("Default"));
+			}
+
+			for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
+			{
+				AT66HeroPreviewStage* HeroStage = *It;
+				HeroStage->SetPreviewDifficulty(GI->SelectedDifficulty);
+				HeroStage->SetPreviewHero(GI->SelectedHeroID, GI->SelectedHeroBodyType, EffectiveHeroSkinID, GI->SelectedCompanionID);
+				break;
+			}
+		}
 	}
 	NavigateBack();
 }

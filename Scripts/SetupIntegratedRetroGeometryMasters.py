@@ -100,7 +100,7 @@ def backup_asset(asset_path, backup_name):
         unreal.log_warning(f'{LOG} Failed to back up {asset_path}')
 
 
-def recreate_material(asset_name, used_with_skeletal_mesh=False, used_with_instanced_static_meshes=False):
+def recreate_material(asset_name, used_with_skeletal_mesh=False, used_with_instanced_static_meshes=False, used_with_nanite=False):
     asset_path = f'{DEST_DIR}/{asset_name}'
     if unreal.EditorAssetLibrary.does_asset_exist(asset_path):
         unreal.EditorAssetLibrary.delete_asset(asset_path)
@@ -115,6 +115,7 @@ def recreate_material(asset_name, used_with_skeletal_mesh=False, used_with_insta
     safe_set(material, 'use_material_attributes', False)
     safe_set(material, 'used_with_skeletal_mesh', used_with_skeletal_mesh)
     safe_set(material, 'used_with_instanced_static_meshes', used_with_instanced_static_meshes)
+    safe_set(material, 'used_with_nanite', used_with_nanite)
     return material, asset_path
 
 
@@ -283,7 +284,7 @@ def build_fbx_material(collection):
 
 def build_glb_material(collection):
     backup_asset('/Game/Materials/M_GLB_Unlit', 'M_GLB_Unlit_IntegratedRetroGeometryBackup')
-    material, asset_path = recreate_material('M_GLB_Unlit', used_with_instanced_static_meshes=True)
+    material, asset_path = recreate_material('M_GLB_Unlit', used_with_instanced_static_meshes=True, used_with_nanite=True)
     uv = build_affine_uv(material, collection, 'World', -120)
     texture = create_texture_parameter(material, 'BaseColorTexture', -350, -120)
     connect(uv, '', texture, 'UVs')

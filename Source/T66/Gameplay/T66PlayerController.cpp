@@ -36,6 +36,7 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66StageCatchUpGate.h"
 #include "Gameplay/T66StageCatchUpGoldInteractable.h"
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
@@ -57,6 +58,9 @@
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "GameFramework/InputSettings.h"
+#include "GameFramework/PlayerInput.h"
+#include "Camera/CameraComponent.h"
 
 namespace
 {
@@ -103,6 +107,80 @@ namespace
 					Boss->TakeDamageFromHeroHit(DamageAmount, UltimateSourceID, NAME_None);
 				}
 			}
+		}
+	}
+
+	static TArray<FKey> GetKeyboardMouseActionKeys(const FName ActionName)
+	{
+		TArray<FKey> OutKeys;
+		if (const UInputSettings* Settings = UInputSettings::GetInputSettings())
+		{
+			for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+			{
+				if (Mapping.ActionName != ActionName) continue;
+				if (!Mapping.Key.IsValid()) continue;
+				if (!Mapping.Key.IsMouseButton() && (Mapping.Key.IsGamepadKey() || Mapping.Key.IsTouch())) continue;
+				OutKeys.AddUnique(Mapping.Key);
+			}
+		}
+		return OutKeys;
+	}
+
+	static void MigrateLegacyMediaViewerTabBinding(APlayerController* PlayerController)
+	{
+		UInputSettings* Settings = UInputSettings::GetInputSettings();
+		if (!Settings)
+		{
+			return;
+		}
+
+		static const FName ToggleTikTokAction(TEXT("ToggleTikTok"));
+		static const FName ToggleMediaViewerAction(TEXT("ToggleMediaViewer"));
+		const FKey DesiredKey = EKeys::Tab;
+		const FKey LegacyKey = EKeys::CapsLock;
+
+		bool bToggleTikTokAlreadyUsesTab = false;
+		bool bLegacyCapsLockMappingPresent = false;
+		bool bTabAlreadyClaimedByAnotherKeyboardAction = false;
+
+		for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+		{
+			if (!Mapping.Key.IsValid() || Mapping.Key.IsGamepadKey() || Mapping.Key.IsMouseButton())
+			{
+				continue;
+			}
+
+			if (Mapping.ActionName == ToggleTikTokAction && Mapping.Key == DesiredKey)
+			{
+				bToggleTikTokAlreadyUsesTab = true;
+			}
+
+			if (Mapping.ActionName == ToggleTikTokAction && Mapping.Key == LegacyKey)
+			{
+				bLegacyCapsLockMappingPresent = true;
+			}
+
+			if (Mapping.Key == DesiredKey
+				&& Mapping.ActionName != ToggleTikTokAction
+				&& Mapping.ActionName != ToggleMediaViewerAction)
+			{
+				bTabAlreadyClaimedByAnotherKeyboardAction = true;
+			}
+		}
+
+		if (bToggleTikTokAlreadyUsesTab || !bLegacyCapsLockMappingPresent || bTabAlreadyClaimedByAnotherKeyboardAction)
+		{
+			return;
+		}
+
+		Settings->RemoveActionMapping(FInputActionKeyMapping(ToggleTikTokAction, LegacyKey));
+		Settings->AddActionMapping(FInputActionKeyMapping(ToggleTikTokAction, DesiredKey));
+		Settings->SaveKeyMappings();
+		Settings->SaveConfig();
+
+		if (PlayerController && PlayerController->PlayerInput)
+		{
+			PlayerController->PlayerInput->ForceRebuildingKeyMaps(true);
 		}
 	}
 }
@@ -630,6 +708,72 @@ void AT66PlayerController::RestoreGameplayInputMode()
 	}
 }
 
+void AT66PlayerController::RefreshGameplayMouseMappings()
+{
+	UObject* Outer = GetTransientPackage();
+	if (!IA_AttackLock)
+	{
+		IA_AttackLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackLock_T66")));
+		if (IA_AttackLock) IA_AttackLock->ValueType = EInputActionValueType::Boolean;
+	}
+	if (!IA_AttackUnlock)
+	{
+		IA_AttackUnlock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackUnlock_T66")));
+		if (IA_AttackUnlock) IA_AttackUnlock->ValueType = EInputActionValueType::Boolean;
+	}
+	if (!IA_ToggleMouseLock)
+	{
+		IA_ToggleMouseLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_ToggleMouseLock_T66")));
+		if (IA_ToggleMouseLock) IA_ToggleMouseLock->ValueType = EInputActionValueType::Boolean;
+	}
+
+	if (ULocalPlayer* LP = GetLocalPlayer())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Sub = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		{
+			if (IMC_GameplayMouse)
+			{
+				Sub->RemoveMappingContext(IMC_GameplayMouse);
+			}
+
+			IMC_GameplayMouse = NewObject<UInputMappingContext>(Outer, FName(TEXT("IMC_GameplayMouse_T66")));
+			if (IMC_GameplayMouse)
+			{
+				auto MapActionKeys = [this](UInputAction* Action, const FName ActionName, const FKey& FallbackKey)
+				{
+					if (!IMC_GameplayMouse || !Action) return;
+					TArray<FKey> Keys = GetKeyboardMouseActionKeys(ActionName);
+					if (Keys.Num() == 0)
+					{
+						Keys.Add(FallbackKey);
+					}
+					for (const FKey& Key : Keys)
+					{
+						IMC_GameplayMouse->MapKey(Action, Key);
+					}
+				};
+
+				MapActionKeys(IA_AttackLock, FName(TEXT("AttackLock")), EKeys::LeftMouseButton);
+				MapActionKeys(IA_AttackUnlock, FName(TEXT("AttackUnlock")), EKeys::RightMouseButton);
+				MapActionKeys(IA_ToggleMouseLock, FName(TEXT("ToggleMouseLock")), EKeys::ThumbMouseButton2);
+				Sub->AddMappingContext(IMC_GameplayMouse, 0);
+			}
+		}
+	}
+}
+
+float AT66PlayerController::GetHeroOneScopedUltRemainingSeconds() const
+{
+	if (!bHeroOneScopedUltActive || !GetWorld()) return 0.f;
+	return FMath::Max(0.f, HeroOneScopedUltEndTime - GetWorld()->GetTimeSeconds());
+}
+
+float AT66PlayerController::GetHeroOneScopedShotCooldownRemainingSeconds() const
+{
+	if (!bHeroOneScopedUltActive || !GetWorld()) return 0.f;
+	return FMath::Max(0.f, HeroOneScopedShotCooldownEndTime - GetWorld()->GetTimeSeconds());
+}
+
 void AT66PlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -684,6 +828,9 @@ void AT66PlayerController::SetupInputComponent()
 		// User preference: Q = Next, E = Previous.
 		InputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AT66PlayerController::HandleTikTokNextPressed);
 		InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AT66PlayerController::HandleTikTokPrevPressed);
+
+		// Old builds used CapsLock here; migrate the legacy default to Tab without touching custom rebinds.
+		MigrateLegacyMediaViewerTabBinding(this);
 
 #if !UE_BUILD_SHIPPING
 		// Dev console overlay: Enter to open (close via Esc).
@@ -834,6 +981,12 @@ void AT66PlayerController::HandleUltimatePressed()
 	case ET66UltimateType::Blizzard:
 		if (Combat) Combat->PerformUltimateBlizzard(UltDmg);
 		break;
+	case ET66UltimateType::ScopedSniper:
+		if (Hero && Combat)
+		{
+			ActivateHeroOneScopedUlt(Hero, Combat);
+		}
+		break;
 	case ET66UltimateType::None:
 	default:
 	{
@@ -923,6 +1076,16 @@ bool AT66PlayerController::CanUseCombatMouseInput() const
 
 void AT66PlayerController::HandleAttackLockPressed()
 {
+	if (bHeroOneScopedUltActive)
+	{
+		if (!CanUseCombatMouseInput() || !bHeroOneScopeViewEnabled)
+		{
+			return;
+		}
+		TryFireHeroOneScopedUltShot();
+		return;
+	}
+
 	if (!CanUseCombatMouseInput()) return;
 
 	APawn* P = GetPawn();
@@ -969,6 +1132,13 @@ void AT66PlayerController::HandleAttackLockPressed()
 
 void AT66PlayerController::HandleAttackUnlockPressed()
 {
+	if (bHeroOneScopedUltActive)
+	{
+		if (!CanUseCombatMouseInput()) return;
+		ToggleHeroOneScopeView();
+		return;
+	}
+
 	// If we're standing on a loot bag, RMB discards it (so loot accept/reject works without showing cursor).
 	if (AT66LootBagPickup* Bag = NearbyLootBag.Get())
 	{
@@ -1001,6 +1171,7 @@ void AT66PlayerController::HandleAttackUnlockPressed()
 void AT66PlayerController::HandleToggleMouseLockPressed()
 {
 	if (!IsGameplayLevel()) return;
+	if (bHeroOneScopedUltActive) return;
 	if (!CanUseCombatMouseInput()) return;
 
 	if (bShowMouseCursor)
@@ -1022,31 +1193,212 @@ void AT66PlayerController::HandleToggleMouseLockPressed()
 
 void AT66PlayerController::SetupGameplayEnhancedInputMappings()
 {
-	if (IA_AttackLock && IA_AttackUnlock && IA_ToggleMouseLock && IMC_GameplayMouse) return;
-
 	UObject* Outer = GetTransientPackage();
-	IA_AttackLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackLock_T66")));
-	if (IA_AttackLock) IA_AttackLock->ValueType = EInputActionValueType::Boolean;
-	IA_AttackUnlock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackUnlock_T66")));
-	if (IA_AttackUnlock) IA_AttackUnlock->ValueType = EInputActionValueType::Boolean;
-	IA_ToggleMouseLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_ToggleMouseLock_T66")));
-	if (IA_ToggleMouseLock) IA_ToggleMouseLock->ValueType = EInputActionValueType::Boolean;
-
-	IMC_GameplayMouse = NewObject<UInputMappingContext>(Outer, FName(TEXT("IMC_GameplayMouse_T66")));
-	if (IMC_GameplayMouse)
+	if (!IA_AttackLock)
 	{
-		if (IA_AttackLock) IMC_GameplayMouse->MapKey(IA_AttackLock, EKeys::LeftMouseButton);
-		if (IA_AttackUnlock) IMC_GameplayMouse->MapKey(IA_AttackUnlock, EKeys::RightMouseButton);
-		if (IA_ToggleMouseLock) IMC_GameplayMouse->MapKey(IA_ToggleMouseLock, EKeys::RightMouseButton);
+		IA_AttackLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackLock_T66")));
+		if (IA_AttackLock) IA_AttackLock->ValueType = EInputActionValueType::Boolean;
+	}
+	if (!IA_AttackUnlock)
+	{
+		IA_AttackUnlock = NewObject<UInputAction>(Outer, FName(TEXT("IA_AttackUnlock_T66")));
+		if (IA_AttackUnlock) IA_AttackUnlock->ValueType = EInputActionValueType::Boolean;
+	}
+	if (!IA_ToggleMouseLock)
+	{
+		IA_ToggleMouseLock = NewObject<UInputAction>(Outer, FName(TEXT("IA_ToggleMouseLock_T66")));
+		if (IA_ToggleMouseLock) IA_ToggleMouseLock->ValueType = EInputActionValueType::Boolean;
 	}
 
-	if (ULocalPlayer* LP = GetLocalPlayer())
+	RefreshGameplayMouseMappings();
+}
+
+void AT66PlayerController::ActivateHeroOneScopedUlt(AT66HeroBase* Hero, UT66CombatComponent* Combat)
+{
+	UWorld* World = GetWorld();
+	if (!World || !Hero || !Combat)
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Sub = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		return;
+	}
+
+	EndHeroOneScopedUlt();
+
+	bHeroOneScopedUltActive = true;
+	bHeroOneScopeViewEnabled = false;
+	HeroOneScopedUltEndTime = World->GetTimeSeconds() + HeroOneScopedUltDurationSeconds;
+	HeroOneScopedShotCooldownEndTime = World->GetTimeSeconds();
+
+	Combat->SetAutoAttackSuppressed(true);
+	Combat->ClearLockedTarget();
+
+	if (LockedEnemy.IsValid())
+	{
+		LockedEnemy->SetLockedIndicator(false);
+		LockedEnemy.Reset();
+	}
+
+	RestoreGameplayInputMode();
+	World->GetTimerManager().SetTimer(HeroOneScopedUltTimerHandle, this, &AT66PlayerController::EndHeroOneScopedUlt, HeroOneScopedUltDurationSeconds, false);
+}
+
+void AT66PlayerController::EndHeroOneScopedUlt()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(HeroOneScopedUltTimerHandle);
+	}
+
+	if (bHeroOneScopeViewEnabled)
+	{
+		SetHeroOneScopeViewEnabled(false);
+	}
+
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(ControlledPawn))
 		{
-			if (IMC_GameplayMouse) Sub->AddMappingContext(IMC_GameplayMouse, 0);
+			if (UT66CombatComponent* Combat = Hero->FindComponentByClass<UT66CombatComponent>())
+			{
+				Combat->SetAutoAttackSuppressed(false);
+			}
 		}
 	}
+
+	bHeroOneScopedUltActive = false;
+	bHeroOneScopeViewEnabled = false;
+	HeroOneScopedUltEndTime = -1.f;
+	HeroOneScopedShotCooldownEndTime = -1.f;
+}
+
+void AT66PlayerController::ToggleHeroOneScopeView()
+{
+	if (!bHeroOneScopedUltActive)
+	{
+		return;
+	}
+
+	SetHeroOneScopeViewEnabled(!bHeroOneScopeViewEnabled);
+}
+
+void AT66PlayerController::SetHeroOneScopeViewEnabled(bool bEnabled)
+{
+	if (!bHeroOneScopedUltActive && bEnabled)
+	{
+		return;
+	}
+
+	if (bHeroOneScopeViewEnabled == bEnabled)
+	{
+		return;
+	}
+
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
+	if (!Hero || !Hero->CameraBoom || !Hero->FollowCamera)
+	{
+		bHeroOneScopeViewEnabled = false;
+		return;
+	}
+
+	if (bEnabled)
+	{
+		RestoreGameplayInputMode();
+
+		SavedScopeCameraBoomLength = Hero->CameraBoom->TargetArmLength;
+		SavedScopeCameraBoomLocation = Hero->CameraBoom->GetRelativeLocation();
+		SavedScopeCameraFOV = Hero->FollowCamera->FieldOfView;
+		bSavedScopeCameraCollisionTest = Hero->CameraBoom->bDoCollisionTest;
+		bSavedScopeUseControllerRotationYaw = Hero->bUseControllerRotationYaw;
+		bSavedScopePlaceholderVisible = Hero->PlaceholderMesh ? Hero->PlaceholderMesh->IsVisible() : false;
+		bSavedScopeMeshVisible = Hero->GetMesh() ? Hero->GetMesh()->IsVisible() : false;
+
+		if (UCharacterMovementComponent* Move = Hero->GetCharacterMovement())
+		{
+			bSavedScopeOrientRotationToMovement = Move->bOrientRotationToMovement;
+			Move->bOrientRotationToMovement = false;
+		}
+
+		Hero->bUseControllerRotationYaw = true;
+		Hero->CameraBoom->TargetArmLength = 0.f;
+		Hero->CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 78.f));
+		Hero->CameraBoom->bDoCollisionTest = false;
+		Hero->FollowCamera->SetFieldOfView(HeroOneScopedCameraFOV);
+
+		if (Hero->PlaceholderMesh)
+		{
+			Hero->PlaceholderMesh->SetVisibility(false, true);
+		}
+		if (Hero->GetMesh())
+		{
+			Hero->GetMesh()->SetVisibility(false, true);
+		}
+	}
+	else
+	{
+		Hero->CameraBoom->TargetArmLength = SavedScopeCameraBoomLength;
+		Hero->CameraBoom->SetRelativeLocation(SavedScopeCameraBoomLocation);
+		Hero->CameraBoom->bDoCollisionTest = bSavedScopeCameraCollisionTest;
+		Hero->FollowCamera->SetFieldOfView(SavedScopeCameraFOV);
+		Hero->bUseControllerRotationYaw = bSavedScopeUseControllerRotationYaw;
+
+		if (UCharacterMovementComponent* Move = Hero->GetCharacterMovement())
+		{
+			Move->bOrientRotationToMovement = bSavedScopeOrientRotationToMovement;
+		}
+
+		if (Hero->PlaceholderMesh)
+		{
+			Hero->PlaceholderMesh->SetVisibility(bSavedScopePlaceholderVisible, true);
+		}
+		if (Hero->GetMesh())
+		{
+			Hero->GetMesh()->SetVisibility(bSavedScopeMeshVisible, true);
+		}
+	}
+
+	bHeroOneScopeViewEnabled = bEnabled;
+}
+
+void AT66PlayerController::TryFireHeroOneScopedUltShot()
+{
+	if (!bHeroOneScopedUltActive || !bHeroOneScopeViewEnabled)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
+	if (!World || !Hero || !Hero->CombatComponent)
+	{
+		return;
+	}
+
+	const float Now = World->GetTimeSeconds();
+	if (Now < HeroOneScopedShotCooldownEndTime)
+	{
+		return;
+	}
+
+	const FVector CameraLocation = PlayerCameraManager ? PlayerCameraManager->GetCameraLocation() : Hero->FollowCamera->GetComponentLocation();
+	const FRotator CameraRotation = PlayerCameraManager ? PlayerCameraManager->GetCameraRotation() : Hero->FollowCamera->GetComponentRotation();
+	const FVector ShotDirection = CameraRotation.Vector();
+	const FVector MaxEnd = CameraLocation + ShotDirection * HeroOneScopedMaxRange;
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(HeroOneScopedUltTrace), false);
+	Params.AddIgnoredActor(Hero);
+
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	FHitResult BlockingHit;
+	FVector FinalEnd = MaxEnd;
+	if (World->LineTraceSingleByObjectType(BlockingHit, CameraLocation, MaxEnd, ObjectParams, Params))
+	{
+		FinalEnd = BlockingHit.ImpactPoint;
+	}
+
+	Hero->CombatComponent->PerformScopedPiercingShot(CameraLocation, FinalEnd);
+	HeroOneScopedShotCooldownEndTime = Now + HeroOneScopedShotCooldownSeconds;
 }
 
 void AT66PlayerController::HandleDashPressed()
@@ -1056,6 +1408,7 @@ void AT66PlayerController::HandleDashPressed()
 	{
 		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(A))
 		{
+			if (Hero->IsVehicleMounted()) return;
 			Hero->DashForward();
 		}
 	}
@@ -1131,6 +1484,10 @@ void AT66PlayerController::HandleTikTokNextPressed()
 void AT66PlayerController::HandleInteractPressed()
 {
 	if (!IsGameplayLevel()) return;
+	if (GameplayHUDWidget && GameplayHUDWidget->TrySkipActivePresentation())
+	{
+		return;
+	}
 
 	// If we're in an in-world NPC dialogue, Interact confirms the selection.
 	if (bWorldDialogueOpen)
@@ -1161,6 +1518,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66LootBagPickup* ClosestLootBag = nullptr;
 	AT66TutorialPortal* ClosestTutorialPortal = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
+	AT66PilotableTractor* ClosestTractor = nullptr;
 	AT66FountainOfLifeInteractable* ClosestFountain = nullptr;
 	AT66ChestInteractable* ClosestChest = nullptr;
 	AT66WheelSpinInteractable* ClosestWheel = nullptr;
@@ -1177,6 +1535,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
 	float ClosestTutorialPortalDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
+	float ClosestTractorDistSq = InteractRadius * InteractRadius;
 	float ClosestFountainDistSq = InteractRadius * InteractRadius;
 	float ClosestChestDistSq = InteractRadius * InteractRadius;
 	float ClosestWheelDistSq = InteractRadius * InteractRadius;
@@ -1226,6 +1585,10 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestIdolAltarDistSq) { ClosestIdolAltarDistSq = DistSq; ClosestIdolAltar = Altar; }
 		}
+		else if (AT66PilotableTractor* Tractor = Cast<AT66PilotableTractor>(A))
+		{
+			if (DistSq < ClosestTractorDistSq) { ClosestTractorDistSq = DistSq; ClosestTractor = Tractor; }
+		}
 		else if (AT66FountainOfLifeInteractable* Fountain = Cast<AT66FountainOfLifeInteractable>(A))
 		{
 			if (DistSq < ClosestFountainDistSq) { ClosestFountainDistSq = DistSq; ClosestFountain = Fountain; }
@@ -1254,6 +1617,13 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestCatchUpLootDistSq) { ClosestCatchUpLootDistSq = DistSq; ClosestCatchUpLoot = L; }
 		}
+	}
+
+	AT66HeroBase* HeroPawn = Cast<AT66HeroBase>(ControlledPawn);
+
+	if (ClosestTractor && ClosestTractor->IsMountedByHero(HeroPawn) && ClosestTractor->Interact(this))
+	{
+		return;
 	}
 
 	// Recruitable companion should take priority over stage gate so you can recruit right after boss death.
@@ -1312,7 +1682,11 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 		return;
 	}
-	// World interactables (Fountain/Chest/Wheel)
+	// World interactables (Tractor/Fountain/Chest/Wheel)
+	if (ClosestTractor && ClosestTractor->Interact(this))
+	{
+		return;
+	}
 	if (ClosestFountain && ClosestFountain->Interact(this))
 	{
 		return;
@@ -1769,6 +2143,8 @@ void AT66PlayerController::ClearNearbyLootBag(AT66LootBagPickup* LootBag)
 
 void AT66PlayerController::OnPlayerDied()
 {
+	EndHeroOneScopedUlt();
+
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
@@ -1979,6 +2355,18 @@ void AT66PlayerController::HandleMoveForward(float Value)
 		return;
 	}
 
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+	{
+		if (Hero->IsVehicleMounted())
+		{
+			if (AT66PilotableTractor* Tractor = Hero->GetMountedTractor())
+			{
+				Tractor->SetDriveForwardInput(Value);
+			}
+			return;
+		}
+	}
+
 	if (FMath::IsNearlyZero(Value)) return;
 
 	// Tutorial progress: first time the player moves.
@@ -2009,6 +2397,18 @@ void AT66PlayerController::HandleMoveRight(float Value)
 
 	// Block strafing while an in-world NPC dialogue is open (so WASD doesn't move you).
 	if (bWorldDialogueOpen) return;
+
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+	{
+		if (Hero->IsVehicleMounted())
+		{
+			if (AT66PilotableTractor* Tractor = Hero->GetMountedTractor())
+			{
+				Tractor->SetDriveRightInput(Value);
+			}
+			return;
+		}
+	}
 
 	if (FMath::IsNearlyZero(Value)) return;
 
@@ -2053,6 +2453,11 @@ void AT66PlayerController::HandleTurn(float Value)
 void AT66PlayerController::HandleJumpPressed()
 {
 	if (!IsGameplayLevel()) return;
+
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+	{
+		if (Hero->IsVehicleMounted()) return;
+	}
 
 	// Tutorial progress: first time the player jumps.
 	if (UGameInstance* GI = GetGameInstance())
@@ -2115,6 +2520,22 @@ void AT66PlayerController::HandleJumpReleased()
 void AT66PlayerController::HandleZoom(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
+
+	if (bHeroOneScopedUltActive && bHeroOneScopeViewEnabled)
+	{
+		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+		{
+			if (Hero->FollowCamera)
+			{
+				const float NewFOV = FMath::Clamp(
+					Hero->FollowCamera->FieldOfView - (Value * HeroOneScopedZoomStep),
+					HeroOneScopedMinFOV,
+					HeroOneScopedMaxFOV);
+				Hero->FollowCamera->SetFieldOfView(NewFOV);
+			}
+		}
+		return;
+	}
 	
 	// Adjust camera boom length on the possessed hero (third-person zoom)
 	APawn* MyPawn = GetPawn();

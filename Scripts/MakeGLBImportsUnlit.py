@@ -100,6 +100,7 @@ def _create_master_material():
             and "Tint" in vector_params
             and "BaseColorTexture" in texture_params
             and mat.get_editor_property("used_with_instanced_static_meshes")
+            and mat.get_editor_property("used_with_nanite")
             and mat.get_editor_property("two_sided")
         )
     except Exception:
@@ -119,6 +120,7 @@ def _create_master_material():
     _safe_set(mat, "blend_mode", unreal.BlendMode.BLEND_OPAQUE)
     _safe_set(mat, "two_sided", True)
     _safe_set(mat, "used_with_instanced_static_meshes", True)
+    _safe_set(mat, "used_with_nanite", True)
 
     tex_param = mel.create_material_expression(
         mat, unreal.MaterialExpressionTextureSampleParameter2D, -300, 0)

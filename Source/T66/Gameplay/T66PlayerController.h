@@ -28,6 +28,8 @@ class AT66HouseNPCBase;
 class AT66VendorNPC;
 class AT66GamblerNPC;
 class AT66RecruitableCompanion;
+class AT66HeroBase;
+class UT66CombatComponent;
 enum class ET66Rarity : uint8;
 class SWidget;
 class SWeakWidget;
@@ -92,6 +94,15 @@ public:
 	/** Restore gameplay input mode and hide cursor (call after closing pause menu) */
 	UFUNCTION(BlueprintCallable, Category = "Game")
 	void RestoreGameplayInputMode();
+
+	/** Rebuild gameplay mouse mappings from the current InputSettings action bindings. */
+	UFUNCTION(BlueprintCallable, Category = "Game|Input")
+	void RefreshGameplayMouseMappings();
+
+	bool IsHeroOneScopedUltActive() const { return bHeroOneScopedUltActive; }
+	bool IsHeroOneScopeViewEnabled() const { return bHeroOneScopeViewEnabled; }
+	float GetHeroOneScopedUltRemainingSeconds() const;
+	float GetHeroOneScopedShotCooldownRemainingSeconds() const;
 
 	/** Dev console overlay: Enter to open, Esc to close. Non-shipping builds only. */
 	void ToggleDevConsole();
@@ -269,6 +280,11 @@ private:
 
 	/** Enhanced Input: create and register gameplay mouse actions (attack lock, unlock, toggle mouse lock). */
 	void SetupGameplayEnhancedInputMappings();
+	void ActivateHeroOneScopedUlt(AT66HeroBase* Hero, UT66CombatComponent* Combat);
+	void EndHeroOneScopedUlt();
+	void ToggleHeroOneScopeView();
+	void SetHeroOneScopeViewEnabled(bool bEnabled);
+	void TryFireHeroOneScopedUltShot();
 
 	UPROPERTY(Transient)
 	TObjectPtr<UInputAction> IA_AttackLock = nullptr;
@@ -280,6 +296,20 @@ private:
 	TObjectPtr<UInputMappingContext> IMC_GameplayMouse = nullptr;
 
 	TWeakObjectPtr<AT66EnemyBase> LockedEnemy;
+
+	bool bHeroOneScopedUltActive = false;
+	bool bHeroOneScopeViewEnabled = false;
+	float HeroOneScopedUltEndTime = -1.f;
+	float HeroOneScopedShotCooldownEndTime = -1.f;
+	FTimerHandle HeroOneScopedUltTimerHandle;
+	float SavedScopeCameraBoomLength = 0.f;
+	FVector SavedScopeCameraBoomLocation = FVector::ZeroVector;
+	float SavedScopeCameraFOV = 90.f;
+	bool bSavedScopeCameraCollisionTest = true;
+	bool bSavedScopeUseControllerRotationYaw = false;
+	bool bSavedScopeOrientRotationToMovement = true;
+	bool bSavedScopePlaceholderVisible = true;
+	bool bSavedScopeMeshVisible = true;
 
 	UPROPERTY()
 	TObjectPtr<UT66IdolAltarOverlayWidget> IdolAltarOverlayWidget;
@@ -309,6 +339,14 @@ private:
 	TWeakObjectPtr<AT66HouseNPCBase> WorldDialogueTargetNPC;
 	TWeakObjectPtr<AT66RecruitableCompanion> WorldDialogueTargetCompanion;
 	FTimerHandle WorldDialoguePositionTimerHandle;
+
+	static constexpr float HeroOneScopedUltDurationSeconds = 120.f;
+	static constexpr float HeroOneScopedShotCooldownSeconds = 0.35f;
+	static constexpr float HeroOneScopedCameraFOV = 18.f;
+	static constexpr float HeroOneScopedMinFOV = 8.f;
+	static constexpr float HeroOneScopedMaxFOV = 30.f;
+	static constexpr float HeroOneScopedZoomStep = 2.f;
+	static constexpr float HeroOneScopedMaxRange = 20000.f;
 
 	void CloseWorldDialogue();
 	void NavigateWorldDialogue(int32 Delta);

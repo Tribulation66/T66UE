@@ -12,11 +12,7 @@ void UT66RngSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	CachedTuning = NewObject<UT66RngTuningConfig>(this);
-	if (CachedTuning)
-	{
-		CachedTuning->LoadConfig();
-	}
+	CachedTuning.LoadFromConfig();
 
 	// Start in a deterministic-but-unique state. BeginRun() should be called when a run actually begins.
 	RunSeed = static_cast<int32>(FPlatformTime::Cycles());
@@ -27,13 +23,12 @@ void UT66RngSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UT66RngSubsystem::Deinitialize()
 {
-	CachedTuning = nullptr;
 	Super::Deinitialize();
 }
 
 const UT66RngTuningConfig* UT66RngSubsystem::GetTuning() const
 {
-	return CachedTuning;
+	return &CachedTuning;
 }
 
 void UT66RngSubsystem::RecomputeLuck01()

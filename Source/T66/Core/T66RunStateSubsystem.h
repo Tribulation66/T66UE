@@ -628,6 +628,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetSecondaryStatValue(ET66SecondaryStatType StatType) const;
 
+	/** Get the raw hero-base value of a secondary stat before primary-stat scaling and Line 2 multipliers. */
+	float GetSecondaryStatBaselineValue(ET66SecondaryStatType StatType) const;
+
 	/** Aggro multiplier (base * taunt items). Higher = enemies target this hero more. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetAggroMultiplier() const;

@@ -84,6 +84,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Director")
 	void NotifyEnemyDied(AT66EnemyBase* Enemy);
 
+	UFUNCTION(BlueprintCallable, Category = "Director")
+	void SetSpawningPaused(bool bPaused);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

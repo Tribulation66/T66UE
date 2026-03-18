@@ -96,19 +96,38 @@ static FText GetPrimaryStatLabel(UT66LocalizationSubsystem* Loc, int32 Index)
 static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
 {
 	return SecType == ET66SecondaryStatType::CritChance
+		|| SecType == ET66SecondaryStatType::ReflectDamage
 		|| SecType == ET66SecondaryStatType::Crush
 		|| SecType == ET66SecondaryStatType::Invisibility
+		|| SecType == ET66SecondaryStatType::CounterAttack
 		|| SecType == ET66SecondaryStatType::LifeSteal
 		|| SecType == ET66SecondaryStatType::Assassinate
 		|| SecType == ET66SecondaryStatType::Cheating
 		|| SecType == ET66SecondaryStatType::Stealing;
 }
 
-static FText FormatSecondaryValue(ET66SecondaryStatType SecType, float Value)
+static FText FormatBonusPercent(float BonusRatio)
 {
-	return IsSecondaryPercent(SecType)
-		? FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)))
-		: FText::FromString(FString::Printf(TEXT("%.1f"), Value));
+	return FText::FromString(FString::Printf(TEXT("+%d%%"), FMath::RoundToInt(FMath::Max(0.f, BonusRatio) * 100.f)));
+}
+
+static FText FormatSecondaryValue(const UT66RunStateSubsystem* RunState, ET66SecondaryStatType SecType, float Value)
+{
+	if (IsSecondaryPercent(SecType))
+	{
+		return FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(Value * 100.f)));
+	}
+
+	if (RunState)
+	{
+		const float BaselineValue = RunState->GetSecondaryStatBaselineValue(SecType);
+		if (BaselineValue > KINDA_SMALL_NUMBER)
+		{
+			return FormatBonusPercent((Value / BaselineValue) - 1.f);
+		}
+	}
+
+	return FText::FromString(FString::Printf(TEXT("%.1f"), Value));
 }
 
 void T66StatsPanelSlate::FT66LiveStatsPanel::Reset()
@@ -171,7 +190,7 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 		const ET66SecondaryStatType SecType = Pair.Key;
 		const FText Label = Loc ? Loc->GetText_SecondaryStatName(SecType) : FText::FromString(TEXT("?"));
 		const float Value = RunState->GetSecondaryStatValue(SecType);
-		Pair.Value->SetText(FText::Format(StatFmt, Label, FormatSecondaryValue(SecType, Value)));
+		Pair.Value->SetText(FText::Format(StatFmt, Label, FormatSecondaryValue(RunState, SecType, Value)));
 	}
 }
 
@@ -432,29 +451,36 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 	}
 
 	TSharedRef<SWidget> StatsContent = bExtended
-		? TSharedRef<SWidget>(SNew(SBox)
-			.HeightOverride(FT66Style::Tokens::NPCStatsPanelContentHeight)
+		? TSharedRef<SWidget>(SNew(SScrollBox)
+			.ScrollBarVisibility(EVisibility::Visible)
+			+ SScrollBox::Slot()
 			[
-				SNew(SScrollBox)
-				.ScrollBarVisibility(EVisibility::Visible)
-				+ SScrollBox::Slot()
-				[
-					StatsBox
-				]
+				StatsBox
 			])
 		: TSharedRef<SWidget>(StatsBox);
 
-	TSharedRef<SWidget> Content = SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-		[
-			SNew(STextBlock)
-			.Text(HeaderText)
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
-		]
-		+ SVerticalBox::Slot().AutoHeight()
+	TSharedRef<SVerticalBox> Content = SNew(SVerticalBox);
+	Content->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+	[
+		SNew(STextBlock)
+		.Text(HeaderText)
+		.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+	];
+
+	if (bExtended)
+	{
+		Content->AddSlot().FillHeight(1.f)
 		[
 			StatsContent
 		];
+	}
+	else
+	{
+		Content->AddSlot().AutoHeight()
+		[
+			StatsContent
+		];
+	}
 
 	LivePanel->Update(RunState, Loc);
 

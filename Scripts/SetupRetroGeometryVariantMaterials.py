@@ -294,6 +294,7 @@ def rebuild_material(spec, collection):
     safe_set(material, 'use_material_attributes', False)
     safe_set(material, 'used_with_skeletal_mesh', spec['builder'] in ('character', 'fbx'))
     safe_set(material, 'used_with_instanced_static_meshes', spec['builder'] in ('environment', 'glb'))
+    safe_set(material, 'used_with_nanite', spec['builder'] == 'glb')
 
     if spec['builder'] == 'character':
         build_character_material(material, collection, spec['group'])

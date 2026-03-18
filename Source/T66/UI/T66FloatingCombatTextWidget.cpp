@@ -50,8 +50,8 @@ void UT66FloatingCombatTextWidget::SetStatusEvent(FName EventType)
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_LevelUp)
 	{
 		DisplayText = NSLOCTEXT("T66.FloatingCombatText", "Status_LevelUp", "LEVEL UP!");
-		Size = 26;
-		Color = FLinearColor(0.2f, 1.f, 0.5f, 1.f);
+		Size = 42;
+		Color = FLinearColor(1.f, 0.92f, 0.25f, 1.f);
 	}
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Taunt)
 	{

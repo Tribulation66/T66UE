@@ -52,6 +52,9 @@ public:
 	/** Get the ideal camera rotation for viewing this preview (computed by FrameCameraToPreview). */
 	FRotator GetIdealCameraRotation() const { return IdealCameraRotation; }
 
+	/** Update preview dressing for the active difficulty. */
+	void SetPreviewDifficulty(ET66Difficulty Difficulty);
+
 	/** Show or hide the entire stage (platform + hero + companion pawns). */
 	void SetStageVisible(bool bVisible);
 
@@ -75,12 +78,16 @@ protected:
 
 	/** Compute the ideal camera location/rotation and update platform placement. */
 	void FrameCameraToPreview();
+	void RefreshPreviewEnvironment();
 
 	class UPrimitiveComponent* GetPreviewTargetComponent() const;
 
 	/** Simple platform so the hero looks grounded (same level lighting as gameplay). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Preview")
 	TObjectPtr<UStaticMeshComponent> PreviewPlatform;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UStaticMeshComponent>> EasyPreviewProps;
 
 	/** Hero pawn class (same as gameplay - unified hero) */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
@@ -94,9 +101,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<AT66CompanionBase> PreviewCompanionPawn;
 
-	/** Offset for companion behind hero (match AT66CompanionBase::FollowOffset: -120 back, 80 to side). */
+	/** Offset for companion beside the hero in preview so both characters remain readable. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
-	FVector CompanionFollowOffset = FVector(-120.f, 80.f, 0.f);
+	FVector CompanionFollowOffset = FVector(20.f, 170.f, 0.f);
 
 	/** Spawn location for the preview pawn (relative to this actor) */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
@@ -129,9 +136,19 @@ protected:
 	UPROPERTY(Transient)
 	FRotator IdealCameraRotation = FRotator::ZeroRotator;
 
+	UPROPERTY(Transient)
+	ET66Difficulty PreviewDifficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(Transient)
+	bool bStageVisible = true;
+
 	/** Fine-tune the platform's backward offset after the automatic edge placement. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
 	float PlatformForwardOffset = 0.f;
+
+	/** Minimum visual scale so the floor fills the entire preview view and hides the void. */
+	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")
+	float MinGroundScale = 90.f;
 
 	/** Multiplier on the auto-framed camera distance (smaller = character appears bigger, more zoomed in). */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview|Tuning")

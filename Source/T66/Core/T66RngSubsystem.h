@@ -75,9 +75,8 @@ public:
 private:
 	void RecomputeLuck01();
 
-	/** Cached tuning instance (avoids CDO so hot reload does not trigger "Cannot replace existing object" crash). */
-	UPROPERTY(Transient)
-	TObjectPtr<UT66RngTuningConfig> CachedTuning;
+	/** Cached tuning data (plain C++ object; no CDO / live-coding replacement path). */
+	UT66RngTuningConfig CachedTuning;
 
 	/** Seed used for RunStream. */
 	int32 RunSeed = 0;

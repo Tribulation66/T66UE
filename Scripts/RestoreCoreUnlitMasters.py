@@ -43,6 +43,7 @@ def recreate_material(asset_name):
         raise RuntimeError(f'Failed to create {path}')
     safe_set(mat, 'shading_model', unreal.MaterialShadingModel.MSM_UNLIT)
     safe_set(mat, 'two_sided', True)
+    safe_set(mat, 'used_with_nanite', asset_name == 'M_GLB_Unlit')
     return mat, path
 
 

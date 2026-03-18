@@ -294,6 +294,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
 	FText GetText_ControlAttackUnlock() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlToggleMouseLock() const;
+
 	// Graphics helper
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Graphics")
 	FText GetText_PrimaryMonitor() const;

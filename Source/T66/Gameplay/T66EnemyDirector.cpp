@@ -4,6 +4,7 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Core/T66GameplayLayout.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -74,6 +75,31 @@ void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
 	}
 }
 
+void AT66EnemyDirector::SetSpawningPaused(bool bPaused)
+{
+	if (bSpawningPaused == bPaused)
+	{
+		return;
+	}
+
+	bSpawningPaused = bPaused;
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
+	}
+
+	bSpawningArmed = false;
+	if (bSpawningPaused)
+	{
+		PendingSpawns.Empty();
+		return;
+	}
+
+	HandleStageTimerChanged();
+}
+
 void AT66EnemyDirector::HandleStageTimerChanged()
 {
 	UWorld* World = GetWorld();
@@ -110,7 +136,7 @@ void AT66EnemyDirector::SpawnWave()
 
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	// Only start spawning once the stage timer is active (i.e. after start gate / start pillars).
+	// Only start spawning once the stage timer is active (i.e. after the main-area entrance trigger).
 	if (!RunState || !RunState->GetStageTimerActive())
 	{
 		return;
@@ -152,6 +178,11 @@ void AT66EnemyDirector::SpawnWave()
 			}
 		}
 		return false;
+	};
+
+	auto IsInBlockedTraversalZone2D = [](const FVector& Loc) -> bool
+	{
+		return T66GameplayLayout::IsInsideReservedTraversalZone2D(Loc, 120.f);
 	};
 
 	// Robust fallback: if EnemyClass is unset or misconfigured to a special enemy, use base enemy for the "regular" slot.
@@ -264,21 +295,77 @@ void AT66EnemyDirector::SpawnWave()
 		EffectiveSpawnMax = EffectiveSpawnMin + 400.f;
 	}
 
+	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
+	auto TraceGroundZAtXY = [&](const FVector& XYLoc, float& OutGroundZ) -> bool
+	{
+		FHitResult Hit;
+		const FVector TraceStart(XYLoc.X, XYLoc.Y, XYLoc.Z + 6000.f);
+		const FVector TraceEnd(XYLoc.X, XYLoc.Y, XYLoc.Z - 20000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+		{
+			OutGroundZ = Hit.ImpactPoint.Z;
+			return true;
+		}
+		return false;
+	};
+
+	float PlayerGroundZ = GetActorLocation().Z;
+	if (!TraceGroundZAtXY(PlayerLoc, PlayerGroundZ))
+	{
+		PlayerGroundZ = GetActorLocation().Z;
+	}
+
+	auto EnforceMinSpawnDistance2D = [&](FVector& InOutLoc)
+	{
+		FVector FromPlayer = InOutLoc - PlayerLoc;
+		FromPlayer.Z = 0.f;
+		const float Dist = FromPlayer.Size();
+		if (Dist >= EffectiveSpawnMin)
+		{
+			return;
+		}
+
+		FVector Dir = (Dist > 1.f) ? (FromPlayer / Dist) : FVector::ZeroVector;
+		if (Dir.IsNearlyZero())
+		{
+			Dir = FVector(Rng.FRandRange(-1.f, 1.f), Rng.FRandRange(-1.f, 1.f), 0.f);
+			if (!Dir.Normalize())
+			{
+				Dir = FVector(1.f, 0.f, 0.f);
+			}
+		}
+
+		InOutLoc = PlayerLoc + (Dir * EffectiveSpawnMin);
+		InOutLoc.Z = PlayerGroundZ;
+	};
+
+	auto ResolveGroundedSpawnLocation = [&](const FVector& XYLoc) -> FVector
+	{
+		static constexpr float EnemyCapsuleHalfHeight = 88.f;
+		float GroundZ = PlayerGroundZ;
+		if (TraceGroundZAtXY(XYLoc, GroundZ))
+		{
+			return FVector(XYLoc.X, XYLoc.Y, GroundZ + EnemyCapsuleHalfHeight);
+		}
+		return FVector(XYLoc.X, XYLoc.Y, PlayerGroundZ + EnemyCapsuleHalfHeight);
+	};
+
 	PendingSpawns.Empty();
 	for (int32 i = 0; i < SpawnPlan.Num(); ++i)
 	{
-		FVector PlayerLoc = PlayerPawn->GetActorLocation();
-		FVector SpawnLoc = PlayerLoc;
-		// Try a few times to avoid spawning inside safe zones
-		for (int32 Try = 0; Try < 6; ++Try)
+		FVector SpawnLoc(PlayerLoc.X, PlayerLoc.Y, PlayerGroundZ);
+		bool bFoundSpawnLoc = false;
+		// Try a few times to avoid spawning inside safe zones or reserved traversal spaces.
+		for (int32 Try = 0; Try < 12; ++Try)
 		{
-			float Angle = FMath::RandRange(0.f, 2.f * PI);
-			float Dist = FMath::RandRange(EffectiveSpawnMin, EffectiveSpawnMax);
+			const float Angle = Rng.FRandRange(0.f, 2.f * PI);
+			const float Dist = Rng.FRandRange(EffectiveSpawnMin, EffectiveSpawnMax);
 			FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
-			SpawnLoc = PlayerLoc + Offset;
+			SpawnLoc = FVector(PlayerLoc.X + Offset.X, PlayerLoc.Y + Offset.Y, PlayerGroundZ);
 
-			if (!IsInAnySafeZone2D(SpawnLoc))
+			if (!IsInAnySafeZone2D(SpawnLoc) && !IsInBlockedTraversalZone2D(SpawnLoc))
 			{
+				bFoundSpawnLoc = true;
 				break;
 			}
 		}
@@ -298,7 +385,7 @@ void AT66EnemyDirector::SpawnWave()
 				{
 					FVector Dir = ToSpawnPt / Dist2D;
 					SpawnLoc = NPC->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
-					SpawnLoc.Z = PlayerLoc.Z;
+					SpawnLoc.Z = PlayerGroundZ;
 					break;
 				}
 				else if (Dist2D <= 1.f)
@@ -308,32 +395,49 @@ void AT66EnemyDirector::SpawnWave()
 					if (Dir.Normalize())
 					{
 						SpawnLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
-						SpawnLoc.Z = PlayerLoc.Z;
+						SpawnLoc.Z = PlayerGroundZ;
 					}
 					break;
 				}
 			}
 		}
 
-		// Trace down for ground
-		FHitResult Hit;
-		FVector Start = SpawnLoc + FVector(0.f, 0.f, 500.f);
-		FVector End = SpawnLoc - FVector(0.f, 0.f, 1000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-		{
-			// Spawn at ground + capsule half-height (so actor is grounded).
-			static constexpr float EnemyCapsuleHalfHeight = 88.f;
-			SpawnLoc = Hit.ImpactPoint + FVector(0.f, 0.f, EnemyCapsuleHalfHeight);
-		}
-		else
-		{
-			SpawnLoc.Z = PlayerLoc.Z;
-		}
-
 		TSubclassOf<AT66EnemyBase> ClassToSpawn = SpawnPlan[i];
 		if (!ClassToSpawn)
 		{
 			ClassToSpawn = RegularClass;
+		}
+
+		EnforceMinSpawnDistance2D(SpawnLoc);
+		SpawnLoc = ResolveGroundedSpawnLocation(SpawnLoc);
+		if (IsInBlockedTraversalZone2D(SpawnLoc))
+		{
+			if (!bFoundSpawnLoc)
+			{
+				continue;
+			}
+
+			bool bResolvedBlockedZone = false;
+			for (int32 Retry = 0; Retry < 8; ++Retry)
+			{
+				const float Angle = Rng.FRandRange(0.f, 2.f * PI);
+				const float Dist = Rng.FRandRange(EffectiveSpawnMin, EffectiveSpawnMax + 400.f);
+				const FVector Offset(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
+				FVector RetryLoc = ResolveGroundedSpawnLocation(FVector(PlayerLoc.X + Offset.X, PlayerLoc.Y + Offset.Y, PlayerGroundZ));
+				if (IsInAnySafeZone2D(RetryLoc) || IsInBlockedTraversalZone2D(RetryLoc))
+				{
+					continue;
+				}
+
+				SpawnLoc = RetryLoc;
+				bResolvedBlockedZone = true;
+				break;
+			}
+
+			if (!bResolvedBlockedZone)
+			{
+				continue;
+			}
 		}
 
 		const bool bIsMob = (ClassToSpawn == RegularClass);

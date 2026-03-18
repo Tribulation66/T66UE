@@ -40,6 +40,70 @@ void UT66CombatComponent::ClearLockedTarget()
 	LockedTarget.Reset();
 }
 
+void UT66CombatComponent::PerformScopedPiercingShot(const FVector& Start, const FVector& End)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World)
+	{
+		return;
+	}
+
+	const float LineLength = FVector::Dist(Start, End);
+	if (LineLength <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	const float TubeRadius = 55.f;
+	const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+	const FVector MidPoint = (Start + End) * 0.5f;
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(OwnerActor);
+
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByChannel(
+		Overlaps,
+		MidPoint,
+		FQuat::Identity,
+		ECC_Pawn,
+		FCollisionShape::MakeSphere((LineLength * 0.5f) + TubeRadius),
+		Params);
+
+	TSet<AActor*> HitActors;
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		AActor* Target = Overlap.GetActor();
+		if (!Target || HitActors.Contains(Target) || !IsValidAutoTarget(Target))
+		{
+			continue;
+		}
+
+		const float DistSq = FMath::PointDistToSegmentSquared(Target->GetActorLocation(), Start, End);
+		if (DistSq <= (TubeRadius * TubeRadius))
+		{
+			HitActors.Add(Target);
+			if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+			{
+				const float DamageMultiplier = FMath::Max(0.01f, 1.f - Enemy->GetEffectiveArmor());
+				const int32 RawDamage = FMath::Max(1, FMath::CeilToInt(static_cast<float>(Enemy->CurrentHP) / DamageMultiplier));
+				Enemy->TakeDamageFromHero(RawDamage, SourceID, NAME_None);
+			}
+			else if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+			{
+				const int32 DesiredFinalDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Boss->MaxHP) * 0.05f));
+				const float DamageMultiplier = FMath::Max(0.01f, 1.f - Boss->GetEffectiveArmor());
+				const int32 RawDamage = FMath::Max(1, FMath::CeilToInt(static_cast<float>(DesiredFinalDamage) / DamageMultiplier));
+				Boss->TakeDamageFromHeroHit(RawDamage, SourceID, NAME_None);
+			}
+		}
+	}
+
+	SpawnPierceVFX(Start, End, FLinearColor(0.95f, 0.95f, 1.f));
+	PlayShotSfx();
+}
+
 // ---------------------------------------------------------------------------
 // BeginPlay — set up delegates, range sphere, fire timer.
 // ---------------------------------------------------------------------------
@@ -343,6 +407,11 @@ void UT66CombatComponent::TryFire()
 
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	if (bSuppressAutoAttack)
+	{
+		return;
+	}
 
 	FLagScopedScope LagScope(World, TEXT("CombatComponent::TryFire"));
 

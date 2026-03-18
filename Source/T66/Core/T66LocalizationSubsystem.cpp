@@ -414,6 +414,7 @@ FText UT66LocalizationSubsystem::GetText_UltimateName(ET66UltimateType Type) con
 	case ET66UltimateType::MeteorStrike:   return NSLOCTEXT("T66.Abilities", "UltName_MeteorStrike", "Meteor Strike");
 	case ET66UltimateType::ChainLightning: return NSLOCTEXT("T66.Abilities", "UltName_ChainLightning", "Chain Lightning");
 	case ET66UltimateType::PlagueCloud:    return NSLOCTEXT("T66.Abilities", "UltName_PlagueCloud", "Plague Cloud");
+	case ET66UltimateType::ScopedSniper:   return NSLOCTEXT("T66.Abilities", "UltName_ScopedSniper", "Scoped Sniper");
 	default: return NSLOCTEXT("T66.Abilities", "UltName_None", "Smite");
 	}
 }
@@ -426,6 +427,7 @@ FText UT66LocalizationSubsystem::GetText_UltimateDescription(ET66UltimateType Ty
 	case ET66UltimateType::MeteorStrike:   return NSLOCTEXT("T66.Abilities", "UltDesc_MeteorStrike", "Calls down 5 meteor strikes at random positions around the hero, dealing heavy AOE damage after a short delay.");
 	case ET66UltimateType::ChainLightning: return NSLOCTEXT("T66.Abilities", "UltDesc_ChainLightning", "Lightning chains to every enemy in range with no falloff, dealing full damage to each target.");
 	case ET66UltimateType::PlagueCloud:    return NSLOCTEXT("T66.Abilities", "UltDesc_PlagueCloud", "Spawns a poisonous cloud at the hero's location that deals damage over time to all enemies inside it.");
+	case ET66UltimateType::ScopedSniper:   return NSLOCTEXT("T66.Abilities", "UltDesc_ScopedSniper", "Enter a two-minute sniper stance. Right click toggles the scope, mouse wheel adjusts zoom, and left click fires piercing shots that execute normal enemies and chunk bosses for 5% of max HP.");
 	default: return NSLOCTEXT("T66.Abilities", "UltDesc_None", "Deals flat damage to all enemies on the field. 30-second cooldown.");
 	}
 }
@@ -943,6 +945,11 @@ FText UT66LocalizationSubsystem::GetText_ControlAttackLock() const
 FText UT66LocalizationSubsystem::GetText_ControlAttackUnlock() const
 {
 	return NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock", "Attack Unlock");
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlToggleMouseLock() const
+{
+	return NSLOCTEXT("T66.Settings.Fallback", "Toggle Mouse Lock", "Toggle Mouse Lock");
 }
 
 FText UT66LocalizationSubsystem::GetText_PracticeMode() const

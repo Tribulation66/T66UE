@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
@@ -350,12 +351,88 @@ void AT66HeroBase::RefreshAttackRangeRing()
 	UpdateAttackRangeRing();
 }
 
+void AT66HeroBase::CacheVehicleVisualDefaults()
+{
+	if (bVehicleDefaultVisualTransformsCached)
+	{
+		return;
+	}
+
+	if (PlaceholderMesh)
+	{
+		DefaultPlaceholderRelativeLocation = PlaceholderMesh->GetRelativeLocation();
+		DefaultPlaceholderRelativeRotation = PlaceholderMesh->GetRelativeRotation();
+	}
+
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		DefaultSkeletalMeshRelativeLocation = Skel->GetRelativeLocation();
+		DefaultSkeletalMeshRelativeRotation = Skel->GetRelativeRotation();
+	}
+
+	bVehicleDefaultVisualTransformsCached = true;
+}
+
+void AT66HeroBase::SetVehicleMounted(bool bMounted, AT66PilotableTractor* InMountedTractor, const FVector& VisualOffset, const FRotator& VisualRotation)
+{
+	CacheVehicleVisualDefaults();
+	bVehicleMounted = bMounted;
+	MountedTractor = bMounted ? InMountedTractor : nullptr;
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		if (bMounted)
+		{
+			Movement->StopMovementImmediately();
+			Movement->DisableMovement();
+			ConsumeMovementInputVector();
+		}
+		else
+		{
+			Movement->SetMovementMode(MOVE_Walking);
+			HandleHeroDerivedStatsChanged();
+		}
+	}
+
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		if (bMounted)
+		{
+			Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+		else
+		{
+			Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			Capsule->SetCollisionProfileName(TEXT("Pawn"));
+		}
+	}
+
+	if (PlaceholderMesh)
+	{
+		PlaceholderMesh->SetRelativeLocation(DefaultPlaceholderRelativeLocation + (bMounted ? VisualOffset : FVector::ZeroVector));
+		PlaceholderMesh->SetRelativeRotation(DefaultPlaceholderRelativeRotation + (bMounted ? VisualRotation : FRotator::ZeroRotator));
+	}
+
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		Skel->SetRelativeLocation(DefaultSkeletalMeshRelativeLocation + (bMounted ? VisualOffset : FVector::ZeroVector));
+		Skel->SetRelativeRotation(DefaultSkeletalMeshRelativeRotation + (bMounted ? VisualRotation : FRotator::ZeroRotator));
+		Skel->GlobalAnimRateScale = bMounted ? 0.f : 1.f;
+		if (bMounted && CachedIdleAnim)
+		{
+			Skel->PlayAnimation(CachedIdleAnim, true);
+		}
+	}
+
+	UpdateAttackRangeRing();
+}
+
 
 void AT66HeroBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bIsPreviewMode)
+	if (!bIsPreviewMode && !bVehicleMounted)
 	{
 		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 		{
@@ -446,7 +523,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	}
 
 	// Hero speed: instant max when moving, 0 when idle; drive MaxWalkSpeed and animation state.
-	if (!bIsPreviewMode)
+	if (!bIsPreviewMode && !bVehicleMounted)
 	{
 		if (CachedHeroSpeedSubsystem)
 		{
@@ -521,7 +598,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	}
 
 	// Enemy touch damage + bounce: proximity check (enemies block so no overlap events; we query range and apply damage + launch).
-	if (!bIsPreviewMode)
+	if (!bIsPreviewMode && !bVehicleMounted)
 	{
 		UWorld* World = GetWorld();
 		EnemyTouchCheckAccumSeconds += DeltaSeconds;
@@ -601,7 +678,7 @@ void AT66HeroBase::UpdateAttackRangeRing()
 	};
 
 	// Hide in preview mode.
-	if (bIsPreviewMode)
+	if (bIsPreviewMode || bVehicleMounted)
 	{
 		HideAllRings();
 		return;

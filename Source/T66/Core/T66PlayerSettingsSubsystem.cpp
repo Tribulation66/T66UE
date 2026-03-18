@@ -17,13 +17,6 @@ void UT66PlayerSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 	Super::Initialize(Collection);
 	LoadOrCreate();
 
-	// Apply saved UI theme (FT66Style::Initialize already ran with Dark defaults at module startup;
-	// override to Light here if the player saved that preference).
-	if (SettingsObj && SettingsObj->bLightTheme)
-	{
-		FT66Style::SetTheme(ET66UITheme::Light);
-	}
-
 	ApplyAudioToEngine();
 	ApplyUnfocusedAudioToEngine();
 }
@@ -40,6 +33,29 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	if (!SettingsObj)
 	{
 		SettingsObj = Cast<UT66PlayerSettingsSaveGame>(UGameplayStatics::CreateSaveGameObject(UT66PlayerSettingsSaveGame::StaticClass()));
+		Save();
+		return;
+	}
+
+	if (SettingsObj->SchemaVersion < 5)
+	{
+		SettingsObj->SchemaVersion = 5;
+		SettingsObj->bFogEnabled = true;
+		Save();
+		return;
+	}
+
+	if (SettingsObj->SchemaVersion < 6)
+	{
+		SettingsObj->SchemaVersion = 6;
+		SettingsObj->bFogEnabled = true;
+		SettingsObj->FogIntensityPercent = 55.0f;
+		Save();
+	}
+
+	if (SettingsObj->bLightTheme)
+	{
+		SettingsObj->bLightTheme = false;
 		Save();
 	}
 }
@@ -109,19 +125,6 @@ void UT66PlayerSettingsSubsystem::SetGoonerMode(bool bEnabled)
 	if (!SettingsObj) return;
 	SettingsObj->bGoonerMode = bEnabled;
 	Save();
-}
-
-bool UT66PlayerSettingsSubsystem::GetLightTheme() const
-{
-	return SettingsObj ? SettingsObj->bLightTheme : false;
-}
-
-void UT66PlayerSettingsSubsystem::SetLightTheme(bool bLight)
-{
-	if (!SettingsObj) return;
-	SettingsObj->bLightTheme = bLight;
-	FT66Style::SetTheme(bLight ? ET66UITheme::Light : ET66UITheme::Dark);
-	Save();  // broadcasts OnSettingsChanged
 }
 
 float UT66PlayerSettingsSubsystem::GetMasterVolume() const
@@ -289,12 +292,30 @@ void UT66PlayerSettingsSubsystem::SetFogEnabled(bool bEnabled)
 {
 	if (!SettingsObj) return;
 	SettingsObj->bFogEnabled = bEnabled;
+	if (bEnabled && SettingsObj->FogIntensityPercent <= KINDA_SMALL_NUMBER)
+	{
+		SettingsObj->FogIntensityPercent = 55.0f;
+	}
 	Save();
 }
 
 bool UT66PlayerSettingsSubsystem::GetFogEnabled() const
 {
-	return SettingsObj ? SettingsObj->bFogEnabled : false;
+	return SettingsObj ? (SettingsObj->bFogEnabled && SettingsObj->FogIntensityPercent > KINDA_SMALL_NUMBER) : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetFogIntensityPercent(float NewValue)
+{
+	if (!SettingsObj) return;
+
+	SettingsObj->FogIntensityPercent = FMath::Clamp(NewValue, 0.0f, 100.0f);
+	SettingsObj->bFogEnabled = SettingsObj->FogIntensityPercent > KINDA_SMALL_NUMBER;
+	Save();
+}
+
+float UT66PlayerSettingsSubsystem::GetFogIntensityPercent() const
+{
+	return SettingsObj ? FMath::Clamp(SettingsObj->FogIntensityPercent, 0.0f, 100.0f) : 55.0f;
 }
 
 void UT66PlayerSettingsSubsystem::SetRetroFXSettings(const FT66RetroFXSettings& NewSettings)

@@ -8,7 +8,6 @@
 #include "T66UIManager.generated.h"
 
 class UT66ScreenBase;
-class UT66ThemeToggleWidget;
 class UUserWidget;
 
 /**
@@ -92,10 +91,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	ET66ScreenType GetCurrentModalType() const;
 
-	/**
-	 * Rebuild all visible UI widgets (theme toggle, current screen, current modal).
-	 * Call after a theme change to ensure no widget holds stale style pointers.
-	 */
+	/** Rebuild all visible UI widgets (current screen and current modal). */
 	void RebuildAllVisibleUI();
 
 	/**
@@ -145,7 +141,4 @@ protected:
 	/** Maximum history depth to prevent memory bloat */
 	static constexpr int32 MaxHistoryDepth = 10;
 
-	/** Persistent Dark/Light theme toggle (viewport Z-order 50, above screens, below modals) */
-	UPROPERTY()
-	TObjectPtr<UT66ThemeToggleWidget> ThemeToggle;
 };

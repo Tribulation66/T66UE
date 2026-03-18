@@ -64,8 +64,10 @@ public:
 
 private:
 	void EnsureBlendablesInWorld(UWorld* World);
+	void EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Settings);
 	void ApplyBlendableWeights(const FT66RetroFXSettings& Settings);
 	void ApplyPs1Parameters(const FT66RetroFXSettings& Settings);
+	void ApplyChromaticAberrationParameters(const FT66RetroFXSettings& Settings);
 	void ApplyN64Parameters(const FT66RetroFXSettings& Settings);
 	void ApplyResolutionCollection(const FT66RetroFXSettings& Settings, UWorld* World);
 	void ApplyResolutionRuntime(const FT66RetroFXSettings& Settings, UWorld* World);
@@ -82,8 +84,9 @@ private:
 	void HandleActorSpawned(AActor* Actor);
 
 	UMaterialInterface* LoadPs1PostProcessMaterial();
+	UMaterialInterface* LoadPs1PostProcessMaterialVariant(const FT66RetroFXSettings& Settings);
+	UMaterialInterface* LoadChromaticAberrationMaterial();
 	UMaterialInterface* LoadN64BlurMaterial(bool bReplaceTonemapper);
-	UMaterialInterface* LoadCRTMaterial();
 	UMaterialParameterCollection* LoadResolutionCollection();
 	UMaterialParameterCollection* LoadGeometryCollection();
 	UMaterialInterface* LoadCharacterRetroGeometryMaterial();
@@ -94,6 +97,7 @@ private:
 
 	UMaterialInstanceDynamic* GetOrCreateDMI(UMaterialInterface* BaseMaterial, TObjectPtr<UMaterialInstanceDynamic>& CachedDMI);
 	void EnsureBlendableEntry(UMaterialInstanceDynamic* DMI);
+	void RemoveBlendableEntry(UObject* BlendableObject);
 	void SetBlendableWeight(UMaterialInstanceDynamic* DMI, float Weight);
 	void SetScalarParameter(UMaterialInstanceDynamic* DMI, FName ParamName, float Value);
 	void CaptureResolutionRuntimeDefaults();
@@ -117,7 +121,7 @@ private:
 	TObjectPtr<UMaterialInstanceDynamic> N64BlurReplaceTonemapperDMI;
 
 	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> CRTDMI;
+	TObjectPtr<UMaterialInstanceDynamic> ChromaticAberrationDMI;
 
 	UPROPERTY()
 	TObjectPtr<UMaterialParameterCollection> ResolutionCollection;
@@ -148,6 +152,7 @@ private:
 	bool bCharacterGeometryActive = false;
 	bool bResolutionRuntimeDefaultsCaptured = false;
 	bool bResolutionRuntimeActive = false;
+	FString ActivePs1MaterialPath;
 	float OriginalScreenPercentage = 100.0f;
 	float OriginalSecondaryScreenPercentage = 100.0f;
 	int32 OriginalUpscaleQuality = 0;

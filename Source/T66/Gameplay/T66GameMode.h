@@ -106,6 +106,9 @@ public:
 	/** Apply UI theme (Dark = blood-red moon, Light = sun) to directional lights in the given world. Shared with frontend. */
 	static void ApplyThemeToDirectionalLightsForWorld(UWorld* World);
 
+	/** Apply the shared gameplay haze/fog profile for the current theme and player settings. */
+	static void ConfigureGameplayFogForWorld(UWorld* World);
+
 	/** Apply UI theme to SkyAtmosphere, SkyLight, fog, PostProcess color grading, and posterize. Shared with frontend. */
 	static void ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World);
 
@@ -140,6 +143,9 @@ protected:
 	/** Spawn lighting if none exists */
 	void SpawnLightingIfNeeded();
 
+	/** Spawn the non-lighting Quake-style moving sky if none exists. */
+	void SpawnQuakeSkyIfNeeded();
+
 	/** Spawn a PlayerStart if none exists */
 	void SpawnPlayerStartIfNeeded();
 
@@ -171,6 +177,7 @@ protected:
 
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
+	void SpawnTraversalMountainBarriersIfNeeded();
 	void SpawnWorldInteractablesForStage();
 	void SpawnModelShowcaseRow();
 	void SpawnStageCatchUpPlatformAndInteractables();
@@ -182,6 +189,7 @@ protected:
 
 	/** Spawn boss for current stage (dormant until player approaches). */
 	void SpawnBossForCurrentStage();
+	void SpawnBossBeaconIfNeeded();
 
 	/** Spawn the 4 corner houses + 4 NPC cylinders (vendor/gambler/ouroboros/saint). */
 	void SpawnCornerHousesAndNPCs();

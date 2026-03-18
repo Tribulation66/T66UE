@@ -86,6 +86,13 @@ public:
 	bool CreatePosterizeMaterial();
 
 	/**
+	 * Create the retro chromatic-aberration post-process material.
+	 * Loaded at runtime by T66RetroFXSubsystem.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
+	bool CreateRetroChromaticAberrationMaterial();
+
+	/**
 	 * Create The Lab level (Content/Maps/LabLevel): empty arena with PlayerStart, lighting, and GameMode.
 	 * Run from Window → T66 Tools → Create Lab Level (or T66CreateLabLevel console).
 	 */

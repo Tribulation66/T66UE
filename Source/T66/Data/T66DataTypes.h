@@ -24,7 +24,7 @@ enum class ET66AttackCategory : uint8
 	DOT UMETA(DisplayName = "DOT"),
 };
 
-/** Ultimate ability type per hero (Hero_1 uses None = flat damage to all). */
+/** Ultimate ability type per hero. */
 UENUM(BlueprintType)
 enum class ET66UltimateType : uint8
 {
@@ -45,6 +45,7 @@ enum class ET66UltimateType : uint8
 	MiasmaBomb UMETA(DisplayName = "Miasma Bomb"),
 	RabidFrenzy UMETA(DisplayName = "Rabid Frenzy"),
 	Blizzard UMETA(DisplayName = "Blizzard"),
+	ScopedSniper UMETA(DisplayName = "Scoped Sniper"),
 };
 
 /** Hero passive ability type (always-on innate). */

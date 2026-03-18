@@ -960,6 +960,48 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	}
 }
 
+float UT66RunStateSubsystem::GetSecondaryStatBaselineValue(ET66SecondaryStatType StatType) const
+{
+	switch (StatType)
+	{
+	case ET66SecondaryStatType::AoeDamage:       return static_cast<float>(BaseAoeDmg);
+	case ET66SecondaryStatType::BounceDamage:    return static_cast<float>(BaseBounceDmg);
+	case ET66SecondaryStatType::PierceDamage:    return static_cast<float>(BasePierceDmg);
+	case ET66SecondaryStatType::DotDamage:       return static_cast<float>(BaseDotDmg);
+	case ET66SecondaryStatType::CritDamage:      return HeroBaseCritDamage;
+	case ET66SecondaryStatType::CloseRangeDamage:return HeroBaseCloseRangeDmg;
+	case ET66SecondaryStatType::LongRangeDamage: return HeroBaseLongRangeDmg;
+	case ET66SecondaryStatType::AoeSpeed:        return static_cast<float>(BaseAoeAtkSpd);
+	case ET66SecondaryStatType::BounceSpeed:     return static_cast<float>(BaseBounceAtkSpd);
+	case ET66SecondaryStatType::PierceSpeed:     return static_cast<float>(BasePierceAtkSpd);
+	case ET66SecondaryStatType::DotSpeed:        return static_cast<float>(BaseDotAtkSpd);
+	case ET66SecondaryStatType::CritChance:      return FMath::Clamp(HeroBaseCritChance, 0.f, 1.f);
+	case ET66SecondaryStatType::AoeScale:        return static_cast<float>(BaseAoeAtkScale);
+	case ET66SecondaryStatType::BounceScale:     return static_cast<float>(BaseBounceAtkScale);
+	case ET66SecondaryStatType::PierceScale:     return static_cast<float>(BasePierceAtkScale);
+	case ET66SecondaryStatType::DotScale:        return static_cast<float>(BaseDotAtkScale);
+	case ET66SecondaryStatType::AttackRange:     return HeroBaseAttackRange;
+	case ET66SecondaryStatType::Taunt:           return HeroBaseTaunt;
+	case ET66SecondaryStatType::ReflectDamage:   return FMath::Clamp(HeroBaseReflectDmg, 0.f, 1.f);
+	case ET66SecondaryStatType::HpRegen:         return FMath::Max(1.f, HeroBaseHpRegen);
+	case ET66SecondaryStatType::Crush:           return FMath::Clamp(HeroBaseCrushChance, 0.f, 1.f);
+	case ET66SecondaryStatType::Invisibility:    return FMath::Clamp(HeroBaseInvisChance, 0.f, 1.f);
+	case ET66SecondaryStatType::CounterAttack:   return FMath::Clamp(HeroBaseCounterAttack, 0.f, 1.f);
+	case ET66SecondaryStatType::LifeSteal:       return FMath::Clamp(HeroBaseLifeSteal, 0.f, 1.f);
+	case ET66SecondaryStatType::Assassinate:     return FMath::Clamp(HeroBaseAssassinateChance, 0.f, 1.f);
+	case ET66SecondaryStatType::SpinWheel:       return 1.f;
+	case ET66SecondaryStatType::Goblin:          return 1.f;
+	case ET66SecondaryStatType::Leprechaun:      return 1.f;
+	case ET66SecondaryStatType::TreasureChest:   return 1.f;
+	case ET66SecondaryStatType::Fountain:        return 1.f;
+	case ET66SecondaryStatType::Cheating:        return FMath::Clamp(HeroBaseCheatChance, 0.f, 1.f);
+	case ET66SecondaryStatType::Stealing:        return FMath::Clamp(HeroBaseStealChance, 0.f, 1.f);
+	case ET66SecondaryStatType::MovementSpeed:   return 1.f;
+	case ET66SecondaryStatType::LootCrate:       return 1.f;
+	default:                                     return 1.f;
+	}
+}
+
 float UT66RunStateSubsystem::GetAggroMultiplier() const
 {
 	return GetSecondaryStatValue(ET66SecondaryStatType::Taunt);

@@ -41,10 +41,7 @@ namespace
 
 	static const TCHAR* N64BlurPath = TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_N64_Blur.UE5RFX_PPM_N64_Blur");
 	static const TCHAR* N64BlurReplaceTonemapperPath = TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_N64_Blur_ReplaceTonemapper.UE5RFX_PPM_N64_Blur_ReplaceTonemapper");
-	static const TCHAR* CrtCandidatePaths[] = {
-		TEXT("/Game/UE5RFX/Materials/PostProcess/UE5RFX_PPM_CRT_Sample_Instance.UE5RFX_PPM_CRT_Sample_Instance"),
-		TEXT("/Game/UE5RFX/Materials/PostProcess/BaseMaterials/UE5RFX_PPM_CRT.UE5RFX_PPM_CRT")
-	};
+	static const TCHAR* ChromaticAberrationMaterialPath = TEXT("/Game/Materials/Retro/M_RetroChromaticAberrationPostProcess.M_RetroChromaticAberrationPostProcess");
 	static const TCHAR* ResolutionCollectionPath = TEXT("/Game/UE5RFX/Materials/UE5RFX_MaterialParameterCollection.UE5RFX_MaterialParameterCollection");
 	static const TCHAR* GeometryCollectionPath = TEXT("/Game/Materials/Retro/MPC_T66_RetroGeometry.MPC_T66_RetroGeometry");
 	static constexpr float RetroPostProcessPriority = 5000.0f;
@@ -89,6 +86,46 @@ namespace
 	static float GetTargetResolutionHeight(float Value)
 	{
 		return PercentToInverseRange(Value, 1080.0f, 120.0f);
+	}
+
+	enum ET66Ps1VariantBits : uint8
+	{
+		Ps1Variant_ColorLUT = 1 << 0,
+		Ps1Variant_SceneDepthFog = 1 << 1,
+		Ps1Variant_BayerDithering = 1 << 2
+	};
+
+	static uint8 BuildPs1VariantMask(const FT66RetroFXSettings& Settings)
+	{
+		uint8 Mask = 0;
+		if (PercentToSwitch(Settings.PS1ColorLUTPercent) > 0.5f)
+		{
+			Mask |= Ps1Variant_ColorLUT;
+		}
+		if (PercentToSwitch(Settings.PS1SceneDepthFogPercent) > 0.5f)
+		{
+			Mask |= Ps1Variant_SceneDepthFog;
+		}
+		if (PercentToSwitch(Settings.PS1BayerDitheringPercent) > 0.5f)
+		{
+			Mask |= Ps1Variant_BayerDithering;
+		}
+		return Mask;
+	}
+
+	static FString GetPs1VariantMaterialPath(uint8 VariantMask)
+	{
+		const int32 bUseColorLUT = (VariantMask & Ps1Variant_ColorLUT) ? 1 : 0;
+		const int32 bUseSceneDepthFog = (VariantMask & Ps1Variant_SceneDepthFog) ? 1 : 0;
+		const int32 bUseBayerDithering = (VariantMask & Ps1Variant_BayerDithering) ? 1 : 0;
+		return FString::Printf(
+			TEXT("/Game/Materials/Retro/PS1/MI_T66_PS1_C%d_S%d_B%d.MI_T66_PS1_C%d_S%d_B%d"),
+			bUseColorLUT,
+			bUseSceneDepthFog,
+			bUseBayerDithering,
+			bUseColorLUT,
+			bUseSceneDepthFog,
+			bUseBayerDithering);
 	}
 
 	static UTexture* GetWhiteFallbackTexture()
@@ -258,6 +295,55 @@ namespace
 		return Group == ET66RetroGeometryGroup::World ? bEnableWorldGeometry : bEnableCharacterGeometry;
 	}
 
+	static FT66RetroFXSettings BuildEffectiveSettings(const FT66RetroFXSettings& Settings)
+	{
+		if (Settings.bEnableRetroFXMaster)
+		{
+			return Settings;
+		}
+
+		FT66RetroFXSettings DisabledSettings = Settings;
+		DisabledSettings.PS1BlendPercent = 0.0f;
+		DisabledSettings.PS1DitheringPercent = 0.0f;
+		DisabledSettings.PS1BayerDitheringPercent = 0.0f;
+		DisabledSettings.PS1ColorLUTPercent = 0.0f;
+		DisabledSettings.PS1ColorBoostPercent = 0.0f;
+		DisabledSettings.PS1FogPercent = 0.0f;
+		DisabledSettings.PS1FogDensityPercent = 0.0f;
+		DisabledSettings.PS1FogStartDistancePercent = 0.0f;
+		DisabledSettings.PS1FogFallOffDistancePercent = 0.0f;
+		DisabledSettings.PS1SceneDepthFogPercent = 0.0f;
+		DisabledSettings.bUseRealLowResolution = false;
+		DisabledSettings.FakeResolutionSwitchSizePercent = 0.0f;
+		DisabledSettings.FakeResolutionSwitchUVPercent = 0.0f;
+		DisabledSettings.TargetResolutionHeightPercent = 0.0f;
+		DisabledSettings.N64BlurBlendPercent = 0.0f;
+		DisabledSettings.N64BlurStepsPercent = 0.0f;
+		DisabledSettings.N64LowFakeResolutionPercent = 0.0f;
+		DisabledSettings.bUseUE5RFXN64BlurReplaceTonemapper = false;
+		DisabledSettings.ChromaticAberrationPercent = 0.0f;
+		DisabledSettings.ChromaticDistortionPercent = 0.0f;
+		DisabledSettings.bInvertChromaticDistortion = false;
+		DisabledSettings.T66PixelationPercent = 0.0f;
+		DisabledSettings.bEnableWorldGeometry = false;
+		DisabledSettings.WorldVertexSnapPercent = 0.0f;
+		DisabledSettings.WorldVertexSnapResolutionPercent = 0.0f;
+		DisabledSettings.WorldVertexNoisePercent = 0.0f;
+		DisabledSettings.WorldAffineBlendPercent = 0.0f;
+		DisabledSettings.WorldAffineDistance1Percent = 0.0f;
+		DisabledSettings.WorldAffineDistance2Percent = 0.0f;
+		DisabledSettings.WorldAffineDistance3Percent = 0.0f;
+		DisabledSettings.bEnableCharacterGeometry = false;
+		DisabledSettings.CharacterVertexSnapPercent = 0.0f;
+		DisabledSettings.CharacterVertexSnapResolutionPercent = 0.0f;
+		DisabledSettings.CharacterVertexNoisePercent = 0.0f;
+		DisabledSettings.CharacterAffineBlendPercent = 0.0f;
+		DisabledSettings.CharacterAffineDistance1Percent = 0.0f;
+		DisabledSettings.CharacterAffineDistance2Percent = 0.0f;
+		DisabledSettings.CharacterAffineDistance3Percent = 0.0f;
+		return DisabledSettings;
+	}
+
 	static FString GetMaterialBasePath(const UMaterialInterface* Material)
 	{
 		if (!Material)
@@ -295,9 +381,10 @@ void UT66RetroFXSubsystem::Deinitialize()
 	Ps1PostProcessDMI = nullptr;
 	N64BlurDMI = nullptr;
 	N64BlurReplaceTonemapperDMI = nullptr;
-	CRTDMI = nullptr;
+	ChromaticAberrationDMI = nullptr;
 	ResolutionCollection = nullptr;
 	GeometryCollection = nullptr;
+	ActivePs1MaterialPath.Reset();
 	CharacterRetroGeometryMaterial = nullptr;
 	EnvironmentRetroGeometryMaterial = nullptr;
 	FbxRetroGeometryMaterial = nullptr;
@@ -336,12 +423,19 @@ void UT66RetroFXSubsystem::ApplySettings(const FT66RetroFXSettings& Settings, UW
 	}
 
 	UE_LOG(LogT66RetroFXRuntime, Log,
-		TEXT("ApplySettings: world=%s PS1Blend=%.2f PS1Dither=%.2f PS1ColorBoost=%.2f PS1FogEnable=%.2f PS1FogDensity=%.2f PS1FogStart=%.2f PS1FogFalloff=%.2f RealLowRes=%s FakeSize=%.2f FakeUV=%.2f TargetRes=%.2f"),
+		TEXT("ApplySettings: world=%s MasterEnabled=%s PS1Blend=%.2f PS1Dither=%.2f PS1Bayer=%.2f PS1ColorLUT=%.2f PS1ColorBoost=%.2f ChromaticStrength=%.2f DistortionStrength=%.2f InvertDistortion=%s PS1FogEnable=%.2f PS1SceneDepthFog=%.2f PS1FogDensity=%.2f PS1FogStart=%.2f PS1FogFalloff=%.2f RealLowRes=%s FakeSize=%.2f FakeUV=%.2f TargetRes=%.2f"),
 		*GetNameSafe(TargetWorld),
+		Settings.bEnableRetroFXMaster ? TEXT("true") : TEXT("false"),
 		Settings.PS1BlendPercent,
 		Settings.PS1DitheringPercent,
+		Settings.PS1BayerDitheringPercent,
+		Settings.PS1ColorLUTPercent,
 		Settings.PS1ColorBoostPercent,
+		Settings.ChromaticAberrationPercent,
+		Settings.ChromaticDistortionPercent,
+		Settings.bInvertChromaticDistortion ? TEXT("true") : TEXT("false"),
 		Settings.PS1FogPercent,
+		Settings.PS1SceneDepthFogPercent,
 		Settings.PS1FogDensityPercent,
 		Settings.PS1FogStartDistancePercent,
 		Settings.PS1FogFallOffDistancePercent,
@@ -350,20 +444,25 @@ void UT66RetroFXSubsystem::ApplySettings(const FT66RetroFXSettings& Settings, UW
 		Settings.FakeResolutionSwitchUVPercent,
 		Settings.TargetResolutionHeightPercent);
 
+	const FT66RetroFXSettings EffectiveSettings = BuildEffectiveSettings(Settings);
+
 	EnsureBlendablesInWorld(TargetWorld);
-	ApplyBlendableWeights(Settings);
-	ApplyPs1Parameters(Settings);
-	ApplyN64Parameters(Settings);
-	ApplyResolutionCollection(Settings, TargetWorld);
-	ApplyResolutionRuntime(Settings, TargetWorld);
-	ApplyGeometryCollection(Settings, TargetWorld);
-	ApplyGeometryMaterials(Settings, TargetWorld);
+	EnsurePs1PostProcessDMI(EffectiveSettings);
+	EnsureBlendableEntry(ChromaticAberrationDMI);
+	ApplyBlendableWeights(EffectiveSettings);
+	ApplyPs1Parameters(EffectiveSettings);
+	ApplyChromaticAberrationParameters(EffectiveSettings);
+	ApplyN64Parameters(EffectiveSettings);
+	ApplyResolutionCollection(EffectiveSettings, TargetWorld);
+	ApplyResolutionRuntime(EffectiveSettings, TargetWorld);
+	ApplyGeometryCollection(EffectiveSettings, TargetWorld);
+	ApplyGeometryMaterials(EffectiveSettings, TargetWorld);
 
 	if (UGameInstance* GI = TargetWorld->GetGameInstance())
 	{
 		if (UT66PixelationSubsystem* Pixelation = GI->GetSubsystem<UT66PixelationSubsystem>())
 		{
-			const int32 PixelationLevel = FMath::RoundToInt(PercentToRange(Settings.T66PixelationPercent, 0.0f, 10.0f));
+			const int32 PixelationLevel = FMath::RoundToInt(PercentToRange(EffectiveSettings.T66PixelationPercent, 0.0f, 10.0f));
 			Pixelation->SetPixelationLevel(PixelationLevel);
 		}
 	}
@@ -397,22 +496,47 @@ void UT66RetroFXSubsystem::EnsureBlendablesInWorld(UWorld* World)
 		ActiveVolume = UseVolume;
 	}
 
-	GetOrCreateDMI(LoadPs1PostProcessMaterial(), Ps1PostProcessDMI);
 	GetOrCreateDMI(LoadN64BlurMaterial(false), N64BlurDMI);
 	GetOrCreateDMI(LoadN64BlurMaterial(true), N64BlurReplaceTonemapperDMI);
-	GetOrCreateDMI(LoadCRTMaterial(), CRTDMI);
+	GetOrCreateDMI(LoadChromaticAberrationMaterial(), ChromaticAberrationDMI);
 
-	EnsureBlendableEntry(Ps1PostProcessDMI);
 	EnsureBlendableEntry(N64BlurDMI);
 	EnsureBlendableEntry(N64BlurReplaceTonemapperDMI);
-	EnsureBlendableEntry(CRTDMI);
+}
+
+void UT66RetroFXSubsystem::EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Settings)
+{
+	UMaterialInterface* DesiredMaterial = LoadPs1PostProcessMaterialVariant(Settings);
+	const FString DesiredPath = DesiredMaterial ? DesiredMaterial->GetPathName() : FString();
+	if (Ps1PostProcessDMI && ActivePs1MaterialPath != DesiredPath)
+	{
+		RemoveBlendableEntry(Ps1PostProcessDMI);
+		Ps1PostProcessDMI = nullptr;
+	}
+
+	ActivePs1MaterialPath = DesiredPath;
+	GetOrCreateDMI(DesiredMaterial, Ps1PostProcessDMI);
+	EnsureBlendableEntry(Ps1PostProcessDMI);
+
+	UE_LOG(
+		LogT66RetroFXRuntime,
+		Log,
+		TEXT("EnsurePs1PostProcessDMI: material=%s colorLUT=%s sceneDepthFog=%s bayer=%s"),
+		DesiredMaterial ? *DesiredMaterial->GetPathName() : TEXT("<null>"),
+		PercentToSwitch(Settings.PS1ColorLUTPercent) > 0.5f ? TEXT("true") : TEXT("false"),
+		PercentToSwitch(Settings.PS1SceneDepthFogPercent) > 0.5f ? TEXT("true") : TEXT("false"),
+		PercentToSwitch(Settings.PS1BayerDitheringPercent) > 0.5f ? TEXT("true") : TEXT("false"));
 }
 
 void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Settings)
 {
 	const float Ps1Weight = PercentToUnit(Settings.PS1BlendPercent);
+	const float ChromaticWeight = (ClampPercent(Settings.ChromaticAberrationPercent) > KINDA_SMALL_NUMBER
+		|| ClampPercent(Settings.ChromaticDistortionPercent) > KINDA_SMALL_NUMBER)
+		? 1.0f
+		: 0.0f;
 	SetBlendableWeight(Ps1PostProcessDMI, Ps1Weight);
-	SetBlendableWeight(CRTDMI, PercentToUnit(Settings.CRTBlendPercent));
+	SetBlendableWeight(ChromaticAberrationDMI, ChromaticWeight);
 
 	const float N64Weight = PercentToUnit(Settings.N64BlurBlendPercent);
 	if (Settings.bUseUE5RFXN64BlurReplaceTonemapper)
@@ -426,10 +550,10 @@ void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Sett
 		SetBlendableWeight(N64BlurReplaceTonemapperDMI, 0.0f);
 	}
 
-	UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyBlendableWeights: PS1Weight=%.3f N64Weight=%.3f CRTWeight=%.3f ReplaceTonemapper=%s"),
+	UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyBlendableWeights: PS1Weight=%.3f N64Weight=%.3f ChromaticWeight=%.3f ReplaceTonemapper=%s"),
 		Ps1Weight,
 		N64Weight,
-		PercentToUnit(Settings.CRTBlendPercent),
+		ChromaticWeight,
 		Settings.bUseUE5RFXN64BlurReplaceTonemapper ? TEXT("true") : TEXT("false"));
 }
 
@@ -455,13 +579,38 @@ void UT66RetroFXSubsystem::ApplyPs1Parameters(const FT66RetroFXSettings& Setting
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("FogFallOffDistance"), FogFallOffDistance);
 
 	UE_LOG(LogT66RetroFXRuntime, Log,
-		TEXT("ApplyPs1Parameters: DitheringStrength=%.3f ColorBoost=%.3f FogEnabled=%s FogDensity=%.3f FogStartDistance=%.3f FogFalloffDistance=%.3f"),
+		TEXT("ApplyPs1Parameters: DitheringStrength=%.3f Bayer=%s ColorLUT=%s SceneDepthFog=%s ColorBoost=%.3f FogEnabled=%s FogDensity=%.3f FogStartDistance=%.3f FogFalloffDistance=%.3f"),
 		DitheringStrength,
+		PercentToSwitch(Settings.PS1BayerDitheringPercent) > 0.5f ? TEXT("true") : TEXT("false"),
+		PercentToSwitch(Settings.PS1ColorLUTPercent) > 0.5f ? TEXT("true") : TEXT("false"),
+		PercentToSwitch(Settings.PS1SceneDepthFogPercent) > 0.5f ? TEXT("true") : TEXT("false"),
 		ColorBoost,
 		FogSwitch > 0.5f ? TEXT("true") : TEXT("false"),
 		FogDensity,
 		FogStartDistance,
 		FogFallOffDistance);
+}
+
+void UT66RetroFXSubsystem::ApplyChromaticAberrationParameters(const FT66RetroFXSettings& Settings)
+{
+	if (!ChromaticAberrationDMI)
+	{
+		UE_LOG(LogT66RetroFXRuntime, Warning, TEXT("ApplyChromaticAberrationParameters: chromatic aberration DMI was null"));
+		return;
+	}
+
+	const float ChromaticStrength = PercentToRange(Settings.ChromaticAberrationPercent, 0.0f, 0.05f);
+	float DistortionAmount = PercentToRange(Settings.ChromaticDistortionPercent, 0.0f, 0.20f);
+	DistortionAmount *= Settings.bInvertChromaticDistortion ? 1.0f : -1.0f;
+
+	SetScalarParameter(ChromaticAberrationDMI, TEXT("ChromaticStrength"), ChromaticStrength);
+	SetScalarParameter(ChromaticAberrationDMI, TEXT("DistortionAmount"), DistortionAmount);
+
+	UE_LOG(LogT66RetroFXRuntime, Log,
+		TEXT("ApplyChromaticAberrationParameters: ChromaticStrength=%.4f DistortionAmount=%.4f Invert=%s"),
+		ChromaticStrength,
+		DistortionAmount,
+		Settings.bInvertChromaticDistortion ? TEXT("true") : TEXT("false"));
 }
 
 void UT66RetroFXSubsystem::ApplyN64Parameters(const FT66RetroFXSettings& Settings)
@@ -884,6 +1033,18 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadPs1PostProcessMaterial()
 	return LoadFirstAvailableMaterial(Ps1CandidatePaths, UE_ARRAY_COUNT(Ps1CandidatePaths));
 }
 
+UMaterialInterface* UT66RetroFXSubsystem::LoadPs1PostProcessMaterialVariant(const FT66RetroFXSettings& Settings)
+{
+	const uint8 VariantMask = BuildPs1VariantMask(Settings);
+	const FString VariantPath = GetPs1VariantMaterialPath(VariantMask);
+	if (UMaterialInterface* VariantMaterial = LoadObject<UMaterialInterface>(nullptr, *VariantPath))
+	{
+		return VariantMaterial;
+	}
+
+	return LoadPs1PostProcessMaterial();
+}
+
 UMaterialInterface* UT66RetroFXSubsystem::LoadN64BlurMaterial(bool bReplaceTonemapper)
 {
 	return LoadObject<UMaterialInterface>(nullptr, bReplaceTonemapper ? N64BlurReplaceTonemapperPath : N64BlurPath);
@@ -925,9 +1086,9 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadGlbRetroGeometryMaterial()
 	return GlbRetroGeometryMaterial;
 }
 
-UMaterialInterface* UT66RetroFXSubsystem::LoadCRTMaterial()
+UMaterialInterface* UT66RetroFXSubsystem::LoadChromaticAberrationMaterial()
 {
-	return LoadFirstAvailableMaterial(CrtCandidatePaths, UE_ARRAY_COUNT(CrtCandidatePaths));
+	return LoadObject<UMaterialInterface>(nullptr, ChromaticAberrationMaterialPath);
 }
 
 UMaterialParameterCollection* UT66RetroFXSubsystem::LoadResolutionCollection()
@@ -1009,6 +1170,23 @@ void UT66RetroFXSubsystem::EnsureBlendableEntry(UMaterialInstanceDynamic* DMI)
 	}
 
 	PPS.WeightedBlendables.Array.Add(FWeightedBlendable(0.0f, DMI));
+}
+
+void UT66RetroFXSubsystem::RemoveBlendableEntry(UObject* BlendableObject)
+{
+	if (!ActiveVolume || !BlendableObject)
+	{
+		return;
+	}
+
+	FPostProcessSettings& PPS = ActiveVolume->Settings;
+	for (int32 Index = PPS.WeightedBlendables.Array.Num() - 1; Index >= 0; --Index)
+	{
+		if (PPS.WeightedBlendables.Array[Index].Object == BlendableObject)
+		{
+			PPS.WeightedBlendables.Array.RemoveAt(Index);
+		}
+	}
 }
 
 void UT66RetroFXSubsystem::SetBlendableWeight(UMaterialInstanceDynamic* DMI, float Weight)

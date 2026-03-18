@@ -3,7 +3,6 @@
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Style/T66Style.h"
-#include "UI/Components/T66ThemeToggleWidget.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Blueprint/UserWidget.h"
 
@@ -19,25 +18,6 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 	OwningPlayer = InOwningPlayer;
 	NavigationHistory.Empty();
 	CurrentScreenType = ET66ScreenType::None;
-
-	// Create the persistent Dark/Light theme toggle (stays above screens, below modals)
-	if (OwningPlayer && !ThemeToggle)
-	{
-		ThemeToggle = CreateWidget<UT66ThemeToggleWidget>(OwningPlayer);
-		if (ThemeToggle)
-		{
-			ThemeToggle->SetUIManager(this);
-			ThemeToggle->AddToViewport(50);
-			// Hide in gameplay; theme is changed via Settings → Gameplay tab
-			if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(OwningPlayer))
-			{
-				if (T66PC->IsGameplayLevel() && ThemeToggle->IsInViewport())
-				{
-					ThemeToggle->RemoveFromParent();
-				}
-			}
-		}
-	}
 }
 
 void UT66UIManager::RegisterScreenClass(ET66ScreenType ScreenType, TSubclassOf<UT66ScreenBase> WidgetClass)
@@ -131,20 +111,6 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		CurrentScreen->AddToViewport(0);
 		CurrentScreen->OnScreenActivated();
 
-		// Ensure the persistent theme toggle is visible (re-add if it was removed by HideAllUI), but not in gameplay
-		if (ThemeToggle && !ThemeToggle->IsInViewport())
-		{
-			bool bShowToggle = true;
-			if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(OwningPlayer))
-			{
-				bShowToggle = !T66PC->IsGameplayLevel();
-			}
-			if (bShowToggle)
-			{
-				ThemeToggle->AddToViewport(50);
-			}
-		}
-
 		OnScreenChanged.Broadcast(OldScreenType, ScreenType);
 	}
 }
@@ -226,20 +192,14 @@ void UT66UIManager::GoBack()
 
 void UT66UIManager::RebuildAllVisibleUI()
 {
-	// Rebuild the persistent theme toggle so its brushes point to the current style set.
-	if (ThemeToggle && ThemeToggle->IsInViewport())
-	{
-		ThemeToggle->ForceRebuildSlate();
-	}
-
-	// Rebuild the underlying screen (e.g. MainMenu) so it picks up new theme tokens.
+	// Rebuild the underlying screen so it picks up fresh style tokens.
 	if (CurrentScreen && CurrentScreen->IsInViewport())
 	{
 		CurrentScreen->ForceRebuildSlate();
 		CurrentScreen->OnScreenActivated();
 	}
 
-	// Rebuild the modal (e.g. Settings) so it picks up new theme tokens.
+	// Rebuild the modal so it picks up fresh style tokens.
 	if (CurrentModal && CurrentModal->IsInViewport())
 	{
 		CurrentModal->ForceRebuildSlate();
@@ -263,12 +223,6 @@ void UT66UIManager::HideAllUI()
 		CurrentScreen->OnScreenDeactivated();
 		CurrentScreen->RemoveFromParent();
 		CurrentScreen = nullptr;
-	}
-
-	// Hide the persistent theme toggle
-	if (ThemeToggle && ThemeToggle->IsInViewport())
-	{
-		ThemeToggle->RemoveFromParent();
 	}
 
 	ET66ScreenType OldScreenType = CurrentScreenType;

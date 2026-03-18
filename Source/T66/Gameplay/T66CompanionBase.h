@@ -66,6 +66,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Follow")
 	float FollowSpeed = 8.f;
 
+	/** Smooth companion height changes against traced ground instead of snapping. */
+	UPROPERTY(EditDefaultsOnly, Category = "Follow")
+	float GroundFollowSpeed = 12.f;
+
+	/** Uniform actor scale for imported companion visuals. */
+	UPROPERTY(EditDefaultsOnly, Category = "Visuals")
+	float CompanionActorScale = 1.5f;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -113,6 +121,8 @@ protected:
 
 	TWeakObjectPtr<APawn> CachedHeroPawn;
 	int32 CachedUnionStagesCleared = 0;
+	bool bHasCachedGroundZ = false;
+	float CachedGroundZ = 0.f;
 
 	// Healing (gameplay only)
 	float HealAccumSeconds = 0.f;
@@ -125,4 +135,6 @@ protected:
 
 	UFUNCTION()
 	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);
+
+	void ApplyCompanionScale();
 };

@@ -28,12 +28,15 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66StageCatchUpGate.h"
 #include "Gameplay/T66StageCatchUpGoldInteractable.h"
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66StageEffects.h"
+#include "Gameplay/T66LavaPatch.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
+#include "Gameplay/T66QuakeSkyActor.h"
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
@@ -50,6 +53,7 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
+#include "Core/T66GameplayLayout.h"
 #include "Core/T66PropSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"
@@ -65,6 +69,7 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/BoxComponent.h"
@@ -244,6 +249,170 @@ namespace
 		UVs.Add(T66RotateUnitUV(FVector2D(1.f, 1.f), QuarterTurns));
 		UVs.Add(T66RotateUnitUV(FVector2D(0.f, 1.f), QuarterTurns));
 	}
+
+	struct FT66TraversalMountainSample
+	{
+		FVector BasePoint = FVector::ZeroVector;
+		float GroundZ = 0.f;
+		float VerticalFaceTopZ = 0.f;
+		float RidgeDepth = 0.f;
+		float RidgeHeight = 0.f;
+		float OuterDepth = 0.f;
+		float BaseSink = 0.f;
+		float OuterDrop = 0.f;
+	};
+
+	struct FT66TraversalMountainStripSpec
+	{
+		FVector Start = FVector::ZeroVector;
+		FVector End = FVector::ZeroVector;
+		FVector OutwardDirection = FVector::ZeroVector;
+		int32 SeedOffset = 0;
+		bool bCapStart = true;
+		bool bCapEnd = true;
+	};
+
+	static float T66TraceGroundAtXY(UWorld* World, const FVector& SampleLocation, float FallbackZ)
+	{
+		if (!World)
+		{
+			return FallbackZ;
+		}
+
+		FHitResult Hit;
+		const FVector TraceStart = FVector(SampleLocation.X, SampleLocation.Y, SampleLocation.Z + 8000.f);
+		const FVector TraceEnd = FVector(SampleLocation.X, SampleLocation.Y, SampleLocation.Z - 20000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic) ||
+			World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility))
+		{
+			return Hit.ImpactPoint.Z;
+		}
+
+		return FallbackZ;
+	}
+
+	static void T66AppendFacingQuad(
+		FT66MeshSectionBuffers& Section,
+		const FVector& A,
+		const FVector& B,
+		const FVector& C,
+		const FVector& D,
+		const FVector& PreferredNormal)
+	{
+		FVector V0 = A;
+		FVector V1 = B;
+		FVector V2 = C;
+		FVector V3 = D;
+
+		FVector FaceNormal = FVector::CrossProduct(V1 - V0, V2 - V0).GetSafeNormal();
+		if (!PreferredNormal.IsNearlyZero() && FVector::DotProduct(FaceNormal, PreferredNormal) < 0.f)
+		{
+			V1 = D;
+			V2 = C;
+			V3 = B;
+			FaceNormal = FVector::CrossProduct(V1 - V0, V2 - V0).GetSafeNormal();
+		}
+
+		const float USize = FMath::Max((V1 - V0).Size() / 800.f, 1.f);
+		const float VSize = FMath::Max((V3 - V0).Size() / 800.f, 1.f);
+		const int32 Base = Section.Verts.Num();
+
+		Section.Verts.Add(V0);
+		Section.Verts.Add(V1);
+		Section.Verts.Add(V2);
+		Section.Verts.Add(V3);
+
+		Section.Normals.Add(FaceNormal);
+		Section.Normals.Add(FaceNormal);
+		Section.Normals.Add(FaceNormal);
+		Section.Normals.Add(FaceNormal);
+
+		Section.UVs.Add(FVector2D(0.f, 0.f));
+		Section.UVs.Add(FVector2D(USize, 0.f));
+		Section.UVs.Add(FVector2D(USize, VSize));
+		Section.UVs.Add(FVector2D(0.f, VSize));
+
+		Section.Tris.Add(Base);
+		Section.Tris.Add(Base + 1);
+		Section.Tris.Add(Base + 2);
+		Section.Tris.Add(Base);
+		Section.Tris.Add(Base + 2);
+		Section.Tris.Add(Base + 3);
+	}
+
+	static void T66AppendTraversalMountainStrip(
+		UWorld* World,
+		FT66MeshSectionBuffers& Section,
+		const FT66TraversalMountainStripSpec& Spec,
+		int32 GlobalSeed)
+	{
+		const FVector AlongVector = Spec.End - Spec.Start;
+		const float Length = AlongVector.Size2D();
+		if (Length <= 1.f)
+		{
+			return;
+		}
+
+		const FVector AlongDir = FVector(AlongVector.X, AlongVector.Y, 0.f).GetSafeNormal();
+		const FVector OutwardDir = FVector(Spec.OutwardDirection.X, Spec.OutwardDirection.Y, 0.f).GetSafeNormal();
+		if (AlongDir.IsNearlyZero() || OutwardDir.IsNearlyZero())
+		{
+			return;
+		}
+
+		const int32 SegmentCount = FMath::Clamp(FMath::RoundToInt(Length / 2200.f), 2, 28);
+		TArray<FT66TraversalMountainSample> Samples;
+		Samples.SetNum(SegmentCount + 1);
+
+		for (int32 SampleIndex = 0; SampleIndex <= SegmentCount; ++SampleIndex)
+		{
+			const float Alpha = static_cast<float>(SampleIndex) / static_cast<float>(SegmentCount);
+			FT66TraversalMountainSample& Sample = Samples[SampleIndex];
+			Sample.BasePoint = FMath::Lerp(Spec.Start, Spec.End, Alpha);
+			Sample.BasePoint.Z = 0.f;
+
+			const uint32 Hash = HashCombineFast(GetTypeHash(GlobalSeed), GetTypeHash(FIntPoint(Spec.SeedOffset, SampleIndex)));
+			FRandomStream Stream(static_cast<int32>(Hash & 0x7fffffff));
+
+			Sample.GroundZ = T66TraceGroundAtXY(World, Sample.BasePoint, 0.f);
+			Sample.OuterDepth = Stream.FRandRange(1800.f, 5200.f);
+			Sample.RidgeDepth = Sample.OuterDepth * Stream.FRandRange(0.35f, 0.68f);
+			Sample.RidgeHeight = Stream.FRandRange(3600.f, 7600.f);
+			Sample.VerticalFaceTopZ = Sample.GroundZ + FMath::Clamp(1400.f, 300.f, FMath::Max(Sample.RidgeHeight - 180.f, 300.f));
+			Sample.BaseSink = 1000.f * Stream.FRandRange(0.85f, 1.20f);
+			Sample.OuterDrop = 1000.f * Stream.FRandRange(0.10f, 0.55f);
+		}
+
+		for (int32 SegmentIndex = 0; SegmentIndex < SegmentCount; ++SegmentIndex)
+		{
+			const FT66TraversalMountainSample& A = Samples[SegmentIndex];
+			const FT66TraversalMountainSample& B = Samples[SegmentIndex + 1];
+
+			const FVector AInner = A.BasePoint + FVector(0.f, 0.f, A.GroundZ - A.BaseSink);
+			const FVector AKnee = A.BasePoint + FVector(0.f, 0.f, A.VerticalFaceTopZ);
+			const FVector ARidge = A.BasePoint + OutwardDir * A.RidgeDepth + FVector(0.f, 0.f, A.GroundZ + A.RidgeHeight);
+			const FVector AOuter = A.BasePoint + OutwardDir * A.OuterDepth + FVector(0.f, 0.f, A.GroundZ - A.BaseSink - A.OuterDrop);
+
+			const FVector BInner = B.BasePoint + FVector(0.f, 0.f, B.GroundZ - B.BaseSink);
+			const FVector BKnee = B.BasePoint + FVector(0.f, 0.f, B.VerticalFaceTopZ);
+			const FVector BRidge = B.BasePoint + OutwardDir * B.RidgeDepth + FVector(0.f, 0.f, B.GroundZ + B.RidgeHeight);
+			const FVector BOuter = B.BasePoint + OutwardDir * B.OuterDepth + FVector(0.f, 0.f, B.GroundZ - B.BaseSink - B.OuterDrop);
+
+			T66AppendFacingQuad(Section, AInner, BInner, BKnee, AKnee, -OutwardDir);
+			T66AppendFacingQuad(Section, AKnee, BKnee, BRidge, ARidge, -OutwardDir);
+			T66AppendFacingQuad(Section, ARidge, BRidge, BOuter, AOuter, OutwardDir);
+			T66AppendFacingQuad(Section, AOuter, BOuter, BInner, AInner, FVector(0.f, 0.f, -1.f));
+
+			if (Spec.bCapStart && SegmentIndex == 0)
+			{
+				T66AppendFacingQuad(Section, AInner, AKnee, ARidge, AOuter, -AlongDir);
+			}
+			if (Spec.bCapEnd && SegmentIndex == SegmentCount - 1)
+			{
+				T66AppendFacingQuad(Section, BInner, BOuter, BRidge, BKnee, AlongDir);
+			}
+		}
+	}
 }
 
 AT66GameMode::AT66GameMode()
@@ -405,6 +574,7 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
 	// Phase 0: Main flat floor (no external asset packs).
 	SpawnLowPolyNatureEnvironment();
+	SpawnTraversalMountainBarriersIfNeeded();
 
 	// Start gate: spawned here (after floor) so the ground trace hits the flat floor.
 	if (!IsColiseumStage() && !IsLabLevel())
@@ -420,8 +590,8 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
 	SpawnCornerHousesAndNPCs();
 	SpawnTricksterAndCowardiceGate();
+	SpawnBossBeaconIfNeeded();
 	SpawnWorldInteractablesForStage();
-	SpawnModelShowcaseRow();
 
 	// Scatter decorative props.
 	if (UGameInstance* PropGI = GetGameInstance())
@@ -599,9 +769,8 @@ void AT66GameMode::SpawnStageEffectsForStage()
 	if (!RunState || !T66GI) return;
 	if (T66GI->bStageCatchUpPending) return;
 
-	// Stage effects are per-difficulty. Easy = Shroom; other difficulties have none yet.
-	if (T66GI->SelectedDifficulty != ET66Difficulty::Easy) return;
-
+	const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
+	const ET66MapTheme MapTheme = T66GI->MapTheme;
 	const int32 StageNum = RunState->GetCurrentStage();
 
 	const int32 RunSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
@@ -609,19 +778,43 @@ void AT66GameMode::SpawnStageEffectsForStage()
 
 	static constexpr float MainHalfExtent = 50000.f;
 	static constexpr float SpawnZ = 40.f;
-	static constexpr float MinDistBetween = 420.f;
 	static constexpr float SafeBubbleMargin = 350.f;
-	static constexpr int32 ShroomCount = 12;
 
-	TArray<FVector> UsedLocs;
+	int32 LavaPatchCount = 0;
+	switch (Difficulty)
+	{
+	case ET66Difficulty::Easy:       LavaPatchCount = 4;  break;
+	case ET66Difficulty::Medium:     LavaPatchCount = 5;  break;
+	case ET66Difficulty::Hard:       LavaPatchCount = 6;  break;
+	case ET66Difficulty::VeryHard:   LavaPatchCount = 7;  break;
+	case ET66Difficulty::Impossible: LavaPatchCount = 8;  break;
+	case ET66Difficulty::Perdition:  LavaPatchCount = 9;  break;
+	case ET66Difficulty::Final:      LavaPatchCount = 10; break;
+	default:                         LavaPatchCount = 5;  break;
+	}
+
+	if (MapTheme == ET66MapTheme::Mountain)
+	{
+		LavaPatchCount += 2;
+	}
+	else if (MapTheme == ET66MapTheme::Ocean)
+	{
+		LavaPatchCount = FMath::Max(3, LavaPatchCount - 1);
+	}
+
+	const int32 ShroomCount = (Difficulty == ET66Difficulty::Easy) ? 12 : 0;
+	if (LavaPatchCount <= 0 && ShroomCount <= 0) return;
+
+	struct FUsedStageEffectLoc
+	{
+		FVector Loc = FVector::ZeroVector;
+		float ExclusionRadius = 0.f;
+	};
+	TArray<FUsedStageEffectLoc> UsedLocs;
 
 	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
-		static constexpr float StartBoxWest = -40000.f, StartBoxEast = -30909.f;
-		static constexpr float StartBoxNorth = 4545.f, StartBoxSouth = -4545.f;
-		static constexpr float StartMargin = 455.f;
-		if (L.X >= (StartBoxWest - StartMargin) && L.X <= (StartBoxEast + StartMargin) &&
-		    L.Y >= (StartBoxSouth - StartMargin) && L.Y <= (StartBoxNorth + StartMargin))
+		if (T66GameplayLayout::IsInsideReservedTraversalZone2D(L, 455.f))
 		{
 			return true;
 		}
@@ -646,12 +839,13 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		return false;
 	};
 
-	auto IsGoodLoc = [&](const FVector& L) -> bool
+	auto IsGoodLoc = [&](const FVector& L, float CandidateRadius) -> bool
 	{
 		if (IsInsideNoSpawnZone(L)) return false;
-		for (const FVector& U : UsedLocs)
+		for (const FUsedStageEffectLoc& Used : UsedLocs)
 		{
-			if (FVector::DistSquared2D(L, U) < (MinDistBetween * MinDistBetween)) return false;
+			const float RequiredRadius = FMath::Max(CandidateRadius, Used.ExclusionRadius);
+			if (FVector::DistSquared2D(L, Used.Loc) < (RequiredRadius * RequiredRadius)) return false;
 		}
 		UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
 		const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
@@ -659,17 +853,23 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		{
 			const AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
-			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
+			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
 			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R)) return false;
 		}
 		return true;
 	};
 
-	struct FStageEffectSpawnHit { FVector Loc; FVector Normal; };
-	auto FindSpawnLoc = [&]() -> FStageEffectSpawnHit
+	struct FStageEffectSpawnHit
+	{
+		FVector Loc = FVector::ZeroVector;
+		FVector Normal = FVector::UpVector;
+		bool bFound = false;
+	};
+
+	auto FindSpawnLoc = [&](float CandidateRadius, int32 MaxTries) -> FStageEffectSpawnHit
 	{
 		const FVector Up = FVector::UpVector;
-		for (int32 Try = 0; Try < 80; ++Try)
+		for (int32 Try = 0; Try < MaxTries; ++Try)
 		{
 			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
@@ -679,29 +879,147 @@ void AT66GameMode::SpawnStageEffectsForStage()
 			FHitResult Hit;
 			const FVector Start = Loc + FVector(0.f, 0.f, 2000.f);
 			const FVector End = Loc - FVector(0.f, 0.f, 6000.f);
-			if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+			if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 			{
-				Loc = Hit.ImpactPoint;
-				Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, Up);
+				continue;
+			}
+			if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+			{
+				continue;
 			}
 
-			if (IsGoodLoc(Loc)) return { Loc, Normal };
+			Loc = Hit.ImpactPoint;
+			Normal = Hit.ImpactNormal.GetSafeNormal(1e-4f, Up);
+
+			if (IsGoodLoc(Loc, CandidateRadius))
+			{
+				return { Loc, Normal, true };
+			}
 		}
-		return { FVector(0.f, 0.f, SpawnZ), Up };
+		return {};
+	};
+
+	auto NoteUsedLoc = [&](const FVector& Loc, float Radius)
+	{
+		UsedLocs.Add({ Loc, Radius });
+	};
+
+	auto GetLavaDamagePerTick = [&]() -> int32
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy:       return 6;
+		case ET66Difficulty::Medium:     return 8;
+		case ET66Difficulty::Hard:       return 10;
+		case ET66Difficulty::VeryHard:   return 12;
+		case ET66Difficulty::Impossible: return 14;
+		case ET66Difficulty::Perdition:  return 16;
+		case ET66Difficulty::Final:      return 18;
+		default:                         return 8;
+		}
+	};
+
+	auto GetLavaSizeScale = [&]() -> float
+	{
+		switch (MapTheme)
+		{
+		case ET66MapTheme::Mountain: return 1.15f;
+		case ET66MapTheme::Ocean:    return 0.92f;
+		default:                     return 1.0f;
+		}
+	};
+
+	auto ConfigureLavaPatch = [&](AT66LavaPatch* Lava)
+	{
+		if (!Lava) return;
+
+		const float ThemeScale = GetLavaSizeScale();
+		FVector2D Flow(Rng.FRandRange(-1.f, 1.f), Rng.FRandRange(-1.f, 1.f));
+		if (Flow.IsNearlyZero())
+		{
+			Flow = FVector2D(1.f, 0.f);
+		}
+		else
+		{
+			Flow.Normalize();
+		}
+
+		Lava->PatchSize = Rng.FRandRange(1400.f, 2400.f) * ThemeScale;
+		Lava->HoverHeight = 1.5f;
+		Lava->CollisionHeight = 160.f;
+		Lava->TextureResolution = 64;
+		Lava->AnimationFrames = 18;
+		Lava->AnimationFPS = 12.f;
+		Lava->WarpSpeed = Rng.FRandRange(0.90f, 1.25f);
+		Lava->WarpIntensity = Rng.FRandRange(0.10f, 0.15f);
+		Lava->WarpCloseness = Rng.FRandRange(1.80f, 2.40f);
+		Lava->FlowDir = Flow;
+		Lava->FlowSpeed = Rng.FRandRange(0.12f, 0.26f);
+		Lava->UVScale = Rng.FRandRange(3.60f, 5.40f);
+		Lava->CellDensity = Rng.FRandRange(5.20f, 7.40f);
+		Lava->EdgeContrast = Rng.FRandRange(6.40f, 8.80f);
+		Lava->Brightness = Rng.FRandRange(2.10f, 2.90f) * ThemeScale;
+		Lava->PatternOffset = FVector2D(Rng.FRandRange(-12.f, 12.f), Rng.FRandRange(-12.f, 12.f));
+		Lava->DamagePerTick = GetLavaDamagePerTick();
+		Lava->DamageIntervalSeconds = 0.45f;
+		Lava->bDamageHero = true;
 	};
 
 	FActorSpawnParameters P;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	int32 SpawnedLavaCount = 0;
+	int32 SpawnedShroomCount = 0;
+
+	static constexpr float LavaExclusionRadius = 1800.f;
+	for (int32 i = 0; i < LavaPatchCount; ++i)
+	{
+		const FStageEffectSpawnHit Th = FindSpawnLoc(LavaExclusionRadius, 120);
+		if (!Th.bFound)
+		{
+			continue;
+		}
+
+		const FRotator LavaRot(0.f, Rng.FRandRange(0.f, 360.f), 0.f);
+		AT66LavaPatch* Lava = World->SpawnActorDeferred<AT66LavaPatch>(
+			AT66LavaPatch::StaticClass(),
+			FTransform(LavaRot, Th.Loc),
+			this,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (Lava)
+		{
+			ConfigureLavaPatch(Lava);
+			Lava->FinishSpawning(FTransform(LavaRot, Th.Loc));
+			NoteUsedLoc(Th.Loc, LavaExclusionRadius);
+			++SpawnedLavaCount;
+		}
+	}
+
+	static constexpr float ShroomExclusionRadius = 420.f;
 	for (int32 i = 0; i < ShroomCount; ++i)
 	{
-		const FStageEffectSpawnHit Th = FindSpawnLoc();
+		const FStageEffectSpawnHit Th = FindSpawnLoc(ShroomExclusionRadius, 80);
+		if (!Th.bFound)
+		{
+			continue;
+		}
+
 		AT66Shroom* Shroom = World->SpawnActor<AT66Shroom>(AT66Shroom::StaticClass(), Th.Loc, FRotator::ZeroRotator, P);
 		if (Shroom)
 		{
-			UsedLocs.Add(Th.Loc);
+			NoteUsedLoc(Th.Loc, ShroomExclusionRadius);
+			++SpawnedShroomCount;
 		}
 	}
+
+	UE_LOG(LogTemp, Log,
+		TEXT("[StageEffects] Spawned %d lava patches and %d shrooms for stage %d (theme=%d diff=%d)."),
+		SpawnedLavaCount,
+		SpawnedShroomCount,
+		StageNum,
+		static_cast<int32>(MapTheme),
+		static_cast<int32>(Difficulty));
 }
 
 void AT66GameMode::Tick(float DeltaTime)
@@ -921,14 +1239,32 @@ void AT66GameMode::SpawnBossGateIfNeeded()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Between main square and boss square (pillars).
-	FVector BossGateLoc(27273.f, 0.f, 0.f);
+	// Trigger right at the boss-area threshold. The visible pillars are hidden so the fight starts on entry.
+	FVector BossGateLoc = T66GameplayLayout::GetBossGateLocation();
 	FHitResult Hit;
 	if (World->LineTraceSingleByChannel(Hit, BossGateLoc + FVector(0.f, 0.f, 3000.f), BossGateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 	{
 		BossGateLoc.Z = Hit.ImpactPoint.Z;
 	}
 	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, FRotator::ZeroRotator, SpawnParams);
+	if (BossGate)
+	{
+		BossGate->TriggerDistance2D = 220.f;
+		if (BossGate->TriggerBox)
+		{
+			BossGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
+		}
+		if (BossGate->PoleLeft)
+		{
+			BossGate->PoleLeft->SetVisibility(false, true);
+			BossGate->PoleLeft->SetHiddenInGame(true, true);
+		}
+		if (BossGate->PoleRight)
+		{
+			BossGate->PoleRight->SetVisibility(false, true);
+			BossGate->PoleRight->SetHiddenInGame(true, true);
+		}
+	}
 }
 
 bool AT66GameMode::IsColiseumStage() const
@@ -1117,10 +1453,9 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Place right before the boss pillars (main->boss connector).
-	const FVector BossGateRef(27273.f, 0.f, 0.f);
-	FVector GateLoc = BossGateRef + FVector(-800.f, 0.f, 0.f);
-	FVector TricksterLoc = GateLoc + FVector(-250.f, 200.f, 0.f);
+	// Place just outside the boss-area entrance.
+	FVector GateLoc = T66GameplayLayout::GetCowardiceGateLocation();
+	FVector TricksterLoc = T66GameplayLayout::GetTricksterLocation();
 
 	FHitResult Hit;
 	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
@@ -1597,39 +1932,17 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 
 void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 {
+	(void)Player;
 	UWorld* World = GetWorld();
 	if (!World) return;
 
 	// Spawn once per level (gate is a world landmark).
 	if (StartGate) return;
 
-	// Hero spawn location (match SpawnCornerHousesAndNPCs). NPCs are at Offset 600 in a cross; gate just outside (east).
-	float HeroX = -35455.f;
-	float HeroY = 0.f;
-	APawn* Pawn = Player ? Player->GetPawn() : nullptr;
-	if (Pawn)
-	{
-		const FVector Loc = Pawn->GetActorLocation();
-		HeroX = Loc.X;
-		HeroY = Loc.Y;
-	}
-	else
-	{
-		for (TActorIterator<APlayerStart> It(World); It; ++It)
-		{
-			const FVector Loc = (*It)->GetActorLocation();
-			HeroX = Loc.X;
-			HeroY = Loc.Y;
-			break;
-		}
-	}
-
-	// Gate right in front of hero (short offset). Place on ground like NPCs (trace ImpactPoint, no float).
-	static constexpr float GateOffsetEast = 200.f;
-	static constexpr float GateZOffset = 5.f; // small offset to avoid z-fight
-	FVector GateLoc(HeroX + GateOffsetEast, HeroY, 0.f);
-	float HeroZ = Pawn ? Pawn->GetActorLocation().Z : 200.f;
-	float GateGroundZ = HeroZ; // fallback if trace misses
+	// Gate at the start-corridor exit so combat starts only when the player enters the main arena.
+	static constexpr float GateZOffset = 5.f;
+	FVector GateLoc = T66GameplayLayout::GetStartGateLocation();
+	float GateGroundZ = 200.f;
 	FHitResult Hit;
 	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 	{
@@ -1647,7 +1960,22 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
 	if (StartGate)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate near hero at (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
+		StartGate->TriggerDistance2D = 220.f;
+		if (StartGate->TriggerBox)
+		{
+			StartGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
+		}
+		if (StartGate->PoleLeft)
+		{
+			StartGate->PoleLeft->SetVisibility(false, true);
+			StartGate->PoleLeft->SetHiddenInGame(true, true);
+		}
+		if (StartGate->PoleRight)
+		{
+			StartGate->PoleRight->SetVisibility(false, true);
+			StartGate->PoleRight->SetHiddenInGame(true, true);
+		}
+		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate at main-area entrance (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
 	}
 
 }
@@ -1688,14 +2016,10 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 	TArray<FVector> UsedLocs;
 
-	// No-spawn zones: keep gameplay spawns out of start box and special arenas (scaled for 100k).
+	// No-spawn zones: keep gameplay spawns out of reserved traversal spaces and special arenas.
 	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
-		static constexpr float StartBoxWest = -40000.f, StartBoxEast = -30909.f;
-		static constexpr float StartBoxNorth = 4545.f, StartBoxSouth = -4545.f;
-		static constexpr float StartMargin = 455.f;
-		if (L.X >= (StartBoxWest - StartMargin) && L.X <= (StartBoxEast + StartMargin) &&
-		    L.Y >= (StartBoxSouth - StartMargin) && L.Y <= (StartBoxNorth + StartMargin))
+		if (T66GameplayLayout::IsInsideReservedTraversalZone2D(L, 455.f))
 		{
 			return true;
 		}
@@ -1748,7 +2072,11 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		return true;
 	};
 
-	struct FSpawnHitResult { FVector Loc; };
+	struct FSpawnHitResult
+	{
+		FVector Loc = FVector::ZeroVector;
+		bool bFound = false;
+	};
 	auto FindSpawnLoc = [&]() -> FSpawnHitResult
 	{
 		for (int32 Try = 0; Try < 40; ++Try)
@@ -1764,14 +2092,18 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			{
 				continue;
 			}
+			if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+			{
+				continue;
+			}
 			Loc = Hit.ImpactPoint;
 
 			if (IsGoodLoc(Loc))
 			{
-				return { Loc };
+				return { Loc, true };
 			}
 		}
-		return { FVector(0.f, 0.f, SpawnZ) };
+		return {};
 	};
 
 	auto SpawnOne = [&](UClass* Cls) -> AActor*
@@ -1779,6 +2111,10 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		FActorSpawnParameters P;
 		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		const FSpawnHitResult HitResult = FindSpawnLoc();
+		if (!HitResult.bFound)
+		{
+			return nullptr;
+		}
 		AActor* A = World->SpawnActor<AActor>(Cls, HitResult.Loc, FRotator::ZeroRotator, P);
 		if (A) UsedLocs.Add(HitResult.Loc);
 		return A;
@@ -1811,7 +2147,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	}
 
 	// Not luck-affected (for now).
-	const int32 CountTotems = Rng.RandRange(2, 5);
+	const int32 CountTotems = Rng.RandRange(4, 10);
 
 	for (int32 i = 0; i < CountFountains; ++i)
 	{
@@ -1853,8 +2189,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	// Always spawn one wheel right next to the hero (at hero spawn position + offset).
 	if (!IsColiseumStage() && !IsLabLevel())
 	{
-		float HeroX = -35455.f;
-		float HeroY = 0.f;
+		float HeroX = T66GameplayLayout::GetStartAreaCenter().X;
+		float HeroY = T66GameplayLayout::GetStartAreaCenter().Y;
 		for (TActorIterator<APlayerStart> It(World); It; ++It)
 		{
 			const FVector Loc = (*It)->GetActorLocation();
@@ -1886,6 +2222,27 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			}
 			UsedLocs.Add(WheelLoc);
 		}
+
+		static constexpr float GuaranteedTractorOffsetX = 850.f; // just east of the start gate, outside the start corridor
+		const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
+		const float TractorX = StartGateLoc.X + GuaranteedTractorOffsetX;
+		const float TractorY = StartGateLoc.Y;
+		FVector TractorLoc(TractorX, TractorY, SpawnZ);
+		FHitResult TractorHit;
+		const FVector TractorTraceStart(TractorX, TractorY, 8000.f);
+		const FVector TractorTraceEnd(TractorX, TractorY, -16000.f);
+		if (World->LineTraceSingleByChannel(TractorHit, TractorTraceStart, TractorTraceEnd, ECC_WorldStatic))
+		{
+			TractorLoc = TractorHit.ImpactPoint;
+		}
+
+		FActorSpawnParameters TractorSpawnParams;
+		TractorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AT66PilotableTractor* GuaranteedTractor = World->SpawnActor<AT66PilotableTractor>(
+			AT66PilotableTractor::StaticClass(), TractorLoc, FRotator::ZeroRotator, TractorSpawnParams))
+		{
+			UsedLocs.Add(TractorLoc);
+		}
 	}
 
 	const int32 CountCrates = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->CratesPerStage, Rng) : Rng.RandRange(1, 3);
@@ -1906,92 +2263,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 void AT66GameMode::SpawnModelShowcaseRow()
 {
-	if (IsColiseumStage() || IsLabLevel()) return;
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	constexpr float ShowcaseX = -32955.f;
-	constexpr float BagShowcaseX = -34205.f;
-	constexpr float Spacing = 800.f;
-
-	static const TCHAR* MeshPaths[] = {
-		TEXT("/Game/World/Interactables/Chests/Black/ChestBlack.ChestBlack"),
-		TEXT("/Game/World/Interactables/Chests/Red/ChestRed.ChestRed"),
-		TEXT("/Game/World/Interactables/Chests/White/ChestWhite.ChestWhite"),
-		TEXT("/Game/World/Interactables/Chests/Yellow/ChestYellow.ChestYellow"),
-		TEXT("/Game/World/Interactables/Crate.Crate"),
-		TEXT("/Game/World/Interactables/Totem.Totem"),
-		TEXT("/Game/World/Interactables/Wheels/Wheel.Wheel"),
-		TEXT("/Game/World/Props/Barn.Barn"),
-		TEXT("/Game/World/Props/Hay.Hay"),
-		TEXT("/Game/World/Props/Hay2.Hay2"),
-		TEXT("/Game/World/Props/Tree.Tree"),
-		TEXT("/Game/World/Props/Tree2.Tree2"),
-	};
-	static const TCHAR* BagMeshPaths[] = {
-		TEXT("/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black"),
-		TEXT("/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red"),
-		TEXT("/Game/World/LootBags/White/SM_LootBag_White.SM_LootBag_White"),
-		TEXT("/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow"),
-	};
-
-	const int32 Count = UE_ARRAY_COUNT(MeshPaths);
-	const float TotalWidth = (Count - 1) * Spacing;
-	const float StartY = -TotalWidth * 0.5f;
-
-	FActorSpawnParameters SP;
-	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	auto SpawnShowcaseMesh = [&](const TCHAR* MeshPath, const FVector& TraceAnchor)
-	{
-		UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, MeshPath);
-		if (!Mesh)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[Showcase] Mesh not found: %s"), MeshPath);
-			return;
-		}
-
-		// Ground trace to find terrain surface
-		FVector SpawnLoc(TraceAnchor.X, TraceAnchor.Y, 220.f);
-		FHitResult Hit;
-		const FVector TraceStart(TraceAnchor.X, TraceAnchor.Y, 2000.f);
-		const FVector TraceEnd(TraceAnchor.X, TraceAnchor.Y, -4000.f);
-		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
-		{
-			SpawnLoc = Hit.ImpactPoint;
-		}
-
-		// Offset so the mesh bottom sits on the ground
-		const FBoxSphereBounds B = Mesh->GetBounds();
-		const float MeshBottomZ = B.Origin.Z - B.BoxExtent.Z;
-		SpawnLoc.Z -= MeshBottomZ;
-
-		AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SP);
-		if (!Actor) return;
-
-		UStaticMeshComponent* SMC = Actor->GetStaticMeshComponent();
-		if (SMC)
-		{
-			SMC->SetMobility(EComponentMobility::Movable);
-			SMC->SetStaticMesh(Mesh);
-			SMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		}
-	};
-
-	for (int32 i = 0; i < Count; ++i)
-	{
-		const float Y = StartY + i * Spacing;
-		SpawnShowcaseMesh(MeshPaths[i], FVector(ShowcaseX, Y, 0.f));
-	}
-
-	const int32 BagCount = UE_ARRAY_COUNT(BagMeshPaths);
-	for (int32 i = 0; i < BagCount; ++i)
-	{
-		const float Y = StartY + i * Spacing;
-		SpawnShowcaseMesh(BagMeshPaths[i], FVector(BagShowcaseX, Y, 0.f));
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[Showcase] Spawned %d showcase actors including %d loot bags."), Count + BagCount, BagCount);
+	// Removed: this was a hard-coded debug row of meshes in front of the hero spawn.
 }
 
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
@@ -2138,9 +2410,9 @@ void AT66GameMode::SpawnBossForCurrentStage()
 		StageData = FromDT;
 	}
 
-	// Map layout: spawn the stage boss in the Boss Area square (right after pillars, inside safe zone).
+	// Map layout: spawn the stage boss in the dedicated boss square at the far end of the run.
 	{
-		FVector BossLoc(35455.f, 0.f, 200.f);
+		FVector BossLoc = T66GameplayLayout::GetBossAreaCenter(200.f);
 		FHitResult BossHit;
 		if (World->LineTraceSingleByChannel(BossHit, BossLoc + FVector(0.f, 0.f, 3000.f), BossLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 		{
@@ -2296,6 +2568,7 @@ void AT66GameMode::EnsureLevelSetup()
 	{
 		SpawnLabFloorIfNeeded();
 		SpawnLightingIfNeeded();  // Same sky and lighting as gameplay: SkyAtmosphere (blue sky), sun, sky light, fog, post process
+		SpawnQuakeSkyIfNeeded();
 		SpawnLabCollectorIfNeeded();
 		SpawnPlayerStartIfNeeded();
 		return;
@@ -2308,6 +2581,7 @@ void AT66GameMode::EnsureLevelSetup()
 	SpawnBossAreaWallsIfNeeded();
 	TryApplyGroundFloorMaterialToAllFloors();
 	SpawnLightingIfNeeded();
+	SpawnQuakeSkyIfNeeded();
 	SpawnPlayerStartIfNeeded();
 }
 
@@ -2491,6 +2765,201 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 	// Coliseum arena: off to the side. No separate floor (hard rule: no overlapping grounds; main floor covers it).
 }
 
+void AT66GameMode::SpawnBossBeaconIfNeeded()
+{
+	if (IsColiseumStage() || IsLabLevel()) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	static const FName BossBeaconTag(TEXT("T66_Boss_Beacon"));
+
+	TArray<AActor*> ExistingBeacons;
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		if (It->Tags.Contains(BossBeaconTag))
+		{
+			ExistingBeacons.Add(*It);
+		}
+	}
+	for (AActor* Existing : ExistingBeacons)
+	{
+		if (Existing)
+		{
+			Existing->Destroy();
+		}
+	}
+
+	const FVector DesiredBase = T66GameplayLayout::GetBossAreaCenter() + FVector(2400.f, 0.f, 0.f);
+	const float MinNormalZ = 0.88f;
+	FVector BeaconBase = DesiredBase;
+	BeaconBase.Z = 0.f;
+
+	auto TryTraceBossBeaconSurface = [&](float X, float Y, FVector& OutLoc) -> bool
+	{
+		FHitResult Hit;
+		const FVector TraceStart(X, Y, 5000.f);
+		const FVector TraceEnd(X, Y, -12000.f);
+		if (!World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+		{
+			return false;
+		}
+
+		if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal, MinNormalZ))
+		{
+			return false;
+		}
+
+		OutLoc = Hit.ImpactPoint;
+		return true;
+	};
+
+	FVector FallbackLoc = DesiredBase;
+	{
+		FHitResult FallbackHit;
+		const FVector TraceStart = DesiredBase + FVector(0.f, 0.f, 5000.f);
+		const FVector TraceEnd = DesiredBase - FVector(0.f, 0.f, 12000.f);
+		if (World->LineTraceSingleByChannel(FallbackHit, TraceStart, TraceEnd, ECC_WorldStatic))
+		{
+			FallbackLoc = FallbackHit.ImpactPoint;
+		}
+	}
+
+	bool bFoundFlatSurface = false;
+	for (float Radius = 0.f; Radius <= 1600.f && !bFoundFlatSurface; Radius += 220.f)
+	{
+		const int32 AngleSteps = (Radius <= KINDA_SMALL_NUMBER) ? 1 : 14;
+		for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
+		{
+			const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
+			const float X = DesiredBase.X + (Radius * FMath::Cos(Angle));
+			const float Y = DesiredBase.Y + (Radius * FMath::Sin(Angle));
+			if (TryTraceBossBeaconSurface(X, Y, BeaconBase))
+			{
+				bFoundFlatSurface = true;
+				break;
+			}
+		}
+	}
+
+	if (!bFoundFlatSurface)
+	{
+		BeaconBase = FallbackLoc;
+	}
+
+	constexpr float OuterHeight = 34000.f;
+	constexpr float InnerHeight = 32000.f;
+	constexpr float OuterRadius = 250.f;
+	constexpr float InnerRadius = 90.f;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AActor* BeaconActor = World->SpawnActor<AActor>(AActor::StaticClass(), BeaconBase, FRotator::ZeroRotator, SpawnParams);
+	if (!BeaconActor)
+	{
+		return;
+	}
+
+	BeaconActor->Tags.Add(BossBeaconTag);
+
+	USceneComponent* Root = NewObject<USceneComponent>(BeaconActor, TEXT("BossBeaconRoot"));
+	if (!Root)
+	{
+		BeaconActor->Destroy();
+		return;
+	}
+
+	BeaconActor->SetRootComponent(Root);
+	Root->SetMobility(EComponentMobility::Movable);
+	Root->RegisterComponent();
+
+	UStaticMesh* CylinderMesh = FT66VisualUtil::GetBasicShapeCylinder();
+	UMaterialInterface* EnvUnlitBase = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+	UTexture* WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+
+	auto CreateBeamMaterial = [&](const FLinearColor& Tint, float Brightness) -> UMaterialInterface*
+	{
+		if (!EnvUnlitBase)
+		{
+			return nullptr;
+		}
+
+		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EnvUnlitBase, BeaconActor);
+		if (!MID)
+		{
+			return nullptr;
+		}
+
+		if (WhiteTexture)
+		{
+			MID->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
+			MID->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
+		}
+		MID->SetVectorParameterValue(TEXT("Tint"), Tint);
+		MID->SetVectorParameterValue(TEXT("BaseColor"), Tint);
+		MID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+		return MID;
+	};
+
+	auto ConfigureBeamMesh = [&](const TCHAR* ComponentName, float Radius, float Height, const FLinearColor& Tint, float Brightness)
+	{
+		if (!CylinderMesh)
+		{
+			return;
+		}
+
+		UStaticMeshComponent* BeamMesh = NewObject<UStaticMeshComponent>(BeaconActor, ComponentName);
+		if (!BeamMesh)
+		{
+			return;
+		}
+
+		BeamMesh->SetStaticMesh(CylinderMesh);
+		BeamMesh->SetRelativeLocation(FVector(0.f, 0.f, Height * 0.5f));
+		BeamMesh->SetRelativeScale3D(FVector(Radius / 50.f, Radius / 50.f, Height / 100.f));
+		BeamMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		BeamMesh->SetCastShadow(false);
+		BeamMesh->SetReceivesDecals(false);
+		BeamMesh->SetCanEverAffectNavigation(false);
+		BeamMesh->SetMobility(EComponentMobility::Movable);
+		BeamMesh->SetupAttachment(Root);
+		if (UMaterialInterface* BeamMaterial = CreateBeamMaterial(Tint, Brightness))
+		{
+			BeamMesh->SetMaterial(0, BeamMaterial);
+		}
+		BeamMesh->RegisterComponent();
+	};
+
+	ConfigureBeamMesh(TEXT("BossBeaconOuter"), OuterRadius, OuterHeight, FLinearColor(0.70f, 0.90f, 1.00f, 1.f), 9.5f);
+	ConfigureBeamMesh(TEXT("BossBeaconInner"), InnerRadius, InnerHeight, FLinearColor(1.00f, 0.93f, 0.60f, 1.f), 26.0f);
+
+	auto ConfigureGlowLight = [&](const TCHAR* ComponentName, float HeightAlpha, float Intensity, float AttenuationRadius)
+	{
+		UPointLightComponent* Glow = NewObject<UPointLightComponent>(BeaconActor, ComponentName);
+		if (!Glow)
+		{
+			return;
+		}
+
+		Glow->SetMobility(EComponentMobility::Movable);
+		Glow->SetupAttachment(Root);
+		Glow->SetRelativeLocation(FVector(0.f, 0.f, OuterHeight * HeightAlpha));
+		Glow->SetIntensity(Intensity);
+		Glow->SetLightColor(FLinearColor(1.00f, 0.92f, 0.72f));
+		Glow->SetAttenuationRadius(AttenuationRadius);
+		Glow->SetCastShadows(false);
+		Glow->bUseInverseSquaredFalloff = false;
+		Glow->LightFalloffExponent = 3.0f;
+		Glow->RegisterComponent();
+	};
+
+	ConfigureGlowLight(TEXT("BossBeaconMidGlow"), 0.42f, 85000.f, 9000.f);
+	ConfigureGlowLight(TEXT("BossBeaconTopGlow"), 0.86f, 125000.f, 14000.f);
+
+	SpawnedSetupActors.Add(BeaconActor);
+}
+
 void AT66GameMode::SpawnStartAreaWallsIfNeeded()
 {
 	UWorld* World = GetWorld();
@@ -2645,6 +3114,98 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 		}
 		SpawnedSetupActors.Add(Wall);
 	}
+}
+
+static const FName T66TraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+static void DestroyActorsWithTag(UWorld* World, FName Tag);
+static void T66ConfigureTerrainVisualCollisionComponent(UPrimitiveComponent* Component);
+
+void AT66GameMode::SpawnTraversalMountainBarriersIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	DestroyActorsWithTag(World, T66TraversalBarrierTag);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AActor* BarrierActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	if (!BarrierActor)
+	{
+		return;
+	}
+
+	BarrierActor->Tags.Add(T66TraversalBarrierTag);
+	UProceduralMeshComponent* BarrierPMC = NewObject<UProceduralMeshComponent>(BarrierActor, TEXT("TraversalMountainBarriers"));
+	if (!BarrierPMC)
+	{
+		BarrierActor->Destroy();
+		return;
+	}
+
+	BarrierActor->SetRootComponent(BarrierPMC);
+	BarrierPMC->bUseAsyncCooking = true;
+	BarrierPMC->bUseComplexAsSimpleCollision = true;
+
+	FT66MeshSectionBuffers BarrierSection;
+	TArray<FT66TraversalMountainStripSpec> StripSpecs = {
+		{ FVector(T66GameplayLayout::StartPartitionWestX, -T66GameplayLayout::WorldHalfExtent, 0.f), FVector(T66GameplayLayout::StartPartitionWestX, T66GameplayLayout::WorldHalfExtent, 0.f), FVector(-1.f, 0.f, 0.f), 10, true, true },
+		{ FVector(T66GameplayLayout::StartPartitionWestX,  T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(T66GameplayLayout::StartAreaEastX,  T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(0.f, 1.f, 0.f), 11, false, false },
+		{ FVector(T66GameplayLayout::StartPartitionWestX, -T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(T66GameplayLayout::StartAreaEastX, -T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(0.f,-1.f, 0.f), 12, false, false },
+		{ FVector(T66GameplayLayout::StartAreaEastX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::StartAreaEastX,  T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(1.f, 0.f, 0.f), 13, false, false },
+		{ FVector(T66GameplayLayout::StartAreaEastX, -T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(T66GameplayLayout::StartAreaEastX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(1.f, 0.f, 0.f), 14, false, false },
+		{ FVector(T66GameplayLayout::StartAreaEastX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::StartMainEntranceX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(0.f, 1.f, 0.f), 15, false, false },
+		{ FVector(T66GameplayLayout::StartAreaEastX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::StartMainEntranceX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(0.f,-1.f, 0.f), 16, false, false },
+		{ FVector(T66GameplayLayout::StartMainEntranceX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::StartMainEntranceX,  T66GameplayLayout::WorldHalfExtent, 0.f), FVector(-1.f, 0.f, 0.f), 17, false, true },
+		{ FVector(T66GameplayLayout::StartMainEntranceX, -T66GameplayLayout::WorldHalfExtent, 0.f), FVector(T66GameplayLayout::StartMainEntranceX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(-1.f, 0.f, 0.f), 18, true, false },
+		{ FVector(T66GameplayLayout::BossMainEntranceX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::BossMainEntranceX,  T66GameplayLayout::WorldHalfExtent, 0.f), FVector(1.f, 0.f, 0.f), 19, false, true },
+		{ FVector(T66GameplayLayout::BossMainEntranceX, -T66GameplayLayout::WorldHalfExtent, 0.f), FVector(T66GameplayLayout::BossMainEntranceX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(1.f, 0.f, 0.f), 20, true, false },
+		{ FVector(T66GameplayLayout::BossMainEntranceX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::BossAreaWestX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(0.f, 1.f, 0.f), 21, false, false },
+		{ FVector(T66GameplayLayout::BossMainEntranceX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::BossAreaWestX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(0.f,-1.f, 0.f), 22, false, false },
+		{ FVector(T66GameplayLayout::BossAreaWestX,  T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(T66GameplayLayout::BossAreaWestX,  T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(-1.f, 0.f, 0.f), 23, false, false },
+		{ FVector(T66GameplayLayout::BossAreaWestX, -T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(T66GameplayLayout::BossAreaWestX, -T66GameplayLayout::CorridorHalfHeightY, 0.f), FVector(-1.f, 0.f, 0.f), 24, false, false },
+		{ FVector(T66GameplayLayout::BossAreaWestX,  T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(T66GameplayLayout::BossPartitionEastX,  T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(0.f, 1.f, 0.f), 25, false, false },
+		{ FVector(T66GameplayLayout::BossAreaWestX, -T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(T66GameplayLayout::BossPartitionEastX, -T66GameplayLayout::AreaHalfHeightY, 0.f), FVector(0.f,-1.f, 0.f), 26, false, false },
+		{ FVector(T66GameplayLayout::BossPartitionEastX, -T66GameplayLayout::WorldHalfExtent, 0.f), FVector(T66GameplayLayout::BossPartitionEastX,  T66GameplayLayout::WorldHalfExtent, 0.f), FVector(1.f, 0.f, 0.f), 27, true, true },
+	};
+
+	UT66GameInstance* GI = GetT66GameInstance();
+	const int32 RunSeed = (GI && GI->RunSeed != 0) ? GI->RunSeed : 660066;
+	for (const FT66TraversalMountainStripSpec& Spec : StripSpecs)
+	{
+		T66AppendTraversalMountainStrip(World, BarrierSection, Spec, RunSeed ^ 0x4D494153);
+	}
+
+	if (!BarrierSection.HasGeometry())
+	{
+		BarrierActor->Destroy();
+		return;
+	}
+
+	TArray<FVector> Normals = BarrierSection.Normals;
+	TArray<FProcMeshTangent> Tangents;
+	TArray<FLinearColor> EmptyColors;
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(BarrierSection.Verts, BarrierSection.Tris, BarrierSection.UVs, Normals, Tangents);
+	BarrierPMC->CreateMeshSection_LinearColor(0, BarrierSection.Verts, BarrierSection.Tris, Normals, BarrierSection.UVs, EmptyColors, Tangents, true);
+
+	UMaterialInterface* BarrierMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Cliffs/MI_OuterWallTexture.MI_OuterWallTexture"));
+	if (!BarrierMaterial)
+	{
+		BarrierMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Cliffs/MI_OuterWall.MI_OuterWall"));
+	}
+	if (!BarrierMaterial)
+	{
+		BarrierMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1"));
+	}
+	if (BarrierMaterial)
+	{
+		BarrierPMC->SetMaterial(0, BarrierMaterial);
+	}
+
+	T66ConfigureTerrainVisualCollisionComponent(BarrierPMC);
+	BarrierPMC->RegisterComponent();
+	SpawnedSetupActors.Add(BarrierActor);
 }
 
 void AT66GameMode::SpawnFloorIfNeeded()
@@ -2829,6 +3390,17 @@ static void T66ConfigureTerrainCollisionComponent(UPrimitiveComponent* Component
 	Component->SetHiddenInGame(true, true);
 }
 
+static void T66ConfigureTerrainVisualCollisionComponent(UPrimitiveComponent* Component)
+{
+	if (!Component) return;
+
+	Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Component->SetCollisionObjectType(ECC_WorldStatic);
+	Component->SetCollisionResponseToAllChannels(ECR_Block);
+	Component->SetGenerateOverlapEvents(false);
+	Component->SetCanEverAffectNavigation(false);
+}
+
 static bool T66BuildRampCollisionTransform(
 	const FT66ProceduralMapResult& MapData,
 	const FT66RampEdge& Edge,
@@ -2947,7 +3519,6 @@ static void AppendWallBox(
 	const FVector C = Center;
 	const float hx = HE.X, hy = HE.Y, hz = HE.Z;
 
-	// Side faces ??? brown material
 	AppendBoxFace(SideV, SideT, SideN, SideUV,
 		C + FVector(hx, -hy, -hz), C + FVector(hx, hy, -hz), C + FVector(hx, hy, hz), C + FVector(hx, -hy, hz),
 		FVector(1, 0, 0), UVQuarterTurns);
@@ -3346,6 +3917,165 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	const float WallThickness = FMath::Clamp(Preset.SurfaceThickness, 60.f, 140.f);
 	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
 
+	struct FT66ReservedTraversalRect
+	{
+		float MinX = 0.f;
+		float MaxX = 0.f;
+		float MinY = 0.f;
+		float MaxY = 0.f;
+	};
+
+	const FT66ReservedTraversalRect ReservedTraversalRects[] = {
+		{ T66GameplayLayout::StartPartitionWestX, T66GameplayLayout::StartAreaEastX, -T66GameplayLayout::AreaHalfHeightY, T66GameplayLayout::AreaHalfHeightY },
+		{ T66GameplayLayout::StartAreaEastX, T66GameplayLayout::StartMainEntranceX, -T66GameplayLayout::CorridorHalfHeightY, T66GameplayLayout::CorridorHalfHeightY },
+		{ T66GameplayLayout::BossMainEntranceX, T66GameplayLayout::BossAreaWestX, -T66GameplayLayout::CorridorHalfHeightY, T66GameplayLayout::CorridorHalfHeightY },
+		{ T66GameplayLayout::BossAreaWestX, T66GameplayLayout::BossPartitionEastX, -T66GameplayLayout::AreaHalfHeightY, T66GameplayLayout::AreaHalfHeightY },
+	};
+
+	auto AppendBoundaryWallSegmentsOutsideReservedTraversal = [&](FT66MeshSectionBuffers& TargetSection,
+		bool bSegmentAlongX,
+		float SegmentBoundaryCoord,
+		float SegmentCenterPerp,
+		float SegmentLengthAlongBoundary,
+		float HighTopZ,
+		float LowTopZ,
+		bool bHighOnPositiveSide,
+		int32 UVQuarterTurns)
+	{
+		if (SegmentLengthAlongBoundary <= 1.f || HighTopZ <= LowTopZ + 1.f)
+		{
+			return;
+		}
+
+		const float HalfThickness = WallThickness * 0.5f;
+		const float HalfLength = SegmentLengthAlongBoundary * 0.5f;
+		const float AxisMin = SegmentCenterPerp - HalfLength;
+		const float AxisMax = SegmentCenterPerp + HalfLength;
+		TArray<FVector2D> BlockedIntervals;
+
+		for (const FT66ReservedTraversalRect& Rect : ReservedTraversalRects)
+		{
+			if (bSegmentAlongX)
+			{
+				if (!T66GameplayLayout::DoAxisRangesOverlap(
+					SegmentBoundaryCoord - HalfThickness,
+					SegmentBoundaryCoord + HalfThickness,
+					Rect.MinX,
+					Rect.MaxX))
+				{
+					continue;
+				}
+
+				const float BlockedMin = FMath::Max(AxisMin, Rect.MinY);
+				const float BlockedMax = FMath::Min(AxisMax, Rect.MaxY);
+				if (BlockedMax > BlockedMin + 1.f)
+				{
+					BlockedIntervals.Add(FVector2D(BlockedMin, BlockedMax));
+				}
+			}
+			else
+			{
+				if (!T66GameplayLayout::DoAxisRangesOverlap(
+					SegmentBoundaryCoord - HalfThickness,
+					SegmentBoundaryCoord + HalfThickness,
+					Rect.MinY,
+					Rect.MaxY))
+				{
+					continue;
+				}
+
+				const float BlockedMin = FMath::Max(AxisMin, Rect.MinX);
+				const float BlockedMax = FMath::Min(AxisMax, Rect.MaxX);
+				if (BlockedMax > BlockedMin + 1.f)
+				{
+					BlockedIntervals.Add(FVector2D(BlockedMin, BlockedMax));
+				}
+			}
+		}
+
+		if (BlockedIntervals.Num() == 0)
+		{
+			AppendWallBox(
+				TargetSection.Verts,
+				TargetSection.Tris,
+				TargetSection.Normals,
+				TargetSection.UVs,
+				bSegmentAlongX,
+				SegmentBoundaryCoord,
+				SegmentCenterPerp,
+				SegmentLengthAlongBoundary,
+				HighTopZ,
+				LowTopZ,
+				WallThickness,
+				Preset.WallBottomPadding,
+				bHighOnPositiveSide,
+				UVQuarterTurns);
+			return;
+		}
+
+		BlockedIntervals.Sort([](const FVector2D& A, const FVector2D& B)
+		{
+			return A.X < B.X;
+		});
+
+		float Cursor = AxisMin;
+		for (const FVector2D& Interval : BlockedIntervals)
+		{
+			const float IntervalMin = FMath::Clamp(Interval.X, AxisMin, AxisMax);
+			const float IntervalMax = FMath::Clamp(Interval.Y, AxisMin, AxisMax);
+			if (IntervalMax <= IntervalMin + 1.f)
+			{
+				continue;
+			}
+
+			if (IntervalMin > Cursor + 1.f)
+			{
+				const float VisibleLength = IntervalMin - Cursor;
+				AppendWallBox(
+					TargetSection.Verts,
+					TargetSection.Tris,
+					TargetSection.Normals,
+					TargetSection.UVs,
+					bSegmentAlongX,
+					SegmentBoundaryCoord,
+					Cursor + VisibleLength * 0.5f,
+					VisibleLength,
+					HighTopZ,
+					LowTopZ,
+					WallThickness,
+					Preset.WallBottomPadding,
+					bHighOnPositiveSide,
+					UVQuarterTurns);
+			}
+
+			Cursor = FMath::Max(Cursor, IntervalMax);
+			if (Cursor >= AxisMax - 1.f)
+			{
+				return;
+			}
+		}
+
+		if (AxisMax > Cursor + 1.f)
+		{
+			const float VisibleLength = AxisMax - Cursor;
+			AppendWallBox(
+				TargetSection.Verts,
+				TargetSection.Tris,
+				TargetSection.Normals,
+				TargetSection.UVs,
+				bSegmentAlongX,
+				SegmentBoundaryCoord,
+				Cursor + VisibleLength * 0.5f,
+				VisibleLength,
+				HighTopZ,
+				LowTopZ,
+				WallThickness,
+				Preset.WallBottomPadding,
+				bHighOnPositiveSide,
+				UVQuarterTurns);
+		}
+	};
+
 	// Brown side material: Unlit solid color for wall sides and ramp undersides.
 	UMaterialInstanceDynamic* BrownSideMat = nullptr;
 	{
@@ -3406,16 +4136,14 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				const FT66RampEdge* Ramp = RampLookup.FindRef(T66MakeBoundaryKey(Idx, OtherIdx));
 				if (!Ramp)
 				{
-					AppendWallBox(
-						WallSideSection.Verts, WallSideSection.Tris, WallSideSection.Normals, WallSideSection.UVs,
+					AppendBoundaryWallSegmentsOutsideReservedTraversal(
+						WallSideSection,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase,
 						CellSize,
 						A.TopZ,
 						B.TopZ,
-						WallThickness,
-						Preset.WallBottomPadding,
 						bHighOnPositiveSide,
 						CliffQuarterTurns);
 					return;
@@ -3428,16 +4156,14 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				const float LeftLen = OpenStart + HalfCell;
 				if (LeftLen > 1.f)
 				{
-					AppendWallBox(
-						WallSideSection.Verts, WallSideSection.Tris, WallSideSection.Normals, WallSideSection.UVs,
+					AppendBoundaryWallSegmentsOutsideReservedTraversal(
+						WallSideSection,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase + (-HalfCell + OpenStart) * 0.5f,
 						LeftLen,
 						A.TopZ,
 						B.TopZ,
-						WallThickness,
-						Preset.WallBottomPadding,
 						bHighOnPositiveSide,
 						CliffQuarterTurns);
 				}
@@ -3445,16 +4171,14 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				const float RightLen = HalfCell - OpenEnd;
 				if (RightLen > 1.f)
 				{
-					AppendWallBox(
-						WallSideSection.Verts, WallSideSection.Tris, WallSideSection.Normals, WallSideSection.UVs,
+					AppendBoundaryWallSegmentsOutsideReservedTraversal(
+						WallSideSection,
 						bAlongX,
 						BoundaryCoord,
 						PerpBase + (OpenEnd + HalfCell) * 0.5f,
 						RightLen,
 						A.TopZ,
 						B.TopZ,
-						WallThickness,
-						Preset.WallBottomPadding,
 						bHighOnPositiveSide,
 						CliffQuarterTurns);
 				}
@@ -3483,6 +4207,8 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 
 			UProceduralMeshComponent* WallPMC = NewObject<UProceduralMeshComponent>(WallActor, TEXT("PlatformWalls"));
 			WallActor->SetRootComponent(WallPMC);
+			WallPMC->bUseAsyncCooking = true;
+			WallPMC->bUseComplexAsSimpleCollision = true;
 
 			int32 SectionIndex = 0;
 			for (int32 Bucket = 0; Bucket < WallSideSections.Num(); ++Bucket)
@@ -3496,7 +4222,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				CreateMeshSection(WallPMC, SectionIndex++, WallSideSections[Bucket], Material);
 			}
 
-			WallPMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			T66ConfigureTerrainVisualCollisionComponent(WallPMC);
 			WallPMC->RegisterComponent();
 		}
 	}
@@ -3561,6 +4287,8 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 
 			UProceduralMeshComponent* PMC = NewObject<UProceduralMeshComponent>(RampActor, TEXT("Ramps"));
 			RampActor->SetRootComponent(PMC);
+			PMC->bUseAsyncCooking = true;
+			PMC->bUseComplexAsSimpleCollision = true;
 
 			int32 SectionIndex = 0;
 			for (int32 Bucket = 0; Bucket < RampSlopeSections.Num(); ++Bucket)
@@ -3584,7 +4312,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 				CreateMeshSection(PMC, SectionIndex++, RampSideSections[Bucket], Material);
 			}
 
-			PMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			T66ConfigureTerrainVisualCollisionComponent(PMC);
 			PMC->RegisterComponent();
 		}
 	}
@@ -3970,17 +4698,6 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		);
 		if (SpawnedFog)
 		{
-			UExponentialHeightFogComponent* FogComp = SpawnedFog->FindComponentByClass<UExponentialHeightFogComponent>();
-			if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(SpawnedFog->GetRootComponent());
-			if (FogComp)
-			{
-				// Larger clear radius (5000 uu), then thicker fog beyond.
-				FogComp->SetStartDistance(10000.f);
-				FogComp->SetFogDensity(0.4f);
-				FogComp->SetFogHeightFalloff(0.2f);
-				FogComp->SetFogMaxOpacity(0.98f);
-				FogComp->SetFogInscatteringColor(FLinearColor(0.6f, 0.65f, 0.78f));
-			}
 #if WITH_EDITOR
 			SpawnedFog->SetActorLabel(TEXT("DEV_ExponentialHeightFog"));
 #endif
@@ -3988,32 +4705,9 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			HeightFog = SpawnedFog;
 		}
 	}
-	else if (HeightFog)
-	{
-		// Align level-placed fog with frontend/gameplay defaults.
-		UExponentialHeightFogComponent* FogComp = HeightFog->FindComponentByClass<UExponentialHeightFogComponent>();
-		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(HeightFog->GetRootComponent());
-		if (FogComp)
-		{
-			FogComp->SetStartDistance(10000.f);
-			FogComp->SetFogDensity(0.4f);
-			FogComp->SetFogHeightFalloff(0.2f);
-			FogComp->SetFogMaxOpacity(0.98f);
-			FogComp->SetFogInscatteringColor(FLinearColor(0.6f, 0.65f, 0.78f));
-		}
-	}
-
-	// Apply player setting: fog off by default (Settings ??? Graphics ??? Fog).
 	if (HeightFog)
 	{
-		UExponentialHeightFogComponent* FogComp = HeightFog->FindComponentByClass<UExponentialHeightFogComponent>();
-		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(HeightFog->GetRootComponent());
-		if (FogComp)
-		{
-			UGameInstance* GI = World->GetGameInstance();
-			UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
-			FogComp->SetVisibility(PS && PS->GetFogEnabled());
-		}
+		ConfigureGameplayFogForWorld(World);
 	}
 
 	// PostProcessVolume (unbound) for exposure and color grading so distance reads less punchy.
@@ -4155,6 +4849,70 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	ApplyThemeToAtmosphereAndLighting();
 }
 
+void AT66GameMode::SpawnQuakeSkyIfNeeded()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	for (TActorIterator<AT66QuakeSkyActor> It(World); It; ++It)
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AT66QuakeSkyActor* SkyActor = World->SpawnActor<AT66QuakeSkyActor>(
+		AT66QuakeSkyActor::StaticClass(),
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		SpawnParams);
+	if (!SkyActor) return;
+
+#if WITH_EDITOR
+	SkyActor->SetActorLabel(TEXT("DEV_QuakeSky"));
+#endif
+	SpawnedSetupActors.Add(SkyActor);
+	UE_LOG(LogTemp, Log, TEXT("[QuakeSky] Spawned retro sky dome"));
+}
+
+void AT66GameMode::ConfigureGameplayFogForWorld(UWorld* World)
+{
+	if (!World) return;
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	const float FogIntensityPercent = PS ? PS->GetFogIntensityPercent() : 55.0f;
+	const bool bFogEnabled = !PS || (PS->GetFogEnabled() && FogIntensityPercent > KINDA_SMALL_NUMBER);
+	const float FogDensityScale = FMath::Clamp(FogIntensityPercent / 55.0f, 0.0f, 100.0f / 55.0f);
+	const float BaseFogDensity = 0.0225f;
+	const float FogDensity = BaseFogDensity * FogDensityScale;
+	const float FogStartDistance = 1400.f;
+	const float FogHeightFalloff = 0.085f;
+	const float FogMaxOpacity = 0.96f;
+	const FLinearColor FogColor(0.05f, 0.06f, 0.08f);
+	const FLinearColor DirectionalFogColor(0.14f, 0.18f, 0.24f);
+
+	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
+	{
+		UExponentialHeightFogComponent* FogComp = It->FindComponentByClass<UExponentialHeightFogComponent>();
+		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(It->GetRootComponent());
+		if (!FogComp) continue;
+
+		FogComp->SetStartDistance(FogStartDistance);
+		FogComp->SetFogDensity(FogDensity);
+		FogComp->SetFogHeightFalloff(FogHeightFalloff);
+		FogComp->SetFogMaxOpacity(FogMaxOpacity);
+		FogComp->SetFogInscatteringColor(FogColor);
+		FogComp->SetDirectionalInscatteringColor(DirectionalFogColor);
+		FogComp->SetDirectionalInscatteringExponent(10.0f);
+		FogComp->SetDirectionalInscatteringStartDistance(2600.0f);
+		FogComp->SetVolumetricFog(false);
+		FogComp->SetVisibility(bFogEnabled);
+		break;
+	}
+}
+
 void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 {
 	if (!World) return;
@@ -4178,38 +4936,15 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 	// Demo map (e.g. Map_Summer): lower sun intensity so it's not as harsh
 	FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
 	const bool bDemoMap = MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase);
-	const float SunIntensityLight = bDemoMap ? 2.f : 3.f;
 	const float SunIntensityDark = bDemoMap ? 1.2f : 2.f;
 
-	const ET66UITheme Theme = FT66Style::GetTheme();
-	if (Theme == ET66UITheme::Light)
-	{
-		SunComp->SetIntensity(SunIntensityLight);
-		SunComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-		SunComp->bAtmosphereSunLight = true;
-		SunComp->AtmosphereSunLightIndex = 0;
-	}
-	else
-	{
-		// Dark theme: Eclipse Sun ??? sun off, eclipsed sun (moon light) is the primary light.
-		SunComp->SetIntensity(0.f);
-		SunComp->bAtmosphereSunLight = false;
-	}
+	// Dark-only lighting: the visible sky light comes from the eclipse/moon light.
+	SunComp->SetIntensity(0.f);
+	SunComp->bAtmosphereSunLight = false;
 	if (MoonLight)
 	{
 		UDirectionalLightComponent* MoonComp = Cast<UDirectionalLightComponent>(MoonLight->GetLightComponent());
 		if (MoonComp)
-		{
-			if (Theme == ET66UITheme::Light)
-			{
-				MoonComp->SetIntensity(0.f);
-				MoonComp->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
-				MoonComp->bAtmosphereSunLight = true;
-				MoonComp->AtmosphereSunLightIndex = 1;
-				MoonComp->SetAtmosphereSunDiskColorScale(FLinearColor(1.f, 1.f, 1.f));
-				MoonLight->SetActorRotation(FRotator(50.f, 135.f, 0.f));
-			}
-		else
 		{
 			// Eclipse dusk: dimmed sun, warm white light, no shadows, hide built-in sun disk
 			MoonComp->SetIntensity(5.0f);
@@ -4219,7 +4954,6 @@ void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
 			MoonComp->SetAtmosphereSunDiskColorScale(FLinearColor(0.f, 0.f, 0.f));
 			MoonComp->SetCastShadows(false);
 			MoonLight->SetActorRotation(FRotator(-50.f, 135.f, 0.f));
-		}
 		}
 	}
 }
@@ -4233,128 +4967,65 @@ void AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World)
 {
 	if (!World) return;
 
-	const ET66UITheme Theme = FT66Style::GetTheme();
-	const bool bDark = (Theme == ET66UITheme::Dark);
-
-	// --- SkyAtmosphere: red Rayleigh scattering for blood-red sky in Dark mode ---
+	// --- SkyAtmosphere: blood-red eclipse sky ---
 	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It)
 	{
 		USkyAtmosphereComponent* Atmos = It->FindComponentByClass<USkyAtmosphereComponent>();
 		if (!Atmos) continue;
 
-		if (bDark)
-		{
-			Atmos->RayleighScattering = FLinearColor(0.028f, 0.005f, 0.004f);
-			Atmos->RayleighScatteringScale = 0.8f;
-			Atmos->MieScatteringScale = 0.01f;
-			Atmos->MultiScatteringFactor = 0.5f;
-		}
-		else
-		{
-			Atmos->RayleighScattering = FLinearColor(0.005802f, 0.013558f, 0.033100f);
-			Atmos->RayleighScatteringScale = 1.0f;
-			Atmos->MieScatteringScale = 0.003996f;
-			Atmos->MultiScatteringFactor = 1.0f;
-		}
+		Atmos->RayleighScattering = FLinearColor(0.028f, 0.005f, 0.004f);
+		Atmos->RayleighScatteringScale = 0.8f;
+		Atmos->MieScatteringScale = 0.01f;
+		Atmos->MultiScatteringFactor = 0.5f;
 		Atmos->MarkRenderStateDirty();
 		break;
 	}
 
-	// --- SkyLight: captured scene with red tint in Dark, HDRI cubemap in Light ---
+	// --- SkyLight: captured scene with red tint ---
 	for (TActorIterator<ASkyLight> It(World); It; ++It)
 	{
 		USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent());
 		if (!SC) continue;
 
-		if (bDark)
-		{
-			SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
-			SC->Cubemap = nullptr;
-			SC->SetIntensity(4.0f);
-			SC->SetLightColor(FLinearColor(0.25f, 0.2f, 0.25f));
-			SC->bLowerHemisphereIsBlack = false;
-			SC->SetLowerHemisphereColor(FLinearColor(0.12f, 0.1f, 0.12f));
-		}
-		else
-		{
-			UTextureCube* HDRICubemap = LoadObject<UTextureCube>(nullptr, TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio"));
-			if (HDRICubemap)
-			{
-				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
-				SC->Cubemap = HDRICubemap;
-			}
-			else
-			{
-				SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
-			}
-			SC->SetIntensity(8.0f);
-			SC->SetLightColor(FLinearColor::White);
-			SC->bLowerHemisphereIsBlack = false;
-			SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f));
-		}
+		SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
+		SC->Cubemap = nullptr;
+		SC->SetIntensity(4.0f);
+		SC->SetLightColor(FLinearColor(0.25f, 0.2f, 0.25f));
+		SC->bLowerHemisphereIsBlack = false;
+		SC->SetLowerHemisphereColor(FLinearColor(0.12f, 0.1f, 0.12f));
 		SC->RecaptureSky();
 		break;
 	}
 
-	// --- ExponentialHeightFog: black inscattering in Dark (moon color dominates) ---
-	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
-	{
-		UExponentialHeightFogComponent* FogComp = It->FindComponentByClass<UExponentialHeightFogComponent>();
-		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(It->GetRootComponent());
-		if (!FogComp) continue;
+	ConfigureGameplayFogForWorld(World);
 
-		if (bDark)
-		{
-			FogComp->SetFogInscatteringColor(FLinearColor(0.0f, 0.0f, 0.0f));
-		}
-		else
-		{
-			FogComp->SetFogInscatteringColor(FLinearColor(0.6f, 0.65f, 0.78f));
-		}
-		break;
-	}
-
-	// --- PostProcess color grading: neutral in Dark (red comes from sky, not color grade) ---
+	// --- PostProcess color grading: neutral (red comes from sky, not color grade) ---
 	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
 	{
 		if (!It->bUnbound) continue;
 		FPostProcessSettings& PPS = It->Settings;
 
-		if (bDark)
-		{
-			PPS.bOverride_ColorSaturation = true;
-			PPS.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.f);
-			PPS.bOverride_ColorGamma = false;
-			PPS.bOverride_ColorGain = false;
-
-			PPS.bOverride_BloomIntensity = true;
-			PPS.BloomIntensity = 0.0f;
-			PPS.bOverride_BloomThreshold = true;
-			PPS.BloomThreshold = 10.0f;
-		}
-		else
-		{
-			PPS.bOverride_ColorSaturation = true;
-			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
-			PPS.bOverride_ColorGamma = false;
-			PPS.bOverride_ColorGain = false;
-
-			PPS.bOverride_BloomIntensity = false;
-			PPS.bOverride_BloomThreshold = false;
-		}
+		PPS.bOverride_ColorSaturation = true;
+		PPS.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.f);
+		PPS.bOverride_ColorGamma = false;
+		PPS.bOverride_ColorGain = false;
+		PPS.bOverride_BloomIntensity = true;
+		PPS.BloomIntensity = 0.0f;
+		PPS.bOverride_BloomThreshold = true;
+		PPS.BloomThreshold = 10.0f;
 		break;
 	}
 
-	// --- Posterize: on in Dark, off in Light ---
+	// --- Posterize: always on in the dark presentation ---
 	if (UGameInstance* GI = World->GetGameInstance())
 	{
 		if (UT66PosterizeSubsystem* Post = GI->GetSubsystem<UT66PosterizeSubsystem>())
 		{
-			Post->SetEnabled(bDark);
+			Post->SetEnabled(true);
 		}
 	}
 
-	// --- Eclipse corona: visible in Dark, destroyed in Light ---
+	// --- Eclipse corona: always visible ---
 	{
 		AT66EclipseActor* ExistingEclipse = nullptr;
 		for (TActorIterator<AT66EclipseActor> It(World); It; ++It)
@@ -4363,15 +5034,11 @@ void AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World)
 			break;
 		}
 
-		if (bDark && !ExistingEclipse)
+		if (!ExistingEclipse)
 		{
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 			World->SpawnActor<AT66EclipseActor>(AT66EclipseActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		}
-		else if (!bDark && ExistingEclipse)
-		{
-			ExistingEclipse->Destroy();
 		}
 	}
 
@@ -4432,7 +5099,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		}
 		else
 		{
-			SpawnLoc = FVector(-35455.f, 0.f, DefaultSpawnHeight);
+			SpawnLoc = T66GameplayLayout::GetStartAreaCenter(DefaultSpawnHeight);
 		}
 
 		APlayerStart* Start = World->SpawnActor<APlayerStart>(
@@ -4650,6 +5317,7 @@ void AT66GameMode::RegenerateMap(ET66MapTheme Theme, int32 Seed)
 	DestroyActorsWithTag(World, T66MapPlatformTag);
 	DestroyActorsWithTag(World, T66MapRampTag);
 	DestroyActorsWithTag(World, T66FloorMainTag);
+	DestroyActorsWithTag(World, T66TraversalBarrierTag);
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	if (GI)
@@ -4659,6 +5327,8 @@ void AT66GameMode::RegenerateMap(ET66MapTheme Theme, int32 Seed)
 	}
 
 	SpawnLowPolyNatureEnvironment();
+	SpawnTraversalMountainBarriersIfNeeded();
+	SpawnBossBeaconIfNeeded();
 }
 
 // Console command: T66.Map <Farm|Ocean|Mountain> [seed]

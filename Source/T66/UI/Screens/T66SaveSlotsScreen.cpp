@@ -48,8 +48,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	if (TexPool)
 	{
 		static const TArray<FSoftObjectPath> MainMenuBgPaths = {
-			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")),
-			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight"))
+			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed"))
 		};
 		TexPool->EnsureTexturesLoadedSync(MainMenuBgPaths);
 	}
@@ -62,8 +61,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	}
 	if (TexPool)
 	{
-		const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMRed");
-		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
+		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
 		if (UTexture2D* Cached = TexPool->GetLoadedTexture(BgSoft))
 		{
 			SaveSlotsBackgroundBrush->SetResourceObject(Cached);

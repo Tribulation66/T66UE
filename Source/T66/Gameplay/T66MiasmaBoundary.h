@@ -6,12 +6,12 @@
 #include "GameFramework/Actor.h"
 #include "T66MiasmaBoundary.generated.h"
 
-class UStaticMeshComponent;
+class UProceduralMeshComponent;
+class USceneComponent;
 
 /**
- * Wall of miasma at the playable area boundary. No collision (player can walk through).
- * When the player is on the "other side" (outside the safe rectangle), they take ticking damage.
- * Visual: thin dark planes at the four edges where ground borders empty space.
+ * Procedural cliff ring at the playable area boundary.
+ * The cliffs block movement, and if the player somehow gets outside the safe rectangle they still take ticking damage.
  */
 UCLASS(Blueprintable)
 class T66_API AT66MiasmaBoundary : public AActor
@@ -29,20 +29,58 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary")
 	float DamageIntervalSeconds = 1.0f;
 
-	/** Height of the visual wall (Z extent). Black smoke-like pass-through boundary. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary")
-	float WallHeight = 2400.f;
+	/** Minimum ridge height of the generated cliff ring. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float WallHeight = 3600.f;
 
-	/** Thickness of the visual wall (no collision). Thicker = more visible black smoke look. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary")
-	float WallThickness = 500.f;
+	/** Maximum ridge height of the generated cliff ring. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float MaxWallHeight = 7600.f;
+
+	/** Minimum outward depth of the generated cliff ring. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float WallThickness = 1800.f;
+
+	/** Maximum outward depth of the generated cliff ring. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float MaxWallThickness = 5200.f;
+
+	/** Number of faceted cliff segments generated per side of the map. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	int32 SegmentsPerSide = 24;
+
+	/** Slight inward offset so the blocking cliff face sits right on the playable edge. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float InnerInset = 180.f;
+
+	/** How far the cliff base is buried into the ground to hide seams at the terrain edge. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float BaseSink = 1000.f;
+
+	/** Height of the straight vertical contact face before the cliff breaks into angled planes. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float VerticalFaceHeight = 1400.f;
+
+	/** Extra overlap past each corner so adjacent sides interlock instead of leaving corner gaps. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	float CornerOverlap = 1800.f;
+
+	/** Seed controlling deterministic cliff faceting. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma Boundary|Cliffs")
+	int32 BoundarySeed = 660066;
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	void SpawnWallVisuals();
+	void BuildBoundaryCliffs();
 	void ApplyBoundaryDamageTick();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Miasma Boundary")
+	TObjectPtr<USceneComponent> SceneRoot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Miasma Boundary")
+	TObjectPtr<UProceduralMeshComponent> BoundaryCliffMesh;
 
 	FTimerHandle DamageTimerHandle;
 };

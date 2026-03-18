@@ -14,6 +14,7 @@ class UT66RunStateSubsystem;
 class UT66DamageLogSubsystem;
 class UT66PlayerSettingsSubsystem;
 class UT66MediaViewerSubsystem;
+class UT66CrateOverlayWidget;
 class STextBlock;
 class SBorder;
 class SBox;
@@ -74,8 +75,10 @@ public:
 	UFUNCTION()
 	void RefreshLootPrompt();
 
-	/** Show the item card popup for a just-picked-up item (above inventory, auto-hides after a few seconds). */
+	/** Show the item card popup for a just-picked-up item (above inventory, skippable, then fades out). */
 	void ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity);
+	bool TrySkipActivePresentation();
+	void ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay);
 
 	/** Full-screen map overlay (M / OpenFullMap). */
 	void SetFullMapOpen(bool bOpen);
@@ -152,16 +155,25 @@ protected:
 	TSharedPtr<FSlateBrush> LootPromptIconBrush;
 	TSharedPtr<STextBlock> LootPromptText;
 	TSharedPtr<SBox> PickupCardBox;
+	TSharedPtr<SBorder> PickupCardTileBorder;
+	TSharedPtr<SBorder> PickupCardIconBorder;
 	TSharedPtr<FSlateBrush> PickupCardIconBrush;
 	TSharedPtr<SImage> PickupCardIconImage;
 	TSharedPtr<STextBlock> PickupCardNameText;
 	TSharedPtr<STextBlock> PickupCardDescText;
-	FTimerHandle PickupCardHideTimerHandle;
-	static constexpr float PickupCardDisplaySeconds = 3.f;
+	TSharedPtr<STextBlock> PickupCardSkipText;
+	static constexpr float PickupCardWidth = 260.f;
+	static constexpr float PickupCardHeight = 460.f;
+	static constexpr float PickupCardDisplaySeconds = 5.f;
+	static constexpr float PickupCardFadeOutSeconds = 0.6f;
 	void HidePickupCard();
 	TSharedPtr<SBorder> TutorialHintBorder;
 	TSharedPtr<STextBlock> TutorialHintLine1Text;
 	TSharedPtr<STextBlock> TutorialHintLine2Text;
+	TSharedPtr<SBox> CenterCrosshairBox;
+	TSharedPtr<SBorder> ScopedSniperOverlayBorder;
+	TSharedPtr<STextBlock> ScopedUltTimerText;
+	TSharedPtr<STextBlock> ScopedShotCooldownText;
 	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // legacy; rarity is now shown via sprite + border color
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
@@ -236,7 +248,9 @@ protected:
 
 	bool bFullMapOpen = false;
 	bool bHUDDirty = false;
+	bool bPickupCardVisible = false;
 	float DPSRefreshAccumSeconds = 0.f;
+	float PickupCardRemainingSeconds = 0.f;
 	static constexpr float DPSRefreshIntervalSeconds = 0.2f;
 	int32 LastDisplayedCooldownBarWidthPx = -1;
 	int32 LastDisplayedCooldownRemainingCs = -1;
@@ -273,6 +287,7 @@ protected:
 	FTimerHandle WheelSpinTickHandle;
 	FTimerHandle WheelResolveHandle;
 	FTimerHandle WheelCloseHandle;
+	TWeakObjectPtr<UT66CrateOverlayWidget> ActiveCrateOverlay;
 
 	// Achievement unlock notification (above inventory, one at a time, tier-colored border)
 	TArray<FName> AchievementNotificationQueue;

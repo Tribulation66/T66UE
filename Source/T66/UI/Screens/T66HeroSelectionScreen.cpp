@@ -99,6 +99,13 @@ namespace
 			if (Stage.IsValid())
 			{
 				Stage->AddPreviewZoom(MouseEvent.GetWheelDelta());
+				if (UWorld* World = Stage->GetWorld())
+				{
+					if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+					{
+						GM->PositionCameraForHeroPreview();
+					}
+				}
 				return FReply::Handled();
 			}
 			return FReply::Unhandled();
@@ -413,6 +420,10 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 		{
 			SelectedDifficulty = Difficulties[Index];
 			CurrentDifficultyOption = NewValue;
+			if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
+			{
+				PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
+			}
 		}
 	}
 }
@@ -1178,12 +1189,20 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				? (GIPreview && !GIPreview->SelectedHeroSkinID.IsNone() ? GIPreview->SelectedHeroSkinID : FName(TEXT("Default")))
 				: PreviewSkinIDOverride;
 			if (EffectiveSkinID.IsNone()) EffectiveSkinID = FName(TEXT("Default"));
+			PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
 			UE_LOG(LogTemp, Log, TEXT("[BEACH] UpdateHeroDisplay: PreviewSkinIDOverride=%s, GI->SelectedHeroSkinID=%s, EffectiveSkinID=%s"),
 				*PreviewSkinIDOverride.ToString(), GIPreview ? *GIPreview->SelectedHeroSkinID.ToString() : TEXT("(null GI)"), *EffectiveSkinID.ToString());
 			UE_LOG(LogTemp, Log, TEXT("[BEACH] UpdateHeroDisplay: calling SetPreviewHero HeroID=%s BodyType=%d SkinID=%s"),
 				*PreviewedHeroID.ToString(), (int32)SelectedBodyType, *EffectiveSkinID.ToString());
 			FName CompanionID = GIPreview ? GIPreview->SelectedCompanionID : NAME_None;
 			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, CompanionID);
+			if (UWorld* World = GetWorld())
+			{
+				if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+				{
+					GM->PositionCameraForHeroPreview();
+				}
+			}
 		}
 		else if (HeroPreviewColorBox.IsValid())
 		{
@@ -1206,6 +1225,13 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 			if (EffectiveSkinID.IsNone()) EffectiveSkinID = FName(TEXT("Default"));
 			FName CompanionID = GI ? GI->SelectedCompanionID : NAME_None;
 			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, CompanionID);
+			if (UWorld* World = GetWorld())
+			{
+				if (AT66FrontendGameMode* GM = Cast<AT66FrontendGameMode>(World->GetAuthGameMode()))
+				{
+					GM->PositionCameraForHeroPreview();
+				}
+			}
 		}
 		else if (HeroPreviewColorBox.IsValid())
 		{

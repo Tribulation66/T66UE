@@ -27,6 +27,9 @@ public:
 	void SetLockedTarget(AActor* InTarget);
 	void ClearLockedTarget();
 	AActor* GetLockedTarget() const { return LockedTarget.Get(); }
+	void SetAutoAttackSuppressed(bool bSuppressed) { bSuppressAutoAttack = bSuppressed; }
+	bool IsAutoAttackSuppressed() const { return bSuppressAutoAttack; }
+	void PerformScopedPiercingShot(const FVector& Start, const FVector& End);
 
 	/** Cooldown progress 0..1 (0 = just fired, 1 = ready). For UI cooldown bar below hero. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Combat")
@@ -195,4 +198,5 @@ protected:
 	float JuicedEndTime = -1.f;
 	int32 JuicedBonusBounce = 0;
 	float RabidFrenzyEndTime = -1.f;
+	bool bSuppressAutoAttack = false;
 };

@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66ProceduralLandscapeGenerator.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
+#include "Core/T66GameplayLayout.h"
 #include "T66.h"
 #include "Math/RandomStream.h"
 
@@ -207,6 +208,33 @@ namespace
 				}
 			}
 		}
+	}
+
+	int32 FlattenReservedTraversalZones(TArray<FT66PlatformNode>& Platforms, const FT66MapPreset& Preset)
+	{
+		int32 FlattenedCount = 0;
+
+		for (FT66PlatformNode& Platform : Platforms)
+		{
+			const float HalfX = Platform.SizeX * 0.5f;
+			const float HalfY = Platform.SizeY * 0.5f;
+			if (!T66GameplayLayout::DoesRectOverlapReservedTraversalZone2D(
+				Platform.Position.X - HalfX,
+				Platform.Position.X + HalfX,
+				Platform.Position.Y - HalfY,
+				Platform.Position.Y + HalfY))
+			{
+				continue;
+			}
+
+			if (!FMath::IsNearlyEqual(Platform.TopZ, Preset.BaselineZ))
+			{
+				Platform.TopZ = Preset.BaselineZ;
+				++FlattenedCount;
+			}
+		}
+
+		return FlattenedCount;
 	}
 
 	// ========================================================================
@@ -708,6 +736,7 @@ FT66ProceduralMapResult FT66ProceduralMapGenerator::Generate(const FT66MapPreset
 	GenerateRegionHeights(Result.Platforms, Preset, GridSize);
 	ForceOuterRingToMaxHeight(Result.Platforms, Preset, GridSize);
 	ClampAdjacency(Result.Platforms, Preset, GridSize);
+	const int32 FlattenedTraversalPlatforms = FlattenReservedTraversalZones(Result.Platforms, Preset);
 	BuildNeighborConnections(Result, GridSize);
 	BuildRamps(Result, Preset, GridSize, CellSize);
 
@@ -748,6 +777,13 @@ FT66ProceduralMapResult FT66ProceduralMapGenerator::Generate(const FT66MapPreset
 		NegativeCount,
 		MinZ,
 		MaxZ);
+
+	if (FlattenedTraversalPlatforms > 0)
+	{
+		UE_LOG(LogT66, Log, TEXT("[MAP] Flattened %d reserved traversal platforms to baseline %.0f."),
+			FlattenedTraversalPlatforms,
+			Preset.BaselineZ);
+	}
 
 	Result.bValid = true;
 	return Result;

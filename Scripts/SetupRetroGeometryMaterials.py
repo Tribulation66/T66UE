@@ -120,6 +120,10 @@ def set_material_flags(material, spec):
         'used_with_instanced_static_meshes',
         spec['builder'] in ('environment', 'glb'),
     )
+    material.set_editor_property(
+        'used_with_nanite',
+        spec['builder'] == 'glb',
+    )
 
 
 def create_texcoord(material, x, y):

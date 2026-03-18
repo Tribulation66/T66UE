@@ -22,12 +22,22 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionConstant2Vector.h"
 #include "Materials/MaterialExpressionSceneTexture.h"
+#include "Materials/MaterialExpressionScreenPosition.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "Materials/MaterialExpressionMultiply.h"
 #include "Materials/MaterialExpressionFloor.h"
 #include "Materials/MaterialExpressionDivide.h"
 #include "Materials/MaterialExpressionLinearInterpolate.h"
+#include "Materials/MaterialExpressionComponentMask.h"
+#include "Materials/MaterialExpressionSubtract.h"
+#include "Materials/MaterialExpressionAdd.h"
+#include "Materials/MaterialExpressionDotProduct.h"
+#include "Materials/MaterialExpressionNormalize.h"
+#include "Materials/MaterialExpressionLength.h"
+#include "Materials/MaterialExpressionAppendVector.h"
+#include "Materials/MaterialExpressionSaturate.h"
 #include "Factories/MaterialFactoryNew.h"
 #include "AssetToolsModule.h"
 #include "IAssetTools.h"
@@ -90,6 +100,21 @@ static FAutoConsoleCommand T66CreatePosterizeMaterialCommand(
 	})
 );
 
+static FAutoConsoleCommand T66CreateRetroChromaticAberrationMaterialCommand(
+	TEXT("T66CreateRetroChromaticAberrationMaterial"),
+	TEXT("Creates M_RetroChromaticAberrationPostProcess (full-screen radial chromatic aberration / distortion post-process material)."),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		if (GEditor)
+		{
+			if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
+			{
+				Sub->CreateRetroChromaticAberrationMaterial();
+			}
+		}
+	})
+);
+
 void UT66UISetupSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -125,6 +150,15 @@ void UT66UISetupSubsystem::RunFullSetup()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("[SKIP] PosterizeMaterial (may already exist)"));
+	}
+
+	if (CreateRetroChromaticAberrationMaterial())
+	{
+		UE_LOG(LogT66Editor, Log, TEXT("[OK] RetroChromaticAberrationMaterial created"));
+	}
+	else
+	{
+		UE_LOG(LogT66Editor, Warning, TEXT("[SKIP] RetroChromaticAberrationMaterial (may already exist)"));
 	}
 
 	// Configure GameInstance
@@ -809,6 +843,177 @@ bool UT66UISetupSubsystem::CreatePosterizeMaterial()
 	}
 
 	UE_LOG(LogT66Editor, Warning, TEXT("Failed to save PosterizeMaterial"));
+	return false;
+}
+
+bool UT66UISetupSubsystem::CreateRetroChromaticAberrationMaterial()
+{
+	const FString MaterialPath = TEXT("/Game/Materials/Retro/M_RetroChromaticAberrationPostProcess");
+	UMaterial* ExistingMaterial = LoadObject<UMaterial>(nullptr, *(MaterialPath + TEXT(".M_RetroChromaticAberrationPostProcess")));
+	if (ExistingMaterial)
+	{
+		UE_LOG(LogT66Editor, Log, TEXT("RetroChromaticAberrationMaterial already exists at %s"), *MaterialPath);
+		return true;
+	}
+
+	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	UMaterialFactoryNew* MaterialFactory = NewObject<UMaterialFactoryNew>();
+	UObject* NewAsset = AssetTools.CreateAsset(TEXT("M_RetroChromaticAberrationPostProcess"), TEXT("/Game/Materials/Retro"), UMaterial::StaticClass(), MaterialFactory);
+	UMaterial* Mat = Cast<UMaterial>(NewAsset);
+	if (!Mat)
+	{
+		UE_LOG(LogT66Editor, Error, TEXT("Failed to create RetroChromaticAberrationMaterial"));
+		return false;
+	}
+
+	Mat->MaterialDomain = MD_PostProcess;
+	Mat->BlendableLocation = BL_SceneColorAfterTonemapping;
+
+	auto* EdData = Mat->GetEditorOnlyData();
+	auto AddExpression = [EdData](UMaterialExpression* Expression, int32 X, int32 Y)
+	{
+		Expression->MaterialExpressionEditorX = X;
+		Expression->MaterialExpressionEditorY = Y;
+		EdData->ExpressionCollection.Expressions.Add(Expression);
+		return Expression;
+	};
+
+	UMaterialExpressionScreenPosition* ScreenPosition = Cast<UMaterialExpressionScreenPosition>(AddExpression(NewObject<UMaterialExpressionScreenPosition>(Mat), -1800, 0));
+
+	UMaterialExpressionComponentMask* ScreenUV = Cast<UMaterialExpressionComponentMask>(AddExpression(NewObject<UMaterialExpressionComponentMask>(Mat), -1560, 0));
+	ScreenUV->Input.Expression = ScreenPosition;
+	ScreenUV->R = 1;
+	ScreenUV->G = 1;
+
+	UMaterialExpressionConstant2Vector* Center = Cast<UMaterialExpressionConstant2Vector>(AddExpression(NewObject<UMaterialExpressionConstant2Vector>(Mat), -1800, 220));
+	Center->R = 0.5f;
+	Center->G = 0.5f;
+
+	UMaterialExpressionSubtract* OffsetFromCenter = Cast<UMaterialExpressionSubtract>(AddExpression(NewObject<UMaterialExpressionSubtract>(Mat), -1320, 0));
+	OffsetFromCenter->A.Expression = ScreenUV;
+	OffsetFromCenter->B.Expression = Center;
+
+	UMaterialExpressionDotProduct* RadiusSquared = Cast<UMaterialExpressionDotProduct>(AddExpression(NewObject<UMaterialExpressionDotProduct>(Mat), -1080, -100));
+	RadiusSquared->A.Expression = OffsetFromCenter;
+	RadiusSquared->B.Expression = OffsetFromCenter;
+
+	UMaterialExpressionScalarParameter* DistortionAmount = Cast<UMaterialExpressionScalarParameter>(AddExpression(NewObject<UMaterialExpressionScalarParameter>(Mat), -1080, 180));
+	DistortionAmount->ParameterName = FName(TEXT("DistortionAmount"));
+	DistortionAmount->DefaultValue = 0.0f;
+
+	UMaterialExpressionMultiply* DistortionRadius = Cast<UMaterialExpressionMultiply>(AddExpression(NewObject<UMaterialExpressionMultiply>(Mat), -840, 60));
+	DistortionRadius->A.Expression = DistortionAmount;
+	DistortionRadius->B.Expression = RadiusSquared;
+
+	UMaterialExpressionConstant* One = Cast<UMaterialExpressionConstant>(AddExpression(NewObject<UMaterialExpressionConstant>(Mat), -840, 240));
+	One->R = 1.0f;
+
+	UMaterialExpressionAdd* DistortionFactor = Cast<UMaterialExpressionAdd>(AddExpression(NewObject<UMaterialExpressionAdd>(Mat), -600, 120));
+	DistortionFactor->A.Expression = One;
+	DistortionFactor->B.Expression = DistortionRadius;
+
+	UMaterialExpressionMultiply* DistortedOffset = Cast<UMaterialExpressionMultiply>(AddExpression(NewObject<UMaterialExpressionMultiply>(Mat), -360, 0));
+	DistortedOffset->A.Expression = OffsetFromCenter;
+	DistortedOffset->B.Expression = DistortionFactor;
+
+	UMaterialExpressionAdd* FinalUV = Cast<UMaterialExpressionAdd>(AddExpression(NewObject<UMaterialExpressionAdd>(Mat), -120, 0));
+	FinalUV->A.Expression = DistortedOffset;
+	FinalUV->B.Expression = Center;
+
+	UMaterialExpressionSubtract* DistortedDirection = Cast<UMaterialExpressionSubtract>(AddExpression(NewObject<UMaterialExpressionSubtract>(Mat), 120, -80));
+	DistortedDirection->A.Expression = FinalUV;
+	DistortedDirection->B.Expression = Center;
+
+	UMaterialExpressionNormalize* RadialDirection = Cast<UMaterialExpressionNormalize>(AddExpression(NewObject<UMaterialExpressionNormalize>(Mat), 360, -160));
+	RadialDirection->VectorInput.Expression = DistortedDirection;
+
+	UMaterialExpressionLength* DirectionLength = Cast<UMaterialExpressionLength>(AddExpression(NewObject<UMaterialExpressionLength>(Mat), 360, 40));
+	DirectionLength->Input.Expression = DistortedDirection;
+
+	UMaterialExpressionScalarParameter* ChromaticStrength = Cast<UMaterialExpressionScalarParameter>(AddExpression(NewObject<UMaterialExpressionScalarParameter>(Mat), 120, 220));
+	ChromaticStrength->ParameterName = FName(TEXT("ChromaticStrength"));
+	ChromaticStrength->DefaultValue = 0.0f;
+
+	UMaterialExpressionMultiply* WeightedStrength = Cast<UMaterialExpressionMultiply>(AddExpression(NewObject<UMaterialExpressionMultiply>(Mat), 600, 100));
+	WeightedStrength->A.Expression = ChromaticStrength;
+	WeightedStrength->B.Expression = DirectionLength;
+
+	UMaterialExpressionMultiply* ChromaticOffset = Cast<UMaterialExpressionMultiply>(AddExpression(NewObject<UMaterialExpressionMultiply>(Mat), 840, -20));
+	ChromaticOffset->A.Expression = RadialDirection;
+	ChromaticOffset->B.Expression = WeightedStrength;
+
+	UMaterialExpressionAdd* RedUV = Cast<UMaterialExpressionAdd>(AddExpression(NewObject<UMaterialExpressionAdd>(Mat), 1080, -140));
+	RedUV->A.Expression = FinalUV;
+	RedUV->B.Expression = ChromaticOffset;
+
+	UMaterialExpressionSubtract* BlueUV = Cast<UMaterialExpressionSubtract>(AddExpression(NewObject<UMaterialExpressionSubtract>(Mat), 1080, 120));
+	BlueUV->A.Expression = FinalUV;
+	BlueUV->B.Expression = ChromaticOffset;
+
+	UMaterialExpressionSaturate* SaturatedFinalUV = Cast<UMaterialExpressionSaturate>(AddExpression(NewObject<UMaterialExpressionSaturate>(Mat), 1080, 0));
+	SaturatedFinalUV->Input.Expression = FinalUV;
+
+	UMaterialExpressionSaturate* SaturatedRedUV = Cast<UMaterialExpressionSaturate>(AddExpression(NewObject<UMaterialExpressionSaturate>(Mat), 1320, -140));
+	SaturatedRedUV->Input.Expression = RedUV;
+
+	UMaterialExpressionSaturate* SaturatedBlueUV = Cast<UMaterialExpressionSaturate>(AddExpression(NewObject<UMaterialExpressionSaturate>(Mat), 1320, 120));
+	SaturatedBlueUV->Input.Expression = BlueUV;
+
+	UMaterialExpressionSceneTexture* RedSample = Cast<UMaterialExpressionSceneTexture>(AddExpression(NewObject<UMaterialExpressionSceneTexture>(Mat), 1560, -220));
+	RedSample->SceneTextureId = PPI_PostProcessInput0;
+	RedSample->bFiltered = true;
+	RedSample->Coordinates.Expression = SaturatedRedUV;
+
+	UMaterialExpressionSceneTexture* GreenSample = Cast<UMaterialExpressionSceneTexture>(AddExpression(NewObject<UMaterialExpressionSceneTexture>(Mat), 1560, 0));
+	GreenSample->SceneTextureId = PPI_PostProcessInput0;
+	GreenSample->bFiltered = true;
+	GreenSample->Coordinates.Expression = SaturatedFinalUV;
+
+	UMaterialExpressionSceneTexture* BlueSample = Cast<UMaterialExpressionSceneTexture>(AddExpression(NewObject<UMaterialExpressionSceneTexture>(Mat), 1560, 220));
+	BlueSample->SceneTextureId = PPI_PostProcessInput0;
+	BlueSample->bFiltered = true;
+	BlueSample->Coordinates.Expression = SaturatedBlueUV;
+
+	UMaterialExpressionComponentMask* RedChannel = Cast<UMaterialExpressionComponentMask>(AddExpression(NewObject<UMaterialExpressionComponentMask>(Mat), 1800, -220));
+	RedChannel->Input.Expression = RedSample;
+	RedChannel->R = 1;
+
+	UMaterialExpressionComponentMask* GreenChannel = Cast<UMaterialExpressionComponentMask>(AddExpression(NewObject<UMaterialExpressionComponentMask>(Mat), 1800, 0));
+	GreenChannel->Input.Expression = GreenSample;
+	GreenChannel->G = 1;
+
+	UMaterialExpressionComponentMask* BlueChannel = Cast<UMaterialExpressionComponentMask>(AddExpression(NewObject<UMaterialExpressionComponentMask>(Mat), 1800, 220));
+	BlueChannel->Input.Expression = BlueSample;
+	BlueChannel->B = 1;
+
+	UMaterialExpressionAppendVector* RedGreen = Cast<UMaterialExpressionAppendVector>(AddExpression(NewObject<UMaterialExpressionAppendVector>(Mat), 2040, -120));
+	RedGreen->A.Expression = RedChannel;
+	RedGreen->B.Expression = GreenChannel;
+
+	UMaterialExpressionAppendVector* FinalColor = Cast<UMaterialExpressionAppendVector>(AddExpression(NewObject<UMaterialExpressionAppendVector>(Mat), 2280, -40));
+	FinalColor->A.Expression = RedGreen;
+	FinalColor->B.Expression = BlueChannel;
+
+	EdData->EmissiveColor.Expression = FinalColor;
+
+	Mat->PreEditChange(nullptr);
+	Mat->PostEditChange();
+	Mat->MarkPackageDirty();
+
+	UPackage* Package = Mat->GetOutermost();
+	if (Package)
+	{
+		FSavePackageArgs SaveArgs;
+		SaveArgs.TopLevelFlags = RF_Standalone;
+		FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
+		if (UPackage::SavePackage(Package, Mat, *PackageFileName, SaveArgs))
+		{
+			UE_LOG(LogT66Editor, Log, TEXT("Created and saved RetroChromaticAberrationMaterial at %s"), *MaterialPath);
+			return true;
+		}
+	}
+
+	UE_LOG(LogT66Editor, Warning, TEXT("Failed to save RetroChromaticAberrationMaterial"));
 	return false;
 }
 

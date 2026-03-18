@@ -324,7 +324,7 @@ Props and interactables imported via GLB use a different material pipeline:
 - Texture parameter: `BaseColorTexture` (not `DiffuseColorMap`)
 
 `Scripts/ImportStaticMeshes.py` now imports the GLB and immediately runs the GLB unlit conversion on that import root. The repair script is still available if needed. The GLB conversion pass:
-1. Creates or safely recreates `M_GLB_Unlit` if it doesn't exist or is missing required params/flags (Unlit, `BaseColorTexture * Tint * Brightness` → Emissive Color, `used_with_instanced_static_meshes = true`)
+1. Creates or safely recreates `M_GLB_Unlit` if it doesn't exist or is missing required params/flags (Unlit, `BaseColorTexture * Tint * Brightness` → Emissive Color, `used_with_instanced_static_meshes = true`, `used_with_nanite = true`)
 2. Finds all MICs parented to `MI_Default_Opaque` or `M_Default`
 3. Reads `BaseColorTexture` before reparenting, reparents to `M_GLB_Unlit`, re-sets it after
 4. Re-applies the gameplay static-mesh build policy for GLB assets: full-precision UVs, no generated lightmap UVs, preserve imported normals/tangents

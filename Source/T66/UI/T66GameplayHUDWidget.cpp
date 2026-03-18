@@ -24,8 +24,10 @@
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66MiasmaBoundary.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/T66ItemCardTextUtils.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66CrateOverlayWidget.h"
+#include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "Widgets/Layout/SBox.h"
@@ -76,6 +78,65 @@ namespace
 	{
 		const int32 Tier = GetDPSTierIndex(DPS);
 		return Tier >= 0 ? FT66RarityUtil::GetTierColor(Tier) : FT66Style::Tokens::TextMuted;
+	}
+
+	static bool IsKeyboardMouseKey(const FKey& Key)
+	{
+		if (!Key.IsValid())
+		{
+			return false;
+		}
+
+		if (Key.IsMouseButton())
+		{
+			return true;
+		}
+
+		return !Key.IsGamepadKey() && !Key.IsTouch();
+	}
+
+	static FText GetActionKeyText(FName ActionName)
+	{
+		if (const UInputSettings* Settings = UInputSettings::GetInputSettings())
+		{
+			for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+			{
+				if (Mapping.ActionName == ActionName && IsKeyboardMouseKey(Mapping.Key))
+				{
+					return Mapping.Key.GetDisplayName();
+				}
+			}
+
+			for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+			{
+				if (Mapping.ActionName == ActionName)
+				{
+					return Mapping.Key.GetDisplayName();
+				}
+			}
+		}
+
+		return FText::GetEmpty();
+	}
+
+	static FText BuildSkipCountdownText(float RemainingSeconds, FName ActionName = NAME_None)
+	{
+		const FText SecondsText = FText::FromString(FString::Printf(TEXT("%.1f"), FMath::Max(0.f, RemainingSeconds)));
+		if (!ActionName.IsNone())
+		{
+			const FText KeyText = GetActionKeyText(ActionName);
+			if (!KeyText.IsEmpty())
+			{
+				return FText::Format(
+					NSLOCTEXT("T66.Presentation", "SkipKeyCountdown", "Skip: {0} ({1}s)"),
+					KeyText,
+					SecondsText);
+			}
+		}
+
+		return FText::Format(
+			NSLOCTEXT("T66.Presentation", "SkipCountdown", "Skip {0}s"),
+			SecondsText);
 	}
 
 	/** Creates a custom tooltip widget (background + text) for HUD item/idol hover. Returns null if InText is empty. */
@@ -390,6 +451,98 @@ private:
 	FLinearColor CrosshairColor = FLinearColor(1.f, 1.f, 1.f, 0.85f);
 };
 
+class ST66ScopedSniperWidget : public SLeafWidget
+{
+public:
+	SLATE_BEGIN_ARGS(ST66ScopedSniperWidget) {}
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs)
+	{
+	}
+
+	virtual FVector2D ComputeDesiredSize(float) const override
+	{
+		return FVector2D(1920.f, 1080.f);
+	}
+
+	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+		FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+	{
+		const FVector2D Size = AllottedGeometry.GetLocalSize();
+		const FVector2D Center(Size.X * 0.5f, Size.Y * 0.5f);
+		const float ScopeDiameter = FMath::Min(Size.Y * 0.82f, Size.X * 0.62f);
+		const float ScopeRadius = ScopeDiameter * 0.5f;
+		const FVector2D ScopeTopLeft = Center - FVector2D(ScopeRadius, ScopeRadius);
+		const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
+
+		auto DrawSolidBox = [&](const FVector2D& Pos, const FVector2D& BoxSize, const FLinearColor& Color)
+		{
+			if (BoxSize.X <= 0.f || BoxSize.Y <= 0.f) return;
+			FSlateDrawElement::MakeBox(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(FVector2f(BoxSize), FSlateLayoutTransform(FVector2f(Pos))),
+				WhiteBrush,
+				ESlateDrawEffect::None,
+				Color);
+		};
+
+		// Hard matte around the scope window. This keeps the focused, CS-style tunneled view
+		// without requiring a dedicated scope texture asset.
+		DrawSolidBox(FVector2D(0.f, 0.f), FVector2D(FMath::Max(0.f, ScopeTopLeft.X), Size.Y), FLinearColor::Black);
+		DrawSolidBox(FVector2D(ScopeTopLeft.X + ScopeDiameter, 0.f), FVector2D(FMath::Max(0.f, Size.X - (ScopeTopLeft.X + ScopeDiameter)), Size.Y), FLinearColor::Black);
+		DrawSolidBox(FVector2D(ScopeTopLeft.X, 0.f), FVector2D(ScopeDiameter, FMath::Max(0.f, ScopeTopLeft.Y)), FLinearColor::Black);
+		DrawSolidBox(FVector2D(ScopeTopLeft.X, ScopeTopLeft.Y + ScopeDiameter), FVector2D(ScopeDiameter, FMath::Max(0.f, Size.Y - (ScopeTopLeft.Y + ScopeDiameter))), FLinearColor::Black);
+
+		auto DrawLine = [&](const FVector2D& A, const FVector2D& B, const FLinearColor& Color, const float Thickness)
+		{
+			TArray<FVector2D> Points;
+			Points.Add(A);
+			Points.Add(B);
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 1,
+				AllottedGeometry.ToPaintGeometry(),
+				Points,
+				ESlateDrawEffect::None,
+				Color,
+				false,
+				Thickness);
+		};
+
+		// Scope ring.
+		{
+			static constexpr int32 NumSeg = 72;
+			TArray<FVector2D> RingPoints;
+			RingPoints.Reserve(NumSeg + 1);
+			for (int32 Index = 0; Index <= NumSeg; ++Index)
+			{
+				const float T = static_cast<float>(Index) / static_cast<float>(NumSeg);
+				const float Angle = 2.f * PI * T;
+				RingPoints.Add(Center + FVector2D(FMath::Cos(Angle) * ScopeRadius, FMath::Sin(Angle) * ScopeRadius));
+			}
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 1,
+				AllottedGeometry.ToPaintGeometry(),
+				RingPoints,
+				ESlateDrawEffect::None,
+				FLinearColor(0.95f, 0.95f, 1.f, 0.95f),
+				true,
+				2.f);
+		}
+
+		// Thin reticle lines like a CS sniper scope.
+		const float LineExtent = ScopeRadius - 18.f;
+		DrawLine(Center + FVector2D(-LineExtent, 0.f), Center + FVector2D(LineExtent, 0.f), FLinearColor(0.95f, 0.95f, 1.f, 0.95f), 1.5f);
+		DrawLine(Center + FVector2D(0.f, -LineExtent), Center + FVector2D(0.f, LineExtent), FLinearColor(0.95f, 0.95f, 1.f, 0.95f), 1.5f);
+
+		return LayerId + 2;
+	}
+};
+
 struct FT66MapMarker
 {
 	FVector2D WorldXY = FVector2D::ZeroVector;
@@ -691,6 +844,64 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		DPSRefreshAccumSeconds = 0.f;
 		RefreshDPS();
 	}
+
+	if (bPickupCardVisible && PickupCardBox.IsValid())
+	{
+		PickupCardRemainingSeconds = FMath::Max(0.f, PickupCardRemainingSeconds - InDeltaTime);
+		if (PickupCardSkipText.IsValid())
+		{
+			PickupCardSkipText->SetText(BuildSkipCountdownText(PickupCardRemainingSeconds, FName(TEXT("Interact"))));
+		}
+
+		const float FadeAlpha = (PickupCardRemainingSeconds > PickupCardFadeOutSeconds)
+			? 1.f
+			: FMath::Clamp(PickupCardRemainingSeconds / PickupCardFadeOutSeconds, 0.f, 1.f);
+		PickupCardBox->SetRenderOpacity(FadeAlpha);
+
+		if (PickupCardRemainingSeconds <= 0.f)
+		{
+			HidePickupCard();
+		}
+	}
+
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		const bool bScoped = T66PC->IsHeroOneScopeViewEnabled();
+		if (CenterCrosshairBox.IsValid())
+		{
+			CenterCrosshairBox->SetVisibility(bScoped ? EVisibility::Collapsed : EVisibility::HitTestInvisible);
+		}
+		if (ScopedSniperOverlayBorder.IsValid())
+		{
+			ScopedSniperOverlayBorder->SetVisibility(bScoped ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+		}
+		if (bScoped)
+		{
+			if (ScopedUltTimerText.IsValid())
+			{
+				ScopedUltTimerText->SetText(FText::FromString(FString::Printf(TEXT("ULT %.1fs"), T66PC->GetHeroOneScopedUltRemainingSeconds())));
+			}
+			if (ScopedShotCooldownText.IsValid())
+			{
+				const float ShotCooldown = T66PC->GetHeroOneScopedShotCooldownRemainingSeconds();
+				ScopedShotCooldownText->SetText(
+					ShotCooldown > 0.f
+						? FText::FromString(FString::Printf(TEXT("SHOT %.2fs"), ShotCooldown))
+						: NSLOCTEXT("T66.HUD", "ScopedShotReady", "SHOT READY"));
+			}
+		}
+	}
+	else
+	{
+		if (CenterCrosshairBox.IsValid())
+		{
+			CenterCrosshairBox->SetVisibility(EVisibility::HitTestInvisible);
+		}
+		if (ScopedSniperOverlayBorder.IsValid())
+		{
+			ScopedSniperOverlayBorder->SetVisibility(EVisibility::Collapsed);
+		}
+	}
 }
 
 void UT66GameplayHUDWidget::RefreshCooldownBar()
@@ -876,7 +1087,13 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		World->GetTimerManager().ClearTimer(WheelResolveHandle);
 		World->GetTimerManager().ClearTimer(WheelCloseHandle);
 		World->GetTimerManager().ClearTimer(AchievementNotificationTimerHandle);
-		World->GetTimerManager().ClearTimer(PickupCardHideTimerHandle);
+	}
+
+	HidePickupCard();
+	if (UT66CrateOverlayWidget* Overlay = ActiveCrateOverlay.Get())
+	{
+		Overlay->RemoveFromParent();
+		ActiveCrateOverlay.Reset();
 	}
 
 	UT66RunStateSubsystem* RunState = GetRunState();
@@ -1197,24 +1414,47 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 
 void UT66GameplayHUDWidget::StartCrateOpen()
 {
-	UWorld* World = GetWorld();
-	if (!World) return;
-
 	APlayerController* PC = GetOwningPlayer();
 	if (!PC) return;
+
+	HidePickupCard();
+	if (ActiveCrateOverlay.IsValid())
+	{
+		return;
+	}
 
 	UT66CrateOverlayWidget* Overlay = CreateWidget<UT66CrateOverlayWidget>(PC, UT66CrateOverlayWidget::StaticClass());
 	if (Overlay)
 	{
+		Overlay->SetPresentationHost(this);
+		Overlay->SetVisibility(ESlateVisibility::HitTestInvisible);
 		Overlay->AddToViewport(100);
+		ActiveCrateOverlay = Overlay;
+	}
+}
 
-		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC))
-		{
-			FInputModeGameAndUI InputMode;
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			T66PC->SetInputMode(InputMode);
-			T66PC->bShowMouseCursor = true;
-		}
+bool UT66GameplayHUDWidget::TrySkipActivePresentation()
+{
+	if (UT66CrateOverlayWidget* Overlay = ActiveCrateOverlay.Get())
+	{
+		Overlay->RequestSkip();
+		return true;
+	}
+
+	if (bPickupCardVisible)
+	{
+		HidePickupCard();
+		return true;
+	}
+
+	return false;
+}
+
+void UT66GameplayHUDWidget::ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay)
+{
+	if (!Overlay || ActiveCrateOverlay.Get() == Overlay)
+	{
+		ActiveCrateOverlay.Reset();
 	}
 }
 
@@ -1660,83 +1900,30 @@ void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity Item
 	}
 	if (PickupCardDescText.IsValid())
 	{
-		if (!bHasData || !RunState)
+		if (!bHasData)
 		{
 			PickupCardDescText->SetText(FText::GetEmpty());
 		}
 		else
 		{
-			auto StatLabel = [Loc](ET66HeroStatType Type) -> FText
-			{
-				if (Loc)
-				{
-					switch (Type)
-					{
-						case ET66HeroStatType::Damage:      return Loc->GetText_Stat_Damage();
-						case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-						case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
-						case ET66HeroStatType::Armor:      return Loc->GetText_Stat_Armor();
-						case ET66HeroStatType::Evasion:     return Loc->GetText_Stat_Evasion();
-						case ET66HeroStatType::Luck:        return Loc->GetText_Stat_Luck();
-						default: break;
-					}
-				}
-				switch (Type)
-				{
-					case ET66HeroStatType::Damage:      return NSLOCTEXT("T66.Stats", "Damage", "Damage");
-					case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-					case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
-					case ET66HeroStatType::Armor:      return NSLOCTEXT("T66.Stats", "Armor", "Armor");
-					case ET66HeroStatType::Evasion:     return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
-					case ET66HeroStatType::Luck:        return NSLOCTEXT("T66.Stats", "Luck", "Luck");
-					default: return FText::GetEmpty();
-				}
-			};
-			const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
 			int32 MainValue = 0;
-			if (Slots.Num() > 0 && Slots.Last().ItemTemplateID == ItemID)
+			if (RunState)
 			{
-				MainValue = Slots.Last().Line1RolledValue;
-			}
-			FText DescLine;
-			if (MainValue > 0)
-			{
-				const ET66HeroStatType MainType = D.PrimaryStatType;
-				if (MainType == ET66HeroStatType::AttackScale && RunState)
+				const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+				if (Slots.Num() > 0 && Slots.Last().ItemTemplateID == ItemID)
 				{
-					const float ScaleMult = RunState->GetHeroScaleMultiplier();
-					DescLine = FText::Format(
-						NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
-						StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
-				}
-				else
-				{
-					DescLine = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
+					MainValue = Slots.Last().Line1RolledValue;
 				}
 			}
-			else
-			{
-				DescLine = FText::GetEmpty();
-			}
-			// Secondary stat line (match vendor: primary + secondary)
-			if (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
-			{
-				const FText Line2 = Loc->GetText_SecondaryStatName(D.SecondaryStatType);
-				if (!Line2.IsEmpty())
-				{
-					DescLine = DescLine.IsEmpty()
-						? Line2
-						: FText::Format(NSLOCTEXT("T66.Vendor", "TwoLineDesc", "{0}\n{1}"), DescLine, Line2);
-				}
-			}
-			PickupCardDescText->SetText(DescLine);
+			const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
+			PickupCardDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, ItemRarity, MainValue, ScaleMult));
 		}
 	}
 	if (!PickupCardIconBrush.IsValid())
 	{
 		PickupCardIconBrush = MakeShared<FSlateBrush>();
 		PickupCardIconBrush->DrawAs = ESlateBrushDrawType::Image;
-		PickupCardIconBrush->ImageSize = FVector2D(48.f, 48.f);
+		PickupCardIconBrush->ImageSize = FVector2D(PickupCardWidth, PickupCardWidth);
 	}
 	const TSoftObjectPtr<UTexture2D> PickupIconSoft = bHasData ? D.GetIconForRarity(ItemRarity) : TSoftObjectPtr<UTexture2D>();
 	if (!PickupIconSoft.IsNull())
@@ -1752,25 +1939,37 @@ void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity Item
 		PickupCardIconImage->SetImage(PickupCardIconBrush.Get());
 		PickupCardIconImage->SetVisibility(!PickupIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
 	}
-	PickupCardBox->SetVisibility(EVisibility::Visible);
-
-	// Auto-hide after delay
-	if (UWorld* W = GetWorld())
+	if (PickupCardTileBorder.IsValid())
 	{
-		W->GetTimerManager().ClearTimer(PickupCardHideTimerHandle);
-		W->GetTimerManager().SetTimer(PickupCardHideTimerHandle, this, &UT66GameplayHUDWidget::HidePickupCard, PickupCardDisplaySeconds, false);
+		PickupCardTileBorder->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(ItemRarity) : FT66Style::Tokens::Panel);
 	}
+	if (PickupCardIconBorder.IsValid())
+	{
+		PickupCardIconBorder->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(ItemRarity) : FT66Style::Tokens::Panel2);
+	}
+	if (PickupCardSkipText.IsValid())
+	{
+		PickupCardSkipText->SetText(BuildSkipCountdownText(PickupCardDisplaySeconds, FName(TEXT("Interact"))));
+	}
+
+	bPickupCardVisible = true;
+	PickupCardRemainingSeconds = PickupCardDisplaySeconds;
+	PickupCardBox->SetVisibility(EVisibility::Visible);
+	PickupCardBox->SetRenderOpacity(1.f);
 }
 
 void UT66GameplayHUDWidget::HidePickupCard()
 {
+	bPickupCardVisible = false;
+	PickupCardRemainingSeconds = 0.f;
 	if (PickupCardBox.IsValid())
 	{
 		PickupCardBox->SetVisibility(EVisibility::Collapsed);
+		PickupCardBox->SetRenderOpacity(1.f);
 	}
-	if (UWorld* World = GetWorld())
+	if (PickupCardSkipText.IsValid())
 	{
-		World->GetTimerManager().ClearTimer(PickupCardHideTimerHandle);
+		PickupCardSkipText->SetText(FText::GetEmpty());
 	}
 }
 
@@ -2091,36 +2290,6 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				const ET66ItemRarity SlotRarity = InvSlots.IsValidIndex(i) ? InvSlots[i].Rarity : ET66ItemRarity::Black;
 				SlotIconSoft = D.GetIconForRarity(SlotRarity);
 
-				// Main stat line (v1): one foundational stat (excluding Speed), flat numeric bonus.
-				auto StatLabel = [&](ET66HeroStatType Type) -> FText
-				{
-					if (Loc)
-					{
-						switch (Type)
-						{
-							case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
-							case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-							case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
-							case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
-							case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
-							case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
-							default: break;
-						}
-					}
-					// Fallback (safe)
-					switch (Type)
-					{
-						case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
-						case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-						case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
-						case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
-						case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
-						case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
-						default: return FText::GetEmpty();
-					}
-				};
-
-				const ET66HeroStatType MainType = D.PrimaryStatType;
 				int32 MainValue = 0;
 				if (RunState)
 				{
@@ -2130,28 +2299,11 @@ void UT66GameplayHUDWidget::RefreshHUD()
 						MainValue = Slots[i].Line1RolledValue;
 					}
 				}
-
-				if (MainValue > 0)
+				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
+				const FText CardDesc = T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult);
+				if (!CardDesc.IsEmpty())
 				{
-					if (MainType == ET66HeroStatType::AttackScale && RunState)
-					{
-						const float ScaleMult = RunState->GetHeroScaleMultiplier();
-						TipLines.Add(FText::Format(
-							NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
-							StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult))));
-					}
-					else
-					{
-						TipLines.Add(FText::Format(
-							NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"),
-							StatLabel(MainType),
-							FText::AsNumber(MainValue)));
-					}
-				}
-				// Line 2: secondary stat name (match vendor description)
-				if (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
-				{
-					TipLines.Add(Loc->GetText_SecondaryStatName(D.SecondaryStatType));
+					TipLines.Add(CardDesc);
 				}
 				{
 					int32 SellValue = D.BaseSellGold;
@@ -3632,59 +3784,67 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Bottom)
-		.Padding(24.f, 0.f, 24.f, 300.f)
+		.Padding(24.f, 0.f, 24.f, 185.f)
 		[
 			SAssignNew(PickupCardBox, SBox)
 			.Visibility(EVisibility::Collapsed)
-			.WidthOverride(280.f)
+			.WidthOverride(PickupCardWidth)
+			.HeightOverride(PickupCardHeight)
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.30f, 0.38f, 0.35f, 0.85f))
-				.Padding(3.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
-					.Padding(FMargin(10.f, 8.f))
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SAssignNew(PickupCardNameText, STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FT66Style::Tokens::FontBold(16))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.AutoWrapText(true)
+						.WrapTextAt(PickupCardWidth - 24.f)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
 					[
 						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top).Padding(0.f, 0.f, 10.f, 0.f)
+						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							SNew(SBox)
-							.WidthOverride(48.f)
-							.HeightOverride(48.f)
-							[
-								SAssignNew(PickupCardIconImage, SImage)
-								.Image(PickupCardIconBrush.Get())
-								.ColorAndOpacity(FLinearColor::White)
-								.Visibility(EVisibility::Collapsed)
-							]
-						]
-						+ SHorizontalBox::Slot().FillWidth(1.f)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight()
-							[
-								SAssignNew(PickupCardNameText, STextBlock)
-								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(16))
-								.ColorAndOpacity(FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
-								.AutoWrapText(true)
-								.WrapTextAt(200.f)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-							[
-								SAssignNew(PickupCardDescText, STextBlock)
-								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontRegular(12))
-								.ColorAndOpacity(FLinearColor(0.6f, 0.7f, 0.65f, 1.f))
-								.AutoWrapText(true)
-								.WrapTextAt(200.f)
-							]
+							FT66Style::MakePanel(
+								SNew(SBox)
+								.WidthOverride(PickupCardWidth)
+								.HeightOverride(PickupCardWidth)
+								[
+									SAssignNew(PickupCardIconImage, SImage)
+									.Image(PickupCardIconBrush.Get())
+									.ColorAndOpacity(FLinearColor::White)
+									.Visibility(EVisibility::Collapsed)
+								],
+								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
+								&PickupCardIconBorder)
 						]
 					]
-				]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					[
+						SAssignNew(PickupCardDescText, STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FT66Style::Tokens::FontRegular(12))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					[
+						FT66Style::MakePanel(
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+							[
+								SAssignNew(PickupCardSkipText, STextBlock)
+								.Text(FText::GetEmpty())
+								.Font(FT66Style::Tokens::FontBold(14))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Justification(ETextJustify::Center)
+							],
+							FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(8.f, 6.f)))
+					],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4),
+					&PickupCardTileBorder)
 			]
 		]
 		// Tutorial hint (above crosshair)
@@ -3723,11 +3883,54 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.VAlign(VAlign_Center)
 		.Padding(0.f, -140.f, 0.f, 0.f)
 		[
-			SNew(SBox)
+			SAssignNew(CenterCrosshairBox, SBox)
 			.WidthOverride(28.f)
 			.HeightOverride(28.f)
 			[
 				SNew(ST66CrosshairWidget)
+			]
+		]
+		// Hero 1 scoped sniper overlay (first-person aim view + ult timers)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SAssignNew(ScopedSniperOverlayBorder, SBorder)
+			.Visibility(EVisibility::Collapsed)
+			.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
+			.Padding(0.f)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SNew(ST66ScopedSniperWidget)
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Top)
+				.Padding(0.f, 24.f, 0.f, 0.f)
+				[
+					FT66Style::MakePanel(
+						SAssignNew(ScopedUltTimerText, STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FT66Style::Tokens::FontBold(20))
+						.ColorAndOpacity(FT66Style::Tokens::Text),
+						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(12.f, 8.f)))
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Bottom)
+				.Padding(0.f, 0.f, 0.f, 42.f)
+				[
+					FT66Style::MakePanel(
+						SAssignNew(ScopedShotCooldownText, STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FT66Style::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66Style::Tokens::Text),
+						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f, 8.f)))
+				]
 			]
 		]
 		// Curse (visibility) overlay (always on top)

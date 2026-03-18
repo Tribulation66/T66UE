@@ -84,17 +84,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
+	float GetEffectiveArmor() const;
+
 	/** If true, this enemy prefers to flee from the hero instead of closing distance. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	bool bRunAwayFromPlayer = false;
 
-	/** If distance to player exceeds this (uu), enemy is teleported to a new position near the player. 0 = disabled. */
+	/** If distance to player exceeds this (uu), enemy gains catch-up speed instead of teleporting. 0 = disabled. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "0"))
 	float LeashMaxDistance = 3000.f;
 
-	/** Interval in seconds between leash distance checks (throttled for performance). */
+	/** Legacy leash interval kept for backwards compatibility with existing defaults/assets. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "0.5"))
 	float LeashCheckIntervalSeconds = 2.f;
+
+	/** Maximum speed multiplier applied when the enemy falls far behind the player. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "1.0"))
+	float FarChaseSpeedMultiplier = 2.0f;
+
+	/** Distance beyond LeashMaxDistance over which the far-chase speed ramps up. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "1.0"))
+	float FarChaseRampDistance = 2000.f;
 
 	/** Refresh health bar display (call when HP changes) */
 	UFUNCTION(BlueprintCallable, Category = "UI")

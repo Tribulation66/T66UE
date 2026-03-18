@@ -17,7 +17,7 @@ AT66FloatingCombatTextActor::AT66FloatingCombatTextActor()
 	WidgetComponent->SetupAttachment(RootComponent);
 	WidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	WidgetComponent->SetDrawAtDesiredSize(true);
-	WidgetComponent->SetDrawSize(FVector2D(200.f, 40.f));
+	WidgetComponent->SetDrawSize(FVector2D(420.f, 100.f));
 	WidgetComponent->SetWidgetClass(UT66FloatingCombatTextWidget::StaticClass());
 	WidgetComponent->InitWidget();
 }

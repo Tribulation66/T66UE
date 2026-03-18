@@ -17,6 +17,7 @@ class UT66RunStateSubsystem;
 class UWidgetComponent;
 class UT66HeroSpeedSubsystem;
 class UAnimationAsset;
+class AT66PilotableTractor;
 
 /**
  * Base class for all playable heroes in Tribulation 66
@@ -75,6 +76,13 @@ public:
 
 	/** Force-refresh the attack range ring visibility/size. */
 	void RefreshAttackRangeRing();
+
+	void SetVehicleMounted(bool bMounted, AT66PilotableTractor* MountedTractor = nullptr, const FVector& VisualOffset = FVector::ZeroVector, const FRotator& VisualRotation = FRotator::ZeroRotator);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement|Vehicle")
+	bool IsVehicleMounted() const { return bVehicleMounted; }
+
+	AT66PilotableTractor* GetMountedTractor() const { return MountedTractor.Get(); }
 
 	// ========== Placeholder Visuals (for prototyping) ==========
 	
@@ -209,6 +217,14 @@ private:
 	enum class EMovementAnimState : uint8 { Idle, Walk, Jump };
 	EMovementAnimState LastMovementAnimState = EMovementAnimState::Idle;
 
+	bool bVehicleMounted = false;
+	bool bVehicleDefaultVisualTransformsCached = false;
+	FVector DefaultPlaceholderRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultPlaceholderRelativeRotation = FRotator::ZeroRotator;
+	FVector DefaultSkeletalMeshRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultSkeletalMeshRelativeRotation = FRotator::ZeroRotator;
+	TWeakObjectPtr<AT66PilotableTractor> MountedTractor;
+
 	float BaseMaxWalkSpeed = 1200.f;
 
 	// Dash tuning
@@ -260,6 +276,7 @@ private:
 private:
 	/** Load and cache the static mesh assets */
 	void CacheMeshAssets();
+	void CacheVehicleVisualDefaults();
 
 	void UpdateAttackRangeRing();
 };

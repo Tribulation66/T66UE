@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66CompanionPreviewStage.h"
 #include "Gameplay/T66CompanionBase.h"
+#include "Gameplay/T66PreviewStageEnvironment.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -12,13 +13,6 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "Materials/MaterialInterface.h"
-
-namespace
-{
-	/** Gameplay ground material for preview floor. */
-	const TCHAR* CompanionPreviewGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
-}
 
 AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 {
@@ -44,12 +38,15 @@ AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 void AT66CompanionPreviewStage::BeginPlay()
 {
 	Super::BeginPlay();
-	// Apply gameplay ground material to floor (same as gameplay level floor).
-	if (PreviewFloor)
+
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor);
+	T66PreviewStageEnvironment::CreateEasyFarmPreviewProps(this, RootComponent, EasyPreviewProps);
+
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, CompanionPreviewGroundMaterialPath))
-			PreviewFloor->SetMaterial(0, GroundMat);
+		PreviewDifficulty = GI->SelectedDifficulty;
 	}
+	RefreshPreviewEnvironment();
 }
 
 void AT66CompanionPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -66,6 +63,12 @@ void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID, FName Ski
 	UpdatePreviewPawn(CompanionID, EffectiveSkin);
 	bHasOrbitFrame = false;
 	FrameCameraToPreview();
+}
+
+void AT66CompanionPreviewStage::SetPreviewDifficulty(ET66Difficulty Difficulty)
+{
+	PreviewDifficulty = Difficulty;
+	RefreshPreviewEnvironment();
 }
 
 void AT66CompanionPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
@@ -114,9 +117,20 @@ void AT66CompanionPreviewStage::ApplyPreviewRotation()
 void AT66CompanionPreviewStage::FrameCameraToPreview()
 {
 	UPrimitiveComponent* Target = GetPreviewTargetComponent();
-	if (!Target) return;
 
-	if (!bHasOrbitFrame)
+	if (!Target)
+	{
+		const FVector StageOrigin = GetActorLocation();
+		const float GroundZ = StageOrigin.Z;
+		const float EmptyPreviewRadius = 900.f;
+		const FVector EmptyCenter = StageOrigin + FVector(250.f, 0.f, 120.f);
+
+		OrbitCenter = EmptyCenter;
+		OrbitRadius = EmptyPreviewRadius;
+		OrbitBottomZ = GroundZ;
+		bHasOrbitFrame = true;
+	}
+	else if (!bHasOrbitFrame)
 	{
 		const FBoxSphereBounds B = Target->Bounds;
 		OrbitCenter = B.Origin;
@@ -150,13 +164,18 @@ void AT66CompanionPreviewStage::FrameCameraToPreview()
 	IdealCameraLocation = CamLoc;
 	IdealCameraRotation = LookRot;
 
-	if (PreviewFloor && PreviewPawn)
+	if (PreviewFloor)
 	{
 		// Floor top at stage ground Z so character feet align with it.
 		const float GroundZ = GetActorLocation().Z;
 		const float FloorCenterZ = GroundZ - 2.f; // ~4 unit thick disc with scale 0.04
-		PreviewFloor->SetWorldLocation(FVector(Center.X + FloorForwardOffset, Center.Y, FloorCenterZ));
-		const float S = FMath::Clamp((Radius / 50.f) * 2.5f, 2.0f, 10.0f);
+		FVector FloorAnchor = FVector(Center.X, Center.Y, GroundZ);
+		if (PreviewPawn)
+		{
+			FloorAnchor = PreviewPawn->GetActorLocation();
+		}
+		PreviewFloor->SetWorldLocation(FVector(FloorAnchor.X + FloorForwardOffset, FloorAnchor.Y, FloorCenterZ));
+		const float S = FMath::Max(MinGroundScale, FMath::Clamp((Radius / 50.f) * 2.5f, 2.0f, 10.0f));
 		PreviewFloor->SetWorldScale3D(FVector(S, S, 0.04f));
 	}
 }
@@ -230,11 +249,26 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID, FName SkinI
 
 void AT66CompanionPreviewStage::SetStageVisible(bool bVisible)
 {
+	bStageVisible = bVisible;
 	SetActorHiddenInGame(!bVisible);
 	if (PreviewPawn) PreviewPawn->SetActorHiddenInGame(!bVisible);
+	RefreshPreviewEnvironment();
 }
 
 void AT66CompanionPreviewStage::ResetFramingCache()
 {
 	bHasOrbitFrame = false;
+}
+
+void AT66CompanionPreviewStage::RefreshPreviewEnvironment()
+{
+	if (PreviewFloor)
+	{
+		PreviewFloor->SetVisibility(bStageVisible, true);
+		PreviewFloor->SetHiddenInGame(!bStageVisible, true);
+	}
+
+	T66PreviewStageEnvironment::SetPreviewPropsVisibility(
+		EasyPreviewProps,
+		bStageVisible && T66PreviewStageEnvironment::ShouldShowEasyProps(PreviewDifficulty));
 }

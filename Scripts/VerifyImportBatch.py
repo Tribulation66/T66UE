@@ -2,10 +2,10 @@
 Verify the current import/gameplay batch in-editor.
 
 Checks:
-  - Imported prop / interactable / bag / goblin assets exist
+  - Imported prop / hero / companion assets exist
   - Imported materials are parented to the expected Unlit masters
-  - DataTables contain the expected new rows and removed Leprechaun row
-  - Fountain interactable defaults point at the imported fountain mesh
+  - DataTables contain the expected prop and character visual rows
+  - Tree2 import overrides and prop build settings still match the GLB pipeline
 
 Run in-editor or with the Python commandlet:
   py "C:/UE/T66/Scripts/VerifyImportBatch.py"
@@ -32,39 +32,78 @@ CHAR_UNLIT_PARENTS = (
     "/Game/Materials/Retro/M_FBX_Unlit_RetroGeometry",
 )
 
+PROP_ROW_NAMES = (
+    "Barn",
+    "Tree",
+    "Tree2",
+    "Hay",
+    "Hay2",
+    "Rock",
+    "Grass",
+    "Bush",
+    "Boulder",
+    "Branch",
+    "Fence",
+    "Fence2",
+    "Fence3",
+    "Haybell",
+    "House",
+    "Log",
+    "Mud",
+    "Rocks",
+    "Scarecrow",
+    "Silo",
+    "Stump",
+    "Tractor",
+    "Tree3",
+    "Troth",
+    "Windmill",
+)
+
+CURRENT_GLB_PROP_BATCH = (
+    "Barn",
+    "Boulder",
+    "Branch",
+    "Bush",
+    "Fence",
+    "Fence2",
+    "Fence3",
+    "Haybell",
+    "House",
+    "Log",
+    "Mud",
+    "Rocks",
+    "Scarecrow",
+    "Silo",
+    "Stump",
+    "Tractor",
+    "Tree",
+    "Tree2",
+    "Tree3",
+    "Troth",
+    "Windmill",
+)
+
 STATIC_MESH_CHECKS = [
-    ("Prop Tree2", "/Game/World/Props/Tree2.Tree2", GLB_UNLIT_PARENTS),
-    ("Prop Rock", "/Game/World/Props/Rock.Rock", GLB_UNLIT_PARENTS),
-    ("Prop Grass", "/Game/World/Props/Grass.Grass", GLB_UNLIT_PARENTS),
-    ("Prop Bush", "/Game/World/Props/Bush.Bush", GLB_UNLIT_PARENTS),
-    ("Prop Boulder", "/Game/World/Props/Boulder.Boulder", GLB_UNLIT_PARENTS),
-    ("Fountain Mesh", "/Game/World/Interactables/Fountain/Fountain.Fountain", GLB_UNLIT_PARENTS),
-    ("LootBag Black", "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black", GLB_UNLIT_PARENTS),
-    ("LootBag Red", "/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red", GLB_UNLIT_PARENTS),
-    ("LootBag Yellow", "/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow", GLB_UNLIT_PARENTS),
-    ("LootBag White", "/Game/World/LootBags/White/SM_LootBag_White.SM_LootBag_White", GLB_UNLIT_PARENTS),
+    (f"Prop {name}", f"/Game/World/Props/{name}.{name}", GLB_UNLIT_PARENTS)
+    for name in PROP_ROW_NAMES
 ]
 
 SKELETAL_MESH_CHECKS = [
     (
-        "Goblin Black",
-        "/Game/Characters/Enemies/GoblinThief/Black/BlackGoblinRun.BlackGoblinRun",
-        "/Game/Characters/Enemies/GoblinThief/Black/BlackGoblinRun_Anim.BlackGoblinRun_Anim",
+        "Hero 1 Type A",
+        "/Game/Characters/Heroes/Hero_1/TypeA/Idle/ArthurAIdle.ArthurAIdle",
+        "/Game/Characters/Heroes/Hero_1/TypeA/Walk/ArthurAWalk_Anim.ArthurAWalk_Anim",
     ),
     (
-        "Goblin Red",
-        "/Game/Characters/Enemies/GoblinThief/Red/RedGoblinRun.RedGoblinRun",
-        "/Game/Characters/Enemies/GoblinThief/Red/RedGoblinRun_Anim.RedGoblinRun_Anim",
+        "Hero 1 Type B",
+        "/Game/Characters/Heroes/Hero_1/TypeB/Idle/ArthurBIdle.ArthurBIdle",
+        "/Game/Characters/Heroes/Hero_1/TypeB/Walk/ArthurBWalk_Anim.ArthurBWalk_Anim",
     ),
     (
-        "Goblin Yellow",
-        "/Game/Characters/Enemies/GoblinThief/Yellow/YellowGoblinRun.YellowGoblinRun",
-        "/Game/Characters/Enemies/GoblinThief/Yellow/YellowGoblinRun_Anim.YellowGoblinRun_Anim",
-    ),
-    (
-        "Goblin White",
-        "/Game/Characters/Enemies/GoblinThief/White/WhiteGoblinRun.WhiteGoblinRun",
-        "/Game/Characters/Enemies/GoblinThief/White/WhiteGoblinRun_Anim.WhiteGoblinRun_Anim",
+        "Companion 01 Default",
+        "/Game/Characters/Companions/Companion_01/Default/Idle/CompanionIdle.CompanionIdle",
+        "/Game/Characters/Companions/Companion_01/Default/Walk/CompanionWalk_Anim.CompanionWalk_Anim",
     ),
 ]
 
@@ -252,7 +291,7 @@ def _check_data_tables(v):
 
     if dt_props:
         rows = _get_row_names(dt_props)
-        for expected in ("Tree2", "Rock", "Grass", "Bush", "Boulder"):
+        for expected in PROP_ROW_NAMES:
             v.add(f"DT_Props row {expected}", expected in rows, f"rows={len(rows)}")
 
     if dt_items:
@@ -263,36 +302,14 @@ def _check_data_tables(v):
 
     if dt_visuals:
         rows = _get_row_names(dt_visuals)
-        for expected in ("GoblinThief_Black", "GoblinThief_Red", "GoblinThief_Yellow", "GoblinThief_White"):
+        for expected in (
+            "Hero_1_TypeA",
+            "Hero_1_TypeB",
+            "Companion_01",
+            "Companion_09",
+            "Companion_17",
+        ):
             v.add(f"DT_CharacterVisuals row {expected}", expected in rows, f"rows={len(rows)}")
-
-
-def _check_fountain_defaults(v):
-    cls = unreal.load_class(None, "/Script/T66.T66TreeOfLifeInteractable")
-    v.add("Fountain interactable class", bool(cls), "/Script/T66.T66TreeOfLifeInteractable")
-    if not cls:
-        return
-
-    try:
-        cdo = unreal.get_default_object(cls)
-    except Exception as exc:
-        v.add("Fountain interactable CDO", False, exc)
-        return
-
-    single_mesh = _get_asset_path_string(cdo.get_editor_property("single_mesh"))
-    v.add(
-        "Fountain default single mesh",
-        "/Game/World/Interactables/Fountain/Fountain.Fountain" in single_mesh,
-        single_mesh,
-    )
-
-    rarity_meshes = cdo.get_editor_property("rarity_meshes")
-    try:
-        rarity_count = len(rarity_meshes)
-    except Exception:
-        rarity_count = -1
-    v.add("Fountain default rarity mesh map empty", rarity_count == 0, f"count={rarity_count}")
-
 
 def _check_import_overrides(v):
     tree2_mesh = _load_asset("/Game/World/Props/Tree2.Tree2")
@@ -325,12 +342,8 @@ def _check_import_overrides(v):
                 )
 
     build_setting_checks = [
-        ("Tree2", "/Game/World/Props/Tree2.Tree2"),
-        ("Rock", "/Game/World/Props/Rock.Rock"),
-        ("BlackBag", "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black"),
-        ("RedBag", "/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red"),
-        ("YellowBag", "/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow"),
-        ("WhiteBag", "/Game/World/LootBags/White/SM_LootBag_White.SM_LootBag_White"),
+        (name, f"/Game/World/Props/{name}.{name}")
+        for name in CURRENT_GLB_PROP_BATCH
     ]
 
     try:
@@ -377,9 +390,11 @@ def _check_master_material_flags(v):
         ("/Game/Materials/M_Character_Unlit.M_Character_Unlit", "used_with_skeletal_mesh", True),
         ("/Game/Materials/M_FBX_Unlit.M_FBX_Unlit", "used_with_skeletal_mesh", True),
         ("/Game/Materials/M_GLB_Unlit.M_GLB_Unlit", "used_with_instanced_static_meshes", True),
+        ("/Game/Materials/M_GLB_Unlit.M_GLB_Unlit", "used_with_nanite", True),
         ("/Game/Materials/Retro/M_Character_Unlit_RetroGeometry.M_Character_Unlit_RetroGeometry", "used_with_skeletal_mesh", True),
         ("/Game/Materials/Retro/M_FBX_Unlit_RetroGeometry.M_FBX_Unlit_RetroGeometry", "used_with_skeletal_mesh", True),
         ("/Game/Materials/Retro/M_GLB_Unlit_RetroGeometry.M_GLB_Unlit_RetroGeometry", "used_with_instanced_static_meshes", True),
+        ("/Game/Materials/Retro/M_GLB_Unlit_RetroGeometry.M_GLB_Unlit_RetroGeometry", "used_with_nanite", True),
     ]
 
     for asset_path, prop_name, expected in checks:
@@ -410,7 +425,6 @@ def main():
         _check_skeletal_mesh(verification, label, mesh_path, anim_path)
 
     _check_data_tables(verification)
-    _check_fountain_defaults(verification)
     _check_import_overrides(verification)
     _check_master_material_flags(verification)
 

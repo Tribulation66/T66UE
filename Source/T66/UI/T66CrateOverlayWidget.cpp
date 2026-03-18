@@ -7,6 +7,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
+#include "UI/T66GameplayHUDWidget.h"
 #include "UI/Style/T66Style.h"
 
 #include "Widgets/SOverlay.h"
@@ -43,6 +44,39 @@ namespace
 		Result.White = BaseWeights.White * Bias * Bias;
 		return Result;
 	}
+
+	static FText BuildSkipCountdownText(float RemainingSeconds)
+	{
+		return FText::Format(
+			NSLOCTEXT("T66.Crate", "SkipCountdown", "Skip {0}s"),
+			FText::FromString(FString::Printf(TEXT("%.1f"), FMath::Max(0.f, RemainingSeconds))));
+	}
+}
+
+void UT66CrateOverlayWidget::SetPresentationHost(UT66GameplayHUDWidget* InPresentationHost)
+{
+	PresentationHost = InPresentationHost;
+}
+
+void UT66CrateOverlayWidget::RequestSkip()
+{
+	if (bResolved)
+	{
+		return;
+	}
+
+	if (!bScrolling)
+	{
+		StartScrolling();
+	}
+
+	ScrollElapsed = ScrollDuration;
+	CurrentScrollOffset = TotalScrollDistance;
+	if (StripContainer.IsValid())
+	{
+		StripContainer->SetPadding(FMargin(-CurrentScrollOffset, 0.f, 0.f, 0.f));
+	}
+	ResolveOpen();
 }
 
 void UT66CrateOverlayWidget::GenerateStrip()
@@ -112,15 +146,11 @@ void UT66CrateOverlayWidget::NativeDestruct()
 	{
 		World->GetTimerManager().ClearTimer(ScrollTickHandle);
 		World->GetTimerManager().ClearTimer(StartHandle);
-		World->GetTimerManager().ClearTimer(CloseHandle);
 	}
 
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	if (UT66GameplayHUDWidget* Host = PresentationHost.Get())
 	{
-		if (PC->IsGameplayLevel() && !PC->IsPaused())
-		{
-			PC->RestoreGameplayInputMode();
-		}
+		Host->ClearActiveCratePresentation(this);
 	}
 	Super::NativeDestruct();
 }
@@ -160,78 +190,91 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 			];
 	}
 
-	TSharedRef<SWidget> Root = SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.9f))
+	TSharedRef<SWidget> Root = SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.Padding(24.f, 0.f, 24.f, 520.f)
 		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.f))
-				.Padding(26.f)
+			FT66Style::MakePanel(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.Crate", "Title", "OPEN CRATE"))
+					.Font(FT66Style::Tokens::FontBold(22))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
 					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Crate", "Title", "OPEN CRATE"))
-						.Font(FT66Style::Tokens::FontBold(28))
-						.ColorAndOpacity(FLinearColor::White)
-					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
-					[
-						SAssignNew(StatusText, STextBlock)
-						.Text(NSLOCTEXT("T66.Crate", "Opening", "Opening..."))
-						.Font(FT66Style::Tokens::FontRegular(14))
-						.ColorAndOpacity(FLinearColor(0.9f, 0.9f, 0.9f, 1.f))
-					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 12.f)
-					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
+						SNew(SBox)
+						.WidthOverride(ItemTileWidth * 4.f)
+						.HeightOverride(ItemTileWidth + 12.f)
+						.Clipping(EWidgetClipping::ClipToBounds)
 						[
-							SNew(SBox)
-							.WidthOverride(ItemTileWidth * 5.f)
-							.HeightOverride(ItemTileWidth + 10.f)
-							.Clipping(EWidgetClipping::ClipToBounds)
+							SAssignNew(StripContainer, SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+							.Padding(0.f)
 							[
-								SAssignNew(StripContainer, SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-								.Padding(0.f)
-								[
-									StripRow.ToSharedRef()
-								]
+								StripRow.ToSharedRef()
 							]
 						]
-						+ SOverlay::Slot()
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Top)
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Top)
+					[
+						SNew(SBox)
+						.WidthOverride(4.f)
+						.HeightOverride(ItemTileWidth + 12.f)
 						[
-							SNew(SBox)
-							.WidthOverride(4.f)
-							.HeightOverride(ItemTileWidth + 10.f)
-							[
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-								.BorderBackgroundColor(FLinearColor(1.f, 1.f, 1.f, 0.8f))
-							]
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(1.f, 1.f, 1.f, 0.8f))
 						]
 					]
 				]
-			]
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.12f, 0.16f, 0.14f, 0.92f))
+					.Padding(FMargin(8.f, 4.f))
+					[
+						SAssignNew(SkipText, STextBlock)
+						.Text(BuildSkipCountdownText(ScrollDuration))
+						.Font(FT66Style::Tokens::FontRegular(10))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Justification(ETextJustify::Right)
+					]
+				],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 12.f, 12.f, 10.f))
+			)
 		];
 
-	// Auto-start the scrolling animation after a brief delay
+	if (SkipText.IsValid())
+	{
+		SkipText->SetText(BuildSkipCountdownText(ScrollDuration));
+	}
+
+	// Start almost immediately so the reveal feels attached to the interact press.
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().SetTimer(StartHandle, this, &UT66CrateOverlayWidget::StartScrolling, 0.3f, false);
+		World->GetTimerManager().SetTimer(StartHandle, this, &UT66CrateOverlayWidget::StartScrolling, 0.05f, false);
 	}
 
 	return Root;
+}
+
+void UT66CrateOverlayWidget::UpdateSkipText()
+{
+	if (SkipText.IsValid())
+	{
+		SkipText->SetText(BuildSkipCountdownText(ScrollDuration - ScrollElapsed));
+	}
 }
 
 void UT66CrateOverlayWidget::TickScroll()
@@ -245,6 +288,7 @@ void UT66CrateOverlayWidget::TickScroll()
 	LastTickTimeSeconds = Now;
 	Delta = FMath::Clamp(Delta, 0.f, 0.05f);
 	ScrollElapsed += Delta;
+	UpdateSkipText();
 
 	const float Alpha = FMath::Clamp(ScrollElapsed / FMath::Max(0.01f, ScrollDuration), 0.f, 1.f);
 	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f);
@@ -261,48 +305,46 @@ void UT66CrateOverlayWidget::TickScroll()
 
 void UT66CrateOverlayWidget::ResolveOpen()
 {
-	if (!bScrolling) return;
+	if (bResolved)
+	{
+		return;
+	}
+
+	bResolved = true;
 	bScrolling = false;
 
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ScrollTickHandle);
+		World->GetTimerManager().ClearTimer(StartHandle);
 	}
 
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	bool bAddedToInventory = false;
 	if (RunState && !WinnerItemID.IsNone())
 	{
+		const int32 InventoryCountBefore = RunState->GetInventorySlots().Num();
 		RunState->RecordLuckQualityRarity(FName(TEXT("CrateRewardRarity")), WinnerRarity);
 		RunState->AddItemWithRarity(WinnerItemID, LootRarityToItemRarity(WinnerRarity));
+		bAddedToInventory = RunState->GetInventorySlots().Num() > InventoryCountBefore;
 	}
 
-	if (StatusText.IsValid())
+	if (UT66GameplayHUDWidget* Host = PresentationHost.Get())
 	{
-		const FText Msg = FText::Format(
-			NSLOCTEXT("T66.Crate", "YouGotFormat", "You received: {0}!"),
-			Loc ? Loc->GetText_ItemDisplayName(WinnerItemID) : FText::FromName(WinnerItemID));
-		StatusText->SetText(Msg);
+		Host->ClearActiveCratePresentation(this);
+		if (bAddedToInventory)
+		{
+			Host->ShowPickupItemCard(WinnerItemID, LootRarityToItemRarity(WinnerRarity));
+		}
 	}
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimer(CloseHandle, this, &UT66CrateOverlayWidget::CloseAfterResolve, 1.2f, false);
-	}
-}
 
-void UT66CrateOverlayWidget::CloseAfterResolve()
-{
 	RemoveFromParent();
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-	{
-		PC->RestoreGameplayInputMode();
-	}
 }
 
 void UT66CrateOverlayWidget::StartScrolling()
 {
-	if (bScrolling) return;
+	if (bScrolling || bResolved) return;
 	UWorld* World = GetWorld();
 	if (!World) return;
 
@@ -310,6 +352,7 @@ void UT66CrateOverlayWidget::StartScrolling()
 	ScrollElapsed = 0.f;
 	CurrentScrollOffset = 0.f;
 	LastTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
+	UpdateSkipText();
 
 	World->GetTimerManager().ClearTimer(ScrollTickHandle);
 	World->GetTimerManager().SetTimer(ScrollTickHandle, this, &UT66CrateOverlayWidget::TickScroll, 0.033f, true);

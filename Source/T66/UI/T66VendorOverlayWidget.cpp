@@ -12,6 +12,7 @@
 #include "Gameplay/T66VendorBoss.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Data/T66DataTypes.h"
+#include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "EngineUtils.h"
@@ -1063,69 +1064,9 @@ void UT66VendorOverlayWidget::RefreshStock()
 			}
 			else
 			{
-				// Items v1: show only the single main stat line (flat numeric bonus).
-				auto StatLabel = [&](ET66HeroStatType Type) -> FText
-				{
-					if (Loc)
-					{
-						switch (Type)
-						{
-							case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
-							case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-							case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
-							case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
-							case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
-							case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
-							default: break;
-						}
-					}
-					switch (Type)
-					{
-						case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
-						case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-						case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
-						case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
-						case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
-						case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
-						default: return FText::GetEmpty();
-					}
-				};
-
-				// Display primary stat from vendor stock slot.
-				const ET66HeroStatType MainType = D.PrimaryStatType;
 				const int32 MainValue = StockSlots.IsValidIndex(i) ? StockSlots[i].Line1RolledValue : 0;
-
-				// Build description: Line 1 stat + Line 2 secondary name. For Attack Scale also show numeric multiplier (e.g. 1.1, 1.3).
-				FText Line1;
-				if (MainValue > 0)
-				{
-					if (MainType == ET66HeroStatType::AttackScale && RunState)
-					{
-						const float ScaleMult = RunState->GetHeroScaleMultiplier();
-						Line1 = FText::Format(
-							NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
-							StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
-					}
-					else
-					{
-						Line1 = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
-					}
-				}
-				else
-				{
-					Line1 = FText::GetEmpty();
-				}
-				FText Line2 = (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
-					? Loc->GetText_SecondaryStatName(D.SecondaryStatType)
-					: FText::GetEmpty();
-				if (!Line1.IsEmpty() && !Line2.IsEmpty())
-				{
-					ItemDescTexts[i]->SetText(FText::Format(NSLOCTEXT("T66.Vendor", "TwoLineDesc", "{0}\n{1}"), Line1, Line2));
-				}
-				else
-				{
-					ItemDescTexts[i]->SetText(Line1);
-				}
+				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
+				ItemDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult));
 			}
 		}
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
@@ -1227,64 +1168,9 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 			}
 			else
 			{
-				auto StatLabel = [&](ET66HeroStatType Type) -> FText
-				{
-					if (Loc)
-					{
-						switch (Type)
-						{
-							case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
-							case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-							case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
-							case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
-							case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
-							case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
-							default: break;
-						}
-					}
-					switch (Type)
-					{
-						case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
-						case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-						case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
-						case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
-						case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
-						case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
-						default: return FText::GetEmpty();
-					}
-				};
-				const ET66HeroStatType MainType = D.PrimaryStatType;
 				const int32 MainValue = Slots[i].Line1RolledValue;
-				FText Line1;
-				if (MainValue > 0)
-				{
-					if (MainType == ET66HeroStatType::AttackScale && RunState)
-					{
-						const float ScaleMult = RunState->GetHeroScaleMultiplier();
-						Line1 = FText::Format(
-							NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
-							StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
-					}
-					else
-					{
-						Line1 = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
-					}
-				}
-				else
-				{
-					Line1 = FText::GetEmpty();
-				}
-				FText Line2 = (Loc && D.SecondaryStatType != ET66SecondaryStatType::None)
-					? Loc->GetText_SecondaryStatName(D.SecondaryStatType)
-					: FText::GetEmpty();
-				if (!Line1.IsEmpty() && !Line2.IsEmpty())
-				{
-					BuybackDescTexts[i]->SetText(FText::Format(NSLOCTEXT("T66.Vendor", "TwoLineDesc", "{0}\n{1}"), Line1, Line2));
-				}
-				else
-				{
-					BuybackDescTexts[i]->SetText(Line1);
-				}
+				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
+				BuybackDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult));
 			}
 		}
 		if (BuybackIconBorders.IsValidIndex(i) && BuybackIconBorders[i].IsValid())
@@ -1513,65 +1399,20 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 		}
 		else
 		{
-			auto StatLabel = [&](ET66HeroStatType Type) -> FText
-			{
-				if (Loc)
-				{
-					switch (Type)
-					{
-						case ET66HeroStatType::Damage: return Loc->GetText_Stat_Damage();
-						case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
-						case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
-						case ET66HeroStatType::Armor: return Loc->GetText_Stat_Armor();
-						case ET66HeroStatType::Evasion: return Loc->GetText_Stat_Evasion();
-						case ET66HeroStatType::Luck: return Loc->GetText_Stat_Luck();
-						default: break;
-					}
-				}
-				switch (Type)
-				{
-					case ET66HeroStatType::Damage: return NSLOCTEXT("T66.Stats", "Damage", "Damage");
-					case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
-					case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
-					case ET66HeroStatType::Armor: return NSLOCTEXT("T66.Stats", "Armor", "Armor");
-					case ET66HeroStatType::Evasion: return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
-					case ET66HeroStatType::Luck: return NSLOCTEXT("T66.Stats", "Luck", "Luck");
-					default: return FText::GetEmpty();
-				}
-			};
-
-			const ET66HeroStatType MainType = D.PrimaryStatType;
 			// Get the rolled value from the inventory slot.
 			int32 MainValue = 0;
+			ET66ItemRarity SelectedRarity = ET66ItemRarity::Black;
 			if (RunState)
 			{
 				const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
 				if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
 				{
 					MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
+					SelectedRarity = Slots[SelectedInventoryIndex].Rarity;
 				}
 			}
-
-			FText DescLine;
-			if (MainValue > 0)
-			{
-				if (MainType == ET66HeroStatType::AttackScale && RunState)
-				{
-					const float ScaleMult = RunState->GetHeroScaleMultiplier();
-					DescLine = FText::Format(
-						NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
-						StatLabel(MainType), FText::AsNumber(MainValue), FText::FromString(FString::Printf(TEXT("%.1f"), ScaleMult)));
-				}
-				else
-				{
-					DescLine = FText::Format(NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"), StatLabel(MainType), FText::AsNumber(MainValue));
-				}
-			}
-			else
-			{
-				DescLine = FText::GetEmpty();
-			}
-			SellItemDescText->SetText(DescLine);
+			const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
+			SellItemDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SelectedRarity, MainValue, ScaleMult));
 		}
 	}
 	if (SellItemPriceText.IsValid())

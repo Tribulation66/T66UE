@@ -3,6 +3,7 @@
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CompanionBase.h"
+#include "Gameplay/T66PreviewStageEnvironment.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
@@ -16,12 +17,13 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "Materials/MaterialInterface.h"
 
 namespace
 {
-	/** Gameplay ground material for preview platform. */
-	const TCHAR* HeroPreviewGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
+	constexpr float HeroPreviewLookUpFraction = 0.45f;
+	constexpr float MinHeroPreviewRadius = 235.f;
+	constexpr float CompanionFrameShiftAlpha = 0.32f;
+	constexpr float CompanionFrameRadiusScale = 0.45f;
 }
 
 AT66HeroPreviewStage::AT66HeroPreviewStage()
@@ -49,12 +51,15 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 void AT66HeroPreviewStage::BeginPlay()
 {
 	Super::BeginPlay();
-	// Apply gameplay ground material to platform (same as gameplay level floor).
-	if (PreviewPlatform)
+
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform);
+	T66PreviewStageEnvironment::CreateEasyFarmPreviewProps(this, RootComponent, EasyPreviewProps);
+
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, HeroPreviewGroundMaterialPath))
-			PreviewPlatform->SetMaterial(0, GroundMat);
+		PreviewDifficulty = GI->SelectedDifficulty;
 	}
+	RefreshPreviewEnvironment();
 }
 
 void AT66HeroPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -85,6 +90,12 @@ void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, F
 	UpdateCompanionPlacement();
 	bHasOrbitFrame = false;
 	FrameCameraToPreview();
+}
+
+void AT66HeroPreviewStage::SetPreviewDifficulty(ET66Difficulty Difficulty)
+{
+	PreviewDifficulty = Difficulty;
+	RefreshPreviewEnvironment();
 }
 
 void AT66HeroPreviewStage::AddPreviewYaw(float DeltaYawDegrees)
@@ -141,15 +152,24 @@ void AT66HeroPreviewStage::ApplyPreviewRotation()
 void AT66HeroPreviewStage::FrameCameraToPreview()
 {
 	UPrimitiveComponent* Target = GetPreviewTargetComponent();
-	if (!Target) return;
+	if (!Target || !PreviewPawn) return;
 
 	// Cache orbit framing once per hero selection so the platform/camera don't "swim" as you rotate.
 	if (!bHasOrbitFrame)
 	{
 		const FBoxSphereBounds B = Target->Bounds;
-		OrbitCenter = B.Origin;
-		OrbitRadius = FMath::Max(25.f, B.SphereRadius);
-		OrbitBottomZ = (B.Origin.Z - B.BoxExtent.Z);
+		const FVector HeroLoc = PreviewPawn->GetActorLocation();
+		float HeroHalfHeight = 88.f;
+		if (const UCapsuleComponent* Cap = PreviewPawn->GetCapsuleComponent())
+		{
+			HeroHalfHeight = Cap->GetUnscaledCapsuleHalfHeight();
+		}
+
+		const float HeroFeetZ = HeroLoc.Z - HeroHalfHeight;
+		OrbitCenter = HeroLoc + FVector(0.f, 0.f, HeroHalfHeight * HeroPreviewLookUpFraction);
+		OrbitRadius = FMath::Max(MinHeroPreviewRadius, B.SphereRadius);
+		OrbitBottomZ = HeroFeetZ;
+
 		// Include companion in frame when present
 		if (PreviewCompanionPawn && !PreviewCompanionPawn->IsHidden())
 		{
@@ -159,8 +179,12 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 			if (CompPrim)
 			{
 				const FBoxSphereBounds CompB = CompPrim->Bounds;
-				const float DistToCompanion = (CompB.Origin - OrbitCenter).Size();
-				OrbitRadius = FMath::Max(OrbitRadius, DistToCompanion + CompB.SphereRadius);
+				FVector CompanionShift = PreviewCompanionPawn->GetActorLocation() - HeroLoc;
+				CompanionShift.Z = 0.f;
+				OrbitCenter += CompanionShift * CompanionFrameShiftAlpha;
+				const float PairSpan = FVector::Dist2D(HeroLoc, PreviewCompanionPawn->GetActorLocation());
+				OrbitRadius = FMath::Max(OrbitRadius, MinHeroPreviewRadius + (PairSpan * CompanionFrameRadiusScale));
+				OrbitRadius = FMath::Max(OrbitRadius, CompB.SphereRadius + (PairSpan * CompanionFrameShiftAlpha));
 				OrbitBottomZ = FMath::Min(OrbitBottomZ, CompB.Origin.Z - CompB.BoxExtent.Z);
 			}
 		}
@@ -196,12 +220,9 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 
 	if (PreviewPlatform)
 	{
-		// Place the platform relative to the hero's feet, not the bounds center.
-		// That keeps the hero visually near the south/front edge even as auto-framing recenters the camera.
 		const float GroundZ = GetActorLocation().Z;
 		const float PlatformCenterZ = GroundZ - 2.f; // ~4 unit thick disc with scale 0.04
-		const float S = FMath::Clamp((Radius / 50.f) * 2.5f, 2.0f, 10.0f);
-		const float PlatformRadius = 50.f * S;
+		const float S = FMath::Max(MinGroundScale, FMath::Clamp((Radius / 50.f) * 2.5f, 2.0f, 10.0f));
 		float HeroFeetX = Center.X;
 		float HeroFeetY = Center.Y;
 		if (PreviewPawn)
@@ -210,8 +231,7 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 			HeroFeetX = HeroLoc.X;
 			HeroFeetY = HeroLoc.Y;
 		}
-		const float RearBias = (PlatformRadius * 0.55f) + PlatformForwardOffset;
-		PreviewPlatform->SetWorldLocation(FVector(HeroFeetX + RearBias, HeroFeetY, PlatformCenterZ));
+		PreviewPlatform->SetWorldLocation(FVector(HeroFeetX + PlatformForwardOffset, HeroFeetY, PlatformCenterZ));
 		PreviewPlatform->SetWorldScale3D(FVector(S, S, 0.04f));
 	}
 }
@@ -365,25 +385,32 @@ void AT66HeroPreviewStage::UpdateCompanionPlacement()
 	FVector CompanionLoc = HeroLoc + OffsetWorld;
 	CompanionLoc.Z = HeroFeetZ;
 	PreviewCompanionPawn->SetActorLocation(CompanionLoc);
-	FVector ToHero = HeroLoc - CompanionLoc;
-	ToHero.Z = 0.f;
-	if (!ToHero.IsNearlyZero())
-	{
-		FRotator Rot = ToHero.Rotation();
-		Rot.Pitch = 0.f;
-		Rot.Roll = 0.f;
-		PreviewCompanionPawn->SetActorRotation(Rot);
-	}
+	PreviewCompanionPawn->SetActorRotation(FRotator(0.f, HeroYaw, 0.f));
 }
 
 void AT66HeroPreviewStage::SetStageVisible(bool bVisible)
 {
+	bStageVisible = bVisible;
 	SetActorHiddenInGame(!bVisible);
 	if (PreviewPawn) PreviewPawn->SetActorHiddenInGame(!bVisible);
 	if (PreviewCompanionPawn) PreviewCompanionPawn->SetActorHiddenInGame(!bVisible);
+	RefreshPreviewEnvironment();
 }
 
 void AT66HeroPreviewStage::ResetFramingCache()
 {
 	bHasOrbitFrame = false;
+}
+
+void AT66HeroPreviewStage::RefreshPreviewEnvironment()
+{
+	if (PreviewPlatform)
+	{
+		PreviewPlatform->SetVisibility(bStageVisible, true);
+		PreviewPlatform->SetHiddenInGame(!bStageVisible, true);
+	}
+
+	T66PreviewStageEnvironment::SetPreviewPropsVisibility(
+		EasyPreviewProps,
+		bStageVisible && T66PreviewStageEnvironment::ShouldShowEasyProps(PreviewDifficulty));
 }

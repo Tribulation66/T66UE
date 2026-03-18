@@ -62,15 +62,6 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
 	bool GetGoonerMode() const;
 
-	// ===== Theme =====
-	/** Returns true when the Light UI theme is active (false = Dark, the default). */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Theme")
-	bool GetLightTheme() const;
-
-	/** Switch between Dark (false) and Light (true) UI theme. Persists to disk and re-initializes styles. */
-	UFUNCTION(BlueprintCallable, Category = "Settings|Theme")
-	void SetLightTheme(bool bLight);
-
 	// ===== Audio =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
 	void SetMasterVolume(float NewValue01);
@@ -156,12 +147,19 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|MediaViewer")
 	bool GetMediaViewerEnabled() const;
 
-	/** Fog in gameplay level (exponential height fog). Default off. */
+	/** Fog in gameplay level (exponential height fog). */
 	UFUNCTION(BlueprintCallable, Category = "Settings|Graphics")
 	void SetFogEnabled(bool bEnabled);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Graphics")
 	bool GetFogEnabled() const;
+
+	/** Native gameplay fog intensity from 0..100. 0 disables fog entirely. */
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetFogIntensityPercent(float NewValue);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	float GetFogIntensityPercent() const;
 
 	// ===== Retro FX =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|RetroFX")

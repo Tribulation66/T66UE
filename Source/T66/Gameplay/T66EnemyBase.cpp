@@ -16,6 +16,7 @@
 #include "Core/T66EnemyPoolSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66GameplayLayout.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "UI/T66EnemyHealthBarWidget.h"
@@ -471,10 +472,20 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	if (!Move) return;
 
+	const float Dist2DToPlayer = FVector::Dist2D(GetActorLocation(), PlayerPawn->GetActorLocation());
+	const bool bPlayerInsideReservedTraversalZone = T66GameplayLayout::IsInsideReservedTraversalZone2D(
+		PlayerPawn->GetActorLocation(),
+		220.f);
+
 	// Safe zone rule: enemies cannot enter NPC safe bubbles.
 	// Perf: evaluate bubble membership at a low frequency (not every Tick).
 	SafeZoneCheckAccumSeconds += DeltaSeconds;
-	if (SafeZoneCheckAccumSeconds >= SafeZoneCheckIntervalSeconds)
+	if (bPlayerInsideReservedTraversalZone)
+	{
+		bCachedInsideSafeZone = false;
+		CachedSafeZoneEscapeDir = FVector::ZeroVector;
+	}
+	else if (SafeZoneCheckAccumSeconds >= SafeZoneCheckIntervalSeconds)
 	{
 		SafeZoneCheckAccumSeconds = 0.f;
 		bCachedInsideSafeZone = false;
@@ -515,87 +526,6 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		return;
 	}
 
-	// Leash: if far from player, teleport to a position near the player (throttled).
-	if (LeashMaxDistance > 0.f)
-	{
-		LeashCheckAccumSeconds += DeltaSeconds;
-		if (LeashCheckAccumSeconds >= LeashCheckIntervalSeconds)
-		{
-			LeashCheckAccumSeconds = 0.f;
-			const float Dist2D = FVector::Dist2D(GetActorLocation(), PlayerPawn->GetActorLocation());
-			if (Dist2D > LeashMaxDistance)
-			{
-				UWorld* World = GetWorld();
-				UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
-				auto IsInAnySafeZone2D = [&](const FVector& Loc) -> bool
-				{
-					if (!Registry) return false;
-					for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
-					{
-						AT66HouseNPCBase* NPC = WeakNPC.Get();
-						if (!NPC) continue;
-						const float R = NPC->GetSafeZoneRadius();
-						if (FVector::DistSquared2D(Loc, NPC->GetActorLocation()) < (R * R)) return true;
-					}
-					return false;
-				};
-				FVector PlayerLoc = PlayerPawn->GetActorLocation();
-				static constexpr float LeashSpawnMin = 400.f;
-				static constexpr float LeashSpawnMax = 800.f;
-				FVector NewLoc = PlayerLoc;
-				for (int32 Try = 0; Try < 6; ++Try)
-				{
-					const float Angle = FMath::FRandRange(0.f, 2.f * PI);
-					const float Dist = FMath::FRandRange(LeashSpawnMin, LeashSpawnMax);
-					NewLoc = PlayerLoc + FVector(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
-					if (!IsInAnySafeZone2D(NewLoc)) break;
-				}
-				if (IsInAnySafeZone2D(NewLoc) && Registry)
-				{
-					static constexpr float SafeZonePushMargin = 50.f;
-					for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
-					{
-						AT66HouseNPCBase* NPC = WeakNPC.Get();
-						if (!NPC) continue;
-						const float R = NPC->GetSafeZoneRadius();
-						FVector ToSpawn = NewLoc - NPC->GetActorLocation();
-						ToSpawn.Z = 0.f;
-						const float Dist2DToNpc = ToSpawn.Size();
-						if (Dist2DToNpc < R && Dist2DToNpc > 1.f)
-						{
-							const FVector Dir = ToSpawn / Dist2DToNpc;
-							NewLoc = NPC->GetActorLocation() + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
-							NewLoc.Z = PlayerLoc.Z;
-							break;
-						}
-						if (Dist2DToNpc <= 1.f)
-						{
-							FVector Dir(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f);
-							Dir.Z = 0.f;
-							if (Dir.Normalize())
-							{
-								NewLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
-								NewLoc.Z = PlayerLoc.Z;
-							}
-							break;
-						}
-					}
-				}
-				FHitResult Hit;
-				if (World && World->LineTraceSingleByChannel(Hit, NewLoc + FVector(0.f, 0.f, 500.f), NewLoc - FVector(0.f, 0.f, 1000.f), ECC_WorldStatic))
-				{
-					static constexpr float CapsuleHalfHeight = 88.f;
-					NewLoc = Hit.ImpactPoint + FVector(0.f, 0.f, CapsuleHalfHeight);
-				}
-				else
-				{
-					NewLoc.Z = PlayerLoc.Z;
-				}
-				SetActorLocation(NewLoc);
-			}
-		}
-	}
-
 	// Tick armor debuff timer.
 	if (ArmorDebuffSecondsRemaining > 0.f)
 	{
@@ -614,8 +544,16 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 			MoveSlowMultiplier = 1.f;
 		}
 	}
+
+	float FarChaseMultiplier = 1.f;
+	if (!bRunAwayFromPlayer && LeashMaxDistance > 0.f && Dist2DToPlayer > LeashMaxDistance)
+	{
+		const float RampDistance = FMath::Max(1.f, FarChaseRampDistance);
+		const float RampAlpha = FMath::Clamp((Dist2DToPlayer - LeashMaxDistance) / RampDistance, 0.f, 1.f);
+		FarChaseMultiplier = FMath::Lerp(1.f, FMath::Max(1.f, FarChaseSpeedMultiplier), RampAlpha);
+	}
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-		MoveComp->MaxWalkSpeed = BaseMaxWalkSpeed * MoveSlowMultiplier;
+		MoveComp->MaxWalkSpeed = BaseMaxWalkSpeed * MoveSlowMultiplier * FarChaseMultiplier;
 
 	// Tick confusion timer.
 	if (bIsConfused)
@@ -666,6 +604,7 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (!OtherActor) return;
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor);
 	if (!Hero) return;
+	if (Hero->IsVehicleMounted()) return;
 	if (Hero->IsInSafeZone()) return;
 
 	UWorld* World = GetWorld();
@@ -688,7 +627,7 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName
 	if (Damage <= 0 || CurrentHP <= 0) return false;
 
 	// Apply enemy armor (damage reduction). Debuffs temporarily lower armor; can go negative for bonus damage.
-	const float EffectiveArmor = FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
+	const float EffectiveArmor = GetEffectiveArmor();
 	const int32 ReducedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Damage) * (1.f - EffectiveArmor)));
 
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
@@ -721,6 +660,11 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName
 		return true;
 	}
 	return false;
+}
+
+float AT66EnemyBase::GetEffectiveArmor() const
+{
+	return FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
 }
 
 void AT66EnemyBase::ApplyConfusion(float DurationSeconds)

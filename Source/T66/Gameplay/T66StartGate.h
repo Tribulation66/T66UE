@@ -30,6 +30,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
 	TObjectPtr<UStaticMeshComponent> PoleRight;
 
+	/** Extra safety: if overlaps fail, trigger when hero gets very close. */
+	UPROPERTY(EditAnywhere, Category = "StartGate")
+	float TriggerDistance2D = 90.f;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -39,10 +43,6 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	bool bTriggered = false;
-
-	/** Extra safety: if overlaps fail, trigger when hero gets very close. */
-	UPROPERTY(EditAnywhere, Category = "StartGate")
-	float TriggerDistance2D = 90.f;
 
 private:
 	void TryTriggerForActor(AActor* OtherActor);

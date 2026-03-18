@@ -49,14 +49,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		// Safe loading window: we are building the main menu UI, not in gameplay. See memory.md.
 		static const TArray<FSoftObjectPath> MainMenuTexturePaths = {
 			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")),
-			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMLight.MMLight")),
 			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")),
 			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")),
 			FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Streamers.T_LB_Streamers")),
 			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")),
-			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloLight.SoloLight")),
-			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")),
-			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopLight.CoopLight"))
+			FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark"))
 		};
 		TexPool->EnsureTexturesLoadedSync(MainMenuTexturePaths);
 	}
@@ -82,6 +79,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.SetFontSize(44)
 			.SetPadding(FMargin(14.f))
 			.SetColor(BgColor)
+			.SetBorderVisual(ET66ButtonBorderVisual::RetroWood)
 			.SetMinWidth(0.f));
 	};
 
@@ -94,8 +92,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	// Use cached texture immediately (EnsureTexturesLoadedSync above already loaded it; this sets the brush).
 	if (TexPool)
 	{
-		const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMRed");
-		const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
+		const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
 		if (UTexture2D* Cached = TexPool->GetLoadedTexture(MainMenuBgSoft))
 		{
 			MainMenuBackgroundBrush->SetResourceObject(Cached);
@@ -113,7 +110,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			[
 				FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f))
 			]
-			// Full-screen background image (Content/UI/MainMenu/MMRed or MMLight)
+			// Full-screen background image.
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
@@ -236,8 +233,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 	{
 		if (UT66UITexturePoolSubsystem* TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>())
 		{
-			const FString BgAssetName = (FT66Style::GetTheme() == ET66UITheme::Light) ? TEXT("MMLight") : TEXT("MMRed");
-			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
+			const TSoftObjectPtr<UTexture2D> MainMenuBgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
 			TSharedPtr<FSlateBrush> Brush = MainMenuBackgroundBrush;
 			TSharedPtr<SImage> Image = MainMenuBackgroundImage;
 			TexPool->RequestTexture(MainMenuBgSoft, this, TEXT("MainMenuBackground"), [Brush, Image](UTexture2D* Loaded)

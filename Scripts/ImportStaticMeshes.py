@@ -30,6 +30,23 @@ import MakeGLBImportsUnlit
 
 IMPORTS = [
     # --- Props ---
+    ("Props/Barn.glb",     "/Game/World/Props",              "Barn"),
+    ("Props/Boulder.glb",  "/Game/World/Props",              "Boulder"),
+    ("Props/Branch.glb",   "/Game/World/Props",              "Branch"),
+    ("Props/Bush.glb",     "/Game/World/Props",              "Bush"),
+    ("Props/Fence.glb",    "/Game/World/Props",              "Fence"),
+    ("Props/Fence2.glb",   "/Game/World/Props",              "Fence2"),
+    ("Props/Fence3.glb",   "/Game/World/Props",              "Fence3"),
+    ("Props/Haybell.glb",  "/Game/World/Props",              "Haybell"),
+    ("Props/House.glb",    "/Game/World/Props",              "House"),
+    ("Props/Log.glb",      "/Game/World/Props",              "Log"),
+    ("Props/Mud.glb",      "/Game/World/Props",              "Mud"),
+    ("Props/Rocks.glb",    "/Game/World/Props",              "Rocks"),
+    ("Props/Scarecrow.glb","/Game/World/Props",              "Scarecrow"),
+    ("Props/Silo.glb",     "/Game/World/Props",              "Silo"),
+    ("Props/Stump.glb",    "/Game/World/Props",              "Stump"),
+    ("Props/Tractor.glb",  "/Game/World/Props",              "Tractor"),
+    ("Props/Tree.glb",     "/Game/World/Props",              "Tree"),
     (
         "Props/Tree2.glb",
         "/Game/World/Props",
@@ -42,51 +59,9 @@ IMPORTS = [
             },
         },
     ),
-    ("Props/Grass.glb",   "/Game/World/Props",              "Grass"),
-    ("Props/Rock.glb",    "/Game/World/Props",              "Rock"),
-    ("Props/Boulder.glb", "/Game/World/Props",              "Boulder"),
-    ("Props/Bush.glb",    "/Game/World/Props",              "Bush"),
-
-    # --- Fountain of Life ---
-    ("Interactables/Fountain.glb", "/Game/World/Interactables/Fountain", "Fountain"),
-
-    # --- Loot Bags ---
-    (
-        "Interactables/BlackBag.glb",
-        "/Game/World/LootBags/Black",
-        "SM_LootBag_Black",
-        {},
-        {},
-        {},
-        {"mode": "dest_dir"},
-    ),
-    (
-        "Interactables/RedBag.glb",
-        "/Game/World/LootBags/Red",
-        "SM_LootBag_Red",
-        {},
-        {},
-        {},
-        {"mode": "dest_dir"},
-    ),
-    (
-        "Interactables/YellowBag.glb",
-        "/Game/World/LootBags/Yellow",
-        "SM_LootBag_Yellow",
-        {},
-        {},
-        {},
-        {"mode": "dest_dir"},
-    ),
-    (
-        "Interactables/WhiteBag.glb",
-        "/Game/World/LootBags/White",
-        "SM_LootBag_White",
-        {},
-        {},
-        {},
-        {"mode": "dest_dir"},
-    ),
+    ("Props/Tree3.glb",    "/Game/World/Props",              "Tree3"),
+    ("Props/Troth.glb",    "/Game/World/Props",              "Troth"),
+    ("Props/Windmill.glb", "/Game/World/Props",              "Windmill"),
 ]
 
 DEFAULT_STATIC_MESH_BUILD_SETTINGS = {

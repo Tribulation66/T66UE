@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/Object.h"
 #include "T66RngTuningConfig.generated.h"
 
 /**
@@ -58,35 +57,33 @@ struct T66_API FT66FloatRange
 	float Max = 0.f;
 };
 
-/** Config-backed RNG tuning. Consumed via UT66RngSubsystem::GetTuning() (subsystem owns an instance; CDO is not used to avoid hot-reload "Cannot replace existing object" crash). */
-UCLASS(Config = "T66Rng", DefaultConfig)
-class T66_API UT66RngTuningConfig : public UObject
+/**
+ * Plain config-backed RNG tuning data.
+ *
+ * This intentionally does not derive from UObject. The previous UObject-based
+ * config class created a CDO at /Script/T66.Default__T66RngTuningConfig, which
+ * was crashing during hot reload / live coding replacement.
+ */
+class T66_API UT66RngTuningConfig
 {
-	GENERATED_BODY()
-
 public:
 	// ================================
 	// Luck → bias model (global)
 	// ================================
 
 	/** How quickly LuckStat shifts outcome weights (per point above 1). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Luck", meta = (ClampMin = "0.0"))
 	float LuckPerPoint = 0.03f;
 
 	/** Max normalized luck factor (0..1). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Luck", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float LuckMax01 = 0.95f;
 
 	/** Strength of rarity reweighting at LuckMax01. Higher = shifts more mass upward. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Luck", meta = (ClampMin = "0.0"))
 	float RarityBiasStrength = 1.35f;
 
 	/** Strength of high-end bias for continuous ranges at LuckMax01 (power transform). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Luck", meta = (ClampMin = "0.0"))
 	float RangeHighBiasStrength = 1.75f;
 
 	/** Strength of "better outcome" bias for Bernoulli events (e.g. loot bag drop) at LuckMax01. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Luck", meta = (ClampMin = "0.0"))
 	float BernoulliBiasStrength = 1.25f;
 
 	// ================================
@@ -94,11 +91,9 @@ public:
 	// ================================
 
 	/** Baseline chance an eligible enemy drops a loot bag (per kill). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|LootBags", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float LootBagDropChanceBase = 0.10f;
 
 	/** Baseline rarity distribution for loot bags. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|LootBags")
 	FT66RarityWeights LootBagRarityBase;
 
 	// ================================
@@ -106,15 +101,12 @@ public:
 	// ================================
 
 	/** Chance a wave includes Goblin Thief spawns (before count roll). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GoblinWaveChanceBase = 0.10f;
 
 	/** Count range for Goblins when they spawn in a wave. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials")
 	FT66IntRange GoblinCountPerWave = { 1, 3 };
 
 	/** Baseline rarity distribution for special enemies (their variant rarity). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Specials")
 	FT66RarityWeights SpecialEnemyRarityBase;
 
 	// ================================
@@ -122,52 +114,41 @@ public:
 	// ================================
 
 	/** Vendor steal: base success chance if timing window is hit (Luck can bias this upward). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Vendor", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float VendorStealSuccessChanceOnTimingHitBase = 0.65f;
 
 	/** Gambler cheat: base success chance (Luck can bias this upward). */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Gambler", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GamblerCheatSuccessChanceBase = 0.40f;
 
 	// ================================
 	// World interactables (count + rarity)
 	// ================================
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66IntRange TreesPerStage = { 2, 5 };
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66IntRange ChestsPerStage = { 2, 5 };
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66IntRange WheelsPerStage = { 2, 5 };
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66RarityWeights InteractableRarityBase;
 
 	/** Chest mimic chance is explicitly NOT luck-affected. */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float ChestMimicChance = 0.20f;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Interactables")
 	FT66IntRange CratesPerStage = { 1, 3 };
 
 	// ================================
 	// Wheel payouts (rarity + payout range)
 	// ================================
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Wheel")
 	FT66RarityWeights WheelRarityBase;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Wheel")
 	FT66FloatRange WheelGoldRange_Black = { 25.f, 100.f };
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Wheel")
 	FT66FloatRange WheelGoldRange_Red = { 100.f, 300.f };
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Wheel")
 	FT66FloatRange WheelGoldRange_Yellow = { 200.f, 600.f };
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "RNG|Wheel")
 	FT66FloatRange WheelGoldRange_White = { 500.f, 1500.f };
+
+	void LoadFromConfig();
 };

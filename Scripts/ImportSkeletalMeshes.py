@@ -18,27 +18,38 @@ if SCRIPT_DIR not in sys.path:
 import MakeCharacterMaterialsUnlit
 
 CLEANUP_DIRS = []
+FILTER_SOURCE = os.environ.get("T66_IMPORT_SKELETAL_SOURCE", "").strip().replace("\\", "/")
 
 IMPORTS = [
     {
-        "source": "Enemies/BlackGoblinRun.fbx",
-        "dest": "/Game/Characters/Enemies/GoblinThief/Black",
-        "name": "BlackGoblinRun",
+        "source": "Heros/ArthurAIdle.fbx",
+        "dest": "/Game/Characters/Heroes/Hero_1/TypeA/Idle",
+        "name": "ArthurAIdle",
     },
     {
-        "source": "Enemies/RedGoblinRun.fbx",
-        "dest": "/Game/Characters/Enemies/GoblinThief/Red",
-        "name": "RedGoblinRun",
+        "source": "Heros/ArthurAWalk.fbx",
+        "dest": "/Game/Characters/Heroes/Hero_1/TypeA/Walk",
+        "name": "ArthurAWalk",
     },
     {
-        "source": "Enemies/YellowGoblinRun.fbx",
-        "dest": "/Game/Characters/Enemies/GoblinThief/Yellow",
-        "name": "YellowGoblinRun",
+        "source": "Heros/ArthurBIdle.fbx",
+        "dest": "/Game/Characters/Heroes/Hero_1/TypeB/Idle",
+        "name": "ArthurBIdle",
     },
     {
-        "source": "Enemies/WhiteGoblinRun.fbx",
-        "dest": "/Game/Characters/Enemies/GoblinThief/White",
-        "name": "WhiteGoblinRun",
+        "source": "Heros/ArthurBWalk.fbx",
+        "dest": "/Game/Characters/Heroes/Hero_1/TypeB/Walk",
+        "name": "ArthurBWalk",
+    },
+    {
+        "source": "Companion/CompanionIdle.fbx",
+        "dest": "/Game/Characters/Companions/Companion_01/Default/Idle",
+        "name": "CompanionIdle",
+    },
+    {
+        "source": "Companion/CompanionWalk.fbx",
+        "dest": "/Game/Characters/Companions/Companion_01/Default/Walk",
+        "name": "CompanionWalk",
     },
 ]
 
@@ -53,17 +64,22 @@ def _get_project_dir():
 def main():
     proj = _get_project_dir()
     import_root = os.path.join(proj, "SourceAssets", "Import").replace("\\", "/")
+    imports = list(IMPORTS)
+    if FILTER_SOURCE:
+        imports = [entry for entry in IMPORTS if entry["source"].replace("\\", "/") == FILTER_SOURCE]
 
     unreal.log("=" * 60)
     unreal.log("[ImportSkeletalMeshes] START")
     unreal.log("=" * 60)
+    if FILTER_SOURCE:
+        unreal.log(f"[ImportSkeletalMeshes] Filter source: {FILTER_SOURCE} ({len(imports)} matching entries)")
 
     for d in CLEANUP_DIRS:
         if unreal.EditorAssetLibrary.does_directory_exist(d):
             unreal.log(f"  [CLEANUP] {d}")
             unreal.EditorAssetLibrary.delete_directory(d)
 
-    for entry in IMPORTS:
+    for entry in imports:
         source = os.path.join(import_root, entry["source"]).replace("\\", "/")
         dest = entry["dest"]
         name = entry["name"]

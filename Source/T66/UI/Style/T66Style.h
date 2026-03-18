@@ -8,13 +8,6 @@
 #include "Widgets/Input/SButton.h"  // FOnClicked used by MakeButton helper
 #include "Widgets/Layout/SBorder.h" // SBorder used by MakePanel OutBorder parameter
 
-/** UI color theme (Dark / Light). */
-enum class ET66UITheme : uint8
-{
-	Dark,    // Default: black panels, gold text
-	Light,   // Grey panels, white text
-};
-
 /** Button semantic types for MakeButton. */
 enum class ET66ButtonType : uint8
 {
@@ -24,6 +17,14 @@ enum class ET66ButtonType : uint8
 	Success,       // Positive confirm: green         (Success)
 	ToggleActive,  // Active toggle state (inverted colors)
 	Row,           // Leaderboard/list row: transparent bg, thin border, content-driven layout
+};
+
+/** Optional decorative border treatment layered on top of the base button behavior. */
+enum class ET66ButtonBorderVisual : uint8
+{
+	Default,   // Use the project's standard button chrome
+	RetroSky,  // Legacy full-rect retro border treatment
+	RetroWood, // Thick rectangular border with a banded wood-grain trim
 };
 
 /**
@@ -51,6 +52,7 @@ struct FT66ButtonParams
 
 	// === Visual Defaults ===
 	ET66ButtonType Type = ET66ButtonType::Neutral;
+	ET66ButtonBorderVisual BorderVisual = ET66ButtonBorderVisual::Default;
 	float MinWidth      = 120.f;
 	float Height        = 0.f;            // 0 = content-driven (recommended), >0 = explicit override
 	int32 FontSize      = 0;              // 0 = use T66.Text.Button default (16pt bold)
@@ -77,6 +79,7 @@ struct FT66ButtonParams
 		: Label(InLabel), OnClicked(MoveTemp(InOnClicked)), Type(InType) {}
 
 	// Builder-style setters (return *this for chaining)
+	FT66ButtonParams& SetBorderVisual(ET66ButtonBorderVisual V)          { BorderVisual = V; return *this; }
 	FT66ButtonParams& SetMinWidth(float W)                                { MinWidth = W; return *this; }
 	FT66ButtonParams& SetHeight(float H)                                  { Height = H; return *this; }
 	FT66ButtonParams& SetFontSize(int32 S)                                { FontSize = S; return *this; }
@@ -142,8 +145,7 @@ struct FT66PanelParams
 
 /**
  * Parameters for the centralized MakeDropdown factory.
- * Every dropdown (combo button) uses the same theme:
- * Dark = black background, white text; Light = white/light background, black text.
+ * Every dropdown (combo button) uses the same dark presentation.
  *
  * Usage (simple):
  *   FT66Style::MakeDropdown(FT66DropdownParams(TriggerContent, OnGetMenuContent))
@@ -189,11 +191,7 @@ public:
 	static void Initialize();
 	static void Shutdown();
 
-	/** Set the UI color theme (Dark/Light). Re-initializes all styles so widgets rebuilt after this call use the new palette. */
-	static void SetTheme(ET66UITheme NewTheme);
-	static ET66UITheme GetTheme();
-
-	/** Cycle to the next UI font (0–4). Call after changing to refresh style. */
+	/** Cycle to the next UI font. Call after changing to refresh style. */
 	static void CycleToNextFont();
 
 	/** Toggle force-bold: when on, all UI text uses the bold variant of the current font (if available). Console: T66Bold */
@@ -202,10 +200,10 @@ public:
 	static const ISlateStyle& Get();
 	static FName GetStyleSetName();
 
-	// ----- Design tokens (mutable: updated by SetTheme) -----
+	// ----- Design tokens -----
 	struct Tokens
 	{
-		// Colors (non-const so SetTheme can swap palettes at runtime)
+		// Colors
 		static FLinearColor Bg;
 		static FLinearColor Panel;
 		static FLinearColor Panel2;
@@ -273,8 +271,12 @@ public:
 		// Individual buttons can still override via SButton::ContentPadding().
 		static const FMargin ButtonPadding;
 		static const FMargin ButtonPaddingPressed;
+		static constexpr float ButtonGlowPadding = 6.f;
+		static constexpr float ButtonHoverGlowIntensity = 0.75f;
+		static constexpr float ButtonPressedGlowIntensity = 1.10f;
+		static constexpr float ButtonGlowFallbackOpacity = 0.28f;
 
-		// Font: all text uses the selected font. In T66Style.cpp set GThemeFontIndex (0–5: Caesar Dressing, Cinzel, Cormorant SC, Germania One, Grenze, Alagard).
+		// Font: all text uses the selected font. In T66Style.cpp set GThemeFontIndex.
 		static FSlateFontInfo FontRegular(int32 Size);
 		static FSlateFontInfo FontBold(int32 Size);
 		static FSlateFontInfo FontTitle();
@@ -294,7 +296,7 @@ public:
 	static FOnClicked DebounceClick(const FOnClicked& InnerDelegate);
 
 	/**
-	 * Create a standard T66 themed button (SBox + SButton + STextBlock).
+	 * Create a standard T66 button (SBox + SButton + STextBlock).
 	 * All buttons in the game should use one of these overloads so behavior
 	 * (debounce, texture backgrounds, sizing, font) is driven from one place.
 	 */
@@ -310,7 +312,7 @@ public:
 		float MinWidth = 120.f);
 
 	/**
-	 * Create a standard T66 themed panel (SBorder wrapping Content).
+	 * Create a standard T66 panel (SBorder wrapping Content).
 	 * All panels/cards in the game should use this so texture backgrounds,
 	 * border styling, and padding are driven from one place.
 	 *
@@ -333,10 +335,10 @@ public:
 	/** Check whether panel textures are loaded. */
 	static bool HasPanelTextures();
 
-	/** Theme-aware combo style (Panel bg, Text for arrow). Use for MakeDropdown and for SComboBox::ComboButtonStyle(). Dark = black bg + white text; Light = light bg + black text. */
+	/** Shared combo style (Panel bg, Text for arrow). Use for MakeDropdown and for SComboBox::ComboButtonStyle(). */
 	static const FComboButtonStyle& GetDropdownComboButtonStyle();
 
-	/** Build a themed dropdown (SComboButton). All dropdowns should use this or apply GetDropdownComboButtonStyle() to SComboBox. */
+	/** Build a dropdown (SComboButton). All dropdowns should use this or apply GetDropdownComboButtonStyle() to SComboBox. */
 	static TSharedRef<SWidget> MakeDropdown(const FT66DropdownParams& Params);
 
 	/**
@@ -348,7 +350,7 @@ public:
 	 * widget tree is torn down, preventing dangling-pointer crashes.
 	 *
 	 * @param Widget   The UUserWidget whose Slate tree should be rebuilt.
-	 * @param ZOrder   Viewport Z-order to restore (0 = screens, 50 = theme toggle, 100 = modals).
+	 * @param ZOrder   Viewport Z-order to restore (0 = screens, 100 = modals).
 	 *
 	 * Cost: one TFunction push onto the timer queue (small-object-optimized,
 	 * no heap alloc).  Fires on the very next tick — imperceptible delay.
@@ -358,4 +360,3 @@ public:
 private:
 	static TSharedPtr<FSlateStyleSet> StyleInstance;
 };
-

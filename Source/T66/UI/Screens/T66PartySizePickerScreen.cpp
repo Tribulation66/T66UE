@@ -37,7 +37,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 	FText CoopText = Loc ? Loc->GetText_Coop() : NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
-	// Brushes for theme-dependent party picker images (Content/UI/PartyPicker: SoloDark, SoloLight, CoopDark, CoopLight)
+	// Brushes for the party picker card images.
 	SoloCardBrush = MakeShared<FSlateBrush>();
 	SoloCardBrush->DrawAs = ESlateBrushDrawType::Image;
 	SoloCardBrush->ImageSize = FVector2D(560.f, 560.f);
@@ -50,12 +50,9 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 	CoopCardBrush->Tiling = ESlateBrushTileType::NoTile;
 	CoopCardBrush->SetResourceObject(nullptr);
 
-	const bool bLight = (FT66Style::GetTheme() == ET66UITheme::Light);
-	const FLinearColor LabelColor = bLight ? FLinearColor::Black : FLinearColor::White;
-	const FString SoloAssetName = bLight ? TEXT("SoloLight") : TEXT("SoloDark");
-	const FString CoopAssetName = bLight ? TEXT("CoopLight") : TEXT("CoopDark");
-	const TSoftObjectPtr<UTexture2D> SoloSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/PartyPicker/%s.%s"), *SoloAssetName, *SoloAssetName)));
-	const TSoftObjectPtr<UTexture2D> CoopSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/PartyPicker/%s.%s"), *CoopAssetName, *CoopAssetName)));
+	const FLinearColor LabelColor = FLinearColor::White;
+	const TSoftObjectPtr<UTexture2D> SoloSoft(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")));
+	const TSoftObjectPtr<UTexture2D> CoopSoft(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")));
 
 	if (TexPool)
 	{
@@ -77,15 +74,14 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 		}
 	}
 
-	// Main menu background (MMRed / MMLight) — same as main menu
+	// Main menu background — same as the main menu.
 	MainMenuBackgroundBrush = MakeShared<FSlateBrush>();
 	MainMenuBackgroundBrush->DrawAs = ESlateBrushDrawType::Box;
 	MainMenuBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
 	MainMenuBackgroundBrush->SetResourceObject(nullptr);
 	if (TexPool)
 	{
-		const FString BgAssetName = bLight ? TEXT("MMLight") : TEXT("MMRed");
-		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(FString::Printf(TEXT("/Game/UI/MainMenu/%s.%s"), *BgAssetName, *BgAssetName)));
+		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
 		if (UTexture2D* Cached = TexPool->GetLoadedTexture(BgSoft))
 		{
 			MainMenuBackgroundBrush->SetResourceObject(Cached);
@@ -157,7 +153,7 @@ TSharedRef<SWidget> UT66PartySizePickerScreen::BuildSlateUI()
 		[
 			FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Bg).SetPadding(0.f))
 		]
-		// Main menu background image (MMRed / MMLight)
+		// Main menu background image.
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
