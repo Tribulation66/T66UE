@@ -109,7 +109,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	int32 RunSeed = 0;
 
-	/** Map theme for procedural platform+ramp generation. Defaults to Farm; overridable via console command T66.Map. */
+	/** Legacy terrain theme selector kept for compatibility. Main gameplay now always uses T66MainMapTerrain. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	ET66MapTheme MapTheme = ET66MapTheme::Farm;
 

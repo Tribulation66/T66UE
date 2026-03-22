@@ -6,7 +6,6 @@
 #include "GameFramework/GameModeBase.h"
 #include "T66GameMode.generated.h"
 
-enum class ET66MapTheme : uint8;
 class AActor;
 class AT66HeroBase;
 class AT66CompanionBase;
@@ -113,8 +112,8 @@ public:
 	/** Apply UI theme to SkyAtmosphere, SkyLight, fog, PostProcess color grading, and posterize. Shared with frontend. */
 	static void ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World);
 
-	/** Destroy existing map geometry and spawn a new procedural platform+ramp map with the given theme and seed. */
-	void RegenerateMap(ET66MapTheme Theme, int32 Seed);
+	/** Destroy existing main map terrain geometry and spawn a fresh difficulty-driven terrain run. */
+	void RegenerateMainMapTerrain(int32 Seed);
 
 protected:
 	virtual void BeginPlay() override;
@@ -178,7 +177,6 @@ protected:
 
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
-	void SpawnTraversalMountainBarriersIfNeeded();
 	void SpawnWorldInteractablesForStage();
 	void SpawnModelShowcaseRow();
 	void SpawnStageCatchUpPlatformAndInteractables();
@@ -199,8 +197,8 @@ protected:
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
 	void SpawnLevelContentAfterLandscapeReady();
 
-	/** Spawn procedural platform+ramp map (cubes + wedges). Replaces old flat floor. */
-	void SpawnLowPolyNatureEnvironment();
+	/** Spawn the runtime main map terrain for the active gameplay difficulty. */
+	void SpawnMainMapTerrain();
 
 	/** Spawn a flat plateau so its top surface is at TopCenterLoc (used under NPCs and world interactables). */
 	void SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc);

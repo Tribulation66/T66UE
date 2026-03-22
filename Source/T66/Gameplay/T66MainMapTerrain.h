@@ -3,13 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gameplay/T66ProceduralLandscapeGenerator.h"
+#include "Gameplay/T66MainMapTerrainTypes.h"
 
 class UWorld;
+enum class ET66Difficulty : uint8;
 struct FActorSpawnParameters;
 struct FT66MapPreset;
 
-namespace T66MegabonkFarm
+namespace T66MainMapTerrain
 {
 	enum class ECellRegion : uint8
 	{
@@ -38,8 +39,8 @@ namespace T66MegabonkFarm
 		int32 X = 0;
 		int32 Z = 0;
 		int32 Level = 0;
-		ET66FarmCellShape Shape = ET66FarmCellShape::Flat;
-		ET66FarmCellDecoration Decoration = ET66FarmCellDecoration::None;
+		ET66MapCellShape Shape = ET66MapCellShape::Flat;
+		ET66MapCellDecoration Decoration = ET66MapCellDecoration::None;
 		ECellRegion Region = ECellRegion::MainBoard;
 		FVector DecorationLocalOffset = FVector::ZeroVector;
 		FRotator DecorationLocalRotation = FRotator::ZeroRotator;
@@ -105,6 +106,7 @@ namespace T66MegabonkFarm
 		}
 	};
 
+	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed = 0);
 	FSettings MakeSettings(const FT66MapPreset& Preset);
 	FVector GetBoardOrigin(const FT66MapPreset& Preset);
 	FVector GetCellCenter(const FT66MapPreset& Preset, int32 Row, int32 Col, float Z);
@@ -115,3 +117,4 @@ namespace T66MegabonkFarm
 	bool Generate(const FT66MapPreset& Preset, FBoard& OutBoard);
 	bool Spawn(UWorld* World, const FBoard& Board, const FT66MapPreset& Preset, const FActorSpawnParameters& SpawnParams, bool& bOutCollisionReady);
 }
+

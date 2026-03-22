@@ -9,8 +9,8 @@ UENUM(BlueprintType)
 enum class ET66MapTheme : uint8
 {
 	Farm     UMETA(DisplayName = "Farm"),
-	Ocean    UMETA(DisplayName = "Ocean"),
-	Mountain UMETA(DisplayName = "Mountain"),
+	Ocean    UMETA(DisplayName = "Ocean (Legacy)"),
+	Mountain UMETA(DisplayName = "Mountain (Legacy)"),
 };
 
 USTRUCT(BlueprintType)
@@ -119,88 +119,32 @@ struct FT66MapPreset
 	{
 		FT66MapPreset P;
 		P.Theme = InTheme;
-		switch (InTheme)
-		{
-		case ET66MapTheme::Farm:
-			P.ElevationMin        = -5000.f;
-			P.ElevationMax        = 5000.f;
-			P.ElevationBias       = 0.0f;
-			P.GridSize            = 20;
-			P.BaselineZ           = -500.f;
-			P.SurfaceThickness    = 120.f;
-			P.WallBottomPadding   = 120.f;
-			P.ElevationStep       = 1000.f;
-			P.MacroNoiseScaleCells = 8.40f;
-			P.MacroNoiseSteps     = 1.30f;
-			P.DetailNoiseScaleCells = 3.10f;
-			P.DetailNoiseSteps    = 0.40f;
-			P.RidgeNoiseScaleCells = 5.10f;
-			P.RidgeNoiseSteps     = 0.75f;
-			P.OcclusionRidgeSteps = 0.95f;
-			P.RampDepthMin        = 2600.f;
-			P.RampDepthMax        = 18000.f;
-			P.RampWidthMinAlpha   = 0.14f;
-			P.RampWidthMaxAlpha   = 0.94f;
-			P.RegionSeedCountMin  = 40;
-			P.RegionSeedCountMax  = 52;
-			P.MaxAdjacentSteps    = 4;
-			P.RampRunPerRise      = 7.50f;
-			P.MapHalfExtent       = 2000.f;
-			P.FarmHilliness       = 0.5f;
-			break;
-
-		case ET66MapTheme::Ocean:
-			P.ElevationMin        = -2450.f;
-			P.ElevationMax        = 1750.f;
-			P.ElevationBias       = -0.35f;
-			P.GridSize            = 28;
-			P.BaselineZ           = 0.f;
-			P.SurfaceThickness    = 140.f;
-			P.WallBottomPadding   = 120.f;
-			P.ElevationStep       = 350.f;
-			P.MacroNoiseScaleCells = 7.75f;
-			P.MacroNoiseSteps     = 1.70f;
-			P.DetailNoiseScaleCells = 2.65f;
-			P.DetailNoiseSteps    = 0.80f;
-			P.RidgeNoiseScaleCells = 4.60f;
-			P.RidgeNoiseSteps     = 1.05f;
-			P.OcclusionRidgeSteps = 1.45f;
-			P.RampDepthMin        = 1500.f;
-			P.RampDepthMax        = 5000.f;
-			P.RampWidthMinAlpha   = 0.12f;
-			P.RampWidthMaxAlpha   = 0.40f;
-			P.RegionSeedCountMin  = 10;
-			P.RegionSeedCountMax  = 15;
-			P.MaxAdjacentSteps    = 2;
-			P.RampRunPerRise      = 4.00f;
-			break;
-
-		case ET66MapTheme::Mountain:
-			P.ElevationMin        = -1050.f;
-			P.ElevationMax        = 3150.f;
-			P.ElevationBias       = 0.35f;
-			P.GridSize            = 30;
-			P.BaselineZ           = 0.f;
-			P.SurfaceThickness    = 140.f;
-			P.WallBottomPadding   = 120.f;
-			P.ElevationStep       = 350.f;
-			P.MacroNoiseScaleCells = 6.70f;
-			P.MacroNoiseSteps     = 2.05f;
-			P.DetailNoiseScaleCells = 2.30f;
-			P.DetailNoiseSteps    = 0.90f;
-			P.RidgeNoiseScaleCells = 3.95f;
-			P.RidgeNoiseSteps     = 1.35f;
-			P.OcclusionRidgeSteps = 1.55f;
-			P.RampDepthMin        = 1500.f;
-			P.RampDepthMax        = 5000.f;
-			P.RampWidthMinAlpha   = 0.12f;
-			P.RampWidthMaxAlpha   = 0.40f;
-			P.RegionSeedCountMin  = 11;
-			P.RegionSeedCountMax  = 17;
-			P.MaxAdjacentSteps    = 2;
-			P.RampRunPerRise      = 4.20f;
-			break;
-		}
+		// Legacy theme variants now collapse to the single main-map terrain family.
+		P.ElevationMin         = -5000.f;
+		P.ElevationMax         = 5000.f;
+		P.ElevationBias        = 0.0f;
+		P.GridSize             = 20;
+		P.BaselineZ            = -500.f;
+		P.SurfaceThickness     = 120.f;
+		P.WallBottomPadding    = 120.f;
+		P.ElevationStep        = 1000.f;
+		P.MacroNoiseScaleCells = 8.40f;
+		P.MacroNoiseSteps      = 1.30f;
+		P.DetailNoiseScaleCells = 3.10f;
+		P.DetailNoiseSteps     = 0.40f;
+		P.RidgeNoiseScaleCells = 5.10f;
+		P.RidgeNoiseSteps      = 0.75f;
+		P.OcclusionRidgeSteps  = 0.95f;
+		P.RampDepthMin         = 2600.f;
+		P.RampDepthMax         = 18000.f;
+		P.RampWidthMinAlpha    = 0.14f;
+		P.RampWidthMaxAlpha    = 0.94f;
+		P.RegionSeedCountMin   = 40;
+		P.RegionSeedCountMax   = 52;
+		P.MaxAdjacentSteps     = 4;
+		P.RampRunPerRise       = 7.50f;
+		P.MapHalfExtent        = 2000.f;
+		P.FarmHilliness        = 0.5f;
 		return P;
 	}
 };

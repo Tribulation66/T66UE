@@ -11,7 +11,8 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66GameplayLayout.h"
-#include "Gameplay/T66MegabonkFarm.h"
+#include "Gameplay/T66MainMapTerrain.h"
+#include "Core/T66GameInstance.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66HouseNPCBase.h"
@@ -190,7 +191,7 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 	SpawnPropsInternal(World, Seed, nullptr, 50000.f, 8000.f, -16000.f, true, FVector::ZeroVector, 0.f);
 }
 
-void UT66PropSubsystem::SpawnFarmPropsForStage(UWorld* World, int32 Seed, const TArray<FName>& AllowedRows)
+void UT66PropSubsystem::SpawnMainMapPropsForStage(UWorld* World, int32 Seed, const TArray<FName>& AllowedRows)
 {
 	if (AllowedRows.Num() == 0)
 	{
@@ -198,21 +199,23 @@ void UT66PropSubsystem::SpawnFarmPropsForStage(UWorld* World, int32 Seed, const 
 		return;
 	}
 
-	FT66MapPreset FarmPreset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
-	FarmPreset.Seed = Seed;
+	const UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	const FT66MapPreset MainMapPreset = T66MainMapTerrain::BuildPresetForDifficulty(
+		T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy,
+		Seed);
 
-	const T66MegabonkFarm::FSettings FarmSettings = T66MegabonkFarm::MakeSettings(FarmPreset);
-	const float MainHalfExtent = FMath::Max(0.0f, FarmSettings.HalfExtent - FarmSettings.CellSize * 1.75f);
-	const FVector KeepClearCenter = T66MegabonkFarm::GetPreferredSpawnLocation(FarmPreset, 200.f);
-	const float KeepClearRadius = FarmSettings.CellSize * 1.6f;
+	const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(MainMapPreset);
+	const float MainHalfExtent = FMath::Max(0.0f, MainMapSettings.HalfExtent - MainMapSettings.CellSize * 1.75f);
+	const FVector KeepClearCenter = T66MainMapTerrain::GetPreferredSpawnLocation(MainMapPreset, 200.f);
+	const float KeepClearRadius = MainMapSettings.CellSize * 1.6f;
 
 	SpawnPropsInternal(
 		World,
 		Seed,
 		&AllowedRows,
 		MainHalfExtent,
-		T66MegabonkFarm::GetTraceZ(FarmPreset),
-		T66MegabonkFarm::GetLowestCollisionBottomZ(FarmPreset) - FarmSettings.StepHeight,
+		T66MainMapTerrain::GetTraceZ(MainMapPreset),
+		T66MainMapTerrain::GetLowestCollisionBottomZ(MainMapPreset) - MainMapSettings.StepHeight,
 		false,
 		KeepClearCenter,
 		KeepClearRadius);

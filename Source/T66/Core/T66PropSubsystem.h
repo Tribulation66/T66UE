@@ -17,8 +17,8 @@ public:
 	/** Spawn all props for the current stage. Call after terrain is ready. */
 	void SpawnPropsForStage(UWorld* World, int32 Seed);
 
-	/** Spawn a filtered set of props inside the dedicated Farm board bounds. */
-	void SpawnFarmPropsForStage(UWorld* World, int32 Seed, const TArray<FName>& AllowedRows);
+	/** Spawn a filtered set of props inside the main-map terrain bounds. */
+	void SpawnMainMapPropsForStage(UWorld* World, int32 Seed, const TArray<FName>& AllowedRows);
 
 	/** Destroy all spawned props (stage transition / map regeneration). */
 	void ClearProps();

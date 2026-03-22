@@ -1,7 +1,8 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
-#include "Gameplay/T66MegabonkFarm.h"
+#include "Gameplay/T66MainMapTerrain.h"
 
+#include "Data/T66DataTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -17,13 +18,13 @@
 #include "TimerManager.h"
 #include "UObject/UObjectGlobals.h"
 
-namespace T66MegabonkFarm
+namespace T66MainMapTerrain
 {
 	namespace
 	{
 		static constexpr float SourceCellSizeUU = 200.0f;
 		static constexpr float SourceStepHeightUU = 120.0f;
-		static constexpr float TargetFarmBoardScale = 10.0f;
+		static constexpr float TargetMainMapBoardScale = 10.0f;
 		static constexpr int32 WallHeightLevels = 50;
 		static constexpr bool bRenderFarmGrass = false;
 		static constexpr bool bRenderFarmDecor = true;
@@ -41,8 +42,8 @@ namespace T66MegabonkFarm
 		static constexpr float GrassAlternateLiftFraction = 0.05f;
 		static const FName MapPlatformTag(TEXT("T66_Map_Platform"));
 		static const FName FloorMainTag(TEXT("T66_Floor_Main"));
-		static const FName FarmVisualTag(TEXT("T66_MegabonkFarm_Visual"));
-		static const FName FarmMaterialsReadyTag(TEXT("T66_MegabonkFarm_MaterialsReady"));
+		static const FName FarmVisualTag(TEXT("T66_MainMapTerrain_Visual"));
+		static const FName FarmMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
 
 		struct FLoadedAssets
 		{
@@ -151,12 +152,12 @@ namespace T66MegabonkFarm
 				Settings.StepHeight / FMath::Max(SourceStepHeightUU, 1.0f));
 		}
 
-		static ET66FarmCellShape GetSlopeShapeFromDirection(const FIntPoint& Direction)
+		static ET66MapCellShape GetSlopeShapeFromDirection(const FIntPoint& Direction)
 		{
-			if (Direction.X > 0) return ET66FarmCellShape::SlopePosX;
-			if (Direction.X < 0) return ET66FarmCellShape::SlopeNegX;
-			if (Direction.Y > 0) return ET66FarmCellShape::SlopePosY;
-			return ET66FarmCellShape::SlopeNegY;
+			if (Direction.X > 0) return ET66MapCellShape::SlopePosX;
+			if (Direction.X < 0) return ET66MapCellShape::SlopeNegX;
+			if (Direction.Y > 0) return ET66MapCellShape::SlopePosY;
+			return ET66MapCellShape::SlopeNegY;
 		}
 
 		static FIntPoint GetOppositeDirection(const FIntPoint& Direction)
@@ -398,8 +399,8 @@ namespace T66MegabonkFarm
 			Cell.X = Coordinate.X;
 			Cell.Z = Coordinate.Y;
 			Cell.Level = Level;
-			Cell.Shape = ET66FarmCellShape::Flat;
-			Cell.Decoration = ET66FarmCellDecoration::None;
+			Cell.Shape = ET66MapCellShape::Flat;
+			Cell.Decoration = ET66MapCellDecoration::None;
 			Cell.Region = Region;
 			Cell.DecorationLocalOffset = FVector::ZeroVector;
 			Cell.DecorationLocalRotation = FRotator::ZeroRotator;
@@ -476,20 +477,20 @@ namespace T66MegabonkFarm
 			return nullptr;
 		}
 
-		static float GetSlopeYaw(ET66FarmCellShape Shape)
+		static float GetSlopeYaw(ET66MapCellShape Shape)
 		{
 			// Unity's direction-to-yaw table assumes Unity's axis conventions.
 			// In Unreal, this imported slope rises toward +Y at yaw 0, but the X-axis
 			// directions need to be mirrored to match the Unity-facing result.
 			switch (Shape)
 			{
-			case ET66FarmCellShape::SlopePosX:
+			case ET66MapCellShape::SlopePosX:
 				return 270.0f;
-			case ET66FarmCellShape::SlopeNegX:
+			case ET66MapCellShape::SlopeNegX:
 				return 90.0f;
-			case ET66FarmCellShape::SlopePosY:
+			case ET66MapCellShape::SlopePosY:
 				return 0.0f;
-			case ET66FarmCellShape::SlopeNegY:
+			case ET66MapCellShape::SlopeNegY:
 				return 180.0f;
 			default:
 				return 0.0f;
@@ -510,9 +511,9 @@ namespace T66MegabonkFarm
 				const float TreeScale = Rng.FRandRange(0.22f, 0.32f) * ImportedScale;
 				switch (Rng.RandRange(0, 2))
 				{
-				case 0: Cell.Decoration = ET66FarmCellDecoration::Tree1; break;
-				case 1: Cell.Decoration = ET66FarmCellDecoration::Tree2; break;
-				default: Cell.Decoration = ET66FarmCellDecoration::Tree3; break;
+				case 0: Cell.Decoration = ET66MapCellDecoration::Tree1; break;
+				case 1: Cell.Decoration = ET66MapCellDecoration::Tree2; break;
+				default: Cell.Decoration = ET66MapCellDecoration::Tree3; break;
 				}
 
 				Cell.DecorationLocalOffset = FVector(
@@ -530,7 +531,7 @@ namespace T66MegabonkFarm
 			if (ObjectToSpawn > 0.60f)
 			{
 				const float RockScale = Rng.FRandRange(0.22f, 0.58f) * ImportedScale;
-				Cell.Decoration = (Rng.FRand() < 0.5f) ? ET66FarmCellDecoration::Rock : ET66FarmCellDecoration::Rocks;
+				Cell.Decoration = (Rng.FRand() < 0.5f) ? ET66MapCellDecoration::Rock : ET66MapCellDecoration::Rocks;
 				Cell.DecorationLocalOffset = FVector(
 					Rng.FRandRange(-RockJitter, RockJitter),
 					Rng.FRandRange(-RockJitter, RockJitter),
@@ -546,7 +547,7 @@ namespace T66MegabonkFarm
 				return;
 			}
 
-			Cell.Decoration = ET66FarmCellDecoration::None;
+			Cell.Decoration = ET66MapCellDecoration::None;
 			Cell.DecorationLocalOffset = FVector::ZeroVector;
 			Cell.DecorationLocalRotation = FRotator::ZeroRotator;
 			Cell.DecorationLocalScale = FVector(1.0f, 1.0f, 1.0f);
@@ -581,16 +582,16 @@ namespace T66MegabonkFarm
 			return true;
 		}
 
-		static UStaticMesh* PickDecorationMesh(const FLoadedAssets& Assets, ET66FarmCellDecoration Decoration)
+		static UStaticMesh* PickDecorationMesh(const FLoadedAssets& Assets, ET66MapCellDecoration Decoration)
 		{
 			switch (Decoration)
 			{
-			case ET66FarmCellDecoration::Tree1: return Assets.TreeMesh1;
-			case ET66FarmCellDecoration::Tree2: return Assets.TreeMesh2;
-			case ET66FarmCellDecoration::Tree3: return Assets.TreeMesh3;
-			case ET66FarmCellDecoration::Rock: return Assets.RockMesh1 ? Assets.RockMesh1 : Assets.RockMesh2;
-			case ET66FarmCellDecoration::Rocks: return Assets.RockMesh3 ? Assets.RockMesh3 : Assets.RockMesh2;
-			case ET66FarmCellDecoration::Log: return Assets.LogMesh;
+			case ET66MapCellDecoration::Tree1: return Assets.TreeMesh1;
+			case ET66MapCellDecoration::Tree2: return Assets.TreeMesh2;
+			case ET66MapCellDecoration::Tree3: return Assets.TreeMesh3;
+			case ET66MapCellDecoration::Rock: return Assets.RockMesh1 ? Assets.RockMesh1 : Assets.RockMesh2;
+			case ET66MapCellDecoration::Rocks: return Assets.RockMesh3 ? Assets.RockMesh3 : Assets.RockMesh2;
+			case ET66MapCellDecoration::Log: return Assets.LogMesh;
 			default: return nullptr;
 			}
 		}
@@ -667,7 +668,7 @@ namespace T66MegabonkFarm
 			OutAssets.RockMesh2 = OutAssets.RockMesh1;
 			OutAssets.RockMesh3 = OutAssets.RockMesh1;
 			OutAssets.LogMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Log.Log"));
-			UE_LOG(LogTemp, Log, TEXT("[MAP] Megabonk Farm assets: WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
+			UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain assets: WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
 				OutAssets.WallMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.WallTexture ? TEXT("yes") : TEXT("no"),
 				OutAssets.TreeMesh1 ? TEXT("yes") : TEXT("no"),
@@ -679,11 +680,42 @@ namespace T66MegabonkFarm
 		}
 	}
 
+	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed)
+	{
+		FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
+		Preset.Seed = Seed;
+
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Medium:
+			Preset.ElevationMin = -10000.0f;
+			Preset.ElevationMax = 0.0f;
+			break;
+
+		case ET66Difficulty::Hard:
+			Preset.ElevationMin = 0.0f;
+			Preset.ElevationMax = 10000.0f;
+			break;
+
+		case ET66Difficulty::Easy:
+		case ET66Difficulty::VeryHard:
+		case ET66Difficulty::Impossible:
+		case ET66Difficulty::Perdition:
+		case ET66Difficulty::Final:
+		default:
+			Preset.ElevationMin = -5000.0f;
+			Preset.ElevationMax = 5000.0f;
+			break;
+		}
+
+		return Preset;
+	}
+
 	FSettings MakeSettings(const FT66MapPreset& Preset)
 	{
 		FSettings Settings;
 		Settings.BoardSize = 40;
-		Settings.BoardScale = TargetFarmBoardScale;
+		Settings.BoardScale = TargetMainMapBoardScale;
 		Settings.CellSize = SourceCellSizeUU * Settings.BoardScale;
 		Settings.StepHeight = FMath::Max(Preset.ElevationStep, 1.0f);
 		Settings.HalfExtent = Settings.CellSize * static_cast<float>(Settings.BoardSize) * 0.5f;
@@ -901,8 +933,8 @@ namespace T66MegabonkFarm
 			Cell->bOccupied = true;
 			Cell->bSlope = false;
 			Cell->Level = Level;
-			Cell->Shape = ET66FarmCellShape::Flat;
-			Cell->Decoration = ET66FarmCellDecoration::None;
+			Cell->Shape = ET66MapCellShape::Flat;
+			Cell->Decoration = ET66MapCellDecoration::None;
 			Cell->Region = ECellRegion::MainBoard;
 			Cell->DecorationLocalOffset = FVector::ZeroVector;
 			Cell->DecorationLocalRotation = FRotator::ZeroRotator;
@@ -1014,14 +1046,14 @@ namespace T66MegabonkFarm
 
 		if (Board.OccupiedCount != Board.Cells.Num())
 		{
-			UE_LOG(LogTemp, Error, TEXT("[MAP] Dedicated Megabonk Farm board incomplete: %d / %d cells occupied"), Board.OccupiedCount, Board.Cells.Num());
+			UE_LOG(LogTemp, Error, TEXT("[MAP] Main map terrain board incomplete: %d / %d cells occupied"), Board.OccupiedCount, Board.Cells.Num());
 			return false;
 		}
 
 		FLoadedAssets Assets;
 		if (!LoadAssets(Assets))
 		{
-			UE_LOG(LogTemp, Error, TEXT("[MAP] Megabonk Farm tile meshes missing; aborting dedicated Farm spawn."));
+			UE_LOG(LogTemp, Error, TEXT("[MAP] Main map terrain tile meshes missing; aborting terrain spawn."));
 			return false;
 		}
 
@@ -1043,7 +1075,7 @@ namespace T66MegabonkFarm
 		VisualActor->Tags.Add(FloorMainTag);
 		VisualActor->Tags.Add(FarmVisualTag);
 
-		USceneComponent* VisualRoot = NewObject<USceneComponent>(VisualActor, TEXT("MegabonkFarmRoot"));
+		USceneComponent* VisualRoot = NewObject<USceneComponent>(VisualActor, TEXT("MainMapTerrainRoot"));
 		VisualActor->AddInstanceComponent(VisualRoot);
 		VisualActor->SetRootComponent(VisualRoot);
 		VisualRoot->SetMobility(EComponentMobility::Static);
@@ -1082,12 +1114,12 @@ namespace T66MegabonkFarm
 			{
 				if (UMaterialInterface* FallbackMaterial = LoadObject<UMaterialInterface>(nullptr, FallbackMaterialPath))
 				{
-					UE_LOG(LogTemp, Warning, TEXT("[MAP] Farm material %s fell back to %s"), DebugName, FallbackMaterialPath);
+					UE_LOG(LogTemp, Warning, TEXT("[MAP] Main map terrain material %s fell back to %s"), DebugName, FallbackMaterialPath);
 					return { FallbackMaterial, false };
 				}
 			}
 
-			UE_LOG(LogTemp, Warning, TEXT("[MAP] Farm material %s is still missing its real texture-backed material"), DebugName);
+			UE_LOG(LogTemp, Warning, TEXT("[MAP] Main map terrain material %s is still missing its real texture-backed material"), DebugName);
 			return {};
 		};
 
@@ -1483,7 +1515,7 @@ namespace T66MegabonkFarm
 				++FlatCount;
 			}
 
-			if (bRenderFarmDecor && !Cell.bSlope && Cell.Decoration != ET66FarmCellDecoration::None)
+			if (bRenderFarmDecor && !Cell.bSlope && Cell.Decoration != ET66MapCellDecoration::None)
 			{
 				if (UStaticMesh* DecorMesh = PickDecorationMesh(Assets, Cell.Decoration))
 				{
@@ -1655,7 +1687,7 @@ namespace T66MegabonkFarm
 		QueueMaterialRefresh(3.00f);
 
 		bOutCollisionReady = true;
-		UE_LOG(LogTemp, Log, TEXT("[MAP] Megabonk Farm terrain spawned: %d occupied tiles, %d flat tiles, %d slope tiles, %d support tiles, %d decor"),
+		UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain spawned: %d occupied tiles, %d flat tiles, %d slope tiles, %d support tiles, %d decor"),
 			Board.OccupiedCount,
 			FlatCount,
 			SlopeCount,
@@ -1664,3 +1696,4 @@ namespace T66MegabonkFarm
 		return true;
 	}
 }
+

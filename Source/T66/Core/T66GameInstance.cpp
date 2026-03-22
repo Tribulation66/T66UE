@@ -808,37 +808,34 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	// Retro sky material is spawned dynamically outside the farm flow.
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Sky/QuakeCanopy2/MI_QuakeSky_Canopy2.MI_QuakeSky_Canopy2")));
 
-	// Farm uses a dedicated Megabonk-style asset set. Preload the full terrain/prop contract
+	// Main gameplay uses a dedicated terrain asset set. Preload the full terrain/prop contract
 	// before opening the gameplay level so the first entry does not depend on cold material state.
-	if (MapTheme == ET66MapTheme::Farm)
-	{
-		AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
-		AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass1.MI_Grass1")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass2.MI_Grass2")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass3.MI_Grass3")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass4.MI_Grass4")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree.Tree")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree2.Tree2")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree3.Tree3")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rocks.Rocks")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Barn.Barn")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Haybell.Haybell")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Windmill.Windmill")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
-	}
+	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
+	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass1.MI_Grass1")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass2.MI_Grass2")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass3.MI_Grass3")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass4.MI_Grass4")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree.Tree")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree2.Tree2")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree3.Tree3")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rocks.Rocks")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Barn.Barn")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Haybell.Haybell")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Windmill.Windmill")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
 
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetHeroVisualID(
 		SelectedHeroID,
@@ -928,27 +925,26 @@ void UT66GameInstance::TransitionToGameplayLevel()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	if (MapTheme == ET66MapTheme::Farm)
 	{
 		if (UGameInstance* GI = World->GetGameInstance())
 		{
 			if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
 			{
-				FT66RetroFXSettings FarmRetroSettings;
+				FT66RetroFXSettings GameplayRetroSettings;
 				if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 				{
-					FarmRetroSettings = PlayerSettings->GetRetroFXSettings();
+					GameplayRetroSettings = PlayerSettings->GetRetroFXSettings();
 				}
 
-				FarmRetroSettings.bEnableWorldGeometry = false;
-				FarmRetroSettings.WorldVertexSnapPercent = 0.0f;
-				FarmRetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
-				FarmRetroSettings.WorldVertexNoisePercent = 0.0f;
-				FarmRetroSettings.WorldAffineBlendPercent = 0.0f;
-				FarmRetroSettings.WorldAffineDistance1Percent = 0.0f;
-				FarmRetroSettings.WorldAffineDistance2Percent = 0.0f;
-				FarmRetroSettings.WorldAffineDistance3Percent = 0.0f;
-				RetroFX->ApplySettings(FarmRetroSettings, World);
+				GameplayRetroSettings.bEnableWorldGeometry = false;
+				GameplayRetroSettings.WorldVertexSnapPercent = 0.0f;
+				GameplayRetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
+				GameplayRetroSettings.WorldVertexNoisePercent = 0.0f;
+				GameplayRetroSettings.WorldAffineBlendPercent = 0.0f;
+				GameplayRetroSettings.WorldAffineDistance1Percent = 0.0f;
+				GameplayRetroSettings.WorldAffineDistance2Percent = 0.0f;
+				GameplayRetroSettings.WorldAffineDistance3Percent = 0.0f;
+				RetroFX->ApplySettings(GameplayRetroSettings, World);
 			}
 		}
 	}

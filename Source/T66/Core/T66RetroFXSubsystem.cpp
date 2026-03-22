@@ -2,7 +2,6 @@
 
 #include "Core/T66RetroFXSubsystem.h"
 
-#include "Core/T66GameInstance.h"
 #include "Components/MeshComponent.h"
 #include "Core/T66PixelationSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -361,22 +360,17 @@ namespace
 		return Material->GetPathName();
 	}
 
-	static bool IsFarmWorld(const UWorld* World)
+	static bool UsesMainMapTerrain(const UWorld* World)
 	{
 		if (!World)
 		{
 			return false;
 		}
 
-		if (const UGameInstance* GameInstance = World->GetGameInstance())
-		{
-			if (const UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance))
-			{
-				return T66GameInstance->MapTheme == ET66MapTheme::Farm;
-			}
-		}
-
-		return false;
+		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+		return !MapName.Contains(TEXT("Coliseum"))
+			&& !MapName.Contains(TEXT("Tutorial"))
+			&& !MapName.Contains(TEXT("Lab"));
 	}
 }
 
@@ -815,7 +809,7 @@ void UT66RetroFXSubsystem::ApplyGeometryCollection(const FT66RetroFXSettings& Se
 
 void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Settings, UWorld* World)
 {
-	const bool bEnableWorldGeometry = HasWorldGeometryEnabled(Settings) && !IsFarmWorld(World);
+	const bool bEnableWorldGeometry = HasWorldGeometryEnabled(Settings) && !UsesMainMapTerrain(World);
 	const bool bEnableCharacterGeometry = HasCharacterGeometryEnabled(Settings);
 
 	bWorldGeometryActive = bEnableWorldGeometry;
