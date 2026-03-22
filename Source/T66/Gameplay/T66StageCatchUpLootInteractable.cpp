@@ -71,5 +71,6 @@ bool AT66StageCatchUpLootInteractable::Interact(APlayerController* PC)
 
 	bConsumed = true;
 	ApplyRarityVisuals();
+	RefreshInteractionPrompt();
 	return true;
 }

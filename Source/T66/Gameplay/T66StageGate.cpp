@@ -97,7 +97,7 @@ bool AT66StageGate::AdvanceToNextStage()
 		T66GI->bForceColiseumMode = false;
 		T66GI->bIsStageTransition = true;
 		// Return to GameplayLevel (checkpoint stage is already set before entering Coliseum).
-		UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Maps/GameplayLevel")));
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
 		return true;
 	}
 
@@ -125,7 +125,7 @@ bool AT66StageGate::AdvanceToNextStage()
 	{
 		T66GI->bIsStageTransition = true;
 		T66GI->bForceColiseumMode = true;
-		UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Maps/GameplayLevel")));
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetColiseumLevelName());
 		return true;
 	}
 

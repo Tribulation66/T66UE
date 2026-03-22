@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66TutorialPortal.h"
 
+#include "Core/T66GameInstance.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/T66AchievementsSubsystem.h"
@@ -9,6 +10,7 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 #include "Components/CapsuleComponent.h"
 
 #include "Gameplay/T66PlayerController.h"
@@ -83,10 +85,7 @@ bool AT66TutorialPortal::Interact(AT66PlayerController* PC)
 		}
 	}
 
-	if (bDestroyOnUse)
-	{
-		Destroy();
-	}
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
 	return true;
 }
 

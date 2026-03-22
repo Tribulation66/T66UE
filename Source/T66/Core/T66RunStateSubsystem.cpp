@@ -10,6 +10,7 @@
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Actor.h"
 #include "TimerManager.h"
@@ -712,17 +713,33 @@ int32 UT66RunStateSubsystem::RegisterTotemActivated()
 
 float UT66RunStateSubsystem::AddGamblerAngerFromBet(int32 BetGold)
 {
-	const float Delta = FMath::Clamp(static_cast<float>(FMath::Max(0, BetGold)) / 100.f, 0.f, 1.f);
-	GamblerAnger01 = FMath::Clamp(GamblerAnger01 + Delta, 0.f, 1.f);
+	return AddCasinoAngerFromGold(BetGold);
+}
+
+float UT66RunStateSubsystem::AddCasinoAngerFromGold(int32 AngerGold)
+{
+	const float Delta = FMath::Clamp(static_cast<float>(FMath::Max(0, AngerGold)) / static_cast<float>(VendorAngerThresholdGold), 0.f, 1.f);
+	const float NewAnger01 = FMath::Clamp(GamblerAnger01 + Delta, 0.f, 1.f);
+	const int32 NewVendorAngerGold = FMath::RoundToInt(NewAnger01 * static_cast<float>(VendorAngerThresholdGold));
+	if (FMath::IsNearlyEqual(NewAnger01, GamblerAnger01) && VendorAngerGold == NewVendorAngerGold)
+	{
+		return GamblerAnger01;
+	}
+
+	GamblerAnger01 = NewAnger01;
+	VendorAngerGold = NewVendorAngerGold;
 	GamblerAngerChanged.Broadcast();
+	VendorChanged.Broadcast();
 	return GamblerAnger01;
 }
 
 void UT66RunStateSubsystem::ResetGamblerAnger()
 {
-	if (FMath::IsNearlyZero(GamblerAnger01)) return;
+	if (FMath::IsNearlyZero(GamblerAnger01) && VendorAngerGold == 0) return;
 	GamblerAnger01 = 0.f;
+	VendorAngerGold = 0;
 	GamblerAngerChanged.Broadcast();
+	VendorChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
@@ -1290,9 +1307,7 @@ void UT66RunStateSubsystem::ResetVendorForStage()
 
 void UT66RunStateSubsystem::ResetVendorAnger()
 {
-	if (VendorAngerGold == 0) return;
-	VendorAngerGold = 0;
-	VendorChanged.Broadcast();
+	ResetGamblerAnger();
 }
 
 void UT66RunStateSubsystem::SetInStageCatchUp(bool bInCatchUp)
@@ -1548,13 +1563,16 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 	else
 	{
 		// Failure: anger increases and the item is not granted.
-		VendorAngerGold = FMath::Clamp(VendorAngerGold + BuyPrice, 0, 9999999);
+		AddCasinoAngerFromGold(BuyPrice);
 	}
 
 	// Luck Rating tracking (quantity): vendor steal success means item granted with no anger increase.
 	RecordLuckQuantityBool(FName(TEXT("VendorStealSuccess")), (LastVendorStealOutcome == ET66VendorStealOutcome::Success));
 
-	VendorChanged.Broadcast();
+	if (LastVendorStealOutcome == ET66VendorStealOutcome::Success)
+	{
+		VendorChanged.Broadcast();
+	}
 	return bGranted;
 }
 
@@ -1667,6 +1685,21 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 		}
 	}
 
+	if (bInQuickReviveDowned && QuickReviveDownedSecondsRemaining > 0.f)
+	{
+		QuickReviveDownedSecondsRemaining = FMath::Max(0.f, QuickReviveDownedSecondsRemaining - DeltaTime);
+		const int32 Cur = FMath::CeilToInt(QuickReviveDownedSecondsRemaining);
+		if (Cur != LastBroadcastQuickReviveSecond)
+		{
+			LastBroadcastQuickReviveSecond = Cur;
+			QuickReviveChanged.Broadcast();
+		}
+		if (QuickReviveDownedSecondsRemaining <= 0.f)
+		{
+			EndQuickReviveDownedAndRevive();
+		}
+	}
+
 	// Stage speed boost timer
 	if (StageMoveSpeedSecondsRemaining > 0.f)
 	{
@@ -1681,6 +1714,76 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 	// Status effects removed — enemies no longer apply Burn/Chill/Curse.
 }
 
+bool UT66RunStateSubsystem::GrantQuickReviveCharge()
+{
+	if (bQuickReviveChargeReady || bInQuickReviveDowned)
+	{
+		return false;
+	}
+
+	bQuickReviveChargeReady = true;
+	QuickReviveChanged.Broadcast();
+	return true;
+}
+
+void UT66RunStateSubsystem::ClearQuickReviveCharge()
+{
+	if (!bQuickReviveChargeReady)
+	{
+		return;
+	}
+
+	bQuickReviveChargeReady = false;
+	QuickReviveChanged.Broadcast();
+}
+
+bool UT66RunStateSubsystem::IsBossDamageSource(const AActor* Attacker)
+{
+	return Cast<AT66BossBase>(Attacker) != nullptr;
+}
+
+void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker)
+{
+	if (bInQuickReviveDowned)
+	{
+		EndQuickReviveDownedAndDie();
+		return;
+	}
+
+	if (bInLastStand)
+	{
+		EndLastStandAndDie();
+		return;
+	}
+
+	// Dev Immortality: never end the run.
+	if (bDevImmortality)
+	{
+		CurrentHP = 0.f;
+		LastDamageTime = -9999.f;
+		HeartsChanged.Broadcast();
+		return;
+	}
+
+	if (bQuickReviveChargeReady)
+	{
+		EnterQuickReviveDowned();
+		return;
+	}
+
+	// If charged, trigger last-stand instead of dying.
+	if (SurvivalCharge01 >= 1.f)
+	{
+		EnterLastStand();
+		return;
+	}
+
+	CurrentHP = 0.f;
+	LastDamageTime = -9999.f;
+	HeartsChanged.Broadcast();
+	OnPlayerDied.Broadcast();
+}
+
 void UT66RunStateSubsystem::EnterLastStand()
 {
 	bInLastStand = true;
@@ -1693,6 +1796,86 @@ void UT66RunStateSubsystem::EnterLastStand()
 	// HP stays at 0, but the run continues.
 	HeartsChanged.Broadcast();
 	SurvivalChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::EnterQuickReviveDowned()
+{
+	bQuickReviveChargeReady = false;
+	bInQuickReviveDowned = true;
+	QuickReviveDownedSecondsRemaining = QuickReviveDownedDurationSeconds;
+	LastBroadcastQuickReviveSecond = FMath::CeilToInt(QuickReviveDownedSecondsRemaining);
+	CurrentHP = 0.f;
+	LastDamageTime = -9999.f;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+			{
+				if (AT66EnemyBase* Enemy = WeakEnemy.Get())
+				{
+					Enemy->ApplyForcedRunAway(QuickReviveDownedDurationSeconds);
+				}
+			}
+		}
+	}
+
+	HeartsChanged.Broadcast();
+	QuickReviveChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::EndQuickReviveDownedAndRevive()
+{
+	if (!bInQuickReviveDowned)
+	{
+		return;
+	}
+
+	bInQuickReviveDowned = false;
+	QuickReviveDownedSecondsRemaining = 0.f;
+	LastBroadcastQuickReviveSecond = 0;
+
+	const int32 Tier = GetHeartDisplayTier();
+	const float HPPerHeart = HPPerRedHeart * FMath::Pow(HeartTierScale, static_cast<float>(Tier));
+	CurrentHP = FMath::Clamp(HPPerHeart, 1.f, MaxHP);
+
+	if (UWorld* World = GetWorld())
+	{
+		LastDamageTime = static_cast<float>(World->GetTimeSeconds());
+	}
+	else
+	{
+		LastDamageTime = 0.f;
+	}
+
+	HeartsChanged.Broadcast();
+	QuickReviveChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::EndQuickReviveDownedAndDie()
+{
+	if (!bInQuickReviveDowned)
+	{
+		return;
+	}
+
+	bInQuickReviveDowned = false;
+	QuickReviveDownedSecondsRemaining = 0.f;
+	LastBroadcastQuickReviveSecond = 0;
+	QuickReviveChanged.Broadcast();
+
+	if (bDevImmortality)
+	{
+		CurrentHP = 0.f;
+		HeartsChanged.Broadcast();
+		return;
+	}
+
+	CurrentHP = 0.f;
+	LastDamageTime = -9999.f;
+	HeartsChanged.Broadcast();
+	OnPlayerDied.Broadcast();
 }
 
 void UT66RunStateSubsystem::EndLastStandAndDie()
@@ -1722,6 +1905,17 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 	// If we're in last-stand, we ignore damage (invincible).
 	if (bInLastStand) return false;
+
+	// Quick Revive downed state only ends if a boss lands the finishing hit.
+	if (bInQuickReviveDowned)
+	{
+		if (IsBossDamageSource(Attacker))
+		{
+			EndQuickReviveDownedAndDie();
+			return true;
+		}
+		return false;
+	}
 
 	// Iron Will: flat damage reduction before armor.
 	if (PassiveType == ET66PassiveType::IronWill)
@@ -1875,12 +2069,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 	if (CurrentHP <= 0.f)
 	{
-		// Dev Immortality: never end the run.
-		if (bDevImmortality)
-		{
-			return true;
-		}
-		OnPlayerDied.Broadcast();
+		HandleLethalDamage(Attacker);
 	}
 	return true;
 }
@@ -1939,15 +2128,56 @@ void UT66RunStateSubsystem::AddCowardiceGateTaken()
 	CowardiceGatesTakenChanged.Broadcast();
 }
 
-void UT66RunStateSubsystem::BorrowGold(int32 Amount)
+int32 UT66RunStateSubsystem::GetInventorySellValueTotal() const
 {
-	if (Amount <= 0) return;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (!GI)
+	{
+		return 0;
+	}
+
+	int32 TotalSellValue = 0;
+	for (const FT66InventorySlot& Slot : InventorySlots)
+	{
+		FItemData ItemData;
+		if (GI->GetItemData(Slot.ItemTemplateID, ItemData))
+		{
+			TotalSellValue += ItemData.GetSellGoldForRarity(Slot.Rarity);
+		}
+	}
+
+	return TotalSellValue;
+}
+
+int32 UT66RunStateSubsystem::GetNetWorth() const
+{
+	return CurrentGold + GetInventorySellValueTotal() - CurrentDebt;
+}
+
+int32 UT66RunStateSubsystem::GetRemainingBorrowCapacity() const
+{
+	return FMath::Max(0, GetNetWorth() - CurrentDebt);
+}
+
+bool UT66RunStateSubsystem::CanBorrowGold(int32 Amount) const
+{
+	return Amount > 0 && Amount <= GetRemainingBorrowCapacity();
+}
+
+bool UT66RunStateSubsystem::BorrowGold(int32 Amount)
+{
+	if (!CanBorrowGold(Amount))
+	{
+		return false;
+	}
+
 	CurrentGold = FMath::Max(0, CurrentGold + Amount);
 	CurrentDebt = FMath::Max(0, CurrentDebt + Amount);
 	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Borrow"), Amount));
 	GoldChanged.Broadcast();
 	DebtChanged.Broadcast();
 	LogAdded.Broadcast();
+	return true;
 }
 
 int32 UT66RunStateSubsystem::PayDebt(int32 Amount)
@@ -2040,14 +2270,14 @@ void UT66RunStateSubsystem::ClearInventory()
 
 void UT66RunStateSubsystem::HealToFull()
 {
-	if (bInLastStand) return;
+	if (bInLastStand || bInQuickReviveDowned) return;
 	CurrentHP = MaxHP;
 	HeartsChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::HealHP(float Amount)
 {
-	if (bInLastStand) return;
+	if (bInLastStand || bInQuickReviveDowned) return;
 	if (Amount <= 0.f) return;
 
 	const float NewHP = FMath::Clamp(CurrentHP + Amount, 0.f, MaxHP);
@@ -2064,7 +2294,7 @@ void UT66RunStateSubsystem::HealHearts(int32 Hearts)
 
 void UT66RunStateSubsystem::ApplyHpRegen(float DeltaTime)
 {
-	if (bInLastStand) return;
+	if (bInLastStand || bInQuickReviveDowned) return;
 	const float Rate = GetHpRegenPerSecond();
 	if (Rate <= 0.f || DeltaTime <= 0.f) return;
 
@@ -2074,26 +2304,8 @@ void UT66RunStateSubsystem::ApplyHpRegen(float DeltaTime)
 
 void UT66RunStateSubsystem::KillPlayer()
 {
-	// Dev Immortality: never end the run.
-	if (bDevImmortality)
-	{
-		CurrentHP = 0.f;
-		LastDamageTime = -9999.f;
-		HeartsChanged.Broadcast();
-		return;
-	}
-
-	// If charged, trigger last-stand instead of dying.
-	if (!bInLastStand && SurvivalCharge01 >= 1.f)
-	{
-		EnterLastStand();
-		return;
-	}
-
 	CurrentHP = 0.f;
-	LastDamageTime = -9999.f;
-	HeartsChanged.Broadcast();
-	OnPlayerDied.Broadcast();
+	HandleLethalDamage(nullptr);
 }
 
 bool UT66RunStateSubsystem::SellFirstItem()
@@ -2126,6 +2338,100 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 	InventoryChanged.Broadcast();
 	BuybackChanged.Broadcast();
 	LogAdded.Broadcast();
+	return true;
+}
+
+ET66ItemRarity UT66RunStateSubsystem::GetNextItemRarity(ET66ItemRarity Rarity)
+{
+	switch (Rarity)
+	{
+	case ET66ItemRarity::Black:  return ET66ItemRarity::Red;
+	case ET66ItemRarity::Red:    return ET66ItemRarity::Yellow;
+	case ET66ItemRarity::Yellow: return ET66ItemRarity::White;
+	case ET66ItemRarity::White:  return ET66ItemRarity::White;
+	default:                     return ET66ItemRarity::Black;
+	}
+}
+
+bool UT66RunStateSubsystem::CanAlchemyUpgradeInventoryItemAt(const int32 InventoryIndex) const
+{
+	if (InventoryIndex < 0 || InventoryIndex >= InventorySlots.Num())
+	{
+		return false;
+	}
+
+	const FT66InventorySlot& Slot = InventorySlots[InventoryIndex];
+	return Slot.IsValid() && Slot.Rarity != ET66ItemRarity::White;
+}
+
+bool UT66RunStateSubsystem::TryAlchemyUpgradeInventoryItems(int32 TargetIndex, int32 SacrificeIndex, FT66InventorySlot& OutUpgradedSlot)
+{
+	OutUpgradedSlot = FT66InventorySlot();
+
+	if (TargetIndex < 0 || TargetIndex >= InventorySlots.Num())
+	{
+		return false;
+	}
+	if (SacrificeIndex < 0 || SacrificeIndex >= InventorySlots.Num())
+	{
+		return false;
+	}
+	if (TargetIndex == SacrificeIndex)
+	{
+		return false;
+	}
+	if (!CanAlchemyUpgradeInventoryItemAt(TargetIndex))
+	{
+		return false;
+	}
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	const FT66InventorySlot OriginalTargetSlot = InventorySlots[TargetIndex];
+	const FT66InventorySlot SacrificeSlot = InventorySlots[SacrificeIndex];
+	if (!OriginalTargetSlot.IsValid() || !SacrificeSlot.IsValid())
+	{
+		return false;
+	}
+
+	FT66InventorySlot UpgradedSlot = OriginalTargetSlot;
+	UpgradedSlot.Rarity = GetNextItemRarity(OriginalTargetSlot.Rarity);
+
+	int32 RollMin = 1;
+	int32 RollMax = 3;
+	FItemData::GetLine1RollRange(UpgradedSlot.Rarity, RollMin, RollMax);
+	const int32 ForcedMin = FMath::Clamp(FMath::Max(RollMin, OriginalTargetSlot.Line1RolledValue + 1), RollMin, RollMax);
+	FRandomStream Local(FPlatformTime::Cycles64());
+	UpgradedSlot.Line1RolledValue = Local.RandRange(ForcedMin, RollMax);
+
+	int32 AngerGold = 25;
+	if (GI)
+	{
+		FItemData SacrificeItemData;
+		if (GI->GetItemData(SacrificeSlot.ItemTemplateID, SacrificeItemData))
+		{
+			AngerGold = FMath::Max(1, SacrificeItemData.GetBuyGoldForRarity(SacrificeSlot.Rarity));
+		}
+	}
+
+	InventorySlots.RemoveAt(SacrificeIndex);
+	if (SacrificeIndex < TargetIndex)
+	{
+		TargetIndex -= 1;
+	}
+	InventorySlots[TargetIndex] = UpgradedSlot;
+
+	RecomputeItemDerivedStats();
+	AddCasinoAngerFromGold(AngerGold);
+	AddStructuredEvent(
+		ET66RunEventType::ItemAcquired,
+		FString::Printf(
+			TEXT("ItemID=%s,Source=Alchemy,SacrificeID=%s"),
+			*UpgradedSlot.ItemTemplateID.ToString(),
+			*SacrificeSlot.ItemTemplateID.ToString()));
+	InventoryChanged.Broadcast();
+	LogAdded.Broadcast();
+
+	OutUpgradedSlot = UpgradedSlot;
 	return true;
 }
 
@@ -2354,6 +2660,10 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	bInLastStand = false;
 	LastStandSecondsRemaining = 0.f;
 	LastBroadcastLastStandSecond = 0;
+	bQuickReviveChargeReady = false;
+	bInQuickReviveDowned = false;
+	QuickReviveDownedSecondsRemaining = 0.f;
+	LastBroadcastQuickReviveSecond = 0;
 	ResetBossState();
 	HeartsChanged.Broadcast();
 	GoldChanged.Broadcast();
@@ -2371,6 +2681,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	HeroProgressChanged.Broadcast();
 	UltimateChanged.Broadcast();
 	SurvivalChanged.Broadcast();
+	QuickReviveChanged.Broadcast();
 	StatusEffectsChanged.Broadcast();
 }
 

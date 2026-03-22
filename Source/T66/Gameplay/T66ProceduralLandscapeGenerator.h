@@ -6,15 +6,43 @@
 
 struct FT66MapPreset;
 
+enum class ET66FarmCellShape : uint8
+{
+	Flat,
+	SlopePosX,
+	SlopeNegX,
+	SlopePosY,
+	SlopeNegY,
+};
+
+enum class ET66FarmCellDecoration : uint8
+{
+	None,
+	Tree1,
+	Tree2,
+	Tree3,
+	Rock,
+	Rocks,
+	Log,
+};
+
 /** A single platform (cube) in the procedural map graph. */
 struct FT66PlatformNode
 {
+	bool bFarmOccupied = true;
 	FVector2D Position = FVector2D::ZeroVector;
 	float TopZ = 0.f;
+	float SurfaceStartZ = 0.f;
 	float SizeX = 0.f;
 	float SizeY = 0.f;
 	int32 GridRow = 0;
 	int32 GridCol = 0;
+	int32 FarmLevel = 0;
+	ET66FarmCellShape FarmCellShape = ET66FarmCellShape::Flat;
+	ET66FarmCellDecoration FarmDecoration = ET66FarmCellDecoration::None;
+	FVector FarmDecorationLocalOffset = FVector::ZeroVector;
+	FRotator FarmDecorationLocalRotation = FRotator::ZeroRotator;
+	FVector FarmDecorationLocalScale = FVector(1.f, 1.f, 1.f);
 	TArray<int32> Connections;
 };
 
@@ -26,6 +54,7 @@ struct FT66RampEdge
 	float Width = 0.f;
 	float Depth = 0.f;
 	float PerpOffset = 0.f;
+	bool bVisualOwner = true;
 
 	/** True when this is a cardinal-X connection (horizontal); false for cardinal-Y (vertical). */
 	bool bAlongX = true;

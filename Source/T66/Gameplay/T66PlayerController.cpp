@@ -25,6 +25,7 @@
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
+#include "UI/T66CasinoOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66LoadPreviewOverlayWidget.h"
@@ -36,7 +37,9 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
+#include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
 #include "Gameplay/T66StageCatchUpGoldInteractable.h"
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
@@ -58,6 +61,10 @@
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66GamblerBoss.h"
+#include "Components/BoxComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "EngineUtils.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerInput.h"
 #include "Camera/CameraComponent.h"
@@ -593,6 +600,7 @@ void AT66PlayerController::BeginPlay()
 		if (RunState)
 		{
 			RunState->OnPlayerDied.AddDynamic(this, &AT66PlayerController::OnPlayerDied);
+			RunState->QuickReviveChanged.AddDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
 			OnPlayerDiedHandle.Reset(); // dynamic delegate has no handle; unbind via RemoveDynamic in EndPlay if needed
 		}
 		UE_LOG(LogTemp, Log, TEXT("PlayerController: Gameplay mode initialized"));
@@ -649,6 +657,7 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
 		RunState->OnPlayerDied.RemoveDynamic(this, &AT66PlayerController::OnPlayerDied);
+		RunState->QuickReviveChanged.RemoveDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -1502,12 +1511,42 @@ void AT66PlayerController::HandleInteractPressed()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	const float InteractRadius = 200.f;
+	const float InteractRadius = 300.f;
 	FVector Loc = ControlledPawn->GetActorLocation();
 	TArray<FOverlapResult> Overlaps;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(ControlledPawn);
 	World->OverlapMultiByChannel(Overlaps, Loc, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(InteractRadius), Params);
+
+	auto ComputeInteractionDistSq = [&Loc](AActor* Actor) -> float
+	{
+		if (!Actor)
+		{
+			return FLT_MAX;
+		}
+
+		const UPrimitiveComponent* InteractionPrimitive = nullptr;
+		if (const AT66WorldInteractableBase* WorldInteractable = Cast<AT66WorldInteractableBase>(Actor))
+		{
+			InteractionPrimitive = WorldInteractable->TriggerBox.Get();
+		}
+		else
+		{
+			InteractionPrimitive = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
+		}
+
+		if (InteractionPrimitive)
+		{
+			float CollisionDistSq = 0.f;
+			FVector ClosestPoint = FVector::ZeroVector;
+			if (InteractionPrimitive->GetSquaredDistanceToCollision(Loc, CollisionDistSq, ClosestPoint))
+			{
+				return CollisionDistSq;
+			}
+		}
+
+		return FVector::DistSquared(Loc, Actor->GetActorLocation());
+	};
 
 	AT66StageGate* ClosestStageGate = nullptr;
 	AT66CowardiceGate* ClosestCowardiceGate = nullptr;
@@ -1526,6 +1565,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66StageCatchUpGate* ClosestCatchUpGate = nullptr;
 	AT66StageCatchUpGoldInteractable* ClosestCatchUpGold = nullptr;
 	AT66StageCatchUpLootInteractable* ClosestCatchUpLoot = nullptr;
+	AT66WorldInteractableBase* ClosestWorldInteractable = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
 	float ClosestTotemDistSq = InteractRadius * InteractRadius;
@@ -1543,12 +1583,13 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestCatchUpGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCatchUpGoldDistSq = InteractRadius * InteractRadius;
 	float ClosestCatchUpLootDistSq = InteractRadius * InteractRadius;
+	float ClosestWorldInteractableDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
 	{
 		AActor* A = R.GetActor();
 		if (!A) continue;
-		float DistSq = FVector::DistSquared(Loc, A->GetActorLocation());
+		const float DistSq = ComputeInteractionDistSq(A);
 		if (AT66StageGate* G = Cast<AT66StageGate>(A))
 		{
 			if (DistSq < ClosestStageGateDistSq) { ClosestStageGateDistSq = DistSq; ClosestStageGate = G; }
@@ -1616,6 +1657,10 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66StageCatchUpLootInteractable* L = Cast<AT66StageCatchUpLootInteractable>(A))
 		{
 			if (DistSq < ClosestCatchUpLootDistSq) { ClosestCatchUpLootDistSq = DistSq; ClosestCatchUpLoot = L; }
+		}
+		else if (AT66WorldInteractableBase* WorldInteractable = Cast<AT66WorldInteractableBase>(A))
+		{
+			if (DistSq < ClosestWorldInteractableDistSq) { ClosestWorldInteractableDistSq = DistSq; ClosestWorldInteractable = WorldInteractable; }
 		}
 	}
 
@@ -1713,6 +1758,10 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		return;
 	}
+	if (ClosestWorldInteractable && ClosestWorldInteractable->Interact(this))
+	{
+		return;
+	}
 	if (ClosestLootBag)
 	{
 		UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
@@ -1763,6 +1812,145 @@ void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
 	}
+}
+
+void AT66PlayerController::OpenCasinoOverlay()
+{
+	if (!IsGameplayLevel()) return;
+
+	if (!CasinoOverlayWidget)
+	{
+		CasinoOverlayWidget = CreateWidget<UT66CasinoOverlayWidget>(this, UT66CasinoOverlayWidget::StaticClass());
+	}
+
+	if (CasinoOverlayWidget)
+	{
+		CasinoOverlayWidget->OpenVendorTab();
+		if (!CasinoOverlayWidget->IsInViewport())
+		{
+			CasinoOverlayWidget->AddToViewport(100);
+		}
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+	}
+}
+
+void AT66PlayerController::CloseCasinoOverlay()
+{
+	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
+	{
+		CasinoOverlayWidget->RemoveFromParent();
+	}
+	RestoreGameplayInputMode();
+}
+
+void AT66PlayerController::SwitchCasinoOverlayToGambling()
+{
+	if (CasinoOverlayWidget)
+	{
+		CasinoOverlayWidget->OpenGamblingTab();
+	}
+}
+
+void AT66PlayerController::SwitchCasinoOverlayToVendor()
+{
+	if (CasinoOverlayWidget)
+	{
+		CasinoOverlayWidget->OpenVendorTab();
+	}
+}
+
+void AT66PlayerController::SwitchCasinoOverlayToAlchemy()
+{
+	if (CasinoOverlayWidget)
+	{
+		CasinoOverlayWidget->OpenAlchemyTab();
+	}
+}
+
+bool AT66PlayerController::IsCasinoOverlayOpen() const
+{
+	return CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport();
+}
+
+bool AT66PlayerController::TriggerCasinoBossIfAngry()
+{
+	if (!IsGameplayLevel()) return false;
+
+	UWorld* World = GetWorld();
+	if (!World) return false;
+
+	UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState || RunState->GetCasinoAnger01() < 1.f || RunState->GetBossActive())
+	{
+		return false;
+	}
+
+	for (TActorIterator<AT66GamblerBoss> It(World); It; ++It)
+	{
+		return false;
+	}
+
+	FVector SpawnLoc = FVector::ZeroVector;
+	bool bHasSpawnLoc = false;
+	for (TActorIterator<AT66CasinoInteractable> It(World); It; ++It)
+	{
+		if (AT66CasinoInteractable* Casino = *It)
+		{
+			SpawnLoc = Casino->GetActorLocation();
+			bHasSpawnLoc = true;
+			break;
+		}
+	}
+
+	if (!bHasSpawnLoc)
+	{
+		for (TActorIterator<AT66GamblerNPC> It(World); It; ++It)
+		{
+			if (AT66GamblerNPC* Gambler = *It)
+			{
+				SpawnLoc = Gambler->GetActorLocation();
+				bHasSpawnLoc = true;
+				Gambler->Destroy();
+				break;
+			}
+		}
+	}
+
+	if (!bHasSpawnLoc)
+	{
+		if (APawn* FallbackPawn = GetPawn())
+		{
+			SpawnLoc = FallbackPawn->GetActorLocation() + FVector(600.f, 0.f, 0.f);
+			bHasSpawnLoc = true;
+		}
+	}
+	if (!bHasSpawnLoc)
+	{
+		return false;
+	}
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	World->SpawnActor<AT66GamblerBoss>(AT66GamblerBoss::StaticClass(), SpawnLoc + FVector(0.f, 0.f, 200.f), FRotator::ZeroRotator, Params);
+
+	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
+	{
+		CasinoOverlayWidget->RemoveFromParent();
+	}
+	if (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
+	{
+		GamblerOverlayWidget->RemoveFromParent();
+	}
+	if (VendorOverlayWidget && VendorOverlayWidget->IsInViewport())
+	{
+		VendorOverlayWidget->RemoveFromParent();
+	}
+	RestoreGameplayInputMode();
+	return true;
 }
 
 void AT66PlayerController::OpenVendorOverlay()
@@ -2214,6 +2402,49 @@ void AT66PlayerController::OnPlayerDied()
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
+	}
+}
+
+void AT66PlayerController::HandleQuickReviveStateChanged()
+{
+	if (!IsGameplayLevel())
+	{
+		return;
+	}
+
+	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const bool bDowned = RunState && RunState->IsInQuickReviveDownedState();
+
+	if (bDowned)
+	{
+		EndHeroOneScopedUlt();
+	}
+
+	SetIgnoreMoveInput(bDowned);
+	SetIgnoreLookInput(bDowned);
+
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+	{
+		Hero->SetQuickReviveDowned(bDowned);
+
+		if (UT66CombatComponent* Combat = Hero->FindComponentByClass<UT66CombatComponent>())
+		{
+			if (bDowned)
+			{
+				Combat->SetAutoAttackSuppressed(true);
+				Combat->ClearLockedTarget();
+			}
+			else if (!bHeroOneScopedUltActive && !Hero->IsVehicleMounted())
+			{
+				Combat->SetAutoAttackSuppressed(false);
+			}
+		}
+	}
+
+	if (LockedEnemy.IsValid())
+	{
+		LockedEnemy->SetLockedIndicator(false);
+		LockedEnemy.Reset();
 	}
 }
 

@@ -43,7 +43,7 @@ private:
 	float CurrentSpeed = 0.f;
 
 	UPROPERTY(Transient)
-	float MaxSpeed = 1200.f;
+	float MaxSpeed = 2400.f;
 
 	UPROPERTY(Transient)
 	bool bLastHasMovementInput = false;

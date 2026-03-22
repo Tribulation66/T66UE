@@ -245,7 +245,7 @@ namespace
 	}
 
 	// ----- Font options: 0=Caesar Dressing, 1=Cinzel, 2=Cormorant SC, 3=Germania One, 4=Grenze, 5=Alagard, 6=Ransom -----
-	static int32 GThemeFontIndex = 6;  // Ransom (default); cycle with T66NextFont console command
+	static int32 GThemeFontIndex = 5;  // Alagard (default); cycle with T66NextFont console command
 	static bool GForceBoldFont = false; // When true, use bold variant for all text (T66Bold console command)
 
 	static const TCHAR* GThemeFontPaths[] = {
@@ -606,6 +606,97 @@ FOnClicked FT66Style::DebounceClick(const FOnClicked& InnerDelegate)
 	});
 }
 
+ET66ButtonBorderVisual FT66Style::ResolveButtonBorderVisual(const FT66ButtonParams& Params)
+{
+	if (Params.BorderVisual != ET66ButtonBorderVisual::Default)
+	{
+		return Params.BorderVisual;
+	}
+
+	if (Params.Type == ET66ButtonType::Row)
+	{
+		return ET66ButtonBorderVisual::None;
+	}
+
+	return ET66ButtonBorderVisual::RetroWood;
+}
+
+ET66ButtonBackgroundVisual FT66Style::ResolveButtonBackgroundVisual(const FT66ButtonParams& Params)
+{
+	if (Params.BackgroundVisual != ET66ButtonBackgroundVisual::Default)
+	{
+		return Params.BackgroundVisual;
+	}
+
+	if (Params.Type == ET66ButtonType::Row)
+	{
+		return ET66ButtonBackgroundVisual::None;
+	}
+
+	return ET66ButtonBackgroundVisual::MainMenuArcane;
+}
+
+ET66ButtonBorderVisual FT66Style::ResolvePanelBorderVisual(const FT66PanelParams& Params)
+{
+	if (Params.BorderVisual != ET66ButtonBorderVisual::Default)
+	{
+		return Params.BorderVisual;
+	}
+
+	return Params.Type == ET66PanelType::Bg
+		? ET66ButtonBorderVisual::None
+		: ET66ButtonBorderVisual::RetroWood;
+}
+
+ET66ButtonBackgroundVisual FT66Style::ResolvePanelBackgroundVisual(const FT66PanelParams& Params)
+{
+	if (Params.BackgroundVisual != ET66ButtonBackgroundVisual::Default)
+	{
+		return Params.BackgroundVisual;
+	}
+
+	return ET66ButtonBackgroundVisual::MainMenuArcane;
+}
+
+float FT66Style::ResolveButtonDecorativeBorderThickness(const FT66ButtonParams& Params, int32 EffectiveFontSize, float MaxThickness)
+{
+	float Thickness = FMath::Clamp(static_cast<float>(EffectiveFontSize) * 0.25f, 3.5f, MaxThickness);
+
+	if (Params.Height > 0.f)
+	{
+		Thickness = FMath::Min(Thickness, FMath::Max(3.f, Params.Height * 0.16f));
+	}
+
+	return FMath::Clamp(Thickness, 3.f, MaxThickness);
+}
+
+float FT66Style::ResolvePanelDecorativeBorderThickness(const FT66PanelParams& Params, float MaxThickness)
+{
+	switch (Params.Type)
+	{
+	case ET66PanelType::Bg:
+		return 0.f;
+
+	case ET66PanelType::Panel2:
+		return FMath::Min(4.f, MaxThickness);
+
+	case ET66PanelType::Panel:
+	default:
+		break;
+	}
+
+	const float MinPadding = FMath::Min(
+		FMath::Min(Params.Padding.Left, Params.Padding.Top),
+		FMath::Min(Params.Padding.Right, Params.Padding.Bottom));
+	float Thickness = MaxThickness;
+	if (MinPadding > 0.f)
+	{
+		Thickness = FMath::Min(Thickness, FMath::Max(4.f, MinPadding * 0.55f));
+	}
+
+	return FMath::Clamp(Thickness, 4.f, MaxThickness);
+}
+
 // ---------------------------------------------------------------------------
 // Full params-based MakeButton — every button in the game funnels through here.
 // ---------------------------------------------------------------------------
@@ -630,13 +721,18 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		StyleName = "T66.Button.Neutral";    DefaultBtnColor = Tokens::Panel2;  break;
 	}
 
-	if (Params.BorderVisual == ET66ButtonBorderVisual::RetroWood)
+	const ET66ButtonBorderVisual ResolvedBorderVisual = ResolveButtonBorderVisual(Params);
+	const ET66ButtonBackgroundVisual ResolvedBackgroundVisual = ResolveButtonBackgroundVisual(Params);
+
+	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood)
 	{
 		StyleName = "T66.Button.FlatRect";
 	}
 
 	const FButtonStyle& BtnStyle = Get().GetWidgetStyle<FButtonStyle>(StyleName);
 	const FTextBlockStyle& TxtStyle = Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+	const TSharedPtr<FT66ButtonFillBrushSet> FillBrushSet = FT66ButtonVisuals::CreateFillBrushSet(ResolvedBackgroundVisual);
+	const bool bHasCustomFill = FillBrushSet.IsValid() && FillBrushSet->IsValid();
 
 	// 2. Debounce the click delegate.
 	FOnClicked SafeClick = DebounceClick(Params.OnClicked);
@@ -645,11 +741,13 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	//    When a color override is set (e.g. ON/OFF toggle selected state), use it so the
 	//    selected button is visually distinct. Otherwise with textures use white so the
 	//    baked-in border/gloss passes through; with fallback use the style default.
-	const bool bUsesTextureChrome = HasButtonTextures() && Params.BorderVisual != ET66ButtonBorderVisual::RetroWood;
+	const bool bUsesTextureChrome = HasButtonTextures() && ResolvedBorderVisual != ET66ButtonBorderVisual::RetroWood;
 	TAttribute<FSlateColor> BtnColor;
 	if (Params.bHasColorOverride)
 	{
-		BtnColor = Params.ColorOverride;
+		BtnColor = bHasCustomFill
+			? TAttribute<FSlateColor>(FSlateColor(FLinearColor(1.f, 1.f, 1.f, 0.f)))
+			: Params.ColorOverride;
 	}
 	else if (bUsesTextureChrome)
 	{
@@ -657,7 +755,9 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	}
 	else
 	{
-		BtnColor = TAttribute<FSlateColor>(FSlateColor(DefaultBtnColor));
+		BtnColor = bHasCustomFill
+			? TAttribute<FSlateColor>(FSlateColor(FLinearColor(1.f, 1.f, 1.f, 0.f)))
+			: TAttribute<FSlateColor>(FSlateColor(DefaultBtnColor));
 	}
 
 	// 4. Content padding (negative sentinel = don't override, use FMargin(0)).
@@ -692,9 +792,12 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	const EHorizontalAlignment BtnHAlign = (Params.Type == ET66ButtonType::Row) ? HAlign_Fill : HAlign_Center;
 	const EVerticalAlignment BtnVAlign = (Params.Type == ET66ButtonType::Row) ? VAlign_Fill : VAlign_Center;
 	const TSharedPtr<FT66ButtonGlowState> GlowState = CreateButtonGlowState(Params.Type);
-	const TSharedPtr<FT66ButtonBorderBrushSet> BorderBrushSet = FT66ButtonVisuals::CreateBorderBrushSet(Params.BorderVisual);
+	const TSharedPtr<FT66ButtonBorderBrushSet> BorderBrushSet = FT66ButtonVisuals::CreateBorderBrushSet(ResolvedBorderVisual);
 	const TSharedPtr<ET66ButtonBorderState> BorderState = MakeShared<ET66ButtonBorderState>(ET66ButtonBorderState::Normal);
-	const float BorderThickness = (BorderBrushSet.IsValid() && BorderBrushSet->IsValid()) ? BorderBrushSet->Thickness : 0.f;
+	const int32 EffectiveFontSize = (Params.FontSize > 0) ? Params.FontSize : TextFont.Size;
+	const float BorderThickness = (BorderBrushSet.IsValid() && BorderBrushSet->IsValid())
+		? ResolveButtonDecorativeBorderThickness(Params, EffectiveFontSize, BorderBrushSet->Thickness)
+		: 0.f;
 	const auto SetGlow = [GlowState](float Intensity)
 	{
 		SetButtonGlowIntensity(GlowState, Intensity);
@@ -707,7 +810,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		}
 	};
 
-	if (Params.BorderVisual == ET66ButtonBorderVisual::RetroWood)
+	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[BORDER] MakeButton: Label='%s' BrushSet=%d BrushSetValid=%d Thickness=%.1f"),
 			*Params.Label.ToString(),
@@ -740,6 +843,27 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 				Color.A = GlowState->Intensity * Tokens::ButtonGlowFallbackOpacity;
 				return FSlateColor(Color);
 			})));
+
+	const TAttribute<const FSlateBrush*> FillBrushAttr = TAttribute<const FSlateBrush*>::CreateLambda([FillBrushSet, BorderState]() -> const FSlateBrush*
+	{
+		if (!FillBrushSet.IsValid() || !FillBrushSet->IsValid() || !BorderState.IsValid())
+		{
+			return nullptr;
+		}
+
+		return FillBrushSet->GetBrush(*BorderState);
+	});
+
+	const TSharedRef<SWidget> FillWidget =
+		bHasCustomFill
+		? StaticCastSharedRef<SWidget>(
+			SNew(SBorder)
+			.Visibility(EVisibility::HitTestInvisible)
+			.BorderImage(FillBrushAttr)
+			.BorderBackgroundColor(FLinearColor::White))
+		: StaticCastSharedRef<SWidget>(
+			SNew(SBox)
+			.Visibility(EVisibility::Collapsed));
 
 	const TAttribute<const FSlateBrush*> HorizontalBorderBrushAttr = TAttribute<const FSlateBrush*>::CreateLambda([BorderBrushSet, BorderState]() -> const FSlateBrush*
 	{
@@ -832,6 +956,13 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 				GlowWidget
 			]
 			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.Padding(FMargin(0.f))
+			[
+				FillWidget
+			]
+			+ SOverlay::Slot()
 			[
 				SNew(SButton)
 				.HAlign(BtnHAlign)
@@ -897,10 +1028,26 @@ TSharedRef<SWidget> FT66Style::MakePanel(
 	default:                    BrushName = "T66.Brush.Panel";   break;
 	}
 
+	const ET66ButtonBorderVisual ResolvedBorderVisual = ResolvePanelBorderVisual(Params);
+	const ET66ButtonBackgroundVisual ResolvedBackgroundVisual = ResolvePanelBackgroundVisual(Params);
+	const TSharedPtr<FT66ButtonFillBrushSet> FillBrushSet = FT66ButtonVisuals::CreateFillBrushSet(ResolvedBackgroundVisual);
+	const bool bHasCustomFill = FillBrushSet.IsValid() && FillBrushSet->IsValid();
+	const TSharedPtr<FT66ButtonBorderBrushSet> BorderBrushSet = FT66ButtonVisuals::CreateBorderBrushSet(ResolvedBorderVisual);
+	const float BorderThickness = (BorderBrushSet.IsValid() && BorderBrushSet->IsValid())
+		? ResolvePanelDecorativeBorderThickness(Params, BorderBrushSet->Thickness)
+		: 0.f;
+	const bool bHasDecorativeBorder = BorderThickness > 0.f;
+
 	// 2. Background color: when textures are loaded, use white tint to pass through
 	//    the baked-in look. Color overrides only apply to the fallback path.
 	TAttribute<FSlateColor> BgColor;
-	if (HasPanelTextures())
+	if (bHasCustomFill)
+	{
+		BgColor = Params.bHasColorOverride
+			? Params.ColorOverride
+			: TAttribute<FSlateColor>(FSlateColor(FLinearColor::White));
+	}
+	else if (HasPanelTextures())
 	{
 		BgColor = TAttribute<FSlateColor>(FSlateColor(FLinearColor::White));
 	}
@@ -921,14 +1068,118 @@ TSharedRef<SWidget> FT66Style::MakePanel(
 		BgColor = TAttribute<FSlateColor>(FSlateColor(DefaultColor));
 	}
 
+	const TAttribute<const FSlateBrush*> BackgroundBrushAttr = TAttribute<const FSlateBrush*>::CreateLambda([FillBrushSet, bHasCustomFill, BrushName]() -> const FSlateBrush*
+	{
+		if (bHasCustomFill && FillBrushSet.IsValid() && FillBrushSet->Normal.IsValid())
+		{
+			return FillBrushSet->Normal.Get();
+		}
+
+		return FT66Style::Get().GetBrush(BrushName);
+	});
+
+	const TAttribute<const FSlateBrush*> HorizontalBorderBrushAttr = TAttribute<const FSlateBrush*>::CreateLambda([BorderBrushSet]() -> const FSlateBrush*
+	{
+		if (!BorderBrushSet.IsValid())
+		{
+			return nullptr;
+		}
+
+		return BorderBrushSet->GetHorizontalBrush(ET66ButtonBorderState::Normal);
+	});
+
+	const TAttribute<const FSlateBrush*> VerticalBorderBrushAttr = TAttribute<const FSlateBrush*>::CreateLambda([BorderBrushSet]() -> const FSlateBrush*
+	{
+		if (!BorderBrushSet.IsValid())
+		{
+			return nullptr;
+		}
+
+		return BorderBrushSet->GetVerticalBrush(ET66ButtonBorderState::Normal);
+	});
+
+	const TSharedRef<SWidget> DecorativeBorderWidget =
+		bHasDecorativeBorder
+		? StaticCastSharedRef<SWidget>(
+			SNew(SOverlay)
+			.Visibility(EVisibility::HitTestInvisible)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				SNew(SBox)
+				.HeightOverride(BorderThickness)
+				[
+					SNew(SImage)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Image(HorizontalBorderBrushAttr)
+				]
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Bottom)
+			[
+				SNew(SBox)
+				.HeightOverride(BorderThickness)
+				[
+					SNew(SImage)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Image(HorizontalBorderBrushAttr)
+				]
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SBox)
+				.WidthOverride(BorderThickness)
+				[
+					SNew(SImage)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Image(VerticalBorderBrushAttr)
+				]
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SBox)
+				.WidthOverride(BorderThickness)
+				[
+					SNew(SImage)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Image(VerticalBorderBrushAttr)
+				]
+			])
+		: StaticCastSharedRef<SWidget>(
+			SNew(SBox)
+			.Visibility(EVisibility::Collapsed));
+
+	const TSharedRef<SWidget> PanelChild =
+		bHasDecorativeBorder
+		? StaticCastSharedRef<SWidget>(
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.Padding(Params.Padding)
+			[
+				Content
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				DecorativeBorderWidget
+			])
+		: Content;
+
 	// 3. Build the SBorder.
 	TSharedRef<SBorder> Border = SNew(SBorder)
-		.BorderImage(Get().GetBrush(BrushName))
+		.BorderImage(BackgroundBrushAttr)
 		.BorderBackgroundColor(BgColor)
-		.Padding(Params.Padding)
+		.Padding(bHasDecorativeBorder ? FMargin(0.f) : Params.Padding)
 		.Visibility(Params.Visibility)
 		[
-			Content
+			PanelChild
 		];
 
 	if (OutBorder)

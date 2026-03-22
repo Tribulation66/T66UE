@@ -9,7 +9,6 @@
 class AT66HeroBase;
 class UBoxComponent;
 class USceneComponent;
-class UTextRenderComponent;
 
 UCLASS(Blueprintable)
 class T66_API AT66PilotableTractor : public AT66WorldInteractableBase
@@ -30,6 +29,10 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void ApplyRarityVisuals() override;
+	virtual bool ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const override;
+	virtual FText BuildInteractionPromptText() const override;
+	virtual float GetInteractionPromptWorldSize() const override { return 82.f; }
+	virtual float GetInteractionPromptVerticalPadding() const override { return 140.f; }
 
 private:
 	bool MountHero(AT66HeroBase* Hero);
@@ -37,10 +40,6 @@ private:
 	void ExpireTractor();
 	void TickMountedDriving(float DeltaSeconds);
 	void HandleMountedEnemyMow(float DeltaSeconds);
-	void UpdatePrompt();
-	void UpdatePromptFacing() const;
-	void UpdatePromptPlacement();
-	FString BuildPromptString() const;
 
 	UPROPERTY(VisibleAnywhere, Category = "Tractor")
 	TObjectPtr<USceneComponent> TractorRoot;
@@ -48,17 +47,11 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Tractor")
 	TObjectPtr<UBoxComponent> BodyCollision;
 
-	UPROPERTY(VisibleAnywhere, Category = "Tractor")
-	TObjectPtr<UTextRenderComponent> PromptText;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Pilot", meta = (ClampMin = "1.0"))
 	float TotalPilotSeconds = 30.f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Tractor|Pilot")
 	float RemainingPilotSeconds = 30.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Prompt", meta = (ClampMin = "50.0"))
-	float PromptVisibleDistance = 650.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Combat", meta = (ClampMin = "50.0"))
 	float MowKillRadius = 220.f;

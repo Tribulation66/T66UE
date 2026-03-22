@@ -17,6 +17,9 @@ public:
 	/** Spawn all props for the current stage. Call after terrain is ready. */
 	void SpawnPropsForStage(UWorld* World, int32 Seed);
 
+	/** Spawn a filtered set of props inside the dedicated Farm board bounds. */
+	void SpawnFarmPropsForStage(UWorld* World, int32 Seed, const TArray<FName>& AllowedRows);
+
 	/** Destroy all spawned props (stage transition / map regeneration). */
 	void ClearProps();
 
@@ -24,6 +27,16 @@ public:
 
 private:
 	UDataTable* GetPropsDataTable() const;
+	void SpawnPropsInternal(
+		UWorld* World,
+		int32 Seed,
+		const TArray<FName>* AllowedRows,
+		float MainHalfExtent,
+		float TraceStartZ,
+		float TraceEndZ,
+		bool bUseLegacyNoSpawnZones,
+		const FVector& KeepClearCenter,
+		float KeepClearRadius);
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UDataTable> CachedPropsDataTable;

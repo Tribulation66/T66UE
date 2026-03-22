@@ -52,7 +52,7 @@ void UT66LobbyScreen::StartRunFromLobby()
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (GI)
 	{
-		GI->bStageCatchUpPending = (GI->SelectedDifficulty != ET66Difficulty::Easy);
+		GI->bStageCatchUpPending = false;
 		GI->RunSeed = FMath::Rand();
 	}
 	if (UIManager) UIManager->HideAllUI();
@@ -62,7 +62,7 @@ void UT66LobbyScreen::StartRunFromLobby()
 	}
 	else
 	{
-		UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
 	}
 }
 

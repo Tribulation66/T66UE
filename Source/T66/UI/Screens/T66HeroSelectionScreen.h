@@ -87,6 +87,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void OnBackClicked();
 
+	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
+	void OnSettingsClicked();
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Hero Selection")
 	void OnPreviewedHeroChanged(const FHeroData& NewHeroData);
 
@@ -189,6 +192,7 @@ private:
 	FReply HandleTheLabClicked();
 	FReply HandleEnterClicked();
 	FReply HandleBackClicked();
+	FReply HandleSettingsClicked();
 	FReply HandleBackToLobbyClicked();
 
 	// Difficulty dropdown

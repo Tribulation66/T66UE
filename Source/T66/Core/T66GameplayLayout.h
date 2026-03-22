@@ -7,6 +7,8 @@ namespace T66GameplayLayout
 	static constexpr float WorldHalfExtent = 50000.f;
 	static constexpr float AreaHalfHeightY = 4545.f;
 	static constexpr float CorridorHalfHeightY = 1000.f;
+	static constexpr float GateExitClearanceDepthX = 5400.f;
+	static constexpr float GateExitClearanceHalfHeightY = 2600.f;
 
 	static constexpr float StartPartitionWestX = -40000.f;
 	static constexpr float StartAreaEastX = -30909.f;
@@ -83,6 +85,27 @@ namespace T66GameplayLayout
 			|| IsInsideBossCorridor2D(Location, Margin);
 	}
 
+	inline bool IsInsideStartGateExitClearance2D(const FVector& Location, float Margin = 0.f)
+	{
+		return Location.X >= (StartMainEntranceX - Margin)
+			&& Location.X <= (StartMainEntranceX + GateExitClearanceDepthX + Margin)
+			&& FMath::Abs(Location.Y) <= (GateExitClearanceHalfHeightY + Margin);
+	}
+
+	inline bool IsInsideBossGateExitClearance2D(const FVector& Location, float Margin = 0.f)
+	{
+		return Location.X >= (BossMainEntranceX - GateExitClearanceDepthX - Margin)
+			&& Location.X <= (BossMainEntranceX + Margin)
+			&& FMath::Abs(Location.Y) <= (GateExitClearanceHalfHeightY + Margin);
+	}
+
+	inline bool IsInsideTraversalKeepClearZone2D(const FVector& Location, float Margin = 0.f)
+	{
+		return IsInsideReservedTraversalZone2D(Location, Margin)
+			|| IsInsideStartGateExitClearance2D(Location, Margin)
+			|| IsInsideBossGateExitClearance2D(Location, Margin);
+	}
+
 	inline bool IsValidGameplayGroundNormal(const FVector& SurfaceNormal, float MinNormalZ = MinGameplayGroundNormalZ)
 	{
 		return SurfaceNormal.GetSafeNormal().Z >= MinNormalZ;
@@ -105,5 +128,18 @@ namespace T66GameplayLayout
 			|| OverlapsRect(StartAreaEastX, StartMainEntranceX, -CorridorHalfHeightY, CorridorHalfHeightY)
 			|| OverlapsRect(BossMainEntranceX, BossAreaWestX, -CorridorHalfHeightY, CorridorHalfHeightY)
 			|| OverlapsRect(BossAreaWestX, BossPartitionEastX, -AreaHalfHeightY, AreaHalfHeightY);
+	}
+
+	inline bool DoesRectOverlapTraversalKeepClearZone2D(float MinX, float MaxX, float MinY, float MaxY, float Margin = 0.f)
+	{
+		auto OverlapsRect = [=](float ZoneMinX, float ZoneMaxX, float ZoneMinY, float ZoneMaxY) -> bool
+		{
+			return DoAxisRangesOverlap(MinX, MaxX, ZoneMinX - Margin, ZoneMaxX + Margin)
+				&& DoAxisRangesOverlap(MinY, MaxY, ZoneMinY - Margin, ZoneMaxY + Margin);
+		};
+
+		return DoesRectOverlapReservedTraversalZone2D(MinX, MaxX, MinY, MaxY, Margin)
+			|| OverlapsRect(StartMainEntranceX, StartMainEntranceX + GateExitClearanceDepthX, -GateExitClearanceHalfHeightY, GateExitClearanceHalfHeightY)
+			|| OverlapsRect(BossMainEntranceX - GateExitClearanceDepthX, BossMainEntranceX, -GateExitClearanceHalfHeightY, GateExitClearanceHalfHeightY);
 	}
 }

@@ -30,6 +30,7 @@ public:
 	virtual void NativeDestruct() override;
 
 	void CloseOverlay();
+	void SetEmbeddedInCasinoShell(bool bEmbedded) { bEmbeddedInCasinoShell = bEmbedded; }
 
 	/** Skip dialogue and open shop page (used by in-world dialogue). */
 	void OpenShopPage();
@@ -44,6 +45,7 @@ private:
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 
 	// Bottom bar (next to inventory title)
+	TSharedPtr<STextBlock> NetWorthText;
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> StatusText;
@@ -163,4 +165,6 @@ private:
 
 	UFUNCTION()
 	void HandleBossChanged();
+
+	bool bEmbeddedInCasinoShell = false;
 };

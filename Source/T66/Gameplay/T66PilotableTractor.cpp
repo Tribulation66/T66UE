@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66PilotableTractor.h"
 
+#include "Core/T66InteractionPromptSubsystem.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66HeroBase.h"
@@ -10,11 +11,9 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
-#include "Components/TextRenderComponent.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "UObject/SoftObjectPath.h"
 
 AT66PilotableTractor::AT66PilotableTractor()
@@ -40,23 +39,13 @@ AT66PilotableTractor::AT66PilotableTractor()
 	TriggerBox->SetGenerateOverlapEvents(true);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	TriggerBox->SetBoxExtent(FVector(260.f, 220.f, 180.f));
-	TriggerBox->SetRelativeLocation(FVector(0.f, 0.f, 140.f));
+	TriggerBox->SetBoxExtent(FVector(560.f, 420.f, 240.f));
+	TriggerBox->SetRelativeLocation(FVector(0.f, 0.f, 150.f));
 
 	VisualMesh->SetupAttachment(TractorRoot);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
-
-	PromptText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("PromptText"));
-	PromptText->SetupAttachment(TractorRoot);
-	PromptText->SetHorizontalAlignment(EHTA_Center);
-	PromptText->SetVerticalAlignment(EVRTA_TextCenter);
-	PromptText->SetWorldSize(82.f);
-	PromptText->SetTextRenderColor(FColor::White);
-	PromptText->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	PromptText->SetHiddenInGame(true, true);
-	PromptText->SetVisibility(false, true);
 
 	RemainingPilotSeconds = TotalPilotSeconds;
 	ApplyRarityVisuals();
@@ -112,9 +101,8 @@ void AT66PilotableTractor::BeginPlay()
 	RemainingPilotSeconds = FMath::Max(0.f, TotalPilotSeconds);
 	TryApplyImportedMesh();
 	FT66VisualUtil::SnapToGround(this, GetWorld());
-	UpdatePromptPlacement();
 	LastFrameLocation = GetActorLocation();
-	UpdatePrompt();
+	RefreshInteractionPrompt();
 }
 
 void AT66PilotableTractor::Tick(float DeltaSeconds)
@@ -138,7 +126,7 @@ void AT66PilotableTractor::Tick(float DeltaSeconds)
 	}
 
 	LastFrameLocation = GetActorLocation();
-	UpdatePrompt();
+	RefreshInteractionPrompt();
 }
 
 void AT66PilotableTractor::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -167,12 +155,48 @@ void AT66PilotableTractor::ApplyRarityVisuals()
 {
 	if (TryApplyImportedMesh())
 	{
-		UpdatePromptPlacement();
+		RefreshInteractionPrompt();
 		return;
 	}
 
 	Super::ApplyRarityVisuals();
-	UpdatePromptPlacement();
+	RefreshInteractionPrompt();
+}
+
+bool AT66PilotableTractor::ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const
+{
+	const bool bMountedByLocalHero = LocalHero && IsMountedByHero(LocalHero);
+	if (MountedHero.IsValid() && !bMountedByLocalHero)
+	{
+		return false;
+	}
+
+	if (RemainingPilotSeconds <= KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	return bMountedByLocalHero || AT66WorldInteractableBase::ShouldShowInteractionPrompt(LocalHero);
+}
+
+FText AT66PilotableTractor::BuildInteractionPromptText() const
+{
+	if (RemainingPilotSeconds <= KINDA_SMALL_NUMBER)
+	{
+		return FText::GetEmpty();
+	}
+
+	UGameInstance* GI = GetGameInstance();
+	UT66InteractionPromptSubsystem* PromptSubsystem = GI ? GI->GetSubsystem<UT66InteractionPromptSubsystem>() : nullptr;
+	if (!PromptSubsystem)
+	{
+		return FText::GetEmpty();
+	}
+
+	const ET66InteractionPromptAction Action = MountedHero.IsValid()
+		? ET66InteractionPromptAction::ExitTractor
+		: ET66InteractionPromptAction::PilotTractor;
+	return PromptSubsystem->BuildPromptTextWithSeconds(Action, FMath::CeilToInt(RemainingPilotSeconds));
 }
 
 bool AT66PilotableTractor::MountHero(AT66HeroBase* Hero)
@@ -201,7 +225,7 @@ bool AT66PilotableTractor::MountHero(AT66HeroBase* Hero)
 	Hero->SetActorRotation(GetActorRotation());
 
 	MowCheckAccumSeconds = MowCheckInterval;
-	UpdatePrompt();
+	RefreshInteractionPrompt();
 	return true;
 }
 
@@ -244,7 +268,7 @@ void AT66PilotableTractor::DismountHero(bool bDestroyAfterExit)
 		}
 	}
 
-	UpdatePrompt();
+	RefreshInteractionPrompt();
 
 	if (bDestroyAfterExit)
 	{
@@ -343,84 +367,4 @@ void AT66PilotableTractor::HandleMountedEnemyMow(float DeltaSeconds)
 
 		Enemy->TakeDamageFromHero(Enemy->CurrentHP + Enemy->MaxHP + 1, FName(TEXT("Tractor")));
 	}
-}
-
-void AT66PilotableTractor::UpdatePrompt()
-{
-	if (!PromptText)
-	{
-		return;
-	}
-
-	AT66HeroBase* LocalHero = Cast<AT66HeroBase>(UGameplayStatics::GetPlayerPawn(this, 0));
-	const bool bMountedByLocalHero = LocalHero && IsMountedByHero(LocalHero);
-	const bool bCanMount = !MountedHero.IsValid() && RemainingPilotSeconds > KINDA_SMALL_NUMBER;
-	const bool bHeroInRange = LocalHero
-		&& FVector::DistSquared2D(GetActorLocation(), LocalHero->GetActorLocation()) <= FMath::Square(PromptVisibleDistance);
-	const bool bShowPrompt = bMountedByLocalHero || (bCanMount && bHeroInRange);
-
-	PromptText->SetText(FText::FromString(BuildPromptString()));
-	PromptText->SetHiddenInGame(!bShowPrompt, true);
-	PromptText->SetVisibility(bShowPrompt, true);
-
-	if (bShowPrompt)
-	{
-		UpdatePromptFacing();
-	}
-}
-
-void AT66PilotableTractor::UpdatePromptFacing() const
-{
-	if (!PromptText)
-	{
-		return;
-	}
-
-	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
-	if (!PC)
-	{
-		return;
-	}
-
-	FVector CameraLocation = FVector::ZeroVector;
-	FRotator CameraRotation = FRotator::ZeroRotator;
-	PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
-
-	const FVector ToCamera = CameraLocation - PromptText->GetComponentLocation();
-	if (ToCamera.IsNearlyZero())
-	{
-		return;
-	}
-
-	const FRotator Facing = ToCamera.Rotation();
-	PromptText->SetWorldRotation(FRotator(0.f, Facing.Yaw, 0.f));
-}
-
-void AT66PilotableTractor::UpdatePromptPlacement()
-{
-	if (!PromptText)
-	{
-		return;
-	}
-
-	const float CollisionHeight = BodyCollision ? (BodyCollision->GetUnscaledBoxExtent().Z * 2.f) : 180.f;
-	const float VisualHeight = VisualMesh ? (VisualMesh->Bounds.BoxExtent.Z * 2.f) : 200.f;
-	const float PromptHeight = FMath::Max(CollisionHeight, VisualHeight) + 140.f;
-	PromptText->SetRelativeLocation(FVector(0.f, 0.f, PromptHeight));
-}
-
-FString AT66PilotableTractor::BuildPromptString() const
-{
-	if (RemainingPilotSeconds <= KINDA_SMALL_NUMBER)
-	{
-		return FString();
-	}
-
-	const int32 DisplaySeconds = FMath::Max(1, FMath::CeilToInt(RemainingPilotSeconds));
-	if (MountedHero.IsValid())
-	{
-		return FString::Printf(TEXT("Press F to Exit (%ds)"), DisplaySeconds);
-	}
-
-	return FString::Printf(TEXT("Press F to Pilot (%ds)"), DisplaySeconds);
 }

@@ -28,7 +28,10 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
+#include "Gameplay/T66QuickReviveVendingMachine.h"
+#include "Gameplay/T66TeleportPadInteractable.h"
 #include "Gameplay/T66StageCatchUpGate.h"
 #include "Gameplay/T66StageCatchUpGoldInteractable.h"
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
@@ -57,6 +60,7 @@
 #include "Core/T66PropSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"
+#include "UI/T66LoadingScreenWidget.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/Texture.h"
@@ -75,6 +79,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/StaticMeshActor.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Components/ExponentialHeightFogComponent.h"
@@ -92,6 +97,7 @@
 #endif
 #include "Materials/MaterialInterface.h"
 #include "EngineUtils.h"
+#include "Gameplay/T66MegabonkFarm.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Gameplay/T66ProceduralLandscapeGenerator.h"
 #include "ProceduralMeshComponent.h"
@@ -171,6 +177,30 @@ namespace
 		return false;
 	}
 
+	static const FName T66MegabonkFarmVisualTag(TEXT("T66_MegabonkFarm_Visual"));
+	static const FName T66MegabonkFarmMaterialsReadyTag(TEXT("T66_MegabonkFarm_MaterialsReady"));
+
+	static bool T66AreMegabonkFarmMaterialsReady(UWorld* World)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (!Actor || !Actor->ActorHasTag(T66MegabonkFarmVisualTag))
+			{
+				continue;
+			}
+
+			return Actor->ActorHasTag(T66MegabonkFarmMaterialsReadyTag);
+		}
+
+		return false;
+	}
+
 	struct FT66MeshSectionBuffers
 	{
 		TArray<FVector> Verts;
@@ -183,6 +213,64 @@ namespace
 			return Verts.Num() > 0 && Tris.Num() > 0;
 		}
 	};
+
+	static bool T66IsStandaloneMegabonkFarmStage(const UWorld* World)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+		if (MapName.Contains(TEXT("Coliseum")) || MapName.Contains(TEXT("Tutorial")) || MapName.Contains(TEXT("Lab")))
+		{
+			return false;
+		}
+
+		if (const UT66GameInstance* GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+		{
+			return GI->MapTheme == ET66MapTheme::Farm;
+		}
+
+		return true;
+	}
+
+	static bool T66IsStandaloneColiseumMap(const UWorld* World)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+		return MapName.Contains(TEXT("Coliseum"));
+	}
+
+	static int32 T66EnsureRunSeed(UT66GameInstance* GI)
+	{
+		if (!GI)
+		{
+			return FMath::Rand();
+		}
+
+		if (GI->RunSeed == 0)
+		{
+			GI->RunSeed = FMath::Rand();
+		}
+
+		return GI->RunSeed;
+	}
+
+	static bool T66IsStandaloneTutorialMap(const UWorld* World)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+		return MapName.Contains(TEXT("Tutorial"));
+	}
 
 	static int32 T66PickQuarterTurns(uint32 Hash)
 	{
@@ -553,12 +641,13 @@ void AT66GameMode::BeginPlay()
 	UT66GameInstance* GIAsT66 = GetT66GameInstance();
 	const bool bStageCatchUp = (GIAsT66 && GIAsT66->bStageCatchUpPending);
 
-	// Stage Catch Up: spawn a separate platform and skip normal stage content.
 	if (bStageCatchUp)
 	{
-		SpawnStageCatchUpPlatformAndInteractables();
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - StageCatchUp"));
-		return;
+		GIAsT66->bStageCatchUpPending = false;
+		if (UT66RunStateSubsystem* RunState = GIAsT66->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->SetInStageCatchUp(false);
+		}
 	}
 
 	// Normal stage: defer all ground-dependent spawns until next tick so the landscape is fully formed and collision is ready.
@@ -572,15 +661,102 @@ void AT66GameMode::BeginPlay()
 
 void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
+	UWorld* World = GetWorld();
+	const bool bStandaloneMegabonkFarm = T66IsStandaloneMegabonkFarmStage(World);
+	TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay;
+	if (bStandaloneMegabonkFarm)
+	{
+		if (APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr)
+		{
+			if (UT66LoadingScreenWidget* Overlay = CreateWidget<UT66LoadingScreenWidget>(PC, UT66LoadingScreenWidget::StaticClass()))
+			{
+				Overlay->AddToViewport(10000);
+				GameplayWarmupOverlay = Overlay;
+			}
+		}
+	}
+	auto ScheduleLightingRefresh = [this, World]()
+	{
+		if (!World)
+		{
+			return;
+		}
+
+		// Recapture after runtime terrain/props register so first PIE does not keep a cold sky capture.
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			ApplyThemeToAtmosphereAndLighting();
+		}));
+
+		FTimerHandle DelayedLightingRefreshHandle;
+		World->GetTimerManager().SetTimer(
+			DelayedLightingRefreshHandle,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				ApplyThemeToAtmosphereAndLighting();
+			}),
+			0.35f,
+			false);
+
+		FTimerHandle FinalLightingRefreshHandle;
+		World->GetTimerManager().SetTimer(
+			FinalLightingRefreshHandle,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				ApplyThemeToAtmosphereAndLighting();
+			}),
+			0.65f,
+			false);
+	};
+	auto ScheduleOverlayHide = [this, World, GameplayWarmupOverlay]()
+	{
+		if (!World || !GameplayWarmupOverlay.IsValid())
+		{
+			return;
+		}
+
+		TSharedPtr<int32> OverlayPollCount = MakeShared<int32>(0);
+		TSharedPtr<FTimerHandle> HideOverlayHandle = MakeShared<FTimerHandle>();
+		World->GetTimerManager().SetTimer(
+			*HideOverlayHandle,
+			FTimerDelegate::CreateWeakLambda(this, [World, GameplayWarmupOverlay, OverlayPollCount, HideOverlayHandle]()
+			{
+				if (!World)
+				{
+					return;
+				}
+
+				if (!GameplayWarmupOverlay.IsValid())
+				{
+					World->GetTimerManager().ClearTimer(*HideOverlayHandle);
+					return;
+				}
+
+				const bool bMaterialsReady = T66AreMegabonkFarmMaterialsReady(World);
+				++(*OverlayPollCount);
+				const bool bTimedOut = *OverlayPollCount >= 50;
+				if (bMaterialsReady || bTimedOut)
+				{
+					GameplayWarmupOverlay->RemoveFromParent();
+					World->GetTimerManager().ClearTimer(*HideOverlayHandle);
+					if (bTimedOut && !bMaterialsReady)
+					{
+						UE_LOG(LogTemp, Warning, TEXT("T66GameMode - Gameplay warmup overlay timed out before farm materials reported ready."));
+					}
+				}
+			}),
+			0.10f,
+			true);
+	};
+
 	// Phase 0: Main flat floor (no external asset packs).
 	SpawnLowPolyNatureEnvironment();
 	SpawnTraversalMountainBarriersIfNeeded();
 
 	// Start gate: spawned here (after floor) so the ground trace hits the flat floor.
-	if (!IsColiseumStage() && !IsLabLevel())
+	if (!bStandaloneMegabonkFarm && !IsColiseumStage() && !IsLabLevel())
 	{
-		UWorld* W = GetWorld();
-		AController* PC = W ? W->GetFirstPlayerController() : nullptr;
+		AController* PC = World ? World->GetFirstPlayerController() : nullptr;
 		if (PC)
 		{
 			SpawnStartGateForPlayer(PC);
@@ -588,9 +764,13 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	}
 
 	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
-	SpawnCornerHousesAndNPCs();
-	SpawnTricksterAndCowardiceGate();
-	SpawnBossBeaconIfNeeded();
+	if (!bStandaloneMegabonkFarm)
+	{
+		SpawnCornerHousesAndNPCs();
+		SpawnCasinoInteractableIfNeeded();
+		SpawnTricksterAndCowardiceGate();
+		SpawnBossBeaconIfNeeded();
+	}
 	SpawnWorldInteractablesForStage();
 
 	// Scatter decorative props.
@@ -600,12 +780,47 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 		{
 			UT66GameInstance* T66GI_Props = GetT66GameInstance();
 			const int32 PropSeed = (T66GI_Props && T66GI_Props->RunSeed != 0) ? T66GI_Props->RunSeed : FMath::Rand();
-			PropSub->SpawnPropsForStage(GetWorld(), PropSeed);
+			if (bStandaloneMegabonkFarm)
+			{
+				const TArray<FName> FarmPropRows = {
+					FName(TEXT("Barn")),
+					FName(TEXT("Haybell")),
+					FName(TEXT("Windmill"))
+				};
+				PropSub->SpawnFarmPropsForStage(GetWorld(), PropSeed, FarmPropRows);
+			}
+			else
+			{
+				PropSub->SpawnPropsForStage(GetWorld(), PropSeed);
+			}
 		}
 	}
 
-	SpawnStageEffectsForStage();
-	SpawnTutorialIfNeeded();
+	if (!bStandaloneMegabonkFarm)
+	{
+		SpawnStageEffectsForStage();
+	}
+	if (!bStandaloneMegabonkFarm)
+	{
+		SpawnTutorialIfNeeded();
+	}
+
+	if (bStandaloneMegabonkFarm)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RunState->ResetStageTimerToFull();
+				RunState->SetStageTimerActive(true);
+			}
+		}
+
+		ScheduleLightingRefresh();
+		ScheduleOverlayHide();
+		UE_LOG(LogTemp, Log, TEXT("T66GameMode - Standalone Megabonk Farm content spawned."));
+		return;
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
 
@@ -614,7 +829,6 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	//   Tick 2: Spawn miasma boundary + miasma manager (wall visuals + dynamic materials)
 	//   Tick 3: Spawn enemy director (triggers first wave ??? enemies are cheap now because visuals are cached)
 	//   Tick 4: Spawn boss + boss gate
-	UWorld* World = GetWorld();
 	if (World)
 	{
 		// --- Tick 1: Preload character visuals ---
@@ -703,6 +917,9 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 			}
 		}));
 	}
+
+	ScheduleLightingRefresh();
+	ScheduleOverlayHide();
 }
 
 void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -724,6 +941,8 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	ActiveAsyncLoadHandles.Reset();
 	PlayerCompanions.Reset();
 	StageBoss = nullptr;
+	BossBeaconActor = nullptr;
+	BossBeaconUpdateAccumulator = 0.f;
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -741,11 +960,11 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 	// v0 per your request: stage 1 always shows tutorial prompts.
 	if (RunState->GetCurrentStage() != 1) return;
 
-	// Only run tutorial when forced by the dev switch (spawn in tutorial arena).
-	if (!bForceSpawnInTutorialArea) return;
-
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	// The duplicated tutorial map should always run the tutorial flow.
+	if (!T66IsStandaloneTutorialMap(World) && !bForceSpawnInTutorialArea) return;
 
 	FActorSpawnParameters P;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -1025,6 +1244,14 @@ void AT66GameMode::SpawnStageEffectsForStage()
 void AT66GameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	MaintainPlayerTerrainSafety();
+
+	BossBeaconUpdateAccumulator += DeltaTime;
+	if (BossBeaconUpdateAccumulator >= 0.10f)
+	{
+		BossBeaconUpdateAccumulator = 0.f;
+		UpdateBossBeaconTransform(true);
+	}
 
 	// Frame-level lag: log when a frame exceeded budget (e.g. >20ms).
 	if (DeltaTime > 0.02f)
@@ -1226,6 +1453,8 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 			PC->ShowLoadPreviewOverlay();
 		}
 	}
+
+	MaintainPlayerTerrainSafety();
 }
 
 void AT66GameMode::SpawnBossGateIfNeeded()
@@ -1269,6 +1498,11 @@ void AT66GameMode::SpawnBossGateIfNeeded()
 
 bool AT66GameMode::IsColiseumStage() const
 {
+	if (T66IsStandaloneColiseumMap(GetWorld()))
+	{
+		return true;
+	}
+
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		return GI->bForceColiseumMode;
@@ -1486,6 +1720,11 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	UWorld* World = GetWorld();
 	if (!World) return;
 	const FVector Location = Boss ? Boss->GetActorLocation() : FVector::ZeroVector;
+	if (Boss && StageBoss.Get() == Boss)
+	{
+		StageBoss = nullptr;
+		DestroyBossBeacon();
+	}
 	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 
@@ -1864,8 +2103,6 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 		FLinearColor Color;
 	};
 	TArray<FNPCDef> NPCDefs = {
-		{ AT66VendorNPC::StaticClass(),    NSLOCTEXT("T66.NPC", "Vendor", "Vendor"),        FLinearColor(0.05f,0.05f,0.05f,1.f) },
-		{ AT66GamblerNPC::StaticClass(),   NSLOCTEXT("T66.NPC", "Gambler", "Gambler"),      FLinearColor(0.8f,0.1f,0.1f,1.f) },
 		{ AT66OuroborosNPC::StaticClass(), NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros"),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
 		{ AT66SaintNPC::StaticClass(),     NSLOCTEXT("T66.NPC", "Saint", "Saint"),          FLinearColor(0.9f,0.9f,0.9f,1.f) },
 	};
@@ -1917,7 +2154,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	for (int32 i = 0; i < 4; ++i)
+	for (int32 i = 0; i < NPCDefs.Num(); ++i)
 	{
 		const FVector FlatLoc = FindClosestFlatSurface(NPCPositions[i].X, NPCPositions[i].Y);
 		AActor* SpawnedNPC = World->SpawnActor<AActor>(NPCDefs[i].NPCClass, FlatLoc, FRotator::ZeroRotator, SpawnParams);
@@ -1930,11 +2167,68 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	}
 }
 
+void AT66GameMode::SpawnCasinoInteractableIfNeeded()
+{
+	if (IsColiseumStage() || IsLabLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (TActorIterator<AT66CasinoInteractable> It(World); It; ++It)
+	{
+		return;
+	}
+
+	auto FindClosestFlatSurface = [World](float RefX, float RefY) -> FVector
+	{
+		static constexpr float MinNormalZ = 0.92f;
+		static constexpr float SearchRadiusMax = 2200.f;
+		static constexpr float RadiusStep = 140.f;
+		static constexpr int32 NumAngles = 20;
+
+		FVector Fallback(RefX, RefY, 60.f);
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(Hit, FVector(RefX, RefY, 2000.f), FVector(RefX, RefY, -4000.f), ECC_WorldStatic))
+		{
+			Fallback = Hit.ImpactPoint;
+		}
+
+		for (float R = 0.f; R <= SearchRadiusMax; R += RadiusStep)
+		{
+			const int32 AngleSteps = (R <= 0.f) ? 1 : NumAngles;
+			for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
+			{
+				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
+				const float X = RefX + R * FMath::Cos(Angle);
+				const float Y = RefY + R * FMath::Sin(Angle);
+				if (World->LineTraceSingleByChannel(Hit, FVector(X, Y, 2000.f), FVector(X, Y, -4000.f), ECC_WorldStatic) && Hit.ImpactNormal.Z >= MinNormalZ)
+				{
+					return Hit.ImpactPoint;
+				}
+			}
+		}
+
+		return Fallback;
+	};
+
+	const FVector FlatLoc = FindClosestFlatSurface(0.f, 0.f);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	World->SpawnActor<AT66CasinoInteractable>(AT66CasinoInteractable::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams);
+}
+
 void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 {
 	(void)Player;
 	UWorld* World = GetWorld();
 	if (!World) return;
+	if (T66IsStandaloneMegabonkFarmStage(World)) return;
 
 	// Spawn once per level (gate is a world landmark).
 	if (StartGate) return;
@@ -2004,12 +2298,26 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	UT66GameInstance* T66GI = GetT66GameInstance();
 
 	// Run-level seed so positions change every time "Enter the Tribulation" or PIE is started (like procedural terrain).
-	const int32 RunSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
+	const int32 RunSeed = T66EnsureRunSeed(T66GI);
 	const int32 StageNum = RunState->GetCurrentStage();
 	FRandomStream Rng(RunSeed + StageNum * 1337 + 42);
+	const bool bStandaloneMegabonkFarm = T66IsStandaloneMegabonkFarmStage(World);
 
-	// Main map square bounds. 100k map: half-extent 50000. Match miasma SafeHalfExtent.
-	static constexpr float MainHalfExtent = 50000.f;
+	FT66MapPreset FarmPreset;
+	T66MegabonkFarm::FSettings FarmSettings;
+	float MainHalfExtent = 50000.f;
+	float TraceStartZ = 8000.f;
+	float TraceEndZ = -16000.f;
+	if (bStandaloneMegabonkFarm)
+	{
+		FarmPreset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
+		FarmPreset.Seed = RunSeed;
+		FarmSettings = T66MegabonkFarm::MakeSettings(FarmPreset);
+		MainHalfExtent = FMath::Max(0.0f, FarmSettings.HalfExtent - FarmSettings.CellSize * 1.25f);
+		TraceStartZ = T66MegabonkFarm::GetTraceZ(FarmPreset);
+		TraceEndZ = T66MegabonkFarm::GetLowestCollisionBottomZ(FarmPreset) - FarmSettings.StepHeight;
+	}
+
 	static constexpr float SpawnZ = 220.f;
 	static constexpr float MinDistBetweenInteractables = 900.f;
 	static constexpr float SafeBubbleMargin = 250.f;
@@ -2019,6 +2327,11 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	// No-spawn zones: keep gameplay spawns out of reserved traversal spaces and special arenas.
 	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
+		if (bStandaloneMegabonkFarm)
+		{
+			return false;
+		}
+
 		if (T66GameplayLayout::IsInsideReservedTraversalZone2D(L, 455.f))
 		{
 			return true;
@@ -2029,7 +2342,6 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		static constexpr float TutorialArenaHalf = 9091.f;
 		struct FArena2D { float X; float Y; float Half; };
 		static constexpr FArena2D Arenas[] = {
-			{ -22727.f, 34091.f, ArenaHalf }, // Boost
 			{      0.f, 34091.f, ArenaHalf },  // Coliseum
 			{      0.f, 61364.f, TutorialArenaHalf }, // Tutorial
 		};
@@ -2047,6 +2359,11 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	auto IsGoodLoc = [&](const FVector& L) -> bool
 	{
 		if (IsInsideNoSpawnZone(L))
+		{
+			return false;
+		}
+		static constexpr float CasinoKeepClearRadius = 2200.f;
+		if (!bStandaloneMegabonkFarm && FVector::DistSquared2D(L, FVector::ZeroVector) < (CasinoKeepClearRadius * CasinoKeepClearRadius))
 		{
 			return false;
 		}
@@ -2086,8 +2403,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			FVector Loc(X, Y, SpawnZ);
 
 			FHitResult Hit;
-			const FVector Start = Loc + FVector(0.f, 0.f, 8000.f);
-			const FVector End = Loc - FVector(0.f, 0.f, 16000.f);
+			const FVector Start(X, Y, TraceStartZ);
+			const FVector End(X, Y, TraceEndZ);
 			if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
 			{
 				continue;
@@ -2129,7 +2446,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 	// Luck-affected counts use central tuning. Locations are still stage-seeded (not luck-affected).
 	const int32 CountFountains = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TreesPerStage, Rng) : Rng.RandRange(2, 5);
-	const int32 CountChests = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->ChestsPerStage, Rng) : Rng.RandRange(2, 5);
+	const int32 CountChestReplacements = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->ChestsPerStage, Rng) : Rng.RandRange(2, 5);
 	const int32 CountWheels = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->WheelsPerStage, Rng) : Rng.RandRange(2, 5);
 
 	// Luck Rating tracking (quantity).
@@ -2142,7 +2459,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		const int32 WheelsMin = (Tuning ? Tuning->WheelsPerStage.Min : 2);
 		const int32 WheelsMax = (Tuning ? Tuning->WheelsPerStage.Max : 5);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("FountainsPerStage")), CountFountains, FountainsMin, FountainsMax);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestsPerStage")), CountChests, ChestsMin, ChestsMax);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestReplacementPerStage")), CountChestReplacements, ChestsMin, ChestsMax);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("WheelsPerStage")), CountWheels, WheelsMin, WheelsMax);
 	}
 
@@ -2156,20 +2473,26 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			Fountain->SetRarity(ET66Rarity::Black);
 		}
 	}
-	for (int32 i = 0; i < CountChests; ++i)
+	for (int32 i = 0; i < CountChestReplacements; ++i)
 	{
-		if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnOne(AT66ChestInteractable::StaticClass())))
+		if (Rng.GetFraction() < 0.5f)
 		{
-			const float MimicChance = Tuning ? FMath::Clamp(Tuning->ChestMimicChance, 0.f, 1.f) : 0.20f;
-			Chest->bIsMimic = (Rng.GetFraction() < MimicChance);
-
+			if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnOne(AT66WheelSpinInteractable::StaticClass())))
+			{
+				const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
+				const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+				Wheel->SetRarity(R);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), R);
+				}
+			}
+		}
+		else if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnOne(AT66CrateInteractable::StaticClass())))
+		{
 			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
 			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			Chest->SetRarity(R);
-			if (RunState)
-			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), R);
-			}
+			Crate->SetRarity(R);
 		}
 	}
 	for (int32 i = 0; i < CountWheels; ++i)
@@ -2191,12 +2514,21 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	{
 		float HeroX = T66GameplayLayout::GetStartAreaCenter().X;
 		float HeroY = T66GameplayLayout::GetStartAreaCenter().Y;
-		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		if (bStandaloneMegabonkFarm)
 		{
-			const FVector Loc = (*It)->GetActorLocation();
-			HeroX = Loc.X;
-			HeroY = Loc.Y;
-			break;
+			const FVector FarmHeroLoc = T66MegabonkFarm::GetPreferredSpawnLocation(FarmPreset, 200.f);
+			HeroX = FarmHeroLoc.X;
+			HeroY = FarmHeroLoc.Y;
+		}
+		if (!bStandaloneMegabonkFarm)
+		{
+			for (TActorIterator<APlayerStart> It(World); It; ++It)
+			{
+				const FVector Loc = (*It)->GetActorLocation();
+				HeroX = Loc.X;
+				HeroY = Loc.Y;
+				break;
+			}
 		}
 		static constexpr float HeroWheelOffset = 380.f;  // to the right of hero spawn
 		const float WheelX = HeroX + HeroWheelOffset;
@@ -2223,26 +2555,91 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			UsedLocs.Add(WheelLoc);
 		}
 
-		static constexpr float GuaranteedTractorOffsetX = 850.f; // just east of the start gate, outside the start corridor
-		const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
-		const float TractorX = StartGateLoc.X + GuaranteedTractorOffsetX;
-		const float TractorY = StartGateLoc.Y;
-		FVector TractorLoc(TractorX, TractorY, SpawnZ);
-		FHitResult TractorHit;
-		const FVector TractorTraceStart(TractorX, TractorY, 8000.f);
-		const FVector TractorTraceEnd(TractorX, TractorY, -16000.f);
-		if (World->LineTraceSingleByChannel(TractorHit, TractorTraceStart, TractorTraceEnd, ECC_WorldStatic))
+		FVector TractorLoc = FVector::ZeroVector;
+		bool bShouldSpawnGuaranteedTractor = false;
+		if (bStandaloneMegabonkFarm)
 		{
-			TractorLoc = TractorHit.ImpactPoint;
+			const FVector FarmHeroLoc = T66MegabonkFarm::GetPreferredSpawnLocation(FarmPreset, 200.f);
+			const float TractorX = FMath::Clamp(FarmHeroLoc.X + FarmSettings.CellSize * 1.35f, -MainHalfExtent, MainHalfExtent);
+			const float TractorY = FMath::Clamp(FarmHeroLoc.Y - FarmSettings.CellSize * 0.65f, -MainHalfExtent, MainHalfExtent);
+			FHitResult TractorHit;
+			const FVector TractorTraceStart(TractorX, TractorY, TraceStartZ);
+			const FVector TractorTraceEnd(TractorX, TractorY, TraceEndZ);
+			if (World->LineTraceSingleByChannel(TractorHit, TractorTraceStart, TractorTraceEnd, ECC_WorldStatic))
+			{
+				TractorLoc = TractorHit.ImpactPoint;
+				bShouldSpawnGuaranteedTractor = IsGoodLoc(TractorLoc);
+			}
+			if (!bShouldSpawnGuaranteedTractor)
+			{
+				const FSpawnHitResult TractorFallback = FindSpawnLoc();
+				if (TractorFallback.bFound)
+				{
+					TractorLoc = TractorFallback.Loc;
+					bShouldSpawnGuaranteedTractor = true;
+				}
+			}
+		}
+		else
+		{
+			static constexpr float GuaranteedTractorOffsetX = 850.f; // just east of the start gate, outside the start corridor
+			const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
+			const float TractorX = StartGateLoc.X + GuaranteedTractorOffsetX;
+			const float TractorY = StartGateLoc.Y;
+			FHitResult TractorHit;
+			const FVector TractorTraceStart(TractorX, TractorY, 8000.f);
+			const FVector TractorTraceEnd(TractorX, TractorY, -16000.f);
+			TractorLoc = FVector(TractorX, TractorY, SpawnZ);
+			if (World->LineTraceSingleByChannel(TractorHit, TractorTraceStart, TractorTraceEnd, ECC_WorldStatic))
+			{
+				TractorLoc = TractorHit.ImpactPoint;
+			}
+			bShouldSpawnGuaranteedTractor = true;
 		}
 
-		FActorSpawnParameters TractorSpawnParams;
-		TractorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		if (AT66PilotableTractor* GuaranteedTractor = World->SpawnActor<AT66PilotableTractor>(
-			AT66PilotableTractor::StaticClass(), TractorLoc, FRotator::ZeroRotator, TractorSpawnParams))
+		if (bShouldSpawnGuaranteedTractor)
 		{
-			UsedLocs.Add(TractorLoc);
+			FActorSpawnParameters TractorSpawnParams;
+			TractorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66PilotableTractor* GuaranteedTractor = World->SpawnActor<AT66PilotableTractor>(
+				AT66PilotableTractor::StaticClass(), TractorLoc, FRotator::ZeroRotator, TractorSpawnParams))
+			{
+				UsedLocs.Add(TractorLoc);
+			}
 		}
+
+		if (!bStandaloneMegabonkFarm)
+		{
+			static constexpr float GuaranteedVendingOffsetX = 1450.f;
+			static constexpr float GuaranteedVendingOffsetY = -950.f;
+			const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
+			const float VendingX = StartGateLoc.X + GuaranteedVendingOffsetX;
+			const float VendingY = StartGateLoc.Y + GuaranteedVendingOffsetY;
+			FVector VendingLoc(VendingX, VendingY, SpawnZ);
+			FHitResult VendingHit;
+			const FVector VendingTraceStart(VendingX, VendingY, 8000.f);
+			const FVector VendingTraceEnd(VendingX, VendingY, -16000.f);
+			if (World->LineTraceSingleByChannel(VendingHit, VendingTraceStart, VendingTraceEnd, ECC_WorldStatic))
+			{
+				VendingLoc = VendingHit.ImpactPoint;
+			}
+
+			FActorSpawnParameters VendingSpawnParams;
+			VendingSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66QuickReviveVendingMachine* Vending = World->SpawnActor<AT66QuickReviveVendingMachine>(
+				AT66QuickReviveVendingMachine::StaticClass(), VendingLoc, FRotator::ZeroRotator, VendingSpawnParams))
+			{
+				UsedLocs.Add(VendingLoc);
+			}
+
+			SpawnModelShowcaseRow();
+		}
+	}
+
+	static constexpr int32 CountTeleportPads = 5;
+	for (int32 i = 0; i < CountTeleportPads; ++i)
+	{
+		SpawnOne(AT66TeleportPadInteractable::StaticClass());
 	}
 
 	const int32 CountCrates = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->CratesPerStage, Rng) : Rng.RandRange(1, 3);
@@ -2263,7 +2660,95 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 void AT66GameMode::SpawnModelShowcaseRow()
 {
-	// Removed: this was a hard-coded debug row of meshes in front of the hero spawn.
+	if (IsColiseumStage() || IsLabLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	struct FShowcaseMeshSpec
+	{
+		const TCHAR* MeshPath = nullptr;
+		FVector Offset = FVector::ZeroVector;
+		FRotator Rotation = FRotator::ZeroRotator;
+		FVector Scale = FVector(1.f, 1.f, 1.f);
+		FName Tag = NAME_None;
+	};
+
+	const FVector StartAreaCenter = T66GameplayLayout::GetStartAreaCenter();
+	const FShowcaseMeshSpec ShowcaseSpecs[] = {
+		{ TEXT("/Game/World/Props/StartAreaDecor/Cow.Cow"),      FVector(1800.f,  1500.f, 0.f), FRotator(0.f, -140.f, 0.f), FVector(2.f, 2.f, 2.f), FName(TEXT("T66StartAreaCow")) },
+		{ TEXT("/Game/World/Props/StartAreaDecor/RoboCow.RoboCow"), FVector(1800.f, -1500.f, 0.f), FRotator(0.f,  140.f, 0.f), FVector(2.f, 2.f, 2.f), FName(TEXT("T66StartAreaRoboCow")) },
+		{ TEXT("/Game/World/Props/StartAreaDecor/FullBody.FullBody"), FVector(-1800.f,    0.f, 0.f), FRotator(0.f,    0.f, 0.f), FVector(2.f, 2.f, 2.f), FName(TEXT("T66StartAreaFullBody")) },
+	};
+
+	auto FindExistingShowcaseActor = [&](const FName Tag) -> AStaticMeshActor*
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			AStaticMeshActor* Existing = *It;
+			if (Existing && Existing->ActorHasTag(Tag))
+			{
+				return Existing;
+			}
+		}
+		return nullptr;
+	};
+
+	for (const FShowcaseMeshSpec& Spec : ShowcaseSpecs)
+	{
+		if (Spec.MeshPath == nullptr || Spec.Tag.IsNone())
+		{
+			continue;
+		}
+
+		AStaticMeshActor* Actor = FindExistingShowcaseActor(Spec.Tag);
+		if (!Actor)
+		{
+			FVector SpawnLoc = StartAreaCenter + Spec.Offset;
+			FHitResult Hit;
+			const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 8000.f);
+			const FVector TraceEnd = SpawnLoc - FVector(0.f, 0.f, 16000.f);
+			if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+			{
+				SpawnLoc = Hit.ImpactPoint;
+			}
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			Actor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), SpawnLoc, Spec.Rotation, SpawnParams);
+			if (!Actor)
+			{
+				continue;
+			}
+			Actor->Tags.AddUnique(Spec.Tag);
+		}
+
+		TSoftObjectPtr<UStaticMesh> MeshSoft(FSoftObjectPath(Spec.MeshPath));
+		UStaticMesh* Mesh = MeshSoft.LoadSynchronous();
+		if (!Mesh)
+		{
+			Actor->Destroy();
+			continue;
+		}
+
+		T66_SetStaticMeshActorMobility(Actor, EComponentMobility::Movable);
+		if (UStaticMeshComponent* MeshComponent = Actor->GetStaticMeshComponent())
+		{
+			MeshComponent->SetStaticMesh(Mesh);
+			MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			MeshComponent->SetGenerateOverlapEvents(false);
+			MeshComponent->SetRelativeScale3D(Spec.Scale);
+			FT66VisualUtil::GroundMeshToActorOrigin(MeshComponent, Mesh);
+		}
+		Actor->SetActorRotation(Spec.Rotation);
+		T66_SetStaticMeshActorMobility(Actor, EComponentMobility::Static);
+	}
 }
 
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
@@ -2485,6 +2970,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 
 		Boss->InitializeBoss(BossData);
 		StageBoss = Boss;
+		SpawnBossBeaconIfNeeded();
 		UE_LOG(LogTemp, Log, TEXT("Spawned boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
 
 		// If the boss class is a soft reference and isn't loaded yet, load asynchronously and replace the dormant boss.
@@ -2522,6 +3008,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 					{
 						NewBoss->InitializeBoss(BossDataCopy);
 						StageBoss = NewBoss;
+						SpawnBossBeaconIfNeeded();
 					}
 				}));
 			if (Handle.IsValid())
@@ -2578,7 +3065,10 @@ void AT66GameMode::EnsureLevelSetup()
 	SpawnColiseumArenaIfNeeded();
 	SpawnTutorialArenaIfNeeded();
 	SpawnStartAreaWallsIfNeeded();
-	SpawnBossAreaWallsIfNeeded();
+	if (!T66IsStandaloneMegabonkFarmStage(CleanupWorld))
+	{
+		SpawnBossAreaWallsIfNeeded();
+	}
 	TryApplyGroundFloorMaterialToAllFloors();
 	SpawnLightingIfNeeded();
 	SpawnQuakeSkyIfNeeded();
@@ -2689,13 +3179,7 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 
 	UWorld* World = GetWorld();
 	if (!World) return;
-
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	if (T66GI && T66GI->bStageCatchUpPending)
-	{
-		// Keep the catch up platform area clean; tutorial arena not needed there.
-		return;
-	}
+	if (!T66IsStandaloneTutorialMap(World)) return;
 
 	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
@@ -2765,35 +3249,23 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 	// Coliseum arena: off to the side. No separate floor (hard rule: no overlapping grounds; main floor covers it).
 }
 
-void AT66GameMode::SpawnBossBeaconIfNeeded()
+bool AT66GameMode::TryComputeBossBeaconBase(FVector& OutBeaconBase) const
 {
-	if (IsColiseumStage() || IsLabLevel()) return;
+	if (IsColiseumStage() || IsLabLevel() || !StageBoss.IsValid())
+	{
+		return false;
+	}
 
 	UWorld* World = GetWorld();
-	if (!World) return;
-
-	static const FName BossBeaconTag(TEXT("T66_Boss_Beacon"));
-
-	TArray<AActor*> ExistingBeacons;
-	for (TActorIterator<AActor> It(World); It; ++It)
+	if (!World)
 	{
-		if (It->Tags.Contains(BossBeaconTag))
-		{
-			ExistingBeacons.Add(*It);
-		}
-	}
-	for (AActor* Existing : ExistingBeacons)
-	{
-		if (Existing)
-		{
-			Existing->Destroy();
-		}
+		return false;
 	}
 
-	const FVector DesiredBase = T66GameplayLayout::GetBossAreaCenter() + FVector(2400.f, 0.f, 0.f);
+	FVector DesiredBase = StageBoss->GetActorLocation() + FVector(3400.f, 0.f, 0.f);
+	DesiredBase.X = FMath::Clamp(DesiredBase.X, T66GameplayLayout::BossAreaWestX + 1000.f, T66GameplayLayout::BossPartitionEastX - 900.f);
+	DesiredBase.Y = FMath::Clamp(DesiredBase.Y, -T66GameplayLayout::AreaHalfHeightY + 600.f, T66GameplayLayout::AreaHalfHeightY - 600.f);
 	const float MinNormalZ = 0.88f;
-	FVector BeaconBase = DesiredBase;
-	BeaconBase.Z = 0.f;
 
 	auto TryTraceBossBeaconSurface = [&](float X, float Y, FVector& OutLoc) -> bool
 	{
@@ -2825,6 +3297,8 @@ void AT66GameMode::SpawnBossBeaconIfNeeded()
 		}
 	}
 
+	FVector BeaconBase = DesiredBase;
+	BeaconBase.Z = 0.f;
 	bool bFoundFlatSurface = false;
 	for (float Radius = 0.f; Radius <= 1600.f && !bFoundFlatSurface; Radius += 220.f)
 	{
@@ -2842,9 +3316,81 @@ void AT66GameMode::SpawnBossBeaconIfNeeded()
 		}
 	}
 
-	if (!bFoundFlatSurface)
+	OutBeaconBase = bFoundFlatSurface ? BeaconBase : FallbackLoc;
+	return true;
+}
+
+void AT66GameMode::DestroyBossBeacon()
+{
+	if (AActor* BeaconActor = BossBeaconActor.Get())
 	{
-		BeaconBase = FallbackLoc;
+		BeaconActor->Destroy();
+	}
+	BossBeaconActor = nullptr;
+}
+
+void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
+{
+	if (IsColiseumStage() || IsLabLevel() || !StageBoss.IsValid())
+	{
+		DestroyBossBeacon();
+		return;
+	}
+
+	FVector BeaconBase = FVector::ZeroVector;
+	if (!TryComputeBossBeaconBase(BeaconBase))
+	{
+		return;
+	}
+
+	if (AActor* BeaconActor = BossBeaconActor.Get())
+	{
+		BeaconActor->SetActorLocation(BeaconBase, false, nullptr, ETeleportType::TeleportPhysics);
+		return;
+	}
+
+	if (bForceSpawnIfMissing)
+	{
+		SpawnBossBeaconIfNeeded();
+	}
+}
+
+void AT66GameMode::SpawnBossBeaconIfNeeded()
+{
+	if (IsColiseumStage() || IsLabLevel())
+	{
+		DestroyBossBeacon();
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	static const FName BossBeaconTag(TEXT("T66_Boss_Beacon"));
+
+	TArray<AActor*> ExistingBeacons;
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		if (It->Tags.Contains(BossBeaconTag))
+		{
+			ExistingBeacons.Add(*It);
+		}
+	}
+	for (AActor* Existing : ExistingBeacons)
+	{
+		if (Existing)
+		{
+			Existing->Destroy();
+		}
+	}
+	BossBeaconActor = nullptr;
+
+	// The beacon is meant to sit behind the live stage boss.
+	// If the boss has not spawned yet, do not place a fallback beam in the arena.
+	FVector BeaconBase = FVector::ZeroVector;
+	if (!TryComputeBossBeaconBase(BeaconBase))
+	{
+		return;
 	}
 
 	constexpr float OuterHeight = 34000.f;
@@ -2957,6 +3503,7 @@ void AT66GameMode::SpawnBossBeaconIfNeeded()
 	ConfigureGlowLight(TEXT("BossBeaconMidGlow"), 0.42f, 85000.f, 9000.f);
 	ConfigureGlowLight(TEXT("BossBeaconTopGlow"), 0.86f, 125000.f, 14000.f);
 
+	BossBeaconActor = BeaconActor;
 	SpawnedSetupActors.Add(BeaconActor);
 }
 
@@ -3051,6 +3598,28 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	if (T66IsStandaloneMegabonkFarmStage(World))
+	{
+		static const FName BossWallTags[] = {
+			FName("T66_Wall_Boss_W"),
+			FName("T66_Wall_Boss_E"),
+			FName("T66_Wall_Boss_N"),
+			FName("T66_Wall_Boss_S")
+		};
+		for (FName Tag : BossWallTags)
+		{
+			for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+			{
+				if (It->Tags.Contains(Tag))
+				{
+					It->Destroy();
+					break;
+				}
+			}
+		}
+		return;
+	}
+
 	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
 
@@ -3126,6 +3695,11 @@ void AT66GameMode::SpawnTraversalMountainBarriersIfNeeded()
 	if (!World) return;
 
 	DestroyActorsWithTag(World, T66TraversalBarrierTag);
+
+	if (T66IsStandaloneMegabonkFarmStage(World))
+	{
+		return;
+	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -3242,12 +3816,24 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	DestroyTaggedIfExists(FName("T66_Floor_Conn2"));
 	DestroyTaggedIfExists(FName("T66_Floor_Start"));
 	DestroyTaggedIfExists(FName("T66_Floor_Boss"));
+	DestroyTaggedIfExists(FName("T66_Floor_Coliseum"));
+	DestroyTaggedIfExists(FName("T66_Floor_CatchUp"));
+	DestroyTaggedIfExists(FName("T66_Floor_Tutorial"));
 
-	// Island floors only: Coliseum and Boost (small islands). Tutorial floor is spawned in SpawnTutorialIfNeeded.
+	if (T66IsStandaloneMegabonkFarmStage(World) || T66IsStandaloneTutorialMap(World))
+	{
+		return;
+	}
+
+	if (!T66IsStandaloneColiseumMap(World))
+	{
+		return;
+	}
+
+	// Standalone coliseum map: spawn only the coliseum floor.
 	constexpr float IslandFloorZ = -50.f;
 	const TArray<FFloorSpec> Floors = {
 		{ FName("T66_Floor_Coliseum"), FVector(ColiseumCenter.X, ColiseumCenter.Y, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
-		{ FName("T66_Floor_CatchUp"),   FVector(-45455.f, 23636.f, IslandFloorZ), FVector(40.f, 40.f, 1.f), FLinearColor(0.30f, 0.30f, 0.35f, 1.f) },
 	};
 
 	UStaticMesh* CubeMesh = GetCubeMesh();
@@ -3401,6 +3987,38 @@ static void T66ConfigureTerrainVisualCollisionComponent(UPrimitiveComponent* Com
 	Component->SetCanEverAffectNavigation(false);
 }
 
+static void T66EnableComplexCollisionForFarmMesh(UStaticMesh* Mesh)
+{
+	if (!Mesh)
+	{
+		return;
+	}
+
+	if (UBodySetup* BodySetup = Mesh->GetBodySetup())
+	{
+		if (BodySetup->CollisionTraceFlag != CTF_UseComplexAsSimple)
+		{
+			BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+			BodySetup->CreatePhysicsMeshes();
+		}
+	}
+}
+
+static void T66ConfigureTerrainSafetyCatchComponent(UPrimitiveComponent* Component)
+{
+	if (!Component) return;
+
+	Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Component->SetCollisionObjectType(ECC_WorldDynamic);
+	Component->SetCollisionResponseToAllChannels(ECR_Ignore);
+	Component->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	Component->SetCollisionResponseToChannel(ECC_Vehicle, ECR_Block);
+	Component->SetGenerateOverlapEvents(false);
+	Component->SetCanEverAffectNavigation(false);
+	Component->SetVisibility(false, true);
+	Component->SetHiddenInGame(true, true);
+}
+
 static bool T66BuildRampCollisionTransform(
 	const FT66ProceduralMapResult& MapData,
 	const FT66RampEdge& Edge,
@@ -3420,6 +4038,9 @@ static bool T66BuildRampCollisionTransform(
 	{
 		return false;
 	}
+
+	const float RampSeamOverlap = FMath::Clamp(FMath::Min(Lo.SizeX, Lo.SizeY) * 0.06f, 80.f, 220.f);
+	const float EffectiveDepth = Edge.Depth + RampSeamOverlap * 2.f;
 
 	FVector RampPos = FVector::ZeroVector;
 	FQuat RampYaw = FQuat::Identity;
@@ -3444,14 +4065,14 @@ static bool T66BuildRampCollisionTransform(
 
 	const FVector HorizontalDir = RampYaw.GetForwardVector();
 	const FVector SideDir = RampYaw.GetRightVector();
-	const FVector Tangent = (HorizontalDir * Edge.Depth + FVector::UpVector * HeightDiff).GetSafeNormal();
+	const FVector Tangent = (HorizontalDir * EffectiveDepth + FVector::UpVector * HeightDiff).GetSafeNormal();
 	FVector Normal = FVector::CrossProduct(Tangent, SideDir).GetSafeNormal();
 	if (Normal.Z < 0.f)
 	{
 		Normal *= -1.f;
 	}
 
-	const float SurfaceLength = FMath::Sqrt(FMath::Square(Edge.Depth) + FMath::Square(HeightDiff));
+	const float SurfaceLength = FMath::Sqrt(FMath::Square(EffectiveDepth) + FMath::Square(HeightDiff));
 	OutTransform = FTransform(
 		FRotationMatrix::MakeFromXZ(Tangent, Normal).ToQuat(),
 		RampPos - Normal * (Thickness * 0.5f));
@@ -3459,6 +4080,432 @@ static bool T66BuildRampCollisionTransform(
 		SurfaceLength * 0.5f + 40.f,
 		Edge.Width * 0.5f + 30.f,
 		Thickness * 0.5f);
+	return true;
+}
+
+static bool T66IsFarmSlopeCell(const FT66PlatformNode& Platform)
+{
+	return Platform.FarmCellShape != ET66FarmCellShape::Flat
+		&& !FMath::IsNearlyEqual(Platform.TopZ, Platform.SurfaceStartZ);
+}
+
+static FVector T66GetMegabonkFarmCellCenter(const FT66MapPreset& Preset, int32 Row, int32 Col, float Z)
+{
+	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
+	const float CellSize = (Preset.MapHalfExtent * 2.0f) / static_cast<float>(GridSize);
+	const int32 SafeRow = FMath::Clamp(Row, 0, GridSize - 1);
+	const int32 SafeCol = FMath::Clamp(Col, 0, GridSize - 1);
+	return FVector(
+		-Preset.MapHalfExtent + (SafeCol + 0.5f) * CellSize,
+		-Preset.MapHalfExtent + (SafeRow + 0.5f) * CellSize,
+		Z);
+}
+
+static FVector T66GetMegabonkFarmSpawnLocation(const FT66MapPreset& Preset, float Z)
+{
+	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
+	return T66GetMegabonkFarmCellCenter(Preset, GridSize / 2, GridSize / 2, Z);
+}
+
+static float T66GetMegabonkFarmTraceZ(const FT66MapPreset& Preset)
+{
+	return Preset.BaselineZ + Preset.ElevationStep * static_cast<float>(FMath::Max(Preset.GridSize * 2, 8));
+}
+
+static FVector T66GetMegabonkFarmBoardOrigin(const FT66MapPreset& Preset)
+{
+	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
+	const float CellSize = (Preset.MapHalfExtent * 2.0f) / static_cast<float>(GridSize);
+	return FVector(
+		-Preset.MapHalfExtent + CellSize * 0.5f,
+		-Preset.MapHalfExtent + CellSize * 0.5f,
+		Preset.BaselineZ);
+}
+
+static FVector T66GetMegabonkFarmCellWorldLocation(const FT66MapPreset& Preset, int32 X, int32 Z, int32 Level)
+{
+	const FVector BoardOrigin = T66GetMegabonkFarmBoardOrigin(Preset);
+	return BoardOrigin + FVector(
+		static_cast<float>(X) * ((Preset.MapHalfExtent * 2.0f) / static_cast<float>(FMath::Max(Preset.GridSize, 2))),
+		static_cast<float>(Z) * ((Preset.MapHalfExtent * 2.0f) / static_cast<float>(FMath::Max(Preset.GridSize, 2))),
+		static_cast<float>(Level) * Preset.ElevationStep);
+}
+
+struct FT66MegabonkFarmCell
+{
+	bool bOccupied = false;
+	bool bSlope = false;
+	int32 X = 0;
+	int32 Z = 0;
+	int32 Level = 0;
+	ET66FarmCellShape Shape = ET66FarmCellShape::Flat;
+	ET66FarmCellDecoration Decoration = ET66FarmCellDecoration::None;
+	FVector DecorationLocalOffset = FVector::ZeroVector;
+	FRotator DecorationLocalRotation = FRotator::ZeroRotator;
+	FVector DecorationLocalScale = FVector(1.f, 1.f, 1.f);
+};
+
+struct FT66MegabonkFarmBoard
+{
+	int32 Size = 0;
+	float CellSize = 0.f;
+	float StepHeight = 0.f;
+	int32 OccupiedCount = 0;
+	TArray<FT66MegabonkFarmCell> Cells;
+
+	int32 Index(int32 X, int32 Z) const
+	{
+		return Z * Size + X;
+	}
+
+	FT66MegabonkFarmCell* GetCell(int32 X, int32 Z)
+	{
+		return (X >= 0 && X < Size && Z >= 0 && Z < Size) ? &Cells[Index(X, Z)] : nullptr;
+	}
+
+	const FT66MegabonkFarmCell* GetCell(int32 X, int32 Z) const
+	{
+		return (X >= 0 && X < Size && Z >= 0 && Z < Size) ? &Cells[Index(X, Z)] : nullptr;
+	}
+};
+
+static ET66FarmCellShape T66GetMegabonkSlopeShapeFromDirection(const FIntPoint& Direction)
+{
+	if (Direction.X > 0) return ET66FarmCellShape::SlopePosX;
+	if (Direction.X < 0) return ET66FarmCellShape::SlopeNegX;
+	if (Direction.Y > 0) return ET66FarmCellShape::SlopePosY;
+	return ET66FarmCellShape::SlopeNegY;
+}
+
+static void T66AssignMegabonkFarmDecoration(
+	FT66MegabonkFarmCell& Cell,
+	FRandomStream& Rng,
+	float CellSize,
+	float StepHeight)
+{
+	const float ObjectToSpawn = Rng.FRand();
+	const float HorizontalScale = CellSize / 20.f;
+	const float VerticalScale = StepHeight / 12.f;
+
+	if (ObjectToSpawn > 0.75f)
+	{
+		switch (Rng.RandRange(0, 2))
+		{
+		case 0: Cell.Decoration = ET66FarmCellDecoration::Tree1; break;
+		case 1: Cell.Decoration = ET66FarmCellDecoration::Tree2; break;
+		default: Cell.Decoration = ET66FarmCellDecoration::Tree3; break;
+		}
+
+		Cell.DecorationLocalOffset = FVector(
+			Rng.FRandRange(-0.25f, 0.25f) * HorizontalScale,
+			Rng.FRandRange(-0.25f, 0.25f) * HorizontalScale,
+			0.25f * VerticalScale);
+		Cell.DecorationLocalRotation = FRotator(90.f, Rng.FRandRange(0.f, 360.f), 0.f);
+		Cell.DecorationLocalScale = FVector(0.25f);
+		return;
+	}
+
+	if (ObjectToSpawn > 0.50f)
+	{
+		Cell.Decoration = (Rng.FRand() < 0.5f) ? ET66FarmCellDecoration::Rock : ET66FarmCellDecoration::Rocks;
+		Cell.DecorationLocalOffset = FVector(
+			Rng.FRandRange(-0.25f, 0.25f) * HorizontalScale,
+			Rng.FRandRange(-0.25f, 0.25f) * HorizontalScale,
+			0.25f * VerticalScale);
+		Cell.DecorationLocalRotation = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f);
+		Cell.DecorationLocalScale = FVector(Rng.FRandRange(0.25f, 0.50f));
+		return;
+	}
+
+	if (ObjectToSpawn > 0.40f)
+	{
+		Cell.Decoration = ET66FarmCellDecoration::Log;
+		Cell.DecorationLocalOffset = FVector(
+			Rng.FRandRange(-0.25f, 0.25f) * HorizontalScale,
+			Rng.FRandRange(-0.25f, 0.25f) * HorizontalScale,
+			0.32f * VerticalScale);
+		Cell.DecorationLocalRotation = FRotator(0.f, Rng.FRandRange(0.f, 360.f), 0.f);
+		Cell.DecorationLocalScale = FVector(Rng.FRandRange(0.10f, 0.25f));
+		return;
+	}
+
+	Cell.Decoration = ET66FarmCellDecoration::None;
+	Cell.DecorationLocalOffset = FVector::ZeroVector;
+	Cell.DecorationLocalRotation = FRotator::ZeroRotator;
+	Cell.DecorationLocalScale = FVector(1.f, 1.f, 1.f);
+}
+
+static bool T66GenerateDedicatedMegabonkFarmBoard(const FT66MapPreset& Preset, FT66MegabonkFarmBoard& OutBoard)
+{
+	OutBoard = FT66MegabonkFarmBoard();
+	OutBoard.Size = FMath::Max(Preset.GridSize, 2);
+	OutBoard.CellSize = (Preset.MapHalfExtent * 2.f) / static_cast<float>(OutBoard.Size);
+	OutBoard.StepHeight = FMath::Max(Preset.ElevationStep, 1.f);
+	OutBoard.Cells.SetNum(OutBoard.Size * OutBoard.Size);
+
+	for (int32 Z = 0; Z < OutBoard.Size; ++Z)
+	{
+		for (int32 X = 0; X < OutBoard.Size; ++X)
+		{
+			FT66MegabonkFarmCell& Cell = OutBoard.Cells[OutBoard.Index(X, Z)];
+			Cell.X = X;
+			Cell.Z = Z;
+		}
+	}
+
+	FRandomStream Rng(Preset.Seed);
+	const TArray<FIntPoint> Directions = { FIntPoint(1, 0), FIntPoint(-1, 0), FIntPoint(0, 1), FIntPoint(0, -1) };
+
+	auto HasUngeneratedNeighbor = [&](const FT66MegabonkFarmCell& Cell, const FIntPoint& Direction) -> bool
+	{
+		const FT66MegabonkFarmCell* Neighbor = OutBoard.GetCell(Cell.X + Direction.X, Cell.Z + Direction.Y);
+		return Neighbor && !Neighbor->bOccupied;
+	};
+
+	auto GetRandomDirectionFromCell = [&](const FT66MegabonkFarmCell& Cell) -> FIntPoint
+	{
+		TArray<FIntPoint> DirectionPool;
+		for (const FIntPoint& Direction : Directions)
+		{
+			if (HasUngeneratedNeighbor(Cell, Direction))
+			{
+				DirectionPool.Add(Direction);
+			}
+		}
+		return DirectionPool.Num() > 0
+			? DirectionPool[Rng.RandRange(0, DirectionPool.Num() - 1)]
+			: FIntPoint::ZeroValue;
+	};
+
+	auto FirstNonSlopeElementWithAvailableSpace = [&]() -> FT66MegabonkFarmCell*
+	{
+		for (int32 X = 0; X < OutBoard.Size; ++X)
+		{
+			for (int32 Z = 0; Z < OutBoard.Size; ++Z)
+			{
+				FT66MegabonkFarmCell* Cell = OutBoard.GetCell(X, Z);
+				if (!Cell || !Cell->bOccupied || Cell->bSlope)
+				{
+					continue;
+				}
+
+				for (const FIntPoint& Direction : Directions)
+				{
+					if (HasUngeneratedNeighbor(*Cell, Direction))
+					{
+						return Cell;
+					}
+				}
+			}
+		}
+		return nullptr;
+	};
+
+	auto CanRaiseElevationInDirection = [&](const FT66MegabonkFarmCell& Cell, const FIntPoint& Direction) -> bool
+	{
+		const FT66MegabonkFarmCell* Target = OutBoard.GetCell(Cell.X + Direction.X, Cell.Z + Direction.Y);
+		return Target && !Target->bOccupied;
+	};
+
+	auto CreateElement = [&](int32 X, int32 Level, int32 Z) -> FT66MegabonkFarmCell*
+	{
+		FT66MegabonkFarmCell* Cell = OutBoard.GetCell(X, Z);
+		if (!Cell || Cell->bOccupied)
+		{
+			return nullptr;
+		}
+
+		Cell->bOccupied = true;
+		Cell->bSlope = false;
+		Cell->Level = Level;
+		Cell->Shape = ET66FarmCellShape::Flat;
+		Cell->Decoration = ET66FarmCellDecoration::None;
+		Cell->DecorationLocalOffset = FVector::ZeroVector;
+		Cell->DecorationLocalRotation = FRotator::ZeroRotator;
+		Cell->DecorationLocalScale = FVector(1.f, 1.f, 1.f);
+		++OutBoard.OccupiedCount;
+		return Cell;
+	};
+
+	FT66MegabonkFarmCell* CurrentCell = CreateElement(
+		Rng.RandRange(0, OutBoard.Size - 1),
+		0,
+		Rng.RandRange(0, OutBoard.Size - 1));
+	FIntPoint LockedDirection = FIntPoint::ZeroValue;
+	const float RaiseChance = FMath::Clamp(Preset.FarmHilliness / 5.f, 0.f, 1.f);
+
+	while (CurrentCell != nullptr)
+	{
+		FIntPoint Direction = (LockedDirection != FIntPoint::ZeroValue && HasUngeneratedNeighbor(*CurrentCell, LockedDirection))
+			? LockedDirection
+			: GetRandomDirectionFromCell(*CurrentCell);
+
+		if (Direction == FIntPoint::ZeroValue)
+		{
+			CurrentCell = FirstNonSlopeElementWithAvailableSpace();
+			if (CurrentCell == nullptr)
+			{
+				break;
+			}
+			Direction = (LockedDirection != FIntPoint::ZeroValue && HasUngeneratedNeighbor(*CurrentCell, LockedDirection))
+				? LockedDirection
+				: GetRandomDirectionFromCell(*CurrentCell);
+		}
+
+		if (Direction == FIntPoint::ZeroValue)
+		{
+			CurrentCell = FirstNonSlopeElementWithAvailableSpace();
+			LockedDirection = FIntPoint::ZeroValue;
+			continue;
+		}
+
+		FT66MegabonkFarmCell* NewCell = CreateElement(CurrentCell->X + Direction.X, CurrentCell->Level, CurrentCell->Z + Direction.Y);
+		if (!NewCell)
+		{
+			LockedDirection = FIntPoint::ZeroValue;
+			CurrentCell = FirstNonSlopeElementWithAvailableSpace();
+			continue;
+		}
+
+		if (CanRaiseElevationInDirection(*NewCell, Direction) && Rng.FRand() < RaiseChance)
+		{
+			NewCell->Level += 1;
+			NewCell->bSlope = true;
+			NewCell->Shape = T66GetMegabonkSlopeShapeFromDirection(Direction);
+			LockedDirection = Direction;
+		}
+		else
+		{
+			LockedDirection = FIntPoint::ZeroValue;
+			T66AssignMegabonkFarmDecoration(*NewCell, Rng, OutBoard.CellSize, OutBoard.StepHeight);
+		}
+
+		CurrentCell = NewCell;
+	}
+
+	return OutBoard.OccupiedCount == OutBoard.Cells.Num();
+}
+
+static FRotator T66GetFarmSlopeRotation(ET66FarmCellShape Shape)
+{
+	switch (Shape)
+	{
+	case ET66FarmCellShape::SlopePosX:
+		return FRotator(0.f, 90.f, 0.f);
+	case ET66FarmCellShape::SlopeNegX:
+		return FRotator(0.f, 270.f, 0.f);
+	case ET66FarmCellShape::SlopePosY:
+		return FRotator::ZeroRotator;
+	case ET66FarmCellShape::SlopeNegY:
+		return FRotator(0.f, 180.f, 0.f);
+	default:
+		return FRotator::ZeroRotator;
+	}
+}
+
+static bool T66BuildScaledStaticMeshTransform(
+	const UStaticMesh* Mesh,
+	const FVector& DesiredCenter,
+	const FVector& DesiredSize,
+	const FRotator& Rotation,
+	FTransform& OutTransform)
+{
+	if (!Mesh)
+	{
+		return false;
+	}
+
+	const FBox MeshBounds = Mesh->GetBoundingBox();
+	const FVector MeshSize = MeshBounds.GetSize();
+	if (MeshSize.X <= KINDA_SMALL_NUMBER || MeshSize.Y <= KINDA_SMALL_NUMBER || MeshSize.Z <= KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	const FVector Scale(
+		DesiredSize.X / MeshSize.X,
+		DesiredSize.Y / MeshSize.Y,
+		DesiredSize.Z / MeshSize.Z);
+	const FVector ScaledLocalCenter = MeshBounds.GetCenter() * Scale;
+	const FQuat RotationQuat = Rotation.Quaternion();
+	OutTransform = FTransform(RotationQuat, DesiredCenter - RotationQuat.RotateVector(ScaledLocalCenter), Scale);
+	return true;
+}
+
+static float T66GetFarmTileCenterZ(const FT66PlatformNode& Platform, float StepHeight, float BaselineZ)
+{
+	return BaselineZ + static_cast<float>(Platform.FarmLevel) * StepHeight;
+}
+
+static float T66GetFarmTileTopSurfaceZ(const FT66PlatformNode& Platform, float StepHeight, float BaselineZ)
+{
+	return T66GetFarmTileCenterZ(Platform, StepHeight, BaselineZ) + StepHeight * 0.5f;
+}
+
+static bool T66BuildFarmTileTransform(
+	const FT66PlatformNode& Platform,
+	float StepHeight,
+	float BaselineZ,
+	const UStaticMesh* Mesh,
+	FTransform& OutTransform)
+{
+	const bool bSlope = T66IsFarmSlopeCell(Platform);
+	const float TileCenterZ = T66GetFarmTileCenterZ(Platform, StepHeight, BaselineZ);
+	const FVector DesiredCenter(Platform.Position.X, Platform.Position.Y, TileCenterZ);
+	const FVector DesiredSize(Platform.SizeX, Platform.SizeY, StepHeight);
+	const FRotator Rotation = bSlope ? T66GetFarmSlopeRotation(Platform.FarmCellShape) : FRotator::ZeroRotator;
+	return T66BuildScaledStaticMeshTransform(Mesh, DesiredCenter, DesiredSize, Rotation, OutTransform);
+}
+
+static bool T66BuildFarmSupportTransform(
+	const FT66PlatformNode& Platform,
+	int32 SupportLevel,
+	float StepHeight,
+	float BaselineZ,
+	const UStaticMesh* Mesh,
+	FTransform& OutTransform)
+{
+	const float SupportCenterZ = BaselineZ + static_cast<float>(SupportLevel) * StepHeight;
+	const FVector DesiredCenter(Platform.Position.X, Platform.Position.Y, SupportCenterZ);
+	const FVector DesiredSize(Platform.SizeX, Platform.SizeY, StepHeight);
+	return T66BuildScaledStaticMeshTransform(Mesh, DesiredCenter, DesiredSize, FRotator::ZeroRotator, OutTransform);
+}
+
+static bool T66BuildFarmSlopeCollisionTransform(
+	const FT66PlatformNode& Platform,
+	float StepHeight,
+	float BaselineZ,
+	float Thickness,
+	FTransform& OutTransform,
+	FVector& OutBoxExtent)
+{
+	if (!T66IsFarmSlopeCell(Platform))
+	{
+		return false;
+	}
+
+	const FQuat RampYaw = T66GetFarmSlopeRotation(Platform.FarmCellShape).Quaternion();
+	const FVector HorizontalDir = RampYaw.GetForwardVector();
+	const FVector SideDir = RampYaw.GetRightVector();
+	const float TileCenterZ = T66GetFarmTileCenterZ(Platform, StepHeight, BaselineZ);
+	const FVector Center(Platform.Position.X, Platform.Position.Y, TileCenterZ);
+	const float CellDepth = FMath::Max(Platform.SizeX, 1.f);
+	const float HeightDiff = StepHeight;
+	const FVector Tangent = (HorizontalDir * CellDepth + FVector::UpVector * HeightDiff).GetSafeNormal();
+	FVector Normal = FVector::CrossProduct(Tangent, SideDir).GetSafeNormal();
+	if (Normal.Z < 0.f)
+	{
+		Normal *= -1.f;
+	}
+
+	const float SurfaceLength = FMath::Sqrt(FMath::Square(CellDepth) + FMath::Square(HeightDiff));
+	OutTransform = FTransform(
+		FRotationMatrix::MakeFromXZ(Tangent, Normal).ToQuat(),
+		Center - Normal * (Thickness * 0.5f));
+	OutBoxExtent = FVector(
+		SurfaceLength * 0.5f + 20.f,
+		Platform.SizeY * 0.5f + 20.f,
+		Thickness * 0.5f + 8.f);
 	return true;
 }
 
@@ -3680,7 +4727,8 @@ static void AppendPlatformTopQuad(
 	float SizeX,
 	float SizeY,
 	float Z,
-	int32 UVQuarterTurns)
+	int32 UVQuarterTurns,
+	float SlabThickness = 0.f)
 {
 	const int32 Base = OutVerts.Num();
 	const float HX = SizeX * 0.5f;
@@ -3704,6 +4752,619 @@ static void AppendPlatformTopQuad(
 	OutTris.Add(Base + 0);
 	OutTris.Add(Base + 3);
 	OutTris.Add(Base + 2);
+
+	if (SlabThickness > KINDA_SMALL_NUMBER)
+	{
+		const int32 BottomBase = OutVerts.Num();
+		const float BottomZ = Z - SlabThickness;
+
+		OutVerts.Add(FVector(Center.X - HX, Center.Y - HY, BottomZ));
+		OutVerts.Add(FVector(Center.X + HX, Center.Y - HY, BottomZ));
+		OutVerts.Add(FVector(Center.X + HX, Center.Y + HY, BottomZ));
+		OutVerts.Add(FVector(Center.X - HX, Center.Y + HY, BottomZ));
+
+		OutNormals.Add(-FVector::UpVector);
+		OutNormals.Add(-FVector::UpVector);
+		OutNormals.Add(-FVector::UpVector);
+		OutNormals.Add(-FVector::UpVector);
+
+		T66AppendRotatedQuadUVs(OutUVs, UVQuarterTurns);
+
+		OutTris.Add(BottomBase + 0);
+		OutTris.Add(BottomBase + 1);
+		OutTris.Add(BottomBase + 2);
+		OutTris.Add(BottomBase + 0);
+		OutTris.Add(BottomBase + 2);
+		OutTris.Add(BottomBase + 3);
+	}
+}
+
+static int32 T66CornerIdx(int32 Row, int32 Col, int32 CornerCols)
+{
+	return Row * CornerCols + Col;
+}
+
+static void BuildVisualTerrainCornerHeights(
+	const FT66ProceduralMapResult& MapData,
+	const FT66MapPreset& Preset,
+	int32 GridSize,
+	TArray<float>& OutCornerHeights)
+{
+	const int32 CornerCols = GridSize + 1;
+	const float CellSize = (Preset.MapHalfExtent * 2.f) / FMath::Max(GridSize, 1);
+	OutCornerHeights.SetNumZeroed(CornerCols * CornerCols);
+	TArray<float> Scratch;
+	Scratch.SetNumZeroed(CornerCols * CornerCols);
+	TArray<bool> bPinnedBaseline;
+	bPinnedBaseline.SetNumZeroed(CornerCols * CornerCols);
+
+	for (int32 R = 0; R <= GridSize; ++R)
+	{
+		for (int32 C = 0; C <= GridSize; ++C)
+		{
+			float Sum = 0.f;
+			float WeightSum = 0.f;
+			for (int32 CellR = FMath::Max(0, R - 1); CellR <= FMath::Min(GridSize - 1, R); ++CellR)
+			{
+				for (int32 CellC = FMath::Max(0, C - 1); CellC <= FMath::Min(GridSize - 1, C); ++CellC)
+				{
+					const int32 CellIdx = CellR * GridSize + CellC;
+					if (!MapData.Platforms.IsValidIndex(CellIdx))
+					{
+						continue;
+					}
+
+					const FT66PlatformNode& Platform = MapData.Platforms[CellIdx];
+					const float CenterDist = FVector2D::Distance(
+						FVector2D(static_cast<float>(C), static_cast<float>(R)),
+						FVector2D(static_cast<float>(CellC) + 0.5f, static_cast<float>(CellR) + 0.5f));
+					const float Weight = 1.25f - FMath::Clamp(CenterDist * 0.5f, 0.f, 0.75f);
+					Sum += Platform.TopZ * Weight;
+					WeightSum += Weight;
+				}
+			}
+
+			float Height = (WeightSum > KINDA_SMALL_NUMBER) ? (Sum / WeightSum) : Preset.BaselineZ;
+			const float WorldX = -Preset.MapHalfExtent + static_cast<float>(C) * CellSize;
+			const float WorldY = -Preset.MapHalfExtent + static_cast<float>(R) * CellSize;
+			const FVector CornerLocation(WorldX, WorldY, 0.f);
+			if (T66GameplayLayout::IsInsideReservedTraversalZone2D(CornerLocation, CellSize * 0.42f))
+			{
+				Height = Preset.BaselineZ;
+				bPinnedBaseline[T66CornerIdx(R, C, CornerCols)] = true;
+			}
+
+			if (R == 0 || R == GridSize || C == 0 || C == GridSize)
+			{
+				Height = FMath::Max(Height, Preset.ElevationMax - Preset.ElevationStep * 0.35f);
+			}
+
+			OutCornerHeights[T66CornerIdx(R, C, CornerCols)] = FMath::Clamp(Height, Preset.ElevationMin, Preset.ElevationMax);
+		}
+	}
+
+	const auto SampleCornerNoise = [&](int32 Row, int32 Col, float ScaleCells, int32 Salt) -> float
+	{
+		const float SafeScale = FMath::Max(ScaleCells, 0.5f);
+		const uint32 Hash = HashCombineFast(GetTypeHash(Preset.Seed), GetTypeHash(Salt));
+		const float OffsetX = static_cast<float>(Hash & 1023u) * 0.113f;
+		const float OffsetY = static_cast<float>((Hash >> 10) & 1023u) * 0.151f;
+		return FMath::PerlinNoise2D(FVector2D(static_cast<float>(Col) / SafeScale + OffsetX, static_cast<float>(Row) / SafeScale + OffsetY));
+	};
+
+	for (int32 R = 0; R <= GridSize; ++R)
+	{
+		for (int32 C = 0; C <= GridSize; ++C)
+		{
+			const int32 Idx = T66CornerIdx(R, C, CornerCols);
+			if (bPinnedBaseline[Idx])
+			{
+				continue;
+			}
+
+			const float MacroNoise = SampleCornerNoise(R, C, Preset.MacroNoiseScaleCells * 1.15f, 0x56495331);
+			const float DetailNoise = SampleCornerNoise(R, C, Preset.DetailNoiseScaleCells * 0.95f, 0x56495332);
+			const float RidgeNoise = 1.f - FMath::Abs(SampleCornerNoise(R, C, Preset.RidgeNoiseScaleCells * 1.05f, 0x56495333));
+			const float RadiusAlpha = FVector2D::Distance(
+				FVector2D(static_cast<float>(C), static_cast<float>(R)),
+				FVector2D(static_cast<float>(GridSize) * 0.5f, static_cast<float>(GridSize) * 0.5f)) / FMath::Max(static_cast<float>(GridSize) * 0.72f, 1.f);
+			const float VisibilityBand = FMath::Clamp(1.f - FMath::Abs(RadiusAlpha - 0.55f) / 0.34f, 0.f, 1.f);
+			const float NoiseOffset =
+				MacroNoise * Preset.ElevationStep * 0.42f +
+				DetailNoise * Preset.ElevationStep * 0.18f +
+				FMath::Clamp((RidgeNoise - 0.20f) / 0.80f, 0.f, 1.f) * VisibilityBand * Preset.ElevationStep * 0.75f;
+			OutCornerHeights[Idx] = FMath::Clamp(OutCornerHeights[Idx] + NoiseOffset, Preset.ElevationMin, Preset.ElevationMax);
+		}
+	}
+
+	for (int32 Pass = 0; Pass < 3; ++Pass)
+	{
+		Scratch = OutCornerHeights;
+		for (int32 R = 0; R <= GridSize; ++R)
+		{
+			for (int32 C = 0; C <= GridSize; ++C)
+			{
+				const int32 Idx = T66CornerIdx(R, C, CornerCols);
+				if (bPinnedBaseline[Idx])
+				{
+					Scratch[Idx] = Preset.BaselineZ;
+					continue;
+				}
+
+				float Sum = OutCornerHeights[Idx] * 2.2f;
+				float WeightSum = 2.2f;
+				for (int32 OffR = -1; OffR <= 1; ++OffR)
+				{
+					for (int32 OffC = -1; OffC <= 1; ++OffC)
+					{
+						if (OffR == 0 && OffC == 0)
+						{
+							continue;
+						}
+
+						const int32 NR = R + OffR;
+						const int32 NC = C + OffC;
+						if (NR < 0 || NR > GridSize || NC < 0 || NC > GridSize)
+						{
+							continue;
+						}
+
+						const float Weight = (OffR == 0 || OffC == 0) ? 1.0f : 0.55f;
+						Sum += OutCornerHeights[T66CornerIdx(NR, NC, CornerCols)] * Weight;
+						WeightSum += Weight;
+					}
+				}
+
+				float Smoothed = Sum / FMath::Max(WeightSum, KINDA_SMALL_NUMBER);
+				if (R == 0 || R == GridSize || C == 0 || C == GridSize)
+				{
+					Smoothed = FMath::Max(Smoothed, Preset.ElevationMax - Preset.ElevationStep * 0.35f);
+				}
+				Scratch[Idx] = FMath::Clamp(Smoothed, Preset.ElevationMin, Preset.ElevationMax);
+			}
+		}
+
+		OutCornerHeights = Scratch;
+	}
+}
+
+static void AppendTerrainCellQuad(
+	TArray<FVector>& OutVerts,
+	TArray<int32>& OutTris,
+	TArray<FVector>& OutNormals,
+	TArray<FVector2D>& OutUVs,
+	float MinX,
+	float MaxX,
+	float MinY,
+	float MaxY,
+	float Z00,
+	float Z10,
+	float Z11,
+	float Z01,
+	int32 UVQuarterTurns)
+{
+	const int32 Base = OutVerts.Num();
+	const FVector V0(MinX, MinY, Z00);
+	const FVector V1(MaxX, MinY, Z10);
+	const FVector V2(MaxX, MaxY, Z11);
+	const FVector V3(MinX, MaxY, Z01);
+
+	OutVerts.Add(V0);
+	OutVerts.Add(V1);
+	OutVerts.Add(V2);
+	OutVerts.Add(V3);
+
+	FVector NormalA = FVector::CrossProduct(V2 - V0, V1 - V0).GetSafeNormal();
+	FVector NormalB = FVector::CrossProduct(V3 - V0, V2 - V0).GetSafeNormal();
+	if (NormalA.Z < 0.f) NormalA *= -1.f;
+	if (NormalB.Z < 0.f) NormalB *= -1.f;
+
+	OutNormals.Add((NormalA + NormalB).GetSafeNormal());
+	OutNormals.Add(NormalA);
+	OutNormals.Add((NormalA + NormalB).GetSafeNormal());
+	OutNormals.Add(NormalB);
+
+	T66AppendRotatedQuadUVs(OutUVs, UVQuarterTurns);
+
+	OutTris.Add(Base + 0);
+	OutTris.Add(Base + 2);
+	OutTris.Add(Base + 1);
+	OutTris.Add(Base + 0);
+	OutTris.Add(Base + 3);
+	OutTris.Add(Base + 2);
+}
+
+static void AppendMergedPlateauTopQuads(
+	const FT66ProceduralMapResult& MapData,
+	int32 GridSize,
+	int32 GroundVariantCount,
+	int32 Seed,
+	float SlabThickness,
+	TArray<FT66MeshSectionBuffers>& OutTopSections)
+{
+	TArray<bool> bConsumed;
+	bConsumed.Init(false, MapData.Platforms.Num());
+
+	auto CanMergeCell = [&](int32 Row, int32 Col, float TopZ) -> bool
+	{
+		if (Row < 0 || Row >= GridSize || Col < 0 || Col >= GridSize)
+		{
+			return false;
+		}
+
+		const int32 Idx = Row * GridSize + Col;
+		return !bConsumed[Idx] && MapData.Platforms.IsValidIndex(Idx) && FMath::IsNearlyEqual(MapData.Platforms[Idx].TopZ, TopZ);
+	};
+
+	for (int32 StartRow = 0; StartRow < GridSize; ++StartRow)
+	{
+		for (int32 StartCol = 0; StartCol < GridSize; ++StartCol)
+		{
+			const int32 StartIdx = StartRow * GridSize + StartCol;
+			if (!MapData.Platforms.IsValidIndex(StartIdx) || bConsumed[StartIdx])
+			{
+				continue;
+			}
+
+			const FT66PlatformNode& Start = MapData.Platforms[StartIdx];
+			const float TopZ = Start.TopZ;
+
+			int32 WidthCells = 1;
+			while (CanMergeCell(StartRow, StartCol + WidthCells, TopZ))
+			{
+				++WidthCells;
+			}
+
+			int32 HeightCells = 1;
+			bool bCanGrow = true;
+			while (bCanGrow && StartRow + HeightCells < GridSize)
+			{
+				for (int32 ColOffset = 0; ColOffset < WidthCells; ++ColOffset)
+				{
+					if (!CanMergeCell(StartRow + HeightCells, StartCol + ColOffset, TopZ))
+					{
+						bCanGrow = false;
+						break;
+					}
+				}
+
+				if (bCanGrow)
+				{
+					++HeightCells;
+				}
+			}
+
+			for (int32 RowOffset = 0; RowOffset < HeightCells; ++RowOffset)
+			{
+				for (int32 ColOffset = 0; ColOffset < WidthCells; ++ColOffset)
+				{
+					bConsumed[(StartRow + RowOffset) * GridSize + (StartCol + ColOffset)] = true;
+				}
+			}
+
+			const FT66PlatformNode& End = MapData.Platforms[(StartRow + HeightCells - 1) * GridSize + (StartCol + WidthCells - 1)];
+			const float MinX = Start.Position.X - Start.SizeX * 0.5f;
+			const float MaxX = End.Position.X + End.SizeX * 0.5f;
+			const float MinY = Start.Position.Y - Start.SizeY * 0.5f;
+			const float MaxY = End.Position.Y + End.SizeY * 0.5f;
+
+			const int32 Bucket = T66PickCellVariant(Seed, Start.GridRow, Start.GridCol, GroundVariantCount);
+			const int32 QuarterTurns = T66PickCellQuarterTurns(Seed ^ 0x47524E44, Start.GridRow, Start.GridCol);
+			FT66MeshSectionBuffers& Section = OutTopSections[Bucket];
+			AppendPlatformTopQuad(
+				Section.Verts,
+				Section.Tris,
+				Section.Normals,
+				Section.UVs,
+				FVector((MinX + MaxX) * 0.5f, (MinY + MaxY) * 0.5f, 0.f),
+				MaxX - MinX,
+				MaxY - MinY,
+				TopZ,
+				QuarterTurns,
+				SlabThickness);
+		}
+	}
+}
+
+static bool T66SpawnMegabonkFarmTerrain(
+	AT66GameMode* GameMode,
+	UWorld* World,
+	const FT66MegabonkFarmBoard& Board,
+	const FT66MapPreset& Preset,
+	const FActorSpawnParameters& SpawnParams,
+	bool& bOutCollisionReady)
+{
+	bOutCollisionReady = false;
+	if (!GameMode || !World || Board.Size <= 0 || Board.Cells.Num() == 0)
+	{
+		return false;
+	}
+
+	if (Board.OccupiedCount != Board.Cells.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("[MAP] Dedicated Megabonk Farm board incomplete: %d / %d cells occupied"), Board.OccupiedCount, Board.Cells.Num());
+		return false;
+	}
+
+	UStaticMesh* BlockMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock"));
+	UStaticMesh* SlopeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope"));
+	if (!BlockMesh || !SlopeMesh)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MAP] Megabonk Farm tile meshes missing; falling back to legacy procedural terrain."));
+		return false;
+	}
+
+	UMaterialInterface* BlockMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+	UMaterialInterface* SlopeMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"));
+	if (!BlockMaterial)
+	{
+		BlockMaterial = SlopeMaterial;
+	}
+	if (!SlopeMaterial)
+	{
+		SlopeMaterial = BlockMaterial;
+	}
+
+	UStaticMesh* TreeMesh1 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Tree.Tree"));
+	UStaticMesh* TreeMesh2 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Tree2.Tree2"));
+	UStaticMesh* TreeMesh3 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Tree3.Tree3"));
+	UStaticMesh* RockMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Rock.Rock"));
+	UStaticMesh* RocksMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Rocks.Rocks"));
+	UStaticMesh* LogMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Log.Log"));
+
+	const float CellSize = Board.CellSize;
+	const float StepHeight = Board.StepHeight;
+	const float MapSize = static_cast<float>(Board.Size) * CellSize;
+	const FVector BoardOrigin = T66GetMegabonkFarmBoardOrigin(Preset);
+
+	AActor* VisualActor = World->SpawnActor<AActor>(AActor::StaticClass(), BoardOrigin, FRotator::ZeroRotator, SpawnParams);
+	if (!VisualActor)
+	{
+		return false;
+	}
+
+	VisualActor->Tags.Add(T66MapPlatformTag);
+	VisualActor->Tags.Add(T66FloorMainTag);
+
+	USceneComponent* VisualRoot = NewObject<USceneComponent>(VisualActor, TEXT("MegabonkFarmRoot"));
+	VisualActor->AddInstanceComponent(VisualRoot);
+	VisualActor->SetRootComponent(VisualRoot);
+	VisualRoot->SetMobility(EComponentMobility::Static);
+	VisualRoot->RegisterComponent();
+
+	T66EnableComplexCollisionForFarmMesh(BlockMesh);
+	T66EnableComplexCollisionForFarmMesh(SlopeMesh);
+	UStaticMesh* PlaneMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
+
+	auto CreateSceneChild = [&](USceneComponent* Parent, const FString& Name, const FVector& RelativeLocation) -> USceneComponent*
+	{
+		USceneComponent* Component = NewObject<USceneComponent>(VisualActor, FName(*Name));
+		VisualActor->AddInstanceComponent(Component);
+		Component->SetupAttachment(Parent);
+		Component->SetMobility(EComponentMobility::Static);
+		Component->SetRelativeLocation(RelativeLocation);
+		Component->RegisterComponent();
+		return Component;
+	};
+
+	auto CreateMeshChild = [&](USceneComponent* Parent, const FString& Name, UStaticMesh* Mesh, UMaterialInterface* Material, const FTransform& RelativeTransform, bool bEnableCollision) -> UStaticMeshComponent*
+	{
+		if (!Mesh)
+		{
+			return nullptr;
+		}
+
+		UStaticMeshComponent* Component = NewObject<UStaticMeshComponent>(VisualActor, FName(*Name));
+		VisualActor->AddInstanceComponent(Component);
+		Component->SetupAttachment(Parent);
+		Component->SetMobility(EComponentMobility::Static);
+		Component->SetStaticMesh(Mesh);
+		if (Material)
+		{
+			Component->SetMaterial(0, Material);
+		}
+		Component->SetRelativeTransform(RelativeTransform);
+		if (bEnableCollision)
+		{
+			T66ConfigureTerrainVisualCollisionComponent(Component);
+			Component->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
+		}
+		else
+		{
+			Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Component->SetCanEverAffectNavigation(false);
+		}
+		Component->RegisterComponent();
+		return Component;
+	};
+
+	auto PickDecorMesh = [&](ET66FarmCellDecoration Decoration) -> UStaticMesh*
+	{
+		switch (Decoration)
+		{
+		case ET66FarmCellDecoration::Tree1: return TreeMesh1;
+		case ET66FarmCellDecoration::Tree2: return TreeMesh2;
+		case ET66FarmCellDecoration::Tree3: return TreeMesh3;
+		case ET66FarmCellDecoration::Rock: return RockMesh;
+		case ET66FarmCellDecoration::Rocks: return RocksMesh;
+		case ET66FarmCellDecoration::Log: return LogMesh;
+		default: return nullptr;
+		}
+	};
+
+	auto SetTileActiveState = [&](UStaticMeshComponent* Component, bool bActive, bool bCollisionEnabled)
+	{
+		if (!Component)
+		{
+			return;
+		}
+
+		Component->SetVisibility(bActive, true);
+		Component->SetHiddenInGame(!bActive, true);
+		Component->SetCollisionEnabled((bActive && bCollisionEnabled) ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+		if (bActive && bCollisionEnabled)
+		{
+			T66ConfigureTerrainVisualCollisionComponent(Component);
+			Component->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
+		}
+	};
+
+	auto CreateWallPrefab = [&](const FString& BaseName, const FVector& LocalCenter, const FVector& Size)
+	{
+		if (!PlaneMesh)
+		{
+			return;
+		}
+
+		USceneComponent* WallRoot = CreateSceneChild(VisualRoot, BaseName + TEXT("_Root"), LocalCenter);
+
+		auto AddWallFace = [&](const FString& FaceName, const FVector& RelativeLocation, const FVector& FaceSize, const FVector& FaceNormal)
+		{
+			FTransform FaceTransform;
+			if (!T66BuildScaledStaticMeshTransform(
+				PlaneMesh,
+				RelativeLocation,
+				FaceSize,
+				FRotationMatrix::MakeFromZ(FaceNormal).Rotator(),
+				FaceTransform))
+			{
+				return;
+			}
+			CreateMeshChild(WallRoot, FaceName, PlaneMesh, BlockMaterial, FaceTransform, false);
+		};
+
+		const FVector HalfSize = Size * 0.5f;
+		AddWallFace(BaseName + TEXT("_West"), FVector(-HalfSize.X, 0.f, 0.f), FVector(Size.Y, Size.Z, 1.f), FVector(-1.f, 0.f, 0.f));
+		AddWallFace(BaseName + TEXT("_East"), FVector(HalfSize.X, 0.f, 0.f), FVector(Size.Y, Size.Z, 1.f), FVector(1.f, 0.f, 0.f));
+		AddWallFace(BaseName + TEXT("_South"), FVector(0.f, -HalfSize.Y, 0.f), FVector(Size.X, Size.Z, 1.f), FVector(0.f, -1.f, 0.f));
+		AddWallFace(BaseName + TEXT("_North"), FVector(0.f, HalfSize.Y, 0.f), FVector(Size.X, Size.Z, 1.f), FVector(0.f, 1.f, 0.f));
+	};
+
+	int32 FlatCount = 0;
+	int32 SlopeCount = 0;
+	int32 SupportCount = 0;
+	int32 DecorCount = 0;
+
+	for (int32 CellIndex = 0; CellIndex < Board.Cells.Num(); ++CellIndex)
+	{
+		const FT66MegabonkFarmCell& Cell = Board.Cells[CellIndex];
+		if (!Cell.bOccupied)
+		{
+			continue;
+		}
+
+		USceneComponent* TileRoot = CreateSceneChild(
+			VisualRoot,
+			FString::Printf(TEXT("FarmTileRoot_%d"), CellIndex),
+			FVector(
+				static_cast<float>(Cell.X) * CellSize,
+				static_cast<float>(Cell.Z) * CellSize,
+				static_cast<float>(Cell.Level) * StepHeight));
+
+		UStaticMeshComponent* CubeComponent = CreateMeshChild(
+			TileRoot,
+			FString::Printf(TEXT("FarmCube_%d"), CellIndex),
+			BlockMesh,
+			BlockMaterial,
+			FTransform::Identity,
+			false);
+		UStaticMeshComponent* SlopeComponent = CreateMeshChild(
+			TileRoot,
+			FString::Printf(TEXT("FarmSlope_%d"), CellIndex),
+			SlopeMesh,
+			SlopeMaterial,
+			FTransform(T66GetFarmSlopeRotation(Cell.Shape), FVector::ZeroVector, FVector::OneVector),
+			false);
+
+		SetTileActiveState(CubeComponent, !Cell.bSlope, true);
+		SetTileActiveState(SlopeComponent, Cell.bSlope, true);
+		if (Cell.bSlope)
+		{
+			++SlopeCount;
+		}
+		else
+		{
+			++FlatCount;
+		}
+
+		USceneComponent* BottomPartRoot = CreateSceneChild(
+			TileRoot,
+			FString::Printf(TEXT("FarmBottomPart_%d"), CellIndex),
+			FVector::ZeroVector);
+		for (int32 SupportLevel = 0; SupportLevel < Cell.Level; ++SupportLevel)
+		{
+			CreateMeshChild(
+				BottomPartRoot,
+				FString::Printf(TEXT("FarmSupportTile_%d_%d"), CellIndex, SupportLevel),
+				BlockMesh,
+				BlockMaterial,
+				FTransform(FRotator::ZeroRotator, FVector(0.f, 0.f, -static_cast<float>(SupportLevel + 1) * StepHeight), FVector::OneVector),
+				false);
+			++SupportCount;
+		}
+
+		if (!Cell.bSlope && Cell.Decoration != ET66FarmCellDecoration::None)
+		{
+			if (UStaticMesh* DecorMesh = PickDecorMesh(Cell.Decoration))
+			{
+				FTransform DecorTransform(
+					Cell.DecorationLocalRotation,
+					Cell.DecorationLocalOffset,
+					Cell.DecorationLocalScale);
+				if (CreateMeshChild(
+					TileRoot,
+					FString::Printf(TEXT("FarmDecor_%d"), CellIndex),
+					DecorMesh,
+					nullptr,
+					DecorTransform,
+					false))
+				{
+					++DecorCount;
+				}
+			}
+		}
+	}
+
+	const float WallThickness = CellSize;
+	const float WallHeight = StepHeight * 50.0f;
+	const float WallCenterZ = 0.f;
+	const float WallOffset = static_cast<float>(Board.Size) * CellSize * 0.5f - CellSize * 0.5f;
+	CreateWallPrefab(TEXT("FarmWallNorth"), FVector(WallOffset, static_cast<float>(Board.Size) * CellSize, WallCenterZ), FVector(MapSize, WallThickness, WallHeight));
+	CreateWallPrefab(TEXT("FarmWallSouth"), FVector(WallOffset, -CellSize, WallCenterZ), FVector(MapSize, WallThickness, WallHeight));
+	CreateWallPrefab(TEXT("FarmWallEast"), FVector(static_cast<float>(Board.Size) * CellSize, WallOffset, WallCenterZ), FVector(WallThickness, MapSize, WallHeight));
+	CreateWallPrefab(TEXT("FarmWallWest"), FVector(-CellSize, WallOffset, WallCenterZ), FVector(WallThickness, MapSize, WallHeight));
+
+	auto AddWallCollision = [&](const TCHAR* Name, const FVector& LocalCenter, const FVector& Extent)
+	{
+		UBoxComponent* Box = NewObject<UBoxComponent>(VisualActor, Name);
+		VisualActor->AddInstanceComponent(Box);
+		Box->SetupAttachment(VisualRoot);
+		Box->SetMobility(EComponentMobility::Static);
+		Box->SetRelativeLocation(LocalCenter);
+		Box->SetBoxExtent(Extent);
+		T66ConfigureTerrainCollisionComponent(Box);
+		Box->RegisterComponent();
+	};
+
+	AddWallCollision(TEXT("FarmWallCollisionNorth"), FVector(WallOffset, static_cast<float>(Board.Size) * CellSize, WallCenterZ), FVector(MapSize * 0.5f, WallThickness * 0.5f, WallHeight * 0.5f));
+	AddWallCollision(TEXT("FarmWallCollisionSouth"), FVector(WallOffset, -CellSize, WallCenterZ), FVector(MapSize * 0.5f, WallThickness * 0.5f, WallHeight * 0.5f));
+	AddWallCollision(TEXT("FarmWallCollisionEast"), FVector(static_cast<float>(Board.Size) * CellSize, WallOffset, WallCenterZ), FVector(WallThickness * 0.5f, MapSize * 0.5f, WallHeight * 0.5f));
+	AddWallCollision(TEXT("FarmWallCollisionWest"), FVector(-CellSize, WallOffset, WallCenterZ), FVector(WallThickness * 0.5f, MapSize * 0.5f, WallHeight * 0.5f));
+
+	const float SafetyCatchThickness = 1800.f;
+	const float SafetyCatchTopZ = Preset.ElevationMin - 350.f;
+	UBoxComponent* SafetyCatch = NewObject<UBoxComponent>(VisualActor, TEXT("TerrainSafetyCatch"));
+	VisualActor->AddInstanceComponent(SafetyCatch);
+	SafetyCatch->SetupAttachment(VisualRoot);
+	SafetyCatch->SetMobility(EComponentMobility::Static);
+	SafetyCatch->SetRelativeLocation(FVector(WallOffset, WallOffset, SafetyCatchTopZ - SafetyCatchThickness * 0.5f));
+	SafetyCatch->SetBoxExtent(FVector(MapSize * 0.5f + CellSize, MapSize * 0.5f + CellSize, SafetyCatchThickness * 0.5f));
+	T66ConfigureTerrainSafetyCatchComponent(SafetyCatch);
+	SafetyCatch->RegisterComponent();
+
+	bOutCollisionReady = true;
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Megabonk Farm terrain spawned: %d occupied tiles, %d flat tiles, %d slope tiles, %d support tiles, %d decor"), Board.OccupiedCount, FlatCount, SlopeCount, SupportCount, DecorCount);
+	return true;
 }
 
 // ---- Main spawn function ----
@@ -3714,23 +5375,104 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	if (!World) return;
 	if (IsLabLevel() || IsColiseumStage()) return;
 
-	for (TActorIterator<AActor> It(World); It; ++It)
+	const bool bStandaloneMegabonkFarm = T66IsStandaloneMegabonkFarmStage(World);
+	if (bStandaloneMegabonkFarm)
 	{
-		if (It->Tags.Contains(T66MapPlatformTag)) return;
+		TArray<AActor*> CleanupActors;
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (!Actor)
+			{
+				continue;
+			}
+
+			if (Actor->Tags.Contains(T66MapPlatformTag)
+				|| Actor->Tags.Contains(T66MapRampTag)
+				|| Actor->Tags.Contains(T66FloorMainTag)
+				|| Actor->Tags.Contains(T66TraversalBarrierTag)
+				|| T66_HasAnyFloorTag(Actor))
+			{
+				CleanupActors.Add(Actor);
+			}
+		}
+
+		for (AActor* Actor : CleanupActors)
+		{
+			if (Actor)
+			{
+				Actor->Destroy();
+			}
+		}
+	}
+	else
+	{
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			if (It->Tags.Contains(T66MapPlatformTag)) return;
+		}
 	}
 
 	bTerrainCollisionReady = false;
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	const ET66MapTheme Theme = GI ? GI->MapTheme : ET66MapTheme::Farm;
-	int32 Seed = GI ? GI->RunSeed : 0;
-	if (Seed == 0) Seed = FMath::Rand();
+	const int32 Seed = T66EnsureRunSeed(GI);
 
 	FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(Theme);
 	Preset.Seed = Seed;
 
+	FActorSpawnParameters SP;
+	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (Theme == ET66MapTheme::Farm)
+	{
+		const T66MegabonkFarm::FSettings FarmSettings = T66MegabonkFarm::MakeSettings(Preset);
+		UE_LOG(LogTemp, Log, TEXT("[MAP] Generating dedicated Megabonk Farm board (seed=%d, grid=%d, cell=%.0f, step=%.0f, scale=%.2f)"),
+			Seed,
+			FarmSettings.BoardSize,
+			FarmSettings.CellSize,
+			FarmSettings.StepHeight,
+			FarmSettings.BoardScale);
+		T66MegabonkFarm::FBoard Board;
+		if (!T66MegabonkFarm::Generate(Preset, Board))
+		{
+			UE_LOG(LogTemp, Error, TEXT("[MAP] Dedicated Megabonk Farm generation failed to fill the board (seed=%d, occupied=%d/%d)"),
+				Seed,
+				Board.OccupiedCount,
+				Board.Cells.Num());
+			return;
+		}
+
+		bool bFarmCollisionReady = false;
+		if (T66MegabonkFarm::Spawn(World, Board, Preset, SP, bFarmCollisionReady))
+		{
+			bTerrainCollisionReady = bFarmCollisionReady;
+			if (bTerrainCollisionReady)
+			{
+				SnapPlayersToTerrain();
+			}
+			UE_LOG(LogTemp, Verbose, TEXT("[MAP] Terrain collision ready=%d"), bTerrainCollisionReady ? 1 : 0);
+			UE_LOG(LogTemp, Log, TEXT("[MAP] Dedicated Megabonk Farm spawned: %d tiles (theme=%d, seed=%d, cell=%.0f)"),
+				Board.OccupiedCount, static_cast<int32>(Theme), Seed, Board.Settings.CellSize);
+			return;
+		}
+
+		return;
+	}
+
+	const bool bMergePlateauVisuals = false;
+
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Generating procedural map (theme=%d, seed=%d, grid=%d)"),
+		static_cast<int32>(Theme), Seed, Preset.GridSize);
 	FT66ProceduralMapResult MapData = FT66ProceduralMapGenerator::Generate(Preset);
 	if (!MapData.bValid) return;
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Generated terrain data: %d platforms, %d ramp entries"),
+		MapData.Platforms.Num(), MapData.Ramps.Num());
+
+	const float MapSize  = Preset.MapHalfExtent * 2.f;
+	const float CellSize = MapSize / FMath::Max(Preset.GridSize, 2);
+	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
 
 	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
@@ -3852,13 +5594,9 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		TerrainCliffMaterials = LoadedCliffMaterials;
 	}
 
-	FActorSpawnParameters SP;
-	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	const float MapSize  = Preset.MapHalfExtent * 2.f;
-	const float CellSize = MapSize / FMath::Max(Preset.GridSize, 2);
 	const int32 GroundVariantCount = FMath::Max(TerrainGroundMaterials.Num(), 1);
 	const int32 CliffVariantCount = FMath::Max(TerrainCliffMaterials.Num(), 1);
+	const float VisualSlabThickness = FMath::Max(Preset.SurfaceThickness, 120.f);
 
 	// Build a lookup so walls can leave openings where a ramp exists.
 	TMap<uint64, const FT66RampEdge*> RampLookup;
@@ -3875,15 +5613,24 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 
 	UProceduralMeshComponent* TopPMC = NewObject<UProceduralMeshComponent>(TopActor, TEXT("PlatformTops"));
 	TopActor->SetRootComponent(TopPMC);
+	TopPMC->bUseAsyncCooking = true;
+	TopPMC->bUseComplexAsSimpleCollision = false;
 
 	TArray<FT66MeshSectionBuffers> TopSections;
 	TopSections.SetNum(GroundVariantCount);
-	for (const FT66PlatformNode& P : MapData.Platforms)
+	if (bMergePlateauVisuals)
 	{
-		const int32 Bucket = T66PickCellVariant(Preset.Seed, P.GridRow, P.GridCol, GroundVariantCount);
-		const int32 QuarterTurns = T66PickCellQuarterTurns(Preset.Seed ^ 0x47524E44, P.GridRow, P.GridCol);
-		FT66MeshSectionBuffers& Section = TopSections[Bucket];
-		AppendPlatformTopQuad(Section.Verts, Section.Tris, Section.Normals, Section.UVs, FVector(P.Position, 0.f), P.SizeX, P.SizeY, P.TopZ, QuarterTurns);
+		AppendMergedPlateauTopQuads(MapData, GridSize, GroundVariantCount, Preset.Seed, VisualSlabThickness, TopSections);
+	}
+	else
+	{
+		for (const FT66PlatformNode& P : MapData.Platforms)
+		{
+			const int32 Bucket = T66PickCellVariant(Preset.Seed, P.GridRow, P.GridCol, GroundVariantCount);
+			const int32 QuarterTurns = T66PickCellQuarterTurns(Preset.Seed ^ 0x47524E44, P.GridRow, P.GridCol);
+			FT66MeshSectionBuffers& Section = TopSections[Bucket];
+			AppendPlatformTopQuad(Section.Verts, Section.Tris, Section.Normals, Section.UVs, FVector(P.Position, 0.f), P.SizeX, P.SizeY, P.TopZ, QuarterTurns, VisualSlabThickness);
+		}
 	}
 
 	TArray<FLinearColor> EmptyColors;
@@ -3891,7 +5638,16 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	{
 		TArray<FVector> Normals = Buffers.Normals;
 		TArray<FProcMeshTangent> Tangents;
-		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Buffers.Verts, Buffers.Tris, Buffers.UVs, Normals, Tangents);
+		Tangents.SetNum(Buffers.Verts.Num());
+		for (int32 VertIndex = 0; VertIndex < Buffers.Verts.Num(); ++VertIndex)
+		{
+			FVector TangentX = FVector::CrossProduct(FVector::UpVector, Normals.IsValidIndex(VertIndex) ? Normals[VertIndex] : FVector::UpVector);
+			if (!TangentX.Normalize())
+			{
+				TangentX = FVector::RightVector;
+			}
+			Tangents[VertIndex] = FProcMeshTangent(TangentX, false);
+		}
 		PMC->CreateMeshSection_LinearColor(SectionIndex, Buffers.Verts, Buffers.Tris, Normals, Buffers.UVs, EmptyColors, Tangents, true);
 		if (Material)
 		{
@@ -3912,10 +5668,12 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	}
 	TopPMC->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TopPMC->RegisterComponent();
+	UE_LOG(LogTemp, Verbose, TEXT("[MAP] Top terrain mesh registered (%d sections)"), TopSectionIndex);
+
+	int32 RampCount = 0;
 
 	// --- Wall sides as procedural mesh (same approach as tops/ramps ??? no engine default material) ---
 	const float WallThickness = FMath::Clamp(Preset.SurfaceThickness, 60.f, 140.f);
-	const int32 GridSize = FMath::Max(Preset.GridSize, 2);
 
 	struct FT66ReservedTraversalRect
 	{
@@ -4224,6 +5982,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 
 			T66ConfigureTerrainVisualCollisionComponent(WallPMC);
 			WallPMC->RegisterComponent();
+			UE_LOG(LogTemp, Verbose, TEXT("[MAP] Wall terrain mesh registered"));
 		}
 	}
 
@@ -4235,13 +5994,19 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	RampSlopeSections.SetNum(GroundVariantCount);
 	RampSideSections.SetNum(CliffVariantCount);
 
-	int32 RampCount = 0;
 	for (const FT66RampEdge& Edge : MapData.Ramps)
 	{
+		if (!Edge.bVisualOwner)
+		{
+			continue;
+		}
+
 		const FT66PlatformNode& Lo = MapData.Platforms[Edge.LowerIndex];
 		const FT66PlatformNode& Hi = MapData.Platforms[Edge.HigherIndex];
 		const float HeightDiff = Hi.TopZ - Lo.TopZ;
 		if (HeightDiff < MinRampHeight) continue;
+		const float RampSeamOverlap = FMath::Clamp(FMath::Min(Lo.SizeX, Lo.SizeY) * 0.06f, 80.f, 220.f);
+		const float EffectiveDepth = Edge.Depth + RampSeamOverlap * 2.f;
 
 		FVector RampPos;
 		FQuat RampRot = FQuat::Identity;
@@ -4265,7 +6030,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 			RampRot = FQuat(FRotator(0.f, bHigherUp ? 90.f : -90.f, 0.f));
 		}
 
-		const FVector RampScale(Edge.Depth / 100.f, Edge.Width / 100.f, HeightDiff / 100.f);
+		const FVector RampScale(EffectiveDepth / 100.f, Edge.Width / 100.f, HeightDiff / 100.f);
 		const int32 GroundBucket = T66PickBoundaryVariant(Preset.Seed, Edge.LowerIndex, Edge.HigherIndex, GroundVariantCount);
 		const int32 CliffBucket = T66PickBoundaryVariant(Preset.Seed ^ 0x4C494646, Edge.LowerIndex, Edge.HigherIndex, CliffVariantCount);
 		const int32 GroundQuarterTurns = T66PickBoundaryQuarterTurns(Preset.Seed ^ 0x534C4F50, Edge.LowerIndex, Edge.HigherIndex);
@@ -4314,6 +6079,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 
 			T66ConfigureTerrainVisualCollisionComponent(PMC);
 			PMC->RegisterComponent();
+			UE_LOG(LogTemp, Verbose, TEXT("[MAP] Ramp terrain mesh registered (%d ramps)"), RampCount);
 		}
 	}
 
@@ -4346,6 +6112,11 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 		const float RampCollisionThickness = FMath::Clamp(Preset.SurfaceThickness, 80.f, 140.f);
 		for (int32 Index = 0; Index < MapData.Ramps.Num(); ++Index)
 		{
+			if (!MapData.Ramps[Index].bVisualOwner)
+			{
+				continue;
+			}
+
 			FTransform RampTransform;
 			FVector RampExtent = FVector::ZeroVector;
 			if (!T66BuildRampCollisionTransform(MapData, MapData.Ramps[Index], RampCollisionThickness, RampTransform, RampExtent))
@@ -4361,6 +6132,35 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 			T66ConfigureTerrainCollisionComponent(Box);
 			Box->RegisterComponent();
 		}
+
+		const float ReservedFloorThickness = 1200.f;
+		for (int32 RectIndex = 0; RectIndex < UE_ARRAY_COUNT(ReservedTraversalRects); ++RectIndex)
+		{
+			const FT66ReservedTraversalRect& Rect = ReservedTraversalRects[RectIndex];
+			UBoxComponent* Box = NewObject<UBoxComponent>(CollisionActor, *FString::Printf(TEXT("ReservedTraversalFloor_%d"), RectIndex));
+			CollisionActor->AddInstanceComponent(Box);
+			Box->SetupAttachment(CollisionRoot);
+			Box->SetRelativeLocation(FVector(
+				(Rect.MinX + Rect.MaxX) * 0.5f,
+				(Rect.MinY + Rect.MaxY) * 0.5f,
+				Preset.BaselineZ - ReservedFloorThickness * 0.5f));
+			Box->SetBoxExtent(FVector(
+				(Rect.MaxX - Rect.MinX) * 0.5f,
+				(Rect.MaxY - Rect.MinY) * 0.5f,
+				ReservedFloorThickness * 0.5f));
+			T66ConfigureTerrainCollisionComponent(Box);
+			Box->RegisterComponent();
+		}
+
+		const float SafetyCatchThickness = 1800.f;
+		const float SafetyCatchTopZ = Preset.ElevationMin - 350.f;
+		UBoxComponent* SafetyCatch = NewObject<UBoxComponent>(CollisionActor, TEXT("TerrainSafetyCatch"));
+		CollisionActor->AddInstanceComponent(SafetyCatch);
+		SafetyCatch->SetupAttachment(CollisionRoot);
+		SafetyCatch->SetRelativeLocation(FVector(0.f, 0.f, SafetyCatchTopZ - SafetyCatchThickness * 0.5f));
+		SafetyCatch->SetBoxExtent(FVector(Preset.MapHalfExtent + CellSize, Preset.MapHalfExtent + CellSize, SafetyCatchThickness * 0.5f));
+		T66ConfigureTerrainSafetyCatchComponent(SafetyCatch);
+		SafetyCatch->RegisterComponent();
 	}
 	else
 	{
@@ -4372,6 +6172,7 @@ void AT66GameMode::SpawnLowPolyNatureEnvironment()
 	{
 		SnapPlayersToTerrain();
 	}
+	UE_LOG(LogTemp, Verbose, TEXT("[MAP] Terrain collision ready=%d"), bTerrainCollisionReady ? 1 : 0);
 
 	UE_LOG(LogTemp, Log, TEXT("[MAP] Procedural map spawned: %d platforms, %d ramps (theme=%d, seed=%d, cell=%.0f)"),
 		MapData.Platforms.Num(), RampCount, static_cast<int32>(Theme), Seed, CellSize);
@@ -4854,6 +6655,27 @@ void AT66GameMode::SpawnQuakeSkyIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	if (T66IsStandaloneMegabonkFarmStage(World))
+	{
+		TArray<AT66QuakeSkyActor*> SkyActorsToDestroy;
+		for (TActorIterator<AT66QuakeSkyActor> It(World); It; ++It)
+		{
+			SkyActorsToDestroy.Add(*It);
+		}
+		for (AT66QuakeSkyActor* SkyActor : SkyActorsToDestroy)
+		{
+			if (SkyActor)
+			{
+				SkyActor->Destroy();
+			}
+		}
+		if (SkyActorsToDestroy.Num() > 0)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[QuakeSky] Removed %d Quake sky actor(s) for standalone Farm"), SkyActorsToDestroy.Num());
+		}
+		return;
+	}
+
 	for (TActorIterator<AT66QuakeSkyActor> It(World); It; ++It)
 	{
 		return;
@@ -4881,17 +6703,63 @@ void AT66GameMode::ConfigureGameplayFogForWorld(UWorld* World)
 	if (!World) return;
 
 	UGameInstance* GI = World->GetGameInstance();
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
 	const float FogIntensityPercent = PS ? PS->GetFogIntensityPercent() : 55.0f;
 	const bool bFogEnabled = !PS || (PS->GetFogEnabled() && FogIntensityPercent > KINDA_SMALL_NUMBER);
 	const float FogDensityScale = FMath::Clamp(FogIntensityPercent / 55.0f, 0.0f, 100.0f / 55.0f);
-	const float BaseFogDensity = 0.0225f;
-	const float FogDensity = BaseFogDensity * FogDensityScale;
-	const float FogStartDistance = 1400.f;
-	const float FogHeightFalloff = 0.085f;
-	const float FogMaxOpacity = 0.96f;
-	const FLinearColor FogColor(0.05f, 0.06f, 0.08f);
-	const FLinearColor DirectionalFogColor(0.14f, 0.18f, 0.24f);
+
+	struct FT66FogTuning
+	{
+		float BaseFogDensity = 0.0225f;
+		float FogStartDistance = 1400.f;
+		float FogHeightFalloff = 0.085f;
+		float FogMaxOpacity = 0.96f;
+		float DirectionalExponent = 10.0f;
+		float DirectionalStartDistance = 2600.0f;
+		float FogCutoffDistance = 0.0f;
+		FLinearColor FogColor = FLinearColor(0.05f, 0.06f, 0.08f);
+		FLinearColor DirectionalFogColor = FLinearColor(0.14f, 0.18f, 0.24f);
+	};
+
+	FT66FogTuning FogTuning;
+	switch (T66GI ? T66GI->MapTheme : ET66MapTheme::Farm)
+	{
+	case ET66MapTheme::Farm:
+		FogTuning.BaseFogDensity = 0.0105f;
+		FogTuning.FogStartDistance = 6200.f;
+		FogTuning.FogHeightFalloff = 0.008f;
+		FogTuning.FogMaxOpacity = 1.0f;
+		FogTuning.DirectionalExponent = 1.6f;
+		FogTuning.DirectionalStartDistance = 6800.0f;
+		FogTuning.FogColor = FLinearColor(0.0f, 0.53f, 0.60f);
+		FogTuning.DirectionalFogColor = FLinearColor(0.10f, 0.64f, 0.74f);
+		break;
+
+	case ET66MapTheme::Ocean:
+		FogTuning.BaseFogDensity = 0.031f;
+		FogTuning.FogStartDistance = 650.f;
+		FogTuning.FogHeightFalloff = 0.105f;
+		FogTuning.FogMaxOpacity = 0.972f;
+		FogTuning.DirectionalExponent = 8.5f;
+		FogTuning.DirectionalStartDistance = 1500.0f;
+		FogTuning.FogColor = FLinearColor(0.07f, 0.09f, 0.10f);
+		FogTuning.DirectionalFogColor = FLinearColor(0.14f, 0.19f, 0.20f);
+		break;
+
+	case ET66MapTheme::Mountain:
+		FogTuning.BaseFogDensity = 0.027f;
+		FogTuning.FogStartDistance = 900.f;
+		FogTuning.FogHeightFalloff = 0.095f;
+		FogTuning.FogMaxOpacity = 0.968f;
+		FogTuning.DirectionalExponent = 9.0f;
+		FogTuning.DirectionalStartDistance = 1900.0f;
+		FogTuning.FogColor = FLinearColor(0.08f, 0.08f, 0.09f);
+		FogTuning.DirectionalFogColor = FLinearColor(0.16f, 0.17f, 0.19f);
+		break;
+	}
+
+	const float FogDensity = FogTuning.BaseFogDensity * FogDensityScale;
 
 	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
 	{
@@ -4899,17 +6767,49 @@ void AT66GameMode::ConfigureGameplayFogForWorld(UWorld* World)
 		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(It->GetRootComponent());
 		if (!FogComp) continue;
 
-		FogComp->SetStartDistance(FogStartDistance);
+		FogComp->SetStartDistance(FogTuning.FogStartDistance);
 		FogComp->SetFogDensity(FogDensity);
-		FogComp->SetFogHeightFalloff(FogHeightFalloff);
-		FogComp->SetFogMaxOpacity(FogMaxOpacity);
-		FogComp->SetFogInscatteringColor(FogColor);
-		FogComp->SetDirectionalInscatteringColor(DirectionalFogColor);
-		FogComp->SetDirectionalInscatteringExponent(10.0f);
-		FogComp->SetDirectionalInscatteringStartDistance(2600.0f);
+		FogComp->SetFogHeightFalloff(FogTuning.FogHeightFalloff);
+		FogComp->SetFogMaxOpacity(FogTuning.FogMaxOpacity);
+		FogComp->SetFogCutoffDistance(FogTuning.FogCutoffDistance);
+		FogComp->SetFogInscatteringColor(FogTuning.FogColor);
+		FogComp->SetDirectionalInscatteringColor(FogTuning.DirectionalFogColor);
+		FogComp->SetDirectionalInscatteringExponent(FogTuning.DirectionalExponent);
+		FogComp->SetDirectionalInscatteringStartDistance(FogTuning.DirectionalStartDistance);
+		FogComp->SetSecondFogDensity(0.0f);
+		FogComp->SetSecondFogHeightFalloff(0.0f);
+		FogComp->SetSecondFogHeightOffset(0.0f);
 		FogComp->SetVolumetricFog(false);
 		FogComp->SetVisibility(bFogEnabled);
 		break;
+	}
+
+	if (GI)
+	{
+		if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
+		{
+			FT66RetroFXSettings RetroSettings = PS ? PS->GetRetroFXSettings() : FT66RetroFXSettings();
+			if ((T66GI ? T66GI->MapTheme : ET66MapTheme::Farm) == ET66MapTheme::Farm)
+			{
+				RetroSettings.bEnableWorldGeometry = false;
+				RetroSettings.WorldVertexSnapPercent = 0.0f;
+				RetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
+				RetroSettings.WorldVertexNoisePercent = 0.0f;
+				RetroSettings.WorldAffineBlendPercent = 0.0f;
+				RetroSettings.WorldAffineDistance1Percent = 0.0f;
+				RetroSettings.WorldAffineDistance2Percent = 0.0f;
+				RetroSettings.WorldAffineDistance3Percent = 0.0f;
+				if (RetroSettings.bEnableRetroFXMaster)
+				{
+					RetroSettings.PS1FogPercent = 100.0f;
+					RetroSettings.PS1SceneDepthFogPercent = 100.0f;
+					RetroSettings.PS1FogDensityPercent = 56.0f;
+					RetroSettings.PS1FogStartDistancePercent = 48.0f;
+					RetroSettings.PS1FogFallOffDistancePercent = 44.0f;
+				}
+			}
+			RetroFX->ApplySettings(RetroSettings, World);
+		}
 	}
 }
 
@@ -5058,7 +6958,29 @@ void AT66GameMode::HandleSettingsChanged()
 	{
 		if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
 		{
-			RetroFX->ApplyCurrentSettings(GetWorld());
+			if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+			{
+				FT66RetroFXSettings RetroSettings = PS->GetRetroFXSettings();
+				if (UT66GameInstance* T66GI = GetT66GameInstance())
+				{
+					if (T66GI->MapTheme == ET66MapTheme::Farm)
+					{
+						RetroSettings.bEnableWorldGeometry = false;
+						RetroSettings.WorldVertexSnapPercent = 0.0f;
+						RetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
+						RetroSettings.WorldVertexNoisePercent = 0.0f;
+						RetroSettings.WorldAffineBlendPercent = 0.0f;
+						RetroSettings.WorldAffineDistance1Percent = 0.0f;
+						RetroSettings.WorldAffineDistance2Percent = 0.0f;
+						RetroSettings.WorldAffineDistance3Percent = 0.0f;
+					}
+				}
+				RetroFX->ApplySettings(RetroSettings, GetWorld());
+			}
+			else
+			{
+				RetroFX->ApplyCurrentSettings(GetWorld());
+			}
 		}
 	}
 }
@@ -5067,6 +6989,16 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	const bool bStandaloneMegabonkFarm = T66IsStandaloneMegabonkFarmStage(World);
+
+	if (bStandaloneMegabonkFarm)
+	{
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+			(*It)->Destroy();
+		}
+	}
 
 	// Check for existing player start
 	bool bHasPlayerStart = false;
@@ -5082,6 +7014,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		UT66GameInstance* GI = GetT66GameInstance();
 
 		// Default spawn:
 		// - Demo map (e.g. Map_Summer): origin (0, 0, DefaultSpawnHeight)
@@ -5092,6 +7025,12 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		if (MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase))
 		{
 			SpawnLoc = FVector(0.f, 0.f, DefaultSpawnHeight);
+		}
+		else if (bStandaloneMegabonkFarm)
+		{
+			FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
+			Preset.Seed = T66EnsureRunSeed(GI);
+			SpawnLoc = T66MegabonkFarm::GetPreferredSpawnLocation(Preset, DefaultSpawnHeight);
 		}
 		else if (IsColiseumStage())
 		{
@@ -5234,6 +7173,11 @@ UT66GameInstance* AT66GameMode::GetT66GameInstance() const
 
 bool AT66GameMode::TrySnapActorToTerrain(AActor* Actor) const
 {
+	return TrySnapActorToTerrainAtLocation(Actor, Actor ? Actor->GetActorLocation() : FVector::ZeroVector);
+}
+
+bool AT66GameMode::TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector& TraceLocation) const
+{
 	UWorld* World = GetWorld();
 	if (!World || !Actor)
 	{
@@ -5242,9 +7186,8 @@ bool AT66GameMode::TrySnapActorToTerrain(AActor* Actor) const
 
 	FHitResult GroundHit;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(T66SnapActorToTerrain), false, Actor);
-	const FVector ActorLoc = Actor->GetActorLocation();
-	const FVector TraceStart = ActorLoc + FVector(0.f, 0.f, 8000.f);
-	const FVector TraceEnd = ActorLoc - FVector(0.f, 0.f, 16000.f);
+	const FVector TraceStart(TraceLocation.X, TraceLocation.Y, TraceLocation.Z + 8000.f);
+	const FVector TraceEnd(TraceLocation.X, TraceLocation.Y, TraceLocation.Z - 16000.f);
 	if (!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, Params) &&
 		!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_Visibility, Params))
 	{
@@ -5260,6 +7203,106 @@ bool AT66GameMode::TrySnapActorToTerrain(AActor* Actor) const
 	const FVector GroundedLoc = GroundHit.ImpactPoint + FVector(0.f, 0.f, HalfHeight + 5.f);
 	Actor->SetActorLocation(GroundedLoc, false, nullptr, ETeleportType::TeleportPhysics);
 	return true;
+}
+
+void AT66GameMode::MaintainPlayerTerrainSafety()
+{
+	UWorld* World = GetWorld();
+	if (!World || IsLabLevel() || IsColiseumStage())
+	{
+		return;
+	}
+
+	UT66GameInstance* GI = GetT66GameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const ET66MapTheme Theme = GI ? GI->MapTheme : ET66MapTheme::Farm;
+	FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(Theme);
+	Preset.Seed = GI ? GI->RunSeed : 0;
+	const bool bStandaloneMegabonkFarm = T66IsStandaloneMegabonkFarmStage(World);
+	const float RescueThresholdZ = bStandaloneMegabonkFarm
+		? (T66MegabonkFarm::GetLowestCollisionBottomZ(Preset) - 100.0f)
+		: (Preset.ElevationMin - 200.f);
+	const float AnchorTraceZ = T66IsStandaloneMegabonkFarmStage(World)
+		? T66MegabonkFarm::GetTraceZ(Preset)
+		: (Preset.ElevationMax + 3000.f);
+	const bool bStageTimerActive = RunState && RunState->GetStageTimerActive();
+
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		APawn* Pawn = PC ? PC->GetPawn() : nullptr;
+		if (!Pawn)
+		{
+			continue;
+		}
+
+		ACharacter* Character = Cast<ACharacter>(Pawn);
+		UCharacterMovementComponent* Movement = Character ? Character->GetCharacterMovement() : nullptr;
+
+		if (!bTerrainCollisionReady)
+		{
+			if (Movement && Movement->MovementMode != MOVE_None)
+			{
+				Movement->StopMovementImmediately();
+				Movement->SetMovementMode(MOVE_None);
+			}
+			continue;
+		}
+
+		const FVector PawnLoc = Pawn->GetActorLocation();
+		const bool bNeedsRescue = PawnLoc.Z <= RescueThresholdZ || (Movement && Movement->MovementMode == MOVE_None);
+		if (!bNeedsRescue)
+		{
+			continue;
+		}
+
+		TArray<FVector> RescueAnchors;
+		if (bStandaloneMegabonkFarm)
+		{
+			const int32 GridSize = T66MegabonkFarm::MakeSettings(Preset).BoardSize;
+			RescueAnchors.Reserve(5);
+			RescueAnchors.Add(T66MegabonkFarm::GetSpawnLocation(Preset, AnchorTraceZ));
+			RescueAnchors.Add(T66MegabonkFarm::GetCellCenter(Preset, GridSize / 2, FMath::Max(0, GridSize / 2 - 1), AnchorTraceZ));
+			RescueAnchors.Add(T66MegabonkFarm::GetCellCenter(Preset, GridSize / 2, FMath::Min(GridSize - 1, GridSize / 2 + 1), AnchorTraceZ));
+			RescueAnchors.Add(T66MegabonkFarm::GetCellCenter(Preset, FMath::Max(0, GridSize / 2 - 1), GridSize / 2, AnchorTraceZ));
+			RescueAnchors.Add(T66MegabonkFarm::GetCellCenter(Preset, FMath::Min(GridSize - 1, GridSize / 2 + 1), GridSize / 2, AnchorTraceZ));
+		}
+		else if (!bStageTimerActive || PawnLoc.X <= 0.f)
+		{
+			RescueAnchors.Reserve(4);
+			RescueAnchors.Add(T66GameplayLayout::GetStartAreaCenter(AnchorTraceZ));
+			RescueAnchors.Add(T66GameplayLayout::GetStartGateLocation(AnchorTraceZ));
+		}
+		if (!bStandaloneMegabonkFarm && bStageTimerActive && PawnLoc.X > 0.f)
+		{
+			RescueAnchors.Add(T66GameplayLayout::GetBossGateLocation(AnchorTraceZ));
+			RescueAnchors.Add(T66GameplayLayout::GetBossAreaCenter(AnchorTraceZ));
+		}
+
+		bool bRecovered = TrySnapActorToTerrain(Pawn);
+		if (!bRecovered)
+		{
+			RescueAnchors.Sort([PawnLoc](const FVector& A, const FVector& B)
+			{
+				return FVector::DistSquared2D(A, PawnLoc) < FVector::DistSquared2D(B, PawnLoc);
+			});
+
+			for (const FVector& Anchor : RescueAnchors)
+			{
+				if (TrySnapActorToTerrainAtLocation(Pawn, Anchor))
+				{
+					bRecovered = true;
+					break;
+				}
+			}
+		}
+
+		if (Movement)
+		{
+			Movement->StopMovementImmediately();
+			Movement->SetMovementMode(bRecovered ? MOVE_Walking : MOVE_None);
+		}
+	}
 }
 
 void AT66GameMode::SnapPlayersToTerrain()
@@ -5318,6 +7361,18 @@ void AT66GameMode::RegenerateMap(ET66MapTheme Theme, int32 Seed)
 	DestroyActorsWithTag(World, T66MapRampTag);
 	DestroyActorsWithTag(World, T66FloorMainTag);
 	DestroyActorsWithTag(World, T66TraversalBarrierTag);
+
+	if (StartGate)
+	{
+		StartGate->Destroy();
+		StartGate = nullptr;
+	}
+	if (BossGate)
+	{
+		BossGate->Destroy();
+		BossGate = nullptr;
+	}
+	DestroyBossBeacon();
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	if (GI)
@@ -5416,6 +7471,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// Get spawn transform - use a safe default height if no PlayerStart exists
 	FVector SpawnLocation;
 	FRotator SpawnRotation = FRotator::ZeroRotator;
+	const bool bStandaloneMegabonkFarm = T66IsStandaloneMegabonkFarmStage(GetWorld());
 	
 	if (StartSpot)
 	{
@@ -5454,6 +7510,13 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		SpawnLocation = FVector(0.f, 0.f, 200.f);
 		SpawnRotation = FRotator::ZeroRotator;
 	}
+	else if (bStandaloneMegabonkFarm)
+	{
+		FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
+		Preset.Seed = T66EnsureRunSeed(GetT66GameInstance());
+		SpawnLocation = T66MegabonkFarm::GetPreferredSpawnLocation(Preset, 200.f);
+		SpawnRotation = FRotator::ZeroRotator;
+	}
 	else if (!IsColiseumStage())
 	{
 		SpawnLocation = FVector(-35455.f, 0.f, 200.f);
@@ -5461,11 +7524,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 		if (UT66GameInstance* T66GI = GetT66GameInstance())
 		{
-		if (T66GI->bStageCatchUpPending)
-		{
-			SpawnLocation = FVector(-45455.f, 23636.f, 200.f);
-			}
-			else if (bForceSpawnInTutorialArea)
+			if (T66IsStandaloneTutorialMap(GetWorld()) || bForceSpawnInTutorialArea)
 			{
 				SpawnLocation = FVector(-3636.f, 56818.f, 200.f);
 				SpawnRotation = FRotator::ZeroRotator;
@@ -5687,6 +7746,8 @@ AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 		ClassToSpawn = AT66IdolAltar::StaticClass();
 	else if (InteractableID == FName(TEXT("Crate")))
 		ClassToSpawn = AT66CrateInteractable::StaticClass();
+	else if (InteractableID == FName(TEXT("QuickReviveVending")))
+		ClassToSpawn = AT66QuickReviveVendingMachine::StaticClass();
 	if (!ClassToSpawn) return nullptr;
 
 	FActorSpawnParameters SpawnParams;

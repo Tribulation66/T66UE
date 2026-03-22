@@ -27,6 +27,7 @@ public:
 	virtual void NativeDestruct() override;
 
 	void CloseOverlay();
+	void SetEmbeddedInCasinoShell(bool bEmbedded) { bEmbeddedInCasinoShell = bEmbedded; }
 
 	/** Skip dialogue and open casino page (used by in-world dialogue). */
 	void OpenCasinoPage();
@@ -48,6 +49,7 @@ public:
 
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 	TSharedPtr<SWidgetSwitcher> CasinoSwitcher;
+	TSharedPtr<STextBlock> NetWorthText;
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> StatusText;
@@ -317,4 +319,5 @@ public:
 	void HandleBossChanged();
 
 	bool bCachedBossActive = false;
+	bool bEmbeddedInCasinoShell = false;
 };

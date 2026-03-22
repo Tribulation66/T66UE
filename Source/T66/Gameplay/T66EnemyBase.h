@@ -52,6 +52,9 @@ public:
 	/** Apply a move speed slow (from Frostbite passive). Multiplier is applied for DurationSeconds. */
 	void ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds);
 
+	/** Force this enemy to flee from the player for a short duration without changing its default AI tuning. */
+	void ApplyForcedRunAway(float DurationSeconds);
+
 	/** Point value for wave budget and score (Bible 2.9) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
@@ -188,6 +191,7 @@ private:
 	float MoveSlowMultiplier = 1.f;
 	float MoveSlowSecondsRemaining = 0.f;
 	float BaseMaxWalkSpeed = 350.f;
+	float ForcedRunAwaySecondsRemaining = 0.f;
 
 	/** Cached player pawn reference (avoid UGameplayStatics::GetPlayerPawn every tick per enemy). */
 	TWeakObjectPtr<APawn> CachedPlayerPawn;

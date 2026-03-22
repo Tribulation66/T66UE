@@ -926,6 +926,9 @@ public:
 	FText GetText_GoldFormat() const; // "Gold: {0}"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
+	FText GetText_NetWorthFormat() const; // "Net Worth: {0}"
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
 	FText GetText_OweFormat() const; // "Debt: {0}"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|GameplayHUD")
@@ -1099,6 +1102,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_BorrowAmountMustBePositive() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_BorrowExceedsNetWorthFormat() const; // "Borrow amount exceeds remaining Net Worth ({0})."
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_PaybackAmountMustBePositive() const;

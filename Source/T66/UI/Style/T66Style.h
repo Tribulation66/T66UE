@@ -22,9 +22,18 @@ enum class ET66ButtonType : uint8
 /** Optional decorative border treatment layered on top of the base button behavior. */
 enum class ET66ButtonBorderVisual : uint8
 {
-	Default,   // Use the project's standard button chrome
+	Default,   // Resolve from the active shared style theme
+	None,      // Use the base button chrome only (no decorative overlay)
 	RetroSky,  // Legacy full-rect retro border treatment
 	RetroWood, // Thick rectangular border with a banded wood-grain trim
+};
+
+/** Optional background treatment layered under the base button body. */
+enum class ET66ButtonBackgroundVisual : uint8
+{
+	Default,        // Resolve from the active shared style theme
+	None,           // Use the base button body only (no decorative fill)
+	MainMenuArcane, // Dark green/purple stylized fill used by the arcane theme
 };
 
 /**
@@ -53,6 +62,7 @@ struct FT66ButtonParams
 	// === Visual Defaults ===
 	ET66ButtonType Type = ET66ButtonType::Neutral;
 	ET66ButtonBorderVisual BorderVisual = ET66ButtonBorderVisual::Default;
+	ET66ButtonBackgroundVisual BackgroundVisual = ET66ButtonBackgroundVisual::Default;
 	float MinWidth      = 120.f;
 	float Height        = 0.f;            // 0 = content-driven (recommended), >0 = explicit override
 	int32 FontSize      = 0;              // 0 = use T66.Text.Button default (16pt bold)
@@ -80,6 +90,7 @@ struct FT66ButtonParams
 
 	// Builder-style setters (return *this for chaining)
 	FT66ButtonParams& SetBorderVisual(ET66ButtonBorderVisual V)          { BorderVisual = V; return *this; }
+	FT66ButtonParams& SetBackgroundVisual(ET66ButtonBackgroundVisual V)  { BackgroundVisual = V; return *this; }
 	FT66ButtonParams& SetMinWidth(float W)                                { MinWidth = W; return *this; }
 	FT66ButtonParams& SetHeight(float H)                                  { Height = H; return *this; }
 	FT66ButtonParams& SetFontSize(int32 S)                                { FontSize = S; return *this; }
@@ -124,6 +135,8 @@ enum class ET66PanelType : uint8
 struct FT66PanelParams
 {
 	ET66PanelType Type = ET66PanelType::Panel;
+	ET66ButtonBorderVisual BorderVisual = ET66ButtonBorderVisual::Default;
+	ET66ButtonBackgroundVisual BackgroundVisual = ET66ButtonBackgroundVisual::Default;
 	FMargin Padding    = FMargin(16.f);
 	TAttribute<EVisibility> Visibility = EVisibility::Visible;
 
@@ -136,6 +149,8 @@ struct FT66PanelParams
 	FT66PanelParams(ET66PanelType InType) : Type(InType) {}
 
 	// Builder-style setters
+	FT66PanelParams& SetBorderVisual(ET66ButtonBorderVisual V)          { BorderVisual = V; return *this; }
+	FT66PanelParams& SetBackgroundVisual(ET66ButtonBackgroundVisual V)  { BackgroundVisual = V; return *this; }
 	FT66PanelParams& SetPadding(const FMargin& P)                        { Padding = P; return *this; }
 	FT66PanelParams& SetPadding(float P)                                  { Padding = FMargin(P); return *this; }
 	FT66PanelParams& SetColor(const TAttribute<FSlateColor>& C)          { ColorOverride = C; bHasColorOverride = true; return *this; }
@@ -359,4 +374,10 @@ public:
 
 private:
 	static TSharedPtr<FSlateStyleSet> StyleInstance;
+	static ET66ButtonBorderVisual ResolveButtonBorderVisual(const FT66ButtonParams& Params);
+	static ET66ButtonBackgroundVisual ResolveButtonBackgroundVisual(const FT66ButtonParams& Params);
+	static ET66ButtonBorderVisual ResolvePanelBorderVisual(const FT66PanelParams& Params);
+	static ET66ButtonBackgroundVisual ResolvePanelBackgroundVisual(const FT66PanelParams& Params);
+	static float ResolveButtonDecorativeBorderThickness(const FT66ButtonParams& Params, int32 EffectiveFontSize, float MaxThickness);
+	static float ResolvePanelDecorativeBorderThickness(const FT66PanelParams& Params, float MaxThickness);
 };

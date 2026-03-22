@@ -13,6 +13,7 @@ class UT66GameplayHUDWidget;
 class UT66LabOverlayWidget;
 class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
+class UT66CasinoOverlayWidget;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class UT66CowardicePromptWidget;
@@ -109,6 +110,18 @@ public:
 
 	/** Open the Gambler overlay (non-pausing). */
 	void OpenGamblerOverlay(int32 WinGoldAmount);
+
+	/** Open the shared casino overlay (gambling + vendor + alchemy). */
+	void OpenCasinoOverlay();
+
+	/** Close the shared casino overlay and return to gameplay input. */
+	void CloseCasinoOverlay();
+
+	void SwitchCasinoOverlayToGambling();
+	void SwitchCasinoOverlayToVendor();
+	void SwitchCasinoOverlayToAlchemy();
+	bool IsCasinoOverlayOpen() const;
+	bool TriggerCasinoBossIfAngry();
 
 	/** Open the Vendor overlay (non-pausing). */
 	void OpenVendorOverlay();
@@ -213,6 +226,9 @@ protected:
 	UFUNCTION()
 	void OnPlayerDied();
 
+	UFUNCTION()
+	void HandleQuickReviveStateChanged();
+
 private:
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
 	UPROPERTY()
@@ -224,6 +240,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66GamblerOverlayWidget> GamblerOverlayWidget;
+
+	UPROPERTY()
+	TObjectPtr<UT66CasinoOverlayWidget> CasinoOverlayWidget;
 
 	UPROPERTY()
 	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;

@@ -15,6 +15,11 @@ namespace
 	static const FName UserColorParam(TEXT("User.Color"));
 	static const FName UserSpriteSizeParam(TEXT("User.SpriteSize"));
 
+	static ENCPoolMethod T66_GetPixelPoolingMethod(bool bAutoDestroy)
+	{
+		return bAutoDestroy ? ENCPoolMethod::AutoRelease : ENCPoolMethod::None;
+	}
+
 	static TAutoConsoleVariable<int32> CVarPixelVFXLowBudget(
 		TEXT("T66.PixelVFX.LowBudget"),
 		72,
@@ -78,9 +83,9 @@ UNiagaraComponent* UT66PixelVFXSubsystem::SpawnPixelAtLocation(
 		Location,
 		Rotation,
 		Scale,
-		true,
+		bAutoDestroy,
 		bAutoActivate,
-		ENCPoolMethod::AutoRelease);
+		T66_GetPixelPoolingMethod(bAutoDestroy));
 
 	if (!NiagaraComponent)
 	{
@@ -92,7 +97,6 @@ UNiagaraComponent* UT66PixelVFXSubsystem::SpawnPixelAtLocation(
 	NiagaraComponent->SetVariableLinearColor(UserTintParam, Tint);
 	NiagaraComponent->SetVariableLinearColor(UserColorParam, Tint);
 	NiagaraComponent->SetVariableVec2(UserSpriteSizeParam, SpriteSize);
-	NiagaraComponent->SetAutoDestroy(bAutoDestroy);
 
 	++EmittedThisFrame;
 	++TotalEmitted;

@@ -379,6 +379,9 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	ConfusionSecondsRemaining = 0.f;
 	ArmorDebuffAmount = 0.f;
 	ArmorDebuffSecondsRemaining = 0.f;
+	MoveSlowMultiplier = 1.f;
+	MoveSlowSecondsRemaining = 0.f;
+	ForcedRunAwaySecondsRemaining = 0.f;
 	bIsMiniBoss = false;
 	MiniBossHPScalarApplied = 1.0f;
 	MiniBossDamageScalarApplied = 1.0f;
@@ -545,8 +548,15 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		}
 	}
 
+	if (ForcedRunAwaySecondsRemaining > 0.f)
+	{
+		ForcedRunAwaySecondsRemaining = FMath::Max(0.f, ForcedRunAwaySecondsRemaining - DeltaSeconds);
+	}
+
+	const bool bShouldRunAwayFromPlayer = bRunAwayFromPlayer || ForcedRunAwaySecondsRemaining > 0.f;
+
 	float FarChaseMultiplier = 1.f;
-	if (!bRunAwayFromPlayer && LeashMaxDistance > 0.f && Dist2DToPlayer > LeashMaxDistance)
+	if (!bShouldRunAwayFromPlayer && LeashMaxDistance > 0.f && Dist2DToPlayer > LeashMaxDistance)
 	{
 		const float RampDistance = FMath::Max(1.f, FarChaseRampDistance);
 		const float RampAlpha = FMath::Clamp((Dist2DToPlayer - LeashMaxDistance) / RampDistance, 0.f, 1.f);
@@ -587,7 +597,7 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	if (Len > 10.f)
 	{
 		ToPlayer /= Len;
-		if (bRunAwayFromPlayer)
+		if (bShouldRunAwayFromPlayer)
 		{
 			AddMovementInput(-ToPlayer, 1.f);
 		}
@@ -691,6 +701,17 @@ void AT66EnemyBase::ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds)
 	if (Dur <= 0.f) return;
 	MoveSlowMultiplier = FMath::Min(MoveSlowMultiplier, Mult);
 	MoveSlowSecondsRemaining = FMath::Max(MoveSlowSecondsRemaining, Dur);
+}
+
+void AT66EnemyBase::ApplyForcedRunAway(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 30.f);
+	if (Dur <= 0.f || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	ForcedRunAwaySecondsRemaining = FMath::Max(ForcedRunAwaySecondsRemaining, Dur);
 }
 
 void AT66EnemyBase::UpdateHealthBar()

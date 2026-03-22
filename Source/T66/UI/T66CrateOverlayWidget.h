@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Core/T66Rarity.h"
+#include "Styling/SlateBrush.h"
 #include "T66CrateOverlayWidget.generated.h"
 
 class UT66GameplayHUDWidget;
@@ -29,6 +30,7 @@ private:
 		FName ItemID;
 		ET66Rarity Rarity;
 		FLinearColor Color;
+		TSharedPtr<FSlateBrush> IconBrush;
 	};
 
 	TArray<FCrateItemEntry> StripItems;
@@ -51,7 +53,12 @@ private:
 	float TotalScrollDistance = 0.f;
 	float CurrentScrollOffset = 0.f;
 
-	static constexpr float ItemTileWidth = 72.f;
+	static constexpr float ItemTileWidth = 132.f;
+	static constexpr float ItemTileHeight = 164.f;
+	static constexpr float ItemTileGap = 8.f;
+	static constexpr float ItemTileStride = ItemTileWidth + ItemTileGap;
+	static constexpr float ItemPreviewSize = 92.f;
+	static constexpr int32 VisibleTileCount = 5;
 	static constexpr int32 StripItemCount = 34;
 	static constexpr int32 WinnerPosition = 29;
 

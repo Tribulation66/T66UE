@@ -27,6 +27,7 @@
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66CrateOverlayWidget.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/InputSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
@@ -1003,6 +1004,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->HeartsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshHearts);
 	RunState->GoldChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 	RunState->DebtChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
+	RunState->InventoryChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 	RunState->InventoryChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->PanelVisibilityChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->ScoreChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
@@ -1016,6 +1018,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
@@ -1102,6 +1105,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->HeartsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshHearts);
 		RunState->GoldChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 		RunState->DebtChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
+		RunState->InventoryChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
 		RunState->InventoryChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->PanelVisibilityChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->ScoreChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshEconomy);
@@ -1115,6 +1119,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		RunState->QuickReviveChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->StatusEffectsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
@@ -1561,11 +1566,37 @@ void UT66GameplayHUDWidget::ToggleFullMap()
 
 void UT66GameplayHUDWidget::RefreshFPS()
 {
-	if (!FPSText.IsValid()) return;
+	if (!FPSText.IsValid() && !ElevationText.IsValid()) return;
 	UWorld* World = GetWorld();
 	const float Delta = World ? World->GetDeltaSeconds() : 0.f;
 	const int32 FPS = (Delta > 0.f) ? FMath::RoundToInt(1.f / Delta) : 0;
-	FPSText->SetText(FText::FromString(FString::Printf(TEXT("FPS: %d"), FPS)));
+	if (FPSText.IsValid())
+	{
+		FPSText->SetText(FText::FromString(FString::Printf(TEXT("FPS: %d"), FPS)));
+	}
+
+	if (ElevationText.IsValid())
+	{
+		const APawn* Pawn = GetOwningPlayerPawn();
+		if (!Pawn)
+		{
+			if (const APlayerController* PC = GetOwningPlayer())
+			{
+				Pawn = PC->GetPawn();
+			}
+		}
+
+		float GroundElevation = Pawn ? Pawn->GetActorLocation().Z : 0.f;
+		if (const AT66HeroBase* Hero = Cast<AT66HeroBase>(Pawn))
+		{
+			if (const UCapsuleComponent* Capsule = Hero->GetCapsuleComponent())
+			{
+				GroundElevation -= Capsule->GetScaledCapsuleHalfHeight();
+			}
+		}
+
+		ElevationText->SetText(FText::FromString(FString::Printf(TEXT("ELV: %d"), FMath::RoundToInt(GroundElevation))));
+	}
 }
 
 void UT66GameplayHUDWidget::RefreshMapData()
@@ -1686,6 +1717,19 @@ void UT66GameplayHUDWidget::RefreshEconomy()
 	if (!RunState) return;
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
+	// Net Worth
+	if (NetWorthText.IsValid())
+	{
+		const int32 NetWorth = RunState->GetNetWorth();
+		const FText Fmt = Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
+		NetWorthText->SetText(FText::Format(Fmt, FText::AsNumber(NetWorth)));
+
+		const FLinearColor NetWorthColor = NetWorth > 0
+			? FT66Style::Tokens::Success
+			: (NetWorth < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
+		NetWorthText->SetColorAndOpacity(FSlateColor(NetWorthColor));
+	}
+
 	// Gold
 	if (GoldText.IsValid())
 	{
@@ -1696,7 +1740,7 @@ void UT66GameplayHUDWidget::RefreshEconomy()
 	// Owe (Debt) in red
 	if (DebtText.IsValid())
 	{
-		const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}");
+		const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
 		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
 	}
 
@@ -1991,6 +2035,33 @@ void UT66GameplayHUDWidget::RefreshHearts()
 	}
 }
 
+void UT66GameplayHUDWidget::RefreshQuickReviveState()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState)
+	{
+		return;
+	}
+
+	if (QuickReviveIconRowBox.IsValid())
+	{
+		QuickReviveIconRowBox->SetVisibility(RunState->HasQuickReviveCharge() ? EVisibility::Visible : EVisibility::Collapsed);
+	}
+
+	if (QuickReviveDownedOverlayBorder.IsValid())
+	{
+		const bool bDowned = RunState->IsInQuickReviveDownedState();
+		QuickReviveDownedOverlayBorder->SetVisibility(bDowned ? EVisibility::Visible : EVisibility::Collapsed);
+		if (QuickReviveDownedText.IsValid())
+		{
+			const int32 SecondsRemaining = FMath::Max(1, FMath::CeilToInt(RunState->GetQuickReviveDownedSecondsRemaining()));
+			QuickReviveDownedText->SetText(FText::Format(
+				NSLOCTEXT("T66.GameplayHUD", "QuickReviveDownedCountdown", "REVIVING IN {0}"),
+				FText::AsNumber(SecondsRemaining)));
+		}
+	}
+}
+
 void UT66GameplayHUDWidget::RefreshStatusEffects()
 {
 }
@@ -2015,6 +2086,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	RefreshDPS();
 
 	RefreshHearts();
+	RefreshQuickReviveState();
 	RefreshStatusEffects();
 	RefreshHeroStats();
 
@@ -2397,8 +2469,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	const FText StageInit = Loc ? FText::Format(Loc->GetText_StageNumberFormat(), FText::AsNumber(1)) : NSLOCTEXT("T66.GameplayHUD", "StageNumberInit", "Stage number: 1");
+	const FText NetWorthInit = Loc ? FText::Format(Loc->GetText_NetWorthFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "NetWorthInit", "Net Worth: 0");
 	const FText GoldInit = Loc ? FText::Format(Loc->GetText_GoldFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "GoldInit", "Gold: 0");
-	const FText OweInit = Loc ? FText::Format(Loc->GetText_OweFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "OweInit", "Owe: 0");
+	const FText OweInit = Loc ? FText::Format(Loc->GetText_OweFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "OweInit", "Debt: 0");
 	const FText ScoreLabelText = Loc ? Loc->GetText_ScoreLabel() : NSLOCTEXT("T66.GameplayHUD", "ScoreLabel", "Score:");
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
 
@@ -2481,6 +2554,22 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		{
 			const TSoftObjectPtr<UTexture2D> HeartSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/HEARTS.HEARTS")));
 			T66SlateTexture::BindSharedBrushAsync(TexPool, HeartSoft, this, HeartBrush, FName(TEXT("HUDHeart")), false);
+		}
+	}
+	if (!QuickReviveBrush.IsValid())
+	{
+		QuickReviveBrush = MakeShared<FSlateBrush>();
+		QuickReviveBrush->DrawAs = ESlateBrushDrawType::Image;
+		QuickReviveBrush->ImageSize = FVector2D(34.f, 34.f);
+		QuickReviveBrush->Tiling = ESlateBrushTileType::NoTile;
+		QuickReviveBrush->SetResourceObject(nullptr);
+	}
+	{
+		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+		if (TexPool)
+		{
+			const TSoftObjectPtr<UTexture2D> QuickReviveSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Interactables/QuickReviveIcon.QuickReviveIcon")));
+			T66SlateTexture::BindSharedBrushAsync(TexPool, QuickReviveSoft, this, QuickReviveBrush, FName(TEXT("HUDQuickRevive")), false);
 		}
 	}
 	// Skull sprite brush
@@ -2601,6 +2690,25 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			];
 		HeartImages[i] = HeartImg;
 	}
+
+	TSharedRef<SWidget> QuickReviveIconRowRef =
+		SAssignNew(QuickReviveIconRowBox, SBox)
+		.Visibility(EVisibility::Collapsed)
+		.WidthOverride(HeartsRowWidth)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				SNew(SBox)
+				.WidthOverride(34.f)
+				.HeightOverride(34.f)
+				[
+					SAssignNew(QuickReviveIconImage, SImage)
+					.Image(QuickReviveBrush.Get())
+					.ColorAndOpacity(FLinearColor::White)
+				]
+			]
+		];
 
 	// Status effect dots row (above hearts): burn / chill / curse
 	TSharedRef<SHorizontalBox> StatusDotsRowRef = SNew(SHorizontalBox);
@@ -3092,6 +3200,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			SAssignNew(BottomLeftHUDBox, SBox)
 			[
 				SNew(SVerticalBox)
+				// Elevation above FPS above idol panel
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+				[
+					SAssignNew(ElevationText, STextBlock)
+					.Text(NSLOCTEXT("T66.GameplayHUD", "ElevationDefault", "ELV: 0"))
+					.Font(FT66Style::Tokens::FontBold(14))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Justification(ETextJustify::Left)
+				]
 				// FPS above idol panel
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
 				[
@@ -3197,6 +3314,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								]
 							]
 						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+					[
+						QuickReviveIconRowRef
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 					[
@@ -3664,11 +3785,18 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									.BorderBackgroundColor(FLinearColor(0.45f, 0.55f, 0.50f, 0.5f))
 								]
 							]
-							// Gold / Owe row
+							// Net Worth / Gold / Owe row
 							+ SVerticalBox::Slot().AutoHeight().Padding(4.f, 0.f, 4.f, 8.f)
 							[
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
+								[
+									SAssignNew(NetWorthText, STextBlock)
+									.Text(NetWorthInit)
+									.Font(FT66Style::Tokens::FontBold(18))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 								[
 									SAssignNew(GoldText, STextBlock)
 									.Text(GoldInit)
@@ -3931,6 +4059,25 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.ColorAndOpacity(FT66Style::Tokens::Text),
 						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f, 8.f)))
 				]
+			]
+		]
+		// Quick Revive downed overlay
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SAssignNew(QuickReviveDownedOverlayBorder, SBorder)
+			.Visibility(EVisibility::Collapsed)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.42f, 0.42f, 0.42f, 0.58f))
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(QuickReviveDownedText, STextBlock)
+				.Text(FText::GetEmpty())
+				.Font(FT66Style::Tokens::FontBold(28))
+				.ColorAndOpacity(FLinearColor::White)
+				.Justification(ETextJustify::Center)
 			]
 		]
 		// Curse (visibility) overlay (always on top)

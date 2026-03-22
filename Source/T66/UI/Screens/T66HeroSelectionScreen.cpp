@@ -485,6 +485,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.HeroSelection", "Skins", "SKINS");
 	FText HeroInfoText = Loc ? Loc->GetText_HeroInfo() : NSLOCTEXT("T66.HeroSelection", "HeroInfo", "HERO INFO");
 	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.HeroSelection", "Lore", "LORE");
+	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.Common", "Settings", "SETTINGS");
 	FText DemoText = Loc ? Loc->GetText_Demo() : NSLOCTEXT("T66.HeroSelection", "Demo", "Demo");
 	FText BackToLobbyText = Loc ? Loc->GetText_BackToLobby() : NSLOCTEXT("T66.Lobby", "BackToLobby", "BACK TO LOBBY");
 	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
@@ -689,36 +690,50 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 					.VAlign(VAlign_Fill)
 					.Padding(0.0f, 0.0f, 10.0f, 80.0f)
 					[
-						FT66Style::MakePanel(
-							SNew(SVerticalBox)
-							// Skins header
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-							[
-								SNew(SOverlay)
-								+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+						[
+							FT66Style::MakeButton(FT66ButtonParams(SettingsText,
+								FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleSettingsClicked),
+								ET66ButtonType::Neutral)
+								.SetMinWidth(0.f))
+						]
+						+ SVerticalBox::Slot()
+						.FillHeight(1.0f)
+						[
+							FT66Style::MakePanel(
+								SNew(SVerticalBox)
+								// Skins header
+								+ SVerticalBox::Slot()
+								.AutoHeight()
+								.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 								[
-									SNew(STextBlock).Text(SkinsText)
-									.TextStyle(&TxtHeading)
+									SNew(SOverlay)
+									+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
+									[
+										SNew(STextBlock).Text(SkinsText)
+										.TextStyle(&TxtHeading)
+									]
+									+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
+									[
+										FT66Style::MakePanel(
+											SAssignNew(ACBalanceTextBlock, STextBlock)
+											.Text(ACBalanceText)
+											.Font(FT66Style::Tokens::FontBold(22))
+											.ColorAndOpacity(FT66Style::Tokens::Text),
+											FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
+									]
 								]
-								+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
+								// Skins list
+								+ SVerticalBox::Slot()
+								.FillHeight(1.0f)
 								[
-									FT66Style::MakePanel(
-										SAssignNew(ACBalanceTextBlock, STextBlock)
-										.Text(ACBalanceText)
-										.Font(FT66Style::Tokens::FontBold(22))
-										.ColorAndOpacity(FT66Style::Tokens::Text),
-										FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(15.0f, 8.0f)))
-								]
-							]
-							// Skins list
-							+ SVerticalBox::Slot()
-							.FillHeight(1.0f)
-							[
-								SkinsListBoxWidget.ToSharedRef()
-							],
-							FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space3)))
+									SkinsListBoxWidget.ToSharedRef()
+								],
+								FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space3)))
+						]
 					]
 					// CENTER: Hero Preview (3D render target or colored box fallback)
 					+ SHorizontalBox::Slot()
@@ -1087,6 +1102,7 @@ FReply UT66HeroSelectionScreen::HandleLoreClicked()
 FReply UT66HeroSelectionScreen::HandleTheLabClicked() { OnTheLabClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
+FReply UT66HeroSelectionScreen::HandleSettingsClicked() { OnSettingsClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackToLobbyClicked()
 {
 	NavigateTo(ET66ScreenType::Lobby);
@@ -1521,6 +1537,7 @@ void UT66HeroSelectionScreen::PreviewPreviousHero()
 void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty) { SelectedDifficulty = Difficulty; }
 void UT66HeroSelectionScreen::ToggleBodyType() { SelectedBodyType = (SelectedBodyType == ET66BodyType::TypeA) ? ET66BodyType::TypeB : ET66BodyType::TypeA; }
 void UT66HeroSelectionScreen::OnHeroGridClicked() { ShowModal(ET66ScreenType::HeroGrid); }
+void UT66HeroSelectionScreen::OnSettingsClicked() { ShowModal(ET66ScreenType::Settings); }
 void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
@@ -1528,7 +1545,7 @@ void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
-		GI->bStageCatchUpPending = (SelectedDifficulty != ET66Difficulty::Easy);
+		GI->bStageCatchUpPending = false;
 	}
 	NavigateTo(ET66ScreenType::CompanionSelection);
 }
@@ -1555,7 +1572,7 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
-		GI->bStageCatchUpPending = (SelectedDifficulty != ET66Difficulty::Easy);
+		GI->bStageCatchUpPending = false;
 		// New seed each time so procedural terrain layout differs per run
 		GI->RunSeed = FMath::Rand();
 	}
@@ -1566,7 +1583,7 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 	}
 	else
 	{
-		UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
 	}
 }
 void UT66HeroSelectionScreen::OnBackClicked() { NavigateBack(); }

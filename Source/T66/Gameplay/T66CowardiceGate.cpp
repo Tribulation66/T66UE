@@ -108,7 +108,7 @@ bool AT66CowardiceGate::ConfirmCowardice()
 	if (bIsDifficultyBossStage && RunState->GetOwedBossIDs().Num() > 0)
 	{
 		T66GI->bForceColiseumMode = true;
-		UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Maps/GameplayLevel")));
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetColiseumLevelName());
 		return true;
 	}
 

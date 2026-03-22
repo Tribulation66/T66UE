@@ -353,7 +353,21 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								.MinValue(0).MaxValue(999999).Delta(10)
 								.Font(FT66Style::Tokens::FontBold(16))
 								.Value_Lambda([this]() { return BorrowAmount; })
-								.OnValueChanged_Lambda([this](int32 V) { BorrowAmount = FMath::Max(0, V); })
+								.OnValueChanged_Lambda([this](int32 V)
+								{
+									int32 MaxBorrow = TNumericLimits<int32>::Max();
+									if (UWorld* World = GetWorld())
+									{
+										if (UGameInstance* GI = World->GetGameInstance())
+										{
+											if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+											{
+												MaxBorrow = RunState->GetRemainingBorrowCapacity();
+											}
+										}
+									}
+									BorrowAmount = FMath::Clamp(V, 0, FMath::Max(0, MaxBorrow));
+								})
 							]
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
@@ -1393,6 +1407,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(18.f, 0.f, 16.f, 0.f)
 				[
+					SAssignNew(NetWorthText, STextBlock)
+					.Text(FText::GetEmpty())
+					.TextStyle(&TextHeading)
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
+				[
 					SAssignNew(GoldText, STextBlock)
 					.Text(FText::GetEmpty())
 					.TextStyle(&TextHeading)
@@ -1648,6 +1669,11 @@ FReply UT66GamblerOverlayWidget::OnDialogueTeleport()
 		SetStatus(Loc2 ? Loc2->GetText_TeleportDisabledBossActive() : NSLOCTEXT("T66.Gambler", "TeleportDisabledBossActive", "Teleport disabled (boss encounter started)."), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
 		return FReply::Handled();
 	}
+	if (bEmbeddedInCasinoShell)
+	{
+		TeleportToVendor();
+		return FReply::Handled();
+	}
 	TeleportToVendor();
 	CloseOverlay();
 	return FReply::Handled();
@@ -1744,8 +1770,15 @@ FReply UT66GamblerOverlayWidget::OnBorrowClicked()
 		{
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
-				RunState->BorrowGold(BorrowAmount);
 				UT66LocalizationSubsystem* Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
+				if (!RunState->BorrowGold(BorrowAmount))
+				{
+					BorrowAmount = FMath::Clamp(BorrowAmount, 0, RunState->GetRemainingBorrowCapacity());
+					const FText Fmt = Loc2 ? Loc2->GetText_BorrowExceedsNetWorthFormat() : NSLOCTEXT("T66.Gambler", "BorrowExceedsNetWorthFormat", "Borrow amount exceeds remaining Net Worth ({0}).");
+					SetStatus(FText::Format(Fmt, FText::AsNumber(RunState->GetRemainingBorrowCapacity())), FLinearColor(1.f, 0.3f, 0.3f, 1.f));
+					RefreshTopBar();
+					return FReply::Handled();
+				}
 				const FText Fmt = Loc2 ? Loc2->GetText_BorrowedAmountFormat() : NSLOCTEXT("T66.Gambler", "BorrowedAmountFormat", "Borrowed {0}.");
 				SetStatus(FText::Format(Fmt, FText::AsNumber(BorrowAmount)), FLinearColor(0.3f, 1.f, 0.4f, 1.f));
 				RefreshTopBar();
@@ -2212,6 +2245,7 @@ void UT66GamblerOverlayWidget::OpenCasinoPage()
 
 void UT66GamblerOverlayWidget::RefreshTopBar()
 {
+	int32 NetWorth = 0;
 	int32 Gold = 0;
 	int32 Debt = 0;
 	float Anger01 = 0.f;
@@ -2223,14 +2257,25 @@ void UT66GamblerOverlayWidget::RefreshTopBar()
 			Loc2 = GI->GetSubsystem<UT66LocalizationSubsystem>();
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
+				BorrowAmount = FMath::Clamp(BorrowAmount, 0, RunState->GetRemainingBorrowCapacity());
 				Gold = RunState->GetCurrentGold();
 				Debt = RunState->GetCurrentDebt();
+				NetWorth = RunState->GetNetWorth();
 				Anger01 = RunState->GetGamblerAnger01();
 			}
 		}
 	}
+	const FText NetWorthFmt = Loc2 ? Loc2->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
 	const FText GoldFmt = Loc2 ? Loc2->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
-	const FText OweFmt = Loc2 ? Loc2->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Owe: {0}");
+	const FText OweFmt = Loc2 ? Loc2->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
+	if (NetWorthText.IsValid())
+	{
+		NetWorthText->SetText(FText::Format(NetWorthFmt, FText::AsNumber(NetWorth)));
+		const FLinearColor NetWorthColor = NetWorth > 0
+			? FT66Style::Tokens::Success
+			: (NetWorth < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
+		NetWorthText->SetColorAndOpacity(NetWorthColor);
+	}
 	if (GoldText.IsValid())
 	{
 		GoldText->SetText(FText::Format(GoldFmt, FText::AsNumber(Gold)));
@@ -2589,6 +2634,14 @@ void UT66GamblerOverlayWidget::HideCheatPrompt()
 
 void UT66GamblerOverlayWidget::TriggerGamblerBossIfAngry()
 {
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (PC->TriggerCasinoBossIfAngry())
+		{
+			return;
+		}
+	}
+
 	UWorld* World = GetWorld();
 	if (!World) return;
 	UGameInstance* GI = World->GetGameInstance();
@@ -3493,6 +3546,15 @@ void UT66GamblerOverlayWidget::HandleBJSplit()
 
 void UT66GamblerOverlayWidget::TeleportToVendor()
 {
+	if (bEmbeddedInCasinoShell)
+	{
+		if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+		{
+			PC->SwitchCasinoOverlayToVendor();
+		}
+		return;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World) return;
 
@@ -3520,6 +3582,15 @@ void UT66GamblerOverlayWidget::CloseOverlay()
 	PendingRevealType = ERevealType::None;
 	bInputLocked = false;
 	HideCheatPrompt();
+
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (bEmbeddedInCasinoShell)
+		{
+			PC->CloseCasinoOverlay();
+			return;
+		}
+	}
 
 	RemoveFromParent();
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))

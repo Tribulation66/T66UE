@@ -47,12 +47,22 @@ void AT66WheelSpinInteractable::ApplyRarityVisuals()
 {
 	if (TryApplyImportedMesh())
 	{
+		if (VisualMesh)
+		{
+			VisualMesh->SetHiddenInGame(false, true);
+			VisualMesh->SetVisibility(true, true);
+		}
 		if (SphereBase) SphereBase->SetVisibility(false, true);
 		if (WheelMesh && WheelMesh != VisualMesh)
 		{
 			WheelMesh->SetVisibility(false, true);
 		}
 		return;
+	}
+	if (VisualMesh)
+	{
+		VisualMesh->SetHiddenInGame(true, true);
+		VisualMesh->SetVisibility(false, true);
 	}
 	const FLinearColor R = FT66RarityUtil::GetRarityColor(Rarity);
 	FT66VisualUtil::ApplyT66Color(SphereBase, this, FLinearColor(0.12f, 0.12f, 0.14f, 1.f));

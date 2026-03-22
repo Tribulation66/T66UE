@@ -62,6 +62,12 @@ IMPORTS = [
     ("Props/Tree3.glb",    "/Game/World/Props",              "Tree3"),
     ("Props/Troth.glb",    "/Game/World/Props",              "Troth"),
     ("Props/Windmill.glb", "/Game/World/Props",              "Windmill"),
+    ("Cow.glb",            "/Game/World/Props/StartAreaDecor", "Cow"),
+    ("FullBody.glb",       "/Game/World/Props/StartAreaDecor", "FullBody"),
+    ("RoboCow.glb",        "/Game/World/Props/StartAreaDecor", "RoboCow"),
+    ("Vending.glb",        "/Game/World/Interactables/Vending", "Vending"),
+    ("Casino.glb",         "/Game/World/Interactables/Casino",  "Casino"),
+    ("TeleportPad.glb",    "/Game/World/Interactables/TeleportPad", "TeleportPad"),
 ]
 
 DEFAULT_STATIC_MESH_BUILD_SETTINGS = {

@@ -6,13 +6,174 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66GameInstance.h"
+#include "Core/T66GameplayLayout.h"
+#include "Gameplay/T66MegabonkFarm.h"
+#include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66PilotableTractor.h"
-#include "Core/T66GameplayLayout.h"
 #include "UObject/SoftObjectPath.h"
+
+namespace
+{
+	static const FName T66MapPlatformTag(TEXT("T66_Map_Platform"));
+
+	static bool T66ShouldUsePrimitiveForGrounding(const UPrimitiveComponent* Primitive)
+	{
+		if (!Primitive || !Primitive->IsRegistered())
+		{
+			return false;
+		}
+
+		const ECollisionEnabled::Type CollisionEnabled = Primitive->GetCollisionEnabled();
+		const bool bIsVisible = Primitive->IsVisible();
+		const bool bHasSolidCollision =
+			CollisionEnabled == ECollisionEnabled::QueryAndPhysics ||
+			CollisionEnabled == ECollisionEnabled::PhysicsOnly;
+
+		return bIsVisible || bHasSolidCollision;
+	}
+
+	static bool T66TryGetActorGroundingBottomZ(const AActor* Actor, float& OutBottomZ)
+	{
+		if (!Actor)
+		{
+			return false;
+		}
+
+		TInlineComponentArray<UPrimitiveComponent*> PrimitiveComponents;
+		Actor->GetComponents(PrimitiveComponents);
+
+		bool bFoundBottom = false;
+		float BottomZ = 0.0f;
+
+		for (const UPrimitiveComponent* Primitive : PrimitiveComponents)
+		{
+			if (!T66ShouldUsePrimitiveForGrounding(Primitive))
+			{
+				continue;
+			}
+
+			const FBoxSphereBounds Bounds = Primitive->CalcBounds(Primitive->GetComponentTransform());
+			const float ComponentBottomZ = Bounds.Origin.Z - Bounds.BoxExtent.Z;
+			if (!bFoundBottom || ComponentBottomZ < BottomZ)
+			{
+				bFoundBottom = true;
+				BottomZ = ComponentBottomZ;
+			}
+		}
+
+		if (!bFoundBottom)
+		{
+			return false;
+		}
+
+		OutBottomZ = BottomZ;
+		return true;
+	}
+
+	static void T66SnapActorBottomToGroundPoint(AActor* Actor, const FVector& GroundPoint)
+	{
+		if (!Actor)
+		{
+			return;
+		}
+
+		float CurrentBottomZ = 0.0f;
+		if (!T66TryGetActorGroundingBottomZ(Actor, CurrentBottomZ))
+		{
+			FVector NewLocation = Actor->GetActorLocation();
+			NewLocation.Z = GroundPoint.Z;
+			Actor->SetActorLocation(NewLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			return;
+		}
+
+		Actor->AddActorWorldOffset(
+			FVector(0.0f, 0.0f, GroundPoint.Z - CurrentBottomZ),
+			false,
+			nullptr,
+			ETeleportType::TeleportPhysics);
+	}
+
+	static bool T66IsRejectedFarmGroundComponent(const UPrimitiveComponent* Primitive)
+	{
+		if (!Primitive)
+		{
+			return true;
+		}
+
+		const FString ComponentName = Primitive->GetName();
+		return ComponentName.StartsWith(TEXT("FarmWall"))
+			|| ComponentName.StartsWith(TEXT("TerrainSafetyCatch"));
+	}
+
+	static bool T66TracePropGround(
+		UWorld* World,
+		const FVector& Start,
+		const FVector& End,
+		bool bRestrictToFarmTerrain,
+		const TArray<AActor*>& IgnoredActors,
+		FHitResult& OutHit)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(T66PropGroundTrace), false);
+		for (AActor* IgnoredActor : IgnoredActors)
+		{
+			if (IgnoredActor)
+			{
+				Params.AddIgnoredActor(IgnoredActor);
+			}
+		}
+
+		TArray<FHitResult> Hits;
+		if (!World->LineTraceMultiByChannel(Hits, Start, End, ECC_WorldStatic, Params) &&
+			!World->LineTraceMultiByChannel(Hits, Start, End, ECC_Visibility, Params))
+		{
+			return false;
+		}
+
+		for (const FHitResult& Hit : Hits)
+		{
+			const UPrimitiveComponent* HitComponent = Hit.GetComponent();
+			const AActor* HitActor = Hit.GetActor();
+			if (!HitComponent || !HitActor)
+			{
+				continue;
+			}
+
+			if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+			{
+				continue;
+			}
+
+			if (bRestrictToFarmTerrain)
+			{
+				if (!HitActor->ActorHasTag(T66MapPlatformTag))
+				{
+					continue;
+				}
+
+				if (T66IsRejectedFarmGroundComponent(HitComponent))
+				{
+					continue;
+				}
+			}
+
+			OutHit = Hit;
+			return true;
+		}
+
+		return false;
+	}
+}
 
 UDataTable* UT66PropSubsystem::GetPropsDataTable() const
 {
@@ -26,6 +187,48 @@ UDataTable* UT66PropSubsystem::GetPropsDataTable() const
 
 void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 {
+	SpawnPropsInternal(World, Seed, nullptr, 50000.f, 8000.f, -16000.f, true, FVector::ZeroVector, 0.f);
+}
+
+void UT66PropSubsystem::SpawnFarmPropsForStage(UWorld* World, int32 Seed, const TArray<FName>& AllowedRows)
+{
+	if (AllowedRows.Num() == 0)
+	{
+		ClearProps();
+		return;
+	}
+
+	FT66MapPreset FarmPreset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
+	FarmPreset.Seed = Seed;
+
+	const T66MegabonkFarm::FSettings FarmSettings = T66MegabonkFarm::MakeSettings(FarmPreset);
+	const float MainHalfExtent = FMath::Max(0.0f, FarmSettings.HalfExtent - FarmSettings.CellSize * 1.75f);
+	const FVector KeepClearCenter = T66MegabonkFarm::GetPreferredSpawnLocation(FarmPreset, 200.f);
+	const float KeepClearRadius = FarmSettings.CellSize * 1.6f;
+
+	SpawnPropsInternal(
+		World,
+		Seed,
+		&AllowedRows,
+		MainHalfExtent,
+		T66MegabonkFarm::GetTraceZ(FarmPreset),
+		T66MegabonkFarm::GetLowestCollisionBottomZ(FarmPreset) - FarmSettings.StepHeight,
+		false,
+		KeepClearCenter,
+		KeepClearRadius);
+}
+
+void UT66PropSubsystem::SpawnPropsInternal(
+	UWorld* World,
+	int32 Seed,
+	const TArray<FName>* AllowedRows,
+	float MainHalfExtent,
+	float TraceStartZ,
+	float TraceEndZ,
+	bool bUseLegacyNoSpawnZones,
+	const FVector& KeepClearCenter,
+	float KeepClearRadius)
+{
 	if (!World) return;
 	ClearProps();
 
@@ -34,14 +237,18 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 
 	FRandomStream Rng(Seed + 9973);
 
-	static constexpr float MainHalfExtent = 50000.f;
 	static constexpr float SpawnZ = 220.f;
 	static constexpr float SafeBubbleMargin = 250.f;
 
 	TArray<FVector> AllUsedLocs;
 
-	auto IsInsideNoSpawnZone = [](const FVector& L) -> bool
+	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
+		if (!bUseLegacyNoSpawnZones)
+		{
+			return false;
+		}
+
 		if (T66GameplayLayout::IsInsideReservedTraversalZone2D(L, 455.f))
 		{
 			return true;
@@ -66,7 +273,8 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 		return false;
 	};
 
-	TArray<FName> RowNames = DT->GetRowNames();
+	const TArray<FName> RowNames = AllowedRows ? *AllowedRows : DT->GetRowNames();
+	const bool bRestrictToFarmTerrain = !bUseLegacyNoSpawnZones;
 	for (const FName& RowName : RowNames)
 	{
 		const FT66PropRow* Row = DT->FindRow<FT66PropRow>(RowName, TEXT("PropSubsystem"));
@@ -80,6 +288,7 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 
 		const int32 Count = Rng.RandRange(Row->CountMin, Row->CountMax);
 		const float MinDist = Row->MinDistanceBetween;
+		const float RowHalfExtent = FMath::Max(0.0f, MainHalfExtent - MinDist * 0.5f);
 
 		for (int32 i = 0; i < Count; ++i)
 		{
@@ -87,11 +296,12 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 			bool bFound = false;
 			for (int32 Try = 0; Try < 40; ++Try)
 			{
-				const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
-				const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+				const float X = Rng.FRandRange(-RowHalfExtent, RowHalfExtent);
+				const float Y = Rng.FRandRange(-RowHalfExtent, RowHalfExtent);
 				Loc = FVector(X, Y, SpawnZ);
 
 				if (IsInsideNoSpawnZone(Loc)) continue;
+				if (KeepClearRadius > 0.0f && FVector::DistSquared2D(Loc, KeepClearCenter) < FMath::Square(KeepClearRadius)) continue;
 
 				bool bTooClose = false;
 				for (const FVector& U : AllUsedLocs)
@@ -121,13 +331,9 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				if (bInNPCSafe) continue;
 
 				FHitResult Hit;
-				const FVector Start = Loc + FVector(0.f, 0.f, 8000.f);
-				const FVector End = Loc - FVector(0.f, 0.f, 16000.f);
-				if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-				{
-					continue;
-				}
-				if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+				const FVector Start(Loc.X, Loc.Y, TraceStartZ);
+				const FVector End(Loc.X, Loc.Y, TraceEndZ);
+				if (!T66TracePropGround(World, Start, End, bRestrictToFarmTerrain, SpawnedProps, Hit))
 				{
 					continue;
 				}
@@ -160,7 +366,7 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				if (!Tractor) continue;
 
 				Tractor->SetActorScale3D(Scale);
-				FT66VisualUtil::SnapToGround(Tractor, World);
+				T66SnapActorBottomToGroundPoint(Tractor, Loc);
 				if (!FMath::IsNearlyZero(Row->PlacementZOffset))
 				{
 					Tractor->AddActorWorldOffset(
@@ -189,7 +395,7 @@ void UT66PropSubsystem::SpawnPropsForStage(UWorld* World, int32 Seed)
 				FT66VisualUtil::GroundMeshToActorOrigin(SMC, Mesh);
 			}
 
-			FT66VisualUtil::SnapToGround(PropActor, World);
+			T66SnapActorBottomToGroundPoint(PropActor, Loc);
 			if (!FMath::IsNearlyZero(Row->PlacementZOffset))
 			{
 				PropActor->AddActorWorldOffset(

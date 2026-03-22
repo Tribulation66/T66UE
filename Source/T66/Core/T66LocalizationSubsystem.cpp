@@ -1956,6 +1956,11 @@ FText UT66LocalizationSubsystem::GetText_GoldFormat() const
 	return NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
 }
 
+FText UT66LocalizationSubsystem::GetText_NetWorthFormat() const
+{
+	return NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
+}
+
 FText UT66LocalizationSubsystem::GetText_OweFormat() const
 {
 	return NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
@@ -2241,6 +2246,11 @@ FText UT66LocalizationSubsystem::GetText_GambleAmountMustBePositive() const
 FText UT66LocalizationSubsystem::GetText_BorrowAmountMustBePositive() const
 {
 	return NSLOCTEXT("T66.Gambler", "BorrowAmountMustBePositive", "Borrow amount must be > 0.");
+}
+
+FText UT66LocalizationSubsystem::GetText_BorrowExceedsNetWorthFormat() const
+{
+	return NSLOCTEXT("T66.Gambler", "BorrowExceedsNetWorthFormat", "Borrow amount exceeds remaining Net Worth ({0}).");
 }
 
 FText UT66LocalizationSubsystem::GetText_PaybackAmountMustBePositive() const

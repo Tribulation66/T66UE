@@ -320,6 +320,12 @@ public:
 
 	/** When true, Enter the Tribulation opens the demo map instead of GameplayLevel. Flip in T66GameInstance.cpp. */
 	static bool UseDemoMapForTribulation();
+	/** Main gameplay map asset name. */
+	static FName GetGameplayLevelName();
+	/** Standalone coliseum gameplay map asset name. */
+	static FName GetColiseumLevelName();
+	/** Standalone tutorial gameplay map asset name. */
+	static FName GetTutorialLevelName();
 	/** Level name when UseDemoMapForTribulation() is true (e.g. Map_Summer). Used by TransitionToGameplayLevel and IsGameplayLevel. */
 	static FName GetDemoMapLevelNameForTribulation();
 

@@ -72,14 +72,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	// Button: 30% smaller (63 -> 44), equal padding on all 4 sides so text isn't glued to edges
 	const float ButtonSpacing = 14.0f;
 
-	auto MakeMenuButton = [this](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const FLinearColor& BgColor = FT66Style::Tokens::Panel2) -> TSharedRef<SWidget>
+	auto MakeMenuButton = [this](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)()) -> TSharedRef<SWidget>
 	{
 		return FT66Style::MakeButton(
 			FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc))
 			.SetFontSize(44)
 			.SetPadding(FMargin(14.f))
-			.SetColor(BgColor)
-			.SetBorderVisual(ET66ButtonBorderVisual::RetroWood)
 			.SetMinWidth(0.f));
 	};
 
@@ -130,11 +128,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
-					[ MakeMenuButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, FT66Style::Tokens::Accent2) ]
+					[ MakeMenuButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
-					[ MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, FT66Style::Tokens::Accent2) ]
+					[ MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
-					[ MakeMenuButton(PowerUpText, &UT66MainMenuScreen::HandlePowerUpClicked, FT66Style::Tokens::Accent2) ]
+					[ MakeMenuButton(PowerUpText, &UT66MainMenuScreen::HandlePowerUpClicked) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
 					[ MakeMenuButton(AchievementsText, &UT66MainMenuScreen::HandleAchievementsClicked) ]
 					+ SVerticalBox::Slot().AutoHeight()

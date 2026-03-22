@@ -70,6 +70,9 @@ public:
 	void RefreshHearts();
 
 	UFUNCTION()
+	void RefreshQuickReviveState();
+
+	UFUNCTION()
 	void RefreshStatusEffects();
 
 	UFUNCTION()
@@ -138,6 +141,7 @@ protected:
 	FReply OnTogglePower();
 
 	/** Cached Slate widgets for updates (set in BuildSlateUI via SAssignNew) */
+	TSharedPtr<STextBlock> NetWorthText;
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> ScoreText;
@@ -174,6 +178,8 @@ protected:
 	TSharedPtr<SBorder> ScopedSniperOverlayBorder;
 	TSharedPtr<STextBlock> ScopedUltTimerText;
 	TSharedPtr<STextBlock> ScopedShotCooldownText;
+	TSharedPtr<SBorder> QuickReviveDownedOverlayBorder;
+	TSharedPtr<STextBlock> QuickReviveDownedText;
 	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // legacy; rarity is now shown via sprite + border color
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
@@ -193,6 +199,9 @@ protected:
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SImage>> HeartImages;
 	TSharedPtr<FSlateBrush> HeartBrush;
+	TSharedPtr<SBox> QuickReviveIconRowBox;
+	TSharedPtr<SImage> QuickReviveIconImage;
+	TSharedPtr<FSlateBrush> QuickReviveBrush;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
 	TArray<TSharedPtr<SImage>> DifficultyImages;
 	TSharedPtr<FSlateBrush> SkullBrush;
@@ -228,6 +237,7 @@ protected:
 	/** Cached idol/item IDs per slot so we only update tooltips when slot content changes (avoids tooltip flash from RefreshHUD). */
 	TArray<FName> CachedIdolSlotIDs;
 	TArray<FName> CachedInventorySlotIDs;
+	TSharedPtr<STextBlock> ElevationText;
 	TSharedPtr<STextBlock> FPSText;
 	TSharedPtr<SBox> InventoryPanelBox;
 	TSharedPtr<SBox> BottomLeftHUDBox;

@@ -3,8 +3,10 @@
 #include "UI/Style/T66ButtonVisuals.h"
 #include "UI/Style/T66Style.h"
 
+#include "Brushes/SlateDynamicImageBrush.h"
 #include "Engine/Texture2D.h"
 #include "Materials/MaterialInterface.h"
+#include "Misc/Paths.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace
@@ -20,6 +22,10 @@ namespace
 	static TObjectPtr<UTexture2D> GRetroWoodVerticalHovered = nullptr;
 	static TObjectPtr<UTexture2D> GRetroWoodVerticalPressed = nullptr;
 	static bool bCheckedRetroWoodTextures = false;
+	static TObjectPtr<UTexture2D> GMainMenuArcaneFillNormal = nullptr;
+	static TObjectPtr<UTexture2D> GMainMenuArcaneFillHovered = nullptr;
+	static TObjectPtr<UTexture2D> GMainMenuArcaneFillPressed = nullptr;
+	static bool bCheckedMainMenuArcaneFillTextures = false;
 
 	static FSlateBrush MakeMaterialBrush(UMaterialInterface* Material)
 	{
@@ -43,6 +49,33 @@ namespace
 		// The surrounding SBox edge strips control the actual border thickness.
 		Brush.ImageSize = FVector2D(1.f, 1.f);
 		return Brush;
+	}
+
+	static FSlateBrush MakeFillTextureBrush(UTexture2D* Texture)
+	{
+		FSlateBrush Brush;
+		Brush.DrawAs = ESlateBrushDrawType::Box;
+		Brush.Tiling = ESlateBrushTileType::NoTile;
+		Brush.SetResourceObject(Texture);
+		Brush.TintColor = FSlateColor(FLinearColor::White);
+		Brush.ImageSize = FVector2D(1.f, 1.f);
+		Brush.Margin = FMargin(0.f);
+		return Brush;
+	}
+
+	static TSharedPtr<FSlateBrush> MakeFillFileBrush(const FString& FilePath)
+	{
+		if (!FPaths::FileExists(FilePath))
+		{
+			return nullptr;
+		}
+
+		return MakeShared<FSlateDynamicImageBrush>(FName(*FilePath), FVector2D(1.f, 1.f));
+	}
+
+	static FString GetMainMenuArcaneFillFilePath(const TCHAR* FileName)
+	{
+		return FPaths::ProjectDir() / TEXT("SourceAssets/UI/MainMenuArcaneFill") / FileName;
 	}
 
 	static void LoadRetroSkyMaterialsOnce()
@@ -80,6 +113,27 @@ namespace
 		GRetroWoodVerticalNormal = LoadTexture(TEXT("/Game/UI/Assets/T_UI_RetroWoodTrimV_V2_N.T_UI_RetroWoodTrimV_V2_N"));
 		GRetroWoodVerticalHovered = LoadTexture(TEXT("/Game/UI/Assets/T_UI_RetroWoodTrimV_V2_H.T_UI_RetroWoodTrimV_V2_H"));
 		GRetroWoodVerticalPressed = LoadTexture(TEXT("/Game/UI/Assets/T_UI_RetroWoodTrimV_V2_P.T_UI_RetroWoodTrimV_V2_P"));
+	}
+
+	static void LoadMainMenuArcaneFillTexturesOnce()
+	{
+		if (bCheckedMainMenuArcaneFillTextures)
+		{
+			return;
+		}
+
+		bCheckedMainMenuArcaneFillTextures = true;
+
+		auto LoadTexture = [](const TCHAR* Path) -> UTexture2D*
+		{
+			UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, Path);
+			UE_LOG(LogTemp, Log, TEXT("[BUTTONFILL] LoadMainMenuArcaneFillTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
+			return Texture;
+		};
+
+		GMainMenuArcaneFillNormal = LoadTexture(TEXT("/Game/UI/Assets/T_UI_MainMenuArcaneFill_N.T_UI_MainMenuArcaneFill_N"));
+		GMainMenuArcaneFillHovered = LoadTexture(TEXT("/Game/UI/Assets/T_UI_MainMenuArcaneFill_H.T_UI_MainMenuArcaneFill_H"));
+		GMainMenuArcaneFillPressed = LoadTexture(TEXT("/Game/UI/Assets/T_UI_MainMenuArcaneFill_P.T_UI_MainMenuArcaneFill_P"));
 	}
 }
 
@@ -128,5 +182,41 @@ TSharedPtr<FT66ButtonBorderBrushSet> FT66ButtonVisuals::CreateBorderBrushSet(ET6
 	Set->Hovered = MakeShared<FSlateBrush>(MakeMaterialBrush(GRetroSkyHovered));
 	Set->Pressed = MakeShared<FSlateBrush>(MakeMaterialBrush(GRetroSkyPressed));
 	Set->Thickness = 12.f;
+	return Set;
+}
+
+TSharedPtr<FT66ButtonFillBrushSet> FT66ButtonVisuals::CreateFillBrushSet(ET66ButtonBackgroundVisual Visual)
+{
+	if (Visual != ET66ButtonBackgroundVisual::MainMenuArcane)
+	{
+		return nullptr;
+	}
+
+	LoadMainMenuArcaneFillTexturesOnce();
+
+	if (!GMainMenuArcaneFillNormal || !GMainMenuArcaneFillHovered || !GMainMenuArcaneFillPressed)
+	{
+		TSharedPtr<FSlateBrush> FileNormal = MakeFillFileBrush(GetMainMenuArcaneFillFilePath(TEXT("T_UI_MainMenuArcaneFill_N.png")));
+		TSharedPtr<FSlateBrush> FileHovered = MakeFillFileBrush(GetMainMenuArcaneFillFilePath(TEXT("T_UI_MainMenuArcaneFill_H.png")));
+		TSharedPtr<FSlateBrush> FilePressed = MakeFillFileBrush(GetMainMenuArcaneFillFilePath(TEXT("T_UI_MainMenuArcaneFill_P.png")));
+
+		if (!FileNormal.IsValid() || !FileHovered.IsValid() || !FilePressed.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[BUTTONFILL] CreateFillBrushSet(MainMenuArcane): missing fill textures in Content and SourceAssets, returning null brush set"));
+			return nullptr;
+		}
+
+		TSharedPtr<FT66ButtonFillBrushSet> Set = MakeShared<FT66ButtonFillBrushSet>();
+		Set->Normal = FileNormal;
+		Set->Hovered = FileHovered;
+		Set->Pressed = FilePressed;
+		UE_LOG(LogTemp, Log, TEXT("[BUTTONFILL] CreateFillBrushSet(MainMenuArcane): using file-backed SourceAssets fill brushes"));
+		return Set;
+	}
+
+	TSharedPtr<FT66ButtonFillBrushSet> Set = MakeShared<FT66ButtonFillBrushSet>();
+	Set->Normal = MakeShared<FSlateBrush>(MakeFillTextureBrush(GMainMenuArcaneFillNormal));
+	Set->Hovered = MakeShared<FSlateBrush>(MakeFillTextureBrush(GMainMenuArcaneFillHovered));
+	Set->Pressed = MakeShared<FSlateBrush>(MakeFillTextureBrush(GMainMenuArcaneFillPressed));
 	return Set;
 }

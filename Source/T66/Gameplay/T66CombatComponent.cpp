@@ -1138,20 +1138,18 @@ static UNiagaraComponent* T66SpawnBudgetedPixel(
 			bAutoDestroy);
 	}
 
+	const ENCPoolMethod PoolingMethod = bAutoDestroy ? ENCPoolMethod::AutoRelease : ENCPoolMethod::None;
+
 	UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		World,
 		VFX,
 		Location,
 		Rotation,
 		FVector(1.f),
+		bAutoDestroy,
 		true,
-		true,
-		ENCPoolMethod::AutoRelease);
+		PoolingMethod);
 	T66ApplyPixelVFXParams(NiagaraComponent, Tint, SpriteSize);
-	if (NiagaraComponent)
-	{
-		NiagaraComponent->SetAutoDestroy(bAutoDestroy);
-	}
 	return NiagaraComponent;
 }
 

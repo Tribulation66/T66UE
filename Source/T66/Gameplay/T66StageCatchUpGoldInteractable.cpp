@@ -42,5 +42,6 @@ bool AT66StageCatchUpGoldInteractable::Interact(APlayerController* PC)
 	RunState->AddGold(GoldAmount);
 	bConsumed = true;
 	ApplyRarityVisuals();
+	RefreshInteractionPrompt();
 	return true;
 }

@@ -7,6 +7,7 @@
 #include "T66GameMode.generated.h"
 
 enum class ET66MapTheme : uint8;
+class AActor;
 class AT66HeroBase;
 class AT66CompanionBase;
 class AT66StartGate;
@@ -193,6 +194,7 @@ protected:
 
 	/** Spawn the 4 corner houses + 4 NPC cylinders (vendor/gambler/ouroboros/saint). */
 	void SpawnCornerHousesAndNPCs();
+	void SpawnCasinoInteractableIfNeeded();
 
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
 	void SpawnLevelContentAfterLandscapeReady();
@@ -287,13 +289,20 @@ private:
 
 	// Track the current stage boss so we can safely replace it after async load.
 	TWeakObjectPtr<AT66BossBase> StageBoss;
+	TWeakObjectPtr<AActor> BossBeaconActor;
+	float BossBeaconUpdateAccumulator = 0.f;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> CachedCubeMesh;
 
 	UStaticMesh* GetCubeMesh();
 	bool TrySnapActorToTerrain(AActor* Actor) const;
+	bool TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector& TraceLocation) const;
+	bool TryComputeBossBeaconBase(FVector& OutBeaconBase) const;
+	void UpdateBossBeaconTransform(bool bForceSpawnIfMissing);
+	void DestroyBossBeacon();
 	void SnapPlayersToTerrain();
+	void MaintainPlayerTerrainSafety();
 
 	// Floor material soft-load.
 	bool bGroundFloorMaterialLoadRequested = false;

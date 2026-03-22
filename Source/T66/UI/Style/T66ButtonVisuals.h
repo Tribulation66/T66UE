@@ -6,6 +6,7 @@
 #include "Styling/SlateBrush.h"
 
 enum class ET66ButtonBorderVisual : uint8;
+enum class ET66ButtonBackgroundVisual : uint8;
 enum class ET66ButtonBorderState : uint8
 {
 	Normal,
@@ -74,6 +75,32 @@ struct FT66ButtonBorderBrushSet
 	}
 };
 
+struct FT66ButtonFillBrushSet
+{
+	TSharedPtr<FSlateBrush> Normal;
+	TSharedPtr<FSlateBrush> Hovered;
+	TSharedPtr<FSlateBrush> Pressed;
+
+	bool IsValid() const
+	{
+		return Normal.IsValid() && Hovered.IsValid() && Pressed.IsValid();
+	}
+
+	const FSlateBrush* GetBrush(ET66ButtonBorderState State) const
+	{
+		switch (State)
+		{
+		case ET66ButtonBorderState::Hovered:
+			return Hovered.Get();
+		case ET66ButtonBorderState::Pressed:
+			return Pressed.Get();
+		case ET66ButtonBorderState::Normal:
+		default:
+			return Normal.Get();
+		}
+	}
+};
+
 /**
  * Shared decorative button border styles that sit on top of the base T66 button system.
  * Keep this separate from FT66Style so experimental chrome treatments don't bloat the core token file.
@@ -82,4 +109,5 @@ class FT66ButtonVisuals
 {
 public:
 	static TSharedPtr<FT66ButtonBorderBrushSet> CreateBorderBrushSet(ET66ButtonBorderVisual Visual);
+	static TSharedPtr<FT66ButtonFillBrushSet> CreateFillBrushSet(ET66ButtonBackgroundVisual Visual);
 };

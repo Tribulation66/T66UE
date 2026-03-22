@@ -161,12 +161,12 @@ AT66HeroBase::AT66HeroBase()
 	
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
-		Movement->MaxWalkSpeed = 1200.f;
+		Movement->MaxWalkSpeed = BaseMaxWalkSpeed;
 		Movement->MaxAcceleration = 99999.f;
 		Movement->BrakingDecelerationWalking = 99999.f;
 		Movement->GroundFriction = 8.f;
 		Movement->BrakingFrictionFactor = 2.f;
-		Movement->JumpZVelocity = 1400.f;
+		Movement->JumpZVelocity = 2800.f;
 		Movement->AirControl = 0.65f;
 		Movement->GravityScale = 2.5f;
 		
@@ -427,12 +427,53 @@ void AT66HeroBase::SetVehicleMounted(bool bMounted, AT66PilotableTractor* InMoun
 	UpdateAttackRangeRing();
 }
 
+void AT66HeroBase::SetQuickReviveDowned(bool bDowned)
+{
+	if (bQuickReviveDowned == bDowned)
+	{
+		return;
+	}
+
+	CacheVehicleVisualDefaults();
+	bQuickReviveDowned = bDowned;
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		if (bQuickReviveDowned)
+		{
+			Movement->StopMovementImmediately();
+			Movement->DisableMovement();
+			ConsumeMovementInputVector();
+		}
+		else if (!bVehicleMounted)
+		{
+			Movement->SetMovementMode(MOVE_Walking);
+			HandleHeroDerivedStatsChanged();
+		}
+	}
+
+	if (PlaceholderMesh)
+	{
+		PlaceholderMesh->SetRelativeLocation(DefaultPlaceholderRelativeLocation + (bQuickReviveDowned ? QuickReviveDownedVisualOffset : FVector::ZeroVector));
+		PlaceholderMesh->SetRelativeRotation(DefaultPlaceholderRelativeRotation + (bQuickReviveDowned ? QuickReviveDownedVisualRotation : FRotator::ZeroRotator));
+	}
+
+	if (USkeletalMeshComponent* Skel = GetMesh())
+	{
+		Skel->SetRelativeLocation(DefaultSkeletalMeshRelativeLocation + (bQuickReviveDowned ? QuickReviveDownedVisualOffset : FVector::ZeroVector));
+		Skel->SetRelativeRotation(DefaultSkeletalMeshRelativeRotation + (bQuickReviveDowned ? QuickReviveDownedVisualRotation : FRotator::ZeroRotator));
+		Skel->GlobalAnimRateScale = (bQuickReviveDowned || bVehicleMounted) ? 0.f : 1.f;
+	}
+
+	UpdateAttackRangeRing();
+}
+
 
 void AT66HeroBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!bIsPreviewMode && !bVehicleMounted)
+	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{
 		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 		{
@@ -492,8 +533,8 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 						&& !bIsSkyDropping
 						&& !bGroundWithinRecoveryRange
 						&& (Now - LastTerrainRecoveryTime) >= TerrainRecoveryCooldown;
-					if (bCanRecover
-						&& (ContinuousFallSeconds >= TerrainRecoveryFallSeconds || bFellFarBelowSafeGround || bFellOutOfWorld))
+					const bool bNeedsHardRecovery = bFellFarBelowSafeGround || bFellOutOfWorld;
+					if (bCanRecover && bNeedsHardRecovery)
 					{
 						SetActorLocation(LastSafeGroundLocation, false, nullptr, ETeleportType::TeleportPhysics);
 						SetActorRotation(LastSafeGroundRotation, ETeleportType::TeleportPhysics);
@@ -523,7 +564,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	}
 
 	// Hero speed: instant max when moving, 0 when idle; drive MaxWalkSpeed and animation state.
-	if (!bIsPreviewMode && !bVehicleMounted)
+	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{
 		if (CachedHeroSpeedSubsystem)
 		{
@@ -598,7 +639,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	}
 
 	// Enemy touch damage + bounce: proximity check (enemies block so no overlap events; we query range and apply damage + launch).
-	if (!bIsPreviewMode && !bVehicleMounted)
+	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{
 		UWorld* World = GetWorld();
 		EnemyTouchCheckAccumSeconds += DeltaSeconds;
@@ -678,7 +719,7 @@ void AT66HeroBase::UpdateAttackRangeRing()
 	};
 
 	// Hide in preview mode.
-	if (bIsPreviewMode || bVehicleMounted)
+	if (bIsPreviewMode || bVehicleMounted || bQuickReviveDowned)
 	{
 		HideAllRings();
 		return;
@@ -833,7 +874,7 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 				LastMovementAnimState = EMovementAnimState::Walk;
 				if (UT66HeroSpeedSubsystem* SpeedSub = GI->GetSubsystem<UT66HeroSpeedSubsystem>())
 				{
-					SpeedSub->SetParams(InHeroData.MaxSpeed, InHeroData.AccelerationPercentPerSecond);
+					SpeedSub->SetParams(InHeroData.MaxSpeed * 2.0f, InHeroData.AccelerationPercentPerSecond);
 				}
 			}
 		}

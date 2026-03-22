@@ -27,6 +27,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnIdolsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeroProgressChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUltimateChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSurvivalChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnQuickReviveChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnVendorChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStatusEffectsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialHintChanged);
@@ -82,6 +83,7 @@ public:
 	static constexpr int32 UltimateDamage = 200;
 	static constexpr float SurvivalChargePerHeart = 0.20f; // 5 hearts of damage -> full
 	static constexpr float LastStandDurationSeconds = 10.f;
+	static constexpr float QuickReviveDownedDurationSeconds = 3.f;
 	static constexpr int32 VendorAngerThresholdGold = 100;
 	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
 	static constexpr int32 MaxEventLogEntries = 400;
@@ -154,6 +156,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnSurvivalChanged SurvivalChanged;
 
+	/** Quick revive token / downed state changed. */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnQuickReviveChanged QuickReviveChanged;
+
 	/** Vendor shop / anger changed (used by Vendor overlay). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnVendorChanged VendorChanged;
@@ -205,6 +211,19 @@ public:
 	int32 GetCurrentDebt() const { return CurrentDebt; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetInventorySellValueTotal() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetNetWorth() const;
+
+	/** Remaining additional gold the player can borrow before hitting their Net Worth-backed cap. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetRemainingBorrowCapacity() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	bool CanBorrowGold(int32 Amount) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetDifficultyTier() const { return DifficultyTier; }
 
 	/** Difficulty as "Skulls" (integer; increments by 1 per totem interaction). */
@@ -239,6 +258,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	float GetGamblerAnger01() const { return GamblerAnger01; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Casino")
+	float GetCasinoAnger01() const { return GamblerAnger01; }
+
+	/** Add anger using the shared casino threshold (100 anger-gold = full bar). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Casino")
+	float AddCasinoAngerFromGold(int32 AngerGold);
 
 	/** Add anger based on bet size: +min(1, Bet/100). Returns new anger. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -277,9 +303,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool TrySpendGold(int32 Amount);
 
-	/** Borrow gold: increases gold AND debt by Amount (no limit for now). */
+	/** Borrow gold: increases gold AND debt by Amount if still within the current remaining borrow capacity. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
-	void BorrowGold(int32 Amount);
+	bool BorrowGold(int32 Amount);
 
 	/** Pay down debt using current gold. Pays up to Amount (clamped by gold and debt). Returns amount actually paid. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -541,6 +567,15 @@ public:
 	/** Sell a specific inventory item slot (0..InventorySlots.Num-1). Returns true if sold. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellInventoryItemAt(int32 InventoryIndex);
+
+	/** True if the item can still be upgraded in casino alchemy. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Casino|Alchemy")
+	bool CanAlchemyUpgradeInventoryItemAt(int32 InventoryIndex) const;
+
+	/** Consume one sacrifice item to increase a target item by one rarity step. */
+	bool TryAlchemyUpgradeInventoryItems(int32 TargetIndex, int32 SacrificeIndex, FT66InventorySlot& OutUpgradedSlot);
+
+	static ET66ItemRarity GetNextItemRarity(ET66ItemRarity Rarity);
 
 	/** True if there is space in the inventory (max 20). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
@@ -955,6 +990,25 @@ public:
 	float GetLastStandAttackSpeedMultiplier() const { return bInLastStand ? 2.f : 1.f; }
 
 	// ============================================
+	// Quick Revive
+	// ============================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive")
+	bool HasQuickReviveCharge() const { return bQuickReviveChargeReady; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive")
+	bool IsInQuickReviveDownedState() const { return bInQuickReviveDowned; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive")
+	float GetQuickReviveDownedSecondsRemaining() const { return FMath::Max(0.f, QuickReviveDownedSecondsRemaining); }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive")
+	bool GrantQuickReviveCharge();
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive")
+	void ClearQuickReviveCharge();
+
+	// ============================================
 	// Stage effects (ground tiles)
 	// ============================================
 
@@ -1064,12 +1118,17 @@ private:
 
 	void TrimLogsIfNeeded();
 	void RecomputeItemDerivedStats();
+	void HandleLethalDamage(AActor* Attacker);
 	void EnterLastStand();
 	void EndLastStandAndDie();
+	void EnterQuickReviveDowned();
+	void EndQuickReviveDownedAndRevive();
+	void EndQuickReviveDownedAndDie();
 	void InitializeHeroStatTuningForSelectedHero();
 	void InitializeHeroStatsForNewRun();
 	void ApplyOneHeroLevelUp();
 	void RefreshPowerupBonusesFromProfile();
+	static bool IsBossDamageSource(const AActor* Attacker);
 
 	UPROPERTY()
 	float CurrentHP = DefaultMaxHP;
@@ -1316,6 +1375,10 @@ private:
 	bool bInLastStand = false;
 	float LastStandSecondsRemaining = 0.f;
 	int32 LastBroadcastLastStandSecond = 0;
+	bool bQuickReviveChargeReady = false;
+	bool bInQuickReviveDowned = false;
+	float QuickReviveDownedSecondsRemaining = 0.f;
+	int32 LastBroadcastQuickReviveSecond = 0;
 
 	// ============================================
 	// Vendor shop state (per-stage)

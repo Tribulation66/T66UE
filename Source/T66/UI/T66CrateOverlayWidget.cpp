@@ -6,10 +6,13 @@
 #include "Core/T66RngTuningConfig.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66GameplayHUDWidget.h"
+#include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 
+#include "Widgets/Images/SImage.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -88,6 +91,7 @@ void UT66CrateOverlayWidget::GenerateStrip()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
 	if (RngSub && RunState)
 	{
@@ -134,10 +138,27 @@ void UT66CrateOverlayWidget::GenerateStrip()
 			Entry.Rarity = DecoyRarity;
 		}
 		Entry.Color = FT66RarityUtil::GetRarityColor(Entry.Rarity);
+		Entry.IconBrush = MakeShared<FSlateBrush>();
+		Entry.IconBrush->DrawAs = ESlateBrushDrawType::Image;
+		Entry.IconBrush->ImageSize = FVector2D(ItemPreviewSize, ItemPreviewSize);
+		if (T66GI && TexPool)
+		{
+			FItemData ItemData;
+			if (T66GI->GetItemData(Entry.ItemID, ItemData))
+			{
+				const TSoftObjectPtr<UTexture2D> IconSoft = ItemData.GetIconForRarity(LootRarityToItemRarity(Entry.Rarity));
+				if (!IconSoft.IsNull())
+				{
+					T66SlateTexture::BindSharedBrushAsync(TexPool, IconSoft, this, Entry.IconBrush, FName(TEXT("CrateStrip"), i + 1), true);
+				}
+			}
+		}
 		StripItems.Add(Entry);
 	}
 
-	TotalScrollDistance = static_cast<float>(WinnerPosition - 2) * ItemTileWidth;
+	const float VisibleWidth = static_cast<float>(VisibleTileCount) * ItemTileStride;
+	const float WinnerCenterX = (static_cast<float>(WinnerPosition) * ItemTileStride) + (ItemTileGap * 0.5f) + (ItemTileWidth * 0.5f);
+	TotalScrollDistance = FMath::Max(0.f, WinnerCenterX - (VisibleWidth * 0.5f));
 }
 
 void UT66CrateOverlayWidget::NativeDestruct()
@@ -166,25 +187,83 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 	for (int32 i = 0; i < StripItems.Num(); ++i)
 	{
 		const FCrateItemEntry& Entry = StripItems[i];
+		const ET66ItemRarity ItemRarity = LootRarityToItemRarity(Entry.Rarity);
+		const FText ItemName = Loc ? Loc->GetText_ItemDisplayName(Entry.ItemID) : FText::FromName(Entry.ItemID);
+		const FText RarityName = Loc ? Loc->GetText_ItemRarityName(ItemRarity) : FText::GetEmpty();
+		const FLinearColor FrameColor = Entry.Color * 0.45f + FLinearColor(0.10f, 0.10f, 0.12f, 0.55f);
+		const FLinearColor NameplateColor = Entry.Color * 0.82f + FLinearColor(0.08f, 0.08f, 0.09f, 0.18f);
+
 		StripRow->AddSlot()
 			.AutoWidth()
-			.Padding(2.f, 0.f)
+			.Padding(ItemTileGap * 0.5f, 0.f)
 			[
 				SNew(SBox)
-				.WidthOverride(ItemTileWidth - 4.f)
-				.HeightOverride(ItemTileWidth - 4.f)
+				.WidthOverride(ItemTileWidth)
+				.HeightOverride(ItemTileHeight)
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(Entry.Color)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
+					.BorderBackgroundColor(FrameColor)
+					.Padding(FMargin(2.f))
 					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_ItemDisplayName(Entry.ItemID) : FText::FromName(Entry.ItemID))
-						.Font(FT66Style::Tokens::FontRegular(9))
-						.ColorAndOpacity(FLinearColor::White)
-						.Justification(ETextJustify::Center)
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().FillHeight(1.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.76f, 0.76f, 0.78f, 1.f))
+							.Padding(FMargin(10.f, 8.f))
+							[
+								SNew(SOverlay)
+								+ SOverlay::Slot()
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.18f, 0.18f, 0.20f, 0.22f))
+									.Padding(FMargin(0.f))
+								]
+								+ SOverlay::Slot()
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								[
+									SNew(SBox)
+									.WidthOverride(ItemPreviewSize)
+									.HeightOverride(ItemPreviewSize)
+									[
+										SNew(SImage)
+										.Image(Entry.IconBrush.IsValid() ? Entry.IconBrush.Get() : nullptr)
+										.ColorAndOpacity(FLinearColor::White)
+									]
+								]
+							]
+						]
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(NameplateColor)
+							.Padding(FMargin(8.f, 6.f))
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight()
+								[
+									SNew(STextBlock)
+									.Text(ItemName)
+									.Font(FT66Style::Tokens::FontBold(11))
+									.ColorAndOpacity(FLinearColor::White)
+									.Justification(ETextJustify::Left)
+									.AutoWrapText(true)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+								[
+									SNew(STextBlock)
+									.Text(RarityName)
+									.Font(FT66Style::Tokens::FontRegular(9))
+									.ColorAndOpacity(FLinearColor(0.96f, 0.96f, 0.96f, 0.92f))
+									.Justification(ETextJustify::Left)
+								]
+							]
+						]
 					]
 				]
 			];
@@ -211,8 +290,8 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					+ SOverlay::Slot()
 					[
 						SNew(SBox)
-						.WidthOverride(ItemTileWidth * 4.f)
-						.HeightOverride(ItemTileWidth + 12.f)
+						.WidthOverride(static_cast<float>(VisibleTileCount) * ItemTileStride)
+						.HeightOverride(ItemTileHeight + 8.f)
 						.Clipping(EWidgetClipping::ClipToBounds)
 						[
 							SAssignNew(StripContainer, SBorder)
@@ -225,15 +304,29 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					]
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Top)
+					.VAlign(VAlign_Center)
 					[
 						SNew(SBox)
-						.WidthOverride(4.f)
-						.HeightOverride(ItemTileWidth + 12.f)
+						.WidthOverride(ItemTileWidth + 4.f)
+						.HeightOverride(ItemTileHeight + 8.f)
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(1.f, 1.f, 1.f, 0.8f))
+							.BorderBackgroundColor(FLinearColor(1.f, 0.83f, 0.24f, 0.16f))
+							.Padding(FMargin(0.f))
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Top)
+					[
+						SNew(SBox)
+						.WidthOverride(3.f)
+						.HeightOverride(ItemTileHeight + 8.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(1.f, 0.82f, 0.22f, 0.92f))
 						]
 					]
 				]
@@ -251,7 +344,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 						.Justification(ETextJustify::Right)
 					]
 				],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 12.f, 12.f, 10.f))
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f, 14.f, 14.f, 10.f))
 			)
 		];
 

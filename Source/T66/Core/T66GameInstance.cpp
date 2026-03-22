@@ -2,6 +2,8 @@
 
 #include "Core/T66GameInstance.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66RetroFXSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66LoadingScreenWidget.h"
@@ -29,6 +31,9 @@ namespace
 
 	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
 	static const bool bUseDemoMapForTribulation = false;  // GameplayLevel uses LowPolyNature procedural env
+	static const TCHAR* GameplayLevelName = TEXT("GameplayLevel");
+	static const TCHAR* ColiseumLevelName = TEXT("Gameplay_Coliseum");
+	static const TCHAR* TutorialLevelName = TEXT("Gameplay_Tutorial");
 	static const TCHAR* DemoMapLevelNameForTribulation = TEXT("Map_Summer");
 
 	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
@@ -800,6 +805,41 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	// Placeholder color material used during level setup.
 	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")));
 
+	// Retro sky material is spawned dynamically outside the farm flow.
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Sky/QuakeCanopy2/MI_QuakeSky_Canopy2.MI_QuakeSky_Canopy2")));
+
+	// Farm uses a dedicated Megabonk-style asset set. Preload the full terrain/prop contract
+	// before opening the gameplay level so the first entry does not depend on cold material state.
+	if (MapTheme == ET66MapTheme::Farm)
+	{
+		AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkBlock.SM_MegabonkBlock")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
+		AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass1.MI_Grass1")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass2.MI_Grass2")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass3.MI_Grass3")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass4.MI_Grass4")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree.Tree")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree2.Tree2")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree3.Tree3")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rocks.Rocks")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Barn.Barn")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Haybell.Haybell")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Windmill.Windmill")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
+	}
+
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetHeroVisualID(
 		SelectedHeroID,
 		SelectedHeroBodyType,
@@ -863,6 +903,21 @@ bool UT66GameInstance::UseDemoMapForTribulation()
 	return bUseDemoMapForTribulation;
 }
 
+FName UT66GameInstance::GetGameplayLevelName()
+{
+	return FName(GameplayLevelName);
+}
+
+FName UT66GameInstance::GetColiseumLevelName()
+{
+	return FName(ColiseumLevelName);
+}
+
+FName UT66GameInstance::GetTutorialLevelName()
+{
+	return FName(TutorialLevelName);
+}
+
 FName UT66GameInstance::GetDemoMapLevelNameForTribulation()
 {
 	return FName(DemoMapLevelNameForTribulation);
@@ -872,6 +927,31 @@ void UT66GameInstance::TransitionToGameplayLevel()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	if (MapTheme == ET66MapTheme::Farm)
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
+			{
+				FT66RetroFXSettings FarmRetroSettings;
+				if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+				{
+					FarmRetroSettings = PlayerSettings->GetRetroFXSettings();
+				}
+
+				FarmRetroSettings.bEnableWorldGeometry = false;
+				FarmRetroSettings.WorldVertexSnapPercent = 0.0f;
+				FarmRetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
+				FarmRetroSettings.WorldVertexNoisePercent = 0.0f;
+				FarmRetroSettings.WorldAffineBlendPercent = 0.0f;
+				FarmRetroSettings.WorldAffineDistance1Percent = 0.0f;
+				FarmRetroSettings.WorldAffineDistance2Percent = 0.0f;
+				FarmRetroSettings.WorldAffineDistance3Percent = 0.0f;
+				RetroFX->ApplySettings(FarmRetroSettings, World);
+			}
+		}
+	}
 
 	// Show loading screen immediately so the player sees feedback instead of a frozen frame.
 	UT66LoadingScreenWidget* LoadingWidget = CreateWidget<UT66LoadingScreenWidget>(World, UT66LoadingScreenWidget::StaticClass());
@@ -887,7 +967,7 @@ void UT66GameInstance::TransitionToGameplayLevel()
 	{
 		PreloadGameplayAssets([this]()
 		{
-			const FName LevelToOpen = UseDemoMapForTribulation() ? GetDemoMapLevelNameForTribulation() : FName(TEXT("GameplayLevel"));
+			const FName LevelToOpen = UseDemoMapForTribulation() ? GetDemoMapLevelNameForTribulation() : GetGameplayLevelName();
 			UGameplayStatics::OpenLevel(this, LevelToOpen);
 		});
 	}), 0.05f, false); // Small delay so the loading widget paints first.
