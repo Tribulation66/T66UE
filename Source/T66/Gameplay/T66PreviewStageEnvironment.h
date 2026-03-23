@@ -11,7 +11,7 @@ class UStaticMeshComponent;
 
 namespace T66PreviewStageEnvironment
 {
-	void ApplyPreviewGroundMaterial(UStaticMeshComponent* GroundComponent);
+	void ApplyPreviewGroundMaterial(UStaticMeshComponent* GroundComponent, ET66Difficulty Difficulty);
 
 	void CreateEasyFarmPreviewProps(
 		AActor* Owner,

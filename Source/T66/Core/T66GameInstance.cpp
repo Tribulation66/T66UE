@@ -761,7 +761,7 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	}
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(32);
+	Paths.Reserve(48);
 	GameplayPreloadVisualIDs.Reset();
 
 	auto AddPath = [&Paths](const FSoftObjectPath& Path)
@@ -770,6 +770,22 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		{
 			Paths.AddUnique(Path);
 		}
+	};
+
+	auto AddDifficultyThemeTextures = [&AddPath](const TCHAR* FolderName, const TCHAR* Suffix)
+	{
+		const FString BlockAssetName = FString::Printf(TEXT("T_MegabonkBlock_%s"), Suffix);
+		const FString SlopeAssetName = FString::Printf(TEXT("T_MegabonkSlope_%s"), Suffix);
+		AddPath(FSoftObjectPath(FString::Printf(
+			TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
+			FolderName,
+			*BlockAssetName,
+			*BlockAssetName)));
+		AddPath(FSoftObjectPath(FString::Printf(
+			TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
+			FolderName,
+			*SlopeAssetName,
+			*SlopeAssetName)));
 	};
 
 	auto AddVisualAssets = [this, &AddPath](FName VisualID)
@@ -815,12 +831,16 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/SM_MegabonkSlope.SM_MegabonkSlope")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
+	AddDifficultyThemeTextures(TEXT("MediumOcean"), TEXT("MediumOcean"));
+	AddDifficultyThemeTextures(TEXT("HardMountain"), TEXT("HardMountain"));
+	AddDifficultyThemeTextures(TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard"));
+	AddDifficultyThemeTextures(TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole"));
+	AddDifficultyThemeTextures(TEXT("PerditionMars"), TEXT("PerditionMars"));
+	AddDifficultyThemeTextures(TEXT("FinalHell"), TEXT("FinalHell"));
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));

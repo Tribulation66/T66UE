@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66MainMapTerrain.h"
 
+#include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Components/BoxComponent.h"
@@ -10,6 +11,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInterface.h"
@@ -54,11 +56,9 @@ namespace T66MainMapTerrain
 			UMaterialInterface* EnvironmentUnlitMaterial = nullptr;
 			UMaterialInterface* BlockMaterial = nullptr;
 			UMaterialInterface* SlopeMaterial = nullptr;
-			UMaterialInterface* DirtMaterial = nullptr;
 			UMaterialInterface* WallMaterial = nullptr;
 			UTexture* BlockTexture = nullptr;
 			UTexture* SlopeTexture = nullptr;
-			UTexture* DirtTexture = nullptr;
 			UTexture* WallTexture = nullptr;
 			TArray<UMaterialInterface*> GrassMaterials;
 			UStaticMesh* TreeMesh1 = nullptr;
@@ -75,6 +75,73 @@ namespace T66MainMapTerrain
 			UMaterialInterface* Material = nullptr;
 			bool bUsingRealTexture = false;
 		};
+
+		struct FDifficultyThemeAssetInfo
+		{
+			const TCHAR* FolderName = nullptr;
+			const TCHAR* AssetSuffix = nullptr;
+		};
+
+		static FDifficultyThemeAssetInfo GetDifficultyThemeAssetInfo(ET66Difficulty Difficulty)
+		{
+			switch (Difficulty)
+			{
+			case ET66Difficulty::Medium: return { TEXT("MediumOcean"), TEXT("MediumOcean") };
+			case ET66Difficulty::Hard: return { TEXT("HardMountain"), TEXT("HardMountain") };
+			case ET66Difficulty::VeryHard: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
+			case ET66Difficulty::Impossible: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
+			case ET66Difficulty::Perdition: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
+			case ET66Difficulty::Final: return { TEXT("FinalHell"), TEXT("FinalHell") };
+			case ET66Difficulty::Easy:
+			default:
+				return {};
+			}
+		}
+
+		static UTexture2D* LoadDifficultyThemeTexture(ET66Difficulty Difficulty, const TCHAR* BaseAssetName)
+		{
+			const FDifficultyThemeAssetInfo ThemeInfo = GetDifficultyThemeAssetInfo(Difficulty);
+			if (!ThemeInfo.FolderName || !ThemeInfo.AssetSuffix || !BaseAssetName)
+			{
+				return nullptr;
+			}
+
+			const FString AssetName = FString::Printf(TEXT("%s_%s"), BaseAssetName, ThemeInfo.AssetSuffix);
+			const FString ThemeTexturePath = FString::Printf(
+				TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
+				ThemeInfo.FolderName,
+				*AssetName,
+				*AssetName);
+
+			static TMap<FString, UTexture2D*> CachedThemeTextures;
+			if (UTexture2D** Existing = CachedThemeTextures.Find(ThemeTexturePath))
+			{
+				return *Existing;
+			}
+
+			UTexture2D* ThemeTexture = LoadObject<UTexture2D>(nullptr, *ThemeTexturePath);
+			if (!ThemeTexture)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[MAP] Missing difficulty terrain texture: %s"), *ThemeTexturePath);
+				return nullptr;
+			}
+
+			CachedThemeTextures.Add(ThemeTexturePath, ThemeTexture);
+			return ThemeTexture;
+		}
+
+		static void ApplyDifficultyTextureOverrides(FLoadedAssets& Assets, ET66Difficulty Difficulty)
+		{
+			if (UTexture2D* BlockOverride = LoadDifficultyThemeTexture(Difficulty, TEXT("T_MegabonkBlock")))
+			{
+				Assets.BlockTexture = BlockOverride;
+			}
+
+			if (UTexture2D* SlopeOverride = LoadDifficultyThemeTexture(Difficulty, TEXT("T_MegabonkSlope")))
+			{
+				Assets.SlopeTexture = SlopeOverride;
+			}
+		}
 
 		static void ConfigureTerrainCollisionComponent(UPrimitiveComponent* Component)
 		{
@@ -608,11 +675,9 @@ namespace T66MainMapTerrain
 			OutAssets.EnvironmentUnlitMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
 			OutAssets.BlockMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
 			OutAssets.SlopeMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"));
-			OutAssets.DirtMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt"));
 			OutAssets.WallMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
 			OutAssets.BlockTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
 			OutAssets.SlopeTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"));
-			OutAssets.DirtTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"));
 			OutAssets.WallTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"));
 			if (!OutAssets.BlockMaterial)
 			{
@@ -621,10 +686,6 @@ namespace T66MainMapTerrain
 			if (!OutAssets.SlopeMaterial)
 			{
 				OutAssets.SlopeMaterial = OutAssets.BlockMaterial;
-			}
-			if (!OutAssets.DirtMaterial)
-			{
-				OutAssets.DirtMaterial = OutAssets.BlockMaterial;
 			}
 			if (!OutAssets.WallMaterial)
 			{
@@ -1057,6 +1118,10 @@ namespace T66MainMapTerrain
 			return false;
 		}
 
+		const UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+		ApplyDifficultyTextureOverrides(Assets, Difficulty);
+
 		EnableComplexCollisionForMesh(Assets.BlockMesh);
 		EnableComplexCollisionForMesh(Assets.SlopeMesh);
 
@@ -1150,11 +1215,6 @@ namespace T66MainMapTerrain
 			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"),
 			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"),
 			TEXT("FarmSlopeMID"));
-		const FResolvedFarmMaterial InitialDirtMaterial = ResolveForcedTextureMaterial(
-			Assets.DirtTexture,
-			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"),
-			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt"),
-			TEXT("FarmDirtMID"));
 		const FResolvedFarmMaterial InitialWallMaterial = ResolveForcedTextureMaterial(
 			Assets.WallTexture,
 			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"),
@@ -1162,13 +1222,11 @@ namespace T66MainMapTerrain
 			TEXT("FarmWallMID"));
 		UMaterialInterface* EffectiveBlockMaterial = InitialBlockMaterial.Material;
 		UMaterialInterface* EffectiveSlopeMaterial = InitialSlopeMaterial.Material;
-		UMaterialInterface* EffectiveDirtMaterial = InitialDirtMaterial.Material;
 		UMaterialInterface* EffectiveWallMaterial = InitialWallMaterial.Material;
 		UpdateFarmMaterialReadyTag(
 			InitialBlockMaterial.bUsingRealTexture &&
 			InitialSlopeMaterial.bUsingRealTexture &&
-			InitialDirtMaterial.bUsingRealTexture &&
-			InitialWallMaterial.bUsingRealTexture);
+			(!bRenderFarmBoundaryWalls || InitialWallMaterial.bUsingRealTexture));
 
 		auto RefreshFarmVisualMaterials = [VisualActor, Assets, ResolveForcedTextureMaterial, UpdateFarmMaterialReadyTag]() -> bool
 		{
@@ -1187,11 +1245,6 @@ namespace T66MainMapTerrain
 				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"),
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"),
 				TEXT("FarmSlopeMID"));
-			const FResolvedFarmMaterial DirtMaterial = ResolveForcedTextureMaterial(
-				Assets.DirtTexture,
-				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"),
-				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt"),
-				TEXT("FarmDirtMID"));
 			const FResolvedFarmMaterial WallMaterial = ResolveForcedTextureMaterial(
 				Assets.WallTexture,
 				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"),
@@ -1200,8 +1253,7 @@ namespace T66MainMapTerrain
 			const bool bMaterialsReady =
 				BlockMaterial.bUsingRealTexture &&
 				SlopeMaterial.bUsingRealTexture &&
-				DirtMaterial.bUsingRealTexture &&
-				WallMaterial.bUsingRealTexture;
+				(!bRenderFarmBoundaryWalls || WallMaterial.bUsingRealTexture);
 			UpdateFarmMaterialReadyTag(bMaterialsReady);
 
 			TInlineComponentArray<UStaticMeshComponent*> MeshComponents(VisualActor);
@@ -1223,7 +1275,7 @@ namespace T66MainMapTerrain
 				}
 				else if (ComponentName.StartsWith(TEXT("Support_")))
 				{
-					MeshComponent->SetMaterial(0, DirtMaterial.Material);
+					MeshComponent->SetMaterial(0, BlockMaterial.Material);
 				}
 				else if (ComponentName.StartsWith(TEXT("FarmWall")))
 				{
@@ -1448,7 +1500,7 @@ namespace T66MainMapTerrain
 						BottomPartRoot,
 						FString::Printf(TEXT("Support_%d_L%d"), CellIndex, SupportLevel),
 						Assets.BlockMesh,
-						EffectiveDirtMaterial,
+						EffectiveBlockMaterial,
 						FTransform(
 							FRotator::ZeroRotator,
 							SupportOffset,

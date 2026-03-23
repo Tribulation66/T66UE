@@ -48,17 +48,29 @@ AT66HeroPreviewStage::AT66HeroPreviewStage()
 	HeroPawnClass = AT66HeroBase::StaticClass();
 }
 
+void AT66HeroPreviewStage::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		PreviewDifficulty = GI->SelectedDifficulty;
+	}
+
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform, PreviewDifficulty);
+}
+
 void AT66HeroPreviewStage::BeginPlay()
 {
 	Super::BeginPlay();
 
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform);
 	T66PreviewStageEnvironment::CreateEasyFarmPreviewProps(this, RootComponent, EasyPreviewProps);
 
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		PreviewDifficulty = GI->SelectedDifficulty;
 	}
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform, PreviewDifficulty);
 	RefreshPreviewEnvironment();
 }
 
@@ -95,6 +107,7 @@ void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, F
 void AT66HeroPreviewStage::SetPreviewDifficulty(ET66Difficulty Difficulty)
 {
 	PreviewDifficulty = Difficulty;
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewPlatform, PreviewDifficulty);
 	RefreshPreviewEnvironment();
 }
 

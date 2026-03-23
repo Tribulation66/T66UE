@@ -35,17 +35,29 @@ AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 	CompanionPawnClass = AT66CompanionBase::StaticClass();
 }
 
+void AT66CompanionPreviewStage::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		PreviewDifficulty = GI->SelectedDifficulty;
+	}
+
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor, PreviewDifficulty);
+}
+
 void AT66CompanionPreviewStage::BeginPlay()
 {
 	Super::BeginPlay();
 
-	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor);
 	T66PreviewStageEnvironment::CreateEasyFarmPreviewProps(this, RootComponent, EasyPreviewProps);
 
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		PreviewDifficulty = GI->SelectedDifficulty;
 	}
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor, PreviewDifficulty);
 	RefreshPreviewEnvironment();
 }
 
@@ -68,6 +80,7 @@ void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID, FName Ski
 void AT66CompanionPreviewStage::SetPreviewDifficulty(ET66Difficulty Difficulty)
 {
 	PreviewDifficulty = Difficulty;
+	T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(PreviewFloor, PreviewDifficulty);
 	RefreshPreviewEnvironment();
 }
 

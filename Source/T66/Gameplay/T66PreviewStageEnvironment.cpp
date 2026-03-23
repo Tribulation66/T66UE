@@ -6,12 +6,25 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/Texture.h"
+#include "Engine/Texture2D.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/UObjectGlobals.h"
 
 namespace
 {
-	const TCHAR* PreviewGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
+	const TCHAR* PreviewFallbackGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
+	const TCHAR* PreviewFallbackBlockMaterialPath = TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock");
+	const TCHAR* PreviewGroundBaseMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
+	const TCHAR* EasyBlockTexturePath = TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock");
+
+	struct FDifficultyThemeAssetInfo
+	{
+		const TCHAR* FolderName = nullptr;
+		const TCHAR* AssetSuffix = nullptr;
+	};
 
 	struct FT66PreviewPropSpec
 	{
@@ -35,6 +48,81 @@ namespace
 		{ TEXT("PreviewScarecrow"), TEXT("/Game/World/Props/Scarecrow.Scarecrow"), FVector(2150.f, 240.f, 0.f), FRotator(0.f, 180.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
 		{ TEXT("PreviewRocks"), TEXT("/Game/World/Props/Rocks.Rocks"), FVector(1350.f, 1550.f, 0.f), FRotator(0.f, 145.f, 0.f), FVector(1.0f, 1.0f, 1.0f) },
 	};
+
+	FDifficultyThemeAssetInfo GetDifficultyThemeAssetInfo(ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Medium: return { TEXT("MediumOcean"), TEXT("MediumOcean") };
+		case ET66Difficulty::Hard: return { TEXT("HardMountain"), TEXT("HardMountain") };
+		case ET66Difficulty::VeryHard: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
+		case ET66Difficulty::Impossible: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
+		case ET66Difficulty::Perdition: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
+		case ET66Difficulty::Final: return { TEXT("FinalHell"), TEXT("FinalHell") };
+		case ET66Difficulty::Easy:
+		default:
+			return {};
+		}
+	}
+
+	UTexture* LoadPreviewBlockTexture(ET66Difficulty Difficulty)
+	{
+		if (Difficulty == ET66Difficulty::Easy)
+		{
+			return LoadObject<UTexture>(nullptr, EasyBlockTexturePath);
+		}
+
+		const FDifficultyThemeAssetInfo ThemeInfo = GetDifficultyThemeAssetInfo(Difficulty);
+		if (!ThemeInfo.FolderName || !ThemeInfo.AssetSuffix)
+		{
+			return LoadObject<UTexture>(nullptr, EasyBlockTexturePath);
+		}
+
+		const FString AssetName = FString::Printf(TEXT("T_MegabonkBlock_%s"), ThemeInfo.AssetSuffix);
+		const FString AssetPath = FString::Printf(
+			TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
+			ThemeInfo.FolderName,
+			*AssetName,
+			*AssetName);
+
+		if (UTexture2D* ThemeTexture = LoadObject<UTexture2D>(nullptr, *AssetPath))
+		{
+			return ThemeTexture;
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("[PREVIEW] Missing preview block texture override: %s"), *AssetPath);
+		return LoadObject<UTexture>(nullptr, EasyBlockTexturePath);
+	}
+
+	UMaterialInterface* BuildPreviewGroundMaterial(UStaticMeshComponent* GroundComponent, ET66Difficulty Difficulty)
+	{
+		if (!GroundComponent)
+		{
+			return nullptr;
+		}
+
+		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, PreviewGroundBaseMaterialPath);
+		UTexture* BlockTexture = LoadPreviewBlockTexture(Difficulty);
+		if (BaseMaterial && BlockTexture)
+		{
+			if (UMaterialInstanceDynamic* GroundMID = UMaterialInstanceDynamic::Create(BaseMaterial, GroundComponent, TEXT("PreviewGroundMID")))
+			{
+				GroundMID->SetTextureParameterValue(TEXT("DiffuseColorMap"), BlockTexture);
+				GroundMID->SetTextureParameterValue(TEXT("BaseColorTexture"), BlockTexture);
+				GroundMID->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
+				GroundMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
+				GroundMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
+				return GroundMID;
+			}
+		}
+
+		if (UMaterialInterface* FallbackBlockMaterial = LoadObject<UMaterialInterface>(nullptr, PreviewFallbackBlockMaterialPath))
+		{
+			return FallbackBlockMaterial;
+		}
+
+		return LoadObject<UMaterialInterface>(nullptr, PreviewFallbackGroundMaterialPath);
+	}
 
 	UStaticMeshComponent* CreatePreviewPropComponent(
 		AActor* Owner,
@@ -76,14 +164,14 @@ namespace
 	}
 }
 
-void T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(UStaticMeshComponent* GroundComponent)
+void T66PreviewStageEnvironment::ApplyPreviewGroundMaterial(UStaticMeshComponent* GroundComponent, ET66Difficulty Difficulty)
 {
 	if (!GroundComponent)
 	{
 		return;
 	}
 
-	if (UMaterialInterface* GroundMat = LoadObject<UMaterialInterface>(nullptr, PreviewGroundMaterialPath))
+	if (UMaterialInterface* GroundMat = BuildPreviewGroundMaterial(GroundComponent, Difficulty))
 	{
 		GroundComponent->SetMaterial(0, GroundMat);
 	}
