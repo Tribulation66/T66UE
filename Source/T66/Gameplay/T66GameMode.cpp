@@ -499,8 +499,8 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	// Phase 0: Spawn the runtime main map terrain before any ground-traced content.
 	SpawnMainMapTerrain();
 
-	// Start gate: spawned here (after floor) so the ground trace hits the flat floor.
-	if (!bUsingMainMapTerrain && !IsColiseumStage() && !IsLabLevel())
+	// Start gate: spawned here (after terrain) so it snaps to the final runtime layout.
+	if (!IsColiseumStage() && !IsLabLevel())
 	{
 		AController* PC = World ? World->GetFirstPlayerController() : nullptr;
 		if (PC)
@@ -549,23 +549,6 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	if (!bUsingMainMapTerrain)
 	{
 		SpawnTutorialIfNeeded();
-	}
-
-	if (bUsingMainMapTerrain)
-	{
-		if (UGameInstance* GI = GetGameInstance())
-		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				RunState->ResetStageTimerToFull();
-				RunState->SetStageTimerActive(true);
-			}
-		}
-
-		ScheduleLightingRefresh();
-		ScheduleOverlayHide();
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map terrain content spawned."));
-		return;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
@@ -1192,20 +1175,37 @@ void AT66GameMode::SpawnBossGateIfNeeded()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Trigger right at the boss-area threshold. The visible pillars are hidden so the fight starts on entry.
-	FVector BossGateLoc = T66GameplayLayout::GetBossGateLocation();
-	FHitResult Hit;
-	if (World->LineTraceSingleByChannel(Hit, BossGateLoc + FVector(0.f, 0.f, 3000.f), BossGateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	FVector BossGateLoc = FVector::ZeroVector;
+	FRotator BossGateRot = FRotator::ZeroRotator;
+	float TriggerHalfSpan = 900.0f;
+	if (T66UsesMainMapTerrainStage(World))
 	{
-		BossGateLoc.Z = Hit.ImpactPoint.Z;
+		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(Preset);
+		const FTransform GateTransform = T66MainMapTerrain::GetBossGateTransform(Preset, 5.0f);
+		BossGateLoc = GateTransform.GetLocation();
+		BossGateRot = GateTransform.Rotator();
+		TriggerHalfSpan = FMath::Clamp(MainMapSettings.CellSize * 0.45f, 600.0f, 1200.0f);
 	}
-	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, FRotator::ZeroRotator, SpawnParams);
+	else
+	{
+		// Trigger right at the boss-area threshold. The visible pillars are hidden so the fight starts on entry.
+		BossGateLoc = T66GameplayLayout::GetBossGateLocation();
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(Hit, BossGateLoc + FVector(0.f, 0.f, 3000.f), BossGateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		{
+			BossGateLoc.Z = Hit.ImpactPoint.Z;
+		}
+		TriggerHalfSpan = T66GameplayLayout::CorridorHalfHeightY * 0.92f;
+	}
+
+	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, BossGateRot, SpawnParams);
 	if (BossGate)
 	{
 		BossGate->TriggerDistance2D = 220.f;
 		if (BossGate->TriggerBox)
 		{
-			BossGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
+			BossGate->TriggerBox->SetBoxExtent(FVector(120.f, TriggerHalfSpan, 220.f));
 		}
 		if (BossGate->PoleLeft)
 		{
@@ -1952,36 +1952,51 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 	(void)Player;
 	UWorld* World = GetWorld();
 	if (!World) return;
-	if (T66UsesMainMapTerrainStage(World)) return;
 
 	// Spawn once per level (gate is a world landmark).
 	if (StartGate) return;
 
-	// Gate at the start-corridor exit so combat starts only when the player enters the main arena.
-	static constexpr float GateZOffset = 5.f;
-	FVector GateLoc = T66GameplayLayout::GetStartGateLocation();
-	float GateGroundZ = 200.f;
-	FHitResult Hit;
-	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	FVector GateLoc = FVector::ZeroVector;
+	FRotator GateRot = FRotator::ZeroRotator;
+	float TriggerHalfSpan = 900.0f;
+	if (T66UsesMainMapTerrainStage(World))
 	{
-		GateGroundZ = Hit.ImpactPoint.Z;
-		GateLoc.Z = GateGroundZ + GateZOffset;
+		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(Preset);
+		const FTransform GateTransform = T66MainMapTerrain::GetStartGateTransform(Preset, 5.0f);
+		GateLoc = GateTransform.GetLocation();
+		GateRot = GateTransform.Rotator();
+		TriggerHalfSpan = FMath::Clamp(MainMapSettings.CellSize * 0.45f, 600.0f, 1200.0f);
 	}
 	else
 	{
-		GateLoc.Z = GateGroundZ;
+		// Gate at the start-corridor exit so combat starts only when the player enters the main arena.
+		static constexpr float GateZOffset = 5.f;
+		GateLoc = T66GameplayLayout::GetStartGateLocation();
+		float GateGroundZ = 200.f;
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		{
+			GateGroundZ = Hit.ImpactPoint.Z;
+			GateLoc.Z = GateGroundZ + GateZOffset;
+		}
+		else
+		{
+			GateLoc.Z = GateGroundZ;
+		}
+		TriggerHalfSpan = T66GameplayLayout::CorridorHalfHeightY * 0.92f;
 	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
+	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), GateLoc, GateRot, SpawnParams);
 	if (StartGate)
 	{
 		StartGate->TriggerDistance2D = 220.f;
 		if (StartGate->TriggerBox)
 		{
-			StartGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
+			StartGate->TriggerBox->SetBoxExtent(FVector(120.f, TriggerHalfSpan, 220.f));
 		}
 		if (StartGate->PoleLeft)
 		{
@@ -2620,11 +2635,20 @@ void AT66GameMode::SpawnBossForCurrentStage()
 
 	// Map layout: spawn the stage boss in the dedicated boss square at the far end of the run.
 	{
-		FVector BossLoc = T66GameplayLayout::GetBossAreaCenter(200.f);
-		FHitResult BossHit;
-		if (World->LineTraceSingleByChannel(BossHit, BossLoc + FVector(0.f, 0.f, 3000.f), BossLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		FVector BossLoc = StageData.BossSpawnLocation;
+		if (T66UsesMainMapTerrainStage(World))
 		{
-			BossLoc.Z = BossHit.ImpactPoint.Z + 100.f;
+			const FT66MapPreset Preset = T66BuildMainMapPreset(T66GI);
+			BossLoc = T66MainMapTerrain::GetBossSpawnLocation(Preset, 100.f);
+		}
+		else
+		{
+			BossLoc = T66GameplayLayout::GetBossAreaCenter(200.f);
+			FHitResult BossHit;
+			if (World->LineTraceSingleByChannel(BossHit, BossLoc + FVector(0.f, 0.f, 3000.f), BossLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+			{
+				BossLoc.Z = BossHit.ImpactPoint.Z + 100.f;
+			}
 		}
 		StageData.BossSpawnLocation = BossLoc;
 	}
@@ -4723,13 +4747,18 @@ void AT66GameMode::MaintainPlayerTerrainSafety()
 		TArray<FVector> RescueAnchors;
 		if (bUsingMainMapTerrain)
 		{
-			const int32 GridSize = T66MainMapTerrain::MakeSettings(Preset).BoardSize;
-			RescueAnchors.Reserve(5);
+			FVector StartGateAnchor = T66MainMapTerrain::GetStartGateTransform(Preset, 0.0f).GetLocation();
+			StartGateAnchor.Z = AnchorTraceZ;
+			FVector BossGateAnchor = T66MainMapTerrain::GetBossGateTransform(Preset, 0.0f).GetLocation();
+			BossGateAnchor.Z = AnchorTraceZ;
+			FVector BossAreaAnchor = T66MainMapTerrain::GetBossAreaCenter(Preset, 0.0f);
+			BossAreaAnchor.Z = AnchorTraceZ;
+
+			RescueAnchors.Reserve(4);
 			RescueAnchors.Add(T66MainMapTerrain::GetSpawnLocation(Preset, AnchorTraceZ));
-			RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, GridSize / 2, FMath::Max(0, GridSize / 2 - 1), AnchorTraceZ));
-			RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, GridSize / 2, FMath::Min(GridSize - 1, GridSize / 2 + 1), AnchorTraceZ));
-			RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, FMath::Max(0, GridSize / 2 - 1), GridSize / 2, AnchorTraceZ));
-			RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, FMath::Min(GridSize - 1, GridSize / 2 + 1), GridSize / 2, AnchorTraceZ));
+			RescueAnchors.Add(StartGateAnchor);
+			RescueAnchors.Add(BossGateAnchor);
+			RescueAnchors.Add(BossAreaAnchor);
 		}
 		else if (!bStageTimerActive || PawnLoc.X <= 0.f)
 		{

@@ -348,6 +348,93 @@ namespace T66MainMapTerrain
 			return FIntPoint(StartAnchor.X, 0);
 		}
 
+		struct FExtensionAreaSpec
+		{
+			int32 CorridorLength = 1;
+			int32 RoomDepth = 3;
+			int32 RoomHalfWidth = 1;
+		};
+
+		static bool IsUsableFlatAnchorCell(const FBoard& Board, const FIntPoint& Coordinate)
+		{
+			if (!IsPerimeterCoordinate(Coordinate.X, Coordinate.Y, Board.Settings.BoardSize))
+			{
+				return false;
+			}
+
+			const FCell* Cell = Board.GetCell(Coordinate.X, Coordinate.Y);
+			return Cell && Cell->bOccupied && !Cell->bSlope;
+		}
+
+		static int32 GetPerimeterAnchorDistance(const FIntPoint& A, const FIntPoint& B)
+		{
+			return (A.X == B.X)
+				? FMath::Abs(A.Y - B.Y)
+				: FMath::Abs(A.X - B.X);
+		}
+
+		static FIntPoint FindNearestUsablePerimeterAnchor(const FBoard& Board, const FIntPoint& Desired, FRandomStream& Rng)
+		{
+			const auto FindCandidate = [&](bool bIncludeCorners) -> FIntPoint
+			{
+				const FIntPoint DesiredOutwardDirection = GetPerimeterOutwardDirection(Desired, Board.Settings.BoardSize);
+				TArray<FIntPoint> Candidates;
+				for (const FIntPoint& Coordinate : BuildPerimeterCandidates(Board.Settings.BoardSize, bIncludeCorners))
+				{
+					if (!IsUsableFlatAnchorCell(Board, Coordinate))
+					{
+						continue;
+					}
+
+					if (GetPerimeterOutwardDirection(Coordinate, Board.Settings.BoardSize) != DesiredOutwardDirection)
+					{
+						continue;
+					}
+
+					Candidates.Add(Coordinate);
+				}
+
+				if (Candidates.Num() == 0)
+				{
+					return FIntPoint(INDEX_NONE, INDEX_NONE);
+				}
+
+				Candidates.Sort([Desired](const FIntPoint& A, const FIntPoint& B)
+				{
+					return GetPerimeterAnchorDistance(A, Desired) < GetPerimeterAnchorDistance(B, Desired);
+				});
+
+				const int32 BestDistance = GetPerimeterAnchorDistance(Candidates[0], Desired);
+				TArray<FIntPoint> BestCandidates;
+				for (const FIntPoint& Coordinate : Candidates)
+				{
+					if (GetPerimeterAnchorDistance(Coordinate, Desired) != BestDistance)
+					{
+						break;
+					}
+					BestCandidates.Add(Coordinate);
+				}
+
+				return BestCandidates.Num() > 0
+					? BestCandidates[Rng.RandRange(0, BestCandidates.Num() - 1)]
+					: Candidates[0];
+			};
+
+			FIntPoint Candidate = FindCandidate(false);
+			if (Candidate.X != INDEX_NONE)
+			{
+				return Candidate;
+			}
+
+			Candidate = FindCandidate(true);
+			if (Candidate.X != INDEX_NONE)
+			{
+				return Candidate;
+			}
+
+			return Desired;
+		}
+
 		static bool GetRegionCenterLocation(const FBoard& Board, ECellRegion Region, float HeightOffset, FVector& OutLocation)
 		{
 			FVector LocationSum = FVector::ZeroVector;
@@ -478,9 +565,11 @@ namespace T66MainMapTerrain
 			FBoard& Board,
 			const FIntPoint& Anchor,
 			const FIntPoint& OutwardDirection,
+			const FExtensionAreaSpec& Spec,
 			ECellRegion PathRegion,
 			ECellRegion AreaRegion,
-			FIntPoint* OutPathCoordinate = nullptr)
+			FIntPoint* OutPathCoordinate = nullptr,
+			FIntPoint* OutSpawnCoordinate = nullptr)
 		{
 			const FCell* AnchorCell = Board.GetCell(Anchor.X, Anchor.Y);
 			if (!AnchorCell)
@@ -488,20 +577,57 @@ namespace T66MainMapTerrain
 				return FIntPoint(INDEX_NONE, INDEX_NONE);
 			}
 
-			(void)PathRegion;
-			const FIntPoint PathCoordinate = Anchor + OutwardDirection;
+			const FIntPoint WidthDirection = GetPreferredPerpendicularDirection(
+				OutwardDirection,
+				Anchor,
+				Board.Settings.BoardSize);
+			const int32 RoomStartStep = FMath::Max(Spec.CorridorLength, 0) + 1;
+			const FIntPoint PathCoordinate = Anchor + OutwardDirection * FMath::Max(Spec.CorridorLength, 1);
+			const FIntPoint SpawnCoordinate = Anchor + OutwardDirection * (RoomStartStep + FMath::Max(Spec.RoomDepth, 1) / 2);
+
+			for (int32 CorridorStep = 1; CorridorStep <= Spec.CorridorLength; ++CorridorStep)
+			{
+				AddExtensionCell(
+					Board,
+					Anchor + OutwardDirection * CorridorStep,
+					AnchorCell->Level,
+					PathRegion);
+			}
+
+			for (int32 Depth = 0; Depth < Spec.RoomDepth; ++Depth)
+			{
+				for (int32 WidthOffset = -Spec.RoomHalfWidth; WidthOffset <= Spec.RoomHalfWidth; ++WidthOffset)
+				{
+					AddExtensionCell(
+						Board,
+						Anchor + OutwardDirection * (RoomStartStep + Depth) + WidthDirection * WidthOffset,
+						AnchorCell->Level,
+						AreaRegion);
+				}
+			}
 
 			if (OutPathCoordinate)
 			{
 				*OutPathCoordinate = PathCoordinate;
 			}
+			if (OutSpawnCoordinate)
+			{
+				*OutSpawnCoordinate = SpawnCoordinate;
+			}
 
-			AddExtensionCell(Board, PathCoordinate, AnchorCell->Level, AreaRegion);
-			return PathCoordinate;
+			return SpawnCoordinate;
 		}
 
 		static const FCell* FindPreferredSpawnCell(const FBoard& Board)
 		{
+			if (const FCell* StartSpawnCell = FindAnyCellAtCoordinate(Board, Board.StartSpawnCell))
+			{
+				if (!StartSpawnCell->bSlope)
+				{
+					return StartSpawnCell;
+				}
+			}
+
 			const int32 Center = Board.Settings.BoardSize / 2;
 			const FCell* BestCell = nullptr;
 			int32 BestDistanceSq = TNumericLimits<int32>::Max();
@@ -542,6 +668,73 @@ namespace T66MainMapTerrain
 			}
 
 			return nullptr;
+		}
+
+		static bool TryGetGateTransformForBoard(
+			const FBoard& Board,
+			const FIntPoint& Anchor,
+			const FIntPoint& PathCoordinate,
+			float HeightOffset,
+			FTransform& OutTransform)
+		{
+			FVector AnchorLocation = FVector::ZeroVector;
+			FVector PathLocation = FVector::ZeroVector;
+			if (!GetCellLocation(Board, Anchor, HeightOffset, AnchorLocation)
+				|| !GetCellLocation(Board, PathCoordinate, HeightOffset, PathLocation))
+			{
+				return false;
+			}
+
+			const FIntPoint PathDirection = PathCoordinate - Anchor;
+			const bool bAlongX = PathDirection.X != 0;
+			const float Yaw = bAlongX ? 0.0f : 90.0f;
+			OutTransform = FTransform(
+				FRotator(0.0f, Yaw, 0.0f),
+				(AnchorLocation + PathLocation) * 0.5f);
+			return true;
+		}
+
+		static void GetOccupiedGridBounds(
+			const FBoard& Board,
+			int32& OutMinX,
+			int32& OutMaxX,
+			int32& OutMinZ,
+			int32& OutMaxZ)
+		{
+			OutMinX = TNumericLimits<int32>::Max();
+			OutMaxX = TNumericLimits<int32>::Lowest();
+			OutMinZ = TNumericLimits<int32>::Max();
+			OutMaxZ = TNumericLimits<int32>::Lowest();
+
+			auto ConsiderCell = [&](const FCell& Cell)
+			{
+				if (!Cell.bOccupied)
+				{
+					return;
+				}
+
+				OutMinX = FMath::Min(OutMinX, Cell.X);
+				OutMaxX = FMath::Max(OutMaxX, Cell.X);
+				OutMinZ = FMath::Min(OutMinZ, Cell.Z);
+				OutMaxZ = FMath::Max(OutMaxZ, Cell.Z);
+			};
+
+			for (const FCell& Cell : Board.Cells)
+			{
+				ConsiderCell(Cell);
+			}
+			for (const FCell& Cell : Board.ExtraCells)
+			{
+				ConsiderCell(Cell);
+			}
+
+			if (OutMinX == TNumericLimits<int32>::Max())
+			{
+				OutMinX = 0;
+				OutMaxX = Board.Settings.BoardSize - 1;
+				OutMinZ = 0;
+				OutMaxZ = Board.Settings.BoardSize - 1;
+			}
 		}
 
 		static float GetSlopeYaw(ET66MapCellShape Shape)
@@ -840,6 +1033,93 @@ namespace T66MainMapTerrain
 			GetCellTopSurfaceZ(Board.Settings, *SpawnCell) + HeightOffset);
 	}
 
+	FVector GetStartAreaCenter(const FT66MapPreset& Preset, float HeightOffset)
+	{
+		FBoard Board;
+		if (Generate(Preset, Board))
+		{
+			FVector Location = FVector::ZeroVector;
+			if (GetRegionCenterLocation(Board, ECellRegion::StartArea, HeightOffset, Location))
+			{
+				return Location;
+			}
+			if (GetCellLocation(Board, Board.StartSpawnCell, HeightOffset, Location))
+			{
+				return Location;
+			}
+		}
+
+		return GetPreferredSpawnLocation(Preset, HeightOffset);
+	}
+
+	FVector GetBossAreaCenter(const FT66MapPreset& Preset, float HeightOffset)
+	{
+		FBoard Board;
+		if (Generate(Preset, Board))
+		{
+			FVector Location = FVector::ZeroVector;
+			if (GetRegionCenterLocation(Board, ECellRegion::BossArea, HeightOffset, Location))
+			{
+				return Location;
+			}
+			if (GetCellLocation(Board, Board.BossSpawnCell, HeightOffset, Location))
+			{
+				return Location;
+			}
+		}
+
+		return GetPreferredSpawnLocation(Preset, HeightOffset);
+	}
+
+	FTransform GetStartGateTransform(const FT66MapPreset& Preset, float HeightOffset)
+	{
+		FBoard Board;
+		if (Generate(Preset, Board))
+		{
+			FTransform Transform = FTransform::Identity;
+			if (TryGetGateTransformForBoard(Board, Board.StartAnchor, Board.StartPathCell, HeightOffset, Transform))
+			{
+				return Transform;
+			}
+		}
+
+		return FTransform(FRotator::ZeroRotator, GetPreferredSpawnLocation(Preset, HeightOffset));
+	}
+
+	FTransform GetBossGateTransform(const FT66MapPreset& Preset, float HeightOffset)
+	{
+		FBoard Board;
+		if (Generate(Preset, Board))
+		{
+			FTransform Transform = FTransform::Identity;
+			if (TryGetGateTransformForBoard(Board, Board.BossAnchor, Board.BossPathCell, HeightOffset, Transform))
+			{
+				return Transform;
+			}
+		}
+
+		return FTransform(FRotator::ZeroRotator, GetPreferredSpawnLocation(Preset, HeightOffset));
+	}
+
+	FVector GetBossSpawnLocation(const FT66MapPreset& Preset, float HeightOffset)
+	{
+		FBoard Board;
+		if (Generate(Preset, Board))
+		{
+			FVector Location = FVector::ZeroVector;
+			if (GetCellLocation(Board, Board.BossSpawnCell, HeightOffset, Location))
+			{
+				return Location;
+			}
+			if (GetRegionCenterLocation(Board, ECellRegion::BossArea, HeightOffset, Location))
+			{
+				return Location;
+			}
+		}
+
+		return GetPreferredSpawnLocation(Preset, HeightOffset);
+	}
+
 	float GetTraceZ(const FT66MapPreset& Preset)
 	{
 		const FSettings Settings = MakeSettings(Preset);
@@ -1094,6 +1374,37 @@ namespace T66MainMapTerrain
 			return false;
 		}
 
+		const FIntPoint DesiredStartAnchor = ChooseStartAnchor(OutBoard.Settings.BoardSize, Rng);
+		OutBoard.StartAnchor = FindNearestUsablePerimeterAnchor(OutBoard, DesiredStartAnchor, Rng);
+		OutBoard.StartOutwardDirection = GetPerimeterOutwardDirection(OutBoard.StartAnchor, OutBoard.Settings.BoardSize);
+
+		const FIntPoint DesiredBossAnchor = ChooseBossAnchor(OutBoard.Settings.BoardSize, OutBoard.StartAnchor, Rng);
+		OutBoard.BossAnchor = FindNearestUsablePerimeterAnchor(OutBoard, DesiredBossAnchor, Rng);
+		OutBoard.BossOutwardDirection = GetPerimeterOutwardDirection(OutBoard.BossAnchor, OutBoard.Settings.BoardSize);
+
+		const FExtensionAreaSpec StartAreaSpec{ 1, 3, 1 };
+		const FExtensionAreaSpec BossAreaSpec{ 1, 3, 2 };
+
+		BuildExtensionArea(
+			OutBoard,
+			OutBoard.StartAnchor,
+			OutBoard.StartOutwardDirection,
+			StartAreaSpec,
+			ECellRegion::StartPath,
+			ECellRegion::StartArea,
+			&OutBoard.StartPathCell,
+			&OutBoard.StartSpawnCell);
+
+		BuildExtensionArea(
+			OutBoard,
+			OutBoard.BossAnchor,
+			OutBoard.BossOutwardDirection,
+			BossAreaSpec,
+			ECellRegion::BossPath,
+			ECellRegion::BossArea,
+			&OutBoard.BossPathCell,
+			&OutBoard.BossSpawnCell);
+
 		return OutBoard.OccupiedCount == OutBoard.Cells.Num();
 	}
 
@@ -1128,7 +1439,6 @@ namespace T66MainMapTerrain
 		const FVector BoardOrigin = GetBoardOrigin(Preset);
 		const float CellSize = Board.Settings.CellSize;
 		const float StepHeight = Board.Settings.StepHeight;
-		const float MapSize = static_cast<float>(Board.Settings.BoardSize) * CellSize;
 
 		AActor* VisualActor = World->SpawnActor<AActor>(AActor::StaticClass(), BoardOrigin, FRotator::ZeroRotator, SpawnParams);
 		if (!VisualActor)
@@ -1598,7 +1908,6 @@ namespace T66MainMapTerrain
 		const float WallThickness = CellSize;
 		const float WallHeight = StepHeight * static_cast<float>(WallHeightLevels);
 		const float WallCenterZ = 0.0f;
-		const float WallOffset = static_cast<float>(Board.Settings.BoardSize) * CellSize * 0.5f - CellSize * 0.5f;
 
 		auto AddWallCollision = [&](const FString& Name, const FVector& LocalCenter, const FVector& Extent)
 		{
@@ -1702,14 +2011,30 @@ namespace T66MainMapTerrain
 			}
 		}
 
+		int32 MinOccupiedX = 0;
+		int32 MaxOccupiedX = Board.Settings.BoardSize - 1;
+		int32 MinOccupiedZ = 0;
+		int32 MaxOccupiedZ = Board.Settings.BoardSize - 1;
+		GetOccupiedGridBounds(Board, MinOccupiedX, MaxOccupiedX, MinOccupiedZ, MaxOccupiedZ);
+		const float MinOccupiedLocalX = static_cast<float>(MinOccupiedX) * CellSize - CellSize * 0.5f;
+		const float MaxOccupiedLocalX = static_cast<float>(MaxOccupiedX) * CellSize + CellSize * 0.5f;
+		const float MinOccupiedLocalY = static_cast<float>(MinOccupiedZ) * CellSize - CellSize * 0.5f;
+		const float MaxOccupiedLocalY = static_cast<float>(MaxOccupiedZ) * CellSize + CellSize * 0.5f;
+
 		const float SafetyCatchThickness = FMath::Max(1800.0f, StepHeight * 8.0f);
 		const float SafetyCatchTopZ = GetLowestCollisionBottomZ(Preset) - 200.0f;
 		UBoxComponent* SafetyCatch = NewObject<UBoxComponent>(VisualActor, TEXT("TerrainSafetyCatch"));
 		VisualActor->AddInstanceComponent(SafetyCatch);
 		SafetyCatch->SetupAttachment(VisualRoot);
 		SafetyCatch->SetMobility(EComponentMobility::Static);
-		SafetyCatch->SetRelativeLocation(FVector(WallOffset, WallOffset, SafetyCatchTopZ - SafetyCatchThickness * 0.5f));
-		SafetyCatch->SetBoxExtent(FVector(MapSize * 0.5f + CellSize, MapSize * 0.5f + CellSize, SafetyCatchThickness * 0.5f));
+		SafetyCatch->SetRelativeLocation(FVector(
+			(MinOccupiedLocalX + MaxOccupiedLocalX) * 0.5f,
+			(MinOccupiedLocalY + MaxOccupiedLocalY) * 0.5f,
+			SafetyCatchTopZ - SafetyCatchThickness * 0.5f));
+		SafetyCatch->SetBoxExtent(FVector(
+			(MaxOccupiedLocalX - MinOccupiedLocalX) * 0.5f + CellSize,
+			(MaxOccupiedLocalY - MinOccupiedLocalY) * 0.5f + CellSize,
+			SafetyCatchThickness * 0.5f));
 		ConfigureTerrainSafetyCatchComponent(SafetyCatch);
 		SafetyCatch->RegisterComponent();
 

@@ -112,6 +112,11 @@ namespace T66MainMapTerrain
 	FVector GetCellCenter(const FT66MapPreset& Preset, int32 Row, int32 Col, float Z);
 	FVector GetSpawnLocation(const FT66MapPreset& Preset, float Z);
 	FVector GetPreferredSpawnLocation(const FT66MapPreset& Preset, float HeightOffset);
+	FVector GetStartAreaCenter(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
+	FVector GetBossAreaCenter(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
+	FTransform GetStartGateTransform(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
+	FTransform GetBossGateTransform(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
+	FVector GetBossSpawnLocation(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
 	float GetTraceZ(const FT66MapPreset& Preset);
 	float GetLowestCollisionBottomZ(const FT66MapPreset& Preset);
 	bool Generate(const FT66MapPreset& Preset, FBoard& OutBoard);
