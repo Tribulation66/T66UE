@@ -114,6 +114,11 @@ namespace
 		}
 	}
 
+	static bool T66_IsGamblersTokenItem(const FName ItemID)
+	{
+		return ItemID == FName(TEXT("Item_GamblersToken"));
+	}
+
 	static void ApplyUltimateDamageToRegisteredTargets(UWorld* World, int32 DamageAmount)
 	{
 		if (!World)
@@ -786,16 +791,30 @@ void AT66PlayerController::HandleInteractPressed()
 	if (ClosestLootBag)
 	{
 		UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-		if (RunState && RunState->HasInventorySpace())
+		if (RunState)
 		{
 			const FName PickedItemID = ClosestLootBag->GetItemID();
 			const ET66ItemRarity PickedItemRarity = LootRarityToItemRarity(ClosestLootBag->GetLootRarity());
-			RunState->AddItemWithRarity(PickedItemID, PickedItemRarity);
-			ClosestLootBag->ConsumeAndDestroy();
-			ClearNearbyLootBag(ClosestLootBag);
-			if (GameplayHUDWidget)
+			if (T66_IsGamblersTokenItem(PickedItemID))
 			{
-				GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
+				const int32 TokenLevel = ClosestLootBag->HasExplicitLine1RolledValue() ? ClosestLootBag->GetExplicitLine1RolledValue() : 1;
+				RunState->ApplyGamblersTokenPickup(TokenLevel);
+				ClosestLootBag->ConsumeAndDestroy();
+				ClearNearbyLootBag(ClosestLootBag);
+				if (GameplayHUDWidget)
+				{
+					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
+				}
+			}
+			else if (RunState->HasInventorySpace())
+			{
+				RunState->AddItemWithRarity(PickedItemID, PickedItemRarity);
+				ClosestLootBag->ConsumeAndDestroy();
+				ClearNearbyLootBag(ClosestLootBag);
+				if (GameplayHUDWidget)
+				{
+					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
+				}
 			}
 		}
 		return;

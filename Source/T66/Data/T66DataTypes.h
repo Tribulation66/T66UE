@@ -626,6 +626,7 @@ enum class ET66SecondaryStatType : uint8
 	MovementSpeed UMETA(DisplayName = "Movement Speed"),
 	// Luck-world (crate rewards)
 	LootCrate UMETA(DisplayName = "Loot Crate"),
+	GamblerToken UMETA(DisplayName = "Gambler's Token"),
 };
 
 FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType)

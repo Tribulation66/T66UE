@@ -313,6 +313,7 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType
 	case ET66SecondaryStatType::Stealing:          return NSLOCTEXT("T66.SecondaryStats", "Stealing", "Stealing");
 	case ET66SecondaryStatType::MovementSpeed:     return NSLOCTEXT("T66.SecondaryStats", "MovementSpeed", "Movement Speed");
 	case ET66SecondaryStatType::LootCrate:         return NSLOCTEXT("T66.SecondaryStats", "LootCrate", "Loot Crate");
+	case ET66SecondaryStatType::GamblerToken:      return NSLOCTEXT("T66.SecondaryStats", "GamblerToken", "Gambler's Token");
 	default:                                       return FText::GetEmpty();
 	}
 }
@@ -376,6 +377,7 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatDescription(ET66SecondaryS
 	case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.StatTooltips", "Stealing", "Success chance when attempting to steal from the Vendor.");
 	case ET66SecondaryStatType::MovementSpeed:   return NSLOCTEXT("T66.StatTooltips", "MovementSpeed", "Bonus movement speed multiplier from secondary stat sources.");
 	case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.StatTooltips", "LootCrate", "Improves the odds of higher-rarity rewards when opening a crate.");
+	case ET66SecondaryStatType::GamblerToken:    return NSLOCTEXT("T66.StatTooltips", "GamblerToken", "A unique casino token that improves item sell prices. Higher levels push the sell rate up to 100%.");
 	default: return FText::GetEmpty();
 	}
 }

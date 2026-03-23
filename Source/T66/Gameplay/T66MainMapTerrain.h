@@ -23,7 +23,7 @@ namespace T66MainMapTerrain
 
 	struct FSettings
 	{
-		int32 BoardSize = 40;
+		int32 BoardSize = 41;
 		float BoardScale = 10.0f;
 		float CellSize = 2000.0f;
 		float StepHeight = 1000.0f;
@@ -110,13 +110,12 @@ namespace T66MainMapTerrain
 	FSettings MakeSettings(const FT66MapPreset& Preset);
 	FVector GetBoardOrigin(const FT66MapPreset& Preset);
 	FVector GetCellCenter(const FT66MapPreset& Preset, int32 Row, int32 Col, float Z);
+	bool TryGetCellLocation(const FBoard& Board, const FIntPoint& Coordinate, float HeightOffset, FVector& OutLocation);
+	bool TryGetRegionCenterLocation(const FBoard& Board, ECellRegion Region, float HeightOffset, FVector& OutLocation);
+	FVector GetSpawnLocation(const FBoard& Board, float Z);
 	FVector GetSpawnLocation(const FT66MapPreset& Preset, float Z);
+	FVector GetPreferredSpawnLocation(const FBoard& Board, float HeightOffset);
 	FVector GetPreferredSpawnLocation(const FT66MapPreset& Preset, float HeightOffset);
-	FVector GetStartAreaCenter(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
-	FVector GetBossAreaCenter(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
-	FTransform GetStartGateTransform(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
-	FTransform GetBossGateTransform(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
-	FVector GetBossSpawnLocation(const FT66MapPreset& Preset, float HeightOffset = 0.0f);
 	float GetTraceZ(const FT66MapPreset& Preset);
 	float GetLowestCollisionBottomZ(const FT66MapPreset& Preset);
 	bool Generate(const FT66MapPreset& Preset, FBoard& OutBoard);

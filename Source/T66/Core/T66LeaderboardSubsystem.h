@@ -110,6 +110,9 @@ public:
 	 */
 	bool RequestOpenAccountRestrictionRunSummary();
 
+	/** Set which modal viewer-mode Run Summary should return to when it closes. */
+	void SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType ModalType);
+
 	/** Consume the "return to modal after viewer-mode Run Summary" request. */
 	ET66ScreenType ConsumePendingReturnModalAfterViewerRunSummary();
 

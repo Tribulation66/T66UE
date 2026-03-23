@@ -2325,7 +2325,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		FItemData D;
 		const bool bHasData = bHasSlot && GI && GI->GetItemData(Slots[i].ItemTemplateID, D);
 		const ET66ItemRarity SlotRarity = bHasSlot ? Slots[i].Rarity : ET66ItemRarity::Black;
-		const int32 SellPrice = bHasData ? D.GetSellGoldForRarity(SlotRarity) : 0;
+		const int32 SellPrice = (bHasSlot && RunState) ? RunState->GetSellGoldForInventorySlot(Slots[i]) : 0;
 
 		if (BuybackNameTexts.IsValidIndex(i) && BuybackNameTexts[i].IsValid())
 		{
@@ -2600,7 +2600,7 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 			const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
 			if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
 			{
-				SellValue = D.GetSellGoldForRarity(Slots[SelectedInventoryIndex].Rarity);
+				SellValue = RunState->GetSellGoldForInventorySlot(Slots[SelectedInventoryIndex]);
 			}
 		}
 		SellItemPriceText->SetText(FText::Format(

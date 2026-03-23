@@ -20,6 +20,7 @@ enum class ET66ScreenType : uint8
 	CompanionSelection UMETA(DisplayName = "Companion Selection"),
 	Settings UMETA(DisplayName = "Settings"),
 	Achievements UMETA(DisplayName = "Achievements"),
+	Leaderboard UMETA(DisplayName = "Leaderboard Modal"),
 	PauseMenu UMETA(DisplayName = "Pause Menu Modal"),
 	ReportBug UMETA(DisplayName = "Report Bug Modal"),
 	RunSummary UMETA(DisplayName = "Run Summary Modal"),

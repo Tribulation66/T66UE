@@ -28,6 +28,12 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Loot")
 	ET66Rarity LootRarity = ET66Rarity::Black;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Loot")
+	bool bUseExplicitLine1RolledValue = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Loot")
+	int32 ExplicitLine1RolledValue = 0;
+
 	UFUNCTION(BlueprintCallable, Category = "Loot")
 	void SetItemID(FName InItemID);
 
@@ -39,6 +45,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Loot")
 	ET66Rarity GetLootRarity() const { return LootRarity; }
+
+	UFUNCTION(BlueprintCallable, Category = "Loot")
+	void SetExplicitLine1RolledValue(int32 InRolledValue);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Loot")
+	bool HasExplicitLine1RolledValue() const { return bUseExplicitLine1RolledValue; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Loot")
+	int32 GetExplicitLine1RolledValue() const { return ExplicitLine1RolledValue; }
 
 	/** Destroy the loot bag after accept/reject. */
 	UFUNCTION(BlueprintCallable, Category = "Loot")

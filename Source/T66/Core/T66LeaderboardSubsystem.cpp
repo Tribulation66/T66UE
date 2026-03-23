@@ -1038,6 +1038,11 @@ bool UT66LeaderboardSubsystem::RequestOpenAccountRestrictionRunSummary()
 	return true;
 }
 
+void UT66LeaderboardSubsystem::SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType ModalType)
+{
+	PendingReturnModalAfterViewerRunSummary = ModalType;
+}
+
 ET66ScreenType UT66LeaderboardSubsystem::ConsumePendingReturnModalAfterViewerRunSummary()
 {
 	const ET66ScreenType Out = PendingReturnModalAfterViewerRunSummary;

@@ -85,6 +85,12 @@ void AT66LootBagPickup::SetLootRarity(ET66Rarity InRarity)
 	UpdateVisualsFromRarity();
 }
 
+void AT66LootBagPickup::SetExplicitLine1RolledValue(int32 InRolledValue)
+{
+	bUseExplicitLine1RolledValue = true;
+	ExplicitLine1RolledValue = InRolledValue;
+}
+
 void AT66LootBagPickup::ConsumeAndDestroy()
 {
 	Destroy();

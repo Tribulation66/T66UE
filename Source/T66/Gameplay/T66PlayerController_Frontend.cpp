@@ -22,6 +22,7 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
@@ -569,6 +570,7 @@ void AT66PlayerController::InitializeUI()
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, UT66PlayerSummaryPickerScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, UT66LeaderboardScreen::StaticClass());
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (!ScreenClasses.Contains(ET66ScreenType::AccountStatus) || ScreenClasses[ET66ScreenType::AccountStatus] == nullptr)
 	{

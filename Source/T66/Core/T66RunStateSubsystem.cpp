@@ -23,6 +23,23 @@
 
 namespace
 {
+	static const FName T66GamblersTokenItemID(TEXT("Item_GamblersToken"));
+
+	static bool T66_IsGamblersTokenItem(const FName ItemID)
+	{
+		return ItemID == T66GamblersTokenItemID;
+	}
+
+	static int32 T66_ClampGamblersTokenLevel(const int32 Level)
+	{
+		return FMath::Clamp(Level, 0, UT66RunStateSubsystem::MaxGamblersTokenLevel);
+	}
+
+	static float T66_GetSellFractionForTokenLevel(const int32 TokenLevel)
+	{
+		return FMath::Clamp(0.40f + 0.10f * static_cast<float>(T66_ClampGamblersTokenLevel(TokenLevel)), 0.40f, 1.00f);
+	}
+
 	static float T66_RarityTo01(ET66Rarity R)
 	{
 		// Linear mapping across tiers (Black worst -> White best).
@@ -1376,7 +1393,13 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	TArray<FName> TemplatePool;
 	if (ItemsDT)
 	{
-		TemplatePool = ItemsDT->GetRowNames();
+		for (const FName ItemID : ItemsDT->GetRowNames())
+		{
+			if (!T66_IsGamblersTokenItem(ItemID))
+			{
+				TemplatePool.Add(ItemID);
+			}
+		}
 	}
 	if (TemplatePool.Num() == 0)
 	{
@@ -1627,7 +1650,7 @@ bool UT66RunStateSubsystem::TryBuybackSlot(int32 DisplayIndex)
 	int32 BuyPrice = 0;
 	if (GI->GetItemData(Slot.ItemTemplateID, ItemData))
 	{
-		BuyPrice = ItemData.GetSellGoldForRarity(Slot.Rarity);
+		BuyPrice = GetSellGoldForInventorySlot(Slot);
 	}
 	if (BuyPrice <= 0) BuyPrice = 1;
 	if (CurrentGold < BuyPrice) return false;
@@ -2130,20 +2153,10 @@ void UT66RunStateSubsystem::AddCowardiceGateTaken()
 
 int32 UT66RunStateSubsystem::GetInventorySellValueTotal() const
 {
-	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
-	if (!GI)
-	{
-		return 0;
-	}
-
 	int32 TotalSellValue = 0;
 	for (const FT66InventorySlot& Slot : InventorySlots)
 	{
-		FItemData ItemData;
-		if (GI->GetItemData(Slot.ItemTemplateID, ItemData))
-		{
-			TotalSellValue += ItemData.GetSellGoldForRarity(Slot.Rarity);
-		}
+		TotalSellValue += GetSellGoldForInventorySlot(Slot);
 	}
 
 	return TotalSellValue;
@@ -2214,12 +2227,23 @@ TArray<FName> UT66RunStateSubsystem::GetInventory() const
 
 void UT66RunStateSubsystem::AddItem(FName ItemID)
 {
+	if (T66_IsGamblersTokenItem(ItemID))
+	{
+		ApplyGamblersTokenPickup(1);
+		return;
+	}
+
 	AddItemWithRarity(ItemID, ET66ItemRarity::Black);
 }
 
 void UT66RunStateSubsystem::AddItemWithRarity(FName ItemID, ET66ItemRarity Rarity)
 {
 	if (ItemID.IsNone()) return;
+	if (T66_IsGamblersTokenItem(ItemID))
+	{
+		ApplyGamblersTokenPickup(1);
+		return;
+	}
 	if (InventorySlots.Num() >= MaxInventorySlots)
 	{
 		AddLogEntry(TEXT("Inventory full."));
@@ -2240,6 +2264,11 @@ void UT66RunStateSubsystem::AddItemWithRarity(FName ItemID, ET66ItemRarity Rarit
 void UT66RunStateSubsystem::AddItemSlot(const FT66InventorySlot& Slot)
 {
 	if (!Slot.IsValid()) return;
+	if (T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+	{
+		ApplyGamblersTokenPickup(Slot.Line1RolledValue);
+		return;
+	}
 	if (InventorySlots.Num() >= MaxInventorySlots)
 	{
 		AddLogEntry(TEXT("Inventory full."));
@@ -2261,9 +2290,61 @@ void UT66RunStateSubsystem::AddItemSlot(const FT66InventorySlot& Slot)
 	LogAdded.Broadcast();
 }
 
+void UT66RunStateSubsystem::ApplyGamblersTokenPickup(int32 TokenLevel)
+{
+	const int32 ClampedLevel = FMath::Clamp(TokenLevel, 1, MaxGamblersTokenLevel);
+	if (ClampedLevel <= 0 || ActiveGamblersTokenLevel >= ClampedLevel)
+	{
+		return;
+	}
+
+	ActiveGamblersTokenLevel = ClampedLevel;
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=GamblerToken,Level=%d"), *T66GamblersTokenItemID.ToString(), ActiveGamblersTokenLevel));
+
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Achieve->AddLabUnlockedItem(T66GamblersTokenItemID);
+		}
+	}
+
+	InventoryChanged.Broadcast();
+	LogAdded.Broadcast();
+}
+
+float UT66RunStateSubsystem::GetCurrentSellFraction() const
+{
+	return T66_GetSellFractionForTokenLevel(ActiveGamblersTokenLevel);
+}
+
+int32 UT66RunStateSubsystem::GetSellGoldForInventorySlot(const FT66InventorySlot& Slot) const
+{
+	if (!Slot.IsValid() || T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+	{
+		return 0;
+	}
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (!GI)
+	{
+		return 0;
+	}
+
+	FItemData ItemData;
+	if (!GI->GetItemData(Slot.ItemTemplateID, ItemData))
+	{
+		return 0;
+	}
+
+	const int32 BuyGold = ItemData.GetBuyGoldForRarity(Slot.Rarity);
+	return FMath::Max(0, FMath::RoundToInt(static_cast<float>(BuyGold) * GetCurrentSellFraction()));
+}
+
 void UT66RunStateSubsystem::ClearInventory()
 {
 	InventorySlots.Empty();
+	ActiveGamblersTokenLevel = 0;
 	RecomputeItemDerivedStats();
 	InventoryChanged.Broadcast();
 }
@@ -2318,16 +2399,8 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 {
 	if (InventoryIndex < 0 || InventoryIndex >= InventorySlots.Num()) return false;
 
-	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
-	if (!GI) return false;
-
 	const FT66InventorySlot Slot = InventorySlots[InventoryIndex];
-	FItemData ItemData;
-	int32 SellGold = 0;
-	if (GI->GetItemData(Slot.ItemTemplateID, ItemData))
-	{
-		SellGold = ItemData.GetSellGoldForRarity(Slot.Rarity);
-	}
+	const int32 SellGold = GetSellGoldForInventorySlot(Slot);
 
 	CurrentGold += SellGold;
 	BuybackPool.Add(Slot);
@@ -2478,6 +2551,10 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 		FItemData D;
 		const bool bHasRow = (GI && GI->GetItemData(Slot.ItemTemplateID, D));
 		if (!bHasRow) continue;
+		if (T66_IsGamblersTokenItem(Slot.ItemTemplateID) || D.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		{
+			continue;
+		}
 
 		// Line 1: Additive flat bonus to primary stat.
 		AddPrimaryBonus(D.PrimaryStatType, Slot.Line1RolledValue);
@@ -2573,6 +2650,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	OwedBossIDs.Empty();
 	CowardiceGatesTakenCount = 0;
 	InventorySlots.Empty();
+	ActiveGamblersTokenLevel = 0;
 	BuybackPool.Empty();
 	BuybackDisplaySlots.Empty();
 	BuybackDisplayPage = 0;

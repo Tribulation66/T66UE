@@ -7,6 +7,7 @@
 #include "T66PauseMenuScreen.generated.h"
 
 class AT66PlayerController;
+struct FSlateBrush;
 
 UCLASS(Blueprintable)
 class T66_API UT66PauseMenuScreen : public UT66ScreenBase
@@ -31,6 +32,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
 	void OnAchievementsClicked();
 
+	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
+	void OnLeaderboardClicked();
+
 protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
@@ -40,6 +44,12 @@ private:
 	FReply HandleRestartClicked();
 	FReply HandleSettingsClicked();
 	FReply HandleAchievementsClicked();
+	FReply HandleLeaderboardClicked();
 
 	AT66PlayerController* GetT66PlayerController() const;
+
+	TSharedPtr<FSlateBrush> PortraitBrush;
+	TSharedPtr<FSlateBrush> HeartBrush;
+	TArray<TSharedPtr<FSlateBrush>> IdolSlotBrushes;
+	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;
 };

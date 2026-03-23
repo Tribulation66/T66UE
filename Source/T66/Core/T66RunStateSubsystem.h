@@ -556,6 +556,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItemSlot(const FT66InventorySlot& Slot);
 
+	/** Activates the Gambler's Token for the current run (1..6 => 50%..100% sell value). */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Items")
+	void ApplyGamblersTokenPickup(int32 TokenLevel);
+
+	/** Active Gambler's Token level for this run (0 = inactive). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	int32 GetActiveGamblersTokenLevel() const { return ActiveGamblersTokenLevel; }
+
+	/** Current sell fraction for regular items in this run (0.4 base, up to 1.0 with the token). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
+	float GetCurrentSellFraction() const;
+
+	/** Sell value for a specific inventory slot under the current run modifiers. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
+	int32 GetSellGoldForInventorySlot(const FT66InventorySlot& Slot) const;
+
+	static constexpr int32 MaxGamblersTokenLevel = 6;
+
 	/** Clear inventory only (e.g. Lab "Reset Items"). Recomputes stats and broadcasts. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ClearInventory();
@@ -1165,6 +1183,9 @@ private:
 	/** Item inventory using the new slot-based system (template + rarity + rolled value). */
 	UPROPERTY()
 	TArray<FT66InventorySlot> InventorySlots;
+
+	/** Active Gambler's Token level for this run. It behaves like a special run upgrade, not a regular slot item. */
+	int32 ActiveGamblersTokenLevel = 0;
 
 	UPROPERTY()
 	TArray<FName> EquippedIdolIDs;

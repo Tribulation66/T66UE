@@ -8,8 +8,6 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
-#include "Gameplay/T66VendorNPC.h"
-#include "Gameplay/T66VendorBoss.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Data/T66DataTypes.h"
 #include "UI/T66ItemCardTextUtils.h"
@@ -1191,7 +1189,7 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 		FItemData D;
 		const bool bHasData = bHasSlot && GI && GI->GetItemData(Slots[i].ItemTemplateID, D);
 		const ET66ItemRarity SlotRarity = bHasSlot ? Slots[i].Rarity : ET66ItemRarity::Black;
-		const int32 SellPrice = bHasData ? D.GetSellGoldForRarity(SlotRarity) : 0;
+		const int32 SellPrice = (bHasSlot && RunState) ? RunState->GetSellGoldForInventorySlot(Slots[i]) : 0;
 
 		if (BuybackNameTexts.IsValidIndex(i) && BuybackNameTexts[i].IsValid())
 		{
@@ -1476,7 +1474,7 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 			const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
 			if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
 			{
-				SellValue = D.GetSellGoldForRarity(Slots[SelectedInventoryIndex].Rarity);
+				SellValue = RunState->GetSellGoldForInventorySlot(Slots[SelectedInventoryIndex]);
 			}
 		}
 		SellItemPriceText->SetText(FText::Format(
@@ -1780,38 +1778,6 @@ void UT66VendorOverlayWidget::TriggerVendorBossIfAngry()
 {
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		if (PC->TriggerCasinoBossIfAngry())
-		{
-			return;
-		}
+		PC->TriggerCasinoBossIfAngry();
 	}
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
-	if (!RunState) return;
-	if (!RunState->IsVendorAngryEnoughToBoss()) return;
-	if (RunState->GetBossActive()) return;
-
-	// Spawn VendorBoss at vendor NPC location (and remove the NPC).
-	FVector SpawnLoc = FVector::ZeroVector;
-	AT66VendorNPC* Vendor = nullptr;
-	for (TActorIterator<AT66VendorNPC> It(World); It; ++It)
-	{
-		Vendor = *It;
-		break;
-	}
-	if (!Vendor)
-	{
-		return;
-	}
-	SpawnLoc = Vendor->GetActorLocation();
-	Vendor->Destroy();
-
-	FActorSpawnParameters P;
-	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	World->SpawnActor<AT66VendorBoss>(AT66VendorBoss::StaticClass(), SpawnLoc, FRotator::ZeroRotator, P);
-
-	// Close UI immediately when boss triggers.
-	CloseOverlay();
 }

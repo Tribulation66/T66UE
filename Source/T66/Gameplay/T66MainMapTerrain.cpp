@@ -32,6 +32,7 @@ namespace T66MainMapTerrain
 		static constexpr bool bRenderFarmDecor = true;
 		static constexpr bool bRenderFarmSupports = true;
 		static constexpr bool bRenderFarmBoundaryWalls = false;
+		static constexpr bool bSpawnFarmPerimeterBoundary = false;
 		static constexpr int32 GrassObjectCount = 30;
 		static constexpr float GrassMinScale = 0.25f;
 		static constexpr float GrassMaxScale = 1.0f;
@@ -348,93 +349,6 @@ namespace T66MainMapTerrain
 			return FIntPoint(StartAnchor.X, 0);
 		}
 
-		struct FExtensionAreaSpec
-		{
-			int32 CorridorLength = 1;
-			int32 RoomDepth = 3;
-			int32 RoomHalfWidth = 1;
-		};
-
-		static bool IsUsableFlatAnchorCell(const FBoard& Board, const FIntPoint& Coordinate)
-		{
-			if (!IsPerimeterCoordinate(Coordinate.X, Coordinate.Y, Board.Settings.BoardSize))
-			{
-				return false;
-			}
-
-			const FCell* Cell = Board.GetCell(Coordinate.X, Coordinate.Y);
-			return Cell && Cell->bOccupied && !Cell->bSlope;
-		}
-
-		static int32 GetPerimeterAnchorDistance(const FIntPoint& A, const FIntPoint& B)
-		{
-			return (A.X == B.X)
-				? FMath::Abs(A.Y - B.Y)
-				: FMath::Abs(A.X - B.X);
-		}
-
-		static FIntPoint FindNearestUsablePerimeterAnchor(const FBoard& Board, const FIntPoint& Desired, FRandomStream& Rng)
-		{
-			const auto FindCandidate = [&](bool bIncludeCorners) -> FIntPoint
-			{
-				const FIntPoint DesiredOutwardDirection = GetPerimeterOutwardDirection(Desired, Board.Settings.BoardSize);
-				TArray<FIntPoint> Candidates;
-				for (const FIntPoint& Coordinate : BuildPerimeterCandidates(Board.Settings.BoardSize, bIncludeCorners))
-				{
-					if (!IsUsableFlatAnchorCell(Board, Coordinate))
-					{
-						continue;
-					}
-
-					if (GetPerimeterOutwardDirection(Coordinate, Board.Settings.BoardSize) != DesiredOutwardDirection)
-					{
-						continue;
-					}
-
-					Candidates.Add(Coordinate);
-				}
-
-				if (Candidates.Num() == 0)
-				{
-					return FIntPoint(INDEX_NONE, INDEX_NONE);
-				}
-
-				Candidates.Sort([Desired](const FIntPoint& A, const FIntPoint& B)
-				{
-					return GetPerimeterAnchorDistance(A, Desired) < GetPerimeterAnchorDistance(B, Desired);
-				});
-
-				const int32 BestDistance = GetPerimeterAnchorDistance(Candidates[0], Desired);
-				TArray<FIntPoint> BestCandidates;
-				for (const FIntPoint& Coordinate : Candidates)
-				{
-					if (GetPerimeterAnchorDistance(Coordinate, Desired) != BestDistance)
-					{
-						break;
-					}
-					BestCandidates.Add(Coordinate);
-				}
-
-				return BestCandidates.Num() > 0
-					? BestCandidates[Rng.RandRange(0, BestCandidates.Num() - 1)]
-					: Candidates[0];
-			};
-
-			FIntPoint Candidate = FindCandidate(false);
-			if (Candidate.X != INDEX_NONE)
-			{
-				return Candidate;
-			}
-
-			Candidate = FindCandidate(true);
-			if (Candidate.X != INDEX_NONE)
-			{
-				return Candidate;
-			}
-
-			return Desired;
-		}
-
 		static bool GetRegionCenterLocation(const FBoard& Board, ECellRegion Region, float HeightOffset, FVector& OutLocation)
 		{
 			FVector LocationSum = FVector::ZeroVector;
@@ -561,11 +475,19 @@ namespace T66MainMapTerrain
 			Cell.DecorationLocalScale = FVector(1.0f, 1.0f, 1.0f);
 		}
 
+		static void ClearDecoration(FCell& Cell)
+		{
+			Cell.Decoration = ET66MapCellDecoration::None;
+			Cell.DecorationLocalOffset = FVector::ZeroVector;
+			Cell.DecorationLocalRotation = FRotator::ZeroRotator;
+			Cell.DecorationLocalScale = FVector(1.0f, 1.0f, 1.0f);
+		}
+
 		static FIntPoint BuildExtensionArea(
 			FBoard& Board,
 			const FIntPoint& Anchor,
 			const FIntPoint& OutwardDirection,
-			const FExtensionAreaSpec& Spec,
+			int32 RoomRadius,
 			ECellRegion PathRegion,
 			ECellRegion AreaRegion,
 			FIntPoint* OutPathCoordinate = nullptr,
@@ -581,30 +503,8 @@ namespace T66MainMapTerrain
 				OutwardDirection,
 				Anchor,
 				Board.Settings.BoardSize);
-			const int32 RoomStartStep = FMath::Max(Spec.CorridorLength, 0) + 1;
-			const FIntPoint PathCoordinate = Anchor + OutwardDirection * FMath::Max(Spec.CorridorLength, 1);
-			const FIntPoint SpawnCoordinate = Anchor + OutwardDirection * (RoomStartStep + FMath::Max(Spec.RoomDepth, 1) / 2);
-
-			for (int32 CorridorStep = 1; CorridorStep <= Spec.CorridorLength; ++CorridorStep)
-			{
-				AddExtensionCell(
-					Board,
-					Anchor + OutwardDirection * CorridorStep,
-					AnchorCell->Level,
-					PathRegion);
-			}
-
-			for (int32 Depth = 0; Depth < Spec.RoomDepth; ++Depth)
-			{
-				for (int32 WidthOffset = -Spec.RoomHalfWidth; WidthOffset <= Spec.RoomHalfWidth; ++WidthOffset)
-				{
-					AddExtensionCell(
-						Board,
-						Anchor + OutwardDirection * (RoomStartStep + Depth) + WidthDirection * WidthOffset,
-						AnchorCell->Level,
-						AreaRegion);
-				}
-			}
+			const FIntPoint PathCoordinate = Anchor + OutwardDirection;
+			const FIntPoint SpawnCoordinate = Anchor + OutwardDirection * (RoomRadius + 2);
 
 			if (OutPathCoordinate)
 			{
@@ -613,6 +513,19 @@ namespace T66MainMapTerrain
 			if (OutSpawnCoordinate)
 			{
 				*OutSpawnCoordinate = SpawnCoordinate;
+			}
+
+			AddExtensionCell(Board, PathCoordinate, AnchorCell->Level, PathRegion);
+			for (int32 DepthOffset = -RoomRadius; DepthOffset <= RoomRadius; ++DepthOffset)
+			{
+				for (int32 WidthOffset = -RoomRadius; WidthOffset <= RoomRadius; ++WidthOffset)
+				{
+					AddExtensionCell(
+						Board,
+						SpawnCoordinate + OutwardDirection * DepthOffset + WidthDirection * WidthOffset,
+						AnchorCell->Level,
+						AreaRegion);
+				}
 			}
 
 			return SpawnCoordinate;
@@ -668,30 +581,6 @@ namespace T66MainMapTerrain
 			}
 
 			return nullptr;
-		}
-
-		static bool TryGetGateTransformForBoard(
-			const FBoard& Board,
-			const FIntPoint& Anchor,
-			const FIntPoint& PathCoordinate,
-			float HeightOffset,
-			FTransform& OutTransform)
-		{
-			FVector AnchorLocation = FVector::ZeroVector;
-			FVector PathLocation = FVector::ZeroVector;
-			if (!GetCellLocation(Board, Anchor, HeightOffset, AnchorLocation)
-				|| !GetCellLocation(Board, PathCoordinate, HeightOffset, PathLocation))
-			{
-				return false;
-			}
-
-			const FIntPoint PathDirection = PathCoordinate - Anchor;
-			const bool bAlongX = PathDirection.X != 0;
-			const float Yaw = bAlongX ? 0.0f : 90.0f;
-			OutTransform = FTransform(
-				FRotator(0.0f, Yaw, 0.0f),
-				(AnchorLocation + PathLocation) * 0.5f);
-			return true;
 		}
 
 		static void GetOccupiedGridBounds(
@@ -968,7 +857,7 @@ namespace T66MainMapTerrain
 	FSettings MakeSettings(const FT66MapPreset& Preset)
 	{
 		FSettings Settings;
-		Settings.BoardSize = 40;
+		Settings.BoardSize = 41;
 		Settings.BoardScale = TargetMainMapBoardScale;
 		Settings.CellSize = SourceCellSizeUU * Settings.BoardScale;
 		Settings.StepHeight = FMath::Max(Preset.ElevationStep, 1.0f);
@@ -995,19 +884,59 @@ namespace T66MainMapTerrain
 		return GetGridCellCenter(Settings, SafeCol, SafeRow, Z);
 	}
 
+	bool TryGetCellLocation(const FBoard& Board, const FIntPoint& Coordinate, float HeightOffset, FVector& OutLocation)
+	{
+		return GetCellLocation(Board, Coordinate, HeightOffset, OutLocation);
+	}
+
+	bool TryGetRegionCenterLocation(const FBoard& Board, ECellRegion Region, float HeightOffset, FVector& OutLocation)
+	{
+		return GetRegionCenterLocation(Board, Region, HeightOffset, OutLocation);
+	}
+
+	FVector GetSpawnLocation(const FBoard& Board, float Z)
+	{
+		if (const FCell* SpawnCell = FindPreferredSpawnCell(Board))
+		{
+			return GetGridCellCenter(Board.Settings, SpawnCell->X, SpawnCell->Z, Z);
+		}
+
+		return GetGridCellCenter(
+			Board.Settings,
+			Board.Settings.BoardSize / 2,
+			Board.Settings.BoardSize / 2,
+			Z);
+	}
+
 	FVector GetSpawnLocation(const FT66MapPreset& Preset, float Z)
 	{
 		FBoard Board;
 		if (Generate(Preset, Board))
 		{
-			if (const FCell* SpawnCell = FindPreferredSpawnCell(Board))
-			{
-				return GetCellCenter(Preset, SpawnCell->Z, SpawnCell->X, Z);
-			}
+			return GetSpawnLocation(Board, Z);
 		}
 
 		const FSettings Settings = MakeSettings(Preset);
 		return GetCellCenter(Preset, Settings.BoardSize / 2, Settings.BoardSize / 2, Z);
+	}
+
+	FVector GetPreferredSpawnLocation(const FBoard& Board, float HeightOffset)
+	{
+		const FCell* SpawnCell = FindPreferredSpawnCell(Board);
+		if (!SpawnCell)
+		{
+			return GetGridCellCenter(
+				Board.Settings,
+				Board.Settings.BoardSize / 2,
+				Board.Settings.BoardSize / 2,
+				Board.Settings.BaselineZ + Board.Settings.StepHeight + HeightOffset);
+		}
+
+		return GetGridCellCenter(
+			Board.Settings,
+			SpawnCell->X,
+			SpawnCell->Z,
+			GetCellTopSurfaceZ(Board.Settings, *SpawnCell) + HeightOffset);
 	}
 
 	FVector GetPreferredSpawnLocation(const FT66MapPreset& Preset, float HeightOffset)
@@ -1019,105 +948,7 @@ namespace T66MainMapTerrain
 			return GetCellCenter(Preset, Settings.BoardSize / 2, Settings.BoardSize / 2, Preset.BaselineZ + Settings.StepHeight + HeightOffset);
 		}
 
-		const FCell* SpawnCell = FindPreferredSpawnCell(Board);
-		if (!SpawnCell)
-		{
-			const FSettings Settings = MakeSettings(Preset);
-			return GetCellCenter(Preset, Settings.BoardSize / 2, Settings.BoardSize / 2, Preset.BaselineZ + Settings.StepHeight + HeightOffset);
-		}
-
-		return GetCellCenter(
-			Preset,
-			SpawnCell->Z,
-			SpawnCell->X,
-			GetCellTopSurfaceZ(Board.Settings, *SpawnCell) + HeightOffset);
-	}
-
-	FVector GetStartAreaCenter(const FT66MapPreset& Preset, float HeightOffset)
-	{
-		FBoard Board;
-		if (Generate(Preset, Board))
-		{
-			FVector Location = FVector::ZeroVector;
-			if (GetRegionCenterLocation(Board, ECellRegion::StartArea, HeightOffset, Location))
-			{
-				return Location;
-			}
-			if (GetCellLocation(Board, Board.StartSpawnCell, HeightOffset, Location))
-			{
-				return Location;
-			}
-		}
-
-		return GetPreferredSpawnLocation(Preset, HeightOffset);
-	}
-
-	FVector GetBossAreaCenter(const FT66MapPreset& Preset, float HeightOffset)
-	{
-		FBoard Board;
-		if (Generate(Preset, Board))
-		{
-			FVector Location = FVector::ZeroVector;
-			if (GetRegionCenterLocation(Board, ECellRegion::BossArea, HeightOffset, Location))
-			{
-				return Location;
-			}
-			if (GetCellLocation(Board, Board.BossSpawnCell, HeightOffset, Location))
-			{
-				return Location;
-			}
-		}
-
-		return GetPreferredSpawnLocation(Preset, HeightOffset);
-	}
-
-	FTransform GetStartGateTransform(const FT66MapPreset& Preset, float HeightOffset)
-	{
-		FBoard Board;
-		if (Generate(Preset, Board))
-		{
-			FTransform Transform = FTransform::Identity;
-			if (TryGetGateTransformForBoard(Board, Board.StartAnchor, Board.StartPathCell, HeightOffset, Transform))
-			{
-				return Transform;
-			}
-		}
-
-		return FTransform(FRotator::ZeroRotator, GetPreferredSpawnLocation(Preset, HeightOffset));
-	}
-
-	FTransform GetBossGateTransform(const FT66MapPreset& Preset, float HeightOffset)
-	{
-		FBoard Board;
-		if (Generate(Preset, Board))
-		{
-			FTransform Transform = FTransform::Identity;
-			if (TryGetGateTransformForBoard(Board, Board.BossAnchor, Board.BossPathCell, HeightOffset, Transform))
-			{
-				return Transform;
-			}
-		}
-
-		return FTransform(FRotator::ZeroRotator, GetPreferredSpawnLocation(Preset, HeightOffset));
-	}
-
-	FVector GetBossSpawnLocation(const FT66MapPreset& Preset, float HeightOffset)
-	{
-		FBoard Board;
-		if (Generate(Preset, Board))
-		{
-			FVector Location = FVector::ZeroVector;
-			if (GetCellLocation(Board, Board.BossSpawnCell, HeightOffset, Location))
-			{
-				return Location;
-			}
-			if (GetRegionCenterLocation(Board, ECellRegion::BossArea, HeightOffset, Location))
-			{
-				return Location;
-			}
-		}
-
-		return GetPreferredSpawnLocation(Preset, HeightOffset);
+		return GetPreferredSpawnLocation(Board, HeightOffset);
 	}
 
 	float GetTraceZ(const FT66MapPreset& Preset)
@@ -1284,10 +1115,11 @@ namespace T66MainMapTerrain
 			return Cell;
 		};
 
-		FCell* CurrentCell = CreateElement(
-			Rng.RandRange(0, OutBoard.Settings.BoardSize - 1),
-			0,
-			Rng.RandRange(0, OutBoard.Settings.BoardSize - 1));
+		const int32 CenterCoordinate = OutBoard.Settings.BoardSize / 2;
+		const FIntPoint InitialCoordinate(CenterCoordinate, 0);
+		const FIntPoint OppositeBossCoordinate(CenterCoordinate, OutBoard.Settings.BoardSize - 1);
+		const FIntPoint InitialOutwardDirection = GetPerimeterOutwardDirection(InitialCoordinate, OutBoard.Settings.BoardSize);
+		FCell* CurrentCell = CreateElement(InitialCoordinate.X, 0, InitialCoordinate.Y);
 		FIntPoint LockedDirection = FIntPoint::ZeroValue;
 		const int32 MainBoardTargetCount = OutBoard.Cells.Num();
 
@@ -1321,8 +1153,10 @@ namespace T66MainMapTerrain
 					: GetRandomDirectionFromElement(*CurrentCell);
 			}
 
+			const FIntPoint DescendSlopeCoordinate(CurrentCell->X + Direction.X, CurrentCell->Z + Direction.Y);
 			if (bDescendingMode
 				&& CurrentCell->Level > MinElevationLevel
+				&& !(DescendSlopeCoordinate == OppositeBossCoordinate)
 				&& CanBeginDescentInDirection(*CurrentCell, Direction)
 				&& Rng.FRand() < RaiseChance)
 			{
@@ -1353,6 +1187,7 @@ namespace T66MainMapTerrain
 			CurrentCell = NewCell;
 
 			if (!bDescendingMode
+				&& !(CurrentCell->X == OppositeBossCoordinate.X && CurrentCell->Z == OppositeBossCoordinate.Y)
 				&& CurrentCell->Level < MaxElevationLevel
 				&& CanRaiseElevationInDirection(*CurrentCell, Direction)
 				&& Rng.FRand() < RaiseChance)
@@ -1374,32 +1209,33 @@ namespace T66MainMapTerrain
 			return false;
 		}
 
-		const FIntPoint DesiredStartAnchor = ChooseStartAnchor(OutBoard.Settings.BoardSize, Rng);
-		OutBoard.StartAnchor = FindNearestUsablePerimeterAnchor(OutBoard, DesiredStartAnchor, Rng);
-		OutBoard.StartOutwardDirection = GetPerimeterOutwardDirection(OutBoard.StartAnchor, OutBoard.Settings.BoardSize);
-
-		const FIntPoint DesiredBossAnchor = ChooseBossAnchor(OutBoard.Settings.BoardSize, OutBoard.StartAnchor, Rng);
-		OutBoard.BossAnchor = FindNearestUsablePerimeterAnchor(OutBoard, DesiredBossAnchor, Rng);
-		OutBoard.BossOutwardDirection = GetPerimeterOutwardDirection(OutBoard.BossAnchor, OutBoard.Settings.BoardSize);
-
-		const FExtensionAreaSpec StartAreaSpec{ 1, 3, 1 };
-		const FExtensionAreaSpec BossAreaSpec{ 1, 3, 2 };
-
+		OutBoard.StartAnchor = InitialCoordinate;
+		OutBoard.StartOutwardDirection = InitialOutwardDirection;
+		if (FCell* StartAnchorCell = OutBoard.GetCell(OutBoard.StartAnchor.X, OutBoard.StartAnchor.Y))
+		{
+			ClearDecoration(*StartAnchorCell);
+		}
 		BuildExtensionArea(
 			OutBoard,
-			OutBoard.StartAnchor,
-			OutBoard.StartOutwardDirection,
-			StartAreaSpec,
+			InitialCoordinate,
+			InitialOutwardDirection,
+			1,
 			ECellRegion::StartPath,
 			ECellRegion::StartArea,
 			&OutBoard.StartPathCell,
 			&OutBoard.StartSpawnCell);
 
+		OutBoard.BossAnchor = OppositeBossCoordinate;
+		OutBoard.BossOutwardDirection = GetPerimeterOutwardDirection(OutBoard.BossAnchor, OutBoard.Settings.BoardSize);
+		if (FCell* BossAnchorCell = OutBoard.GetCell(OutBoard.BossAnchor.X, OutBoard.BossAnchor.Y))
+		{
+			ClearDecoration(*BossAnchorCell);
+		}
 		BuildExtensionArea(
 			OutBoard,
 			OutBoard.BossAnchor,
 			OutBoard.BossOutwardDirection,
-			BossAreaSpec,
+			1,
 			ECellRegion::BossPath,
 			ECellRegion::BossArea,
 			&OutBoard.BossPathCell,
@@ -1440,7 +1276,7 @@ namespace T66MainMapTerrain
 		const float CellSize = Board.Settings.CellSize;
 		const float StepHeight = Board.Settings.StepHeight;
 
-		AActor* VisualActor = World->SpawnActor<AActor>(AActor::StaticClass(), BoardOrigin, FRotator::ZeroRotator, SpawnParams);
+		AActor* VisualActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		if (!VisualActor)
 		{
 			return false;
@@ -1454,6 +1290,7 @@ namespace T66MainMapTerrain
 		VisualActor->AddInstanceComponent(VisualRoot);
 		VisualActor->SetRootComponent(VisualRoot);
 		VisualRoot->SetMobility(EComponentMobility::Static);
+		VisualRoot->SetRelativeLocation(BoardOrigin);
 		VisualRoot->RegisterComponent();
 
 		auto ResolveForcedTextureMaterial = [VisualActor, Assets](
@@ -1908,7 +1745,6 @@ namespace T66MainMapTerrain
 		const float WallThickness = CellSize;
 		const float WallHeight = StepHeight * static_cast<float>(WallHeightLevels);
 		const float WallCenterZ = 0.0f;
-
 		auto AddWallCollision = [&](const FString& Name, const FVector& LocalCenter, const FVector& Extent)
 		{
 			UBoxComponent* Box = NewObject<UBoxComponent>(VisualActor, FName(*Name));
@@ -1921,93 +1757,96 @@ namespace T66MainMapTerrain
 			Box->RegisterComponent();
 		};
 
-		auto ShouldOpenNorth = [&](int32 X) -> bool
+		if (bSpawnFarmPerimeterBoundary)
 		{
-			return (Board.StartOutwardDirection == FIntPoint(0, 1) && Board.StartAnchor.X == X)
-				|| (Board.BossOutwardDirection == FIntPoint(0, 1) && Board.BossAnchor.X == X);
-		};
-
-		auto ShouldOpenSouth = [&](int32 X) -> bool
-		{
-			return (Board.StartOutwardDirection == FIntPoint(0, -1) && Board.StartAnchor.X == X)
-				|| (Board.BossOutwardDirection == FIntPoint(0, -1) && Board.BossAnchor.X == X);
-		};
-
-		auto ShouldOpenEast = [&](int32 Z) -> bool
-		{
-			return (Board.StartOutwardDirection == FIntPoint(1, 0) && Board.StartAnchor.Y == Z)
-				|| (Board.BossOutwardDirection == FIntPoint(1, 0) && Board.BossAnchor.Y == Z);
-		};
-
-		auto ShouldOpenWest = [&](int32 Z) -> bool
-		{
-			return (Board.StartOutwardDirection == FIntPoint(-1, 0) && Board.StartAnchor.Y == Z)
-				|| (Board.BossOutwardDirection == FIntPoint(-1, 0) && Board.BossAnchor.Y == Z);
-		};
-
-		for (int32 X = 0; X < Board.Settings.BoardSize; ++X)
-		{
-			if (!ShouldOpenNorth(X))
+			auto ShouldOpenNorth = [&](int32 X) -> bool
 			{
-				if (bRenderFarmBoundaryWalls)
+				return (Board.StartOutwardDirection == FIntPoint(0, 1) && Board.StartAnchor.X == X)
+					|| (Board.BossOutwardDirection == FIntPoint(0, 1) && Board.BossAnchor.X == X);
+			};
+
+			auto ShouldOpenSouth = [&](int32 X) -> bool
+			{
+				return (Board.StartOutwardDirection == FIntPoint(0, -1) && Board.StartAnchor.X == X)
+					|| (Board.BossOutwardDirection == FIntPoint(0, -1) && Board.BossAnchor.X == X);
+			};
+
+			auto ShouldOpenEast = [&](int32 Z) -> bool
+			{
+				return (Board.StartOutwardDirection == FIntPoint(1, 0) && Board.StartAnchor.Y == Z)
+					|| (Board.BossOutwardDirection == FIntPoint(1, 0) && Board.BossAnchor.Y == Z);
+			};
+
+			auto ShouldOpenWest = [&](int32 Z) -> bool
+			{
+				return (Board.StartOutwardDirection == FIntPoint(-1, 0) && Board.StartAnchor.Y == Z)
+					|| (Board.BossOutwardDirection == FIntPoint(-1, 0) && Board.BossAnchor.Y == Z);
+			};
+
+			for (int32 X = 0; X < Board.Settings.BoardSize; ++X)
+			{
+				if (!ShouldOpenNorth(X))
 				{
-					CreateWallPrefab(
-						FString::Printf(TEXT("FarmWallNorth_%d"), X),
+					if (bRenderFarmBoundaryWalls)
+					{
+						CreateWallPrefab(
+							FString::Printf(TEXT("FarmWallNorth_%d"), X),
+							FVector(static_cast<float>(X) * CellSize, static_cast<float>(Board.Settings.BoardSize) * CellSize, WallCenterZ),
+							FVector(CellSize, WallThickness, WallHeight));
+					}
+					AddWallCollision(
+						*FString::Printf(TEXT("FarmWallCollisionNorth_%d"), X),
 						FVector(static_cast<float>(X) * CellSize, static_cast<float>(Board.Settings.BoardSize) * CellSize, WallCenterZ),
-						FVector(CellSize, WallThickness, WallHeight));
+						FVector(CellSize * 0.5f, WallThickness * 0.5f, WallHeight * 0.5f));
 				}
-				AddWallCollision(
-					*FString::Printf(TEXT("FarmWallCollisionNorth_%d"), X),
-					FVector(static_cast<float>(X) * CellSize, static_cast<float>(Board.Settings.BoardSize) * CellSize, WallCenterZ),
-					FVector(CellSize * 0.5f, WallThickness * 0.5f, WallHeight * 0.5f));
-			}
 
-			if (!ShouldOpenSouth(X))
-			{
-				if (bRenderFarmBoundaryWalls)
+				if (!ShouldOpenSouth(X))
 				{
-					CreateWallPrefab(
-						FString::Printf(TEXT("FarmWallSouth_%d"), X),
+					if (bRenderFarmBoundaryWalls)
+					{
+						CreateWallPrefab(
+							FString::Printf(TEXT("FarmWallSouth_%d"), X),
+							FVector(static_cast<float>(X) * CellSize, -CellSize, WallCenterZ),
+							FVector(CellSize, WallThickness, WallHeight));
+					}
+					AddWallCollision(
+						*FString::Printf(TEXT("FarmWallCollisionSouth_%d"), X),
 						FVector(static_cast<float>(X) * CellSize, -CellSize, WallCenterZ),
-						FVector(CellSize, WallThickness, WallHeight));
+						FVector(CellSize * 0.5f, WallThickness * 0.5f, WallHeight * 0.5f));
 				}
-				AddWallCollision(
-					*FString::Printf(TEXT("FarmWallCollisionSouth_%d"), X),
-					FVector(static_cast<float>(X) * CellSize, -CellSize, WallCenterZ),
-					FVector(CellSize * 0.5f, WallThickness * 0.5f, WallHeight * 0.5f));
 			}
-		}
 
-		for (int32 Z = 0; Z < Board.Settings.BoardSize; ++Z)
-		{
-			if (!ShouldOpenEast(Z))
+			for (int32 Z = 0; Z < Board.Settings.BoardSize; ++Z)
 			{
-				if (bRenderFarmBoundaryWalls)
+				if (!ShouldOpenEast(Z))
 				{
-					CreateWallPrefab(
-						FString::Printf(TEXT("FarmWallEast_%d"), Z),
+					if (bRenderFarmBoundaryWalls)
+					{
+						CreateWallPrefab(
+							FString::Printf(TEXT("FarmWallEast_%d"), Z),
+							FVector(static_cast<float>(Board.Settings.BoardSize) * CellSize, static_cast<float>(Z) * CellSize, WallCenterZ),
+							FVector(WallThickness, CellSize, WallHeight));
+					}
+					AddWallCollision(
+						*FString::Printf(TEXT("FarmWallCollisionEast_%d"), Z),
 						FVector(static_cast<float>(Board.Settings.BoardSize) * CellSize, static_cast<float>(Z) * CellSize, WallCenterZ),
-						FVector(WallThickness, CellSize, WallHeight));
+						FVector(WallThickness * 0.5f, CellSize * 0.5f, WallHeight * 0.5f));
 				}
-				AddWallCollision(
-					*FString::Printf(TEXT("FarmWallCollisionEast_%d"), Z),
-					FVector(static_cast<float>(Board.Settings.BoardSize) * CellSize, static_cast<float>(Z) * CellSize, WallCenterZ),
-					FVector(WallThickness * 0.5f, CellSize * 0.5f, WallHeight * 0.5f));
-			}
 
-			if (!ShouldOpenWest(Z))
-			{
-				if (bRenderFarmBoundaryWalls)
+				if (!ShouldOpenWest(Z))
 				{
-					CreateWallPrefab(
-						FString::Printf(TEXT("FarmWallWest_%d"), Z),
+					if (bRenderFarmBoundaryWalls)
+					{
+						CreateWallPrefab(
+							FString::Printf(TEXT("FarmWallWest_%d"), Z),
+							FVector(-CellSize, static_cast<float>(Z) * CellSize, WallCenterZ),
+							FVector(WallThickness, CellSize, WallHeight));
+					}
+					AddWallCollision(
+						*FString::Printf(TEXT("FarmWallCollisionWest_%d"), Z),
 						FVector(-CellSize, static_cast<float>(Z) * CellSize, WallCenterZ),
-						FVector(WallThickness, CellSize, WallHeight));
+						FVector(WallThickness * 0.5f, CellSize * 0.5f, WallHeight * 0.5f));
 				}
-				AddWallCollision(
-					*FString::Printf(TEXT("FarmWallCollisionWest_%d"), Z),
-					FVector(-CellSize, static_cast<float>(Z) * CellSize, WallCenterZ),
-					FVector(WallThickness * 0.5f, CellSize * 0.5f, WallHeight * 0.5f));
 			}
 		}
 
@@ -2020,7 +1859,6 @@ namespace T66MainMapTerrain
 		const float MaxOccupiedLocalX = static_cast<float>(MaxOccupiedX) * CellSize + CellSize * 0.5f;
 		const float MinOccupiedLocalY = static_cast<float>(MinOccupiedZ) * CellSize - CellSize * 0.5f;
 		const float MaxOccupiedLocalY = static_cast<float>(MaxOccupiedZ) * CellSize + CellSize * 0.5f;
-
 		const float SafetyCatchThickness = FMath::Max(1800.0f, StepHeight * 8.0f);
 		const float SafetyCatchTopZ = GetLowestCollisionBottomZ(Preset) - 200.0f;
 		UBoxComponent* SafetyCatch = NewObject<UBoxComponent>(VisualActor, TEXT("TerrainSafetyCatch"));

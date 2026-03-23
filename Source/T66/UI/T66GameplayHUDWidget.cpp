@@ -1958,6 +1958,10 @@ void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity Item
 				{
 					MainValue = Slots.Last().Line1RolledValue;
 				}
+				if (ItemID == FName(TEXT("Item_GamblersToken")))
+				{
+					MainValue = RunState->GetActiveGamblersTokenLevel();
+				}
 			}
 			const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
 			PickupCardDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, ItemRarity, MainValue, ScaleMult));
@@ -2378,14 +2382,10 @@ void UT66GameplayHUDWidget::RefreshHUD()
 					TipLines.Add(CardDesc);
 				}
 				{
-					int32 SellValue = D.BaseSellGold;
-					if (RunState)
+					int32 SellValue = 0;
+					if (RunState && i >= 0 && i < InvSlots.Num())
 					{
-						const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
-						if (i >= 0 && i < Slots.Num())
-						{
-							SellValue = D.GetSellGoldForRarity(Slots[i].Rarity);
-						}
+						SellValue = RunState->GetSellGoldForInventorySlot(InvSlots[i]);
 					}
 					if (SellValue > 0)
 					{

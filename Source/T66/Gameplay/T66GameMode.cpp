@@ -499,8 +499,8 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	// Phase 0: Spawn the runtime main map terrain before any ground-traced content.
 	SpawnMainMapTerrain();
 
-	// Start gate: spawned here (after terrain) so it snaps to the final runtime layout.
-	if (!IsColiseumStage() && !IsLabLevel())
+	// Start gate: spawned here (after floor) so the ground trace hits the flat floor.
+	if (!bUsingMainMapTerrain && !IsColiseumStage() && !IsLabLevel())
 	{
 		AController* PC = World ? World->GetFirstPlayerController() : nullptr;
 		if (PC)
@@ -510,10 +510,10 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	}
 
 	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
+	SpawnCornerHousesAndNPCs();
+	SpawnCasinoInteractableIfNeeded();
 	if (!bUsingMainMapTerrain)
 	{
-		SpawnCornerHousesAndNPCs();
-		SpawnCasinoInteractableIfNeeded();
 		SpawnTricksterAndCowardiceGate();
 		SpawnBossBeaconIfNeeded();
 	}
@@ -549,6 +549,39 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	if (!bUsingMainMapTerrain)
 	{
 		SpawnTutorialIfNeeded();
+	}
+
+	if (bUsingMainMapTerrain)
+	{
+		SpawnTricksterAndCowardiceGate();
+		SpawnBossForCurrentStage();
+
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RunState->ResetStageTimerToFull();
+				RunState->SetStageTimerActive(true);
+			}
+		}
+
+		bool bHasEnemyDirector = false;
+		for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
+		{
+			bHasEnemyDirector = true;
+			break;
+		}
+		if (!bHasEnemyDirector)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			World->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		}
+
+		ScheduleLightingRefresh();
+		ScheduleOverlayHide();
+		UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map terrain content spawned."));
+		return;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
@@ -1175,37 +1208,20 @@ void AT66GameMode::SpawnBossGateIfNeeded()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	FVector BossGateLoc = FVector::ZeroVector;
-	FRotator BossGateRot = FRotator::ZeroRotator;
-	float TriggerHalfSpan = 900.0f;
-	if (T66UsesMainMapTerrainStage(World))
+	// Trigger right at the boss-area threshold. The visible pillars are hidden so the fight starts on entry.
+	FVector BossGateLoc = T66GameplayLayout::GetBossGateLocation();
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(Hit, BossGateLoc + FVector(0.f, 0.f, 3000.f), BossGateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 	{
-		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(Preset);
-		const FTransform GateTransform = T66MainMapTerrain::GetBossGateTransform(Preset, 5.0f);
-		BossGateLoc = GateTransform.GetLocation();
-		BossGateRot = GateTransform.Rotator();
-		TriggerHalfSpan = FMath::Clamp(MainMapSettings.CellSize * 0.45f, 600.0f, 1200.0f);
+		BossGateLoc.Z = Hit.ImpactPoint.Z;
 	}
-	else
-	{
-		// Trigger right at the boss-area threshold. The visible pillars are hidden so the fight starts on entry.
-		BossGateLoc = T66GameplayLayout::GetBossGateLocation();
-		FHitResult Hit;
-		if (World->LineTraceSingleByChannel(Hit, BossGateLoc + FVector(0.f, 0.f, 3000.f), BossGateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
-		{
-			BossGateLoc.Z = Hit.ImpactPoint.Z;
-		}
-		TriggerHalfSpan = T66GameplayLayout::CorridorHalfHeightY * 0.92f;
-	}
-
-	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, BossGateRot, SpawnParams);
+	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, FRotator::ZeroRotator, SpawnParams);
 	if (BossGate)
 	{
 		BossGate->TriggerDistance2D = 220.f;
 		if (BossGate->TriggerBox)
 		{
-			BossGate->TriggerBox->SetBoxExtent(FVector(120.f, TriggerHalfSpan, 220.f));
+			BossGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
 		}
 		if (BossGate->PoleLeft)
 		{
@@ -1406,27 +1422,50 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	if ((StageNum % 5) == 0) return;
 
 	UWorld* World = GetWorld();
+	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!World) return;
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Place just outside the boss-area entrance.
 	FVector GateLoc = T66GameplayLayout::GetCowardiceGateLocation();
 	FVector TricksterLoc = T66GameplayLayout::GetTricksterLocation();
+	FRotator SpawnRotation = FRotator::ZeroRotator;
 
-	FHitResult Hit;
-	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	if (CowardiceGate)
 	{
-		GateLoc.Z = Hit.ImpactPoint.Z;
+		CowardiceGate->Destroy();
+		CowardiceGate = nullptr;
 	}
-	if (World->LineTraceSingleByChannel(Hit, TricksterLoc + FVector(0.f, 0.f, 3000.f), TricksterLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	if (TricksterNPC)
 	{
-		TricksterLoc.Z = Hit.ImpactPoint.Z;
+		TricksterNPC->Destroy();
+		TricksterNPC = nullptr;
 	}
 
-	CowardiceGate = World->SpawnActor<AT66CowardiceGate>(AT66CowardiceGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
-	TricksterNPC = World->SpawnActor<AT66TricksterNPC>(AT66TricksterNPC::StaticClass(), TricksterLoc, FRotator::ZeroRotator, SpawnParams);
+	if (T66UsesMainMapTerrainStage(World) && !MainMapBossAnchorSurfaceLocation.IsNearlyZero())
+	{
+		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(T66BuildMainMapPreset(T66GI));
+		const FVector SideOffset(MainMapSettings.CellSize * 0.28f, 0.f, 0.f);
+		GateLoc = MainMapBossAnchorSurfaceLocation;
+		TricksterLoc = MainMapBossAnchorSurfaceLocation + SideOffset;
+		SpawnRotation = FRotator(0.f, 180.f, 0.f);
+	}
+	else
+	{
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		{
+			GateLoc.Z = Hit.ImpactPoint.Z;
+		}
+		if (World->LineTraceSingleByChannel(Hit, TricksterLoc + FVector(0.f, 0.f, 3000.f), TricksterLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		{
+			TricksterLoc.Z = Hit.ImpactPoint.Z;
+		}
+	}
+
+	CowardiceGate = World->SpawnActor<AT66CowardiceGate>(AT66CowardiceGate::StaticClass(), GateLoc, SpawnRotation, SpawnParams);
+	TricksterNPC = World->SpawnActor<AT66TricksterNPC>(AT66TricksterNPC::StaticClass(), TricksterLoc, SpawnRotation, SpawnParams);
 	if (TricksterNPC)
 	{
 		TricksterNPC->ApplyVisuals();
@@ -1801,17 +1840,36 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
+	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+	float TraceStartZ = 2000.f;
+	float TraceEndZ = -4000.f;
+
 	// Hero spawn location (same as PlayerStart / default spawn); NPCs spawn around it.
 	float HeroX = -35455.f;
 	float HeroY = 0.f;
-	for (TActorIterator<APlayerStart> It(World); It; ++It)
+	if (bUsingMainMapTerrain)
 	{
-		const FVector Loc = (*It)->GetActorLocation();
-		HeroX = Loc.X;
-		HeroY = Loc.Y;
-		break;
+		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+		TraceStartZ = T66MainMapTerrain::GetTraceZ(Preset);
+		TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - T66MainMapTerrain::MakeSettings(Preset).StepHeight;
+		const FVector HeroLoc = bHasMainMapSpawnSurfaceLocation
+			? MainMapSpawnSurfaceLocation
+			: T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 0.f);
+		HeroX = HeroLoc.X;
+		HeroY = HeroLoc.Y;
 	}
-	const float Offset = 600.f;  // NPCs in a cross around hero spawn
+	else
+	{
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+			const FVector Loc = (*It)->GetActorLocation();
+			HeroX = Loc.X;
+			HeroY = Loc.Y;
+			break;
+		}
+	}
+
+	const float Offset = bUsingMainMapTerrain ? 950.f : 600.f;
 	struct FNPCPosition { float X; float Y; };
 	const FNPCPosition NPCPositions[] = {
 		{ HeroX + Offset, HeroY },
@@ -1842,7 +1900,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	}
 
 	// Find closest flat surface to a reference point (flat = normal nearly vertical). Search in rings outward.
-	auto FindClosestFlatSurface = [World](float RefX, float RefY) -> FVector
+	auto FindClosestFlatSurface = [World, TraceStartZ, TraceEndZ](float RefX, float RefY) -> FVector
 	{
 		static constexpr float MinNormalZ = 0.92f;   // ~22?? max slope
 		static constexpr float SearchRadiusMax = 1200.f;
@@ -1851,7 +1909,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 
 		FVector Fallback(RefX, RefY, 60.f);
 		FHitResult Hit;
-		if (World->LineTraceSingleByChannel(Hit, FVector(RefX, RefY, 2000.f), FVector(RefX, RefY, -4000.f), ECC_WorldStatic))
+		if (World->LineTraceSingleByChannel(Hit, FVector(RefX, RefY, TraceStartZ), FVector(RefX, RefY, TraceEndZ), ECC_WorldStatic))
 		{
 			Fallback = Hit.ImpactPoint;
 		}
@@ -1864,8 +1922,8 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(a) / static_cast<float>(AngleSteps));
 				const float X = RefX + R * FMath::Cos(Angle);
 				const float Y = RefY + R * FMath::Sin(Angle);
-				const FVector Start(X, Y, 2000.f);
-				const FVector End(X, Y, -4000.f);
+				const FVector Start(X, Y, TraceStartZ);
+				const FVector End(X, Y, TraceEndZ);
 				if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic) && Hit.ImpactNormal.Z >= MinNormalZ)
 				{
 					return Hit.ImpactPoint;
@@ -1909,16 +1967,34 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 		return;
 	}
 
-	auto FindClosestFlatSurface = [World](float RefX, float RefY) -> FVector
+	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+	float TraceStartZ = 2000.f;
+	float TraceEndZ = -4000.f;
+	float RefX = 0.f;
+	float RefY = 0.f;
+	if (bUsingMainMapTerrain)
+	{
+		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(Preset);
+		TraceStartZ = T66MainMapTerrain::GetTraceZ(Preset);
+		TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - MainMapSettings.StepHeight;
+		const FVector StartLoc = bHasMainMapSpawnSurfaceLocation
+			? MainMapSpawnSurfaceLocation
+			: T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 0.f);
+		RefX = StartLoc.X;
+		RefY = StartLoc.Y + MainMapSettings.CellSize * 0.55f;
+	}
+
+	auto FindClosestFlatSurface = [World, TraceStartZ, TraceEndZ](float InRefX, float InRefY) -> FVector
 	{
 		static constexpr float MinNormalZ = 0.92f;
 		static constexpr float SearchRadiusMax = 2200.f;
 		static constexpr float RadiusStep = 140.f;
 		static constexpr int32 NumAngles = 20;
 
-		FVector Fallback(RefX, RefY, 60.f);
+		FVector Fallback(InRefX, InRefY, 60.f);
 		FHitResult Hit;
-		if (World->LineTraceSingleByChannel(Hit, FVector(RefX, RefY, 2000.f), FVector(RefX, RefY, -4000.f), ECC_WorldStatic))
+		if (World->LineTraceSingleByChannel(Hit, FVector(InRefX, InRefY, TraceStartZ), FVector(InRefX, InRefY, TraceEndZ), ECC_WorldStatic))
 		{
 			Fallback = Hit.ImpactPoint;
 		}
@@ -1929,9 +2005,9 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 			for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
 			{
 				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
-				const float X = RefX + R * FMath::Cos(Angle);
-				const float Y = RefY + R * FMath::Sin(Angle);
-				if (World->LineTraceSingleByChannel(Hit, FVector(X, Y, 2000.f), FVector(X, Y, -4000.f), ECC_WorldStatic) && Hit.ImpactNormal.Z >= MinNormalZ)
+				const float X = InRefX + R * FMath::Cos(Angle);
+				const float Y = InRefY + R * FMath::Sin(Angle);
+				if (World->LineTraceSingleByChannel(Hit, FVector(X, Y, TraceStartZ), FVector(X, Y, TraceEndZ), ECC_WorldStatic) && Hit.ImpactNormal.Z >= MinNormalZ)
 				{
 					return Hit.ImpactPoint;
 				}
@@ -1941,7 +2017,7 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 		return Fallback;
 	};
 
-	const FVector FlatLoc = FindClosestFlatSurface(0.f, 0.f);
+	const FVector FlatLoc = FindClosestFlatSurface(RefX, RefY);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	World->SpawnActor<AT66CasinoInteractable>(AT66CasinoInteractable::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams);
@@ -1952,51 +2028,36 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 	(void)Player;
 	UWorld* World = GetWorld();
 	if (!World) return;
+	if (T66UsesMainMapTerrainStage(World)) return;
 
 	// Spawn once per level (gate is a world landmark).
 	if (StartGate) return;
 
-	FVector GateLoc = FVector::ZeroVector;
-	FRotator GateRot = FRotator::ZeroRotator;
-	float TriggerHalfSpan = 900.0f;
-	if (T66UsesMainMapTerrainStage(World))
+	// Gate at the start-corridor exit so combat starts only when the player enters the main arena.
+	static constexpr float GateZOffset = 5.f;
+	FVector GateLoc = T66GameplayLayout::GetStartGateLocation();
+	float GateGroundZ = 200.f;
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 	{
-		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(Preset);
-		const FTransform GateTransform = T66MainMapTerrain::GetStartGateTransform(Preset, 5.0f);
-		GateLoc = GateTransform.GetLocation();
-		GateRot = GateTransform.Rotator();
-		TriggerHalfSpan = FMath::Clamp(MainMapSettings.CellSize * 0.45f, 600.0f, 1200.0f);
+		GateGroundZ = Hit.ImpactPoint.Z;
+		GateLoc.Z = GateGroundZ + GateZOffset;
 	}
 	else
 	{
-		// Gate at the start-corridor exit so combat starts only when the player enters the main arena.
-		static constexpr float GateZOffset = 5.f;
-		GateLoc = T66GameplayLayout::GetStartGateLocation();
-		float GateGroundZ = 200.f;
-		FHitResult Hit;
-		if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
-		{
-			GateGroundZ = Hit.ImpactPoint.Z;
-			GateLoc.Z = GateGroundZ + GateZOffset;
-		}
-		else
-		{
-			GateLoc.Z = GateGroundZ;
-		}
-		TriggerHalfSpan = T66GameplayLayout::CorridorHalfHeightY * 0.92f;
+		GateLoc.Z = GateGroundZ;
 	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), GateLoc, GateRot, SpawnParams);
+	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
 	if (StartGate)
 	{
 		StartGate->TriggerDistance2D = 220.f;
 		if (StartGate->TriggerBox)
 		{
-			StartGate->TriggerBox->SetBoxExtent(FVector(120.f, TriggerHalfSpan, 220.f));
+			StartGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
 		}
 		if (StartGate->PoleLeft)
 		{
@@ -2247,57 +2308,15 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		}
 	}
 
-	// Always spawn one wheel right next to the hero (at hero spawn position + offset).
 	if (!IsColiseumStage() && !IsLabLevel())
 	{
-		float HeroX = T66GameplayLayout::GetStartAreaCenter().X;
-		float HeroY = T66GameplayLayout::GetStartAreaCenter().Y;
-		if (bUsingMainMapTerrain)
-		{
-			const FVector MainMapHeroLoc = T66MainMapTerrain::GetPreferredSpawnLocation(MainMapPreset, 200.f);
-			HeroX = MainMapHeroLoc.X;
-			HeroY = MainMapHeroLoc.Y;
-		}
-		if (!bUsingMainMapTerrain)
-		{
-			for (TActorIterator<APlayerStart> It(World); It; ++It)
-			{
-				const FVector Loc = (*It)->GetActorLocation();
-				HeroX = Loc.X;
-				HeroY = Loc.Y;
-				break;
-			}
-		}
-		static constexpr float HeroWheelOffset = 380.f;  // to the right of hero spawn
-		const float WheelX = HeroX + HeroWheelOffset;
-		const float WheelY = HeroY;
-		FVector WheelLoc(WheelX, WheelY, SpawnZ);
-		FHitResult Hit;
-		const FVector TraceStart(WheelX, WheelY, 8000.f);
-		const FVector TraceEnd(WheelX, WheelY, -16000.f);
-		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
-		{
-			WheelLoc = Hit.ImpactPoint;
-		}
-		FActorSpawnParameters P;
-		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		if (AT66WheelSpinInteractable* HeroWheel = World->SpawnActor<AT66WheelSpinInteractable>(AT66WheelSpinInteractable::StaticClass(), WheelLoc, FRotator::ZeroRotator, P))
-		{
-			const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			HeroWheel->SetRarity(R);
-			if (RunState)
-			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), R);
-			}
-			UsedLocs.Add(WheelLoc);
-		}
-
 		FVector TractorLoc = FVector::ZeroVector;
 		bool bShouldSpawnGuaranteedTractor = false;
 		if (bUsingMainMapTerrain)
 		{
-			const FVector MainMapHeroLoc = T66MainMapTerrain::GetPreferredSpawnLocation(MainMapPreset, 200.f);
+			const FVector MainMapHeroLoc = bHasMainMapSpawnSurfaceLocation
+				? (MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, 200.f))
+				: T66MainMapTerrain::GetPreferredSpawnLocation(MainMapPreset, 200.f);
 			const float TractorX = FMath::Clamp(MainMapHeroLoc.X + MainMapSettings.CellSize * 1.35f, -MainHalfExtent, MainHalfExtent);
 			const float TractorY = FMath::Clamp(MainMapHeroLoc.Y - MainMapSettings.CellSize * 0.65f, -MainHalfExtent, MainHalfExtent);
 			FHitResult TractorHit;
@@ -2346,14 +2365,41 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			}
 		}
 
-		if (!bUsingMainMapTerrain)
+		FVector VendingLoc = FVector::ZeroVector;
+		bool bShouldSpawnGuaranteedVending = false;
+		if (bUsingMainMapTerrain)
+		{
+			const FVector MainMapHeroLoc = bHasMainMapSpawnSurfaceLocation
+				? (MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, 200.f))
+				: T66MainMapTerrain::GetPreferredSpawnLocation(MainMapPreset, 200.f);
+			const float VendingX = MainMapHeroLoc.X - MainMapSettings.CellSize * 0.85f;
+			const float VendingY = MainMapHeroLoc.Y + MainMapSettings.CellSize * 0.55f;
+			FHitResult VendingHit;
+			const FVector VendingTraceStart(VendingX, VendingY, TraceStartZ);
+			const FVector VendingTraceEnd(VendingX, VendingY, TraceEndZ);
+			if (World->LineTraceSingleByChannel(VendingHit, VendingTraceStart, VendingTraceEnd, ECC_WorldStatic))
+			{
+				VendingLoc = VendingHit.ImpactPoint;
+				bShouldSpawnGuaranteedVending = IsGoodLoc(VendingLoc);
+			}
+			if (!bShouldSpawnGuaranteedVending)
+			{
+				const FSpawnHitResult VendingFallback = FindSpawnLoc();
+				if (VendingFallback.bFound)
+				{
+					VendingLoc = VendingFallback.Loc;
+					bShouldSpawnGuaranteedVending = true;
+				}
+			}
+		}
+		else
 		{
 			static constexpr float GuaranteedVendingOffsetX = 1450.f;
 			static constexpr float GuaranteedVendingOffsetY = -950.f;
 			const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
 			const float VendingX = StartGateLoc.X + GuaranteedVendingOffsetX;
 			const float VendingY = StartGateLoc.Y + GuaranteedVendingOffsetY;
-			FVector VendingLoc(VendingX, VendingY, SpawnZ);
+			VendingLoc = FVector(VendingX, VendingY, SpawnZ);
 			FHitResult VendingHit;
 			const FVector VendingTraceStart(VendingX, VendingY, 8000.f);
 			const FVector VendingTraceEnd(VendingX, VendingY, -16000.f);
@@ -2361,7 +2407,11 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			{
 				VendingLoc = VendingHit.ImpactPoint;
 			}
+			bShouldSpawnGuaranteedVending = true;
+		}
 
+		if (bShouldSpawnGuaranteedVending)
+		{
 			FActorSpawnParameters VendingSpawnParams;
 			VendingSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 			if (AT66QuickReviveVendingMachine* Vending = World->SpawnActor<AT66QuickReviveVendingMachine>(
@@ -2369,7 +2419,10 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			{
 				UsedLocs.Add(VendingLoc);
 			}
+		}
 
+		if (!bUsingMainMapTerrain)
+		{
 			SpawnModelShowcaseRow();
 		}
 	}
@@ -2633,22 +2686,18 @@ void AT66GameMode::SpawnBossForCurrentStage()
 		StageData = FromDT;
 	}
 
-	// Map layout: spawn the stage boss in the dedicated boss square at the far end of the run.
+	if (T66UsesMainMapTerrainStage(World) && !MainMapBossSpawnSurfaceLocation.IsNearlyZero())
 	{
-		FVector BossLoc = StageData.BossSpawnLocation;
-		if (T66UsesMainMapTerrainStage(World))
+		StageData.BossSpawnLocation = MainMapBossSpawnSurfaceLocation + FVector(0.f, 0.f, 100.f);
+	}
+	else
+	{
+		// Map layout: spawn the stage boss in the dedicated boss square at the far end of the run.
+		FVector BossLoc = T66GameplayLayout::GetBossAreaCenter(200.f);
+		FHitResult BossHit;
+		if (World->LineTraceSingleByChannel(BossHit, BossLoc + FVector(0.f, 0.f, 3000.f), BossLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
 		{
-			const FT66MapPreset Preset = T66BuildMainMapPreset(T66GI);
-			BossLoc = T66MainMapTerrain::GetBossSpawnLocation(Preset, 100.f);
-		}
-		else
-		{
-			BossLoc = T66GameplayLayout::GetBossAreaCenter(200.f);
-			FHitResult BossHit;
-			if (World->LineTraceSingleByChannel(BossHit, BossLoc + FVector(0.f, 0.f, 3000.f), BossLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
-			{
-				BossLoc.Z = BossHit.ImpactPoint.Z + 100.f;
-			}
+			BossLoc.Z = BossHit.ImpactPoint.Z + 100.f;
 		}
 		StageData.BossSpawnLocation = BossLoc;
 	}
@@ -3007,6 +3056,21 @@ bool AT66GameMode::TryComputeBossBeaconBase(FVector& OutBeaconBase) const
 	if (!World)
 	{
 		return false;
+	}
+
+	if (T66UsesMainMapTerrainStage(World))
+	{
+		if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
+		{
+			OutBeaconBase = MainMapBossBeaconSurfaceLocation;
+			return true;
+		}
+
+		if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero())
+		{
+			OutBeaconBase = MainMapBossAreaCenterSurfaceLocation;
+			return true;
+		}
 	}
 
 	FVector DesiredBase = StageBoss->GetActorLocation() + FVector(3400.f, 0.f, 0.f);
@@ -3655,6 +3719,13 @@ void AT66GameMode::SpawnMainMapTerrain()
 	}
 
 	bTerrainCollisionReady = false;
+	bHasMainMapSpawnSurfaceLocation = false;
+	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
+	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
+	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
+	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
+	MainMapRescueAnchorLocations.Reset();
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	const FT66MapPreset Preset = T66BuildMainMapPreset(GI);
@@ -3680,6 +3751,40 @@ void AT66GameMode::SpawnMainMapTerrain()
 		return;
 	}
 
+	MainMapSpawnSurfaceLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Board, 0.f);
+	bHasMainMapSpawnSurfaceLocation = true;
+	MainMapRescueAnchorLocations.Add(MainMapSpawnSurfaceLocation);
+	T66MainMapTerrain::TryGetCellLocation(Board, Board.BossAnchor, 0.f, MainMapBossAnchorSurfaceLocation);
+	T66MainMapTerrain::TryGetCellLocation(Board, Board.BossSpawnCell, 0.f, MainMapBossSpawnSurfaceLocation);
+	if (!T66MainMapTerrain::TryGetRegionCenterLocation(Board, T66MainMapTerrain::ECellRegion::BossArea, 0.f, MainMapBossAreaCenterSurfaceLocation))
+	{
+		MainMapBossAreaCenterSurfaceLocation = MainMapBossSpawnSurfaceLocation;
+	}
+
+	FVector BossBeaconLocation = FVector::ZeroVector;
+	if (T66MainMapTerrain::TryGetCellLocation(Board, Board.BossSpawnCell - Board.BossOutwardDirection, 0.f, BossBeaconLocation))
+	{
+		MainMapBossBeaconSurfaceLocation = BossBeaconLocation;
+	}
+	else
+	{
+		MainMapBossBeaconSurfaceLocation = MainMapBossAreaCenterSurfaceLocation;
+	}
+
+	if (!MainMapBossAnchorSurfaceLocation.IsNearlyZero())
+	{
+		MainMapRescueAnchorLocations.Add(MainMapBossAnchorSurfaceLocation);
+	}
+	if (!MainMapBossSpawnSurfaceLocation.IsNearlyZero())
+	{
+		MainMapRescueAnchorLocations.Add(MainMapBossSpawnSurfaceLocation);
+	}
+	if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero())
+	{
+		MainMapRescueAnchorLocations.Add(MainMapBossAreaCenterSurfaceLocation);
+	}
+	UE_LOG(LogTemp, Log, TEXT("[MAP] Cached main-map spawn surface at %s"), *MainMapSpawnSurfaceLocation.ToString());
+
 	bool bMainMapCollisionReady = false;
 	if (!T66MainMapTerrain::Spawn(World, Board, Preset, SpawnParams, bMainMapCollisionReady))
 	{
@@ -3689,7 +3794,11 @@ void AT66GameMode::SpawnMainMapTerrain()
 	bTerrainCollisionReady = bMainMapCollisionReady;
 	if (bTerrainCollisionReady)
 	{
-		SnapPlayersToTerrain();
+		RestartPlayersMissingPawns();
+		if (!T66UsesMainMapTerrainStage(World))
+		{
+			SnapPlayersToTerrain();
+		}
 	}
 
 	UE_LOG(LogTemp, Verbose, TEXT("[MAP] Terrain collision ready=%d"), bTerrainCollisionReady ? 1 : 0);
@@ -4489,6 +4598,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		{
 			(*It)->Destroy();
 		}
+		return;
 	}
 
 	// Check for existing player start
@@ -4546,6 +4656,26 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 			SpawnedSetupActors.Add(Start);
 			UE_LOG(LogTemp, Log, TEXT("Spawned development PlayerStart at %s"), *SpawnLoc.ToString());
 		}
+	}
+}
+
+void AT66GameMode::RestartPlayersMissingPawns()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		if (!PC || PC->GetPawn())
+		{
+			continue;
+		}
+
+		RestartPlayer(PC);
 	}
 }
 
@@ -4676,6 +4806,10 @@ bool AT66GameMode::TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector&
 
 	FHitResult GroundHit;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(T66SnapActorToTerrain), false, Actor);
+	for (TActorIterator<APlayerStart> It(World); It; ++It)
+	{
+		Params.AddIgnoredActor(*It);
+	}
 	const FVector TraceStart(TraceLocation.X, TraceLocation.Y, TraceLocation.Z + 8000.f);
 	const FVector TraceEnd(TraceLocation.X, TraceLocation.Y, TraceLocation.Z - 16000.f);
 	if (!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, Params) &&
@@ -4747,18 +4881,20 @@ void AT66GameMode::MaintainPlayerTerrainSafety()
 		TArray<FVector> RescueAnchors;
 		if (bUsingMainMapTerrain)
 		{
-			FVector StartGateAnchor = T66MainMapTerrain::GetStartGateTransform(Preset, 0.0f).GetLocation();
-			StartGateAnchor.Z = AnchorTraceZ;
-			FVector BossGateAnchor = T66MainMapTerrain::GetBossGateTransform(Preset, 0.0f).GetLocation();
-			BossGateAnchor.Z = AnchorTraceZ;
-			FVector BossAreaAnchor = T66MainMapTerrain::GetBossAreaCenter(Preset, 0.0f);
-			BossAreaAnchor.Z = AnchorTraceZ;
-
-			RescueAnchors.Reserve(4);
-			RescueAnchors.Add(T66MainMapTerrain::GetSpawnLocation(Preset, AnchorTraceZ));
-			RescueAnchors.Add(StartGateAnchor);
-			RescueAnchors.Add(BossGateAnchor);
-			RescueAnchors.Add(BossAreaAnchor);
+			if (MainMapRescueAnchorLocations.Num() > 0)
+			{
+				RescueAnchors = MainMapRescueAnchorLocations;
+			}
+			else
+			{
+				const int32 GridSize = T66MainMapTerrain::MakeSettings(Preset).BoardSize;
+				RescueAnchors.Reserve(5);
+				RescueAnchors.Add(T66MainMapTerrain::GetSpawnLocation(Preset, AnchorTraceZ));
+				RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, GridSize / 2, FMath::Max(0, GridSize / 2 - 1), AnchorTraceZ));
+				RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, GridSize / 2, FMath::Min(GridSize - 1, GridSize / 2 + 1), AnchorTraceZ));
+				RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, FMath::Max(0, GridSize / 2 - 1), GridSize / 2, AnchorTraceZ));
+				RescueAnchors.Add(T66MainMapTerrain::GetCellCenter(Preset, FMath::Min(GridSize - 1, GridSize / 2 + 1), GridSize / 2, AnchorTraceZ));
+			}
 		}
 		else if (!bStageTimerActive || PawnLoc.X <= 0.f)
 		{
@@ -4849,6 +4985,13 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	}
 
 	bTerrainCollisionReady = false;
+	bHasMainMapSpawnSurfaceLocation = false;
+	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
+	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
+	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
+	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
+	MainMapRescueAnchorLocations.Reset();
 
 	DestroyActorsWithTag(World, T66MapPlatformTag);
 	DestroyActorsWithTag(World, T66MapRampTag);
@@ -4865,6 +5008,21 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 		BossGate->Destroy();
 		BossGate = nullptr;
 	}
+	if (CowardiceGate)
+	{
+		CowardiceGate->Destroy();
+		CowardiceGate = nullptr;
+	}
+	if (TricksterNPC)
+	{
+		TricksterNPC->Destroy();
+		TricksterNPC = nullptr;
+	}
+	if (AT66BossBase* ExistingBoss = StageBoss.Get())
+	{
+		ExistingBoss->Destroy();
+	}
+	StageBoss = nullptr;
 	DestroyBossBeacon();
 
 	UT66GameInstance* GI = GetT66GameInstance();
@@ -4874,7 +5032,15 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	}
 
 	SpawnMainMapTerrain();
-	SpawnBossBeaconIfNeeded();
+	if (T66UsesMainMapTerrainStage(World))
+	{
+		SpawnTricksterAndCowardiceGate();
+		SpawnBossForCurrentStage();
+	}
+	else
+	{
+		SpawnBossBeaconIfNeeded();
+	}
 }
 
 // Console command: T66.MainMap [seed]
@@ -4951,8 +5117,19 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	FVector SpawnLocation;
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(GetWorld());
-	
-	if (StartSpot)
+
+	if (bUsingMainMapTerrain && !bTerrainCollisionReady)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Deferring main-map hero spawn until terrain collision is ready."));
+		return nullptr;
+	}
+
+	if (bUsingMainMapTerrain && bHasMainMapSpawnSurfaceLocation)
+	{
+		SpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, DefaultSpawnHeight);
+		SpawnRotation = FRotator::ZeroRotator;
+	}
+	else if (StartSpot)
 	{
 		SpawnLocation = StartSpot->GetActorLocation();
 		SpawnRotation = StartSpot->GetActorRotation();
@@ -4991,8 +5168,15 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	}
 	else if (bUsingMainMapTerrain)
 	{
-		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-		SpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 200.f);
+		if (bHasMainMapSpawnSurfaceLocation)
+		{
+			SpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, 200.f);
+		}
+		else
+		{
+			const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+			SpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 200.f);
+		}
 		SpawnRotation = FRotator::ZeroRotator;
 	}
 	else if (!IsColiseumStage())
@@ -5028,7 +5212,9 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	// Spawn parameters
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = NewPlayer;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	SpawnParams.SpawnCollisionHandlingOverride = bUsingMainMapTerrain
+		? ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+		: ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	// Spawn the pawn
 	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(PawnClass, SpawnLocation, SpawnRotation, SpawnParams);
@@ -5036,7 +5222,35 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	if (SpawnedPawn)
 	{
 		const bool bNeedsProceduralTerrain = !IsLabLevel() && !IsColiseumStage();
-		if (bTerrainCollisionReady)
+		if (bUsingMainMapTerrain && bTerrainCollisionReady)
+		{
+			float HalfHeight = 0.f;
+			if (const UCapsuleComponent* Capsule = SpawnedPawn->FindComponentByClass<UCapsuleComponent>())
+			{
+				HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+			}
+
+			FVector ExactSpawnLocation = SpawnLocation;
+			if (bHasMainMapSpawnSurfaceLocation)
+			{
+				ExactSpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, HalfHeight + 5.f);
+			}
+			else
+			{
+				const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+				ExactSpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, HalfHeight + 5.f);
+			}
+			SpawnedPawn->SetActorLocation(ExactSpawnLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			if (ACharacter* Character = Cast<ACharacter>(SpawnedPawn))
+			{
+				if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->SetMovementMode(MOVE_Walking);
+				}
+			}
+		}
+		else if (bTerrainCollisionReady)
 		{
 			TrySnapActorToTerrain(SpawnedPawn);
 		}

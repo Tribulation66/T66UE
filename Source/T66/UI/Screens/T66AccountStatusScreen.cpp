@@ -280,6 +280,15 @@ FReply UT66AccountStatusScreen::HandleBackClicked()
 {
 	if (UIManager)
 	{
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (PC->IsPaused())
+			{
+				UIManager->ShowModal(ET66ScreenType::Leaderboard);
+				return FReply::Handled();
+			}
+		}
+
 		UIManager->CloseModal();
 	}
 	return FReply::Handled();
@@ -318,4 +327,3 @@ FReply UT66AccountStatusScreen::HandleSubmitAppealClicked()
 	RefreshScreen();
 	return FReply::Handled();
 }
-

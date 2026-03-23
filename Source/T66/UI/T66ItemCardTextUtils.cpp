@@ -74,8 +74,19 @@ namespace T66ItemCardTextUtils
 	static FText BuildSecondaryStatLine(
 		const UT66LocalizationSubsystem* Loc,
 		const FItemData& ItemData,
-		ET66ItemRarity ItemRarity)
+		ET66ItemRarity ItemRarity,
+		int32 MainValue)
 	{
+		if (ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		{
+			const int32 TokenLevel = FMath::Clamp(MainValue, 1, 6);
+			const int32 SellPercent = 40 + TokenLevel * 10;
+			return FText::Format(
+				NSLOCTEXT("T66.ItemTooltip", "GamblerTokenLineFormat", "Level {0}: sell items for {1}% of buy value."),
+				FText::AsNumber(TokenLevel),
+				FText::AsNumber(SellPercent));
+		}
+
 		if (!Loc || ItemData.SecondaryStatType == ET66SecondaryStatType::None)
 		{
 			return FText::GetEmpty();
@@ -106,8 +117,13 @@ namespace T66ItemCardTextUtils
 		int32 MainValue,
 		float CurrentHeroScaleMultiplier)
 	{
+		if (ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		{
+			return BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue);
+		}
+
 		const FText Line1 = BuildPrimaryStatLine(Loc, ItemData, MainValue, CurrentHeroScaleMultiplier);
-		const FText Line2 = BuildSecondaryStatLine(Loc, ItemData, ItemRarity);
+		const FText Line2 = BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue);
 
 		if (!Line1.IsEmpty() && !Line2.IsEmpty())
 		{

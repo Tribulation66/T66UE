@@ -20,6 +20,8 @@
 
 namespace
 {
+	static const FName GamblersTokenItemID(TEXT("Item_GamblersToken"));
+
 	static FName NormalizeLegacyItemID(FName ItemID)
 	{
 		if (ItemID == FName(TEXT("Item_Goblin")))
@@ -27,6 +29,32 @@ namespace
 			return FName(TEXT("Item_LootCrate"));
 		}
 		return ItemID;
+	}
+
+	static bool IsRandomItemPoolEligible(FName ItemID)
+	{
+		return !ItemID.IsNone() && ItemID != GamblersTokenItemID;
+	}
+
+	static bool BuildSyntheticSpecialItemData(FName ItemID, FItemData& OutItemData)
+	{
+		if (ItemID != GamblersTokenItemID)
+		{
+			return false;
+		}
+
+		OutItemData = FItemData{};
+		OutItemData.ItemID = GamblersTokenItemID;
+		OutItemData.Icon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_white.Item_Cheating_white")));
+		OutItemData.BlackIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_black.Item_Cheating_black")));
+		OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_red.Item_Cheating_red")));
+		OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_yellow.Item_Cheating_yellow")));
+		OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_white.Item_Cheating_white")));
+		OutItemData.PrimaryStatType = ET66HeroStatType::Luck;
+		OutItemData.SecondaryStatType = ET66SecondaryStatType::GamblerToken;
+		OutItemData.BaseBuyGold = 100;
+		OutItemData.BaseSellGold = 0;
+		return true;
 	}
 
 	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
@@ -381,7 +409,13 @@ void UT66GameInstance::EnsureCachedItemIDs()
 
 	if (UDataTable* ItemsDT = GetItemsDataTable())
 	{
-		CachedItemIDs = ItemsDT->GetRowNames();
+		for (const FName ItemID : ItemsDT->GetRowNames())
+		{
+			if (IsRandomItemPoolEligible(ItemID))
+			{
+				CachedItemIDs.Add(ItemID);
+			}
+		}
 	}
 
 	// Fallback (keeps game functional even if DT isn't wired yet).
@@ -501,20 +535,17 @@ UDataTable* UT66GameInstance::GetCharacterVisualsDataTable()
 
 bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 {
-	UDataTable* DataTable = GetItemsDataTable();
-	if (!DataTable)
-	{
-		return false;
-	}
 	const FName NormalizedItemID = NormalizeLegacyItemID(ItemID);
-	FItemData* FoundRow = DataTable->FindRow<FItemData>(NormalizedItemID, TEXT("GetItemData"));
-	if (FoundRow)
+	if (UDataTable* DataTable = GetItemsDataTable())
 	{
-		OutItemData = *FoundRow;
-		return true;
+		if (FItemData* FoundRow = DataTable->FindRow<FItemData>(NormalizedItemID, TEXT("GetItemData")))
+		{
+			OutItemData = *FoundRow;
+			return true;
+		}
 	}
 
-	return false;
+	return BuildSyntheticSpecialItemData(NormalizedItemID, OutItemData);
 }
 
 bool UT66GameInstance::GetIdolData(FName IdolID, FIdolData& OutIdolData)

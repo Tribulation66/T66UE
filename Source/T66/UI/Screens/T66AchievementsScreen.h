@@ -33,6 +33,9 @@ public:
 	void SwitchToTier(ET66AchievementTier Tier);
 
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void SwitchToUnlocks();
+
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void OnBackClicked();
 
 protected:
@@ -49,11 +52,15 @@ private:
 
 	void RefreshAchievements();
 	void RebuildAchievementList();
+	void RebuildUnlockList();
 
 	FReply HandleTierClicked(ET66AchievementTier Tier);
+	FReply HandleUnlocksClicked();
 	FReply HandleBackClicked();
 	FReply HandleClaimClicked(FName AchievementID);
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);
+
+	bool bShowingUnlocksTab = false;
 };

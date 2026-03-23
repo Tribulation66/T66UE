@@ -68,17 +68,20 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Loaded EXISTING profile from save file"));
 	}
 
+	const int32 LoadedSaveVersion = Profile->SaveVersion;
+
 	// Enforce safe defaults.
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 8);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 0);
 	Profile->LifetimeEnemiesKilled = FMath::Max(0, Profile->LifetimeEnemiesKilled);
 	Profile->LifetimeBossesKilled = FMath::Max(0, Profile->LifetimeBossesKilled);
 	Profile->LifetimeStagesCleared = FMath::Max(0, Profile->LifetimeStagesCleared);
 	Profile->LifetimeRunsCompleted = FMath::Max(0, Profile->LifetimeRunsCompleted);
 	Profile->LifetimeVendorPurchases = FMath::Max(0, Profile->LifetimeVendorPurchases);
 	Profile->LifetimeGamblerWins = FMath::Max(0, Profile->LifetimeGamblerWins);
+	Profile->GamblersTokenUnlockedLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 6);
 
 	// Migration: Hero renumbering (Hero_1 removed, Hero_2..5 -> Hero_1..4). SaveVersion 9.
-	if (Profile->SaveVersion < 9)
+	if (LoadedSaveVersion < 9)
 	{
 		TMap<FName, FT66OwnedSkinsList> NewOwned;
 		for (const auto& Pair : Profile->OwnedHeroSkinsByHero)
@@ -135,6 +138,8 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	{
 		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
 	}
+
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 10);
 }
 
 int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
@@ -523,6 +528,41 @@ void UT66AchievementsSubsystem::NotifyGamblerWin()
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_010")), Total, 1, &NewlyUnlocked);
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
+}
+
+int32 UT66AchievementsSubsystem::GetGamblersTokenUnlockedLevel() const
+{
+	return Profile ? FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 6) : 0;
+}
+
+int32 UT66AchievementsSubsystem::GetGamblersTokenDifficultyFloor(ET66Difficulty Difficulty)
+{
+	const int32 DifficultyIndex = static_cast<int32>(Difficulty);
+	return FMath::Clamp(DifficultyIndex + 1, 1, 6);
+}
+
+int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficulty Difficulty)
+{
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile)
+	{
+		return 0;
+	}
+
+	const int32 CurrentLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 6);
+	const int32 NextSequentialLevel = FMath::Clamp(CurrentLevel + 1, 1, 6);
+	const int32 DifficultyFloor = GetGamblersTokenDifficultyFloor(Difficulty);
+	const int32 NewLevel = FMath::Clamp(FMath::Max(NextSequentialLevel, DifficultyFloor), 1, 6);
+
+	if (NewLevel == CurrentLevel)
+	{
+		return CurrentLevel;
+	}
+
+	Profile->GamblersTokenUnlockedLevel = NewLevel;
+	MarkDirtyAndMaybeSave(true);
+	AchievementsStateChanged.Broadcast();
+	return NewLevel;
 }
 
 bool UT66AchievementsSubsystem::TryClaimAchievement(FName AchievementID)

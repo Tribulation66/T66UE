@@ -22,7 +22,9 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
+#include "Core/T66LeaderboardSubsystem.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66CasinoOverlayWidget.h"
@@ -520,6 +522,8 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, UT66PlayerSummaryPickerScreen::StaticClass());
 	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, UT66LeaderboardScreen::StaticClass());
+	UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, UT66AccountStatusScreen::StaticClass());
 }
 
 
@@ -571,9 +575,38 @@ void AT66PlayerController::HandleEscapePressed()
 	if (bPaused && UIManager && UIManager->IsModalActive())
 	{
 		const ET66ScreenType ClosingModal = UIManager->GetCurrentModalType();
-		if (ClosingModal == ET66ScreenType::Settings || ClosingModal == ET66ScreenType::ReportBug || ClosingModal == ET66ScreenType::Achievements)
+		if (ClosingModal == ET66ScreenType::Settings
+			|| ClosingModal == ET66ScreenType::ReportBug
+			|| ClosingModal == ET66ScreenType::Achievements
+			|| ClosingModal == ET66ScreenType::Leaderboard
+			|| ClosingModal == ET66ScreenType::PlayerSummaryPicker
+			|| ClosingModal == ET66ScreenType::AccountStatus
+			|| ClosingModal == ET66ScreenType::RunSummary)
 		{
 			UIManager->CloseModal();
+
+			if (ClosingModal == ET66ScreenType::PlayerSummaryPicker || ClosingModal == ET66ScreenType::AccountStatus)
+			{
+				UIManager->ShowModal(ET66ScreenType::Leaderboard);
+				return;
+			}
+
+			if (ClosingModal == ET66ScreenType::RunSummary)
+			{
+				if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+				{
+					if (UT66LeaderboardSubsystem* LB = GI->GetSubsystem<UT66LeaderboardSubsystem>())
+					{
+						const ET66ScreenType ReturnModal = LB->ConsumePendingReturnModalAfterViewerRunSummary();
+						if (ReturnModal != ET66ScreenType::None)
+						{
+							UIManager->ShowModal(ReturnModal);
+							return;
+						}
+					}
+				}
+			}
+
 			UIManager->ShowModal(ET66ScreenType::PauseMenu);
 			return;
 		}

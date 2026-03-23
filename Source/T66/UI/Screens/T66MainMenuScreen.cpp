@@ -132,7 +132,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
 					[ MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked) ]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
-					[ MakeMenuButton(PowerUpText, &UT66MainMenuScreen::HandlePowerUpClicked) ]
+					[
+						SNew(SBox)
+						.Visibility(EVisibility::Collapsed)
+						[
+							MakeMenuButton(PowerUpText, &UT66MainMenuScreen::HandlePowerUpClicked)
+						]
+					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, ButtonSpacing)
 					[ MakeMenuButton(AchievementsText, &UT66MainMenuScreen::HandleAchievementsClicked) ]
 					+ SVerticalBox::Slot().AutoHeight()

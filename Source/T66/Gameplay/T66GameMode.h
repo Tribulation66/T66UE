@@ -296,6 +296,7 @@ private:
 	UStaticMesh* GetCubeMesh();
 	bool TrySnapActorToTerrain(AActor* Actor) const;
 	bool TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector& TraceLocation) const;
+	void RestartPlayersMissingPawns();
 	bool TryComputeBossBeaconBase(FVector& OutBeaconBase) const;
 	void UpdateBossBeaconTransform(bool bForceSpawnIfMissing);
 	void DestroyBossBeacon();
@@ -305,6 +306,13 @@ private:
 	// Floor material soft-load.
 	bool bGroundFloorMaterialLoadRequested = false;
 	bool bTerrainCollisionReady = false;
+	bool bHasMainMapSpawnSurfaceLocation = false;
+	FVector MainMapSpawnSurfaceLocation = FVector::ZeroVector;
+	FVector MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
+	FVector MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
+	FVector MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+	FVector MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
+	TArray<FVector> MainMapRescueAnchorLocations;
 
 	// Coliseum: async-load boss classes before spawning.
 	bool bColiseumBossesAsyncLoadInFlight = false;

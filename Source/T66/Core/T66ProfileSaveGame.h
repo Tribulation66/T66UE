@@ -46,7 +46,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 8;
+	int32 SaveVersion = 10;
 
 	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
@@ -111,6 +111,10 @@ public:
 	/** Lifetime gambler wins. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	int32 LifetimeGamblerWins = 0;
+
+	/** Highest unlocked Gambler's Token level (0 = locked, 1..6 = 50%..100% sell rate). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	int32 GamblersTokenUnlockedLevel = 0;
 
 	/** First-time onboarding: set true once the player completes the tutorial area. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial")

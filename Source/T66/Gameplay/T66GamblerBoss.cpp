@@ -1,9 +1,12 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66GamblerBoss.h"
+#include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66LootBagPickup.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/StaticMesh.h"
@@ -52,6 +55,30 @@ void AT66GamblerBoss::BeginPlay()
 	// Gambler boss must use the same mesh as Gambler NPC (per rule).
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
+		float DifficultyScalar = 1.f;
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			DifficultyScalar = RunState->GetDifficultyScalar();
+		}
+
+		float MetaScalar = 1.f;
+		if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			const int32 UnlockedTokenLevel = Achievements->GetGamblersTokenUnlockedLevel();
+			if (UnlockedTokenLevel > 0)
+			{
+				MetaScalar = 1.f + 0.20f * static_cast<float>(UnlockedTokenLevel);
+				GroundAOEBaseDamageHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * MetaScalar));
+				FireIntervalSeconds = FMath::Max(0.25f, FireIntervalSeconds * (1.f - 0.05f * static_cast<float>(UnlockedTokenLevel)));
+				GroundAOEIntervalSeconds = FMath::Max(1.5f, GroundAOEIntervalSeconds * (1.f - 0.04f * static_cast<float>(UnlockedTokenLevel)));
+				if (UCharacterMovementComponent* Move = GetCharacterMovement())
+				{
+					Move->MaxWalkSpeed *= 1.f + 0.05f * static_cast<float>(UnlockedTokenLevel);
+				}
+			}
+		}
+		ApplyDifficultyScalar(DifficultyScalar * MetaScalar);
+
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
 			const bool bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("GamblerBoss")), GetMesh(), VisualMesh, true);
@@ -67,8 +94,33 @@ void AT66GamblerBoss::BeginPlay()
 
 void AT66GamblerBoss::Die()
 {
-	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	UWorld* World = GetWorld();
+	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
+		ET66Difficulty Difficulty = ET66Difficulty::Easy;
+		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+		{
+			Difficulty = T66GI->SelectedDifficulty;
+		}
+
+		int32 TokenLevelToDrop = FMath::Clamp(static_cast<int32>(Difficulty) + 1, 1, 6);
+		if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			TokenLevelToDrop = FMath::Max(1, Achievements->UpgradeGamblersTokenForDifficulty(Difficulty));
+		}
+
+		if (World)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66LootBagPickup* TokenBag = World->SpawnActor<AT66LootBagPickup>(AT66LootBagPickup::StaticClass(), GetActorLocation() + FVector(0.f, 0.f, 80.f), FRotator::ZeroRotator, SpawnParams))
+			{
+				TokenBag->SetItemID(FName(TEXT("Item_GamblersToken")));
+				TokenBag->SetLootRarity(ET66Rarity::White);
+				TokenBag->SetExplicitLine1RolledValue(TokenLevelToDrop);
+			}
+		}
+
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
 			RunState->ResetGamblerAnger();

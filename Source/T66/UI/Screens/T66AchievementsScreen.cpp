@@ -3,6 +3,8 @@
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66CompanionUnlockSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
@@ -13,6 +15,54 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
+
+namespace
+{
+	bool T66IsPausedGameplayWidget(const UUserWidget* Widget)
+	{
+		const APlayerController* PC = Widget ? Widget->GetOwningPlayer() : nullptr;
+		return PC && PC->IsPaused();
+	}
+
+	int32 T66ExtractNumericSuffix(FName ID)
+	{
+		const FString AsString = ID.ToString();
+		int32 UnderscoreIndex = INDEX_NONE;
+		if (!AsString.FindLastChar(TEXT('_'), UnderscoreIndex))
+		{
+			return MAX_int32;
+		}
+
+		const FString Suffix = AsString.Mid(UnderscoreIndex + 1);
+		return FCString::Atoi(*Suffix);
+	}
+
+	int32 T66CompanionUnlockStageFromID(FName CompanionID)
+	{
+		const int32 TargetIndex = T66ExtractNumericSuffix(CompanionID);
+		if (TargetIndex <= 0)
+		{
+			return INDEX_NONE;
+		}
+
+		int32 CompanionCount = 0;
+		for (int32 Stage = 1; Stage <= 30; ++Stage)
+		{
+			if ((Stage % 5) == 0)
+			{
+				continue;
+			}
+
+			++CompanionCount;
+			if (CompanionCount == TargetIndex)
+			{
+				return Stage;
+			}
+		}
+
+		return INDEX_NONE;
+	}
+}
 
 UT66AchievementsScreen::UT66AchievementsScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -109,6 +159,27 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		);
 	};
 
+	auto MakeUnlocksButton = [this](const FText& Text) -> TSharedRef<SWidget>
+	{
+		const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+		const FLinearColor SelectedColor(0.18f, 0.32f, 0.38f, 1.0f);
+
+		return FT66Style::MakeButton(
+			FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleUnlocksClicked))
+			.SetMinWidth(140.f)
+			.SetPadding(FMargin(12.f, 8.f))
+			.SetColor(TAttribute<FSlateColor>::CreateLambda([this, SelectedColor]() -> FSlateColor
+			{
+				return bShowingUnlocksTab ? FSlateColor(SelectedColor) : FSlateColor(FT66Style::Tokens::Panel2);
+			}))
+			.SetContent(
+				SNew(STextBlock).Text(Text)
+				.TextStyle(&TxtChip)
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			)
+		);
+	};
+
 	return FT66Style::MakePanel(
 		SNew(SOverlay)
 			// Main content
@@ -174,6 +245,10 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 					[
 						MakeTierButton(Loc ? Loc->GetText_AchievementTierWhite() : NSLOCTEXT("T66.Achievements", "TierWhite", "WHITE"), ET66AchievementTier::White)
 					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeUnlocksButton(NSLOCTEXT("T66.Achievements", "UnlocksTab", "UNLOCKS"))
+					]
 				]
 				// Achievement list
 				+ SVerticalBox::Slot()
@@ -210,6 +285,12 @@ void UT66AchievementsScreen::RebuildAchievementList()
 	AchievementListBox->ClearChildren();
 
 	RefreshAchievements();
+	if (bShowingUnlocksTab)
+	{
+		RebuildUnlockList();
+		return;
+	}
+
 	UT66AchievementsSubsystem* Ach = GetAchievementsSubsystem();
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 
@@ -325,10 +406,168 @@ void UT66AchievementsScreen::RebuildAchievementList()
 	}
 }
 
+void UT66AchievementsScreen::RebuildUnlockList()
+{
+	if (!AchievementListBox.IsValid())
+	{
+		return;
+	}
+
+	AchievementListBox->ClearChildren();
+
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	UT66CompanionUnlockSubsystem* CompanionUnlocks = GI ? GI->GetSubsystem<UT66CompanionUnlockSubsystem>() : nullptr;
+
+	TArray<FName> LockedHeroIDs;
+	TArray<FName> LockedCompanionIDs;
+
+	if (GI)
+	{
+		TArray<FName> HeroIDs = GI->GetAllHeroIDs();
+		HeroIDs.Sort([](const FName& A, const FName& B)
+		{
+			return T66ExtractNumericSuffix(A) < T66ExtractNumericSuffix(B);
+		});
+
+		for (const FName& HeroID : HeroIDs)
+		{
+			FHeroData HeroData;
+			if (GI->GetHeroData(HeroID, HeroData) && !HeroData.bUnlockedByDefault)
+			{
+				LockedHeroIDs.Add(HeroID);
+			}
+		}
+
+		TArray<FName> CompanionIDs = GI->GetAllCompanionIDs();
+		CompanionIDs.Sort([](const FName& A, const FName& B)
+		{
+			return T66ExtractNumericSuffix(A) < T66ExtractNumericSuffix(B);
+		});
+
+		for (const FName& CompanionID : CompanionIDs)
+		{
+			if (!CompanionUnlocks || CompanionUnlocks->IsCompanionUnlocked(CompanionID))
+			{
+				continue;
+			}
+
+			LockedCompanionIDs.Add(CompanionID);
+		}
+	}
+
+	auto AddSectionHeader = [this](const FText& Text)
+	{
+		AchievementListBox->AddSlot()
+		.AutoHeight()
+		.Padding(0.f, 12.f, 0.f, 8.f)
+		[
+			SNew(STextBlock)
+			.Text(Text)
+			.Font(FT66Style::Tokens::FontBold(20))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		];
+	};
+
+	auto AddUnlockRow = [this](const FText& KindText, const FText& NameText, const FText& ConditionText)
+	{
+		AchievementListBox->AddSlot()
+		.AutoHeight()
+		.Padding(0.f, 0.f, 0.f, 8.f)
+		[
+			SNew(SBorder)
+			.BorderBackgroundColor(FT66Style::Tokens::Panel)
+			.Padding(FMargin(18.f, 14.f))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top).Padding(0.f, 0.f, 14.f, 0.f)
+				[
+					SNew(STextBlock)
+					.Text(KindText)
+					.Font(FT66Style::Tokens::FontBold(12))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(STextBlock)
+						.Text(NameText)
+						.Font(FT66Style::Tokens::FontBold(16))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(ConditionText)
+						.Font(FT66Style::Tokens::FontRegular(12))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+				]
+			]
+		];
+	};
+
+	if (LockedHeroIDs.Num() == 0 && LockedCompanionIDs.Num() == 0)
+	{
+		AchievementListBox->AddSlot()
+		.AutoHeight()
+		[
+			SNew(SBorder)
+			.BorderBackgroundColor(FT66Style::Tokens::Panel)
+			.Padding(FMargin(20.f, 18.f))
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.Achievements", "UnlocksAllUnlocked", "All currently defined heroes and companions are unlocked."))
+				.Font(FT66Style::Tokens::FontRegular(14))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.AutoWrapText(true)
+			]
+		];
+		return;
+	}
+
+	if (LockedHeroIDs.Num() > 0)
+	{
+		AddSectionHeader(NSLOCTEXT("T66.Achievements", "LockedHeroesHeader", "CHARACTERS"));
+		for (const FName& HeroID : LockedHeroIDs)
+		{
+			const FText HeroName = Loc ? Loc->GetText_HeroName(HeroID) : FText::FromName(HeroID);
+			AddUnlockRow(
+				NSLOCTEXT("T66.Achievements", "UnlockKindHero", "HERO"),
+				HeroName,
+				NSLOCTEXT("T66.Achievements", "UnlockHeroConditionUnknown", "Unlock condition is not exposed by the current hero data."));
+		}
+	}
+
+	if (LockedCompanionIDs.Num() > 0)
+	{
+		AddSectionHeader(NSLOCTEXT("T66.Achievements", "LockedCompanionsHeader", "COMPANIONS"));
+		for (const FName& CompanionID : LockedCompanionIDs)
+		{
+			const int32 UnlockStage = T66CompanionUnlockStageFromID(CompanionID);
+			const FText CompanionName = Loc ? Loc->GetText_CompanionName(CompanionID) : FText::FromName(CompanionID);
+			const FText ConditionText = (UnlockStage != INDEX_NONE)
+				? FText::Format(
+					NSLOCTEXT("T66.Achievements", "UnlockCompanionStageCondition", "Clear Stage {0} for the first time."),
+					FText::AsNumber(UnlockStage))
+				: NSLOCTEXT("T66.Achievements", "UnlockCompanionConditionUnknown", "Unlock condition is not exposed by the current companion data.");
+
+			AddUnlockRow(
+				NSLOCTEXT("T66.Achievements", "UnlockKindCompanion", "COMPANION"),
+				CompanionName,
+				ConditionText);
+		}
+	}
+}
+
 void UT66AchievementsScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 	CurrentTier = ET66AchievementTier::Black;
+	bShowingUnlocksTab = false;
 	RebuildAchievementList();
 
 	// Subscribe to language changes (rebuild UI).
@@ -350,18 +589,37 @@ void UT66AchievementsScreen::OnScreenDeactivated_Implementation()
 void UT66AchievementsScreen::SwitchToTier(ET66AchievementTier Tier)
 {
 	CurrentTier = Tier;
+	bShowingUnlocksTab = false;
 	// Rebuild just the achievement list (button colors update via lambdas)
+	RebuildAchievementList();
+}
+
+void UT66AchievementsScreen::SwitchToUnlocks()
+{
+	bShowingUnlocksTab = true;
 	RebuildAchievementList();
 }
 
 void UT66AchievementsScreen::OnBackClicked()
 {
+	if (T66IsPausedGameplayWidget(this) && UIManager)
+	{
+		ShowModal(ET66ScreenType::PauseMenu);
+		return;
+	}
+
 	NavigateBack();
 }
 
 FReply UT66AchievementsScreen::HandleTierClicked(ET66AchievementTier Tier)
 {
 	SwitchToTier(Tier);
+	return FReply::Handled();
+}
+
+FReply UT66AchievementsScreen::HandleUnlocksClicked()
+{
+	SwitchToUnlocks();
 	return FReply::Handled();
 }
 
