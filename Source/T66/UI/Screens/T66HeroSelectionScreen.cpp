@@ -1049,8 +1049,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 												.SetMinWidth(0.f)
 												.SetPadding(FMargin(12.f, 8.f))
 												.SetFontSize(12)
-												.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return SelectedDifficulty == ET66Difficulty::Easy; }))
-												.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor { return SelectedDifficulty == ET66Difficulty::Easy ? FSlateColor(FT66Style::Tokens::Danger) : FSlateColor(FLinearColor(0.4f, 0.2f, 0.2f, 1.f)); }))
 											)
 											]
 										]
