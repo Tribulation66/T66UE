@@ -1,0 +1,50 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" T66Editor Win64 Development C:\UE\T66\T66.uproject -WaitMutex -NoHotReload
+Log file: C:\Users\DoPra\AppData\Local\UnrealBuildTool\Log.txt
+Using 'git status' to determine working set for adaptive non-unity build (C:\UE\T66).
+Invalidating makefile for T66Editor (working set of source files changed)
+UHT compiled-in object format Default
+Parsing headers for T66Editor
+  Running Internal UnrealHeaderTool C:\UE\T66\T66.uproject C:\UE\T66\Intermediate\Build\Win64\T66Editor\Development\T66Editor.uhtmanifest -WarningsAsErrors -installed
+UHT processed T66Editor in 0.7410533 seconds (5 files written)
+Building T66Editor...
+Using Visual Studio 2022 14.44.35222 toolchain (C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+[Adaptive Build] Excluded from T66 unity file: T66IdolManagerSubsystem.cpp, T66InteractionPromptSubsystem.cpp, T66LeaderboardSubsystem.cpp, T66LocalizationSubsystem.cpp, T66PlayerExperienceSubSystem.cpp, T66RngTuningConfig.cpp, T66RunStateSubsystem.cpp, T66ChestInteractable.cpp, T66CircusInteractable.cpp, T66CombatComponent.cpp, T66EnemyBase.cpp, T66GameMode.cpp, T66PlayerController.cpp, T66PlayerController_Combat.cpp, T66PlayerController_Frontend.cpp, T66PlayerController_Input.cpp, T66PlayerController_Overlays.cpp, T66PlayerController_ScopedUlt.cpp, T66PlayerController_WorldDialogue.cpp, T66StageCatchUpLootInteractable.cpp, T66VendorNPC.cpp, T66CircusOverlayWidget.cpp, T66CrateOverlayWidget.cpp, T66GamblerOverlayWidget.cpp, T66GameplayHUDWidget.cpp, T66IdolAltarOverlayWidget.cpp, T66VendorOverlayWidget.cpp, T66WheelOverlayWidget.cpp, T66MainMenuScreen.cpp, T66PauseMenuScreen.cpp, T66RunSummaryScreen.cpp, T66SaveSlotsScreen.cpp, T66ButtonVisuals.cpp, T66Style.cpp
+Determining max actions to execute in parallel (24 physical cores, 32 logical cores)
+  Executing up to 24 processes, one per physical core
+Using Unreal Build Accelerator local executor to run 26 action(s)
+  Storage capacity 40Gb
+---- Starting trace: 260323_210039 ----
+UbaServer - Listening on 0.0.0.0:1345
+[1/26] Compile [x64] T66ChestInteractable.cpp
+[2/26] Compile [x64] T66RunStateSubsystem.cpp
+[3/26] Compile [x64] Module.T66.5.cpp
+[4/26] Compile [x64] Module.T66.1.cpp
+[5/26] Compile [x64] Module.T66.2.cpp
+[6/26] Compile [x64] T66EnemyBase.cpp
+[7/26] Compile [x64] Module.T66.4.cpp
+[8/26] Compile [x64] Module.T66.11.cpp
+[9/26] Compile [x64] T66CrateOverlayWidget.cpp
+[10/26] Compile [x64] T66CombatComponent.cpp
+[11/26] Compile [x64] T66PlayerController_WorldDialogue.cpp
+[12/26] Compile [x64] T66PlayerController_Input.cpp
+[13/26] Compile [x64] T66PlayerController_Combat.cpp
+[14/26] Compile [x64] T66PlayerController_ScopedUlt.cpp
+[15/26] Compile [x64] T66PlayerController.cpp
+[16/26] Compile [x64] T66PlayerController_Overlays.cpp
+[17/26] Compile [x64] T66PlayerController_Frontend.cpp
+[18/26] Compile [x64] T66GameMode.cpp
+[19/26] Compile [x64] Module.T66.15.cpp
+[20/26] Compile [x64] Module.T66.16.cpp
+[21/26] Compile [x64] Module.T66.14.cpp
+[22/26] Compile [x64] Module.T66.17.cpp
+[23/26] Compile [x64] T66GameplayHUDWidget.cpp
+[24/26] Link [x64] UnrealEditor-T66.lib
+[25/26] Link [x64] UnrealEditor-T66.dll
+[26/26] WriteMetadata T66Editor.target [NoUba]
+
+Trace written to file C:/Users/DoPra/AppData/Local/UnrealBuildTool/Log.uba with size 9.7kb
+Total time in Unreal Build Accelerator local executor: 17.26 seconds
+
+Result: Succeeded
+Total execution time: 20.63 seconds

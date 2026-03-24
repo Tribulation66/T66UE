@@ -1,8 +1,10 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66WheelOverlayWidget.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RngSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/Style/T66Style.h"
@@ -328,22 +330,19 @@ FReply UT66WheelOverlayWidget::OnSpin()
 				RngSub->UpdateLuckStat(RunState->GetLuckStat());
 			}
 
-			const UT66RngTuningConfig* Tuning = RngSub->GetTuning();
-			if (Tuning)
+			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 			{
-				const FT66FloatRange Range =
-					(WheelRarity == ET66Rarity::Black) ? Tuning->WheelGoldRange_Black :
-					(WheelRarity == ET66Rarity::Red) ? Tuning->WheelGoldRange_Red :
-					(WheelRarity == ET66Rarity::Yellow) ? Tuning->WheelGoldRange_Yellow :
-					(WheelRarity == ET66Rarity::White) ? Tuning->WheelGoldRange_White :
-					Tuning->WheelGoldRange_Black;
+				if (UT66PlayerExperienceSubSystem* PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
+				{
+					const FT66FloatRange Range = PlayerExperience->GetDifficultyWheelGoldRange(T66GI->SelectedDifficulty, WheelRarity);
 
-				MinGold = FMath::FloorToInt(FMath::Min(Range.Min, Range.Max));
-				MaxGold = FMath::CeilToInt(FMath::Max(Range.Min, Range.Max));
-				bHasGoldRange = true;
+					MinGold = FMath::FloorToInt(FMath::Min(Range.Min, Range.Max));
+					MaxGold = FMath::CeilToInt(FMath::Max(Range.Min, Range.Max));
+					bHasGoldRange = true;
 
-				FRandomStream& Stream = RngSub->GetRunStream();
-				NewPendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+					FRandomStream& Stream = RngSub->GetRunStream();
+					NewPendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+				}
 			}
 
 			if (RunState && bHasGoldRange)

@@ -2,6 +2,8 @@
 
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66ChestMimicEnemy.h"
+#include "Core/T66GameInstance.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -33,8 +35,9 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	if (bConsumed) return false;
 
 	UWorld* World = GetWorld();
-	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	if (!RunState) return false;
 
 	if (bIsMimic)
@@ -47,15 +50,10 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 		return true;
 	}
 
-	int32 Gold = 50;
-	switch (Rarity)
-	{
-	case ET66Rarity::Black:  Gold = 50; break;
-	case ET66Rarity::Red:    Gold = 150; break;
-	case ET66Rarity::Yellow: Gold = 300; break;
-	case ET66Rarity::White:  Gold = 600; break;
-	default:                 Gold = 50; break;
-	}
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	int32 Gold = PlayerExperience
+		? PlayerExperience->GetDifficultyChestGoldForRarity(Difficulty, Rarity)
+		: 50;
 
 	RunState->AddGold(Gold);
 	bConsumed = true;

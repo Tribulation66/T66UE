@@ -2051,7 +2051,12 @@ FText UT66LocalizationSubsystem::GetText_Gambler() const
 
 FText UT66LocalizationSubsystem::GetText_Casino() const
 {
-	return NSLOCTEXT("T66.Gambler", "Casino", "CASINO");
+	return GetText_Circus();
+}
+
+FText UT66LocalizationSubsystem::GetText_Circus() const
+{
+	return NSLOCTEXT("T66.Gambler", "Circus", "CIRCUS");
 }
 
 FText UT66LocalizationSubsystem::GetText_Bank() const

@@ -118,6 +118,7 @@ void AT66PlayerController::OpenWorldDialogueVendor(AT66VendorNPC* Vendor)
 
 	WorldDialogueKind = ET66WorldDialogueKind::Vendor;
 	WorldDialogueTargetNPC = Vendor;
+	ActiveVendorNPC = Vendor;
 	WorldDialogueTargetCompanion.Reset();
 	WorldDialogueSelectedIndex = 0;
 	WorldDialogueNumOptions = 3;
@@ -230,6 +231,10 @@ void AT66PlayerController::ConfirmWorldDialogue()
 		: 0;
 
 	CloseWorldDialogue();
+	if (!(Kind == ET66WorldDialogueKind::Vendor && Choice == 0))
+	{
+		ActiveVendorNPC.Reset();
+	}
 
 	if (Kind == ET66WorldDialogueKind::Companion)
 	{

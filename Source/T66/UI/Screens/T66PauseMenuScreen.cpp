@@ -3,6 +3,7 @@
 #include "UI/Screens/T66PauseMenuScreen.h"
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunSaveGame.h"
@@ -128,7 +129,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		T66SlateTexture::BindSharedBrushAsync(TexPool, HeartSoft, this, HeartBrush, FName(TEXT("PauseHeart")), false);
 	}
 
-	IdolSlotBrushes.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
+	IdolSlotBrushes.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
 	for (int32 Index = 0; Index < IdolSlotBrushes.Num(); ++Index)
 	{
 		if (!IdolSlotBrushes[Index].IsValid())
@@ -291,8 +292,9 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 
 	static constexpr int32 IdolColumns = 3;
 	static constexpr float IdolSlotSize = 50.f;
-	const TArray<FName>& EquippedIdols = RunState ? RunState->GetEquippedIdols() : TArray<FName>();
-	for (int32 SlotIndex = 0; SlotIndex < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++SlotIndex)
+	UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
+	const TArray<FName>& EquippedIdols = IdolManager ? IdolManager->GetEquippedIdols() : (RunState ? RunState->GetEquippedIdols() : TArray<FName>());
+	for (int32 SlotIndex = 0; SlotIndex < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++SlotIndex)
 	{
 		FLinearColor IdolSlotColor(0.10f, 0.16f, 0.14f, 0.92f);
 		TSoftObjectPtr<UTexture2D> IdolIconSoft;
@@ -302,7 +304,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			FIdolData IdolData;
 			if (GI->GetIdolData(EquippedIdols[SlotIndex], IdolData))
 			{
-				const ET66ItemRarity IdolRarity = RunState->GetEquippedIdolRarityInSlot(SlotIndex);
+				const ET66ItemRarity IdolRarity = IdolManager ? IdolManager->GetEquippedIdolRarityInSlot(SlotIndex) : RunState->GetEquippedIdolRarityInSlot(SlotIndex);
 				IdolSlotColor = FItemData::GetItemRarityColor(IdolRarity);
 				IdolIconSoft = IdolData.GetIconForRarity(IdolRarity);
 			}
@@ -594,8 +596,16 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 	if (UT66RunStateSubsystem* LocalRunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 	{
 		SaveObj->StageReached = LocalRunState->GetCurrentStage();
-		SaveObj->EquippedIdols = LocalRunState->GetEquippedIdols();
-		SaveObj->EquippedIdolTiers = LocalRunState->GetEquippedIdolTierValues();
+		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+		{
+			SaveObj->EquippedIdols = IdolManager->GetEquippedIdols();
+			SaveObj->EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+		}
+		else
+		{
+			SaveObj->EquippedIdols = LocalRunState->GetEquippedIdols();
+			SaveObj->EquippedIdolTiers = LocalRunState->GetEquippedIdolTierValues();
+		}
 	}
 
 	if (APawn* Pawn = PC->GetPawn())

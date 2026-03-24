@@ -1,0 +1,247 @@
+[gd_scene format=3 uid="uid://cmrdiuncmpo16"]
+
+[ext_resource type="Shader" uid="uid://bqpv4y7x6y0wa" path="res://addons/pixel_portals/pixel_portal.gdshader" id="1_l2w8d"]
+[ext_resource type="Shader" uid="uid://0kttheqg5ixs" path="res://addons/pixel_portals/pixel_portal_stencil.gdshader" id="2_cawxa"]
+[ext_resource type="Script" uid="uid://btwck4qdxgnwb" path="res://examples/base/utility/demo_portal.gd" id="3_yi5k6"]
+[ext_resource type="Shader" uid="uid://catdhnjgt7mwy" path="res://examples/base/utility/floor3d.gdshader" id="4_ixyj5"]
+[ext_resource type="Texture2D" uid="uid://bwmekc450hxnj" path="res://examples/base/sprites/demo-tile-dark-scaled.png" id="5_lcuiq"]
+[ext_resource type="Shader" uid="uid://cltys6lou2qbk" path="res://examples/base/utility/floor3d_stencil.gdshader" id="6_hplgk"]
+[ext_resource type="Texture2D" uid="uid://b4007amnflpy" path="res://examples/base/sprites/demo-tile-light-scaled.png" id="7_st150"]
+[ext_resource type="Script" uid="uid://cua0dysnutm66" path="res://examples/base/utility/orbit.gd" id="8_p87fg"]
+
+[sub_resource type="Environment" id="Environment_6tkrt"]
+background_mode = 1
+background_color = Color(0.099985994, 0.099985994, 0.099985994, 1)
+reflected_light_source = 1
+glow_enabled = true
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_v6mcw"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3kgwp"]
+render_priority = 2
+shader = ExtResource("1_l2w8d")
+shader_parameter/last_layer_transparent = true
+shader_parameter/first_layer_transparent = true
+shader_parameter/transparency_transition = 0
+shader_parameter/transparency_falloff = 1.0
+shader_parameter/rim = true
+shader_parameter/rim_extra_radius = 0.10000000475
+shader_parameter/color_repeat_layer = 0
+shader_parameter/color_offset_layer = 0
+shader_parameter/color_one = Color(1, 1, 1, 1)
+shader_parameter/color_two = Color(0, 0, 0, 1)
+shader_parameter/color_falloff = 1.0
+shader_parameter/color_transition = 0
+shader_parameter/glow_repeat_layer = 0
+shader_parameter/glow_offset_layer = 0
+shader_parameter/glow = 0.0
+shader_parameter/glow_falloff = 1.0
+shader_parameter/depth_amount = 1.0
+shader_parameter/layers = 10
+shader_parameter/radius = 0.38
+shader_parameter/radius_reduction = 0.05
+shader_parameter/radius_reduction_type = 0
+shader_parameter/vary_radius = true
+shader_parameter/radius_variation = 0.1
+shader_parameter/radius_speed_variation = 1.0
+shader_parameter/radius_variation_offset = 1.0
+shader_parameter/radius_random_offset = true
+shader_parameter/center = Vector2(0.5, 0.5)
+shader_parameter/rotation_repeat_layer = 0
+shader_parameter/rotation_offset_layer = 0
+shader_parameter/rotation = 0.0
+shader_parameter/pixel_size = 10.0
+shader_parameter/resolution = Vector2(512, 512)
+shader_parameter/dither_offset = Vector2i(2, 0)
+shader_parameter/bayer_size = 2
+shader_parameter/interpolate = true
+shader_parameter/falloff = 2.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_y1sgv"]
+render_priority = 0
+next_pass = SubResource("ShaderMaterial_3kgwp")
+shader = ExtResource("2_cawxa")
+shader_parameter/last_layer_transparent = true
+shader_parameter/first_layer_transparent = true
+shader_parameter/transparency_transition = 0
+shader_parameter/transparency_falloff = 1.0
+shader_parameter/depth_amount = 1.0
+shader_parameter/layers = 10
+shader_parameter/radius = 0.38
+shader_parameter/radius_reduction = 0.05
+shader_parameter/radius_reduction_type = 0
+shader_parameter/vary_radius = true
+shader_parameter/radius_variation = 0.1
+shader_parameter/radius_speed_variation = 1.0
+shader_parameter/radius_variation_offset = 1.0
+shader_parameter/radius_random_offset = true
+shader_parameter/center = Vector2(0.5, 0.5)
+shader_parameter/rotation_repeat_layer = 0
+shader_parameter/rotation_offset_layer = 0
+shader_parameter/rotation = 0.0
+shader_parameter/pixel_size = 10.0
+shader_parameter/resolution = Vector2(512, 512)
+shader_parameter/dither_offset = Vector2i(2, 0)
+shader_parameter/bayer_size = 2
+shader_parameter/interpolate = true
+shader_parameter/falloff = 2.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_e2vdk"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v6mcw"]
+render_priority = 2
+transparency = 1
+stencil_mode = 3
+stencil_flags = 1
+stencil_compare = 2
+
+[sub_resource type="Animation" id="Animation_bmbjk"]
+length = 0.001
+
+[sub_resource type="Animation" id="Animation_m13r3"]
+resource_name = "close"
+length = 0.4
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:surface_material_override/0:next_pass:shader_parameter/radius")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(0.38, -0.2, 0, 0.36666667, -0.107260734, 0, 0, 0.10417125, 0, 0),
+"times": PackedFloat32Array(0, 0.4)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".:surface_material_override/0:next_pass:shader_parameter/depth_amount")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(1, -0.2, 0, 0.23333333, 0.30033445, 0, 0, 0.24326, 0, 0),
+"times": PackedFloat32Array(0, 0.4)
+}
+
+[sub_resource type="Animation" id="Animation_y8l4v"]
+resource_name = "open"
+length = 0.4
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:surface_material_override/0:next_pass:shader_parameter/radius")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(0, -0.15, 0, 0.033333335, 0.01277007, 0.38, -0.3, 0.035801977, 0, 0),
+"times": PackedFloat32Array(0, 0.4)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".:surface_material_override/0:next_pass:shader_parameter/depth_amount")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(0, -0.2, 0, 0, 0.74397945, 1, -0.3, 0.23675108, 0, 0),
+"times": PackedFloat32Array(0, 0.4)
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_l2w8d"]
+_data = {
+&"RESET": SubResource("Animation_bmbjk"),
+&"close": SubResource("Animation_m13r3"),
+&"open": SubResource("Animation_y8l4v")
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7t3ax"]
+render_priority = 1
+shader = ExtResource("4_ixyj5")
+shader_parameter/bg_texture = ExtResource("5_lcuiq")
+shader_parameter/speed = Vector2(0, 0)
+shader_parameter/scale = 0.004
+shader_parameter/invert = false
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_me0rb"]
+material = SubResource("ShaderMaterial_7t3ax")
+size = Vector2(1000, 1000)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ck1l3"]
+render_priority = 1
+shader = ExtResource("6_hplgk")
+shader_parameter/bg_texture = ExtResource("7_st150")
+shader_parameter/speed = Vector2(0, 0)
+shader_parameter/scale = 0.004
+shader_parameter/invert = false
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ypt24"]
+material = SubResource("ShaderMaterial_ck1l3")
+size = Vector2(1000, 1000)
+
+[sub_resource type="GDScript" id="GDScript_7t3ax"]
+script/source = "extends Camera3D
+"
+
+[node name="PixelPortalSingle" type="Node3D" unique_id=589736465]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=228054590]
+transform = Transform3D(0.8829476, -0.40657434, 0.23473577, 0, 0.49999997, 0.86602545, -0.4694716, -0.76465505, 0.44147375, 2.3449738, 3.7629788, 1.6191844)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1935722707]
+environment = SubResource("Environment_6tkrt")
+
+[node name="PortalViewport" type="MeshInstance3D" parent="." unique_id=1334032624 node_paths=PackedStringArray("animation_player")]
+transform = Transform3D(1, 0, 0, 0, 0.052335974, -0.9986295, 0, 0.9986295, 0.052335974, 0, 1, 0)
+mesh = SubResource("PlaneMesh_v6mcw")
+surface_material_override/0 = SubResource("ShaderMaterial_y1sgv")
+script = ExtResource("3_yi5k6")
+enable_copy_properties = true
+apply_material = SubResource("ShaderMaterial_3kgwp")
+animation_player = NodePath("AnimationPlayer")
+
+[node name="PortalCube" type="MeshInstance3D" parent="PortalViewport" unique_id=316795626]
+transform = Transform3D(0.48213536, 0.13891882, 0.32900918, 0.22410907, 0.31268373, -0.46043873, -0.27806562, 0.49287966, 0.19937147, 0, -3.4302747, 0.08562642)
+mesh = SubResource("BoxMesh_e2vdk")
+surface_material_override/0 = SubResource("StandardMaterial3D_v6mcw")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="PortalViewport" unique_id=658612030]
+libraries/ = SubResource("AnimationLibrary_l2w8d")
+
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=1283877464]
+mesh = SubResource("PlaneMesh_me0rb")
+
+[node name="PortalFloor" type="MeshInstance3D" parent="." unique_id=782889844]
+mesh = SubResource("PlaneMesh_ypt24")
+
+[node name="Node3D" type="Node3D" parent="." unique_id=2132801366]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("8_p87fg")
+
+[node name="Camera3D" type="Camera3D" parent="Node3D" unique_id=895343072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+script = SubResource("GDScript_7t3ax")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1977115361]
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer" unique_id=875804556]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -169.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="LinkButton" type="LinkButton" parent="CanvasLayer/MarginContainer" unique_id=936890595]
+layout_mode = 2
+text = "Rate this asset! (https://nojoule.itch.io/pixel-portals/rate)"
+uri = "https://nojoule.itch.io/pixel-portals/rate"

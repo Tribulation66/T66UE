@@ -168,6 +168,7 @@ protected:
 	TSharedPtr<STextBlock> PickupCardSkipText;
 	static constexpr float PickupCardWidth = 260.f;
 	static constexpr float PickupCardHeight = 460.f;
+	static constexpr float PickupCardBottomOffset = 310.f;
 	static constexpr float PickupCardDisplaySeconds = 5.f;
 	static constexpr float PickupCardFadeOutSeconds = 0.6f;
 	void HidePickupCard();

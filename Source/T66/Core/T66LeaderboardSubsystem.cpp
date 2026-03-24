@@ -6,6 +6,7 @@
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LocalLeaderboardSaveGame.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
@@ -281,8 +282,16 @@ bool UT66LeaderboardSubsystem::SaveLocalBestScoreRunSummarySnapshot(ET66Difficul
 	Snapshot->ProofOfRunUrl = FString();
 	Snapshot->bProofOfRunLocked = false;
 
-	Snapshot->EquippedIdols = RunState->GetEquippedIdols();
-	Snapshot->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
+	if (UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr)
+	{
+		Snapshot->EquippedIdols = IdolManager->GetEquippedIdols();
+		Snapshot->EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+	}
+	else
+	{
+		Snapshot->EquippedIdols = RunState->GetEquippedIdols();
+		Snapshot->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
+	}
 	Snapshot->Inventory = RunState->GetInventory();
 	Snapshot->EventLog = RunState->GetEventLog();
 
@@ -621,8 +630,16 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 				BackendSnapshot->LuckRatingQuality0To100 = RunState->GetLuckRatingQuality0To100();
 				BackendSnapshot->SkillRating0To100 = Skill ? Skill->GetSkillRating0To100() : -1;
 
-				BackendSnapshot->EquippedIdols = RunState->GetEquippedIdols();
-				BackendSnapshot->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
+				if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+				{
+					BackendSnapshot->EquippedIdols = IdolManager->GetEquippedIdols();
+					BackendSnapshot->EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+				}
+				else
+				{
+					BackendSnapshot->EquippedIdols = RunState->GetEquippedIdols();
+					BackendSnapshot->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
+				}
 				BackendSnapshot->Inventory = RunState->GetInventory();
 				BackendSnapshot->EventLog = RunState->GetEventLog();
 
@@ -917,12 +934,12 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 
 	Snapshot->EquippedIdols.Reset();
 	Snapshot->EquippedIdolTiers.Reset();
-	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
+	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		if (IdolIDs.Num() > 0)
 		{
 			Snapshot->EquippedIdols.Add(IdolIDs[Rng.RandRange(0, IdolIDs.Num() - 1)]);
-			Snapshot->EquippedIdolTiers.Add(static_cast<uint8>(Rng.RandRange(1, UT66RunStateSubsystem::MaxIdolLevel)));
+			Snapshot->EquippedIdolTiers.Add(static_cast<uint8>(Rng.RandRange(1, UT66IdolManagerSubsystem::MaxIdolLevel)));
 		}
 	}
 	Snapshot->Inventory.Reset();

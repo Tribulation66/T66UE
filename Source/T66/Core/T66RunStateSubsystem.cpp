@@ -4,9 +4,11 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66PowerUpSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -20,6 +22,7 @@
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66VendorBoss.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Subsystems/SubsystemCollection.h"
 
 namespace
 {
@@ -72,6 +75,39 @@ namespace
 		}
 		return (N > 0) ? static_cast<float>(Sum / static_cast<double>(N)) : 0.5f;
 	}
+}
+
+void UT66RunStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	Collection.InitializeDependency<UT66IdolManagerSubsystem>();
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66RunStateSubsystem::HandleIdolStateChanged);
+		IdolManager->IdolStateChanged.AddDynamic(this, &UT66RunStateSubsystem::HandleIdolStateChanged);
+	}
+}
+
+void UT66RunStateSubsystem::Deinitialize()
+{
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66RunStateSubsystem::HandleIdolStateChanged);
+	}
+
+	Super::Deinitialize();
+}
+
+void UT66RunStateSubsystem::HandleIdolStateChanged()
+{
+	IdolsChanged.Broadcast();
+}
+
+UT66IdolManagerSubsystem* UT66RunStateSubsystem::GetIdolManager() const
+{
+	UGameInstance* GI = GetGameInstance();
+	return GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
 }
 
 void UT66RunStateSubsystem::ResetLuckRatingTracking()
@@ -151,92 +187,12 @@ int32 UT66RunStateSubsystem::GetLuckRating0To100() const
 
 const TArray<FName>& UT66RunStateSubsystem::GetAllIdolIDs()
 {
-	// 24 canonical idol IDs grouped by category:
-	//   DOT (6): Curse, Lava, Poison, Decay, Bleed, Acid
-	//   Bounce (6): Electric, Ice, Sound, Shadow, Star, Rubber
-	//   AOE (6): Fire, Earth, Water, Sand, BlackHole, Storm
-	//   Pierce (6): Light, Wind, Steel, Wood, Bone, Glass
-	static const TArray<FName> Idols = {
-		FName(TEXT("Idol_Curse")),
-		FName(TEXT("Idol_Lava")),
-		FName(TEXT("Idol_Poison")),
-		FName(TEXT("Idol_Decay")),
-		FName(TEXT("Idol_Bleed")),
-		FName(TEXT("Idol_Acid")),
-		FName(TEXT("Idol_Electric")),
-		FName(TEXT("Idol_Ice")),
-		FName(TEXT("Idol_Sound")),
-		FName(TEXT("Idol_Shadow")),
-		FName(TEXT("Idol_Star")),
-		FName(TEXT("Idol_Rubber")),
-		FName(TEXT("Idol_Fire")),
-		FName(TEXT("Idol_Earth")),
-		FName(TEXT("Idol_Water")),
-		FName(TEXT("Idol_Sand")),
-		FName(TEXT("Idol_BlackHole")),
-		FName(TEXT("Idol_Storm")),
-		FName(TEXT("Idol_Light")),
-		FName(TEXT("Idol_Wind")),
-		FName(TEXT("Idol_Steel")),
-		FName(TEXT("Idol_Wood")),
-		FName(TEXT("Idol_Bone")),
-		FName(TEXT("Idol_Glass")),
-	};
-	return Idols;
+	return UT66IdolManagerSubsystem::GetAllIdolIDs();
 }
 
 FLinearColor UT66RunStateSubsystem::GetIdolColor(FName IdolID)
 {
-	// Back-compat aliases (legacy → closest new idol).
-	if (IdolID == FName(TEXT("Idol_Shock")))     IdolID = FName(TEXT("Idol_Electric"));
-	if (IdolID == FName(TEXT("Idol_Silence")))    IdolID = FName(TEXT("Idol_Shadow"));
-	if (IdolID == FName(TEXT("Idol_Mark")))       IdolID = FName(TEXT("Idol_Light"));
-	if (IdolID == FName(TEXT("Idol_Pierce")))     IdolID = FName(TEXT("Idol_Steel"));
-	if (IdolID == FName(TEXT("Idol_Split")))      IdolID = FName(TEXT("Idol_Wind"));
-	if (IdolID == FName(TEXT("Idol_Knockback")))  IdolID = FName(TEXT("Idol_Wood"));
-	if (IdolID == FName(TEXT("Idol_Ricochet")))   IdolID = FName(TEXT("Idol_Rubber"));
-	if (IdolID == FName(TEXT("Idol_Hex")))        IdolID = FName(TEXT("Idol_Curse"));
-	if (IdolID == FName(TEXT("Idol_Lifesteal")))  IdolID = FName(TEXT("Idol_Bleed"));
-	if (IdolID == FName(TEXT("Idol_Lightning")))  IdolID = FName(TEXT("Idol_Electric"));
-	if (IdolID == FName(TEXT("Idol_Darkness")))   IdolID = FName(TEXT("Idol_Shadow"));
-	if (IdolID == FName(TEXT("Idol_Metal")))      IdolID = FName(TEXT("Idol_Steel"));
-	if (IdolID == FName(TEXT("Idol_Spectral")))   IdolID = FName(TEXT("Idol_Curse"));
-	if (IdolID == FName(TEXT("Idol_Frost")))      IdolID = FName(TEXT("Idol_Ice"));
-	if (IdolID == FName(TEXT("Idol_Glue")))       IdolID = FName(TEXT("Idol_Decay"));
-
-	// DOT idols
-	if (IdolID == FName(TEXT("Idol_Curse")))     return FLinearColor(0.50f, 0.10f, 0.60f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Lava")))      return FLinearColor(0.95f, 0.40f, 0.05f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Poison")))    return FLinearColor(0.20f, 0.85f, 0.35f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Decay")))     return FLinearColor(0.45f, 0.40f, 0.20f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Bleed")))     return FLinearColor(0.80f, 0.10f, 0.10f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Acid")))      return FLinearColor(0.60f, 0.90f, 0.10f, 1.f);
-
-	// Bounce idols
-	if (IdolID == FName(TEXT("Idol_Electric")))  return FLinearColor(0.70f, 0.25f, 0.95f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Ice")))       return FLinearColor(0.35f, 0.75f, 1.00f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Sound")))     return FLinearColor(0.85f, 0.75f, 0.95f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Shadow")))    return FLinearColor(0.10f, 0.10f, 0.12f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Star")))      return FLinearColor(0.95f, 0.90f, 0.50f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Rubber")))    return FLinearColor(0.90f, 0.55f, 0.30f, 1.f);
-
-	// AOE idols
-	if (IdolID == FName(TEXT("Idol_Fire")))      return FLinearColor(0.95f, 0.25f, 0.10f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Earth")))     return FLinearColor(0.55f, 0.40f, 0.25f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Water")))     return FLinearColor(0.20f, 0.60f, 0.95f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Sand")))      return FLinearColor(0.90f, 0.85f, 0.55f, 1.f);
-	if (IdolID == FName(TEXT("Idol_BlackHole"))) return FLinearColor(0.15f, 0.05f, 0.25f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Storm")))     return FLinearColor(0.40f, 0.50f, 0.70f, 1.f);
-
-	// Pierce idols
-	if (IdolID == FName(TEXT("Idol_Light")))     return FLinearColor(0.92f, 0.92f, 0.98f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Wind")))      return FLinearColor(0.70f, 0.90f, 0.80f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Steel")))     return FLinearColor(0.55f, 0.55f, 0.75f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Wood")))      return FLinearColor(0.35f, 0.65f, 0.25f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Bone")))      return FLinearColor(0.90f, 0.88f, 0.80f, 1.f);
-	if (IdolID == FName(TEXT("Idol_Glass")))     return FLinearColor(0.85f, 0.92f, 0.95f, 1.f);
-
-	return FLinearColor(0.25f, 0.25f, 0.28f, 1.f);
+	return UT66IdolManagerSubsystem::GetIdolColor(IdolID);
 }
 
 void UT66RunStateSubsystem::SetDOTDamageApplier(TFunction<void(AActor*, int32, FName)> InApplier)
@@ -309,342 +265,152 @@ void UT66RunStateSubsystem::TickDOT()
 	}
 }
 
+const TArray<FName>& UT66RunStateSubsystem::GetEquippedIdols() const
+{
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->GetEquippedIdols();
+	}
+
+	static const TArray<FName> Empty;
+	return Empty;
+}
+
+const TArray<uint8>& UT66RunStateSubsystem::GetEquippedIdolTierValues() const
+{
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->GetEquippedIdolTierValues();
+	}
+
+	static const TArray<uint8> Empty;
+	return Empty;
+}
+
 bool UT66RunStateSubsystem::EquipIdolInSlot(int32 SlotIndex, FName IdolID)
 {
-	if (SlotIndex < 0 || SlotIndex >= MaxEquippedIdolSlots) return false;
-	if (IdolID.IsNone()) return false;
-
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+		return IdolManager->EquipIdolInSlot(SlotIndex, IdolID);
 	}
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
-	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-	}
-
-	if (EquippedIdolIDs[SlotIndex] == IdolID) return false;
-	EquippedIdolIDs[SlotIndex] = IdolID;
-	EquippedIdolLevels[SlotIndex] = 1;
-	IdolsChanged.Broadcast();
-	return true;
+	return false;
 }
 
 bool UT66RunStateSubsystem::EquipIdolFirstEmpty(FName IdolID)
 {
-	if (IdolID.IsNone()) return false;
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
-	}
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
-	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-	}
-
-	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
-	{
-		if (EquippedIdolIDs[i].IsNone())
-		{
-			EquippedIdolIDs[i] = IdolID;
-			EquippedIdolLevels[i] = 1;
-			IdolsChanged.Broadcast();
-			return true;
-		}
+		return IdolManager->EquipIdolFirstEmpty(IdolID);
 	}
 	return false;
 }
 
 int32 UT66RunStateSubsystem::GetEquippedIdolLevelInSlot(int32 SlotIndex) const
 {
-	if (SlotIndex < 0 || SlotIndex >= MaxEquippedIdolSlots) return 0;
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots) return 0;
-	if (SlotIndex >= EquippedIdolIDs.Num()) return 0;
-	if (EquippedIdolIDs[SlotIndex].IsNone()) return 0;
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots) return 1; // back-compat default
-	return FMath::Clamp(static_cast<int32>(EquippedIdolLevels[SlotIndex]), 1, MaxIdolLevel);
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->GetEquippedIdolLevelInSlot(SlotIndex);
+	}
+	return 0;
 }
 
 ET66ItemRarity UT66RunStateSubsystem::IdolTierValueToRarity(int32 TierValue)
 {
-	switch (FMath::Clamp(TierValue, 1, MaxIdolLevel))
-	{
-	case 1: return ET66ItemRarity::Black;
-	case 2: return ET66ItemRarity::Red;
-	case 3: return ET66ItemRarity::Yellow;
-	case 4: return ET66ItemRarity::White;
-	default: return ET66ItemRarity::Black;
-	}
+	return UT66IdolManagerSubsystem::IdolTierValueToRarity(TierValue);
 }
 
 int32 UT66RunStateSubsystem::IdolRarityToTierValue(ET66ItemRarity Rarity)
 {
-	switch (Rarity)
-	{
-	case ET66ItemRarity::Black:  return 1;
-	case ET66ItemRarity::Red:    return 2;
-	case ET66ItemRarity::Yellow: return 3;
-	case ET66ItemRarity::White:  return 4;
-	default:                     return 1;
-	}
+	return UT66IdolManagerSubsystem::IdolRarityToTierValue(Rarity);
 }
 
 ET66ItemRarity UT66RunStateSubsystem::GetEquippedIdolRarityInSlot(int32 SlotIndex) const
 {
-	return IdolTierValueToRarity(GetEquippedIdolLevelInSlot(SlotIndex));
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->GetEquippedIdolRarityInSlot(SlotIndex);
+	}
+	return ET66ItemRarity::Black;
 }
 
 bool UT66RunStateSubsystem::SelectIdolFromAltar(FName IdolID)
 {
-	if (IdolID.IsNone()) return false;
-
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
-	}
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
-	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-	}
-
-	// If already equipped, upgrade it to the next rarity tier.
-	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
-	{
-		if (EquippedIdolIDs[i] == IdolID)
-		{
-			const int32 Cur = FMath::Clamp(static_cast<int32>(EquippedIdolLevels[i]), 1, MaxIdolLevel);
-			const int32 Next = FMath::Clamp(Cur + 1, 1, MaxIdolLevel);
-			if (Next == Cur) return false;
-			EquippedIdolLevels[i] = static_cast<uint8>(Next);
-			IdolsChanged.Broadcast();
-			return true;
-		}
-	}
-
-	// Otherwise, equip into the first empty slot at Black rarity.
-	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
-	{
-		if (EquippedIdolIDs[i].IsNone())
-		{
-			EquippedIdolIDs[i] = IdolID;
-			EquippedIdolLevels[i] = 1;
-			IdolsChanged.Broadcast();
-			return true;
-		}
+		return IdolManager->SelectIdolFromAltar(IdolID);
 	}
 	return false;
 }
 
 void UT66RunStateSubsystem::ClearEquippedIdols()
 {
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-		IdolsChanged.Broadcast();
-		return;
-	}
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
-	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-	}
-
-	bool bAny = false;
-	for (FName& N : EquippedIdolIDs)
-	{
-		if (!N.IsNone())
-		{
-			N = NAME_None;
-			bAny = true;
-		}
-	}
-	if (bAny)
-	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-		IdolsChanged.Broadcast();
+		IdolManager->ClearEquippedIdols();
 	}
 }
 
 void UT66RunStateSubsystem::EnsureIdolStock()
 {
-	if (IdolStockStage == CurrentStage
-		&& IdolStockIDs.Num() == IdolStockSlotCount
-		&& IdolStockTierValues.Num() == IdolStockSlotCount)
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		return;
+		IdolManager->EnsureIdolStock();
 	}
-	RerollIdolStock();
 }
 
 void UT66RunStateSubsystem::RerollIdolStock()
 {
-	struct FIdolStockOffer
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		FName IdolID = NAME_None;
-		uint8 TierValue = 0;
-	};
-
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
-	{
-		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+		IdolManager->RerollIdolStock();
 	}
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+}
+
+const TArray<FName>& UT66RunStateSubsystem::GetIdolStockIDs() const
+{
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+		return IdolManager->GetIdolStockIDs();
 	}
 
-	IdolStockIDs.Empty(IdolStockSlotCount);
-	IdolStockTierValues.Empty(IdolStockSlotCount);
-	IdolStockSelected.Init(false, IdolStockSlotCount);
-	IdolStockStage = CurrentStage;
-
-	const TArray<FName>& AllIdols = GetAllIdolIDs();
-	const bool bHasEmptySlot = EquippedIdolIDs.Contains(NAME_None);
-
-	// Build pool:
-	// - owned idols offer the next rarity upgrade
-	// - unowned idols offer Black, but only if there is an empty slot to equip them
-	TArray<FIdolStockOffer> Pool;
-	Pool.Reserve(AllIdols.Num());
-	for (const FName& ID : AllIdols)
-	{
-		int32 OwnedTierValue = 0;
-		for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
-		{
-			if (EquippedIdolIDs[i] == ID)
-			{
-				OwnedTierValue = (EquippedIdolLevels.IsValidIndex(i))
-					? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[i]), 1, MaxIdolLevel)
-					: 1;
-				break;
-			}
-		}
-
-		if (OwnedTierValue > 0)
-		{
-			if (OwnedTierValue < MaxIdolLevel)
-			{
-				FIdolStockOffer& Offer = Pool.AddDefaulted_GetRef();
-				Offer.IdolID = ID;
-				Offer.TierValue = static_cast<uint8>(OwnedTierValue + 1);
-			}
-		}
-		else if (bHasEmptySlot)
-		{
-			FIdolStockOffer& Offer = Pool.AddDefaulted_GetRef();
-			Offer.IdolID = ID;
-			Offer.TierValue = 1;
-		}
-	}
-
-	// Shuffle and pick up to IdolStockSlotCount.
-	const int32 Count = FMath::Min(IdolStockSlotCount, Pool.Num());
-	for (int32 i = Pool.Num() - 1; i > 0; --i)
-	{
-		const int32 j = FMath::RandRange(0, i);
-		Pool.Swap(i, j);
-	}
-	for (int32 i = 0; i < Count; ++i)
-	{
-		IdolStockIDs.Add(Pool[i].IdolID);
-		IdolStockTierValues.Add(Pool[i].TierValue);
-	}
-
-	// Pad with NAME_None if pool was too small.
-	while (IdolStockIDs.Num() < IdolStockSlotCount)
-	{
-		IdolStockIDs.Add(NAME_None);
-		IdolStockTierValues.Add(0);
-	}
-
-	IdolsChanged.Broadcast();
+	static const TArray<FName> Empty;
+	return Empty;
 }
 
 int32 UT66RunStateSubsystem::GetIdolStockTierValue(int32 SlotIndex) const
 {
-	if (SlotIndex < 0 || SlotIndex >= IdolStockSlotCount) return 0;
-	if (!IdolStockTierValues.IsValidIndex(SlotIndex)) return 0;
-	return FMath::Clamp(static_cast<int32>(IdolStockTierValues[SlotIndex]), 0, MaxIdolLevel);
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->GetIdolStockTierValue(SlotIndex);
+	}
+	return 0;
 }
 
 ET66ItemRarity UT66RunStateSubsystem::GetIdolStockRarityInSlot(int32 SlotIndex) const
 {
-	return IdolTierValueToRarity(FMath::Max(1, GetIdolStockTierValue(SlotIndex)));
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->GetIdolStockRarityInSlot(SlotIndex);
+	}
+	return ET66ItemRarity::Black;
 }
 
 bool UT66RunStateSubsystem::SelectIdolFromStock(int32 SlotIndex)
 {
-	if (SlotIndex < 0 || SlotIndex >= IdolStockSlotCount) return false;
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
-		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+		return IdolManager->SelectIdolFromStock(SlotIndex);
 	}
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
-	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-	}
-	if (!IdolStockIDs.IsValidIndex(SlotIndex)) return false;
-	if (IdolStockIDs[SlotIndex].IsNone()) return false;
-	if (!IdolStockTierValues.IsValidIndex(SlotIndex) || IdolStockTierValues[SlotIndex] <= 0) return false;
-	if (IdolStockSelected.IsValidIndex(SlotIndex) && IdolStockSelected[SlotIndex]) return false;
-
-	const FName OfferedIdolID = IdolStockIDs[SlotIndex];
-	const int32 OfferedTierValue = FMath::Clamp(static_cast<int32>(IdolStockTierValues[SlotIndex]), 1, MaxIdolLevel);
-
-	bool bApplied = false;
-	for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
-	{
-		if (EquippedIdolIDs[i] != OfferedIdolID)
-		{
-			continue;
-		}
-
-		const int32 CurTierValue = (EquippedIdolLevels.IsValidIndex(i))
-			? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[i]), 1, MaxIdolLevel)
-			: 1;
-		if (OfferedTierValue != CurTierValue + 1)
-		{
-			return false;
-		}
-
-		EquippedIdolLevels[i] = static_cast<uint8>(OfferedTierValue);
-		bApplied = true;
-		break;
-	}
-
-	if (!bApplied)
-	{
-		if (OfferedTierValue != 1)
-		{
-			return false;
-		}
-
-		for (int32 i = 0; i < EquippedIdolIDs.Num(); ++i)
-		{
-			if (!EquippedIdolIDs[i].IsNone())
-			{
-				continue;
-			}
-
-			EquippedIdolIDs[i] = OfferedIdolID;
-			EquippedIdolLevels[i] = 1;
-			bApplied = true;
-			break;
-		}
-	}
-
-	if (bApplied && IdolStockSelected.IsValidIndex(SlotIndex))
-	{
-		IdolStockSelected[SlotIndex] = true;
-		IdolsChanged.Broadcast();
-	}
-	return bApplied;
+	return false;
 }
 
 bool UT66RunStateSubsystem::IsIdolStockSlotSelected(int32 SlotIndex) const
 {
-	if (SlotIndex < 0 || SlotIndex >= IdolStockSlotCount) return false;
-	return IdolStockSelected.IsValidIndex(SlotIndex) && IdolStockSelected[SlotIndex];
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->IsIdolStockSlotSelected(SlotIndex);
+	}
+	return false;
 }
 
 void UT66RunStateSubsystem::TrimLogsIfNeeded()
@@ -1516,6 +1282,7 @@ bool UT66RunStateSubsystem::TryBuyVendorStockSlot(int32 Index)
 
 bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess)
 {
+	(void)bRngSuccess;
 	EnsureVendorStockForCurrentStage();
 	if (Index < 0 || Index >= VendorStockSlots.Num()) return false;
 	if (IsVendorStockSlotSold(Index)) return false;
@@ -1527,23 +1294,27 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 	const int32 BuyPrice = D.GetBuyGoldForRarity(StealSlot.Rarity);
 	if (BuyPrice <= 0) return false;
 
-	// Determine success via central RNG. Timing window improves odds but does not guarantee success.
-	const UT66RngTuningConfig* Tuning = nullptr;
+	// Determine success via player-experience tuning and central luck bias.
+	UT66PlayerExperienceSubSystem* PlayerExperience = nullptr;
 	UT66RngSubsystem* RngSub = nullptr;
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
+		PlayerExperience = GameInstance->GetSubsystem<UT66PlayerExperienceSubSystem>();
 		RngSub = GameInstance->GetSubsystem<UT66RngSubsystem>();
 		if (RngSub)
 		{
 			RngSub->UpdateLuckStat(GetLuckStat());
-			Tuning = RngSub->GetTuning();
 		}
 	}
 
 	float BaseChance = 0.f;
 	if (bTimingHit)
 	{
-		BaseChance = Tuning ? Tuning->VendorStealSuccessChanceOnTimingHitBase : 0.65f;
+		const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+		BaseChance = PlayerExperience
+			? PlayerExperience->GetDifficultyVendorStealSuccessChanceOnTimingHitBase(Difficulty)
+			: 0.65f;
 	}
 	BaseChance = FMath::Clamp(BaseChance, 0.f, 1.f);
 
@@ -2655,12 +2426,6 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	BuybackDisplaySlots.Empty();
 	BuybackDisplayPage = 0;
 	RecomputeItemDerivedStats();
-	EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
-	EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
-	IdolStockIDs.Empty();
-	IdolStockTierValues.Empty();
-	IdolStockSelected.Empty();
-	IdolStockStage = INDEX_NONE;
 	ActiveDOTs.Empty();
 	RallyStacks = 0;
 	RallyTimerEndWorldTime = 0.0;
@@ -2711,13 +2476,22 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	StatusChillMoveSpeedMultiplier = 1.f;
 	StatusCurseSecondsRemaining = 0.f;
 	HeroLevel = DefaultHeroLevel;
-	// Difficulty start boosts: each difficulty step grants +10 levels.
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
-		const int32 DiffIndex = static_cast<int32>(T66GI->SelectedDifficulty);
-		const int32 Steps = FMath::Clamp(DiffIndex, 0, 999);
-		HeroLevel = FMath::Clamp(DefaultHeroLevel + (Steps * 10), 1, 9999);
+		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+		{
+			IdolManager->ResetForNewRun(T66GI->SelectedDifficulty);
+		}
+		if (UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
+		{
+			const int32 BonusLevels = PlayerExperience->GetDifficultyStartHeroBonusLevels(T66GI->SelectedDifficulty);
+			HeroLevel = FMath::Clamp(DefaultHeroLevel + BonusLevels, 1, 9999);
+		}
 		bInStageCatchUp = T66GI->bStageCatchUpPending;
+	}
+	else if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		IdolManager->ResetForNewRun(ET66Difficulty::Easy);
 	}
 	InitializeHeroStatsForNewRun();
 
@@ -2810,10 +2584,10 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 	// Bible: gambler anger resets at end of every stage.
 	ResetGamblerAnger();
 	ResetVendorForStage();
-	IdolStockIDs.Empty();
-	IdolStockTierValues.Empty();
-	IdolStockSelected.Empty();
-	IdolStockStage = INDEX_NONE;
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		IdolManager->HandleStageChanged(NewStage);
+	}
 	StageChanged.Broadcast();
 }
 

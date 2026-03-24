@@ -19,6 +19,13 @@ bool AT66VendorNPC::TrySellFirstItem()
 	return RunState->SellFirstItem();
 }
 
+void AT66VendorNPC::ConfigureAsSupportVendor(const bool bInAllowSteal)
+{
+	bAllowSteal = bInAllowSteal;
+	NPCID = FName(TEXT("SupportVendor"));
+	NPCName = NSLOCTEXT("T66.NPC", "SupportVendor", "Vendor");
+}
+
 bool AT66VendorNPC::Interact(APlayerController* PC)
 {
 	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);

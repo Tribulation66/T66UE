@@ -984,6 +984,9 @@ public:
 	FText GetText_Casino() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
+	FText GetText_Circus() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_Bank() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")

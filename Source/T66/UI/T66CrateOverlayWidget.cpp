@@ -1,9 +1,9 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66CrateOverlayWidget.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66RngSubsystem.h"
-#include "Core/T66RngTuningConfig.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
@@ -91,6 +91,7 @@ void UT66CrateOverlayWidget::GenerateStrip()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
 	if (RngSub && RunState)
@@ -100,11 +101,10 @@ void UT66CrateOverlayWidget::GenerateStrip()
 
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 
-	FT66RarityWeights CrateWeights;
-	CrateWeights.Black = 0.70f;
-	CrateWeights.Red = 0.20f;
-	CrateWeights.Yellow = 0.08f;
-	CrateWeights.White = 0.02f;
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	FT66RarityWeights CrateWeights = PlayerExperience
+		? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
+		: FT66RarityWeights{};
 	if (RunState)
 	{
 		CrateWeights = ApplyLootCrateBias(CrateWeights, RunState->GetLootCrateRewardMultiplier());

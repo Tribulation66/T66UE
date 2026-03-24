@@ -536,6 +536,17 @@ void FT66Style::Initialize()
 				.SetPressedPadding(Tokens::ButtonPaddingPressed));
 		}
 
+		// Transparent hit target for buttons that render their body from a separate fill overlay.
+		{
+			const FSlateRoundedBoxBrush FlatTransparentBrush(FLinearColor::Transparent, 0.f, FLinearColor::Transparent, 0.f);
+			StyleInstance->Set("T66.Button.FlatTransparent", FButtonStyle()
+				.SetNormal(FlatTransparentBrush)
+				.SetHovered(FlatTransparentBrush)
+				.SetPressed(FlatTransparentBrush)
+				.SetNormalPadding(Tokens::ButtonPadding)
+				.SetPressedPadding(Tokens::ButtonPaddingPressed));
+		}
+
 		// Row style: transparent background, very thin border, subtle hover highlight.
 		// Used for leaderboard rows and list items that are clickable but shouldn't look like buttons.
 		{
@@ -724,15 +735,16 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	const ET66ButtonBorderVisual ResolvedBorderVisual = ResolveButtonBorderVisual(Params);
 	const ET66ButtonBackgroundVisual ResolvedBackgroundVisual = ResolveButtonBackgroundVisual(Params);
 
-	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood)
+	const TSharedPtr<FT66ButtonFillBrushSet> FillBrushSet = FT66ButtonVisuals::CreateFillBrushSet(ResolvedBackgroundVisual);
+	const bool bHasCustomFill = FillBrushSet.IsValid() && FillBrushSet->IsValid();
+
+	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood || ResolvedBorderVisual == ET66ButtonBorderVisual::MainMenuBlueTrim)
 	{
-		StyleName = "T66.Button.FlatRect";
+		StyleName = bHasCustomFill ? "T66.Button.FlatTransparent" : "T66.Button.FlatRect";
 	}
 
 	const FButtonStyle& BtnStyle = Get().GetWidgetStyle<FButtonStyle>(StyleName);
 	const FTextBlockStyle& TxtStyle = Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
-	const TSharedPtr<FT66ButtonFillBrushSet> FillBrushSet = FT66ButtonVisuals::CreateFillBrushSet(ResolvedBackgroundVisual);
-	const bool bHasCustomFill = FillBrushSet.IsValid() && FillBrushSet->IsValid();
 
 	// 2. Debounce the click delegate.
 	FOnClicked SafeClick = DebounceClick(Params.OnClicked);
@@ -741,13 +753,18 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	//    When a color override is set (e.g. ON/OFF toggle selected state), use it so the
 	//    selected button is visually distinct. Otherwise with textures use white so the
 	//    baked-in border/gloss passes through; with fallback use the style default.
-	const bool bUsesTextureChrome = HasButtonTextures() && ResolvedBorderVisual != ET66ButtonBorderVisual::RetroWood;
+	const bool bUsesTextureChrome =
+		HasButtonTextures()
+		&& ResolvedBorderVisual != ET66ButtonBorderVisual::RetroWood
+		&& ResolvedBorderVisual != ET66ButtonBorderVisual::MainMenuBlueTrim;
 	TAttribute<FSlateColor> BtnColor;
-	if (Params.bHasColorOverride)
+	if (bHasCustomFill)
 	{
-		BtnColor = bHasCustomFill
-			? TAttribute<FSlateColor>(FSlateColor(FLinearColor(1.f, 1.f, 1.f, 0.f)))
-			: Params.ColorOverride;
+		BtnColor = TAttribute<FSlateColor>(FSlateColor(FLinearColor::White));
+	}
+	else if (Params.bHasColorOverride)
+	{
+		BtnColor = Params.ColorOverride;
 	}
 	else if (bUsesTextureChrome)
 	{
@@ -755,13 +772,12 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	}
 	else
 	{
-		BtnColor = bHasCustomFill
-			? TAttribute<FSlateColor>(FSlateColor(FLinearColor(1.f, 1.f, 1.f, 0.f)))
-			: TAttribute<FSlateColor>(FSlateColor(DefaultBtnColor));
+		BtnColor = TAttribute<FSlateColor>(FSlateColor(DefaultBtnColor));
 	}
 
 	// 4. Content padding (negative sentinel = don't override, use FMargin(0)).
 	const FMargin ContentPad = (Params.Padding.Left >= 0.f) ? Params.Padding : FMargin(0.f);
+	const TSharedPtr<ET66ButtonBorderState> BorderState = MakeShared<ET66ButtonBorderState>(ET66ButtonBorderState::Normal);
 
 	// 5. Build the inner content widget (text block or custom).
 	TAttribute<FText> TextAttr = Params.DynamicLabel.IsBound()
@@ -772,28 +788,155 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		? Tokens::FontBold(Params.FontSize)
 		: TxtStyle.Font;
 
-	TAttribute<FSlateColor> TextColor = Params.bHasTextColorOverride
-		? Params.TextColorOverride
-		: TAttribute<FSlateColor>(TxtStyle.ColorAndOpacity);
+	TAttribute<FSlateColor> TextColor;
+	if (Params.bHasStateTextColors)
+	{
+		const FSlateColor NormalStateTextColor = Params.NormalStateTextColor;
+		const FSlateColor HoveredStateTextColor = Params.HoveredStateTextColor;
+		const FSlateColor PressedStateTextColor = Params.PressedStateTextColor;
+		TextColor = TAttribute<FSlateColor>::CreateLambda([BorderState, NormalStateTextColor, HoveredStateTextColor, PressedStateTextColor]() -> FSlateColor
+		{
+			if (!BorderState.IsValid())
+			{
+				return NormalStateTextColor;
+			}
 
-	TSharedRef<SWidget> Content = Params.CustomContent.IsValid()
-		? Params.CustomContent.ToSharedRef()
-		: StaticCastSharedRef<SWidget>(
+			switch (*BorderState)
+			{
+			case ET66ButtonBorderState::Hovered:
+				return HoveredStateTextColor;
+			case ET66ButtonBorderState::Pressed:
+				return PressedStateTextColor;
+			case ET66ButtonBorderState::Normal:
+			default:
+				return NormalStateTextColor;
+			}
+		});
+	}
+	else if (Params.bHasTextColorOverride)
+	{
+		TextColor = Params.TextColorOverride;
+	}
+	else
+	{
+		TextColor = TAttribute<FSlateColor>(TxtStyle.ColorAndOpacity);
+	}
+
+	TAttribute<FSlateColor> SecondaryTextColor;
+	if (Params.bHasStateTextSecondaryColors)
+	{
+		const FSlateColor NormalStateTextSecondaryColor = Params.NormalStateTextSecondaryColor;
+		const FSlateColor HoveredStateTextSecondaryColor = Params.HoveredStateTextSecondaryColor;
+		const FSlateColor PressedStateTextSecondaryColor = Params.PressedStateTextSecondaryColor;
+		SecondaryTextColor = TAttribute<FSlateColor>::CreateLambda([BorderState, NormalStateTextSecondaryColor, HoveredStateTextSecondaryColor, PressedStateTextSecondaryColor]() -> FSlateColor
+		{
+			if (!BorderState.IsValid())
+			{
+				return NormalStateTextSecondaryColor;
+			}
+
+			switch (*BorderState)
+			{
+			case ET66ButtonBorderState::Hovered:
+				return HoveredStateTextSecondaryColor;
+			case ET66ButtonBorderState::Pressed:
+				return PressedStateTextSecondaryColor;
+			case ET66ButtonBorderState::Normal:
+			default:
+				return NormalStateTextSecondaryColor;
+			}
+		});
+	}
+
+	TAttribute<FLinearColor> TextShadowColor;
+	if (Params.bHasStateTextShadowColors)
+	{
+		const FLinearColor NormalStateTextShadowColor = Params.NormalStateTextShadowColor;
+		const FLinearColor HoveredStateTextShadowColor = Params.HoveredStateTextShadowColor;
+		const FLinearColor PressedStateTextShadowColor = Params.PressedStateTextShadowColor;
+		TextShadowColor = TAttribute<FLinearColor>::CreateLambda([BorderState, NormalStateTextShadowColor, HoveredStateTextShadowColor, PressedStateTextShadowColor]() -> FLinearColor
+		{
+			if (!BorderState.IsValid())
+			{
+				return NormalStateTextShadowColor;
+			}
+
+			switch (*BorderState)
+			{
+			case ET66ButtonBorderState::Hovered:
+				return HoveredStateTextShadowColor;
+			case ET66ButtonBorderState::Pressed:
+				return PressedStateTextShadowColor;
+			case ET66ButtonBorderState::Normal:
+			default:
+				return NormalStateTextShadowColor;
+			}
+		});
+	}
+	else
+	{
+		TextShadowColor = TAttribute<FLinearColor>(TxtStyle.ShadowColorAndOpacity);
+	}
+
+	const TAttribute<FVector2D> TextShadowOffset = Params.bHasTextShadowOffset
+		? TAttribute<FVector2D>(Params.TextShadowOffset)
+		: TAttribute<FVector2D>(TxtStyle.ShadowOffset);
+
+	const TSharedRef<SWidget> Content = [&]() -> TSharedRef<SWidget>
+	{
+		if (Params.CustomContent.IsValid())
+		{
+			return Params.CustomContent.ToSharedRef();
+		}
+
+		if (Params.bHasStateTextSecondaryColors)
+		{
+			const float PrimaryClipHeight = FMath::Max(1.f, FMath::RoundToFloat(static_cast<float>(TextFont.Size) * Params.TextDualToneSplit));
+
+			return StaticCastSharedRef<SWidget>(
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(STextBlock)
+					.Text(TextAttr)
+					.Font(TextFont)
+					.ColorAndOpacity(SecondaryTextColor)
+					.Justification(ETextJustify::Center)
+				]
+				+ SOverlay::Slot()
+				.VAlign(VAlign_Top)
+				[
+					SNew(SBox)
+					.Clipping(EWidgetClipping::ClipToBounds)
+					.HeightOverride(PrimaryClipHeight)
+					[
+						SNew(STextBlock)
+						.Text(TextAttr)
+						.Font(TextFont)
+						.ColorAndOpacity(TextColor)
+						.Justification(ETextJustify::Center)
+					]
+				]);
+		}
+
+		return StaticCastSharedRef<SWidget>(
 			SNew(STextBlock)
 			.Text(TextAttr)
 			.Font(TextFont)
 			.ColorAndOpacity(TextColor)
+			.ShadowOffset(TextShadowOffset)
+			.ShadowColorAndOpacity(TextShadowColor)
 			.Justification(ETextJustify::Center)
 		);
+	}();
 
 	// 6. Assemble: SBox > SButton > Content.
 	//    Width/Height of 0 means "no constraint" (FOptionalSize() = unset).
 	//    Row buttons use HAlign_Fill so custom content (e.g. column layouts) stretches to full width.
 	const EHorizontalAlignment BtnHAlign = (Params.Type == ET66ButtonType::Row) ? HAlign_Fill : HAlign_Center;
 	const EVerticalAlignment BtnVAlign = (Params.Type == ET66ButtonType::Row) ? VAlign_Fill : VAlign_Center;
-	const TSharedPtr<FT66ButtonGlowState> GlowState = CreateButtonGlowState(Params.Type);
+	const TSharedPtr<FT66ButtonGlowState> GlowState = Params.bUseGlow ? CreateButtonGlowState(Params.Type) : nullptr;
 	const TSharedPtr<FT66ButtonBorderBrushSet> BorderBrushSet = FT66ButtonVisuals::CreateBorderBrushSet(ResolvedBorderVisual);
-	const TSharedPtr<ET66ButtonBorderState> BorderState = MakeShared<ET66ButtonBorderState>(ET66ButtonBorderState::Normal);
 	const int32 EffectiveFontSize = (Params.FontSize > 0) ? Params.FontSize : TextFont.Size;
 	const float BorderThickness = (BorderBrushSet.IsValid() && BorderBrushSet->IsValid())
 		? ResolveButtonDecorativeBorderThickness(Params, EffectiveFontSize, BorderBrushSet->Thickness)
@@ -820,29 +963,33 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	}
 
 	const TSharedRef<SWidget> GlowWidget =
-		(GlowState.IsValid() && GlowState->Brush.IsValid())
+		!Params.bUseGlow
 		? StaticCastSharedRef<SWidget>(
-			SNew(SImage)
-			.Visibility(EVisibility::HitTestInvisible)
-			.Image(TAttribute<const FSlateBrush*>::CreateLambda([GlowState]() -> const FSlateBrush*
-			{
-				return GlowState.IsValid() && GlowState->Brush.IsValid() ? GlowState->Brush.Get() : nullptr;
-			})))
-		: StaticCastSharedRef<SWidget>(
-			SNew(SBorder)
-			.Visibility(EVisibility::HitTestInvisible)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([GlowState]() -> FSlateColor
-			{
-				if (!GlowState.IsValid())
+			SNew(SBox)
+			.Visibility(EVisibility::Collapsed))
+		: (GlowState.IsValid() && GlowState->Brush.IsValid())
+			? StaticCastSharedRef<SWidget>(
+				SNew(SImage)
+				.Visibility(EVisibility::HitTestInvisible)
+				.Image(TAttribute<const FSlateBrush*>::CreateLambda([GlowState]() -> const FSlateBrush*
 				{
-					return FSlateColor(FLinearColor::Transparent);
-				}
+					return GlowState.IsValid() && GlowState->Brush.IsValid() ? GlowState->Brush.Get() : nullptr;
+				})))
+			: StaticCastSharedRef<SWidget>(
+				SNew(SBorder)
+				.Visibility(EVisibility::HitTestInvisible)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([GlowState]() -> FSlateColor
+				{
+					if (!GlowState.IsValid())
+					{
+						return FSlateColor(FLinearColor::Transparent);
+					}
 
-				FLinearColor Color = GlowState->Color;
-				Color.A = GlowState->Intensity * Tokens::ButtonGlowFallbackOpacity;
-				return FSlateColor(Color);
-			})));
+					FLinearColor Color = GlowState->Color;
+					Color.A = GlowState->Intensity * Tokens::ButtonGlowFallbackOpacity;
+					return FSlateColor(Color);
+				})));
 
 	const TAttribute<const FSlateBrush*> FillBrushAttr = TAttribute<const FSlateBrush*>::CreateLambda([FillBrushSet, BorderState]() -> const FSlateBrush*
 	{

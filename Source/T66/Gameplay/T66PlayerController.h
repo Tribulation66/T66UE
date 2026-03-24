@@ -13,6 +13,7 @@ class UT66GameplayHUDWidget;
 class UT66LabOverlayWidget;
 class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
+class UT66CircusOverlayWidget;
 class UT66CasinoOverlayWidget;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
@@ -113,15 +114,22 @@ public:
 
 	/** Open the shared casino overlay (gambling + vendor + alchemy). */
 	void OpenCasinoOverlay();
+	void OpenCircusOverlay();
 
 	/** Close the shared casino overlay and return to gameplay input. */
 	void CloseCasinoOverlay();
+	void CloseCircusOverlay();
 
 	void SwitchCasinoOverlayToGambling();
 	void SwitchCasinoOverlayToVendor();
 	void SwitchCasinoOverlayToAlchemy();
 	bool IsCasinoOverlayOpen() const;
 	bool TriggerCasinoBossIfAngry();
+	void SwitchCircusOverlayToGambling();
+	void SwitchCircusOverlayToVendor();
+	void SwitchCircusOverlayToAlchemy();
+	bool IsCircusOverlayOpen() const;
+	bool TriggerCircusBossIfAngry();
 
 	/** Open the Vendor overlay (non-pausing). */
 	void OpenVendorOverlay();
@@ -242,7 +250,7 @@ private:
 	TObjectPtr<UT66GamblerOverlayWidget> GamblerOverlayWidget;
 
 	UPROPERTY()
-	TObjectPtr<UT66CasinoOverlayWidget> CasinoOverlayWidget;
+	TObjectPtr<UT66CircusOverlayWidget> CircusOverlayWidget;
 
 	UPROPERTY()
 	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
@@ -255,6 +263,7 @@ private:
 	TObjectPtr<UT66CollectorOverlayWidget> CollectorOverlayWidget;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
+	TWeakObjectPtr<AT66VendorNPC> ActiveVendorNPC;
 
 	/** Niagara system for jump VFX (legacy round ball: VFX_Attack1). */
 	UPROPERTY(EditDefaultsOnly, Category = "Game|VFX")

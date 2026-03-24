@@ -12,6 +12,7 @@ class STextBlock;
 class SImage;
 class SWidget;
 struct FSlateBrush;
+class AT66IdolAltar;
 
 /**
  * Idol Altar overlay — shop-style panel showing 3 idol cards with SELECT + REROLL.
@@ -24,6 +25,7 @@ class T66_API UT66IdolAltarOverlayWidget : public UUserWidget
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeDestruct() override;
+	void SetSourceAltar(AT66IdolAltar* InSourceAltar) { SourceAltar = InSourceAltar; }
 
 private:
 	static constexpr int32 SlotCount = 3;
@@ -39,6 +41,7 @@ private:
 	TArray<TSharedPtr<STextBlock>> SelectButtonTexts;
 
 	TSharedPtr<STextBlock> StatusText;
+	TWeakObjectPtr<AT66IdolAltar> SourceAltar;
 
 	// Actions
 	FReply OnSelectSlot(int32 SlotIndex);

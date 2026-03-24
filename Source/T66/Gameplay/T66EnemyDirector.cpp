@@ -142,10 +142,19 @@ void AT66EnemyDirector::SpawnWave()
 		return;
 	}
 
+	// Global density pass: triple combat spawns on top of the existing difficulty scalar.
+	static constexpr float SpawnDensityMultiplier = 3.0f;
+
 	// Difficulty scaling affects enemy count (waves + max alive).
 	const float Scalar = RunState->GetDifficultyScalar();
-	int32 EffectivePerWave = FMath::Clamp(FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * Scalar), 1, 200);
-	int32 EffectiveMaxAlive = FMath::Clamp(FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseMaxAliveEnemies)) * Scalar), 1, 500);
+	int32 EffectivePerWave = FMath::Clamp(
+		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * Scalar * SpawnDensityMultiplier),
+		1,
+		600);
+	int32 EffectiveMaxAlive = FMath::Clamp(
+		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseMaxAliveEnemies)) * Scalar * SpawnDensityMultiplier),
+		1,
+		1500);
 	EffectiveMaxAlive = FMath::Max(EffectiveMaxAlive, EffectivePerWave);
 
 	int32 ToSpawn = FMath::Min(EffectivePerWave, EffectiveMaxAlive - AliveCount);

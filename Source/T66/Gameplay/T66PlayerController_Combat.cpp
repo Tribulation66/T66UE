@@ -744,6 +744,7 @@ void AT66PlayerController::HandleInteractPressed()
 		UT66IdolAltarOverlayWidget* W = CreateWidget<UT66IdolAltarOverlayWidget>(this, UT66IdolAltarOverlayWidget::StaticClass());
 		if (W)
 		{
+			W->SetSourceAltar(ClosestIdolAltar);
 			IdolAltarOverlayWidget = W;
 			W->AddToViewport(150); // above gambler overlay
 			FInputModeGameAndUI InputMode;

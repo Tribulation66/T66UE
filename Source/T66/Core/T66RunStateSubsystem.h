@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Templates/Function.h"
 #include "T66RunStateSubsystem.generated.h"
@@ -36,6 +37,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDevCheatsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCowardiceGatesTakenChanged);
 
 class AActor;
+class FSubsystemCollectionBase;
 
 /** Single DOT instance on one target (idol DOT damage over time). */
 struct FT66DotInstance
@@ -67,6 +69,9 @@ class T66_API UT66RunStateSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+
 	static constexpr int32 DefaultMaxHearts = 5;
 	/** HP per heart by tier: red=20, blue=25, green=31.25, purple=39.0625, gold=48.828125. */
 	static constexpr float HPPerRedHeart = 20.f;
@@ -76,7 +81,7 @@ public:
 	static constexpr float DefaultInvulnDurationSeconds = 0.75f;
 	static constexpr int32 DefaultStartGold = 100;
 	static constexpr int32 MaxInventorySlots = 20;
-	static constexpr int32 MaxEquippedIdolSlots = 6;
+	static constexpr int32 MaxEquippedIdolSlots = UT66IdolManagerSubsystem::MaxEquippedIdolSlots;
 	static constexpr int32 DefaultHeroLevel = 1;
 	static constexpr int32 DefaultXPToLevel = 100;
 	static constexpr float UltimateCooldownSeconds = 30.f;
@@ -140,7 +145,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnGamblerAngerChanged GamblerAngerChanged;
 
-	/** Equipped idols changed. */
+	/** Compatibility delegate: idol state now lives in UT66IdolManagerSubsystem. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnIdolsChanged IdolsChanged;
 
@@ -338,12 +343,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	TArray<FName> GetInventory() const;
 
-	/** Equipped idol slots (size=6). NAME_None means empty slot. */
+	/** Compatibility facade: idol state is owned by UT66IdolManagerSubsystem. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
-	const TArray<FName>& GetEquippedIdols() const { return EquippedIdolIDs; }
+	const TArray<FName>& GetEquippedIdols() const;
 
 	/** Idol rarity tiers: black, red, yellow, white. */
-	static constexpr int32 MaxIdolLevel = 4;
+	static constexpr int32 MaxIdolLevel = UT66IdolManagerSubsystem::MaxIdolLevel;
 
 	/** Equipped idol rarity tier for a specific slot (0 empty, 1 black .. 4 white). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -355,7 +360,7 @@ public:
 
 	/** Raw idol tier values aligned with EquippedIdolIDs (0 empty, 1 black .. 4 white). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
-	const TArray<uint8>& GetEquippedIdolTierValues() const { return EquippedIdolLevels; }
+	const TArray<uint8>& GetEquippedIdolTierValues() const;
 
 	/** Convert between stored idol tier values and the shared item rarity enum. */
 	static ET66ItemRarity IdolTierValueToRarity(int32 TierValue);
@@ -400,7 +405,7 @@ public:
 	// Idol stock (shop-style altar: 3 offered idols + reroll)
 	// ============================================================
 
-	static constexpr int32 IdolStockSlotCount = 3;
+	static constexpr int32 IdolStockSlotCount = UT66IdolManagerSubsystem::IdolStockSlotCount;
 
 	/** Ensure idol stock has been generated for the current stage. */
 	void EnsureIdolStock();
@@ -409,7 +414,7 @@ public:
 	void RerollIdolStock();
 
 	/** Returns the current idol stock IDs (3 slots). */
-	const TArray<FName>& GetIdolStockIDs() const { return IdolStockIDs; }
+	const TArray<FName>& GetIdolStockIDs() const;
 
 	/** Returns the current idol stock tier value (0 empty, 1 black .. 4 white). */
 	int32 GetIdolStockTierValue(int32 SlotIndex) const;
@@ -1133,6 +1138,10 @@ private:
 	float ComputeLuckRatingQuality01() const;
 
 	void ResetLuckRatingTracking();
+	UFUNCTION()
+	void HandleIdolStateChanged();
+
+	UT66IdolManagerSubsystem* GetIdolManager() const;
 
 	void TrimLogsIfNeeded();
 	void RecomputeItemDerivedStats();
@@ -1187,30 +1196,12 @@ private:
 	/** Active Gambler's Token level for this run. It behaves like a special run upgrade, not a regular slot item. */
 	int32 ActiveGamblersTokenLevel = 0;
 
-	UPROPERTY()
-	TArray<FName> EquippedIdolIDs;
-
-	UPROPERTY()
-	TArray<uint8> EquippedIdolLevels;
-
 	/** Active DOTs (idol): target -> instance. Keys are weak so destroyed actors drop out. */
 	TMap<TWeakObjectPtr<AActor>, FT66DotInstance> ActiveDOTs;
 
 	TFunction<void(AActor*, int32, FName)> DOTDamageApplier;
 	FTimerHandle DOTTimerHandle;
 	static constexpr float DOTTickRateSeconds = 0.2f;
-
-	/** Idol stock: 3 offered idols (shop-style altar). */
-	TArray<FName> IdolStockIDs;
-
-	/** Idol stock tier values (0 empty, 1 black .. 4 white). */
-	TArray<uint8> IdolStockTierValues;
-
-	/** Whether each stock slot has been selected this visit. */
-	TArray<bool> IdolStockSelected;
-
-	/** Stage number the current idol stock was generated for. */
-	int32 IdolStockStage = INDEX_NONE;
 
 	UPROPERTY()
 	TArray<FString> EventLog;

@@ -7,6 +7,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
@@ -2827,15 +2828,14 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 	UWorld* World = GetWorld();
 	UT66RunStateSubsystem* RunState = nullptr;
 	UT66RngSubsystem* RngSub = nullptr;
-	const UT66RngTuningConfig* Tuning = nullptr;
+	UT66GameInstance* T66GI = nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = nullptr;
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
+		T66GI = Cast<UT66GameInstance>(GI);
 		RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 		RngSub = GI->GetSubsystem<UT66RngSubsystem>();
-		if (RngSub)
-		{
-			Tuning = RngSub->GetTuning();
-		}
+		PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>();
 	}
 
 	bPendingWin = true;
@@ -2846,7 +2846,10 @@ FReply UT66GamblerOverlayWidget::OnCheatYes()
 	// Roll cheat success: success => force win with no anger increase. failure => anger increases and normal RNG plays out.
 	bool bCheatSuccess = false;
 	{
-		const float Base = Tuning ? FMath::Clamp(Tuning->GamblerCheatSuccessChanceBase, 0.f, 1.f) : 0.40f;
+		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+		const float Base = PlayerExperience
+			? PlayerExperience->GetDifficultyGamblerCheatSuccessChanceBase(Difficulty)
+			: 0.40f;
 		if (RunState && RngSub && Base > 0.f)
 		{
 			RngSub->UpdateLuckStat(RunState->GetLuckStat());

@@ -1,0 +1,115 @@
+[gd_scene format=3 uid="uid://bjbx0b1ad8ecg"]
+
+[ext_resource type="Shader" uid="uid://bqpv4y7x6y0wa" path="res://addons/pixel_portals/pixel_portal.gdshader" id="1_aw41p"]
+[ext_resource type="Shader" uid="uid://catdhnjgt7mwy" path="res://examples/base/utility/floor3d.gdshader" id="2_mskp1"]
+[ext_resource type="Texture2D" uid="uid://bwmekc450hxnj" path="res://examples/base/sprites/demo-tile-dark-scaled.png" id="3_me7oi"]
+[ext_resource type="Script" uid="uid://cua0dysnutm66" path="res://examples/base/utility/orbit.gd" id="4_wff4c"]
+
+[sub_resource type="Environment" id="Environment_6tkrt"]
+background_mode = 1
+background_color = Color(0.099985994, 0.099985994, 0.099985994, 1)
+glow_normalized = true
+glow_intensity = 4.84
+glow_strength = 1.6
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7t3ax"]
+render_priority = 0
+shader = ExtResource("2_mskp1")
+shader_parameter/bg_texture = ExtResource("3_me7oi")
+shader_parameter/speed = Vector2(0, 0)
+shader_parameter/scale = 0.004
+shader_parameter/invert = false
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_me0rb"]
+material = SubResource("ShaderMaterial_7t3ax")
+size = Vector2(1000, 1000)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_lk3l0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6tkrt"]
+render_priority = 0
+shader = ExtResource("1_aw41p")
+shader_parameter/last_layer_transparent = true
+shader_parameter/first_layer_transparent = true
+shader_parameter/transparency_transition = 0
+shader_parameter/transparency_falloff = 1.0
+shader_parameter/rim = true
+shader_parameter/rim_extra_radius = 0.1
+shader_parameter/color_repeat_layer = 0
+shader_parameter/color_offset_layer = 0
+shader_parameter/color_one = Color(1, 1, 1, 1)
+shader_parameter/color_two = Color(0, 0, 0, 1)
+shader_parameter/color_falloff = 1.0
+shader_parameter/color_transition = 0
+shader_parameter/glow_repeat_layer = 0
+shader_parameter/glow_offset_layer = 0
+shader_parameter/glow = 0.0
+shader_parameter/glow_falloff = 1.0
+shader_parameter/depth_amount = 1.0
+shader_parameter/layers = 12
+shader_parameter/radius = 0.400000019
+shader_parameter/radius_reduction = 0.1
+shader_parameter/radius_reduction_type = 0
+shader_parameter/vary_radius = true
+shader_parameter/radius_variation = 0.1
+shader_parameter/radius_speed_variation = 1.0
+shader_parameter/radius_variation_offset = 1.0
+shader_parameter/radius_random_offset = true
+shader_parameter/center = Vector2(0.5, 0.5)
+shader_parameter/rotation_repeat_layer = 0
+shader_parameter/rotation_offset_layer = 0
+shader_parameter/rotation = 0.0
+shader_parameter/pixel_size = 10.0
+shader_parameter/resolution = Vector2(512, 512)
+shader_parameter/dither_offset = Vector2i(2, 0)
+shader_parameter/bayer_size = 2
+shader_parameter/interpolate = true
+shader_parameter/falloff = 2.5
+
+[sub_resource type="GDScript" id="GDScript_7t3ax"]
+script/source = "extends Camera3D
+"
+
+[node name="SimpleDitherPortal" type="Node3D" unique_id=589736465]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1935722707]
+environment = SubResource("Environment_6tkrt")
+
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=1283877464]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0011832714, 0.0044658184, -0.0019609928)
+mesh = SubResource("PlaneMesh_me0rb")
+
+[node name="Portal" type="MeshInstance3D" parent="." unique_id=2116438249]
+transform = Transform3D(1, 0, 0, 0, 0.34202015, -0.9396926, 0, 0.9396926, 0.34202015, 0.003, 1.5, 0.006)
+mesh = SubResource("PlaneMesh_lk3l0")
+surface_material_override/0 = SubResource("ShaderMaterial_6tkrt")
+
+[node name="Node3D" type="Node3D" parent="." unique_id=2132801366]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+script = ExtResource("4_wff4c")
+
+[node name="Camera3D" type="Camera3D" parent="Node3D" unique_id=895343072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+script = SubResource("GDScript_7t3ax")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2128957486]
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer" unique_id=190622691]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -169.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="LinkButton" type="LinkButton" parent="CanvasLayer/MarginContainer" unique_id=264053639]
+layout_mode = 2
+text = "Rate this asset! (https://nojoule.itch.io/pixel-portals/rate)"
+uri = "https://nojoule.itch.io/pixel-portals/rate"

@@ -27,7 +27,7 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
-#include "UI/T66CasinoOverlayWidget.h"
+#include "UI/T66CircusOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66LoadPreviewOverlayWidget.h"
@@ -39,7 +39,7 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
+#include "Gameplay/T66CircusInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66StageCatchUpGate.h"
@@ -139,21 +139,22 @@ void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
 }
 
 
-void AT66PlayerController::OpenCasinoOverlay()
+void AT66PlayerController::OpenCircusOverlay()
 {
 	if (!IsGameplayLevel()) return;
+	ActiveVendorNPC.Reset();
 
-	if (!CasinoOverlayWidget)
+	if (!CircusOverlayWidget)
 	{
-		CasinoOverlayWidget = CreateWidget<UT66CasinoOverlayWidget>(this, UT66CasinoOverlayWidget::StaticClass());
+		CircusOverlayWidget = CreateWidget<UT66CircusOverlayWidget>(this, UT66CircusOverlayWidget::StaticClass());
 	}
 
-	if (CasinoOverlayWidget)
+	if (CircusOverlayWidget)
 	{
-		CasinoOverlayWidget->OpenVendorTab();
-		if (!CasinoOverlayWidget->IsInViewport())
+		CircusOverlayWidget->OpenVendorTab();
+		if (!CircusOverlayWidget->IsInViewport())
 		{
-			CasinoOverlayWidget->AddToViewport(100);
+			CircusOverlayWidget->AddToViewport(100);
 		}
 
 		FInputModeGameAndUI InputMode;
@@ -163,51 +164,75 @@ void AT66PlayerController::OpenCasinoOverlay()
 	}
 }
 
-
-void AT66PlayerController::CloseCasinoOverlay()
+void AT66PlayerController::OpenCasinoOverlay()
 {
-	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
+	OpenCircusOverlay();
+}
+
+void AT66PlayerController::CloseCircusOverlay()
+{
+	if (CircusOverlayWidget && CircusOverlayWidget->IsInViewport())
 	{
-		CasinoOverlayWidget->RemoveFromParent();
+		CircusOverlayWidget->RemoveFromParent();
 	}
 	RestoreGameplayInputMode();
 }
 
+void AT66PlayerController::CloseCasinoOverlay()
+{
+	CloseCircusOverlay();
+}
+
+void AT66PlayerController::SwitchCircusOverlayToGambling()
+{
+	if (CircusOverlayWidget)
+	{
+		CircusOverlayWidget->OpenGamblingTab();
+	}
+}
 
 void AT66PlayerController::SwitchCasinoOverlayToGambling()
 {
-	if (CasinoOverlayWidget)
-	{
-		CasinoOverlayWidget->OpenGamblingTab();
-	}
+	SwitchCircusOverlayToGambling();
 }
 
+void AT66PlayerController::SwitchCircusOverlayToVendor()
+{
+	if (CircusOverlayWidget)
+	{
+		CircusOverlayWidget->OpenVendorTab();
+	}
+}
 
 void AT66PlayerController::SwitchCasinoOverlayToVendor()
 {
-	if (CasinoOverlayWidget)
-	{
-		CasinoOverlayWidget->OpenVendorTab();
-	}
+	SwitchCircusOverlayToVendor();
 }
 
+void AT66PlayerController::SwitchCircusOverlayToAlchemy()
+{
+	if (CircusOverlayWidget)
+	{
+		CircusOverlayWidget->OpenAlchemyTab();
+	}
+}
 
 void AT66PlayerController::SwitchCasinoOverlayToAlchemy()
 {
-	if (CasinoOverlayWidget)
-	{
-		CasinoOverlayWidget->OpenAlchemyTab();
-	}
+	SwitchCircusOverlayToAlchemy();
 }
 
+bool AT66PlayerController::IsCircusOverlayOpen() const
+{
+	return CircusOverlayWidget && CircusOverlayWidget->IsInViewport();
+}
 
 bool AT66PlayerController::IsCasinoOverlayOpen() const
 {
-	return CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport();
+	return IsCircusOverlayOpen();
 }
 
-
-bool AT66PlayerController::TriggerCasinoBossIfAngry()
+bool AT66PlayerController::TriggerCircusBossIfAngry()
 {
 	if (!IsGameplayLevel()) return false;
 
@@ -227,11 +252,11 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 
 	FVector SpawnLoc = FVector::ZeroVector;
 	bool bHasSpawnLoc = false;
-	for (TActorIterator<AT66CasinoInteractable> It(World); It; ++It)
+	for (TActorIterator<AT66CircusInteractable> It(World); It; ++It)
 	{
-		if (AT66CasinoInteractable* Casino = *It)
+		if (AT66CircusInteractable* Circus = *It)
 		{
-			SpawnLoc = Casino->GetActorLocation();
+			SpawnLoc = Circus->GetActorLocation();
 			bHasSpawnLoc = true;
 			break;
 		}
@@ -268,9 +293,9 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	World->SpawnActor<AT66GamblerBoss>(AT66GamblerBoss::StaticClass(), SpawnLoc + FVector(0.f, 0.f, 200.f), FRotator::ZeroRotator, Params);
 
-	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
+	if (CircusOverlayWidget && CircusOverlayWidget->IsInViewport())
 	{
-		CasinoOverlayWidget->RemoveFromParent();
+		CircusOverlayWidget->RemoveFromParent();
 	}
 	if (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 	{
@@ -284,6 +309,10 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 	return true;
 }
 
+bool AT66PlayerController::TriggerCasinoBossIfAngry()
+{
+	return TriggerCircusBossIfAngry();
+}
 
 void AT66PlayerController::OpenVendorOverlay()
 {
@@ -294,13 +323,18 @@ void AT66PlayerController::OpenVendorOverlay()
 		VendorOverlayWidget = CreateWidget<UT66VendorOverlayWidget>(this, UT66VendorOverlayWidget::StaticClass());
 	}
 
-	if (VendorOverlayWidget && !VendorOverlayWidget->IsInViewport())
+	if (VendorOverlayWidget)
 	{
-		VendorOverlayWidget->AddToViewport(100); // above HUD
-		FInputModeGameAndUI InputMode;
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		SetInputMode(InputMode);
-		bShowMouseCursor = true;
+		VendorOverlayWidget->SetEmbeddedInCircusShell(false);
+		VendorOverlayWidget->SetVendorAllowsSteal(ActiveVendorNPC.IsValid() ? ActiveVendorNPC->DoesAllowSteal() : true);
+		if (!VendorOverlayWidget->IsInViewport())
+		{
+			VendorOverlayWidget->AddToViewport(100); // above HUD
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
 	}
 }
 

@@ -1,10 +1,11 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66IdolAltarOverlayWidget.h"
-#include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Data/T66DataTypes.h"
 #include "Engine/Texture2D.h"
@@ -22,10 +23,10 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 
-static UT66RunStateSubsystem* GetRunState(UWorld* World)
+static UT66IdolManagerSubsystem* GetIdolManager(UWorld* World)
 {
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	return GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
 }
 
 static FText GetItemRarityDisplayText(ET66ItemRarity Rarity)
@@ -41,9 +42,9 @@ void UT66IdolAltarOverlayWidget::NativeDestruct()
 	// Unbind delegate.
 	if (UWorld* World = GetWorld())
 	{
-		if (UT66RunStateSubsystem* RunState = GetRunState(World))
+		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
 		{
-			RunState->IdolsChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
+			IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
 		}
 	}
 
@@ -66,7 +67,7 @@ void UT66IdolAltarOverlayWidget::HandleIdolsChanged()
 TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 {
 	UWorld* World = GetWorld();
-	UT66RunStateSubsystem* RunState = GetRunState(World);
+	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
 	UT66LocalizationSubsystem* Loc = nullptr;
 	if (World)
 	{
@@ -77,13 +78,13 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	}
 
 	// Ensure stock is generated.
-	if (RunState)
+	if (IdolManager)
 	{
-		RunState->EnsureIdolStock();
+		IdolManager->EnsureIdolStock();
 
 		// Bind delegate (event-driven refresh).
-		RunState->IdolsChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
-		RunState->IdolsChanged.AddDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
+		IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
+		IdolManager->IdolStateChanged.AddDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
 	}
 
 	const ISlateStyle& Style = FT66Style::Get();
@@ -258,20 +259,20 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 void UT66IdolAltarOverlayWidget::RefreshStock()
 {
 	UWorld* World = GetWorld();
-	UT66RunStateSubsystem* RunState = GetRunState(World);
-	if (!RunState) return;
+	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
+	if (!IdolManager) return;
 
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
-	const TArray<FName>& Stock = RunState->GetIdolStockIDs();
+	const TArray<FName>& Stock = IdolManager->GetIdolStockIDs();
 
 	for (int32 i = 0; i < SlotCount; ++i)
 	{
 		const bool bHasItem = Stock.IsValidIndex(i) && !Stock[i].IsNone();
-		const ET66ItemRarity OfferedRarity = RunState->GetIdolStockRarityInSlot(i);
-		const bool bSelected = RunState->IsIdolStockSlotSelected(i);
+		const ET66ItemRarity OfferedRarity = IdolManager->GetIdolStockRarityInSlot(i);
+		const bool bSelected = IdolManager->IsIdolStockSlotSelected(i);
 
 		FIdolData D;
 		const bool bHasData = bHasItem && GI && GI->GetIdolData(Stock[i], D);
@@ -358,8 +359,18 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 {
 	UWorld* World = GetWorld();
-	UT66RunStateSubsystem* RunState = GetRunState(World);
-	if (!RunState) return FReply::Handled();
+	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
+	if (!IdolManager) return FReply::Handled();
+	const bool bConsumesCatchUpPick = SourceAltar.IsValid() && SourceAltar->bConsumesCatchUpIdolPicks;
+	if (bConsumesCatchUpPick && !IdolManager->HasCatchUpIdolPicksRemaining())
+	{
+		if (AT66IdolAltar* Altar = SourceAltar.Get())
+		{
+			Altar->Destroy();
+		}
+		SourceAltar.Reset();
+		return OnBack();
+	}
 
 	UT66LocalizationSubsystem* Loc = nullptr;
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
@@ -367,14 +378,19 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
 	}
 
-	const TArray<FName>& EquippedBefore = RunState->GetEquippedIdols();
-	const TArray<FName>& Stock = RunState->GetIdolStockIDs();
+	const TArray<FName>& EquippedBefore = IdolManager->GetEquippedIdols();
+	const TArray<FName>& Stock = IdolManager->GetIdolStockIDs();
 	const FName OfferedIdolID = Stock.IsValidIndex(SlotIndex) ? Stock[SlotIndex] : NAME_None;
 	const bool bWasUpgrade = EquippedBefore.Contains(OfferedIdolID);
 
-	const bool bApplied = RunState->SelectIdolFromStock(SlotIndex);
+	const bool bApplied = IdolManager->SelectIdolFromStock(SlotIndex);
 	if (bApplied)
 	{
+		if (bConsumesCatchUpPick)
+		{
+			IdolManager->ConsumeCatchUpIdolPick();
+		}
+
 		if (StatusText.IsValid())
 		{
 			StatusText->SetText(
@@ -382,11 +398,21 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 					? NSLOCTEXT("T66.IdolAltar", "Upgraded", "Upgraded.")
 					: (Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped.")));
 		}
+
+		if (bConsumesCatchUpPick && !IdolManager->HasCatchUpIdolPicksRemaining())
+		{
+			if (AT66IdolAltar* Altar = SourceAltar.Get())
+			{
+				Altar->Destroy();
+			}
+			SourceAltar.Reset();
+			return OnBack();
+		}
 	}
 	else
 	{
 		// Determine why it failed for a helpful message.
-		const bool bAlreadySelected = RunState->IsIdolStockSlotSelected(SlotIndex);
+		const bool bAlreadySelected = IdolManager->IsIdolStockSlotSelected(SlotIndex);
 		if (bAlreadySelected)
 		{
 			if (StatusText.IsValid())
@@ -399,10 +425,10 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 			bool bAtMaxRarity = false;
 			if (!OfferedIdolID.IsNone())
 			{
-				const TArray<FName>& Equipped = RunState->GetEquippedIdols();
+				const TArray<FName>& Equipped = IdolManager->GetEquippedIdols();
 				for (int32 i = 0; i < Equipped.Num(); ++i)
 				{
-					if (Equipped[i] == OfferedIdolID && RunState->GetEquippedIdolRarityInSlot(i) == ET66ItemRarity::White)
+					if (Equipped[i] == OfferedIdolID && IdolManager->GetEquippedIdolRarityInSlot(i) == ET66ItemRarity::White)
 					{
 						bAtMaxRarity = true;
 						break;
@@ -428,16 +454,16 @@ FReply UT66IdolAltarOverlayWidget::OnReroll()
 {
 	if (UWorld* World = GetWorld())
 	{
-		if (UT66RunStateSubsystem* RunState = GetRunState(World))
+		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
 		{
-			RunState->RerollIdolStock();
+			IdolManager->RerollIdolStock();
 		}
 	}
 	if (StatusText.IsValid())
 	{
 		StatusText->SetText(FText::GetEmpty());
 	}
-	// RefreshStock is called automatically via IdolsChanged delegate.
+	// RefreshStock is called automatically via IdolStateChanged delegate.
 	return FReply::Handled();
 }
 
@@ -446,9 +472,9 @@ FReply UT66IdolAltarOverlayWidget::OnBack()
 	// Unbind delegate before closing.
 	if (UWorld* World = GetWorld())
 	{
-		if (UT66RunStateSubsystem* RunState = GetRunState(World))
+		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
 		{
-			RunState->IdolsChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
+			IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
 		}
 	}
 

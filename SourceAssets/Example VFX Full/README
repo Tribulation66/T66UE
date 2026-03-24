@@ -1,0 +1,37 @@
+# Pixel Portals
+
+## Disclaimers
+Use this addon at your own risk. The author will not guarantee any support and the software is provided as-is (Check LICENSE for more info).
+These addons were developed in Godot 4.6. They might work in other versions of Godot, but they are not actively being tested for compatibility.
+
+## Basic Setup
+For the stencil shader basics in regards to portal effects, I can recommend this YouTube tutorial: https://www.youtube.com/watch?v=2orX7yWF0QA
+You can look at the examples, or follow this rough setup:
+
+### Portal
+- Create MeshInstance3D
+- Create Plane Mesh
+- Put "addons/pixel_portals/pixel_portal_stencil.gdshader" in the surface material override
+- Put one of the "pixel_portal[_simple|_outline|_texture].gdshader" into "NextPass" and increse RenderPriority to 1 (greater than the stencil shader)
+The stencil id is defined as 1 in the "addons/pixel_portals/pixel_portal_stencil.gdshader", you can change this or other stencil settings there.
+
+### Other Objects
+- Create MeshInstance3D
+- Create any Mesh
+- Assing StandardMaterial3D
+- Under Stencil chose: Mode = Custom, Read = true, Write = false, Compare = Equal, Render Priority 1 (greater than the stencil shader)
+Now you should see the object only through the portal!
+
+### Notes
+The Render Priority is necessary for correct rendering using multiple objects in some cases, in my examples, the Render Priority is 2 for the Cubes and 1 for the floor for example.
+
+## Examples
+
+The examples provide a basic setup, but needs some adjustments for more complicated scenes. The examples provide some helpful scripts and classes like "DemoPortal", which should be used with caution as it is mostly intendet for demo purposes. For the stencil effect, two shaders are necessary, which share some uniform variables, which needs to be updated in both. The "DemoPortal" keeps variables in sync, which is not optimized and can cause lags with many portals at the same time.
+
+## Animations
+
+The Animations in the example are just some basic open/close animation and when creating your own animations, keep in mind to change uniform variables in both the stencil and regular shader.
+
+## Contact
+hello@nojoule.com

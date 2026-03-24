@@ -87,6 +87,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
+	/** Briefly shove the enemy back when hit by a hero auto attack. */
+	void ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale = 1.f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0"))
+	float AutoAttackKnockbackSpeed = 260.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0"))
+	float AutoAttackKnockbackStutterSeconds = 0.12f;
+
 	float GetEffectiveArmor() const;
 
 	/** If true, this enemy prefers to flee from the hero instead of closing distance. */
@@ -192,6 +201,7 @@ private:
 	float MoveSlowSecondsRemaining = 0.f;
 	float BaseMaxWalkSpeed = 350.f;
 	float ForcedRunAwaySecondsRemaining = 0.f;
+	float AutoAttackKnockbackSecondsRemaining = 0.f;
 
 	/** Cached player pawn reference (avoid UGameplayStatics::GetPlayerPawn every tick per enemy). */
 	TWeakObjectPtr<APawn> CachedPlayerPawn;

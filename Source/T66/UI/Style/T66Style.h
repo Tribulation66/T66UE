@@ -26,6 +26,7 @@ enum class ET66ButtonBorderVisual : uint8
 	None,      // Use the base button chrome only (no decorative overlay)
 	RetroSky,  // Legacy full-rect retro border treatment
 	RetroWood, // Thick rectangular border with a banded wood-grain trim
+	MainMenuBlueTrim, // Main-menu trim with blue/gold state swaps
 };
 
 /** Optional background treatment layered under the base button body. */
@@ -34,6 +35,7 @@ enum class ET66ButtonBackgroundVisual : uint8
 	Default,        // Resolve from the active shared style theme
 	None,           // Use the base button body only (no decorative fill)
 	MainMenuArcane, // Dark green/purple stylized fill used by the arcane theme
+	MainMenuBlueWood, // Blue/black stylized fill for the large main-menu buttons
 };
 
 /**
@@ -79,6 +81,22 @@ struct FT66ButtonParams
 
 	bool bHasTextColorOverride = false;
 	TAttribute<FSlateColor> TextColorOverride;      // Overrides text ColorAndOpacity
+	bool bHasStateTextColors = false;
+	FSlateColor NormalStateTextColor = FSlateColor::UseForeground();
+	FSlateColor HoveredStateTextColor = FSlateColor::UseForeground();
+	FSlateColor PressedStateTextColor = FSlateColor::UseForeground();
+	bool bHasStateTextSecondaryColors = false;
+	FSlateColor NormalStateTextSecondaryColor = FSlateColor::UseForeground();
+	FSlateColor HoveredStateTextSecondaryColor = FSlateColor::UseForeground();
+	FSlateColor PressedStateTextSecondaryColor = FSlateColor::UseForeground();
+	float TextDualToneSplit = 0.58f;
+	bool bHasStateTextShadowColors = false;
+	FLinearColor NormalStateTextShadowColor = FLinearColor::Transparent;
+	FLinearColor HoveredStateTextShadowColor = FLinearColor::Transparent;
+	FLinearColor PressedStateTextShadowColor = FLinearColor::Transparent;
+	bool bHasTextShadowOffset = false;
+	FVector2D TextShadowOffset = FVector2D::ZeroVector;
+	bool bUseGlow = true;
 
 	// === Custom Content ===
 	TSharedPtr<SWidget> CustomContent;               // If set, replaces text block entirely
@@ -99,6 +117,33 @@ struct FT66ButtonParams
 	FT66ButtonParams& SetColor(const FLinearColor& C)                     { ColorOverride = FSlateColor(C); bHasColorOverride = true; return *this; }
 	FT66ButtonParams& SetTextColor(const TAttribute<FSlateColor>& C)      { TextColorOverride = C; bHasTextColorOverride = true; return *this; }
 	FT66ButtonParams& SetTextColor(const FLinearColor& C)                 { TextColorOverride = FSlateColor(C); bHasTextColorOverride = true; return *this; }
+	FT66ButtonParams& SetStateTextColors(const FLinearColor& Normal, const FLinearColor& Hovered, const FLinearColor& Pressed)
+	{
+		NormalStateTextColor = FSlateColor(Normal);
+		HoveredStateTextColor = FSlateColor(Hovered);
+		PressedStateTextColor = FSlateColor(Pressed);
+		bHasStateTextColors = true;
+		return *this;
+	}
+	FT66ButtonParams& SetStateTextSecondaryColors(const FLinearColor& Normal, const FLinearColor& Hovered, const FLinearColor& Pressed)
+	{
+		NormalStateTextSecondaryColor = FSlateColor(Normal);
+		HoveredStateTextSecondaryColor = FSlateColor(Hovered);
+		PressedStateTextSecondaryColor = FSlateColor(Pressed);
+		bHasStateTextSecondaryColors = true;
+		return *this;
+	}
+	FT66ButtonParams& SetTextDualToneSplit(float InSplit)                { TextDualToneSplit = FMath::Clamp(InSplit, 0.1f, 0.9f); return *this; }
+	FT66ButtonParams& SetStateTextShadowColors(const FLinearColor& Normal, const FLinearColor& Hovered, const FLinearColor& Pressed)
+	{
+		NormalStateTextShadowColor = Normal;
+		HoveredStateTextShadowColor = Hovered;
+		PressedStateTextShadowColor = Pressed;
+		bHasStateTextShadowColors = true;
+		return *this;
+	}
+	FT66ButtonParams& SetTextShadowOffset(const FVector2D& Offset)       { TextShadowOffset = Offset; bHasTextShadowOffset = true; return *this; }
+	FT66ButtonParams& SetUseGlow(bool bInUseGlow)                         { bUseGlow = bInUseGlow; return *this; }
 	FT66ButtonParams& SetEnabled(const TAttribute<bool>& E)               { IsEnabled = E; return *this; }
 	FT66ButtonParams& SetVisibility(const TAttribute<EVisibility>& V)     { Visibility = V; return *this; }
 	FT66ButtonParams& SetDynamicLabel(const TAttribute<FText>& L)         { DynamicLabel = L; return *this; }

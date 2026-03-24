@@ -30,7 +30,9 @@ public:
 	virtual void NativeDestruct() override;
 
 	void CloseOverlay();
-	void SetEmbeddedInCasinoShell(bool bEmbedded) { bEmbeddedInCasinoShell = bEmbedded; }
+	void SetEmbeddedInCircusShell(bool bEmbedded) { bEmbeddedInCircusShell = bEmbedded; }
+	void SetEmbeddedInCasinoShell(bool bEmbedded) { SetEmbeddedInCircusShell(bEmbedded); }
+	void SetVendorAllowsSteal(bool bEnabled) { bVendorAllowsSteal = bEnabled; }
 
 	/** Skip dialogue and open shop page (used by in-world dialogue). */
 	void OpenShopPage();
@@ -166,5 +168,6 @@ private:
 	UFUNCTION()
 	void HandleBossChanged();
 
-	bool bEmbeddedInCasinoShell = false;
+	bool bEmbeddedInCircusShell = false;
+	bool bVendorAllowsSteal = true;
 };

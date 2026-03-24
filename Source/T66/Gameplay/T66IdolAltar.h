@@ -43,6 +43,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "IdolAltar")
 	TSoftObjectPtr<UStaticMesh> AltarMeshOverride;
 
+	/** Start-area catch-up altars consume the stored pre-run idol picks; boss-clear altars do not. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
+	bool bConsumesCatchUpIdolPicks = false;
+
 	/** Apply simple placeholder visuals (color/material). */
 	void ApplyVisuals();
 

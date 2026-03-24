@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/T66UIManager.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
@@ -658,8 +659,16 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	}
 	else if (RunState)
 	{
-		IdolsPtr = &RunState->GetEquippedIdols();
-		IdolTiersPtr = &RunState->GetEquippedIdolTierValues();
+		if (UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr)
+		{
+			IdolsPtr = &IdolManager->GetEquippedIdols();
+			IdolTiersPtr = &IdolManager->GetEquippedIdolTierValues();
+		}
+		else
+		{
+			IdolsPtr = &RunState->GetEquippedIdols();
+			IdolTiersPtr = &RunState->GetEquippedIdolTierValues();
+		}
 		InventoryLocal = RunState->GetInventory();
 		InvSlotsPtr = &RunState->GetInventorySlots();
 	}
@@ -671,20 +680,20 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	static constexpr float IdolSlotPad = 4.f;
 	static constexpr float IdolSlotSize = 52.f;
 	TSharedRef<SHorizontalBox> IdolSlotsRow = SNew(SHorizontalBox);
-	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
+	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		const FName IdolID = Idols.IsValidIndex(i) ? Idols[i] : NAME_None;
 		const int32 IdolTierValue = IdolTiers.IsValidIndex(i)
-			? FMath::Clamp(static_cast<int32>(IdolTiers[i]), 1, UT66RunStateSubsystem::MaxIdolLevel)
+			? FMath::Clamp(static_cast<int32>(IdolTiers[i]), 1, UT66IdolManagerSubsystem::MaxIdolLevel)
 			: 1;
 		const FLinearColor IdolColor = !IdolID.IsNone()
-			? FItemData::GetItemRarityColor(UT66RunStateSubsystem::IdolTierValueToRarity(IdolTierValue))
+			? FItemData::GetItemRarityColor(UT66IdolManagerSubsystem::IdolTierValueToRarity(IdolTierValue))
 			: FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
 		FIdolData IdolData;
 		const bool bHasIdolData = GI && !IdolID.IsNone() && GI->GetIdolData(IdolID, IdolData);
 		TSharedPtr<FSlateBrush> IdolBrush;
 		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasIdolData
-			? IdolData.GetIconForRarity(UT66RunStateSubsystem::IdolTierValueToRarity(IdolTierValue))
+			? IdolData.GetIconForRarity(UT66IdolManagerSubsystem::IdolTierValueToRarity(IdolTierValue))
 			: TSoftObjectPtr<UTexture2D>();
 		if (!IdolIconSoft.IsNull())
 		{

@@ -28,7 +28,7 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66CasinoInteractable.h"
+#include "Gameplay/T66CircusInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66QuickReviveVendingMachine.h"
 #include "Gameplay/T66TeleportPadInteractable.h"
@@ -51,6 +51,8 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -511,13 +513,21 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 
 	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
 	SpawnCornerHousesAndNPCs();
-	SpawnCasinoInteractableIfNeeded();
+	SpawnCircusInteractableIfNeeded();
+	SpawnSupportVendorAtStartIfNeeded();
+	if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
+	{
+		SpawnIdolAltarForPlayer(PC);
+	}
 	if (!bUsingMainMapTerrain)
 	{
 		SpawnTricksterAndCowardiceGate();
 		SpawnBossBeaconIfNeeded();
 	}
-	SpawnWorldInteractablesForStage();
+	if (!bUsingMainMapTerrain)
+	{
+		SpawnWorldInteractablesForStage();
+	}
 
 	// Scatter decorative props.
 	if (UGameInstance* PropGI = GetGameInstance())
@@ -555,32 +565,34 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	{
 		SpawnTricksterAndCowardiceGate();
 		SpawnBossForCurrentStage();
-
+		TArray<AT66EnemyDirector*> ExistingEnemyDirectors;
+		for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
+		{
+			if (AT66EnemyDirector* ExistingDirector = *It)
+			{
+				ExistingEnemyDirectors.Add(ExistingDirector);
+			}
+		}
+		for (AT66EnemyDirector* ExistingDirector : ExistingEnemyDirectors)
+		{
+			if (ExistingDirector)
+			{
+				ExistingDirector->Destroy();
+			}
+		}
+		bMainMapCombatStarted = false;
 		if (UGameInstance* GI = GetGameInstance())
 		{
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
 				RunState->ResetStageTimerToFull();
-				RunState->SetStageTimerActive(true);
+				RunState->SetStageTimerActive(false);
 			}
-		}
-
-		bool bHasEnemyDirector = false;
-		for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
-		{
-			bHasEnemyDirector = true;
-			break;
-		}
-		if (!bHasEnemyDirector)
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			World->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		}
 
 		ScheduleLightingRefresh();
 		ScheduleOverlayHide();
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map terrain content spawned."));
+		UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
 		return;
 	}
 
@@ -703,6 +715,7 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	ActiveAsyncLoadHandles.Reset();
 	PlayerCompanions.Reset();
 	StageBoss = nullptr;
+	IdolAltar = nullptr;
 	BossBeaconActor = nullptr;
 	BossBeaconUpdateAccumulator = 0.f;
 
@@ -985,6 +998,7 @@ void AT66GameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	MaintainPlayerTerrainSafety();
+	TryActivateMainMapCombat();
 
 	BossBeaconUpdateAccumulator += DeltaTime;
 	if (BossBeaconUpdateAccumulator >= 0.10f)
@@ -1472,6 +1486,256 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	}
 }
 
+bool AT66GameMode::TryGetMainMapStartAxes(FVector& OutCenter, FVector& OutInwardDirection, FVector& OutSideDirection, float& OutCellSize) const
+{
+	if (!bHasMainMapSpawnSurfaceLocation || MainMapStartPathSurfaceLocation.IsNearlyZero() || MainMapStartAnchorSurfaceLocation.IsNearlyZero())
+	{
+		return false;
+	}
+
+	const FVector Center = MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+		? MainMapSpawnSurfaceLocation
+		: MainMapStartAreaCenterSurfaceLocation;
+	const FVector Inward2D = (MainMapStartAnchorSurfaceLocation - MainMapStartPathSurfaceLocation).GetSafeNormal2D();
+	if (Inward2D.IsNearlyZero())
+	{
+		return false;
+	}
+
+	const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+	const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
+	if (Settings.CellSize <= KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	OutCenter = Center;
+	OutInwardDirection = FVector(Inward2D.X, Inward2D.Y, 0.f);
+	OutSideDirection = FVector(-Inward2D.Y, Inward2D.X, 0.f);
+	OutCellSize = Settings.CellSize;
+	return true;
+}
+
+bool AT66GameMode::TryGetMainMapStartPlacementLocation(float SideCells, float InwardCells, FVector& OutLocation) const
+{
+	FVector Center = FVector::ZeroVector;
+	FVector InwardDirection = FVector::ZeroVector;
+	FVector SideDirection = FVector::ZeroVector;
+	float CellSize = 0.f;
+	if (!TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize))
+	{
+		return false;
+	}
+
+	const FVector DesiredLocation = Center + (SideDirection * (SideCells * CellSize)) + (InwardDirection * (InwardCells * CellSize));
+	OutLocation = DesiredLocation;
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return true;
+	}
+
+	const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+	const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
+	const float TraceStartZ = T66MainMapTerrain::GetTraceZ(Preset);
+	const float TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - Settings.StepHeight;
+
+	FHitResult Hit;
+	if (World->LineTraceSingleByChannel(
+		Hit,
+		FVector(DesiredLocation.X, DesiredLocation.Y, TraceStartZ),
+		FVector(DesiredLocation.X, DesiredLocation.Y, TraceEndZ),
+		ECC_WorldStatic))
+	{
+		OutLocation = Hit.ImpactPoint;
+	}
+	else
+	{
+		OutLocation.Z = Center.Z;
+	}
+
+	return true;
+}
+
+bool AT66GameMode::TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector& OutLocation, float ExtraSafeBubbleMargin) const
+{
+	UWorld* World = GetWorld();
+	if (!World || !T66UsesMainMapTerrainStage(World))
+	{
+		return false;
+	}
+
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!T66GI)
+	{
+		return false;
+	}
+
+	UGameInstance* GI = GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const FT66MapPreset MainMapPreset = T66BuildMainMapPreset(T66GI);
+	const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(MainMapPreset);
+	const float MainHalfExtent = FMath::Max(0.0f, MainMapSettings.HalfExtent - MainMapSettings.CellSize * 1.25f);
+	const float TraceStartZ = T66MainMapTerrain::GetTraceZ(MainMapPreset);
+	const float TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(MainMapPreset) - MainMapSettings.StepHeight;
+	const float RoomReserveRadius = MainMapSettings.CellSize * 1.70f;
+	const float CorridorReserveRadius = MainMapSettings.CellSize * 0.80f;
+	const float SafeBubbleMargin = 250.f + ExtraSafeBubbleMargin;
+
+	const int32 RunSeed = T66EnsureRunSeed(T66GI);
+	const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
+	FRandomStream Rng(RunSeed + StageNum * 1337 + SeedOffset);
+
+	auto IsInsideReservedZone = [&](const FVector& Location) -> bool
+	{
+		if (!MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+			&& FVector::DistSquared2D(Location, MainMapStartAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
+		{
+			return true;
+		}
+		if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero()
+			&& FVector::DistSquared2D(Location, MainMapBossAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
+		{
+			return true;
+		}
+		if (!MainMapStartPathSurfaceLocation.IsNearlyZero()
+			&& FVector::DistSquared2D(Location, MainMapStartPathSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+		{
+			return true;
+		}
+		if (!MainMapStartAnchorSurfaceLocation.IsNearlyZero()
+			&& FVector::DistSquared2D(Location, MainMapStartAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+		{
+			return true;
+		}
+		if (!MainMapBossAnchorSurfaceLocation.IsNearlyZero()
+			&& FVector::DistSquared2D(Location, MainMapBossAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+		{
+			return true;
+		}
+		return false;
+	};
+
+	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+	for (int32 Try = 0; Try < 60; ++Try)
+	{
+		const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+		const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+
+		FHitResult Hit;
+		if (!World->LineTraceSingleByChannel(
+			Hit,
+			FVector(X, Y, TraceStartZ),
+			FVector(X, Y, TraceEndZ),
+			ECC_WorldStatic))
+		{
+			continue;
+		}
+		if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+		{
+			continue;
+		}
+
+		const FVector Candidate = Hit.ImpactPoint;
+		if (IsInsideReservedZone(Candidate))
+		{
+			continue;
+		}
+
+		bool bBlockedByNPC = false;
+		if (Registry)
+		{
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			{
+				const AT66HouseNPCBase* NPC = WeakNPC.Get();
+				if (!NPC)
+				{
+					continue;
+				}
+				const float Clearance = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
+				if (FVector::DistSquared2D(Candidate, NPC->GetActorLocation()) < FMath::Square(Clearance))
+				{
+					bBlockedByNPC = true;
+					break;
+				}
+			}
+		}
+
+		if (bBlockedByNPC)
+		{
+			continue;
+		}
+
+		OutLocation = Candidate;
+		return true;
+	}
+
+	return false;
+}
+
+void AT66GameMode::TryActivateMainMapCombat()
+{
+	UWorld* World = GetWorld();
+	if (!World || !T66UsesMainMapTerrainStage(World) || !bTerrainCollisionReady || bMainMapCombatStarted)
+	{
+		return;
+	}
+
+	UGameInstance* GI = GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return;
+	}
+
+	AController* PlayerController = World->GetFirstPlayerController();
+	APawn* PlayerPawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+	if (!PlayerPawn || MainMapStartAnchorSurfaceLocation.IsNearlyZero() || MainMapStartPathSurfaceLocation.IsNearlyZero())
+	{
+		return;
+	}
+
+	const FVector2D EntryMidpoint = FVector2D(
+		(MainMapStartAnchorSurfaceLocation.X + MainMapStartPathSurfaceLocation.X) * 0.5f,
+		(MainMapStartAnchorSurfaceLocation.Y + MainMapStartPathSurfaceLocation.Y) * 0.5f);
+	const FVector2D EntryNormal = FVector2D(
+		MainMapStartAnchorSurfaceLocation.X - MainMapStartPathSurfaceLocation.X,
+		MainMapStartAnchorSurfaceLocation.Y - MainMapStartPathSurfaceLocation.Y).GetSafeNormal();
+	if (EntryNormal.IsNearlyZero())
+	{
+		return;
+	}
+
+	const FVector PlayerLocation = PlayerPawn->GetActorLocation();
+	const float SignedDistance = FVector2D::DotProduct(FVector2D(PlayerLocation.X, PlayerLocation.Y) - EntryMidpoint, EntryNormal);
+	if (SignedDistance < 0.f)
+	{
+		return;
+	}
+
+	RunState->ResetStageTimerToFull();
+	SpawnWorldInteractablesForStage();
+	RunState->SetStageTimerActive(true);
+
+	bool bHasEnemyDirector = false;
+	for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
+	{
+		bHasEnemyDirector = true;
+		break;
+	}
+
+	if (!bHasEnemyDirector)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		World->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+
+	bMainMapCombatStarted = true;
+	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map combat activated after player crossed the start threshold."));
+}
+
 void AT66GameMode::ResetColiseumState()
 {
 	ColiseumBossesRemaining = 0;
@@ -1586,16 +1850,11 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	ClearMiasma();
 	SpawnStageGateAtLocation(Location);
 
-	// Idol altar cadence for the 33-stage structure:
-	// - spawn after most cleared stages
-	// - skip checkpoint / difficulty-ending stages (5,10,15,20,25,30)
-	// - skip the final segment entirely (31,32,33)
 	if (RunState)
 	{
 		const int32 ClearedStage = RunState->GetCurrentStage();
-		const bool bIsCheckpointStage = (ClearedStage > 0) && ((ClearedStage % 5) == 0);
-		const bool bIsFinalSegmentStage = (ClearedStage >= 31);
-		if (!bIsCheckpointStage && !bIsFinalSegmentStage)
+		UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
+		if (IdolManager && IdolManager->ShouldSpawnBossClearAltarForClearedStage(ClearedStage))
 		{
 			SpawnIdolAltarAtLocation(Location);
 		}
@@ -1841,35 +2100,43 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	if (!World) return;
 
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+	if (bUsingMainMapTerrain)
+	{
+		FVector SaintLoc = FVector::ZeroVector;
+		if (!TryFindRandomMainMapSurfaceLocation(3101, SaintLoc, 150.f))
+		{
+			return;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AActor* SpawnedNPC = World->SpawnActor<AActor>(AT66SaintNPC::StaticClass(), SaintLoc, FRotator::ZeroRotator, SpawnParams))
+		{
+			if (AT66HouseNPCBase* NPC = Cast<AT66HouseNPCBase>(SpawnedNPC))
+			{
+				NPC->NPCName = NSLOCTEXT("T66.NPC", "Saint", "Saint");
+				NPC->NPCColor = FLinearColor(0.9f, 0.9f, 0.9f, 1.f);
+				NPC->ApplyVisuals();
+			}
+		}
+		return;
+	}
+
 	float TraceStartZ = 2000.f;
 	float TraceEndZ = -4000.f;
 
 	// Hero spawn location (same as PlayerStart / default spawn); NPCs spawn around it.
 	float HeroX = -35455.f;
 	float HeroY = 0.f;
-	if (bUsingMainMapTerrain)
+	for (TActorIterator<APlayerStart> It(World); It; ++It)
 	{
-		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-		TraceStartZ = T66MainMapTerrain::GetTraceZ(Preset);
-		TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - T66MainMapTerrain::MakeSettings(Preset).StepHeight;
-		const FVector HeroLoc = bHasMainMapSpawnSurfaceLocation
-			? MainMapSpawnSurfaceLocation
-			: T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 0.f);
-		HeroX = HeroLoc.X;
-		HeroY = HeroLoc.Y;
-	}
-	else
-	{
-		for (TActorIterator<APlayerStart> It(World); It; ++It)
-		{
-			const FVector Loc = (*It)->GetActorLocation();
-			HeroX = Loc.X;
-			HeroY = Loc.Y;
-			break;
-		}
+		const FVector Loc = (*It)->GetActorLocation();
+		HeroX = Loc.X;
+		HeroY = Loc.Y;
+		break;
 	}
 
-	const float Offset = bUsingMainMapTerrain ? 950.f : 600.f;
+	const float Offset = 600.f;
 	struct FNPCPosition { float X; float Y; };
 	const FNPCPosition NPCPositions[] = {
 		{ HeroX + Offset, HeroY },
@@ -1949,7 +2216,7 @@ void AT66GameMode::SpawnCornerHousesAndNPCs()
 	}
 }
 
-void AT66GameMode::SpawnCasinoInteractableIfNeeded()
+void AT66GameMode::SpawnCircusInteractableIfNeeded()
 {
 	if (IsColiseumStage() || IsLabLevel())
 	{
@@ -1962,7 +2229,7 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 		return;
 	}
 
-	for (TActorIterator<AT66CasinoInteractable> It(World); It; ++It)
+	for (TActorIterator<AT66CircusInteractable> It(World); It; ++It)
 	{
 		return;
 	}
@@ -1974,15 +2241,16 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 	float RefY = 0.f;
 	if (bUsingMainMapTerrain)
 	{
-		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(Preset);
-		TraceStartZ = T66MainMapTerrain::GetTraceZ(Preset);
-		TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - MainMapSettings.StepHeight;
-		const FVector StartLoc = bHasMainMapSpawnSurfaceLocation
-			? MainMapSpawnSurfaceLocation
-			: T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 0.f);
-		RefX = StartLoc.X;
-		RefY = StartLoc.Y + MainMapSettings.CellSize * 0.55f;
+		FVector CircusLoc = FVector::ZeroVector;
+		if (!TryFindRandomMainMapSurfaceLocation(3201, CircusLoc, 450.f))
+		{
+			return;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		World->SpawnActor<AT66CircusInteractable>(AT66CircusInteractable::StaticClass(), CircusLoc, FRotator::ZeroRotator, SpawnParams);
+		return;
 	}
 
 	auto FindClosestFlatSurface = [World, TraceStartZ, TraceEndZ](float InRefX, float InRefY) -> FVector
@@ -2020,7 +2288,124 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 	const FVector FlatLoc = FindClosestFlatSurface(RefX, RefY);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	World->SpawnActor<AT66CasinoInteractable>(AT66CasinoInteractable::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams);
+	World->SpawnActor<AT66CircusInteractable>(AT66CircusInteractable::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams);
+}
+
+void AT66GameMode::SpawnSupportVendorAtStartIfNeeded()
+{
+	if (IsColiseumStage() || IsLabLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!T66GI)
+	{
+		return;
+	}
+
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>();
+	if (!PlayerExperience || !PlayerExperience->ShouldSpawnSupportVendorAtRunStart(T66GI->SelectedDifficulty))
+	{
+		return;
+	}
+
+	static const FName SupportVendorTag(TEXT("T66_StartSupportVendor"));
+	for (TActorIterator<AT66VendorNPC> It(World); It; ++It)
+	{
+		if (AT66VendorNPC* ExistingVendor = *It)
+		{
+			if (ExistingVendor->ActorHasTag(SupportVendorTag))
+			{
+				return;
+			}
+		}
+	}
+
+	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+	float TraceStartZ = 2000.f;
+	float TraceEndZ = -4000.f;
+	FVector ReferenceLoc = FVector(-35455.f, 0.f, 60.f);
+	float SideOffset = 700.f;
+	if (bUsingMainMapTerrain)
+	{
+		FVector SpawnLoc = FVector::ZeroVector;
+		if (!TryGetMainMapStartPlacementLocation(1.0f, 0.0f, SpawnLoc))
+		{
+			return;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AT66VendorNPC* SupportVendor = World->SpawnActor<AT66VendorNPC>(AT66VendorNPC::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams))
+		{
+			SupportVendor->ConfigureAsSupportVendor(PlayerExperience->ShouldSupportVendorAllowSteal(T66GI->SelectedDifficulty));
+			SupportVendor->Tags.AddUnique(SupportVendorTag);
+			SupportVendor->ApplyVisuals();
+		}
+		return;
+	}
+	else if (AController* PC = World->GetFirstPlayerController())
+	{
+		if (APawn* HeroPawn = PC->GetPawn())
+		{
+			ReferenceLoc = HeroPawn->GetActorLocation();
+		}
+	}
+
+	auto FindClosestFlatSurface = [World, TraceStartZ, TraceEndZ](const FVector& DesiredLoc) -> FVector
+	{
+		static constexpr float MinNormalZ = 0.92f;
+		static constexpr float SearchRadiusMax = 900.f;
+		static constexpr float RadiusStep = 100.f;
+		static constexpr int32 NumAngles = 16;
+
+		FVector Fallback = DesiredLoc;
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(
+			Hit,
+			FVector(DesiredLoc.X, DesiredLoc.Y, TraceStartZ),
+			FVector(DesiredLoc.X, DesiredLoc.Y, TraceEndZ),
+			ECC_WorldStatic))
+		{
+			Fallback = Hit.ImpactPoint;
+		}
+
+		for (float Radius = 0.f; Radius <= SearchRadiusMax; Radius += RadiusStep)
+		{
+			const int32 AngleSteps = (Radius <= 0.f) ? 1 : NumAngles;
+			for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
+			{
+				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
+				const float X = DesiredLoc.X + Radius * FMath::Cos(Angle);
+				const float Y = DesiredLoc.Y + Radius * FMath::Sin(Angle);
+				if (World->LineTraceSingleByChannel(Hit, FVector(X, Y, TraceStartZ), FVector(X, Y, TraceEndZ), ECC_WorldStatic)
+					&& Hit.ImpactNormal.Z >= MinNormalZ)
+				{
+					return Hit.ImpactPoint;
+				}
+			}
+		}
+
+		return Fallback;
+	};
+
+	const FVector DesiredLoc = ReferenceLoc + FVector(SideOffset, 0.f, 0.f);
+	const FVector SpawnLoc = FindClosestFlatSurface(DesiredLoc);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AT66VendorNPC* SupportVendor = World->SpawnActor<AT66VendorNPC>(AT66VendorNPC::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams))
+	{
+		SupportVendor->ConfigureAsSupportVendor(PlayerExperience->ShouldSupportVendorAllowSteal(T66GI->SelectedDifficulty));
+		SupportVendor->Tags.AddUnique(SupportVendorTag);
+		SupportVendor->ApplyVisuals();
+	}
 }
 
 void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
@@ -2128,6 +2513,33 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	{
 		if (bUsingMainMapTerrain)
 		{
+			const float RoomReserveRadius = MainMapSettings.CellSize * 1.70f;
+			const float CorridorReserveRadius = MainMapSettings.CellSize * 0.80f;
+			if (!MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+				&& FVector::DistSquared2D(L, MainMapStartAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
+			{
+				return true;
+			}
+			if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero()
+				&& FVector::DistSquared2D(L, MainMapBossAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
+			{
+				return true;
+			}
+			if (!MainMapStartPathSurfaceLocation.IsNearlyZero()
+				&& FVector::DistSquared2D(L, MainMapStartPathSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+			{
+				return true;
+			}
+			if (!MainMapStartAnchorSurfaceLocation.IsNearlyZero()
+				&& FVector::DistSquared2D(L, MainMapStartAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+			{
+				return true;
+			}
+			if (!MainMapBossAnchorSurfaceLocation.IsNearlyZero()
+				&& FVector::DistSquared2D(L, MainMapBossAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+			{
+				return true;
+			}
 			return false;
 		}
 
@@ -2242,24 +2654,39 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	}
 
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	const FT66IntRange ChestCountRange = PlayerExperience
+		? PlayerExperience->GetDifficultyChestCountRange(Difficulty)
+		: FT66IntRange{ 4, 10 };
+	const FT66IntRange WheelCountRange = PlayerExperience
+		? PlayerExperience->GetDifficultyWheelCountRange(Difficulty)
+		: FT66IntRange{ 5, 11 };
+	const FT66IntRange CrateCountRange = PlayerExperience
+		? PlayerExperience->GetDifficultyCrateCountRange(Difficulty)
+		: FT66IntRange{ 3, 6 };
 
 	// Luck-affected counts use central tuning. Locations are still stage-seeded (not luck-affected).
 	const int32 CountFountains = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TreesPerStage, Rng) : Rng.RandRange(2, 5);
-	const int32 CountChestReplacements = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->ChestsPerStage, Rng) : Rng.RandRange(2, 5);
-	const int32 CountWheels = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->WheelsPerStage, Rng) : Rng.RandRange(2, 5);
+	const int32 CountChests = RngSub ? RngSub->RollIntRangeBiased(ChestCountRange, Rng) : Rng.RandRange(FMath::Min(ChestCountRange.Min, ChestCountRange.Max), FMath::Max(ChestCountRange.Min, ChestCountRange.Max));
+	const int32 CountWheels = RngSub ? RngSub->RollIntRangeBiased(WheelCountRange, Rng) : Rng.RandRange(FMath::Min(WheelCountRange.Min, WheelCountRange.Max), FMath::Max(WheelCountRange.Min, WheelCountRange.Max));
+	const int32 CountCrates = RngSub ? RngSub->RollIntRangeBiased(CrateCountRange, Rng) : Rng.RandRange(FMath::Min(CrateCountRange.Min, CrateCountRange.Max), FMath::Max(CrateCountRange.Min, CrateCountRange.Max));
 
 	// Luck Rating tracking (quantity).
 	if (RunState)
 	{
 		const int32 FountainsMin = (Tuning ? Tuning->TreesPerStage.Min : 2);
 		const int32 FountainsMax = (Tuning ? Tuning->TreesPerStage.Max : 5);
-		const int32 ChestsMin = (Tuning ? Tuning->ChestsPerStage.Min : 2);
-		const int32 ChestsMax = (Tuning ? Tuning->ChestsPerStage.Max : 5);
-		const int32 WheelsMin = (Tuning ? Tuning->WheelsPerStage.Min : 2);
-		const int32 WheelsMax = (Tuning ? Tuning->WheelsPerStage.Max : 5);
+		const int32 ChestsMin = FMath::Min(ChestCountRange.Min, ChestCountRange.Max);
+		const int32 ChestsMax = FMath::Max(ChestCountRange.Min, ChestCountRange.Max);
+		const int32 WheelsMin = FMath::Min(WheelCountRange.Min, WheelCountRange.Max);
+		const int32 WheelsMax = FMath::Max(WheelCountRange.Min, WheelCountRange.Max);
+		const int32 CratesMin = FMath::Min(CrateCountRange.Min, CrateCountRange.Max);
+		const int32 CratesMax = FMath::Max(CrateCountRange.Min, CrateCountRange.Max);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("FountainsPerStage")), CountFountains, FountainsMin, FountainsMax);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestReplacementPerStage")), CountChestReplacements, ChestsMin, ChestsMax);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestsPerStage")), CountChests, ChestsMin, ChestsMax);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("WheelsPerStage")), CountWheels, WheelsMin, WheelsMax);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("CratesPerStage")), CountCrates, CratesMin, CratesMax);
 	}
 
 	// Not luck-affected (for now).
@@ -2272,34 +2699,30 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			Fountain->SetRarity(ET66Rarity::Black);
 		}
 	}
-	for (int32 i = 0; i < CountChestReplacements; ++i)
+	for (int32 i = 0; i < CountChests; ++i)
 	{
-		if (Rng.GetFraction() < 0.5f)
+		if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnOne(AT66ChestInteractable::StaticClass())))
 		{
-			if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnOne(AT66WheelSpinInteractable::StaticClass())))
+			const FT66RarityWeights Weights = PlayerExperience
+				? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
+				: FT66RarityWeights{};
+			Chest->bIsMimic = (Rng.GetFraction() < (PlayerExperience ? PlayerExperience->GetDifficultyChestMimicChance(Difficulty) : 0.20f));
+			const ET66Rarity R = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			Chest->SetRarity(R);
+			if (RunState)
 			{
-				const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
-				const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-				Wheel->SetRarity(R);
-				if (RunState)
-				{
-					RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), R);
-				}
+				RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), R);
 			}
-		}
-		else if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnOne(AT66CrateInteractable::StaticClass())))
-		{
-			const FT66RarityWeights Weights = Tuning ? Tuning->InteractableRarityBase : FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			Crate->SetRarity(R);
 		}
 	}
 	for (int32 i = 0; i < CountWheels; ++i)
 	{
 		if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnOne(AT66WheelSpinInteractable::StaticClass())))
 		{
-			const FT66RarityWeights Weights = Tuning ? Tuning->WheelRarityBase : FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && Tuning) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			const FT66RarityWeights Weights = PlayerExperience
+				? PlayerExperience->GetDifficultyWheelRarityWeights(Difficulty)
+				: FT66RarityWeights{};
+			const ET66Rarity R = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
 			Wheel->SetRarity(R);
 			if (RunState)
 			{
@@ -2312,32 +2735,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	{
 		FVector TractorLoc = FVector::ZeroVector;
 		bool bShouldSpawnGuaranteedTractor = false;
-		if (bUsingMainMapTerrain)
-		{
-			const FVector MainMapHeroLoc = bHasMainMapSpawnSurfaceLocation
-				? (MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, 200.f))
-				: T66MainMapTerrain::GetPreferredSpawnLocation(MainMapPreset, 200.f);
-			const float TractorX = FMath::Clamp(MainMapHeroLoc.X + MainMapSettings.CellSize * 1.35f, -MainHalfExtent, MainHalfExtent);
-			const float TractorY = FMath::Clamp(MainMapHeroLoc.Y - MainMapSettings.CellSize * 0.65f, -MainHalfExtent, MainHalfExtent);
-			FHitResult TractorHit;
-			const FVector TractorTraceStart(TractorX, TractorY, TraceStartZ);
-			const FVector TractorTraceEnd(TractorX, TractorY, TraceEndZ);
-			if (World->LineTraceSingleByChannel(TractorHit, TractorTraceStart, TractorTraceEnd, ECC_WorldStatic))
-			{
-				TractorLoc = TractorHit.ImpactPoint;
-				bShouldSpawnGuaranteedTractor = IsGoodLoc(TractorLoc);
-			}
-			if (!bShouldSpawnGuaranteedTractor)
-			{
-				const FSpawnHitResult TractorFallback = FindSpawnLoc();
-				if (TractorFallback.bFound)
-				{
-					TractorLoc = TractorFallback.Loc;
-					bShouldSpawnGuaranteedTractor = true;
-				}
-			}
-		}
-		else
+		if (!bUsingMainMapTerrain)
 		{
 			static constexpr float GuaranteedTractorOffsetX = 850.f; // just east of the start gate, outside the start corridor
 			const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
@@ -2369,27 +2767,11 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		bool bShouldSpawnGuaranteedVending = false;
 		if (bUsingMainMapTerrain)
 		{
-			const FVector MainMapHeroLoc = bHasMainMapSpawnSurfaceLocation
-				? (MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, 200.f))
-				: T66MainMapTerrain::GetPreferredSpawnLocation(MainMapPreset, 200.f);
-			const float VendingX = MainMapHeroLoc.X - MainMapSettings.CellSize * 0.85f;
-			const float VendingY = MainMapHeroLoc.Y + MainMapSettings.CellSize * 0.55f;
-			FHitResult VendingHit;
-			const FVector VendingTraceStart(VendingX, VendingY, TraceStartZ);
-			const FVector VendingTraceEnd(VendingX, VendingY, TraceEndZ);
-			if (World->LineTraceSingleByChannel(VendingHit, VendingTraceStart, VendingTraceEnd, ECC_WorldStatic))
+			const FSpawnHitResult VendingFallback = FindSpawnLoc();
+			if (VendingFallback.bFound)
 			{
-				VendingLoc = VendingHit.ImpactPoint;
-				bShouldSpawnGuaranteedVending = IsGoodLoc(VendingLoc);
-			}
-			if (!bShouldSpawnGuaranteedVending)
-			{
-				const FSpawnHitResult VendingFallback = FindSpawnLoc();
-				if (VendingFallback.bFound)
-				{
-					VendingLoc = VendingFallback.Loc;
-					bShouldSpawnGuaranteedVending = true;
-				}
+				VendingLoc = VendingFallback.Loc;
+				bShouldSpawnGuaranteedVending = true;
 			}
 		}
 		else
@@ -2433,10 +2815,20 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		SpawnOne(AT66TeleportPadInteractable::StaticClass());
 	}
 
-	const int32 CountCrates = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->CratesPerStage, Rng) : Rng.RandRange(1, 3);
 	for (int32 i = 0; i < CountCrates; ++i)
 	{
-		SpawnOne(AT66CrateInteractable::StaticClass());
+		if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnOne(AT66CrateInteractable::StaticClass())))
+		{
+			const FT66RarityWeights Weights = PlayerExperience
+				? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
+				: FT66RarityWeights{};
+			const ET66Rarity R = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+			Crate->SetRarity(R);
+			if (RunState)
+			{
+				RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), R);
+			}
+		}
 	}
 
 	for (int32 i = 0; i < CountTotems; ++i)
@@ -2544,17 +2936,63 @@ void AT66GameMode::SpawnModelShowcaseRow()
 
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 {
-	if (IsColiseumStage()) return;
-	// v1: Idol altars only spawn after boss kills (one per stage).
+	if (IsColiseumStage() || IsLabLevel()) return;
+
+	UWorld* World = GetWorld();
+	if (!World || !Player) return;
+
+	if (IsValid(IdolAltar))
+	{
+		return;
+	}
+	IdolAltar = nullptr;
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
+	if (!IdolManager || !IdolManager->HasCatchUpIdolPicksRemaining())
+	{
+		return;
+	}
+
+	FVector SpawnLoc = FVector::ZeroVector;
+	if (T66UsesMainMapTerrainStage(World))
+	{
+		if (!TryGetMainMapStartPlacementLocation(-1.2f, 0.35f, SpawnLoc))
+		{
+			return;
+		}
+	}
+	else
+	{
+		SpawnLoc = T66GameplayLayout::GetStartAreaCenter() + FVector(-900.f, 1250.f, 0.f);
+
+		FHitResult Hit;
+		const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 3000.f);
+		const FVector TraceEnd = SpawnLoc - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic)
+			|| World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility))
+		{
+			SpawnLoc = Hit.ImpactPoint;
+		}
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (IdolAltar)
+	{
+		IdolAltar->bConsumesCatchUpIdolPicks = true;
+	}
 }
 
 void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
 {
 	if (IsColiseumStage()) return;
-	if (IdolAltar) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
+	if (IsValid(IdolAltar) && !IdolAltar->bConsumesCatchUpIdolPicks) return;
+	IdolAltar = nullptr;
 
 	// Place near boss death, but offset so it doesn't overlap the Stage Gate.
 	FVector SpawnLoc = Location + FVector(420.f, 260.f, 0.f);
@@ -2571,6 +3009,10 @@ void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (IdolAltar)
+	{
+		IdolAltar->bConsumesCatchUpIdolPicks = false;
+	}
 }
 
 void AT66GameMode::SpawnStageCatchUpPlatformAndInteractables()
@@ -2581,15 +3023,21 @@ void AT66GameMode::SpawnStageCatchUpPlatformAndInteractables()
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!T66GI || !RunState) return;
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>();
 
 	RunState->SetInStageCatchUp(true);
 
-	// Difficulty index: Easy=0, Medium=1, Hard=2, ...
 	const int32 DiffIndex = FMath::Max(0, static_cast<int32>(T66GI->SelectedDifficulty));
-	const int32 StartStage = FMath::Clamp(1 + (DiffIndex * 5), 1, 33);
+	const int32 StartStage = PlayerExperience
+		? PlayerExperience->GetDifficultyStartStage(T66GI->SelectedDifficulty)
+		: FMath::Clamp(1 + (DiffIndex * 5), 1, 33);
 
-	const int32 GoldAmount = 200 * DiffIndex;
-	const int32 LootBags = 2 + (DiffIndex * 2);
+	const int32 GoldAmount = PlayerExperience
+		? PlayerExperience->GetDifficultyStartGoldBonus(T66GI->SelectedDifficulty)
+		: 200 * DiffIndex;
+	const int32 LootBags = PlayerExperience
+		? PlayerExperience->GetDifficultyStartLootBags(T66GI->SelectedDifficulty)
+		: 2 + (DiffIndex * 2);
 
 	const FVector PlatformCenter(-45455.f, 23636.f, -50.f);
 
@@ -3719,8 +4167,12 @@ void AT66GameMode::SpawnMainMapTerrain()
 	}
 
 	bTerrainCollisionReady = false;
+	bMainMapCombatStarted = false;
 	bHasMainMapSpawnSurfaceLocation = false;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
+	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
+	MainMapStartPathSurfaceLocation = FVector::ZeroVector;
+	MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
@@ -3754,6 +4206,20 @@ void AT66GameMode::SpawnMainMapTerrain()
 	MainMapSpawnSurfaceLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Board, 0.f);
 	bHasMainMapSpawnSurfaceLocation = true;
 	MainMapRescueAnchorLocations.Add(MainMapSpawnSurfaceLocation);
+	T66MainMapTerrain::TryGetCellLocation(Board, Board.StartAnchor, 0.f, MainMapStartAnchorSurfaceLocation);
+	T66MainMapTerrain::TryGetCellLocation(Board, Board.StartPathCell, 0.f, MainMapStartPathSurfaceLocation);
+	if (!T66MainMapTerrain::TryGetRegionCenterLocation(Board, T66MainMapTerrain::ECellRegion::StartArea, 0.f, MainMapStartAreaCenterSurfaceLocation))
+	{
+		MainMapStartAreaCenterSurfaceLocation = MainMapSpawnSurfaceLocation;
+	}
+	if (!MainMapStartAnchorSurfaceLocation.IsNearlyZero())
+	{
+		MainMapRescueAnchorLocations.Add(MainMapStartAnchorSurfaceLocation);
+	}
+	if (!MainMapStartAreaCenterSurfaceLocation.IsNearlyZero())
+	{
+		MainMapRescueAnchorLocations.Add(MainMapStartAreaCenterSurfaceLocation);
+	}
 	T66MainMapTerrain::TryGetCellLocation(Board, Board.BossAnchor, 0.f, MainMapBossAnchorSurfaceLocation);
 	T66MainMapTerrain::TryGetCellLocation(Board, Board.BossSpawnCell, 0.f, MainMapBossSpawnSurfaceLocation);
 	if (!T66MainMapTerrain::TryGetRegionCenterLocation(Board, T66MainMapTerrain::ECellRegion::BossArea, 0.f, MainMapBossAreaCenterSurfaceLocation))
@@ -4985,8 +5451,12 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	}
 
 	bTerrainCollisionReady = false;
+	bMainMapCombatStarted = false;
 	bHasMainMapSpawnSurfaceLocation = false;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
+	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
+	MainMapStartPathSurfaceLocation = FVector::ZeroVector;
+	MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;

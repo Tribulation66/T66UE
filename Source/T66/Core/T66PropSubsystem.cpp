@@ -17,11 +17,29 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66PilotableTractor.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "UObject/SoftObjectPath.h"
 
 namespace
 {
 	static const FName T66MapPlatformTag(TEXT("T66_Map_Platform"));
+
+	static void T66EnsureMeshHasBlockingCollision(UStaticMesh* Mesh)
+	{
+		if (!Mesh)
+		{
+			return;
+		}
+
+		if (UBodySetup* BodySetup = Mesh->GetBodySetup())
+		{
+			if (BodySetup->CollisionTraceFlag != CTF_UseComplexAsSimple)
+			{
+				BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+				BodySetup->CreatePhysicsMeshes();
+			}
+		}
+	}
 
 	static bool T66ShouldUsePrimitiveForGrounding(const UPrimitiveComponent* Primitive)
 	{
@@ -287,6 +305,7 @@ void UT66PropSubsystem::SpawnPropsInternal(
 		const bool bSpawnPilotableTractor = (RowName == FName(TEXT("Tractor")));
 
 		UStaticMesh* Mesh = Row->Mesh.LoadSynchronous();
+		T66EnsureMeshHasBlockingCollision(Mesh);
 		if (!Mesh && !bSpawnPilotableTractor) continue;
 
 		const int32 Count = Rng.RandRange(Row->CountMin, Row->CountMax);

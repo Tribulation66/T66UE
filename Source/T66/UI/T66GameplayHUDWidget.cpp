@@ -4,12 +4,14 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Core/T66Rarity.h"
@@ -1014,7 +1016,13 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->BossChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
 	RunState->DifficultyChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->CowardiceGatesTakenChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
-	RunState->IdolsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+		{
+			IdolManager->IdolStateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		}
+	}
 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
@@ -1115,7 +1123,13 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->BossChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshBossBar);
 		RunState->DifficultyChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->CowardiceGatesTakenChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
-		RunState->IdolsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+			{
+				IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+			}
+		}
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
@@ -1378,22 +1392,19 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 				RngSub->UpdateLuckStat(RunState->GetLuckStat());
 			}
 
-			const UT66RngTuningConfig* Tuning = RngSub->GetTuning();
-			if (Tuning)
+			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 			{
-				const FT66FloatRange Range =
-					(WheelRarity == ET66Rarity::Black) ? Tuning->WheelGoldRange_Black :
-					(WheelRarity == ET66Rarity::Red) ? Tuning->WheelGoldRange_Red :
-					(WheelRarity == ET66Rarity::Yellow) ? Tuning->WheelGoldRange_Yellow :
-					(WheelRarity == ET66Rarity::White) ? Tuning->WheelGoldRange_White :
-					Tuning->WheelGoldRange_Black;
+				if (UT66PlayerExperienceSubSystem* PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
+				{
+					const FT66FloatRange Range = PlayerExperience->GetDifficultyWheelGoldRange(T66GI->SelectedDifficulty, WheelRarity);
 
-				MinGold = FMath::FloorToInt(FMath::Min(Range.Min, Range.Max));
-				MaxGold = FMath::CeilToInt(FMath::Max(Range.Min, Range.Max));
-				bHasGoldRange = true;
+					MinGold = FMath::FloorToInt(FMath::Min(Range.Min, Range.Max));
+					MaxGold = FMath::CeilToInt(FMath::Max(Range.Min, Range.Max));
+					bHasGoldRange = true;
 
-				FRandomStream& Stream = RngSub->GetRunStream();
-				PendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+					FRandomStream& Stream = RngSub->GetRunStream();
+					PendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+				}
 			}
 
 			if (RunState && bHasGoldRange)
@@ -2279,7 +2290,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	}
 
 	// Idol slots (6): rarity-colored when equipped, dark teal when empty.
-	const TArray<FName>& Idols = RunState->GetEquippedIdols();
+	UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
+	const TArray<FName>& Idols = IdolManager ? IdolManager->GetEquippedIdols() : RunState->GetEquippedIdols();
 	for (int32 i = 0; i < IdolSlotBorders.Num(); ++i)
 	{
 		if (!IdolSlotBorders[i].IsValid()) continue;
@@ -2288,7 +2300,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		FText IdolTooltipText = FText::GetEmpty();
 		if (i < Idols.Num() && !Idols[i].IsNone())
 		{
-			const ET66ItemRarity IdolRarity = RunState->GetEquippedIdolRarityInSlot(i);
+			const ET66ItemRarity IdolRarity = IdolManager ? IdolManager->GetEquippedIdolRarityInSlot(i) : RunState->GetEquippedIdolRarityInSlot(i);
 			C = FItemData::GetItemRarityColor(IdolRarity);
 			if (GIAsT66)
 			{
@@ -2480,12 +2492,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	DifficultyBorders.SetNum(5);
 	DifficultyImages.SetNum(5);
 	ClownImages.SetNum(5);
-	IdolSlotBorders.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
-	IdolSlotContainers.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
-	IdolSlotImages.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
-	IdolSlotBrushes.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
+	IdolSlotBorders.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+	IdolSlotContainers.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+	IdolSlotImages.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+	IdolSlotBrushes.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
 	IdolLevelDotBorders.Empty();
-	CachedIdolSlotIDs.SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
+	CachedIdolSlotIDs.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotContainers.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
@@ -2739,7 +2751,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const float IdolGridHeight = FMath::Max(0.f, HeartsRowWidth - IdolPanelOverhead);
 	const float IdolSlotSize = FMath::Max(18.f, (IdolGridHeight / 3.f) - (IdolSlotPad * 2.f));
 	const float IdolPanelWidth = 2.f * IdolSlotSize + 4.f * IdolSlotPad + 20.f;
-	for (int32 i = 0; i < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++i)
+	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		TSharedPtr<SBorder> IdolBorder;
 		const int32 Row = i / 2;
@@ -3912,7 +3924,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Bottom)
-		.Padding(24.f, 0.f, 24.f, 185.f)
+		.Padding(24.f, 0.f, 24.f, PickupCardBottomOffset)
 		[
 			SAssignNew(PickupCardBox, SBox)
 			.Visibility(EVisibility::Collapsed)

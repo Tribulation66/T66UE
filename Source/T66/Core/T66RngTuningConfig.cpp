@@ -65,31 +65,9 @@ void UT66RngTuningConfig::LoadFromConfig()
 	LoadFloatValue(ConfigFilename, TEXT("RangeHighBiasStrength"), RangeHighBiasStrength);
 	LoadFloatValue(ConfigFilename, TEXT("BernoulliBiasStrength"), BernoulliBiasStrength);
 
-	LoadFloatValue(ConfigFilename, TEXT("LootBagDropChanceBase"), LootBagDropChanceBase);
-	LoadStructValue(ConfigFilename, TEXT("LootBagRarityBase"), LootBagRarityBase);
-
 	LoadFloatValue(ConfigFilename, TEXT("GoblinWaveChanceBase"), GoblinWaveChanceBase);
 	LoadStructValue(ConfigFilename, TEXT("GoblinCountPerWave"), GoblinCountPerWave);
 	LoadStructValue(ConfigFilename, TEXT("SpecialEnemyRarityBase"), SpecialEnemyRarityBase);
 
-	LoadFloatValue(ConfigFilename, TEXT("VendorStealSuccessChanceOnTimingHitBase"), VendorStealSuccessChanceOnTimingHitBase);
-	LoadFloatValue(ConfigFilename, TEXT("GamblerCheatSuccessChanceBase"), GamblerCheatSuccessChanceBase);
-
 	LoadStructValue(ConfigFilename, TEXT("TreesPerStage"), TreesPerStage);
-	LoadStructValue(ConfigFilename, TEXT("ChestsPerStage"), ChestsPerStage);
-	LoadStructValue(ConfigFilename, TEXT("WheelsPerStage"), WheelsPerStage);
-	LoadStructValue(ConfigFilename, TEXT("InteractableRarityBase"), InteractableRarityBase);
-	LoadFloatValue(ConfigFilename, TEXT("ChestMimicChance"), ChestMimicChance);
-	if (FMath::IsNearlyEqual(ChestMimicChance, 0.20f))
-	{
-		// Backward compatibility for the typo that already exists in DefaultT66Rng.ini.
-		LoadFloatValue(ConfigFilename, TEXT("TruckMimicChance"), ChestMimicChance);
-	}
-	LoadStructValue(ConfigFilename, TEXT("CratesPerStage"), CratesPerStage);
-
-	LoadStructValue(ConfigFilename, TEXT("WheelRarityBase"), WheelRarityBase);
-	LoadStructValue(ConfigFilename, TEXT("WheelGoldRange_Black"), WheelGoldRange_Black);
-	LoadStructValue(ConfigFilename, TEXT("WheelGoldRange_Red"), WheelGoldRange_Red);
-	LoadStructValue(ConfigFilename, TEXT("WheelGoldRange_Yellow"), WheelGoldRange_Yellow);
-	LoadStructValue(ConfigFilename, TEXT("WheelGoldRange_White"), WheelGoldRange_White);
 }

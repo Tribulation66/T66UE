@@ -3,7 +3,9 @@
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66RngSubsystem.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/BoxComponent.h"
@@ -44,10 +46,20 @@ bool AT66StageCatchUpLootInteractable::Interact(APlayerController* PC)
 
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
 	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66RngSubsystem* RngSub = T66GI ? T66GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 	if (!T66GI || !RunState) return false;
 
 	const int32 Count = FMath::Clamp(LootBagCount, 0, 999);
-	FRandomStream Rng(FPlatformTime::Cycles());
+	if (RngSub)
+	{
+		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+	}
+	FRandomStream LocalRng(FPlatformTime::Cycles());
+	FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;
+	const FT66RarityWeights Weights = PlayerExperience
+		? PlayerExperience->GetDifficultyCatchUpLootBagRarityWeights(T66GI->SelectedDifficulty)
+		: FT66RarityWeights{};
 
 	for (int32 i = 0; i < Count; ++i)
 	{
@@ -55,8 +67,7 @@ bool AT66StageCatchUpLootInteractable::Interact(APlayerController* PC)
 		const float Radius = Rng.FRandRange(0.f, 240.f);
 		const FVector Offset(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);
 
-		const int32 LuckStat = RunState->GetLuckStat();
-		const ET66Rarity BagRarity = FT66RarityUtil::RollRarityWithLuck(Rng, LuckStat);
+		const ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
 		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
 
 		FActorSpawnParameters SpawnParams;

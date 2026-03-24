@@ -811,6 +811,13 @@ namespace T66MainMapTerrain
 			OutAssets.RockMesh2 = OutAssets.RockMesh1;
 			OutAssets.RockMesh3 = OutAssets.RockMesh1;
 			OutAssets.LogMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Log.Log"));
+			EnableComplexCollisionForMesh(OutAssets.TreeMesh1);
+			EnableComplexCollisionForMesh(OutAssets.TreeMesh2);
+			EnableComplexCollisionForMesh(OutAssets.TreeMesh3);
+			EnableComplexCollisionForMesh(OutAssets.RockMesh1);
+			EnableComplexCollisionForMesh(OutAssets.RockMesh2);
+			EnableComplexCollisionForMesh(OutAssets.RockMesh3);
+			EnableComplexCollisionForMesh(OutAssets.LogMesh);
 			UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain assets: WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
 				OutAssets.WallMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.WallTexture ? TEXT("yes") : TEXT("no"),
@@ -1718,14 +1725,15 @@ namespace T66MainMapTerrain
 			{
 				if (UStaticMesh* DecorMesh = PickDecorationMesh(Assets, Cell.Decoration))
 				{
-					if (CreateMeshChild(
+					if (UStaticMeshComponent* DecorComponent = CreateMeshChild(
 						TileRoot,
 						FString::Printf(TEXT("Decor_%d"), CellIndex),
 						DecorMesh,
 						nullptr,
 						FTransform(Cell.DecorationLocalRotation, Cell.DecorationLocalOffset, Cell.DecorationLocalScale),
-						false))
+						true))
 					{
+						DecorComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 						++DecorCount;
 					}
 				}

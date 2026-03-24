@@ -87,16 +87,6 @@ public:
 	float BernoulliBiasStrength = 1.25f;
 
 	// ================================
-	// Loot bags (enemies)
-	// ================================
-
-	/** Baseline chance an eligible enemy drops a loot bag (per kill). */
-	float LootBagDropChanceBase = 0.10f;
-
-	/** Baseline rarity distribution for loot bags. */
-	FT66RarityWeights LootBagRarityBase;
-
-	// ================================
 	// Specials (Goblin Thief) per-wave
 	// ================================
 
@@ -109,46 +99,7 @@ public:
 	/** Baseline rarity distribution for special enemies (their variant rarity). */
 	FT66RarityWeights SpecialEnemyRarityBase;
 
-	// ================================
-	// Vendor / Gambler success odds
-	// ================================
-
-	/** Vendor steal: base success chance if timing window is hit (Luck can bias this upward). */
-	float VendorStealSuccessChanceOnTimingHitBase = 0.65f;
-
-	/** Gambler cheat: base success chance (Luck can bias this upward). */
-	float GamblerCheatSuccessChanceBase = 0.40f;
-
-	// ================================
-	// World interactables (count + rarity)
-	// ================================
-
 	FT66IntRange TreesPerStage = { 2, 5 };
-
-	FT66IntRange ChestsPerStage = { 2, 5 };
-
-	FT66IntRange WheelsPerStage = { 2, 5 };
-
-	FT66RarityWeights InteractableRarityBase;
-
-	/** Chest mimic chance is explicitly NOT luck-affected. */
-	float ChestMimicChance = 0.20f;
-
-	FT66IntRange CratesPerStage = { 1, 3 };
-
-	// ================================
-	// Wheel payouts (rarity + payout range)
-	// ================================
-
-	FT66RarityWeights WheelRarityBase;
-
-	FT66FloatRange WheelGoldRange_Black = { 25.f, 100.f };
-
-	FT66FloatRange WheelGoldRange_Red = { 100.f, 300.f };
-
-	FT66FloatRange WheelGoldRange_Yellow = { 200.f, 600.f };
-
-	FT66FloatRange WheelGoldRange_White = { 500.f, 1500.f };
 
 	void LoadFromConfig();
 };

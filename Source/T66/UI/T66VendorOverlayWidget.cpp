@@ -81,9 +81,9 @@ void UT66VendorOverlayWidget::CloseOverlay()
 	}
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		if (bEmbeddedInCasinoShell)
+		if (bEmbeddedInCircusShell)
 		{
-			PC->CloseCasinoOverlay();
+			PC->CloseCircusOverlay();
 			return;
 		}
 	}
@@ -1167,7 +1167,8 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (StealButtons.IsValidIndex(i) && StealButtons[i].IsValid())
 		{
-			StealButtons[i]->SetEnabled(bHasItem && !bSold && bBoughtSomethingThisVisit && !IsBossActive());
+			StealButtons[i]->SetVisibility(bVendorAllowsSteal ? EVisibility::Visible : EVisibility::Hidden);
+			StealButtons[i]->SetEnabled(bVendorAllowsSteal && bHasItem && !bSold && bBoughtSomethingThisVisit && !IsBossActive());
 		}
 	}
 }
@@ -1286,7 +1287,7 @@ FReply UT66VendorOverlayWidget::OnDialogueTeleport()
 		}
 		return FReply::Handled();
 	}
-	if (bEmbeddedInCasinoShell)
+	if (bEmbeddedInCircusShell)
 	{
 		TeleportToGambler();
 		return FReply::Handled();
@@ -1299,11 +1300,11 @@ FReply UT66VendorOverlayWidget::OnDialogueTeleport()
 
 void UT66VendorOverlayWidget::TeleportToGambler()
 {
-	if (bEmbeddedInCasinoShell)
+	if (bEmbeddedInCircusShell)
 	{
 		if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 		{
-			PC->SwitchCasinoOverlayToGambling();
+			PC->SwitchCircusOverlayToGambling();
 		}
 		return;
 	}
@@ -1647,6 +1648,11 @@ FReply UT66VendorOverlayWidget::OnBuybackSlot(int32 SlotIndex)
 
 FReply UT66VendorOverlayWidget::OnStealSlot(int32 SlotIndex)
 {
+	if (!bVendorAllowsSteal)
+	{
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "StealDisabled", "Stealing is disabled here."));
+		return FReply::Handled();
+	}
 	if (!bBoughtSomethingThisVisit)
 	{
 		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Vendor", "BuyOneBeforeStealing", "Buy one item before stealing."));
@@ -1778,6 +1784,6 @@ void UT66VendorOverlayWidget::TriggerVendorBossIfAngry()
 {
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		PC->TriggerCasinoBossIfAngry();
+		PC->TriggerCircusBossIfAngry();
 	}
 }

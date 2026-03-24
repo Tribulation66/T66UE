@@ -192,7 +192,8 @@ protected:
 
 	/** Spawn the 4 corner houses + 4 NPC cylinders (vendor/gambler/ouroboros/saint). */
 	void SpawnCornerHousesAndNPCs();
-	void SpawnCasinoInteractableIfNeeded();
+	void SpawnCircusInteractableIfNeeded();
+	void SpawnSupportVendorAtStartIfNeeded();
 
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
 	void SpawnLevelContentAfterLandscapeReady();
@@ -302,12 +303,20 @@ private:
 	void DestroyBossBeacon();
 	void SnapPlayersToTerrain();
 	void MaintainPlayerTerrainSafety();
+	void TryActivateMainMapCombat();
+	bool TryGetMainMapStartAxes(FVector& OutCenter, FVector& OutInwardDirection, FVector& OutSideDirection, float& OutCellSize) const;
+	bool TryGetMainMapStartPlacementLocation(float SideCells, float InwardCells, FVector& OutLocation) const;
+	bool TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector& OutLocation, float ExtraSafeBubbleMargin = 0.f) const;
 
 	// Floor material soft-load.
 	bool bGroundFloorMaterialLoadRequested = false;
 	bool bTerrainCollisionReady = false;
+	bool bMainMapCombatStarted = false;
 	bool bHasMainMapSpawnSurfaceLocation = false;
 	FVector MainMapSpawnSurfaceLocation = FVector::ZeroVector;
+	FVector MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
+	FVector MainMapStartPathSurfaceLocation = FVector::ZeroVector;
+	FVector MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;

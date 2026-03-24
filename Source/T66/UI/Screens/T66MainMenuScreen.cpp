@@ -76,6 +76,18 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	{
 		return FT66Style::MakeButton(
 			FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc))
+			.SetBorderVisual(ET66ButtonBorderVisual::MainMenuBlueTrim)
+			.SetBackgroundVisual(ET66ButtonBackgroundVisual::MainMenuBlueWood)
+			.SetStateTextColors(
+				FLinearColor(1.0f, 1.0f, 1.0f, 1.0f),
+				FLinearColor(1.0f, 0.88f, 0.36f, 1.0f),
+				FLinearColor(1.0f, 0.97f, 0.84f, 1.0f))
+			.SetStateTextSecondaryColors(
+				FLinearColor(1.0f, 0.84f, 0.22f, 1.0f),
+				FLinearColor(1.0f, 1.0f, 1.0f, 1.0f),
+				FLinearColor(0.96f, 0.78f, 0.18f, 1.0f))
+			.SetTextDualToneSplit(0.60f)
+			.SetUseGlow(false)
 			.SetFontSize(44)
 			.SetPadding(FMargin(14.f))
 			.SetMinWidth(0.f));

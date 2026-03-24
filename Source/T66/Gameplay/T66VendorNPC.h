@@ -18,5 +18,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Vendor")
 	bool TrySellFirstItem();
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Vendor")
+	bool DoesAllowSteal() const { return bAllowSteal; }
+
+	UFUNCTION(BlueprintCallable, Category = "Vendor")
+	void ConfigureAsSupportVendor(bool bInAllowSteal);
+
 	virtual bool Interact(APlayerController* PC) override;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vendor")
+	bool bAllowSteal = true;
 };

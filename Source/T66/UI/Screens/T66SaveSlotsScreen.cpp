@@ -5,6 +5,7 @@
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -78,8 +79,8 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			SlotHeroPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Box;
 			SlotHeroPortraitBrushes[i]->SetResourceObject(nullptr);
 		}
-		SlotIdolBrushes[i].SetNum(UT66RunStateSubsystem::MaxEquippedIdolSlots);
-		for (int32 k = 0; k < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++k)
+		SlotIdolBrushes[i].SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+		for (int32 k = 0; k < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++k)
 		{
 			if (!SlotIdolBrushes[i][k].IsValid())
 			{
@@ -123,14 +124,14 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 						SlotHeroPortraitBrushes[LocalIndex], FName(TEXT("SaveSlotHero"), SlotIndex), true);
 				}
 			}
-			for (int32 k = 0; k < FMath::Min(Idols.Num(), UT66RunStateSubsystem::MaxEquippedIdolSlots); ++k)
+			for (int32 k = 0; k < FMath::Min(Idols.Num(), UT66IdolManagerSubsystem::MaxEquippedIdolSlots); ++k)
 			{
 				FIdolData IdolData;
 				const int32 TierValue = IdolTiers.IsValidIndex(k)
-					? FMath::Clamp(static_cast<int32>(IdolTiers[k]), 1, UT66RunStateSubsystem::MaxIdolLevel)
+					? FMath::Clamp(static_cast<int32>(IdolTiers[k]), 1, UT66IdolManagerSubsystem::MaxIdolLevel)
 					: 1;
 				const TSoftObjectPtr<UTexture2D> IdolIconSoft = GI->GetIdolData(Idols[k], IdolData)
-					? IdolData.GetIconForRarity(UT66RunStateSubsystem::IdolTierValueToRarity(TierValue))
+					? IdolData.GetIconForRarity(UT66IdolManagerSubsystem::IdolTierValueToRarity(TierValue))
 					: TSoftObjectPtr<UTexture2D>();
 				if (!IdolIconSoft.IsNull())
 				{
@@ -154,7 +155,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			];
 
 		TSharedRef<SHorizontalBox> IdolRow = SNew(SHorizontalBox);
-		for (int32 k = 0; k < UT66RunStateSubsystem::MaxEquippedIdolSlots; ++k)
+		for (int32 k = 0; k < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++k)
 		{
 			IdolRow->AddSlot().AutoWidth().Padding(2.f)
 				[

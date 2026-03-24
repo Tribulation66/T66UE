@@ -17,6 +17,7 @@
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66GameplayLayout.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "UI/T66EnemyHealthBarWidget.h"
@@ -382,6 +383,7 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	MoveSlowMultiplier = 1.f;
 	MoveSlowSecondsRemaining = 0.f;
 	ForcedRunAwaySecondsRemaining = 0.f;
+	AutoAttackKnockbackSecondsRemaining = 0.f;
 	bIsMiniBoss = false;
 	MiniBossHPScalarApplied = 1.0f;
 	MiniBossDamageScalarApplied = 1.0f;
@@ -474,6 +476,16 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	if (!Move) return;
+
+	if (AutoAttackKnockbackSecondsRemaining > 0.f)
+	{
+		AutoAttackKnockbackSecondsRemaining = FMath::Max(0.f, AutoAttackKnockbackSecondsRemaining - DeltaSeconds);
+		if (AutoAttackKnockbackSecondsRemaining <= 0.f)
+		{
+			Move->StopMovementImmediately();
+		}
+		return;
+	}
 
 	const float Dist2DToPlayer = FVector::Dist2D(GetActorLocation(), PlayerPawn->GetActorLocation());
 	const bool bPlayerInsideReservedTraversalZone = T66GameplayLayout::IsInsideReservedTraversalZone2D(
@@ -672,6 +684,40 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName
 	return false;
 }
 
+void AT66EnemyBase::ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale)
+{
+	if (CurrentHP <= 0 || bRisingFromGround)
+	{
+		return;
+	}
+
+	const float KnockbackSpeed = AutoAttackKnockbackSpeed * FMath::Max(0.f, StrengthScale);
+	if (KnockbackSpeed <= 0.f || AutoAttackKnockbackStutterSeconds <= 0.f)
+	{
+		return;
+	}
+
+	FVector AwayFromHit = GetActorLocation() - HitOrigin;
+	AwayFromHit.Z = 0.f;
+	if (!AwayFromHit.Normalize())
+	{
+		AwayFromHit = -GetActorForwardVector();
+		AwayFromHit.Z = 0.f;
+		if (!AwayFromHit.Normalize())
+		{
+			return;
+		}
+	}
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->Velocity = AwayFromHit * KnockbackSpeed;
+	}
+
+	AutoAttackKnockbackSecondsRemaining = FMath::Max(AutoAttackKnockbackSecondsRemaining, AutoAttackKnockbackStutterSeconds);
+}
+
 float AT66EnemyBase::GetEffectiveArmor() const
 {
 	return FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
@@ -765,8 +811,9 @@ void AT66EnemyBase::OnDeath()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
 	if (bDropsLoot && T66GI)
 	{
-		// Loot bag drop chance + rarity are now driven by the central RNG subsystem (Luck-biased).
+		// Loot bag drop chance + rarity are driven by player-experience tuning and luck bias.
 		UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+		UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
 		if (RngSub && RunState)
 		{
 			RngSub->UpdateLuckStat(RunState->GetLuckStat());
@@ -774,9 +821,10 @@ void AT66EnemyBase::OnDeath()
 
 		FRandomStream LocalRng(FPlatformTime::Cycles());
 		FRandomStream& Stream = RngSub ? RngSub->GetRunStream() : LocalRng;
-
-		const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
-		const float BaseDropChance = Tuning ? Tuning->LootBagDropChanceBase : 0.10f;
+		const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
+		const float BaseDropChance = PlayerExperience
+			? PlayerExperience->GetDifficultyEnemyLootBagDropChanceBase(Difficulty)
+			: 0.10f;
 		const float DropChance = RngSub ? RngSub->BiasChance01(BaseDropChance) : FMath::Clamp(BaseDropChance, 0.f, 1.f);
 		const bool bDroppedBag = (Stream.GetFraction() <= DropChance);
 		if (RunState)
@@ -806,27 +854,52 @@ void AT66EnemyBase::OnDeath()
 			return;
 		}
 
-		const FT66RarityWeights Weights = Tuning ? Tuning->LootBagRarityBase : FT66RarityWeights{};
-		ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
-		if (bIsMiniBoss)
-		{
-			// Mini-bosses should skew toward higher tier loot bags.
-			// Simple bias: roll twice (luck-weighted) and take the better rarity.
-			const ET66Rarity R2 = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
-			BagRarity = (static_cast<uint8>(R2) > static_cast<uint8>(BagRarity)) ? R2 : BagRarity;
-		}
+		const FT66IntRange BagCountRange = PlayerExperience
+			? PlayerExperience->GetDifficultyEnemyLootBagCountOnDrop(Difficulty)
+			: FT66IntRange{ 1, 1 };
+		const int32 BagCountMin = FMath::Max(1, FMath::Min(BagCountRange.Min, BagCountRange.Max));
+		const int32 BagCountMax = FMath::Max(BagCountMin, FMath::Max(BagCountRange.Min, BagCountRange.Max));
+		const int32 LootBagCount = RngSub
+			? FMath::Max(1, RngSub->RollIntRangeBiased(BagCountRange, Stream))
+			: FMath::Max(1, Stream.RandRange(BagCountMin, BagCountMax));
 		if (RunState)
 		{
-			RunState->RecordLuckQualityRarity(FName(TEXT("EnemyLootBagRarity")), BagRarity);
+			RunState->RecordLuckQuantityRoll(FName(TEXT("EnemyLootBagCount")), LootBagCount, BagCountMin, BagCountMax);
 		}
-		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
+
+		const FT66RarityWeights Weights = PlayerExperience
+			? PlayerExperience->GetDifficultyEnemyLootBagRarityWeights(Difficulty)
+			: FT66RarityWeights{};
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AT66LootBagPickup* Loot = World->SpawnActor<AT66LootBagPickup>(AT66LootBagPickup::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, SpawnParams);
-		if (Loot)
+		for (int32 BagIndex = 0; BagIndex < LootBagCount; ++BagIndex)
 		{
-			Loot->SetLootRarity(BagRarity);
-			Loot->SetItemID(ItemID);
+			ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
+			if (bIsMiniBoss)
+			{
+				// Mini-bosses should skew toward higher tier loot bags.
+				const ET66Rarity R2 = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
+				BagRarity = (static_cast<uint8>(R2) > static_cast<uint8>(BagRarity)) ? R2 : BagRarity;
+			}
+			if (RunState)
+			{
+				RunState->RecordLuckQualityRarity(FName(TEXT("EnemyLootBagRarity")), BagRarity);
+			}
+
+			const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
+			const float Angle = Stream.FRandRange(0.f, 2.f * PI);
+			const float Radius = (LootBagCount > 1) ? Stream.FRandRange(0.f, 90.f) : 0.f;
+			const FVector Offset(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);
+			AT66LootBagPickup* Loot = World->SpawnActor<AT66LootBagPickup>(
+				AT66LootBagPickup::StaticClass(),
+				GetActorLocation() + Offset,
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (Loot)
+			{
+				Loot->SetLootRarity(BagRarity);
+				Loot->SetItemID(ItemID);
+			}
 		}
 	}
 

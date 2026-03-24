@@ -12,6 +12,7 @@ class AT66EnemyBase;
 class AT66BossBase;
 class UT66RunStateSubsystem;
 class UT66FloatingCombatTextSubsystem;
+class UT66IdolManagerSubsystem;
 class USoundBase;
 class UNiagaraSystem;
 
@@ -118,6 +119,9 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UT66FloatingCombatTextSubsystem> CachedFloatingCombatText = nullptr;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UT66IdolManagerSubsystem> CachedIdolManager = nullptr;
+
 	bool bHasCachedHeroData = false;
 	FHeroData CachedHeroData;
 
@@ -164,8 +168,13 @@ protected:
 
 	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
 	void SpawnPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color);
+	void SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation);
 	void SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color);
 	void SpawnDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color);
+	void SpawnIdolPierceVFX(const FName& IdolID, ET66ItemRarity Rarity, const FVector& Start, const FVector& End, const FVector& ImpactLocation, float StartDelaySeconds);
+	void SpawnIdolAOEVFX(const FName& IdolID, ET66ItemRarity Rarity, const FVector& Location, float Radius, float StartDelaySeconds);
+	void SpawnIdolBounceVFX(const FName& IdolID, ET66ItemRarity Rarity, const TArray<FVector>& ChainPositions, float StartDelaySeconds);
+	void SpawnIdolDOTVFX(const FName& IdolID, ET66ItemRarity Rarity, AActor* FollowTarget, const FVector& Location, float Duration, float Radius, float StartDelaySeconds);
 
 	/** Hero-specific VFX variants: spawn unique pixel patterns based on HeroID. */
 	void SpawnHeroSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color, const FName& HeroID);
