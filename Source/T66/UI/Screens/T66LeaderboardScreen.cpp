@@ -6,6 +6,7 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Components/T66LeaderboardPanel.h"
+#include "UI/Dota/T66DotaSlate.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
 
@@ -42,43 +43,47 @@ TSharedRef<SWidget> UT66LeaderboardScreen::BuildSlateUI()
 	const FText TitleText = Loc ? Loc->GetText_Leaderboard() : NSLOCTEXT("T66.Leaderboard", "Title", "LEADERBOARD");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FLinearColor ScrimColor(FT66Style::Tokens::Scrim.R, FT66Style::Tokens::Scrim.G, FT66Style::Tokens::Scrim.B, 0.95f);
+	const TSharedRef<SWidget> Content =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66LeaderboardScreen::HandleBackClicked), ET66ButtonType::Neutral)
+					.SetMinWidth(120.f))
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(TitleText)
+				.Font(FT66Style::Tokens::FontBold(36))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Justification(ETextJustify::Center)
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				SNew(SBox)
+				.WidthOverride(120.f)
+			]
+		]
+		+ SVerticalBox::Slot().FillHeight(1.f)
+		[
+			SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
+			.LocalizationSubsystem(Loc)
+			.LeaderboardSubsystem(LB)
+			.UIManager(UIManager)
+		];
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(ScrimColor)
 		.Padding(FMargin(40.f))
 		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-				[
-					FT66Style::MakeButton(
-						FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66LeaderboardScreen::HandleBackClicked), ET66ButtonType::Neutral)
-						.SetMinWidth(120.f))
-				]
-				+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(TitleText)
-					.Font(FT66Style::Tokens::FontBold(36))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-					.Justification(ETextJustify::Center)
-				]
-				+ SHorizontalBox::Slot().AutoWidth()
-				[
-					SNew(SBox)
-					.WidthOverride(120.f)
-				]
-			]
-			+ SVerticalBox::Slot().FillHeight(1.f)
-			[
-				SAssignNew(LeaderboardPanel, ST66LeaderboardPanel)
-				.LocalizationSubsystem(Loc)
-				.LeaderboardSubsystem(LB)
-				.UIManager(UIManager)
-			]
+			FT66Style::IsDotaTheme()
+				? FT66DotaSlate::MakeScreenSurface(Content, FMargin(20.f))
+				: Content
 		];
 }
 

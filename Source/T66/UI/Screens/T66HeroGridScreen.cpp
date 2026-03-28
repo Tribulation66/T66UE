@@ -6,6 +6,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
@@ -157,7 +158,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	// Centered modal dialog (same layout as companion grid)
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.85f))
+		.BorderBackgroundColor(FT66DotaTheme::Scrim())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -165,7 +166,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
+				.BorderBackgroundColor(FT66DotaTheme::Panel())
 				.Padding(FMargin(30.0f, 25.0f))
 				[
 					SNew(SVerticalBox)
@@ -177,7 +178,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(TitleText)
 						.Font(FT66Style::Tokens::FontBold(28))
-						.ColorAndOpacity(FLinearColor::White)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot()
 					.FillHeight(1.0f)

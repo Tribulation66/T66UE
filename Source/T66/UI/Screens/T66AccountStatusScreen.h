@@ -6,15 +6,7 @@
 #include "UI/T66ScreenBase.h"
 #include "T66AccountStatusScreen.generated.h"
 
-class SMultiLineEditableTextBox;
-class SEditableTextBox;
-
-/**
- * Account Status Panel (Suspension / Appeal)
- * Modal overlay opened from the Main Menu when the account has a flagged run.
- *
- * Bible: T66_Bible.md -> "1.4 ACCOUNT STATUS PANEL (SUSPENSION / APPEAL)"
- */
+/** Simple account-status modal opened from the frontend top bar. */
 UCLASS(Blueprintable)
 class T66_API UT66AccountStatusScreen : public UT66ScreenBase
 {
@@ -29,16 +21,6 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
-	// UI elements (draft state)
-	TSharedPtr<SMultiLineEditableTextBox> AppealTextBox;
-	TSharedPtr<SEditableTextBox> EvidenceUrlTextBox;
-
-	FString DraftAppealMessage;
-	FString DraftEvidenceUrl;
-
-	// Button handlers
 	FReply HandleBackClicked();
-	FReply HandleRunInQuestionClicked();
-	FReply HandleSubmitAppealClicked();
 };
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UI/T66UITypes.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateTypes.h"     // FComboButtonStyle for GetDropdownComboButtonStyle
 #include "Widgets/Input/SButton.h"  // FOnClicked used by MakeButton helper
@@ -97,6 +98,8 @@ struct FT66ButtonParams
 	bool bHasTextShadowOffset = false;
 	FVector2D TextShadowOffset = FVector2D::ZeroVector;
 	bool bUseGlow = true;
+	bool bUseDotaPlateOverlay = false;
+	const FSlateBrush* DotaPlateOverrideBrush = nullptr;
 
 	// === Custom Content ===
 	TSharedPtr<SWidget> CustomContent;               // If set, replaces text block entirely
@@ -144,6 +147,8 @@ struct FT66ButtonParams
 	}
 	FT66ButtonParams& SetTextShadowOffset(const FVector2D& Offset)       { TextShadowOffset = Offset; bHasTextShadowOffset = true; return *this; }
 	FT66ButtonParams& SetUseGlow(bool bInUseGlow)                         { bUseGlow = bInUseGlow; return *this; }
+	FT66ButtonParams& SetUseDotaPlateOverlay(bool bInUseDotaPlateOverlay) { bUseDotaPlateOverlay = bInUseDotaPlateOverlay; return *this; }
+	FT66ButtonParams& SetDotaPlateOverrideBrush(const FSlateBrush* InDotaPlateOverrideBrush) { DotaPlateOverrideBrush = InDotaPlateOverrideBrush; return *this; }
 	FT66ButtonParams& SetEnabled(const TAttribute<bool>& E)               { IsEnabled = E; return *this; }
 	FT66ButtonParams& SetVisibility(const TAttribute<EVisibility>& V)     { Visibility = V; return *this; }
 	FT66ButtonParams& SetDynamicLabel(const TAttribute<FText>& L)         { DynamicLabel = L; return *this; }
@@ -256,6 +261,10 @@ public:
 
 	/** Toggle force-bold: when on, all UI text uses the bold variant of the current font (if available). Console: T66Bold */
 	static void ToggleBoldFont();
+
+	static void SetActiveTheme(ET66UITheme InTheme);
+	static ET66UITheme GetActiveTheme();
+	static bool IsDotaTheme();
 
 	static const ISlateStyle& Get();
 	static FName GetStyleSetName();
@@ -400,6 +409,20 @@ public:
 
 	/** Build a dropdown (SComboButton). All dropdowns should use this or apply GetDropdownComboButtonStyle() to SComboBox. */
 	static TSharedRef<SWidget> MakeDropdown(const FT66DropdownParams& Params);
+
+	/** Wrap a Slate subtree in a viewport-aware DPI scaler using the given design resolution. */
+	static TSharedRef<SWidget> MakeResponsiveRoot(
+		const TSharedRef<SWidget>& Content,
+		const FVector2D& ReferenceResolution = FVector2D(1920.f, 1080.f),
+		bool bAllowUpscale = true);
+
+	/** Compute the current viewport scale relative to the supplied design resolution. */
+	static float GetViewportResponsiveScale(
+		const FVector2D& ReferenceResolution = FVector2D(1920.f, 1080.f),
+		bool bAllowUpscale = true);
+
+	/** Get the current game viewport size, or a 1920x1080 fallback if unavailable. */
+	static FVector2D GetViewportSize();
 
 	/**
 	 * Schedule a safe widget rebuild for the next tick.

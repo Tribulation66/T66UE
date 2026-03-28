@@ -275,7 +275,22 @@ protected:
 	ET66HeroPortraitVariant LastPortraitVariant = ET66HeroPortraitVariant::Half;
 
 	/** Map/minimap: cache actor refs + static marker data; full TActorIterator only every MapCacheRefreshIntervalSeconds. */
-	struct FMapCacheEntry { TWeakObjectPtr<AActor> Actor; FLinearColor Color; FText Label; };
+	enum class EMapCacheMarkerType : uint8
+	{
+		NPC,
+		Gate,
+		Enemy,
+		Miasma,
+	};
+
+	struct FMapCacheEntry
+	{
+		TWeakObjectPtr<AActor> Actor;
+		EMapCacheMarkerType Type = EMapCacheMarkerType::NPC;
+		FLinearColor Color = FLinearColor::White;
+		FText Label = FText::GetEmpty();
+		FName MarkerKey = NAME_None;
+	};
 	TArray<FMapCacheEntry> MapCache;
 	float MapCacheLastRefreshTime = -1.f;
 	TWeakObjectPtr<UWorld> MapCacheWorld;

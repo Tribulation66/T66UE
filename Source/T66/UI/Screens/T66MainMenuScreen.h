@@ -5,16 +5,17 @@
 #include "CoreMinimal.h"
 #include "UI/T66ScreenBase.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "UObject/StrongObjectPtr.h"
 #include "T66MainMenuScreen.generated.h"
 
 struct FSlateBrush;
 class ST66LeaderboardPanel;
-class SImage;
+class UTexture2D;
 /**
  * Main Menu Screen
- * Left side: Navigation buttons (New Game, Load Game, Settings, Achievements)
- * Right side: Leaderboard display
- * Corners: Language button (bottom-left), Quit button (top-right)
+ * Left side: social / last-run panel
+ * Center: primary actions
+ * Right side: leaderboard display
  */
 UCLASS(Blueprintable)
 class T66_API UT66MainMenuScreen : public UT66ScreenBase
@@ -39,6 +40,9 @@ public:
 	void OnPowerUpClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
+	void OnMinigamesClicked();
+
+	UFUNCTION(BlueprintCallable, Category = "Main Menu")
 	void OnAchievementsClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
@@ -56,12 +60,25 @@ public:
 protected:
 	virtual void OnScreenActivated_Implementation() override;
 	virtual void RefreshScreen_Implementation() override;
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
 	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
-	TSharedPtr<FSlateBrush> MainMenuBackgroundBrush;
-	TSharedPtr<SImage> MainMenuBackgroundImage;
+	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
+	TSharedPtr<FSlateBrush> FireMoonBrush;
+	TSharedPtr<FSlateBrush> PyramidChadBrush;
+	TSharedPtr<FSlateBrush> LastRunHeroBrush;
+	TSharedPtr<FSlateBrush> PrimaryCTAFillBrush;
+	TStrongObjectPtr<UTexture2D> PrimaryCTAFillTexture;
+	TSharedPtr<FSlateBrush> SettingsIconBrush;
+	TSharedPtr<FSlateBrush> LanguageIconBrush;
+	TArray<TSharedPtr<FSlateBrush>> FriendPortraitBrushes;
+	bool bShowOnlineFriends = true;
+	bool bShowOfflineFriends = true;
+	FVector2D CachedViewportSize = FVector2D::ZeroVector;
+	bool bViewportResponsiveRebuildQueued = false;
 
 	// Get localization subsystem
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
@@ -70,13 +87,15 @@ private:
 	FReply HandleNewGameClicked();
 	FReply HandleLoadGameClicked();
 	FReply HandlePowerUpClicked();
+	FReply HandleMinigamesClicked();
 	FReply HandleAchievementsClicked();
 	FReply HandleSettingsClicked();
 	FReply HandleLanguageClicked();
 	FReply HandleQuitClicked();
 
-	/** Load the main menu background texture into the background brush. */
+	/** Load or bind the main menu animated background layers. */
 	void RequestBackgroundTexture();
+	void RequestUtilityButtonIcons();
 
 	// Handle language change to rebuild UI
 	UFUNCTION()

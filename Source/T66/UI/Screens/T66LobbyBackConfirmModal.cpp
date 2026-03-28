@@ -3,6 +3,7 @@
 #include "UI/Screens/T66LobbyBackConfirmModal.h"
 #include "UI/Screens/T66LobbyScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -31,7 +32,7 @@ TSharedRef<SWidget> UT66LobbyBackConfirmModal::BuildSlateUI()
 	FText LeaveText = Loc ? Loc->GetText_LobbyLeaveLeave() : NSLOCTEXT("T66.Lobby", "LeaveLeave", "LEAVE");
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f))
+		.BorderBackgroundColor(FT66DotaTheme::Scrim())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)

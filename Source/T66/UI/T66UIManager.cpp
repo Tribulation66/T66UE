@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/T66UIManager.h"
+#include "UI/T66FrontendTopBarWidget.h"
 #include "UI/T66ScreenBase.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66PlayerController.h"
@@ -11,6 +12,7 @@ UT66UIManager::UT66UIManager()
 	CurrentScreenType = ET66ScreenType::None;
 	CurrentScreen = nullptr;
 	CurrentModal = nullptr;
+	FrontendTopBar = nullptr;
 }
 
 void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
@@ -18,6 +20,11 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 	OwningPlayer = InOwningPlayer;
 	NavigationHistory.Empty();
 	CurrentScreenType = ET66ScreenType::None;
+	if (FrontendTopBar && FrontendTopBar->IsInViewport())
+	{
+		FrontendTopBar->RemoveFromParent();
+	}
+	FrontendTopBar = nullptr;
 }
 
 void UT66UIManager::RegisterScreenClass(ET66ScreenType ScreenType, TSubclassOf<UT66ScreenBase> WidgetClass)
@@ -110,6 +117,7 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		}
 		CurrentScreen->AddToViewport(0);
 		CurrentScreen->OnScreenActivated();
+		UpdateFrontendTopBar();
 
 		OnScreenChanged.Broadcast(OldScreenType, ScreenType);
 	}
@@ -130,6 +138,7 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 		CurrentModal = NewModal;
 		CurrentModal->AddToViewport(100); // Higher Z-order than main screen
 		CurrentModal->OnScreenActivated();
+		UpdateFrontendTopBar();
 	}
 }
 
@@ -151,6 +160,8 @@ void UT66UIManager::CloseModal()
 		{
 			CurrentScreen->RefreshScreen();
 		}
+
+		UpdateFrontendTopBar();
 	}
 }
 
@@ -184,6 +195,7 @@ void UT66UIManager::GoBack()
 			CurrentScreenType = PreviousScreen;
 			CurrentScreen->AddToViewport(0);
 			CurrentScreen->OnScreenActivated();
+			UpdateFrontendTopBar();
 
 			OnScreenChanged.Broadcast(OldScreenType, PreviousScreen);
 		}
@@ -192,18 +204,20 @@ void UT66UIManager::GoBack()
 
 void UT66UIManager::RebuildAllVisibleUI()
 {
-	// Rebuild the underlying screen so it picks up fresh style tokens.
+	// Always defer rebuilds so theme switches cannot tear down Slate trees mid-input event.
 	if (CurrentScreen && CurrentScreen->IsInViewport())
 	{
-		CurrentScreen->ForceRebuildSlate();
-		CurrentScreen->OnScreenActivated();
+		FT66Style::DeferRebuild(CurrentScreen, 0);
 	}
 
-	// Rebuild the modal so it picks up fresh style tokens.
 	if (CurrentModal && CurrentModal->IsInViewport())
 	{
-		CurrentModal->ForceRebuildSlate();
-		CurrentModal->OnScreenActivated();
+		FT66Style::DeferRebuild(CurrentModal, 100);
+	}
+
+	if (FrontendTopBar && FrontendTopBar->IsInViewport())
+	{
+		FT66Style::DeferRebuild(FrontendTopBar, 50);
 	}
 }
 
@@ -227,6 +241,74 @@ void UT66UIManager::HideAllUI()
 
 	ET66ScreenType OldScreenType = CurrentScreenType;
 	CurrentScreenType = ET66ScreenType::None;
+	UpdateFrontendTopBar();
 
 	OnScreenChanged.Broadcast(OldScreenType, ET66ScreenType::None);
+}
+
+bool UT66UIManager::IsFrontendTopBarVisible() const
+{
+	return FrontendTopBar && FrontendTopBar->IsInViewport();
+}
+
+float UT66UIManager::GetFrontendTopBarReservedHeight() const
+{
+	return IsFrontendTopBarVisible() ? UT66FrontendTopBarWidget::GetReservedHeight() : 0.f;
+}
+
+float UT66UIManager::GetFrontendTopBarContentHeight() const
+{
+	return UT66FrontendTopBarWidget::GetVisibleContentHeight();
+}
+
+bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
+{
+	switch (ScreenType)
+	{
+	case ET66ScreenType::MainMenu:
+	case ET66ScreenType::SaveSlots:
+	case ET66ScreenType::PowerUp:
+	case ET66ScreenType::Achievements:
+	case ET66ScreenType::Unlocks:
+		return true;
+	default:
+		return false;
+	}
+}
+
+void UT66UIManager::UpdateFrontendTopBar()
+{
+	const bool bShouldShow = ShouldShowFrontendTopBar(CurrentScreenType);
+	if (!bShouldShow)
+	{
+		if (FrontendTopBar && FrontendTopBar->IsInViewport())
+		{
+			FrontendTopBar->RemoveFromParent();
+		}
+		return;
+	}
+
+	if (!OwningPlayer)
+	{
+		return;
+	}
+
+	if (!FrontendTopBar)
+	{
+		FrontendTopBar = CreateWidget<UT66FrontendTopBarWidget>(OwningPlayer, UT66FrontendTopBarWidget::StaticClass());
+		if (!FrontendTopBar)
+		{
+			return;
+		}
+
+		FrontendTopBar->UIManager = this;
+	}
+
+	FrontendTopBar->UIManager = this;
+	if (!FrontendTopBar->IsInViewport())
+	{
+		FrontendTopBar->AddToViewport(50);
+	}
+
+	FrontendTopBar->RefreshScreen();
 }

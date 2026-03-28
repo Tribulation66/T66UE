@@ -2,10 +2,12 @@
 
 #include "UI/Screens/T66SaveSlotsScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Dota/T66DotaSlate.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -94,15 +96,19 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 
 	const float SlotPadding = 20.f;
 	const float PortraitSize = 80.f;
-	const int32 PageStart = CurrentPage * SlotsPerPage;
+	const bool bHasVisibleSaves = VisibleSlotIndices.Num() > 0;
 
-	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, EmptyText, PreviewText, LoadText, PortraitSize, PageStart](
+	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, EmptyText, PreviewText, LoadText, PortraitSize](
 		int32 LocalIndex) -> TSharedRef<SWidget>
 	{
-		const int32 SlotIndex = PageStart + LocalIndex;
-		bool bOccupied = false;
+		const int32 SlotIndex = GetVisibleSlotIndexForPageEntry(LocalIndex);
+		const bool bSlotVisible = SlotIndex != INDEX_NONE;
+		bool bOccupied = bSlotVisible;
 		FString LastPlayed, HeroDisplayName, MapName;
-		if (SaveSub) SaveSub->GetSlotMeta(SlotIndex, bOccupied, LastPlayed, HeroDisplayName, MapName);
+		if (bSlotVisible && SaveSub)
+		{
+			SaveSub->GetSlotMeta(SlotIndex, bOccupied, LastPlayed, HeroDisplayName, MapName);
+		}
 
 		UT66RunSaveGame* Loaded = nullptr;
 		if (bOccupied && SaveSub) Loaded = SaveSub->LoadFromSlot(SlotIndex);
@@ -143,15 +149,23 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 
 		TSharedRef<SWidget> PortraitWidget = SNew(SBox).WidthOverride(PortraitSize).HeightOverride(PortraitSize)
 			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(bOccupied ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel)
-				[
-					SNew(SImage)
-					.Image(TAttribute<const FSlateBrush*>::Create([this, LocalIndex]()
-						{ return SlotHeroPortraitBrushes.IsValidIndex(LocalIndex) && SlotHeroPortraitBrushes[LocalIndex].IsValid()
-							? SlotHeroPortraitBrushes[LocalIndex].Get() : nullptr; }))
-				]
+				FT66Style::IsDotaTheme()
+					? FT66DotaSlate::MakeViewportFrame(
+						SNew(SImage)
+						.Image(TAttribute<const FSlateBrush*>::Create([this, LocalIndex]()
+							{ return SlotHeroPortraitBrushes.IsValidIndex(LocalIndex) && SlotHeroPortraitBrushes[LocalIndex].IsValid()
+								? SlotHeroPortraitBrushes[LocalIndex].Get() : nullptr; })),
+						FMargin(0.f))
+					: StaticCastSharedRef<SWidget>(
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(bOccupied ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel)
+						[
+							SNew(SImage)
+							.Image(TAttribute<const FSlateBrush*>::Create([this, LocalIndex]()
+								{ return SlotHeroPortraitBrushes.IsValidIndex(LocalIndex) && SlotHeroPortraitBrushes[LocalIndex].IsValid()
+									? SlotHeroPortraitBrushes[LocalIndex].Get() : nullptr; }))
+						])
 			];
 
 		TSharedRef<SHorizontalBox> IdolRow = SNew(SHorizontalBox);
@@ -198,33 +212,46 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 0.f)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral).SetMinWidth(90.f).SetEnabled(bOccupied))
+					FT66Style::MakeButton(FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral).SetMinWidth(90.f).SetEnabled(bOccupied && bSlotVisible))
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 0.f)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), ET66ButtonType::Success).SetMinWidth(90.f).SetEnabled(bOccupied))
+					FT66Style::MakeButton(FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), ET66ButtonType::Success).SetMinWidth(90.f).SetEnabled(bOccupied && bSlotVisible))
 				]
 			];
 
-		return SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(bOccupied ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel)
-			.Padding(16.f)
-			[
+		return FT66Style::IsDotaTheme()
+			? FT66DotaSlate::MakeScreenSurface(
 				SNew(SBox).WidthOverride(220.f)
 				[
 					CardContent
-				]
-			];
+				],
+				FMargin(16.f))
+			: StaticCastSharedRef<SWidget>(
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(bOccupied ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel)
+				.Padding(16.f)
+				[
+					SNew(SBox).WidthOverride(220.f)
+					[
+						CardContent
+					]
+				]);
 	};
 
 	TSharedRef<SWidget> BgUnderlay = SNew(SBorder).BorderBackgroundColor(FT66Style::Tokens::Bg);
+	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
+	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	const FText PageText = FText::Format(
 		NSLOCTEXT("T66.SaveSlots", "PageFormat", "Page {0} / {1}"),
 		FText::AsNumber(CurrentPage + 1), FText::AsNumber(TotalPages));
 
-	return SNew(SOverlay)
+	return SNew(SBox)
+		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+		[
+			SNew(SOverlay)
 		+ SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Fill)[BgUnderlay]
 		+ SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Fill)
 		[
@@ -237,6 +264,24 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 40.f, 0.f, 30.f)
 			[SNew(STextBlock).Text(TitleText).Font(FT66Style::Tokens::FontBold(48)).ColorAndOpacity(FT66Style::Tokens::Text)]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 20.f)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.SaveSlots", "PartyFilterHint", "Showing saves for the current party."))
+				.Font(FT66Style::Tokens::FontRegular(14))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 20.f)
+			[
+				SNew(SBox)
+				.Visibility(bHasVisibleSaves ? EVisibility::Collapsed : EVisibility::Visible)
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.SaveSlots", "NoPartySaves", "No saves found for the current party."))
+					.Font(FT66Style::Tokens::FontRegular(18))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				]
+			]
 			+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 			[
 				SNew(SHorizontalBox)
@@ -261,7 +306,12 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		]
 		+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(20.f, 0.f, 0.f, 20.f)
 		[
-			FT66Style::MakeButton(FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked), ET66ButtonType::Neutral).SetMinWidth(120.f))
+			SNew(SBox)
+			.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked), ET66ButtonType::Neutral).SetMinWidth(120.f))
+			]
+		]
 		];
 }
 
@@ -291,22 +341,71 @@ FReply UT66SaveSlotsScreen::HandleNextPageClicked()
 	return FReply::Handled();
 }
 
+void UT66SaveSlotsScreen::RebuildVisibleSlotIndices()
+{
+	VisibleSlotIndices.Reset();
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
+	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	if (!SaveSub)
+	{
+		TotalPages = 1;
+		CurrentPage = 0;
+		return;
+	}
+
+	for (int32 SlotIndex = 0; SlotIndex < UT66SaveSubsystem::MaxSlots; ++SlotIndex)
+	{
+		bool bOccupied = false;
+		FString LastPlayedUtc;
+		FString HeroDisplayName;
+		FString MapName;
+		SaveSub->GetSlotMeta(SlotIndex, bOccupied, LastPlayedUtc, HeroDisplayName, MapName);
+		if (!bOccupied)
+		{
+			continue;
+		}
+
+		UT66RunSaveGame* Loaded = SaveSub->LoadFromSlot(SlotIndex);
+		if (!Loaded)
+		{
+			continue;
+		}
+
+		if (!PartySubsystem || PartySubsystem->DoesSaveMatchCurrentParty(Loaded))
+		{
+			VisibleSlotIndices.Add(SlotIndex);
+		}
+	}
+
+	TotalPages = FMath::Max(1, (VisibleSlotIndices.Num() + SlotsPerPage - 1) / SlotsPerPage);
+	CurrentPage = FMath::Clamp(CurrentPage, 0, TotalPages - 1);
+}
+
+int32 UT66SaveSlotsScreen::GetVisibleSlotIndexForPageEntry(int32 LocalIndex) const
+{
+	const int32 VisibleIndex = (CurrentPage * SlotsPerPage) + LocalIndex;
+	return VisibleSlotIndices.IsValidIndex(VisibleIndex) ? VisibleSlotIndices[VisibleIndex] : INDEX_NONE;
+}
+
 void UT66SaveSlotsScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 	CurrentPage = 0;
-	TotalPages = FMath::Max(1, (UT66SaveSubsystem::MaxSlots + SlotsPerPage - 1) / SlotsPerPage);
+	RebuildVisibleSlotIndices();
 }
 
 void UT66SaveSlotsScreen::RefreshScreen_Implementation()
 {
 	Super::RefreshScreen_Implementation();
+	RebuildVisibleSlotIndices();
 	ForceRebuildSlate();
 }
 
 void UT66SaveSlotsScreen::OnLoadClicked(int32 SlotIndex)
 {
-	if (!IsSlotOccupied(SlotIndex)) return;
+	if (!VisibleSlotIndices.Contains(SlotIndex) || !IsSlotOccupied(SlotIndex)) return;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
@@ -324,6 +423,10 @@ void UT66SaveSlotsScreen::OnLoadClicked(int32 SlotIndex)
 	GI->bApplyLoadedTransform = true;
 	GI->bLoadAsPreview = false;
 	GI->CurrentSaveSlotIndex = SlotIndex;
+	GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
+	GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
+	GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;
+	GI->CurrentRunPartyMemberDisplayNames = Loaded->PartyMemberDisplayNames;
 
 	if (UIManager) UIManager->HideAllUI();
 	GI->TransitionToGameplayLevel();
@@ -336,7 +439,7 @@ void UT66SaveSlotsScreen::OnSlotClicked(int32 SlotIndex)
 
 void UT66SaveSlotsScreen::OnPreviewClicked(int32 SlotIndex)
 {
-	if (!IsSlotOccupied(SlotIndex)) return;
+	if (!VisibleSlotIndices.Contains(SlotIndex) || !IsSlotOccupied(SlotIndex)) return;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
@@ -354,6 +457,10 @@ void UT66SaveSlotsScreen::OnPreviewClicked(int32 SlotIndex)
 	GI->bApplyLoadedTransform = true;
 	GI->bLoadAsPreview = true;
 	GI->CurrentSaveSlotIndex = SlotIndex;
+	GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
+	GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
+	GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;
+	GI->CurrentRunPartyMemberDisplayNames = Loaded->PartyMemberDisplayNames;
 
 	if (UIManager) UIManager->HideAllUI();
 	GI->TransitionToGameplayLevel();

@@ -27,12 +27,12 @@
 
 namespace
 {
-	DECLARE_DELEGATE_RetVal_TwoParams(FReply, FCasinoAlchemyOnBeginDrag, const FGeometry&, const FPointerEvent&);
+	DECLARE_DELEGATE_RetVal_TwoParams(FReply, FCircusAlchemyOnBeginDrag, const FGeometry&, const FPointerEvent&);
 
-	class SCasinoAlchemyDropBorder : public SBorder
+	class SCircusAlchemyDropBorder : public SBorder
 	{
 	public:
-		SLATE_BEGIN_ARGS(SCasinoAlchemyDropBorder)
+		SLATE_BEGIN_ARGS(SCircusAlchemyDropBorder)
 			: _BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			, _BorderBackgroundColor(FLinearColor::White)
 			, _Padding(FMargin(0.f))
@@ -66,10 +66,10 @@ namespace
 		FOnDrop OnDropHandler;
 	};
 
-	class SCasinoAlchemyInventoryTile : public SBorder
+	class SCircusAlchemyInventoryTile : public SBorder
 	{
 	public:
-		SLATE_BEGIN_ARGS(SCasinoAlchemyInventoryTile)
+		SLATE_BEGIN_ARGS(SCircusAlchemyInventoryTile)
 			: _BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			, _BorderBackgroundColor(FLinearColor::White)
 			, _Padding(FMargin(0.f))
@@ -77,7 +77,7 @@ namespace
 			SLATE_ARGUMENT(const FSlateBrush*, BorderImage)
 			SLATE_ARGUMENT(FSlateColor, BorderBackgroundColor)
 			SLATE_ARGUMENT(FMargin, Padding)
-			SLATE_EVENT(FCasinoAlchemyOnBeginDrag, OnBeginDragHandler)
+			SLATE_EVENT(FCircusAlchemyOnBeginDrag, OnBeginDragHandler)
 			SLATE_DEFAULT_SLOT(FArguments, Content)
 		SLATE_END_ARGS()
 
@@ -109,21 +109,21 @@ namespace
 		}
 
 	private:
-		FCasinoAlchemyOnBeginDrag OnBeginDragHandler;
+		FCircusAlchemyOnBeginDrag OnBeginDragHandler;
 	};
 
-	class FCasinoAlchemyDragDropOp : public FDragDropOperation
+	class FCircusAlchemyDragDropOp : public FDragDropOperation
 	{
 	public:
-		DRAG_DROP_OPERATOR_TYPE(FCasinoAlchemyDragDropOp, FDragDropOperation)
+		DRAG_DROP_OPERATOR_TYPE(FCircusAlchemyDragDropOp, FDragDropOperation)
 
 		int32 InventoryIndex = INDEX_NONE;
 		FText Label;
 		TSharedPtr<FSlateBrush> IconBrush;
 
-		static TSharedRef<FCasinoAlchemyDragDropOp> New(int32 InInventoryIndex, const FText& InLabel, const TSharedPtr<FSlateBrush>& InIconBrush)
+		static TSharedRef<FCircusAlchemyDragDropOp> New(int32 InInventoryIndex, const FText& InLabel, const TSharedPtr<FSlateBrush>& InIconBrush)
 		{
-			TSharedRef<FCasinoAlchemyDragDropOp> Op = MakeShared<FCasinoAlchemyDragDropOp>();
+			TSharedRef<FCircusAlchemyDragDropOp> Op = MakeShared<FCircusAlchemyDragDropOp>();
 			Op->InventoryIndex = InInventoryIndex;
 			Op->Label = InLabel;
 			Op->IconBrush = InIconBrush.IsValid() ? InIconBrush : MakeShared<FSlateBrush>();
@@ -375,14 +375,14 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 
 	for (int32 InventoryIndex = 0; InventoryIndex < UT66RunStateSubsystem::MaxInventorySlots; ++InventoryIndex)
 	{
-		TSharedPtr<SCasinoAlchemyInventoryTile> TileBorder;
-		TSharedRef<SCasinoAlchemyInventoryTile> Tile =
-			SAssignNew(TileBorder, SCasinoAlchemyInventoryTile)
+		TSharedPtr<SCircusAlchemyInventoryTile> TileBorder;
+		TSharedRef<SCircusAlchemyInventoryTile> Tile =
+			SAssignNew(TileBorder, SCircusAlchemyInventoryTile)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 			.Padding(0.f)
 			.Cursor(EMouseCursor::GrabHand)
-			.OnBeginDragHandler(FCasinoAlchemyOnBeginDrag::CreateLambda([this, InventoryIndex](const FGeometry& Geometry, const FPointerEvent& MouseEvent)
+			.OnBeginDragHandler(FCircusAlchemyOnBeginDrag::CreateLambda([this, InventoryIndex](const FGeometry& Geometry, const FPointerEvent& MouseEvent)
 			{
 				return HandleAlchemyInventoryDragDetected(Geometry, MouseEvent, InventoryIndex);
 			}))
@@ -420,8 +420,8 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 	const FText DragHereText = NSLOCTEXT("T66.Casino", "DragHere", "Drag an item here");
 	const FText UpgradeText = NSLOCTEXT("T66.Casino", "Transmute", "TRANSMUTE");
 	const FText ClearText = NSLOCTEXT("T66.Common", "Clear", "CLEAR");
-	TSharedPtr<SCasinoAlchemyDropBorder> TargetDropBorder;
-	TSharedPtr<SCasinoAlchemyDropBorder> SacrificeDropBorder;
+	TSharedPtr<SCircusAlchemyDropBorder> TargetDropBorder;
+	TSharedPtr<SCircusAlchemyDropBorder> SacrificeDropBorder;
 
 	TSharedRef<SWidget> RootWidget =
 		FT66Style::MakePanel(
@@ -484,7 +484,7 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SAssignNew(TargetDropBorder, SCasinoAlchemyDropBorder)
+							SAssignNew(TargetDropBorder, SCircusAlchemyDropBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 							.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 							.Padding(FMargin(12.f))
@@ -545,7 +545,7 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SAssignNew(SacrificeDropBorder, SCasinoAlchemyDropBorder)
+							SAssignNew(SacrificeDropBorder, SCircusAlchemyDropBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 							.BorderBackgroundColor(FT66Style::Tokens::Panel2)
 							.Padding(FMargin(12.f))
@@ -924,7 +924,7 @@ FReply UT66CircusOverlayWidget::HandleAlchemyInventoryDragDetected(const FGeomet
 		DragIconBrush->ImageSize = FVector2D(72.f, 72.f);
 	}
 
-	return FReply::Handled().BeginDragDrop(FCasinoAlchemyDragDropOp::New(
+	return FReply::Handled().BeginDragDrop(FCircusAlchemyDragDropOp::New(
 		InventoryIndex,
 		Label,
 		DragIconBrush));
@@ -932,7 +932,7 @@ FReply UT66CircusOverlayWidget::HandleAlchemyInventoryDragDetected(const FGeomet
 
 FReply UT66CircusOverlayWidget::HandleAlchemyDropTarget(const FGeometry&, const FDragDropEvent& DragDropEvent, const bool bIsTargetSlot)
 {
-	const TSharedPtr<FCasinoAlchemyDragDropOp> DragOp = DragDropEvent.GetOperationAs<FCasinoAlchemyDragDropOp>();
+	const TSharedPtr<FCircusAlchemyDragDropOp> DragOp = DragDropEvent.GetOperationAs<FCircusAlchemyDragDropOp>();
 	if (!DragOp.IsValid())
 	{
 		return FReply::Unhandled();

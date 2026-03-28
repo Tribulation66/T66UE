@@ -13,6 +13,8 @@
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66SaveMigration.h"
 #include "Core/T66UITexturePoolSubsystem.h"
+#include "UI/Dota/T66DotaSlate.h"
+#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/Style/T66Style.h"
@@ -424,6 +426,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	// Global ranking (high score always; speed run when mode on — N/A if no time for that stage).
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66PlayerSettingsSubsystem* PS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	const bool bDotaTheme = FT66Style::IsDotaTheme();
 	const int32 ScoreRank = (GI && LB && !bViewingSavedLeaderboardRunSummary) ? LB->GetLocalScoreRank(GI->SelectedDifficulty, GI->SelectedPartySize) : 0;
 	const bool bSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
 	const int32 SpeedRunStageForRank = FMath::Max(1, StageReached - 1);
@@ -451,21 +454,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		);
 	};
 
-	auto MakeHeroPreview = [](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
+	auto MakeHeroPreview = [bDotaTheme](const TSharedPtr<FSlateBrush>& Brush) -> TSharedRef<SWidget>
 	{
 		constexpr float PreviewSize = 520.f;
-		return Brush.IsValid()
-			? StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
-				SNew(SBox)
+		TSharedRef<SWidget> PreviewContent = Brush.IsValid()
+			? StaticCastSharedRef<SWidget>(SNew(SBox)
 				.WidthOverride(PreviewSize)
 				.HeightOverride(PreviewSize)
 				[
 					SNew(SImage).Image(Brush.Get())
-				],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(0.f)
-			))
-			: StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
-				SNew(SBox)
+				])
+			: StaticCastSharedRef<SWidget>(SNew(SBox)
 				.WidthOverride(PreviewSize)
 				.HeightOverride(PreviewSize)
 				[
@@ -473,9 +472,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.Text(NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"))
 					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
 					.Justification(ETextJustify::Center)
-				],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(0.f)
-			));
+				]);
+		return bDotaTheme
+			? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeViewportFrame(PreviewContent, FMargin(8.f)))
+			: StaticCastSharedRef<SWidget>(FT66Style::MakePanel(PreviewContent, FT66PanelParams(ET66PanelType::Panel).SetPadding(0.f)));
 	};
 
 	// Event log (hidden by default; opened via "EVENT LOG" button).
@@ -709,25 +709,34 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(SBox).WidthOverride(IdolSlotSize).HeightOverride(IdolSlotSize)
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(IdolColor)
-					.Padding(1.f)
-					[
-						IdolBrush.IsValid()
-						? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
-						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-					]
+					bDotaTheme
+						? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeSlotFrame(
+							IdolBrush.IsValid()
+								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
+								: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
+							IdolColor,
+							FMargin(1.f)))
+						: StaticCastSharedRef<SWidget>(SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(IdolColor)
+							.Padding(1.f)
+							[
+								IdolBrush.IsValid()
+								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
+								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+							])
 				]
 			];
 	}
-	TSharedRef<SWidget> IdolsBorderedGrid = SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Tokens::Stroke)
-		.Padding(4.f)
-		[
-			IdolSlotsRow
-		];
+	TSharedRef<SWidget> IdolsBorderedGrid = bDotaTheme
+		? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeScreenSurface(IdolSlotsRow, FMargin(4.f)))
+		: StaticCastSharedRef<SWidget>(SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FT66Style::Tokens::Stroke)
+			.Padding(4.f)
+			[
+				IdolSlotsRow
+			]);
 
 	// Inventory: slot grid (2x10), sprites only — larger slots than in-game.
 	static constexpr int32 InvCols = 10;
@@ -774,33 +783,42 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(SBox).WidthOverride(InvSlotSize).HeightOverride(InvSlotSize)
 					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(SlotColor)
-						.Padding(1.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.25f))
-							.Padding(0.f)
-							[
+						bDotaTheme
+							? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeSlotFrame(
 								(SlotBrush.IsValid() && bHasItem)
-								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
-								: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-							]
-						]
+									? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
+									: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
+								SlotColor,
+								FMargin(0.f)))
+							: StaticCastSharedRef<SWidget>(SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(SlotColor)
+								.Padding(1.f)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.25f))
+									.Padding(0.f)
+									[
+										(SlotBrush.IsValid() && bHasItem)
+										? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
+										: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+									]
+								])
 					]
 				];
 		}
 		InvGridRef->AddSlot().AutoHeight()[RowBox];
 	}
-	TSharedRef<SWidget> InventorySlotGrid = SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Tokens::Stroke)
-		.Padding(4.f)
-		[
-			InvGridRef
-		];
+	TSharedRef<SWidget> InventorySlotGrid = bDotaTheme
+		? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeScreenSurface(InvGridRef, FMargin(4.f)))
+		: StaticCastSharedRef<SWidget>(SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FT66Style::Tokens::Stroke)
+			.Padding(4.f)
+			[
+				InvGridRef
+			]);
 
 	// Back button (when viewing saved run) — shown in overlay bottom-left; Restart + Main Menu stay in panel.
 	TSharedRef<SWidget> BackButton =
@@ -993,9 +1011,16 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Tokens::Bg)
+		.BorderBackgroundColor(bDotaTheme ? FT66DotaTheme::ScreenBackground() : FT66Style::Tokens::Bg)
 		[
 			SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.Visibility(bDotaTheme ? EVisibility::Visible : EVisibility::Collapsed)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66DotaTheme::Scrim())
+			]
 			// Main full-screen panel
 			+ SOverlay::Slot()
 			[
@@ -1184,7 +1209,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.7f))
+					.BorderBackgroundColor(bDotaTheme ? FT66DotaTheme::Scrim() : FLinearColor(0.f, 0.f, 0.f, 0.7f))
 					.Padding(0.f)
 					[
 						SNew(SBox)

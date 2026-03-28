@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66LanguageSelectScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
@@ -46,7 +47,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 			const auto GetRowBgColor = [this, Lang]()
 			{
 				const bool bIsSelected = (Lang == PreviewedLanguage);
-				return bIsSelected ? FLinearColor(0.22f, 0.48f, 0.90f, 1.0f) : FLinearColor(0.12f, 0.12f, 0.18f, 1.0f);
+				return bIsSelected ? FT66DotaTheme::SelectionFill() : FT66DotaTheme::PanelInner();
 			};
 
 			const auto GetRowTextColor = [this, Lang]()
@@ -94,10 +95,9 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 
 	const float ScreenPadding = 60.0f;
 
-	// Create a solid color brush for full opacity background
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f))
+		.BorderBackgroundColor(FT66DotaTheme::Background())
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -107,7 +107,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.12f, 1.0f))
+				.BorderBackgroundColor(FT66DotaTheme::Panel())
 				.Padding(FMargin(40.0f, 30.0f))
 				[
 					SNew(SVerticalBox)
@@ -120,7 +120,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(TitleText)
 						.Font(FT66Style::Tokens::FontBold(36))
-						.ColorAndOpacity(FLinearColor::White)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					// Language List
 					+ SVerticalBox::Slot()

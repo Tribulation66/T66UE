@@ -222,7 +222,7 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 		}
 		else
 		{
-			// Co-op: use Trio (3 slots) for lobby; Duo/Trio only for leaderboards/saves
+			// Co-op now routes to the max-party lobby size.
 			NavigateTo(ET66ScreenType::Lobby);
 		}
 	}
@@ -233,5 +233,5 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 }
 
 void UT66PartySizePickerScreen::OnSoloClicked() { SelectPartySize(ET66PartySize::Solo); }
-void UT66PartySizePickerScreen::OnCoopClicked() { SelectPartySize(ET66PartySize::Trio); } // Co-op UI → Trio lobby (3 slots)
+void UT66PartySizePickerScreen::OnCoopClicked() { SelectPartySize(ET66PartySize::Quad); } // Co-op UI → Quad lobby (4 slots)
 void UT66PartySizePickerScreen::OnBackClicked() { NavigateBack(); }

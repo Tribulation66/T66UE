@@ -2,6 +2,7 @@
 
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
+#include "Gameplay/T66PlayerController.h"
 #include "UI/Style/T66Style.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -16,6 +17,7 @@ void UT66PlayerSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 {
 	Super::Initialize(Collection);
 	LoadOrCreate();
+	ApplyUITheme();
 
 	ApplyAudioToEngine();
 	ApplyUnfocusedAudioToEngine();
@@ -37,12 +39,13 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		return;
 	}
 
+	bool bNeedsSave = false;
+
 	if (SettingsObj->SchemaVersion < 5)
 	{
 		SettingsObj->SchemaVersion = 5;
 		SettingsObj->bFogEnabled = true;
-		Save();
-		return;
+		bNeedsSave = true;
 	}
 
 	if (SettingsObj->SchemaVersion < 6)
@@ -50,12 +53,38 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		SettingsObj->SchemaVersion = 6;
 		SettingsObj->bFogEnabled = true;
 		SettingsObj->FogIntensityPercent = 55.0f;
-		Save();
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 7)
+	{
+		SettingsObj->SchemaVersion = 7;
+		SettingsObj->UIThemeIndex = static_cast<int32>(ET66UITheme::Dota);
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 8)
+	{
+		SettingsObj->SchemaVersion = 8;
+		SettingsObj->UIThemeIndex = static_cast<int32>(ET66UITheme::Dota);
+		bNeedsSave = true;
 	}
 
 	if (SettingsObj->bLightTheme)
 	{
 		SettingsObj->bLightTheme = false;
+		bNeedsSave = true;
+	}
+
+	const int32 ClampedThemeIndex = FMath::Clamp(SettingsObj->UIThemeIndex, 0, static_cast<int32>(ET66UITheme::Dota));
+	if (SettingsObj->UIThemeIndex != ClampedThemeIndex)
+	{
+		SettingsObj->UIThemeIndex = ClampedThemeIndex;
+		bNeedsSave = true;
+	}
+
+	if (bNeedsSave)
+	{
 		Save();
 	}
 }
@@ -77,6 +106,32 @@ void UT66PlayerSettingsSubsystem::SetLastSettingsTabIndex(int32 TabIndex)
 	if (!SettingsObj) return;
 	SettingsObj->LastSettingsTabIndex = FMath::Clamp(TabIndex, 0, 7);
 	Save();
+}
+
+void UT66PlayerSettingsSubsystem::SetUITheme(ET66UITheme NewTheme)
+{
+	if (!SettingsObj) return;
+
+	const int32 NewThemeIndex = FMath::Clamp(static_cast<int32>(NewTheme), 0, static_cast<int32>(ET66UITheme::Dota));
+	if (SettingsObj->UIThemeIndex == NewThemeIndex)
+	{
+		return;
+	}
+
+	SettingsObj->UIThemeIndex = NewThemeIndex;
+	ApplyUITheme();
+	Save();
+}
+
+ET66UITheme UT66PlayerSettingsSubsystem::GetUITheme() const
+{
+	if (!SettingsObj)
+	{
+		return ET66UITheme::Dota;
+	}
+
+	const int32 ThemeIndex = FMath::Clamp(SettingsObj->UIThemeIndex, 0, static_cast<int32>(ET66UITheme::Dota));
+	return static_cast<ET66UITheme>(ThemeIndex);
 }
 
 bool UT66PlayerSettingsSubsystem::GetPracticeMode() const
@@ -336,6 +391,22 @@ void UT66PlayerSettingsSubsystem::ResetRetroFXSettingsToDefaults()
 	if (!SettingsObj) return;
 	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
 	Save();
+}
+
+void UT66PlayerSettingsSubsystem::ApplyUITheme()
+{
+	FT66Style::SetActiveTheme(GetUITheme());
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UWorld* World = GI->GetWorld())
+		{
+			if (AT66PlayerController* PC = Cast<AT66PlayerController>(World->GetFirstPlayerController()))
+			{
+				PC->RebuildThemeAwareUI();
+			}
+		}
+	}
 }
 
 void UT66PlayerSettingsSubsystem::ApplyAudioToEngine()

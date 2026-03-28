@@ -10,11 +10,12 @@
 
 class UT66LocalizationSubsystem;
 class UT66PowerUpSubsystem;
+struct FSlateBrush;
 
 /**
- * Power Up screen: 6 stats (Damage, Attack Speed, Attack Size, Evasion, Armor, Luck),
- * each with 10 unlockable slices. Cost 10 Power Crystals per slice.
- * Page 0: 2x3 stat grid.  Page 1: Random panel (full-width).
+ * Power Up screen: 6 stats (Damage, Attack Speed, Attack Scale, Evasion, Armor, Luck),
+ * each represented by a statue that fills from bottom to top as the stat is unlocked.
+ * Page 0: 2x3 stat grid. Page 1: Power Coupon to Achievement Coin converter.
  */
 UCLASS(Blueprintable)
 class T66_API UT66PowerUpScreen : public UT66ScreenBase
@@ -32,12 +33,17 @@ private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	UT66PowerUpSubsystem* GetPowerUpSubsystem() const;
 
-	// Page switching (0 = stats grid, 1 = random)
+	// Page switching (0 = stats grid, 1 = converter)
 	int32 CurrentPage = 0;
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
+	TMap<FString, TSharedPtr<FSlateBrush>> StatueBrushes;
+	static constexpr int32 AchievementCoinsPerPowerCoupon = 100;
 
 	FReply HandleBackClicked();
-	FReply HandleNextClicked();
+	FReply HandleOpenConverterClicked();
 	FReply HandleUnlockClicked(ET66HeroStatType StatType);
-	FReply HandleUnlockRandomClicked();
+	FReply HandleConvertOneClicked();
+	FReply HandleConvertFiveClicked();
+	FReply HandleConvertAllClicked();
+	bool TryConvertPowerCoupons(int32 RequestedCoupons);
 };

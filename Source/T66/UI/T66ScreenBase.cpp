@@ -21,7 +21,7 @@ void UT66ScreenBase::NativeConstruct()
 TSharedRef<SWidget> UT66ScreenBase::RebuildWidget()
 {
 	// Build our custom Slate UI
-	return BuildSlateUI();
+	return FT66Style::MakeResponsiveRoot(BuildSlateUI());
 }
 
 TSharedRef<SWidget> UT66ScreenBase::BuildSlateUI()
@@ -132,4 +132,3 @@ TSharedRef<SWidget> UT66ScreenBase::WrapInBorder(TSharedRef<SWidget> Content, co
 			Content
 		];
 }
-

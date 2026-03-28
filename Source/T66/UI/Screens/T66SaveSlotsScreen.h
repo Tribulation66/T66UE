@@ -56,6 +56,10 @@ private:
 	TSharedPtr<FSlateBrush> SaveSlotsBackgroundBrush;
 	TArray<TSharedPtr<FSlateBrush>> SlotHeroPortraitBrushes;
 	TArray<TArray<TSharedPtr<FSlateBrush>>> SlotIdolBrushes;
+	TArray<int32> VisibleSlotIndices;
+
+	void RebuildVisibleSlotIndices();
+	int32 GetVisibleSlotIndexForPageEntry(int32 LocalIndex) const;
 
 	FReply HandleBackClicked();
 	FReply HandleLoadClicked(int32 SlotIndex);

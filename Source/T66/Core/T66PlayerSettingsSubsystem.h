@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Core/T66RetroFXSettings.h"
+#include "UI/T66UITypes.h"
 #include "T66PlayerSettingsSubsystem.generated.h"
 
 class UT66PlayerSettingsSaveGame;
@@ -36,6 +37,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings")
 	int32 GetLastSettingsTabIndex() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|UI")
+	void SetUITheme(ET66UITheme NewTheme);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|UI")
+	ET66UITheme GetUITheme() const;
 
 	// ===== Gameplay =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
@@ -184,6 +191,7 @@ private:
 
 	void LoadOrCreate();
 	void Save();
+	void ApplyUITheme();
 
 	void ApplyAudioToEngine();
 	void ApplyUnfocusedAudioToEngine();

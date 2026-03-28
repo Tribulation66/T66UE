@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -45,14 +46,14 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 	BugReportText.Empty();
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.7f))
+		.BorderBackgroundColor(FT66DotaTheme::Scrim())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
 				SNew(SBorder)
-				.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.15f, 1.0f))
+				.BorderBackgroundColor(FT66DotaTheme::Panel())
 				.Padding(FMargin(40.0f, 30.0f))
 				[
 					SNew(SVerticalBox)
@@ -64,7 +65,7 @@ TSharedRef<SWidget> UT66ReportBugScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(TitleText)
 						.Font(FT66Style::Tokens::FontBold(28))
-						.ColorAndOpacity(FLinearColor::White)
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()

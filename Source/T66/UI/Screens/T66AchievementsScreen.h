@@ -3,20 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UI/T66ScreenBase.h"
-#include "Data/T66DataTypes.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Data/T66DataTypes.h"
+#include "UI/T66ScreenBase.h"
 #include "T66AchievementsScreen.generated.h"
 
 class UT66LocalizationSubsystem;
 class UT66AchievementsSubsystem;
 
 /**
- * Achievements Screen - Bible 1.19
- * Full-page achievement browser with category toggles
- * Header: Title (left), Total AC (right)
- * Tabs: Black, Red, Yellow, White
- * Content: Scrollable list of achievement rows
+ * Achievements Screen
+ * Full-page achievement browser with a single 100-entry list and overall completion progress.
  */
 UCLASS(Blueprintable)
 class T66_API UT66AchievementsScreen : public UT66ScreenBase
@@ -25,15 +22,6 @@ class T66_API UT66AchievementsScreen : public UT66ScreenBase
 
 public:
 	UT66AchievementsScreen(const FObjectInitializer& ObjectInitializer);
-
-	UPROPERTY(BlueprintReadWrite, Category = "Achievements")
-	ET66AchievementTier CurrentTier = ET66AchievementTier::Black;
-
-	UFUNCTION(BlueprintCallable, Category = "Achievements")
-	void SwitchToTier(ET66AchievementTier Tier);
-
-	UFUNCTION(BlueprintCallable, Category = "Achievements")
-	void SwitchToUnlocks();
 
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void OnBackClicked();
@@ -52,15 +40,14 @@ private:
 
 	void RefreshAchievements();
 	void RebuildAchievementList();
-	void RebuildUnlockList();
+	int32 GetUnlockedAchievementCount() const;
 
-	FReply HandleTierClicked(ET66AchievementTier Tier);
-	FReply HandleUnlocksClicked();
 	FReply HandleBackClicked();
 	FReply HandleClaimClicked(FName AchievementID);
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);
 
-	bool bShowingUnlocksTab = false;
+	UFUNCTION()
+	void HandleAchievementsStateChanged();
 };

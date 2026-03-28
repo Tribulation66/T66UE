@@ -2,10 +2,12 @@
 
 #include "UI/Screens/T66LobbyScreen.h"
 #include "UI/T66UIManager.h"
+#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
@@ -43,8 +45,28 @@ void UT66LobbyScreen::OnScreenDeactivated_Implementation()
 
 int32 UT66LobbyScreen::GetPartySlotCount() const
 {
-	// Co-op lobby always 3 slots (Trio).
-	return 3;
+	if (const UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (const UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			return FMath::Clamp(PartySubsystem->GetPartyMemberCount(), 1, 4);
+		}
+
+		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+		{
+			switch (T66GI->SelectedPartySize)
+			{
+			case ET66PartySize::Quad: return 4;
+			case ET66PartySize::Trio: return 3;
+			case ET66PartySize::Duo: return 2;
+			case ET66PartySize::Solo:
+			default:
+				return 1;
+			}
+		}
+	}
+
+	return 1;
 }
 
 void UT66LobbyScreen::StartRunFromLobby()
@@ -54,6 +76,10 @@ void UT66LobbyScreen::StartRunFromLobby()
 	{
 		GI->bStageCatchUpPending = false;
 		GI->RunSeed = FMath::Rand();
+		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartySubsystem->ApplyCurrentPartyToGameInstanceRunContext();
+		}
 	}
 	if (UIManager) UIManager->HideAllUI();
 	if (GI)
@@ -80,11 +106,16 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
 	FText InviteText = Loc ? Loc->GetText_LobbyInviteFriend() : NSLOCTEXT("T66.Lobby", "InviteFriend", "INVITE");
 	FText YouText = Loc ? Loc->GetText_LobbyYou() : NSLOCTEXT("T66.Lobby", "You", "You");
-	FText WaitingText = Loc ? Loc->GetText_LobbyWaitingForPlayer() : NSLOCTEXT("T66.Lobby", "WaitingForPlayer", "Waiting for player...");
 	FText FriendsTitleText = Loc ? Loc->GetText_LobbyFriends() : NSLOCTEXT("T66.Lobby", "Friends", "FRIENDS");
 	FText FriendsStubText = NSLOCTEXT("T66.Lobby", "FriendsStub", "Friends list will appear when connected to Steam.");
 	FText ReadyText = Loc ? Loc->GetText_LobbyReady() : NSLOCTEXT("T66.Lobby", "Ready", "READY");
 	FText NotReadyText = Loc ? Loc->GetText_LobbyNotReady() : NSLOCTEXT("T66.Lobby", "NotReady", "Not Ready");
+	const FText InPartyText = NSLOCTEXT("T66.Lobby", "InParty", "In Party");
+	const FText RemoveText = NSLOCTEXT("T66.Lobby", "RemoveFriend", "REMOVE");
+	const FText OfflineText = NSLOCTEXT("T66.Lobby", "Offline", "OFFLINE");
+	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	const TArray<FT66PartyMemberEntry> PartyMembers = PartySubsystem ? PartySubsystem->GetPartyMembers() : TArray<FT66PartyMemberEntry>();
+	const TArray<FT66PartyFriendEntry> Friends = PartySubsystem ? PartySubsystem->GetFriends() : TArray<FT66PartyFriendEntry>();
 
 	// Button styles no longer needed: all buttons go through FT66Style::MakeButton
 
@@ -132,11 +163,60 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 
 	const int32 SlotCount = GetPartySlotCount();
 
-	// Left panel: players in lobby (vertical slots) — hero + companion portrait, name, Not Ready/Ready
+	// Left panel: current party members.
 	TSharedRef<SVerticalBox> PlayersBox = SNew(SVerticalBox);
 	for (int32 i = 0; i < SlotCount; ++i)
 	{
-		const bool bIsLocal = (i == 0);
+		const FT66PartyMemberEntry* PartyMember = PartyMembers.IsValidIndex(i) ? &PartyMembers[i] : nullptr;
+		const bool bIsLocal = PartyMember ? PartyMember->bIsLocal : (i == 0);
+		const FString DisplayName = PartyMember ? PartyMember->DisplayName : YouText.ToString();
+		const FString Initial = DisplayName.IsEmpty() ? TEXT("?") : DisplayName.Left(1).ToUpper();
+		const FText TopLineText = FText::FromString(DisplayName);
+		const FText BottomLineText = bIsLocal
+			? (bReadyCheckConfirmed ? ReadyText : NotReadyText)
+			: InPartyText;
+
+		TSharedRef<SWidget> HeroPortraitWidget =
+			bIsLocal
+			? StaticCastSharedRef<SWidget>(
+				SNew(SImage)
+				.Image(LocalPlayerHeroPortraitBrush.IsValid() ? LocalPlayerHeroPortraitBrush.Get() : nullptr)
+				.Visibility_Lambda([this]() -> EVisibility
+				{
+					return (LocalPlayerHeroPortraitBrush.IsValid() && LocalPlayerHeroPortraitBrush->GetResourceObject())
+						? EVisibility::Visible
+						: EVisibility::Collapsed;
+				}))
+			: StaticCastSharedRef<SWidget>(
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel2)
+				.Padding(0.f)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(Initial))
+					.Font(FT66Style::Tokens::FontBold(24))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+				]);
+
+		TSharedRef<SWidget> CompanionWidget =
+			bIsLocal
+			? StaticCastSharedRef<SWidget>(
+				SNew(SImage)
+				.Image(LocalPlayerCompanionPortraitBrush.IsValid() ? LocalPlayerCompanionPortraitBrush.Get() : nullptr)
+				.Visibility_Lambda([this]() -> EVisibility
+				{
+					return (LocalPlayerCompanionPortraitBrush.IsValid() && LocalPlayerCompanionPortraitBrush->GetResourceObject())
+						? EVisibility::Visible
+						: EVisibility::Collapsed;
+				}))
+			: StaticCastSharedRef<SWidget>(
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+			);
+
 		PlayersBox->AddSlot()
 			.AutoHeight()
 			.Padding(0.0f, 6.0f)
@@ -152,12 +232,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 						.WidthOverride(64.0f)
 						.HeightOverride(64.0f)
 						[
-							SNew(SImage)
-							.Image(LocalPlayerHeroPortraitBrush.IsValid() && bIsLocal ? LocalPlayerHeroPortraitBrush.Get() : nullptr)
-							.Visibility_Lambda([this, bIsLocal]() -> EVisibility {
-								if (!bIsLocal) return EVisibility::Collapsed;
-								return (LocalPlayerHeroPortraitBrush.IsValid() && LocalPlayerHeroPortraitBrush->GetResourceObject()) ? EVisibility::Visible : EVisibility::Collapsed;
-							})
+							HeroPortraitWidget
 						]
 					]
 					+ SHorizontalBox::Slot()
@@ -169,12 +244,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 						.WidthOverride(48.0f)
 						.HeightOverride(48.0f)
 						[
-							SNew(SImage)
-							.Image(LocalPlayerCompanionPortraitBrush.IsValid() && bIsLocal ? LocalPlayerCompanionPortraitBrush.Get() : nullptr)
-							.Visibility_Lambda([this, bIsLocal]() -> EVisibility {
-								if (!bIsLocal) return EVisibility::Collapsed;
-								return (LocalPlayerCompanionPortraitBrush.IsValid() && LocalPlayerCompanionPortraitBrush->GetResourceObject()) ? EVisibility::Visible : EVisibility::Collapsed;
-							})
+							CompanionWidget
 						]
 					]
 					+ SHorizontalBox::Slot()
@@ -186,16 +256,16 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 						.AutoHeight()
 						[
 							SNew(STextBlock)
-							.Text(bIsLocal ? YouText : WaitingText)
+							.Text(TopLineText)
 							.Font(FT66Style::Tokens::FontRegular(16))
-							.ColorAndOpacity(bIsLocal ? FT66Style::Tokens::Text : FT66Style::Tokens::TextMuted)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
 						.Padding(0.0f, 2.0f, 0.0f, 0.0f)
 						[
 							SNew(STextBlock)
-							.Text(bIsLocal ? (bReadyCheckConfirmed ? ReadyText : NotReadyText) : NotReadyText)
+							.Text(BottomLineText)
 							.Font(FT66Style::Tokens::FontRegular(12))
 							.ColorAndOpacity(bIsLocal && bReadyCheckConfirmed ? FT66Style::Tokens::Success : FT66Style::Tokens::TextMuted)
 						]
@@ -206,16 +276,102 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 			];
 	}
 
-	// Right panel: friends list (stub)
+	// Right panel: available friends / invite actions.
+	TSharedRef<SVerticalBox> FriendRows = SNew(SVerticalBox);
+	if (Friends.Num() == 0)
+	{
+		FriendRows->AddSlot()
+			.AutoHeight()
+			.Padding(8.0f)
+			[
+				SNew(STextBlock)
+				.Text(FriendsStubText)
+				.Font(FT66Style::Tokens::FontRegular(12))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true)
+			];
+	}
+	else
+	{
+		for (const FT66PartyFriendEntry& Friend : Friends)
+		{
+			const bool bInParty = PartySubsystem && PartySubsystem->IsFriendInParty(Friend.PlayerId);
+			const bool bCanInvite = PartySubsystem && Friend.bOnline && !bInParty && PartySubsystem->GetPartyMemberCount() < 4;
+			const FText ActionText = bInParty
+				? RemoveText
+				: (Friend.bOnline ? InviteText : OfflineText);
+
+			FriendRows->AddSlot()
+				.AutoHeight()
+				.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+				[
+					FT66Style::MakePanel(
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.0f)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString(Friend.DisplayName))
+								.Font(FT66Style::Tokens::FontRegular(15))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0.0f, 2.0f, 0.0f, 0.0f)
+							[
+								SNew(STextBlock)
+								.Text(bInParty ? InPartyText : FText::FromString(Friend.PresenceText))
+								.Font(FT66Style::Tokens::FontRegular(12))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							]
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						.Padding(12.0f, 0.0f, 0.0f, 0.0f)
+						[
+							FT66Style::MakeButton(
+								FT66ButtonParams(
+									ActionText,
+									FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, bInParty]()
+									{
+										if (!PartySubsystem)
+										{
+											return FReply::Handled();
+										}
+
+										if (bInParty)
+										{
+											PartySubsystem->RemovePartyMember(PlayerId);
+										}
+										else
+										{
+											PartySubsystem->InviteFriend(PlayerId);
+										}
+
+										FT66Style::DeferRebuild(this);
+										return FReply::Handled();
+									}),
+									bInParty ? ET66ButtonType::Neutral : ET66ButtonType::Primary)
+								.SetMinWidth(120.f)
+								.SetEnabled(bCanInvite || bInParty))
+						],
+						ET66PanelType::Panel,
+						FMargin(12.f))
+				];
+		}
+	}
+
 	TSharedRef<SScrollBox> FriendsScroll = SNew(SScrollBox)
 		+ SScrollBox::Slot()
 		.Padding(8.0f)
 		[
-			SNew(STextBlock)
-			.Text(FriendsStubText)
-			.Font(FT66Style::Tokens::FontRegular(12))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-			.AutoWrapText(true)
+			FriendRows
 		];
 
 	// Difficulty options for Lobby (same list as Hero Selection)
@@ -354,7 +510,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 		];
 
 	TSharedRef<SWidget> Root = SNew(SBorder)
-		.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.0f))
+		.BorderBackgroundColor(FT66DotaTheme::Background())
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()

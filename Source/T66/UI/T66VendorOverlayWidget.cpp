@@ -10,6 +10,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Data/T66DataTypes.h"
+#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
@@ -1369,18 +1370,22 @@ void UT66VendorOverlayWidget::RefreshInventory()
 		}
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
-			FLinearColor Fill = FT66Style::Tokens::Panel2;
+			const bool bDotaTheme = FT66Style::IsDotaTheme();
+			FLinearColor Fill = bDotaTheme ? FT66DotaTheme::SlotFill() : FT66Style::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && GI && GI->GetItemData(Inv[i], D);
 			if (bHasData && InvSlots.IsValidIndex(i))
 			{
-				Fill = FItemData::GetItemRarityColor(InvSlots[i].Rarity);
+				const FLinearColor RarityColor = FItemData::GetItemRarityColor(InvSlots[i].Rarity);
+				Fill = bDotaTheme ? FLinearColor::LerpUsingHSV(FT66DotaTheme::SlotInner(), RarityColor, 0.75f) : RarityColor;
 			}
 
 			// If selected, tint toward accent for readability.
 			if (i == SelectedInventoryIndex)
 			{
-				Fill = Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f;
+				Fill = bDotaTheme
+					? FLinearColor::LerpUsingHSV(Fill, FT66DotaTheme::SelectionFill(), 0.65f)
+					: (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
 

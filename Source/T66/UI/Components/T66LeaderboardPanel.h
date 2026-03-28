@@ -12,6 +12,7 @@ class UT66LocalizationSubsystem;
 class UT66LeaderboardSubsystem;
 class UT66BackendSubsystem;
 class UT66UIManager;
+struct FComboButtonStyle;
 
 /**
  * Leaderboard Panel - Slate widget for displaying leaderboard
@@ -119,9 +120,19 @@ private:
 	// Avatar brushes (keyed by URL, kept alive for SImage)
 	TMap<FString, TSharedPtr<FSlateBrush>> AvatarBrushes;
 
+	// Hero portrait brushes (used when no Steam avatar is available yet)
+	TMap<FName, TSharedPtr<FSlateBrush>> HeroPortraitBrushes;
+
 	// Default avatar brush (used when no avatar URL or download pending)
 	TSharedPtr<FSlateBrush> DefaultAvatarBrush;
 
+	// Local dark dropdown treatment for the leaderboard board.
+	TSharedPtr<FComboButtonStyle> LeaderboardDropdownStyle;
+
+	void NormalizeEntryIdentity(FLeaderboardEntry& Entry, int32 EntryIndex);
+	const FSlateBrush* GetPortraitBrushForEntry(const FLeaderboardEntry& Entry);
+
 	/** Create or retrieve a cached FSlateBrush for an avatar URL. */
 	const FSlateBrush* GetOrCreateAvatarBrush(const FString& AvatarUrl);
+	const FSlateBrush* GetOrCreateHeroPortraitBrush(FName HeroID);
 };

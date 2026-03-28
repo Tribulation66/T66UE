@@ -8,6 +8,7 @@
 #include "T66UIManager.generated.h"
 
 class UT66ScreenBase;
+class UT66FrontendTopBarWidget;
 class UUserWidget;
 
 /**
@@ -91,6 +92,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	ET66ScreenType GetCurrentModalType() const;
 
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	bool IsFrontendTopBarVisible() const;
+
+	float GetFrontendTopBarReservedHeight() const;
+	float GetFrontendTopBarContentHeight() const;
+
 	/** Rebuild all visible UI widgets (current screen and current modal). */
 	void RebuildAllVisibleUI();
 
@@ -134,11 +141,18 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UT66ScreenBase> CurrentModal;
 
+	/** Persistent frontend navigation bar shown on hub screens. */
+	UPROPERTY()
+	TObjectPtr<UT66FrontendTopBarWidget> FrontendTopBar;
+
 	/** Navigation history stack for back navigation */
 	UPROPERTY()
 	TArray<ET66ScreenType> NavigationHistory;
 
 	/** Maximum history depth to prevent memory bloat */
 	static constexpr int32 MaxHistoryDepth = 10;
+
+	bool ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const;
+	void UpdateFrontendTopBar();
 
 };

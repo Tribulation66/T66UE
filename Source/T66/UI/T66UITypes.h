@@ -20,6 +20,7 @@ enum class ET66ScreenType : uint8
 	CompanionSelection UMETA(DisplayName = "Companion Selection"),
 	Settings UMETA(DisplayName = "Settings"),
 	Achievements UMETA(DisplayName = "Achievements"),
+	Unlocks UMETA(DisplayName = "Unlocks"),
 	Leaderboard UMETA(DisplayName = "Leaderboard Modal"),
 	PauseMenu UMETA(DisplayName = "Pause Menu Modal"),
 	ReportBug UMETA(DisplayName = "Report Bug Modal"),
@@ -36,4 +37,11 @@ enum class ET66ScreenType : uint8
 	LobbyBackConfirm UMETA(DisplayName = "Lobby Back Confirm Modal"),
 	AccountStatus UMETA(DisplayName = "Account Status Panel"),
 	PlayerSummaryPicker UMETA(DisplayName = "Player Summary Picker")
+};
+
+UENUM(BlueprintType)
+enum class ET66UITheme : uint8
+{
+	Classic UMETA(DisplayName = "Classic"),
+	Dota UMETA(DisplayName = "Dota")
 };
