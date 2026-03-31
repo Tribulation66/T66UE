@@ -11,7 +11,6 @@
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/SOverlay.h"
@@ -2485,19 +2484,19 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
 			const bool bDotaTheme = FT66Style::IsDotaTheme();
-			FLinearColor Fill = bDotaTheme ? FT66DotaTheme::SlotFill() : FT66Style::Tokens::Panel2;
+			FLinearColor Fill = bDotaTheme ? FT66Style::SlotFill() : FT66Style::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && T66GI && T66GI->GetItemData(Inv[i], D);
 			if (bHasData && InvSlots.IsValidIndex(i))
 			{
 				const FLinearColor RarityColor = FItemData::GetItemRarityColor(InvSlots[i].Rarity);
-				Fill = bDotaTheme ? FLinearColor::LerpUsingHSV(FT66DotaTheme::SlotInner(), RarityColor, 0.75f) : RarityColor;
+				Fill = bDotaTheme ? FLinearColor::LerpUsingHSV(FT66Style::SlotInner(), RarityColor, 0.75f) : RarityColor;
 			}
 
 			if (i == SelectedInventoryIndex)
 			{
 				Fill = bDotaTheme
-					? FLinearColor::LerpUsingHSV(Fill, FT66DotaTheme::SelectionFill(), 0.65f)
+					? FLinearColor::LerpUsingHSV(Fill, FT66Style::SelectionFill(), 0.65f)
 					: (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
@@ -3684,3 +3683,4 @@ void UT66GamblerOverlayWidget::UpdatePlinkoBallVisual()
 
 	PlinkoBallWidget->SetRenderTransform(FSlateRenderTransform(BallOffset));
 }
+

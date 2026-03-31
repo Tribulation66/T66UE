@@ -9,8 +9,6 @@
 #include "Core/T66SkinSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
-#include "UI/Dota/T66DotaSlate.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66HeroPreviewStage.h"
@@ -591,7 +589,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		const float Opacity = (Offset == 0) ? 1.0f : 0.6f;
 		const int32 SlotIdx = Offset + 2;
 		const TSharedRef<SWidget> CarouselSlotWidget = bDotaTheme
-			? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeSlotFrame(
+			? StaticCastSharedRef<SWidget>(FT66Style::MakeSlotFrame(
 				SNew(SImage)
 				.Image_Lambda([this, SlotIdx]() -> const FSlateBrush*
 				{
@@ -608,7 +606,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				{
 					return HeroCarouselSlotColors.IsValidIndex(SlotIdx)
 						? FSlateColor(HeroCarouselSlotColors[SlotIdx])
-						: FSlateColor(FT66DotaTheme::SlotInner());
+						: FSlateColor(FT66Style::SlotInner());
 				}),
 				FMargin(2.f)))
 			: StaticCastSharedRef<SWidget>(SNew(SOverlay)
@@ -747,7 +745,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 				[
 					bDotaTheme
-						? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeViewportFrame(
+						? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot()
 							.FillWidth(1.0f)
@@ -1976,3 +1974,4 @@ FReply UT66HeroSelectionScreen::NativeOnKeyDown(const FGeometry& MyGeometry, con
 	}
 	return Super::NativeOnKeyDown(MyGeometry, InKeyEvent);
 }
+

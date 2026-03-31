@@ -3,7 +3,6 @@
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
 
@@ -16,11 +15,51 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
 
+namespace
+{
+	FLinearColor T66AccountStatusShellFill()
+	{
+		return FT66Style::Background();
+	}
+
+	FLinearColor T66AccountStatusPanelFill()
+	{
+		return FT66Style::PanelOuter();
+	}
+
+	FLinearColor T66AccountStatusNeutralButtonFill()
+	{
+		return FT66Style::ButtonNeutral();
+	}
+
+	TSharedRef<SWidget> MakeAccountStatusPanel(const TSharedRef<SWidget>& Content, ET66PanelType Type, const FLinearColor& FillColor, const FMargin& Padding)
+	{
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(Type)
+				.SetBorderVisual(ET66ButtonBorderVisual::None)
+				.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+				.SetColor(FillColor)
+				.SetPadding(Padding));
+	}
+
+	TSharedRef<SWidget> MakeAccountStatusButton(const FT66ButtonParams& Params)
+	{
+		FT66ButtonParams FlatParams = Params;
+		FlatParams
+			.SetBorderVisual(ET66ButtonBorderVisual::None)
+			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+			.SetUseGlow(false);
+
+		return FT66Style::MakeButton(FlatParams);
+	}
+}
+
 UT66AccountStatusScreen::UT66AccountStatusScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	ScreenType = ET66ScreenType::AccountStatus;
-	bIsModal = true;
+	bIsModal = false;
 }
 
 void UT66AccountStatusScreen::OnScreenActivated_Implementation()
@@ -58,22 +97,27 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	const FLinearColor StatusColor = bAccountGood
 		? FLinearColor(0.58f, 0.76f, 0.54f, 1.0f)
 		: FLinearColor(0.85f, 0.22f, 0.18f, 1.0f);
+	const bool bModalPresentation = (UIManager && UIManager->GetCurrentModalType() == ScreenType) || (!UIManager && GetOwningPlayer() && GetOwningPlayer()->IsPaused());
+	const float TopInset = bModalPresentation ? 0.f : (UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f);
+	const bool bShowBackButton = bModalPresentation;
 
 	TSharedRef<SWidget> Content =
 		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SNew(STextBlock)
 			.Text(TitleText)
-			.Font(FT66Style::Tokens::FontBold(34))
+			.Font(FT66Style::Tokens::FontBold(42))
 			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.Justification(ETextJustify::Center)
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
 		[
 			SNew(STextBlock)
 			.Text(StatusHeadlineText)
-			.Font(FT66Style::Tokens::FontBold(28))
+			.Font(FT66Style::Tokens::FontBold(30))
 			.ColorAndOpacity(StatusColor)
+			.Justification(ETextJustify::Center)
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, bShowReason ? 12.f : 26.f)
 		[
@@ -105,38 +149,78 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 						.AutoWrapText(true)
 					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space3)
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetBorderVisual(ET66ButtonBorderVisual::None)
+						.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+						.SetColor(T66AccountStatusPanelFill())
+						.SetPadding(FT66Style::Tokens::Space3)
 				)
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
 		[
-			FT66Style::MakeButton(FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked))
-				.SetPadding(FMargin(18.f, 10.f)))
+			SNew(SBox)
+			.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
+			[
+				MakeAccountStatusButton(
+					FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked))
+					.SetPadding(FMargin(18.f, 10.f))
+					.SetColor(T66AccountStatusNeutralButtonFill()))
+			]
 		];
 
-	// Modal overlay: dim background + centered two-column panel.
-	return SNew(SOverlay)
-		+ SOverlay::Slot()
+	if (bModalPresentation)
+	{
+		// Modal overlay: dim background + centered panel.
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66Style::Scrim())
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			.Padding(FMargin(60.f))
+			[
+				MakeAccountStatusPanel(
+					SNew(SBox)
+					.WidthOverride(780.f)
+					[
+						MakeAccountStatusPanel(
+							SNew(SBox)
+							.Padding(FMargin(34.f, 28.f, 34.f, 30.f))
+							[
+								Content
+							],
+							ET66PanelType::Panel2,
+							T66AccountStatusPanelFill(),
+							FMargin(20.f))
+					],
+					ET66PanelType::Panel,
+					T66AccountStatusShellFill(),
+					FMargin(FT66Style::Tokens::Space5)
+				)
+			];
+	}
+
+	return SNew(SBox)
+		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
 		[
-			// Dim overlay to keep main menu visible underneath.
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FT66DotaTheme::Scrim())
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		.Padding(FMargin(60.f))
-		[
-			FT66Style::MakePanel(
-				SNew(SBox)
-				.WidthOverride(720.f)
-				[
-					Content
-				],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space5)
-			)
+			MakeAccountStatusPanel(
+				MakeAccountStatusPanel(
+					SNew(SBox)
+					.Padding(FMargin(34.f, 28.f, 34.f, 30.f))
+					[
+						Content
+					],
+					ET66PanelType::Panel2,
+					T66AccountStatusPanelFill(),
+					FMargin(20.f)),
+				ET66PanelType::Panel,
+				T66AccountStatusShellFill(),
+				FMargin(FT66Style::Tokens::Space5))
 		];
 }
 
@@ -144,16 +228,22 @@ FReply UT66AccountStatusScreen::HandleBackClicked()
 {
 	if (UIManager)
 	{
-		if (APlayerController* PC = GetOwningPlayer())
+		if (UIManager->GetCurrentModalType() == ScreenType)
 		{
-			if (PC->IsPaused())
+			if (APlayerController* PC = GetOwningPlayer())
 			{
-				UIManager->ShowModal(ET66ScreenType::Leaderboard);
-				return FReply::Handled();
+				if (PC->IsPaused())
+				{
+					UIManager->ShowModal(ET66ScreenType::Leaderboard);
+					return FReply::Handled();
+				}
 			}
+
+			UIManager->CloseModal();
+			return FReply::Handled();
 		}
 
-		UIManager->CloseModal();
+		UIManager->GoBack();
 	}
 	return FReply::Handled();
 }

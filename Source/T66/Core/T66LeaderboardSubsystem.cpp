@@ -85,6 +85,7 @@ static bool ParsePartySize(const FString& In, ET66PartySize& Out)
 	if (S.Equals(TEXT("Solo"), ESearchCase::IgnoreCase)) { Out = ET66PartySize::Solo; return true; }
 	if (S.Equals(TEXT("Duo"), ESearchCase::IgnoreCase)) { Out = ET66PartySize::Duo; return true; }
 	if (S.Equals(TEXT("Trio"), ESearchCase::IgnoreCase)) { Out = ET66PartySize::Trio; return true; }
+	if (S.Equals(TEXT("Quad"), ESearchCase::IgnoreCase)) { Out = ET66PartySize::Quad; return true; }
 	return false;
 }
 
@@ -92,11 +93,10 @@ void UT66LeaderboardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	LoadOrCreateLocalSave();
-	// Prefer DataTables (UE-friendly, packages cleanly). Fall back to CSV if missing.
-	if (!LoadTargetsFromDataTablesIfPresent())
-	{
-		LoadTargetsFromCsv();
-	}
+	// Load packaged DataTables first, then let CSV fill any gaps that are still missing
+	// (for example, newly added target rows that have not been reimported into DT assets yet).
+	LoadTargetsFromDataTablesIfPresent();
+	LoadTargetsFromCsv();
 }
 
 bool UT66LeaderboardSubsystem::GetSettingsPracticeAndAnon(bool& bOutPractice, bool& bOutAnon) const
@@ -160,6 +160,7 @@ void UT66LeaderboardSubsystem::DebugClearLocalLeaderboard()
 		ET66PartySize::Solo,
 		ET66PartySize::Duo,
 		ET66PartySize::Trio,
+		ET66PartySize::Quad,
 	};
 
 	for (const ET66Difficulty Diff : Diffs)
@@ -206,6 +207,7 @@ FString UT66LeaderboardSubsystem::PartySizeKey(ET66PartySize PartySize)
 	case ET66PartySize::Solo: return TEXT("Solo");
 	case ET66PartySize::Duo: return TEXT("Duo");
 	case ET66PartySize::Trio: return TEXT("Trio");
+	case ET66PartySize::Quad: return TEXT("Quad");
 	default: return TEXT("Unknown");
 	}
 }
@@ -426,7 +428,11 @@ void UT66LeaderboardSubsystem::LoadScoreTargetsFromCsv(const FString& AbsPath)
 		const int64 Target10 = FCString::Atoi64(*Cells[Base + 2].TrimStartAndEnd());
 		if (Target10 <= 0) continue;
 
-		ScoreTarget10ByKey.Add(MakeScoreKey(Diff, Party), Target10);
+		const uint64 Key = MakeScoreKey(Diff, Party);
+		if (!ScoreTarget10ByKey.Contains(Key))
+		{
+			ScoreTarget10ByKey.Add(Key, Target10);
+		}
 	}
 }
 
@@ -467,7 +473,11 @@ void UT66LeaderboardSubsystem::LoadSpeedRunTargetsFromCsv(const FString& AbsPath
 		const float Target10 = static_cast<float>(FCString::Atof(*Cells[Base + 2].TrimStartAndEnd()));
 		if (Stage <= 0 || Target10 <= 0.f) continue;
 
-		SpeedRunTarget10ByKey_DiffStage.Add(MakeSpeedRunKey_DiffStage(Diff, Stage), Target10);
+		const uint64 Key = MakeSpeedRunKey_DiffStage(Diff, Stage);
+		if (!SpeedRunTarget10ByKey_DiffStage.Contains(Key))
+		{
+			SpeedRunTarget10ByKey_DiffStage.Add(Key, Target10);
+		}
 	}
 }
 
@@ -481,7 +491,7 @@ int64 UT66LeaderboardSubsystem::GetScoreTarget10(ET66Difficulty Difficulty, ET66
 
 	// Fallback tuning (lower numbers so the player can realistically break into Top 10).
 	const int32 DiffIndex = FMath::Clamp(static_cast<int32>(Difficulty), 0, 999);
-	const int32 PartyIndex = FMath::Clamp(static_cast<int32>(PartySize), 0, 2);
+	const int32 PartyIndex = FMath::Clamp(static_cast<int32>(PartySize), 0, 3);
 	return static_cast<int64>(600 + (DiffIndex * 400) + (PartyIndex * 150));
 }
 
@@ -503,7 +513,8 @@ float UT66LeaderboardSubsystem::GetSpeedRunTarget10(ET66Difficulty Difficulty, E
 
 	const float PartyMult =
 		(PartySize == ET66PartySize::Solo) ? 1.0f :
-		(PartySize == ET66PartySize::Duo) ? 1.06f : 1.12f;
+		(PartySize == ET66PartySize::Duo) ? 1.06f :
+		(PartySize == ET66PartySize::Trio) ? 1.12f : 1.18f;
 
 	return FMath::Max(1.f, Base * PartyMult);
 }
@@ -529,6 +540,12 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 
 	Score = FMath::Max(0, Score);
 	bLastScoreWasNewBest = false;
+
+	if (!IsAccountEligibleForLeaderboard())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Leaderboard: blocked (account status). Score=%d"), Score);
+		return false;
+	}
 
 	bool bPractice = false;
 	bool bAnon = false;
@@ -678,6 +695,12 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	bLastSpeedRunWasNewBest = false;
 	LastSpeedRunSubmittedStage = Stage;
 
+	if (!IsAccountEligibleForLeaderboard())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Leaderboard: blocked (account status). Stage=%d Seconds=%.3f"), Stage, Seconds);
+		return false;
+	}
+
 	bool bPractice = false;
 	bool bAnon = false;
 	(void)GetSettingsPracticeAndAnon(bPractice, bAnon);
@@ -775,6 +798,9 @@ void UT66LeaderboardSubsystem::ClearPendingPickerSnapshots()
 
 namespace
 {
+	constexpr int32 GVisibleLeaderboardEntryCount = 15;
+	constexpr int32 GVisibleLeaderboardEntryCountWithLocal = GVisibleLeaderboardEntryCount + 1;
+
 	// Unique placeholder names for leaderboard rows (no reuse). Index = (rank-1)*3 + slot (0..2 for trio).
 	static const TArray<FString>& GetPlaceholderNamePool()
 	{
@@ -802,8 +828,11 @@ namespace
 	void FillPlayerNamesForEntry(FLeaderboardEntry& E, int32 Rank, ET66PartySize PartySize)
 	{
 		const TArray<FString>& Pool = GetPlaceholderNamePool();
-		const int32 N = (PartySize == ET66PartySize::Duo) ? 2 : (PartySize == ET66PartySize::Trio) ? 3 : 1;
-		const int32 Start = (Rank - 1) * 3;
+		const int32 N =
+			(PartySize == ET66PartySize::Quad) ? 4 :
+			(PartySize == ET66PartySize::Trio) ? 3 :
+			(PartySize == ET66PartySize::Duo) ? 2 : 1;
+		const int32 Start = (Rank - 1) * 4;
 		E.PlayerNames.Reset();
 		for (int32 i = 0; i < N && (Start + i) < Pool.Num(); ++i)
 		{
@@ -812,6 +841,72 @@ namespace
 		if (E.PlayerNames.Num() > 0)
 		{
 			E.PlayerName = E.PlayerNames[0];
+		}
+	}
+
+	FString GetPlaceholderNameByIndex(int32 Index)
+	{
+		const TArray<FString>& Pool = GetPlaceholderNamePool();
+		if (Pool.IsValidIndex(Index))
+		{
+			return Pool[Index];
+		}
+
+		return FString::Printf(TEXT("Placeholder_%02d"), Index + 1);
+	}
+
+	void ExtendSeedEntriesForDisplay(TArray<FLeaderboardEntry>& Out, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage)
+	{
+		if (Out.Num() > GVisibleLeaderboardEntryCount)
+		{
+			Out.SetNum(GVisibleLeaderboardEntryCount);
+		}
+
+		if (Out.Num() >= GVisibleLeaderboardEntryCount)
+		{
+			return;
+		}
+
+		if (Type == ET66LeaderboardType::Score)
+		{
+			int64 LastScore = Out.Num() > 0
+				? Out.Last().Score
+				: FMath::Max<int64>(1, 900);
+			for (int32 Rank = Out.Num() + 1; Rank <= GVisibleLeaderboardEntryCount; ++Rank)
+			{
+				LastScore = FMath::Max<int64>(1, FMath::RoundToInt64(static_cast<double>(LastScore) * 0.88));
+				FLeaderboardEntry Entry;
+				Entry.Rank = Rank;
+				Entry.Score = LastScore;
+				Entry.TimeSeconds = 0.f;
+				Entry.PartySize = PartySize;
+				Entry.Difficulty = Difficulty;
+				Entry.StageReached = 0;
+				Entry.bIsLocalPlayer = false;
+				Entry.PlayerNames = { GetPlaceholderNameByIndex(Rank - 1) };
+				Entry.PlayerName = Entry.PlayerNames[0];
+				Out.Add(Entry);
+			}
+			return;
+		}
+
+		float LastTime = Out.Num() > 0
+			? FMath::Max(1.f, Out.Last().TimeSeconds)
+			: 60.f;
+		for (int32 Rank = Out.Num() + 1; Rank <= GVisibleLeaderboardEntryCount; ++Rank)
+		{
+			LastTime = FMath::Max(1.f, LastTime * 1.08f);
+			FLeaderboardEntry Entry;
+			Entry.Rank = Rank;
+			Entry.Score = 0;
+			Entry.TimeSeconds = LastTime;
+			Entry.StageReached = Stage;
+			Entry.PartySize = PartySize;
+			Entry.Difficulty = Difficulty;
+			Entry.bIsLocalPlayer = false;
+			Entry.PlayerNames = { GetPlaceholderNameByIndex(Rank - 1) };
+			Entry.PlayerName = Entry.PlayerNames[0];
+			Out.Add(Entry);
 		}
 	}
 }
@@ -828,7 +923,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 		Cast<UT66LeaderboardRunSummarySaveGame>(UGameplayStatics::CreateSaveGameObject(UT66LeaderboardRunSummarySaveGame::StaticClass()));
 	if (!Snapshot) return nullptr;
 
-	const uint32 Seed = static_cast<uint32>((static_cast<int32>(Filter) * 1000) + (static_cast<int32>(Type) * 100) + (static_cast<int32>(Difficulty) * 10) + Rank * 3 + SlotIndex);
+	const uint32 Seed = static_cast<uint32>((static_cast<int32>(Filter) * 1000) + (static_cast<int32>(Type) * 100) + (static_cast<int32>(Difficulty) * 10) + Rank * 4 + SlotIndex);
 	FRandomStream Rng(Seed);
 
 	TArray<FName> HeroIDs = T66GI->GetAllHeroIDs();
@@ -994,6 +1089,11 @@ FT66AccountRestrictionRecord UT66LeaderboardSubsystem::GetAccountRestrictionReco
 	return LocalSave ? LocalSave->AccountRestriction : FT66AccountRestrictionRecord();
 }
 
+bool UT66LeaderboardSubsystem::IsAccountEligibleForLeaderboard() const
+{
+	return GetAccountRestrictionRecord().Restriction == ET66AccountRestrictionKind::None;
+}
+
 bool UT66LeaderboardSubsystem::HasAccountRestrictionRunSummary() const
 {
 	const FT66AccountRestrictionRecord Rec = GetAccountRestrictionRecord();
@@ -1076,14 +1176,14 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildScoreEntries(ET66Diffic
 	}
 
 	TArray<FLeaderboardEntry> Out;
-	Out.Reserve(11);
+	Out.Reserve(GVisibleLeaderboardEntryCountWithLocal);
 
-	// Placeholder "global" Top 10 (generated from the 10th-place target).
+	// Placeholder "global" Top 15 (generated from the 10th-place target as the anchor).
 	const int64 Target10 = GetScoreTarget10(Difficulty, PartySize);
 
-	for (int32 Rank = 1; Rank <= 10; ++Rank)
+	for (int32 Rank = 1; Rank <= GVisibleLeaderboardEntryCount; ++Rank)
 	{
-		const float Mult = 1.0f + (static_cast<float>(10 - Rank) * 0.08f); // rank1 higher, rank10 baseline
+		const float Mult = 1.0f + (static_cast<float>(10 - Rank) * 0.08f); // rank1 higher, rank10 baseline, ranks 11-15 taper below it
 		FLeaderboardEntry E;
 		E.Rank = Rank;
 		FillPlayerNamesForEntry(E, Rank, PartySize);
@@ -1117,10 +1217,10 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildScoreEntries(ET66Diffic
 	const bool bUseAnonName = (LocalBest > 0) ? bLocalAnonStored : bAnonNow;
 	const FString LocalName = bUseAnonName ? TEXT("ANONYMOUS") : TEXT("YOU");
 
-	// If local best beats into Top 10, insert; otherwise append rank 11.
-	const int64 Tenth = Out.Last().Score;
-	bool bLocalInTop10 = false;
-	if (LocalBest >= Tenth && LocalBest > 0)
+	// If local best beats into Top 15, insert; otherwise append rank 16.
+	const int64 Fifteenth = Out.Last().Score;
+	bool bLocalInTop15 = false;
+	if (LocalBest >= Fifteenth && LocalBest > 0)
 	{
 		const int32 InsertIndex = [&]()
 		{
@@ -1131,10 +1231,10 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildScoreEntries(ET66Diffic
 					return i;
 				}
 			}
-			return Out.Num(); // best is not better than any; would be after rank 10
+			return Out.Num();
 		}();
 
-		if (InsertIndex < 10)
+		if (InsertIndex < GVisibleLeaderboardEntryCount)
 		{
 			FLeaderboardEntry You;
 			You.PlayerNames = { LocalName };
@@ -1146,21 +1246,21 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildScoreEntries(ET66Diffic
 			You.bIsLocalPlayer = true;
 
 			Out.Insert(You, InsertIndex);
-			Out.SetNum(10);
-			bLocalInTop10 = true;
+			Out.SetNum(GVisibleLeaderboardEntryCount);
+			bLocalInTop15 = true;
 		}
 	}
 
-	// Re-rank Top 10.
+	// Re-rank visible entries.
 	for (int32 i = 0; i < Out.Num(); ++i)
 	{
 		Out[i].Rank = i + 1;
 	}
 
-	if (!bLocalInTop10)
+	if (!bLocalInTop15)
 	{
 		FLeaderboardEntry You;
-		You.Rank = 11;
+		You.Rank = GVisibleLeaderboardEntryCountWithLocal;
 		You.PlayerNames = { LocalName };
 		You.PlayerName = LocalName;
 		You.Score = LocalBest;
@@ -1183,15 +1283,17 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	}
 
 	TArray<FLeaderboardEntry> Out;
-	Out.Reserve(11);
+	Out.Reserve(GVisibleLeaderboardEntryCountWithLocal);
 
 	Stage = FMath::Clamp(Stage, 1, 33);
 
 	const float Target10 = GetSpeedRunTarget10(Difficulty, PartySize, Stage);
 
-	for (int32 Rank = 1; Rank <= 10; ++Rank)
+	for (int32 Rank = 1; Rank <= GVisibleLeaderboardEntryCount; ++Rank)
 	{
-		const float Mult = 0.55f + (static_cast<float>(Rank - 1) * (0.45f / 9.f)); // rank1 fastest, rank10 baseline
+		const float Mult = Rank <= 10
+			? (0.55f + (static_cast<float>(Rank - 1) * (0.45f / 9.f))) // rank1 fastest, rank10 baseline
+			: (1.0f + (static_cast<float>(Rank - 10) * 0.08f));
 		FLeaderboardEntry E;
 		E.Rank = Rank;
 		FillPlayerNamesForEntry(E, Rank, PartySize);
@@ -1225,9 +1327,9 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	const bool bUseAnonName = (LocalBest > 0.01f) ? bLocalAnonStored : bAnonNow;
 	const FString LocalName = bUseAnonName ? TEXT("ANONYMOUS") : TEXT("YOU");
 
-	const float Tenth = Out.Last().TimeSeconds;
-	bool bLocalInTop10 = false;
-	if (LocalBest > 0.01f && LocalBest <= Tenth)
+	const float Fifteenth = Out.Last().TimeSeconds;
+	bool bLocalInTop15 = false;
+	if (LocalBest > 0.01f && LocalBest <= Fifteenth)
 	{
 		const int32 InsertIndex = [&]()
 		{
@@ -1241,7 +1343,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 			return Out.Num();
 		}();
 
-		if (InsertIndex < 10)
+		if (InsertIndex < GVisibleLeaderboardEntryCount)
 		{
 			FLeaderboardEntry You;
 			You.PlayerNames = { LocalName };
@@ -1254,8 +1356,8 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 			You.bIsLocalPlayer = true;
 
 			Out.Insert(You, InsertIndex);
-			Out.SetNum(10);
-			bLocalInTop10 = true;
+			Out.SetNum(GVisibleLeaderboardEntryCount);
+			bLocalInTop15 = true;
 		}
 	}
 
@@ -1264,10 +1366,10 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 		Out[i].Rank = i + 1;
 	}
 
-	if (!bLocalInTop10)
+	if (!bLocalInTop15)
 	{
 		FLeaderboardEntry You;
-		You.Rank = 11;
+		You.Rank = GVisibleLeaderboardEntryCountWithLocal;
 		You.PlayerNames = { LocalName };
 		You.PlayerName = LocalName;
 		You.Score = 0;
@@ -1346,13 +1448,39 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 		return BuildSpeedRunEntries(Difficulty, PartySize, SpeedRunStage);
 	}
 
-	// Friends / Streamers: load base Top 10 from DT, then splice in local player's "YOU" entry
+	// Friends / Streamers: load base Top 15 from DT, then splice in local player's "YOU" entry
 	// exactly the same way Global does.
 	const TCHAR* Path = (Filter == ET66LeaderboardFilter::Friends) ? FriendsDTPath : StreamersDTPath;
 	UDataTable* DT = LoadObject<UDataTable>(nullptr, Path);
 	TArray<FLeaderboardEntry> Out = LoadEntriesFromDataTable(DT);
 
-	if (Out.Num() == 0) return Out;
+	// The authored friends/streamers seed table is currently solo-only. Project the loaded rows
+	// onto the active leaderboard view so duo/trio/quad boards still populate all party members.
+	for (FLeaderboardEntry& Entry : Out)
+	{
+		Entry.PartySize = PartySize;
+		Entry.Difficulty = Difficulty;
+
+		if (Type == ET66LeaderboardType::SpeedRun)
+		{
+			const int32 Stage = FMath::Clamp(SpeedRunStage, 1, 33);
+			Entry.StageReached = Stage;
+			Entry.Score = 0;
+
+			if (Entry.TimeSeconds <= 0.01f)
+			{
+				const float Target10 = GetSpeedRunTarget10(Difficulty, PartySize, Stage);
+				const float RankMultiplier = 0.55f + (static_cast<float>(FMath::Max(1, Entry.Rank) - 1) * (0.45f / 9.f));
+				Entry.TimeSeconds = FMath::Max(1.f, Target10 * RankMultiplier);
+			}
+		}
+	}
+
+	ExtendSeedEntriesForDisplay(Out, Type, Difficulty, PartySize, FMath::Clamp(SpeedRunStage, 1, 33));
+	if (Out.Num() == 0)
+	{
+		return Out;
+	}
 
 	// Ensure local save is loaded
 	if (!LocalSave)
@@ -1384,10 +1512,10 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 		const bool bUseAnonName = (LocalBest > 0) ? bLocalAnonStored : bAnonNow;
 		const FString LocalName = bUseAnonName ? TEXT("ANONYMOUS") : TEXT("YOU");
 
-		// Try to insert into top 10
-		const int64 Tenth = Out.Last().Score;
-		bool bLocalInTop10 = false;
-		if (LocalBest >= Tenth && LocalBest > 0)
+		// Try to insert into top 15.
+		const int64 Fifteenth = Out.Last().Score;
+		bool bLocalInTop15 = false;
+		if (LocalBest >= Fifteenth && LocalBest > 0)
 		{
 			int32 InsertIndex = Out.Num();
 			for (int32 i = 0; i < Out.Num(); ++i)
@@ -1398,7 +1526,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 					break;
 				}
 			}
-			if (InsertIndex < 10)
+			if (InsertIndex < GVisibleLeaderboardEntryCount)
 			{
 				FLeaderboardEntry You;
 				You.PlayerNames = { LocalName };
@@ -1408,18 +1536,18 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 				You.Difficulty = Difficulty;
 				You.bIsLocalPlayer = true;
 				Out.Insert(You, InsertIndex);
-				Out.SetNum(10);
-				bLocalInTop10 = true;
+				Out.SetNum(GVisibleLeaderboardEntryCount);
+				bLocalInTop15 = true;
 			}
 		}
 
 		// Re-rank
 		for (int32 i = 0; i < Out.Num(); ++i) Out[i].Rank = i + 1;
 
-		if (!bLocalInTop10)
+		if (!bLocalInTop15)
 		{
 			FLeaderboardEntry You;
-			You.Rank = 11;
+			You.Rank = GVisibleLeaderboardEntryCountWithLocal;
 			You.PlayerNames = { LocalName };
 			You.PlayerName = LocalName;
 			You.Score = LocalBest;
@@ -1449,9 +1577,9 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 		const bool bUseAnonName = (LocalBest > 0.01f) ? bLocalAnonStored : bAnonNow;
 		const FString LocalName = bUseAnonName ? TEXT("ANONYMOUS") : TEXT("YOU");
 
-		const float Tenth = Out.Last().TimeSeconds;
-		bool bLocalInTop10 = false;
-		if (LocalBest > 0.01f && LocalBest <= Tenth)
+		const float Fifteenth = Out.Last().TimeSeconds;
+		bool bLocalInTop15 = false;
+		if (LocalBest > 0.01f && LocalBest <= Fifteenth)
 		{
 			int32 InsertIndex = Out.Num();
 			for (int32 i = 0; i < Out.Num(); ++i)
@@ -1462,7 +1590,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 					break;
 				}
 			}
-			if (InsertIndex < 10)
+			if (InsertIndex < GVisibleLeaderboardEntryCount)
 			{
 				FLeaderboardEntry You;
 				You.PlayerNames = { LocalName };
@@ -1474,17 +1602,17 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 				You.Difficulty = Difficulty;
 				You.bIsLocalPlayer = true;
 				Out.Insert(You, InsertIndex);
-				Out.SetNum(10);
-				bLocalInTop10 = true;
+				Out.SetNum(GVisibleLeaderboardEntryCount);
+				bLocalInTop15 = true;
 			}
 		}
 
 		for (int32 i = 0; i < Out.Num(); ++i) Out[i].Rank = i + 1;
 
-		if (!bLocalInTop10)
+		if (!bLocalInTop15)
 		{
 			FLeaderboardEntry You;
-			You.Rank = 11;
+			You.Rank = GVisibleLeaderboardEntryCountWithLocal;
 			You.PlayerNames = { LocalName };
 			You.PlayerName = LocalName;
 			You.Score = 0;

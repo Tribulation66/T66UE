@@ -136,7 +136,12 @@ UTexture2D* UT66WebImageCache::CreateTextureFromData(const TArray<uint8>& Data, 
 		return nullptr;
 	}
 
-	Texture->AddToRoot(); // Prevent GC until we manage it
+	Texture->AddToRoot();
+	Texture->SRGB = true;
+	Texture->Filter = TextureFilter::TF_Trilinear;
+	Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+	Texture->CompressionSettings = TC_EditorIcon;
+	Texture->NeverStream = true;
 
 	void* MipData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
 	FMemory::Memcpy(MipData, RawData.GetData(), RawData.Num());

@@ -15,8 +15,6 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66UIManager.h"
-#include "UI/Dota/T66DotaSlate.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 
 #include "Data/T66DataTypes.h"
@@ -196,7 +194,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 				.WidthOverride(SlotSize)
 				.HeightOverride(SlotSize)
 				[
-					FT66DotaSlate::MakeSlotFrame(
+					FT66Style::MakeSlotFrame(
 						SNew(SImage)
 						.Image(IconBrush.IsValid() ? IconBrush.Get() : nullptr)
 						.ColorAndOpacity(FLinearColor::White),
@@ -289,8 +287,8 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	const FLinearColor FilledHeartColor = FT66RarityUtil::GetTierColor(HeartTier);
 	const FLinearColor EmptyHeartColor(0.25f, 0.25f, 0.28f, 0.35f);
 	const FLinearColor PortraitBorderColor = RunState
-		? (RunState->GetMaxHP() > 0.f ? FT66RarityUtil::GetTierColor(HeartTier) : (FT66Style::IsDotaTheme() ? FT66DotaTheme::Border() : FLinearColor(0.12f, 0.12f, 0.14f, 1.f)))
-		: (FT66Style::IsDotaTheme() ? FT66DotaTheme::Border() : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
+		? (RunState->GetMaxHP() > 0.f ? FT66RarityUtil::GetTierColor(HeartTier) : (FT66Style::IsDotaTheme() ? FT66Style::Border() : FLinearColor(0.12f, 0.12f, 0.14f, 1.f)))
+		: (FT66Style::IsDotaTheme() ? FT66Style::Border() : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
 
 	bool bHasPortrait = false;
 	if (GI && RunState)
@@ -487,7 +485,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			SNew(STextBlock)
 			.Text(IdolsTitleText)
 			.Font(FT66Style::Tokens::FontBold(18))
-			.ColorAndOpacity(bDotaTheme ? FT66DotaTheme::Text() : FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
+			.ColorAndOpacity(bDotaTheme ? FT66Style::Text() : FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 		[
@@ -568,7 +566,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			SNew(STextBlock)
 			.Text(InventoryTitleText)
 			.Font(FT66Style::Tokens::FontBold(18))
-			.ColorAndOpacity(bDotaTheme ? FT66DotaTheme::Text() : FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
+			.ColorAndOpacity(bDotaTheme ? FT66Style::Text() : FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 8.f)
 		[
@@ -662,7 +660,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	static constexpr float SideColumnWidth = 460.f;
 	static constexpr float ButtonColumnWidth = 420.f;
 	const FLinearColor ScrimColor = FT66Style::IsDotaTheme()
-		? FT66DotaTheme::Scrim()
+		? FT66Style::Scrim()
 		: FLinearColor(FT66Style::Tokens::Scrim.R, FT66Style::Tokens::Scrim.G, FT66Style::Tokens::Scrim.B, 0.88f);
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -682,7 +680,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			.Padding(50.f, 40.f)
 			[
 				bDotaTheme
-					? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeViewportFrame(
+					? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 28.f, 0.f)
 						[
@@ -863,3 +861,4 @@ void UT66PauseMenuScreen::OnLeaderboardClicked()
 {
 	ShowModal(ET66ScreenType::Leaderboard);
 }
+

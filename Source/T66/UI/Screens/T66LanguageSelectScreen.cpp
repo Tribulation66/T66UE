@@ -2,7 +2,6 @@
 
 #include "UI/Screens/T66LanguageSelectScreen.h"
 #include "UI/T66UIManager.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
@@ -13,11 +12,56 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SOverlay.h"
 
+namespace
+{
+	FLinearColor T66LanguageShellFill()
+	{
+		return FT66Style::Background();
+	}
+
+	FLinearColor T66LanguagePanelFill()
+	{
+		return FT66Style::PanelOuter();
+	}
+
+	FLinearColor T66LanguageRowFill()
+	{
+		return FT66Style::PanelInner();
+	}
+
+	FLinearColor T66LanguageNeutralButtonFill()
+	{
+		return FT66Style::ButtonNeutral();
+	}
+
+	TSharedRef<SWidget> MakeLanguageButton(const FT66ButtonParams& Params)
+	{
+		FT66ButtonParams FlatParams = Params;
+		FlatParams
+			.SetBorderVisual(ET66ButtonBorderVisual::None)
+			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+			.SetUseGlow(false);
+
+		return FT66Style::MakeButton(FlatParams);
+	}
+
+	TSharedRef<SWidget> MakeLanguagePanel(const TSharedRef<SWidget>& Content, ET66PanelType Type, const FLinearColor& FillColor, const FMargin& Padding)
+	{
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(Type)
+				.SetBorderVisual(ET66ButtonBorderVisual::None)
+				.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+				.SetColor(FillColor)
+				.SetPadding(Padding));
+	}
+}
+
 UT66LanguageSelectScreen::UT66LanguageSelectScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	ScreenType = ET66ScreenType::LanguageSelect;
-	bIsModal = true;
+	bIsModal = false;
 }
 
 UT66LocalizationSubsystem* UT66LanguageSelectScreen::GetLocSubsystem() const
@@ -47,7 +91,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 			const auto GetRowBgColor = [this, Lang]()
 			{
 				const bool bIsSelected = (Lang == PreviewedLanguage);
-				return bIsSelected ? FT66DotaTheme::SelectionFill() : FT66DotaTheme::PanelInner();
+				return bIsSelected ? FT66Style::SelectionFill() : T66LanguageRowFill();
 			};
 
 			const auto GetRowTextColor = [this, Lang]()
@@ -94,71 +138,119 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.LanguageSelect", "Back", "Back");
 
 	const float ScreenPadding = 60.0f;
+	const bool bModalPresentation = (UIManager && UIManager->GetCurrentModalType() == ScreenType) || (!UIManager && GetOwningPlayer() && GetOwningPlayer()->IsPaused());
+	const float TopInset = bModalPresentation ? 0.f : (UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f);
 
-	return SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66DotaTheme::Background())
+	const TSharedRef<SWidget> LanguageList =
+		MakeLanguagePanel(
+			SNew(SScrollBox)
+			.Orientation(Orient_Vertical)
+			.ScrollBarVisibility(EVisibility::Visible)
+			.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
+			+ SScrollBox::Slot()
+			.Padding(FMargin(0.0f, 0.0f, 10.0f, 0.0f))
+			[
+				LanguageButtons
+			],
+			ET66PanelType::Panel2,
+			T66LanguagePanelFill(),
+			FMargin(18.f, 16.f, 14.f, 16.f));
+
+	const TSharedRef<SWidget> PageContent =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(0.0f, 0.0f, 0.0f, 26.0f)
 		[
-			SNew(SOverlay)
+			SNew(STextBlock)
+			.Text(TitleText)
+			.Font(FT66Style::Tokens::FontBold(42))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		.HAlign(HAlign_Fill)
+		[
+			LanguageList
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(0.0f, 30.0f, 0.0f, 0.0f)
+		[
+			SNew(SHorizontalBox)
+			.Visibility(bModalPresentation ? EVisibility::Visible : EVisibility::Collapsed)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(10.0f, 0.0f)
+			[
+				MakeLanguageButton(
+					FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleBackClicked), ET66ButtonType::Neutral)
+					.SetMinWidth(150.f)
+					.SetColor(T66LanguageNeutralButtonFill()))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(10.0f, 0.0f)
+			[
+				MakeLanguageButton(
+					FT66ButtonParams(ConfirmText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked), ET66ButtonType::Success)
+					.SetMinWidth(150.f)
+					.SetColor(FT66Style::Tokens::Success))
+			]
+		];
+
+	if (bModalPresentation)
+	{
+		return SNew(SOverlay)
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.Padding(FMargin(ScreenPadding))
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FT66DotaTheme::Panel())
-				.Padding(FMargin(40.0f, 30.0f))
-				[
-					SNew(SVerticalBox)
-					// Title
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 0.0f, 0.0f, 30.0f)
-					[
-						SNew(STextBlock)
-						.Text(TitleText)
-						.Font(FT66Style::Tokens::FontBold(36))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					// Language List
-					+ SVerticalBox::Slot()
-					.FillHeight(1.0f)
-					.HAlign(HAlign_Fill)
-					[
-						SNew(SScrollBox)
-						.Orientation(Orient_Vertical)
-						.ScrollBarVisibility(EVisibility::Visible)
-						.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
-						+ SScrollBox::Slot()
-						.Padding(FMargin(0.0f, 0.0f, 10.0f, 0.0f))
-						[
-							LanguageButtons
-						]
-					]
-					// Buttons
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Center)
-					.Padding(0.0f, 30.0f, 0.0f, 0.0f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(10.0f, 0.0f)
-						[
-							FT66Style::MakeButton(BackText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleBackClicked), ET66ButtonType::Neutral, 150.f)
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.Padding(10.0f, 0.0f)
-						[
-							FT66Style::MakeButton(ConfirmText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked), ET66ButtonType::Success, 150.f)
-						]
-					]
-				]
+				.BorderBackgroundColor(FT66Style::Scrim())
 			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			.Padding(FMargin(ScreenPadding))
+			[
+				MakeLanguagePanel(
+					SNew(SBox)
+					.WidthOverride(960.f)
+					.Padding(FMargin(40.0f, 30.0f))
+					[
+						PageContent
+					],
+					ET66PanelType::Panel,
+					T66LanguageShellFill(),
+					FMargin(24.f))
+			];
+	}
+
+	return SNew(SBox)
+		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+		[
+			MakeLanguagePanel(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.FillHeight(1.0f)
+				[
+					PageContent
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0.0f, 24.0f, 0.0f, 0.0f)
+				[
+					MakeLanguageButton(
+						FT66ButtonParams(ConfirmText, FOnClicked::CreateUObject(this, &UT66LanguageSelectScreen::HandleConfirmClicked), ET66ButtonType::Success)
+						.SetMinWidth(180.f)
+						.SetColor(FT66Style::Tokens::Success))
+				],
+				ET66PanelType::Panel,
+				T66LanguageShellFill(),
+				FMargin(ScreenPadding, 28.f, ScreenPadding, 28.f))
 		];
 }
 
@@ -202,30 +294,40 @@ FReply UT66LanguageSelectScreen::HandleBackClicked()
 
 void UT66LanguageSelectScreen::OnConfirmClicked()
 {
-	// Get reference to underlying screen before closing modal
-	UT66ScreenBase* UnderlyingScreen = UIManager ? UIManager->GetCurrentScreen() : nullptr;
-	
-	// Close the modal
-	CloseModal();
+	const bool bModalPresentation = UIManager && UIManager->GetCurrentModalType() == ScreenType;
 
-	// Apply the selected language now (after closing) so the selector's own text doesn't visibly switch.
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
 	{
 		Loc->SetLanguage(PreviewedLanguage);
 	}
-	
-	// Force a full Slate widget rebuild on the underlying screen to apply new language
-	// TakeWidget() triggers RebuildWidget() which calls BuildSlateUI() with the new language
-	if (UnderlyingScreen)
+
+	if (bModalPresentation)
 	{
-		UnderlyingScreen->ForceRebuildSlate();
+		CloseModal();
+	}
+	else if (UIManager)
+	{
+		UIManager->GoBack();
+	}
+
+	if (UIManager)
+	{
+		UIManager->RebuildAllVisibleUI();
 	}
 }
 
 void UT66LanguageSelectScreen::OnBackClicked()
 {
-	// No change needed - we never applied the preview
-	CloseModal();
+	if (UIManager && UIManager->GetCurrentModalType() == ScreenType)
+	{
+		CloseModal();
+		return;
+	}
+
+	if (UIManager)
+	{
+		UIManager->GoBack();
+	}
 }
 
 void UT66LanguageSelectScreen::RebuildLanguageList()

@@ -15,7 +15,7 @@ struct FSlateBrush;
 /**
  * Power Up screen: 6 stats (Damage, Attack Speed, Attack Scale, Evasion, Armor, Luck),
  * each represented by a statue that fills from bottom to top as the stat is unlocked.
- * Page 0: 2x3 stat grid. Page 1: Power Coupon to Achievement Coin converter.
+ * Stats are stacked in a scrollable surface plus a converter page.
  */
 UCLASS(Blueprintable)
 class T66_API UT66PowerUpScreen : public UT66ScreenBase
@@ -32,9 +32,9 @@ protected:
 private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	UT66PowerUpSubsystem* GetPowerUpSubsystem() const;
+	void SetShowingConverter(bool bInShowingConverter);
 
-	// Page switching (0 = stats grid, 1 = converter)
-	int32 CurrentPage = 0;
+	bool bShowingConverter = false;
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 	TMap<FString, TSharedPtr<FSlateBrush>> StatueBrushes;
 	static constexpr int32 AchievementCoinsPerPowerCoupon = 100;

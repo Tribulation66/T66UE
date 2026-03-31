@@ -1,0 +1,86 @@
+#include "/Engine/Private/Common.ush"
+
+#include "ZibraShaderCommon.ush"
+#include "ZibraVDBRenderingUtils.ush"
+
+Texture3D<float> MaxDensityPerBlockTexture;
+Texture3D<uint> BlockIndexTexture;
+uint SparseBlockGridSize;
+uint SparseBlockGridSizeMultiply;
+uint SparseBlockGridSizeShift1;
+uint SparseBlockGridSizeShift2;
+
+Texture3D<float3> SparseBlocks;
+Texture3D<float> SparseBlocksDensity;
+RWTexture3D<float4> IlluminatedVolume;
+
+int rb_IlluminationDownscaleFactor;
+uint3 rb_IlluminationSize;
+
+#if ENABLE_DOWNSCALE
+uint DownscaleFactor;
+uint DownscaledBlockSize;
+#endif
+
+uint GetBlockSize()
+{
+#if ENABLE_DOWNSCALE
+    return DownscaledBlockSize;
+#endif
+    return BLOCK_SIZE;
+}
+
+uint GetRenderBlockSize()
+{
+    uint renderBlockSize = GetBlockSize();
+#if ENABLE_INTERPOLATION
+    renderBlockSize += RENDER_PADDING_SIZE;
+#endif
+    
+    return renderBlockSize;
+}
+
+uint3 GetVoxelPosition(uint3 block_pos, uint3 voxel_offset)
+{
+    uint3 voxel_pos = block_pos * GetRenderBlockSize() + voxel_offset;
+#if ENABLE_INTERPOLATION
+    voxel_pos += RENDER_PADDING_SIZE;
+#endif
+    return voxel_pos;
+}
+
+
+[numthreads(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)]
+void MainCS(uint3 id : SV_DispatchThreadID)
+{
+	if (any(id >= rb_IlluminationSize))
+    {
+        return;
+    }
+	
+	uint3 voxelPos = id * rb_IlluminationDownscaleFactor;
+	uint3 blockPos = VoxelToBlock(voxelPos);
+	int blockID = GetBlockID(BlockIndexTexture, blockPos);
+	
+
+    if (blockID < 0)
+	{
+		IlluminatedVolume[id] = 0;
+		return;
+	}
+	
+    uint3 block_pos = RenderBlockPos(blockID, SparseBlockGridSize, SparseBlockGridSizeMultiply, SparseBlockGridSizeShift1, SparseBlockGridSizeShift2);
+    uint3 block_voxel = voxelPos & (BLOCK_SIZE - 1);
+#if ENABLE_DOWNSCALE
+	// TODO: use bit shift operator.
+    block_voxel = block_voxel / DownscaleFactor;
+#endif
+	
+    uint3 voxel_pos = GetVoxelPosition(block_pos, block_voxel);
+
+	float4 voxel_value = 0;
+	voxel_value.rgb = SparseBlocks[voxel_pos];
+	voxel_value.a = SparseBlocksDensity[voxel_pos]
+				  * MaxDensityPerBlockTexture[block_pos];
+	IlluminatedVolume[id] = voxel_value;
+}

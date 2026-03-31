@@ -18,7 +18,7 @@ class UDataTable;
 
 /**
  * Foundation for leaderboard submission.
- * For now this provides a fully local (offline) "Top 10 + You" experience, with placeholder global targets.
+ * For now this provides a fully local (offline) "Top 15 + You" experience, with placeholder global targets.
  * Practice Mode blocks submission. "Anonymous" affects displayed name for the local entry.
  */
 UCLASS()
@@ -92,6 +92,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
 	FT66AccountRestrictionRecord GetAccountRestrictionRecord() const;
 
+	/** True when the account is allowed to place new scores and times on leaderboards. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
+	bool IsAccountEligibleForLeaderboard() const;
+
 	/** True if there is a run summary slot associated with the restricted run. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
 	bool HasAccountRestrictionRunSummary() const;
@@ -116,10 +120,10 @@ public:
 	/** Consume the "return to modal after viewer-mode Run Summary" request. */
 	ET66ScreenType ConsumePendingReturnModalAfterViewerRunSummary();
 
-	/** Build menu entries for Score: Top 10 + local entry ("You") at rank 11 unless in Top 10. */
+	/** Build menu entries for Score: Top 15 + local entry ("You") at rank 16 unless in Top 15. */
 	TArray<FLeaderboardEntry> BuildScoreEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
-	/** Build menu entries for Speed Run: per-stage Top 10 + local entry ("You") at rank 11 unless in Top 10. */
+	/** Build menu entries for Speed Run: per-stage Top 15 + local entry ("You") at rank 16 unless in Top 15. */
 	TArray<FLeaderboardEntry> BuildSpeedRunEntries(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 
 	/**
@@ -131,11 +135,11 @@ public:
 	/** Returns the 10th-place target time for this stage (used by HUD "time to beat"). */
 	bool GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const;
 
-	/** Rank (1–11) of local player's best score for this difficulty/party; 0 if none. */
+	/** Rank (1–16) of local player's best score for this difficulty/party; 0 if none. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalScoreRank(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
 
-	/** Rank (1–11) of local player's best speed run time for this stage; 0 if no time submitted. */
+	/** Rank (1–16) of local player's best speed run time for this stage; 0 if no time submitted. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 

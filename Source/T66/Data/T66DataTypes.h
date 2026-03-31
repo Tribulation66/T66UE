@@ -1268,7 +1268,8 @@ enum class ET66PartySize : uint8
 {
 	Solo UMETA(DisplayName = "Solo"),
 	Duo UMETA(DisplayName = "Duo"),
-	Trio UMETA(DisplayName = "Trio")
+	Trio UMETA(DisplayName = "Trio"),
+	Quad UMETA(DisplayName = "Quad")
 };
 
 /**

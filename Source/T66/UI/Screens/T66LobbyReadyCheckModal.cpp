@@ -3,7 +3,6 @@
 #include "UI/Screens/T66LobbyReadyCheckModal.h"
 #include "UI/Screens/T66LobbyScreen.h"
 #include "UI/T66UIManager.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -30,7 +29,7 @@ TSharedRef<SWidget> UT66LobbyReadyCheckModal::BuildSlateUI()
 	FText NotReadyText = Loc ? Loc->GetText_LobbyNotReady() : NSLOCTEXT("T66.Lobby", "NotReady", "NOT READY");
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FT66DotaTheme::Scrim())
+		.BorderBackgroundColor(FT66Style::Scrim())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -109,3 +108,4 @@ void UT66LobbyReadyCheckModal::OnNotReadyClicked()
 {
 	CloseModal();
 }
+

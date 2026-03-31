@@ -70,16 +70,23 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
+	if (SettingsObj->SchemaVersion < 9)
+	{
+		SettingsObj->SchemaVersion = 9;
+		SettingsObj->UIThemeIndex = static_cast<int32>(ET66UITheme::Dota);
+		bNeedsSave = true;
+	}
+
 	if (SettingsObj->bLightTheme)
 	{
 		SettingsObj->bLightTheme = false;
 		bNeedsSave = true;
 	}
 
-	const int32 ClampedThemeIndex = FMath::Clamp(SettingsObj->UIThemeIndex, 0, static_cast<int32>(ET66UITheme::Dota));
-	if (SettingsObj->UIThemeIndex != ClampedThemeIndex)
+	const int32 ForcedThemeIndex = static_cast<int32>(ET66UITheme::Dota);
+	if (SettingsObj->UIThemeIndex != ForcedThemeIndex)
 	{
-		SettingsObj->UIThemeIndex = ClampedThemeIndex;
+		SettingsObj->UIThemeIndex = ForcedThemeIndex;
 		bNeedsSave = true;
 	}
 
@@ -111,8 +118,9 @@ void UT66PlayerSettingsSubsystem::SetLastSettingsTabIndex(int32 TabIndex)
 void UT66PlayerSettingsSubsystem::SetUITheme(ET66UITheme NewTheme)
 {
 	if (!SettingsObj) return;
+	(void)NewTheme;
 
-	const int32 NewThemeIndex = FMath::Clamp(static_cast<int32>(NewTheme), 0, static_cast<int32>(ET66UITheme::Dota));
+	const int32 NewThemeIndex = static_cast<int32>(ET66UITheme::Dota);
 	if (SettingsObj->UIThemeIndex == NewThemeIndex)
 	{
 		return;
@@ -125,13 +133,7 @@ void UT66PlayerSettingsSubsystem::SetUITheme(ET66UITheme NewTheme)
 
 ET66UITheme UT66PlayerSettingsSubsystem::GetUITheme() const
 {
-	if (!SettingsObj)
-	{
-		return ET66UITheme::Dota;
-	}
-
-	const int32 ThemeIndex = FMath::Clamp(SettingsObj->UIThemeIndex, 0, static_cast<int32>(ET66UITheme::Dota));
-	return static_cast<ET66UITheme>(ThemeIndex);
+	return ET66UITheme::Dota;
 }
 
 bool UT66PlayerSettingsSubsystem::GetPracticeMode() const

@@ -178,9 +178,9 @@ protected:
 
 	/** Hero-specific VFX variants: spawn unique pixel patterns based on HeroID. */
 	void SpawnHeroSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color, const FName& HeroID);
-	void SpawnHeroPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color, const FName& HeroID);
+	void SpawnHeroPierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color, const FName& HeroID);
 	void SpawnHeroBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color, const FName& HeroID);
-	void SpawnHeroDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color, const FName& HeroID);
+	void SpawnHeroDOTVFX(AActor* FollowTarget, const FVector& Location, float Duration, float Radius, const FLinearColor& Color, const FName& HeroID);
 
 	float BaseAttackRange = 0.f;
 	float BaseFireIntervalSeconds = 0.f;

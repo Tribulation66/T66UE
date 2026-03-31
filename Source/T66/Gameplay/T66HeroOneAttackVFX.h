@@ -9,6 +9,7 @@
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
 class USceneComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 
 /**
@@ -24,7 +25,8 @@ class T66_API AT66HeroOneAttackVFX : public AActor
 public:
 	AT66HeroOneAttackVFX();
 
-	void InitEffect(const FVector& InStart, const FVector& InEnd, const FVector& InImpactLocation, const FLinearColor& InTint);
+	void InitEffect(const FVector& InStart, const FVector& InEnd, const FVector& InImpactLocation, const FLinearColor& InTint, int32 InDebugRequestId = INDEX_NONE, FName InDebugHeroID = NAME_None);
+	void SetPaletteOverride(const FLinearColor& InTint, const FLinearColor& InPrimary, const FLinearColor& InSecondary, const FLinearColor& InOutline, float InGlowStrength, FName InPaletteMode = NAME_None);
 
 protected:
 	virtual void BeginPlay() override;
@@ -33,6 +35,9 @@ protected:
 private:
 	void ApplyEffectTransforms();
 	void UpdateMaterialParams(float Age01) const;
+	void LogConfiguredBegin() const;
+	void ResolveRuntimePalette(FLinearColor& OutTintColor, FLinearColor& OutPrimaryColor, FLinearColor& OutSecondaryColor, FLinearColor& OutOutlineColor, float& OutGlowStrength, FString& OutPaletteMode) const;
+	bool UseArthurSwordSilhouette() const;
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -43,11 +48,26 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> ImpactMesh;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> SwordMesh;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> GuardMesh;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> GripMesh;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> PommelMesh;
+
 	UPROPERTY()
 	TObjectPtr<UMaterialInterface> StreakBaseMaterial = nullptr;
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInterface> ImpactBaseMaterial = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> ArthurSwordStaticMesh = nullptr;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> StreakMID = nullptr;
@@ -66,5 +86,14 @@ private:
 	float ImpactDistance = 100.f;
 	float BaseStreakWidthScale = 0.22f;
 	float BaseImpactScale = 0.55f;
+	int32 DebugRequestId = INDEX_NONE;
+	FName DebugHeroID = NAME_None;
+	FLinearColor OverrideTintColor = FLinearColor::White;
+	FLinearColor OverridePrimaryColor = FLinearColor::White;
+	FLinearColor OverrideSecondaryColor = FLinearColor(0.35f, 0.35f, 0.35f, 1.f);
+	FLinearColor OverrideOutlineColor = FLinearColor::Black;
+	float OverrideGlowStrength = 0.f;
+	FName OverridePaletteMode = NAME_None;
+	bool bUsePaletteOverride = false;
 	bool bInitialized = false;
 };

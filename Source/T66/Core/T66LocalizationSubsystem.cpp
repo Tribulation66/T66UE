@@ -1175,6 +1175,11 @@ FText UT66LocalizationSubsystem::GetText_TrioRuns() const
 	return NSLOCTEXT("T66.Leaderboard", "TrioRuns", "TRIO");
 }
 
+FText UT66LocalizationSubsystem::GetText_QuadRuns() const
+{
+	return NSLOCTEXT("T66.Leaderboard", "QuadRuns", "QUAD");
+}
+
 // ========== Party Size Picker ==========
 
 FText UT66LocalizationSubsystem::GetText_SelectPartySize() const
@@ -1195,6 +1200,11 @@ FText UT66LocalizationSubsystem::GetText_Duo() const
 FText UT66LocalizationSubsystem::GetText_Trio() const
 {
 	return NSLOCTEXT("T66.PartySize", "Trio", "Trio");
+}
+
+FText UT66LocalizationSubsystem::GetText_Quad() const
+{
+	return NSLOCTEXT("T66.PartySize", "Quad", "Quad");
 }
 
 FText UT66LocalizationSubsystem::GetText_Coop() const

@@ -11,6 +11,7 @@ class UT66UIManager;
 class UT66ScreenBase;
 class UT66GameplayHUDWidget;
 class UT66LabOverlayWidget;
+class UT66LoadPreviewOverlayWidget;
 class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
 class UT66CircusOverlayWidget;
@@ -61,6 +62,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TMap<ET66ScreenType, TSubclassOf<UT66ScreenBase>> ScreenClasses;
 
+	/** Optional theme-specific screen overrides used when the Dota theme is active. */
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TMap<ET66ScreenType, TSubclassOf<UT66ScreenBase>> DotaScreenClasses;
+
 	/** The initial screen to show (usually MainMenu) */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	ET66ScreenType InitialScreen = ET66ScreenType::MainMenu;
@@ -100,6 +105,9 @@ public:
 	/** Rebuild gameplay mouse mappings from the current InputSettings action bindings. */
 	UFUNCTION(BlueprintCallable, Category = "Game|Input")
 	void RefreshGameplayMouseMappings();
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void RebuildThemeAwareUI();
 
 	bool IsHeroOneScopedUltActive() const { return bHeroOneScopedUltActive; }
 	bool IsHeroOneScopeViewEnabled() const { return bHeroOneScopeViewEnabled; }
@@ -238,6 +246,16 @@ protected:
 	void HandleQuickReviveStateChanged();
 
 private:
+	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
+	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
+	TSubclassOf<UT66GamblerOverlayWidget> ResolveGamblerOverlayClass() const;
+	TSubclassOf<UT66CircusOverlayWidget> ResolveCircusOverlayClass() const;
+	TSubclassOf<UT66VendorOverlayWidget> ResolveVendorOverlayClass() const;
+	TSubclassOf<UT66CollectorOverlayWidget> ResolveCollectorOverlayClass() const;
+	TSubclassOf<UT66CowardicePromptWidget> ResolveCowardicePromptClass() const;
+	TSubclassOf<UT66LoadPreviewOverlayWidget> ResolveLoadPreviewOverlayClass() const;
+	TSubclassOf<UT66IdolAltarOverlayWidget> ResolveIdolAltarOverlayClass() const;
+
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
 	UPROPERTY()
 	TObjectPtr<UT66GameplayHUDWidget> GameplayHUDWidget;
@@ -322,6 +340,30 @@ private:
 	TObjectPtr<UInputAction> IA_ToggleMouseLock = nullptr;
 	UPROPERTY(Transient)
 	TObjectPtr<UInputMappingContext> IMC_GameplayMouse = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66GameplayHUDWidget> DotaGameplayHUDClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66GamblerOverlayWidget> DotaGamblerOverlayClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66CircusOverlayWidget> DotaCircusOverlayClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66VendorOverlayWidget> DotaVendorOverlayClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66CollectorOverlayWidget> DotaCollectorOverlayClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66CowardicePromptWidget> DotaCowardicePromptClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66LoadPreviewOverlayWidget> DotaLoadPreviewOverlayClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
+	TSubclassOf<UT66IdolAltarOverlayWidget> DotaIdolAltarOverlayClass;
 
 	TWeakObjectPtr<AT66EnemyBase> LockedEnemy;
 

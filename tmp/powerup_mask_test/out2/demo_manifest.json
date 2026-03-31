@@ -1,0 +1,73 @@
+{
+  "base_file": "tmp\\powerup_mask_test\\base.png",
+  "mask_file": "tmp\\powerup_mask_test\\mask.png",
+  "size": {
+    "width": 96,
+    "height": 128
+  },
+  "unlock_order": [
+    "left_leg",
+    "right_leg",
+    "torso",
+    "left_arm",
+    "right_arm",
+    "head"
+  ],
+  "parts": [
+    {
+      "name": "left_leg",
+      "unlock_index": 0,
+      "mask_color": "#FF00FF",
+      "layer_file": "demo_left_leg.png",
+      "cover_file": "demo_left_leg_cover.png",
+      "mask_file": "demo_left_leg_mask.png"
+    },
+    {
+      "name": "right_leg",
+      "unlock_index": 1,
+      "mask_color": "#00FFFF",
+      "layer_file": "demo_right_leg.png",
+      "cover_file": "demo_right_leg_cover.png",
+      "mask_file": "demo_right_leg_mask.png"
+    },
+    {
+      "name": "torso",
+      "unlock_index": 2,
+      "mask_color": "#00FF00",
+      "layer_file": "demo_torso.png",
+      "cover_file": "demo_torso_cover.png",
+      "mask_file": "demo_torso_mask.png"
+    },
+    {
+      "name": "left_arm",
+      "unlock_index": 3,
+      "mask_color": "#0000FF",
+      "layer_file": "demo_left_arm.png",
+      "cover_file": "demo_left_arm_cover.png",
+      "mask_file": "demo_left_arm_mask.png"
+    },
+    {
+      "name": "right_arm",
+      "unlock_index": 4,
+      "mask_color": "#FFFF00",
+      "layer_file": "demo_right_arm.png",
+      "cover_file": "demo_right_arm_cover.png",
+      "mask_file": "demo_right_arm_mask.png"
+    },
+    {
+      "name": "head",
+      "unlock_index": 5,
+      "mask_color": "#FF0000",
+      "layer_file": "demo_head.png",
+      "cover_file": "demo_head_cover.png",
+      "mask_file": "demo_head_mask.png"
+    }
+  ],
+  "locked_file": "demo_locked.png",
+  "coverage": {
+    "base_alpha_pixels": 3730,
+    "matched_base_pixels": 3730,
+    "matched_mask_pixels": 3730,
+    "base_coverage_percent": 100.0
+  }
+}

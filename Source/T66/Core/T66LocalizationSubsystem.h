@@ -435,6 +435,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Leaderboard")
 	FText GetText_TrioRuns() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Leaderboard")
+	FText GetText_QuadRuns() const;
 	
 	// Party Size Picker
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
@@ -448,6 +451,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
 	FText GetText_Trio() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
+	FText GetText_Quad() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|PartySizePicker")
 	FText GetText_Coop() const;

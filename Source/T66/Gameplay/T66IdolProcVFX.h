@@ -62,9 +62,11 @@ struct FT66IdolVFXLayerAnimState
 	FVector BaseScale = FVector::OneVector;
 	FVector WaveAmplitude = FVector::ZeroVector;
 	FVector ScaleAmplitude = FVector::ZeroVector;
+	FVector TravelOffset = FVector::ZeroVector;
 	float RotationSpeed = 0.f;
 	float Phase = 0.f;
 	float AgeOffset = 0.f;
+	float TravelAlphaExponent = 1.f;
 };
 
 UCLASS(NotBlueprintable)
@@ -101,6 +103,13 @@ private:
 		const FT66IdolVFXLayerMaterial& MaterialParams,
 		const FT66IdolVFXLayerAnimState& AnimTemplate,
 		int32 SortPriority);
+	void AddMeshLayer(
+		const FName& LayerName,
+		UStaticMesh* MeshAsset,
+		const FVector& RelativeLocation,
+		const FRotator& RelativeRotation,
+		const FVector& RelativeScale,
+		const FT66IdolVFXLayerAnimState& AnimTemplate);
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> SceneRoot;

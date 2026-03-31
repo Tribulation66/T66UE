@@ -17,6 +17,7 @@
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/PackageName.h"
 
 namespace
 {
@@ -121,22 +122,33 @@ void UT66GameInstance::Init()
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
 
-	// Preload all main-menu + Party Picker textures so they are often ready before BuildSlateUI's
+	// Preload the main-menu textures so they are often ready before BuildSlateUI's
 	// EnsureTexturesLoadedSync fallback fires. If these finish in time, the sync path becomes a no-op.
 	if (UT66UITexturePoolSubsystem* TexPool = GetSubsystem<UT66UITexturePoolSubsystem>())
 	{
 		const TSoftObjectPtr<UTexture2D> MMRed(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
+		const TSoftObjectPtr<UTexture2D> SkyBg(FSoftObjectPath(TEXT("/Game/UI/MainMenu/sky_bg.sky_bg")));
+		const TSoftObjectPtr<UTexture2D> FireMoon(FSoftObjectPath(TEXT("/Game/UI/MainMenu/fire_moon.fire_moon")));
+		const TSoftObjectPtr<UTexture2D> PyramidChad(FSoftObjectPath(TEXT("/Game/UI/MainMenu/pyramid_chad.pyramid_chad")));
 		const TSoftObjectPtr<UTexture2D> LBGlobal(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Global.T_LB_Global")));
 		const TSoftObjectPtr<UTexture2D> LBFriends(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Friends.T_LB_Friends")));
 		const TSoftObjectPtr<UTexture2D> LBStreamers(FSoftObjectPath(TEXT("/Game/UI/Leaderboard/T_LB_Streamers.T_LB_Streamers")));
-		const TSoftObjectPtr<UTexture2D> SoloDark(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/SoloDark.SoloDark")));
-		const TSoftObjectPtr<UTexture2D> CoopDark(FSoftObjectPath(TEXT("/Game/UI/PartyPicker/CoopDark.CoopDark")));
 		TexPool->RequestTexture(MMRed, this, FName(TEXT("PreloadMMRed")), [](UTexture2D*) {});
+		if (FPackageName::DoesPackageExist(TEXT("/Game/UI/MainMenu/sky_bg")))
+		{
+			TexPool->RequestTexture(SkyBg, this, FName(TEXT("PreloadSkyBg")), [](UTexture2D*) {});
+		}
+		if (FPackageName::DoesPackageExist(TEXT("/Game/UI/MainMenu/fire_moon")))
+		{
+			TexPool->RequestTexture(FireMoon, this, FName(TEXT("PreloadFireMoon")), [](UTexture2D*) {});
+		}
+		if (FPackageName::DoesPackageExist(TEXT("/Game/UI/MainMenu/pyramid_chad")))
+		{
+			TexPool->RequestTexture(PyramidChad, this, FName(TEXT("PreloadPyramidChad")), [](UTexture2D*) {});
+		}
 		TexPool->RequestTexture(LBGlobal, this, FName(TEXT("PreloadLBGlobal")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBFriends, this, FName(TEXT("PreloadLBFriends")), [](UTexture2D*) {});
 		TexPool->RequestTexture(LBStreamers, this, FName(TEXT("PreloadLBStreamers")), [](UTexture2D*) {});
-		TexPool->RequestTexture(SoloDark, this, FName(TEXT("PreloadSoloDark")), [](UTexture2D*) {});
-		TexPool->RequestTexture(CoopDark, this, FName(TEXT("PreloadCoopDark")), [](UTexture2D*) {});
 	}
 }
 

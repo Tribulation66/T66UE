@@ -67,6 +67,7 @@
 #include "Engine/StreamableManager.h"
 #include "Engine/Texture.h"
 #include "Kismet/GameplayStatics.h"
+#include "HAL/IConsoleManager.h"
 #include "TimerManager.h"
 #include "GameFramework/PlayerStart.h"
 #include "Engine/DirectionalLight.h"
@@ -87,6 +88,7 @@
 #include "Engine/PostProcessVolume.h"
 #include "Engine/TextureCube.h"
 #include "Engine/Texture2D.h"
+#include "Engine/Engine.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
 #if WITH_EDITORONLY_DATA
@@ -249,6 +251,436 @@ namespace
 
 		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
 		return MapName.Contains(TEXT("Tutorial"));
+	}
+
+	static const FName T66_CombatIterationEnemyTag(TEXT("T66.Dev.CombatIterationEnemy"));
+	static TAutoConsoleVariable<int32> CVarT66DevCombatIterationEquipStageTestIdol(
+		TEXT("T66.Dev.CombatIterationEquipStageTestIdol"),
+		1,
+		TEXT("PIE-only combat iteration helper. When enabled, equips one deterministic idol for the current VFX stage after clearing the startup loadout so idol VFX stages can be tested in isolation."),
+		ECVF_Default);
+	static TAutoConsoleVariable<int32> CVarT66DevCombatIterationStageTestIdolIndex(
+		TEXT("T66.Dev.CombatIterationStageTestIdolIndex"),
+		13,
+		TEXT("PIE-only combat iteration helper. 1..24 selects the deterministic idol equipped in slot 0 for isolated VFX tests. Default 13 = Idol_Fire."),
+		ECVF_Default);
+	static int32 T66_CountEquippedEntries(const TArray<FName>& Entries)
+	{
+		int32 Count = 0;
+		for (const FName Entry : Entries)
+		{
+			if (!Entry.IsNone())
+			{
+				++Count;
+			}
+		}
+		return Count;
+	}
+
+	static const TArray<FName>& T66_GetCombatIterationOrderedIdolIDs()
+	{
+		return UT66IdolManagerSubsystem::GetAllIdolIDs();
+	}
+
+	static int32 T66_GetCombatIterationStageTestIdolIndex()
+	{
+		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
+		if (OrderedIdols.Num() <= 0)
+		{
+			return INDEX_NONE;
+		}
+
+		const int32 RawIndex = CVarT66DevCombatIterationStageTestIdolIndex.GetValueOnGameThread();
+		return FMath::Clamp(RawIndex, 1, OrderedIdols.Num());
+	}
+
+	static FName T66_GetCombatIterationStageTestIdolID()
+	{
+		if (CVarT66DevCombatIterationEquipStageTestIdol.GetValueOnGameThread() == 0)
+		{
+			return NAME_None;
+		}
+
+		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
+		const int32 IdolIndex = T66_GetCombatIterationStageTestIdolIndex();
+		return OrderedIdols.IsValidIndex(IdolIndex - 1) ? OrderedIdols[IdolIndex - 1] : NAME_None;
+	}
+
+	static FName T66_GetCombatIterationStageTestHeroID()
+	{
+		return FName(TEXT("Hero_1"));
+	}
+
+	static const TCHAR* T66_GetCombatIterationRarityName(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return TEXT("Black");
+		case ET66ItemRarity::Red:    return TEXT("Red");
+		case ET66ItemRarity::Yellow: return TEXT("Yellow");
+		case ET66ItemRarity::White:  return TEXT("White");
+		default:                     return TEXT("Unknown");
+		}
+	}
+
+	static UWorld* T66_GetCombatIterationConsoleWorld()
+	{
+		if (!GEngine)
+		{
+			return nullptr;
+		}
+
+		if (UWorld* PlayWorld = GEngine->GetCurrentPlayWorld())
+		{
+			return PlayWorld;
+		}
+
+		if (GEngine->GameViewport)
+		{
+			return GEngine->GameViewport->GetWorld();
+		}
+
+		return nullptr;
+	}
+
+	static void T66_LogCombatIterationIdolOrder()
+	{
+		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
+		UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Idol alias order:"));
+		for (int32 Index = 0; Index < OrderedIdols.Num(); ++Index)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration]   idol%d = %s"), Index + 1, *OrderedIdols[Index].ToString());
+		}
+	}
+
+	static void T66_ApplyCombatIterationStageTestIdolSelection(UWorld* World, const int32 IdolIndex)
+	{
+		if (!World)
+		{
+			return;
+		}
+
+		UGameInstance* GI = World->GetGameInstance();
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		if (!RunState)
+		{
+			return;
+		}
+
+		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
+		if (!OrderedIdols.IsValidIndex(IdolIndex - 1))
+		{
+			return;
+		}
+
+		const FName IdolID = OrderedIdols[IdolIndex - 1];
+		RunState->ClearEquippedIdols();
+		const bool bEquipped = RunState->EquipIdolInSlot(0, IdolID);
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[DEV][CombatIteration] Applied test idol selection immediately: Index=%d Idol=%s Slot=0 Equipped=%d World=%s"),
+			IdolIndex,
+			*IdolID.ToString(),
+			bEquipped ? 1 : 0,
+			*World->GetMapName());
+	}
+
+	static void T66_SetCombatIterationStageTestIdolIndex(const int32 RequestedIndex, UWorld* World)
+	{
+		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
+		if (OrderedIdols.Num() <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DEV][CombatIteration] No idols are registered for selection."));
+			return;
+		}
+
+		const int32 ClampedIndex = FMath::Clamp(RequestedIndex, 1, OrderedIdols.Num());
+		CVarT66DevCombatIterationStageTestIdolIndex->Set(ClampedIndex, ECVF_SetByConsole);
+		CVarT66DevCombatIterationEquipStageTestIdol->Set(1, ECVF_SetByConsole);
+
+		const FName IdolID = OrderedIdols[ClampedIndex - 1];
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[DEV][CombatIteration] Selected test idol alias: idol%d -> %s (Requested=%d, NextPIE=enabled)"),
+			ClampedIndex,
+			*IdolID.ToString(),
+			RequestedIndex);
+
+		UWorld* EffectiveWorld = World ? World : T66_GetCombatIterationConsoleWorld();
+		if (EffectiveWorld)
+		{
+			T66_ApplyCombatIterationStageTestIdolSelection(EffectiveWorld, ClampedIndex);
+		}
+	}
+
+	static void T66_SelectCombatIterationStageTestIdolByArgs(const TArray<FString>& Args, UWorld* World)
+	{
+		if (Args.Num() <= 0)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Usage: idol <1-24>"));
+			T66_LogCombatIterationIdolOrder();
+			return;
+		}
+
+		const int32 RequestedIndex = FCString::Atoi(*Args[0]);
+		if (RequestedIndex <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DEV][CombatIteration] Invalid idol index '%s'. Usage: idol <1-24>"), *Args[0]);
+			return;
+		}
+
+		T66_SetCombatIterationStageTestIdolIndex(RequestedIndex, World);
+	}
+
+	static void T66_ListCombatIterationIdolAliases(const TArray<FString>& Args, UWorld* World)
+	{
+		(void)Args;
+		(void)World;
+		T66_LogCombatIterationIdolOrder();
+	}
+
+	static FAutoConsoleCommandWithWorldAndArgs T66CombatIterationIdolCommand(
+		TEXT("idol"),
+		TEXT("Select the combat-iteration test idol by 1-based index. Example: idol 13"),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_SelectCombatIterationStageTestIdolByArgs));
+
+	static FAutoConsoleCommandWithWorldAndArgs T66CombatIterationIdolListCommand(
+		TEXT("idollist"),
+		TEXT("Log the 1..24 idol alias order used by idol1..idol24."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_ListCombatIterationIdolAliases));
+
+#define T66_REGISTER_IDOL_ALIAS(N) \
+	static FAutoConsoleCommandWithWorldAndArgs T66CombatIterationIdolAlias##N( \
+		TEXT("idol" #N), \
+		TEXT("Select combat-iteration test idol #" #N "."), \
+		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World) \
+		{ \
+			(void)Args; \
+			T66_SetCombatIterationStageTestIdolIndex(N, World); \
+		}) \
+	);
+
+	T66_REGISTER_IDOL_ALIAS(1)
+	T66_REGISTER_IDOL_ALIAS(2)
+	T66_REGISTER_IDOL_ALIAS(3)
+	T66_REGISTER_IDOL_ALIAS(4)
+	T66_REGISTER_IDOL_ALIAS(5)
+	T66_REGISTER_IDOL_ALIAS(6)
+	T66_REGISTER_IDOL_ALIAS(7)
+	T66_REGISTER_IDOL_ALIAS(8)
+	T66_REGISTER_IDOL_ALIAS(9)
+	T66_REGISTER_IDOL_ALIAS(10)
+	T66_REGISTER_IDOL_ALIAS(11)
+	T66_REGISTER_IDOL_ALIAS(12)
+	T66_REGISTER_IDOL_ALIAS(13)
+	T66_REGISTER_IDOL_ALIAS(14)
+	T66_REGISTER_IDOL_ALIAS(15)
+	T66_REGISTER_IDOL_ALIAS(16)
+	T66_REGISTER_IDOL_ALIAS(17)
+	T66_REGISTER_IDOL_ALIAS(18)
+	T66_REGISTER_IDOL_ALIAS(19)
+	T66_REGISTER_IDOL_ALIAS(20)
+	T66_REGISTER_IDOL_ALIAS(21)
+	T66_REGISTER_IDOL_ALIAS(22)
+	T66_REGISTER_IDOL_ALIAS(23)
+	T66_REGISTER_IDOL_ALIAS(24)
+
+#undef T66_REGISTER_IDOL_ALIAS
+
+	static bool T66_ShouldApplyCombatIterationSetup(const UWorld* World, const UT66GameInstance* T66GI, const UT66RunStateSubsystem* RunState)
+	{
+#if WITH_EDITOR
+		if (!World || World->WorldType != EWorldType::PIE)
+		{
+			return false;
+		}
+#else
+		return false;
+#endif
+
+		if (!RunState)
+		{
+			return false;
+		}
+
+		if (T66GI && T66GI->bLoadAsPreview)
+		{
+			return false;
+		}
+
+		const bool bIsLab = T66GI && T66GI->bIsLabLevel;
+		return bIsLab || RunState->GetCurrentStage() == 1;
+	}
+
+	static void T66_ResetCombatIterationLoadout(UT66RunStateSubsystem* RunState)
+	{
+		if (!RunState)
+		{
+			return;
+		}
+
+		const int32 RemovedItemCount = RunState->GetInventorySlots().Num();
+		const int32 RemovedIdolCount = T66_CountEquippedEntries(RunState->GetEquippedIdols());
+		RunState->ClearInventory();
+		RunState->ClearEquippedIdols();
+		RunState->SetInStageCatchUp(false);
+		UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Cleared startup loadout for isolated VFX tests. RemovedItems=%d RemovedIdols=%d"), RemovedItemCount, RemovedIdolCount);
+	}
+
+	static void T66_SeedCombatIterationHeroSelection(UT66GameInstance* T66GI)
+	{
+		if (!T66GI)
+		{
+			return;
+		}
+
+		const FName TestHeroID = T66_GetCombatIterationStageTestHeroID();
+		const FName DefaultSkinID(TEXT("Default"));
+
+		T66GI->SelectedHeroID = TestHeroID;
+		T66GI->SelectedHeroBodyType = ET66BodyType::TypeA;
+		T66GI->SelectedHeroSkinID = DefaultSkinID;
+
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[DEV][CombatIteration] Forced hero selection for isolated VFX tests: Hero=%s BodyType=%s Skin=%s"),
+			*TestHeroID.ToString(),
+			TEXT("TypeA"),
+			*DefaultSkinID.ToString());
+	}
+
+	static void T66_SeedCombatIterationStageTestIdol(UT66RunStateSubsystem* RunState)
+	{
+		if (!RunState)
+		{
+			return;
+		}
+
+		const FName TestIdolID = T66_GetCombatIterationStageTestIdolID();
+		if (TestIdolID.IsNone())
+		{
+			UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Stage test idol disabled. Idol loadout remains empty."));
+			return;
+		}
+
+		const bool bEquipped = RunState->EquipIdolInSlot(0, TestIdolID);
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[DEV][CombatIteration] Equipped stage test idol: Idol=%s Slot=0 Equipped=%d Rarity=%s"),
+			*TestIdolID.ToString(),
+			bEquipped ? 1 : 0,
+			T66_GetCombatIterationRarityName(RunState->GetEquippedIdolRarityInSlot(0)));
+	}
+
+	static void T66_SpawnCombatIterationEnemies(UWorld* World, const APawn* Pawn)
+	{
+		if (!World || !Pawn)
+		{
+			return;
+		}
+
+		TArray<AActor*> ExistingTaggedEnemies;
+		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+		{
+			if (AT66EnemyBase* ExistingEnemy = *It)
+			{
+				if (ExistingEnemy->Tags.Contains(T66_CombatIterationEnemyTag))
+				{
+					ExistingTaggedEnemies.Add(ExistingEnemy);
+				}
+			}
+		}
+		for (AActor* ExistingEnemy : ExistingTaggedEnemies)
+		{
+			if (ExistingEnemy)
+			{
+				ExistingEnemy->Destroy();
+			}
+		}
+
+		FVector Forward = Pawn->GetActorForwardVector();
+		Forward.Z = 0.f;
+		if (!Forward.Normalize())
+		{
+			Forward = FVector::ForwardVector;
+		}
+
+		FVector Right = Pawn->GetActorRightVector();
+		Right.Z = 0.f;
+		if (!Right.Normalize())
+		{
+			Right = FVector::CrossProduct(FVector::UpVector, Forward).GetSafeNormal();
+		}
+
+		const FVector PawnLocation = Pawn->GetActorLocation();
+		const FVector BaseSpawnLocation = PawnLocation + Forward * 475.f;
+		const float LateralSpacing = 170.f;
+		const float EnemyHeightOffset = 90.f;
+		const FRotator EnemyRotation = (-Forward).Rotation();
+
+		for (int32 EnemyIndex = 0; EnemyIndex < 3; ++EnemyIndex)
+		{
+			const float SideOffset = static_cast<float>(EnemyIndex - 1) * LateralSpacing;
+			FVector SpawnLocation = BaseSpawnLocation + Right * SideOffset;
+
+			FHitResult GroundHit;
+			const FVector TraceStart = SpawnLocation + FVector(0.f, 0.f, 600.f);
+			const FVector TraceEnd = SpawnLocation - FVector(0.f, 0.f, 1400.f);
+			if (World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic))
+			{
+				SpawnLocation = GroundHit.ImpactPoint + FVector(0.f, 0.f, EnemyHeightOffset);
+			}
+			else
+			{
+				SpawnLocation.Z = PawnLocation.Z;
+			}
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			if (AT66EnemyBase* SpawnedEnemy = World->SpawnActor<AT66EnemyBase>(AT66EnemyBase::StaticClass(), SpawnLocation, EnemyRotation, SpawnParams))
+			{
+				SpawnedEnemy->MaxHP = 999999;
+				SpawnedEnemy->CurrentHP = SpawnedEnemy->MaxHP;
+				SpawnedEnemy->bDropsLoot = false;
+				SpawnedEnemy->XPValue = 0;
+				SpawnedEnemy->PointValue = 0;
+				SpawnedEnemy->Tags.AddUnique(T66_CombatIterationEnemyTag);
+				SpawnedEnemy->AutoAttackKnockbackSpeed = 0.f;
+				if (UCharacterMovementComponent* Movement = SpawnedEnemy->GetCharacterMovement())
+				{
+					Movement->DisableMovement();
+					Movement->StopMovementImmediately();
+				}
+				SpawnedEnemy->UpdateHealthBar();
+			}
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Spawned 3 stationary invulnerable enemy targets in front of the hero start."));
+	}
+
+	static void T66_ApplyCombatIterationSetup(UWorld* World, APawn* Pawn, UT66RunStateSubsystem* RunState, UT66GameInstance* T66GI)
+	{
+		if (!T66_ShouldApplyCombatIterationSetup(World, T66GI, RunState) || !Pawn)
+		{
+			return;
+		}
+
+		T66_SeedCombatIterationHeroSelection(T66GI);
+		T66_ResetCombatIterationLoadout(RunState);
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[DEV][CombatIteration] Active hero for isolated VFX tests: SelectedHero=%s InventorySlots=%d EquippedIdols=%d PreviewMode=%d"),
+			(T66GI && !T66GI->SelectedHeroID.IsNone()) ? *T66GI->SelectedHeroID.ToString() : TEXT("None"),
+			RunState ? RunState->GetInventorySlots().Num() : -1,
+			RunState ? T66_CountEquippedEntries(RunState->GetEquippedIdols()) : -1,
+			(T66GI && T66GI->bLoadAsPreview) ? 1 : 0);
+		T66_SeedCombatIterationStageTestIdol(RunState);
+		T66_SpawnCombatIterationEnemies(World, Pawn);
 	}
 }
 
@@ -590,6 +1022,15 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 			}
 		}
 
+		if (APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr)
+		{
+			if (APawn* Pawn = PC->GetPawn())
+			{
+				UGameInstance* GI = GetGameInstance();
+				T66_ApplyCombatIterationSetup(World, Pawn, GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr, GetT66GameInstance());
+			}
+		}
+
 		ScheduleLightingRefresh();
 		ScheduleOverlayHide();
 		UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
@@ -605,6 +1046,15 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	//   Tick 4: Spawn boss + boss gate
 	if (World)
 	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			if (APawn* Pawn = PC->GetPawn())
+			{
+				UGameInstance* GI = GetGameInstance();
+				T66_ApplyCombatIterationSetup(World, Pawn, GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr, GetT66GameInstance());
+			}
+		}
+
 		// --- Tick 1: Preload character visuals ---
 		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
@@ -1209,6 +1659,20 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 	}
 
 	MaintainPlayerTerrainSafety();
+
+	if (IsLabLevel())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this, WeakPlayer = TWeakObjectPtr<AController>(NewPlayer)]()
+			{
+				AController* Player = WeakPlayer.Get();
+				APawn* SpawnedPawn = Player ? Player->GetPawn() : nullptr;
+				UGameInstance* GIForSetup = GetGameInstance();
+				T66_ApplyCombatIterationSetup(GetWorld(), SpawnedPawn, GIForSetup ? GIForSetup->GetSubsystem<UT66RunStateSubsystem>() : nullptr, GetT66GameInstance());
+			}));
+		}
+	}
 }
 
 void AT66GameMode::SpawnBossGateIfNeeded()
@@ -5743,16 +6207,24 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 		if (UT66GameInstance* GI = GetT66GameInstance())
 		{
+			if (T66_ShouldApplyCombatIterationSetup(GetWorld(), GI, GI->GetSubsystem<UT66RunStateSubsystem>()))
+			{
+				T66_SeedCombatIterationHeroSelection(GI);
+			}
+
 			FHeroData HeroData;
-			if (GI->GetSelectedHeroData(HeroData))
+			const FName EffectiveHeroID = GI->SelectedHeroID;
+
+			if (!EffectiveHeroID.IsNone() && GI->GetHeroData(EffectiveHeroID, HeroData))
 			{
 				// Pass hero data, body type, and skin from Game Instance
 				ET66BodyType SelectedBodyType = GI->SelectedHeroBodyType;
 				FName SelectedSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
 				Hero->InitializeHero(HeroData, SelectedBodyType, SelectedSkinID, false);
 
-				UE_LOG(LogTemp, Log, TEXT("Spawned hero: %s, BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
+				UE_LOG(LogTemp, Log, TEXT("Spawned hero: %s (%s), BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
 					*HeroData.DisplayName.ToString(),
+					*EffectiveHeroID.ToString(),
 					SelectedBodyType == ET66BodyType::TypeA ? TEXT("TypeA") : TEXT("TypeB"),
 					*SelectedSkinID.ToString(),
 					HeroData.PlaceholderColor.R,

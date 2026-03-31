@@ -110,6 +110,7 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 	{
 		CurrentScreen = NewScreen;
 		CurrentScreenType = ScreenType;
+		CurrentScreen->bIsModal = false;
 		// Force Hero Selection to rebuild so co-op (Lab + Back to Lobby only) vs solo (difficulty + Enter) layout is correct on first paint. Otherwise cached tree from a previous show can display.
 		if (ScreenType == ET66ScreenType::HeroSelection)
 		{
@@ -193,6 +194,7 @@ void UT66UIManager::GoBack()
 		{
 			CurrentScreen = NewScreen;
 			CurrentScreenType = PreviousScreen;
+			CurrentScreen->bIsModal = false;
 			CurrentScreen->AddToViewport(0);
 			CurrentScreen->OnScreenActivated();
 			UpdateFrontendTopBar();
@@ -267,6 +269,9 @@ bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 	{
 	case ET66ScreenType::MainMenu:
 	case ET66ScreenType::SaveSlots:
+	case ET66ScreenType::Settings:
+	case ET66ScreenType::LanguageSelect:
+	case ET66ScreenType::AccountStatus:
 	case ET66ScreenType::PowerUp:
 	case ET66ScreenType::Achievements:
 	case ET66ScreenType::Unlocks:

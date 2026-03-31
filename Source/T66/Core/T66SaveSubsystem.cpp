@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66SaveSubsystem.h"
+#include "Core/T66PartySubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SaveMigration.h"
 #include "Kismet/GameplayStatics.h"
@@ -123,6 +124,40 @@ UT66RunSaveGame* UT66SaveSubsystem::LoadFromSlot(int32 SlotIndex)
 	if (RunSave)
 	{
 		RunSave->HeroID = T66MigrateHeroIDFromSave(RunSave->HeroID);
+
+		FString LocalPlayerId = TEXT("local_player");
+		FString LocalDisplayName = TEXT("You");
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+			{
+				if (!PartySubsystem->GetLocalPlayerId().IsEmpty())
+				{
+					LocalPlayerId = PartySubsystem->GetLocalPlayerId();
+				}
+				if (!PartySubsystem->GetLocalDisplayName().IsEmpty())
+				{
+					LocalDisplayName = PartySubsystem->GetLocalDisplayName();
+				}
+			}
+		}
+
+		if (RunSave->OwnerPlayerId.IsEmpty())
+		{
+			RunSave->OwnerPlayerId = LocalPlayerId;
+		}
+		if (RunSave->OwnerDisplayName.IsEmpty())
+		{
+			RunSave->OwnerDisplayName = LocalDisplayName;
+		}
+		if (!RunSave->OwnerPlayerId.IsEmpty() && !RunSave->PartyMemberIds.Contains(RunSave->OwnerPlayerId))
+		{
+			RunSave->PartyMemberIds.Insert(RunSave->OwnerPlayerId, 0);
+		}
+		if (!RunSave->OwnerDisplayName.IsEmpty() && !RunSave->PartyMemberDisplayNames.Contains(RunSave->OwnerDisplayName))
+		{
+			RunSave->PartyMemberDisplayNames.Insert(RunSave->OwnerDisplayName, 0);
+		}
 	}
 	return RunSave;
 }

@@ -1,0 +1,37 @@
+#include "/Engine/Public/Platform.ush"
+
+struct UB0_S0
+{
+    int UB0_S0_M0;
+    uint3 UB0_S0_M1;
+};
+
+cbuffer UBT0 : register(b0)
+{
+    UB0_S0 UB0_M0 : packoffset(c0);
+};
+
+RWBuffer<float> SIMG0 : register(u0);
+
+static uint3 gl_GlobalInvocationID;
+struct SPIRV_Cross_Input
+{
+    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;
+};
+
+void comp_main()
+{
+    uint _29 = 4u * gl_GlobalInvocationID.x;
+    uint _33 = uint(UB0_M0.UB0_S0_M0 * 512);
+    SIMG0[_29 + _33] = 0.0f;
+    SIMG0[(_29 + 1u) + _33] = 0.0f;
+    SIMG0[(_29 + 2u) + _33] = 0.0f;
+    SIMG0[(_29 + 3u) + _33] = 0.0f;
+}
+
+[numthreads(128, 1, 1)]
+void main(SPIRV_Cross_Input stage_input)
+{
+    gl_GlobalInvocationID = stage_input.gl_GlobalInvocationID;
+    comp_main();
+}

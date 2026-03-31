@@ -1,0 +1,74 @@
+#include "/Engine/Private/Common.ush"
+
+#include "ZibraShaderCommon.ush"
+#include "ZibraVDBRenderingUtils.ush"
+
+int SpatialBlockCount;
+int3 BlockGridSize;
+
+int DensityChannelMask;
+int TemperatureChannelMask;
+int FlamesChannelMask;
+
+ByteAddressBuffer BlockInfo : register(t1);
+
+RWByteAddressBuffer BlockBuffer : register(u0);
+RWTexture3D<uint> BlockIndexTexture : register(u1);
+
+#define BINFO_POS 0
+#define BINFO_OFFSET 1
+#define BINFO_MASK 2
+#define BINFO_COUNT 3
+
+[numthreads(128, 1, 1)]
+void MainCS(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    uint blockID = id.x;
+
+    if (blockID >= SpatialBlockCount)
+    {
+        return;
+    }
+
+    int packedBlockPos = BlockInfo.Load((BINFO_COUNT * blockID + BINFO_POS) * sizeof(int));
+    uint3 blockXYZ = UnpackBlockXYZ(packedBlockPos);
+    int channelBlockOffset = BlockInfo.Load((BINFO_COUNT * blockID + BINFO_OFFSET) * sizeof(int));
+    int channelMask = BlockInfo.Load((BINFO_COUNT * blockID + BINFO_MASK) * sizeof(int));
+
+    int densityIndex = -1;
+    int temperatureIndex = -1;
+    int flamesIndex = -1;
+
+    if (channelBlockOffset != -1)
+    {
+        for (uint mask = 1; mask <= (1 << 7); mask = (mask << 1))
+        {
+            if (channelMask & mask)
+            {
+                if (mask == DensityChannelMask)
+                {
+                    densityIndex = channelBlockOffset;
+                }
+                if (mask == TemperatureChannelMask)
+                {
+                    temperatureIndex = channelBlockOffset;
+                }
+                if (mask == FlamesChannelMask)
+                {
+                    flamesIndex = channelBlockOffset;
+                }
+                ++channelBlockOffset;
+            }
+        }
+    }
+    
+    if (densityIndex > -1 || flamesIndex > -1)
+    {
+        BlockIndexTexture[blockXYZ] = blockID;
+
+        BlockBuffer.Store((blockID * 4 + 0) * sizeof(int), densityIndex);
+        BlockBuffer.Store((blockID * 4 + 1) * sizeof(int), temperatureIndex);
+        BlockBuffer.Store((blockID * 4 + 2) * sizeof(int), flamesIndex);
+        BlockBuffer.Store((blockID * 4 + 3) * sizeof(int), packedBlockPos);
+    }
+}

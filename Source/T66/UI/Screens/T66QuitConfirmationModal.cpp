@@ -3,7 +3,6 @@
 #include "UI/Screens/T66QuitConfirmationModal.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -36,7 +35,7 @@ TSharedRef<SWidget> UT66QuitConfirmationModal::BuildSlateUI()
 	FText QuitText = Loc ? Loc->GetText_YesQuit() : NSLOCTEXT("T66.QuitConfirm", "Quit", "YES, I WANT TO QUIT");
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FT66DotaTheme::Scrim())
+		.BorderBackgroundColor(FT66Style::Scrim())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -99,3 +98,4 @@ FReply UT66QuitConfirmationModal::HandleQuitClicked() { OnQuitClicked(); return 
 
 void UT66QuitConfirmationModal::OnStayClicked() { CloseModal(); }
 void UT66QuitConfirmationModal::OnQuitClicked() { UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false); }
+

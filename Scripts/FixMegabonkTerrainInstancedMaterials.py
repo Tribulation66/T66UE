@@ -4,6 +4,7 @@ LOG = "[FixMegabonkTerrainInstancedMaterials]"
 MATERIAL_PATHS = [
     "/Game/Materials/M_Environment_Unlit",
     "/Game/World/Terrain/Megabonk/MI_MegabonkBlock",
+    "/Game/World/Terrain/Megabonk/MI_MegabonkDirt",
     "/Game/World/Terrain/Megabonk/MI_MegabonkSlope",
 ]
 

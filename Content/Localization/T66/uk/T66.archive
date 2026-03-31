@@ -3,602 +3,6 @@
 	"Namespace": "",
 	"Subnamespaces": [
 		{
-			"Namespace": "DT_Companions",
-			"Children": [
-				{
-					"Source": {
-						"Text": "Aria"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_01_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Blaze"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_02_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Bone"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_03_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Cinder"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_04_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Coral"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_05_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Dawn"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_06_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Echo"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_07_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Ember"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_08_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Fang"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_09_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Frost"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_10_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Hex"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_11_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Ivy"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_12_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Jinx"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_13_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Luna"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_14_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Mercy"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_15_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Nova"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_16_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Nyx"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_17_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Petra"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_18_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Pixel"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_19_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Raven"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_20_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Sage"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_21_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Sera"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_22_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Storm"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_23_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Vex"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Companion_24_DisplayName"
-				}
-			]
-		},
-		{
-			"Namespace": "DT_Heroes",
-			"Children": [
-				{
-					"Source": {
-						"Text": "A battle-worn knight who meets every trial head-on."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_1_Description"
-				},
-				{
-					"Source": {
-						"Text": "A chaos-fueled duelist who wins fights by overwhelming the room."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_12_Description"
-				},
-				{
-					"Source": {
-						"Text": "A cold-eyed wanderer hardened by long roads and worse winters."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_14_Description"
-				},
-				{
-					"Source": {
-						"Text": "A deadpan menace who walks into disaster without blinking."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_13_Description"
-				},
-				{
-					"Source": {
-						"Text": "A disciplined duelist with a steady hand and colder nerve."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_5_Description"
-				},
-				{
-					"Source": {
-						"Text": "A grim scavenger king draped in dust, gold, and bad omens."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_15_Description"
-				},
-				{
-					"Source": {
-						"Text": "A loyal brawler who charges first and doubts later."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_10_Description"
-				},
-				{
-					"Source": {
-						"Text": "A nimble trickster who never stays where danger lands."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_9_Description"
-				},
-				{
-					"Source": {
-						"Text": "A quick-draw outlaw who turns panic into momentum."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_8_Description"
-				},
-				{
-					"Source": {
-						"Text": "A relentless machine built to keep marching through the swarm."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_7_Description"
-				},
-				{
-					"Source": {
-						"Text": "A silent hunter who lets the dark speak for him."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_11_Description"
-				},
-				{
-					"Source": {
-						"Text": "A storm-crowned tyrant who fights like thunder made flesh."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_6_Description"
-				},
-				{
-					"Source": {
-						"Text": "A streetwise bruiser who thrives when the fight turns messy."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_4_Description"
-				},
-				{
-					"Source": {
-						"Text": "A stubborn survivor who drags every doomed run across the line."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_16_Description"
-				},
-				{
-					"Source": {
-						"Text": "A warlord who breaks enemy lines through sheer force."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_3_Description"
-				},
-				{
-					"Source": {
-						"Text": "An old sorcerer whose calm hides terrifying power."
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_2_Description"
-				},
-				{
-					"Source": {
-						"Text": "Arthur"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_1_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Asmon"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_15_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Billy"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_8_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Dog"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_10_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Forsen"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_16_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "George"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_5_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Lu Bu"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_3_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Merlin"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_2_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Mike"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_4_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Moist"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_13_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "North"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_14_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Rabbit"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_9_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Robo"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_7_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Shroud"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_11_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Zeus"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_6_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "xQc"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Hero_12_DisplayName"
-				}
-			]
-		},
-		{
-			"Namespace": "DT_HouseNPCs",
-			"Children": [
-				{
-					"Source": {
-						"Text": "Gambler"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Gambler_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Ouroboros"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Ouroboros_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Saint"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Saint_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Vendor"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Vendor_DisplayName"
-				}
-			]
-		},
-		{
-			"Namespace": "HouseNPCs",
-			"Children": [
-				{
-					"Source": {
-						"Text": "Gambler"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Gambler_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Ouroboros"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Ouroboros_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Saint"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Saint_DisplayName"
-				},
-				{
-					"Source": {
-						"Text": "Vendor"
-					},
-					"Translation": {
-						"Text": ""
-					},
-					"Key": "Vendor_DisplayName"
-				}
-			]
-		},
-		{
 			"Namespace": "T66",
 			"Subnamespaces": [
 				{
@@ -827,6 +231,33 @@
 						},
 						{
 							"Source": {
+								"Text": "ACCOUNT STATUS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "TopBarTitle"
+						},
+						{
+							"Source": {
+								"Text": "ACCOUNT STATUS: BAD"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "BadHeadline"
+						},
+						{
+							"Source": {
+								"Text": "ACCOUNT STATUS: GOOD"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "GoodHeadline"
+						},
+						{
+							"Source": {
 								"Text": "APPEAL"
 							},
 							"Translation": {
@@ -944,12 +375,21 @@
 						},
 						{
 							"Source": {
-								"Text": "Your account is in good standing."
+								"Text": "Your scores do not go to the leaderboard."
 							},
 							"Translation": {
-								"Text": "Ваш обліковий запис в хорошому стані."
+								"Text": ""
 							},
-							"Key": "NotRestrictedBody"
+							"Key": "BadBody"
+						},
+						{
+							"Source": {
+								"Text": "Your scores go to the leaderboard."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "GoodBody"
 						}
 					]
 				},
@@ -958,12 +398,30 @@
 					"Children": [
 						{
 							"Source": {
+								"Text": "A"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "AchievementCoinsFallback"
+						},
+						{
+							"Source": {
 								"Text": "ACHIEVEMENTS"
 							},
 							"Translation": {
 								"Text": "ДОПОМОГИ"
 							},
 							"Key": "Title"
+						},
+						{
+							"Source": {
+								"Text": "Achievement Coins"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "AchievementCoinsBalanceTooltip"
 						},
 						{
 							"Source": {
@@ -994,6 +452,15 @@
 						},
 						{
 							"Source": {
+								"Text": "Boss Hunter {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraBossTitle"
+						},
+						{
+							"Source": {
 								"Text": "Boss Slayer"
 							},
 							"Translation": {
@@ -1009,6 +476,15 @@
 								"Text": "Купити товар з Постачальника."
 							},
 							"Key": "ACH_BLK_009_Desc"
+						},
+						{
+							"Source": {
+								"Text": "Buy {0} items from the vendor."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraVendorDesc"
 						},
 						{
 							"Source": {
@@ -1066,12 +542,48 @@
 						},
 						{
 							"Source": {
+								"Text": "Clear {0} stages with the same companion."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraUnionDesc"
+						},
+						{
+							"Source": {
+								"Text": "Clear {0} stages."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraStageDesc"
+						},
+						{
+							"Source": {
 								"Text": "Collector"
 							},
 							"Translation": {
 								"Text": "Колектор"
 							},
 							"Key": "ACH_BLK_011_Name"
+						},
+						{
+							"Source": {
+								"Text": "Collector {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraItemTitle"
+						},
+						{
+							"Source": {
+								"Text": "Companion Bond {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraUnionTitle"
 						},
 						{
 							"Source": {
@@ -1090,6 +602,15 @@
 								"Text": "Повний підручник."
 							},
 							"Key": "ACH_BLK_005_Desc"
+						},
+						{
+							"Source": {
+								"Text": "Customer {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraVendorTitle"
 						},
 						{
 							"Source": {
@@ -1129,12 +650,75 @@
 						},
 						{
 							"Source": {
+								"Text": "Defeat {0} bosses."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraBossDesc"
+						},
+						{
+							"Source": {
+								"Text": "Defeat {0} enemies."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraEnemyDesc"
+						},
+						{
+							"Source": {
+								"Text": "Discover {0} enemies."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraLabEnemyDesc"
+						},
+						{
+							"Source": {
+								"Text": "Discover {0} items."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraItemDesc"
+						},
+						{
+							"Source": {
+								"Text": "Enemy Hunter {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraEnemyTitle"
+						},
+						{
+							"Source": {
+								"Text": "Field Notes {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraLabEnemyTitle"
+						},
+						{
+							"Source": {
 								"Text": "Finish a run."
 							},
 							"Translation": {
 								"Text": "Оздоблення забігу."
 							},
 							"Key": "ACH_BLK_007_Desc"
+						},
+						{
+							"Source": {
+								"Text": "Finish {0} runs."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraRunDesc"
 						},
 						{
 							"Source": {
@@ -1171,6 +755,15 @@
 								"Text": "Високий ролик"
 							},
 							"Key": "ACH_BLK_010_Name"
+						},
+						{
+							"Source": {
+								"Text": "High Roller {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraGamblerTitle"
 						},
 						{
 							"Source": {
@@ -1246,6 +839,15 @@
 						},
 						{
 							"Source": {
+								"Text": "Pilgrim {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraStageTitle"
+						},
+						{
+							"Source": {
 								"Text": "RED"
 							},
 							"Translation": {
@@ -1300,6 +902,15 @@
 						},
 						{
 							"Source": {
+								"Text": "Token Rank {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraTokenTitle"
+						},
+						{
+							"Source": {
 								"Text": "Union: Bonded"
 							},
 							"Translation": {
@@ -1345,12 +956,30 @@
 						},
 						{
 							"Source": {
+								"Text": "Unlock Gambler's Token level {0}."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraTokenDesc"
+						},
+						{
+							"Source": {
 								"Text": "Veteran"
 							},
 							"Translation": {
 								"Text": "Ветеран"
 							},
 							"Key": "ACH_RED_003_Name"
+						},
+						{
+							"Source": {
+								"Text": "Veteran {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraRunTitle"
 						},
 						{
 							"Source": {
@@ -1369,6 +998,15 @@
 								"Text": "Виграти гамбл на Гамблі."
 							},
 							"Key": "ACH_BLK_010_Desc"
+						},
+						{
+							"Source": {
+								"Text": "Win {0} gambles."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ExtraGamblerDesc"
 						},
 						{
 							"Source": {
@@ -1396,6 +1034,15 @@
 								"Text": "{0} В наявності"
 							},
 							"Key": "CoinsFormat"
+						},
+						{
+							"Source": {
+								"Text": "{0}/{1} ACHIEVEMENTS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "CompletionLabel"
 						}
 					]
 				},
@@ -1897,6 +1544,15 @@
 								"Text": "СКЛАД"
 							},
 							"Key": "Sell"
+						},
+						{
+							"Source": {
+								"Text": "SETTINGS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "Settings"
 						},
 						{
 							"Source": {
@@ -2697,6 +2353,15 @@
 						},
 						{
 							"Source": {
+								"Text": "CIRCUS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "Circus"
+						},
+						{
+							"Source": {
 								"Text": "COIN FLIP"
 							},
 							"Translation": {
@@ -3197,21 +2862,12 @@
 					"Children": [
 						{
 							"Source": {
-								"Text": "AS: {0}"
+								"Text": "COMBAT"
 							},
 							"Translation": {
-								"Text": "AS: {0}"
+								"Text": ""
 							},
-							"Key": "StatAS"
-						},
-						{
-							"Source": {
-								"Text": "Armor: {0}"
-							},
-							"Translation": {
-								"Text": "Арматура: {0}"
-							},
-							"Key": "StatArmor"
+							"Key": "CombatTitle"
 						},
 						{
 							"Source": {
@@ -3251,21 +2907,12 @@
 						},
 						{
 							"Source": {
-								"Text": "Dmg: {0}"
+								"Text": "ELV: 0"
 							},
 							"Translation": {
-								"Text": "Дмг: {0}"
+								"Text": ""
 							},
-							"Key": "StatDmg"
-						},
-						{
-							"Source": {
-								"Text": "Eva: {0}"
-							},
-							"Translation": {
-								"Text": "Eva: {0}"
-							},
-							"Key": "StatEva"
+							"Key": "ElevationDefault"
 						},
 						{
 							"Source": {
@@ -3311,15 +2958,6 @@
 								"Text": "Інвентар"
 							},
 							"Key": "InventoryTitle"
-						},
-						{
-							"Source": {
-								"Text": "Luck: {0}"
-							},
-							"Translation": {
-								"Text": "Лак: {0}"
-							},
-							"Key": "StatLuck"
 						},
 						{
 							"Source": {
@@ -3404,12 +3042,12 @@
 						},
 						{
 							"Source": {
-								"Text": "Scale: {0}"
+								"Text": "STATS"
 							},
 							"Translation": {
-								"Text": "Вага: {0}"
+								"Text": ""
 							},
-							"Key": "StatScale"
+							"Key": "StatsTitleUpper"
 						},
 						{
 							"Source": {
@@ -4803,12 +4441,12 @@
 						},
 						{
 							"Source": {
-								"Text": "enter casino"
+								"Text": "enter circus"
 							},
 							"Translation": {
-								"Text": "enter casino"
+								"Text": ""
 							},
-							"Key": "EnterCasino"
+							"Key": "EnterCircus"
 						},
 						{
 							"Source": {
@@ -4904,6 +4542,15 @@
 								"Text": ""
 							},
 							"Key": "SecondaryBonusPercentFormat"
+						},
+						{
+							"Source": {
+								"Text": "Level {0}: sell items for {1}% of buy value."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "GamblerTokenLineFormat"
 						},
 						{
 							"Source": {
@@ -5138,6 +4785,15 @@
 						},
 						{
 							"Source": {
+								"Text": "L"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "LanguageIconFallback"
+						},
+						{
+							"Source": {
 								"Text": "Lang"
 							},
 							"Translation": {
@@ -5221,6 +4877,24 @@
 								"Text": "НАМ"
 							},
 							"Key": "Name"
+						},
+						{
+							"Source": {
+								"Text": "No leaderboard data yet"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "NoEntriesFallback"
+						},
+						{
+							"Source": {
+								"Text": "QUAD"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "QuadRuns"
 						},
 						{
 							"Source": {
@@ -5374,6 +5048,15 @@
 						},
 						{
 							"Source": {
+								"Text": "In Party"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "InParty"
+						},
+						{
+							"Source": {
 								"Text": "LEAVE"
 							},
 							"Translation": {
@@ -5410,6 +5093,15 @@
 						},
 						{
 							"Source": {
+								"Text": "OFFLINE"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "Offline"
+						},
+						{
+							"Source": {
 								"Text": "READY"
 							},
 							"Translation": {
@@ -5425,6 +5117,15 @@
 								"Text": "ЧЕЦЬКИЙ"
 							},
 							"Key": "ReadyCheck"
+						},
+						{
+							"Source": {
+								"Text": "REMOVE"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "RemoveFriend"
 						},
 						{
 							"Source": {
@@ -5478,6 +5179,15 @@
 					"Children": [
 						{
 							"Source": {
+								"Text": "({0})"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "FriendsGroupCount"
+						},
+						{
+							"Source": {
 								"Text": "ACHIEVEMENTS"
 							},
 							"Translation": {
@@ -5493,6 +5203,36 @@
 								"Text": "Апокаліпсис"
 							},
 							"Key": "Apocalypse"
+						},
+						{
+							"Source": { "Text": "CHADPOCALYPSE" }, "Translation": { "Text": "CHADPOCALYPSE" }, "Key": "Home"
+						},
+						{
+							"Source": {
+								"Text": "INVITE"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "InviteFriend"
+						},
+						{
+							"Source": {
+								"Text": "In Party"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "InParty"
+						},
+						{
+							"Source": {
+								"Text": "LAST RUN"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "LastRunSection"
 						},
 						{
 							"Source": {
@@ -5514,12 +5254,66 @@
 						},
 						{
 							"Source": {
+								"Text": "OFFLINE"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "FriendOffline"
+						},
+						{
+							"Source": {
+								"Text": "OFFLINE"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "OfflineFriendsHeader"
+						},
+						{
+							"Source": {
+								"Text": "ONLINE"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "OnlineFriendsHeader"
+						},
+						{
+							"Source": {
+								"Text": "PARTY"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "PartySection"
+						},
+						{
+							"Source": {
+								"Text": "PARTY FULL"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "PartyFull"
+						},
+						{
+							"Source": {
 								"Text": "POWER UP"
 							},
 							"Translation": {
 								"Text": "Енергоефективність"
 							},
 							"Key": "PowerUp"
+						},
+						{
+							"Source": {
+								"Text": "Q"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "QuitFallback"
 						},
 						{
 							"Source": {
@@ -5532,6 +5326,24 @@
 						},
 						{
 							"Source": {
+								"Text": "REMOVE"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "RemoveFriend"
+						},
+						{
+							"Source": {
+								"Text": "S"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "SettingsFallback"
+						},
+						{
+							"Source": {
 								"Text": "SETTINGS"
 							},
 							"Translation": {
@@ -5541,12 +5353,39 @@
 						},
 						{
 							"Source": {
+								"Text": "Stage {0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "LastRunStage"
+						},
+						{
+							"Source": {
 								"Text": "TRIBULATION 66"
 							},
 							"Translation": {
 								"Text": "ТРИБУЛЯЦІЯ 66"
 							},
 							"Key": "Title"
+						},
+						{
+							"Source": {
+								"Text": "Unknown Hero"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "UnknownHero"
+						},
+						{
+							"Source": {
+								"Text": "{0}  |  {1}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "LastRunMeta"
 						},
 						{
 							"Source": {
@@ -5694,6 +5533,15 @@
 								"Text": "Vendor"
 							},
 							"Translation": {
+								"Text": ""
+							},
+							"Key": "SupportVendor"
+						},
+						{
+							"Source": {
+								"Text": "Vendor"
+							},
+							"Translation": {
 								"Text": "Про компанію"
 							},
 							"Key": "Vendor"
@@ -5720,6 +5568,15 @@
 								"Text": "ДУО"
 							},
 							"Key": "Duo"
+						},
+						{
+							"Source": {
+								"Text": "Quad"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "Quad"
 						},
 						{
 							"Source": {
@@ -5753,15 +5610,6 @@
 				{
 					"Namespace": "PauseMenu",
 					"Children": [
-						{
-							"Source": {
-								"Text": "In progress"
-							},
-							"Translation": {
-								"Text": "Досягнення прогресу"
-							},
-							"Key": "InProgress"
-						},
 						{
 							"Source": {
 								"Text": "PAUSED"
@@ -5815,6 +5663,24 @@
 								"Text": "Налаштування"
 							},
 							"Key": "Settings"
+						},
+						{
+							"Source": {
+								"Text": "Stats unavailable"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "StatsUnavailable"
+						},
+						{
+							"Source": {
+								"Text": "x1.0"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ScoreMultiplierFallback"
 						}
 					]
 				},
@@ -5864,6 +5730,15 @@
 					"Children": [
 						{
 							"Source": {
+								"Text": "1 POWER COUPON = {0} ACHIEVEMENT COINS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ConverterRate"
+						},
+						{
+							"Source": {
 								"Text": "?"
 							},
 							"Translation": {
@@ -5873,12 +5748,93 @@
 						},
 						{
 							"Source": {
+								"Text": "ACHIEVEMENT COINS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "AchievementCoinsBalanceLabel"
+						},
+						{
+							"Source": {
+								"Text": "BONUS +{0}"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "OverflowBonusFormat"
+						},
+						{
+							"Source": {
+								"Text": "CONVERT 1 PC (+{0} AC)"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ConvertOneButton"
+						},
+						{
+							"Source": {
+								"Text": "CONVERT 5 PC (+{0} AC)"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ConvertFiveButton"
+						},
+						{
+							"Source": {
+								"Text": "CONVERT ALL"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ConvertAllButton"
+						},
+						{
+							"Source": {
+								"Text": "CONVERTER"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "Converter"
+						},
+						{
+							"Source": {
 								"Text": "MAX"
 							},
 							"Translation": {
 								"Text": "МАКС"
 							},
 							"Key": "Max"
+						},
+						{
+							"Source": {
+								"Text": "P"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "PowerCouponsFallback"
+						},
+						{
+							"Source": {
+								"Text": "PC -> AC CONVERTER"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ConverterButton"
+						},
+						{
+							"Source": {
+								"Text": "POWER COUPONS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "CouponsBalanceLabel"
 						},
 						{
 							"Source": {
@@ -5894,27 +5850,18 @@
 								"Text": "Power Coupons"
 							},
 							"Translation": {
-								"Text": "Купони живлення"
+								"Text": ""
 							},
-							"Key": "PowerCoupons"
+							"Key": "PowerCouponsBalanceTooltip"
 						},
 						{
 							"Source": {
-								"Text": "RANDOM"
+								"Text": "Trade Power Coupons for Achievement Coins at {0} AC per coupon."
 							},
 							"Translation": {
-								"Text": "РЕНДОМ"
+								"Text": ""
 							},
-							"Key": "Random"
-						},
-						{
-							"Source": {
-								"Text": "UNLOCK 1 PC (RANDOM)"
-							},
-							"Translation": {
-								"Text": "ОНЛОК 1 ПК (РАНДОМ)"
-							},
-							"Key": "UnlockRandom1PC"
+							"Key": "ConverterHint"
 						},
 						{
 							"Source": {
@@ -5927,12 +5874,12 @@
 						},
 						{
 							"Source": {
-								"Text": "{0} PCs"
+								"Text": "{0}% FILLED"
 							},
 							"Translation": {
-								"Text": "{0} ПК"
+								"Text": ""
 							},
-							"Key": "PCsFormat"
+							"Key": "FillPercentFormat"
 						}
 					]
 				},
@@ -6443,6 +6390,15 @@
 						},
 						{
 							"Source": {
+								"Text": "No saves found for the current party."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "NoPartySaves"
+						},
+						{
+							"Source": {
 								"Text": "PREV"
 							},
 							"Translation": {
@@ -6476,6 +6432,15 @@
 								"Text": "СКЛАД"
 							},
 							"Key": "Stage"
+						},
+						{
+							"Source": {
+								"Text": "Showing saves for the current party."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "PartyFilterHint"
 						},
 						{
 							"Source": {
@@ -6652,6 +6617,15 @@
 								"Text": "Фонтан життя"
 							},
 							"Key": "Fountain"
+						},
+						{
+							"Source": {
+								"Text": "Gambler's Token"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "GamblerToken"
 						},
 						{
 							"Source": {
@@ -7875,6 +7849,24 @@
 						},
 						{
 							"Source": {
+								"Text": "UI Style"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "UiTheme"
+						},
+						{
+							"Source": {
+								"Text": "Unified"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "UiThemeUnified"
+						},
+						{
+							"Source": {
 								"Text": "Unlimited"
 							},
 							"Translation": {
@@ -8630,6 +8622,15 @@
 					"Children": [
 						{
 							"Source": {
+								"Text": "A unique casino token that improves item sell prices. Higher levels push the sell rate up to 100%."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "GamblerToken"
+						},
+						{
+							"Source": {
 								"Text": "Aggro generation multiplier. Higher values draw more enemy attention."
 							},
 							"Translation": {
@@ -9304,6 +9305,146 @@
 					]
 				},
 				{
+					"Namespace": "Unlocks",
+					"Children": [
+						{
+							"Source": {
+								"Text": "Available from the start."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "HeroUnlockedDetail"
+						},
+						{
+							"Source": {
+								"Text": "COMPANION"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "CompanionType"
+						},
+						{
+							"Source": {
+								"Text": "COMPANIONS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "CompanionsTab"
+						},
+						{
+							"Source": {
+								"Text": "Clear Stage {0} for the first time."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "CompanionStageCondition"
+						},
+						{
+							"Source": {
+								"Text": "HERO"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "HeroType"
+						},
+						{
+							"Source": {
+								"Text": "HEROES"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "HeroesTab"
+						},
+						{
+							"Source": {
+								"Text": "ITEM"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ItemType"
+						},
+						{
+							"Source": {
+								"Text": "ITEMS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ItemsTab"
+						},
+						{
+							"Source": {
+								"Text": "LOCKED"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "LockedStatus"
+						},
+						{
+							"Source": {
+								"Text": "Obtain this item in a run for the first time."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "ItemCondition"
+						},
+						{
+							"Source": {
+								"Text": "UNLOCKED"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "UnlockedStatus"
+						},
+						{
+							"Source": {
+								"Text": "UNLOCKS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "Title"
+						},
+						{
+							"Source": {
+								"Text": "Unlock condition is not exposed by the current companion data."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "CompanionFallbackCondition"
+						},
+						{
+							"Source": {
+								"Text": "Unlock condition is not exposed by the current hero data."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "HeroLockedDetail"
+						},
+						{
+							"Source": {
+								"Text": "{0}/{1} UNLOCKS"
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "CompletionLabel"
+						}
+					]
+				},
+				{
 					"Namespace": "Vendor",
 					"Children": [
 						{
@@ -9566,6 +9707,15 @@
 								"Text": "Стійка досягла успіху, але інвентар повністю."
 							},
 							"Key": "StealSucceededButInventoryFull"
+						},
+						{
+							"Source": {
+								"Text": "Stealing is disabled here."
+							},
+							"Translation": {
+								"Text": ""
+							},
+							"Key": "StealDisabled"
 						},
 						{
 							"Source": {

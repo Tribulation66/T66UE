@@ -81,11 +81,11 @@ def import_texture(source_path, dest_dir, dest_name):
     except Exception:
         pass
     try:
-        asset.set_editor_property("mip_gen_settings", unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS)
+        asset.set_editor_property("mip_gen_settings", unreal.TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP)
     except Exception:
         pass
     try:
-        asset.set_editor_property("filter", unreal.TextureFilter.TF_NEAREST)
+        asset.set_editor_property("filter", unreal.TextureFilter.TF_TRILINEAR)
     except Exception:
         pass
     try:

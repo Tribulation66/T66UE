@@ -2,7 +2,6 @@
 
 #include "UI/Screens/T66SaveSlotsScreen.h"
 #include "UI/T66UIManager.h"
-#include "UI/Dota/T66DotaSlate.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Core/T66GameInstance.h"
@@ -150,7 +149,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 		TSharedRef<SWidget> PortraitWidget = SNew(SBox).WidthOverride(PortraitSize).HeightOverride(PortraitSize)
 			[
 				FT66Style::IsDotaTheme()
-					? FT66DotaSlate::MakeViewportFrame(
+					? FT66Style::MakeViewportFrame(
 						SNew(SImage)
 						.Image(TAttribute<const FSlateBrush*>::Create([this, LocalIndex]()
 							{ return SlotHeroPortraitBrushes.IsValidIndex(LocalIndex) && SlotHeroPortraitBrushes[LocalIndex].IsValid()
@@ -221,7 +220,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			];
 
 		return FT66Style::IsDotaTheme()
-			? FT66DotaSlate::MakeScreenSurface(
+			? FT66Style::MakeScreenSurface(
 				SNew(SBox).WidthOverride(220.f)
 				[
 					CardContent
@@ -487,3 +486,4 @@ void UT66SaveSlotsScreen::OnNextPageClicked()
 }
 
 void UT66SaveSlotsScreen::OnBackClicked() { NavigateBack(); }
+

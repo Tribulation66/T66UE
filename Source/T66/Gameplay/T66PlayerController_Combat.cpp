@@ -741,7 +741,7 @@ void AT66PlayerController::HandleInteractPressed()
 	// Idol Altar (Stage 1)
 	if (ClosestIdolAltar)
 	{
-		UT66IdolAltarOverlayWidget* W = CreateWidget<UT66IdolAltarOverlayWidget>(this, UT66IdolAltarOverlayWidget::StaticClass());
+		UT66IdolAltarOverlayWidget* W = CreateWidget<UT66IdolAltarOverlayWidget>(this, ResolveIdolAltarOverlayClass());
 		if (W)
 		{
 			W->SetSourceAltar(ClosestIdolAltar);

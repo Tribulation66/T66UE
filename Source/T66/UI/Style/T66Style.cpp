@@ -1,12 +1,11 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Style/T66Style.h"
-#include "UI/Dota/T66DotaTheme.h"
-#include "UI/Dota/T66DotaSlate.h"
 #include "UI/Style/T66ButtonVisuals.h"
 #include "T66.h"
 
 #include "Engine/Texture2D.h"
+#include "ImageUtils.h"
 #include "HAL/IConsoleManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -19,12 +18,14 @@
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Brushes/SlateColorBrush.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SDPIScaler.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Layout/Visibility.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
+#include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Fonts/CompositeFont.h"
@@ -52,6 +53,7 @@ const FMargin FT66Style::Tokens::ButtonPaddingPressed(12.f, 5.f, 12.f, 3.f);
 namespace
 {
 	static ET66UITheme GActiveUITheme = ET66UITheme::Dota;
+	static const FString GDotaGeneratedSourceDir = FPaths::ProjectDir() / TEXT("SourceAssets/UI/Dota/Generated");
 
 	// Keep recent old style sets alive so existing Slate widgets' brush/style
 	// raw pointers remain valid until the UI is rebuilt with fresh widgets.
@@ -105,11 +107,16 @@ namespace
 
 	static void LoadButtonTexturesOnce()
 	{
-		// Only load once — textures persist for the lifetime of the process.
 		if (GBtnDarkN) return;
 		auto Load = [](const TCHAR* Path) -> UTexture2D* {
 			UTexture2D* T = LoadObject<UTexture2D>(nullptr, Path);
 			UE_LOG(LogTemp, Log, TEXT("[T66Style] Load button tex %s -> %s"), Path, T ? TEXT("OK") : TEXT("MISS"));
+			if (T)
+			{
+				T->Filter = TextureFilter::TF_Trilinear;
+				T->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+				T->NeverStream = true;
+			}
 			return T;
 		};
 		GBtnDarkN  = Load(TEXT("/Game/UI/Assets/ButtonDark_N.ButtonDark_N"));
@@ -121,6 +128,286 @@ namespace
 	static TObjectPtr<UTexture2D> GPanelDark = nullptr;
 	static TObjectPtr<UMaterialInterface> GButtonGlowMaterial = nullptr;
 	static bool bCheckedButtonGlowMaterial = false;
+
+	enum class ET66StyleButtonPlateType : uint8
+	{
+		Neutral,
+		Primary,
+		Danger,
+	};
+
+	struct FT66OptionalTextureBrush
+	{
+		TObjectPtr<UTexture2D> ImportedTexture = nullptr;
+		TStrongObjectPtr<UTexture2D> FileTexture;
+		TSharedPtr<FSlateBrush> Brush;
+		bool bChecked = false;
+	};
+
+	const FSlateBrush* GetWhiteBrush()
+	{
+		return FCoreStyle::Get().GetBrush("WhiteBrush");
+	}
+
+	FSlateBrush MakeNineSliceBrush(UTexture2D* Texture, const FMargin& Margin)
+	{
+		FSlateBrush Brush;
+		const bool bUseImageDraw =
+			FMath::IsNearlyZero(Margin.Left) &&
+			FMath::IsNearlyZero(Margin.Top) &&
+			FMath::IsNearlyZero(Margin.Right) &&
+			FMath::IsNearlyZero(Margin.Bottom);
+		Brush.DrawAs = bUseImageDraw ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
+		Brush.Tiling = ESlateBrushTileType::NoTile;
+		Brush.SetResourceObject(Texture);
+		Brush.TintColor = FSlateColor(FLinearColor::White);
+		Brush.ImageSize = FVector2D(1.f, 1.f);
+		Brush.Margin = Margin;
+		return Brush;
+	}
+
+	UTexture2D* LoadOptionalTexture(
+		FT66OptionalTextureBrush& Entry,
+		const TCHAR* ImportedAssetPath,
+		const FString& FallbackFilePath,
+		const FMargin& Margin)
+	{
+		if (Entry.Brush.IsValid())
+		{
+			return Cast<UTexture2D>(Entry.Brush->GetResourceObject());
+		}
+
+		if (!Entry.bChecked)
+		{
+			Entry.bChecked = true;
+			if (ImportedAssetPath && *ImportedAssetPath)
+			{
+				Entry.ImportedTexture = LoadObject<UTexture2D>(nullptr, ImportedAssetPath);
+				if (Entry.ImportedTexture.Get())
+				{
+					Entry.ImportedTexture->Filter = TextureFilter::TF_Trilinear;
+					Entry.ImportedTexture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+					Entry.ImportedTexture->NeverStream = true;
+				}
+			}
+
+			UTexture2D* Texture = Entry.ImportedTexture.Get();
+			if (!Texture && !FallbackFilePath.IsEmpty() && FPaths::FileExists(FallbackFilePath))
+			{
+			Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
+			if (Texture)
+			{
+				Texture->SRGB = true;
+				Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+				Texture->NeverStream = true;
+				Texture->Filter = TextureFilter::TF_Trilinear;
+				Texture->CompressionSettings = TC_EditorIcon;
+				Texture->UpdateResource();
+				Entry.FileTexture.Reset(Texture);
+			}
+			}
+
+			if (Texture)
+			{
+				Entry.Brush = MakeShared<FSlateBrush>(MakeNineSliceBrush(Texture, Margin));
+			}
+		}
+
+		return Entry.Brush.IsValid() ? Cast<UTexture2D>(Entry.Brush->GetResourceObject()) : nullptr;
+	}
+
+	const FSlateBrush* ResolveOptionalTextureBrush(
+		FT66OptionalTextureBrush& Entry,
+		const TCHAR* ImportedAssetPath,
+		const FString& FallbackFilePath,
+		const FMargin& Margin)
+	{
+		LoadOptionalTexture(Entry, ImportedAssetPath, FallbackFilePath, Margin);
+		return Entry.Brush.IsValid() ? Entry.Brush.Get() : nullptr;
+	}
+
+	FT66OptionalTextureBrush& GetButtonPlateEntry(ET66StyleButtonPlateType Type)
+	{
+		static FT66OptionalTextureBrush Neutral;
+		static FT66OptionalTextureBrush Primary;
+		static FT66OptionalTextureBrush Danger;
+
+		switch (Type)
+		{
+		case ET66StyleButtonPlateType::Primary:
+			return Primary;
+		case ET66StyleButtonPlateType::Danger:
+			return Danger;
+		case ET66StyleButtonPlateType::Neutral:
+		default:
+			return Neutral;
+		}
+	}
+
+	const TCHAR* GetButtonPlateAssetPath(ET66StyleButtonPlateType Type)
+	{
+		switch (Type)
+		{
+		case ET66StyleButtonPlateType::Primary:
+			return TEXT("/Game/UI/Assets/T_UI_DotaPrimaryButtonPlate.T_UI_DotaPrimaryButtonPlate");
+		case ET66StyleButtonPlateType::Danger:
+			return TEXT("/Game/UI/Assets/T_UI_DotaDangerButtonPlate.T_UI_DotaDangerButtonPlate");
+		case ET66StyleButtonPlateType::Neutral:
+		default:
+			return TEXT("/Game/UI/Assets/T_UI_DotaNeutralButtonPlate.T_UI_DotaNeutralButtonPlate");
+		}
+	}
+
+	FString GetButtonPlateFallbackPath(ET66StyleButtonPlateType Type)
+	{
+		switch (Type)
+		{
+		case ET66StyleButtonPlateType::Primary:
+			return GDotaGeneratedSourceDir / TEXT("dota_primary_button_plate.png");
+		case ET66StyleButtonPlateType::Danger:
+			return GDotaGeneratedSourceDir / TEXT("dota_danger_button_plate.png");
+		case ET66StyleButtonPlateType::Neutral:
+		default:
+			return GDotaGeneratedSourceDir / TEXT("dota_neutral_button_plate.png");
+		}
+	}
+
+	const FSlateBrush* GetButtonPlateBrush(ET66StyleButtonPlateType Type)
+	{
+		const FMargin Margin = (Type == ET66StyleButtonPlateType::Primary)
+			? FMargin(0.f)
+			: FMargin(0.22f, 0.32f, 0.22f, 0.32f);
+		return ResolveOptionalTextureBrush(
+			GetButtonPlateEntry(Type),
+			GetButtonPlateAssetPath(Type),
+			GetButtonPlateFallbackPath(Type),
+			Margin);
+	}
+
+	FT66OptionalTextureBrush& GetInventorySlotEntry()
+	{
+		static FT66OptionalTextureBrush InventorySlot;
+		return InventorySlot;
+	}
+
+	FString ResolveRadianceFontPath()
+	{
+		const FString SourceAssetsPath = FPaths::ProjectDir() / TEXT("SourceAssets/radiance.ttf");
+		if (FPaths::FileExists(SourceAssetsPath))
+		{
+			return SourceAssetsPath;
+		}
+
+		return FPaths::ProjectContentDir() / TEXT("Slate/Fonts/radiance.ttf");
+	}
+
+	FString ResolveReaverBoldFontPath()
+	{
+		const FString SourceAssetsPath = FPaths::ProjectDir() / TEXT("SourceAssets/Reaver-Bold.woff");
+		if (FPaths::FileExists(SourceAssetsPath))
+		{
+			return SourceAssetsPath;
+		}
+
+		const FString ContentWoffFallbackPath = FPaths::ProjectContentDir() / TEXT("Slate/Fonts/Reaver-Bold.woff");
+		if (FPaths::FileExists(ContentWoffFallbackPath))
+		{
+			return ContentWoffFallbackPath;
+		}
+
+		const FString ContentTtfFallbackPath = FPaths::ProjectContentDir() / TEXT("Slate/Fonts/Reaver-Bold.ttf");
+		if (FPaths::FileExists(ContentTtfFallbackPath))
+		{
+			return ContentTtfFallbackPath;
+		}
+
+		return FString();
+	}
+
+	bool IsBoldWeight(const TCHAR* Weight)
+	{
+		if (Weight == nullptr)
+		{
+			return false;
+		}
+
+		return FCString::Stricmp(Weight, TEXT("Bold")) == 0
+			|| FCString::Stricmp(Weight, TEXT("Black")) == 0
+			|| FCString::Stricmp(Weight, TEXT("Semibold")) == 0
+			|| FCString::Stricmp(Weight, TEXT("SemiBold")) == 0;
+	}
+
+	FSlateFontInfo MakeFontFromAbsoluteFile(const FString& Path, int32 Size)
+	{
+		if (!FPaths::FileExists(Path))
+		{
+			return FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
+		}
+
+		TSharedPtr<const FCompositeFont> CompositeFont = MakeShared<FStandaloneCompositeFont>(
+			NAME_None,
+			Path,
+			EFontHinting::Default,
+			EFontLoadingPolicy::LazyLoad);
+		return FSlateFontInfo(CompositeFont, static_cast<float>(Size));
+	}
+
+	TSharedRef<SWidget> MakeLayeredSurface(
+		const TSharedRef<SWidget>& Content,
+		const FLinearColor& Outer,
+		const FLinearColor& Middle,
+		const FLinearColor& Fill,
+		const FLinearColor& TopHighlight,
+		const FMargin& Padding)
+	{
+		return SNew(SBorder)
+			.BorderImage(GetWhiteBrush())
+			.BorderBackgroundColor(Outer)
+			.Padding(1.f)
+			[
+				SNew(SBorder)
+				.BorderImage(GetWhiteBrush())
+				.BorderBackgroundColor(Middle)
+				.Padding(1.f)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SBorder)
+						.BorderImage(GetWhiteBrush())
+						.BorderBackgroundColor(Fill)
+						.Padding(Padding)
+						[
+							Content
+						]
+					]
+					+ SOverlay::Slot()
+					.VAlign(VAlign_Top)
+					.Padding(1.f, 1.f, 1.f, 0.f)
+					[
+						SNew(SBox)
+						.HeightOverride(2.f)
+						[
+							SNew(SBorder)
+							.BorderImage(GetWhiteBrush())
+							.BorderBackgroundColor(TopHighlight)
+						]
+					]
+					+ SOverlay::Slot()
+					.VAlign(VAlign_Bottom)
+					.Padding(1.f, 0.f, 1.f, 1.f)
+					[
+						SNew(SBox)
+						.HeightOverride(2.f)
+						[
+							SNew(SBorder)
+							.BorderImage(GetWhiteBrush())
+							.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+						]
+					]
+				]
+			];
+	}
 
 	static bool GPanelTexturesAvailable()
 	{
@@ -152,7 +439,7 @@ namespace
 		switch (ButtonType)
 		{
 		case ET66ButtonType::Primary:
-			return FT66DotaTheme::Accent();
+			return FT66Style::Accent();
 		case ET66ButtonType::Danger:
 			return FT66Style::Tokens::Danger;
 		case ET66ButtonType::Success:
@@ -242,6 +529,12 @@ namespace
 		auto Load = [](const TCHAR* Path) -> UTexture2D* {
 			UTexture2D* T = LoadObject<UTexture2D>(nullptr, Path);
 			UE_LOG(LogTemp, Log, TEXT("[T66Style] Load panel tex %s -> %s"), Path, T ? TEXT("OK") : TEXT("MISS"));
+			if (T)
+			{
+				T->Filter = TextureFilter::TF_Trilinear;
+				T->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+				T->NeverStream = true;
+			}
 			return T;
 		};
 		GPanelDark  = Load(TEXT("/Game/UI/Assets/PanelDark.PanelDark"));
@@ -252,18 +545,18 @@ namespace
 		using T = FT66Style::Tokens;
 		if (GActiveUITheme == ET66UITheme::Dota)
 		{
-			T::Bg = FT66DotaTheme::Background();
-			T::Panel = FT66DotaTheme::Panel();
-			T::Panel2 = FT66DotaTheme::PanelInner();
-			T::Stroke = FT66DotaTheme::Stroke();
-			T::Scrim = FT66DotaTheme::Scrim();
-			T::Text = FT66DotaTheme::Text();
-			T::TextMuted = FT66DotaTheme::TextMuted();
-			T::Accent = FT66DotaTheme::Accent();
-			T::Accent2 = FT66DotaTheme::Accent2();
-			T::Danger = FT66DotaTheme::Danger();
-			T::Success = FT66DotaTheme::Success();
-			T::Border = FT66DotaTheme::Border();
+			T::Bg = FT66Style::Background();
+			T::Panel = FT66Style::Panel();
+			T::Panel2 = FT66Style::PanelInner();
+			T::Stroke = FT66Style::Stroke();
+			T::Scrim = FT66Style::Scrim();
+			T::Text = FT66Style::Text();
+			T::TextMuted = FT66Style::TextMuted();
+			T::Accent = FT66Style::Accent();
+			T::Accent2 = FT66Style::Accent2();
+			T::Danger = FT66Style::Danger();
+			T::Success = FT66Style::Success();
+			T::Border = FT66Style::Border();
 			return;
 		}
 
@@ -329,7 +622,7 @@ namespace
 	{
 		if (GActiveUITheme == ET66UITheme::Dota)
 		{
-			return FT66DotaTheme::MakeFont(Weight, Size);
+			return FT66Style::MakeFont(Weight, Size);
 		}
 
 		const int32 Idx = FMath::Clamp(GThemeFontIndex, 0, GThemeFontCount - 1);
@@ -378,7 +671,16 @@ namespace
 		}
 
 		const float MaxScale = bAllowUpscale ? 1.35f : 1.f;
-		return FMath::Clamp(Scale, 0.70f, MaxScale);
+		Scale = FMath::Clamp(Scale, 0.70f, MaxScale);
+
+		// Avoid slight fractional desktop downscales that soften Slate text, borders, and small portraits.
+		// Below this threshold we still scale down so smaller windows remain usable.
+		if (ViewportSize.X >= 1600.f && ViewportSize.Y >= 900.f && Scale <= 1.f)
+		{
+			return 1.f;
+		}
+
+		return Scale;
 	}
 
 	void ToggleForceBoldFont()
@@ -475,12 +777,14 @@ void FT66Style::ToggleBoldFont()
 
 void FT66Style::SetActiveTheme(ET66UITheme InTheme)
 {
-	if (GActiveUITheme == InTheme)
+	(void)InTheme;
+	const ET66UITheme ResolvedTheme = ET66UITheme::Dota;
+	if (GActiveUITheme == ResolvedTheme)
 	{
 		return;
 	}
 
-	GActiveUITheme = InTheme;
+	GActiveUITheme = ResolvedTheme;
 	if (StyleInstance.IsValid())
 	{
 		FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
@@ -491,13 +795,76 @@ void FT66Style::SetActiveTheme(ET66UITheme InTheme)
 
 ET66UITheme FT66Style::GetActiveTheme()
 {
-	return GActiveUITheme;
+	return ET66UITheme::Dota;
 }
 
 bool FT66Style::IsDotaTheme()
 {
-	return GActiveUITheme == ET66UITheme::Dota;
+	return true;
 }
+
+FSlateFontInfo FT66Style::MakeFont(const TCHAR* Weight, int32 Size)
+{
+	if (IsBoldWeight(Weight))
+	{
+		const FString ReaverPath = ResolveReaverBoldFontPath();
+		if (!ReaverPath.IsEmpty())
+		{
+			return MakeFontFromAbsoluteFile(ReaverPath, Size);
+		}
+	}
+
+	return MakeFontFromAbsoluteFile(ResolveRadianceFontPath(), Size);
+}
+
+FLinearColor FT66Style::Background() { return FLinearColor(2.f / 255.f, 3.f / 255.f, 6.f / 255.f, 1.0f); }
+FLinearColor FT66Style::PanelOuter() { return FLinearColor(1.f / 255.f, 1.f / 255.f, 3.f / 255.f, 1.0f); }
+FLinearColor FT66Style::Panel() { return FLinearColor(6.f / 255.f, 8.f / 255.f, 13.f / 255.f, 0.988f); }
+FLinearColor FT66Style::PanelInner() { return FLinearColor(4.f / 255.f, 5.f / 255.f, 9.f / 255.f, 0.992f); }
+FLinearColor FT66Style::Stroke() { return FLinearColor(38.f / 255.f, 44.f / 255.f, 54.f / 255.f, 1.0f); }
+FLinearColor FT66Style::Scrim() { return FLinearColor(2.f / 255.f, 3.f / 255.f, 5.f / 255.f, 0.93f); }
+FLinearColor FT66Style::Text() { return FLinearColor(228.f / 255.f, 230.f / 255.f, 233.f / 255.f, 1.0f); }
+FLinearColor FT66Style::TextMuted() { return FLinearColor(126.f / 255.f, 136.f / 255.f, 148.f / 255.f, 1.0f); }
+FLinearColor FT66Style::Accent() { return FLinearColor(58.f / 255.f, 96.f / 255.f, 138.f / 255.f, 1.0f); }
+FLinearColor FT66Style::Accent2() { return FLinearColor(196.f / 255.f, 167.f / 255.f, 96.f / 255.f, 1.0f); }
+FLinearColor FT66Style::Border() { return FLinearColor(44.f / 255.f, 50.f / 255.f, 60.f / 255.f, 1.0f); }
+FLinearColor FT66Style::HeaderBar() { return FLinearColor(5.f / 255.f, 7.f / 255.f, 11.f / 255.f, 0.99f); }
+FLinearColor FT66Style::HeaderAccent() { return FLinearColor(64.f / 255.f, 104.f / 255.f, 148.f / 255.f, 1.0f); }
+FLinearColor FT66Style::Success() { return FLinearColor(78.f / 255.f, 110.f / 255.f, 63.f / 255.f, 1.0f); }
+FLinearColor FT66Style::Danger() { return FLinearColor(171.f / 255.f, 64.f / 255.f, 52.f / 255.f, 1.0f); }
+FLinearColor FT66Style::ScreenBackground() { return FLinearColor(3.f / 255.f, 4.f / 255.f, 7.f / 255.f, 0.992f); }
+FLinearColor FT66Style::ScreenText() { return Text(); }
+FLinearColor FT66Style::ScreenMuted() { return TextMuted(); }
+FLinearColor FT66Style::SlotOuter() { return FLinearColor(2.f / 255.f, 3.f / 255.f, 5.f / 255.f, 0.99f); }
+FLinearColor FT66Style::SlotInner() { return FLinearColor(22.f / 255.f, 27.f / 255.f, 34.f / 255.f, 1.0f); }
+FLinearColor FT66Style::SlotFill() { return FLinearColor(4.f / 255.f, 5.f / 255.f, 8.f / 255.f, 0.992f); }
+FLinearColor FT66Style::BossBarBackground() { return FLinearColor(0.04f, 0.04f, 0.05f, 0.94f); }
+FLinearColor FT66Style::BossBarFill() { return FLinearColor(0.70f, 0.17f, 0.12f, 0.98f); }
+FLinearColor FT66Style::PromptBackground() { return FLinearColor(0.015f, 0.020f, 0.028f, 0.92f); }
+FLinearColor FT66Style::SelectionFill() { return FLinearColor(42.f / 255.f, 72.f / 255.f, 104.f / 255.f, 0.96f); }
+FLinearColor FT66Style::MinimapBackground() { return FLinearColor(22.f / 255.f, 25.f / 255.f, 30.f / 255.f, 0.99f); }
+FLinearColor FT66Style::MinimapTerrain() { return FLinearColor(49.f / 255.f, 57.f / 255.f, 52.f / 255.f, 1.0f); }
+FLinearColor FT66Style::MinimapGrid() { return FLinearColor(88.f / 255.f, 94.f / 255.f, 91.f / 255.f, 0.30f); }
+FLinearColor FT66Style::MinimapFriendly() { return FLinearColor(0.220f, 0.930f, 0.510f, 1.0f); }
+FLinearColor FT66Style::MinimapEnemy() { return FLinearColor(0.920f, 0.220f, 0.155f, 1.0f); }
+FLinearColor FT66Style::MinimapNeutral() { return FLinearColor(0.665f, 0.595f, 0.340f, 1.0f); }
+FLinearColor FT66Style::ButtonNeutral() { return FLinearColor(10.f / 255.f, 13.f / 255.f, 18.f / 255.f, 1.0f); }
+FLinearColor FT66Style::ButtonHovered() { return FLinearColor(16.f / 255.f, 20.f / 255.f, 27.f / 255.f, 1.0f); }
+FLinearColor FT66Style::ButtonPressed() { return FLinearColor(7.f / 255.f, 9.f / 255.f, 13.f / 255.f, 1.0f); }
+FLinearColor FT66Style::ButtonPrimary() { return FLinearColor(59.f / 255.f, 85.f / 255.f, 48.f / 255.f, 1.0f); }
+FLinearColor FT66Style::ButtonPrimaryHovered() { return FLinearColor(69.f / 255.f, 98.f / 255.f, 56.f / 255.f, 1.0f); }
+FLinearColor FT66Style::ButtonPrimaryPressed() { return FLinearColor(46.f / 255.f, 67.f / 255.f, 38.f / 255.f, 1.0f); }
+FLinearColor FT66Style::DangerButton() { return FLinearColor(92.f / 255.f, 37.f / 255.f, 31.f / 255.f, 1.0f); }
+FLinearColor FT66Style::DangerButtonHovered() { return FLinearColor(122.f / 255.f, 48.f / 255.f, 40.f / 255.f, 1.0f); }
+FLinearColor FT66Style::DangerButtonPressed() { return FLinearColor(69.f / 255.f, 28.f / 255.f, 24.f / 255.f, 1.0f); }
+FLinearColor FT66Style::SuccessButton() { return ButtonPrimary(); }
+FLinearColor FT66Style::SuccessButtonHovered() { return ButtonPrimaryHovered(); }
+FLinearColor FT66Style::SuccessButtonPressed() { return ButtonPrimaryPressed(); }
+FLinearColor FT66Style::ToggleButton() { return ButtonPrimary(); }
+FLinearColor FT66Style::ToggleButtonHovered() { return ButtonPrimaryHovered(); }
+FLinearColor FT66Style::ToggleButtonPressed() { return ButtonPrimaryPressed(); }
+float FT66Style::CornerRadius() { return 0.0f; }
+float FT66Style::CornerRadiusSmall() { return 0.0f; }
 
 FName FT66Style::GetStyleSetName()
 {
@@ -552,8 +919,8 @@ void FT66Style::Initialize()
 	// Panel brushes: prefer texture (9-slice with baked border/bevel), fallback to rounded box
 	const float BorderW = Tokens::BorderWidth;
 	const FLinearColor BorderColor = Tokens::Border;
-	const float PanelCornerRadius = IsDotaTheme() ? FT66DotaTheme::CornerRadius() : Tokens::CornerRadius;
-	const float PanelCornerRadiusSmall = IsDotaTheme() ? FT66DotaTheme::CornerRadiusSmall() : Tokens::CornerRadiusSmall;
+	const float PanelCornerRadius = IsDotaTheme() ? FT66Style::CornerRadius() : Tokens::CornerRadius;
+	const float PanelCornerRadiusSmall = IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall;
 
 	if (bUsePanelTextures && PanelTex)
 	{
@@ -613,7 +980,7 @@ void FT66Style::Initialize()
 
 	// Button styles: prefer 6-texture set (with effects baked in), else solid rounded box fallback
 	{
-		const float ButtonCornerRadius = IsDotaTheme() ? FT66DotaTheme::CornerRadiusSmall() : Tokens::CornerRadiusSmall;
+		const float ButtonCornerRadius = IsDotaTheme() ? FT66Style::CornerRadiusSmall() : Tokens::CornerRadiusSmall;
 
 		if (bUseButtonTextures && BtnN && BtnH && BtnP)
 		{
@@ -634,9 +1001,9 @@ void FT66Style::Initialize()
 		}
 		else
 		{
-			const FLinearColor NeutralN = IsDotaTheme() ? FT66DotaTheme::ButtonNeutral() : Tokens::Panel2;
-			const FLinearColor NeutralH = IsDotaTheme() ? FT66DotaTheme::ButtonHovered() : (Tokens::Panel2 + FLinearColor(0.05f, 0.05f, 0.07f, 0.f));
-			const FLinearColor NeutralP = IsDotaTheme() ? FT66DotaTheme::ButtonPressed() : (Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f));
+			const FLinearColor NeutralN = IsDotaTheme() ? FT66Style::ButtonNeutral() : Tokens::Panel2;
+			const FLinearColor NeutralH = IsDotaTheme() ? FT66Style::ButtonHovered() : (Tokens::Panel2 + FLinearColor(0.05f, 0.05f, 0.07f, 0.f));
+			const FLinearColor NeutralP = IsDotaTheme() ? FT66Style::ButtonPressed() : (Tokens::Panel2 + FLinearColor(0.08f, 0.08f, 0.10f, 0.f));
 
 			auto MakeBoxStyle = [&](const FLinearColor& N, const FLinearColor& H, const FLinearColor& P) {
 				return FButtonStyle()
@@ -647,15 +1014,15 @@ void FT66Style::Initialize()
 					.SetPressedPadding(Tokens::ButtonPaddingPressed);
 			};
 
-			const FLinearColor PrimaryN = IsDotaTheme() ? FT66DotaTheme::ButtonPrimary() : NeutralN;
-			const FLinearColor PrimaryH = IsDotaTheme() ? FT66DotaTheme::ButtonPrimaryHovered() : NeutralH;
-			const FLinearColor PrimaryP = IsDotaTheme() ? FT66DotaTheme::ButtonPrimaryPressed() : NeutralP;
-			const FLinearColor DangerN = IsDotaTheme() ? FT66DotaTheme::DangerButton() : NeutralN;
-			const FLinearColor DangerH = IsDotaTheme() ? FT66DotaTheme::DangerButtonHovered() : NeutralH;
-			const FLinearColor DangerP = IsDotaTheme() ? FT66DotaTheme::DangerButtonPressed() : NeutralP;
-			const FLinearColor SuccessN = IsDotaTheme() ? FT66DotaTheme::SuccessButton() : NeutralN;
-			const FLinearColor SuccessH = IsDotaTheme() ? FT66DotaTheme::SuccessButtonHovered() : NeutralH;
-			const FLinearColor SuccessP = IsDotaTheme() ? FT66DotaTheme::SuccessButtonPressed() : NeutralP;
+			const FLinearColor PrimaryN = IsDotaTheme() ? FT66Style::ButtonPrimary() : NeutralN;
+			const FLinearColor PrimaryH = IsDotaTheme() ? FT66Style::ButtonPrimaryHovered() : NeutralH;
+			const FLinearColor PrimaryP = IsDotaTheme() ? FT66Style::ButtonPrimaryPressed() : NeutralP;
+			const FLinearColor DangerN = IsDotaTheme() ? FT66Style::DangerButton() : NeutralN;
+			const FLinearColor DangerH = IsDotaTheme() ? FT66Style::DangerButtonHovered() : NeutralH;
+			const FLinearColor DangerP = IsDotaTheme() ? FT66Style::DangerButtonPressed() : NeutralP;
+			const FLinearColor SuccessN = IsDotaTheme() ? FT66Style::SuccessButton() : NeutralN;
+			const FLinearColor SuccessH = IsDotaTheme() ? FT66Style::SuccessButtonHovered() : NeutralH;
+			const FLinearColor SuccessP = IsDotaTheme() ? FT66Style::SuccessButtonPressed() : NeutralP;
 
 			StyleInstance->Set("T66.Button.Primary",      MakeBoxStyle(PrimaryN, PrimaryH, PrimaryP));
 			StyleInstance->Set("T66.Button.Neutral",      MakeBoxStyle(NeutralN, NeutralH, NeutralP));
@@ -663,9 +1030,9 @@ void FT66Style::Initialize()
 			StyleInstance->Set("T66.Button.Success",      MakeBoxStyle(SuccessN, SuccessH, SuccessP));
 			// ToggleActive: selected/pressed look — brighter fill + visible border so ON/OFF selection is obvious.
 			{
-				const FLinearColor ToggleN = IsDotaTheme() ? FT66DotaTheme::ToggleButton() : Tokens::Text;
-				const FLinearColor ToggleH = IsDotaTheme() ? FT66DotaTheme::ToggleButtonHovered() : (Tokens::Text * 0.90f + FLinearColor(0,0,0,0.10f));
-				const FLinearColor ToggleP = IsDotaTheme() ? FT66DotaTheme::ToggleButtonPressed() : (Tokens::Text * 0.75f + FLinearColor(0,0,0,0.25f));
+				const FLinearColor ToggleN = IsDotaTheme() ? FT66Style::ToggleButton() : Tokens::Text;
+				const FLinearColor ToggleH = IsDotaTheme() ? FT66Style::ToggleButtonHovered() : (Tokens::Text * 0.90f + FLinearColor(0,0,0,0.10f));
+				const FLinearColor ToggleP = IsDotaTheme() ? FT66Style::ToggleButtonPressed() : (Tokens::Text * 0.75f + FLinearColor(0,0,0,0.25f));
 				const float ToggleBorderW = 2.f;
 				const FLinearColor ToggleBorder = Tokens::Accent2.A > 0.01f ? Tokens::Accent2 : Tokens::Stroke;
 				StyleInstance->Set("T66.Button.ToggleActive", FButtonStyle()
@@ -926,7 +1293,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 	//    selected button is visually distinct. Otherwise with textures use white so the
 	//    baked-in border/gloss passes through; with fallback use the style default.
 	const bool bUsesTextureChrome =
-		HasButtonTextures()
+		!IsDotaTheme()
+		&& HasButtonTextures()
 		&& ResolvedBorderVisual != ET66ButtonBorderVisual::RetroWood
 		&& ResolvedBorderVisual != ET66ButtonBorderVisual::MainMenuBlueTrim;
 	TAttribute<FSlateColor> BtnColor;
@@ -956,18 +1324,28 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		? Params.DynamicLabel
 		: TAttribute<FText>(Params.Label);
 
+	const bool bUseBoldButtonText = IsBoldWeight(*Params.FontWeight);
 	FSlateFontInfo TextFont = (Params.FontSize > 0)
 		? Tokens::FontBold(Params.FontSize)
 		: TxtStyle.Font;
+	if (!bUseBoldButtonText)
+	{
+		const int32 ResolvedFontSize = Params.FontSize > 0 ? Params.FontSize : TextFont.Size;
+		TextFont = FT66Style::MakeFont(*Params.FontWeight, ResolvedFontSize);
+	}
 	if (IsDotaTheme() && Params.Type != ET66ButtonType::Row)
 	{
-		if (Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success)
+		if (bUseBoldButtonText && (Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success))
 		{
 			TextFont.LetterSpacing = FMath::Max(TextFont.LetterSpacing, FMath::RoundToInt(FMath::Clamp(static_cast<float>(TextFont.Size) * 2.0f, 72.f, 118.f)));
 		}
-		else
+		else if (bUseBoldButtonText)
 		{
 			TextFont.LetterSpacing = FMath::Max(TextFont.LetterSpacing, FMath::RoundToInt(FMath::Clamp(static_cast<float>(TextFont.Size) * 1.45f, 42.f, 86.f)));
+		}
+		else
+		{
+			TextFont.LetterSpacing = FMath::Max(TextFont.LetterSpacing, FMath::RoundToInt(FMath::Clamp(static_cast<float>(TextFont.Size) * 0.35f, 6.f, 18.f)));
 		}
 	}
 
@@ -1287,6 +1665,50 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			SNew(SBox)
 			.Visibility(EVisibility::Collapsed));
 
+	const bool bUseFlatBodyOnly =
+		!IsDotaTheme() &&
+		ResolvedBorderVisual == ET66ButtonBorderVisual::None &&
+		ResolvedBackgroundVisual == ET66ButtonBackgroundVisual::None &&
+		!Params.bUseDotaPlateOverlay;
+
+	if (bUseFlatBodyOnly && Params.Type != ET66ButtonType::Row)
+	{
+		const FButtonStyle& FlatStyle = Get().GetWidgetStyle<FButtonStyle>("T66.Button.FlatRect");
+		const FMargin FlatContentPad = (Params.Padding.Left >= 0.f)
+			? Params.Padding
+			: ((Params.FontSize >= 24) ? FMargin(20.f, 12.f, 20.f, 10.f) : FMargin(14.f, 8.f, 14.f, 6.f));
+
+		return SNew(SBox)
+			.MinDesiredWidth(Params.MinWidth > 0.f ? Params.MinWidth : FOptionalSize())
+			.HeightOverride(Params.Height > 0.f ? Params.Height : FOptionalSize())
+			.Visibility(Params.Visibility)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					GlowWidget
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SButton)
+					.HAlign(BtnHAlign)
+					.VAlign(BtnVAlign)
+					.OnClicked(SafeClick)
+					.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
+					.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); }))
+					.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
+					.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
+					.ButtonStyle(&FlatStyle)
+					.ButtonColorAndOpacity(BtnColor)
+					.ContentPadding(FlatContentPad)
+					.IsEnabled(Params.IsEnabled)
+					[
+						Content
+					]
+				]
+			];
+	}
+
 	if (IsDotaTheme() && Params.Type != ET66ButtonType::Row)
 	{
 		const FButtonStyle& HitStyle = Get().GetWidgetStyle<FButtonStyle>("T66.Button.FlatTransparent");
@@ -1294,31 +1716,31 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			? Params.Padding
 			: ((Params.FontSize >= 24) ? FMargin(20.f, 12.f, 20.f, 10.f) : FMargin(14.f, 8.f, 14.f, 6.f));
 
-		FLinearColor BodyNormal = FT66DotaTheme::ButtonNeutral();
-		FLinearColor BodyHovered = FT66DotaTheme::ButtonHovered();
-		FLinearColor BodyPressed = FT66DotaTheme::ButtonPressed();
+		FLinearColor BodyNormal = FT66Style::ButtonNeutral();
+		FLinearColor BodyHovered = FT66Style::ButtonHovered();
+		FLinearColor BodyPressed = FT66Style::ButtonPressed();
 
 		switch (Params.Type)
 		{
 		case ET66ButtonType::Primary:
-			BodyNormal = FT66DotaTheme::ButtonPrimary();
-			BodyHovered = FT66DotaTheme::ButtonPrimaryHovered();
-			BodyPressed = FT66DotaTheme::ButtonPrimaryPressed();
+			BodyNormal = FT66Style::ButtonPrimary();
+			BodyHovered = FT66Style::ButtonPrimaryHovered();
+			BodyPressed = FT66Style::ButtonPrimaryPressed();
 			break;
 		case ET66ButtonType::Danger:
-			BodyNormal = FT66DotaTheme::DangerButton();
-			BodyHovered = FT66DotaTheme::DangerButtonHovered();
-			BodyPressed = FT66DotaTheme::DangerButtonPressed();
+			BodyNormal = FT66Style::DangerButton();
+			BodyHovered = FT66Style::DangerButtonHovered();
+			BodyPressed = FT66Style::DangerButtonPressed();
 			break;
 		case ET66ButtonType::Success:
-			BodyNormal = FT66DotaTheme::SuccessButton();
-			BodyHovered = FT66DotaTheme::SuccessButtonHovered();
-			BodyPressed = FT66DotaTheme::SuccessButtonPressed();
+			BodyNormal = FT66Style::SuccessButton();
+			BodyHovered = FT66Style::SuccessButtonHovered();
+			BodyPressed = FT66Style::SuccessButtonPressed();
 			break;
 		case ET66ButtonType::ToggleActive:
-			BodyNormal = FT66DotaTheme::ToggleButton();
-			BodyHovered = FT66DotaTheme::ToggleButtonHovered();
-			BodyPressed = FT66DotaTheme::ToggleButtonPressed();
+			BodyNormal = FT66Style::ToggleButton();
+			BodyHovered = FT66Style::ToggleButtonHovered();
+			BodyPressed = FT66Style::ToggleButtonPressed();
 			break;
 		default:
 			break;
@@ -1328,8 +1750,8 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		{
 			const FLinearColor OverrideBase = Params.ColorOverride.Get().GetSpecifiedColor();
 			BodyNormal = OverrideBase;
-			BodyHovered = MixColor(OverrideBase, FT66DotaTheme::Text(), 0.10f);
-			BodyPressed = MixColor(OverrideBase, FT66DotaTheme::Background(), 0.30f);
+			BodyHovered = MixColor(OverrideBase, FT66Style::Text(), 0.10f);
+			BodyPressed = MixColor(OverrideBase, FT66Style::Background(), 0.30f);
 		}
 
 		const TAttribute<FSlateColor> BodyColor = TAttribute<FSlateColor>::CreateLambda([BorderState, BodyNormal, BodyHovered, BodyPressed]() -> FSlateColor
@@ -1353,10 +1775,10 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 
 		const FLinearColor OutlineBaseColor =
 			(Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success)
-				? FT66DotaTheme::Success()
+				? FT66Style::Success()
 				: (Params.Type == ET66ButtonType::Danger
-					? FT66DotaTheme::Danger()
-					: (Params.Type == ET66ButtonType::ToggleActive ? FT66DotaTheme::Success() : FT66DotaTheme::Border()));
+					? FT66Style::Danger()
+					: (Params.Type == ET66ButtonType::ToggleActive ? FT66Style::Success() : FT66Style::Border()));
 		const bool bPrimaryLikeButton =
 			Params.Type == ET66ButtonType::Primary ||
 			Params.Type == ET66ButtonType::Success ||
@@ -1392,7 +1814,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			{
 				const float BlendAmount = bPrimaryLikeButton ? 0.10f : 0.24f;
 				const float Alpha = bPrimaryLikeButton ? 0.10f : 0.22f;
-				return WithAlpha(MixColor(InColor, FT66DotaTheme::Text(), BlendAmount), Alpha);
+				return WithAlpha(MixColor(InColor, FT66Style::Text(), BlendAmount), Alpha);
 			};
 
 			if (!BorderState.IsValid())
@@ -1412,21 +1834,21 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			}
 		});
 
-		ET66DotaButtonPlateType PlateType = ET66DotaButtonPlateType::Neutral;
+		ET66StyleButtonPlateType PlateType = ET66StyleButtonPlateType::Neutral;
 		if (Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success || Params.Type == ET66ButtonType::ToggleActive)
 		{
-			PlateType = ET66DotaButtonPlateType::Primary;
+			PlateType = ET66StyleButtonPlateType::Primary;
 		}
 		else if (Params.Type == ET66ButtonType::Danger)
 		{
-			PlateType = ET66DotaButtonPlateType::Danger;
+			PlateType = ET66StyleButtonPlateType::Danger;
 		}
 
 		const bool bUseButtonPlateOverlay = Params.bUseDotaPlateOverlay;
 		const FSlateBrush* PlateBrush = nullptr;
 		if (bUseButtonPlateOverlay)
 		{
-			PlateBrush = Params.DotaPlateOverrideBrush ? Params.DotaPlateOverrideBrush : FT66DotaSlate::GetButtonPlateBrush(PlateType);
+			PlateBrush = Params.DotaPlateOverrideBrush ? Params.DotaPlateOverrideBrush : GetButtonPlateBrush(PlateType);
 		}
 		const FLinearColor PlateNormalTint(1.00f, 1.00f, 1.00f, 1.0f);
 		const FLinearColor PlateHoverTint(1.05f, 1.05f, 1.05f, 1.0f);
@@ -1506,7 +1928,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FT66DotaTheme::PanelOuter())
+					.BorderBackgroundColor(FT66Style::PanelOuter())
 					.Padding(1.f)
 					[
 						SNew(SBorder)
@@ -1806,17 +2228,52 @@ TSharedRef<SWidget> FT66Style::MakePanel(
 			])
 		: Content;
 
+	const bool bUseFlatPanelBody =
+		ResolvedBorderVisual == ET66ButtonBorderVisual::None &&
+		ResolvedBackgroundVisual == ET66ButtonBackgroundVisual::None &&
+		!bHasCustomFill &&
+		!bHasDecorativeBorder;
+
 	if (IsDotaTheme())
 	{
+		if (bUseFlatPanelBody)
+		{
+			FLinearColor FlatFill = Params.bHasColorOverride
+				? Params.ColorOverride.Get().GetSpecifiedColor()
+				: (Params.Type == ET66PanelType::Panel2 ? FT66Style::PanelInner() : FT66Style::PanelOuter());
+
+			if (Params.Type == ET66PanelType::Bg)
+			{
+				FlatFill = Params.bHasColorOverride
+					? Params.ColorOverride.Get().GetSpecifiedColor()
+					: FT66Style::Background();
+			}
+
+			TSharedRef<SBorder> FlatBorder = SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FlatFill)
+				.Padding(Params.Padding)
+				.Visibility(Params.Visibility)
+				[
+					Content
+				];
+
+			if (OutBorder)
+			{
+				*OutBorder = FlatBorder;
+			}
+			return FlatBorder;
+		}
+
 		const FLinearColor FillColorValue = Params.bHasColorOverride
 			? Params.ColorOverride.Get().GetSpecifiedColor()
-			: (Params.Type == ET66PanelType::Panel2 ? FT66DotaTheme::PanelInner() : FT66DotaTheme::Panel());
+			: (Params.Type == ET66PanelType::Panel2 ? FT66Style::PanelInner() : FT66Style::Panel());
 
 		if (Params.Type == ET66PanelType::Bg)
 		{
 			const TAttribute<FSlateColor> BackgroundColor = Params.bHasColorOverride
 				? Params.ColorOverride
-				: TAttribute<FSlateColor>(FSlateColor(FT66DotaTheme::Background()));
+				: TAttribute<FSlateColor>(FSlateColor(FT66Style::Background()));
 
 			TSharedRef<SBorder> BackgroundBorder = SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -1837,13 +2294,13 @@ TSharedRef<SWidget> FT66Style::MakePanel(
 		TSharedPtr<SBorder> FillBorder;
 		TSharedRef<SBorder> RootBorder = SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FT66DotaTheme::PanelOuter())
+			.BorderBackgroundColor(FT66Style::PanelOuter())
 			.Padding(1.f)
 			.Visibility(Params.Visibility)
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(Params.Type == ET66PanelType::Panel2 ? FT66DotaTheme::Border() : MixColor(FT66DotaTheme::Border(), FT66DotaTheme::Stroke(), 0.18f))
+				.BorderBackgroundColor(Params.Type == ET66PanelType::Panel2 ? FT66Style::Border() : MixColor(FT66Style::Border(), FT66Style::Stroke(), 0.18f))
 				.Padding(1.f)
 				[
 					SNew(SOverlay)
@@ -1866,7 +2323,7 @@ TSharedRef<SWidget> FT66Style::MakePanel(
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(WithAlpha(MixColor(FillColorValue, FT66DotaTheme::Text(), 0.16f), 0.16f))
+							.BorderBackgroundColor(WithAlpha(MixColor(FillColorValue, FT66Style::Text(), 0.16f), 0.16f))
 						]
 					]
 					+ SOverlay::Slot()
@@ -1951,6 +2408,223 @@ TSharedRef<SWidget> FT66Style::MakeDropdown(const FT66DropdownParams& Params)
 		[
 			Combo
 		];
+}
+
+TSharedRef<SWidget> FT66Style::MakeScreenSurface(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+{
+	return MakeLayeredSurface(
+		Content,
+		FT66Style::PanelOuter(),
+		FT66Style::Border(),
+		FT66Style::PanelInner(),
+		FT66Style::Stroke() * FLinearColor(1.f, 1.f, 1.f, 0.55f),
+		Padding);
+}
+
+TSharedRef<SWidget> FT66Style::MakeViewportFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+{
+	return MakeLayeredSurface(
+		Content,
+		FT66Style::PanelOuter(),
+		FT66Style::Border(),
+		FT66Style::Background(),
+		FT66Style::Stroke() * FLinearColor(1.f, 1.f, 1.f, 0.70f),
+		Padding);
+}
+
+TSharedRef<SWidget> FT66Style::MakeViewportCutoutFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+{
+	return MakeLayeredSurface(
+		Content,
+		FT66Style::PanelOuter(),
+		FT66Style::Border(),
+		FLinearColor(0.f, 0.f, 0.f, 0.f),
+		FT66Style::Stroke() * FLinearColor(1.f, 1.f, 1.f, 0.70f),
+		Padding);
+}
+
+TSharedRef<SWidget> FT66Style::MakeSlotFrame(const TSharedRef<SWidget>& Content, const TAttribute<FSlateColor>& AccentColor, const FMargin& Padding)
+{
+	const FSlateBrush* SlotBrush = GetInventorySlotFrameBrush();
+
+	return SNew(SBorder)
+		.BorderImage(GetWhiteBrush())
+		.BorderBackgroundColor(FT66Style::SlotOuter())
+		.Padding(1.f)
+		[
+			SNew(SBorder)
+			.BorderImage(GetWhiteBrush())
+			.BorderBackgroundColor(AccentColor)
+			.Padding(1.f)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SBorder)
+					.BorderImage(GetWhiteBrush())
+					.BorderBackgroundColor(FT66Style::SlotFill())
+					[
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SImage)
+							.Visibility(SlotBrush ? EVisibility::Visible : EVisibility::Collapsed)
+							.Image(SlotBrush)
+							.ColorAndOpacity(FLinearColor::White)
+						]
+						+ SOverlay::Slot()
+						.Padding(Padding)
+						[
+							Content
+						]
+					]
+				]
+				+ SOverlay::Slot()
+				.VAlign(VAlign_Top)
+				.Padding(1.f, 1.f, 1.f, 0.f)
+				[
+					SNew(SBox)
+					.HeightOverride(2.f)
+					[
+						SNew(SBorder)
+						.BorderImage(GetWhiteBrush())
+						.BorderBackgroundColor(FLinearColor(0.95f, 0.96f, 1.0f, 0.10f))
+					]
+				]
+				+ SOverlay::Slot()
+				.VAlign(VAlign_Bottom)
+				.Padding(1.f, 0.f, 1.f, 1.f)
+				[
+					SNew(SBox)
+					.HeightOverride(2.f)
+					[
+						SNew(SBorder)
+						.BorderImage(GetWhiteBrush())
+						.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.42f))
+					]
+				]
+			]
+		];
+}
+
+TSharedRef<SWidget> FT66Style::MakeSlotFrame(const TSharedRef<SWidget>& Content, const FLinearColor& AccentColor, const FMargin& Padding)
+{
+	return MakeSlotFrame(Content, TAttribute<FSlateColor>(FSlateColor(AccentColor)), Padding);
+}
+
+TSharedRef<SWidget> FT66Style::MakeHudPanel(const TSharedRef<SWidget>& Content, const FText& Title, const FMargin& Padding)
+{
+	TSharedRef<SWidget> PanelContent =
+		Title.IsEmpty()
+		? Content
+		: StaticCastSharedRef<SWidget>(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				SNew(STextBlock)
+				.Text(Title)
+				.Font(FT66Style::MakeFont(TEXT("Bold"), 18))
+				.ColorAndOpacity(FT66Style::TextMuted())
+				.Justification(ETextJustify::Center)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 8.f)
+			[
+				MakeDivider()
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				Content
+			]);
+
+	return MakeScreenSurface(PanelContent, Padding);
+}
+
+TSharedRef<SWidget> FT66Style::MakeHudPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+{
+	return MakeHudPanel(Content, FText::GetEmpty(), Padding);
+}
+
+TSharedRef<SWidget> FT66Style::MakeDivider(float Height)
+{
+	return SNew(SBox)
+		.HeightOverride(Height)
+		[
+			SNew(SBorder)
+			.BorderImage(GetWhiteBrush())
+			.BorderBackgroundColor(FT66Style::Stroke() * FLinearColor(1.f, 1.f, 1.f, 0.45f))
+		];
+}
+
+TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding)
+{
+	return SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			MakeLayeredSurface(
+				Content,
+				FT66Style::PanelOuter(),
+				FT66Style::Border(),
+				FT66Style::Background(),
+				FT66Style::Accent() * FLinearColor(1.f, 1.f, 1.f, 0.75f),
+				Padding)
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(5.f)
+		[
+			SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
+			[
+				SNew(SBorder)
+				.BorderImage(GetWhiteBrush())
+				.BorderBackgroundColor(FT66Style::Accent2())
+			]
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Top)
+		.Padding(5.f)
+		[
+			SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
+			[
+				SNew(SBorder)
+				.BorderImage(GetWhiteBrush())
+				.BorderBackgroundColor(FT66Style::Accent2())
+			]
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Bottom)
+		.Padding(5.f)
+		[
+			SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
+			[
+				SNew(SBorder)
+				.BorderImage(GetWhiteBrush())
+				.BorderBackgroundColor(FT66Style::Accent2())
+			]
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.Padding(5.f)
+		[
+			SNew(SBox).WidthOverride(10.f).HeightOverride(10.f)
+			[
+				SNew(SBorder)
+				.BorderImage(GetWhiteBrush())
+				.BorderBackgroundColor(FT66Style::Accent2())
+			]
+		];
+}
+
+const FSlateBrush* FT66Style::GetInventorySlotFrameBrush()
+{
+	return ResolveOptionalTextureBrush(
+		GetInventorySlotEntry(),
+		TEXT("/Game/UI/Assets/T_UI_DotaInventorySlotFrame.T_UI_DotaInventorySlotFrame"),
+		GDotaGeneratedSourceDir / TEXT("dota_inventory_slot_frame.png"),
+		FMargin(0.22f));
 }
 
 TSharedRef<SWidget> FT66Style::MakeResponsiveRoot(

@@ -1,0 +1,344 @@
+#define TWO_PI 6.28318530718
+#define PI 3.14159265359
+#define FAR_DISTANCE 1e5
+#define RENDERING_EPS 1.0e-4
+#define DIVISION_EPS 1.0e-6
+#define UINT16_MAX 0xffff
+#define UINT32_MAX 0xffffffff
+#define LOG_MAX_SCALE 524288.0
+#define LOG_MIN_SCALE 0.0001
+#define MAX_UINT16 65535.0
+
+#define BBOX_MIN -100.0
+#define BBOX_MAX  100.0
+
+// FLOAT_MAX was added in UE 5.6 Common.ush, define it for earlier versions
+#ifndef FLOAT_MAX
+#define FLOAT_MAX (asfloat(0x7F7FFFFF))
+#endif
+
+float3 GridSize;
+
+float3 toVolumeSpace(float4 x)
+{
+    return ((x.xyz - x.w * BBOX_MIN) / (BBOX_MAX - BBOX_MIN)) * (GridSize - 2.0) + x.w * 1.0;
+}
+
+//as a segment
+struct Segment
+{
+    float3 seg0;
+    float3 seg1;
+};
+
+//as origin, direction, max distance
+struct Ray
+{
+    float3 ro;
+    float3 rd;
+    float maxt;
+};
+
+Ray GetRay1(Segment ray)
+{
+    Ray r1;
+    float3 dx = ray.seg1 - ray.seg0;
+    r1.maxt = length(dx);
+    r1.rd = dx/r1.maxt;
+    r1.ro = ray.seg0;
+    return r1;
+}
+
+Segment transformRay(float4x4 m, Segment r)
+{
+    r.seg0 = mul(float4(r.seg0, 1.0), m).xyz;
+    r.seg1 = mul(float4(r.seg1, 1.0), m).xyz;
+    return r;
+}
+
+Segment transformRayToVolumeSpace(Segment r)
+{
+    r.seg0 = toVolumeSpace(float4(r.seg0, 1.0));
+    r.seg1 = toVolumeSpace(float4(r.seg1, 1.0));
+    return r;
+}
+
+bool boxIntersection(inout Segment ray, float3 minpos, float3 maxpos)
+{
+    Ray r = GetRay1(ray);
+
+    float3 inverse_dir = 1.0 / r.rd;
+    float3 tbot = inverse_dir * (minpos - r.ro);
+    float3 ttop = inverse_dir * (maxpos - r.ro);
+    float3 tmin = min(ttop, tbot);
+    float3 tmax = max(ttop, tbot);
+    float2 traverse = max(tmin.xx, tmin.yz);
+    float traverselow = max(traverse.x, traverse.y);
+    traverse = min(tmax.xx, tmax.yz);
+    float traversehi = min(traverse.x, traverse.y);
+    ray.seg0 = r.ro + r.rd * clamp(traverselow, 0.0, r.maxt);
+    ray.seg1 = r.ro + r.rd * min(traversehi, r.maxt);
+    return traverselow <= r.maxt && traversehi > max(traverselow, 0.0);
+}
+
+float3 Texel2UVW(float3 p, float3 size)
+{
+    return (p + 0.5) / size;
+}
+
+
+float4 cubic(float v)
+{
+    float4 n = float4(1.0, 2.0, 3.0, 4.0) - v;
+    float4 s = n * n * n;
+    float x = s.x;
+    float y = s.y - 4.0 * s.x;
+    float z = s.z - 4.0 * s.y + 6.0 * s.x;
+    float w = 6.0 - x - y - z;
+    return float4(x, y, z, w) * (1.0 / 6.0);
+}
+
+#define c1 0xcc9e2d51u
+#define c2 0x1b873593u
+
+// Bitwise left-rotating
+uint rotl(uint x, uint r)
+{
+	return (x << r) | (x >> (32u - r));
+}
+
+uint FinalizationMix(uint h)
+{
+    h ^= h >> 16;
+    h *= 0x85ebca6bu;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35u;
+    h ^= h >> 16;
+    return h;
+}
+
+uint MurmurHash3(uint2 seed)
+{
+    uint h = 0u;
+    uint k = seed.x;
+
+    k *= c1;
+    k = rotl(k,15u);
+    k *= c2;
+
+    h ^= k;
+    h = rotl(h,13u);
+    h = h*5u+0xe6546b64u;
+
+    k = seed.y;
+
+    k *= c1;
+    k = rotl(k,15u);
+    k *= c2;
+
+    h ^= k;
+    h = rotl(h,13u);
+    h = h*5u+0xe6546b64u;
+
+    h ^= 8u;
+
+    return FinalizationMix(h);
+}
+
+float Rand(uint2 seed)
+{
+    return float(MurmurHash3(seed)) / float(0xffffffffu);
+}
+
+float3 ColorTemperatureToRGB(float Temp)
+{
+	if (Temp < 1000.0f)
+		return float3(0.0f, 0.0f, 0.0f);
+
+	Temp = clamp(Temp, 1000.0f, 15000.0f);
+
+	// Approximate Planckian locus in CIE 1960 UCS
+	float u = (0.860117757f + 1.54118254e-4f * Temp + 1.28641212e-7f * Temp * Temp) / (1.0f + 8.42420235e-4f * Temp + 7.08145163e-7f * Temp * Temp);
+	float v = (0.317398726f + 4.22806245e-5f * Temp + 4.20481691e-8f * Temp * Temp) / (1.0f - 2.89741816e-5f * Temp + 1.61456053e-7f * Temp * Temp);
+
+	float x = 3.0f * u / (2.0f * u - 8.0f * v + 4.0f);
+	float y = 2.0f * v / (2.0f * u - 8.0f * v + 4.0f);
+	float z = 1.0f - x - y;
+
+	float Y = 1.0f;
+	float X = Y / y * x;
+	float Z = Y / y * z;
+
+	// XYZ to RGB with BT.709 primaries
+	float R = 3.2404542f * X + -1.5371385f * Y + -0.4985314f * Z;
+	float G = -0.9692660f * X + 1.8760108f * Y + 0.0415560f * Z;
+	float B = 0.0556434f * X + -0.2040259f * Y + 1.0572252f * Z;
+
+	return float3(R, G, B);
+}
+
+float3 black_body_radiation(float temperature)
+{
+    float3 output = 0.0;
+    
+    const float saturation = 0.05;
+    for (float i = 0.; i < 3.; i+=1) // +=.1 if you want to better sample the spectrum.
+    { 
+        float freq = 1. + .5 * i;
+        output[int(i)] += 10. / saturation * (freq * freq * freq) / (exp((freq / temperature)) - 1.); // Planck law
+    }
+    
+    return output;
+}
+
+uint cosToUint16(float cosinus)
+{
+    return ((cosinus + 1.0f) / 2.0f) * (UINT16_MAX - 1);
+}
+float uint16ToCos(uint value)
+{
+    return (float(value) / (UINT16_MAX - 1)) * 2.0f - 1.0f;
+}
+
+int GetBlockID(Texture3D<uint> BlockIndexTexture, uint3 block_pos)
+{
+    return BlockIndexTexture[block_pos];
+}
+
+uint3 UnpackBlockXYZ(uint block_pos_packed)
+{
+    return uint3(block_pos_packed & 1023u, (block_pos_packed >> 10u) & 1023u, (block_pos_packed >> 20u) & 1023u);
+}
+
+uint PackBlockXYZ(uint3 block_pos)
+{
+    return (block_pos.x & 1023u) | ((block_pos.y & 1023u) << 10u) | ((block_pos.z & 1023u) << 20u);
+}
+
+// Source: https://gmplib.org/~tege/divcnst-pldi94.pdf
+uint FastDiv(uint n, uint m, uint sh1, uint sh2)
+{    
+    uint64_t wide = uint64_t(n) * uint64_t(m);
+    uint t1 = uint(wide >> 32);
+
+    return (t1 + ((n - t1) >> sh1)) >> sh2;
+}
+
+uint3 RenderBlockPos(uint blockID, uint blockSize, uint blockSizeMultiply, uint blockSizeShift1, uint blockSizeShift2)
+{
+    uint temp1 = FastDiv(blockID, blockSizeMultiply, blockSizeShift1, blockSizeShift2);
+    uint temp2 = FastDiv(temp1, blockSizeMultiply, blockSizeShift1, blockSizeShift2);
+    
+    return uint3(
+        blockID - temp1 * blockSize,
+        temp1 - temp2 * blockSize,
+        temp2
+    );
+}
+
+uint InverseRenderBlockPos(uint3 blockPos, uint SparseBlockGridSize)
+{
+    return blockPos.x + blockPos.y * SparseBlockGridSize + blockPos.z * SparseBlockGridSize * SparseBlockGridSize;
+}
+
+uint3 VoxelToBlock(float3 voxelPos)
+{
+    return uint3(voxelPos) >> BLOCK_SIZE_LOG2;
+}
+
+float LogToFloat(uint l)
+{
+    float l2 = float(l) * (1.f / MAX_UINT16);
+    float log_range = log2(LOG_MAX_SCALE) - log2(LOG_MIN_SCALE);
+    return exp2(log_range * l2 + log2(LOG_MIN_SCALE)) - LOG_MIN_SCALE;
+}
+
+//Separating Axis Theorem
+bool TriangleBoxIntersection(float3 boxCenter, float3 boxHalfExtents, float3 v0, float3 v1, float3 v2)
+{
+    float3 e0 = v1 - v0;
+    float3 e1 = v2 - v1;
+    float3 e2 = v0 - v2;
+
+    float3 boxAxes[3] = { float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1) };
+
+    v0 -= boxCenter;
+    v1 -= boxCenter;
+    v2 -= boxCenter;
+
+    for (int i = 0; i < 3; ++i)
+    {
+        float3 axis = boxAxes[i];
+        float r = boxHalfExtents[i];
+        float p0 = dot(v0, axis);
+        float p1 = dot(v1, axis);
+        float p2 = dot(v2, axis);
+        if (max(max(p0, p1), p2) < -r || min(min(p0, p1), p2) > r)
+            return false;
+    }
+
+    float3 triangleNormal = cross(e0, e1);
+    float d = dot(triangleNormal, v0);
+    float r = abs(boxHalfExtents.x * abs(triangleNormal.x)) +
+              abs(boxHalfExtents.y * abs(triangleNormal.y)) +
+              abs(boxHalfExtents.z * abs(triangleNormal.z));
+    if (abs(d) > r)
+        return false;
+
+    float3 edgeCrossAxes[9] =
+    {
+        cross(e0, boxAxes[0]), cross(e0, boxAxes[1]), cross(e0, boxAxes[2]),
+        cross(e1, boxAxes[0]), cross(e1, boxAxes[1]), cross(e1, boxAxes[2]),
+        cross(e2, boxAxes[0]), cross(e2, boxAxes[1]), cross(e2, boxAxes[2])
+    };
+
+    for (int i = 0; i < 9; ++i)
+    {
+        float3 axis = edgeCrossAxes[i];
+        if (length(axis) < 1e-6)
+            continue;
+        float r = boxHalfExtents.x * abs(dot(axis, boxAxes[0])) +
+                  boxHalfExtents.y * abs(dot(axis, boxAxes[1])) +
+                  boxHalfExtents.z * abs(dot(axis, boxAxes[2]));
+        float p0 = dot(v0, axis);
+        float p1 = dot(v1, axis);
+        float p2 = dot(v2, axis);
+        if (max(max(p0, p1), p2) < -r || min(min(p0, p1), p2) > r)
+            return false;
+    }
+
+    return true;
+}
+
+
+bool TriangleIntersectsAABB(float3 v0, float3 v1, float3 v2,
+                            float3 Bmin, float3 Bmax)
+{
+    float3 triMin = min(min(v0, v1), v2);
+    float3 triMax = max(max(v0, v1), v2);
+
+    if (triMax.x < Bmin.x || triMin.x > Bmax.x)
+        return false;
+    if (triMax.y < Bmin.y || triMin.y > Bmax.y)
+        return false;
+    if (triMax.z < Bmin.z || triMin.z > Bmax.z)
+        return false;
+
+    float3 center = (Bmin + Bmax) * 0.5f;
+    float3 extents = (Bmax - Bmin) * 0.5f;
+    if (TriangleBoxIntersection(center, extents, v0, v1, v2))
+        return true;
+
+    return false;
+}
+
+uint BlockIndex(float3 blockPos, uint3 BlockGridSize)
+{
+    return min(blockPos.x + blockPos.y * BlockGridSize.x + blockPos.z * BlockGridSize.x * BlockGridSize.y, BlockGridSize.x * BlockGridSize.y * BlockGridSize.z - 1);
+}
+
+float DepthFade(float Opacity, float FadeDistance, float3 p1, float3 p2)
+{
+    float fadeFactor = saturate(distance(p1, p2) / max(FadeDistance, 0.0f));
+    return lerp(fadeFactor * Opacity, fadeFactor, step(1.0f, fadeFactor));
+}

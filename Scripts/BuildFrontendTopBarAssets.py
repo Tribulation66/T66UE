@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections import deque
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageChops, ImageColor, ImageDraw, ImageFilter, ImageFont
 
 
@@ -21,6 +23,8 @@ UTILITY_SLOT_OUT = OUTPUT_DIR / "frontend_topbar_utility_slot.png"
 QUIT_SLOT_OUT = OUTPUT_DIR / "frontend_topbar_quit_slot.png"
 NAV_TAB_OUT = OUTPUT_DIR / "frontend_topbar_nav_tab.png"
 ACTIVE_TAB_OUT = OUTPUT_DIR / "frontend_topbar_active_tab.png"
+HOME_NAV_TAB_OUT = OUTPUT_DIR / "frontend_topbar_home_tab.png"
+HOME_ACTIVE_TAB_OUT = OUTPUT_DIR / "frontend_topbar_home_active_tab.png"
 SEPARATOR_OUT = OUTPUT_DIR / "frontend_topbar_separator.png"
 SETTINGS_ICON_OUT = OUTPUT_DIR / "frontend_topbar_settings_icon.png"
 LANGUAGE_ICON_OUT = OUTPUT_DIR / "frontend_topbar_language_icon.png"
@@ -29,9 +33,12 @@ POWER_COUPONS_ICON_OUT = OUTPUT_DIR / "frontend_topbar_power_coupons_icon.png"
 QUIT_ICON_OUT = OUTPUT_DIR / "frontend_topbar_quit_icon.png"
 QUIT_GLOW_OUT = OUTPUT_DIR / "frontend_topbar_quit_glow.png"
 ICON_PREVIEW_OUT = OUTPUT_DIR / "topbar_icon_sheet_preview.png"
+AI_SETTINGS_BASE = OUTPUT_DIR / "topbar_ai_settings_base.png"
 AI_ACHIEVEMENT_BASE = OUTPUT_DIR / "topbar_ai_achievement_base.png"
 AI_COUPON_BASE = OUTPUT_DIR / "topbar_ai_coupon_base.png"
 AI_LANGUAGE_BASE = OUTPUT_DIR / "topbar_ai_language_base.png"
+AI_QUIT_BASE = OUTPUT_DIR / "topbar_ai_quit_base.png"
+ICON_OUTPUT_SIZE = 256
 
 UI_FONT_BOLD = ROOT / "Content" / "Slate" / "Fonts" / "New Fonts" / "Cinzel" / "static" / "Cinzel-Bold.ttf"
 UI_FONT_REGULAR = ROOT / "Content" / "Slate" / "Fonts" / "New Fonts" / "Cinzel" / "static" / "Cinzel-Regular.ttf"
@@ -165,7 +172,115 @@ def load_icon_base(path: Path) -> Image.Image | None:
     if not path.exists():
         return None
 
-    return crop_to_alpha(Image.open(path).convert("RGBA"))
+    image = peel_connected_background(Image.open(path).convert("RGBA"))
+    alpha = image.getchannel("A").point(lambda value: 0 if value < 24 else value)
+    image.putalpha(alpha)
+    return crop_to_alpha(image)
+
+
+def peel_connected_background(image: Image.Image, neighbor_delta_threshold: int = 8) -> Image.Image:
+    image = image.convert("RGBA")
+    rgba = np.array(image, dtype=np.uint8)
+    rgb = rgba[:, :, :3].astype(np.int16)
+    alpha = rgba[:, :, 3]
+    height, width = alpha.shape
+
+    visited = np.zeros((height, width), dtype=bool)
+    background = np.zeros((height, width), dtype=bool)
+    queue: deque[tuple[int, int]] = deque()
+
+    for x in range(width):
+        queue.append((0, x))
+        queue.append((height - 1, x))
+    for y in range(1, height - 1):
+        queue.append((y, 0))
+        queue.append((y, width - 1))
+
+    while queue:
+        y, x = queue.popleft()
+        if visited[y, x] or alpha[y, x] == 0:
+            continue
+
+        visited[y, x] = True
+        background[y, x] = True
+        current = rgb[y, x]
+
+        for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+            if 0 <= ny < height and 0 <= nx < width and not visited[ny, nx] and alpha[ny, nx] > 0:
+                if np.abs(rgb[ny, nx] - current).sum() <= neighbor_delta_threshold:
+                    queue.append((ny, nx))
+
+    rgba[background, 3] = 0
+    return Image.fromarray(rgba, "RGBA")
+
+
+def tighten_icon_alpha(
+    image: Image.Image,
+    transparent_cutoff: int = 6,
+    solid_cutoff: int = 250,
+) -> Image.Image:
+    image = image.convert("RGBA")
+    alpha = image.getchannel("A")
+
+    def remap(value: int) -> int:
+        if value <= transparent_cutoff:
+            return 0
+        if value >= solid_cutoff:
+            return 255
+        return int(round(((value - transparent_cutoff) * 255.0) / float(solid_cutoff - transparent_cutoff)))
+
+    image.putalpha(alpha.point(remap))
+    return image
+
+
+def bleed_rgb_into_transparency(image: Image.Image, iterations: int = 24) -> Image.Image:
+    image = image.convert("RGBA")
+    rgba = np.array(image, dtype=np.uint8)
+    alpha = rgba[:, :, 3]
+    filled = alpha > 0
+
+    if filled.all():
+        return image
+
+    rgb = rgba[:, :, :3].astype(np.float32)
+
+    for _ in range(iterations):
+        if filled.all():
+            break
+
+        rgb_sum = np.zeros_like(rgb, dtype=np.float32)
+        weight_sum = np.zeros(alpha.shape, dtype=np.float32)
+
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dx == 0 and dy == 0:
+                    continue
+
+                src_y0 = max(0, -dy)
+                src_y1 = alpha.shape[0] - max(0, dy)
+                src_x0 = max(0, -dx)
+                src_x1 = alpha.shape[1] - max(0, dx)
+                dst_y0 = max(0, dy)
+                dst_y1 = dst_y0 + (src_y1 - src_y0)
+                dst_x0 = max(0, dx)
+                dst_x1 = dst_x0 + (src_x1 - src_x0)
+
+                neighbor_mask = filled[src_y0:src_y1, src_x0:src_x1]
+                if not neighbor_mask.any():
+                    continue
+
+                rgb_sum[dst_y0:dst_y1, dst_x0:dst_x1] += rgb[src_y0:src_y1, src_x0:src_x1] * neighbor_mask[:, :, None]
+                weight_sum[dst_y0:dst_y1, dst_x0:dst_x1] += neighbor_mask.astype(np.float32)
+
+        can_fill = (~filled) & (weight_sum > 0)
+        if not can_fill.any():
+            break
+
+        rgb[can_fill] = rgb_sum[can_fill] / weight_sum[can_fill, None]
+        filled[can_fill] = True
+
+    rgba[:, :, :3] = np.clip(np.rint(rgb), 0, 255).astype(np.uint8)
+    return Image.fromarray(rgba, "RGBA")
 
 
 def draw_centered_text(
@@ -328,16 +443,8 @@ def build_recessed_slot_texture(size: tuple[int, int], *, warm: bool = False) ->
 
     draw.polygon(outer, fill=outer_fill, outline=base_shadow)
     draw.polygon(cavity, fill=cavity_fill, outline=cavity_line)
-    draw.line((18, 8, w - 18, 8), fill=top_highlight, width=2)
-    draw.line((16, h - 8, w - 16, h - 8), fill=base_shadow, width=1)
-
-    if warm:
-        overlay.alpha_composite(warm_overlay((w - 12, h - 12), rim_glow, 22), (6, 5))
-    else:
-        overlay.alpha_composite(warm_overlay((w - 14, h - 14), rim_glow, 10), (7, 7))
-
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=0.4))
-    canvas.alpha_composite(make_shadow(overlay, (0, 0, 0, 170), 6.0), (0, 5))
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=0.15))
+    canvas.alpha_composite(make_shadow(overlay, (0, 0, 0, 140), 4.0), (0, 3))
     canvas.alpha_composite(overlay)
     return canvas
 
@@ -482,19 +589,19 @@ def build_nav_tab_texture(size: tuple[int, int], *, active: bool = False) -> Ima
 
     if active:
         outer_fill = (53, 58, 66, 252)
-        outer_line = (122, 132, 144, 196)
         middle_fill = (18, 22, 28, 252)
-        middle_line = (109, 118, 127, 210)
         inner_fill = (39, 44, 50, 250)
+        outer_line = middle_fill
+        middle_line = inner_fill
         top_highlight = (236, 241, 246, 64)
         bottom_accent = (132, 150, 168, 132)
         glow_alpha = 14
     else:
         outer_fill = (45, 53, 61, 238)
-        outer_line = (88, 100, 113, 160)
         middle_fill = (15, 20, 25, 242)
-        middle_line = (66, 76, 86, 170)
         inner_fill = (27, 33, 40, 245)
+        outer_line = middle_fill
+        middle_line = inner_fill
         top_highlight = (236, 241, 246, 34)
         bottom_accent = (108, 124, 140, 58)
         glow_alpha = 6
@@ -502,13 +609,6 @@ def build_nav_tab_texture(size: tuple[int, int], *, active: bool = False) -> Ima
     draw.polygon(outer, fill=outer_fill, outline=(12, 15, 18, 214))
     draw.polygon(middle, fill=middle_fill, outline=outer_line)
     draw.polygon(inner, fill=inner_fill, outline=middle_line)
-    draw.line((30, 12, w - 30, 12), fill=top_highlight, width=2)
-    draw.line((26, h - 16, w - 26, h - 16), fill=bottom_accent, width=2)
-    draw.line((18, 18, 26, h - 22), fill=(0, 0, 0, 86), width=1)
-    draw.line((w - 26, 18, w - 18, h - 22), fill=(0, 0, 0, 86), width=1)
-    overlay.alpha_composite(warm_overlay((w - 48, h - 28), (124, 146, 170), glow_alpha), (24, 12))
-
-    canvas.alpha_composite(make_shadow(overlay, (0, 0, 0, 150), 6.0), (0, 4))
     canvas.alpha_composite(overlay)
     return canvas
 
@@ -519,6 +619,58 @@ def build_inactive_tab_texture(size: tuple[int, int]) -> Image.Image:
 
 def build_active_tab_texture(size: tuple[int, int]) -> Image.Image:
     return build_nav_tab_texture(size, active=True)
+
+
+def build_home_tab_texture(size: tuple[int, int], *, active: bool = False) -> Image.Image:
+    w, h = size
+    canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    outer_box = (8, 4, w - 8, h - 10)
+    middle_box = (12, 8, w - 12, h - 14)
+    inner_box = (17, 12, w - 17, h - 20)
+    highlight_box = (20, 14, w - 20, (h // 2) - 1)
+
+    if active:
+        outer_fill = (62, 69, 79, 248)
+        middle_fill = (21, 24, 31, 252)
+        inner_fill = (81, 34, 39, 248)
+        outer_line = (142, 124, 102, 214)
+        middle_line = (28, 18, 20, 232)
+        lower_glow = (184, 67, 69, 82)
+        upper_gloss = (255, 235, 222, 48)
+    else:
+        outer_fill = (55, 60, 70, 236)
+        middle_fill = (18, 20, 26, 244)
+        inner_fill = (54, 26, 31, 242)
+        outer_line = (118, 106, 90, 184)
+        middle_line = (24, 16, 18, 220)
+        lower_glow = (154, 57, 60, 58)
+        upper_gloss = (255, 238, 227, 26)
+
+    draw.rounded_rectangle(outer_box, radius=8, fill=outer_fill, outline=(12, 14, 18, 228), width=2)
+    draw.rounded_rectangle(middle_box, radius=6, fill=middle_fill, outline=outer_line, width=1)
+    draw.rounded_rectangle(inner_box, radius=5, fill=inner_fill, outline=middle_line, width=1)
+    draw.rounded_rectangle(highlight_box, radius=4, fill=upper_gloss)
+    draw.line((22, h - 21, w - 22, h - 21), fill=lower_glow, width=1)
+    draw.line((20, 13, w - 20, 13), fill=(236, 240, 245, 40 if active else 22), width=1)
+
+    corner_shadow = Image.new("RGBA", size, (0, 0, 0, 0))
+    sdraw = ImageDraw.Draw(corner_shadow)
+    sdraw.rounded_rectangle((18, 16, w - 18, h - 18), radius=4, outline=(0, 0, 0, 50), width=2)
+    overlay.alpha_composite(corner_shadow)
+
+    canvas.alpha_composite(overlay)
+    return canvas
+
+
+def build_home_inactive_tab_texture(size: tuple[int, int]) -> Image.Image:
+    return build_home_tab_texture(size, active=False)
+
+
+def build_home_active_tab_texture(size: tuple[int, int]) -> Image.Image:
+    return build_home_tab_texture(size, active=True)
 
 
 def build_separator_texture(size: tuple[int, int]) -> Image.Image:
@@ -570,6 +722,8 @@ def make_topbar_plate() -> None:
     build_quit_slot_texture((78, 78)).save(QUIT_SLOT_OUT)
     build_inactive_tab_texture((210, 76)).save(NAV_TAB_OUT)
     build_active_tab_texture((226, 82)).save(ACTIVE_TAB_OUT)
+    build_home_inactive_tab_texture((242, 76)).save(HOME_NAV_TAB_OUT)
+    build_home_active_tab_texture((258, 82)).save(HOME_ACTIVE_TAB_OUT)
     build_separator_texture((26, 68)).save(SEPARATOR_OUT)
 
 
@@ -589,84 +743,75 @@ def build_star_points(center_x: int, center_y: int, outer_radius: int, inner_rad
 
 
 def make_power_symbol(size: int = 256) -> Image.Image:
+    base = load_icon_base(AI_QUIT_BASE)
+    if base is not None:
+        return base
+
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    sdraw = ImageDraw.Draw(shadow)
-    sdraw.ellipse((30, 30, size - 30, size - 30), fill=(0, 0, 0, 110))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=12.0))
-    canvas.alpha_composite(shadow, (0, 10))
+    draw = ImageDraw.Draw(canvas)
+    center = size // 2
+    outer_box = (46, 46, size - 46, size - 46)
+    middle_box = (58, 58, size - 58, size - 58)
+    inner_box = (72, 72, size - 72, size - 72)
+    gap_half_width = max(26, size // 13)
+    ring_y_top = 22
+    ring_y_bottom = (size // 2) - 8
+    ring_dark = (41, 24, 18, 255)
+    ring_hot = (235, 132, 52, 255)
+    ring_light = (255, 230, 178, 255)
+    stem_dark = (52, 31, 20, 255)
 
-    ring = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(ring)
+    draw.ellipse(outer_box, outline=ring_dark, width=max(16, size // 24))
+    draw.ellipse(middle_box, outline=ring_hot, width=max(18, size // 22))
+    draw.ellipse(inner_box, outline=ring_light, width=max(8, size // 52))
+    draw.rounded_rectangle((center - gap_half_width, ring_y_top, center + gap_half_width, ring_y_bottom), radius=gap_half_width, fill=(0, 0, 0, 0))
 
-    outer_dark = (24, 16, 13, 255)
-    outer_mid = (78, 51, 35, 255)
-    warm_dark = (231, 124, 47, 255)
-    warm_light = (255, 226, 168, 255)
-    ivory = (254, 247, 232, 255)
-
-    draw.ellipse((38, 38, size - 38, size - 38), fill=outer_dark)
-    draw.ellipse((52, 52, size - 52, size - 52), outline=outer_mid, width=10)
-    draw.arc((56, 56, size - 56, size - 56), start=42, end=318, fill=warm_dark, width=24)
-    draw.arc((62, 62, size - 62, size - 62), start=42, end=318, fill=warm_light, width=10)
-    draw.arc((60, 60, size - 60, size - 60), start=42, end=318, fill=ivory, width=5)
-
-    draw.rounded_rectangle((size // 2 - 18, 24, size // 2 + 18, 132), radius=16, fill=outer_dark)
-    draw.rounded_rectangle((size // 2 - 10, 28, size // 2 + 10, 124), radius=10, fill=warm_light)
-    draw.rounded_rectangle((size // 2 - 6, 34, size // 2 + 6, 116), radius=6, fill=ivory)
-
-    ring = ring.filter(ImageFilter.GaussianBlur(radius=0.35))
-    canvas.alpha_composite(ring)
-
-    sheen = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    sdraw = ImageDraw.Draw(sheen)
-    sdraw.arc((60, 60, size - 60, size - 60), start=210, end=300, fill=(255, 244, 220, 84), width=10)
-    sdraw.rounded_rectangle((size // 2 - 10, 34, size // 2 - 2, 86), radius=5, fill=(255, 248, 234, 68))
-    sheen = sheen.filter(ImageFilter.GaussianBlur(radius=1.8))
-    canvas.alpha_composite(sheen)
-
+    stem_outer = (center - max(18, size // 28), 30, center + max(18, size // 28), (size // 2) + 28)
+    stem_inner = (center - max(10, size // 50), 24, center + max(10, size // 50), (size // 2) + 18)
+    draw.rounded_rectangle(stem_outer, radius=max(14, size // 32), fill=stem_dark)
+    draw.rounded_rectangle(stem_inner, radius=max(10, size // 46), fill=ring_light)
     return canvas
 
 
 def make_settings_gear(size: int = 256) -> Image.Image:
-    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    sdraw = ImageDraw.Draw(shadow)
-    sdraw.ellipse((42, 42, size - 42, size - 42), fill=(0, 0, 0, 82))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=10.0))
-    canvas.alpha_composite(shadow, (0, 8))
+    base = load_icon_base(AI_SETTINGS_BASE)
+    if base is not None:
+        return base
 
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     ring = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(ring)
     center = size // 2
-    tooth_outer = 116
-    tooth_inner = 80
+    tooth_outer = int(size * 0.49)
+    tooth_inner = int(size * 0.25)
+    tooth_half_width = max(18, size // 14)
+    tooth_radius = max(8, size // 30)
+    outer_ring_width = max(18, size // 22)
+    inner_ring_width = max(9, size // 44)
 
     steel_dark = (43, 50, 58, 255)
     steel_mid = (93, 105, 118, 255)
     steel_light = (216, 223, 230, 255)
-    steel_soft = (167, 177, 187, 255)
-    core_dark = (26, 31, 36, 255)
+    steel_soft = (188, 196, 206, 255)
+    core_dark = (33, 39, 46, 255)
 
     for angle in range(0, 360, 45):
         tooth = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         tdraw = ImageDraw.Draw(tooth)
-        tdraw.rounded_rectangle((center - 20, center - tooth_outer, center + 20, center - tooth_inner), radius=10, fill=steel_mid)
+        tdraw.rounded_rectangle(
+            (center - tooth_half_width, center - tooth_outer, center + tooth_half_width, center - tooth_inner),
+            radius=tooth_radius,
+            fill=steel_mid,
+            outline=steel_dark,
+            width=max(2, size // 120),
+        )
         tooth = tooth.rotate(angle, resample=Image.Resampling.BICUBIC, center=(center, center))
         ring.alpha_composite(tooth)
 
-    draw.ellipse((48, 48, size - 48, size - 48), fill=steel_dark)
-    draw.ellipse((66, 66, size - 66, size - 66), outline=steel_light, width=18)
-    draw.ellipse((84, 84, size - 84, size - 84), outline=steel_soft, width=7)
-    draw.ellipse((98, 98, size - 98, size - 98), fill=core_dark)
-    draw.ellipse((112, 112, size - 112, size - 112), fill=steel_light)
-    draw.ellipse((122, 122, size - 122, size - 122), fill=steel_dark)
-
-    sheen = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    sdraw = ImageDraw.Draw(sheen)
-    sdraw.arc((60, 60, size - 60, size - 60), start=210, end=300, fill=(248, 252, 255, 82), width=10)
-    sheen = sheen.filter(ImageFilter.GaussianBlur(radius=2.0))
-    ring.alpha_composite(sheen)
+    draw.ellipse((56, 56, size - 56, size - 56), fill=steel_dark)
+    draw.ellipse((74, 74, size - 74, size - 74), outline=steel_light, width=outer_ring_width)
+    draw.ellipse((100, 100, size - 100, size - 100), outline=steel_soft, width=inner_ring_width)
+    draw.ellipse((126, 126, size - 126, size - 126), fill=core_dark)
     canvas.alpha_composite(ring)
     return canvas
 
@@ -674,21 +819,9 @@ def make_settings_gear(size: int = 256) -> Image.Image:
 def make_language_icon(size: int = 256) -> Image.Image:
     base = load_icon_base(AI_LANGUAGE_BASE)
     if base is not None:
-        canvas = fit_visible_to_canvas(base, size, 10)
-        shadow = make_shadow(canvas, (0, 0, 0, 110), 8.0)
-        framed = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-        framed.alpha_composite(shadow, (0, 6))
-        framed.alpha_composite(canvas)
-        return framed
+        return base
 
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    sdraw = ImageDraw.Draw(shadow)
-    sdraw.rounded_rectangle((34, 78, 122, 186), radius=18, fill=(0, 0, 0, 84))
-    sdraw.rounded_rectangle((132, 72, 222, 180), radius=18, fill=(0, 0, 0, 76))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=9.0))
-    canvas.alpha_composite(shadow, (0, 8))
-
     icon = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(icon)
 
@@ -729,65 +862,100 @@ def make_language_icon(size: int = 256) -> Image.Image:
         stroke_width=max(1, size // 112),
     )
 
-    icon = icon.filter(ImageFilter.GaussianBlur(radius=0.2))
     canvas.alpha_composite(icon)
     return canvas
 
 
 def make_achievement_coin_icon(size: int = 256) -> Image.Image:
     base = load_icon_base(AI_ACHIEVEMENT_BASE)
-    if base is None:
-        base = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    if base is not None:
+        return base
 
-    canvas = fit_visible_to_canvas(base, size, 8)
-    draw_centered_ellipse_glow(
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+
+    outer = (34, 34, size - 34, size - 34)
+    mid = (50, 50, size - 50, size - 50)
+    inner = (72, 72, size - 72, size - 72)
+    core = (96, 96, size - 96, size - 96)
+
+    dark_gold = (113, 70, 9, 255)
+    rich_gold = (215, 150, 18, 255)
+    bright_gold = (245, 198, 43, 255)
+    pale_gold = (255, 229, 154, 255)
+    text_black = (22, 18, 14, 255)
+
+    draw.ellipse(outer, fill=dark_gold)
+    draw.ellipse(mid, fill=bright_gold)
+    draw.ellipse(mid, outline=pale_gold, width=max(8, size // 56))
+    draw.ellipse(inner, fill=rich_gold)
+    draw.ellipse(core, fill=bright_gold)
+    draw.ellipse(core, outline=pale_gold, width=max(4, size // 96))
+
+    font = load_ui_font(int(size * 0.34), bold=True)
+    draw_centered_text(
         canvas,
-        (int(size * 0.28), int(size * 0.30), int(size * 0.72), int(size * 0.74)),
-        (36, 21, 12),
-        66,
-    )
-    font = load_ui_font(int(size * 0.24), bold=True)
-    draw_centered_text_pair(
-        canvas,
-        (int(size * 0.24), int(size * 0.28), int(size * 0.76), int(size * 0.74)),
-        "A",
-        "C",
+        (92, 102, size - 92, size - 92),
+        "AC",
         font,
-        (247, 238, 222, 255),
-        shadow_fill=(40, 22, 11, 215),
-        shadow_offset=(0, max(2, size // 56)),
-        stroke_fill=(110, 63, 28, 156),
-        stroke_width=max(1, size // 96),
-        tracking=max(6, size // 40),
+        text_black,
+        stroke_fill=(255, 233, 181, 120),
+        stroke_width=max(1, size // 170),
     )
     return canvas
 
 
 def make_power_coupon_icon(size: int = 256) -> Image.Image:
     base = load_icon_base(AI_COUPON_BASE)
-    if base is None:
-        base = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    if base is not None:
+        return base
 
-    canvas = fit_visible_to_canvas(base, size, 8)
-    draw_centered_ellipse_glow(
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+
+    outer = [
+        (112, 166),
+        (146, 132),
+        (size - 146, 132),
+        (size - 112, 166),
+        (size - 112, size - 166),
+        (size - 146, size - 132),
+        (146, size - 132),
+        (112, size - 166),
+    ]
+    inner = [
+        (132, 184),
+        (158, 158),
+        (size - 158, 158),
+        (size - 132, 184),
+        (size - 132, size - 184),
+        (size - 158, size - 158),
+        (158, size - 158),
+        (132, size - 184),
+    ]
+
+    gold_dark = (104, 66, 18, 255)
+    gold = (223, 171, 61, 255)
+    red_fill = (176, 26, 31, 255)
+    red_mid = (205, 52, 47, 255)
+    ivory = (248, 241, 225, 255)
+
+    draw.polygon(outer, fill=gold_dark)
+    draw.polygon(inner, fill=red_fill, outline=gold)
+    draw.line((154, 166, size - 154, 166), fill=(255, 222, 160, 86), width=max(2, size // 170))
+    draw.line((150, size - 168, size - 150, size - 168), fill=red_mid, width=max(2, size // 170))
+
+    font = load_ui_font(int(size * 0.24), bold=True)
+    draw_centered_text(
         canvas,
-        (int(size * 0.23), int(size * 0.34), int(size * 0.77), int(size * 0.66)),
-        (64, 29, 10),
-        48,
-    )
-    font = load_ui_font(int(size * 0.22), bold=True)
-    draw_centered_text_pair(
-        canvas,
-        (int(size * 0.24), int(size * 0.32), int(size * 0.76), int(size * 0.67)),
-        "P",
-        "C",
+        (150, 154, size - 150, size - 150),
+        "PC",
         font,
-        (247, 236, 214, 255),
-        shadow_fill=(58, 27, 11, 205),
-        shadow_offset=(0, max(2, size // 56)),
-        stroke_fill=(129, 69, 31, 152),
-        stroke_width=max(1, size // 96),
-        tracking=max(8, size // 30),
+        ivory,
+        shadow_fill=(70, 10, 12, 220),
+        shadow_offset=(0, max(2, size // 160)),
+        stroke_fill=(60, 12, 14, 220),
+        stroke_width=max(2, size // 120),
     )
     return canvas
 
@@ -841,26 +1009,32 @@ def save_icon_preview_sheet(icons: list[tuple[str, Image.Image]]) -> None:
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     make_topbar_plate()
-    settings_icon = make_settings_gear(256)
-    language_icon = make_language_icon(256)
-    achievement_icon = make_achievement_coin_icon(256)
-    coupon_icon = make_power_coupon_icon(256)
-    quit_icon = make_power_symbol(256)
-    quit_glow = make_quit_glow(256)
+    settings_icon = make_settings_gear(ICON_OUTPUT_SIZE)
+    language_icon = make_language_icon(ICON_OUTPUT_SIZE)
+    achievement_icon = make_achievement_coin_icon(ICON_OUTPUT_SIZE)
+    coupon_icon = make_power_coupon_icon(ICON_OUTPUT_SIZE)
+    quit_icon = make_power_symbol(ICON_OUTPUT_SIZE)
+    quit_glow = make_quit_glow(ICON_OUTPUT_SIZE)
 
-    fit_visible_to_canvas(settings_icon, 256, 14).save(SETTINGS_ICON_OUT)
-    fit_visible_to_canvas(language_icon, 256, 8).save(LANGUAGE_ICON_OUT)
-    fit_visible_to_canvas(achievement_icon, 256, 8).save(ACHIEVEMENT_COINS_ICON_OUT)
-    fit_visible_to_canvas(coupon_icon, 256, 8).save(POWER_COUPONS_ICON_OUT)
-    fit_visible_to_canvas(quit_icon, 256, 14).save(QUIT_ICON_OUT)
-    fit_visible_to_canvas(quit_glow, 256, 10).save(QUIT_GLOW_OUT)
+    settings_output = bleed_rgb_into_transparency(tighten_icon_alpha(fit_visible_to_canvas(settings_icon, ICON_OUTPUT_SIZE, 12)))
+    language_output = bleed_rgb_into_transparency(tighten_icon_alpha(fit_visible_to_canvas(language_icon, ICON_OUTPUT_SIZE, 14)))
+    achievement_output = bleed_rgb_into_transparency(tighten_icon_alpha(fit_visible_to_canvas(achievement_icon, ICON_OUTPUT_SIZE, 14)))
+    coupon_output = bleed_rgb_into_transparency(tighten_icon_alpha(fit_visible_to_canvas(coupon_icon, ICON_OUTPUT_SIZE, 16)))
+    quit_output = bleed_rgb_into_transparency(tighten_icon_alpha(fit_visible_to_canvas(quit_icon, ICON_OUTPUT_SIZE, 12)))
+
+    settings_output.save(SETTINGS_ICON_OUT)
+    language_output.save(LANGUAGE_ICON_OUT)
+    achievement_output.save(ACHIEVEMENT_COINS_ICON_OUT)
+    coupon_output.save(POWER_COUPONS_ICON_OUT)
+    quit_output.save(QUIT_ICON_OUT)
+    fit_visible_to_canvas(quit_glow, ICON_OUTPUT_SIZE, 14).save(QUIT_GLOW_OUT)
     save_icon_preview_sheet(
         [
-            ("settings", settings_icon),
-            ("language", language_icon),
-            ("achievement_coins", achievement_icon),
-            ("power_coupons", coupon_icon),
-            ("quit", quit_icon),
+            ("settings", settings_output),
+            ("language", language_output),
+            ("achievement_coins", achievement_output),
+            ("power_coupons", coupon_output),
+            ("quit", quit_output),
         ]
     )
     print(f"Wrote {TOPBAR_OUT}")
@@ -872,6 +1046,8 @@ def main() -> None:
     print(f"Wrote {QUIT_SLOT_OUT}")
     print(f"Wrote {NAV_TAB_OUT}")
     print(f"Wrote {ACTIVE_TAB_OUT}")
+    print(f"Wrote {HOME_NAV_TAB_OUT}")
+    print(f"Wrote {HOME_ACTIVE_TAB_OUT}")
     print(f"Wrote {SEPARATOR_OUT}")
     print(f"Wrote {SETTINGS_ICON_OUT}")
     print(f"Wrote {LANGUAGE_ICON_OUT}")

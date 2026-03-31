@@ -227,15 +227,15 @@ namespace
 		switch (Rarity)
 		{
 		case ET66ItemRarity::Black:
-			return {0, 0.82f, 0.80f, 0.84f, 0.90f, 0.88f, 0.90f, 0.00f, 0.80f};
+			return {0, 0.82f, 0.72f, 0.84f, 0.90f, 0.90f, 0.92f, 0.00f, 0.78f};
 		case ET66ItemRarity::Red:
-			return {1, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 0.05f, 0.92f};
+			return {1, 0.96f, 0.86f, 0.98f, 1.00f, 1.00f, 1.02f, 0.03f, 0.86f};
 		case ET66ItemRarity::Yellow:
-			return {2, 1.12f, 1.18f, 1.16f, 1.08f, 1.10f, 1.12f, 0.12f, 1.00f};
+			return {2, 1.04f, 0.94f, 1.08f, 1.06f, 1.08f, 1.08f, 0.06f, 0.90f};
 		case ET66ItemRarity::White:
-			return {3, 1.26f, 1.42f, 1.34f, 1.16f, 1.20f, 1.22f, 0.20f, 1.08f};
+			return {3, 1.12f, 1.02f, 1.16f, 1.12f, 1.14f, 1.14f, 0.08f, 0.94f};
 		default:
-			return {0, 0.82f, 0.80f, 0.84f, 0.90f, 0.88f, 0.90f, 0.00f, 0.80f};
+			return {0, 0.82f, 0.72f, 0.84f, 0.90f, 0.90f, 0.92f, 0.00f, 0.78f};
 		}
 	}
 
@@ -267,6 +267,134 @@ const TCHAR* GetIdolVFXCategoryName(const ET66AttackCategory Category)
 	default:                         return TEXT("Unknown");
 	}
 }
+
+	UStaticMesh* ResolveIdolAccentMesh(const FName IdolID)
+	{
+		const TCHAR* MeshPath = nullptr;
+	if (IdolID == TEXT("Idol_Bone"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Bone_Projectile.Idol_Bone_Projectile");
+	}
+	else if (IdolID == TEXT("Idol_Glass"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Glass_Shard.Idol_Glass_Shard");
+	}
+	else if (IdolID == TEXT("Idol_Steel"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Steel_Spike.Idol_Steel_Spike");
+	}
+	else if (IdolID == TEXT("Idol_Wood"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Wood_Thorn.Idol_Wood_Thorn");
+	}
+	else if (IdolID == TEXT("Idol_Light"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Light_Lance.Idol_Light_Lance");
+	}
+	else if (IdolID == TEXT("Idol_Wind"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Wind_Crescent.Idol_Wind_Crescent");
+	}
+	else if (IdolID == TEXT("Idol_Rubber"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Rubber_Ball.Idol_Rubber_Ball");
+	}
+	else if (IdolID == TEXT("Idol_Ice"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Ice_Crystal.Idol_Ice_Crystal");
+	}
+	else if (IdolID == TEXT("Idol_Sound"))
+	{
+		MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Sound_Disc.Idol_Sound_Disc");
+	}
+		else if (IdolID == TEXT("Idol_Shadow"))
+		{
+			MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Shadow_Orb.Idol_Shadow_Orb");
+		}
+		else if (IdolID == TEXT("Idol_BlackHole"))
+		{
+			MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Shadow_Orb.Idol_Shadow_Orb");
+		}
+		else if (IdolID == TEXT("Idol_Star"))
+		{
+			MeshPath = TEXT("/Game/VFX/Projectiles/Idols/Idol_Star_Shard.Idol_Star_Shard");
+		}
+
+	if (!MeshPath)
+	{
+		return nullptr;
+	}
+
+		return LoadObject<UStaticMesh>(nullptr, MeshPath);
+	}
+
+	bool IsHardSurfacePierceFlavor(const ET66IdolFlavor Flavor)
+	{
+		switch (Flavor)
+		{
+		case ET66IdolFlavor::Light:
+		case ET66IdolFlavor::Wind:
+		case ET66IdolFlavor::Steel:
+		case ET66IdolFlavor::Wood:
+		case ET66IdolFlavor::Bone:
+		case ET66IdolFlavor::Glass:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool IsMeshDrivenBounceFlavor(const ET66IdolFlavor Flavor)
+	{
+		switch (Flavor)
+		{
+		case ET66IdolFlavor::Ice:
+		case ET66IdolFlavor::Sound:
+		case ET66IdolFlavor::Shadow:
+		case ET66IdolFlavor::Star:
+		case ET66IdolFlavor::Rubber:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	FLinearColor ResolveMeshTint(const FT66IdolThemeSpec& Theme, const FT66IdolRaritySpec& Tier)
+	{
+		const FLinearColor Primary = Brighten(Theme.PrimaryColor, Tier.Brightness * 0.35f);
+		const FLinearColor Secondary = Brighten(Theme.SecondaryColor, Tier.Brightness * 0.20f);
+		const FLinearColor Accent = Brighten(Theme.AccentColor, Tier.Brightness * 0.45f);
+
+		switch (Theme.Flavor)
+		{
+		case ET66IdolFlavor::Light:
+			return FLinearColor(1.00f, 0.95f, 0.72f, 1.f);
+		case ET66IdolFlavor::Wind:
+			return FLinearColor(0.76f, 0.94f, 0.84f, 1.f);
+		case ET66IdolFlavor::Steel:
+			return FLinearColor(0.74f, 0.80f, 0.92f, 1.f);
+		case ET66IdolFlavor::Wood:
+			return FLinearColor(0.56f, 0.74f, 0.34f, 1.f);
+		case ET66IdolFlavor::Bone:
+			return FLinearColor(0.94f, 0.89f, 0.78f, 1.f);
+		case ET66IdolFlavor::Glass:
+			return FLinearColor(0.78f, 0.96f, 1.00f, 1.f);
+		case ET66IdolFlavor::Ice:
+			return FLinearColor(0.72f, 0.92f, 1.00f, 1.f);
+		case ET66IdolFlavor::Sound:
+			return FLinearColor(0.94f, 0.82f, 1.00f, 1.f);
+		case ET66IdolFlavor::Shadow:
+			return FLinearColor(0.50f, 0.38f, 0.72f, 1.f);
+		case ET66IdolFlavor::Star:
+			return FLinearColor(1.00f, 0.94f, 0.68f, 1.f);
+		case ET66IdolFlavor::Rubber:
+			return FLinearColor(0.98f, 0.54f, 0.36f, 1.f);
+		case ET66IdolFlavor::BlackHole:
+			return FLinearColor(0.36f, 0.22f, 0.52f, 1.f);
+		default:
+			return FLinearColor::LerpUsingHSV(Primary, Accent, 0.45f + (Tier.Brightness * 0.25f));
+		}
+	}
 }
 
 AT66IdolProcVFX::AT66IdolProcVFX()
@@ -287,6 +415,12 @@ void AT66IdolProcVFX::InitEffect(const FT66IdolProcVFXRequest& InRequest)
 	if (HasActorBegunPlay() && !bBuilt)
 	{
 		BuildEffect();
+	}
+	else if (UWorld* World = GetWorld(); World && !World->IsGameWorld() && !bBuilt)
+	{
+		BuildEffect();
+		constexpr float PreviewAge01 = 0.36f;
+		UpdateLayers(LifetimeSeconds * PreviewAge01, PreviewAge01);
 	}
 }
 
@@ -539,6 +673,69 @@ void AT66IdolProcVFX::AddLayer(
 	}
 }
 
+void AT66IdolProcVFX::AddMeshLayer(
+	const FName& LayerName,
+	UStaticMesh* MeshAsset,
+	const FVector& RelativeLocation,
+	const FRotator& RelativeRotation,
+	const FVector& RelativeScale,
+	const FT66IdolVFXLayerAnimState& AnimTemplate)
+{
+	if (!MeshAsset)
+	{
+		return;
+	}
+
+	UStaticMeshComponent* Mesh = NewObject<UStaticMeshComponent>(this, LayerName);
+	if (!Mesh)
+	{
+		return;
+	}
+
+	AddInstanceComponent(Mesh);
+	Mesh->SetupAttachment(SceneRoot);
+	Mesh->SetStaticMesh(MeshAsset);
+	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Mesh->SetCastShadow(false);
+	Mesh->SetReceivesDecals(false);
+	Mesh->SetCanEverAffectNavigation(false);
+	Mesh->SetMobility(EComponentMobility::Movable);
+	Mesh->SetHiddenInGame(false, true);
+	Mesh->SetVisibility(true, true);
+	Mesh->SetRenderInMainPass(true);
+	Mesh->SetRenderInDepthPass(true);
+	Mesh->TranslucencySortPriority = 24;
+	Mesh->SetRelativeLocation(RelativeLocation);
+	Mesh->SetRelativeRotation(RelativeRotation);
+	Mesh->SetRelativeScale3D(RelativeScale);
+	Mesh->RegisterComponent();
+
+	const FT66IdolThemeSpec Theme = ResolveTheme(Request.IdolID);
+	const FT66IdolRaritySpec Tier = ResolveRarity(Request.Rarity);
+	FT66VisualUtil::ApplyT66Color(Mesh, this, ResolveMeshTint(Theme, Tier));
+
+	SpawnedMeshes.Add(Mesh);
+
+	FT66IdolVFXLayerAnimState LayerState = AnimTemplate;
+	LayerState.Mesh = Mesh;
+	LayerState.MID = nullptr;
+	LayerState.BaseLocation = RelativeLocation;
+	LayerState.BaseRotation = RelativeRotation;
+	LayerState.BaseScale = RelativeScale;
+	LayerStates.Add(LayerState);
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("[IDOL VFX ACTOR] MeshLayer actor=%s name=%s mesh=%s relLoc=%s relScale=%s travel=%s"),
+		*GetName(),
+		*LayerName.ToString(),
+		*MeshAsset->GetName(),
+		*RelativeLocation.ToCompactString(),
+		*RelativeScale.ToCompactString(),
+		*AnimTemplate.TravelOffset.ToCompactString());
+}
+
 void AT66IdolProcVFX::BuildEffect()
 {
 	if (!bInitialized || bBuilt)
@@ -622,6 +819,8 @@ void AT66IdolProcVFX::BuildPierceEffect()
 	const FVector ImpactLocal = Request.Impact.IsNearlyZero()
 		? FVector(TraceLength * 0.3f, 0.f, 12.f)
 		: (Request.Impact - Request.Start) + FVector(0.f, 0.f, 12.f);
+	const float CoreWidthScale = IsHardSurfacePierceFlavor(Theme.Flavor) ? 0.56f : 1.0f;
+	const float CoreGlowScale = IsHardSurfacePierceFlavor(Theme.Flavor) ? 0.62f : 1.0f;
 
 	const FLinearColor Primary = Brighten(Theme.PrimaryColor, Tier.Brightness);
 	const FLinearColor Secondary = Brighten(Theme.SecondaryColor, Tier.Brightness * 0.5f);
@@ -660,8 +859,8 @@ void AT66IdolProcVFX::BuildPierceEffect()
 		TEXT("PierceCore"),
 		FVector(TraceLength * 0.5f, 0.f, 10.f),
 		FRotator(0.f, Yaw, 0.f),
-		FVector(TraceLength / 100.f, Theme.BaseWidth * Tier.WidthScale, 1.f),
-		MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.34f, 0.49f, 1.f, 1.f),
+		FVector(TraceLength / 100.f, Theme.BaseWidth * CoreWidthScale * Tier.WidthScale, 1.f),
+		MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.34f, 0.49f, CoreGlowScale, 1.f),
 		MakeAnim(FVector::ZeroVector, FVector(0.05f, 0.20f, 0.f), 0.f, 0.f, 0.f),
 		3);
 
@@ -694,6 +893,45 @@ void AT66IdolProcVFX::BuildPierceEffect()
 		break;
 	default:
 		break;
+	}
+
+	if (UStaticMesh* AccentMesh = ResolveIdolAccentMesh(Request.IdolID))
+	{
+		float AccentScale = 0.72f;
+		switch (Theme.Flavor)
+		{
+		case ET66IdolFlavor::Light: AccentScale = 0.82f; break;
+		case ET66IdolFlavor::Wind:  AccentScale = 0.80f; break;
+		case ET66IdolFlavor::Steel: AccentScale = 0.74f; break;
+		case ET66IdolFlavor::Wood:  AccentScale = 0.80f; break;
+		case ET66IdolFlavor::Bone:  AccentScale = 0.92f; break;
+		case ET66IdolFlavor::Glass: AccentScale = 0.90f; break;
+		default:                    AccentScale = 0.72f; break;
+		}
+
+		FT66IdolVFXLayerAnimState MeshAnim = MakeAnim(FVector(0.f, 0.f, 4.f), FVector(0.06f, 0.06f, 0.06f), Theme.RotationSpeed * 0.10f, 0.35f, 0.f);
+		MeshAnim.TravelOffset = FVector(FMath::Max(60.f, TraceLength - 28.f), 0.f, 0.f);
+		MeshAnim.TravelAlphaExponent = 0.88f;
+
+		AddMeshLayer(
+			TEXT("PierceMeshAccent"),
+			AccentMesh,
+			FVector(18.f, 0.f, 16.f),
+			FRotator(0.f, Yaw, 0.f),
+			FVector(AccentScale, AccentScale, AccentScale),
+			MeshAnim);
+
+		FT66IdolVFXLayerAnimState MeshTrailAnim = MeshAnim;
+		MeshTrailAnim.TravelOffset = FVector(FMath::Max(38.f, TraceLength - 92.f), 0.f, 0.f);
+		MeshTrailAnim.TravelAlphaExponent = 1.10f;
+		MeshTrailAnim.Phase += 0.55f;
+		AddMeshLayer(
+			TEXT("PierceMeshTrail"),
+			AccentMesh,
+			FVector(-12.f, 0.f, 13.f),
+			FRotator(0.f, Yaw, 0.f),
+			FVector(AccentScale * 0.74f, AccentScale * 0.74f, AccentScale * 0.74f),
+			MeshTrailAnim);
 	}
 
 	for (int32 EchoIndex = 0; EchoIndex < Tier.ExtraLayers; ++EchoIndex)
@@ -775,14 +1013,32 @@ void AT66IdolProcVFX::BuildAOEEffect()
 		break;
 	case ET66IdolFlavor::Sand:
 		AddLayer(TEXT("AOESandDust"), FVector(0.f, 0.f, 10.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.92f, RadiusScale * 0.92f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Secondary, 0.24f, 0.48f, 0.90f, 0.75f), MakeAnim(FVector(0.f, 0.f, 3.f), FVector(0.16f, 0.16f, 0.f), Theme.RotationSpeed * 0.18f, 0.9f, -0.04f), 4);
+		AddLayer(TEXT("AOESandColumnA"), FVector(0.f, 0.f, 40.f), FRotator(90.f, 24.f, 0.f), FVector(RadiusScale * 0.24f, RadiusScale * 0.88f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.12f, 0.44f, 0.82f, 1.25f), MakeAnim(FVector(0.f, 0.f, 8.f), FVector(0.18f, 0.22f, 0.f), Theme.RotationSpeed * 0.18f, 0.4f, -0.02f), 5);
+		AddLayer(TEXT("AOESandColumnB"), FVector(0.f, 0.f, 36.f), FRotator(90.f, -36.f, 0.f), FVector(RadiusScale * 0.22f, RadiusScale * 0.78f, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.10f, 0.42f, 0.75f, 0.95f), MakeAnim(FVector(0.f, 0.f, 7.f), FVector(0.15f, 0.20f, 0.f), -Theme.RotationSpeed * 0.16f, 1.1f, 0.01f), 5);
 		break;
 	case ET66IdolFlavor::BlackHole:
 		AddLayer(TEXT("AOEBlackHoleRim"), FVector(0.f, 0.f, 11.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.82f, RadiusScale * 0.82f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Secondary, 0.36f, 0.49f, 1.20f, 1.10f), MakeAnim(FVector::ZeroVector, FVector(-0.12f, -0.12f, 0.f), Theme.RotationSpeed * 0.38f, 0.6f, 0.04f), 5);
 		AddLayer(TEXT("AOEBlackHoleCore"), FVector(0.f, 0.f, 7.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.32f, RadiusScale * 0.32f, 1.f), MakeMaterial(Theme.PrimaryTexture, Theme.AccentColor, Theme.SecondaryColor, 0.02f, 0.38f, 0.85f, -0.18f), MakeAnim(FVector::ZeroVector, FVector(0.06f, 0.06f, 0.f), -Theme.RotationSpeed * 0.22f, 1.4f, -0.03f), 4);
+		AddLayer(TEXT("AOEBlackHoleSpiralA"), FVector(0.f, 0.f, 34.f), FRotator(90.f, 20.f, 0.f), FVector(RadiusScale * 0.18f, RadiusScale * 0.92f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Secondary, 0.10f, 0.40f, 1.10f, 1.65f), MakeAnim(FVector(0.f, 0.f, 7.f), FVector(0.12f, 0.18f, 0.f), Theme.RotationSpeed * 0.28f, 0.5f, 0.02f), 6);
+		AddLayer(TEXT("AOEBlackHoleSpiralB"), FVector(0.f, 0.f, 30.f), FRotator(90.f, -26.f, 0.f), FVector(RadiusScale * 0.16f, RadiusScale * 0.78f, 1.f), MakeMaterial(Theme.PrimaryTexture, Theme.SecondaryColor, Accent, 0.08f, 0.38f, 0.95f, -1.45f), MakeAnim(FVector(0.f, 0.f, 6.f), FVector(0.10f, 0.16f, 0.f), -Theme.RotationSpeed * 0.24f, 1.2f, -0.01f), 6);
+		AddLayer(TEXT("AOEBlackHolePullA"), FVector(0.f, 0.f, 56.f), FRotator(90.f, 0.f, 0.f), FVector(RadiusScale * 0.10f, RadiusScale * 0.92f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Secondary, 0.08f, 0.36f, 0.84f, 1.20f), MakeAnim(FVector(0.f, 0.f, 10.f), FVector(0.06f, 0.16f, 0.f), Theme.RotationSpeed * 0.18f, 0.2f, 0.01f), 6);
+		AddLayer(TEXT("AOEBlackHolePullB"), FVector(0.f, 0.f, 50.f), FRotator(90.f, 54.f, 0.f), FVector(RadiusScale * 0.09f, RadiusScale * 0.74f, 1.f), MakeMaterial(Theme.PrimaryTexture, Secondary, Accent, 0.06f, 0.34f, 0.76f, -0.95f), MakeAnim(FVector(0.f, 0.f, 9.f), FVector(0.05f, 0.14f, 0.f), -Theme.RotationSpeed * 0.15f, 1.0f, -0.01f), 6);
+		if (UStaticMesh* BlackHoleMesh = ResolveIdolAccentMesh(Request.IdolID))
+		{
+			FT66IdolVFXLayerAnimState CoreMeshAnim = MakeAnim(FVector(0.f, 0.f, 3.f), FVector(0.04f, 0.04f, 0.04f), Theme.RotationSpeed * 0.16f, 0.2f, 0.f);
+			AddMeshLayer(TEXT("AOEBlackHoleCoreMesh"), BlackHoleMesh, FVector(0.f, 0.f, 20.f), FRotator(0.f, 0.f, 0.f), FVector(0.88f, 0.88f, 0.88f), CoreMeshAnim);
+
+			FT66IdolVFXLayerAnimState OrbitMeshAnim = MakeAnim(FVector(0.f, 0.f, 8.f), FVector(0.06f, 0.06f, 0.06f), Theme.RotationSpeed * 0.30f, 1.1f, 0.02f);
+			OrbitMeshAnim.TravelOffset = FVector(0.f, 42.f, 0.f);
+			OrbitMeshAnim.TravelAlphaExponent = 0.70f;
+			AddMeshLayer(TEXT("AOEBlackHoleOrbitMesh"), BlackHoleMesh, FVector(0.f, -42.f, 28.f), FRotator(0.f, 90.f, 0.f), FVector(0.30f, 0.30f, 0.30f), OrbitMeshAnim);
+		}
 		break;
 	case ET66IdolFlavor::Storm:
 		AddLayer(TEXT("AOEStormRing"), FVector(0.f, 0.f, 10.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.88f, RadiusScale * 0.88f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.28f, 0.49f, 1.05f, 1.20f), MakeAnim(FVector::ZeroVector, FVector(0.18f, 0.18f, 0.f), Theme.RotationSpeed * 0.30f, 0.2f, -0.03f), 4);
 		AddLayer(TEXT("AOEStormEye"), FVector(0.f, 0.f, 13.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.46f, RadiusScale * 0.46f, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.14f, 0.42f, 0.95f, 0.50f), MakeAnim(FVector::ZeroVector, FVector(0.14f, 0.14f, 0.f), -Theme.RotationSpeed * 0.24f, 1.1f, 0.01f), 5);
+		AddLayer(TEXT("AOEStormColumnA"), FVector(0.f, 0.f, 42.f), FRotator(90.f, 10.f, 0.f), FVector(RadiusScale * 0.20f, RadiusScale * 0.84f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.12f, 0.44f, 0.96f, 1.30f), MakeAnim(FVector(0.f, 0.f, 10.f), FVector(0.14f, 0.18f, 0.f), Theme.RotationSpeed * 0.26f, 0.35f, -0.02f), 5);
+		AddLayer(TEXT("AOEStormColumnB"), FVector(0.f, 0.f, 38.f), FRotator(90.f, -18.f, 0.f), FVector(RadiusScale * 0.18f, RadiusScale * 0.72f, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.10f, 0.40f, 0.84f, 0.90f), MakeAnim(FVector(0.f, 0.f, 9.f), FVector(0.12f, 0.16f, 0.f), -Theme.RotationSpeed * 0.22f, 1.1f, 0.01f), 5);
 		break;
 	default:
 		AddLayer(TEXT("AOEAccent"), FVector(0.f, 0.f, 10.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.84f, RadiusScale * 0.84f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.26f, 0.48f, 1.00f, 0.80f), MakeAnim(FVector::ZeroVector, FVector(0.16f, 0.16f, 0.f), Theme.RotationSpeed * 0.18f, 0.6f, -0.02f), 4);
@@ -809,6 +1065,7 @@ void AT66IdolProcVFX::BuildBounceEffect()
 	const FLinearColor Primary = Brighten(Theme.PrimaryColor, Tier.Brightness);
 	const FLinearColor Secondary = Brighten(Theme.SecondaryColor, Tier.Brightness * 0.4f);
 	const FLinearColor Accent = Brighten(Theme.AccentColor, Tier.Brightness);
+	const bool bMeshDrivenFlavor = IsMeshDrivenBounceFlavor(Theme.Flavor);
 
 	auto MakeMaterial = [&](const ET66IdolVFXTexture Texture, const FLinearColor& LocalPrimary, const FLinearColor& LocalSecondary, const float InnerRadius, const float OuterRadius, const float GlowScale, const float ScrollScale)
 	{
@@ -892,11 +1149,20 @@ void AT66IdolProcVFX::BuildBounceEffect()
 			break;
 		}
 
-		AddLayer(*FString::Printf(TEXT("BounceCore_%d"), SegmentIndex), MidLocal, FRotator(0.f, Yaw, 0.f), FVector(Dist / 100.f, Theme.BaseWidth * WidthMultiplier * Tier.WidthScale, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.30f, 0.48f, 1.00f, ScrollMultiplier), MakeAnim(Wave, FVector(0.03f, 0.14f, 0.f), Theme.RotationSpeed * 0.08f, SegmentIndex * 0.9f, SegmentIndex * 0.03f), 3);
+		const float CoreWidthScale = bMeshDrivenFlavor ? 0.70f : 1.0f;
+		const float CoreGlowScale = bMeshDrivenFlavor ? 0.72f : 1.0f;
+		AddLayer(*FString::Printf(TEXT("BounceCore_%d"), SegmentIndex), MidLocal, FRotator(0.f, Yaw, 0.f), FVector(Dist / 100.f, Theme.BaseWidth * WidthMultiplier * CoreWidthScale * Tier.WidthScale, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.30f, 0.48f, CoreGlowScale, ScrollMultiplier), MakeAnim(Wave, FVector(0.03f, 0.14f, 0.f), Theme.RotationSpeed * 0.08f, SegmentIndex * 0.9f, SegmentIndex * 0.03f), 3);
 
 		if (Theme.Flavor == ET66IdolFlavor::Electric || Theme.Flavor == ET66IdolFlavor::Shadow || Theme.Flavor == ET66IdolFlavor::Star)
 		{
 			AddLayer(*FString::Printf(TEXT("BounceAccent_%d"), SegmentIndex), MidLocal + FVector(0.f, (SegmentIndex % 2 == 0 ? 8.f : -8.f), 3.f), FRotator(0.f, Yaw + (SegmentIndex % 2 == 0 ? 6.f : -6.f), 0.f), FVector((Dist * 0.82f) / 100.f, Theme.BaseWidth * 0.42f * Tier.WidthScale, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.20f, 0.46f, 0.90f, ScrollMultiplier * 1.15f), MakeAnim(Wave * 0.5f, FVector(0.04f, 0.10f, 0.f), Theme.RotationSpeed * 0.14f, 0.6f + SegmentIndex, -0.02f), 4);
+		}
+
+		if (Theme.Flavor == ET66IdolFlavor::Electric)
+		{
+			AddLayer(*FString::Printf(TEXT("BounceElectricBranchA_%d"), SegmentIndex), MidLocal + FVector(0.f, 16.f, 12.f), FRotator(0.f, Yaw + 12.f, 0.f), FVector((Dist * 0.72f) / 100.f, Theme.BaseWidth * 0.24f * Tier.WidthScale, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.16f, 0.44f, 1.18f, 2.20f), MakeAnim(FVector(0.f, 12.f, 6.f), FVector(0.06f, 0.10f, 0.f), Theme.RotationSpeed * 0.24f, 0.45f + SegmentIndex, -0.03f), 5);
+			AddLayer(*FString::Printf(TEXT("BounceElectricBranchB_%d"), SegmentIndex), MidLocal + FVector(0.f, -16.f, 8.f), FRotator(0.f, Yaw - 12.f, 0.f), FVector((Dist * 0.66f) / 100.f, Theme.BaseWidth * 0.22f * Tier.WidthScale, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Secondary, 0.14f, 0.42f, 1.05f, 2.00f), MakeAnim(FVector(0.f, -12.f, 5.f), FVector(0.05f, 0.09f, 0.f), -Theme.RotationSpeed * 0.22f, 1.15f + SegmentIndex, 0.02f), 5);
+			AddLayer(*FString::Printf(TEXT("BounceElectricNode_%d"), SegmentIndex), ImpactLocal + FVector(0.f, 0.f, 6.f), FRotator::ZeroRotator, FVector(Theme.ImpactScale * 0.68f * Tier.ImpactScale, Theme.ImpactScale * 0.68f * Tier.ImpactScale, 1.f), MakeMaterial(Theme.PrimaryTexture, Accent, Primary, 0.08f, 0.42f, 1.30f, 0.45f), MakeAnim(FVector::ZeroVector, FVector(0.24f, 0.24f, 0.f), Theme.RotationSpeed * 0.34f, 0.5f + SegmentIndex, -0.05f), 6);
 		}
 
 		AddLayer(*FString::Printf(TEXT("BounceImpact_%d"), SegmentIndex), ImpactLocal, FRotator::ZeroRotator, FVector(Theme.ImpactScale * 0.82f * Tier.ImpactScale, Theme.ImpactScale * 0.82f * Tier.ImpactScale, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.18f, 0.46f, 1.10f, 0.35f), MakeAnim(FVector::ZeroVector, FVector(0.16f, 0.16f, 0.f), Theme.RotationSpeed * 0.28f, 0.2f + SegmentIndex, -0.04f), 5);
@@ -904,6 +1170,51 @@ void AT66IdolProcVFX::BuildBounceEffect()
 		if (Theme.Flavor == ET66IdolFlavor::Sound || Theme.Flavor == ET66IdolFlavor::Rubber)
 		{
 			AddLayer(*FString::Printf(TEXT("BouncePulse_%d"), SegmentIndex), ImpactLocal + FVector(0.f, 0.f, 2.f), FRotator::ZeroRotator, FVector(Theme.ImpactScale * 1.15f * Tier.ImpactScale, Theme.ImpactScale * 1.15f * Tier.ImpactScale, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.30f, 0.49f, 0.85f, 0.20f), MakeAnim(FVector::ZeroVector, FVector(0.22f, 0.22f, 0.f), Theme.RotationSpeed * 0.18f, 1.1f + SegmentIndex, 0.01f), 4);
+		}
+
+		if (UStaticMesh* AccentMesh = ResolveIdolAccentMesh(Request.IdolID))
+		{
+			float AccentScale = 0.54f;
+			switch (Theme.Flavor)
+			{
+			case ET66IdolFlavor::Rubber: AccentScale = 0.66f; break;
+			case ET66IdolFlavor::Ice:    AccentScale = 0.62f; break;
+			case ET66IdolFlavor::Shadow: AccentScale = 0.60f; break;
+			case ET66IdolFlavor::Star:   AccentScale = 0.56f; break;
+			case ET66IdolFlavor::Sound:  AccentScale = 0.54f; break;
+			default:                     AccentScale = 0.54f; break;
+			}
+
+			FT66IdolVFXLayerAnimState MeshAnim;
+			MeshAnim.WaveAmplitude = FVector(0.f, 0.f, 3.f);
+			MeshAnim.ScaleAmplitude = FVector(0.06f, 0.06f, 0.06f);
+			MeshAnim.RotationSpeed = Theme.RotationSpeed * 0.20f;
+			MeshAnim.Phase = SegmentIndex * 0.55f;
+			MeshAnim.TravelOffset = (SegmentEnd - SegmentStart);
+			MeshAnim.TravelAlphaExponent = 0.92f;
+
+			AddMeshLayer(
+				*FString::Printf(TEXT("BounceMesh_%d"), SegmentIndex),
+				AccentMesh,
+				SegmentStart - Root + FVector(0.f, 0.f, 16.f),
+				FRotator(0.f, Yaw, 0.f),
+				FVector(AccentScale, AccentScale, AccentScale),
+				MeshAnim);
+
+			if (Theme.Flavor == ET66IdolFlavor::Rubber || Theme.Flavor == ET66IdolFlavor::Ice || Theme.Flavor == ET66IdolFlavor::Star || Theme.Flavor == ET66IdolFlavor::Shadow)
+			{
+				FT66IdolVFXLayerAnimState MeshMidAnim = MeshAnim;
+				MeshMidAnim.TravelOffset = (SegmentEnd - SegmentStart) * 0.55f;
+				MeshMidAnim.TravelAlphaExponent = 0.84f;
+				MeshMidAnim.Phase += 0.35f;
+				AddMeshLayer(
+					*FString::Printf(TEXT("BounceMeshMid_%d"), SegmentIndex),
+					AccentMesh,
+					SegmentStart - Root + FVector(0.f, 0.f, 20.f),
+					FRotator(0.f, Yaw, 0.f),
+					FVector(AccentScale * 0.72f, AccentScale * 0.72f, AccentScale * 0.72f),
+					MeshMidAnim);
+			}
 		}
 	}
 
@@ -969,7 +1280,9 @@ void AT66IdolProcVFX::BuildDOTEffect()
 	};
 
 	AddLayer(TEXT("DOTGround"), FVector(0.f, 0.f, 4.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.86f, RadiusScale * 0.86f, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.30f, 0.49f, 0.95f, 0.35f), MakeAnim(FVector::ZeroVector, FVector(0.08f, 0.08f, 0.f), Theme.RotationSpeed * 0.10f, 0.f, 0.f), 3);
-	AddLayer(TEXT("DOTAura"), FVector(0.f, 0.f, 26.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.46f, RadiusScale * 0.46f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.12f, 0.44f, 1.05f, 0.70f), MakeAnim(FVector(0.f, 0.f, 6.f), FVector(0.14f, 0.14f, 0.f), Theme.RotationSpeed * 0.22f, 0.6f, -0.03f), 4);
+	AddLayer(TEXT("DOTAura"), FVector(0.f, 0.f, 28.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.56f, RadiusScale * 0.56f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.12f, 0.44f, 0.92f, 0.52f), MakeAnim(FVector(0.f, 0.f, 7.f), FVector(0.16f, 0.16f, 0.f), Theme.RotationSpeed * 0.22f, 0.6f, -0.03f), 4);
+	AddLayer(TEXT("DOTBodyCrossA"), FVector(0.f, 0.f, 36.f), FRotator(90.f, 0.f, 0.f), FVector(RadiusScale * 0.42f, RadiusScale * 0.74f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.10f, 0.44f, 0.84f, 0.38f), MakeAnim(FVector(0.f, 0.f, 4.f), FVector(0.10f, 0.14f, 0.f), Theme.RotationSpeed * 0.10f, 0.3f, -0.02f), 4);
+	AddLayer(TEXT("DOTBodyCrossB"), FVector(0.f, 0.f, 36.f), FRotator(90.f, 90.f, 0.f), FVector(RadiusScale * 0.42f, RadiusScale * 0.70f, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.14f, 0.46f, 0.72f, 0.20f), MakeAnim(FVector(0.f, 0.f, 5.f), FVector(0.08f, 0.12f, 0.f), -Theme.RotationSpeed * 0.08f, 1.0f, 0.01f), 4);
 
 	switch (Theme.Flavor)
 	{
@@ -987,6 +1300,10 @@ void AT66IdolProcVFX::BuildDOTEffect()
 		break;
 	case ET66IdolFlavor::Bleed:
 		AddLayer(TEXT("DOTBleedPulse"), FVector(0.f, 0.f, 12.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.64f, RadiusScale * 0.64f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.18f, 0.47f, 1.00f, 0.85f), MakeAnim(FVector::ZeroVector, FVector(0.18f, 0.18f, 0.f), Theme.RotationSpeed * 0.12f, 0.5f, -0.02f), 5);
+		AddLayer(TEXT("DOTBleedSlashA"), FVector(0.f, 0.f, 40.f), FRotator(90.f, 24.f, 0.f), FVector(RadiusScale * 0.18f, RadiusScale * 0.56f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Secondary, 0.10f, 0.42f, 1.08f, 1.10f), MakeAnim(FVector(0.f, 0.f, 2.f), FVector(0.08f, 0.12f, 0.f), Theme.RotationSpeed * 0.06f, 0.9f, 0.02f), 5);
+		AddLayer(TEXT("DOTBleedSlashB"), FVector(0.f, 0.f, 30.f), FRotator(90.f, -18.f, 0.f), FVector(RadiusScale * 0.16f, RadiusScale * 0.44f, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.10f, 0.42f, 0.92f, 0.80f), MakeAnim(FVector(0.f, 0.f, 2.f), FVector(0.08f, 0.10f, 0.f), -Theme.RotationSpeed * 0.04f, 1.4f, -0.01f), 5);
+		AddLayer(TEXT("DOTBleedDripA"), FVector(0.f, 0.f, 22.f), FRotator(90.f, 8.f, 0.f), FVector(RadiusScale * 0.10f, RadiusScale * 0.52f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Secondary, 0.06f, 0.40f, 0.82f, 0.58f), MakeAnim(FVector(0.f, 0.f, -4.f), FVector(0.02f, 0.10f, 0.f), Theme.RotationSpeed * 0.02f, 0.3f, 0.01f), 5);
+		AddLayer(TEXT("DOTBleedDripB"), FVector(0.f, 0.f, 18.f), FRotator(90.f, -10.f, 0.f), FVector(RadiusScale * 0.08f, RadiusScale * 0.44f, 1.f), MakeMaterial(Theme.PrimaryTexture, Primary, Secondary, 0.06f, 0.38f, 0.74f, 0.42f), MakeAnim(FVector(0.f, 0.f, -5.f), FVector(0.02f, 0.08f, 0.f), -Theme.RotationSpeed * 0.02f, 0.9f, -0.01f), 5);
 		break;
 	case ET66IdolFlavor::Acid:
 		AddLayer(TEXT("DOTAcidSizzle"), FVector(0.f, 0.f, 18.f), FRotator::ZeroRotator, FVector(RadiusScale * 0.52f, RadiusScale * 0.52f, 1.f), MakeMaterial(Theme.AccentTexture, Accent, Primary, 0.10f, 0.42f, 1.10f, 1.25f), MakeAnim(FVector(0.f, 0.f, 5.f), FVector(0.16f, 0.16f, 0.f), Theme.RotationSpeed * 0.20f, 1.5f, -0.01f), 5);
@@ -1062,9 +1379,13 @@ void AT66IdolProcVFX::UpdateLayers(const float ActiveElapsed, const float Active
 			FMath::Max(0.02f, 1.f + (Layer.ScaleAmplitude.Y * Osc)),
 			FMath::Max(0.02f, 1.f + (Layer.ScaleAmplitude.Z * Osc)));
 		const FVector FinalScale = MultiplyComponents(Layer.BaseScale, ScaleFactor);
+		const float TravelAlpha = Layer.TravelOffset.IsNearlyZero()
+			? 0.f
+			: FMath::Pow(FMath::Clamp(ActiveAge01, 0.f, 1.f), FMath::Max(0.01f, Layer.TravelAlphaExponent));
+		const FVector Travel = Layer.TravelOffset * TravelAlpha;
 		const FRotator FinalRotation = Layer.BaseRotation + FRotator(0.f, Layer.RotationSpeed * ActiveElapsed, 0.f);
 
-		Layer.Mesh->SetRelativeLocation(Layer.BaseLocation + Offset);
+		Layer.Mesh->SetRelativeLocation(Layer.BaseLocation + Offset + Travel);
 		Layer.Mesh->SetRelativeRotation(FinalRotation);
 		Layer.Mesh->SetRelativeScale3D(FinalScale);
 

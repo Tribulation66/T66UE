@@ -57,9 +57,11 @@ namespace T66MainMapTerrain
 			UMaterialInterface* EnvironmentUnlitMaterial = nullptr;
 			UMaterialInterface* BlockMaterial = nullptr;
 			UMaterialInterface* SlopeMaterial = nullptr;
+			UMaterialInterface* DirtMaterial = nullptr;
 			UMaterialInterface* WallMaterial = nullptr;
 			UTexture* BlockTexture = nullptr;
 			UTexture* SlopeTexture = nullptr;
+			UTexture* DirtTexture = nullptr;
 			UTexture* WallTexture = nullptr;
 			TArray<UMaterialInterface*> GrassMaterials;
 			UStaticMesh* TreeMesh1 = nullptr;
@@ -757,9 +759,11 @@ namespace T66MainMapTerrain
 			OutAssets.EnvironmentUnlitMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
 			OutAssets.BlockMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
 			OutAssets.SlopeMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"));
+			OutAssets.DirtMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt"));
 			OutAssets.WallMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"));
 			OutAssets.BlockTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
 			OutAssets.SlopeTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"));
+			OutAssets.DirtTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"));
 			OutAssets.WallTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"));
 			if (!OutAssets.BlockMaterial)
 			{
@@ -818,7 +822,9 @@ namespace T66MainMapTerrain
 			EnableComplexCollisionForMesh(OutAssets.RockMesh2);
 			EnableComplexCollisionForMesh(OutAssets.RockMesh3);
 			EnableComplexCollisionForMesh(OutAssets.LogMesh);
-			UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain assets: WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
+			UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain assets: DirtMaterial=%s DirtTexture=%s WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
+				OutAssets.DirtMaterial ? TEXT("yes") : TEXT("no"),
+				OutAssets.DirtTexture ? TEXT("yes") : TEXT("no"),
 				OutAssets.WallMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.WallTexture ? TEXT("yes") : TEXT("no"),
 				OutAssets.TreeMesh1 ? TEXT("yes") : TEXT("no"),
@@ -1303,6 +1309,7 @@ namespace T66MainMapTerrain
 		auto ResolveForcedTextureMaterial = [VisualActor, Assets](
 			UTexture* Texture,
 			const TCHAR* TexturePath,
+			UMaterialInterface* FallbackMaterial,
 			const TCHAR* FallbackMaterialPath,
 			const TCHAR* DebugName) -> FResolvedFarmMaterial
 		{
@@ -1329,13 +1336,18 @@ namespace T66MainMapTerrain
 				}
 			}
 
-			if (FallbackMaterialPath)
+			if (!FallbackMaterial && FallbackMaterialPath)
 			{
-				if (UMaterialInterface* FallbackMaterial = LoadObject<UMaterialInterface>(nullptr, FallbackMaterialPath))
+				FallbackMaterial = LoadObject<UMaterialInterface>(nullptr, FallbackMaterialPath);
+			}
+
+			if (FallbackMaterial)
+			{
+				if (FallbackMaterialPath)
 				{
 					UE_LOG(LogTemp, Warning, TEXT("[MAP] Main map terrain material %s fell back to %s"), DebugName, FallbackMaterialPath);
-					return { FallbackMaterial, false };
 				}
+				return { FallbackMaterial, false };
 			}
 
 			UE_LOG(LogTemp, Warning, TEXT("[MAP] Main map terrain material %s is still missing its real texture-backed material"), DebugName);
@@ -1362,24 +1374,37 @@ namespace T66MainMapTerrain
 		const FResolvedFarmMaterial InitialBlockMaterial = ResolveForcedTextureMaterial(
 			Assets.BlockTexture,
 			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"),
+			Assets.BlockMaterial,
 			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"),
 			TEXT("FarmBlockMID"));
 		const FResolvedFarmMaterial InitialSlopeMaterial = ResolveForcedTextureMaterial(
 			Assets.SlopeTexture,
 			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"),
+			Assets.SlopeMaterial,
 			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"),
 			TEXT("FarmSlopeMID"));
+		const FResolvedFarmMaterial InitialDirtMaterial = ResolveForcedTextureMaterial(
+			Assets.DirtTexture,
+			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"),
+			Assets.DirtMaterial ? Assets.DirtMaterial : Assets.BlockMaterial,
+			Assets.DirtMaterial
+				? TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")
+				: TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"),
+			TEXT("FarmDirtMID"));
 		const FResolvedFarmMaterial InitialWallMaterial = ResolveForcedTextureMaterial(
 			Assets.WallTexture,
 			TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"),
+			Assets.WallMaterial,
 			TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"),
 			TEXT("FarmWallMID"));
 		UMaterialInterface* EffectiveBlockMaterial = InitialBlockMaterial.Material;
 		UMaterialInterface* EffectiveSlopeMaterial = InitialSlopeMaterial.Material;
+		UMaterialInterface* EffectiveDirtMaterial = InitialDirtMaterial.Material;
 		UMaterialInterface* EffectiveWallMaterial = InitialWallMaterial.Material;
 		UpdateFarmMaterialReadyTag(
 			InitialBlockMaterial.bUsingRealTexture &&
 			InitialSlopeMaterial.bUsingRealTexture &&
+			InitialDirtMaterial.bUsingRealTexture &&
 			(!bRenderFarmBoundaryWalls || InitialWallMaterial.bUsingRealTexture));
 
 		auto RefreshFarmVisualMaterials = [VisualActor, Assets, ResolveForcedTextureMaterial, UpdateFarmMaterialReadyTag]() -> bool
@@ -1392,21 +1417,33 @@ namespace T66MainMapTerrain
 			const FResolvedFarmMaterial BlockMaterial = ResolveForcedTextureMaterial(
 				Assets.BlockTexture,
 				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"),
+				Assets.BlockMaterial,
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"),
 				TEXT("FarmBlockMID"));
 			const FResolvedFarmMaterial SlopeMaterial = ResolveForcedTextureMaterial(
 				Assets.SlopeTexture,
 				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope"),
+				Assets.SlopeMaterial,
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkSlope.MI_MegabonkSlope"),
 				TEXT("FarmSlopeMID"));
+			const FResolvedFarmMaterial DirtMaterial = ResolveForcedTextureMaterial(
+				Assets.DirtTexture,
+				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkDirt.T_MegabonkDirt"),
+				Assets.DirtMaterial ? Assets.DirtMaterial : Assets.BlockMaterial,
+				Assets.DirtMaterial
+					? TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkDirt.MI_MegabonkDirt")
+					: TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"),
+				TEXT("FarmDirtMID"));
 			const FResolvedFarmMaterial WallMaterial = ResolveForcedTextureMaterial(
 				Assets.WallTexture,
 				TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall"),
+				Assets.WallMaterial,
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"),
 				TEXT("FarmWallMID"));
 			const bool bMaterialsReady =
 				BlockMaterial.bUsingRealTexture &&
 				SlopeMaterial.bUsingRealTexture &&
+				DirtMaterial.bUsingRealTexture &&
 				(!bRenderFarmBoundaryWalls || WallMaterial.bUsingRealTexture);
 			UpdateFarmMaterialReadyTag(bMaterialsReady);
 
@@ -1429,7 +1466,7 @@ namespace T66MainMapTerrain
 				}
 				else if (ComponentName.StartsWith(TEXT("Support_")))
 				{
-					MeshComponent->SetMaterial(0, BlockMaterial.Material);
+					MeshComponent->SetMaterial(0, DirtMaterial.Material);
 				}
 				else if (ComponentName.StartsWith(TEXT("FarmWall")))
 				{
@@ -1654,7 +1691,7 @@ namespace T66MainMapTerrain
 						BottomPartRoot,
 						FString::Printf(TEXT("Support_%d_L%d"), CellIndex, SupportLevel),
 						Assets.BlockMesh,
-						EffectiveBlockMaterial,
+						EffectiveDirtMaterial,
 						FTransform(
 							FRotator::ZeroRotator,
 							SupportOffset,

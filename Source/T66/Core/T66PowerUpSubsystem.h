@@ -9,18 +9,15 @@
 
 class UT66PowerUpSaveGame;
 
-/** Wedge tier: 0=Empty, 1=Black, 2=Red, 3=Yellow, 4=White. */
-enum class ET66PowerUpWedgeTier : uint8
+/** Fill-step state: 0=Locked, 1=Unlocked. */
+enum class ET66PowerUpFillStepState : uint8
 {
-	Empty = 0,
-	Black = 1,
-	Red = 2,
-	Yellow = 3,
-	White = 4
+	Locked = 0,
+	Unlocked = 1
 };
 
 /**
- * Power-up progression: Power Coupons balance and per-wedge tiers (Black/Red/Yellow/White).
+ * Power-up progression: Power Coupons balance and per-stat statue fill unlocks.
  * Persists in its own save slot (separate from profile).
  */
 UCLASS()
@@ -32,11 +29,8 @@ public:
 	static const FString PowerUpSaveSlotName;
 	static constexpr int32 PowerUpSaveUserIndex = 0;
 
-	/** Max wedges per stat. */
-	static constexpr int32 MaxSlicesPerStat = 10;
-
-	/** Cost in Power Coupons per tier step: Empty->Black 1, Black->Red 3, Red->Yellow 5, Yellow->White 10. */
-	static int32 GetCostForTierStep(uint8 FromTier);
+	/** Visible fill steps per statue: 10 slices from bottom to top. */
+	static constexpr int32 MaxFillStepsPerStat = 10;
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
@@ -48,40 +42,55 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	void AddPowerCrystals(int32 Amount);
 
-	/** Get wedge tier (0..4) for the given stat and wedge index (0..9). */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetWedgeTier(ET66HeroStatType StatType, int32 WedgeIndex) const;
-
-	/** Cost in PC for the next upgrade on this stat (0 if maxed). */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetCostForNextUpgrade(ET66HeroStatType StatType) const;
-
-	/** Unlock next wedge upgrade for the given stat (lowest-index wedge not yet White). Returns true if successful. */
+	/** Spend Power Coupons. Returns true if balance was sufficient and amount was deducted. */
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool UnlockNextWedgeUpgrade(ET66HeroStatType StatType);
+	bool SpendPowerCrystals(int32 Amount);
 
-	/** Unlock one random stat: add one Black wedge to first empty wedge of a random stat. Cost 1 PC. */
+	/** Get fill-step state (0=Locked, 1=Unlocked) for the given stat and step index (0..9). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
+	int32 GetFillStepState(ET66HeroStatType StatType, int32 StepIndex) const;
+
+	/** Number of visible fill steps currently unlocked for this stat. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
+	int32 GetUnlockedFillStepCount(ET66HeroStatType StatType) const;
+
+	/** Flat stat bonus from this stat's fill steps plus any non-visual overflow bonus. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
+	int32 GetTotalStatBonus(ET66HeroStatType StatType) const;
+
+	/** Cost in PC for the next visible fill-step unlock on this stat (0 if maxed). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
+	int32 GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const;
+
+	/** Unlock the next locked fill step for the given stat. Returns true if successful. */
+	UFUNCTION(BlueprintCallable, Category = "PowerUp")
+	bool UnlockNextFillStep(ET66HeroStatType StatType);
+
+	/** Unlock one random stat: reveal its next locked fill step. Cost 1 PC. */
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockRandomStat();
 
-	/** True if all 10 wedges for this stat are White. */
+	/** True if all 10 visible fill steps for this stat are unlocked. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	bool IsStatMaxed(ET66HeroStatType StatType) const;
 
-	/** All powerup bonuses as flat stat points (for RunState stat getters). Each wedge tier >= Black counts as +1. */
+	/** All powerup bonuses as flat stat points (for RunState stat getters). Each unlocked fill step counts as +1. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	FT66HeroStatBonuses GetPowerupStatBonuses() const;
 
 private:
+	static constexpr int32 LegacyV2SlotsPerStat = 10;
+
 	UPROPERTY()
 	TObjectPtr<UT66PowerUpSaveGame> SaveData;
 
 	void LoadOrCreateSave();
 	void MigrateV1ToV2WedgeTiers();
+	void MigrateV2ToV3BodyParts();
+	void MigrateV3ToV4FillSteps();
 	void Save();
-	TArray<uint8>* GetWedgeTiersForStat(ET66HeroStatType StatType);
-	const TArray<uint8>* GetWedgeTiersForStat(ET66HeroStatType StatType) const;
-	void EnsureWedgeTiersSize(TArray<uint8>& Arr);
+	TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType);
+	const TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType) const;
+	void EnsureFillStepStatesSize(TArray<uint8>& Arr);
 	int32 GetRandomBonusForStat(ET66HeroStatType StatType) const;
-	void AddRandomBonusToStat(ET66HeroStatType StatType);
 };

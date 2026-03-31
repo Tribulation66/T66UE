@@ -145,6 +145,22 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	bool bLoadAsPreview = false;
 
+	/** Owner ID of the current run/save context. */
+	UPROPERTY(BlueprintReadWrite, Category = "Party")
+	FString CurrentRunOwnerPlayerId;
+
+	/** Owner display name of the current run/save context. */
+	UPROPERTY(BlueprintReadWrite, Category = "Party")
+	FString CurrentRunOwnerDisplayName;
+
+	/** Party member IDs attached to the current run/save context. */
+	UPROPERTY(BlueprintReadWrite, Category = "Party")
+	TArray<FString> CurrentRunPartyMemberIds;
+
+	/** Party member display names attached to the current run/save context. */
+	UPROPERTY(BlueprintReadWrite, Category = "Party")
+	TArray<FString> CurrentRunPartyMemberDisplayNames;
+
 	/** True if Main Menu chose New Game, false if Load Game (used by Party Size Picker) */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsNewGameFlow = true;

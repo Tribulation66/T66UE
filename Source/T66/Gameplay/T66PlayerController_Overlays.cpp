@@ -26,6 +26,7 @@
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "UI/T66GameplayHUDWidget.h"
+#include "UI/Style/T66Style.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66CircusOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
@@ -106,7 +107,7 @@
 void AT66PlayerController::SetupGameplayHUD()
 {
 	if (!IsGameplayLevel()) return;
-	UClass* HUDClass = UT66GameplayHUDWidget::StaticClass();
+	UClass* HUDClass = ResolveGameplayHUDClass();
 	if (!HUDClass) return;
 	GameplayHUDWidget = CreateWidget<UT66GameplayHUDWidget>(this, HUDClass);
 	if (GameplayHUDWidget)
@@ -117,6 +118,43 @@ void AT66PlayerController::SetupGameplayHUD()
 	// (LabOverlayWidget not created when in Lab.)
 }
 
+void AT66PlayerController::RebuildThemeAwareUI()
+{
+	if (UIManager)
+	{
+		UIManager->RebuildAllVisibleUI();
+	}
+
+	if (GameplayHUDWidget && GameplayHUDWidget->IsInViewport())
+	{
+		FT66Style::DeferRebuild(GameplayHUDWidget, 0);
+	}
+	if (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
+	{
+		FT66Style::DeferRebuild(GamblerOverlayWidget, 100);
+	}
+	if (CircusOverlayWidget && CircusOverlayWidget->IsInViewport())
+	{
+		FT66Style::DeferRebuild(CircusOverlayWidget, 100);
+	}
+	if (VendorOverlayWidget && VendorOverlayWidget->IsInViewport())
+	{
+		FT66Style::DeferRebuild(VendorOverlayWidget, 100);
+	}
+	if (CollectorOverlayWidget && CollectorOverlayWidget->IsInViewport())
+	{
+		FT66Style::DeferRebuild(CollectorOverlayWidget, 100);
+	}
+	if (CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
+	{
+		FT66Style::DeferRebuild(CowardicePromptWidget, 200);
+	}
+	if (IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport())
+	{
+		FT66Style::DeferRebuild(IdolAltarOverlayWidget, 150);
+	}
+}
+
 
 void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
 {
@@ -124,7 +162,7 @@ void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
 
 	if (!GamblerOverlayWidget)
 	{
-		GamblerOverlayWidget = CreateWidget<UT66GamblerOverlayWidget>(this, UT66GamblerOverlayWidget::StaticClass());
+		GamblerOverlayWidget = CreateWidget<UT66GamblerOverlayWidget>(this, ResolveGamblerOverlayClass());
 	}
 
 	if (GamblerOverlayWidget && !GamblerOverlayWidget->IsInViewport())
@@ -146,7 +184,7 @@ void AT66PlayerController::OpenCircusOverlay()
 
 	if (!CircusOverlayWidget)
 	{
-		CircusOverlayWidget = CreateWidget<UT66CircusOverlayWidget>(this, UT66CircusOverlayWidget::StaticClass());
+		CircusOverlayWidget = CreateWidget<UT66CircusOverlayWidget>(this, ResolveCircusOverlayClass());
 	}
 
 	if (CircusOverlayWidget)
@@ -320,7 +358,7 @@ void AT66PlayerController::OpenVendorOverlay()
 
 	if (!VendorOverlayWidget)
 	{
-		VendorOverlayWidget = CreateWidget<UT66VendorOverlayWidget>(this, UT66VendorOverlayWidget::StaticClass());
+		VendorOverlayWidget = CreateWidget<UT66VendorOverlayWidget>(this, ResolveVendorOverlayClass());
 	}
 
 	if (VendorOverlayWidget)
@@ -345,7 +383,7 @@ void AT66PlayerController::OpenCollectorOverlay()
 
 	if (!CollectorOverlayWidget)
 	{
-		CollectorOverlayWidget = CreateWidget<UT66CollectorOverlayWidget>(this, UT66CollectorOverlayWidget::StaticClass());
+		CollectorOverlayWidget = CreateWidget<UT66CollectorOverlayWidget>(this, ResolveCollectorOverlayClass());
 	}
 
 	if (CollectorOverlayWidget && !CollectorOverlayWidget->IsInViewport())
@@ -365,7 +403,7 @@ void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 
 	if (!CowardicePromptWidget)
 	{
-		CowardicePromptWidget = CreateWidget<UT66CowardicePromptWidget>(this, UT66CowardicePromptWidget::StaticClass());
+		CowardicePromptWidget = CreateWidget<UT66CowardicePromptWidget>(this, ResolveCowardicePromptClass());
 	}
 
 	if (CowardicePromptWidget && !CowardicePromptWidget->IsInViewport())
@@ -384,7 +422,7 @@ void AT66PlayerController::ShowLoadPreviewOverlay()
 {
 	if (!IsGameplayLevel()) return;
 
-	UT66LoadPreviewOverlayWidget* W = CreateWidget<UT66LoadPreviewOverlayWidget>(this, UT66LoadPreviewOverlayWidget::StaticClass());
+	UT66LoadPreviewOverlayWidget* W = CreateWidget<UT66LoadPreviewOverlayWidget>(this, ResolveLoadPreviewOverlayClass());
 	if (W)
 	{
 		W->AddToViewport(500); // above HUD and other overlays
@@ -549,15 +587,42 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	if (!UIManager) return;
 
 	UIManager->Initialize(this);
-	UIManager->RegisterScreenClass(ET66ScreenType::PauseMenu, UT66PauseMenuScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::Achievements, UT66AchievementsScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::ReportBug, UT66ReportBugScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::Settings, UT66SettingsScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, UT66PlayerSummaryPickerScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, UT66LeaderboardScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, UT66AccountStatusScreen::StaticClass());
+	if (TSubclassOf<UT66ScreenBase> PauseClass = ResolveScreenClass(ET66ScreenType::PauseMenu))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::PauseMenu, PauseClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> AchievementsClass = ResolveScreenClass(ET66ScreenType::Achievements))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::Achievements, AchievementsClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> ReportBugClass = ResolveScreenClass(ET66ScreenType::ReportBug))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::ReportBug, ReportBugClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> SettingsClass = ResolveScreenClass(ET66ScreenType::Settings))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::Settings, SettingsClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> RunSummaryClass = ResolveScreenClass(ET66ScreenType::RunSummary))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, RunSummaryClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> SummaryPickerClass = ResolveScreenClass(ET66ScreenType::PlayerSummaryPicker))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> PowerUpClass = ResolveScreenClass(ET66ScreenType::PowerUp))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, PowerUpClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, LeaderboardClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, AccountStatusClass);
+	}
 }
 
 

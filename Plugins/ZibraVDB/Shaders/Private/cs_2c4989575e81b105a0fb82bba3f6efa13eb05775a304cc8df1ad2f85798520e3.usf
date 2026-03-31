@@ -1,0 +1,919 @@
+#include "/Engine/Public/Platform.ush"
+
+struct UB0_S0
+{
+    uint UB0_S0_M0;
+    uint UB0_S0_M1;
+    uint UB0_S0_M2;
+    uint UB0_S0_M3;
+};
+
+struct UB1_S0
+{
+    uint UB1_S0_M0;
+    uint UB1_S0_M1;
+    uint UB1_S0_M2;
+    uint UB1_S0_M3;
+};
+
+cbuffer UBT0 : register(b0)
+{
+    UB0_S0 UB0_M0 : packoffset(c0);
+};
+
+cbuffer UBT1 : register(b1)
+{
+    UB1_S0 UB1_m0 : packoffset(c0);
+};
+
+ByteAddressBuffer SB0 : register(t0);
+ByteAddressBuffer SB1 : register(t1);
+ByteAddressBuffer SB2 : register(t2);
+ByteAddressBuffer SB3 : register(t3);
+ByteAddressBuffer SB4 : register(t4);
+ByteAddressBuffer SB5 : register(t5);
+RWByteAddressBuffer SB6 : register(u0);
+RWByteAddressBuffer SB7 : register(u1);
+
+static uint3 gl_GlobalInvocationID;
+struct SPIRV_Cross_Input
+{
+    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;
+};
+
+void comp_main()
+{
+    do
+    {
+        if (gl_GlobalInvocationID.x >= UB0_M0.UB0_S0_M0)
+        {
+            break;
+        }
+        uint _88 = SB3.Load(gl_GlobalInvocationID.x * 4 + 0);
+        uint _91 = _88 - UB0_M0.UB0_S0_M3;
+        uint _92 = _91 >> 5u;
+        uint _96 = _92 + 1u;
+        uint2 _99 = uint2(SB0.Load(_92 * 4 + 0), SB0.Load(_96 * 4 + 0));
+        uint _188;
+        uint _189;
+        uint _190;
+        uint _191;
+        do
+        {
+            int _103 = int(4u - (_91 & 31u));
+            uint2 _110;
+            if (_92 != _92)
+            {
+                _110 = uint2(SB0.Load(_92 * 4 + 0), SB0.Load(_96 * 4 + 0));
+            }
+            else
+            {
+                _110 = _99;
+            }
+            uint _118 = _110.x << (uint(-_103) & 31u);
+            uint2 _119 = uint2(_110.x >> (uint(_103) & 31u), _118);
+            _119.y = _118 | (_110.y >> (uint(_103 + 32) & 31u));
+            uint2 _127 = _119 & uint2(268435455u, 268435455u);
+            uint _134;
+            if (_103 >= 0)
+            {
+                _134 = _127.x;
+            }
+            else
+            {
+                _134 = _127.y;
+            }
+            uint _135 = _134 & 65535u;
+            uint _136 = _134 >> 16u;
+            uint _139 = SB2.Load(_136 * 4 + 0) >> 1u;
+            if ((SB2.Load(_136 * 4 + 0) & 1u) > 0u)
+            {
+                uint _183 = _91 + (_139 & 255u);
+                _188 = _183;
+                _189 = _183 >> 5u;
+                _190 = _183 & 31u;
+                _191 = (_139 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _151;
+                uint _175;
+                do
+                {
+                    _151 = 0u;
+                    uint _149;
+                    uint _154;
+                    bool _176;
+                    uint _148 = _139;
+                    uint _153 = 0u;
+                    for (;;)
+                    {
+                        if (_151 < 16u)
+                        {
+                            bool _165 = (SB1.Load(_148 * 4 + 0) & 1u) != 0u;
+                            uint _171;
+                            if (_165)
+                            {
+                                _154 = SB1.Load(_148 * 4 + 0) >> 1u;
+                                _171 = SB1.Load(0);
+                            }
+                            else
+                            {
+                                _154 = _153;
+                                _171 = SB1.Load(_148 * 4 + 0);
+                            }
+                            _149 = (_171 >> 1u) + ((_135 >> ((15u - _151) & 31u)) & 1u);
+                            if (_165)
+                            {
+                                _175 = _154;
+                                _176 = true;
+                                break;
+                            }
+                            _148 = _149;
+                            _151++;
+                            _153 = _154;
+                            continue;
+                        }
+                        else
+                        {
+                            _175 = _153;
+                            _176 = false;
+                            break;
+                        }
+                    }
+                    if (_176)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                uint _179 = _91 + (_151 + 12u);
+                _188 = _179;
+                _189 = _179 >> 5u;
+                _190 = _179 & 31u;
+                _191 = _175;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _286;
+        uint _287;
+        uint _288;
+        uint _289;
+        do
+        {
+            int _196 = int(4u - _190);
+            uint2 _206;
+            if (_92 != _189)
+            {
+                _206 = uint2(SB0.Load(_189 * 4 + 0), SB0.Load((_189 + 1u) * 4 + 0));
+            }
+            else
+            {
+                _206 = _99;
+            }
+            uint _214 = _206.x << (uint(-_196) & 31u);
+            uint2 _215 = uint2(_206.x >> (uint(_196) & 31u), _214);
+            _215.y = _214 | (_206.y >> (uint(_196 + 32) & 31u));
+            uint2 _223 = _215 & uint2(268435455u, 268435455u);
+            uint _230;
+            if (_196 >= 0)
+            {
+                _230 = _223.x;
+            }
+            else
+            {
+                _230 = _223.y;
+            }
+            uint _231 = _230 & 65535u;
+            uint _233 = (_230 >> 16u) + 4096u;
+            uint _236 = SB2.Load(_233 * 4 + 0) >> 1u;
+            if ((SB2.Load(_233 * 4 + 0) & 1u) > 0u)
+            {
+                uint _281 = _188 + (_236 & 255u);
+                _286 = _281;
+                _287 = _281 >> 5u;
+                _288 = _281 & 31u;
+                _289 = (_236 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _248;
+                uint _273;
+                do
+                {
+                    _248 = 0u;
+                    uint _246;
+                    uint _251;
+                    bool _274;
+                    uint _245 = _236;
+                    uint _250 = 0u;
+                    for (;;)
+                    {
+                        if (_248 < 16u)
+                        {
+                            uint _259 = _245 + 1024u;
+                            bool _263 = (SB1.Load(_259 * 4 + 0) & 1u) != 0u;
+                            uint _269;
+                            if (_263)
+                            {
+                                _251 = SB1.Load(_259 * 4 + 0) >> 1u;
+                                _269 = SB1.Load(4096);
+                            }
+                            else
+                            {
+                                _251 = _250;
+                                _269 = SB1.Load(_259 * 4 + 0);
+                            }
+                            _246 = (_269 >> 1u) + ((_231 >> ((15u - _248) & 31u)) & 1u);
+                            if (_263)
+                            {
+                                _273 = _251;
+                                _274 = true;
+                                break;
+                            }
+                            _245 = _246;
+                            _248++;
+                            _250 = _251;
+                            continue;
+                        }
+                        else
+                        {
+                            _273 = _250;
+                            _274 = false;
+                            break;
+                        }
+                    }
+                    if (_274)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                uint _277 = _188 + (_248 + 12u);
+                _286 = _277;
+                _287 = _277 >> 5u;
+                _288 = _277 & 31u;
+                _289 = _273;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _384;
+        uint _385;
+        uint _386;
+        uint _387;
+        do
+        {
+            int _294 = int(4u - _288);
+            uint2 _304;
+            if (_92 != _287)
+            {
+                _304 = uint2(SB0.Load(_287 * 4 + 0), SB0.Load((_287 + 1u) * 4 + 0));
+            }
+            else
+            {
+                _304 = _99;
+            }
+            uint _312 = _304.x << (uint(-_294) & 31u);
+            uint2 _313 = uint2(_304.x >> (uint(_294) & 31u), _312);
+            _313.y = _312 | (_304.y >> (uint(_294 + 32) & 31u));
+            uint2 _321 = _313 & uint2(268435455u, 268435455u);
+            uint _328;
+            if (_294 >= 0)
+            {
+                _328 = _321.x;
+            }
+            else
+            {
+                _328 = _321.y;
+            }
+            uint _329 = _328 & 65535u;
+            uint _331 = (_328 >> 16u) + 8192u;
+            uint _334 = SB2.Load(_331 * 4 + 0) >> 1u;
+            if ((SB2.Load(_331 * 4 + 0) & 1u) > 0u)
+            {
+                uint _379 = _286 + (_334 & 255u);
+                _384 = _379;
+                _385 = _379 >> 5u;
+                _386 = _379 & 31u;
+                _387 = (_334 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _346;
+                uint _371;
+                do
+                {
+                    _346 = 0u;
+                    uint _344;
+                    uint _349;
+                    bool _372;
+                    uint _343 = _334;
+                    uint _348 = 0u;
+                    for (;;)
+                    {
+                        if (_346 < 16u)
+                        {
+                            uint _357 = _343 + 2048u;
+                            bool _361 = (SB1.Load(_357 * 4 + 0) & 1u) != 0u;
+                            uint _367;
+                            if (_361)
+                            {
+                                _349 = SB1.Load(_357 * 4 + 0) >> 1u;
+                                _367 = SB1.Load(8192);
+                            }
+                            else
+                            {
+                                _349 = _348;
+                                _367 = SB1.Load(_357 * 4 + 0);
+                            }
+                            _344 = (_367 >> 1u) + ((_329 >> ((15u - _346) & 31u)) & 1u);
+                            if (_361)
+                            {
+                                _371 = _349;
+                                _372 = true;
+                                break;
+                            }
+                            _343 = _344;
+                            _346++;
+                            _348 = _349;
+                            continue;
+                        }
+                        else
+                        {
+                            _371 = _348;
+                            _372 = false;
+                            break;
+                        }
+                    }
+                    if (_372)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                uint _375 = _286 + (_346 + 12u);
+                _384 = _375;
+                _385 = _375 >> 5u;
+                _386 = _375 & 31u;
+                _387 = _371;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _483;
+        uint _484;
+        uint _485;
+        uint _486;
+        do
+        {
+            int _393 = int(4u - _386);
+            uint2 _403;
+            if (_92 != _385)
+            {
+                _403 = uint2(SB0.Load(_385 * 4 + 0), SB0.Load((_385 + 1u) * 4 + 0));
+            }
+            else
+            {
+                _403 = _99;
+            }
+            uint _411 = _403.x << (uint(-_393) & 31u);
+            uint2 _412 = uint2(_403.x >> (uint(_393) & 31u), _411);
+            _412.y = _411 | (_403.y >> (uint(_393 + 32) & 31u));
+            uint2 _420 = _412 & uint2(268435455u, 268435455u);
+            uint _427;
+            if (_393 >= 0)
+            {
+                _427 = _420.x;
+            }
+            else
+            {
+                _427 = _420.y;
+            }
+            uint _428 = _427 & 65535u;
+            uint _430 = (_427 >> 16u) + 12288u;
+            uint _433 = SB2.Load(_430 * 4 + 0) >> 1u;
+            if ((SB2.Load(_430 * 4 + 0) & 1u) > 0u)
+            {
+                uint _478 = _384 + (_433 & 255u);
+                _483 = _478;
+                _484 = _478 >> 5u;
+                _485 = _478 & 31u;
+                _486 = (_433 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _445;
+                uint _470;
+                do
+                {
+                    _445 = 0u;
+                    uint _443;
+                    uint _448;
+                    bool _471;
+                    uint _442 = _433;
+                    uint _447 = 0u;
+                    for (;;)
+                    {
+                        if (_445 < 16u)
+                        {
+                            uint _456 = _442 + 3072u;
+                            bool _460 = (SB1.Load(_456 * 4 + 0) & 1u) != 0u;
+                            uint _466;
+                            if (_460)
+                            {
+                                _448 = SB1.Load(_456 * 4 + 0) >> 1u;
+                                _466 = SB1.Load(12288);
+                            }
+                            else
+                            {
+                                _448 = _447;
+                                _466 = SB1.Load(_456 * 4 + 0);
+                            }
+                            _443 = (_466 >> 1u) + ((_428 >> ((15u - _445) & 31u)) & 1u);
+                            if (_460)
+                            {
+                                _470 = _448;
+                                _471 = true;
+                                break;
+                            }
+                            _442 = _443;
+                            _445++;
+                            _447 = _448;
+                            continue;
+                        }
+                        else
+                        {
+                            _470 = _447;
+                            _471 = false;
+                            break;
+                        }
+                    }
+                    if (_471)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                uint _474 = _384 + (_445 + 12u);
+                _483 = _474;
+                _484 = _474 >> 5u;
+                _485 = _474 & 31u;
+                _486 = _470;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _580;
+        uint _581;
+        uint _582;
+        uint _583;
+        do
+        {
+            int _490 = int(4u - _485);
+            uint2 _500;
+            if (_92 != _484)
+            {
+                _500 = uint2(SB0.Load(_484 * 4 + 0), SB0.Load((_484 + 1u) * 4 + 0));
+            }
+            else
+            {
+                _500 = _99;
+            }
+            uint _508 = _500.x << (uint(-_490) & 31u);
+            uint2 _509 = uint2(_500.x >> (uint(_490) & 31u), _508);
+            _509.y = _508 | (_500.y >> (uint(_490 + 32) & 31u));
+            uint2 _517 = _509 & uint2(268435455u, 268435455u);
+            uint _524;
+            if (_490 >= 0)
+            {
+                _524 = _517.x;
+            }
+            else
+            {
+                _524 = _517.y;
+            }
+            uint _525 = _524 & 65535u;
+            uint _527 = (_524 >> 16u) + 16384u;
+            uint _530 = SB2.Load(_527 * 4 + 0) >> 1u;
+            if ((SB2.Load(_527 * 4 + 0) & 1u) > 0u)
+            {
+                uint _575 = _483 + (_530 & 255u);
+                _580 = _575;
+                _581 = _575 >> 5u;
+                _582 = _575 & 31u;
+                _583 = (_530 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _542;
+                uint _567;
+                do
+                {
+                    _542 = 0u;
+                    uint _540;
+                    uint _545;
+                    bool _568;
+                    uint _539 = _530;
+                    uint _544 = 0u;
+                    for (;;)
+                    {
+                        if (_542 < 16u)
+                        {
+                            uint _553 = _539 + 4096u;
+                            bool _557 = (SB1.Load(_553 * 4 + 0) & 1u) != 0u;
+                            uint _563;
+                            if (_557)
+                            {
+                                _545 = SB1.Load(_553 * 4 + 0) >> 1u;
+                                _563 = SB1.Load(16384);
+                            }
+                            else
+                            {
+                                _545 = _544;
+                                _563 = SB1.Load(_553 * 4 + 0);
+                            }
+                            _540 = (_563 >> 1u) + ((_525 >> ((15u - _542) & 31u)) & 1u);
+                            if (_557)
+                            {
+                                _567 = _545;
+                                _568 = true;
+                                break;
+                            }
+                            _539 = _540;
+                            _542++;
+                            _544 = _545;
+                            continue;
+                        }
+                        else
+                        {
+                            _567 = _544;
+                            _568 = false;
+                            break;
+                        }
+                    }
+                    if (_568)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                uint _571 = _483 + (_542 + 12u);
+                _580 = _571;
+                _581 = _571 >> 5u;
+                _582 = _571 & 31u;
+                _583 = _567;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _679;
+        uint _680;
+        uint _681;
+        uint _682;
+        do
+        {
+            int _589 = int(4u - _582);
+            uint2 _599;
+            if (_92 != _581)
+            {
+                _599 = uint2(SB0.Load(_581 * 4 + 0), SB0.Load((_581 + 1u) * 4 + 0));
+            }
+            else
+            {
+                _599 = _99;
+            }
+            uint _607 = _599.x << (uint(-_589) & 31u);
+            uint2 _608 = uint2(_599.x >> (uint(_589) & 31u), _607);
+            _608.y = _607 | (_599.y >> (uint(_589 + 32) & 31u));
+            uint2 _616 = _608 & uint2(268435455u, 268435455u);
+            uint _623;
+            if (_589 >= 0)
+            {
+                _623 = _616.x;
+            }
+            else
+            {
+                _623 = _616.y;
+            }
+            uint _624 = _623 & 65535u;
+            uint _626 = (_623 >> 16u) + 20480u;
+            uint _629 = SB2.Load(_626 * 4 + 0) >> 1u;
+            if ((SB2.Load(_626 * 4 + 0) & 1u) > 0u)
+            {
+                uint _674 = _580 + (_629 & 255u);
+                _679 = _674;
+                _680 = _674 >> 5u;
+                _681 = _674 & 31u;
+                _682 = (_629 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _641;
+                uint _666;
+                do
+                {
+                    _641 = 0u;
+                    uint _639;
+                    uint _644;
+                    bool _667;
+                    uint _638 = _629;
+                    uint _643 = 0u;
+                    for (;;)
+                    {
+                        if (_641 < 16u)
+                        {
+                            uint _652 = _638 + 5120u;
+                            bool _656 = (SB1.Load(_652 * 4 + 0) & 1u) != 0u;
+                            uint _662;
+                            if (_656)
+                            {
+                                _644 = SB1.Load(_652 * 4 + 0) >> 1u;
+                                _662 = SB1.Load(20480);
+                            }
+                            else
+                            {
+                                _644 = _643;
+                                _662 = SB1.Load(_652 * 4 + 0);
+                            }
+                            _639 = (_662 >> 1u) + ((_624 >> ((15u - _641) & 31u)) & 1u);
+                            if (_656)
+                            {
+                                _666 = _644;
+                                _667 = true;
+                                break;
+                            }
+                            _638 = _639;
+                            _641++;
+                            _643 = _644;
+                            continue;
+                        }
+                        else
+                        {
+                            _666 = _643;
+                            _667 = false;
+                            break;
+                        }
+                    }
+                    if (_667)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                uint _670 = _580 + (_641 + 12u);
+                _679 = _670;
+                _680 = _670 >> 5u;
+                _681 = _670 & 31u;
+                _682 = _666;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _684 = (_486 | (_583 << 8u)) | (_682 << 16u);
+        uint _778;
+        uint _779;
+        uint _780;
+        do
+        {
+            int _688 = int(4u - _681);
+            uint2 _698;
+            if (_92 != _680)
+            {
+                _698 = uint2(SB0.Load(_680 * 4 + 0), SB0.Load((_680 + 1u) * 4 + 0));
+            }
+            else
+            {
+                _698 = _99;
+            }
+            uint _706 = _698.x << (uint(-_688) & 31u);
+            uint2 _707 = uint2(_698.x >> (uint(_688) & 31u), _706);
+            _707.y = _706 | (_698.y >> (uint(_688 + 32) & 31u));
+            uint2 _715 = _707 & uint2(268435455u, 268435455u);
+            uint _722;
+            if (_688 >= 0)
+            {
+                _722 = _715.x;
+            }
+            else
+            {
+                _722 = _715.y;
+            }
+            uint _723 = _722 & 65535u;
+            uint _725 = (_722 >> 16u) + 28672u;
+            uint _728 = SB2.Load(_725 * 4 + 0) >> 1u;
+            if ((SB2.Load(_725 * 4 + 0) & 1u) > 0u)
+            {
+                uint _773 = _679 + (_728 & 255u);
+                _778 = _773 >> 5u;
+                _779 = _773 & 31u;
+                _780 = (_728 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _740;
+                uint _765;
+                do
+                {
+                    _740 = 0u;
+                    uint _738;
+                    uint _743;
+                    bool _766;
+                    uint _737 = _728;
+                    uint _742 = 0u;
+                    for (;;)
+                    {
+                        if (_740 < 16u)
+                        {
+                            uint _751 = _737 + 7168u;
+                            bool _755 = (SB1.Load(_751 * 4 + 0) & 1u) != 0u;
+                            uint _761;
+                            if (_755)
+                            {
+                                _743 = SB1.Load(_751 * 4 + 0) >> 1u;
+                                _761 = SB1.Load(28672);
+                            }
+                            else
+                            {
+                                _743 = _742;
+                                _761 = SB1.Load(_751 * 4 + 0);
+                            }
+                            _738 = (_761 >> 1u) + ((_723 >> ((15u - _740) & 31u)) & 1u);
+                            if (_755)
+                            {
+                                _765 = _743;
+                                _766 = true;
+                                break;
+                            }
+                            _737 = _738;
+                            _740++;
+                            _742 = _743;
+                            continue;
+                        }
+                        else
+                        {
+                            _765 = _742;
+                            _766 = false;
+                            break;
+                        }
+                    }
+                    if (_766)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                uint _769 = _679 + (_740 + 12u);
+                _778 = _769 >> 5u;
+                _779 = _769 & 31u;
+                _780 = _765;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _866;
+        do
+        {
+            int _784 = int(4u - _779);
+            uint2 _794;
+            if (_92 != _778)
+            {
+                _794 = uint2(SB0.Load(_778 * 4 + 0), SB0.Load((_778 + 1u) * 4 + 0));
+            }
+            else
+            {
+                _794 = _99;
+            }
+            uint _802 = _794.x << (uint(-_784) & 31u);
+            uint2 _803 = uint2(_794.x >> (uint(_784) & 31u), _802);
+            _803.y = _802 | (_794.y >> (uint(_784 + 32) & 31u));
+            uint2 _811 = _803 & uint2(268435455u, 268435455u);
+            uint _818;
+            if (_784 >= 0)
+            {
+                _818 = _811.x;
+            }
+            else
+            {
+                _818 = _811.y;
+            }
+            uint _819 = _818 & 65535u;
+            uint _821 = (_818 >> 16u) + 24576u;
+            uint _824 = SB2.Load(_821 * 4 + 0) >> 1u;
+            if ((SB2.Load(_821 * 4 + 0) & 1u) > 0u)
+            {
+                _866 = (_824 >> 8u) & 511u;
+                break;
+            }
+            else
+            {
+                uint _861;
+                do
+                {
+                    uint _834;
+                    uint _839;
+                    bool _862;
+                    uint _833 = _824;
+                    uint _836 = 0u;
+                    uint _838 = 0u;
+                    for (;;)
+                    {
+                        if (_836 < 16u)
+                        {
+                            uint _847 = _833 + 6144u;
+                            bool _851 = (SB1.Load(_847 * 4 + 0) & 1u) != 0u;
+                            uint _857;
+                            if (_851)
+                            {
+                                _839 = SB1.Load(_847 * 4 + 0) >> 1u;
+                                _857 = SB1.Load(24576);
+                            }
+                            else
+                            {
+                                _839 = _838;
+                                _857 = SB1.Load(_847 * 4 + 0);
+                            }
+                            _834 = (_857 >> 1u) + ((_819 >> ((15u - _836) & 31u)) & 1u);
+                            if (_851)
+                            {
+                                _861 = _839;
+                                _862 = true;
+                                break;
+                            }
+                            _833 = _834;
+                            _836++;
+                            _838 = _839;
+                            continue;
+                        }
+                        else
+                        {
+                            _861 = _838;
+                            _862 = false;
+                            break;
+                        }
+                    }
+                    if (_862)
+                    {
+                        break;
+                    }
+                    break;
+                } while(false);
+                _866 = _861;
+                break;
+            }
+            break; // unreachable workaround
+        } while(false);
+        uint _870 = UB1_m0.UB1_S0_M2 + (3u * gl_GlobalInvocationID.x);
+        uint3 _871 = uint3(int3(int(_191), int(_289), int(_387)));
+        SB6.Store(_870 * 4 + 0, ((_871.x & 1023u) | ((_871.y & 1023u) << 10u)) | ((_871.z & 1023u) << 20u));
+        SB6.Store((_870 + 1u) * 4 + 0, _684);
+        SB6.Store((_870 + 2u) * 4 + 0, _780);
+        for (uint _888 = 0u; _888 < _866; _888++)
+        {
+            uint _897 = (_684 - UB0_M0.UB0_S0_M2) + _888;
+            uint _899 = SB4.Load(_897 * 4 + 0);
+            uint _900 = _91 + _899;
+            uint _911;
+            if (_888 == (_866 - 1u))
+            {
+                _911 = SB5.Load(gl_GlobalInvocationID.x * 4 + 0);
+            }
+            else
+            {
+                _911 = SB4.Load((_897 + 1u) * 4 + 0);
+            }
+            int _914 = int(_888);
+            int _919;
+            _919 = -1;
+            uint _916 = _780;
+            int _921 = _914;
+            for (; _921 >= 0; )
+            {
+                uint _925 = _916 & 1u;
+                _916 = _916 >> 1u;
+                _919++;
+                _921 = int(uint(_921) - _925);
+                continue;
+            }
+            uint _935 = 2u * _897;
+            SB7.Store(_935 * 4 + 0, (((_888 & 15u) << 28u) | ((uint(_919) & 15u) << 24u)) | ((_91 + _911) - _900));
+            SB7.Store((_935 + 1u) * 4 + 0, _900);
+        }
+        break;
+    } while(false);
+}
+
+[numthreads(32, 1, 1)]
+void main(SPIRV_Cross_Input stage_input)
+{
+    gl_GlobalInvocationID = stage_input.gl_GlobalInvocationID;
+    comp_main();
+}

@@ -21,6 +21,7 @@ MESH_IMPORTS = [
 TEXTURE_IMPORTS = [
     ("Materials/Textures/Texture_Block.png", "T_MegabonkBlock", "MI_MegabonkBlock"),
     ("Materials/Textures/Texture_Slope.png", "T_MegabonkSlope", "MI_MegabonkSlope"),
+    ("Materials/Textures/Texture_Dirt.png", "T_MegabonkDirt", "MI_MegabonkDirt"),
 ]
 
 

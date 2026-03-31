@@ -1,0 +1,47 @@
+#include "/Engine/Private/Common.ush"
+
+RWTexture3D<float4> Tex3DFloat4UAV;
+float4 Tex3DFloat4ClearValue;
+
+[numthreads(8, 8, 8)]
+void ClearTex3DFloat4(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    Tex3DFloat4UAV[id] = Tex3DFloat4ClearValue;
+}
+
+RWTexture3D<uint4> Tex3DUint4UAV;
+uint4 Tex3DUint4ClearValue;
+
+[numthreads(8, 8, 8)]
+void ClearTex3DUint4(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    Tex3DUint4UAV[id] = Tex3DUint4ClearValue;
+}
+
+RWTexture3D<float> Tex3DFloatUAV;
+float Tex3DFloatClearValue;
+
+[numthreads(8, 8, 8)]
+void ClearTex3DFloat(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    Tex3DFloatUAV[id] = Tex3DFloatClearValue;
+}
+
+RWTexture3D<uint> Tex3DUintUAV;
+uint Tex3DUintClearValue;
+
+[numthreads(8, 8, 8)]
+void ClearTex3DUint(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    Tex3DUintUAV[id] = Tex3DUintClearValue;
+}
+
+RWTexture3D<float3> SparseEmission;
+RWTexture3D<float> SparseDensity;
+
+[numthreads(8, 8, 8)]
+void ClearEmissionAndDensity(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    SparseEmission[id] = 0.0f;
+    SparseDensity[id] = 0.0f;
+}

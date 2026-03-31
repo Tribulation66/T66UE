@@ -6,18 +6,23 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66PowerUpSubsystem.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/ST66PulsingIcon.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
 #include "GameFramework/GameUserSettings.h"
+#include "HAL/FileManager.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
 #include "ImageUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
+#include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
+#include "TextureResource.h"
 #include "UObject/StrongObjectPtr.h"
+#include "Widgets/SLeafWidget.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -43,6 +48,471 @@ namespace
 	constexpr float GTopBarRightClusterGap = 12.f;
 	constexpr int32 GTopBarViewportZOrder = 50;
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GTopBarFileTextureCache;
+
+	bool DecodeImageFileToBGRA(const FString& FilePath, TArray<FColor>& OutPixels, int32& OutWidth, int32& OutHeight)
+	{
+		OutPixels.Reset();
+		OutWidth = 0;
+		OutHeight = 0;
+
+		TArray64<uint8> CompressedBytes;
+		if (!FFileHelper::LoadFileToArray(CompressedBytes, *FilePath) || CompressedBytes.Num() == 0)
+		{
+			return false;
+		}
+
+		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(TEXT("ImageWrapper"));
+		const EImageFormat Format = ImageWrapperModule.DetectImageFormat(CompressedBytes.GetData(), CompressedBytes.Num());
+		if (Format == EImageFormat::Invalid)
+		{
+			return false;
+		}
+
+		const TSharedPtr<IImageWrapper> Wrapper = ImageWrapperModule.CreateImageWrapper(Format);
+		if (!Wrapper.IsValid() || !Wrapper->SetCompressed(CompressedBytes.GetData(), CompressedBytes.Num()))
+		{
+			return false;
+		}
+
+		TArray64<uint8> RawBytes;
+		if (!Wrapper->GetRaw(ERGBFormat::BGRA, 8, RawBytes))
+		{
+			return false;
+		}
+
+		OutWidth = Wrapper->GetWidth();
+		OutHeight = Wrapper->GetHeight();
+		if (OutWidth <= 0 || OutHeight <= 0)
+		{
+			return false;
+		}
+
+		const int64 PixelCount = static_cast<int64>(OutWidth) * static_cast<int64>(OutHeight);
+		if (RawBytes.Num() != PixelCount * static_cast<int64>(sizeof(FColor)))
+		{
+			return false;
+		}
+
+		OutPixels.SetNumUninitialized(static_cast<int32>(PixelCount));
+		FMemory::Memcpy(OutPixels.GetData(), RawBytes.GetData(), RawBytes.Num());
+		return true;
+	}
+
+	void CopyPixelsIntoMip(FTexture2DMipMap& Mip, const TArray<FColor>& Pixels)
+	{
+		const int64 ExpectedBytes = static_cast<int64>(Pixels.Num()) * static_cast<int64>(sizeof(FColor));
+		void* DestPixels = Mip.BulkData.Lock(LOCK_READ_WRITE);
+		DestPixels = Mip.BulkData.Realloc(ExpectedBytes);
+		FMemory::Memcpy(DestPixels, Pixels.GetData(), ExpectedBytes);
+		Mip.BulkData.Unlock();
+	}
+
+	UTexture2D* CreateTopBarTextureWithMips(const FString& SourcePath, const TArray<FColor>& BasePixels, int32 Width, int32 Height, TextureFilter Filter)
+	{
+		if (BasePixels.Num() != Width * Height || Width <= 0 || Height <= 0)
+		{
+			return nullptr;
+		}
+
+		const FName TextureName = MakeUniqueObjectName(
+			GetTransientPackage(),
+			UTexture2D::StaticClass(),
+			FName(*FPaths::GetBaseFilename(SourcePath)));
+
+		UTexture2D* Texture = UTexture2D::CreateTransient(Width, Height, PF_B8G8R8A8, TextureName);
+		if (!Texture || !Texture->GetPlatformData() || Texture->GetPlatformData()->Mips.Num() == 0)
+		{
+			return nullptr;
+		}
+
+		Texture->bNotOfflineProcessed = true;
+		Texture->SRGB = true;
+		Texture->Filter = Filter;
+		Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+		Texture->CompressionSettings = TC_EditorIcon;
+		Texture->NeverStream = true;
+		Texture->AddressX = TextureAddress::TA_Clamp;
+		Texture->AddressY = TextureAddress::TA_Clamp;
+
+		CopyPixelsIntoMip(Texture->GetPlatformData()->Mips[0], BasePixels);
+
+		TArray<FColor> SourcePixels = BasePixels;
+		int32 SourceWidth = Width;
+		int32 SourceHeight = Height;
+
+		while (SourceWidth > 1 || SourceHeight > 1)
+		{
+			const int32 NextWidth = FMath::Max(1, SourceWidth / 2);
+			const int32 NextHeight = FMath::Max(1, SourceHeight / 2);
+
+			TArray<FColor> NextPixels;
+			FImageUtils::ImageResize(
+				SourceWidth,
+				SourceHeight,
+				SourcePixels,
+				NextWidth,
+				NextHeight,
+				NextPixels,
+				true,
+				false);
+
+			FTexture2DMipMap* NextMip = new FTexture2DMipMap(NextWidth, NextHeight, 1);
+			Texture->GetPlatformData()->Mips.Add(NextMip);
+			CopyPixelsIntoMip(*NextMip, NextPixels);
+
+			SourcePixels = MoveTemp(NextPixels);
+			SourceWidth = NextWidth;
+			SourceHeight = NextHeight;
+		}
+
+		Texture->UpdateResource();
+		return Texture;
+	}
+
+	UTexture2D* LoadTopBarAssetTexture(const TCHAR* AssetPath, TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		if (!AssetPath || !*AssetPath)
+		{
+			return nullptr;
+		}
+
+		if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, AssetPath))
+		{
+			Texture->SRGB = true;
+			Texture->Filter = Filter;
+			Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+			Texture->CompressionSettings = TC_EditorIcon;
+			Texture->NeverStream = true;
+			Texture->UpdateResource();
+			return Texture;
+		}
+
+		return nullptr;
+	}
+
+	float SnapPixel(float Value)
+	{
+		return FMath::RoundToFloat(Value);
+	}
+
+	FVector2D SnapPixelSize(const FVector2D& Value)
+	{
+		return FVector2D(SnapPixel(Value.X), SnapPixel(Value.Y));
+	}
+
+	TArray<FVector2D> MakeCirclePoints(const FVector2D& Center, float Radius, int32 Segments, float StartAngle = 0.f, float EndAngle = 2.f * PI)
+	{
+		TArray<FVector2D> Points;
+		Points.Reserve(Segments + 1);
+		for (int32 Index = 0; Index <= Segments; ++Index)
+		{
+			const float Alpha = static_cast<float>(Index) / static_cast<float>(Segments);
+			const float Angle = FMath::Lerp(StartAngle, EndAngle, Alpha);
+			Points.Add(Center + FVector2D(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius));
+		}
+		return Points;
+	}
+
+	class ST66TopBarGearGlyph : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66TopBarGearGlyph) {}
+			SLATE_ARGUMENT(FVector2D, DesiredSize)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			DesiredSize = InArgs._DesiredSize.IsNearlyZero() ? FVector2D(48.f, 48.f) : InArgs._DesiredSize;
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			return DesiredSize;
+		}
+
+		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+		{
+			const FVector2D Size = AllottedGeometry.GetLocalSize();
+			const FVector2D Center(Size * 0.5f);
+			const float MinDim = FMath::Max(1.f, FMath::Min(Size.X, Size.Y));
+			const float ToothStart = MinDim * 0.34f;
+			const float ToothEnd = MinDim * 0.47f;
+			const float ToothThickness = FMath::Max(3.f, MinDim * 0.10f);
+			const float OuterRadius = MinDim * 0.27f;
+			const float InnerRadius = MinDim * 0.17f;
+			const float CoreRadius = MinDim * 0.08f;
+
+			for (int32 AngleIndex = 0; AngleIndex < 8; ++AngleIndex)
+			{
+				const float Angle = FMath::DegreesToRadians(static_cast<float>(AngleIndex) * 45.f);
+				const FVector2D Dir(FMath::Cos(Angle), FMath::Sin(Angle));
+				const TArray<FVector2D> ToothLine = {
+					Center + (Dir * ToothStart),
+					Center + (Dir * ToothEnd)
+				};
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId,
+					AllottedGeometry.ToPaintGeometry(),
+					ToothLine,
+					ESlateDrawEffect::None,
+					FLinearColor(0.40f, 0.45f, 0.51f, 1.f),
+					true,
+					ToothThickness);
+			}
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 1,
+				AllottedGeometry.ToPaintGeometry(),
+				MakeCirclePoints(Center, OuterRadius, 40),
+				ESlateDrawEffect::None,
+				FLinearColor(0.86f, 0.89f, 0.93f, 1.f),
+				true,
+				FMath::Max(4.f, MinDim * 0.11f));
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 2,
+				AllottedGeometry.ToPaintGeometry(),
+				MakeCirclePoints(Center, InnerRadius, 32),
+				ESlateDrawEffect::None,
+				FLinearColor(0.19f, 0.22f, 0.27f, 1.f),
+				true,
+				FMath::Max(5.f, MinDim * 0.16f));
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 3,
+				AllottedGeometry.ToPaintGeometry(),
+				MakeCirclePoints(Center, InnerRadius, 32),
+				ESlateDrawEffect::None,
+				FLinearColor(0.86f, 0.89f, 0.93f, 1.f),
+				true,
+				FMath::Max(2.f, MinDim * 0.05f));
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 4,
+				AllottedGeometry.ToPaintGeometry(),
+				MakeCirclePoints(Center, CoreRadius, 24),
+				ESlateDrawEffect::None,
+				FLinearColor(0.17f, 0.20f, 0.24f, 1.f),
+				true,
+				CoreRadius * 2.f);
+
+			return LayerId + 5;
+		}
+
+	private:
+		FVector2D DesiredSize = FVector2D(48.f, 48.f);
+	};
+
+	class ST66TopBarPowerGlyph : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(ST66TopBarPowerGlyph) {}
+			SLATE_ARGUMENT(FVector2D, DesiredSize)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			DesiredSize = InArgs._DesiredSize.IsNearlyZero() ? FVector2D(48.f, 48.f) : InArgs._DesiredSize;
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			return DesiredSize;
+		}
+
+		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+		{
+			const FVector2D Size = AllottedGeometry.GetLocalSize();
+			const FVector2D Center(Size * 0.5f);
+			const float MinDim = FMath::Max(1.f, FMath::Min(Size.X, Size.Y));
+			const float Radius = MinDim * 0.36f;
+			const float OuterThickness = FMath::Max(5.f, MinDim * 0.12f);
+			const float InnerThickness = FMath::Max(2.f, MinDim * 0.05f);
+			const float StartAngle = -1.10f * PI;
+			const float EndAngle = 0.10f * PI;
+			const TArray<FVector2D> ArcPoints = MakeCirclePoints(Center, Radius, 44, StartAngle, EndAngle);
+			const TArray<FVector2D> StemPoints = {
+				FVector2D(Center.X, MinDim * 0.12f),
+				FVector2D(Center.X, Center.Y + (MinDim * 0.04f))
+			};
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(),
+				ArcPoints,
+				ESlateDrawEffect::None,
+				FLinearColor(0.22f, 0.12f, 0.08f, 1.f),
+				true,
+				OuterThickness);
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 1,
+				AllottedGeometry.ToPaintGeometry(),
+				ArcPoints,
+				ESlateDrawEffect::None,
+				FLinearColor(0.96f, 0.57f, 0.22f, 1.f),
+				true,
+				FMath::Max(3.f, OuterThickness - 3.f));
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 2,
+				AllottedGeometry.ToPaintGeometry(),
+				ArcPoints,
+				ESlateDrawEffect::None,
+				FLinearColor(1.f, 0.92f, 0.74f, 1.f),
+				true,
+				InnerThickness);
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 3,
+				AllottedGeometry.ToPaintGeometry(),
+				StemPoints,
+				ESlateDrawEffect::None,
+				FLinearColor(0.22f, 0.12f, 0.08f, 1.f),
+				true,
+				FMath::Max(8.f, MinDim * 0.18f));
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId + 4,
+				AllottedGeometry.ToPaintGeometry(),
+				StemPoints,
+				ESlateDrawEffect::None,
+				FLinearColor(1.f, 0.92f, 0.74f, 1.f),
+				true,
+				FMath::Max(4.f, MinDim * 0.09f));
+
+			return LayerId + 5;
+		}
+
+	private:
+		FVector2D DesiredSize = FVector2D(48.f, 48.f);
+	};
+
+	class ST66TopBarBadgeBackground : public SLeafWidget
+	{
+	public:
+		enum class EKind : uint8
+		{
+			Coin,
+			Coupon
+		};
+
+		SLATE_BEGIN_ARGS(ST66TopBarBadgeBackground) {}
+			SLATE_ARGUMENT(EKind, Kind)
+			SLATE_ARGUMENT(FVector2D, DesiredSize)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			Kind = InArgs._Kind;
+			DesiredSize = InArgs._DesiredSize.IsNearlyZero() ? FVector2D(56.f, 56.f) : InArgs._DesiredSize;
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			return DesiredSize;
+		}
+
+		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
+		{
+			const FVector2D Size = AllottedGeometry.GetLocalSize();
+			const float MinDim = FMath::Max(1.f, FMath::Min(Size.X, Size.Y));
+			const FSlateBrush* WhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
+
+			if (Kind == EKind::Coin)
+			{
+				const FVector2D Center(Size * 0.5f);
+				const float OuterRadius = MinDim * 0.45f;
+				const float InnerRadius = MinDim * 0.33f;
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId,
+					AllottedGeometry.ToPaintGeometry(),
+					MakeCirclePoints(Center, OuterRadius, 40),
+					ESlateDrawEffect::None,
+					FLinearColor(0.62f, 0.39f, 0.04f, 1.f),
+					true,
+					OuterRadius * 2.f);
+
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 1,
+					AllottedGeometry.ToPaintGeometry(),
+					MakeCirclePoints(Center, OuterRadius, 40),
+					ESlateDrawEffect::None,
+					FLinearColor(0.98f, 0.79f, 0.17f, 1.f),
+					true,
+					FMath::Max(4.f, MinDim * 0.10f));
+
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 2,
+					AllottedGeometry.ToPaintGeometry(),
+					MakeCirclePoints(Center, InnerRadius, 36),
+					ESlateDrawEffect::None,
+					FLinearColor(1.f, 0.95f, 0.70f, 1.f),
+					true,
+					FMath::Max(2.f, MinDim * 0.04f));
+				return LayerId + 3;
+			}
+
+			const FVector2D OuterInset(1.f, 4.f);
+			const FVector2D OuterSize(Size.X - 2.f, Size.Y - 8.f);
+			const FVector2D InnerInset(4.f, 7.f);
+			const FVector2D InnerSize(Size.X - 8.f, Size.Y - 14.f);
+
+			FSlateDrawElement::MakeBox(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(FVector2f(OuterSize), FSlateLayoutTransform(FVector2f(OuterInset))),
+				WhiteBrush,
+				ESlateDrawEffect::None,
+				FLinearColor(0.55f, 0.37f, 0.08f, 1.f));
+
+			FSlateDrawElement::MakeBox(
+				OutDrawElements,
+				LayerId + 1,
+				AllottedGeometry.ToPaintGeometry(FVector2f(InnerSize), FSlateLayoutTransform(FVector2f(InnerInset))),
+				WhiteBrush,
+				ESlateDrawEffect::None,
+				FLinearColor(0.74f, 0.12f, 0.14f, 1.f));
+
+			const TArray<FVector2D> OuterOutline = {
+				OuterInset,
+				FVector2D(OuterInset.X + OuterSize.X, OuterInset.Y),
+				FVector2D(OuterInset.X + OuterSize.X, OuterInset.Y + OuterSize.Y),
+				FVector2D(OuterInset.X, OuterInset.Y + OuterSize.Y),
+				OuterInset
+			};
+			const TArray<FVector2D> InnerOutline = {
+				InnerInset,
+				FVector2D(InnerInset.X + InnerSize.X, InnerInset.Y),
+				FVector2D(InnerInset.X + InnerSize.X, InnerInset.Y + InnerSize.Y),
+				FVector2D(InnerInset.X, InnerInset.Y + InnerSize.Y),
+				InnerInset
+			};
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), OuterOutline, ESlateDrawEffect::None, FLinearColor(0.94f, 0.79f, 0.29f, 1.f), true, 1.5f);
+			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 3, AllottedGeometry.ToPaintGeometry(), InnerOutline, ESlateDrawEffect::None, FLinearColor(0.98f, 0.85f, 0.48f, 1.f), true, 1.0f);
+			return LayerId + 4;
+		}
+
+	private:
+		EKind Kind = EKind::Coin;
+		FVector2D DesiredSize = FVector2D(56.f, 56.f);
+	};
 
 	FVector2D GetEffectiveFrontendViewportSize()
 	{
@@ -71,12 +541,20 @@ namespace
 		const FVector2D EffectiveViewportSize = GetEffectiveFrontendViewportSize();
 		const float WidthScale = EffectiveViewportSize.X / FMath::Max(ReferenceViewportSize.X, 1.f);
 		const float HeightScale = EffectiveViewportSize.Y / FMath::Max(ReferenceViewportSize.Y, 1.f);
-		return FMath::Clamp(FMath::Sqrt(WidthScale * HeightScale), 0.70f, 3.0f);
+		const float Scale = FMath::Clamp(FMath::Sqrt(WidthScale * HeightScale), 0.70f, 3.0f);
+		if (EffectiveViewportSize.X >= 1600.f && EffectiveViewportSize.Y >= 900.f && Scale <= 1.f)
+		{
+			return 1.f;
+		}
+
+		return Scale;
 	}
 
-	UTexture2D* LoadTopBarFileTexture(const FString& FilePath)
+	UTexture2D* LoadTopBarFileTexture(const FString& FilePath, TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
-		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GTopBarFileTextureCache.Find(FilePath))
+		const FDateTime FileTimestamp = IFileManager::Get().GetTimeStamp(*FilePath);
+		const FString CacheKey = FString::Printf(TEXT("%s|%d|%lld"), *FilePath, static_cast<int32>(Filter), FileTimestamp.GetTicks());
+		if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GTopBarFileTextureCache.Find(CacheKey))
 		{
 			return CachedTexture->Get();
 		}
@@ -86,31 +564,94 @@ namespace
 			return nullptr;
 		}
 
-		UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(FilePath);
+		TArray<FColor> DecodedPixels;
+		int32 Width = 0;
+		int32 Height = 0;
+		UTexture2D* Texture = nullptr;
+		if (DecodeImageFileToBGRA(FilePath, DecodedPixels, Width, Height))
+		{
+			Texture = CreateTopBarTextureWithMips(FilePath, DecodedPixels, Width, Height, Filter);
+		}
+
+		if (!Texture)
+		{
+			Texture = FImageUtils::ImportFileAsTexture2D(FilePath);
+		}
+
 		if (!Texture)
 		{
 			return nullptr;
 		}
 
 		Texture->SRGB = true;
-		Texture->Filter = TextureFilter::TF_Bilinear;
+		Texture->Filter = Filter;
 		Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+		Texture->CompressionSettings = TC_EditorIcon;
 		Texture->NeverStream = true;
 		Texture->UpdateResource();
 
-		GTopBarFileTextureCache.Add(FilePath, TStrongObjectPtr<UTexture2D>(Texture));
+		GTopBarFileTextureCache.Add(CacheKey, TStrongObjectPtr<UTexture2D>(Texture));
 		return Texture;
 	}
 
-	void LoadBrushFromRelativePath(const FString& RelativePath, TSharedPtr<FSlateBrush>& Brush, const FVector2D& DesiredSize = FVector2D::ZeroVector)
+	void LoadBrushFromRelativePath(
+		const TCHAR* ImportedAssetPath,
+		const FString& RelativePath,
+		TSharedPtr<FSlateBrush>& Brush,
+		const FVector2D& DesiredSize = FVector2D::ZeroVector,
+		TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
 		if (Brush.IsValid())
 		{
 			return;
 		}
 
+		UTexture2D* Texture = nullptr;
 		const FString FullPath = FPaths::ProjectDir() / RelativePath;
-		if (UTexture2D* Texture = LoadTopBarFileTexture(FullPath))
+		const bool bFileExists = FPaths::FileExists(FullPath);
+		const FString AssetPath = ImportedAssetPath ? FString(ImportedAssetPath) : FString(TEXT("<null>"));
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[TopBarBrushLoad] Begin RelativePath='%s' FullPath='%s' FileExists=%s AssetPath='%s' DesiredSize=(%.1f, %.1f)"),
+			*RelativePath,
+			*FullPath,
+			bFileExists ? TEXT("true") : TEXT("false"),
+			*AssetPath,
+			DesiredSize.X,
+			DesiredSize.Y);
+
+		if (bFileExists)
+		{
+			Texture = LoadTopBarFileTexture(FullPath, Filter);
+		}
+
+		FString LoadedFrom = TEXT("none");
+		if (Texture)
+		{
+			LoadedFrom = TEXT("file");
+		}
+
+		if (!Texture)
+		{
+			Texture = LoadTopBarAssetTexture(ImportedAssetPath, Filter);
+			if (Texture)
+			{
+				LoadedFrom = TEXT("asset");
+			}
+		}
+
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[TopBarBrushLoad] Result RelativePath='%s' LoadedFrom=%s Texture=%s Resolution=%dx%d"),
+			*RelativePath,
+			*LoadedFrom,
+			Texture ? *Texture->GetName() : TEXT("<null>"),
+			Texture ? Texture->GetSizeX() : 0,
+			Texture ? Texture->GetSizeY() : 0);
+
+		if (Texture)
 		{
 			Brush = MakeShared<FSlateBrush>();
 			Brush->DrawAs = ESlateBrushDrawType::Image;
@@ -215,6 +756,8 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	TopBarPlateBrush.Reset();
 	InactiveTabBrush.Reset();
 	ActiveTabBrush.Reset();
+	HomeInactiveTabBrush.Reset();
+	HomeActiveTabBrush.Reset();
 	NavSeparatorBrush.Reset();
 	SettingsSlotBrush.Reset();
 	UtilitySlotBrush.Reset();
@@ -228,19 +771,21 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	GTopBarFileTextureCache.Empty();
 #endif
 
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_plate.png"), TopBarPlateBrush);
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_nav_tab.png"), InactiveTabBrush);
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_active_tab.png"), ActiveTabBrush);
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_separator.png"), NavSeparatorBrush);
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_settings_slot.png"), SettingsSlotBrush, FVector2D(78.f, 78.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_utility_slot.png"), UtilitySlotBrush, FVector2D(78.f, 78.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_quit_slot.png"), QuitSlotBrush, FVector2D(78.f, 78.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_settings_icon.png"), SettingsIconBrush, FVector2D(44.f, 44.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_language_icon.png"), LanguageIconBrush, FVector2D(44.f, 44.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_achievement_coins_icon.png"), AchievementCoinsIconBrush, FVector2D(44.f, 44.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_power_coupons_icon.png"), PowerCouponsIconBrush, FVector2D(44.f, 44.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_quit_icon.png"), QuitIconBrush, FVector2D(44.f, 44.f));
-	LoadBrushFromRelativePath(TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_quit_glow.png"), QuitGlowBrush, FVector2D(62.f, 62.f));
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_plate.png"), TopBarPlateBrush);
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_nav_tab.png"), InactiveTabBrush);
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_active_tab.png"), ActiveTabBrush);
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_tab.png"), HomeInactiveTabBrush);
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_active_tab.png"), HomeActiveTabBrush);
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_separator.png"), NavSeparatorBrush);
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_settings_slot.png"), SettingsSlotBrush, FVector2D(78.f, 78.f));
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_utility_slot.png"), UtilitySlotBrush, FVector2D(78.f, 78.f));
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_quit_slot.png"), QuitSlotBrush, FVector2D(78.f, 78.f));
+	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_settings_icon.frontend_topbar_settings_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_settings_icon.png"), SettingsIconBrush, FVector2D(44.f, 44.f), TextureFilter::TF_Trilinear);
+	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_language_icon.frontend_topbar_language_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_language_icon.png"), LanguageIconBrush, FVector2D(48.f, 48.f), TextureFilter::TF_Trilinear);
+	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_achievement_coins_icon.frontend_topbar_achievement_coins_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_achievement_coins_icon.png"), AchievementCoinsIconBrush, FVector2D(48.f, 48.f), TextureFilter::TF_Trilinear);
+	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_power_coupons_icon.frontend_topbar_power_coupons_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_power_coupons_icon.png"), PowerCouponsIconBrush, FVector2D(58.f, 38.f), TextureFilter::TF_Trilinear);
+	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_quit_icon.frontend_topbar_quit_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_quit_icon.png"), QuitIconBrush, FVector2D(44.f, 44.f), TextureFilter::TF_Trilinear);
+	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_quit_glow.png"), QuitGlowBrush, FVector2D(62.f, 62.f));
 
 	if (TopBarPlateBrush.IsValid())
 	{
@@ -259,6 +804,18 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		ActiveTabBrush->DrawAs = ESlateBrushDrawType::Box;
 		ActiveTabBrush->Margin = FMargin(0.16f, 0.16f, 0.16f, 0.28f);
 	}
+
+	if (HomeInactiveTabBrush.IsValid())
+	{
+		HomeInactiveTabBrush->DrawAs = ESlateBrushDrawType::Box;
+		HomeInactiveTabBrush->Margin = FMargin(0.14f, 0.16f, 0.14f, 0.24f);
+	}
+
+	if (HomeActiveTabBrush.IsValid())
+	{
+		HomeActiveTabBrush->DrawAs = ESlateBrushDrawType::Box;
+		HomeActiveTabBrush->Margin = FMargin(0.14f, 0.14f, 0.14f, 0.24f);
+	}
 }
 
 void UT66FrontendTopBarWidget::RefreshScreen_Implementation()
@@ -273,12 +830,15 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	bViewportResponsiveRebuildQueued = false;
 	RequestTopBarAssets();
 
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	UT66LeaderboardSubsystem* Leaderboard = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	const ETopBarSection ActiveSection = GetActiveSection();
+	const bool bAccountGood = Leaderboard ? Leaderboard->IsAccountEligibleForLeaderboard() : true;
 
 	const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
 	const FText LanguageText = Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "LANG");
-	const FText HomeText = NSLOCTEXT("T66.MainMenu", "Home", "HOME");
+	const FText HomeText = NSLOCTEXT("T66.MainMenu", "Home", "CHADPOCALYPSE");
 	const FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
 	const FText AccountStatusText = NSLOCTEXT("T66.AccountStatus", "TopBarTitle", "ACCOUNT STATUS");
@@ -286,35 +846,36 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 
 	const FButtonStyle& FlatButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>(TEXT("T66.Button.FlatTransparent"));
 	const float LayoutScale = GetTopBarLayoutScale();
-	const float TopBarButtonWidth = GTopBarButtonWidth * LayoutScale;
-	const float TopBarButtonHeight = GTopBarButtonHeight * LayoutScale;
-	const float TopBarSurfaceHeight = GTopBarSurfaceHeight * LayoutScale;
-	const float InactiveNavHeight = GTopBarInactiveNavHeight * LayoutScale;
-	const float ActiveNavHeight = GTopBarActiveNavHeight * LayoutScale;
-	const float InactiveNavMinWidth = GTopBarInactiveNavMinWidth * LayoutScale;
-	const float ActiveNavMinWidth = GTopBarActiveNavMinWidth * LayoutScale;
-	const float UtilityClusterGap = 12.f * LayoutScale;
-	const float ClusterGap = 18.f * LayoutScale;
-	const float NavButtonGap = 8.f * LayoutScale;
-	const float ReadoutGap = 10.f * LayoutScale;
-	const float QuitGap = 12.f * LayoutScale;
-	const float RowHorizontalPadding = 18.f * LayoutScale;
-	const float RowTopPadding = 8.f * LayoutScale;
-	const FVector2D UtilitySlotSize = FVector2D(78.f, 78.f) * LayoutScale;
-	const FVector2D SettingsIconSize = FVector2D(44.f, 44.f) * LayoutScale;
-	const FVector2D LanguageIconSize = FVector2D(50.f, 50.f) * LayoutScale;
-	const FVector2D BalanceIconSize = FVector2D(50.f, 50.f) * LayoutScale;
-	const FVector2D QuitIconSize = FVector2D(44.f, 44.f) * LayoutScale;
-	const FVector2D QuitGlowSize = FVector2D(70.f, 70.f) * LayoutScale;
+	const float TopBarButtonWidth = SnapPixel(GTopBarButtonWidth * LayoutScale);
+	const float TopBarButtonHeight = SnapPixel(GTopBarButtonHeight * LayoutScale);
+	const float TopBarSurfaceHeight = SnapPixel(GTopBarSurfaceHeight * LayoutScale);
+	const float InactiveNavHeight = SnapPixel(GTopBarInactiveNavHeight * LayoutScale);
+	const float ActiveNavHeight = SnapPixel(GTopBarActiveNavHeight * LayoutScale);
+	const float InactiveNavMinWidth = SnapPixel(GTopBarInactiveNavMinWidth * LayoutScale);
+	const float ActiveNavMinWidth = SnapPixel(GTopBarActiveNavMinWidth * LayoutScale);
+	const float UtilityClusterGap = SnapPixel(12.f * LayoutScale);
+	const float ClusterGap = SnapPixel(18.f * LayoutScale);
+	const float NavButtonGap = SnapPixel(8.f * LayoutScale);
+	const float ReadoutGap = SnapPixel(10.f * LayoutScale);
+	const float QuitGap = SnapPixel(12.f * LayoutScale);
+	const float RowHorizontalPadding = SnapPixel(18.f * LayoutScale);
+	const float RowTopPadding = SnapPixel(8.f * LayoutScale);
+	const FVector2D UtilitySlotSize = SnapPixelSize(FVector2D(78.f, 78.f) * LayoutScale);
+	const FVector2D SettingsIconSize = SnapPixelSize(FVector2D(44.f, 44.f) * LayoutScale);
+	const FVector2D LanguageIconSize = SnapPixelSize(FVector2D(48.f, 48.f) * LayoutScale);
+	const FVector2D AchievementCoinIconSize = SnapPixelSize(FVector2D(48.f, 48.f) * LayoutScale);
+	const FVector2D PowerCouponIconSize = SnapPixelSize(FVector2D(58.f, 38.f) * LayoutScale);
+	const FVector2D QuitIconSize = SnapPixelSize(FVector2D(44.f, 44.f) * LayoutScale);
+	const FVector2D QuitGlowSize = SnapPixelSize(FVector2D(70.f, 70.f) * LayoutScale);
 	constexpr int32 TopBarTitleFontSize = 16;
 
-	FSlateFontInfo NavFont = FT66DotaTheme::MakeFont(TEXT("Bold"), TopBarTitleFontSize);
+	FSlateFontInfo NavFont = FT66Style::MakeFont(TEXT("Bold"), TopBarTitleFontSize);
 	NavFont.LetterSpacing = 14;
 
-	FSlateFontInfo ActiveNavFont = FT66DotaTheme::MakeFont(TEXT("Bold"), TopBarTitleFontSize + 1);
+	FSlateFontInfo ActiveNavFont = FT66Style::MakeFont(TEXT("Bold"), TopBarTitleFontSize + 1);
 	ActiveNavFont.LetterSpacing = 16;
 
-	FSlateFontInfo BalanceFont = FT66DotaTheme::MakeFont(TEXT("Bold"), TopBarTitleFontSize);
+	FSlateFontInfo BalanceFont = FT66Style::MakeFont(TEXT("Bold"), TopBarTitleFontSize);
 	BalanceFont.LetterSpacing = 8;
 
 	auto MakeFallbackIconLabel = [](const FText& FallbackText) -> TSharedRef<SWidget>
@@ -356,9 +917,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		return SNew(STextBlock)
 			.Text(Text)
 			.Font(bActive ? ActiveNavFont : NavFont)
-			.ColorAndOpacity(bActive ? FT66DotaTheme::Text() : FLinearColor(0.80f, 0.82f, 0.84f, 0.94f))
-			.ShadowOffset(FVector2D(0.f, 1.f))
-			.ShadowColorAndOpacity(bActive ? FLinearColor(0.f, 0.f, 0.f, 0.55f) : FLinearColor(0.f, 0.f, 0.f, 0.72f))
+			.ColorAndOpacity(bActive ? FT66Style::Text() : FLinearColor(0.80f, 0.82f, 0.84f, 0.94f))
 			.Justification(ETextJustify::Center);
 	};
 
@@ -405,10 +964,25 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			const TSharedPtr<FSlateBrush>& IconBrush,
 			const FVector2D& IconSize,
 			const FText& IconFallbackText,
-			bool bIconOnly = false) -> TSharedRef<SWidget>
+			const FLinearColor& BackgroundTint = FLinearColor::White,
+			bool bIconOnly = false,
+			const FSlateBrush* InactiveBackgroundBrush = nullptr,
+			const FSlateBrush* ActiveBackgroundBrush = nullptr) -> TSharedRef<SWidget>
 	{
 		const float IconOnlyNavWidth = FMath::Max(TopBarButtonWidth, LanguageIconSize.X + (28.f * LayoutScale));
-		const TSharedPtr<FSlateBrush>& BackgroundBrush = InactiveTabBrush.IsValid() ? InactiveTabBrush : ActiveTabBrush;
+		const FSlateBrush* BackgroundBrush = nullptr;
+		if (bActive)
+		{
+			BackgroundBrush = ActiveBackgroundBrush
+				? ActiveBackgroundBrush
+				: (ActiveTabBrush.IsValid() ? ActiveTabBrush.Get() : InactiveTabBrush.Get());
+		}
+		else
+		{
+			BackgroundBrush = InactiveBackgroundBrush
+				? InactiveBackgroundBrush
+				: (InactiveTabBrush.IsValid() ? InactiveTabBrush.Get() : ActiveTabBrush.Get());
+		}
 		const float ButtonMinWidth = bActive ? ActiveNavMinWidth : InactiveNavMinWidth;
 		const float ButtonHeight = bActive ? ActiveNavHeight : InactiveNavHeight;
 		return SNew(SBox)
@@ -421,9 +995,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				.VAlign(VAlign_Fill)
 				[
 					SNew(SImage)
-					.Image(BackgroundBrush.Get())
-					.ColorAndOpacity(FLinearColor::White)
-					.Visibility(BackgroundBrush.IsValid() ? EVisibility::HitTestInvisible : EVisibility::Collapsed)
+					.Image(BackgroundBrush)
+					.ColorAndOpacity(BackgroundTint)
+					.Visibility(BackgroundBrush ? EVisibility::HitTestInvisible : EVisibility::Collapsed)
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Fill)
@@ -497,11 +1071,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	};
 
 	auto MakeBalanceReadout =
-		[this, &BalanceFont, &MakeBrushIconWidget, LayoutScale, InactiveNavHeight = InactiveNavHeight](
-			const TSharedPtr<FSlateBrush>& IconBrush,
-			const FVector2D& IconSize,
+		[this, &BalanceFont, LayoutScale, InactiveNavHeight = InactiveNavHeight](
+			const TSharedRef<SWidget>& IconWidget,
 			const FText& TooltipText,
-			const FText& FallbackText,
 			FText (UT66FrontendTopBarWidget::*ValueGetter)() const) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
@@ -515,7 +1087,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
-					MakeBrushIconWidget(IconBrush, IconSize, FallbackText)
+					IconWidget
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
@@ -528,57 +1100,36 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 						return (this->*ValueGetter)();
 					})
 					.Font(BalanceFont)
-					.ColorAndOpacity(FT66DotaTheme::Text())
-					.ShadowOffset(FVector2D(0.f, 1.f))
-					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.55f))
+					.ColorAndOpacity(FT66Style::Text())
 				]
 			];
 	};
 
-	const TSharedRef<SWidget> SettingsIconWidget = MakeBrushIconWidget(SettingsIconBrush, SettingsIconSize, NSLOCTEXT("T66.MainMenu", "SettingsFallback", "S"));
+	const TSharedRef<SWidget> SettingsIconWidget = MakeBrushIconWidget(SettingsIconBrush, SettingsIconSize, NSLOCTEXT("T66.Settings", "SettingsIconFallback", "S"));
 	const TSharedRef<SWidget> LanguageIconWidget = MakeBrushIconWidget(LanguageIconBrush, LanguageIconSize, NSLOCTEXT("T66.LanguageSelect", "LanguageIconFallback", "L"));
+	const TSharedRef<SWidget> AchievementCoinsIconWidget = MakeBrushIconWidget(AchievementCoinsIconBrush, AchievementCoinIconSize, NSLOCTEXT("T66.Achievements", "AchievementCoinsIconFallback", "AC"));
+	const TSharedRef<SWidget> PowerCouponsIconWidget = MakeBrushIconWidget(PowerCouponsIconBrush, PowerCouponIconSize, NSLOCTEXT("T66.PowerUp", "PowerCouponsIconFallback", "PC"));
 	const TSharedRef<SWidget> SettingsButtonWidget =
 		MakeUtilityButton(
 			SettingsText,
 			SettingsIconWidget,
-			&UT66FrontendTopBarWidget::HandleSettingsClicked,
-			SettingsSlotBrush,
-			UtilitySlotSize);
+			&UT66FrontendTopBarWidget::HandleSettingsClicked);
 	const TSharedRef<SWidget> LanguageButtonWidget =
 		MakeUtilityButton(
 			LanguageText,
 			LanguageIconWidget,
-			&UT66FrontendTopBarWidget::HandleLanguageClicked,
-			UtilitySlotBrush,
-			UtilitySlotSize);
+			&UT66FrontendTopBarWidget::HandleLanguageClicked);
 	const TSharedRef<SWidget> AchievementCoinsWidget =
 		MakeBalanceReadout(
-			AchievementCoinsIconBrush,
-			BalanceIconSize,
+			AchievementCoinsIconWidget,
 			NSLOCTEXT("T66.Achievements", "AchievementCoinsBalanceTooltip", "Achievement Coins"),
-			NSLOCTEXT("T66.Achievements", "AchievementCoinsFallback", "A"),
 			&UT66FrontendTopBarWidget::GetAchievementCoinsValueText);
 	const TSharedRef<SWidget> PowerCouponsWidget =
 		MakeBalanceReadout(
-			PowerCouponsIconBrush,
-			BalanceIconSize,
+			PowerCouponsIconWidget,
 			NSLOCTEXT("T66.PowerUp", "PowerCouponsBalanceTooltip", "Power Coupons"),
-			NSLOCTEXT("T66.PowerUp", "PowerCouponsFallback", "P"),
 			&UT66FrontendTopBarWidget::GetPowerCouponsValueText);
-	const TSharedRef<SWidget> QuitIconWidget =
-		(QuitIconBrush.IsValid() && QuitGlowBrush.IsValid())
-		? StaticCastSharedRef<SWidget>(
-			SNew(ST66PulsingIcon)
-			.IconBrush(QuitIconBrush.Get())
-			.GlowBrush(QuitGlowBrush.Get())
-			.IconSize(QuitIconSize)
-			.GlowSize(QuitGlowSize)
-			.GlowOpacityMin(0.34f)
-			.GlowOpacityMax(0.62f)
-			.GlowOpacityFrequency(0.48f)
-			.GlowScaleAmplitude(0.028f)
-			.GlowScaleFrequency(0.30f))
-		: MakeBrushIconWidget(QuitIconBrush, QuitIconSize, NSLOCTEXT("T66.MainMenu", "QuitFallback", "Q"));
+	const TSharedRef<SWidget> QuitIconWidget = MakeBrushIconWidget(QuitIconBrush, QuitIconSize, NSLOCTEXT("T66.MainMenu", "QuitIconFallback", "Q"));
 
 	const TSharedRef<SWidget> LeftUtilityCluster =
 		SNew(SHorizontalBox)
@@ -595,19 +1146,41 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().AutoWidth()
 		[
-			MakeNavButton(AccountStatusText, &UT66FrontendTopBarWidget::HandleAccountStatusClicked, ActiveSection == ETopBarSection::AccountStatus, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), false)
+			MakeNavButton(
+				AccountStatusText,
+				&UT66FrontendTopBarWidget::HandleAccountStatusClicked,
+				ActiveSection == ETopBarSection::AccountStatus,
+				TSharedPtr<FSlateBrush>(),
+				FVector2D::ZeroVector,
+				FText::GetEmpty(),
+				bAccountGood
+					? (ActiveSection == ETopBarSection::AccountStatus
+						? FLinearColor(0.84f, 0.94f, 0.72f, 1.0f)
+						: FLinearColor(0.76f, 0.89f, 0.66f, 1.0f))
+					: FLinearColor::White,
+				false)
 		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(NavButtonGap, 0.f, 0.f, 0.f)
 		[
-			MakeNavButton(HomeText, &UT66FrontendTopBarWidget::HandleHomeClicked, ActiveSection == ETopBarSection::Home, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), false)
+			MakeNavButton(
+				HomeText,
+				&UT66FrontendTopBarWidget::HandleHomeClicked,
+				ActiveSection == ETopBarSection::Home,
+				TSharedPtr<FSlateBrush>(),
+				FVector2D::ZeroVector,
+				FText::GetEmpty(),
+				FLinearColor::White,
+				false,
+				HomeInactiveTabBrush.Get(),
+				HomeActiveTabBrush.Get())
 		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(NavButtonGap, 0.f, 0.f, 0.f)
 		[
-			MakeNavButton(PowerUpText, &UT66FrontendTopBarWidget::HandlePowerUpClicked, ActiveSection == ETopBarSection::PowerUp, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), false)
+			MakeNavButton(PowerUpText, &UT66FrontendTopBarWidget::HandlePowerUpClicked, ActiveSection == ETopBarSection::PowerUp, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), FLinearColor::White, false)
 		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(NavButtonGap, 0.f, 0.f, 0.f)
 		[
-			MakeNavButton(AchievementsText, &UT66FrontendTopBarWidget::HandleAchievementsClicked, ActiveSection == ETopBarSection::Achievements, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), false)
+			MakeNavButton(AchievementsText, &UT66FrontendTopBarWidget::HandleAchievementsClicked, ActiveSection == ETopBarSection::Achievements, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), FLinearColor::White, false)
 		];
 
 	const TSharedRef<SWidget> RightUtilityCluster =
@@ -622,7 +1195,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(QuitGap, 0.f, 0.f, 0.f)
 		[
-			MakeUtilityButton(QuitTooltipText, QuitIconWidget, &UT66FrontendTopBarWidget::HandleQuitClicked, QuitSlotBrush, UtilitySlotSize)
+			MakeUtilityButton(QuitTooltipText, QuitIconWidget, &UT66FrontendTopBarWidget::HandleQuitClicked)
 		];
 
 	const TSharedRef<SWidget> TopBarRow =
@@ -716,13 +1289,13 @@ void UT66FrontendTopBarWidget::NativeTick(const FGeometry& MyGeometry, float InD
 
 FReply UT66FrontendTopBarWidget::HandleSettingsClicked()
 {
-	ShowModal(ET66ScreenType::Settings);
+	NavigateTo(ET66ScreenType::Settings);
 	return FReply::Handled();
 }
 
 FReply UT66FrontendTopBarWidget::HandleLanguageClicked()
 {
-	ShowModal(ET66ScreenType::LanguageSelect);
+	NavigateTo(ET66ScreenType::LanguageSelect);
 	return FReply::Handled();
 }
 
@@ -752,7 +1325,7 @@ FReply UT66FrontendTopBarWidget::HandleAchievementsClicked()
 
 FReply UT66FrontendTopBarWidget::HandleAccountStatusClicked()
 {
-	ShowModal(ET66ScreenType::AccountStatus);
+	NavigateTo(ET66ScreenType::AccountStatus);
 	return FReply::Handled();
 }
 

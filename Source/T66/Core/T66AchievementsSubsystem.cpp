@@ -11,6 +11,132 @@
 
 const FString UT66AchievementsSubsystem::ProfileSaveSlotName(TEXT("T66_Profile"));
 
+namespace
+{
+	FName MakeExtraAchievementID(const TCHAR* Prefix, int32 Index)
+	{
+		return FName(*FString::Printf(TEXT("%s%03d"), Prefix, Index + 1));
+	}
+
+	ET66AchievementTier GetGeneratedAchievementTier(int32 Index, int32 Total)
+	{
+		if (Total <= 1)
+		{
+			return ET66AchievementTier::Black;
+		}
+
+		const float Progress = static_cast<float>(Index) / static_cast<float>(Total - 1);
+		if (Progress >= 0.90f)
+		{
+			return ET66AchievementTier::White;
+		}
+		if (Progress >= 0.70f)
+		{
+			return ET66AchievementTier::Yellow;
+		}
+		if (Progress >= 0.40f)
+		{
+			return ET66AchievementTier::Red;
+		}
+		return ET66AchievementTier::Black;
+	}
+
+	int32 GetGeneratedRewardCoins(ET66AchievementTier Tier)
+	{
+		switch (Tier)
+		{
+		case ET66AchievementTier::White:
+			return 750;
+		case ET66AchievementTier::Yellow:
+			return 400;
+		case ET66AchievementTier::Red:
+			return 200;
+		case ET66AchievementTier::Black:
+		default:
+			return 100;
+		}
+	}
+
+	const TArray<int32>& GetExtraEnemyKillThresholds()
+	{
+		static const TArray<int32> Thresholds = { 5, 10, 50, 250, 500, 2500, 5000, 10000, 25000, 50000, 100000, 250000 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraBossKillThresholds()
+	{
+		static const TArray<int32> Thresholds = { 2, 3, 5, 15, 25, 50, 75, 100 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraStageClearThresholds()
+	{
+		static const TArray<int32> Thresholds = { 3, 5, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraRunCompletionThresholds()
+	{
+		static const TArray<int32> Thresholds = { 3, 5, 10, 15, 20, 50, 75, 100 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraVendorPurchaseThresholds()
+	{
+		static const TArray<int32> Thresholds = { 3, 5, 10, 15, 20, 25, 50, 100 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraGamblerWinThresholds()
+	{
+		static const TArray<int32> Thresholds = { 3, 5, 10, 15, 20, 25, 50, 100 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraLabItemThresholds()
+	{
+		static const TArray<int32> Thresholds = { 1, 3, 10, 15, 20, 30 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraLabEnemyThresholds()
+	{
+		static const TArray<int32> Thresholds = { 1, 3, 10, 15, 20, 30 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraUnionThresholds()
+	{
+		static const TArray<int32> Thresholds = { 3, 7, 10, 12, 15, 25, 30 };
+		return Thresholds;
+	}
+
+	const TArray<int32>& GetExtraGamblerTokenThresholds()
+	{
+		static const TArray<int32> Thresholds = { 1, 2, 3, 4, 5 };
+		return Thresholds;
+	}
+
+	void AddGeneratedAchievement(
+		TArray<FAchievementData>& Out,
+		FName Id,
+		int32 Index,
+		int32 Total,
+		int32 RequirementCount,
+		const FText& DisplayName,
+		const FText& Description)
+	{
+		FAchievementData A;
+		A.AchievementID = Id;
+		A.RequirementCount = RequirementCount;
+		A.DisplayName = DisplayName;
+		A.Description = Description;
+		A.Tier = GetGeneratedAchievementTier(Index, Total);
+		A.RewardCoins = GetGeneratedRewardCoins(A.Tier);
+		Out.Add(A);
+	}
+}
+
 UT66LocalizationSubsystem* UT66AchievementsSubsystem::GetLocSubsystem() const
 {
 	if (UGameInstance* GI = GetGameInstance())
@@ -149,12 +275,33 @@ int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
 
 bool UT66AchievementsSubsystem::SpendAchievementCoins(int32 Amount)
 {
+	if (!Profile)
+	{
+		LoadOrCreateProfile();
+	}
 	if (!Profile || Amount <= 0 || Profile->AchievementCoinsBalance < Amount) return false;
 	Profile->AchievementCoinsBalance -= Amount;
 	bProfileDirty = true;
 	SaveProfileIfNeeded(true);
 	AchievementCoinsChanged.Broadcast();
 	return true;
+}
+
+void UT66AchievementsSubsystem::AddAchievementCoins(int32 Amount)
+{
+	if (!Profile)
+	{
+		LoadOrCreateProfile();
+	}
+	if (!Profile || Amount <= 0)
+	{
+		return;
+	}
+
+	Profile->AchievementCoinsBalance = FMath::Clamp(Profile->AchievementCoinsBalance + Amount, 0, 2000000000);
+	bProfileDirty = true;
+	SaveProfileIfNeeded(true);
+	AchievementCoinsChanged.Broadcast();
 }
 
 bool UT66AchievementsSubsystem::IsHeroSkinOwned(FName HeroID, FName SkinID) const
@@ -287,6 +434,146 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_011")), ET66AchievementTier::Black, 5, 100);
 	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_007")), ET66AchievementTier::Red, 5, 250);
 
+	const TArray<int32>& ExtraEnemyThresholds = GetExtraEnemyKillThresholds();
+	for (int32 Index = 0; Index < ExtraEnemyThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraEnemyThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_ENEMY_"), Index),
+			Index,
+			ExtraEnemyThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraEnemyTitle", "Enemy Hunter {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraEnemyDesc", "Defeat {0} enemies."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraBossThresholds = GetExtraBossKillThresholds();
+	for (int32 Index = 0; Index < ExtraBossThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraBossThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_BOSS_"), Index),
+			Index,
+			ExtraBossThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraBossTitle", "Boss Hunter {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraBossDesc", "Defeat {0} bosses."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraStageThresholds = GetExtraStageClearThresholds();
+	for (int32 Index = 0; Index < ExtraStageThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraStageThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_STAGE_"), Index),
+			Index,
+			ExtraStageThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraStageTitle", "Pilgrim {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraStageDesc", "Clear {0} stages."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraRunThresholds = GetExtraRunCompletionThresholds();
+	for (int32 Index = 0; Index < ExtraRunThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraRunThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_RUN_"), Index),
+			Index,
+			ExtraRunThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraRunTitle", "Veteran {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraRunDesc", "Finish {0} runs."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraVendorThresholds = GetExtraVendorPurchaseThresholds();
+	for (int32 Index = 0; Index < ExtraVendorThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraVendorThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_VENDOR_"), Index),
+			Index,
+			ExtraVendorThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraVendorTitle", "Customer {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraVendorDesc", "Buy {0} items from the vendor."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraGamblerThresholds = GetExtraGamblerWinThresholds();
+	for (int32 Index = 0; Index < ExtraGamblerThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraGamblerThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_GAMBLER_"), Index),
+			Index,
+			ExtraGamblerThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraGamblerTitle", "High Roller {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraGamblerDesc", "Win {0} gambles."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraLabItemThresholds = GetExtraLabItemThresholds();
+	for (int32 Index = 0; Index < ExtraLabItemThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraLabItemThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_ITEM_"), Index),
+			Index,
+			ExtraLabItemThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraItemTitle", "Collector {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraItemDesc", "Discover {0} items."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraLabEnemyThresholds = GetExtraLabEnemyThresholds();
+	for (int32 Index = 0; Index < ExtraLabEnemyThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraLabEnemyThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_LABENEMY_"), Index),
+			Index,
+			ExtraLabEnemyThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraLabEnemyTitle", "Field Notes {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraLabEnemyDesc", "Discover {0} enemies."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraUnionThresholds = GetExtraUnionThresholds();
+	for (int32 Index = 0; Index < ExtraUnionThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraUnionThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_UNION_"), Index),
+			Index,
+			ExtraUnionThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraUnionTitle", "Companion Bond {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraUnionDesc", "Clear {0} stages with the same companion."), FText::AsNumber(Requirement)));
+	}
+
+	const TArray<int32>& ExtraTokenThresholds = GetExtraGamblerTokenThresholds();
+	for (int32 Index = 0; Index < ExtraTokenThresholds.Num(); ++Index)
+	{
+		const int32 Requirement = ExtraTokenThresholds[Index];
+		AddGeneratedAchievement(
+			CachedDefinitions,
+			MakeExtraAchievementID(TEXT("ACH_EXT_TOKEN_"), Index),
+			Index,
+			ExtraTokenThresholds.Num(),
+			Requirement,
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenTitle", "Token Rank {0}"), FText::AsNumber(Requirement)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenDesc", "Unlock Gambler's Token level {0}."), FText::AsNumber(Requirement)));
+	}
+
 	ApplyRuntimeStateToCachedDefinitions(CachedDefinitions);
 }
 
@@ -385,6 +672,7 @@ bool UT66AchievementsSubsystem::AddLabUnlockedItem(FName ItemID)
 	const int32 NumItems = Profile->LabUnlockedItemIDs.Num();
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_011")), NumItems, 5, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_ITEM_"), GetExtraLabItemThresholds(), NumItems, &NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);
 	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 	return true;
@@ -400,6 +688,7 @@ bool UT66AchievementsSubsystem::AddLabUnlockedEnemy(FName EnemyOrBossID)
 	const int32 NumEnemies = Profile->LabUnlockedEnemyIDs.Num();
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_RED_007")), NumEnemies, 5, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_LABENEMY_"), GetExtraLabEnemyThresholds(), NumEnemies, &NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);
 	if (bAnyChanged) { AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 	return true;
@@ -430,6 +719,16 @@ bool UT66AchievementsSubsystem::UpdateCountAchievement(FName AchievementID, int3
 	return bProgressChanged;
 }
 
+bool UT66AchievementsSubsystem::UpdateMilestoneAchievements(const TCHAR* Prefix, const TArray<int32>& Thresholds, int32 SourceValue, TArray<FName>* OutNewlyUnlocked)
+{
+	bool bAnyChanged = false;
+	for (int32 Index = 0; Index < Thresholds.Num(); ++Index)
+	{
+		bAnyChanged |= UpdateCountAchievement(MakeExtraAchievementID(Prefix, Index), SourceValue, Thresholds[Index], OutNewlyUnlocked);
+	}
+	return bAnyChanged;
+}
+
 void UT66AchievementsSubsystem::NotifyEnemyKilled(int32 Count)
 {
 	if (!Profile) LoadOrCreateProfile();
@@ -447,6 +746,7 @@ void UT66AchievementsSubsystem::NotifyEnemyKilled(int32 Count)
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_002")), Total, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_003")), Total, 100, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_001")), Total, 1000, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_ENEMY_"), GetExtraEnemyKillThresholds(), Total, &NewlyUnlocked);
 	if (bAnyChanged)
 	{
 		MarkDirtyAndMaybeSave(true);
@@ -466,6 +766,7 @@ void UT66AchievementsSubsystem::NotifyBossKilled(int32 Count)
 	bool bAnyChanged = false;
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_004")), Total, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_002")), Total, 10, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_BOSS_"), GetExtraBossKillThresholds(), Total, &NewlyUnlocked);
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 }
 
@@ -480,6 +781,7 @@ void UT66AchievementsSubsystem::NotifyStageCleared(int32 Count)
 	bool bAnyChanged = false;
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_006")), Total, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_003")), Total, 10, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_STAGE_"), GetExtraStageClearThresholds(), Total, &NewlyUnlocked);
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 }
 
@@ -495,6 +797,7 @@ void UT66AchievementsSubsystem::NotifyRunCompleted(UT66RunStateSubsystem* RunSta
 	bool bAnyChanged = false;
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_007")), TotalRuns, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_YEL_001")), TotalRuns, 25, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_RUN_"), GetExtraRunCompletionThresholds(), TotalRuns, &NewlyUnlocked);
 
 	if (RunState)
 	{
@@ -516,6 +819,7 @@ void UT66AchievementsSubsystem::NotifyVendorPurchase()
 	const int32 Total = Profile->LifetimeVendorPurchases;
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_009")), Total, 1, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_VENDOR_"), GetExtraVendorPurchaseThresholds(), Total, &NewlyUnlocked);
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 }
 
@@ -527,6 +831,7 @@ void UT66AchievementsSubsystem::NotifyGamblerWin()
 	const int32 Total = Profile->LifetimeGamblerWins;
 	TArray<FName> NewlyUnlocked;
 	bool bAnyChanged = UpdateCountAchievement(FName(TEXT("ACH_BLK_010")), Total, 1, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_GAMBLER_"), GetExtraGamblerWinThresholds(), Total, &NewlyUnlocked);
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 }
 
@@ -560,8 +865,18 @@ int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficult
 	}
 
 	Profile->GamblersTokenUnlockedLevel = NewLevel;
+	TArray<FName> NewlyUnlocked;
+	const bool bExtraAchievementsChanged = UpdateMilestoneAchievements(
+		TEXT("ACH_EXT_TOKEN_"),
+		GetExtraGamblerTokenThresholds(),
+		NewLevel,
+		&NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);
 	AchievementsStateChanged.Broadcast();
+	if (bExtraAchievementsChanged && NewlyUnlocked.Num() > 0)
+	{
+		AchievementsUnlocked.Broadcast(NewlyUnlocked);
+	}
 	return NewLevel;
 }
 
@@ -656,6 +971,7 @@ void UT66AchievementsSubsystem::AddCompanionUnionStagesCleared(FName CompanionID
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_BLK_008")), MaxStages, 1, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_004")), MaxStages, 5, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_YEL_002")), MaxStages, 20, &NewlyUnlocked);
+	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_UNION_"), GetExtraUnionThresholds(), MaxStages, &NewlyUnlocked);
 
 	const bool bTierCrossed =
 		(Prev < UnionTier_GoodStages && Next >= UnionTier_GoodStages) ||

@@ -66,6 +66,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	bool SpendAchievementCoins(int32 Amount);
 
+	/** Add AC directly (used by frontend conversion flows). */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void AddAchievementCoins(int32 Amount);
+
 	/** Hero skins: per-hero ownership. Default is always considered owned. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
 	bool IsHeroSkinOwned(FName HeroID, FName SkinID) const;
@@ -241,6 +245,7 @@ private:
 
 	/** Update progress from source value; unlock if >= Target. Returns true if state changed. If OutNewlyUnlocked, appends AchievementID when just unlocked. */
 	bool UpdateCountAchievement(FName AchievementID, int32 SourceValue, int32 Target, TArray<FName>* OutNewlyUnlocked = nullptr);
+	bool UpdateMilestoneAchievements(const TCHAR* Prefix, const TArray<int32>& Thresholds, int32 SourceValue, TArray<FName>* OutNewlyUnlocked = nullptr);
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);

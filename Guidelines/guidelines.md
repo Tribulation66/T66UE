@@ -690,3 +690,88 @@ The scene lighting exists only for:
 - **Exponential Height Fog**: Atmospheric depth
 
 The directional light, sky light, and fog do NOT affect Unlit materials. They only affect the sky rendering and any remaining Lit materials (there should be none).
+
+---
+
+## 14. UI Texture Quality Standards (anti-grain rules)
+
+All UI textures (icons, portraits, sprites, button plates, panel backgrounds, leaderboard avatars, etc.) must appear crisp at their display size. Grainy, blocky, or blurry UI textures are a visual defect. Follow these rules for every texture loading path.
+
+### 14.1 Required runtime texture properties
+
+Every `UTexture2D` used as a Slate brush resource must have these properties set **before** `UpdateResource()` (for file-imported/transient textures) or immediately after load (for `.uasset` textures):
+
+| Property | Required Value | Why |
+|---|---|---|
+| `Filter` | `TextureFilter::TF_Trilinear` | Smooth mip transitions; eliminates visible mip band boundaries |
+| `LODGroup` | `TextureGroup::TEXTUREGROUP_UI` | Engine treats it as UI; no aggressive LOD/streaming downgrade |
+| `NeverStream` | `true` | Full-resolution mips stay in VRAM; no streaming quality reduction |
+| `SRGB` | `true` | Correct gamma for UI display (set on file-imported/transient textures) |
+
+For file-imported or transient textures (created at runtime from PNG data), also set:
+| Property | Required Value | Why |
+|---|---|---|
+| `CompressionSettings` | `TC_EditorIcon` | Uncompressed quality; no DXT/BC block artifacts on small icons |
+
+For `.uasset` textures loaded via `LoadObject` or the texture pool: do **not** change `CompressionSettings` at runtime (the cooked data is already in the asset's format). Instead, ensure the asset was imported with the correct settings in the editor (see 14.3).
+
+**Exception:** `T66ButtonVisuals.cpp` intentionally uses `TF_Nearest` for retro-style textures. Do not change that.
+
+### 14.2 Centralized loading paths (where to apply settings)
+
+The project has several texture loading paths. Each must enforce the rules above:
+
+| Loading Path | File | Applies Settings? |
+|---|---|---|
+| **Texture pool** (async + sync) | `T66UITexturePoolSubsystem.cpp` | Yes: `HandleLoaded()` and `EnsureTexturesLoadedSync()` set Filter, LODGroup, NeverStream |
+| **Web image cache** (HTTP avatars) | `T66WebImageCache.cpp` | Yes: `CreateTextureFromData()` sets all properties including SRGB and TC_EditorIcon |
+| **Top bar file loader** | `T66FrontendTopBarWidget.cpp` | Yes: `CreateTopBarTextureWithMips()`, `LoadTopBarFileTexture()`, `LoadTopBarAssetTexture()` all set full properties |
+| **Style file fallback** | `T66Style.cpp` `LoadOptionalTexture()` | Yes: file-import and LoadObject paths both set Filter, LODGroup, NeverStream |
+| **Dota slate file fallback** | `T66DotaSlate.cpp` `LoadOptionalTexture()` | Yes: same pattern as T66Style |
+| **Main menu file textures** | `T66MainMenuScreen.cpp` | Yes |
+| **Power-up file textures** | `T66PowerUpScreen.cpp` | Yes |
+| **Minimap icon atlas** | `T66GameplayHUDWidget.cpp` | Yes |
+
+When adding a **new** texture loading path, always apply the same settings. If using the texture pool (`T66UITexturePoolSubsystem`), settings are applied automatically.
+
+### 14.3 Asset import settings (editor / `.uasset`)
+
+When importing UI textures into the Unreal Editor (manually or via import scripts), set these properties on the texture asset:
+
+- **Compression Settings:** `UserInterface2D (RGBA)` or `TC_EditorIcon` for small icons/sprites
+- **Mip Gen Settings:** `FromTextureGroup` (default) -- do NOT set `NoMipmaps` for UI textures displayed at varying sizes
+- **Filter:** `TF_Trilinear` (or leave as Default which inherits from TextureGroup)
+- **Texture Group:** `UI`
+- **Never Stream:** checked
+- **sRGB:** checked (for color textures)
+- **Max Texture Size:** leave at 0 (no limit) unless the source is unnecessarily large
+
+### 14.4 Source image resolution guidelines
+
+| Display Size | Recommended Source PNG Size | Notes |
+|---|---|---|
+| < 64px | 128px or 256px | 2-4x display size for clean downsampling |
+| 64-128px | 256px | Sweet spot for icons |
+| 128-256px | 512px | Hero portraits, large sprites |
+| Full-screen backgrounds | 1920px or match viewport | No larger than needed |
+
+**Never** generate source PNGs at 1024px or larger for icons that display at < 100px. Excessive downsampling causes moire/aliasing artifacts even with trilinear filtering.
+
+### 14.5 Brush `ImageSize` rule
+
+When creating an `FSlateBrush` for a texture, always set `ImageSize` to match the intended display dimensions (in Slate units). Do not leave it as `ZeroVector` for small icons -- Slate may choose an inappropriate sample size.
+
+```cpp
+Brush->ImageSize = FVector2D(44.f, 44.f); // match the display size
+```
+
+### 14.6 Checklist for new UI textures
+
+When adding any new UI texture to the project:
+
+1. Source PNG at appropriate resolution (see 14.4)
+2. If loading from file at runtime: set SRGB, TF_Trilinear, TEXTUREGROUP_UI, TC_EditorIcon, NeverStream, then call UpdateResource()
+3. If loading via texture pool: settings are applied automatically
+4. If importing as .uasset: set correct import properties in editor (see 14.3)
+5. Set explicit `ImageSize` on the FSlateBrush
+6. Verify visually at target display size -- no graininess, blockiness, or blurriness

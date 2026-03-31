@@ -79,6 +79,7 @@ FString UT66BackendSubsystem::PartySizeToApiString(ET66PartySize Party)
 	case ET66PartySize::Solo: return TEXT("solo");
 	case ET66PartySize::Duo: return TEXT("duo");
 	case ET66PartySize::Trio: return TEXT("trio");
+	case ET66PartySize::Quad: return TEXT("quad");
 	default: return TEXT("solo");
 	}
 }
@@ -511,6 +512,7 @@ ET66PartySize UT66BackendSubsystem::ApiStringToPartySize(const FString& S)
 	if (S == TEXT("solo")) return ET66PartySize::Solo;
 	if (S == TEXT("duo")) return ET66PartySize::Duo;
 	if (S == TEXT("trio")) return ET66PartySize::Trio;
+	if (S == TEXT("quad")) return ET66PartySize::Quad;
 	return ET66PartySize::Solo;
 }
 

@@ -36,6 +36,7 @@
 | **AC balance / profile save** | `UT66AchievementsSubsystem`: `GetAchievementCoinsBalance()`, profile load/save. Skin *data* is in profile; skin *API* is in SkinSubsystem. |
 | **Hero/companion definitions** | `UT66GameInstance` (GetHeroData, GetCompanionData, GetAllHeroIDs, etc.) + DataTables `DT_Heroes`, `DT_Companions` + CSVs under `Content/Data/`. |
 | **Front-end UI panels** | Panels use **FT66Style::MakePanel()** with PanelDark/PanelLight textures only. Obsidian asset and import removed; no 9-slice Obsidian. |
+| **UI texture quality** | All UI textures must be `TF_Trilinear`, `TEXTUREGROUP_UI`, `NeverStream`. Central enforcement in `T66UITexturePoolSubsystem` (pool-loaded), per-file for file-imports. See **guidelines.md §14**. |
 | **Dark/Light theme** | `FT66Style::SetTheme(ET66UITheme)` / `GetTheme()`. Tokens are mutable (non-const); `SetTheme` swaps palette, re-inits styles. Persisted in `T66PlayerSettingsSaveGame::bLightTheme`, getter/setter in `T66PlayerSettingsSubsystem`. Toggle buttons in MainMenu bottom-left (next to globe). `ToggleActive` button style for selected theme. Old style set kept alive (`GPreviousStyleSet`) to prevent dangling pointer crashes. |
 | **Button debounce** | `FT66Style::DebounceClick(FOnClicked)` — wraps any click delegate with 150ms global cooldown. `MakeButton` uses it automatically; custom buttons should wrap with it too. Prevents double-fire, spam crashes, accidental double-nav. |
 | **Buttons (create / style)** | **Generate:** `Scripts/GenerateButtonTextures.py` → PNGs in `SourceAssets/Images/Buttons/` (Dark/Light × N/H/P). **Import:** `Scripts/ImportButtonTextures.py` (editor) → `/Game/UI/Assets/`. **Procedural:** `Scripts/CreateButtonProceduralAssets.py` + `SourceAssets/Data/ButtonProcedural_MaterialInstances.json` → M_ButtonProcedural + 6 MIs. **Usage:** `FT66Style::MakeButton(...)` only; debounced via `DebounceClick`. See **guidelines.md §11**. |
@@ -220,8 +221,20 @@
 
 **DeferRebuild (widget rebuild safety):** **Never** call `ReleaseSlateResources`, `TakeWidget()`, or raw `RemoveFromParent + Release + AddToViewport` directly. Always use **`FT66Style::DeferRebuild(Widget, ZOrder)`** — defers rebuild to next tick so Slate finishes processing click/key events before the widget tree is torn down. `ForceRebuildSlate()` on `UT66ScreenBase` is now a thin wrapper around `DeferRebuild`. Replaced all 18+ dangerous sites across Lab/Collector overlays, HeroSelection, Settings, PowerUp, ThemeToggle, Lobby, MainMenu, Achievements, CompanionSelection, LanguageSelect, UIManager. See **guidelines.md §6.5**.
 
+**UI texture quality pass (anti-grain):**
+Comprehensive pass across all UI texture loading paths to eliminate grainy/pixelated icons and sprites. Root causes were: missing `TF_Trilinear` filtering (most paths used `TF_Bilinear` or engine defaults), missing `NeverStream`, missing `TEXTUREGROUP_UI`, and missing `TC_EditorIcon` on transient/file-imported textures. Files changed:
+- **`T66UITexturePoolSubsystem.cpp`**: `HandleLoaded()` and `EnsureTexturesLoadedSync()` now set `TF_Trilinear`, `NeverStream`, `TEXTUREGROUP_UI` on every loaded texture (affects all pool-loaded textures: hero portraits, item sprites, leaderboard icons, etc.)
+- **`T66WebImageCache.cpp`**: `CreateTextureFromData()` now sets SRGB, `TF_Trilinear`, `TEXTUREGROUP_UI`, `TC_EditorIcon`, `NeverStream` on transient web avatars
+- **`T66FrontendTopBarWidget.cpp`**: Default filter upgraded from `TF_Bilinear` to `TF_Trilinear` for all paths (plates, tabs, slots, plus the existing `TF_Trilinear` on inner icons)
+- **`T66Style.cpp`**: `LoadOptionalTexture` file-import path upgraded to `TF_Trilinear` + `TC_EditorIcon`; `LoadButtonTexturesOnce` and `LoadPanelTexturesOnce` now set `TF_Trilinear`, `TEXTUREGROUP_UI`, `NeverStream` on LoadObject-loaded assets; LoadObject path in `LoadOptionalTexture` also gets quality settings
+- **`T66DotaSlate.cpp`**: Both file-import and LoadObject paths in `LoadOptionalTexture` now set `TF_Trilinear`, `TEXTUREGROUP_UI`, `NeverStream` (+ `TC_EditorIcon` for file path)
+- **`T66MainMenuScreen.cpp`**: File-import path upgraded to `TF_Trilinear` + `TC_EditorIcon`
+- **`T66PowerUpScreen.cpp`**: File-import path upgraded to `TF_Trilinear` + `TC_EditorIcon`
+- **`T66GameplayHUDWidget.cpp`**: Minimap icon atlas now gets SRGB, `TF_Trilinear`, `TEXTUREGROUP_UI`, `TC_EditorIcon`, `NeverStream`
+- **`T66ButtonVisuals.cpp`**: Intentionally kept at `TF_Nearest` (retro style)
+See **guidelines.md §14** for the full texture quality standard.
+
 **Performance / loading optimizations (batch):**
-- **Blurry UI textures fixed:** `UT66UITexturePoolSubsystem::HandleLoaded()` and `EnsureTexturesLoadedSync()` now set `Tex->bForceMiplevelsToBeResident = true` on every UI texture after load, ensuring full-resolution mips stay resident. Applies to all textures loaded via the texture pool (Party Picker, items, idols, leaderboard icons, etc.).
 - **PIE startup lag reduced:** `UT66GameInstance::Init()` now pre-warms all 9 main-menu + Party Picker textures (added SoloDark, SoloLight, CoopDark, CoopLight) so the sync fallback in `MainMenuScreen::BuildSlateUI()` is a no-op more often.
 - **PIE resolution zoom flash fixed:** Frontend UI initialization in `AT66PlayerController::BeginPlay()` is deferred by 0.1s via `SetTimer` so the PIE viewport stabilizes its resolution before the first UI frame renders. Prevents the "zoomed-in then snaps to correct size" flash.
 - **Enter Tribulation loading screen:** New `UT66LoadingScreenWidget` (Slate, `UI/T66LoadingScreenWidget.h/.cpp`). `UT66GameInstance::TransitionToGameplayLevel()` shows loading screen → pre-loads gameplay assets → opens level. Called from Hero Selection, Lobby, and Save Slots instead of raw `OpenLevel`. Loading text localized via `UT66LocalizationSubsystem::GetText_Loading()`.

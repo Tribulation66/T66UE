@@ -6,18 +6,6 @@
 
 const FString UT66PowerUpSubsystem::PowerUpSaveSlotName(TEXT("T66_PowerUp"));
 
-int32 UT66PowerUpSubsystem::GetCostForTierStep(uint8 FromTier)
-{
-	switch (FromTier)
-	{
-		case 0: return 1;   // Empty -> Black
-		case 1: return 3;   // Black -> Red
-		case 2: return 5;   // Red -> Yellow
-		case 3: return 10; // Yellow -> White
-		default: return 0; // White or invalid
-	}
-}
-
 void UT66PowerUpSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -28,6 +16,7 @@ void UT66PowerUpSubsystem::LoadOrCreateSave()
 {
 	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(PowerUpSaveSlotName, PowerUpSaveUserIndex);
 	SaveData = Cast<UT66PowerUpSaveGame>(Loaded);
+	bool bNeedsSave = false;
 	if (!SaveData)
 	{
 		SaveData = NewObject<UT66PowerUpSaveGame>(this);
@@ -37,22 +26,43 @@ void UT66PowerUpSubsystem::LoadOrCreateSave()
 	{
 		UE_LOG(LogTemp, Log, TEXT("[PowerUp] LoadOrCreateSave: Loaded existing save, balance=%d"), SaveData->PowerCrystalBalance);
 	}
+
 	if (SaveData->SaveVersion < 2)
 	{
 		MigrateV1ToV2WedgeTiers();
 		SaveData->SaveVersion = 2;
+		bNeedsSave = true;
+	}
+
+	if (SaveData->SaveVersion < 3)
+	{
+		MigrateV2ToV3BodyParts();
+		SaveData->SaveVersion = 3;
+		bNeedsSave = true;
+	}
+
+	if (SaveData->SaveVersion < 4)
+	{
+		MigrateV3ToV4FillSteps();
+		SaveData->SaveVersion = 4;
+		bNeedsSave = true;
+	}
+
+	if (bNeedsSave)
+	{
+		Save();
 	}
 }
 
 void UT66PowerUpSubsystem::MigrateV1ToV2WedgeTiers()
 {
 	if (!SaveData) return;
-	auto Migrate = [this](TArray<uint8>& Tiers, int32 LegacyCount)
+	auto Migrate = [](TArray<uint8>& Tiers, int32 LegacyCount)
 	{
-		Tiers.SetNumZeroed(MaxSlicesPerStat);
-		for (int32 i = 0; i < LegacyCount && i < MaxSlicesPerStat; ++i)
+		Tiers.SetNumZeroed(UT66PowerUpSubsystem::LegacyV2SlotsPerStat);
+		for (int32 i = 0; i < LegacyCount && i < UT66PowerUpSubsystem::LegacyV2SlotsPerStat; ++i)
 		{
-			Tiers[i] = static_cast<uint8>(ET66PowerUpWedgeTier::Black);
+			Tiers[i] = static_cast<uint8>(ET66PowerUpFillStepState::Unlocked);
 		}
 	};
 	Migrate(SaveData->WedgeTiersDamage, SaveData->PowerupSlicesDamage);
@@ -62,6 +72,86 @@ void UT66PowerUpSubsystem::MigrateV1ToV2WedgeTiers()
 	Migrate(SaveData->WedgeTiersEvasion, SaveData->PowerupSlicesEvasion);
 	Migrate(SaveData->WedgeTiersLuck, SaveData->PowerupSlicesLuck);
 	UE_LOG(LogTemp, Log, TEXT("[PowerUp] Migrated v1 slice counts to v2 wedge tiers."));
+}
+
+void UT66PowerUpSubsystem::MigrateV2ToV3BodyParts()
+{
+	if (!SaveData) return;
+
+	auto CountLegacyUnlocked = [](const TArray<uint8>& States) -> int32
+	{
+		int32 Count = 0;
+		for (int32 i = 0; i < States.Num() && i < UT66PowerUpSubsystem::LegacyV2SlotsPerStat; ++i)
+		{
+			if (States[i] > 0)
+			{
+				++Count;
+			}
+		}
+		return Count;
+	};
+
+	auto Convert = [this, &CountLegacyUnlocked](TArray<uint8>& States, int32& RandomBonus)
+	{
+		const int32 LegacyUnlocked = CountLegacyUnlocked(States);
+		const int32 VisibleUnlocked = FMath::Clamp(LegacyUnlocked, 0, 6);
+		const int32 OverflowBonus = FMath::Max(0, LegacyUnlocked - 6);
+
+		States.SetNumZeroed(6);
+		for (int32 i = 0; i < VisibleUnlocked; ++i)
+		{
+			States[i] = static_cast<uint8>(ET66PowerUpFillStepState::Unlocked);
+		}
+
+		RandomBonus = FMath::Max(0, RandomBonus) + OverflowBonus;
+	};
+
+	Convert(SaveData->WedgeTiersDamage, SaveData->RandomBonusDamage);
+	Convert(SaveData->WedgeTiersAttackSpeed, SaveData->RandomBonusAttackSpeed);
+	Convert(SaveData->WedgeTiersAttackScale, SaveData->RandomBonusAttackScale);
+	Convert(SaveData->WedgeTiersArmor, SaveData->RandomBonusArmor);
+	Convert(SaveData->WedgeTiersEvasion, SaveData->RandomBonusEvasion);
+	Convert(SaveData->WedgeTiersLuck, SaveData->RandomBonusLuck);
+
+	UE_LOG(LogTemp, Log, TEXT("[PowerUp] Migrated v2 wedge tiers to v3 six-part statues."));
+}
+
+void UT66PowerUpSubsystem::MigrateV3ToV4FillSteps()
+{
+	if (!SaveData) return;
+
+	auto Convert = [](TArray<uint8>& States, int32& RandomBonus)
+	{
+		int32 UnlockedVisible = 0;
+		for (int32 i = 0; i < States.Num(); ++i)
+		{
+			if (States[i] > 0)
+			{
+				++UnlockedVisible;
+			}
+		}
+
+		const int32 TotalBonus = FMath::Max(0, UnlockedVisible) + FMath::Max(0, RandomBonus);
+		const int32 VisibleUnlocked = FMath::Clamp(TotalBonus, 0, UT66PowerUpSubsystem::MaxFillStepsPerStat);
+		const int32 OverflowBonus = FMath::Max(0, TotalBonus - UT66PowerUpSubsystem::MaxFillStepsPerStat);
+
+		States.SetNumZeroed(UT66PowerUpSubsystem::MaxFillStepsPerStat);
+		for (int32 i = 0; i < VisibleUnlocked; ++i)
+		{
+			States[i] = static_cast<uint8>(ET66PowerUpFillStepState::Unlocked);
+		}
+
+		RandomBonus = OverflowBonus;
+	};
+
+	Convert(SaveData->WedgeTiersDamage, SaveData->RandomBonusDamage);
+	Convert(SaveData->WedgeTiersAttackSpeed, SaveData->RandomBonusAttackSpeed);
+	Convert(SaveData->WedgeTiersAttackScale, SaveData->RandomBonusAttackScale);
+	Convert(SaveData->WedgeTiersArmor, SaveData->RandomBonusArmor);
+	Convert(SaveData->WedgeTiersEvasion, SaveData->RandomBonusEvasion);
+	Convert(SaveData->WedgeTiersLuck, SaveData->RandomBonusLuck);
+
+	UE_LOG(LogTemp, Log, TEXT("[PowerUp] Migrated v3 six-part statues to v4 ten-step fill progression."));
 }
 
 void UT66PowerUpSubsystem::Save()
@@ -84,19 +174,31 @@ void UT66PowerUpSubsystem::AddPowerCrystals(int32 Amount)
 	Save();
 }
 
-void UT66PowerUpSubsystem::EnsureWedgeTiersSize(TArray<uint8>& Arr)
+bool UT66PowerUpSubsystem::SpendPowerCrystals(int32 Amount)
 {
-	if (Arr.Num() < MaxSlicesPerStat)
+	if (!SaveData || Amount <= 0 || SaveData->PowerCrystalBalance < Amount)
 	{
-		Arr.SetNumZeroed(MaxSlicesPerStat);
+		return false;
 	}
-	else if (Arr.Num() > MaxSlicesPerStat)
+
+	SaveData->PowerCrystalBalance -= Amount;
+	Save();
+	return true;
+}
+
+void UT66PowerUpSubsystem::EnsureFillStepStatesSize(TArray<uint8>& Arr)
+{
+	if (Arr.Num() < MaxFillStepsPerStat)
 	{
-		Arr.SetNum(MaxSlicesPerStat);
+		Arr.SetNumZeroed(MaxFillStepsPerStat);
+	}
+	else if (Arr.Num() > MaxFillStepsPerStat)
+	{
+		Arr.SetNum(MaxFillStepsPerStat);
 	}
 }
 
-TArray<uint8>* UT66PowerUpSubsystem::GetWedgeTiersForStat(ET66HeroStatType StatType)
+TArray<uint8>* UT66PowerUpSubsystem::GetFillStepStatesForStat(ET66HeroStatType StatType)
 {
 	if (!SaveData) return nullptr;
 	switch (StatType)
@@ -111,58 +213,68 @@ TArray<uint8>* UT66PowerUpSubsystem::GetWedgeTiersForStat(ET66HeroStatType StatT
 	}
 }
 
-const TArray<uint8>* UT66PowerUpSubsystem::GetWedgeTiersForStat(ET66HeroStatType StatType) const
+const TArray<uint8>* UT66PowerUpSubsystem::GetFillStepStatesForStat(ET66HeroStatType StatType) const
 {
-	return const_cast<UT66PowerUpSubsystem*>(this)->GetWedgeTiersForStat(StatType);
+	return const_cast<UT66PowerUpSubsystem*>(this)->GetFillStepStatesForStat(StatType);
 }
 
-int32 UT66PowerUpSubsystem::GetWedgeTier(ET66HeroStatType StatType, int32 WedgeIndex) const
+int32 UT66PowerUpSubsystem::GetFillStepState(ET66HeroStatType StatType, int32 StepIndex) const
 {
-	const TArray<uint8>* Arr = GetWedgeTiersForStat(StatType);
-	if (!Arr || WedgeIndex < 0 || WedgeIndex >= MaxSlicesPerStat) return 0;
-	if (WedgeIndex >= Arr->Num()) return 0;
-	return FMath::Clamp(static_cast<int32>((*Arr)[WedgeIndex]), 0, 4);
+	const TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
+	if (!Arr || StepIndex < 0 || StepIndex >= MaxFillStepsPerStat) return 0;
+	if (StepIndex >= Arr->Num()) return 0;
+	return (*Arr)[StepIndex] > 0 ? 1 : 0;
 }
 
-int32 UT66PowerUpSubsystem::GetCostForNextUpgrade(ET66HeroStatType StatType) const
+int32 UT66PowerUpSubsystem::GetUnlockedFillStepCount(ET66HeroStatType StatType) const
 {
-	const TArray<uint8>* Arr = GetWedgeTiersForStat(StatType);
+	const TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
 	if (!Arr) return 0;
-	// Fill by tier: all Black first, then all Red, then Yellow, then White. Cost = cost for the current min tier.
-	uint8 MinTier = 4;
-	for (int32 i = 0; i < MaxSlicesPerStat; ++i)
+
+	int32 Count = 0;
+	for (int32 i = 0; i < Arr->Num() && i < MaxFillStepsPerStat; ++i)
 	{
-		const uint8 T = (i < Arr->Num()) ? (*Arr)[i] : 0;
-		if (T < MinTier) MinTier = T;
+		if ((*Arr)[i] > 0)
+		{
+			++Count;
+		}
 	}
-	return (MinTier < 4) ? GetCostForTierStep(MinTier) : 0;
+	return Count;
 }
 
-bool UT66PowerUpSubsystem::UnlockNextWedgeUpgrade(ET66HeroStatType StatType)
+int32 UT66PowerUpSubsystem::GetTotalStatBonus(ET66HeroStatType StatType) const
 {
-	TArray<uint8>* Arr = GetWedgeTiersForStat(StatType);
+	return GetUnlockedFillStepCount(StatType) + GetRandomBonusForStat(StatType);
+}
+
+int32 UT66PowerUpSubsystem::GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const
+{
+	return IsStatMaxed(StatType) ? 0 : 1;
+}
+
+bool UT66PowerUpSubsystem::UnlockNextFillStep(ET66HeroStatType StatType)
+{
+	TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
 	if (!SaveData || !Arr) return false;
-	EnsureWedgeTiersSize(*Arr);
-	// Find minimum tier across all wedges; upgrade the first wedge at that tier.
-	uint8 MinTier = 4;
-	for (int32 i = 0; i < MaxSlicesPerStat; ++i)
+	EnsureFillStepStatesSize(*Arr);
+
+	const int32 Cost = GetCostForNextFillStepUnlock(StatType);
+	if (Cost <= 0 || SaveData->PowerCrystalBalance < Cost)
 	{
-		const uint8 T = (*Arr)[i];
-		if (T < MinTier) MinTier = T;
+		return false;
 	}
-	if (MinTier >= 4) return false;
-	const int32 Cost = GetCostForTierStep(MinTier);
-	if (SaveData->PowerCrystalBalance < Cost) return false;
-	for (int32 i = 0; i < MaxSlicesPerStat; ++i)
+
+	for (int32 i = 0; i < MaxFillStepsPerStat; ++i)
 	{
-		if ((*Arr)[i] == MinTier)
+		if ((*Arr)[i] == static_cast<uint8>(ET66PowerUpFillStepState::Locked))
 		{
 			SaveData->PowerCrystalBalance -= Cost;
-			(*Arr)[i]++;
+			(*Arr)[i] = static_cast<uint8>(ET66PowerUpFillStepState::Unlocked);
 			Save();
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -184,15 +296,15 @@ bool UT66PowerUpSubsystem::UnlockRandomStat()
 	}
 	for (ET66HeroStatType Stat : Shuffled)
 	{
-		TArray<uint8>* Arr = GetWedgeTiersForStat(Stat);
+		TArray<uint8>* Arr = GetFillStepStatesForStat(Stat);
 		if (!Arr) continue;
-		EnsureWedgeTiersSize(*Arr);
-		for (int32 i = 0; i < MaxSlicesPerStat; ++i)
+		EnsureFillStepStatesSize(*Arr);
+		for (int32 i = 0; i < MaxFillStepsPerStat; ++i)
 		{
-			if ((*Arr)[i] == 0)
+			if ((*Arr)[i] == static_cast<uint8>(ET66PowerUpFillStepState::Locked))
 			{
 				SaveData->PowerCrystalBalance -= 1;
-				(*Arr)[i] = static_cast<uint8>(ET66PowerUpWedgeTier::Black);
+				(*Arr)[i] = static_cast<uint8>(ET66PowerUpFillStepState::Unlocked);
 				Save();
 				return true;
 			}
@@ -203,11 +315,14 @@ bool UT66PowerUpSubsystem::UnlockRandomStat()
 
 bool UT66PowerUpSubsystem::IsStatMaxed(ET66HeroStatType StatType) const
 {
-	const TArray<uint8>* Arr = GetWedgeTiersForStat(StatType);
+	const TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
 	if (!Arr) return true;
-	for (int32 i = 0; i < MaxSlicesPerStat; ++i)
+	for (int32 i = 0; i < MaxFillStepsPerStat; ++i)
 	{
-		if (i >= Arr->Num() || (*Arr)[i] < 4) return false;
+		if (i >= Arr->Num() || (*Arr)[i] == static_cast<uint8>(ET66PowerUpFillStepState::Locked))
+		{
+			return false;
+		}
 	}
 	return true;
 }
@@ -216,23 +331,12 @@ FT66HeroStatBonuses UT66PowerUpSubsystem::GetPowerupStatBonuses() const
 {
 	FT66HeroStatBonuses Out;
 	if (!SaveData) return Out;
-	auto SumWedges = [this](ET66HeroStatType Stat) -> int32
-	{
-		const TArray<uint8>* Arr = GetWedgeTiersForStat(Stat);
-		if (!Arr) return 0;
-		int32 S = 0;
-		for (int32 i = 0; i < Arr->Num() && i < MaxSlicesPerStat; ++i)
-		{
-			if ((*Arr)[i] >= 1) S++;
-		}
-		return S;
-	};
-	Out.Damage = SumWedges(ET66HeroStatType::Damage) + GetRandomBonusForStat(ET66HeroStatType::Damage);
-	Out.AttackSpeed = SumWedges(ET66HeroStatType::AttackSpeed) + GetRandomBonusForStat(ET66HeroStatType::AttackSpeed);
-	Out.AttackScale = SumWedges(ET66HeroStatType::AttackScale) + GetRandomBonusForStat(ET66HeroStatType::AttackScale);
-	Out.Armor = SumWedges(ET66HeroStatType::Armor) + GetRandomBonusForStat(ET66HeroStatType::Armor);
-	Out.Evasion = SumWedges(ET66HeroStatType::Evasion) + GetRandomBonusForStat(ET66HeroStatType::Evasion);
-	Out.Luck = SumWedges(ET66HeroStatType::Luck) + GetRandomBonusForStat(ET66HeroStatType::Luck);
+	Out.Damage = GetTotalStatBonus(ET66HeroStatType::Damage);
+	Out.AttackSpeed = GetTotalStatBonus(ET66HeroStatType::AttackSpeed);
+	Out.AttackScale = GetTotalStatBonus(ET66HeroStatType::AttackScale);
+	Out.Armor = GetTotalStatBonus(ET66HeroStatType::Armor);
+	Out.Evasion = GetTotalStatBonus(ET66HeroStatType::Evasion);
+	Out.Luck = GetTotalStatBonus(ET66HeroStatType::Luck);
 	return Out;
 }
 
@@ -248,20 +352,5 @@ int32 UT66PowerUpSubsystem::GetRandomBonusForStat(ET66HeroStatType StatType) con
 		case ET66HeroStatType::Evasion:    return SaveData->RandomBonusEvasion;
 		case ET66HeroStatType::Luck:       return SaveData->RandomBonusLuck;
 		default: return 0;
-	}
-}
-
-void UT66PowerUpSubsystem::AddRandomBonusToStat(ET66HeroStatType StatType)
-{
-	if (!SaveData) return;
-	switch (StatType)
-	{
-		case ET66HeroStatType::Damage:      SaveData->RandomBonusDamage++; break;
-		case ET66HeroStatType::AttackSpeed: SaveData->RandomBonusAttackSpeed++; break;
-		case ET66HeroStatType::AttackScale: SaveData->RandomBonusAttackScale++; break;
-		case ET66HeroStatType::Armor:      SaveData->RandomBonusArmor++; break;
-		case ET66HeroStatType::Evasion:    SaveData->RandomBonusEvasion++; break;
-		case ET66HeroStatType::Luck:       SaveData->RandomBonusLuck++; break;
-		default: break;
 	}
 }

@@ -50,11 +50,11 @@ def import_texture(source_path, asset_name):
     except Exception:
         pass
     try:
-        texture.set_editor_property("mip_gen_settings", unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS)
+        texture.set_editor_property("mip_gen_settings", unreal.TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP)
     except Exception:
         pass
     try:
-        texture.set_editor_property("filter", unreal.TextureFilter.TF_BILINEAR)
+        texture.set_editor_property("filter", unreal.TextureFilter.TF_TRILINEAR)
     except Exception:
         pass
     try:

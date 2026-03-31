@@ -20,6 +20,7 @@
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/SBoxPanel.h"
@@ -29,24 +30,66 @@
 
 namespace
 {
-	const FVector2D PowerUpStatueImageSize(200.f, 280.f);
+	const FVector2D PowerUpStatueImageSize(372.f, 548.f);
+	constexpr int32 PowerUpStatsPerRow = 3;
 	const FLinearColor PowerUpLockedTint(0.03f, 0.03f, 0.04f, 0.96f);
 	const FLinearColor PowerUpFillTint = FLinearColor::White;
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GPowerUpFileTextureCache;
 
-	FLinearColor T66FrontendShellFill()
+	FLinearColor T66PowerUpShellFill()
 	{
-		return FLinearColor(0.004f, 0.005f, 0.010f, 0.985f);
+		return FT66Style::Background();
 	}
 
 	FLinearColor T66PowerUpPanelFill()
 	{
-		return FLinearColor(0.024f, 0.025f, 0.030f, 1.0f);
+		return FT66Style::PanelOuter();
 	}
 
 	FLinearColor T66PowerUpInsetFill()
 	{
-		return FLinearColor(0.018f, 0.019f, 0.024f, 1.0f);
+		return FT66Style::PanelInner();
+	}
+
+	FLinearColor T66PowerUpButtonFill()
+	{
+		return FLinearColor(0.53f, 0.62f, 0.47f, 1.0f);
+	}
+
+	FLinearColor T66PowerUpButtonDisabledFill()
+	{
+		return FLinearColor(0.29f, 0.31f, 0.33f, 1.0f);
+	}
+
+	FLinearColor T66PowerUpNeutralButtonFill()
+	{
+		return FT66Style::ButtonNeutral();
+	}
+
+	FT66ButtonParams FlattenPowerUpButton(FT66ButtonParams Params)
+	{
+		Params
+			.SetBorderVisual(ET66ButtonBorderVisual::None)
+			.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+			.SetUseGlow(false);
+
+		return Params;
+	}
+
+	TSharedRef<SWidget> MakePowerUpButton(const FT66ButtonParams& Params)
+	{
+		return FT66Style::MakeButton(FlattenPowerUpButton(Params));
+	}
+
+	TSharedRef<SWidget> MakePowerUpPanel(const TSharedRef<SWidget>& Content, const FLinearColor& FillColor, const FMargin& Padding, ET66PanelType Type = ET66PanelType::Panel)
+	{
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(Type)
+				.SetBorderVisual(ET66ButtonBorderVisual::None)
+				.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+				.SetColor(FillColor)
+				.SetPadding(Padding));
 	}
 
 	UTexture2D* LoadPowerUpFileTexture(const FString& FilePath)
@@ -68,8 +111,9 @@ namespace
 		}
 
 		Texture->SRGB = true;
-		Texture->Filter = TextureFilter::TF_Bilinear;
+		Texture->Filter = TextureFilter::TF_Trilinear;
 		Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+		Texture->CompressionSettings = TC_EditorIcon;
 		Texture->NeverStream = true;
 		Texture->UpdateResource();
 
@@ -315,22 +359,30 @@ UT66PowerUpSubsystem* UT66PowerUpScreen::GetPowerUpSubsystem() const
 	return nullptr;
 }
 
+void UT66PowerUpScreen::SetShowingConverter(bool bInShowingConverter)
+{
+	bShowingConverter = bInShowingConverter;
+	if (PageSwitcher.IsValid())
+	{
+		PageSwitcher->SetActiveWidgetIndex(bShowingConverter ? 1 : 0);
+	}
+}
+
 FReply UT66PowerUpScreen::HandleBackClicked()
 {
-	if (CurrentPage > 0)
+	if (bShowingConverter)
 	{
-		CurrentPage = 0;
-		if (PageSwitcher.IsValid()) PageSwitcher->SetActiveWidgetIndex(0);
+		SetShowingConverter(false);
 		return FReply::Handled();
 	}
+
 	NavigateBack();
 	return FReply::Handled();
 }
 
 FReply UT66PowerUpScreen::HandleOpenConverterClicked()
 {
-	CurrentPage = 1;
-	if (PageSwitcher.IsValid()) PageSwitcher->SetActiveWidgetIndex(1);
+	SetShowingConverter(true);
 	return FReply::Handled();
 }
 
@@ -424,8 +476,6 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		return NSLOCTEXT("T66.PowerUp", "StatUnknown", "?");
 	};
 
-	const FText FillPercentFormatText = NSLOCTEXT("T66.PowerUp", "FillPercentFormat", "{0}% FILLED");
-	const FText BonusOverflowFormatText = NSLOCTEXT("T66.PowerUp", "OverflowBonusFormat", "BONUS +{0}");
 	const FText ConverterLabelText = NSLOCTEXT("T66.PowerUp", "Converter", "CONVERTER");
 	const FText ConverterHintText = FText::Format(
 		NSLOCTEXT("T66.PowerUp", "ConverterHint", "Trade Power Coupons for Achievement Coins at {0} AC per coupon."),
@@ -434,6 +484,14 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		NSLOCTEXT("T66.PowerUp", "ConverterRate", "1 POWER COUPON = {0} ACHIEVEMENT COINS"),
 		FText::AsNumber(AchievementCoinsPerPowerCoupon));
 	const FText ConverterButtonText = NSLOCTEXT("T66.PowerUp", "ConverterButton", "PC -> AC CONVERTER");
+	const TArray<ET66HeroStatType> StatTypes = {
+		ET66HeroStatType::Damage,
+		ET66HeroStatType::AttackSpeed,
+		ET66HeroStatType::AttackScale,
+		ET66HeroStatType::Armor,
+		ET66HeroStatType::Evasion,
+		ET66HeroStatType::Luck
+	};
 
 	auto MakeStatueWidget = [&](ET66HeroStatType StatType, const FVector2D& ImageSize) -> TSharedRef<SWidget>
 	{
@@ -463,96 +521,103 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 
 	auto MakeStatPanel = [&](ET66HeroStatType StatType) -> TSharedRef<SWidget>
 	{
-		const int32 UnlockedSteps = PowerUp ? PowerUp->GetUnlockedFillStepCount(StatType) : 0;
-		const int32 FillPercent = FMath::Clamp((UnlockedSteps * 100) / UT66PowerUpSubsystem::MaxFillStepsPerStat, 0, 100);
-		const int32 TotalBonus = PowerUp ? PowerUp->GetTotalStatBonus(StatType) : 0;
-		const int32 ExtraBonus = FMath::Max(0, TotalBonus - UnlockedSteps);
 		const int32 Cost = PowerUp ? PowerUp->GetCostForNextFillStepUnlock(StatType) : 0;
 		const bool bMaxed = PowerUp && PowerUp->IsStatMaxed(StatType);
 		const FText ButtonText = bMaxed
 			? NSLOCTEXT("T66.PowerUp", "Max", "MAX")
-			: FText::Format(NSLOCTEXT("T66.PowerUp", "UnlockPCFormat", "UNLOCK {0} PC"), FText::AsNumber(Cost));
-		const FText FillText = FText::Format(FillPercentFormatText, FText::AsNumber(FillPercent));
-		const FText BonusText = FText::Format(BonusOverflowFormatText, FText::AsNumber(ExtraBonus));
+			: FText::FromString(FString::Printf(TEXT("%d POWER COUPON%s"), Cost, Cost == 1 ? TEXT("") : TEXT("S")));
 
-		return FT66Style::MakePanel(
+		return MakePowerUpPanel(
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 2.f, 0.f, 12.f)
 			[
 				SNew(STextBlock)
 				.Text(GetStatLabel(StatType))
-				.Font(FT66Style::Tokens::FontBold(18))
+				.Font(FT66Style::Tokens::FontBold(36))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 				.Justification(ETextJustify::Center)
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
 			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).VAlign(VAlign_Center)
+				SNew(SBox)
+				.MinDesiredHeight(560.f)
 				[
-					MakeStatueWidget(StatType, PowerUpStatueImageSize)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f).HAlign(HAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(FillText)
-					.Font(FT66Style::Tokens::FontBold(12))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f).HAlign(HAlign_Center)
-				[
-					ExtraBonus > 0
-						? StaticCastSharedRef<SWidget>(
-							SNew(STextBlock)
-							.Text(BonusText)
-							.Font(FT66Style::Tokens::FontBold(11))
-							.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.65f, 1.f)))
-						: StaticCastSharedRef<SWidget>(SNew(SSpacer).Size(FVector2D(1.f, 18.f)))
-				]
-				+ SVerticalBox::Slot().FillHeight(1.f)
-				[
-					SNew(SSpacer)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0.f, 0.f, 0.f, 6.f)
+					[
+						MakeStatueWidget(StatType, PowerUpStatueImageSize)
+					]
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 18.f, 0.f, 0.f)
+			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 16.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(
+				MakePowerUpButton(
 					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
+					.SetHeight(66.f)
+					.SetFontSize(23)
+					.SetColor(TAttribute<FSlateColor>::CreateLambda([bMaxed, Balance, Cost]() -> FSlateColor
+					{
+						if (bMaxed)
+						{
+							return FSlateColor(T66PowerUpButtonFill());
+						}
+
+						return FSlateColor(Balance >= Cost ? T66PowerUpButtonFill() : T66PowerUpButtonDisabledFill());
+					}))
 					.SetEnabled(TAttribute<bool>::CreateLambda([bMaxed, Balance, Cost]() { return !bMaxed && Balance >= Cost; }))
 				)
 			]
 		,
-		FT66PanelParams(ET66PanelType::Panel)
-			.SetColor(T66PowerUpPanelFill())
-			.SetPadding(FMargin(18.f, 16.f, 18.f, 18.f)));
+		T66PowerUpPanelFill(),
+		FMargin(20.f, 18.f, 20.f, 18.f));
 	};
 
-	TSharedRef<SVerticalBox> StatsPage =
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
+	auto MakeStatRow = [&](int32 StartIndex) -> TSharedRef<SWidget>
+	{
+		TSharedRef<SHorizontalBox> StatRow = SNew(SHorizontalBox);
+		for (int32 LocalIndex = 0; LocalIndex < PowerUpStatsPerRow; ++LocalIndex)
+		{
+			const int32 StatIndex = StartIndex + LocalIndex;
+			StatRow->AddSlot()
+				.FillWidth(1.f)
+				.Padding(LocalIndex < PowerUpStatsPerRow - 1 ? FMargin(0.f, 0.f, FT66Style::Tokens::Space4, 0.f) : FMargin(0.f))
+				[
+					StatIndex < StatTypes.Num()
+						? MakeStatPanel(StatTypes[StatIndex])
+						: StaticCastSharedRef<SWidget>(SNew(SSpacer))
+				];
+		}
+
+		return StatRow;
+	};
+
+	TSharedRef<SWidget> StatsPage =
+		SNew(SScrollBox)
+		.Orientation(Orient_Vertical)
+		.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
+		.ScrollBarVisibility(EVisibility::Visible)
+		+ SScrollBox::Slot()
+		.Padding(0.f, 0.f, 10.f, 0.f)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
-			[ MakeStatPanel(ET66HeroStatType::Damage) ]
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
-			[ MakeStatPanel(ET66HeroStatType::AttackSpeed) ]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[ MakeStatPanel(ET66HeroStatType::AttackScale) ]
-		]
-		+ SVerticalBox::Slot().FillHeight(1.f)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
-			[ MakeStatPanel(ET66HeroStatType::Armor) ]
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
-			[ MakeStatPanel(ET66HeroStatType::Evasion) ]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[ MakeStatPanel(ET66HeroStatType::Luck) ]
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				MakeStatRow(0)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 22.f, 0.f, 0.f)
+			[
+				MakeStatRow(PowerUpStatsPerRow)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
+			[
+				SNew(SSpacer)
+				.Size(FVector2D(1.f, 1.f))
+			]
 		];
 
 	TSharedRef<SWidget> ConverterPage =
-		FT66Style::MakePanel(
+		MakePowerUpPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f).HAlign(HAlign_Center)
 			[
@@ -574,7 +639,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 12.f, 0.f)
 				[
-						FT66Style::MakePanel(
+						MakePowerUpPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()
 							[
@@ -590,13 +655,13 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 								.Font(FT66Style::Tokens::FontBold(34))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							],
-							FT66PanelParams(ET66PanelType::Panel)
-								.SetColor(T66PowerUpInsetFill())
-								.SetPadding(FMargin(20.f, 18.f)))
+							T66PowerUpInsetFill(),
+							FMargin(20.f, 18.f),
+							ET66PanelType::Panel)
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(12.f, 0.f, 0.f, 0.f)
 				[
-						FT66Style::MakePanel(
+						MakePowerUpPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight()
 							[
@@ -612,9 +677,9 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 								.Font(FT66Style::Tokens::FontBold(34))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							],
-							FT66PanelParams(ET66PanelType::Panel)
-								.SetColor(T66PowerUpInsetFill())
-								.SetPadding(FMargin(20.f, 18.f)))
+							T66PowerUpInsetFill(),
+							FMargin(20.f, 18.f),
+							ET66PanelType::Panel)
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f).HAlign(HAlign_Center)
@@ -630,47 +695,48 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 				[
-					FT66Style::MakeButton(
+					MakePowerUpButton(
 						FT66ButtonParams(
 							FText::Format(NSLOCTEXT("T66.PowerUp", "ConvertOneButton", "CONVERT 1 PC (+{0} AC)"),
 								FText::AsNumber(AchievementCoinsPerPowerCoupon)),
 							FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleConvertOneClicked),
 							ET66ButtonType::Primary)
+						.SetColor(T66PowerUpButtonFill())
 						.SetEnabled(TAttribute<bool>::CreateLambda([Balance]() { return Balance >= 1; })))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(10.f, 0.f, 10.f, 0.f)
 				[
-					FT66Style::MakeButton(
+					MakePowerUpButton(
 						FT66ButtonParams(
 							FText::Format(NSLOCTEXT("T66.PowerUp", "ConvertFiveButton", "CONVERT 5 PC (+{0} AC)"),
 								FText::AsNumber(AchievementCoinsPerPowerCoupon * 5)),
 							FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleConvertFiveClicked),
 							ET66ButtonType::Neutral)
+						.SetColor(T66PowerUpNeutralButtonFill())
 						.SetEnabled(TAttribute<bool>::CreateLambda([Balance]() { return Balance >= 5; })))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(10.f, 0.f, 0.f, 0.f)
 				[
-					FT66Style::MakeButton(
+					MakePowerUpButton(
 						FT66ButtonParams(
 							NSLOCTEXT("T66.PowerUp", "ConvertAllButton", "CONVERT ALL"),
 							FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleConvertAllClicked),
 							ET66ButtonType::Success)
+						.SetColor(T66PowerUpButtonFill())
 						.SetEnabled(TAttribute<bool>::CreateLambda([Balance]() { return Balance > 0; })))
 				]
 			]
 		,
-		FT66PanelParams(ET66PanelType::Panel)
-			.SetColor(T66PowerUpPanelFill())
-			.SetPadding(FMargin(24.f)));
+		T66PowerUpPanelFill(),
+		FMargin(24.f));
 
-	CurrentPage = FMath::Clamp(CurrentPage, 0, 1);
 	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
 	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	return SNew(SBox)
 		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
 		[
-			FT66Style::MakePanel(
+			MakePowerUpPanel(
 		SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
@@ -684,7 +750,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(TitleText)
-						.Font(FT66Style::Tokens::FontBold(32))
+						.Font(FT66Style::Tokens::FontBold(48))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SOverlay::Slot()
@@ -692,12 +758,13 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					.VAlign(VAlign_Center)
 					[
 						SNew(SBox)
-						.Visibility_Lambda([this]() { return CurrentPage == 0 ? EVisibility::Visible : EVisibility::Collapsed; })
+						.Visibility_Lambda([this]() { return !bShowingConverter ? EVisibility::Visible : EVisibility::Collapsed; })
 						[
-							FT66Style::MakeButton(FT66ButtonParams(ConverterButtonText,
+							MakePowerUpButton(FT66ButtonParams(ConverterButtonText,
 								FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleOpenConverterClicked),
 								ET66ButtonType::Neutral)
-								.SetMinWidth(220.f)
+								.SetMinWidth(240.f)
+								.SetColor(T66PowerUpNeutralButtonFill())
 							)
 						]
 					]
@@ -705,7 +772,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				+ SVerticalBox::Slot().FillHeight(1.f)
 				[
 					SAssignNew(PageSwitcher, SWidgetSwitcher)
-					.WidgetIndex(CurrentPage)
+					.WidgetIndex(bShowingConverter ? 1 : 0)
 					+ SWidgetSwitcher::Slot()[ StatsPage ]
 					+ SWidgetSwitcher::Slot()[ ConverterPage ]
 				]
@@ -718,16 +785,16 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				SNew(SBox)
 				.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(BackText,
+					MakePowerUpButton(FT66ButtonParams(BackText,
 						FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleBackClicked),
 						ET66ButtonType::Neutral)
 						.SetMinWidth(120.f)
+						.SetColor(T66PowerUpNeutralButtonFill())
 					)
 				]
 			]
 		,
-		FT66PanelParams(ET66PanelType::Panel)
-			.SetColor(T66FrontendShellFill())
-			.SetPadding(FMargin(24.f)))
+		T66PowerUpShellFill(),
+		FMargin(24.f))
 		];
 }

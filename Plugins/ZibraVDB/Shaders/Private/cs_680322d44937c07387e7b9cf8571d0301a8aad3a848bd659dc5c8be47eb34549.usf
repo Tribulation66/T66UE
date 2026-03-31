@@ -1,0 +1,259 @@
+#include "/Engine/Public/Platform.ush"
+
+struct UB0_S0
+{
+    uint UB0_S0_M0;
+    uint UB0_S0_M1;
+    uint2 UB0_S0_M2;
+};
+
+cbuffer UBT0 : register(b0)
+{
+    UB0_S0 UB0_M0 : packoffset(c0);
+};
+
+ByteAddressBuffer SB0 : register(t0);
+ByteAddressBuffer SB1 : register(t1);
+ByteAddressBuffer SB2 : register(t2);
+RWByteAddressBuffer SB3 : register(u0);
+RWBuffer<float> SIMG0 : register(u1);
+
+static uint3 gl_WorkGroupID;
+static uint3 gl_LocalInvocationID;
+struct SPIRV_Cross_Input
+{
+    uint3 gl_WorkGroupID : SV_GroupID;
+    uint3 gl_LocalInvocationID : SV_GroupThreadID;
+};
+
+groupshared float _17[512];
+groupshared float _18[512];
+groupshared uint _19;
+
+void comp_main()
+{
+    do
+    {
+        uint _104 = gl_WorkGroupID.x + UB0_M0.UB0_S0_M0;
+        if (_104 >= UB0_M0.UB0_S0_M1)
+        {
+            break;
+        }
+        uint _116 = 9u * (((SB0.Load((2u * _104) * 4 + 0) >> 24u) & 15u) & 7u);
+        uint _117 = 1u + _116;
+        uint _120 = 2u + _116;
+        uint _123 = 3u + _116;
+        uint _126 = 4u + _116;
+        uint _129 = 5u + _116;
+        float _131 = asfloat(SB1.Load(_129 * 4 + 0));
+        float _134 = asfloat(SB1.Load((7u + _116) * 4 + 0));
+        uint _135 = asuint(_134);
+        uint _136 = 8u + _116;
+        float _138 = asfloat(SB1.Load(_136 * 4 + 0));
+        float _145 = exp2((float(SB3.Load(_104 * 4 + 0)) * 0.0004926788969896733760833740234375f) + (-13.28771209716796875f)) - 9.9999997473787516355514526367188e-05f;
+        bool _147 = all(bool3(gl_LocalInvocationID.x == uint3(0u, 0u, 0u).x, gl_LocalInvocationID.y == uint3(0u, 0u, 0u).y, gl_LocalInvocationID.z == uint3(0u, 0u, 0u).z));
+        if (_147)
+        {
+            _19 = 0u;
+        }
+        float _96[8];
+        for (int _151 = 0; _151 < 8; )
+        {
+            uint _158 = uint(_151);
+            float4 _181 = SIMG0[SB2.Load(((gl_LocalInvocationID.x + (_158 * 8u)) + (gl_LocalInvocationID.y * 64u)) * 4 + 0) + (_104 * 512u)].xxxx;
+            float _182 = _181.x;
+            _96[_151] = (((log(1.0f - ((abs(_182) * 0.0078740157186985015869140625f) * asfloat(SB1.Load(_126 * 4 + 0)))) / log(1.0f - asfloat(SB1.Load(_126 * 4 + 0)))) * max(_145, 9.9999999747524270787835121154785e-07f)) * float(int(sign(_182)))) * pow(asfloat(SB1.Load(_120 * 4 + 0)) + (asfloat(SB1.Load(_117 * 4 + 0)) * (sqrt(float(((gl_LocalInvocationID.x * gl_LocalInvocationID.x) + (_158 * _158)) + (gl_LocalInvocationID.y * gl_LocalInvocationID.y))) * 0.07216878235340118408203125f)), asfloat(SB1.Load(_123 * 4 + 0)));
+            _151++;
+            continue;
+        }
+        float _200 = _96[0];
+        float _201 = _200 * 1.41421353816986083984375f;
+        float _203 = _96[1];
+        float _204 = _203 * 1.9615705013275146484375f;
+        float _206 = _96[2];
+        float _207 = _206 * 1.8477590084075927734375f;
+        float _209 = _96[3];
+        float _210 = _209 * 1.66293919086456298828125f;
+        float _212 = _96[4];
+        float _213 = _212 * 1.41421353816986083984375f;
+        float _215 = _96[5];
+        float _216 = _215 * 1.1111404895782470703125f;
+        float _218 = _96[6];
+        float _219 = _218 * 0.76536691188812255859375f;
+        float _221 = _96[7];
+        float _222 = _221 * 0.3901806771755218505859375f;
+        float _223 = _216 - _210;
+        float _225 = _204 - _222;
+        float _228 = (_204 + _222) * 0.5f;
+        float _230 = (_216 + _210) * 0.5f;
+        float _232 = (_228 + _230) * 0.5f;
+        float _234 = (_207 + _219) * 0.5f;
+        float _238 = (_201 + _213) * 0.5f;
+        float _240 = (_201 - _213) * 0.5f;
+        float _242 = ((_223 * 0.5f) - (_225 * 0.5f)) * 0.3826834261417388916015625f;
+        float _249 = ((_242 - (_225 * 0.27059805393218994140625f)) * (-1.0f)) - _232;
+        float _251 = ((_228 - _230) * 0.707106769084930419921875f) - _249;
+        float _253 = (-_251) - (((_223 * 0.6532814502716064453125f) - _242) * (-1.0f));
+        float _255 = ((_207 - _219) * 0.707106769084930419921875f) - _234;
+        float _257 = (_238 + _234) * 0.5f;
+        float _259 = (_240 + _255) * 0.5f;
+        float _261 = (_240 - _255) * 0.5f;
+        float _263 = (_238 - _234) * 0.5f;
+        _96[0] = _257 + _232;
+        _96[1] = _259 + _249;
+        _96[2] = _261 + _251;
+        _96[3] = _263 + _253;
+        _96[4] = _263 - _253;
+        _96[5] = _261 - _251;
+        _96[6] = _259 - _249;
+        _96[7] = _257 - _232;
+        for (int _273 = 0; _273 < 8; )
+        {
+            _18[(gl_LocalInvocationID.x + (uint(_273) * 8u)) + (gl_LocalInvocationID.y * 64u)] = _96[_273];
+            _273++;
+            continue;
+        }
+        GroupMemoryBarrierWithGroupSync();
+        for (int _291 = 0; _291 < 8; )
+        {
+            _96[_291] = _18[(uint(_291) + (gl_LocalInvocationID.x * 8u)) + (gl_LocalInvocationID.y * 64u)];
+            _291++;
+            continue;
+        }
+        float _308 = _96[0];
+        float _309 = _308 * 1.41421353816986083984375f;
+        float _310 = _96[1];
+        float _311 = _310 * 1.9615705013275146484375f;
+        float _312 = _96[2];
+        float _313 = _312 * 1.8477590084075927734375f;
+        float _314 = _96[3];
+        float _315 = _314 * 1.66293919086456298828125f;
+        float _316 = _96[4];
+        float _317 = _316 * 1.41421353816986083984375f;
+        float _318 = _96[5];
+        float _319 = _318 * 1.1111404895782470703125f;
+        float _320 = _96[6];
+        float _321 = _320 * 0.76536691188812255859375f;
+        float _322 = _96[7];
+        float _323 = _322 * 0.3901806771755218505859375f;
+        float _324 = _319 - _315;
+        float _326 = _311 - _323;
+        float _329 = (_311 + _323) * 0.5f;
+        float _331 = (_319 + _315) * 0.5f;
+        float _333 = (_329 + _331) * 0.5f;
+        float _335 = (_313 + _321) * 0.5f;
+        float _339 = (_309 + _317) * 0.5f;
+        float _341 = (_309 - _317) * 0.5f;
+        float _343 = ((_324 * 0.5f) - (_326 * 0.5f)) * 0.3826834261417388916015625f;
+        float _350 = ((_343 - (_326 * 0.27059805393218994140625f)) * (-1.0f)) - _333;
+        float _352 = ((_329 - _331) * 0.707106769084930419921875f) - _350;
+        float _354 = (-_352) - (((_324 * 0.6532814502716064453125f) - _343) * (-1.0f));
+        float _356 = ((_313 - _321) * 0.707106769084930419921875f) - _335;
+        float _358 = (_339 + _335) * 0.5f;
+        float _360 = (_341 + _356) * 0.5f;
+        float _362 = (_341 - _356) * 0.5f;
+        float _364 = (_339 - _335) * 0.5f;
+        _96[0] = _358 + _333;
+        _96[1] = _360 + _350;
+        _96[2] = _362 + _352;
+        _96[3] = _364 + _354;
+        _96[4] = _364 - _354;
+        _96[5] = _362 - _352;
+        _96[6] = _360 - _350;
+        _96[7] = _358 - _333;
+        for (int _374 = 0; _374 < 8; )
+        {
+            _17[(uint(_374) + (gl_LocalInvocationID.x * 8u)) + (gl_LocalInvocationID.y * 64u)] = _96[_374];
+            _374++;
+            continue;
+        }
+        GroupMemoryBarrierWithGroupSync();
+        for (int _392 = 0; _392 < 8; )
+        {
+            _96[_392] = _17[(gl_LocalInvocationID.x + (gl_LocalInvocationID.y * 8u)) + (uint(_392) * 64u)];
+            _392++;
+            continue;
+        }
+        float _409 = _96[0];
+        float _410 = _409 * 1.41421353816986083984375f;
+        float _411 = _96[1];
+        float _412 = _411 * 1.9615705013275146484375f;
+        float _413 = _96[2];
+        float _414 = _413 * 1.8477590084075927734375f;
+        float _415 = _96[3];
+        float _416 = _415 * 1.66293919086456298828125f;
+        float _417 = _96[4];
+        float _418 = _417 * 1.41421353816986083984375f;
+        float _419 = _96[5];
+        float _420 = _419 * 1.1111404895782470703125f;
+        float _421 = _96[6];
+        float _422 = _421 * 0.76536691188812255859375f;
+        float _423 = _96[7];
+        float _424 = _423 * 0.3901806771755218505859375f;
+        float _425 = _420 - _416;
+        float _427 = _412 - _424;
+        float _430 = (_412 + _424) * 0.5f;
+        float _432 = (_420 + _416) * 0.5f;
+        float _434 = (_430 + _432) * 0.5f;
+        float _436 = (_414 + _422) * 0.5f;
+        float _440 = (_410 + _418) * 0.5f;
+        float _442 = (_410 - _418) * 0.5f;
+        float _444 = ((_425 * 0.5f) - (_427 * 0.5f)) * 0.3826834261417388916015625f;
+        float _451 = ((_444 - (_427 * 0.27059805393218994140625f)) * (-1.0f)) - _434;
+        float _453 = ((_430 - _432) * 0.707106769084930419921875f) - _451;
+        float _455 = (-_453) - (((_425 * 0.6532814502716064453125f) - _444) * (-1.0f));
+        float _457 = ((_414 - _422) * 0.707106769084930419921875f) - _436;
+        float _459 = (_440 + _436) * 0.5f;
+        float _461 = (_442 + _457) * 0.5f;
+        float _463 = (_442 - _457) * 0.5f;
+        float _465 = (_440 - _436) * 0.5f;
+        _96[0] = _459 + _434;
+        _96[1] = _461 + _451;
+        _96[2] = _463 + _453;
+        _96[3] = _465 + _455;
+        _96[4] = _465 - _455;
+        _96[5] = _463 - _453;
+        _96[6] = _461 - _451;
+        _96[7] = _459 - _434;
+        float _475;
+        _475 = -1.0f;
+        float _476;
+        for (int _478 = 0; _478 < 8; _475 = _476, _478++)
+        {
+            uint _487 = uint(_478);
+            float _512;
+            float _513;
+            if (_135 == 0u)
+            {
+                float _503 = clamp(pow(max(_96[_487], 0.0f), 1.0f / _131), 0.0f, 1.0f);
+                _512 = _503 * _138;
+                _513 = _503;
+            }
+            else
+            {
+                float _505 = clamp(_96[_487], -1.0f, 1.0f);
+                float _506 = -_138;
+                _512 = (((_505 - (-1.0f)) * 0.5f) * (_138 - _506)) + _506;
+                _513 = _505;
+            }
+            _476 = max(_475, _513);
+            SIMG0[((gl_LocalInvocationID.x + (gl_LocalInvocationID.y * 8u)) + (_487 * 64u)) + (_104 * 512u)] = _512;
+        }
+        uint _522;
+        InterlockedMax(_19, uint(clamp(ceil((log2(_475 + 9.9999997473787516355514526367188e-05f) - (-13.28771209716796875f)) * 2029.719482421875f), 0.0f, 65534.0f)), _522);
+        GroupMemoryBarrierWithGroupSync();
+        if (_147)
+        {
+            SB3.Store(_104 * 4 + 0, _19);
+        }
+        break;
+    } while(false);
+}
+
+[numthreads(8, 8, 1)]
+void main(SPIRV_Cross_Input stage_input)
+{
+    gl_WorkGroupID = stage_input.gl_WorkGroupID;
+    gl_LocalInvocationID = stage_input.gl_LocalInvocationID;
+    comp_main();
+}

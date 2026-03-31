@@ -33,6 +33,11 @@
 #include "Engine/World.h"
 // [GOLD] EngineUtils.h removed — no more TActorIterator in this file (using ActorRegistry instead).
 
+namespace
+{
+	const FName T66CombatIterationEnemyTag(TEXT("T66.Dev.CombatIterationEnemy"));
+}
+
 AT66EnemyBase::AT66EnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -623,6 +628,7 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (Tags.Contains(T66CombatIterationEnemyTag)) return;
 	if (!OtherActor) return;
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor);
 	if (!Hero) return;
@@ -647,6 +653,33 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName EventType)
 {
 	if (Damage <= 0 || CurrentHP <= 0) return false;
+	if (Tags.Contains(T66CombatIterationEnemyTag))
+	{
+		const float EffectiveArmor = GetEffectiveArmor();
+		const int32 PreviewDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Damage) * (1.f - EffectiveArmor)));
+		const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				if (UT66FloatingCombatTextSubsystem* FloatingText = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
+				{
+					FloatingText->ShowDamageNumber(this, PreviewDamage, EventType);
+				}
+			}
+		}
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("[DEV][CombatIteration] DummyHit Enemy=%s Raw=%d Reduced=%d Armor=%.2f Source=%s Event=%s"),
+			*GetName(),
+			Damage,
+			PreviewDamage,
+			EffectiveArmor,
+			*SourceID.ToString(),
+			EventType.IsNone() ? TEXT("None") : *EventType.ToString());
+		return false;
+	}
 
 	// Apply enemy armor (damage reduction). Debuffs temporarily lower armor; can go negative for bonus damage.
 	const float EffectiveArmor = GetEffectiveArmor();

@@ -1,0 +1,16 @@
+{
+  "ImportGroups": [
+    {
+      "GroupName": "TopBarIcons",
+      "DestinationPath": "/Game/UI/Assets/TopBar",
+      "bReplaceExisting": true,
+      "Filenames": [
+        "C:/UE/T66/SourceAssets/UI/Dota/Generated/frontend_topbar_settings_icon.png",
+        "C:/UE/T66/SourceAssets/UI/Dota/Generated/frontend_topbar_language_icon.png",
+        "C:/UE/T66/SourceAssets/UI/Dota/Generated/frontend_topbar_achievement_coins_icon.png",
+        "C:/UE/T66/SourceAssets/UI/Dota/Generated/frontend_topbar_power_coupons_icon.png",
+        "C:/UE/T66/SourceAssets/UI/Dota/Generated/frontend_topbar_quit_icon.png"
+      ]
+    }
+  ]
+}

@@ -13,8 +13,6 @@
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66SaveMigration.h"
 #include "Core/T66UITexturePoolSubsystem.h"
-#include "UI/Dota/T66DotaSlate.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/Style/T66Style.h"
@@ -474,7 +472,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					.Justification(ETextJustify::Center)
 				]);
 		return bDotaTheme
-			? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeViewportFrame(PreviewContent, FMargin(8.f)))
+			? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(PreviewContent, FMargin(8.f)))
 			: StaticCastSharedRef<SWidget>(FT66Style::MakePanel(PreviewContent, FT66PanelParams(ET66PanelType::Panel).SetPadding(0.f)));
 	};
 
@@ -710,7 +708,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SBox).WidthOverride(IdolSlotSize).HeightOverride(IdolSlotSize)
 				[
 					bDotaTheme
-						? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeSlotFrame(
+						? StaticCastSharedRef<SWidget>(FT66Style::MakeSlotFrame(
 							IdolBrush.IsValid()
 								? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IdolBrush.Get()))
 								: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
@@ -729,7 +727,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			];
 	}
 	TSharedRef<SWidget> IdolsBorderedGrid = bDotaTheme
-		? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeScreenSurface(IdolSlotsRow, FMargin(4.f)))
+		? StaticCastSharedRef<SWidget>(FT66Style::MakeScreenSurface(IdolSlotsRow, FMargin(4.f)))
 		: StaticCastSharedRef<SWidget>(SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FT66Style::Tokens::Stroke)
@@ -784,7 +782,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					SNew(SBox).WidthOverride(InvSlotSize).HeightOverride(InvSlotSize)
 					[
 						bDotaTheme
-							? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeSlotFrame(
+							? StaticCastSharedRef<SWidget>(FT66Style::MakeSlotFrame(
 								(SlotBrush.IsValid() && bHasItem)
 									? StaticCastSharedRef<SWidget>(SNew(SImage).Image(SlotBrush.Get()))
 									: StaticCastSharedRef<SWidget>(SNew(SSpacer)),
@@ -811,7 +809,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		InvGridRef->AddSlot().AutoHeight()[RowBox];
 	}
 	TSharedRef<SWidget> InventorySlotGrid = bDotaTheme
-		? StaticCastSharedRef<SWidget>(FT66DotaSlate::MakeScreenSurface(InvGridRef, FMargin(4.f)))
+		? StaticCastSharedRef<SWidget>(FT66Style::MakeScreenSurface(InvGridRef, FMargin(4.f)))
 		: StaticCastSharedRef<SWidget>(SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FT66Style::Tokens::Stroke)
@@ -1011,7 +1009,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(bDotaTheme ? FT66DotaTheme::ScreenBackground() : FT66Style::Tokens::Bg)
+		.BorderBackgroundColor(bDotaTheme ? FT66Style::ScreenBackground() : FT66Style::Tokens::Bg)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -1019,7 +1017,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SBorder)
 				.Visibility(bDotaTheme ? EVisibility::Visible : EVisibility::Collapsed)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FT66DotaTheme::Scrim())
+				.BorderBackgroundColor(FT66Style::Scrim())
 			]
 			// Main full-screen panel
 			+ SOverlay::Slot()
@@ -1209,7 +1207,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(bDotaTheme ? FT66DotaTheme::Scrim() : FLinearColor(0.f, 0.f, 0.f, 0.7f))
+					.BorderBackgroundColor(bDotaTheme ? FT66Style::Scrim() : FLinearColor(0.f, 0.f, 0.f, 0.7f))
 					.Padding(0.f)
 					[
 						SNew(SBox)
@@ -1462,3 +1460,4 @@ void UT66RunSummaryScreen::OnViewLogClicked()
 	}
 	InvalidateLayoutAndVolatility();
 }
+

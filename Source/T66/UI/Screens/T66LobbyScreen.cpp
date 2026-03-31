@@ -2,7 +2,6 @@
 
 #include "UI/Screens/T66LobbyScreen.h"
 #include "UI/T66UIManager.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Core/T66GameInstance.h"
@@ -510,7 +509,7 @@ TSharedRef<SWidget> UT66LobbyScreen::BuildSlateUI()
 		];
 
 	TSharedRef<SWidget> Root = SNew(SBorder)
-		.BorderBackgroundColor(FT66DotaTheme::Background())
+		.BorderBackgroundColor(FT66Style::Background())
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -635,3 +634,4 @@ void UT66LobbyScreen::OnBackClicked()
 {
 	ShowModal(ET66ScreenType::LobbyBackConfirm);
 }
+

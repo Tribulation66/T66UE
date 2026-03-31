@@ -64,21 +64,28 @@ namespace
 			if (ImportedAssetPath && *ImportedAssetPath)
 			{
 				Entry.ImportedTexture = LoadObject<UTexture2D>(nullptr, ImportedAssetPath);
+				if (Entry.ImportedTexture.Get())
+				{
+					Entry.ImportedTexture->Filter = TextureFilter::TF_Trilinear;
+					Entry.ImportedTexture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+					Entry.ImportedTexture->NeverStream = true;
+				}
 			}
 
 			UTexture2D* Texture = Entry.ImportedTexture.Get();
 			if (!Texture && !FallbackFilePath.IsEmpty() && FPaths::FileExists(FallbackFilePath))
 			{
-				Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
-				if (Texture)
-				{
-					Texture->SRGB = true;
-					Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-					Texture->NeverStream = true;
-					Texture->Filter = TextureFilter::TF_Bilinear;
-					Texture->UpdateResource();
-					Entry.FileTexture.Reset(Texture);
-				}
+			Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
+			if (Texture)
+			{
+				Texture->SRGB = true;
+				Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+				Texture->NeverStream = true;
+				Texture->Filter = TextureFilter::TF_Trilinear;
+				Texture->CompressionSettings = TC_EditorIcon;
+				Texture->UpdateResource();
+				Entry.FileTexture.Reset(Texture);
+			}
 			}
 
 			if (Texture)

@@ -25,8 +25,6 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66MiasmaBoundary.h"
-#include "UI/Dota/T66DotaSlate.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/Style/T66Style.h"
@@ -83,11 +81,17 @@ namespace
 				FPaths::ProjectDir() / TEXT("SourceAssets/Shikashi's Fantasy Icons Pack v2/Shikashi's Fantasy Icons Pack v2/#1 - Transparent Icons.png"));
 			if (FPaths::FileExists(AtlasPath))
 			{
-				GMinimapIconAtlas = FImageUtils::ImportFileAsTexture2D(AtlasPath);
-				if (GMinimapIconAtlas)
-				{
-					GMinimapIconAtlas->AddToRoot();
-				}
+			GMinimapIconAtlas = FImageUtils::ImportFileAsTexture2D(AtlasPath);
+			if (GMinimapIconAtlas)
+			{
+				GMinimapIconAtlas->SRGB = true;
+				GMinimapIconAtlas->Filter = TextureFilter::TF_Trilinear;
+				GMinimapIconAtlas->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+				GMinimapIconAtlas->CompressionSettings = TC_EditorIcon;
+				GMinimapIconAtlas->NeverStream = true;
+				GMinimapIconAtlas->UpdateResource();
+				GMinimapIconAtlas->AddToRoot();
+			}
 			}
 		}
 
@@ -872,10 +876,10 @@ public:
 				FSlateLayoutTransform(FVector2f(static_cast<float>(Pos.X), static_cast<float>(Pos.Y))));
 		};
 
-		const FLinearColor MapBackgroundColor = bMinimap ? FT66DotaTheme::MinimapBackground() : FT66DotaTheme::Background();
-		const FLinearColor MapTerrainColor = WithAlpha(FT66DotaTheme::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
-		const FLinearColor GridColor = FT66DotaTheme::MinimapGrid();
-		const FLinearColor OutlineColor = WithAlpha(FT66DotaTheme::Border(), 0.88f);
+		const FLinearColor MapBackgroundColor = bMinimap ? FT66Style::MinimapBackground() : FT66Style::Background();
+		const FLinearColor MapTerrainColor = WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
+		const FLinearColor GridColor = FT66Style::MinimapGrid();
+		const FLinearColor OutlineColor = WithAlpha(FT66Style::Border(), 0.88f);
 
 		// Solid dark background fill.
 		FSlateDrawElement::MakeBox(
@@ -899,7 +903,7 @@ public:
 				MapTerrainColor
 			);
 
-			const FLinearColor LaneColor = WithAlpha(FT66DotaTheme::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
+			const FLinearColor LaneColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
 			const TArray<FVector2D> LaneA = {
 				FVector2D(Size.X * 0.08f, Size.Y * 0.78f),
 				FVector2D(Size.X * 0.24f, Size.Y * 0.62f),
@@ -956,9 +960,9 @@ public:
 			};
 
 			const TArray<FArea> Areas = {
-				{ NSLOCTEXT("T66.Map", "AreaStart", "START"), FVector2D(-10000.f, 0.f), FVector2D(3000.f, 3000.f), WithAlpha(FT66DotaTheme::MinimapFriendly(), 0.10f), WithAlpha(FT66DotaTheme::MinimapFriendly(), 0.28f) },
-				{ NSLOCTEXT("T66.Map", "AreaMain",  "MAIN"),  FVector2D(0.f, 0.f),      FVector2D(10000.f, 10000.f), WithAlpha(FT66DotaTheme::MinimapNeutral(), 0.06f), WithAlpha(FT66DotaTheme::MinimapNeutral(), 0.18f) },
-				{ NSLOCTEXT("T66.Map", "AreaBoss",  "BOSS"),  FVector2D(10000.f, 0.f),  FVector2D(3000.f, 3000.f), WithAlpha(FT66DotaTheme::MinimapEnemy(), 0.08f), WithAlpha(FT66DotaTheme::MinimapEnemy(), 0.25f) },
+				{ NSLOCTEXT("T66.Map", "AreaStart", "START"), FVector2D(-10000.f, 0.f), FVector2D(3000.f, 3000.f), WithAlpha(FT66Style::MinimapFriendly(), 0.10f), WithAlpha(FT66Style::MinimapFriendly(), 0.28f) },
+				{ NSLOCTEXT("T66.Map", "AreaMain",  "MAIN"),  FVector2D(0.f, 0.f),      FVector2D(10000.f, 10000.f), WithAlpha(FT66Style::MinimapNeutral(), 0.06f), WithAlpha(FT66Style::MinimapNeutral(), 0.18f) },
+				{ NSLOCTEXT("T66.Map", "AreaBoss",  "BOSS"),  FVector2D(10000.f, 0.f),  FVector2D(3000.f, 3000.f), WithAlpha(FT66Style::MinimapEnemy(), 0.08f), WithAlpha(FT66Style::MinimapEnemy(), 0.25f) },
 			};
 
 			for (const FArea& A : Areas)
@@ -990,7 +994,7 @@ public:
 					A.Label,
 					FT66Style::Tokens::FontBold(14),
 					ESlateDrawEffect::None,
-					WithAlpha(FT66DotaTheme::TextMuted(), 0.80f)
+					WithAlpha(FT66Style::TextMuted(), 0.80f)
 				);
 			}
 		}
@@ -1023,7 +1027,7 @@ public:
 					ToPaintGeo(TL - FVector2D(1.f, 1.f), FVector2D(MarkerSize + 2.f, MarkerSize + 2.f)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66DotaTheme::PanelOuter());
+					FT66Style::PanelOuter());
 
 				FSlateDrawElement::MakeBox(
 					OutDrawElements,
@@ -1031,7 +1035,7 @@ public:
 					ToPaintGeo(TL, FVector2D(MarkerSize, MarkerSize)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66DotaTheme::MinimapFriendly());
+					FT66Style::MinimapFriendly());
 
 				FSlateDrawElement::MakeBox(
 					OutDrawElements,
@@ -1057,7 +1061,7 @@ public:
 					AllottedGeometry.ToPaintGeometry(),
 					Diamond,
 					ESlateDrawEffect::None,
-					FT66DotaTheme::MinimapFriendly(),
+					FT66Style::MinimapFriendly(),
 					true,
 					2.5f
 				);
@@ -1086,7 +1090,7 @@ public:
 					ToPaintGeo(TL - FVector2D(1.f, 1.f), IconSize + FVector2D(2.f, 2.f)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66DotaTheme::PanelOuter());
+					FT66Style::PanelOuter());
 
 				FSlateDrawElement::MakeBox(
 					OutDrawElements,
@@ -1105,7 +1109,7 @@ public:
 					ToPaintGeo(P - FVector2D(R + 1.f, R + 1.f), FVector2D((R + 1.f) * 2.f, (R + 1.f) * 2.f)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66DotaTheme::PanelOuter()
+					FT66Style::PanelOuter()
 				);
 
 				FSlateDrawElement::MakeBox(
@@ -1127,7 +1131,7 @@ public:
 					M.Label,
 					FT66Style::Tokens::FontBold(bMinimap ? 10 : 12),
 					ESlateDrawEffect::None,
-					WithAlpha(FT66DotaTheme::Text(), bMinimap ? 0.70f : 0.92f)
+					WithAlpha(FT66Style::Text(), bMinimap ? 0.70f : 0.92f)
 				);
 			}
 		}
@@ -2017,14 +2021,14 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			{
 				AT66StageGate* A = WeakGate.Get();
 				if (!A) continue;
-				MapCache.Add({ A, EMapCacheMarkerType::Gate, FT66DotaTheme::Accent2(), NSLOCTEXT("T66.Map", "Gate", "GATE"), FName(TEXT("Gate")) });
+				MapCache.Add({ A, EMapCacheMarkerType::Gate, FT66Style::Accent2(), NSLOCTEXT("T66.Map", "Gate", "GATE"), FName(TEXT("Gate")) });
 			}
 			// Enemies stay as close-range red pips.
 			for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
 			{
 				AT66EnemyBase* Enemy = WeakEnemy.Get();
 				if (!IsValid(Enemy)) continue;
-				MapCache.Add({ Enemy, EMapCacheMarkerType::Enemy, FT66DotaTheme::MinimapEnemy(), FText::GetEmpty(), NAME_None });
+				MapCache.Add({ Enemy, EMapCacheMarkerType::Enemy, FT66Style::MinimapEnemy(), FText::GetEmpty(), NAME_None });
 			}
 			// Miasma boundary uses a dedicated icon marker on the full map.
 			for (const TWeakObjectPtr<AT66MiasmaBoundary>& WeakMiasma : Registry->GetMiasmaBoundaries())
@@ -2662,11 +2666,12 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	// Idol slots (6): rarity-colored when equipped, dark teal when empty.
 	UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
 	const TArray<FName>& EquippedIdols = IdolManager ? IdolManager->GetEquippedIdols() : RunState->GetEquippedIdols();
+	const bool bAllowPreviewLoadout = GIAsT66 && GIAsT66->bLoadAsPreview;
 	TArray<FName> PreviewIdolIDs;
 	TArray<ET66ItemRarity> PreviewIdolRarities;
 	const TArray<FName>* DisplayIdols = &EquippedIdols;
 	const TArray<ET66ItemRarity>* DisplayIdolRarities = nullptr;
-	if (!HasAnyNamedEntries(EquippedIdols))
+	if (bAllowPreviewLoadout && !HasAnyNamedEntries(EquippedIdols))
 	{
 		BuildPreviewIdolDisplay(GIAsT66, PreviewIdolIDs, PreviewIdolRarities);
 		if (HasAnyNamedEntries(PreviewIdolIDs))
@@ -2746,7 +2751,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	TArray<FT66InventorySlot> PreviewInventorySlots;
 	const TArray<FName>* DisplayInventory = &EquippedInventory;
 	const TArray<FT66InventorySlot>* DisplayInventorySlots = &EquippedInventorySlots;
-	if (!HasAnyNamedEntries(EquippedInventory))
+	if (bAllowPreviewLoadout && !HasAnyNamedEntries(EquippedInventory))
 	{
 		BuildPreviewInventoryDisplay(T66GI, PreviewInventoryIDs, PreviewInventorySlots);
 		if (HasAnyNamedEntries(PreviewInventoryIDs))
@@ -2884,14 +2889,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FText ScoreLabelText = Loc ? Loc->GetText_ScoreLabel() : NSLOCTEXT("T66.GameplayHUD", "ScoreLabel", "Score:");
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
-	const FLinearColor SlotOuterColor = bDotaTheme ? FT66DotaTheme::SlotOuter() : FLinearColor(0.f, 0.f, 0.f, 0.25f);
-	const FLinearColor SlotFrameColor = bDotaTheme ? FT66DotaTheme::SlotInner() : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
-	const FLinearColor SlotFillColor = bDotaTheme ? FT66DotaTheme::SlotFill() : FLinearColor(0.f, 0.f, 0.f, 0.f);
-	const FSlateBrush* DotaSlotFrameBrush = bDotaTheme ? FT66DotaSlate::GetInventorySlotFrameBrush() : nullptr;
-	const FLinearColor BossBarBackgroundColor = bDotaTheme ? FT66DotaTheme::BossBarBackground() : FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
-	const FLinearColor BossBarFillColor = bDotaTheme ? FT66DotaTheme::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
-	const FLinearColor PromptBackgroundColor = bDotaTheme ? FT66DotaTheme::PromptBackground() : FLinearColor(0.02f, 0.02f, 0.03f, 0.65f);
-	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FT66DotaTheme::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f);
+	const FLinearColor SlotOuterColor = bDotaTheme ? FT66Style::SlotOuter() : FLinearColor(0.f, 0.f, 0.f, 0.25f);
+	const FLinearColor SlotFrameColor = bDotaTheme ? FT66Style::SlotInner() : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
+	const FLinearColor SlotFillColor = bDotaTheme ? FT66Style::SlotFill() : FLinearColor(0.f, 0.f, 0.f, 0.f);
+	const FSlateBrush* DotaSlotFrameBrush = bDotaTheme ? FT66Style::GetInventorySlotFrameBrush() : nullptr;
+	const FLinearColor BossBarBackgroundColor = bDotaTheme ? FT66Style::BossBarBackground() : FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
+	const FLinearColor BossBarFillColor = bDotaTheme ? FT66Style::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
+	const FLinearColor PromptBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.02f, 0.02f, 0.03f, 0.65f);
+	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f);
 
 	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
 	HeartImages.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
@@ -3584,7 +3589,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.Padding(24.f, 24.f)
 		[
 			bDotaTheme
-				? FT66DotaSlate::MakeHudPanel(
+				? FT66Style::MakeHudPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -3594,21 +3599,21 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							SNew(STextBlock)
 							.Text(ScoreLabelText)
 							.Font(FT66Style::Tokens::FontBold(17))
-							.ColorAndOpacity(FSlateColor(FT66DotaTheme::TextMuted()))
+							.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 						[
 							SAssignNew(ScoreText, STextBlock)
 							.Text(FText::AsNumber(0))
 							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FSlateColor(FT66DotaTheme::Text()))
+							.ColorAndOpacity(FSlateColor(FT66Style::Text()))
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
 						[
 							SAssignNew(ScoreMultiplierText, STextBlock)
 							.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreMultiplierDefault", "x1.0"))
 							.Font(FT66Style::Tokens::FontBold(16))
-							.ColorAndOpacity(FSlateColor(FT66DotaTheme::Accent2()))
+							.ColorAndOpacity(FSlateColor(FT66Style::Accent2()))
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -3616,14 +3621,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						SAssignNew(DPSText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "DPSDefault", "DPS 0"))
 						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FSlateColor(FT66DotaTheme::TextMuted()))
+						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 					[
 						SAssignNew(SpeedRunText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
 						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FSlateColor(FT66DotaTheme::Text()))
+						.ColorAndOpacity(FSlateColor(FT66Style::Text()))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
@@ -3631,7 +3636,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						SAssignNew(SpeedRunTargetText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetDefault", "TO BEAT --:--.--"))
 						.Font(FT66Style::Tokens::FontBold(15))
-						.ColorAndOpacity(FSlateColor(FT66DotaTheme::TextMuted()))
+						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
 						.Visibility(EVisibility::Collapsed)
 					],
 					NSLOCTEXT("T66.GameplayHUD", "CombatTitle", "COMBAT"),
@@ -3774,7 +3779,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.MinDesiredHeight(HUDSidePanelMinHeight)
 						[
 							bDotaTheme
-								? FT66DotaSlate::MakeHudPanel(IdolSlotsRef, NSLOCTEXT("T66.GameplayHUD", "IdolsTitle", "IDOLS"), FMargin(10.f, 10.f))
+								? FT66Style::MakeHudPanel(IdolSlotsRef, NSLOCTEXT("T66.GameplayHUD", "IdolsTitle", "IDOLS"), FMargin(10.f, 10.f))
 								: StaticCastSharedRef<SWidget>(
 									SNew(SOverlay)
 									+ SOverlay::Slot()
@@ -3883,17 +3888,17 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									[
 										SNew(SBorder)
 										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(FT66DotaTheme::PanelOuter())
+										.BorderBackgroundColor(FT66Style::PanelOuter())
 										.Padding(1.f)
 										[
 											SNew(SBorder)
 											.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-											.BorderBackgroundColor(FT66DotaTheme::Border())
+											.BorderBackgroundColor(FT66Style::Border())
 											.Padding(1.f)
 											[
 												SAssignNew(PortraitBorder, SBorder)
 												.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-												.BorderBackgroundColor(FT66DotaTheme::PanelInner())
+												.BorderBackgroundColor(FT66Style::PanelInner())
 											]
 										]
 									]
@@ -3911,7 +3916,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SNew(STextBlock)
 										.Text(PortraitLabel)
 										.Font(FT66Style::Tokens::FontBold(12))
-										.ColorAndOpacity(FT66DotaTheme::TextMuted())
+										.ColorAndOpacity(FT66Style::TextMuted())
 										.Justification(ETextJustify::Center)
 										.Visibility_Lambda([this]() -> EVisibility
 										{
@@ -3939,7 +3944,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 												SAssignNew(LevelText, STextBlock)
 												.Text(FText::AsNumber(1))
 												.Font(FT66Style::Tokens::FontBold(14))
-												.ColorAndOpacity(FT66DotaTheme::Accent2())
+												.ColorAndOpacity(FT66Style::Accent2())
 												.Justification(ETextJustify::Center)
 											]
 										]
@@ -4010,7 +4015,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.MinDesiredHeight(HUDSidePanelMinHeight)
 					[
 						bDotaTheme
-							? FT66DotaSlate::MakeHudPanel(
+							? FT66Style::MakeHudPanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)
 								[
@@ -4022,7 +4027,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SAssignNew(StatDamageText, STextBlock)
 										.Text(FText::FromString(TEXT("Dmg: F")))
 										.Font(FT66Style::Tokens::FontBold(16))
-										.ColorAndOpacity(FT66DotaTheme::Text())
+										.ColorAndOpacity(FT66Style::Text())
 									]
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)
@@ -4035,7 +4040,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SAssignNew(StatAttackSpeedText, STextBlock)
 										.Text(FText::FromString(TEXT("AS: F")))
 										.Font(FT66Style::Tokens::FontBold(16))
-										.ColorAndOpacity(FT66DotaTheme::Text())
+										.ColorAndOpacity(FT66Style::Text())
 									]
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)
@@ -4048,7 +4053,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SAssignNew(StatAttackScaleText, STextBlock)
 										.Text(FText::FromString(TEXT("Scale: F")))
 										.Font(FT66Style::Tokens::FontBold(16))
-										.ColorAndOpacity(FT66DotaTheme::Text())
+										.ColorAndOpacity(FT66Style::Text())
 									]
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)
@@ -4061,7 +4066,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SAssignNew(StatArmorText, STextBlock)
 										.Text(FText::FromString(TEXT("Armor: F")))
 										.Font(FT66Style::Tokens::FontBold(16))
-										.ColorAndOpacity(FT66DotaTheme::Text())
+										.ColorAndOpacity(FT66Style::Text())
 									]
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)
@@ -4074,7 +4079,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SAssignNew(StatEvasionText, STextBlock)
 										.Text(FText::FromString(TEXT("Eva: F")))
 										.Font(FT66Style::Tokens::FontBold(16))
-										.ColorAndOpacity(FT66DotaTheme::Text())
+										.ColorAndOpacity(FT66Style::Text())
 									]
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 3.f)
@@ -4087,7 +4092,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SAssignNew(StatLuckText, STextBlock)
 										.Text(FText::FromString(TEXT("Luck: F")))
 										.Font(FT66Style::Tokens::FontBold(16))
-										.ColorAndOpacity(FT66DotaTheme::Text())
+										.ColorAndOpacity(FT66Style::Text())
 									]
 								]
 								+ SVerticalBox::Slot().AutoHeight()
@@ -4100,7 +4105,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										SAssignNew(StatSpeedText, STextBlock)
 										.Text(FText::FromString(TEXT("Speed: F")))
 										.Font(FT66Style::Tokens::FontBold(16))
-										.ColorAndOpacity(FT66DotaTheme::Text())
+										.ColorAndOpacity(FT66Style::Text())
 									]
 								],
 								NSLOCTEXT("T66.GameplayHUD", "StatsTitleUpper", "STATS"),
@@ -4377,7 +4382,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.HeightOverride(MinimapWidth)
 					[
 						bDotaTheme
-							? FT66DotaSlate::MakeMinimapFrame(
+							? FT66Style::MakeMinimapFrame(
 								SAssignNew(MinimapWidget, ST66WorldMapWidget)
 								.bMinimap(true)
 								.bShowLabels(false),
@@ -4466,7 +4471,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				SAssignNew(InventoryPanelBox, SBox)
 				[
 					bDotaTheme
-						? FT66DotaSlate::MakeHudPanel(
+						? FT66Style::MakeHudPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().Padding(4.f, 0.f, 4.f, 8.f)
 							[
@@ -4476,21 +4481,21 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									SAssignNew(NetWorthText, STextBlock)
 									.Text(NetWorthInit)
 									.Font(FT66Style::Tokens::FontBold(17))
-									.ColorAndOpacity(FT66DotaTheme::TextMuted())
+									.ColorAndOpacity(FT66Style::TextMuted())
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 								[
 									SAssignNew(GoldText, STextBlock)
 									.Text(GoldInit)
 									.Font(FT66Style::Tokens::FontBold(18))
-									.ColorAndOpacity(FT66DotaTheme::Accent2())
+									.ColorAndOpacity(FT66Style::Accent2())
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 								[
 									SAssignNew(DebtText, STextBlock)
 									.Text(OweInit)
 									.Font(FT66Style::Tokens::FontBold(18))
-									.ColorAndOpacity(FT66DotaTheme::Danger())
+									.ColorAndOpacity(FT66Style::Danger())
 								]
 							]
 							+ SVerticalBox::Slot().AutoHeight()
@@ -4896,8 +4901,8 @@ static void T66_ApplyWorldDialogueSelection(
 		if (OptionBorders[i].IsValid())
 		{
 			OptionBorders[i]->SetBorderBackgroundColor(bSelected
-				? (FT66Style::IsDotaTheme() ? FT66DotaTheme::SelectionFill() : FLinearColor(0.18f, 0.18f, 0.26f, 0.95f))
-				: (FT66Style::IsDotaTheme() ? FT66DotaTheme::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f)));
+				? (FT66Style::IsDotaTheme() ? FT66Style::SelectionFill() : FLinearColor(0.18f, 0.18f, 0.26f, 0.95f))
+				: (FT66Style::IsDotaTheme() ? FT66Style::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f)));
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{

@@ -24,7 +24,7 @@ namespace
 		return PC && PC->IsPaused();
 	}
 
-	FLinearColor T66FrontendShellFill()
+	FLinearColor T66AchievementsShellFill()
 	{
 		return FLinearColor(0.004f, 0.005f, 0.010f, 0.985f);
 	}
@@ -161,14 +161,15 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	const FLinearColor ShellFill = T66FrontendShellFill();
+	const FLinearColor ShellFill = T66AchievementsShellFill();
 	const FLinearColor InsetFill = T66AchievementsInsetFill();
 	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
 	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	RefreshAchievements();
 
-	return SNew(SBox)
+	const TSharedRef<SWidget> Root =
+		SNew(SBox)
 		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
 		[
 			FT66Style::MakePanel(
@@ -283,6 +284,9 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				],
 				FT66PanelParams(ET66PanelType::Panel).SetColor(ShellFill))
 		];
+
+	RebuildAchievementList();
+	return Root;
 }
 
 void UT66AchievementsScreen::RebuildAchievementList()
@@ -459,8 +463,6 @@ FReply UT66AchievementsScreen::HandleClaimClicked(FName AchievementID)
 	{
 		Achievements->TryClaimAchievement(AchievementID);
 	}
-
-	RebuildAchievementList();
 	return FReply::Handled();
 }
 
@@ -471,5 +473,11 @@ void UT66AchievementsScreen::HandleLanguageChanged(ET66Language NewLanguage)
 
 void UT66AchievementsScreen::HandleAchievementsStateChanged()
 {
+	if (UIManager)
+	{
+		UIManager->RebuildAllVisibleUI();
+		return;
+	}
+
 	FT66Style::DeferRebuild(this);
 }

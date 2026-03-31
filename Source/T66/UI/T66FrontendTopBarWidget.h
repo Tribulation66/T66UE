@@ -58,6 +58,8 @@ protected:
 	TSharedPtr<FSlateBrush> TopBarPlateBrush;
 	TSharedPtr<FSlateBrush> InactiveTabBrush;
 	TSharedPtr<FSlateBrush> ActiveTabBrush;
+	TSharedPtr<FSlateBrush> HomeInactiveTabBrush;
+	TSharedPtr<FSlateBrush> HomeActiveTabBrush;
 	TSharedPtr<FSlateBrush> NavSeparatorBrush;
 	TSharedPtr<FSlateBrush> SettingsSlotBrush;
 	TSharedPtr<FSlateBrush> UtilitySlotBrush;

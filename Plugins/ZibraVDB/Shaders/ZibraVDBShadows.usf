@@ -1,0 +1,360 @@
+#include "/Engine/Private/Common.ush"
+#include "/Engine/Private/RectLight.ush"
+#include "/Engine/Private/ReflectionEnvironmentShared.ush"
+#include "ZibraVDBRenderingUtils.ush"
+
+#define ZIB_MAX_LIGHT_COUNT 16
+#define ZIB_AO_INTENSITY_MULT 6
+#define ZIB_RECT_LIGHT_INTENSITY_MULT 0.05
+#define ZIB_AO_DIR_COUNT 6
+#define ZIB_EPS 1e-5f
+
+#include "ZibraVDBVSMUtils.ush"
+
+SamplerState TextureSampler;
+Texture3D<float> Density;
+RWTexture3D<float4> IlluminationOUT;
+
+int LightCount;
+float4 Light_Position_AttenuationRadius[ZIB_MAX_LIGHT_COUNT];
+float4 Light_PositionWS_EnableReceivedShadow[ZIB_MAX_LIGHT_COUNT];
+float4 Light_Color_EnableRaymarch[ZIB_MAX_LIGHT_COUNT];
+float4 Light_Direction_RadiusLimit[ZIB_MAX_LIGHT_COUNT];
+float4 Light_RectData[ZIB_MAX_LIGHT_COUNT];
+float4 Light_RectTangent[ZIB_MAX_LIGHT_COUNT];
+DECLARE_SCALAR_ARRAY(float, Light_SourceRadius, ZIB_MAX_LIGHT_COUNT);
+uint SmoothReceivedShadows;
+
+float3 GetLightPosition(int i)
+{
+    return Light_Position_AttenuationRadius[i].xyz;
+}
+
+float GetLightAttenuationRadiusWS(int i)
+{
+    return Light_Position_AttenuationRadius[i].w;
+}
+
+float3 GetLightColor(int i)
+{
+    return Light_Color_EnableRaymarch[i].xyz;
+}
+
+uint GetEnableRaymarch(int i)
+{
+    return asuint(Light_Color_EnableRaymarch[i].w);
+}
+
+float3 GetLightDirection(int i)
+{
+    return Light_Direction_RadiusLimit[i].xyz;
+}
+
+// Return cos of radius limits.
+float2 GetLightRadiusLimits(int i)
+{
+    uint packedLimits = asuint(Light_Direction_RadiusLimit[i].w);
+
+    if (packedLimits == -1)
+    {
+        return float2(-1., -1.);
+    }
+    float innerLimit = uint16ToCos(packedLimits >> 16);
+    float outerLimit = uint16ToCos(packedLimits & UINT16_MAX);
+    return float2(innerLimit, outerLimit);
+
+}
+
+float3 GetLightPositionWS(int i)
+{
+    return Light_PositionWS_EnableReceivedShadow[i].xyz;
+}
+
+uint GetEnableReceivedShadow(int i)
+{
+    return asuint(Light_PositionWS_EnableReceivedShadow[i].w);
+}
+
+float GetLightSourceRadius(int i)
+{
+    return GET_SCALAR_ARRAY_ELEMENT(Light_SourceRadius, i);
+}
+
+float4 GetLightRectData(int i)
+{
+    return Light_RectData[i];
+}
+
+float3 GetLightRectTangent(int i)
+{
+    return Light_RectTangent[i].xyz;
+}
+
+bool IsRectLight(int i)
+{
+    return Light_RectData[i].x > 0.0f && Light_RectData[i].y > 0.0f;
+}
+
+float4x4 BoxToWorld;
+float4x4 WorldToBox;
+float3 CameraPositionWS;
+float StepSize;
+int MaxStepCount;
+float ShadowIntensity;
+float DensityScale;
+float3 AbsorptionColor;
+int AmbientLightingMode;
+float AmbientLightIntensity;
+float3 AmbientLightingColor;
+float AOShadowIntensity;
+float AORadius;
+int AORayMarcherStepCount;
+
+#define AMBIENT_LIGHTING_MODE_DISABLED 0
+#define AMBIENT_LIGHTING_MODE_SAMPLE_SKY 1
+#define AMBIENT_LIGHTING_MODE_CONSTANT 2
+
+bool IsInside(float3 p, float3 size)
+{
+    return all((p >= 0.0)) && all(p < size);
+}
+
+float3 ShadowingFunction(float3 t)
+{
+    return 0.005 * exp(-0.001 * t) + 0.1 * exp(-0.03 * t) + exp(-0.25 * t);
+}
+
+float3 DensityRaycast(Texture3D<float> Volume, SamplerState Sampler, float3 Size, float3 rayOrigin, float3 rayDir, float maxDist)
+{
+    float traveled = 0.0;
+    float opticalDepth = 0.0;
+
+    for (int i = 0; i < MaxStepCount; i++)
+    {
+        traveled += StepSize;
+        if (traveled > maxDist)
+            break;
+        float3 p = rayOrigin + traveled * rayDir;
+
+        if (!IsInside(p, Size))
+            break;
+        float density = Volume.SampleLevel(Sampler, Texel2UVW(p, Size), 0);
+        opticalDepth += density * StepSize;
+    }
+
+    return ShadowingFunction(DensityScale * ShadowIntensity * AbsorptionColor * opticalDepth);
+}
+
+float3 SampleAmbientColor(float3 worldDir)
+{
+    if (AmbientLightingMode == AMBIENT_LIGHTING_MODE_SAMPLE_SKY)
+    {
+        return View.SkyLightColor.rgb * GetSkySHDiffuseSimple(worldDir);
+    }
+    if (AmbientLightingMode == AMBIENT_LIGHTING_MODE_CONSTANT)
+    {
+        return AmbientLightingColor;
+    }
+    return 0.0;
+}
+
+float SampleDensityAtUVW(float3 uvw)
+{
+    return Density.SampleLevel(TextureSampler, uvw, 0).x;
+}
+
+float3 ComputeLightContribution(int i, float3 voxelPos, float3 voxelPosWS)
+{
+    float3 lightPos = GetLightPosition(i);
+    float3 lightPosWS = GetLightPositionWS(i);
+    float3 lightDirWS = normalize(lightPosWS - voxelPosWS);
+    float3 light = GetLightColor(i);
+    float attenuationRadiusWS = GetLightAttenuationRadiusWS(i);
+    float3 lightDirection = GetLightDirection(i);
+    float2 lightRadiusLimits = GetLightRadiusLimits(i);
+    float lightSourceRadius = GetLightSourceRadius(i);
+
+    // If radiusAttenuation is set, then this light is point, spot, or rect light.
+    if (attenuationRadiusWS > 0.0f)
+    {
+        float distFromCenter = length(lightPosWS - voxelPosWS);
+        float attenuationRadius = smoothstep(attenuationRadiusWS, 0.0, distFromCenter);
+
+        // Rect lights get inverse-square falloff from RectIrradianceLambert,
+        // so only apply the attenuation radius windowing for them.
+        if (!IsRectLight(i))
+        {
+            // A factor of 100 is needed to match UE's light intensity units.
+            // However, voxels inside the light source radius would be severely overexposed at 100x,
+            // so we use 1x inside. The smoothstep transition over 10% of the radius prevents
+            // overexposed voxels at the rim where the multiplier would otherwise jump from 1 to 100.
+            // When lightSourceRadius is 0 (point/spot lights), the transition band collapses to
+            // epsilon and the 100x factor applies everywhere, giving a clean inverse-square falloff.
+            float lightSDF = distFromCenter - lightSourceRadius;
+            float sourceRadiusIntensity = lerp(1, 100, smoothstep(0, max(lightSourceRadius * 0.1f, ZIB_EPS), lightSDF));
+            float distToLight = max(1.0f, lightSDF);
+            light *= sourceRadiusIntensity / (distToLight * distToLight);
+        }
+
+        light *= attenuationRadius;
+    }
+
+    // Voxel isn't lit after attenuation - early return
+    if (!any(light > ZIB_EPS)) { return 0.0; }
+
+    // Spot light: apply cone falloff
+    if (lightRadiusLimits.x >= 0.0f || lightRadiusLimits.y >= 0.0f)
+    {
+        float dotFromDirection = dot(lightDirWS, -lightDirection);
+        light *= smoothstep(lightRadiusLimits.y, lightRadiusLimits.x, dotFromDirection);
+    }
+    // Rect light: apply rect irradiance falloff
+    else if (IsRectLight(i))
+    {
+        if (dot(lightDirWS, -lightDirection) <= 0.0f)
+        {
+            return 0.0f;
+        }
+        float4 rectData = GetLightRectData(i);
+        FRect rect = GetRect(lightPosWS - voxelPosWS, -lightDirection, GetLightRectTangent(i), rectData.x * 0.5f,
+            rectData.y * 0.5f, rectData.z, rectData.w, true);
+        if (rect.Extent.x > 0 && rect.Extent.y > 0)
+        {
+            float NoL;
+            float Falloff;
+            RectIrradianceLambert(0, rect, Falloff, NoL);
+            light *= Falloff * ZIB_RECT_LIGHT_INTENSITY_MULT;
+        }
+        else
+        {
+            return 0.0f;
+        }
+    }
+
+    // Voxel outside spot/rect cone - early return
+    if (!any(light > ZIB_EPS)) { return 0.0; }
+
+    if (GetEnableReceivedShadow(i))
+    {
+        float shadow = ReceivedShadowVSM(voxelPosWS, i);
+
+        if (SmoothReceivedShadows)
+        {
+            float3 axis[] = {BoxToWorld[0].xyz, BoxToWorld[1].xyz, BoxToWorld[2].xyz};
+            for (uint n = 0; n < 3; ++n)
+            {
+                shadow += ReceivedShadowVSM(voxelPosWS + axis[n], i);
+                shadow += ReceivedShadowVSM(voxelPosWS - axis[n], i);
+            }
+            shadow /= 7.0;
+        }
+
+        light *= shadow;
+
+        // Voxel completely dark after shadow cast, no need to perform further light calculation
+        if (!any(light > ZIB_EPS)) { return 0.0; }
+    }
+
+    if (GetEnableRaymarch(i))
+    {
+        float3 rayDir;
+        float maxDist;
+        // Directional light: use direction, not position
+        if (attenuationRadiusWS <= 0.0f)
+        {
+            rayDir = normalize(mul(float4(-lightDirection, 0.0), WorldToBox).xyz);
+            maxDist = FLOAT_MAX;
+        }
+        else
+        {
+            float3 toLight = lightPos - voxelPos;
+            maxDist = length(toLight);
+            rayDir = toLight / maxDist;
+        }
+        light *= DensityRaycast(Density, TextureSampler, GridSize, voxelPos, rayDir, maxDist);
+    }
+
+    return light;
+}
+
+[numthreads(8, 8, 8)]
+void MainCS(uint3 id : SV_DispatchThreadID)
+{
+    if (any(id >= uint3(GridSize)))
+    {
+        return;
+    }
+
+    //required to get proper padding for interpolation when skipping empty space
+    float sum = 0.0;
+    float3 TextureInPos = id - 0.5;
+    for (uint i = 0; i < 2; ++i)
+    {
+        for (uint j = 0; j < 2; ++j)
+        {
+            for (uint k = 0; k < 2; ++k)
+            {
+                float3 texturePos = TextureInPos + float3(i, j, k);
+                sum += Density.SampleLevel(TextureSampler, Texel2UVW(texturePos, GridSize), 0);
+            }
+        }
+    }
+
+    //skip empty space
+    if (sum < ZIB_EPS)
+    {
+        IlluminationOUT[id] = 0.0;
+        return;
+    }
+
+    float3 voxelPos = float3(id) + 0.5f;
+    float3 voxelPosWS = mul(float4(voxelPos, 1.0), BoxToWorld).xyz;
+
+    float3 totalLight = 0.0;
+
+    for (int i = 0; i < LightCount; ++i)
+    {
+        totalLight += ComputeLightContribution(i, voxelPos, voxelPosWS);
+    }
+
+    if (AmbientLightingMode != AMBIENT_LIGHTING_MODE_DISABLED)
+    {
+        const float3 dirs[ZIB_AO_DIR_COUNT] = {
+            float3(1, 0, 0), float3(-1, 0, 0),
+            float3(0, 1, 0), float3(0, -1, 0),
+            float3(0, 0, 1), float3(0, 0, -1)
+        };
+
+        float3 uvw = Texel2UVW(voxelPos, GridSize);
+        float3 ambientLight = 0.0;
+        float aoStepSize = AORadius / float(AORayMarcherStepCount);
+
+        for (int dir = 0; dir < ZIB_AO_DIR_COUNT; dir++)
+        {
+            float3 rd = dirs[dir] * aoStepSize;
+            
+            float2 weightedDensity = float2(0.0, 0.0);
+            for (int step = 1; step <= AORayMarcherStepCount; step++)
+            {
+                float3 p = uvw + rd * step;
+                if (all(p >= 0.0) && all(p <= 1.0))
+                {
+                    float dist = aoStepSize * step;
+                    float w = exp(-dist / AORadius);
+                    weightedDensity += float2(SampleDensityAtUVW(p), 1.0) * w;
+                }
+            }
+            float dirDensity = weightedDensity.x / max(weightedDensity.y, ZIB_EPS);
+
+            float visibility = exp(-AOShadowIntensity * ZIB_AO_INTENSITY_MULT * DensityScale * dirDensity);
+            float3 worldDir = normalize(mul(float4(dirs[dir], 0.0), BoxToWorld).xyz);
+            ambientLight += visibility * SampleAmbientColor(worldDir);
+        }
+        ambientLight /= float(ZIB_AO_DIR_COUNT);
+
+        const float AmbientLightIntensityScaler = 5.0;
+        totalLight += ambientLight * AmbientLightIntensity * AmbientLightIntensityScaler;
+    }
+
+    IlluminationOUT[id] = float4(0.05 * totalLight, 1.0);
+}

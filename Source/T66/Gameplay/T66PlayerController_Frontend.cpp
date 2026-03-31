@@ -22,11 +22,13 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66UnlocksScreen.h"
 #include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66CasinoOverlayWidget.h"
+#include "UI/T66CircusOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66LoadPreviewOverlayWidget.h"
@@ -55,6 +57,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "UI/Style/T66Style.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66GamblerNPC.h"
@@ -351,6 +354,143 @@ namespace
 }
 #endif // !UE_BUILD_SHIPPING
 
+TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenType ScreenType) const
+{
+	if (FT66Style::IsDotaTheme())
+	{
+		if (const TSubclassOf<UT66ScreenBase>* DotaClass = DotaScreenClasses.Find(ScreenType))
+		{
+			if (*DotaClass)
+			{
+				return *DotaClass;
+			}
+		}
+	}
+
+	if (const TSubclassOf<UT66ScreenBase>* ScreenClass = ScreenClasses.Find(ScreenType))
+	{
+		return *ScreenClass;
+	}
+
+	switch (ScreenType)
+	{
+	case ET66ScreenType::HeroGrid:
+		return UT66HeroGridScreen::StaticClass();
+	case ET66ScreenType::CompanionGrid:
+		return UT66CompanionGridScreen::StaticClass();
+	case ET66ScreenType::SaveSlots:
+		return UT66SaveSlotsScreen::StaticClass();
+	case ET66ScreenType::Lobby:
+		return UT66LobbyScreen::StaticClass();
+	case ET66ScreenType::LobbyReadyCheck:
+		return UT66LobbyReadyCheckModal::StaticClass();
+	case ET66ScreenType::LobbyBackConfirm:
+		return UT66LobbyBackConfirmModal::StaticClass();
+	case ET66ScreenType::PauseMenu:
+		return UT66PauseMenuScreen::StaticClass();
+	case ET66ScreenType::Achievements:
+		return UT66AchievementsScreen::StaticClass();
+	case ET66ScreenType::Unlocks:
+		return UT66UnlocksScreen::StaticClass();
+	case ET66ScreenType::ReportBug:
+		return UT66ReportBugScreen::StaticClass();
+	case ET66ScreenType::Settings:
+		return UT66SettingsScreen::StaticClass();
+	case ET66ScreenType::RunSummary:
+		return UT66RunSummaryScreen::StaticClass();
+	case ET66ScreenType::PlayerSummaryPicker:
+		return UT66PlayerSummaryPickerScreen::StaticClass();
+	case ET66ScreenType::PowerUp:
+		return UT66PowerUpScreen::StaticClass();
+	case ET66ScreenType::Leaderboard:
+		return UT66LeaderboardScreen::StaticClass();
+	case ET66ScreenType::AccountStatus:
+		return UT66AccountStatusScreen::StaticClass();
+	default:
+		return nullptr;
+	}
+}
+
+TSubclassOf<UT66GameplayHUDWidget> AT66PlayerController::ResolveGameplayHUDClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaGameplayHUDClass)
+	{
+		return DotaGameplayHUDClass;
+	}
+
+	return UT66GameplayHUDWidget::StaticClass();
+}
+
+TSubclassOf<UT66GamblerOverlayWidget> AT66PlayerController::ResolveGamblerOverlayClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaGamblerOverlayClass)
+	{
+		return DotaGamblerOverlayClass;
+	}
+
+	return UT66GamblerOverlayWidget::StaticClass();
+}
+
+TSubclassOf<UT66CircusOverlayWidget> AT66PlayerController::ResolveCircusOverlayClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaCircusOverlayClass)
+	{
+		return DotaCircusOverlayClass;
+	}
+
+	return UT66CircusOverlayWidget::StaticClass();
+}
+
+TSubclassOf<UT66VendorOverlayWidget> AT66PlayerController::ResolveVendorOverlayClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaVendorOverlayClass)
+	{
+		return DotaVendorOverlayClass;
+	}
+
+	return UT66VendorOverlayWidget::StaticClass();
+}
+
+TSubclassOf<UT66CollectorOverlayWidget> AT66PlayerController::ResolveCollectorOverlayClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaCollectorOverlayClass)
+	{
+		return DotaCollectorOverlayClass;
+	}
+
+	return UT66CollectorOverlayWidget::StaticClass();
+}
+
+TSubclassOf<UT66CowardicePromptWidget> AT66PlayerController::ResolveCowardicePromptClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaCowardicePromptClass)
+	{
+		return DotaCowardicePromptClass;
+	}
+
+	return UT66CowardicePromptWidget::StaticClass();
+}
+
+TSubclassOf<UT66LoadPreviewOverlayWidget> AT66PlayerController::ResolveLoadPreviewOverlayClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaLoadPreviewOverlayClass)
+	{
+		return DotaLoadPreviewOverlayClass;
+	}
+
+	return UT66LoadPreviewOverlayWidget::StaticClass();
+}
+
+TSubclassOf<UT66IdolAltarOverlayWidget> AT66PlayerController::ResolveIdolAltarOverlayClass() const
+{
+	if (FT66Style::IsDotaTheme() && DotaIdolAltarOverlayClass)
+	{
+		return DotaIdolAltarOverlayClass;
+	}
+
+	return UT66IdolAltarOverlayWidget::StaticClass();
+}
+
 
 void AT66PlayerController::ToggleDevConsole()
 {
@@ -462,7 +602,6 @@ void AT66PlayerController::AutoLoadScreenClasses()
 
 	static const FScreenPathMapping ScreenPaths[] = {
 		{ ET66ScreenType::MainMenu, TEXT("/Game/Blueprints/UI/WBP_MainMenu.WBP_MainMenu_C") },
-		{ ET66ScreenType::PartySizePicker, TEXT("/Game/Blueprints/UI/WBP_PartySizePicker.WBP_PartySizePicker_C") },
 		{ ET66ScreenType::HeroSelection, TEXT("/Game/Blueprints/UI/WBP_HeroSelection.WBP_HeroSelection_C") },
 		{ ET66ScreenType::CompanionSelection, TEXT("/Game/Blueprints/UI/WBP_CompanionSelection.WBP_CompanionSelection_C") },
 		{ ET66ScreenType::SaveSlots, TEXT("/Game/Blueprints/UI/WBP_SaveSlots.WBP_SaveSlots_C") },
@@ -559,22 +698,38 @@ void AT66PlayerController::InitializeUI()
 	// Register all screen classes
 	for (const auto& Pair : ScreenClasses)
 	{
-		if (Pair.Value)
+		if (TSubclassOf<UT66ScreenBase> ResolvedClass = ResolveScreenClass(Pair.Key))
 		{
-			UIManager->RegisterScreenClass(Pair.Key, Pair.Value);
+			UIManager->RegisterScreenClass(Pair.Key, ResolvedClass);
 			UE_LOG(LogTemp, Log, TEXT("Registered screen class for type %d"), static_cast<int32>(Pair.Key));
 		}
 	}
 
 	// Ensure core modal screens are available in frontend too (leaderboard row opens Run Summary / Pick the Player).
-	UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, UT66RunSummaryScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, UT66PlayerSummaryPickerScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, UT66PowerUpScreen::StaticClass());
-	UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, UT66LeaderboardScreen::StaticClass());
-	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
-	if (!ScreenClasses.Contains(ET66ScreenType::AccountStatus) || ScreenClasses[ET66ScreenType::AccountStatus] == nullptr)
+	if (TSubclassOf<UT66ScreenBase> RunSummaryClass = ResolveScreenClass(ET66ScreenType::RunSummary))
 	{
-		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, UT66AccountStatusScreen::StaticClass());
+		UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, RunSummaryClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> SummaryPickerClass = ResolveScreenClass(ET66ScreenType::PlayerSummaryPicker))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> PowerUpClass = ResolveScreenClass(ET66ScreenType::PowerUp))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, PowerUpClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> UnlocksClass = ResolveScreenClass(ET66ScreenType::Unlocks))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::Unlocks, UnlocksClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, LeaderboardClass);
+	}
+	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
+	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, AccountStatusClass);
 	}
 
 	bUIInitialized = true;

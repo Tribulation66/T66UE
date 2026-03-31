@@ -6,7 +6,6 @@
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UI/Components/T66LeaderboardPanel.h"
-#include "UI/Dota/T66DotaSlate.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
 
@@ -82,7 +81,7 @@ TSharedRef<SWidget> UT66LeaderboardScreen::BuildSlateUI()
 		.Padding(FMargin(40.f))
 		[
 			FT66Style::IsDotaTheme()
-				? FT66DotaSlate::MakeScreenSurface(Content, FMargin(20.f))
+				? FT66Style::MakeScreenSurface(Content, FMargin(20.f))
 				: Content
 		];
 }
@@ -106,3 +105,4 @@ FReply UT66LeaderboardScreen::HandleBackClicked()
 	UIManager->CloseModal();
 	return FReply::Handled();
 }
+

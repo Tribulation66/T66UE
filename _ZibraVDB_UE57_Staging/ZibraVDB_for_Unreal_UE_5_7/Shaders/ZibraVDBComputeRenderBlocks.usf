@@ -1,0 +1,346 @@
+#include "/Engine/Private/Common.ush"
+
+#include "ZibraShaderCommon.ush"
+#include "ZibraVDBRenderingUtils.ush"
+
+int4 BlockGridSize;
+int4 TextureSize;
+
+uint SparseBlockGridSize;
+uint SparseBlockGridSizeMultiply;
+uint SparseBlockGridSizeShift1;
+uint SparseBlockGridSizeShift2;
+
+float rb_flameScale;
+float rb_temperatureScale;
+int rb_offset;
+uint SpatialBlockCount;
+
+float rb_densityScale;
+float DensityChannelScale;
+float DensityDenormalizationScale;
+
+float3 rb_maskSpherePos;
+float rb_maskSphereRadius;
+float rb_maskSphereFalloff;
+float4x4 rb_frameTransform;
+int rb_maskEnabled;
+
+float bEnableEmissionMasking;
+float bEnableFlameEmissionMasking;
+float bEnableTemperatureEmissionMasking;
+float EmissionMaskCenter;
+float EmissionMaskWidth;
+float EmissionMaskIntensity;
+float EmissionMaskRamp;
+
+Buffer<float> Input;
+ByteAddressBuffer BlockBuffer;
+Texture3D<uint> BlockIndexTexture;
+Texture3D<float4> Illumination;
+SamplerState samplerIllumination;
+RWTexture3D<float3> SparseBlocks;
+RWTexture3D<float> SparseBlocksDensity;
+RWTexture3D<float> MaxDensityPerBlockTexture;
+Texture2D<float4> ScatteringColorsTexture;
+Texture2D<float4> FlameColorsTexture;
+Texture2D<float4> TemperatureColorsTexture;
+SamplerState ColorsTextureSampler;
+
+#if ENABLE_DOWNSCALE
+uint DownscaleFactor;
+uint DownscaledBlockSize;
+#endif
+
+uint GetBlockSize()
+{
+#if ENABLE_DOWNSCALE
+    return DownscaledBlockSize;
+#endif
+    return BLOCK_SIZE;
+}
+
+uint GetRenderBlockSize()
+{
+    uint renderBlockSize = GetBlockSize();
+#if ENABLE_INTERPOLATION
+    renderBlockSize += RENDER_PADDING_SIZE;
+#endif
+    
+    return renderBlockSize;
+}
+
+uint3 GetVoxelPosition(uint3 block_pos, uint3 voxel_offset)
+{
+    uint3 voxel_pos = block_pos * GetRenderBlockSize() + voxel_offset;
+#if ENABLE_INTERPOLATION
+    voxel_pos += RENDER_PADDING_SIZE;
+#endif
+    return voxel_pos;
+}
+
+void SetPaddingVoxel(int3 volume_block_pos, uint3 gtid, int3 delta, float4 voxel_value)
+{  
+    int3 neighbor_block_pos = volume_block_pos + delta;
+
+    bool inside_grid = all(neighbor_block_pos >= 0) && all(neighbor_block_pos < BlockGridSize.xyz);
+    if (inside_grid)
+    {
+        int neighbor_blockID = GetBlockID(BlockIndexTexture, neighbor_block_pos);
+        if (neighbor_blockID != -1)
+        {
+            int3 neighbor_render_block_pos = RenderBlockPos(neighbor_blockID, SparseBlockGridSize, SparseBlockGridSizeMultiply, SparseBlockGridSizeShift1, SparseBlockGridSizeShift2);
+            //get relative position to this block
+            int3 relative = gtid - delta * GetBlockSize();
+            int3 neighbor_voxel_pos = GetVoxelPosition(neighbor_render_block_pos, relative);
+
+#if DENSITY_ONLY || HV_ENABLED
+            float max_neighbor_block_density = MaxDensityPerBlockTexture[neighbor_render_block_pos];
+            SparseBlocksDensity[neighbor_voxel_pos] = voxel_value.a / max_neighbor_block_density;
+#endif
+
+#if !DENSITY_ONLY
+            SparseBlocks[neighbor_voxel_pos] = voxel_value.rgb;
+#endif
+        }
+    }
+}
+
+float MaskEmmision(float value, float center, float width, float intensity, float ramp)
+{
+    return intensity + (1.f - intensity) / (1.f + exp(ramp * (value - center) / width));
+}
+
+float4 SampleEmissionDensity(uint density_index, uint flames_index, uint temperature_index, uint index, float3 voxel_xyz)
+{
+    float density = 0.0;
+    float3 emission = 0.0;
+    
+    float dns = Input[density_index * TOTAL_BLOCK_SIZE + index];
+    float dns_valid = float(density_index != -1);
+ 
+    float falloff_scale = 1.f;
+    if (rb_maskEnabled)
+    {
+        float distance_to_center = distance(mul(float4(voxel_xyz, 1), rb_frameTransform).xyz, rb_maskSpherePos);
+        if (distance_to_center <= rb_maskSphereRadius)
+        {
+            falloff_scale = rb_maskSphereRadius - distance_to_center < rb_maskSphereFalloff ?
+                                    1 - smoothstep(0, rb_maskSphereFalloff, rb_maskSphereRadius - distance_to_center) : 0;
+        }
+    }
+
+    float clamped_density = max(asfloat(dns), 0.0);
+    density = clamped_density * float(dns_valid) * falloff_scale * DensityChannelScale;
+
+#if !DENSITY_ONLY
+    dns_valid *= float(density > 1e-6);
+    density *= dns_valid;
+    float density_scaled = density * rb_densityScale;
+
+#if !HV_ENABLED
+    if (density_scaled > 1e-6)
+    {
+        float4 illum = Illumination.SampleLevel(samplerIllumination, Texel2UVW(voxel_xyz, TextureSize.xyz), 0);
+        float3 scatteringColor = ScatteringColorsTexture.SampleLevel(ColorsTextureSampler, float2(density, 0.0), 0).rgb;
+        emission += scatteringColor * illum.xyz * density_scaled;
+    }
+#endif
+
+    float emmisionMask = lerp(1., MaskEmmision(density, EmissionMaskCenter, EmissionMaskWidth, EmissionMaskIntensity, EmissionMaskRamp), dns_valid * bEnableEmissionMasking);
+
+    float flms = Input[flames_index * TOTAL_BLOCK_SIZE + index];
+    float flms_valid = float(flames_index != -1);
+    float clamped_flms = max(flms, 0.0);
+    float3 flameColor = FlameColorsTexture.SampleLevel(ColorsTextureSampler, float2(clamped_flms, 0.0), 0).rgb;
+    float flame_scaled = rb_flameScale * clamped_flms * flms_valid * falloff_scale * lerp(1., emmisionMask, bEnableFlameEmissionMasking);
+    emission += flameColor * flame_scaled;
+
+    float tmpr = Input[temperature_index * TOTAL_BLOCK_SIZE + index];
+    float clamped_tmpr = max(tmpr, 0.0);
+    float3 temperatureColor = TemperatureColorsTexture.SampleLevel(ColorsTextureSampler, float2(clamped_tmpr, 0.0), 0).rgb;
+    float tmpr_scale = density_scaled + flame_scaled;
+    float tmpr_valid = float(temperature_index != -1 && tmpr_scale > 0.0);
+    float tmpr_scaled = rb_temperatureScale * clamped_tmpr * tmpr_scale * tmpr_valid * lerp(1., emmisionMask, bEnableTemperatureEmissionMasking);
+    emission += temperatureColor * tmpr_scaled;
+#endif
+
+    return float4(emission, density);
+}
+
+uint GetBlockID(uint3 gtid, uint3 gid)
+{
+    uint blockID = gid.x + rb_offset;
+#if ENABLE_DOWNSCALE     
+    uint3 relativeGTID = gtid / DownscaledBlockSize;
+    blockID = blockID * (DownscaleFactor * DownscaleFactor * DownscaleFactor) + (relativeGTID.x + relativeGTID.y * DownscaleFactor + relativeGTID.z * DownscaleFactor * DownscaleFactor);
+#endif
+    
+    return blockID;
+}
+
+[numthreads(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)]
+void MainCS(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    uint blockID = GetBlockID(gtid, gid);
+    if (blockID >= SpatialBlockCount)
+    {
+        return;
+    }
+    
+#if ENABLE_DOWNSCALE
+    gtid = gtid % DownscaledBlockSize; 
+#endif
+
+    int density_index = BlockBuffer.Load((blockID * 4 + 0) * sizeof(int));
+    int temperature_index = -1;
+    int flames_index = -1;
+#if !DENSITY_ONLY
+    temperature_index = BlockBuffer.Load((blockID * 4 + 1) * sizeof(int));
+    flames_index = BlockBuffer.Load((blockID * 4 + 2) * sizeof(int));
+#endif
+    int block_pos_packed = BlockBuffer.Load((blockID * 4 + 3) * sizeof(int));
+    uint3 block_xyz = UnpackBlockXYZ(block_pos_packed);
+    //get block position in the grid
+    uint3 block_pos = RenderBlockPos(blockID, SparseBlockGridSize, SparseBlockGridSizeMultiply, SparseBlockGridSizeShift1, SparseBlockGridSizeShift2);
+    uint3 voxel_pos = GetVoxelPosition(block_pos, gtid);
+    
+    if (density_index == -1
+#if !DENSITY_ONLY
+     && flames_index == -1
+#endif
+                           )
+    {
+#if DENSITY_ONLY || HV_ENABLED
+        SparseBlocksDensity[voxel_pos] = 0.f;
+#endif
+
+#if !DENSITY_ONLY
+        SparseBlocks[voxel_pos] = 0.f;
+#endif
+        return;
+    }
+
+    float4 voxel_value = 0.f;
+    uint3 blockOffset = gtid;
+#if ENABLE_DOWNSCALE
+    blockOffset = gtid * DownscaleFactor;
+    // TODO: consider adding option to turn off this averaging.
+    for (int i = 0; i < DownscaleFactor; ++i)
+        for (int j = 0; j < DownscaleFactor; ++j)
+            for (int k = 0; k < DownscaleFactor; ++k)
+#else
+    int i = 0, j = 0, k = 0;
+#endif
+    {
+        uint3 voxel_offset = blockOffset + int3(i, j, k);
+        int index = VoxelIndex(voxel_offset);
+        float3 voxel_xyz = float3(voxel_offset + block_xyz * BLOCK_SIZE);
+        voxel_value += SampleEmissionDensity(density_index, flames_index, temperature_index, index, voxel_xyz);
+    }
+    
+#if ENABLE_DOWNSCALE
+    voxel_value /= (DownscaleFactor * DownscaleFactor * DownscaleFactor);
+#endif
+
+    float3 emission = voxel_value.xyz;
+    float density = voxel_value.w;
+    
+#if DENSITY_ONLY || HV_ENABLED
+    float maxRenderBlockDensity = MaxDensityPerBlockTexture[block_pos];
+    SparseBlocksDensity[voxel_pos] = density / maxRenderBlockDensity;
+#endif
+
+#if !DENSITY_ONLY
+    SparseBlocks[voxel_pos] = emission;
+#endif
+}
+
+float4 GetPaddingVoxelValue(uint3 blockXYZ, uint3 offsetInRenderBlock)
+{
+    uint dx = (offsetInRenderBlock.x == 0);
+    uint dy = (offsetInRenderBlock.y == 0);
+    uint dz = (offsetInRenderBlock.z == 0);
+    
+    int3 neighborBlockPos = blockXYZ - int3(dx, dy, dz);
+
+    bool isInsideGrid = all(neighborBlockPos >= 0);
+    if (!isInsideGrid)
+    {
+        return float4(0.f, 0.f, 0.f, 0.f);
+    }
+    
+    int neighborBlockID = GetBlockID(BlockIndexTexture, neighborBlockPos);
+    if (neighborBlockID == -1)
+    {
+        return float4(0.f, 0.f, 0.f, 0.f);
+    }
+    
+    uint3 neighborRenderBlockPos = RenderBlockPos(neighborBlockID, SparseBlockGridSize, SparseBlockGridSizeMultiply, SparseBlockGridSizeShift1, SparseBlockGridSizeShift2);
+    
+    uint3 neighborRenderVoxelPos = neighborRenderBlockPos * GetRenderBlockSize() + uint3(dx, dy, dz) * GetBlockSize() + offsetInRenderBlock;
+
+    float4 voxelValue = 0.f;
+#if DENSITY_ONLY || HV_ENABLED
+    float maxNeighborBlockDensity = MaxDensityPerBlockTexture[neighborRenderBlockPos];
+    voxelValue.a = SparseBlocksDensity[neighborRenderVoxelPos] * maxNeighborBlockDensity;
+#endif
+
+#if !DENSITY_ONLY
+    voxelValue.rgb = SparseBlocks[neighborRenderVoxelPos];
+#endif
+    
+    return voxelValue;
+}
+
+[numthreads(8, 8, 1)]
+void SetPaddingVoxelCS(uint3 id : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
+{
+    uint renderBlockSize = GetRenderBlockSize();
+    
+    uint3 renderBlockPos = uint3(id.x / renderBlockSize, id.y / renderBlockSize, id.z);
+       
+    if (any(renderBlockPos >= SparseBlockGridSize))
+    {
+        return;
+    }
+    
+    uint3 offsetInRenderBlock = uint3(id.x - renderBlockPos.x * renderBlockSize, id.y - renderBlockPos.y * renderBlockSize, 0);
+    
+    uint blockID = InverseRenderBlockPos(renderBlockPos, SparseBlockGridSize);
+    if (blockID >= SpatialBlockCount)
+    {
+        return;
+    }
+    
+    uint block_pos_packed = BlockBuffer.Load((blockID * 4 + 3) * sizeof(int));
+    uint3 blockXYZ = UnpackBlockXYZ(block_pos_packed);
+    
+    float4 voxelValXY = 0.f, voxelValXZ = 0.f, voxelValYZ = 0.f;
+    voxelValXY = GetPaddingVoxelValue(blockXYZ, uint3(offsetInRenderBlock.x, offsetInRenderBlock.y, 0));
+    if (offsetInRenderBlock.y >= 1)
+        voxelValXZ = GetPaddingVoxelValue(blockXYZ, uint3(offsetInRenderBlock.x, 0, offsetInRenderBlock.y));
+    if (offsetInRenderBlock.x >= 1 && offsetInRenderBlock.y >= 1)
+        voxelValYZ = GetPaddingVoxelValue(blockXYZ, uint3(0, offsetInRenderBlock.x, offsetInRenderBlock.y));
+
+#if DENSITY_ONLY || HV_ENABLED
+    float maxRenderBlockDensityInverse = 1.f / MaxDensityPerBlockTexture[renderBlockPos];
+#endif
+    
+    uint3 offsetInBlocks = renderBlockPos * renderBlockSize;
+#if DENSITY_ONLY || HV_ENABLED
+    SparseBlocksDensity[offsetInBlocks + uint3(offsetInRenderBlock.x, offsetInRenderBlock.y, 0)] = voxelValXY.a * maxRenderBlockDensityInverse;
+    if (offsetInRenderBlock.y >= 1)
+        SparseBlocksDensity[offsetInBlocks + uint3(offsetInRenderBlock.x, 0, offsetInRenderBlock.y)] = voxelValXZ.a * maxRenderBlockDensityInverse;
+    if (offsetInRenderBlock.x >= 1 && offsetInRenderBlock.y >= 1)
+        SparseBlocksDensity[offsetInBlocks + uint3(0, offsetInRenderBlock.x, offsetInRenderBlock.y)] = voxelValYZ.a * maxRenderBlockDensityInverse;
+#endif
+
+#if !DENSITY_ONLY
+    SparseBlocks[offsetInBlocks + uint3(offsetInRenderBlock.x, offsetInRenderBlock.y, 0)] = voxelValXY.rgb;
+    if (offsetInRenderBlock.y >= 1)
+        SparseBlocks[offsetInBlocks + uint3(offsetInRenderBlock.x, 0, offsetInRenderBlock.y)] = voxelValXZ.rgb;
+    if (offsetInRenderBlock.x >= 1 && offsetInRenderBlock.y >= 1)
+        SparseBlocks[offsetInBlocks + uint3(0, offsetInRenderBlock.x, offsetInRenderBlock.y)] = voxelValYZ.rgb;
+#endif
+}

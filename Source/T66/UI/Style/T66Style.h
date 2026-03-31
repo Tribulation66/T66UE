@@ -69,6 +69,7 @@ struct FT66ButtonParams
 	float MinWidth      = 120.f;
 	float Height        = 0.f;            // 0 = content-driven (recommended), >0 = explicit override
 	int32 FontSize      = 0;              // 0 = use T66.Text.Button default (16pt bold)
+	FString FontWeight  = TEXT("Bold");   // Defaults to Reaver-style button text; set to "Regular" for Radiance.
 	FMargin Padding     = FMargin(-1.f);  // Negative = use ButtonStyle default padding
 
 	// === Dynamic State ===
@@ -115,6 +116,7 @@ struct FT66ButtonParams
 	FT66ButtonParams& SetMinWidth(float W)                                { MinWidth = W; return *this; }
 	FT66ButtonParams& SetHeight(float H)                                  { Height = H; return *this; }
 	FT66ButtonParams& SetFontSize(int32 S)                                { FontSize = S; return *this; }
+	FT66ButtonParams& SetFontWeight(const TCHAR* Weight)                  { FontWeight = Weight; return *this; }
 	FT66ButtonParams& SetPadding(const FMargin& M)                        { Padding = M; return *this; }
 	FT66ButtonParams& SetColor(const TAttribute<FSlateColor>& C)          { ColorOverride = C; bHasColorOverride = true; return *this; }
 	FT66ButtonParams& SetColor(const FLinearColor& C)                     { ColorOverride = FSlateColor(C); bHasColorOverride = true; return *this; }
@@ -265,6 +267,55 @@ public:
 	static void SetActiveTheme(ET66UITheme InTheme);
 	static ET66UITheme GetActiveTheme();
 	static bool IsDotaTheme();
+	static FSlateFontInfo MakeFont(const TCHAR* Weight, int32 Size);
+	static FLinearColor Background();
+	static FLinearColor PanelOuter();
+	static FLinearColor Panel();
+	static FLinearColor PanelInner();
+	static FLinearColor Stroke();
+	static FLinearColor Scrim();
+	static FLinearColor Text();
+	static FLinearColor TextMuted();
+	static FLinearColor Accent();
+	static FLinearColor Accent2();
+	static FLinearColor Border();
+	static FLinearColor HeaderBar();
+	static FLinearColor HeaderAccent();
+	static FLinearColor Success();
+	static FLinearColor Danger();
+	static FLinearColor ScreenBackground();
+	static FLinearColor ScreenText();
+	static FLinearColor ScreenMuted();
+	static FLinearColor SlotOuter();
+	static FLinearColor SlotInner();
+	static FLinearColor SlotFill();
+	static FLinearColor BossBarBackground();
+	static FLinearColor BossBarFill();
+	static FLinearColor PromptBackground();
+	static FLinearColor SelectionFill();
+	static FLinearColor MinimapBackground();
+	static FLinearColor MinimapTerrain();
+	static FLinearColor MinimapGrid();
+	static FLinearColor MinimapFriendly();
+	static FLinearColor MinimapEnemy();
+	static FLinearColor MinimapNeutral();
+	static FLinearColor ButtonNeutral();
+	static FLinearColor ButtonHovered();
+	static FLinearColor ButtonPressed();
+	static FLinearColor ButtonPrimary();
+	static FLinearColor ButtonPrimaryHovered();
+	static FLinearColor ButtonPrimaryPressed();
+	static FLinearColor DangerButton();
+	static FLinearColor DangerButtonHovered();
+	static FLinearColor DangerButtonPressed();
+	static FLinearColor SuccessButton();
+	static FLinearColor SuccessButtonHovered();
+	static FLinearColor SuccessButtonPressed();
+	static FLinearColor ToggleButton();
+	static FLinearColor ToggleButtonHovered();
+	static FLinearColor ToggleButtonPressed();
+	static float CornerRadius();
+	static float CornerRadiusSmall();
 
 	static const ISlateStyle& Get();
 	static FName GetStyleSetName();
@@ -409,6 +460,16 @@ public:
 
 	/** Build a dropdown (SComboButton). All dropdowns should use this or apply GetDropdownComboButtonStyle() to SComboBox. */
 	static TSharedRef<SWidget> MakeDropdown(const FT66DropdownParams& Params);
+	static TSharedRef<SWidget> MakeScreenSurface(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(14.f));
+	static TSharedRef<SWidget> MakeViewportFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(6.f));
+	static TSharedRef<SWidget> MakeViewportCutoutFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(6.f));
+	static TSharedRef<SWidget> MakeSlotFrame(const TSharedRef<SWidget>& Content, const TAttribute<FSlateColor>& AccentColor, const FMargin& Padding = FMargin(1.f));
+	static TSharedRef<SWidget> MakeSlotFrame(const TSharedRef<SWidget>& Content, const FLinearColor& AccentColor, const FMargin& Padding = FMargin(1.f));
+	static TSharedRef<SWidget> MakeHudPanel(const TSharedRef<SWidget>& Content, const FText& Title, const FMargin& Padding = FMargin(12.f, 10.f));
+	static TSharedRef<SWidget> MakeHudPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(12.f, 10.f));
+	static TSharedRef<SWidget> MakeDivider(float Height = 1.f);
+	static TSharedRef<SWidget> MakeMinimapFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(10.f));
+	static const FSlateBrush* GetInventorySlotFrameBrush();
 
 	/** Wrap a Slate subtree in a viewport-aware DPI scaler using the given design resolution. */
 	static TSharedRef<SWidget> MakeResponsiveRoot(

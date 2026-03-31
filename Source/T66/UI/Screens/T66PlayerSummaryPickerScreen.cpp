@@ -5,7 +5,6 @@
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66UITexturePoolSubsystem.h"
-#include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66UITypes.h"
 #include "UI/T66SlateTextureHelpers.h"
@@ -36,7 +35,7 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 	if (!LB || !Manager)
 	{
 		return SNew(SBorder)
-			.BorderBackgroundColor(FT66DotaTheme::Background())
+			.BorderBackgroundColor(FT66Style::Background())
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Picker", "Error", "Error loading picker."))
@@ -49,7 +48,7 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 	if (Snapshots.Num() == 0)
 	{
 		return SNew(SBorder)
-			.BorderBackgroundColor(FT66DotaTheme::Background())
+			.BorderBackgroundColor(FT66Style::Background())
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Picker", "NoPlayers", "No players."))
@@ -148,7 +147,7 @@ TSharedRef<SWidget> UT66PlayerSummaryPickerScreen::BuildSlateUI()
 	}
 
 	return SNew(SBorder)
-		.BorderBackgroundColor(FT66DotaTheme::Scrim())
+		.BorderBackgroundColor(FT66Style::Scrim())
 		[
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -197,3 +196,4 @@ FReply UT66PlayerSummaryPickerScreen::HandleSelectClicked(int32 Index)
 	UIManager->ShowModal(ET66ScreenType::RunSummary);
 	return FReply::Handled();
 }
+

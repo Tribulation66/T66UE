@@ -1,0 +1,93 @@
+#include "/Engine/Public/Platform.ush"
+
+static bool _29;
+
+ByteAddressBuffer SB0 : register(t0);
+RWByteAddressBuffer SB1 : register(u0);
+
+static uint3 gl_GlobalInvocationID;
+struct SPIRV_Cross_Input
+{
+    uint3 gl_GlobalInvocationID : SV_DispatchThreadID;
+};
+
+void comp_main()
+{
+    uint _43;
+    uint _69;
+    uint _70;
+    bool _74;
+    do
+    {
+        _43 = 0u;
+        uint _41;
+        uint _46;
+        bool _71;
+        bool _72;
+        uint _40 = 0u;
+        uint _45 = 0u;
+        for (;;)
+        {
+            if (_43 < 12u)
+            {
+                uint _54 = gl_GlobalInvocationID.y * 1024u;
+                uint _55 = _40 + _54;
+                bool _59 = (SB0.Load(_55 * 4 + 0) & 1u) != 0u;
+                uint _65;
+                if (_59)
+                {
+                    _46 = SB0.Load(_55 * 4 + 0) >> 1u;
+                    _65 = SB0.Load(_54 * 4 + 0);
+                }
+                else
+                {
+                    _46 = _45;
+                    _65 = SB0.Load(_55 * 4 + 0);
+                }
+                _41 = (_65 >> 1u) + ((gl_GlobalInvocationID.x >> ((11u - _43) & 31u)) & 1u);
+                if (_59)
+                {
+                    _69 = _46;
+                    _70 = _41;
+                    _71 = true;
+                    _72 = true;
+                    break;
+                }
+                _40 = _41;
+                _43++;
+                _45 = _46;
+                continue;
+            }
+            else
+            {
+                _69 = _45;
+                _70 = _40;
+                _71 = _29;
+                _72 = false;
+                break;
+            }
+        }
+        if (_72)
+        {
+            _74 = _71;
+            break;
+        }
+        _74 = false;
+        break;
+    } while(false);
+    if (_74)
+    {
+        SB1.Store((gl_GlobalInvocationID.x + (4096u * gl_GlobalInvocationID.y)) * 4 + 0, 1u + (((_69 << 8u) | _43) << 1u));
+    }
+    else
+    {
+        SB1.Store((gl_GlobalInvocationID.x + (4096u * gl_GlobalInvocationID.y)) * 4 + 0, _70 << 1u);
+    }
+}
+
+[numthreads(128, 1, 1)]
+void main(SPIRV_Cross_Input stage_input)
+{
+    gl_GlobalInvocationID = stage_input.gl_GlobalInvocationID;
+    comp_main();
+}
