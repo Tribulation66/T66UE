@@ -113,11 +113,14 @@ protected:
 	FTimerHandle AOETimerHandle;
 
 private:
+	APawn* ResolvePlayerPawn();
+
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseProjectileDamageHearts = 0;
 
 	float ArmorDebuffAmount = 0.f;
 	float ArmorDebuffSecondsRemaining = 0.f;
+	TWeakObjectPtr<APawn> CachedPlayerPawn;
 };
 

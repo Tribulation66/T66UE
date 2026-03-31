@@ -16,6 +16,8 @@
 #include "UI/Screens/T66LobbyReadyCheckModal.h"
 #include "UI/Screens/T66LobbyBackConfirmModal.h"
 #include "UI/Screens/T66AchievementsScreen.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
@@ -25,7 +27,6 @@
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
-#include "UI/T66CasinoOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66LoadPreviewOverlayWidget.h"
@@ -121,9 +122,11 @@ void AT66PlayerController::BeginPlay()
 		SetupGameplayHUD();
 		CachedJumpVFXNiagara = JumpVFXNiagara.LoadSynchronous();
 		CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
+		UWorld* World = GetWorld();
+		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 
 		// Prewarm TikTok/WebView2 so login + CSS formatting are done before first toggle.
-		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		if (GI)
 		{
 			if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
 			{
@@ -131,14 +134,13 @@ void AT66PlayerController::BeginPlay()
 			}
 		}
 
-		UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		if (RunState)
 		{
 			RunState->OnPlayerDied.AddDynamic(this, &AT66PlayerController::OnPlayerDied);
 			RunState->QuickReviveChanged.AddDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
-			OnPlayerDiedHandle.Reset(); // dynamic delegate has no handle; unbind via RemoveDynamic in EndPlay if needed
 		}
-		UE_LOG(LogTemp, Log, TEXT("PlayerController: Gameplay mode initialized"));
+		UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Gameplay mode initialized"));
 	}
 	else
 	{
@@ -178,7 +180,7 @@ void AT66PlayerController::BeginPlay()
 				}
 			}), 0.1f, false);
 		}
-		UE_LOG(LogTemp, Log, TEXT("PlayerController: Frontend mode initialized (UI deferred)"));
+		UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Frontend mode initialized (UI deferred)"));
 	}
 }
 
@@ -190,7 +192,9 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		World->GetTimerManager().ClearTimer(DeathVFXTimerHandle);
 	}
 
-	if (UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
 		RunState->OnPlayerDied.RemoveDynamic(this, &AT66PlayerController::OnPlayerDied);
 		RunState->QuickReviveChanged.RemoveDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
@@ -234,5 +238,5 @@ bool AT66PlayerController::IsGameplayLevel() const
 void AT66PlayerController::SetupGameplayMode()
 {
 	RestoreGameplayInputMode();
-	UE_LOG(LogTemp, Log, TEXT("PlayerController: Gameplay input mode set, cursor hidden"));
+	UE_LOG(LogT66PlayerController, Log, TEXT("PlayerController: Gameplay input mode set, cursor hidden"));
 }

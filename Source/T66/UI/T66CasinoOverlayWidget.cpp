@@ -697,7 +697,9 @@ void UT66CasinoOverlayWidget::RefreshAlchemyTopBar()
 void UT66CasinoOverlayWidget::RefreshAlchemyInventory()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	if (!RunState)
@@ -757,7 +759,9 @@ void UT66CasinoOverlayWidget::RefreshAlchemyInventory()
 void UT66CasinoOverlayWidget::RefreshAlchemyDropTargets()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	TArray<FName> Inventory;
@@ -977,7 +981,7 @@ FReply UT66CasinoOverlayWidget::OnAlchemyTransmuteClicked()
 
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		PC->TriggerCasinoBossIfAngry();
+		PC->TriggerCircusBossIfAngry();
 	}
 	return FReply::Handled();
 }

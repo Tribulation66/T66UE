@@ -42,6 +42,10 @@ public:
 
 private:
 	FString GetSlotName(int32 SlotIndex) const;
+	UT66SaveIndex* LoadOrCreateIndex();
 	UT66SaveIndex* LoadOrCreateIndex() const;
 	bool SaveIndex(UT66SaveIndex* Index) const;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66SaveIndex> CachedSaveIndex;
 };

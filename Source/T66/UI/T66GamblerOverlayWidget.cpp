@@ -2641,7 +2641,7 @@ void UT66GamblerOverlayWidget::TriggerGamblerBossIfAngry()
 {
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		if (PC->TriggerCasinoBossIfAngry())
+		if (PC->TriggerCircusBossIfAngry())
 		{
 			return;
 		}
@@ -3557,7 +3557,7 @@ void UT66GamblerOverlayWidget::TeleportToVendor()
 	{
 		if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 		{
-			PC->SwitchCasinoOverlayToVendor();
+			PC->SwitchCircusOverlayToVendor();
 		}
 		return;
 	}
@@ -3594,7 +3594,7 @@ void UT66GamblerOverlayWidget::CloseOverlay()
 	{
 		if (bEmbeddedInCasinoShell)
 		{
-			PC->CloseCasinoOverlay();
+			PC->CloseCircusOverlay();
 			return;
 		}
 	}

@@ -32,8 +32,7 @@ public class T66Editor : ModuleRules
 			"LandscapeEditor",
 			"Foliage",
 			"LevelEditor",
-			"ToolMenus",
-			"EditorStyle"
+			"ToolMenus"
 		});
 
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

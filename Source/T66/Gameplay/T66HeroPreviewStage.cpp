@@ -18,6 +18,8 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66HeroPreview, Log, All);
+
 namespace
 {
 	constexpr float HeroPreviewLookUpFraction = 0.45f;
@@ -203,7 +205,7 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 		}
 		bHasOrbitFrame = true;
 
-		UE_LOG(LogTemp, Log, TEXT("[PREVIEW] HeroPreview orbit: Center=(%.1f,%.1f,%.1f) Radius=%.1f BottomZ=%.1f BoundsExtent=(%.1f,%.1f,%.1f)"),
+		UE_LOG(LogT66HeroPreview, Verbose, TEXT("[PREVIEW] HeroPreview orbit: Center=(%.1f,%.1f,%.1f) Radius=%.1f BottomZ=%.1f BoundsExtent=(%.1f,%.1f,%.1f)"),
 			OrbitCenter.X, OrbitCenter.Y, OrbitCenter.Z, OrbitRadius, OrbitBottomZ,
 			B.BoxExtent.X, B.BoxExtent.Y, B.BoxExtent.Z);
 	}

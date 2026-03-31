@@ -6,6 +6,8 @@
 #include "Core/T66SaveMigration.h"
 #include "Kismet/GameplayStatics.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Save, Log, All);
+
 const FString UT66SaveSubsystem::SaveIndexSlotName(TEXT("T66_SaveIndex"));
 const FString UT66SaveSubsystem::SlotNamePrefix(TEXT("T66_Slot_"));
 
@@ -93,17 +95,17 @@ bool UT66SaveSubsystem::SaveToSlot(int32 SlotIndex, UT66RunSaveGame* SaveGameObj
 	FString SlotName = GetSlotName(SlotIndex);
 
 	// [GOLD] Async save: writes to disk on a background thread so the game thread doesn't hitch.
-	UE_LOG(LogTemp, Log, TEXT("[GOLD] AsyncSave: queuing async save for slot %s"), *SlotName);
+	UE_LOG(LogT66Save, Log, TEXT("[GOLD] AsyncSave: queuing async save for slot %s"), *SlotName);
 	UGameplayStatics::AsyncSaveGameToSlot(SaveGameObject, SlotName, 0,
 		FAsyncSaveGameToSlotDelegate::CreateLambda([SlotName](const FString& /*InSlotName*/, const int32 /*UserIndex*/, bool bSuccess)
 		{
 			if (bSuccess)
 			{
-				UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: slot %s saved successfully"), *SlotName);
+				UE_LOG(LogT66Save, Verbose, TEXT("[GOLD] AsyncSave: slot %s saved successfully"), *SlotName);
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[GOLD] AsyncSave: FAILED for slot %s"), *SlotName);
+				UE_LOG(LogT66Save, Warning, TEXT("[GOLD] AsyncSave: FAILED for slot %s"), *SlotName);
 			}
 		}));
 
@@ -199,26 +201,37 @@ bool UT66SaveSubsystem::GetSlotMeta(int32 SlotIndex, bool& bOutOccupied, FString
 	return true;
 }
 
-UT66SaveIndex* UT66SaveSubsystem::LoadOrCreateIndex() const
+UT66SaveIndex* UT66SaveSubsystem::LoadOrCreateIndex()
 {
-	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SaveIndexSlotName, 0);
-	UT66SaveIndex* Index = Cast<UT66SaveIndex>(Loaded);
-	if (!Index)
+	if (CachedSaveIndex)
 	{
-		Index = NewObject<UT66SaveIndex>(const_cast<UT66SaveSubsystem*>(this));
-		if (Index)
+		return CachedSaveIndex;
+	}
+
+	USaveGame* Loaded = UGameplayStatics::LoadGameFromSlot(SaveIndexSlotName, 0);
+	CachedSaveIndex = Cast<UT66SaveIndex>(Loaded);
+	if (!CachedSaveIndex)
+	{
+		CachedSaveIndex = NewObject<UT66SaveIndex>(this);
+		if (CachedSaveIndex)
 		{
-			Index->SlotMeta.SetNum(MaxSlots);
+			CachedSaveIndex->SlotMeta.SetNum(MaxSlots);
 		}
 	}
-	return Index;
+
+	return CachedSaveIndex;
+}
+
+UT66SaveIndex* UT66SaveSubsystem::LoadOrCreateIndex() const
+{
+	return const_cast<UT66SaveSubsystem*>(this)->LoadOrCreateIndex();
 }
 
 bool UT66SaveSubsystem::SaveIndex(UT66SaveIndex* Index) const
 {
 	if (!Index) return false;
 	// [GOLD] Async index save to avoid blocking the game thread.
-	UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: queuing async save for index"));
+	UE_LOG(LogT66Save, Verbose, TEXT("[GOLD] AsyncSave: queuing async save for index"));
 	UGameplayStatics::AsyncSaveGameToSlot(Index, SaveIndexSlotName, 0);
 	return true;
 }

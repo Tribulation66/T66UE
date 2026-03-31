@@ -91,7 +91,7 @@ bool AT66CasinoInteractable::Interact(APlayerController* PC)
 		}
 	}
 
-	T66PC->OpenCasinoOverlay();
+	T66PC->OpenCircusOverlay();
 	return true;
 }
 

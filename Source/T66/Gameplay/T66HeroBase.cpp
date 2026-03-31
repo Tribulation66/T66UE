@@ -28,6 +28,8 @@
 #include "Engine/OverlapResult.h"
 #include "Engine/EngineTypes.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Hero, Log, All);
+
 AT66HeroBase::AT66HeroBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -100,12 +102,8 @@ AT66HeroBase::AT66HeroBase()
 		AttackRangeRingISM->SetStaticMesh(CylinderMesh);
 	}
 
-	// Wireframe reads best for a "range ring"; engine debug material path can vary, so fallback to project material.
-	UMaterialInterface* RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/EngineDebugMaterials/M_Wireframe.M_Wireframe"));
-	if (!RingMat)
-	{
-		RingMat = FT66VisualUtil::GetPlaceholderColorMaterial();
-	}
+	// Keep the range ring on a stable project material path; editor-only engine debug materials are noisy in commandlets.
+	UMaterialInterface* RingMat = FT66VisualUtil::GetFlatColorMaterial();
 	if (!RingMat)
 	{
 		RingMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
@@ -234,7 +232,7 @@ void AT66HeroBase::BeginPlay()
 			if (PS->GetGoonerMode())
 			{
 				// TODO: When real character meshes exist, apply barefoot cosmetic set here.
-				UE_LOG(LogTemp, Log, TEXT("Gooner Mode enabled (placeholder; no meshes to modify yet)."));
+				UE_LOG(LogT66Hero, Log, TEXT("Gooner Mode enabled (placeholder; no meshes to modify yet)."));
 			}
 		}
 	}
@@ -246,17 +244,17 @@ void AT66HeroBase::BeginPlay()
 	}
 
 	// Debug: Log camera status
-	UE_LOG(LogTemp, Log, TEXT("HeroBase BeginPlay - Location: (%.1f, %.1f, %.1f)"),
+	UE_LOG(LogT66Hero, Log, TEXT("HeroBase BeginPlay - Location: (%.1f, %.1f, %.1f)"),
 		GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
 	
 	if (FollowCamera)
 	{
-		UE_LOG(LogTemp, Log, TEXT("HeroBase - FollowCamera is active: %s"), 
+		UE_LOG(LogT66Hero, Log, TEXT("HeroBase - FollowCamera is active: %s"),
 			FollowCamera->IsActive() ? TEXT("YES") : TEXT("NO"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("HeroBase - FollowCamera is NULL!"));
+		UE_LOG(LogT66Hero, Error, TEXT("HeroBase - FollowCamera is NULL!"));
 	}
 
 	// Cache run state for derived stats (level + last-stand).
@@ -320,7 +318,7 @@ void AT66HeroBase::Landed(const FHitResult& Hit)
 			EnableInput(PC);
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("Sky-drop landing at Z=%.1f"), GetActorLocation().Z);
+		UE_LOG(LogT66Hero, Log, TEXT("Sky-drop landing at Z=%.1f"), GetActorLocation().Z);
 	}
 }
 
@@ -817,7 +815,7 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 
 	FName SkinID = InSkinID.IsNone() ? FName(TEXT("Default")) : InSkinID;
 
-	UE_LOG(LogTemp, Log, TEXT("Hero initialized: %s, BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
+	UE_LOG(LogT66Hero, Log, TEXT("Hero initialized: %s, BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
 		*InHeroData.DisplayName.ToString(),
 		InBodyType == ET66BodyType::TypeA ? TEXT("TypeA") : TEXT("TypeB"),
 		*SkinID.ToString(),
@@ -833,7 +831,7 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			const FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(HeroID, InBodyType, SkinID);
 			// Hero selection preview uses the idle animation so the character is non-static in the showcase.
 			const bool bUseIdleAnimation = bPreviewMode;
-			UE_LOG(LogTemp, Log, TEXT("[ANIM] HeroBase::InitializeHero HeroID=%s BodyType=%s SkinID=%s bPreviewMode=%d bUseIdleAnimation=%d VisualID=%s"),
+			UE_LOG(LogT66Hero, Log, TEXT("[ANIM] HeroBase::InitializeHero HeroID=%s BodyType=%s SkinID=%s bPreviewMode=%d bUseIdleAnimation=%d VisualID=%s"),
 				*HeroID.ToString(), InBodyType == ET66BodyType::TypeA ? TEXT("A") : TEXT("B"), *SkinID.ToString(),
 				bPreviewMode ? 1 : 0, bUseIdleAnimation ? 1 : 0, *VisualID.ToString());
 			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseIdleAnimation, bPreviewMode);
@@ -889,11 +887,11 @@ void AT66HeroBase::SetPlaceholderColor(FLinearColor Color)
 
 	if (PlaceholderMaterial)
 	{
-		PlaceholderMaterial->SetVectorParameterValue(FName("Color"), Color);
+		FT66VisualUtil::ConfigureFlatColorMaterial(PlaceholderMaterial, Color);
 		return;
 	}
 
-	UMaterialInterface* ColorMaterial = FT66VisualUtil::GetPlaceholderColorMaterial();
+	UMaterialInterface* ColorMaterial = FT66VisualUtil::GetFlatColorMaterial();
 	if (!ColorMaterial)
 	{
 		ColorMaterial = PlaceholderMesh->GetMaterial(0);
@@ -905,7 +903,7 @@ void AT66HeroBase::SetPlaceholderColor(FLinearColor Color)
 		if (PlaceholderMaterial)
 		{
 			PlaceholderMesh->SetMaterial(0, PlaceholderMaterial);
-			PlaceholderMaterial->SetVectorParameterValue(FName("Color"), Color);
+			FT66VisualUtil::ConfigureFlatColorMaterial(PlaceholderMaterial, Color);
 		}
 	}
 
@@ -951,7 +949,7 @@ void AT66HeroBase::SetBodyType(ET66BodyType NewBodyType)
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Hero body type set to: %s"),
+	UE_LOG(LogT66Hero, Log, TEXT("Hero body type set to: %s"),
 		NewBodyType == ET66BodyType::TypeA ? TEXT("TypeA (Cylinder)") : TEXT("TypeB (Cube)"));
 }
 

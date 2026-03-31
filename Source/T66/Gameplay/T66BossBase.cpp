@@ -177,7 +177,7 @@ void AT66BossBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	APawn* PlayerPawn = ResolvePlayerPawn();
 	if (!PlayerPawn) return;
 
 	const FVector MyLoc = GetActorLocation();
@@ -256,7 +256,7 @@ void AT66BossBase::FireAtPlayer()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	APawn* PlayerPawn = ResolvePlayerPawn();
 	if (!PlayerPawn) return;
 
 	const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 80.f);
@@ -321,7 +321,7 @@ void AT66BossBase::SpawnGroundAOE()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	APawn* PlayerPawn = ResolvePlayerPawn();
 	if (!PlayerPawn) return;
 
 	FVector TargetLoc = PlayerPawn->GetActorLocation();
@@ -346,6 +346,18 @@ void AT66BossBase::SpawnGroundAOE()
 		const int32 Stage = RS ? FMath::Max(1, RS->GetCurrentStage()) : 1;
 		AOE->DamageHP = FMath::Max(10, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
 	}
+}
+
+APawn* AT66BossBase::ResolvePlayerPawn()
+{
+	APawn* PlayerPawn = CachedPlayerPawn.Get();
+	if (!PlayerPawn)
+	{
+		PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+		CachedPlayerPawn = PlayerPawn;
+	}
+
+	return PlayerPawn;
 }
 
 void AT66BossBase::Die()

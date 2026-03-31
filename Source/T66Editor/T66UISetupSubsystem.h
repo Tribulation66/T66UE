@@ -73,12 +73,6 @@ public:
 	void PrintSetupStatus();
 
 	/**
-	 * Create the placeholder color material for hero visuals
-	 */
-	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
-	bool CreatePlaceholderMaterial();
-
-	/**
 	 * Create the posterize post-process material (full-screen color banding).
 	 * Loaded at runtime by T66PosterizeSubsystem.
 	 */

@@ -17,7 +17,8 @@ class UWorld;
 
 struct FT66VisualUtil
 {
-	static UMaterialInterface* GetPlaceholderColorMaterial();
+	static UMaterialInterface* GetFlatColorMaterial();
+	static void ConfigureFlatColorMaterial(UMaterialInstanceDynamic* Material, const FLinearColor& Color);
 
 	static void ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color);
 

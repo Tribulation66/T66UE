@@ -20,6 +20,8 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "UObject/SoftObjectPath.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Props, Log, All);
+
 namespace
 {
 	static const FName T66MapPlatformTag(TEXT("T66_Map_Platform"));
@@ -431,7 +433,7 @@ void UT66PropSubsystem::SpawnPropsInternal(
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("T66PropSubsystem: Spawned %d props for stage (seed=%d)."), SpawnedProps.Num(), Seed);
+	UE_LOG(LogT66Props, Verbose, TEXT("T66PropSubsystem: Spawned %d props for stage (seed=%d)."), SpawnedProps.Num(), Seed);
 }
 
 void UT66PropSubsystem::ClearProps()

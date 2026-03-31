@@ -54,6 +54,8 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SToolTip.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66HUD, Log, All);
+
 namespace
 {
 	static FLinearColor WithAlpha(const FLinearColor& Color, float Alpha)
@@ -1671,7 +1673,7 @@ void UT66GameplayHUDWidget::UpdateTikTokVisibility()
 	{
 		TikTokPlaceholderBox->SetVisibility(Vis);
 	}
-	UE_LOG(LogTemp, Log, TEXT("[TIKTOK] Viewer %s"), bOpen ? TEXT("OPEN") : TEXT("CLOSED"));
+	UE_LOG(LogT66HUD, Log, TEXT("[TIKTOK] Viewer %s"), bOpen ? TEXT("OPEN") : TEXT("CLOSED"));
 	if (bOpen)
 	{
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
@@ -2038,7 +2040,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				MapCache.Add({ A, EMapCacheMarkerType::Miasma, FLinearColor(0.65f, 0.15f, 0.85f, 0.78f), FText::GetEmpty(), FName(TEXT("Miasma")) });
 			}
 
-			UE_LOG(LogTemp, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Miasma=%d)"),
+			UE_LOG(LogT66HUD, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Miasma=%d)"),
 				Registry->GetNPCs().Num(), Registry->GetStageGates().Num(),
 				Registry->GetEnemies().Num(), Registry->GetMiasmaBoundaries().Num());
 		}

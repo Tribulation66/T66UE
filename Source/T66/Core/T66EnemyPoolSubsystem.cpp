@@ -4,6 +4,8 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66EnemyPool, Log, All);
+
 // ---------------------------------------------------------------------------
 AT66EnemyBase* UT66EnemyPoolSubsystem::TryAcquire(TSubclassOf<AT66EnemyBase> EnemyClass, const FVector& Location)
 {
@@ -22,14 +24,14 @@ AT66EnemyBase* UT66EnemyPoolSubsystem::TryAcquire(TSubclassOf<AT66EnemyBase> Ene
 		if (!IsValid(Enemy)) continue; // was garbage-collected
 
 		++TotalReused;
-		UE_LOG(LogTemp, Log, TEXT("[GOLD] EnemyPool: reused %s (pool=%d, reuse-rate=%.0f%%)"),
+		UE_LOG(LogT66EnemyPool, Log, TEXT("[GOLD] EnemyPool: reused %s (pool=%d, reuse-rate=%.0f%%)"),
 			*Enemy->GetClass()->GetName(), ClassPool->Num(),
 			TotalAcquired > 0 ? (100.f * static_cast<float>(TotalReused) / static_cast<float>(TotalAcquired)) : 0.f);
 		return Enemy;
 	}
 
 	// Pool empty for this class.
-	UE_LOG(LogTemp, Verbose, TEXT("[GOLD] EnemyPool: no pooled %s available, caller should spawn fresh (total-acquired=%d)"),
+	UE_LOG(LogT66EnemyPool, Verbose, TEXT("[GOLD] EnemyPool: no pooled %s available, caller should spawn fresh (total-acquired=%d)"),
 		*EnemyClass->GetName(), TotalAcquired);
 	return nullptr;
 }
@@ -55,7 +57,7 @@ void UT66EnemyPoolSubsystem::Release(AT66EnemyBase* Enemy)
 	TArray<TWeakObjectPtr<AT66EnemyBase>>& ClassPool = Pool.FindOrAdd(Enemy->GetClass());
 	ClassPool.Add(Enemy);
 
-	UE_LOG(LogTemp, Verbose, TEXT("[GOLD] EnemyPool: released %s back to pool (pool=%d)"),
+	UE_LOG(LogT66EnemyPool, Verbose, TEXT("[GOLD] EnemyPool: released %s back to pool (pool=%d)"),
 		*Enemy->GetClass()->GetName(), ClassPool.Num());
 }
 
@@ -73,7 +75,7 @@ int32 UT66EnemyPoolSubsystem::GetPooledCount() const
 // ---------------------------------------------------------------------------
 void UT66EnemyPoolSubsystem::Deinitialize()
 {
-	UE_LOG(LogTemp, Log, TEXT("[GOLD] EnemyPool: shutting down. Total acquired=%d, reused=%d (%.0f%%)"),
+	UE_LOG(LogT66EnemyPool, Log, TEXT("[GOLD] EnemyPool: shutting down. Total acquired=%d, reused=%d (%.0f%%)"),
 		TotalAcquired, TotalReused,
 		TotalAcquired > 0 ? (100.f * static_cast<float>(TotalReused) / static_cast<float>(TotalAcquired)) : 0.f);
 	Pool.Empty();

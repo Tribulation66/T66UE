@@ -22,6 +22,8 @@
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
 #include "Widgets/SOverlay.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66ReportBug, Log, All);
+
 UT66ReportBugScreen::UT66ReportBugScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -158,7 +160,7 @@ void UT66ReportBugScreen::OnSubmitClicked()
 	const FString FilePath = Dir / FString::Printf(TEXT("BugReport_%s.txt"), *Timestamp);
 	FFileHelper::SaveStringToFile(Report, *FilePath);
 
-	UE_LOG(LogTemp, Log, TEXT("Report Bug saved: %s"), *FilePath);
+	UE_LOG(LogT66ReportBug, Log, TEXT("Report Bug saved: %s"), *FilePath);
 	CloseModal();
 
 	// In gameplay, Report Bug is opened from Pause Menu. Our UIManager is single-modal, so opening this

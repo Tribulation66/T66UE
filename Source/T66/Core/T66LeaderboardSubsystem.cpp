@@ -17,6 +17,8 @@
 #include "Misc/Paths.h"
 #include "HAL/IConsoleManager.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Leaderboard, Log, All);
+
 static TAutoConsoleVariable<int32> CVarT66AccountStatusForce(
 	TEXT("t66.AccountStatus.Force"),
 	0,
@@ -182,7 +184,7 @@ void UT66LeaderboardSubsystem::DebugClearLocalLeaderboard()
 
 	LoadOrCreateLocalSave();
 
-	UE_LOG(LogTemp, Log, TEXT("Leaderboard: cleared local saves (LocalLeaderboard + LocalBestScoreRunSummary_*_*)"));
+	UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: cleared local saves (LocalLeaderboard + LocalBestScoreRunSummary_*_*)"));
 }
 
 FString UT66LeaderboardSubsystem::DifficultyKey(ET66Difficulty Difficulty)
@@ -349,7 +351,7 @@ bool UT66LeaderboardSubsystem::LoadTargetsFromDataTablesIfPresent()
 	{
 		if (SrcDT->GetRowStruct() != FT66LeaderboardScoreTargetRow::StaticStruct())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("DT_Leaderboard_ScoreTargets exists but has wrong RowStruct. Expected FT66LeaderboardScoreTargetRow."));
+			UE_LOG(LogT66Leaderboard, Warning, TEXT("DT_Leaderboard_ScoreTargets exists but has wrong RowStruct. Expected FT66LeaderboardScoreTargetRow."));
 		}
 		else
 		{
@@ -369,7 +371,7 @@ bool UT66LeaderboardSubsystem::LoadTargetsFromDataTablesIfPresent()
 	{
 		if (SDT->GetRowStruct() != FT66LeaderboardSpeedRunTargetRow::StaticStruct())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("DT_Leaderboard_SpeedrunTargets exists but has wrong RowStruct. Expected FT66LeaderboardSpeedRunTargetRow."));
+			UE_LOG(LogT66Leaderboard, Warning, TEXT("DT_Leaderboard_SpeedrunTargets exists but has wrong RowStruct. Expected FT66LeaderboardSpeedRunTargetRow."));
 		}
 		else
 		{
@@ -543,7 +545,7 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 
 	if (!IsAccountEligibleForLeaderboard())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Leaderboard: blocked (account status). Score=%d"), Score);
+		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: blocked (account status). Score=%d"), Score);
 		return false;
 	}
 
@@ -552,7 +554,7 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 	(void)GetSettingsPracticeAndAnon(bPractice, bAnon);
 	if (bPractice)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Leaderboard: blocked (Practice Mode). Score=%d"), Score);
+		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: blocked (Practice Mode). Score=%d"), Score);
 		return false;
 	}
 
@@ -603,7 +605,7 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Leaderboard: submit local score. Score=%d NewBest=%s Anonymous=%s"), Score, bIsNewBest ? TEXT("true") : TEXT("false"), bAnon ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: submit local score. Score=%d NewBest=%s Anonymous=%s"), Score, bIsNewBest ? TEXT("true") : TEXT("false"), bAnon ? TEXT("true") : TEXT("false"));
 
 	// Fire-and-forget backend submission (online complement to local save).
 	if (UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr)
@@ -697,7 +699,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 
 	if (!IsAccountEligibleForLeaderboard())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Leaderboard: blocked (account status). Stage=%d Seconds=%.3f"), Stage, Seconds);
+		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: blocked (account status). Stage=%d Seconds=%.3f"), Stage, Seconds);
 		return false;
 	}
 
@@ -706,7 +708,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	(void)GetSettingsPracticeAndAnon(bPractice, bAnon);
 	if (bPractice)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Leaderboard: blocked (Practice Mode). Stage=%d Seconds=%.3f"), Stage, Seconds);
+		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: blocked (Practice Mode). Stage=%d Seconds=%.3f"), Stage, Seconds);
 		return false;
 	}
 
@@ -745,7 +747,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 		SaveLocalSave();
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Leaderboard: submit local stage time. Stage=%d Seconds=%.3f NewBest=%s Anonymous=%s"), Stage, Seconds, bIsNewBest ? TEXT("true") : TEXT("false"), bAnon ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: submit local stage time. Stage=%d Seconds=%.3f NewBest=%s Anonymous=%s"), Stage, Seconds, bIsNewBest ? TEXT("true") : TEXT("false"), bAnon ? TEXT("true") : TEXT("false"));
 	return true;
 }
 
@@ -1130,7 +1132,7 @@ void UT66LeaderboardSubsystem::SubmitAccountAppeal(const FString& Message, const
 	// Minimal guard: empty submissions do nothing.
 	if (Msg.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AccountStatus: appeal not submitted (empty message)."));
+		UE_LOG(LogT66Leaderboard, Warning, TEXT("AccountStatus: appeal not submitted (empty message)."));
 		return;
 	}
 
@@ -1139,7 +1141,7 @@ void UT66LeaderboardSubsystem::SubmitAccountAppeal(const FString& Message, const
 	LocalSave->AccountRestriction.AppealStatus = ET66AppealReviewStatus::UnderReview;
 	SaveLocalSave();
 
-	UE_LOG(LogTemp, Log, TEXT("AccountStatus: appeal submitted (local placeholder). EvidenceUrl=%s"), *Url);
+	UE_LOG(LogT66Leaderboard, Log, TEXT("AccountStatus: appeal submitted (local placeholder). EvidenceUrl=%s"), *Url);
 }
 
 bool UT66LeaderboardSubsystem::RequestOpenAccountRestrictionRunSummary()

@@ -106,6 +106,8 @@
 #include "UI/Style/T66Style.h"
 #include "T66.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66GameMode, Log, All);
+
 namespace
 {
 	// Helper: avoid PIE warnings ("StaticMeshComponent has to be 'Movable' if you'd like to move")
@@ -253,435 +255,6 @@ namespace
 		return MapName.Contains(TEXT("Tutorial"));
 	}
 
-	static const FName T66_CombatIterationEnemyTag(TEXT("T66.Dev.CombatIterationEnemy"));
-	static TAutoConsoleVariable<int32> CVarT66DevCombatIterationEquipStageTestIdol(
-		TEXT("T66.Dev.CombatIterationEquipStageTestIdol"),
-		1,
-		TEXT("PIE-only combat iteration helper. When enabled, equips one deterministic idol for the current VFX stage after clearing the startup loadout so idol VFX stages can be tested in isolation."),
-		ECVF_Default);
-	static TAutoConsoleVariable<int32> CVarT66DevCombatIterationStageTestIdolIndex(
-		TEXT("T66.Dev.CombatIterationStageTestIdolIndex"),
-		13,
-		TEXT("PIE-only combat iteration helper. 1..24 selects the deterministic idol equipped in slot 0 for isolated VFX tests. Default 13 = Idol_Fire."),
-		ECVF_Default);
-	static int32 T66_CountEquippedEntries(const TArray<FName>& Entries)
-	{
-		int32 Count = 0;
-		for (const FName Entry : Entries)
-		{
-			if (!Entry.IsNone())
-			{
-				++Count;
-			}
-		}
-		return Count;
-	}
-
-	static const TArray<FName>& T66_GetCombatIterationOrderedIdolIDs()
-	{
-		return UT66IdolManagerSubsystem::GetAllIdolIDs();
-	}
-
-	static int32 T66_GetCombatIterationStageTestIdolIndex()
-	{
-		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
-		if (OrderedIdols.Num() <= 0)
-		{
-			return INDEX_NONE;
-		}
-
-		const int32 RawIndex = CVarT66DevCombatIterationStageTestIdolIndex.GetValueOnGameThread();
-		return FMath::Clamp(RawIndex, 1, OrderedIdols.Num());
-	}
-
-	static FName T66_GetCombatIterationStageTestIdolID()
-	{
-		if (CVarT66DevCombatIterationEquipStageTestIdol.GetValueOnGameThread() == 0)
-		{
-			return NAME_None;
-		}
-
-		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
-		const int32 IdolIndex = T66_GetCombatIterationStageTestIdolIndex();
-		return OrderedIdols.IsValidIndex(IdolIndex - 1) ? OrderedIdols[IdolIndex - 1] : NAME_None;
-	}
-
-	static FName T66_GetCombatIterationStageTestHeroID()
-	{
-		return FName(TEXT("Hero_1"));
-	}
-
-	static const TCHAR* T66_GetCombatIterationRarityName(const ET66ItemRarity Rarity)
-	{
-		switch (Rarity)
-		{
-		case ET66ItemRarity::Black:  return TEXT("Black");
-		case ET66ItemRarity::Red:    return TEXT("Red");
-		case ET66ItemRarity::Yellow: return TEXT("Yellow");
-		case ET66ItemRarity::White:  return TEXT("White");
-		default:                     return TEXT("Unknown");
-		}
-	}
-
-	static UWorld* T66_GetCombatIterationConsoleWorld()
-	{
-		if (!GEngine)
-		{
-			return nullptr;
-		}
-
-		if (UWorld* PlayWorld = GEngine->GetCurrentPlayWorld())
-		{
-			return PlayWorld;
-		}
-
-		if (GEngine->GameViewport)
-		{
-			return GEngine->GameViewport->GetWorld();
-		}
-
-		return nullptr;
-	}
-
-	static void T66_LogCombatIterationIdolOrder()
-	{
-		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
-		UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Idol alias order:"));
-		for (int32 Index = 0; Index < OrderedIdols.Num(); ++Index)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration]   idol%d = %s"), Index + 1, *OrderedIdols[Index].ToString());
-		}
-	}
-
-	static void T66_ApplyCombatIterationStageTestIdolSelection(UWorld* World, const int32 IdolIndex)
-	{
-		if (!World)
-		{
-			return;
-		}
-
-		UGameInstance* GI = World->GetGameInstance();
-		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-		if (!RunState)
-		{
-			return;
-		}
-
-		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
-		if (!OrderedIdols.IsValidIndex(IdolIndex - 1))
-		{
-			return;
-		}
-
-		const FName IdolID = OrderedIdols[IdolIndex - 1];
-		RunState->ClearEquippedIdols();
-		const bool bEquipped = RunState->EquipIdolInSlot(0, IdolID);
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("[DEV][CombatIteration] Applied test idol selection immediately: Index=%d Idol=%s Slot=0 Equipped=%d World=%s"),
-			IdolIndex,
-			*IdolID.ToString(),
-			bEquipped ? 1 : 0,
-			*World->GetMapName());
-	}
-
-	static void T66_SetCombatIterationStageTestIdolIndex(const int32 RequestedIndex, UWorld* World)
-	{
-		const TArray<FName>& OrderedIdols = T66_GetCombatIterationOrderedIdolIDs();
-		if (OrderedIdols.Num() <= 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[DEV][CombatIteration] No idols are registered for selection."));
-			return;
-		}
-
-		const int32 ClampedIndex = FMath::Clamp(RequestedIndex, 1, OrderedIdols.Num());
-		CVarT66DevCombatIterationStageTestIdolIndex->Set(ClampedIndex, ECVF_SetByConsole);
-		CVarT66DevCombatIterationEquipStageTestIdol->Set(1, ECVF_SetByConsole);
-
-		const FName IdolID = OrderedIdols[ClampedIndex - 1];
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("[DEV][CombatIteration] Selected test idol alias: idol%d -> %s (Requested=%d, NextPIE=enabled)"),
-			ClampedIndex,
-			*IdolID.ToString(),
-			RequestedIndex);
-
-		UWorld* EffectiveWorld = World ? World : T66_GetCombatIterationConsoleWorld();
-		if (EffectiveWorld)
-		{
-			T66_ApplyCombatIterationStageTestIdolSelection(EffectiveWorld, ClampedIndex);
-		}
-	}
-
-	static void T66_SelectCombatIterationStageTestIdolByArgs(const TArray<FString>& Args, UWorld* World)
-	{
-		if (Args.Num() <= 0)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Usage: idol <1-24>"));
-			T66_LogCombatIterationIdolOrder();
-			return;
-		}
-
-		const int32 RequestedIndex = FCString::Atoi(*Args[0]);
-		if (RequestedIndex <= 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[DEV][CombatIteration] Invalid idol index '%s'. Usage: idol <1-24>"), *Args[0]);
-			return;
-		}
-
-		T66_SetCombatIterationStageTestIdolIndex(RequestedIndex, World);
-	}
-
-	static void T66_ListCombatIterationIdolAliases(const TArray<FString>& Args, UWorld* World)
-	{
-		(void)Args;
-		(void)World;
-		T66_LogCombatIterationIdolOrder();
-	}
-
-	static FAutoConsoleCommandWithWorldAndArgs T66CombatIterationIdolCommand(
-		TEXT("idol"),
-		TEXT("Select the combat-iteration test idol by 1-based index. Example: idol 13"),
-		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_SelectCombatIterationStageTestIdolByArgs));
-
-	static FAutoConsoleCommandWithWorldAndArgs T66CombatIterationIdolListCommand(
-		TEXT("idollist"),
-		TEXT("Log the 1..24 idol alias order used by idol1..idol24."),
-		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_ListCombatIterationIdolAliases));
-
-#define T66_REGISTER_IDOL_ALIAS(N) \
-	static FAutoConsoleCommandWithWorldAndArgs T66CombatIterationIdolAlias##N( \
-		TEXT("idol" #N), \
-		TEXT("Select combat-iteration test idol #" #N "."), \
-		FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World) \
-		{ \
-			(void)Args; \
-			T66_SetCombatIterationStageTestIdolIndex(N, World); \
-		}) \
-	);
-
-	T66_REGISTER_IDOL_ALIAS(1)
-	T66_REGISTER_IDOL_ALIAS(2)
-	T66_REGISTER_IDOL_ALIAS(3)
-	T66_REGISTER_IDOL_ALIAS(4)
-	T66_REGISTER_IDOL_ALIAS(5)
-	T66_REGISTER_IDOL_ALIAS(6)
-	T66_REGISTER_IDOL_ALIAS(7)
-	T66_REGISTER_IDOL_ALIAS(8)
-	T66_REGISTER_IDOL_ALIAS(9)
-	T66_REGISTER_IDOL_ALIAS(10)
-	T66_REGISTER_IDOL_ALIAS(11)
-	T66_REGISTER_IDOL_ALIAS(12)
-	T66_REGISTER_IDOL_ALIAS(13)
-	T66_REGISTER_IDOL_ALIAS(14)
-	T66_REGISTER_IDOL_ALIAS(15)
-	T66_REGISTER_IDOL_ALIAS(16)
-	T66_REGISTER_IDOL_ALIAS(17)
-	T66_REGISTER_IDOL_ALIAS(18)
-	T66_REGISTER_IDOL_ALIAS(19)
-	T66_REGISTER_IDOL_ALIAS(20)
-	T66_REGISTER_IDOL_ALIAS(21)
-	T66_REGISTER_IDOL_ALIAS(22)
-	T66_REGISTER_IDOL_ALIAS(23)
-	T66_REGISTER_IDOL_ALIAS(24)
-
-#undef T66_REGISTER_IDOL_ALIAS
-
-	static bool T66_ShouldApplyCombatIterationSetup(const UWorld* World, const UT66GameInstance* T66GI, const UT66RunStateSubsystem* RunState)
-	{
-#if WITH_EDITOR
-		if (!World || World->WorldType != EWorldType::PIE)
-		{
-			return false;
-		}
-#else
-		return false;
-#endif
-
-		if (!RunState)
-		{
-			return false;
-		}
-
-		if (T66GI && T66GI->bLoadAsPreview)
-		{
-			return false;
-		}
-
-		const bool bIsLab = T66GI && T66GI->bIsLabLevel;
-		return bIsLab || RunState->GetCurrentStage() == 1;
-	}
-
-	static void T66_ResetCombatIterationLoadout(UT66RunStateSubsystem* RunState)
-	{
-		if (!RunState)
-		{
-			return;
-		}
-
-		const int32 RemovedItemCount = RunState->GetInventorySlots().Num();
-		const int32 RemovedIdolCount = T66_CountEquippedEntries(RunState->GetEquippedIdols());
-		RunState->ClearInventory();
-		RunState->ClearEquippedIdols();
-		RunState->SetInStageCatchUp(false);
-		UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Cleared startup loadout for isolated VFX tests. RemovedItems=%d RemovedIdols=%d"), RemovedItemCount, RemovedIdolCount);
-	}
-
-	static void T66_SeedCombatIterationHeroSelection(UT66GameInstance* T66GI)
-	{
-		if (!T66GI)
-		{
-			return;
-		}
-
-		const FName TestHeroID = T66_GetCombatIterationStageTestHeroID();
-		const FName DefaultSkinID(TEXT("Default"));
-
-		T66GI->SelectedHeroID = TestHeroID;
-		T66GI->SelectedHeroBodyType = ET66BodyType::TypeA;
-		T66GI->SelectedHeroSkinID = DefaultSkinID;
-
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("[DEV][CombatIteration] Forced hero selection for isolated VFX tests: Hero=%s BodyType=%s Skin=%s"),
-			*TestHeroID.ToString(),
-			TEXT("TypeA"),
-			*DefaultSkinID.ToString());
-	}
-
-	static void T66_SeedCombatIterationStageTestIdol(UT66RunStateSubsystem* RunState)
-	{
-		if (!RunState)
-		{
-			return;
-		}
-
-		const FName TestIdolID = T66_GetCombatIterationStageTestIdolID();
-		if (TestIdolID.IsNone())
-		{
-			UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Stage test idol disabled. Idol loadout remains empty."));
-			return;
-		}
-
-		const bool bEquipped = RunState->EquipIdolInSlot(0, TestIdolID);
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("[DEV][CombatIteration] Equipped stage test idol: Idol=%s Slot=0 Equipped=%d Rarity=%s"),
-			*TestIdolID.ToString(),
-			bEquipped ? 1 : 0,
-			T66_GetCombatIterationRarityName(RunState->GetEquippedIdolRarityInSlot(0)));
-	}
-
-	static void T66_SpawnCombatIterationEnemies(UWorld* World, const APawn* Pawn)
-	{
-		if (!World || !Pawn)
-		{
-			return;
-		}
-
-		TArray<AActor*> ExistingTaggedEnemies;
-		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
-		{
-			if (AT66EnemyBase* ExistingEnemy = *It)
-			{
-				if (ExistingEnemy->Tags.Contains(T66_CombatIterationEnemyTag))
-				{
-					ExistingTaggedEnemies.Add(ExistingEnemy);
-				}
-			}
-		}
-		for (AActor* ExistingEnemy : ExistingTaggedEnemies)
-		{
-			if (ExistingEnemy)
-			{
-				ExistingEnemy->Destroy();
-			}
-		}
-
-		FVector Forward = Pawn->GetActorForwardVector();
-		Forward.Z = 0.f;
-		if (!Forward.Normalize())
-		{
-			Forward = FVector::ForwardVector;
-		}
-
-		FVector Right = Pawn->GetActorRightVector();
-		Right.Z = 0.f;
-		if (!Right.Normalize())
-		{
-			Right = FVector::CrossProduct(FVector::UpVector, Forward).GetSafeNormal();
-		}
-
-		const FVector PawnLocation = Pawn->GetActorLocation();
-		const FVector BaseSpawnLocation = PawnLocation + Forward * 475.f;
-		const float LateralSpacing = 170.f;
-		const float EnemyHeightOffset = 90.f;
-		const FRotator EnemyRotation = (-Forward).Rotation();
-
-		for (int32 EnemyIndex = 0; EnemyIndex < 3; ++EnemyIndex)
-		{
-			const float SideOffset = static_cast<float>(EnemyIndex - 1) * LateralSpacing;
-			FVector SpawnLocation = BaseSpawnLocation + Right * SideOffset;
-
-			FHitResult GroundHit;
-			const FVector TraceStart = SpawnLocation + FVector(0.f, 0.f, 600.f);
-			const FVector TraceEnd = SpawnLocation - FVector(0.f, 0.f, 1400.f);
-			if (World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic))
-			{
-				SpawnLocation = GroundHit.ImpactPoint + FVector(0.f, 0.f, EnemyHeightOffset);
-			}
-			else
-			{
-				SpawnLocation.Z = PawnLocation.Z;
-			}
-
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-			if (AT66EnemyBase* SpawnedEnemy = World->SpawnActor<AT66EnemyBase>(AT66EnemyBase::StaticClass(), SpawnLocation, EnemyRotation, SpawnParams))
-			{
-				SpawnedEnemy->MaxHP = 999999;
-				SpawnedEnemy->CurrentHP = SpawnedEnemy->MaxHP;
-				SpawnedEnemy->bDropsLoot = false;
-				SpawnedEnemy->XPValue = 0;
-				SpawnedEnemy->PointValue = 0;
-				SpawnedEnemy->Tags.AddUnique(T66_CombatIterationEnemyTag);
-				SpawnedEnemy->AutoAttackKnockbackSpeed = 0.f;
-				if (UCharacterMovementComponent* Movement = SpawnedEnemy->GetCharacterMovement())
-				{
-					Movement->DisableMovement();
-					Movement->StopMovementImmediately();
-				}
-				SpawnedEnemy->UpdateHealthBar();
-			}
-		}
-
-		UE_LOG(LogTemp, Log, TEXT("[DEV][CombatIteration] Spawned 3 stationary invulnerable enemy targets in front of the hero start."));
-	}
-
-	static void T66_ApplyCombatIterationSetup(UWorld* World, APawn* Pawn, UT66RunStateSubsystem* RunState, UT66GameInstance* T66GI)
-	{
-		if (!T66_ShouldApplyCombatIterationSetup(World, T66GI, RunState) || !Pawn)
-		{
-			return;
-		}
-
-		T66_SeedCombatIterationHeroSelection(T66GI);
-		T66_ResetCombatIterationLoadout(RunState);
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("[DEV][CombatIteration] Active hero for isolated VFX tests: SelectedHero=%s InventorySlots=%d EquippedIdols=%d PreviewMode=%d"),
-			(T66GI && !T66GI->SelectedHeroID.IsNone()) ? *T66GI->SelectedHeroID.ToString() : TEXT("None"),
-			RunState ? RunState->GetInventorySlots().Num() : -1,
-			RunState ? T66_CountEquippedEntries(RunState->GetEquippedIdols()) : -1,
-			(T66GI && T66GI->bLoadAsPreview) ? 1 : 0);
-		T66_SeedCombatIterationStageTestIdol(RunState);
-		T66_SpawnCombatIterationEnemies(World, Pawn);
-	}
 }
 
 AT66GameMode::AT66GameMode()
@@ -724,37 +297,7 @@ void AT66GameMode::BeginPlay()
 	Super::BeginPlay();
 
 	// Main flat floor is spawned in SpawnLevelContentAfterLandscapeReady (no external asset packs).
-
-	// Reset run state when entering gameplay level unless this is a stage transition (keep progress)
-	UGameInstance* GI = GetGameInstance();
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	if (GI && T66GI)
-	{
-		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			// Bind to timer changes so we can spawn LoanShark exactly when timer starts.
-			RunState->StageTimerChanged.AddDynamic(this, &AT66GameMode::HandleStageTimerChanged);
-			RunState->DifficultyChanged.AddDynamic(this, &AT66GameMode::HandleDifficultyChanged);
-
-			// Robust: treat any stage > 1 as a stage transition even if a gate forgot to set the flag.
-			const bool bKeepProgress = T66GI->bIsStageTransition || (RunState->GetCurrentStage() > 1);
-			if (bKeepProgress)
-			{
-				T66GI->bIsStageTransition = false;
-				RunState->ResetStageTimerToFull(); // New stage: timer frozen at 60 until start gate
-				RunState->ResetBossState(); // New stage: boss is dormant again; hide boss UI
-			}
-			else
-			{
-				T66GI->bRunIneligibleForLeaderboard = false; // Fresh run is eligible
-				RunState->ResetForNewRun();
-				if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-				{
-					DamageLog->ResetForNewRun();
-				}
-			}
-		}
-	}
+	InitializeRunStateForBeginPlay();
 
 	if (bAutoSetupLevel)
 	{
@@ -770,180 +313,271 @@ void AT66GameMode::BeginPlay()
 	}
 	HandleSettingsChanged();
 
-	// Coliseum mode: only spawn owed bosses + miasma (no houses, no waves, no NPCs, no start gate/pillars).
+	if (HandleSpecialModeBeginPlay())
+	{
+		return;
+	}
+
+	ConsumePendingStageCatchUp();
+	ScheduleDeferredGameplayLevelSpawn();
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - Level setup scheduled; content will spawn after landscape is ready."));
+}
+
+void AT66GameMode::InitializeRunStateForBeginPlay()
+{
+	UGameInstance* GI = GetGameInstance();
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!GI || !T66GI)
+	{
+		return;
+	}
+
+	if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+	{
+		// Bind to timer changes so we can spawn LoanShark exactly when timer starts.
+		RunState->StageTimerChanged.AddDynamic(this, &AT66GameMode::HandleStageTimerChanged);
+		RunState->DifficultyChanged.AddDynamic(this, &AT66GameMode::HandleDifficultyChanged);
+
+		// Robust: treat any stage > 1 as a stage transition even if a gate forgot to set the flag.
+		const bool bKeepProgress = T66GI->bIsStageTransition || (RunState->GetCurrentStage() > 1);
+		if (bKeepProgress)
+		{
+			T66GI->bIsStageTransition = false;
+			RunState->ResetStageTimerToFull(); // New stage: timer frozen at 60 until start gate
+			RunState->ResetBossState(); // New stage: boss is dormant again; hide boss UI
+			return;
+		}
+
+		T66GI->bRunIneligibleForLeaderboard = false; // Fresh run is eligible
+		RunState->ResetForNewRun();
+		if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+		{
+			DamageLog->ResetForNewRun();
+		}
+	}
+}
+
+bool AT66GameMode::HandleSpecialModeBeginPlay()
+{
 	if (IsColiseumStage())
 	{
-		ResetColiseumState();
-		if (UGameInstance* GI2 = GetGameInstance())
-		{
-			if (UT66RunStateSubsystem* RunState = GI2->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				// Coliseum countdown begins immediately (no start gate).
-				RunState->ResetStageTimerToFull();
-				RunState->SetStageTimerActive(true);
-			}
-		}
-
-		// Coliseum still has miasma.
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			MiasmaManager = GetWorld()->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		}
-
-		SpawnColiseumArenaIfNeeded();
-		SpawnAllOwedBossesInColiseum();
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Coliseum"));
-		return;
+		HandleColiseumBeginPlay();
+		return true;
 	}
 
-	// The Lab: minimal arena, hero + companion only; no waves, NPCs, gates, or run progress.
 	if (IsLabLevel())
 	{
-		if (UGameInstance* GILab = GetGameInstance())
+		HandleLabBeginPlay();
+		return true;
+	}
+
+	return false;
+}
+
+void AT66GameMode::HandleColiseumBeginPlay()
+{
+	ResetColiseumState();
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
-			if (UT66RunStateSubsystem* RunState = GILab->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				RunState->ResetForNewRun();
-			}
-			if (UT66DamageLogSubsystem* DamageLog = GILab->GetSubsystem<UT66DamageLogSubsystem>())
-			{
-				DamageLog->ResetForNewRun();
-			}
+			// Coliseum countdown begins immediately (no start gate).
+			RunState->ResetStageTimerToFull();
+			RunState->SetStageTimerActive(true);
 		}
-		if (bAutoSetupLevel)
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (UWorld* World = GetWorld())
+	{
+		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+
+	SpawnColiseumArenaIfNeeded();
+	SpawnAllOwedBossesInColiseum();
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - Coliseum"));
+}
+
+void AT66GameMode::HandleLabBeginPlay()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
-			EnsureLevelSetup();
+			RunState->ResetForNewRun();
 		}
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Lab"));
+		if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+		{
+			DamageLog->ResetForNewRun();
+		}
+	}
+
+	if (bAutoSetupLevel)
+	{
+		EnsureLevelSetup();
+	}
+
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - Lab"));
+}
+
+void AT66GameMode::ConsumePendingStageCatchUp()
+{
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!T66GI || !T66GI->bStageCatchUpPending)
+	{
 		return;
 	}
 
-	UT66GameInstance* GIAsT66 = GetT66GameInstance();
-	const bool bStageCatchUp = (GIAsT66 && GIAsT66->bStageCatchUpPending);
-
-	if (bStageCatchUp)
+	T66GI->bStageCatchUpPending = false;
+	if (UT66RunStateSubsystem* RunState = T66GI->GetSubsystem<UT66RunStateSubsystem>())
 	{
-		GIAsT66->bStageCatchUpPending = false;
-		if (UT66RunStateSubsystem* RunState = GIAsT66->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			RunState->SetInStageCatchUp(false);
-		}
+		RunState->SetInStageCatchUp(false);
 	}
+}
 
-	// Normal stage: defer all ground-dependent spawns until next tick so the landscape is fully formed and collision is ready.
-	UWorld* World = GetWorld();
-	if (World)
+void AT66GameMode::ScheduleDeferredGameplayLevelSpawn()
+{
+	if (UWorld* World = GetWorld())
 	{
+		// Normal stage: defer all ground-dependent spawns until next tick so the landscape is fully formed and collision is ready.
 		World->GetTimerManager().SetTimerForNextTick(this, &AT66GameMode::SpawnLevelContentAfterLandscapeReady);
 	}
-	UE_LOG(LogTemp, Log, TEXT("T66GameMode BeginPlay - Level setup scheduled; content will spawn after landscape is ready."));
 }
 
 void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
 	UWorld* World = GetWorld();
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
-	TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay;
-	if (bUsingMainMapTerrain)
-	{
-		if (APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr)
-		{
-			if (UT66LoadingScreenWidget* Overlay = CreateWidget<UT66LoadingScreenWidget>(PC, UT66LoadingScreenWidget::StaticClass()))
-			{
-				Overlay->AddToViewport(10000);
-				GameplayWarmupOverlay = Overlay;
-			}
-		}
-	}
-	auto ScheduleLightingRefresh = [this, World]()
-	{
-		if (!World)
-		{
-			return;
-		}
-
-		// Recapture after runtime terrain/props register so first PIE does not keep a cold sky capture.
-		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			ApplyThemeToAtmosphereAndLighting();
-		}));
-
-		FTimerHandle DelayedLightingRefreshHandle;
-		World->GetTimerManager().SetTimer(
-			DelayedLightingRefreshHandle,
-			FTimerDelegate::CreateWeakLambda(this, [this]()
-			{
-				ApplyThemeToAtmosphereAndLighting();
-			}),
-			0.35f,
-			false);
-
-		FTimerHandle FinalLightingRefreshHandle;
-		World->GetTimerManager().SetTimer(
-			FinalLightingRefreshHandle,
-			FTimerDelegate::CreateWeakLambda(this, [this]()
-			{
-				ApplyThemeToAtmosphereAndLighting();
-			}),
-			0.65f,
-			false);
-	};
-	auto ScheduleOverlayHide = [this, World, GameplayWarmupOverlay]()
-	{
-		if (!World || !GameplayWarmupOverlay.IsValid())
-		{
-			return;
-		}
-
-		TSharedPtr<int32> OverlayPollCount = MakeShared<int32>(0);
-		TSharedPtr<FTimerHandle> HideOverlayHandle = MakeShared<FTimerHandle>();
-		World->GetTimerManager().SetTimer(
-			*HideOverlayHandle,
-			FTimerDelegate::CreateWeakLambda(this, [World, GameplayWarmupOverlay, OverlayPollCount, HideOverlayHandle]()
-			{
-				if (!World)
-				{
-					return;
-				}
-
-				if (!GameplayWarmupOverlay.IsValid())
-				{
-					World->GetTimerManager().ClearTimer(*HideOverlayHandle);
-					return;
-				}
-
-				const bool bMaterialsReady = T66AreMainMapTerrainMaterialsReady(World);
-				++(*OverlayPollCount);
-				const bool bTimedOut = *OverlayPollCount >= 50;
-				if (bMaterialsReady || bTimedOut)
-				{
-					GameplayWarmupOverlay->RemoveFromParent();
-					World->GetTimerManager().ClearTimer(*HideOverlayHandle);
-					if (bTimedOut && !bMaterialsReady)
-					{
-						UE_LOG(LogTemp, Warning, TEXT("T66GameMode - Gameplay warmup overlay timed out before main map terrain materials reported ready."));
-					}
-				}
-			}),
-			0.10f,
-			true);
-	};
+	TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay = CreateGameplayWarmupOverlay(World, bUsingMainMapTerrain);
 
 	// Phase 0: Spawn the runtime main map terrain before any ground-traced content.
 	SpawnMainMapTerrain();
+	SpawnStageStructuresAndInteractables(World, bUsingMainMapTerrain);
+	SpawnStageDecorativeProps(bUsingMainMapTerrain);
 
-	// Start gate: spawned here (after floor) so the ground trace hits the flat floor.
+	if (bUsingMainMapTerrain)
+	{
+		PrepareMainMapStage(World);
+		ScheduleGameplayLightingRefresh(World);
+		ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
+		UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
+		return;
+	}
+
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
+	ScheduleStandardStageCombatBootstrap(World);
+	ScheduleGameplayLightingRefresh(World);
+	ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
+}
+
+TWeakObjectPtr<UT66LoadingScreenWidget> AT66GameMode::CreateGameplayWarmupOverlay(UWorld* World, bool bUsingMainMapTerrain) const
+{
+	if (!bUsingMainMapTerrain || !World)
+	{
+		return nullptr;
+	}
+
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (!PC)
+	{
+		return nullptr;
+	}
+
+	if (UT66LoadingScreenWidget* Overlay = CreateWidget<UT66LoadingScreenWidget>(PC, UT66LoadingScreenWidget::StaticClass()))
+	{
+		Overlay->AddToViewport(10000);
+		return Overlay;
+	}
+
+	return nullptr;
+}
+
+void AT66GameMode::ScheduleGameplayLightingRefresh(UWorld* World)
+{
+	if (!World)
+	{
+		return;
+	}
+
+	// Recapture after runtime terrain/props register so first PIE does not keep a cold sky capture.
+	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		ApplyThemeToAtmosphereAndLighting();
+	}));
+
+	FTimerHandle DelayedLightingRefreshHandle;
+	World->GetTimerManager().SetTimer(
+		DelayedLightingRefreshHandle,
+		FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			ApplyThemeToAtmosphereAndLighting();
+		}),
+		0.35f,
+		false);
+
+	FTimerHandle FinalLightingRefreshHandle;
+	World->GetTimerManager().SetTimer(
+		FinalLightingRefreshHandle,
+		FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			ApplyThemeToAtmosphereAndLighting();
+		}),
+		0.65f,
+		false);
+}
+
+void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay)
+{
+	if (!World || !GameplayWarmupOverlay.IsValid())
+	{
+		return;
+	}
+
+	TSharedPtr<int32> OverlayPollCount = MakeShared<int32>(0);
+	TSharedPtr<FTimerHandle> HideOverlayHandle = MakeShared<FTimerHandle>();
+	World->GetTimerManager().SetTimer(
+		*HideOverlayHandle,
+		FTimerDelegate::CreateWeakLambda(this, [World, GameplayWarmupOverlay, OverlayPollCount, HideOverlayHandle]()
+		{
+			if (!World)
+			{
+				return;
+			}
+
+			if (!GameplayWarmupOverlay.IsValid())
+			{
+				World->GetTimerManager().ClearTimer(*HideOverlayHandle);
+				return;
+			}
+
+			const bool bMaterialsReady = T66AreMainMapTerrainMaterialsReady(World);
+			++(*OverlayPollCount);
+			const bool bTimedOut = *OverlayPollCount >= 50;
+			if (bMaterialsReady || bTimedOut)
+			{
+				GameplayWarmupOverlay->RemoveFromParent();
+				World->GetTimerManager().ClearTimer(*HideOverlayHandle);
+				if (bTimedOut && !bMaterialsReady)
+				{
+					UE_LOG(LogT66GameMode, Warning, TEXT("T66GameMode - Gameplay warmup overlay timed out before main map terrain materials reported ready."));
+				}
+			}
+		}),
+		0.10f,
+		true);
+}
+
+void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsingMainMapTerrain)
+{
 	if (!bUsingMainMapTerrain && !IsColiseumStage() && !IsLabLevel())
 	{
-		AController* PC = World ? World->GetFirstPlayerController() : nullptr;
-		if (PC)
+		if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
 		{
 			SpawnStartGateForPlayer(PC);
 		}
 	}
 
-	// Phase 1: Spawn ground-dependent structures (houses, NPCs, world interactables, tiles).
 	SpawnCornerHousesAndNPCs();
 	SpawnCircusInteractableIfNeeded();
 	SpawnSupportVendorAtStartIfNeeded();
@@ -951,23 +585,25 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	{
 		SpawnIdolAltarForPlayer(PC);
 	}
+
 	if (!bUsingMainMapTerrain)
 	{
 		SpawnTricksterAndCowardiceGate();
 		SpawnBossBeaconIfNeeded();
-	}
-	if (!bUsingMainMapTerrain)
-	{
 		SpawnWorldInteractablesForStage();
+		SpawnStageEffectsForStage();
+		SpawnTutorialIfNeeded();
 	}
+}
 
-	// Scatter decorative props.
-	if (UGameInstance* PropGI = GetGameInstance())
+void AT66GameMode::SpawnStageDecorativeProps(bool bUsingMainMapTerrain)
+{
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		if (UT66PropSubsystem* PropSub = PropGI->GetSubsystem<UT66PropSubsystem>())
+		if (UT66PropSubsystem* PropSub = GI->GetSubsystem<UT66PropSubsystem>())
 		{
-			UT66GameInstance* T66GI_Props = GetT66GameInstance();
-			const int32 PropSeed = (T66GI_Props && T66GI_Props->RunSeed != 0) ? T66GI_Props->RunSeed : FMath::Rand();
+			UT66GameInstance* T66GI = GetT66GameInstance();
+			const int32 PropSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
 			if (bUsingMainMapTerrain)
 			{
 				const TArray<FName> MainMapPropRows = {
@@ -983,167 +619,149 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 			}
 		}
 	}
+}
 
-	if (!bUsingMainMapTerrain)
+void AT66GameMode::PrepareMainMapStage(UWorld* World)
+{
+	SpawnTricksterAndCowardiceGate();
+	SpawnBossForCurrentStage();
+
+	TArray<AT66EnemyDirector*> ExistingEnemyDirectors;
+	for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
 	{
-		SpawnStageEffectsForStage();
+		if (AT66EnemyDirector* ExistingDirector = *It)
+		{
+			ExistingEnemyDirectors.Add(ExistingDirector);
+		}
 	}
-	if (!bUsingMainMapTerrain)
+	for (AT66EnemyDirector* ExistingDirector : ExistingEnemyDirectors)
 	{
-		SpawnTutorialIfNeeded();
+		if (ExistingDirector)
+		{
+			ExistingDirector->Destroy();
+		}
 	}
 
-	if (bUsingMainMapTerrain)
+	bMainMapCombatStarted = false;
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		SpawnTricksterAndCowardiceGate();
-		SpawnBossForCurrentStage();
-		TArray<AT66EnemyDirector*> ExistingEnemyDirectors;
-		for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
-			if (AT66EnemyDirector* ExistingDirector = *It)
-			{
-				ExistingEnemyDirectors.Add(ExistingDirector);
-			}
+			RunState->ResetStageTimerToFull();
+			RunState->SetStageTimerActive(false);
 		}
-		for (AT66EnemyDirector* ExistingDirector : ExistingEnemyDirectors)
-		{
-			if (ExistingDirector)
-			{
-				ExistingDirector->Destroy();
-			}
-		}
-		bMainMapCombatStarted = false;
-		if (UGameInstance* GI = GetGameInstance())
-		{
-			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				RunState->ResetStageTimerToFull();
-				RunState->SetStageTimerActive(false);
-			}
-		}
+	}
+}
 
-		if (APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr)
-		{
-			if (APawn* Pawn = PC->GetPawn())
-			{
-				UGameInstance* GI = GetGameInstance();
-				T66_ApplyCombatIterationSetup(World, Pawn, GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr, GetT66GameInstance());
-			}
-		}
-
-		ScheduleLightingRefresh();
-		ScheduleOverlayHide();
-		UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
+void AT66GameMode::ScheduleStandardStageCombatBootstrap(UWorld* World)
+{
+	if (!World)
+	{
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
-
-	// [GOLD] Phase 2 is now staggered across 4 ticks to eliminate the ~1 second hitch:
-	//   Tick 1: Preload character visuals for this stage's mobs + boss (sync loads happen here, before combat)
-	//   Tick 2: Spawn miasma boundary + miasma manager (wall visuals + dynamic materials)
-	//   Tick 3: Spawn enemy director (triggers first wave ??? enemies are cheap now because visuals are cached)
-	//   Tick 4: Spawn boss + boss gate
-	if (World)
+	// Phase 2 is staggered across 4 ticks to eliminate the large startup hitch:
+	// preload visuals -> spawn miasma systems -> spawn enemy director -> spawn boss/gate.
+	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
+		PreloadStageCharacterVisuals();
+	}));
+}
+
+void AT66GameMode::PreloadStageCharacterVisuals()
+{
+	const double PreloadStart = FPlatformTime::Seconds();
+
+	UGameInstance* GI = GetGameInstance();
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66CharacterVisualSubsystem* Visuals = GI ? GI->GetSubsystem<UT66CharacterVisualSubsystem>() : nullptr;
+
+	if (T66GI && RunState && Visuals)
+	{
+		const int32 StageNum = RunState->GetCurrentStage();
+		FStageData StageData;
+		if (T66GI->GetStageData(StageNum, StageData))
 		{
-			if (APawn* Pawn = PC->GetPawn())
-			{
-				UGameInstance* GI = GetGameInstance();
-				T66_ApplyCombatIterationSetup(World, Pawn, GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr, GetT66GameInstance());
-			}
+			// Preload mob visuals before the first enemy spawn to avoid sync-load hitches.
+			if (!StageData.EnemyA.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyA);
+			if (!StageData.EnemyB.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyB);
+			if (!StageData.EnemyC.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyC);
+			Visuals->PreloadCharacterVisual(FName(TEXT("Boss")));
+
+			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, Boss=%s) in %.1fms"),
+				StageNum,
+				*StageData.EnemyA.ToString(), *StageData.EnemyB.ToString(), *StageData.EnemyC.ToString(),
+				*StageData.BossID.ToString(),
+				(FPlatformTime::Seconds() - PreloadStart) * 1000.0);
 		}
 
-		// --- Tick 1: Preload character visuals ---
-		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			const double PreloadStart = FPlatformTime::Seconds();
-
-			UGameInstance* GI = GetGameInstance();
-			UT66GameInstance* T66GI = GetT66GameInstance();
-			UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-			UT66CharacterVisualSubsystem* Visuals = GI ? GI->GetSubsystem<UT66CharacterVisualSubsystem>() : nullptr;
-
-			if (T66GI && RunState && Visuals)
-			{
-				const int32 StageNum = RunState->GetCurrentStage();
-				FStageData StageData;
-				if (T66GI->GetStageData(StageNum, StageData))
-				{
-					// Preload mob visuals (these are the ones that cause sync loads on first enemy spawn).
-					if (!StageData.EnemyA.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyA);
-					if (!StageData.EnemyB.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyB);
-					if (!StageData.EnemyC.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyC);
-					// Preload shared boss visual (all stages use "Boss" mesh).
-					Visuals->PreloadCharacterVisual(FName(TEXT("Boss")));
-
-					UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, Boss=%s) in %.1fms"),
-						StageNum,
-						*StageData.EnemyA.ToString(), *StageData.EnemyB.ToString(), *StageData.EnemyC.ToString(),
-						*StageData.BossID.ToString(),
-						(FPlatformTime::Seconds() - PreloadStart) * 1000.0);
-				}
-				// Also preload fallback mob IDs in case DT_Stages isn't fully wired.
-				const FName FallbackA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), RunState->GetCurrentStage()));
-				const FName FallbackB = FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), RunState->GetCurrentStage()));
-				const FName FallbackC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), RunState->GetCurrentStage()));
-				Visuals->PreloadCharacterVisual(FallbackA);
-				Visuals->PreloadCharacterVisual(FallbackB);
-				Visuals->PreloadCharacterVisual(FallbackC);
-			}
-
-			UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Preload: total preload time %.1fms"), (FPlatformTime::Seconds() - PreloadStart) * 1000.0);
-
-			// --- Tick 2: Spawn miasma systems ---
-			if (UWorld* W2 = GetWorld())
-			{
-				W2->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-				{
-					FActorSpawnParameters SpawnParams;
-					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-					UWorld* W = GetWorld();
-					if (W)
-					{
-						MiasmaManager = W->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-						W->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-					}
-					UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Tick2: miasma systems spawned."));
-
-					// --- Tick 3: Spawn enemy director ---
-					if (UWorld* W3 = GetWorld())
-					{
-						W3->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-						{
-							FActorSpawnParameters SpawnParams;
-							SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-							UWorld* W = GetWorld();
-							if (W)
-							{
-								W->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-							}
-							UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Tick3: enemy director spawned."));
-
-							// --- Tick 4: Spawn boss + boss gate ---
-							if (UWorld* W4 = GetWorld())
-							{
-								W4->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-								{
-									SpawnBossForCurrentStage();
-									SpawnBossGateIfNeeded();
-									UE_LOG(LogTemp, Log, TEXT("[GOLD] Phase2-Tick4: boss + boss gate spawned. Phase 2 complete."));
-									UE_LOG(LogTemp, Log, TEXT("T66GameMode - Phase 2 content spawned (combat systems + boss)."));
-								}));
-							}
-						}));
-					}
-				}));
-			}
-		}));
+		const FName FallbackA = FName(*FString::Printf(TEXT("Mob_Stage%02d_A"), RunState->GetCurrentStage()));
+		const FName FallbackB = FName(*FString::Printf(TEXT("Mob_Stage%02d_B"), RunState->GetCurrentStage()));
+		const FName FallbackC = FName(*FString::Printf(TEXT("Mob_Stage%02d_C"), RunState->GetCurrentStage()));
+		Visuals->PreloadCharacterVisual(FallbackA);
+		Visuals->PreloadCharacterVisual(FallbackB);
+		Visuals->PreloadCharacterVisual(FallbackC);
 	}
 
-	ScheduleLightingRefresh();
-	ScheduleOverlayHide();
+	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: total preload time %.1fms"), (FPlatformTime::Seconds() - PreloadStart) * 1000.0);
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			SpawnStageMiasmaSystems();
+		}));
+	}
+}
+
+void AT66GameMode::SpawnStageMiasmaSystems()
+{
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (UWorld* World = GetWorld())
+	{
+		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+
+	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick2: miasma systems spawned."));
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			SpawnStageEnemyDirector();
+		}));
+	}
+}
+
+void AT66GameMode::SpawnStageEnemyDirector()
+{
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (UWorld* World = GetWorld())
+	{
+		World->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+
+	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick3: enemy director spawned."));
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			FinalizeStandardStageCombatBootstrap();
+		}));
+	}
+}
+
+void AT66GameMode::FinalizeStandardStageCombatBootstrap()
+{
+	SpawnBossForCurrentStage();
+	SpawnBossGateIfNeeded();
+	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick4: boss + boss gate spawned. Phase 2 complete."));
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 2 content spawned (combat systems + boss)."));
 }
 
 void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -1436,7 +1054,7 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		}
 	}
 
-	UE_LOG(LogTemp, Log,
+	UE_LOG(LogT66GameMode, Log,
 		TEXT("[StageEffects] Spawned %d lava patches and %d shrooms for stage %d (diff=%d)."),
 		SpawnedLavaCount,
 		SpawnedShroomCount,
@@ -1466,7 +1084,7 @@ void AT66GameMode::Tick(float DeltaTime)
 			{
 				if (Lag->IsEnabled())
 				{
-					UE_LOG(LogTemp, Warning, TEXT("[LAG] Frame: %.2fms (%.1f FPS)"), DeltaTime * 1000.f, 1.f / FMath::Max(0.001f, DeltaTime));
+					UE_LOG(LogT66GameMode, Warning, TEXT("[LAG] Frame: %.2fms (%.1f FPS)"), DeltaTime * 1000.f, 1.f / FMath::Max(0.001f, DeltaTime));
 				}
 			}
 		}
@@ -1660,19 +1278,6 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 
 	MaintainPlayerTerrainSafety();
 
-	if (IsLabLevel())
-	{
-		if (UWorld* World = GetWorld())
-		{
-			World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this, WeakPlayer = TWeakObjectPtr<AController>(NewPlayer)]()
-			{
-				AController* Player = WeakPlayer.Get();
-				APawn* SpawnedPawn = Player ? Player->GetPawn() : nullptr;
-				UGameInstance* GIForSetup = GetGameInstance();
-				T66_ApplyCombatIterationSetup(GetWorld(), SpawnedPawn, GIForSetup ? GIForSetup->GetSubsystem<UT66RunStateSubsystem>() : nullptr, GetT66GameInstance());
-			}));
-		}
-	}
 }
 
 void AT66GameMode::SpawnBossGateIfNeeded()
@@ -2197,7 +1802,7 @@ void AT66GameMode::TryActivateMainMapCombat()
 	}
 
 	bMainMapCombatStarted = true;
-	UE_LOG(LogTemp, Log, TEXT("T66GameMode - Main map combat activated after player crossed the start threshold."));
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map combat activated after player crossed the start threshold."));
 }
 
 void AT66GameMode::ResetColiseumState()
@@ -2465,7 +2070,7 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 		{
 			Companion->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
 		}
-		UE_LOG(LogTemp, Log, TEXT("Spawned companion: %s"), *CompanionData.DisplayName.ToString());
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned companion: %s"), *CompanionData.DisplayName.ToString());
 	}
 
 	// If the companion class is a soft reference and isn't loaded yet, load asynchronously and replace.
@@ -2554,7 +2159,7 @@ void AT66GameMode::SpawnVendorForPlayer(AController* Player)
 	AT66VendorNPC* Vendor = World->SpawnActor<AT66VendorNPC>(AT66VendorNPC::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 	if (Vendor)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Spawned vendor NPC near hero"));
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned vendor NPC near hero"));
 	}
 }
 
@@ -2918,7 +2523,7 @@ void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
 			StartGate->PoleRight->SetVisibility(false, true);
 			StartGate->PoleRight->SetHiddenInGame(true, true);
 		}
-		UE_LOG(LogTemp, Log, TEXT("Spawned Start Gate at main-area entrance (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned Start Gate at main-area entrance (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
 	}
 
 }
@@ -3564,7 +3169,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 	AT66StageGate* StageGate = World->SpawnActor<AT66StageGate>(AT66StageGate::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 	if (StageGate)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Spawned Stage Gate at boss death location"));
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned Stage Gate at boss death location"));
 	}
 }
 
@@ -3679,7 +3284,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 		Boss->InitializeBoss(BossData);
 		StageBoss = Boss;
 		SpawnBossBeaconIfNeeded();
-		UE_LOG(LogTemp, Log, TEXT("Spawned boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
 
 		// If the boss class is a soft reference and isn't loaded yet, load asynchronously and replace the dormant boss.
 		if (bWantsSpecificBossClass && !bBossClassLoaded)
@@ -3729,7 +3334,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 
 void AT66GameMode::EnsureLevelSetup()
 {
-	UE_LOG(LogTemp, Log, TEXT("Checking level setup..."));
+	UE_LOG(LogT66GameMode, Log, TEXT("Checking level setup..."));
 
 	// Destroy any Landscape or editor-placed foliage actors saved in the level (legacy from external asset packs).
 	UWorld* CleanupWorld = GetWorld();
@@ -3737,7 +3342,7 @@ void AT66GameMode::EnsureLevelSetup()
 	{
 		for (TActorIterator<ALandscape> It(CleanupWorld); It; ++It)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[MAP] Destroying saved Landscape actor: %s"), *It->GetName());
+			UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Destroying saved Landscape actor: %s"), *It->GetName());
 			It->Destroy();
 		}
 		static const FName OldFoliageTag(TEXT("T66ProceduralFoliage"));
@@ -3755,7 +3360,7 @@ void AT66GameMode::EnsureLevelSetup()
 		}
 		if (ToDestroy.Num() > 0)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[MAP] Destroyed %d legacy foliage actors."), ToDestroy.Num());
+			UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Destroyed %d legacy foliage actors."), ToDestroy.Num());
 		}
 	}
 
@@ -4650,7 +4255,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UE_LOG(LogTemp, Log, TEXT("[MAP] Generating main map terrain (seed=%d, grid=%d, cell=%.0f, step=%.0f, scale=%.2f)"),
+	UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Generating main map terrain (seed=%d, grid=%d, cell=%.0f, step=%.0f, scale=%.2f)"),
 		Preset.Seed,
 		MainMapSettings.BoardSize,
 		MainMapSettings.CellSize,
@@ -4660,7 +4265,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	T66MainMapTerrain::FBoard Board;
 	if (!T66MainMapTerrain::Generate(Preset, Board))
 	{
-		UE_LOG(LogTemp, Error, TEXT("[MAP] Main map terrain generation failed to fill the board (seed=%d, occupied=%d/%d)"),
+		UE_LOG(LogT66GameMode, Error, TEXT("[MAP] Main map terrain generation failed to fill the board (seed=%d, occupied=%d/%d)"),
 			Preset.Seed,
 			Board.OccupiedCount,
 			Board.Cells.Num());
@@ -4713,7 +4318,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	{
 		MainMapRescueAnchorLocations.Add(MainMapBossAreaCenterSurfaceLocation);
 	}
-	UE_LOG(LogTemp, Log, TEXT("[MAP] Cached main-map spawn surface at %s"), *MainMapSpawnSurfaceLocation.ToString());
+	UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Cached main-map spawn surface at %s"), *MainMapSpawnSurfaceLocation.ToString());
 
 	bool bMainMapCollisionReady = false;
 	if (!T66MainMapTerrain::Spawn(World, Board, Preset, SpawnParams, bMainMapCollisionReady))
@@ -4731,15 +4336,15 @@ void AT66GameMode::SpawnMainMapTerrain()
 		}
 	}
 
-	UE_LOG(LogTemp, Verbose, TEXT("[MAP] Terrain collision ready=%d"), bTerrainCollisionReady ? 1 : 0);
-	UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain spawned: %d tiles (seed=%d, cell=%.0f)"),
+	UE_LOG(LogT66GameMode, Verbose, TEXT("[MAP] Terrain collision ready=%d"), bTerrainCollisionReady ? 1 : 0);
+	UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Main map terrain spawned: %d tiles (seed=%d, cell=%.0f)"),
 		Board.OccupiedCount,
 		Preset.Seed,
 		Board.Settings.CellSize);
 }
 
 // ============================================================================
-// HDRI Equirectangular ??? TextureCube conversion (editor-only, runs once)
+// HDRI equirectangular -> TextureCube conversion (editor-only, runs once)
 // ============================================================================
 #if WITH_EDITORONLY_DATA
 
@@ -4790,14 +4395,14 @@ static UTextureCube* EnsureHDRICubemap()
 	UTexture2D* Src = LoadObject<UTexture2D>(nullptr, HDRIEquirectPath);
 	if (!Src)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[HDRI] No equirectangular source at %s ??? skipping cubemap creation"), HDRIEquirectPath);
+		UE_LOG(LogT66GameMode, Log, TEXT("[HDRI] No equirectangular source at %s; skipping cubemap creation"), HDRIEquirectPath);
 		return nullptr;
 	}
 
 	FTextureSource& SrcSource = Src->Source;
 	if (!SrcSource.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HDRI] Source texture has no valid FTextureSource data"));
+		UE_LOG(LogT66GameMode, Warning, TEXT("[HDRI] Source texture has no valid FTextureSource data"));
 		return nullptr;
 	}
 
@@ -4810,7 +4415,7 @@ static UTextureCube* EnsureHDRICubemap()
 	SrcSource.GetMipData(SrcData, 0);
 	if (SrcData.Num() == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[HDRI] Could not read source mip data"));
+		UE_LOG(LogT66GameMode, Warning, TEXT("[HDRI] Could not read source mip data"));
 		return nullptr;
 	}
 
@@ -4819,7 +4424,7 @@ static UTextureCube* EnsureHDRICubemap()
 	const int32 FacePixels = FaceSize * FaceSize;
 	const int32 OutBpp = 8; // RGBA16F = 4 channels ?? 2 bytes (FFloat16)
 
-	UE_LOG(LogTemp, Log, TEXT("[HDRI] Creating cubemap from %dx%d equirect (format %d) ??? %dx%d faces"), SrcW, SrcH, (int32)SrcFmt, FaceSize, FaceSize);
+	UE_LOG(LogT66GameMode, Log, TEXT("[HDRI] Creating cubemap from %dx%d equirect (format %d) into %dx%d faces"), SrcW, SrcH, (int32)SrcFmt, FaceSize, FaceSize);
 
 	// Create the package and TextureCube
 	UPackage* Package = CreatePackage(HDRICubePackagePath);
@@ -4893,15 +4498,14 @@ static UTextureCube* EnsureHDRICubemap()
 	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
 	UPackage::Save(Package, Cube, *Filename, SaveArgs);
 
-	UE_LOG(LogTemp, Log, TEXT("[HDRI] Saved cubemap: %s (%dx%d per face, RGBA16F)"), HDRICubeAssetPath, FaceSize, FaceSize);
+	UE_LOG(LogT66GameMode, Log, TEXT("[HDRI] Saved cubemap: %s (%dx%d per face, RGBA16F)"), HDRICubeAssetPath, FaceSize, FaceSize);
 	return Cube;
 }
 
 #endif // WITH_EDITORONLY_DATA
 
-void AT66GameMode::SpawnLightingIfNeeded()
+void AT66GameMode::EnsureSharedLightingForWorld(UWorld* World)
 {
-	UWorld* World = GetWorld();
 	if (!World) return;
 
 	static const FName MoonTag(TEXT("T66Moon"));
@@ -4933,7 +4537,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	// Sky atmosphere (blue mid-day sky) if needed.
 	if (!Atmosphere)
 	{
-		UE_LOG(LogTemp, Log, TEXT("No SkyAtmosphere found - spawning development sky atmosphere"));
+		UE_LOG(LogT66GameMode, Log, TEXT("No SkyAtmosphere found - spawning development sky atmosphere"));
 		ASkyAtmosphere* SpawnedAtmosphere = World->SpawnActor<ASkyAtmosphere>(
 			ASkyAtmosphere::StaticClass(),
 			FVector::ZeroVector,
@@ -4946,7 +4550,6 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			#if WITH_EDITOR
 			SpawnedAtmosphere->SetActorLabel(TEXT("DEV_SkyAtmosphere"));
 			#endif
-			SpawnedSetupActors.Add(SpawnedAtmosphere);
 			Atmosphere = SpawnedAtmosphere;
 		}
 	}
@@ -4954,7 +4557,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	// Spawn directional light (sun) if needed
 	if (!SunForAtmosphere)
 	{
-		UE_LOG(LogTemp, Log, TEXT("No directional light found - spawning development sun"));
+		UE_LOG(LogT66GameMode, Log, TEXT("No directional light found - spawning development sun"));
 
 		ADirectionalLight* Sun = World->SpawnActor<ADirectionalLight>(
 			ADirectionalLight::StaticClass(),
@@ -4968,9 +4571,9 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
 				LightComp->SetMobility(EComponentMobility::Movable); // Dynamic lighting so landscape stays lit without Build Lighting
-				LightComp->SetIntensity(3.f);  // Fill light ??? SkyLight is primary ambient
+				LightComp->SetIntensity(3.f);  // Fill light; SkyLight is the primary ambient source.
 				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
-				LightComp->CastShadows = false; // Shadows disabled ??? prevents dark bands on characters
+				LightComp->CastShadows = false; // Disable shadows to avoid dark banding on characters.
 
 				// Drive SkyAtmosphere sun/sky scattering (mid-day blue sky).
 				LightComp->bAtmosphereSunLight = true;
@@ -4980,9 +4583,8 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			#if WITH_EDITOR
 			Sun->SetActorLabel(TEXT("DEV_Sun"));
 			#endif
-			SpawnedSetupActors.Add(Sun);
 			SunForAtmosphere = Sun;
-			UE_LOG(LogTemp, Log, TEXT("Spawned development directional light"));
+			UE_LOG(LogT66GameMode, Log, TEXT("Spawned development directional light"));
 		}
 	}
 
@@ -5013,15 +4615,14 @@ void AT66GameMode::SpawnLightingIfNeeded()
 #if WITH_EDITOR
 			Moon->SetActorLabel(TEXT("DEV_Moon"));
 #endif
-			SpawnedSetupActors.Add(Moon);
-			UE_LOG(LogTemp, Log, TEXT("Spawned development moon light for dark-mode sky"));
+			UE_LOG(LogT66GameMode, Log, TEXT("Spawned development moon light for dark-mode sky"));
 		}
 	}
 
 	// Spawn sky light (ambient) if needed
 	if (!SkyForCapture)
 	{
-		UE_LOG(LogTemp, Log, TEXT("No sky light found - spawning development ambient light"));
+		UE_LOG(LogT66GameMode, Log, TEXT("No sky light found - spawning development ambient light"));
 
 		ASkyLight* Sky = World->SpawnActor<ASkyLight>(
 			ASkyLight::StaticClass(),
@@ -5035,9 +4636,8 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			#if WITH_EDITOR
 			Sky->SetActorLabel(TEXT("DEV_SkyLight"));
 			#endif
-			SpawnedSetupActors.Add(Sky);
 			SkyForCapture = Sky;
-			UE_LOG(LogTemp, Log, TEXT("Spawned development sky light"));
+			UE_LOG(LogT66GameMode, Log, TEXT("Spawned development sky light"));
 		}
 	}
 
@@ -5050,7 +4650,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	}
 	if (!HeightFog)
 	{
-		UE_LOG(LogTemp, Log, TEXT("No Exponential Height Fog found - spawning for atmospheric depth"));
+		UE_LOG(LogT66GameMode, Log, TEXT("No Exponential Height Fog found - spawning for atmospheric depth"));
 		AExponentialHeightFog* SpawnedFog = World->SpawnActor<AExponentialHeightFog>(
 			AExponentialHeightFog::StaticClass(),
 			FVector::ZeroVector,
@@ -5062,7 +4662,6 @@ void AT66GameMode::SpawnLightingIfNeeded()
 #if WITH_EDITOR
 			SpawnedFog->SetActorLabel(TEXT("DEV_ExponentialHeightFog"));
 #endif
-			SpawnedSetupActors.Add(SpawnedFog);
 			HeightFog = SpawnedFog;
 		}
 	}
@@ -5093,7 +4692,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 	}
 	if (!PPVolume)
 	{
-		UE_LOG(LogTemp, Log, TEXT("No PostProcessVolume found - spawning for exposure/color grading"));
+		UE_LOG(LogT66GameMode, Log, TEXT("No PostProcessVolume found - spawning for exposure/color grading"));
 		APostProcessVolume* SpawnedPP = World->SpawnActor<APostProcessVolume>(
 			APostProcessVolume::StaticClass(),
 			FVector::ZeroVector,
@@ -5105,17 +4704,16 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			SpawnedPP->bUnbound = true;
 			FPostProcessSettings& PPS = SpawnedPP->Settings;
 			PPS.bOverride_AutoExposureMinBrightness = true;
-			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure ??? matches asset-preview consistency
+			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure to match preview consistency.
 			PPS.bOverride_AutoExposureMaxBrightness = true;
 			PPS.AutoExposureMaxBrightness = 1.0f;  // Same as min = no auto-exposure variation
 			PPS.bOverride_AmbientOcclusionIntensity = true;
-			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off ??? eliminates dark creases on characters
+			PPS.AmbientOcclusionIntensity = 0.0f;  // Disable AO to avoid dark creases on characters.
 			PPS.bOverride_ColorSaturation = true;
 			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f); // Slight desaturation so scene isn't uniformly punchy
 #if WITH_EDITOR
 			SpawnedPP->SetActorLabel(TEXT("DEV_PostProcessVolume"));
 #endif
-			SpawnedSetupActors.Add(SpawnedPP);
 		}
 	}
 	else if (PPVolume)
@@ -5128,7 +4726,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		PPS.bOverride_AutoExposureMaxBrightness = true;
 		PPS.AutoExposureMaxBrightness = 1.0f;  // Locked exposure
 		PPS.bOverride_AmbientOcclusionIntensity = true;
-		PPS.AmbientOcclusionIntensity = 0.0f;  // AO off ??? eliminates dark creases on characters
+		PPS.AmbientOcclusionIntensity = 0.0f;  // Disable AO to avoid dark creases on characters.
 		PPS.bOverride_ColorSaturation = true;
 		PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
 	}
@@ -5140,7 +4738,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
 		{
 			LC->SetMobility(EComponentMobility::Movable);
-			LC->CastShadows = false; // Shadows disabled globally ??? replicates asset-preview look
+			LC->CastShadows = false; // Disable shadows globally to match the preview look.
 			LC->bAtmosphereSunLight = true;
 			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(MoonTag) ? 1 : 0;
 			LC->SetForwardShadingPriority(DirLight->Tags.Contains(MoonTag) ? 0 : 1); // Sun primary for forward shading
@@ -5152,7 +4750,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			else
 			{
 				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-				LC->SetIntensity(3.f); // Fill light ??? SkyLight is primary ambient
+				LC->SetIntensity(3.f); // Fill light; SkyLight is the primary ambient source.
 			}
 		}
 		if (USceneComponent* Root = DirLight->GetRootComponent())
@@ -5160,7 +4758,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 			Root->SetMobility(EComponentMobility::Movable);
 		}
 	}
-	ApplyThemeToDirectionalLights();
+	ApplyThemeToDirectionalLightsForWorld(World);
 
 	// Configure all SkyLights: HDRI cubemap (asset-preview quality) or boosted sky capture fallback.
 	// Lumen is disabled; the SkyLight is the primary source of ambient/indirect light.
@@ -5177,16 +4775,19 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
 		{
 			SC->SetMobility(EComponentMobility::Movable);
+			// Real-time capture throws a persistent runtime warning unless the map has a sky atmosphere/sky material stack.
+			// Our lighting path uses an explicit cubemap or manual recapture instead, so keep it disabled.
+			SC->SetRealTimeCapture(false);
 
 			if (HDRICubemap)
 			{
 				// Studio HDRI cubemap: replicates asset-preview lighting quality.
 				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
 				SC->Cubemap = HDRICubemap;
-				SC->SetIntensity(8.0f); // Dominant ambient ??? overshooting intentionally for bright characters
+				SC->SetIntensity(8.0f); // Strong ambient fill to keep characters readable.
 				SC->bLowerHemisphereIsBlack = false;
 				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f)); // Near-white underside fill
-				UE_LOG(LogTemp, Log, TEXT("[LIGHT] SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
+				UE_LOG(LogT66GameMode, Log, TEXT("[LIGHT] SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
 			}
 			else
 			{
@@ -5195,7 +4796,7 @@ void AT66GameMode::SpawnLightingIfNeeded()
 				SC->SetIntensity(8.0f);
 				SC->bLowerHemisphereIsBlack = false;
 				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f));
-				UE_LOG(LogTemp, Log, TEXT("[LIGHT] SkyLight using boosted sky capture (no HDRI cubemap found, intensity 8.0)"));
+				UE_LOG(LogT66GameMode, Log, TEXT("[LIGHT] SkyLight using boosted sky capture (no HDRI cubemap found, intensity 8.0)"));
 			}
 
 			SC->SetLightColor(FLinearColor::White);
@@ -5207,7 +4808,12 @@ void AT66GameMode::SpawnLightingIfNeeded()
 		}
 	}
 
-	ApplyThemeToAtmosphereAndLighting();
+	ApplyThemeToAtmosphereAndLightingForWorld(World);
+}
+
+void AT66GameMode::SpawnLightingIfNeeded()
+{
+	EnsureSharedLightingForWorld(GetWorld());
 }
 
 void AT66GameMode::SpawnQuakeSkyIfNeeded()
@@ -5231,7 +4837,7 @@ void AT66GameMode::SpawnQuakeSkyIfNeeded()
 		}
 		if (SkyActorsToDestroy.Num() > 0)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[QuakeSky] Removed %d Quake sky actor(s) for standalone Farm"), SkyActorsToDestroy.Num());
+			UE_LOG(LogT66GameMode, Log, TEXT("[QuakeSky] Removed %d Quake sky actor(s) for standalone Farm"), SkyActorsToDestroy.Num());
 		}
 		return;
 	}
@@ -5255,7 +4861,7 @@ void AT66GameMode::SpawnQuakeSkyIfNeeded()
 	SkyActor->SetActorLabel(TEXT("DEV_QuakeSky"));
 #endif
 	SpawnedSetupActors.Add(SkyActor);
-	UE_LOG(LogTemp, Log, TEXT("[QuakeSky] Spawned retro sky dome"));
+	UE_LOG(LogT66GameMode, Log, TEXT("[QuakeSky] Spawned retro sky dome"));
 }
 
 void AT66GameMode::ConfigureGameplayFogForWorld(UWorld* World)
@@ -5420,6 +5026,7 @@ void AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World)
 		USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent());
 		if (!SC) continue;
 
+		SC->SetRealTimeCapture(false);
 		SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
 		SC->Cubemap = nullptr;
 		SC->SetIntensity(4.0f);
@@ -5541,7 +5148,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 
 	if (!bHasPlayerStart)
 	{
-		UE_LOG(LogTemp, Log, TEXT("No PlayerStart found - spawning development PlayerStart"));
+		UE_LOG(LogT66GameMode, Log, TEXT("No PlayerStart found - spawning development PlayerStart"));
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -5584,7 +5191,7 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 			Start->SetActorLabel(TEXT("DEV_PlayerStart"));
 			#endif
 			SpawnedSetupActors.Add(Start);
-			UE_LOG(LogTemp, Log, TEXT("Spawned development PlayerStart at %s"), *SpawnLoc.ToString());
+			UE_LOG(LogT66GameMode, Log, TEXT("Spawned development PlayerStart at %s"), *SpawnLoc.ToString());
 		}
 	}
 }
@@ -5651,7 +5258,7 @@ void AT66GameMode::SpawnLabFloorIfNeeded()
 		Floor->GetStaticMeshComponent()->SetMaterial(0, GroundFloorMaterials[0].Get());
 	}
 	SpawnedSetupActors.Add(Floor);
-	UE_LOG(LogTemp, Log, TEXT("Spawned Lab central floor (half-extent %.0f, top Z %.0f)"), LabHalfExtent, LabFloorHeight);
+	UE_LOG(LogT66GameMode, Log, TEXT("Spawned Lab central floor (half-extent %.0f, top Z %.0f)"), LabHalfExtent, LabFloorHeight);
 }
 
 void AT66GameMode::SpawnLabCollectorIfNeeded()
@@ -5672,7 +5279,7 @@ void AT66GameMode::SpawnLabCollectorIfNeeded()
 	if (Collector)
 	{
 		SpawnedSetupActors.Add(Collector);
-		UE_LOG(LogTemp, Log, TEXT("Spawned The Collector in Lab"));
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned The Collector in Lab"));
 	}
 }
 
@@ -5989,7 +5596,7 @@ static FAutoConsoleCommandWithWorldAndArgs T66MainMapCmd(
 			AT66GameMode* T66GM = Cast<AT66GameMode>(GM);
 			if (!T66GM)
 			{
-				UE_LOG(LogTemp, Error, TEXT("T66.MainMap: no T66GameMode active"));
+				UE_LOG(LogT66GameMode, Error, TEXT("T66.MainMap: no T66GameMode active"));
 				return;
 			}
 
@@ -5999,7 +5606,7 @@ static FAutoConsoleCommandWithWorldAndArgs T66MainMapCmd(
 				Seed = FCString::Atoi(*Args[0]);
 			}
 
-			UE_LOG(LogTemp, Log, TEXT("T66.MainMap: Regenerating main map terrain (seed=%d)"), Seed);
+			UE_LOG(LogT66GameMode, Log, TEXT("T66.MainMap: Regenerating main map terrain (seed=%d)"), Seed);
 			T66GM->RegenerateMainMapTerrain(Seed);
 		})
 );
@@ -6043,7 +5650,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	UClass* PawnClass = GetDefaultPawnClassForController(NewPlayer);
 	if (!PawnClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("No pawn class for spawning!"));
+		UE_LOG(LogT66GameMode, Error, TEXT("No pawn class for spawning!"));
 		return nullptr;
 	}
 
@@ -6054,7 +5661,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 	if (bUsingMainMapTerrain && !bTerrainCollisionReady)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Deferring main-map hero spawn until terrain collision is ready."));
+		UE_LOG(LogT66GameMode, Log, TEXT("Deferring main-map hero spawn until terrain collision is ready."));
 		return nullptr;
 	}
 
@@ -6067,7 +5674,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	{
 		SpawnLocation = StartSpot->GetActorLocation();
 		SpawnRotation = StartSpot->GetActorRotation();
-		UE_LOG(LogTemp, Log, TEXT("Spawning at PlayerStart: (%.1f, %.1f, %.1f)"), 
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawning at PlayerStart: (%.1f, %.1f, %.1f)"),
 			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
 	}
 	else
@@ -6085,7 +5692,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 				? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)
 				: FVector(-35455.f, 0.f, 200.f);
 		}
-		UE_LOG(LogTemp, Warning, TEXT("No PlayerStart found! Spawning at default location (%.0f, %.0f, %.0f)."),
+		UE_LOG(LogT66GameMode, Warning, TEXT("No PlayerStart found! Spawning at default location (%.0f, %.0f, %.0f)."),
 			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
 	}
 
@@ -6207,11 +5814,6 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 		if (UT66GameInstance* GI = GetT66GameInstance())
 		{
-			if (T66_ShouldApplyCombatIterationSetup(GetWorld(), GI, GI->GetSubsystem<UT66RunStateSubsystem>()))
-			{
-				T66_SeedCombatIterationHeroSelection(GI);
-			}
-
 			FHeroData HeroData;
 			const FName EffectiveHeroID = GI->SelectedHeroID;
 
@@ -6222,7 +5824,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 				FName SelectedSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
 				Hero->InitializeHero(HeroData, SelectedBodyType, SelectedSkinID, false);
 
-				UE_LOG(LogTemp, Log, TEXT("Spawned hero: %s (%s), BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
+				UE_LOG(LogT66GameMode, Log, TEXT("Spawned hero: %s (%s), BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
 					*HeroData.DisplayName.ToString(),
 					*EffectiveHeroID.ToString(),
 					SelectedBodyType == ET66BodyType::TypeA ? TEXT("TypeA") : TEXT("TypeB"),
@@ -6233,7 +5835,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("No hero selected in Game Instance - spawning with defaults"));
+				UE_LOG(LogT66GameMode, Warning, TEXT("No hero selected in Game Instance - spawning with defaults"));
 			}
 		}
 	}

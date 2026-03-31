@@ -10,6 +10,8 @@
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectGlobals.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66ButtonVisuals, Log, All);
+
 namespace
 {
 	static TObjectPtr<UMaterialInterface> GRetroSkyNormal = nullptr;
@@ -100,7 +102,7 @@ namespace
 		}
 
 		UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(FilePath);
-		UE_LOG(LogTemp, Log, TEXT("[BUTTONVISUAL] LoadFallbackTexture(%s): %s -> %s"), DebugVisualName, *FilePath, Texture ? TEXT("OK") : TEXT("MISS"));
+		UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BUTTONVISUAL] LoadFallbackTexture(%s): %s -> %s"), DebugVisualName, *FilePath, Texture ? TEXT("OK") : TEXT("MISS"));
 		if (!Texture)
 		{
 			return nullptr;
@@ -156,7 +158,7 @@ namespace
 		auto LoadTexture = [](const TCHAR* Path) -> UTexture2D*
 		{
 			UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, Path);
-			UE_LOG(LogTemp, Log, TEXT("[BORDER] LoadRetroWoodTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BORDER] LoadRetroWoodTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
 			return Texture;
 		};
 
@@ -180,7 +182,7 @@ namespace
 		auto LoadTexture = [](const TCHAR* Path) -> UTexture2D*
 		{
 			UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, Path);
-			UE_LOG(LogTemp, Log, TEXT("[BORDER] LoadMainMenuBlueTrimTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BORDER] LoadMainMenuBlueTrimTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
 			return Texture;
 		};
 
@@ -204,7 +206,7 @@ namespace
 		auto LoadTexture = [](const TCHAR* Path) -> UTexture2D*
 		{
 			UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, Path);
-			UE_LOG(LogTemp, Log, TEXT("[BUTTONFILL] LoadMainMenuArcaneFillTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BUTTONFILL] LoadMainMenuArcaneFillTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
 			return Texture;
 		};
 
@@ -225,7 +227,7 @@ namespace
 		auto LoadTexture = [](const TCHAR* Path) -> UTexture2D*
 		{
 			UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, Path);
-			UE_LOG(LogTemp, Log, TEXT("[BUTTONFILL] LoadMainMenuBlueWoodFillTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BUTTONFILL] LoadMainMenuBlueWoodFillTexture: %s -> %s"), Path, Texture ? TEXT("OK") : TEXT("MISS"));
 			return Texture;
 		};
 
@@ -269,7 +271,7 @@ namespace
 				|| !LoadedVerticalNormal || !LoadedVerticalHovered || !LoadedVerticalPressed)
 			{
 				UE_LOG(
-					LogTemp,
+					LogT66ButtonVisuals,
 					Warning,
 					TEXT("[BORDER] CreateBorderBrushSet(%s): missing trim textures in Content and SourceAssets, returning null brush set"),
 					DebugVisualName);
@@ -282,7 +284,7 @@ namespace
 			VerticalNormalTexture = LoadedVerticalNormal;
 			VerticalHoveredTexture = LoadedVerticalHovered;
 			VerticalPressedTexture = LoadedVerticalPressed;
-			UE_LOG(LogTemp, Log, TEXT("[BORDER] CreateBorderBrushSet(%s): using runtime-loaded SourceAssets trim textures"), DebugVisualName);
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BORDER] CreateBorderBrushSet(%s): using runtime-loaded SourceAssets trim textures"), DebugVisualName);
 		}
 
 		TSharedPtr<FT66ButtonBorderBrushSet> Set = MakeShared<FT66ButtonBorderBrushSet>();
@@ -320,7 +322,7 @@ namespace
 			if (!LoadedNormal || !LoadedHovered || !LoadedPressed)
 			{
 				UE_LOG(
-					LogTemp,
+					LogT66ButtonVisuals,
 					Warning,
 					TEXT("[BUTTONFILL] CreateFillBrushSet(%s): missing fill textures in Content and SourceAssets, returning null brush set"),
 					DebugVisualName);
@@ -330,7 +332,7 @@ namespace
 			NormalTexture = LoadedNormal;
 			HoveredTexture = LoadedHovered;
 			PressedTexture = LoadedPressed;
-			UE_LOG(LogTemp, Log, TEXT("[BUTTONFILL] CreateFillBrushSet(%s): using runtime-loaded SourceAssets fill textures"), DebugVisualName);
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BUTTONFILL] CreateFillBrushSet(%s): using runtime-loaded SourceAssets fill textures"), DebugVisualName);
 		}
 
 		TSharedPtr<FT66ButtonFillBrushSet> Set = MakeShared<FT66ButtonFillBrushSet>();
@@ -375,7 +377,7 @@ TSharedPtr<FT66ButtonBorderBrushSet> FT66ButtonVisuals::CreateBorderBrushSet(ET6
 		if (!GRetroWoodHorizontalNormal || !GRetroWoodHorizontalHovered || !GRetroWoodHorizontalPressed
 			|| !GRetroWoodVerticalNormal || !GRetroWoodVerticalHovered || !GRetroWoodVerticalPressed)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[BORDER] CreateBorderBrushSet(RetroWood): missing border texture(s), returning null brush set"));
+			UE_LOG(LogT66ButtonVisuals, Warning, TEXT("[BORDER] CreateBorderBrushSet(RetroWood): missing border texture(s), returning null brush set"));
 			return nullptr;
 		}
 
@@ -390,7 +392,7 @@ TSharedPtr<FT66ButtonBorderBrushSet> FT66ButtonVisuals::CreateBorderBrushSet(ET6
 		Set->VerticalHovered = MakeShared<FSlateBrush>(MakeTextureBrush(GRetroWoodVerticalHovered, FVector2D(24.f, 256.f)));
 		Set->VerticalPressed = MakeShared<FSlateBrush>(MakeTextureBrush(GRetroWoodVerticalPressed, FVector2D(24.f, 256.f)));
 		Set->Thickness = 12.f;
-		UE_LOG(LogTemp, Log, TEXT("[BORDER] CreateBorderBrushSet(RetroWood): texture brush set ready, thickness=%.1f"), Set->Thickness);
+		UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BORDER] CreateBorderBrushSet(RetroWood): texture brush set ready, thickness=%.1f"), Set->Thickness);
 		return Set;
 	}
 

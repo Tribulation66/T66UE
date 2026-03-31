@@ -14,194 +14,9 @@
 #include "Engine/World.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
-#include "Components/SkyAtmosphereComponent.h"
-#include "Engine/DirectionalLight.h"
-#include "Engine/SkyLight.h"
-#include "Engine/ExponentialHeightFog.h"
-#include "Engine/PostProcessVolume.h"
-#include "Components/DirectionalLightComponent.h"
-#include "Components/SkyLightComponent.h"
-#include "Components/ExponentialHeightFogComponent.h"
-#include "Engine/TextureCube.h"
 #include "GameFramework/PlayerController.h"
 
-static const FName T66MoonTag(TEXT("T66Moon"));
-
-static void SpawnFrontendLightingIfNeeded(UWorld* World)
-{
-	if (!World) return;
-
-	ASkyAtmosphere* Atmosphere = nullptr;
-	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It) { Atmosphere = *It; break; }
-	ADirectionalLight* Sun = nullptr;
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It) { Sun = *It; break; }
-	ASkyLight* SkyLight = nullptr;
-	for (TActorIterator<ASkyLight> It(World); It; ++It) { SkyLight = *It; break; }
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (!Atmosphere)
-	{
-		Atmosphere = World->SpawnActor<ASkyAtmosphere>(ASkyAtmosphere::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		if (Atmosphere) UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned SkyAtmosphere for preview (same as gameplay)"));
-	}
-	if (!Sun)
-	{
-		Sun = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector(0.f, 0.f, 1000.f), FRotator(-50.f, -45.f, 0.f), SpawnParams);
-		if (Sun)
-		{
-			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
-			{
-				LC->SetMobility(EComponentMobility::Movable);
-				LC->SetIntensity(3.f);  // Fill light ??? SkyLight is primary ambient
-				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-				LC->CastShadows = false; // Shadows disabled ??? replicates asset-preview look
-				LC->bAtmosphereSunLight = true;
-				LC->AtmosphereSunLightIndex = 0;
-				LC->SetForwardShadingPriority(1); // Primary for forward shading
-			}
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned DirectionalLight for preview (no shadows)"));
-		}
-	}
-
-	// Ensure two directional lights (sun + moon) for theme-driven day/night, same as gameplay.
-	int32 DirLightCount = 0;
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It) { ++DirLightCount; }
-	if (DirLightCount < 2)
-	{
-		ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(
-			ADirectionalLight::StaticClass(),
-			FVector(0.f, 0.f, 1000.f),
-			FRotator(50.f, 135.f, 0.f),
-			SpawnParams
-		);
-		if (Moon)
-		{
-			Moon->Tags.Add(T66MoonTag);
-			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Moon->GetLightComponent()))
-			{
-				LC->SetMobility(EComponentMobility::Movable);
-				LC->SetIntensity(0.f);
-				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
-				LC->CastShadows = false; // Shadows disabled globally
-				LC->bAtmosphereSunLight = true;
-				LC->AtmosphereSunLightIndex = 1;
-				LC->SetForwardShadingPriority(0); // Secondary; sun is primary for forward shading
-			}
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned moon light for theme (no shadows)"));
-		}
-	}
-
-	// Assign atmosphere indices, disable shadows, and apply current theme.
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
-	{
-		ADirectionalLight* DirLight = *It;
-		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
-		{
-			LC->SetMobility(EComponentMobility::Movable);
-			LC->CastShadows = false; // Shadows disabled globally ??? replicates asset-preview look
-			LC->bAtmosphereSunLight = true;
-			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(T66MoonTag) ? 1 : 0;
-			LC->SetForwardShadingPriority(DirLight->Tags.Contains(T66MoonTag) ? 0 : 1); // Sun primary for forward shading
-		}
-	}
-	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
-
-	if (!SkyLight)
-	{
-		SkyLight = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FVector(0.f, 0.f, 500.f), FRotator::ZeroRotator, SpawnParams);
-		if (SkyLight)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned SkyLight for preview (same as gameplay)"));
-		}
-	}
-
-	// Exponential Height Fog (same as gameplay) for atmospheric depth.
-	AExponentialHeightFog* HeightFog = nullptr;
-	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It) { HeightFog = *It; break; }
-	if (!HeightFog)
-	{
-		HeightFog = World->SpawnActor<AExponentialHeightFog>(AExponentialHeightFog::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		if (HeightFog)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned ExponentialHeightFog (same as gameplay)"));
-		}
-	}
-	if (HeightFog)
-	{
-		AT66GameMode::ConfigureGameplayFogForWorld(World);
-	}
-
-	// PostProcessVolume (unbound) with same exposure as gameplay so frontend matches brightness.
-	APostProcessVolume* PPVolume = nullptr;
-	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
-	{
-		APostProcessVolume* P = *It;
-		if (P && P->bUnbound) { PPVolume = P; break; }
-	}
-	if (!PPVolume)
-	{
-		for (TActorIterator<APostProcessVolume> It(World); It; ++It) { PPVolume = *It; break; }
-	}
-	if (!PPVolume)
-	{
-		PPVolume = World->SpawnActor<APostProcessVolume>(APostProcessVolume::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		if (PPVolume)
-		{
-			PPVolume->bUnbound = true;
-			FPostProcessSettings& PPS = PPVolume->Settings;
-			PPS.bOverride_AutoExposureMinBrightness = true;
-			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure ??? matches asset-preview consistency
-			PPS.bOverride_AutoExposureMaxBrightness = true;
-			PPS.AutoExposureMaxBrightness = 1.0f;  // Same as min = no auto-exposure variation
-			PPS.bOverride_AmbientOcclusionIntensity = true;
-			PPS.AmbientOcclusionIntensity = 0.0f;  // AO off ??? eliminates dark creases on characters
-			PPS.bOverride_ColorSaturation = true;
-			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
-			UE_LOG(LogTemp, Log, TEXT("Frontend: Spawned PostProcessVolume (locked exposure)"));
-		}
-	}
-
-	// Configure all SkyLights: HDRI cubemap (asset-preview quality) or boosted sky capture fallback.
-	// Lumen is disabled; the SkyLight is the primary source of ambient/indirect light.
-	// Note: EnsureHDRICubemap() is called by GameMode; frontend just loads the result.
-	UTextureCube* HDRICubemap = LoadObject<UTextureCube>(nullptr, TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio"));
-
-	for (TActorIterator<ASkyLight> It(World); It; ++It)
-	{
-		ASkyLight* SL = *It;
-		if (USkyLightComponent* SC = Cast<USkyLightComponent>(SL->GetLightComponent()))
-		{
-			SC->SetMobility(EComponentMobility::Movable);
-
-			if (HDRICubemap)
-			{
-				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
-				SC->Cubemap = HDRICubemap;
-				SC->SetIntensity(8.0f); // Dominant ambient ??? overshooting intentionally for bright characters
-				SC->bLowerHemisphereIsBlack = false;
-				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f)); // Near-white underside fill
-				UE_LOG(LogTemp, Log, TEXT("Frontend: SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
-			}
-			else
-			{
-				SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
-				SC->SetIntensity(8.0f);
-				SC->bLowerHemisphereIsBlack = false;
-				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f));
-				UE_LOG(LogTemp, Log, TEXT("Frontend: SkyLight using boosted sky capture (no HDRI cubemap, intensity 8.0)"));
-			}
-
-			SC->SetLightColor(FLinearColor::White);
-			SC->RecaptureSky();
-		}
-		if (USceneComponent* Root = SL->GetRootComponent())
-			Root->SetMobility(EComponentMobility::Movable);
-	}
-
-	AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(World);
-}
+DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendGameMode, Log, All);
 
 AT66FrontendGameMode::AT66FrontendGameMode()
 {
@@ -235,8 +50,8 @@ void AT66FrontendGameMode::BeginPlay()
 	}
 
 	UWorld* World = GetWorld();
-	// Same sky and lights as gameplay level ??? HDRI cubemap SkyLight for ambient (no Lumen).
-	SpawnFrontendLightingIfNeeded(World);
+	// Match gameplay lighting so frontend previews render under the same ambient setup.
+	AT66GameMode::EnsureSharedLightingForWorld(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
@@ -254,7 +69,7 @@ void AT66FrontendGameMode::BeginPlay()
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		// Both preview stages share the same platform location ??? we toggle visibility
+		// Both preview stages share the same platform location; we toggle visibility
 		// instead of moving the camera between two positions.
 		const FVector PreviewOrigin(100000.f, 0.f, 0.f);
 
@@ -274,7 +89,7 @@ void AT66FrontendGameMode::BeginPlay()
 				FRotator::ZeroRotator,
 				SpawnParams
 			);
-			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned HeroPreviewStage for in-world preview"));
+			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Spawned HeroPreviewStage for in-world preview"));
 		}
 
 		bool bHasCompanionPreview = false;
@@ -293,9 +108,9 @@ void AT66FrontendGameMode::BeginPlay()
 				FRotator::ZeroRotator,
 				SpawnParams
 			);
-			// Start hidden ??? hero is shown first; companion becomes visible when its screen activates.
+			// Start hidden; the hero preview is shown first.
 			if (CompStage) CompStage->SetStageVisible(false);
-			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage (hidden) for in-world preview"));
+			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Spawned CompanionPreviewStage (hidden) for in-world preview"));
 		}
 
 		// Spawn the world camera that views the preview characters.
@@ -314,7 +129,7 @@ void AT66FrontendGameMode::BeginPlay()
 					CamComp->SetFieldOfView(90.f); // Match gameplay FollowCamera FOV
 					CamComp->bConstrainAspectRatio = false; // Game view fills entire screen (no letterbox bars)
 				}
-				UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Spawned PreviewCamera for in-world character viewing"));
+				UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Spawned PreviewCamera for in-world character viewing"));
 			}
 		}
 
@@ -353,7 +168,7 @@ void AT66FrontendGameMode::BeginPlay()
 		PositionCameraForHeroPreview();
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode BeginPlay - Menu level initialized (in-world preview)"));
+	UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode BeginPlay - Menu level initialized (in-world preview)"));
 }
 
 void AT66FrontendGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -403,7 +218,7 @@ void AT66FrontendGameMode::PositionCameraForHeroPreview()
 		{
 			PreviewCamera->SetActorLocation(CamLoc);
 			PreviewCamera->SetActorRotation(CamRot);
-			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Camera positioned for hero preview at (%.1f,%.1f,%.1f)"),
+			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Camera positioned for hero preview at (%.1f,%.1f,%.1f)"),
 				CamLoc.X, CamLoc.Y, CamLoc.Z);
 		}
 		break;
@@ -430,7 +245,7 @@ void AT66FrontendGameMode::PositionCameraForCompanionPreview()
 		{
 			PreviewCamera->SetActorLocation(CamLoc);
 			PreviewCamera->SetActorRotation(CamRot);
-			UE_LOG(LogTemp, Log, TEXT("T66FrontendGameMode: Camera positioned for companion preview at (%.1f,%.1f,%.1f)"),
+			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Camera positioned for companion preview at (%.1f,%.1f,%.1f)"),
 				CamLoc.X, CamLoc.Y, CamLoc.Z);
 		}
 		break;

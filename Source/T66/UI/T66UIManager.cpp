@@ -7,6 +7,8 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Blueprint/UserWidget.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66UIManager, Log, All);
+
 UT66UIManager::UT66UIManager()
 {
 	CurrentScreenType = ET66ScreenType::None;
@@ -47,13 +49,13 @@ UT66ScreenBase* UT66UIManager::CreateScreen(ET66ScreenType ScreenType)
 	TSubclassOf<UT66ScreenBase>* WidgetClassPtr = ScreenClasses.Find(ScreenType);
 	if (!WidgetClassPtr || !*WidgetClassPtr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No widget class registered for screen type %d"), static_cast<int32>(ScreenType));
+		UE_LOG(LogT66UIManager, Warning, TEXT("No widget class registered for screen type %d"), static_cast<int32>(ScreenType));
 		return nullptr;
 	}
 
 	if (!OwningPlayer)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot create screen - no owning player set"));
+		UE_LOG(LogT66UIManager, Error, TEXT("Cannot create screen - no owning player set"));
 		return nullptr;
 	}
 

@@ -42,6 +42,8 @@
 #include "Math/TransformCalculus2D.h"
 #include "Rendering/SlateRenderTransform.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66MainMenu, Log, All);
+
 namespace
 {
 	const FVector2D MainMenuBackgroundImageSize(1920.f, 1080.f);
@@ -1046,7 +1048,7 @@ void UT66MainMenuScreen::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 void UT66MainMenuScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
-	UE_LOG(LogTemp, Log, TEXT("MainMenuScreen activated!"));
+	UE_LOG(LogT66MainMenu, Verbose, TEXT("MainMenuScreen activated."));
 
 	// Important: Screen UI can be built before UIManager is assigned by UT66UIManager.
 	// Inject it here so the leaderboard panel can open modals on row click.
@@ -1275,4 +1277,3 @@ bool UT66MainMenuScreen::ShouldShowAccountStatus() const
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	return LB && LB->ShouldShowAccountStatusButton();
 }
-

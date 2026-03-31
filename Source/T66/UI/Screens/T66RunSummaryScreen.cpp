@@ -43,6 +43,8 @@
 #include "Styling/CoreStyle.h"
 #include "HAL/PlatformProcess.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66RunSummary, Log, All);
+
 UT66RunSummaryScreen::UT66RunSummaryScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -317,7 +319,9 @@ void UT66RunSummaryScreen::RebuildLogItems()
 	}
 	else
 	{
-		UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		UWorld* World = GetWorld();
+		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		if (RunState)
 		{
 			LogPtr = &RunState->GetEventLog();
@@ -349,7 +353,9 @@ TSharedRef<ITableRow> UT66RunSummaryScreen::GenerateLogRow(TSharedPtr<FString> I
 
 TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 {
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GIBase ? GIBase->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const int32 StageReached =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached :
 		(RunState ? RunState->GetCurrentStage() : 1);
@@ -389,9 +395,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const int32 SpeedStat =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->SpeedStat :
 		(RunState ? RunState->GetSpeedStat() : 1);
-	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
-	UT66UITexturePoolSubsystem* TexPool = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+	UT66LocalizationSubsystem* Loc = GIBase ? GIBase->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
+	UT66UITexturePoolSubsystem* TexPool = GIBase ? GIBase->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 
 	EnsurePreviewCaptures();
 	InventoryItemIconBrushes.Reset();
@@ -1323,7 +1329,7 @@ FReply UT66RunSummaryScreen::HandleReportSubmitClicked()
 	const int32 ReportScore = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Score : 0;
 	const FName HeroID = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID : NAME_None;
 
-	UE_LOG(LogTemp, Warning, TEXT("[CHEAT REPORT] Stage=%d Score=%d Hero=%s Reason=%s"),
+	UE_LOG(LogT66RunSummary, Warning, TEXT("[CHEAT REPORT] Stage=%d Score=%d Hero=%s Reason=%s"),
 		StageReached,
 		ReportScore,
 		*HeroID.ToString(),

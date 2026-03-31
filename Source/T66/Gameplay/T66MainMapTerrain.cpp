@@ -20,6 +20,8 @@
 #include "TimerManager.h"
 #include "UObject/UObjectGlobals.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66MainMapTerrain, Log, All);
+
 namespace T66MainMapTerrain
 {
 	namespace
@@ -125,7 +127,7 @@ namespace T66MainMapTerrain
 			UTexture2D* ThemeTexture = LoadObject<UTexture2D>(nullptr, *ThemeTexturePath);
 			if (!ThemeTexture)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[MAP] Missing difficulty terrain texture: %s"), *ThemeTexturePath);
+				UE_LOG(LogT66MainMapTerrain, Warning, TEXT("[MAP] Missing difficulty terrain texture: %s"), *ThemeTexturePath);
 				return nullptr;
 			}
 
@@ -822,7 +824,7 @@ namespace T66MainMapTerrain
 			EnableComplexCollisionForMesh(OutAssets.RockMesh2);
 			EnableComplexCollisionForMesh(OutAssets.RockMesh3);
 			EnableComplexCollisionForMesh(OutAssets.LogMesh);
-			UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain assets: DirtMaterial=%s DirtTexture=%s WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
+			UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain assets: DirtMaterial=%s DirtTexture=%s WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
 				OutAssets.DirtMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.DirtTexture ? TEXT("yes") : TEXT("no"),
 				OutAssets.WallMaterial ? TEXT("yes") : TEXT("no"),
@@ -1267,14 +1269,14 @@ namespace T66MainMapTerrain
 
 		if (Board.OccupiedCount != Board.Cells.Num())
 		{
-			UE_LOG(LogTemp, Error, TEXT("[MAP] Main map terrain board incomplete: %d / %d cells occupied"), Board.OccupiedCount, Board.Cells.Num());
+			UE_LOG(LogT66MainMapTerrain, Error, TEXT("[MAP] Main map terrain board incomplete: %d / %d cells occupied"), Board.OccupiedCount, Board.Cells.Num());
 			return false;
 		}
 
 		FLoadedAssets Assets;
 		if (!LoadAssets(Assets))
 		{
-			UE_LOG(LogTemp, Error, TEXT("[MAP] Main map terrain tile meshes missing; aborting terrain spawn."));
+			UE_LOG(LogT66MainMapTerrain, Error, TEXT("[MAP] Main map terrain tile meshes missing; aborting terrain spawn."));
 			return false;
 		}
 
@@ -1345,12 +1347,12 @@ namespace T66MainMapTerrain
 			{
 				if (FallbackMaterialPath)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("[MAP] Main map terrain material %s fell back to %s"), DebugName, FallbackMaterialPath);
+					UE_LOG(LogT66MainMapTerrain, Warning, TEXT("[MAP] Main map terrain material %s fell back to %s"), DebugName, FallbackMaterialPath);
 				}
 				return { FallbackMaterial, false };
 			}
 
-			UE_LOG(LogTemp, Warning, TEXT("[MAP] Main map terrain material %s is still missing its real texture-backed material"), DebugName);
+			UE_LOG(LogT66MainMapTerrain, Warning, TEXT("[MAP] Main map terrain material %s is still missing its real texture-backed material"), DebugName);
 			return {};
 		};
 
@@ -1947,7 +1949,7 @@ namespace T66MainMapTerrain
 		QueueMaterialRefresh(3.00f);
 
 		bOutCollisionReady = true;
-		UE_LOG(LogTemp, Log, TEXT("[MAP] Main map terrain spawned: %d occupied tiles, %d flat tiles, %d slope tiles, %d support tiles, %d decor"),
+		UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain spawned: %d occupied tiles, %d flat tiles, %d slope tiles, %d support tiles, %d decor"),
 			Board.OccupiedCount,
 			FlatCount,
 			SlopeCount,

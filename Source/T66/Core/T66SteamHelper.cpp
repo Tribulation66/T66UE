@@ -8,6 +8,8 @@ THIRD_PARTY_INCLUDES_START
 #include "steam/steam_api.h"
 THIRD_PARTY_INCLUDES_END
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Steam, Log, All);
+
 static void T66_SetDevTicket(const TArray<FString>& Args, UWorld* World)
 {
 	if (!World) return;
@@ -17,7 +19,7 @@ static void T66_SetDevTicket(const TArray<FString>& Args, UWorld* World)
 
 	FString TicketVal = (Args.Num() > 0) ? Args[0] : TEXT("dev_player_1");
 	Backend->SetSteamTicketHex(TicketVal);
-	UE_LOG(LogTemp, Log, TEXT("SetTicket: manually set backend ticket to '%s'"), *TicketVal);
+	UE_LOG(LogT66Steam, Log, TEXT("SetTicket: manually set backend ticket to '%s'"), *TicketVal);
 }
 
 static FAutoConsoleCommandWithWorldAndArgs T66SetTicketCommand(
@@ -45,7 +47,7 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 				LocalDisplayName = FString(UTF8_TO_TCHAR(Friends->GetPersonaName()));
 			}
 
-			UE_LOG(LogTemp, Log, TEXT("SteamHelper: local SteamID=%s Name=%s"), *LocalSteamIdStr, *LocalDisplayName);
+			UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: local SteamID=%s Name=%s"), *LocalSteamIdStr, *LocalDisplayName);
 
 			CollectFriendsList();
 			ObtainTicket();
@@ -59,7 +61,7 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 
 	if (!DevTicket.IsEmpty())
 	{
-		UE_LOG(LogTemp, Log, TEXT("SteamHelper: Steam not available. Using dev ticket '%s' from config."), *DevTicket);
+		UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: Steam not available. Using dev ticket '%s' from config."), *DevTicket);
 
 		TicketHex = DevTicket;
 		LocalSteamIdStr = TEXT("76561100000000001");
@@ -81,7 +83,7 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 					FriendSteamIds.Add(Trimmed);
 				}
 			}
-			UE_LOG(LogTemp, Log, TEXT("SteamHelper: dev friends loaded: %d IDs"), FriendSteamIds.Num());
+			UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: dev friends loaded: %d IDs"), FriendSteamIds.Num());
 		}
 
 		if (UGameInstance* GI = GetGameInstance())
@@ -96,7 +98,7 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SteamHelper: Steam not available and no DevTicket configured. Online features disabled."));
+		UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: Steam not available and no DevTicket configured. Online features disabled."));
 	}
 }
 
@@ -139,7 +141,7 @@ void UT66SteamHelper::ObtainTicket()
 	ISteamUser* User = SteamUser();
 	if (!User)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SteamHelper: cannot obtain ticket — ISteamUser null."));
+		UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: cannot obtain ticket — ISteamUser null."));
 		OnSteamTicketReady.Broadcast(false, FString());
 		return;
 	}
@@ -152,7 +154,7 @@ void UT66SteamHelper::ObtainTicket()
 
 	if (TicketHandle == 0 || TicketLen == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SteamHelper: GetAuthSessionTicket failed."));
+		UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: GetAuthSessionTicket failed."));
 		OnSteamTicketReady.Broadcast(false, FString());
 		return;
 	}
@@ -166,7 +168,7 @@ void UT66SteamHelper::ObtainTicket()
 	}
 
 	bSteamReady = true;
-	UE_LOG(LogTemp, Log, TEXT("SteamHelper: ticket obtained (%d bytes, %d hex chars)."), TicketLen, TicketHex.Len());
+	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: ticket obtained (%d bytes, %d hex chars)."), TicketLen, TicketHex.Len());
 
 	// Wire into BackendSubsystem
 	if (UGameInstance* GI = GetGameInstance())
@@ -196,5 +198,5 @@ void UT66SteamHelper::CollectFriendsList()
 		FriendSteamIds.Add(FString::Printf(TEXT("%llu"), FriendId.ConvertToUint64()));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("SteamHelper: collected %d friends."), FriendSteamIds.Num());
+	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: collected %d friends."), FriendSteamIds.Num());
 }

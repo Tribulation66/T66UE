@@ -4,13 +4,7 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66HeroBase.h"
-#include "Gameplay/T66HeroAOEAttackVFX.h"
-#include "Gameplay/T66HeroBounceAttackVFX.h"
-#include "Gameplay/T66HeroDOTAttackVFX.h"
-#include "Gameplay/T66FireIdolAttackVFX.h"
 #include "Gameplay/T66HeroOneAttackVFX.h"
-#include "Gameplay/T66IdolProcVFX.h"
-#include "Gameplay/T66IdolVolumeAttackVFX.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
@@ -28,114 +22,68 @@
 #include "CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
 #include "HAL/IConsoleManager.h"
-#include "Materials/MaterialInterface.h"
 #include "Sound/SoundBase.h"
 #include "UObject/SoftObjectPath.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Combat, Log, All);
+
+static UNiagaraComponent* T66SpawnBudgetedPixel(
+	UWorld* World,
+	UNiagaraSystem* VFX,
+	const FVector& Location,
+	const FVector4& Tint,
+	const FVector2D& SpriteSize,
+	ET66PixelVFXPriority Priority,
+	const FRotator& Rotation,
+	bool bAutoDestroy);
+
 namespace
 {
-	static TAutoConsoleVariable<int32> CVarT66VFXHeroOnePierceEnabled(
-		TEXT("T66.VFX.Hero1PierceExample"),
-		1,
-		TEXT("Use the stage-1 Example VFX path for Hero_1 pierce attacks. 0 falls back to the legacy pixel line."));
-
 	static TAutoConsoleVariable<int32> CVarT66VFXHeroOneVerbose(
 		TEXT("T66.VFX.Hero1Verbose"),
-		1,
-		TEXT("Emit detailed logs for the Hero_1 stage-1 Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXHeroPierceExample(
-		TEXT("T66.VFX.HeroPierceExample"),
-		1,
-		TEXT("Use the stage-2 Example VFX path for non-Hero_1 hero pierce attacks. 0 falls back to the legacy hero pierce pixels."));
+		0,
+		TEXT("Emit detailed logs for the Hero_1 pierce VFX path."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXHeroPierceVerbose(
 		TEXT("T66.VFX.HeroPierceVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-2 generic hero pierce Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXIdolPierceExample(
-		TEXT("T66.VFX.IdolPierceExample"),
 		0,
-		TEXT("Use the stage-3 generic debug VFX path for idol pierce attacks. 0 uses the idol-specific runtime actor plus pixel overlay."));
+		TEXT("Emit detailed logs for the generic hero pierce VFX path."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXIdolPierceVerbose(
 		TEXT("T66.VFX.IdolPierceVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-3 idol pierce Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXHeroAOEExample(
-		TEXT("T66.VFX.HeroAOEExample"),
-		1,
-		TEXT("Use the stage-4 Example VFX path for hero AOE attacks. 0 falls back to the legacy slash pixel patterns."));
+		0,
+		TEXT("Emit detailed logs for idol pierce VFX requests."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXHeroAOEVerbose(
 		TEXT("T66.VFX.HeroAOEVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-4 hero AOE Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXHeroBounceExample(
-		TEXT("T66.VFX.HeroBounceExample"),
-		1,
-		TEXT("Use the stage-5 Example VFX path for hero bounce attacks. 0 falls back to the legacy bounce pixel patterns."));
+		0,
+		TEXT("Emit detailed logs for hero AOE VFX requests."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXHeroBounceVerbose(
 		TEXT("T66.VFX.HeroBounceVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-5 hero bounce Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXHeroDOTExample(
-		TEXT("T66.VFX.HeroDOTExample"),
-		1,
-		TEXT("Use the stage-6 Example VFX path for hero DOT attacks. 0 falls back to the legacy DOT pixels."));
+		0,
+		TEXT("Emit detailed logs for hero bounce VFX requests."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXHeroDOTVerbose(
 		TEXT("T66.VFX.HeroDOTVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-6 hero DOT Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXIdolAOEExample(
-		TEXT("T66.VFX.IdolAOEExample"),
 		0,
-		TEXT("Use the stage-7 generic debug VFX path for idol AOE attacks. 0 prefers fire/Zibra or idol-specific runtime actors."));
+		TEXT("Emit detailed logs for hero DOT VFX requests."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXIdolAOEVerbose(
 		TEXT("T66.VFX.IdolAOEVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-7 idol AOE Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXFireIdolCandidate(
-		TEXT("T66.VFX.FireIdolCandidate"),
-		static_cast<int32>(ET66FireIdolTestCandidate::ZibraShockwave),
-		TEXT("Select the non-flipbook Fire idol gameplay-test candidate. 0=Blender3D, 1=ZibraShockwave."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXIdolBounceExample(
-		TEXT("T66.VFX.IdolBounceExample"),
 		0,
-		TEXT("Use the stage-8 generic debug VFX path for idol bounce attacks. 0 uses the idol-specific runtime actor and pixel chain."));
+		TEXT("Emit detailed logs for idol AOE VFX requests."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXIdolBounceVerbose(
 		TEXT("T66.VFX.IdolBounceVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-8 idol bounce Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXIdolDOTExample(
-		TEXT("T66.VFX.IdolDOTExample"),
 		0,
-		TEXT("Use the stage-9 generic debug VFX path for idol DOT attacks. 0 prefers volumetric or idol-specific runtime actors."));
+		TEXT("Emit detailed logs for idol bounce VFX requests."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXIdolDOTVerbose(
 		TEXT("T66.VFX.IdolDOTVerbose"),
-		1,
-		TEXT("Emit detailed logs for the stage-9 idol DOT Example VFX path."));
-
-	static TAutoConsoleVariable<int32> CVarT66VFXIdolLegacyPixels(
-		TEXT("T66.VFX.IdolLegacyPixels"),
 		0,
-		TEXT("Keep the old pixel-overlay idol embellishments on top of the replacement idol actors. 0 disables them so the replacement visuals stand alone."));
+		TEXT("Emit detailed logs for idol DOT VFX requests."));
 
-	const TCHAR* HeroOneStreakMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Streak.MI_Hero1_Attack_Streak");
-	const TCHAR* HeroOneImpactMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Impact.MI_Hero1_Attack_Impact");
 	int32 GHeroOneStage1RequestSerial = 0;
 	int32 GHeroPierceStage2RequestSerial = 0;
 	int32 GIdolPierceStage3RequestSerial = 0;
@@ -206,316 +154,269 @@ namespace
 		return ResolveGroundAnchor(World, ApproxLocation, TargetActor);
 	}
 
-	FLinearColor BuildExamplePierceTint(const FLinearColor& BaseColor)
-	{
-		const FLinearColor ClampedColor(
-			FMath::Clamp(BaseColor.R, 0.f, 1.f),
-			FMath::Clamp(BaseColor.G, 0.f, 1.f),
-			FMath::Clamp(BaseColor.B, 0.f, 1.f),
-			1.f);
-
-		return FLinearColor(
-			FMath::Lerp(ClampedColor.R, 1.0f, 0.42f),
-			FMath::Lerp(ClampedColor.G, 0.96f, 0.38f),
-			FMath::Lerp(ClampedColor.B, 0.92f, 0.34f),
-			1.f);
-	}
-
-	float GetPierceRarityGlowBoost(const ET66ItemRarity Rarity)
-	{
-		switch (Rarity)
-		{
-		case ET66ItemRarity::Red:    return 0.10f;
-		case ET66ItemRarity::Yellow: return 0.18f;
-		case ET66ItemRarity::White:  return 0.26f;
-		case ET66ItemRarity::Black:
-		default:                     return 0.0f;
-		}
-	}
-
-	void BuildIdolExamplePiercePalette(
-		const FLinearColor& IdolColor,
-		const ET66ItemRarity Rarity,
-		FLinearColor& OutTintColor,
-		FLinearColor& OutPrimaryColor,
-		FLinearColor& OutSecondaryColor,
-		FLinearColor& OutOutlineColor,
-		float& OutGlowStrength)
-	{
-		const FLinearColor ClampedColor(
-			FMath::Clamp(IdolColor.R, 0.f, 1.f),
-			FMath::Clamp(IdolColor.G, 0.f, 1.f),
-			FMath::Clamp(IdolColor.B, 0.f, 1.f),
-			1.f);
-
-		FLinearColor IdolHSV = ClampedColor.LinearRGBToHSV();
-		IdolHSV.G = FMath::Clamp(FMath::Max(IdolHSV.G * 1.55f, 0.72f), 0.f, 1.f);
-		IdolHSV.B = FMath::Clamp(FMath::Max(IdolHSV.B * 1.12f, 0.82f), 0.f, 1.f);
-
-		const FLinearColor VividPrimary = IdolHSV.HSVToLinearRGB();
-		const FLinearColor BrightTint = FLinearColor::LerpUsingHSV(VividPrimary, FLinearColor::White, 0.12f);
-		const FLinearColor DeepSecondary = FLinearColor::LerpUsingHSV(VividPrimary, FLinearColor::Black, 0.58f);
-		const FLinearColor DeepOutline = FLinearColor::LerpUsingHSV(DeepSecondary, FLinearColor::Black, 0.68f);
-
-		OutTintColor = BrightTint;
-		OutPrimaryColor = VividPrimary;
-		OutSecondaryColor = DeepSecondary;
-		OutOutlineColor = DeepOutline;
-		OutGlowStrength = 1.90f + GetPierceRarityGlowBoost(Rarity);
-	}
-
-	bool IsExamplePierceVFXReady(const int32 RequestId, const bool bLogResult)
-	{
-		static TWeakObjectPtr<UMaterialInterface> CachedStreakMaterial;
-		static TWeakObjectPtr<UMaterialInterface> CachedImpactMaterial;
-
-		UMaterialInterface* StreakMaterial = CachedStreakMaterial.Get();
-		if (!StreakMaterial)
-		{
-			StreakMaterial = LoadObject<UMaterialInterface>(nullptr, HeroOneStreakMaterialPath);
-			CachedStreakMaterial = StreakMaterial;
-		}
-
-		UMaterialInterface* ImpactMaterial = CachedImpactMaterial.Get();
-		if (!ImpactMaterial)
-		{
-			ImpactMaterial = LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
-			CachedImpactMaterial = ImpactMaterial;
-		}
-
-		const bool bReady = (StreakMaterial != nullptr) && (ImpactMaterial != nullptr);
-		if (bLogResult && (CVarT66VFXHeroOneVerbose.GetValueOnGameThread() != 0 || CVarT66VFXHeroPierceVerbose.GetValueOnGameThread() != 0 || CVarT66VFXIdolPierceVerbose.GetValueOnGameThread() != 0))
-		{
-			UE_LOG(
-				LogTemp,
-				Log,
-				TEXT("[ATTACK VFX][ExamplePierce] AssetPreflight Req=%d Ready=%d Streak=%s Impact=%s StreakPath=%s ImpactPath=%s"),
-				RequestId,
-				bReady ? 1 : 0,
-				StreakMaterial ? TEXT("OK") : TEXT("MISSING"),
-				ImpactMaterial ? TEXT("OK") : TEXT("MISSING"),
-				HeroOneStreakMaterialPath,
-				HeroOneImpactMaterialPath);
-		}
-
-		return bReady;
-	}
-
-	bool IsExampleAOEVFXReady(const int32 RequestId, const bool bLogResult, const FName EffectSourceID = NAME_None)
-	{
-		static TWeakObjectPtr<UMaterialInterface> CachedImpactMaterial;
-		UMaterialInterface* ImpactMaterial = CachedImpactMaterial.Get();
-		if (!ImpactMaterial)
-		{
-			ImpactMaterial = LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
-			CachedImpactMaterial = ImpactMaterial;
-		}
-
-		const bool bReady = ImpactMaterial != nullptr;
-		if (bLogResult && (CVarT66VFXHeroAOEVerbose.GetValueOnGameThread() != 0 || CVarT66VFXIdolAOEVerbose.GetValueOnGameThread() != 0))
-		{
-			UE_LOG(
-				LogTemp,
-				Log,
-				TEXT("[ATTACK VFX][ExampleAOE] AssetPreflight Req=%d Source=%s Ready=%d Impact=%s ImpactPath=%s"),
-				RequestId,
-				EffectSourceID.IsNone() ? TEXT("DefaultAOE") : *EffectSourceID.ToString(),
-				bReady ? 1 : 0,
-				ImpactMaterial ? TEXT("OK") : TEXT("MISSING"),
-				HeroOneImpactMaterialPath);
-		}
-
-		return bReady;
-	}
-
-	ET66FireIdolTestCandidate GetConfiguredFireIdolCandidate(int32& OutRawValue, bool& bOutWasClamped)
-	{
-		OutRawValue = CVarT66VFXFireIdolCandidate.GetValueOnGameThread();
-		return AT66FireIdolAttackVFX::SanitizeCandidate(OutRawValue, bOutWasClamped);
-	}
-
-	bool TrySpawnIdolVolumeEffect(
+	bool TrySpawnHeroPierceVariantPixels(
 		UWorld* World,
-		AActor* OwnerActor,
-		const FName IdolID,
-		const ET66AttackCategory Category,
-		AActor* FollowTarget,
+		UNiagaraSystem* VFX,
+		const FVector& Start,
+		const FVector& End,
+		const FVector4& ColorVec,
+		const FName HeroID)
+	{
+		const FVector Dir = (End - Start).GetSafeNormal();
+		const float Length = FVector::Dist(Start, End);
+
+		if (HeroID == FName(TEXT("Hero_5")))
+		{
+			constexpr int32 N = 48;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(Start, End, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
+		}
+
+		if (HeroID == FName(TEXT("Hero_8")))
+		{
+			constexpr int32 N = 16;
+			constexpr float ConeDeg = 45.f;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float T = (N > 1) ? (static_cast<float>(i) / static_cast<float>(N - 1)) : 0.5f;
+				const float Angle = -ConeDeg * 0.5f + ConeDeg * T;
+				const FVector ShotDir = Dir.RotateAngleAxis(Angle, FVector::UpVector);
+				const float Dist = FMath::FRandRange(Length * 0.2f, Length * 0.6f);
+				T66SpawnBudgetedPixel(World, VFX, Start + ShotDir * Dist, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
+		}
+
+		if (HeroID == FName(TEXT("Hero_11")))
+		{
+			const FVector Right = FVector::CrossProduct(FVector::UpVector, Dir).GetSafeNormal() * 30.f;
+			constexpr int32 N = 8;
+			for (int32 Line = 0; Line < 2; ++Line)
+			{
+				const FVector Offset = (Line == 0) ? Right : -Right;
+				for (int32 i = 0; i < N; ++i)
+				{
+					const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+					T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(Start + Offset, End + Offset, T), ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+				}
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	bool TrySpawnHeroAOEVariantPixels(
+		UWorld* World,
+		UNiagaraSystem* VFX,
 		const FVector& Location,
 		const float Radius,
-		const float Duration,
-		const FLinearColor& IdolColor,
-		const int32 RequestId)
+		const FVector4& ColorVec,
+		const FName HeroID)
 	{
-		if (!World || !AT66IdolVolumeAttackVFX::ShouldUseVolume(IdolID, Category))
+		if (HeroID == FName(TEXT("Hero_3")))
 		{
-			return false;
+			constexpr int32 N = 28;
+			constexpr float ArcDeg = 180.f;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+				const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
+				const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
 		}
 
-		FString BindingSummary;
-		FString FailureReason;
-		const bool bReady = AT66IdolVolumeAttackVFX::Preflight(IdolID, Category, BindingSummary, FailureReason);
-		if (bReady)
+		if (HeroID == FName(TEXT("Hero_4")))
 		{
-			UE_LOG(
-				LogTemp,
-				Log,
-				TEXT("[IDOL VOLUME VFX] Preflight Req=%d Idol=%s Category=%s Success=1 FailurePoint=None Fallback=None Details=%s"),
-				RequestId,
-				*IdolID.ToString(),
-				Category == ET66AttackCategory::DOT ? TEXT("DOT") : TEXT("AOE"),
-				*BindingSummary);
-		}
-		else
-		{
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("[IDOL VOLUME VFX] Preflight Req=%d Idol=%s Category=%s Success=0 FailurePoint=Preflight Fallback=IdolProcVFX Details=%s FailureReason=%s"),
-				RequestId,
-				*IdolID.ToString(),
-				Category == ET66AttackCategory::DOT ? TEXT("DOT") : TEXT("AOE"),
-				*BindingSummary,
-				*FailureReason);
-			return false;
+			constexpr int32 N = 16;
+			constexpr float ArcDeg = 90.f;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+				const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
+				const float R = Radius * 0.25f * FMath::FRandRange(0.5f, 1.f);
+				const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, 0.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(3.0f, 3.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
 		}
 
-		const FTransform SpawnTransform(FRotator::ZeroRotator, Location);
-		AT66IdolVolumeAttackVFX* VolumeEffect = World->SpawnActorDeferred<AT66IdolVolumeAttackVFX>(
-			AT66IdolVolumeAttackVFX::StaticClass(),
-			SpawnTransform,
-			OwnerActor,
-			nullptr,
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (!VolumeEffect)
+		if (HeroID == FName(TEXT("Hero_10")))
 		{
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("[IDOL VOLUME VFX] Spawn Req=%d Idol=%s Category=%s Success=0 FailurePoint=SpawnActorDeferred Fallback=IdolProcVFX Details=World->SpawnActorDeferred returned null."),
-				RequestId,
-				*IdolID.ToString(),
-				Category == ET66AttackCategory::DOT ? TEXT("DOT") : TEXT("AOE"));
-			return false;
+			constexpr int32 N = 32;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
+				const FVector Offset(FMath::Cos(Angle) * Radius * 0.35f, FMath::Sin(Angle) * Radius * 0.35f, 0.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
 		}
 
-		VolumeEffect->InitEffect(IdolID, Category, FollowTarget, Location, Radius, Duration, IdolColor, RequestId);
-		UGameplayStatics::FinishSpawningActor(VolumeEffect, SpawnTransform);
+		if (HeroID == FName(TEXT("Hero_15")))
+		{
+			constexpr int32 N = 12;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float T = static_cast<float>(i) / static_cast<float>(N - 1);
+				const float InnerAngle = FMath::DegreesToRadians(-60.f + 120.f * T);
+				const FVector InnerOff(FMath::Cos(InnerAngle) * Radius * 0.25f, FMath::Sin(InnerAngle) * Radius * 0.25f, 0.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + InnerOff, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
 
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("[IDOL VOLUME VFX] Spawn Req=%d Idol=%s Category=%s Success=1 FailurePoint=None Fallback=None Actor=%s Profile=%s"),
-			RequestId,
-			*IdolID.ToString(),
-			Category == ET66AttackCategory::DOT ? TEXT("DOT") : TEXT("AOE"),
-			*VolumeEffect->GetName(),
-			*AT66IdolVolumeAttackVFX::DescribeProfile(IdolID, Category));
+				const float OuterAngle = FMath::DegreesToRadians(-75.f + 150.f * T);
+				const FVector OuterOff(FMath::Cos(OuterAngle) * Radius * 0.4f, FMath::Sin(OuterAngle) * Radius * 0.4f, 0.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + OuterOff, FVector4(0.95f, 0.85f, 0.1f, 1.f), FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
+		}
 
-		return true;
+		return false;
 	}
 
-	bool IsExampleBounceVFXReady(const int32 RequestId, const bool bLogResult)
+	bool TrySpawnHeroBounceVariantPixels(
+		UWorld* World,
+		UNiagaraSystem* VFX,
+		const TArray<FVector>& ChainPositions,
+		const FVector4& ColorVec,
+		const FName HeroID)
 	{
-		static TWeakObjectPtr<UMaterialInterface> CachedStreakMaterial;
-		static TWeakObjectPtr<UMaterialInterface> CachedImpactMaterial;
-
-		UMaterialInterface* StreakMaterial = CachedStreakMaterial.Get();
-		if (!StreakMaterial)
+		if (HeroID == FName(TEXT("Hero_6")))
 		{
-			StreakMaterial = LoadObject<UMaterialInterface>(nullptr, HeroOneStreakMaterialPath);
-			CachedStreakMaterial = StreakMaterial;
+			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+			{
+				const FVector A = ChainPositions[i];
+				const FVector B = ChainPositions[i + 1];
+				const float Dist = FVector::Dist(A, B);
+				const int32 N = FMath::Max(4, FMath::RoundToInt(Dist / 15.f));
+				for (int32 j = 0; j < N; ++j)
+				{
+					const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+					T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+				}
+			}
+			return true;
 		}
 
-		UMaterialInterface* ImpactMaterial = CachedImpactMaterial.Get();
-		if (!ImpactMaterial)
+		if (HeroID == FName(TEXT("Hero_7")))
 		{
-			ImpactMaterial = LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
-			CachedImpactMaterial = ImpactMaterial;
+			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+			{
+				const FVector A = ChainPositions[i];
+				const FVector B = ChainPositions[i + 1];
+				const float Dist = FVector::Dist(A, B);
+				const int32 N = FMath::Max(3, FMath::RoundToInt(Dist / 60.f));
+				for (int32 j = 0; j < N; ++j)
+				{
+					const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+					T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(3.5f, 3.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+				}
+			}
+			return true;
 		}
 
-		const bool bReady = (StreakMaterial != nullptr) && (ImpactMaterial != nullptr);
-		if (bLogResult && CVarT66VFXHeroBounceVerbose.GetValueOnGameThread() != 0)
+		if (HeroID == FName(TEXT("Hero_12")))
 		{
-			UE_LOG(
-				LogTemp,
-				Log,
-				TEXT("[ATTACK VFX][ExampleBounce] AssetPreflight Req=%d Ready=%d Streak=%s Impact=%s StreakPath=%s ImpactPath=%s"),
-				RequestId,
-				bReady ? 1 : 0,
-				StreakMaterial ? TEXT("OK") : TEXT("MISSING"),
-				ImpactMaterial ? TEXT("OK") : TEXT("MISSING"),
-				HeroOneStreakMaterialPath,
-				HeroOneImpactMaterialPath);
+			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+			{
+				const FVector A = ChainPositions[i];
+				const FVector B = ChainPositions[i + 1];
+				const float Dist = FVector::Dist(A, B);
+				const int32 N = FMath::Max(6, FMath::RoundToInt(Dist / 15.f));
+				for (int32 j = 0; j < N; ++j)
+				{
+					const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+					const FVector Jitter(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
+					T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T) + Jitter, ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+				}
+			}
+			return true;
 		}
 
-		return bReady;
-	}
-
-	bool IsExampleDOTVFXReady(const int32 RequestId, const bool bLogResult)
-	{
-		static TWeakObjectPtr<UMaterialInterface> CachedImpactMaterial;
-
-		UMaterialInterface* ImpactMaterial = CachedImpactMaterial.Get();
-		if (!ImpactMaterial)
+		if (HeroID == FName(TEXT("Hero_9")))
 		{
-			ImpactMaterial = LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
-			CachedImpactMaterial = ImpactMaterial;
+			for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
+			{
+				const FVector A = ChainPositions[i];
+				const FVector B = ChainPositions[i + 1];
+				const float Dist = FVector::Dist(A, B);
+				const int32 N = FMath::Max(4, FMath::RoundToInt(Dist / 25.f));
+				for (int32 j = 0; j < N; ++j)
+				{
+					const float T = static_cast<float>(j) / static_cast<float>(N - 1);
+					T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+				}
+			}
+			return true;
 		}
 
-		const bool bReady = ImpactMaterial != nullptr;
-		if (bLogResult && CVarT66VFXHeroDOTVerbose.GetValueOnGameThread() != 0)
+		return false;
+	}
+
+	bool TrySpawnHeroDOTVariantPixels(
+		UWorld* World,
+		UNiagaraSystem* VFX,
+		const FVector& Location,
+		const float Radius,
+		const FVector4& ColorVec,
+		const FName HeroID)
+	{
+		if (HeroID == FName(TEXT("Hero_2")))
 		{
-			UE_LOG(
-				LogTemp,
-				Log,
-				TEXT("[ATTACK VFX][ExampleDOT] AssetPreflight Req=%d Ready=%d Impact=%s ImpactPath=%s"),
-				RequestId,
-				bReady ? 1 : 0,
-				ImpactMaterial ? TEXT("OK") : TEXT("MISSING"),
-				HeroOneImpactMaterialPath);
+			constexpr int32 N = 12;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float T = static_cast<float>(i) / static_cast<float>(N);
+				const float Angle = T * 4.f * PI;
+				const float R = Radius * 0.3f * T;
+				const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, T * 30.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
 		}
 
-		return bReady;
+		if (HeroID == FName(TEXT("Hero_13")))
+		{
+			constexpr int32 N = 8;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const FVector Offset(FMath::FRandRange(-15.f, 15.f), FMath::FRandRange(-15.f, 15.f), -static_cast<float>(i) * 12.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
+		}
+
+		if (HeroID == FName(TEXT("Hero_14")))
+		{
+			constexpr int32 N = 16;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
+				const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
+				T66SpawnBudgetedPixel(World, VFX, Location + Offset, FVector4(0.5f, 0.8f, 1.f, 1.f), FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
+		}
+
+		if (HeroID == FName(TEXT("Hero_16")))
+		{
+			constexpr int32 N = 6;
+			for (int32 i = 0; i < N; ++i)
+			{
+				const FVector Offset(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
+				T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
+			}
+			return true;
+		}
+
+		return false;
 	}
 
-	void BuildIdolExampleAOEPalette(
-		const FLinearColor& IdolColor,
-		const ET66ItemRarity Rarity,
-		FLinearColor& OutTintColor,
-		FLinearColor& OutPrimaryColor,
-		FLinearColor& OutSecondaryColor,
-		FLinearColor& OutOutlineColor,
-		float& OutGlowStrength)
-	{
-		BuildIdolExamplePiercePalette(IdolColor, Rarity, OutTintColor, OutPrimaryColor, OutSecondaryColor, OutOutlineColor, OutGlowStrength);
-		OutGlowStrength += 0.06f;
-	}
-
-	void BuildIdolExampleBouncePalette(
-		const FLinearColor& IdolColor,
-		const ET66ItemRarity Rarity,
-		FLinearColor& OutTintColor,
-		FLinearColor& OutPrimaryColor,
-		FLinearColor& OutSecondaryColor,
-		FLinearColor& OutOutlineColor,
-		float& OutGlowStrength)
-	{
-		BuildIdolExamplePiercePalette(IdolColor, Rarity, OutTintColor, OutPrimaryColor, OutSecondaryColor, OutOutlineColor, OutGlowStrength);
-		OutGlowStrength += 0.03f;
-	}
-
-	void BuildIdolExampleDOTPalette(
-		const FLinearColor& IdolColor,
-		const ET66ItemRarity Rarity,
-		FLinearColor& OutTintColor,
-		FLinearColor& OutPrimaryColor,
-		FLinearColor& OutSecondaryColor,
-		FLinearColor& OutOutlineColor,
-		float& OutGlowStrength)
-	{
-		BuildIdolExamplePiercePalette(IdolColor, Rarity, OutTintColor, OutPrimaryColor, OutSecondaryColor, OutOutlineColor, OutGlowStrength);
-		OutGlowStrength += 0.10f;
-	}
 }
 
 UT66CombatComponent::UT66CombatComponent()
@@ -641,11 +542,11 @@ void UT66CombatComponent::BeginPlay()
 	CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
 	if (CachedPixelVFXNiagara)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[VFX] Pixel particle system loaded: NS_PixelParticle"));
+		UE_LOG(LogT66Combat, Log, TEXT("[VFX] Pixel particle system loaded: NS_PixelParticle"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[VFX] NS_PixelParticle not found; falling back to VFX_Attack1. Run CreatePixelParticleNiagara.py + configure in editor."));
+		UE_LOG(LogT66Combat, Warning, TEXT("[VFX] NS_PixelParticle not found; falling back to VFX_Attack1. Run CreatePixelParticleNiagara.py + configure in editor."));
 	}
 
 	// --- Create the range detection sphere ---
@@ -672,7 +573,7 @@ void UT66CombatComponent::BeginPlay()
 
 	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &UT66CombatComponent::TryFire, EffectiveFireIntervalSeconds, true, EffectiveFireIntervalSeconds);
 
-	UE_LOG(LogTemp, Log, TEXT("[GOLD] CombatComponent: initialized — overlap sphere (radius=%.0f), VFX pooling (AutoRelease), timer-based fire (%.2fs)"),
+	UE_LOG(LogT66Combat, Log, TEXT("[GOLD] CombatComponent: initialized — overlap sphere (radius=%.0f), VFX pooling (AutoRelease), timer-based fire (%.2fs)"),
 		AttackRange, EffectiveFireIntervalSeconds);
 }
 
@@ -767,7 +668,7 @@ AActor* UT66CombatComponent::FindClosestEnemyInRange(const FVector& FromLocation
 
 void UT66CombatComponent::HandleInventoryChanged()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[IDOL CACHE] HandleInventoryChanged owner=%s"), GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
+	UE_LOG(LogT66Combat, Warning, TEXT("[IDOL CACHE] HandleInventoryChanged owner=%s"), GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
 	const float OldInterval = EffectiveFireIntervalSeconds;
 	RecomputeFromRunState();
 	if (!FMath::IsNearlyEqual(OldInterval, EffectiveFireIntervalSeconds, 0.001f))
@@ -807,7 +708,9 @@ void UT66CombatComponent::RecomputeFromRunState()
 		return;
 	}
 
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	if (GI)
 	{
 		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetOwner()))
@@ -839,7 +742,7 @@ void UT66CombatComponent::RecomputeFromRunState()
 
 		++ValidIdolCount;
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Warning,
 			TEXT("[IDOL CACHE] Slot=%d Idol=%s Rarity=%s Category=%s"),
 			Slot,
@@ -848,7 +751,7 @@ void UT66CombatComponent::RecomputeFromRunState()
 			GetT66AttackCategoryName(Entry.IdolData.Category));
 	}
 	UE_LOG(
-		LogTemp,
+		LogT66Combat,
 		Warning,
 		TEXT("[IDOL CACHE] owner=%s totalSlots=%d validSlots=%d"),
 		GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
@@ -912,7 +815,7 @@ void UT66CombatComponent::PlayShotSfx()
 		if (!bShotSfxWarnedMissing)
 		{
 			bShotSfxWarnedMissing = true;
-			UE_LOG(LogTemp, Warning, TEXT("Shot SFX not found. Import your Shot audio into UE so '/Game/Audio/SFX/Shot' exists (SoundWave/SoundCue)."));
+			UE_LOG(LogT66Combat, Warning, TEXT("Shot SFX not found. Import your Shot audio into UE so '/Game/Audio/SFX/Shot' exists (SoundWave/SoundCue)."));
 		}
 		return;
 	}
@@ -1047,7 +950,7 @@ void UT66CombatComponent::TryFire()
 		}
 		const float HalfLen = FMath::Max(1.f, (LineLength * 0.5f) - PierceRadius);
 		const FVector MidPoint = MyLoc + OutDir * (LineLength * 0.5f);
-		const FQuat Rot = FQuat::FindBetween(FVector::UpVector, OutDir);
+		const FQuat Rot = FQuat::FindBetweenNormals(FVector::UpVector, OutDir);
 		const FCollisionShape Cap = FCollisionShape::MakeCapsule(PierceRadius, HalfLen);
 
 		FCollisionQueryParams Params;
@@ -1439,7 +1342,7 @@ void UT66CombatComponent::TryFire()
 			// Bounce search radius = hero attack range, centered on the last hit enemy each step.
 			const float BounceSearchRadius = IdolRange;
 			UE_LOG(
-				LogTemp,
+				LogT66Combat,
 				Warning,
 				TEXT("[IDOL PROC] owner=%s target=%s cachedIdolSlots=%d"),
 				GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
@@ -1459,7 +1362,7 @@ void UT66CombatComponent::TryFire()
 				const FVector PrimaryLoc = PrimaryTargetImpactLocation;
 				const FVector PrimaryVFXLoc = ResolveGroundAnchor(World, PrimaryLoc, PrimaryTarget);
 				UE_LOG(
-					LogTemp,
+					LogT66Combat,
 					Warning,
 					TEXT("[IDOL PROC] Index=%d Idol=%s Rarity=%s Category=%s Damage=%d Delay=%.3f targetLoc=%s vfxLoc=%s"),
 					IdolVisualIndex,
@@ -1691,9 +1594,17 @@ UNiagaraSystem* UT66CombatComponent::GetActiveVFXSystem() const
 // ---------------------------------------------------------------------------
 static UNiagaraSystem* FindPixelVFXSystem()
 {
-	UNiagaraSystem* Pixel = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
-	if (Pixel) return Pixel;
-	return LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+	static TObjectPtr<UNiagaraSystem> CachedPixelSystem = nullptr;
+	static TObjectPtr<UNiagaraSystem> CachedFallbackSystem = nullptr;
+	if (!CachedPixelSystem)
+	{
+		CachedPixelSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+	}
+	if (!CachedPixelSystem && !CachedFallbackSystem)
+	{
+		CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+	}
+	return CachedPixelSystem ? CachedPixelSystem.Get() : CachedFallbackSystem.Get();
 }
 
 static FVector4 T66MakeBloodTint(bool bBrightCore)
@@ -1919,13 +1830,13 @@ void UT66CombatComponent::SpawnPierceVFX(const FVector& Start, const FVector& En
 	UNiagaraSystem* VFX = GetActiveVFXSystem();
 	if (!World)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Legacy] Pierce spawn skipped: no world."));
+		UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Legacy] Pierce spawn skipped: no world."));
 		return;
 	}
 	if (!VFX)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Warning,
 			TEXT("[ATTACK VFX][Legacy] Pierce spawn skipped: no active Niagara system. Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f)"),
 			Start.X, Start.Y, Start.Z,
@@ -1955,38 +1866,19 @@ void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVec
 	const int32 RequestId = ++GHeroOneStage1RequestSerial;
 	const float TraceLength2D = FVector::Dist2D(Start, End);
 	const bool bVerbose = CVarT66VFXHeroOneVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXHeroOnePierceEnabled.GetValueOnGameThread() != 0;
-	UNiagaraSystem* LegacyVFX = GetActiveVFXSystem();
-	const FString LegacyVFXName = LegacyVFX ? LegacyVFX->GetName() : TEXT("None");
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage1] Hero_1 Pierce request Req=%d Owner=%s Time=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Trace2D=%.1f UseExample=%d LegacyVFX=%s"),
+			TEXT("[ATTACK VFX][Stage1] Hero_1 Pierce request Req=%d Owner=%s Time=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Trace2D=%.1f"),
 			RequestId,
 			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
 			World->GetTimeSeconds(),
 			Start.X, Start.Y, Start.Z,
 			End.X, End.Y, End.Z,
 			ImpactLocation.X, ImpactLocation.Y, ImpactLocation.Z,
-			TraceLength2D,
-			bUseExamplePath ? 1 : 0,
-			*LegacyVFXName);
-	}
-
-	if (!bUseExamplePath)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage1] Hero_1 Example path disabled Req=%d via T66.VFX.Hero1PierceExample. Falling back to legacy pierce pixels with VFX=%s."), RequestId, *LegacyVFXName);
-		SpawnPierceVFX(Start, End, FLinearColor(1.f, 0.95f, 0.8f, 1.f));
-		return;
-	}
-
-	if (!IsExamplePierceVFXReady(RequestId, true))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage1] Hero_1 Example path missing materials Req=%d. Falling back to legacy pierce pixels with VFX=%s."), RequestId, *LegacyVFXName);
-		SpawnPierceVFX(Start, End, FLinearColor(1.f, 0.95f, 0.8f, 1.f));
-		return;
+			TraceLength2D);
 	}
 
 	FActorSpawnParameters SpawnParams;
@@ -2003,7 +1895,7 @@ void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVec
 		if (bVerbose)
 		{
 			UE_LOG(
-				LogTemp,
+				LogT66Combat,
 				Log,
 				TEXT("[ATTACK VFX][Stage1] Hero_1 Example actor spawned Req=%d Actor=%s Owner=%s"),
 				RequestId,
@@ -2014,8 +1906,7 @@ void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVec
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage1] Hero_1 Example actor spawn failed Req=%d. Falling back to legacy pierce pixels with VFX=%s."), RequestId, *LegacyVFXName);
-	SpawnPierceVFX(Start, End, FLinearColor(1.f, 0.95f, 0.8f, 1.f));
+	UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Stage1] Hero_1 pierce actor spawn failed Req=%d."), RequestId);
 }
 
 void UT66CombatComponent::SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color)
@@ -2086,107 +1977,23 @@ void UT66CombatComponent::SpawnIdolPierceVFX(const FName& IdolID, const ET66Item
 	}
 	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
 	const int32 RequestId = ++GIdolPierceStage3RequestSerial;
-	const bool bVerbose = CVarT66VFXIdolPierceVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXIdolPierceExample.GetValueOnGameThread() != 0;
-	const float TraceLength2D = FVector::Dist2D(Start, End);
-
-	FLinearColor PaletteTint;
-	FLinearColor PalettePrimary;
-	FLinearColor PaletteSecondary;
-	FLinearColor PaletteOutline;
-	float PaletteGlow = 0.f;
-	BuildIdolExamplePiercePalette(IdolColor, Rarity, PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow);
-
-	if (bVerbose)
+	if (CVarT66VFXIdolPierceVerbose.GetValueOnGameThread() != 0)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage3] Idol Pierce request Req=%d Idol=%s Rarity=%s Owner=%s Time=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Trace2D=%.1f Delay=%.3f UseExample=%d IdolColor=(%.2f,%.2f,%.2f,%.2f) Tint=(%.2f,%.2f,%.2f,%.2f) Primary=(%.2f,%.2f,%.2f,%.2f) Secondary=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][IdolPierce] Req=%d Idol=%s Rarity=%s Owner=%s Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Delay=%.3f"),
 			RequestId,
 			*IdolID.ToString(),
 			GetT66ItemRarityName(Rarity),
 			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
-			World->GetTimeSeconds(),
 			Start.X, Start.Y, Start.Z,
 			End.X, End.Y, End.Z,
 			ImpactLocation.X, ImpactLocation.Y, ImpactLocation.Z,
-			TraceLength2D,
-			StartDelaySeconds,
-			bUseExamplePath ? 1 : 0,
-			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A,
-			PaletteTint.R, PaletteTint.G, PaletteTint.B, PaletteTint.A,
-			PalettePrimary.R, PalettePrimary.G, PalettePrimary.B, PalettePrimary.A,
-			PaletteSecondary.R, PaletteSecondary.G, PaletteSecondary.B, PaletteSecondary.A);
+			StartDelaySeconds);
 	}
 
-	if (bUseExamplePath)
-	{
-		if (!IsExamplePierceVFXReady(RequestId, true))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage3] Idol Pierce missing materials Req=%d Idol=%s. Falling back to legacy idol pierce actor."), RequestId, *IdolID.ToString());
-		}
-		else
-		{
-			FActorSpawnParameters ExampleSpawnParams;
-			ExampleSpawnParams.Owner = GetOwner();
-			ExampleSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroOneAttackVFX* ExampleEffect = World->SpawnActor<AT66HeroOneAttackVFX>(
-				AT66HeroOneAttackVFX::StaticClass(),
-				Start,
-				FRotator::ZeroRotator,
-				ExampleSpawnParams);
-			if (ExampleEffect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage3] Idol Pierce Example actor spawned Req=%d Idol=%s Actor=%s Owner=%s"),
-						RequestId,
-						*IdolID.ToString(),
-						*ExampleEffect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-
-				ExampleEffect->SetPaletteOverride(PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow, FName(TEXT("IdolTwoTone")));
-				ExampleEffect->InitEffect(Start, End, ImpactLocation, IdolColor, RequestId, IdolID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage3] Idol Pierce Example actor spawn failed Req=%d Idol=%s. Falling back to legacy idol pierce actor."), RequestId, *IdolID.ToString());
-		}
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetOwner();
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AT66IdolProcVFX* Effect = World->SpawnActor<AT66IdolProcVFX>(AT66IdolProcVFX::StaticClass(), Start, FRotator::ZeroRotator, SpawnParams);
-	if (Effect)
-	{
-		FT66IdolProcVFXRequest Request;
-		Request.IdolID = IdolID;
-		Request.Rarity = Rarity;
-		Request.Category = ET66AttackCategory::Pierce;
-		Request.Start = Start;
-		Request.End = End;
-		Request.Impact = ImpactLocation;
-		Request.StartDelay = StartDelaySeconds;
-		Effect->InitEffect(Request);
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] Pierce Idol=%s Rarity=%s Delay=%.3f Actor=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), StartDelaySeconds, *Effect->GetName(), RequestId);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] Pierce spawn failed Idol=%s Rarity=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), RequestId);
-	}
-
-	if (CVarT66VFXIdolLegacyPixels.GetValueOnGameThread() != 0)
-	{
-		SpawnPierceVFX(Start + FVector(0.f, 0.f, 24.f), End + FVector(0.f, 0.f, 24.f), IdolColor);
-	}
+	SpawnPierceVFX(Start, End, IdolColor);
 }
 
 void UT66CombatComponent::SpawnIdolAOEVFX(const FName& IdolID, const ET66ItemRarity Rarity, const FVector& Location, const float Radius, const float StartDelaySeconds)
@@ -2199,21 +2006,13 @@ void UT66CombatComponent::SpawnIdolAOEVFX(const FName& IdolID, const ET66ItemRar
 	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
 	const int32 RequestId = ++GIdolAOEStage7RequestSerial;
 	const bool bVerbose = CVarT66VFXIdolAOEVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXIdolAOEExample.GetValueOnGameThread() != 0;
-
-	FLinearColor PaletteTint;
-	FLinearColor PalettePrimary;
-	FLinearColor PaletteSecondary;
-	FLinearColor PaletteOutline;
-	float PaletteGlow = 0.f;
-	BuildIdolExampleAOEPalette(IdolColor, Rarity, PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow);
 
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage7] Idol AOE request Req=%d Idol=%s Rarity=%s Owner=%s Time=%.3f Radius=%.1f Delay=%.3f UseExample=%d Center=(%.1f,%.1f,%.1f) IdolColor=(%.2f,%.2f,%.2f,%.2f) Tint=(%.2f,%.2f,%.2f,%.2f) Primary=(%.2f,%.2f,%.2f,%.2f) Secondary=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][Stage7] Idol AOE request Req=%d Idol=%s Rarity=%s Owner=%s Time=%.3f Radius=%.1f Delay=%.3f Center=(%.1f,%.1f,%.1f) IdolColor=(%.2f,%.2f,%.2f,%.2f)"),
 			RequestId,
 			*IdolID.ToString(),
 			GetT66ItemRarityName(Rarity),
@@ -2221,198 +2020,11 @@ void UT66CombatComponent::SpawnIdolAOEVFX(const FName& IdolID, const ET66ItemRar
 			World->GetTimeSeconds(),
 			Radius,
 			StartDelaySeconds,
-			bUseExamplePath ? 1 : 0,
 			Location.X, Location.Y, Location.Z,
-			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A,
-			PaletteTint.R, PaletteTint.G, PaletteTint.B, PaletteTint.A,
-			PalettePrimary.R, PalettePrimary.G, PalettePrimary.B, PalettePrimary.A,
-			PaletteSecondary.R, PaletteSecondary.G, PaletteSecondary.B, PaletteSecondary.A);
+			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A);
 	}
 
-	if (IdolID == FName(TEXT("Idol_Fire")))
-	{
-		int32 RawFireCandidateValue = 0;
-		bool bFireCandidateClamped = false;
-		const ET66FireIdolTestCandidate FireCandidate = GetConfiguredFireIdolCandidate(RawFireCandidateValue, bFireCandidateClamped);
-		if (bFireCandidateClamped)
-		{
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("[FIRE IDOL TEST] CandidateSelected Req=%d Source=%s RawCVar=%d Candidate=%s Success=0 FailurePoint=CVarSanitize Fallback=None Details=Unsupported candidate value; defaulted to ZibraShockwave."),
-				RequestId,
-				*IdolID.ToString(),
-				RawFireCandidateValue,
-				AT66FireIdolAttackVFX::GetCandidateName(FireCandidate));
-		}
-
-		FString BindingSummary;
-		FString FailureReason;
-		const bool bFireCandidateReady = AT66FireIdolAttackVFX::PreflightCandidate(FireCandidate, BindingSummary, FailureReason);
-		if (bFireCandidateReady)
-		{
-			UE_LOG(
-				LogTemp,
-				Log,
-				TEXT("[FIRE IDOL TEST] CandidatePreflight Req=%d Source=%s Candidate=%s RawCVar=%d Success=1 FailurePoint=None Fallback=None Details=%s"),
-				RequestId,
-				*IdolID.ToString(),
-				AT66FireIdolAttackVFX::GetCandidateName(FireCandidate),
-				RawFireCandidateValue,
-				*BindingSummary);
-		}
-		else
-		{
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("[FIRE IDOL TEST] CandidatePreflight Req=%d Source=%s Candidate=%s RawCVar=%d Success=0 FailurePoint=Preflight Fallback=LegacyIdolProcVFX Details=%s FailureReason=%s"),
-				RequestId,
-				*IdolID.ToString(),
-				AT66FireIdolAttackVFX::GetCandidateName(FireCandidate),
-				RawFireCandidateValue,
-				*BindingSummary,
-				*FailureReason);
-		}
-
-		if (!bFireCandidateReady)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage7][Fire] Candidate preflight failed Req=%d Idol=%s. Falling back to idol-specific AOE actor."), RequestId, *IdolID.ToString());
-		}
-		else
-		{
-			const FTransform SpawnTransform(FRotator::ZeroRotator, Location);
-			AT66FireIdolAttackVFX* FireEffect = World->SpawnActorDeferred<AT66FireIdolAttackVFX>(
-				AT66FireIdolAttackVFX::StaticClass(),
-				SpawnTransform,
-				GetOwner(),
-				nullptr,
-				ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-			if (FireEffect)
-			{
-				UE_LOG(
-					LogTemp,
-					Log,
-					TEXT("[FIRE IDOL TEST] CandidateSpawned Req=%d Source=%s Candidate=%s Actor=%s Success=1 FailurePoint=None Fallback=None Details=Deferred actor allocated."),
-					RequestId,
-					*IdolID.ToString(),
-					AT66FireIdolAttackVFX::GetCandidateName(FireCandidate),
-					*FireEffect->GetName());
-
-				FireEffect->ConfigureCandidate(FireCandidate);
-				FireEffect->InitEffect(Location, Radius, IdolColor, RequestId, IdolID);
-				UGameplayStatics::FinishSpawningActor(FireEffect, SpawnTransform);
-				return;
-			}
-
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("[FIRE IDOL TEST] CandidateSpawned Req=%d Source=%s Candidate=%s Actor=None Success=0 FailurePoint=SpawnActorDeferred Fallback=IdolProcVFX Details=World->SpawnActorDeferred returned null."),
-				RequestId,
-				*IdolID.ToString(),
-				AT66FireIdolAttackVFX::GetCandidateName(FireCandidate));
-		}
-	}
-	else if (TrySpawnIdolVolumeEffect(World, GetOwner(), IdolID, ET66AttackCategory::AOE, nullptr, Location, Radius, 0.f, IdolColor, RequestId))
-	{
-		return;
-	}
-	else if (bUseExamplePath)
-	{
-		if (!IsExampleAOEVFXReady(RequestId, true, IdolID))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage7] Idol AOE missing materials Req=%d Idol=%s. Falling back to idol-specific AOE actor."), RequestId, *IdolID.ToString());
-		}
-		else
-		{
-			FActorSpawnParameters ExampleSpawnParams;
-			ExampleSpawnParams.Owner = GetOwner();
-			ExampleSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroAOEAttackVFX* ExampleEffect = World->SpawnActor<AT66HeroAOEAttackVFX>(
-				AT66HeroAOEAttackVFX::StaticClass(),
-				Location,
-				FRotator::ZeroRotator,
-				ExampleSpawnParams);
-			if (ExampleEffect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage7] Idol AOE Example actor spawned Req=%d Idol=%s Actor=%s Owner=%s"),
-						RequestId,
-						*IdolID.ToString(),
-						*ExampleEffect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-
-				ExampleEffect->SetPaletteOverride(PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow, FName(TEXT("IdolTwoTone")));
-				ExampleEffect->InitEffect(Location, Radius, IdolColor, RequestId, IdolID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage7] Idol AOE Example actor spawn failed Req=%d Idol=%s. Falling back to idol-specific AOE actor."), RequestId, *IdolID.ToString());
-		}
-	}
-	else if (IdolID == FName(TEXT("Idol_Fire")))
-	{
-		UE_LOG(
-			LogTemp,
-			Warning,
-			TEXT("[FIRE IDOL TEST] CandidateBypassed Req=%d Source=%s Candidate=None Success=0 FailurePoint=Unknown Fallback=IdolProcVFX Details=The fire test candidate path was unavailable so the idol-specific AOE actor was used."),
-			RequestId,
-			*IdolID.ToString());
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetOwner();
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AT66IdolProcVFX* Effect = World->SpawnActor<AT66IdolProcVFX>(AT66IdolProcVFX::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams);
-	if (Effect)
-	{
-		FT66IdolProcVFXRequest Request;
-		Request.IdolID = IdolID;
-		Request.Rarity = Rarity;
-		Request.Category = ET66AttackCategory::AOE;
-		Request.Center = Location;
-		Request.Radius = Radius;
-		Request.StartDelay = StartDelaySeconds;
-		Effect->InitEffect(Request);
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] AOE Idol=%s Rarity=%s Radius=%.1f Delay=%.3f Actor=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), Radius, StartDelaySeconds, *Effect->GetName(), RequestId);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] AOE spawn failed Idol=%s Rarity=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), RequestId);
-	}
-
-	UNiagaraSystem* VFX = GetActiveVFXSystem();
-	if (VFX && CVarT66VFXIdolLegacyPixels.GetValueOnGameThread() != 0)
-	{
-		const FVector4 ColorVec(IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A);
-		const FVector RingCenter = Location + FVector(0.f, 0.f, 12.f);
-		const float RingRadius = FMath::Max(40.f, Radius * 0.34f);
-		const int32 RingCount = (Rarity == ET66ItemRarity::White) ? 40 : 28;
-		for (int32 PixelIndex = 0; PixelIndex < RingCount; ++PixelIndex)
-		{
-			const float Angle = (2.f * PI * static_cast<float>(PixelIndex)) / static_cast<float>(RingCount);
-			const FVector Offset(FMath::Cos(Angle) * RingRadius, FMath::Sin(Angle) * RingRadius, 0.f);
-			T66SpawnBudgetedPixel(World, VFX, RingCenter + Offset, ColorVec, FVector2D(3.0f, 3.0f), ET66PixelVFXPriority::High);
-		}
-
-		const int32 BurstCount = (Rarity == ET66ItemRarity::White) ? 18 : 10;
-		for (int32 PixelIndex = 0; PixelIndex < BurstCount; ++PixelIndex)
-		{
-			const FVector Offset(
-				FMath::FRandRange(-RingRadius * 0.35f, RingRadius * 0.35f),
-				FMath::FRandRange(-RingRadius * 0.35f, RingRadius * 0.35f),
-				FMath::FRandRange(0.f, 18.f));
-			T66SpawnBudgetedPixel(World, VFX, RingCenter + Offset, ColorVec, FVector2D(3.5f, 3.5f), ET66PixelVFXPriority::High);
-		}
-	}
+	SpawnSlashVFX(Location, Radius, IdolColor);
 }
 
 void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66ItemRarity Rarity, const TArray<FVector>& ChainPositions, const float StartDelaySeconds)
@@ -2425,21 +2037,13 @@ void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66Item
 	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
 	const int32 RequestId = ++GIdolBounceStage8RequestSerial;
 	const bool bVerbose = CVarT66VFXIdolBounceVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXIdolBounceExample.GetValueOnGameThread() != 0;
-
-	FLinearColor PaletteTint;
-	FLinearColor PalettePrimary;
-	FLinearColor PaletteSecondary;
-	FLinearColor PaletteOutline;
-	float PaletteGlow = 0.f;
-	BuildIdolExampleBouncePalette(IdolColor, Rarity, PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow);
 
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage8] Idol Bounce request Req=%d Idol=%s Rarity=%s Owner=%s Time=%.3f Links=%d Delay=%.3f UseExample=%d Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) IdolColor=(%.2f,%.2f,%.2f,%.2f) Tint=(%.2f,%.2f,%.2f,%.2f) Primary=(%.2f,%.2f,%.2f,%.2f) Secondary=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][Stage8] Idol Bounce request Req=%d Idol=%s Rarity=%s Owner=%s Time=%.3f Links=%d Delay=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) IdolColor=(%.2f,%.2f,%.2f,%.2f)"),
 			RequestId,
 			*IdolID.ToString(),
 			GetT66ItemRarityName(Rarity),
@@ -2447,74 +2051,9 @@ void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66Item
 			World->GetTimeSeconds(),
 			ChainPositions.Num() - 1,
 			StartDelaySeconds,
-			bUseExamplePath ? 1 : 0,
 			ChainPositions[0].X, ChainPositions[0].Y, ChainPositions[0].Z,
 			ChainPositions.Last().X, ChainPositions.Last().Y, ChainPositions.Last().Z,
-			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A,
-			PaletteTint.R, PaletteTint.G, PaletteTint.B, PaletteTint.A,
-			PalettePrimary.R, PalettePrimary.G, PalettePrimary.B, PalettePrimary.A,
-			PaletteSecondary.R, PaletteSecondary.G, PaletteSecondary.B, PaletteSecondary.A);
-	}
-
-	if (bUseExamplePath)
-	{
-		if (!IsExampleBounceVFXReady(RequestId, true))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage8] Idol Bounce missing materials Req=%d Idol=%s. Falling back to legacy idol bounce actor."), RequestId, *IdolID.ToString());
-		}
-		else
-		{
-			FActorSpawnParameters ExampleSpawnParams;
-			ExampleSpawnParams.Owner = GetOwner();
-			ExampleSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroBounceAttackVFX* ExampleEffect = World->SpawnActor<AT66HeroBounceAttackVFX>(
-				AT66HeroBounceAttackVFX::StaticClass(),
-				ChainPositions[0],
-				FRotator::ZeroRotator,
-				ExampleSpawnParams);
-			if (ExampleEffect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage8] Idol Bounce Example actor spawned Req=%d Idol=%s Actor=%s Owner=%s"),
-						RequestId,
-						*IdolID.ToString(),
-						*ExampleEffect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-
-				ExampleEffect->SetPaletteOverride(PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow, FName(TEXT("IdolTwoTone")));
-				ExampleEffect->InitEffect(ChainPositions, IdolColor, RequestId, IdolID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage8] Idol Bounce Example actor spawn failed Req=%d Idol=%s. Falling back to legacy idol bounce actor."), RequestId, *IdolID.ToString());
-		}
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetOwner();
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AT66IdolProcVFX* Effect = World->SpawnActor<AT66IdolProcVFX>(AT66IdolProcVFX::StaticClass(), ChainPositions[0], FRotator::ZeroRotator, SpawnParams);
-	if (Effect)
-	{
-		FT66IdolProcVFXRequest Request;
-		Request.IdolID = IdolID;
-		Request.Rarity = Rarity;
-		Request.Category = ET66AttackCategory::Bounce;
-		Request.ChainPositions = ChainPositions;
-		Request.StartDelay = StartDelaySeconds;
-		Effect->InitEffect(Request);
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] Bounce Idol=%s Rarity=%s Segments=%d Delay=%.3f Actor=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), ChainPositions.Num() - 1, StartDelaySeconds, *Effect->GetName(), RequestId);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] Bounce spawn failed Idol=%s Rarity=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), RequestId);
+			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A);
 	}
 
 	TArray<FVector> ElevatedPositions;
@@ -2523,10 +2062,7 @@ void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66Item
 	{
 		ElevatedPositions.Add(Pos + FVector(0.f, 0.f, 24.f));
 	}
-	if (CVarT66VFXIdolLegacyPixels.GetValueOnGameThread() != 0)
-	{
-		SpawnBounceVFX(ElevatedPositions, IdolColor);
-	}
+	SpawnBounceVFX(ElevatedPositions, IdolColor);
 }
 
 void UT66CombatComponent::SpawnIdolDOTVFX(const FName& IdolID, const ET66ItemRarity Rarity, AActor* FollowTarget, const FVector& Location, const float Duration, const float Radius, const float StartDelaySeconds)
@@ -2539,21 +2075,13 @@ void UT66CombatComponent::SpawnIdolDOTVFX(const FName& IdolID, const ET66ItemRar
 	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
 	const int32 RequestId = ++GIdolDOTStage9RequestSerial;
 	const bool bVerbose = CVarT66VFXIdolDOTVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXIdolDOTExample.GetValueOnGameThread() != 0;
-
-	FLinearColor PaletteTint;
-	FLinearColor PalettePrimary;
-	FLinearColor PaletteSecondary;
-	FLinearColor PaletteOutline;
-	float PaletteGlow = 0.f;
-	BuildIdolExampleDOTPalette(IdolColor, Rarity, PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow);
 
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage9] Idol DOT request Req=%d Idol=%s Rarity=%s Owner=%s Time=%.3f Follow=%d Duration=%.2f Radius=%.1f Delay=%.3f UseExample=%d Location=(%.1f,%.1f,%.1f) IdolColor=(%.2f,%.2f,%.2f,%.2f) Tint=(%.2f,%.2f,%.2f,%.2f) Primary=(%.2f,%.2f,%.2f,%.2f) Secondary=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][Stage9] Idol DOT request Req=%d Idol=%s Rarity=%s Owner=%s Time=%.3f Follow=%d Duration=%.2f Radius=%.1f Delay=%.3f Location=(%.1f,%.1f,%.1f) IdolColor=(%.2f,%.2f,%.2f,%.2f)"),
 			RequestId,
 			*IdolID.ToString(),
 			GetT66ItemRarityName(Rarity),
@@ -2563,87 +2091,11 @@ void UT66CombatComponent::SpawnIdolDOTVFX(const FName& IdolID, const ET66ItemRar
 			Duration,
 			Radius,
 			StartDelaySeconds,
-			bUseExamplePath ? 1 : 0,
 			Location.X, Location.Y, Location.Z,
-			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A,
-			PaletteTint.R, PaletteTint.G, PaletteTint.B, PaletteTint.A,
-			PalettePrimary.R, PalettePrimary.G, PalettePrimary.B, PalettePrimary.A,
-			PaletteSecondary.R, PaletteSecondary.G, PaletteSecondary.B, PaletteSecondary.A);
+			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A);
 	}
 
-	if (TrySpawnIdolVolumeEffect(World, GetOwner(), IdolID, ET66AttackCategory::DOT, FollowTarget, Location, Radius, Duration, IdolColor, RequestId))
-	{
-		return;
-	}
-
-	if (bUseExamplePath)
-	{
-		if (!IsExampleDOTVFXReady(RequestId, true))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage9] Idol DOT missing materials Req=%d Idol=%s. Falling back to idol-specific DOT actor."), RequestId, *IdolID.ToString());
-		}
-		else
-		{
-			FActorSpawnParameters ExampleSpawnParams;
-			ExampleSpawnParams.Owner = GetOwner();
-			ExampleSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroDOTAttackVFX* ExampleEffect = World->SpawnActor<AT66HeroDOTAttackVFX>(
-				AT66HeroDOTAttackVFX::StaticClass(),
-				Location,
-				FRotator::ZeroRotator,
-				ExampleSpawnParams);
-			if (ExampleEffect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage9] Idol DOT Example actor spawned Req=%d Idol=%s Actor=%s Owner=%s"),
-						RequestId,
-						*IdolID.ToString(),
-						*ExampleEffect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-
-				ExampleEffect->SetPaletteOverride(PaletteTint, PalettePrimary, PaletteSecondary, PaletteOutline, PaletteGlow, FName(TEXT("IdolTwoTone")));
-				ExampleEffect->InitEffect(FollowTarget, Location, Duration, Radius, IdolColor, RequestId, IdolID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage9] Idol DOT Example actor spawn failed Req=%d Idol=%s. Falling back to idol-specific DOT actor."), RequestId, *IdolID.ToString());
-		}
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetOwner();
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AT66IdolProcVFX* Effect = World->SpawnActor<AT66IdolProcVFX>(AT66IdolProcVFX::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams);
-	if (Effect)
-	{
-		FT66IdolProcVFXRequest Request;
-		Request.IdolID = IdolID;
-		Request.Rarity = Rarity;
-		Request.Category = ET66AttackCategory::DOT;
-		Request.Center = Location;
-		Request.Duration = Duration;
-		Request.Radius = Radius;
-		Request.StartDelay = StartDelaySeconds;
-		Request.FollowTarget = FollowTarget;
-		Effect->InitEffect(Request);
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] DOT Idol=%s Rarity=%s Duration=%.2f Delay=%.3f Actor=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), Duration, StartDelaySeconds, *Effect->GetName(), RequestId);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[IDOL VFX] DOT spawn failed Idol=%s Rarity=%s Req=%d"), *IdolID.ToString(), GetT66ItemRarityName(Rarity), RequestId);
-	}
-
-	if (CVarT66VFXIdolLegacyPixels.GetValueOnGameThread() != 0)
-	{
-		SpawnDOTVFX(Location + FVector(0.f, 0.f, 28.f), FMath::Min(Duration, 1.6f), Radius, IdolColor);
-	}
+	SpawnDOTVFX(Location + FVector(0.f, 0.f, 28.f), FMath::Min(Duration, 1.6f), Radius, IdolColor);
 }
 
 // ---------------------------------------------------------------------------
@@ -2653,6 +2105,7 @@ void UT66CombatComponent::SpawnIdolDOTVFX(const FName& IdolID, const ET66ItemRar
 void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color, const FName& HeroID)
 {
 	UWorld* World = GetWorld();
+	UNiagaraSystem* VFX = GetActiveVFXSystem();
 	if (!World)
 	{
 		return;
@@ -2660,18 +2113,15 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 
 	const int32 RequestId = ++GHeroPierceStage2RequestSerial;
 	const bool bVerbose = CVarT66VFXHeroPierceVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXHeroPierceExample.GetValueOnGameThread() != 0 && HeroID != FName(TEXT("Hero_1"));
-	UNiagaraSystem* LegacyVFX = GetActiveVFXSystem();
-	const FString LegacyVFXName = LegacyVFX ? LegacyVFX->GetName() : TEXT("None");
+	const FString ActiveVFXName = VFX ? VFX->GetName() : TEXT("None");
 	const float TraceLength2D = FVector::Dist2D(Start, End);
-	const FLinearColor ExampleTint = BuildExamplePierceTint(Color);
 
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage2] Hero Pierce request Req=%d Hero=%s Owner=%s Time=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Trace2D=%.1f UseExample=%d LegacyVFX=%s BaseTint=(%.2f,%.2f,%.2f,%.2f) ExampleTint=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][Stage2] Hero Pierce request Req=%d Hero=%s Owner=%s Time=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Trace2D=%.1f ActiveVFX=%s BaseTint=(%.2f,%.2f,%.2f,%.2f)"),
 			RequestId,
 			*HeroID.ToString(),
 			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
@@ -2680,106 +2130,24 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 			End.X, End.Y, End.Z,
 			ImpactLocation.X, ImpactLocation.Y, ImpactLocation.Z,
 			TraceLength2D,
-			bUseExamplePath ? 1 : 0,
-			*LegacyVFXName,
-			Color.R, Color.G, Color.B, Color.A,
-			ExampleTint.R, ExampleTint.G, ExampleTint.B, ExampleTint.A);
+			*ActiveVFXName,
+			Color.R, Color.G, Color.B, Color.A);
 	}
 
-	if (bUseExamplePath)
+	if (!VFX)
 	{
-		if (!IsExamplePierceVFXReady(RequestId, true))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage2] Hero Pierce missing materials Req=%d Hero=%s. Falling back to legacy hero pierce pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
-		else
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = GetOwner();
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroOneAttackVFX* Effect = World->SpawnActor<AT66HeroOneAttackVFX>(
-				AT66HeroOneAttackVFX::StaticClass(),
-				Start,
-				FRotator::ZeroRotator,
-				SpawnParams);
-			if (Effect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage2] Hero Pierce Example actor spawned Req=%d Hero=%s Actor=%s Owner=%s"),
-						RequestId,
-						*HeroID.ToString(),
-						*Effect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-				Effect->InitEffect(Start, End, ImpactLocation, Color, RequestId, HeroID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage2] Hero Pierce Example actor spawn failed Req=%d Hero=%s. Falling back to legacy hero pierce pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
-	}
-
-	UNiagaraSystem* VFX = GetActiveVFXSystem();
-	if (!World || !VFX)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage2] Hero Pierce legacy fallback unavailable Req=%d Hero=%s LegacyVFX=%s"), RequestId, *HeroID.ToString(), *LegacyVFXName);
+		UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Stage2] Hero Pierce VFX unavailable Req=%d Hero=%s ActiveVFX=%s"), RequestId, *HeroID.ToString(), *ActiveVFXName);
 		return;
 	}
 
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
-	const FVector Dir = (End - Start).GetSafeNormal();
-	const float Length = FVector::Dist(Start, End);
 
 	if (HeroID == FName(TEXT("Hero_1")))
 	{
 		SpawnHeroOnePierceVFX(Start, End, ImpactLocation);
 		return;
 	}
-	if (HeroID == FName(TEXT("Hero_5")))
-	{
-		// George: Tight needle — 48 pixels in a very narrow line
-		constexpr int32 N = 48;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
-			T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(Start, End, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_8")))
-	{
-		// Billy: Short shotgun burst — 16 pixels in a 45° cone
-		constexpr int32 N = 16;
-		constexpr float ConeDeg = 45.f;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float T = (N > 1) ? (static_cast<float>(i) / static_cast<float>(N - 1)) : 0.5f;
-			const float Angle = -ConeDeg * 0.5f + ConeDeg * T;
-			const FVector ShotDir = Dir.RotateAngleAxis(Angle, FVector::UpVector);
-			const float Dist = FMath::FRandRange(Length * 0.2f, Length * 0.6f);
-			T66SpawnBudgetedPixel(World, VFX, Start + ShotDir * Dist, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_11")))
-	{
-		// Shroud: Twin lines — two parallel lines, 8 pixels each
-		const FVector Right = FVector::CrossProduct(FVector::UpVector, Dir).GetSafeNormal() * 30.f;
-		constexpr int32 N = 8;
-		for (int32 Line = 0; Line < 2; ++Line)
-		{
-			const FVector Offset = (Line == 0) ? Right : -Right;
-			for (int32 i = 0; i < N; ++i)
-			{
-				const float T = static_cast<float>(i) / static_cast<float>(N - 1);
-				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(Start + Offset, End + Offset, T), ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
-			}
-		}
-	}
-	else
+	if (!TrySpawnHeroPierceVariantPixels(World, VFX, Start, End, ColorVec, HeroID))
 	{
 		SpawnPierceVFX(Start, End, Color);
 	}
@@ -2793,127 +2161,33 @@ void UT66CombatComponent::SpawnHeroSlashVFX(const FVector& Location, float Radiu
 
 	const int32 RequestId = ++GHeroAOEStage4RequestSerial;
 	const bool bVerbose = CVarT66VFXHeroAOEVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXHeroAOEExample.GetValueOnGameThread() != 0;
-	const FString LegacyVFXName = VFX ? VFX->GetName() : TEXT("None");
+	const FString ActiveVFXName = VFX ? VFX->GetName() : TEXT("None");
 
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage4] Hero AOE request Req=%d Hero=%s Owner=%s Time=%.3f Location=(%.1f,%.1f,%.1f) Radius=%.1f UseExample=%d LegacyVFX=%s BaseTint=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][Stage4] Hero AOE request Req=%d Hero=%s Owner=%s Time=%.3f Location=(%.1f,%.1f,%.1f) Radius=%.1f ActiveVFX=%s BaseTint=(%.2f,%.2f,%.2f,%.2f)"),
 			RequestId,
 			*HeroID.ToString(),
 			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
 			World->GetTimeSeconds(),
 			Location.X, Location.Y, Location.Z,
 			Radius,
-			bUseExamplePath ? 1 : 0,
-			*LegacyVFXName,
+			*ActiveVFXName,
 			Color.R, Color.G, Color.B, Color.A);
-	}
-
-	if (bUseExamplePath)
-	{
-		if (!IsExampleAOEVFXReady(RequestId, true, HeroID))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage4] Hero AOE missing materials Req=%d Hero=%s. Falling back to legacy slash pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
-		else
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = GetOwner();
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroAOEAttackVFX* Effect = World->SpawnActor<AT66HeroAOEAttackVFX>(
-				AT66HeroAOEAttackVFX::StaticClass(),
-				Location,
-				FRotator::ZeroRotator,
-				SpawnParams);
-			if (Effect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage4] Hero AOE Example actor spawned Req=%d Hero=%s Actor=%s Owner=%s"),
-						RequestId,
-						*HeroID.ToString(),
-						*Effect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-				Effect->InitEffect(Location, Radius, Color, RequestId, HeroID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage4] Hero AOE Example actor spawn failed Req=%d Hero=%s. Falling back to legacy slash pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
 	}
 
 	if (!VFX)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage4] Hero AOE legacy fallback unavailable Req=%d Hero=%s LegacyVFX=%s"), RequestId, *HeroID.ToString(), *LegacyVFXName);
+		UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Stage4] Hero AOE VFX unavailable Req=%d Hero=%s ActiveVFX=%s"), RequestId, *HeroID.ToString(), *ActiveVFXName);
 		return;
 	}
 
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
 
-	if (HeroID == FName(TEXT("Hero_3")))
-	{
-		// Lu Bu: Wide cleave — 28 pixels in full 180° arc
-		constexpr int32 N = 28;
-		constexpr float ArcDeg = 180.f;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
-			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
-			const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_4")))
-	{
-		// Mike: Tight burst — 16 pixels in a small 90° cone
-		constexpr int32 N = 16;
-		constexpr float ArcDeg = 90.f;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
-			const float Angle = FMath::DegreesToRadians(-ArcDeg * 0.5f + ArcDeg * T);
-			const float R = Radius * 0.25f * FMath::FRandRange(0.5f, 1.f);
-			const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, 0.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(3.0f, 3.0f), ET66PixelVFXPriority::Medium);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_10")))
-	{
-		// Dog: Ring slam — 32 pixels in a full 360° ring around target
-		constexpr int32 N = 32;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
-			const FVector Offset(FMath::Cos(Angle) * Radius * 0.35f, FMath::Sin(Angle) * Radius * 0.35f, 0.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_15")))
-	{
-		// Asmon: Double arc — inner 12 + outer 12 at 120° and 150°
-		constexpr int32 N = 12;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float T = static_cast<float>(i) / static_cast<float>(N - 1);
-			const float InnerAngle = FMath::DegreesToRadians(-60.f + 120.f * T);
-			const FVector InnerOff(FMath::Cos(InnerAngle) * Radius * 0.25f, FMath::Sin(InnerAngle) * Radius * 0.25f, 0.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + InnerOff, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium);
-
-			const float OuterAngle = FMath::DegreesToRadians(-75.f + 150.f * T);
-			const FVector OuterOff(FMath::Cos(OuterAngle) * Radius * 0.4f, FMath::Sin(OuterAngle) * Radius * 0.4f, 0.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + OuterOff, FVector4(0.95f, 0.85f, 0.1f, 1.f), FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium);
-		}
-	}
-	else
+	if (!TrySpawnHeroAOEVariantPixels(World, VFX, Location, Radius, ColorVec, HeroID))
 	{
 		SpawnSlashVFX(Location, Radius, Color);
 	}
@@ -2927,139 +2201,34 @@ void UT66CombatComponent::SpawnHeroBounceVFX(const TArray<FVector>& ChainPositio
 
 	const int32 RequestId = ++GHeroBounceStage5RequestSerial;
 	const bool bVerbose = CVarT66VFXHeroBounceVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXHeroBounceExample.GetValueOnGameThread() != 0;
-	const FString LegacyVFXName = VFX ? VFX->GetName() : TEXT("None");
+	const FString ActiveVFXName = VFX ? VFX->GetName() : TEXT("None");
 
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage5] Hero Bounce request Req=%d Hero=%s Owner=%s Time=%.3f Links=%d UseExample=%d LegacyVFX=%s BaseTint=(%.2f,%.2f,%.2f,%.2f) Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f)"),
+			TEXT("[ATTACK VFX][Stage5] Hero Bounce request Req=%d Hero=%s Owner=%s Time=%.3f Links=%d ActiveVFX=%s BaseTint=(%.2f,%.2f,%.2f,%.2f) Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f)"),
 			RequestId,
 			*HeroID.ToString(),
 			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
 			World->GetTimeSeconds(),
 			ChainPositions.Num() - 1,
-			bUseExamplePath ? 1 : 0,
-			*LegacyVFXName,
+			*ActiveVFXName,
 			Color.R, Color.G, Color.B, Color.A,
 			ChainPositions[0].X, ChainPositions[0].Y, ChainPositions[0].Z,
 			ChainPositions.Last().X, ChainPositions.Last().Y, ChainPositions.Last().Z);
 	}
 
-	if (bUseExamplePath)
-	{
-		if (!IsExampleBounceVFXReady(RequestId, true))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage5] Hero Bounce missing materials Req=%d Hero=%s. Falling back to legacy bounce pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
-		else
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = GetOwner();
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroBounceAttackVFX* Effect = World->SpawnActor<AT66HeroBounceAttackVFX>(
-				AT66HeroBounceAttackVFX::StaticClass(),
-				ChainPositions[0],
-				FRotator::ZeroRotator,
-				SpawnParams);
-			if (Effect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage5] Hero Bounce Example actor spawned Req=%d Hero=%s Actor=%s Owner=%s"),
-						RequestId,
-						*HeroID.ToString(),
-						*Effect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-				Effect->InitEffect(ChainPositions, Color, RequestId, HeroID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage5] Hero Bounce Example actor spawn failed Req=%d Hero=%s. Falling back to legacy bounce pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
-	}
-
 	if (!VFX)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage5] Hero Bounce legacy fallback unavailable Req=%d Hero=%s LegacyVFX=%s"), RequestId, *HeroID.ToString(), *LegacyVFXName);
+		UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Stage5] Hero Bounce VFX unavailable Req=%d Hero=%s ActiveVFX=%s"), RequestId, *HeroID.ToString(), *ActiveVFXName);
 		return;
 	}
 
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
 
-	if (HeroID == FName(TEXT("Hero_6")))
-	{
-		// Zeus: Long chain — dense trail (1 pixel per 15u)
-		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
-		{
-			const FVector A = ChainPositions[i];
-			const FVector B = ChainPositions[i + 1];
-			const float Dist = FVector::Dist(A, B);
-			const int32 N = FMath::Max(4, FMath::RoundToInt(Dist / 15.f));
-			for (int32 j = 0; j < N; ++j)
-			{
-				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
-			}
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_7")))
-	{
-		// Robo: Heavy bolts — fewer, larger pixels (3.5px)
-		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
-		{
-			const FVector A = ChainPositions[i];
-			const FVector B = ChainPositions[i + 1];
-			const float Dist = FVector::Dist(A, B);
-			const int32 N = FMath::Max(3, FMath::RoundToInt(Dist / 60.f));
-			for (int32 j = 0; j < N; ++j)
-			{
-				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(3.5f, 3.5f), ET66PixelVFXPriority::Medium);
-			}
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_12")))
-	{
-		// xQc: Scatter bounce — fast, tiny (1.5px) with random offset
-		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
-		{
-			const FVector A = ChainPositions[i];
-			const FVector B = ChainPositions[i + 1];
-			const float Dist = FVector::Dist(A, B);
-			const int32 N = FMath::Max(6, FMath::RoundToInt(Dist / 15.f));
-			for (int32 j = 0; j < N; ++j)
-			{
-				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-				const FVector Jitter(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
-				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T) + Jitter, ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
-			}
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_9")))
-	{
-		// Rabbit: Quick ricochet — very small (1.5px), sparse
-		for (int32 i = 0; i < ChainPositions.Num() - 1; ++i)
-		{
-			const FVector A = ChainPositions[i];
-			const FVector B = ChainPositions[i + 1];
-			const float Dist = FVector::Dist(A, B);
-			const int32 N = FMath::Max(4, FMath::RoundToInt(Dist / 25.f));
-			for (int32 j = 0; j < N; ++j)
-			{
-				const float T = static_cast<float>(j) / static_cast<float>(N - 1);
-				T66SpawnBudgetedPixel(World, VFX, FMath::Lerp(A, B, T), ColorVec, FVector2D(1.5f, 1.5f), ET66PixelVFXPriority::Medium);
-			}
-		}
-	}
-	else
+	if (!TrySpawnHeroBounceVariantPixels(World, VFX, ChainPositions, ColorVec, HeroID))
 	{
 		SpawnBounceVFX(ChainPositions, Color);
 	}
@@ -3073,119 +2242,35 @@ void UT66CombatComponent::SpawnHeroDOTVFX(AActor* FollowTarget, const FVector& L
 
 	const int32 RequestId = ++GHeroDOTStage6RequestSerial;
 	const bool bVerbose = CVarT66VFXHeroDOTVerbose.GetValueOnGameThread() != 0;
-	const bool bUseExamplePath = CVarT66VFXHeroDOTExample.GetValueOnGameThread() != 0;
-	const FString LegacyVFXName = VFX ? VFX->GetName() : TEXT("None");
+	const FString ActiveVFXName = VFX ? VFX->GetName() : TEXT("None");
 
 	if (bVerbose)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage6] Hero DOT request Req=%d Hero=%s Owner=%s Time=%.3f Follow=%d UseExample=%d LegacyVFX=%s Location=(%.1f,%.1f,%.1f) Duration=%.2f Radius=%.1f BaseTint=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][Stage6] Hero DOT request Req=%d Hero=%s Owner=%s Time=%.3f Follow=%d ActiveVFX=%s Location=(%.1f,%.1f,%.1f) Duration=%.2f Radius=%.1f BaseTint=(%.2f,%.2f,%.2f,%.2f)"),
 			RequestId,
 			*HeroID.ToString(),
 			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
 			World->GetTimeSeconds(),
 			FollowTarget ? 1 : 0,
-			bUseExamplePath ? 1 : 0,
-			*LegacyVFXName,
+			*ActiveVFXName,
 			Location.X, Location.Y, Location.Z,
 			Duration,
 			Radius,
 			Color.R, Color.G, Color.B, Color.A);
 	}
 
-	if (bUseExamplePath)
-	{
-		if (!IsExampleDOTVFXReady(RequestId, true))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage6] Hero DOT missing materials Req=%d Hero=%s. Falling back to legacy DOT pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
-		else
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = GetOwner();
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AT66HeroDOTAttackVFX* Effect = World->SpawnActor<AT66HeroDOTAttackVFX>(
-				AT66HeroDOTAttackVFX::StaticClass(),
-				Location,
-				FRotator::ZeroRotator,
-				SpawnParams);
-			if (Effect)
-			{
-				if (bVerbose)
-				{
-					UE_LOG(
-						LogTemp,
-						Log,
-						TEXT("[ATTACK VFX][Stage6] Hero DOT Example actor spawned Req=%d Hero=%s Actor=%s Owner=%s"),
-						RequestId,
-						*HeroID.ToString(),
-						*Effect->GetName(),
-						GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
-				}
-				Effect->InitEffect(FollowTarget, Location, Duration, Radius, Color, RequestId, HeroID);
-				return;
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage6] Hero DOT Example actor spawn failed Req=%d Hero=%s. Falling back to legacy DOT pixels with VFX=%s."), RequestId, *HeroID.ToString(), *LegacyVFXName);
-		}
-	}
-
 	if (!VFX)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ATTACK VFX][Stage6] Hero DOT legacy fallback unavailable Req=%d Hero=%s LegacyVFX=%s"), RequestId, *HeroID.ToString(), *LegacyVFXName);
+		UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Stage6] Hero DOT VFX unavailable Req=%d Hero=%s ActiveVFX=%s"), RequestId, *HeroID.ToString(), *ActiveVFXName);
 		return;
 	}
 
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
 
-	if (HeroID == FName(TEXT("Hero_2")))
-	{
-		// Merlin: Spiral orb — 12 pixels in a tight spiral
-		constexpr int32 N = 12;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float T = static_cast<float>(i) / static_cast<float>(N);
-			const float Angle = T * 4.f * PI;
-			const float R = Radius * 0.3f * T;
-			const FVector Offset(FMath::Cos(Angle) * R, FMath::Sin(Angle) * R, T * 30.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_13")))
-	{
-		// Moist: Drip trail — 8 pixels falling vertically
-		constexpr int32 N = 8;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const FVector Offset(FMath::FRandRange(-15.f, 15.f), FMath::FRandRange(-15.f, 15.f), -static_cast<float>(i) * 12.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_14")))
-	{
-		// North: Frost ring — 16 pixels expanding outward
-		constexpr int32 N = 16;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const float Angle = (2.f * PI * static_cast<float>(i)) / static_cast<float>(N);
-			const FVector Offset(FMath::Cos(Angle) * Radius * 0.4f, FMath::Sin(Angle) * Radius * 0.4f, 0.f);
-			T66SpawnBudgetedPixel(World, VFX, Location + Offset, FVector4(0.5f, 0.8f, 1.f, 1.f), FVector2D(2.0f, 2.0f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-		}
-	}
-	else if (HeroID == FName(TEXT("Hero_16")))
-	{
-		// Forsen: Stubborn pulse — 6 pixels in a small cluster
-		constexpr int32 N = 6;
-		for (int32 i = 0; i < N; ++i)
-		{
-			const FVector Offset(FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-20.f, 20.f), FMath::FRandRange(-10.f, 10.f));
-			T66SpawnBudgetedPixel(World, VFX, Location + Offset, ColorVec, FVector2D(2.5f, 2.5f), ET66PixelVFXPriority::Medium, FRotator::ZeroRotator, true);
-		}
-	}
-	else
+	if (!TrySpawnHeroDOTVariantPixels(World, VFX, Location, Radius, ColorVec, HeroID))
 	{
 		SpawnDOTVFX(Location, Duration, Radius, Color);
 	}

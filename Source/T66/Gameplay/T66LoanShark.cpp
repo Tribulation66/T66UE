@@ -44,11 +44,11 @@ AT66LoanShark::AT66LoanShark()
 	}
 
 	// Force a visible solid color material (avoids relying on engine default material params).
-	if (UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial())
+	if (UMaterialInterface* ColorMat = FT66VisualUtil::GetFlatColorMaterial())
 	{
 		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, this))
 		{
-			Mat->SetVectorParameterValue(FName("Color"), FLinearColor(0.1f, 0.45f, 0.9f, 1.f));
+			FT66VisualUtil::ConfigureFlatColorMaterial(Mat, FLinearColor(0.1f, 0.45f, 0.9f, 1.f));
 			VisualMesh->SetMaterial(0, Mat);
 		}
 	}

@@ -8,6 +8,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "ProceduralMeshComponent.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66QuakeSky, Log, All);
+
 namespace
 {
 	static const TCHAR* QuakeSkyMaterialPath = TEXT("/Game/World/Sky/QuakeCanopy2/MI_QuakeSky_Canopy2.MI_QuakeSky_Canopy2");
@@ -65,7 +67,7 @@ void AT66QuakeSkyActor::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[QuakeSky] Missing material asset %s"), QuakeSkyMaterialPath);
+		UE_LOG(LogT66QuakeSky, Warning, TEXT("[QuakeSky] Missing material asset %s"), QuakeSkyMaterialPath);
 	}
 
 	UpdateSkyLocation();

@@ -9,7 +9,39 @@ public class T66 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "NavigationSystem", "Slate", "SlateCore", "UMG", "AssetRegistry", "Landscape", "Foliage", "ApplicationCore", "Niagara", "HTTP", "Json", "JsonUtilities", "OnlineSubsystem", "OnlineSubsystemUtils", "Steamworks", "OnlineSubsystemSteam", "ImageWrapper", "MediaAssets", "Media", "ProceduralMeshComponent", "ZibraVDBRuntime" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"SlateCore",
+			"UMG",
+			"HTTP",
+			"Json"
+		});
+
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"EnhancedInput",
+			"AIModule",
+			"NavigationSystem",
+			"Slate",
+			"AssetRegistry",
+			"Landscape",
+			"Foliage",
+			"ApplicationCore",
+			"Niagara",
+			"JsonUtilities",
+			"OnlineSubsystem",
+			"OnlineSubsystemUtils",
+			"Steamworks",
+			"OnlineSubsystemSteam",
+			"ImageWrapper",
+			"MediaAssets",
+			"Media",
+			"ProceduralMeshComponent"
+		});
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{
@@ -37,6 +69,5 @@ public class T66 : ModuleRules
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "UI", "Screens"));
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "UI", "Components"));
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Gameplay"));
-		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "..", "Plugins", "ZibraVDB", "Source", "ZibraVDBRuntime", "Private"));
 	}
 }

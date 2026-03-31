@@ -6,6 +6,8 @@
 
 #include "Misc/Paths.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66WebView2, Log, All);
+
 // NOTE: WebView2 requires Win32 headers, but they define macros like `max`, `PlaySound`, `UpdateResource`
 // which can break Unreal/standard headers when using unity builds. Wrap + undef to keep the TU clean.
 #include "Windows/AllowWindowsPlatformTypes.h"
@@ -111,7 +113,7 @@ namespace
 	{
 		if (!Hwnd)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] %s hwnd=null"), Label);
+			UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] %s hwnd=null"), Label);
 			return;
 		}
 
@@ -129,7 +131,7 @@ namespace
 		const UINT Dpi = GetDpiForWindowSafe(Hwnd);
 
 		UE_LOG(
-			LogTemp,
+			LogT66WebView2,
 			Log,
 			TEXT("[TIKTOK][WEBVIEW2] %s hwnd=0x%p parent=0x%p owner=0x%p rootOwner=0x%p visible=%d dpi=%u %s winRect=[%d,%d %dx%d] client=[%dx%d]"),
 			Label,
@@ -338,10 +340,10 @@ struct FT66WebView2Host::FImpl
 			LoaderModule = LoadLibraryW(*Fallback);
 			if (!LoaderModule)
 			{
-				UE_LOG(LogTemp, Error, TEXT("[TIKTOK][WEBVIEW2] Missing WebView2Loader.dll. Expected next to exe or at '%s'."), *Fallback);
+				UE_LOG(LogT66WebView2, Error, TEXT("[TIKTOK][WEBVIEW2] Missing WebView2Loader.dll. Expected next to exe or at '%s'."), *Fallback);
 				return false;
 			}
-			UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] Loaded WebView2Loader.dll from '%s'."), *Fallback);
+			UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] Loaded WebView2Loader.dll from '%s'."), *Fallback);
 		}
 
 	#if defined(_MSC_VER)
@@ -355,7 +357,7 @@ struct FT66WebView2Host::FImpl
 	#endif
 		if (!CreateEnv)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[TIKTOK][WEBVIEW2] WebView2Loader.dll missing CreateCoreWebView2EnvironmentWithOptions."));
+			UE_LOG(LogT66WebView2, Error, TEXT("[TIKTOK][WEBVIEW2] WebView2Loader.dll missing CreateCoreWebView2EnvironmentWithOptions."));
 			return false;
 		}
 		return true;
@@ -446,7 +448,7 @@ struct FT66WebView2Host::FImpl
 			{
 				DesiredZoomFactor = Target;
 				Ctrl->put_ZoomFactor(DesiredZoomFactor);
-				UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] ZoomFactor=%.3f (w=%d, design=%.0f)"), DesiredZoomFactor, ScreenR.Width(), DesignWidthPx);
+				UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] ZoomFactor=%.3f (w=%d, design=%.0f)"), DesiredZoomFactor, ScreenR.Width(), DesignWidthPx);
 			}
 
 			Ctrl->NotifyParentWindowPositionChanged();
@@ -461,7 +463,7 @@ struct FT66WebView2Host::FImpl
 		Parent = InParent;
 		if (!Parent)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[TIKTOK][WEBVIEW2] No parent HWND."));
+			UE_LOG(LogT66WebView2, Error, TEXT("[TIKTOK][WEBVIEW2] No parent HWND."));
 			return false;
 		}
 		LogHwndInfo(TEXT("Owner"), Parent);
@@ -471,13 +473,13 @@ struct FT66WebView2Host::FImpl
 			Host = CreateHostOwnedPopup(Parent);
 			if (!Host)
 			{
-				UE_LOG(LogTemp, Error, TEXT("[TIKTOK][WEBVIEW2] Failed to create host window."));
+				UE_LOG(LogT66WebView2, Error, TEXT("[TIKTOK][WEBVIEW2] Failed to create host window."));
 				return false;
 			}
 		}
 
 		std::wstring UserDataWide = ToWide(UserDataFolder);
-		UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] Creating environment. UserData='%s'"), *UserDataFolder);
+		UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] Creating environment. UserData='%s'"), *UserDataFolder);
 
 		HRESULT Hr = CreateEnv(
 			nullptr,
@@ -488,12 +490,12 @@ struct FT66WebView2Host::FImpl
 				{
 					if (FAILED(Result) || !InEnv)
 					{
-						UE_LOG(LogTemp, Error, TEXT("[TIKTOK][WEBVIEW2] Environment create failed (0x%08x)."), static_cast<uint32>(Result));
+						UE_LOG(LogT66WebView2, Error, TEXT("[TIKTOK][WEBVIEW2] Environment create failed (0x%08x)."), static_cast<uint32>(Result));
 						return S_OK;
 					}
 
 					Env = InEnv;
-					UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] Environment ready."));
+					UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] Environment ready."));
 						LogHwndInfo(TEXT("HostPreController"), Host);
 
 					Env->CreateCoreWebView2Controller(
@@ -503,7 +505,7 @@ struct FT66WebView2Host::FImpl
 							{
 								if (FAILED(Result2) || !InCtrl)
 								{
-									UE_LOG(LogTemp, Error, TEXT("[TIKTOK][WEBVIEW2] Controller create failed (0x%08x)."), static_cast<uint32>(Result2));
+									UE_LOG(LogT66WebView2, Error, TEXT("[TIKTOK][WEBVIEW2] Controller create failed (0x%08x)."), static_cast<uint32>(Result2));
 									return S_OK;
 								}
 
@@ -512,7 +514,7 @@ struct FT66WebView2Host::FImpl
 
 								// IMPORTANT: This is toggled on open/close. If we hide it, we must re-show it.
 								Ctrl->put_IsVisible(bWantVisible ? 1 : 0);
-								UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] Controller/WebView ready."));
+								UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] Controller/WebView ready."));
 								LogHwndInfo(TEXT("HostPostController"), Host);
 
 								if (bHasPendingRect)
@@ -575,11 +577,11 @@ struct FT66WebView2Host::FImpl
 												CoTaskMemFree(Raw);
 												if (!IsAllowedUrl(Url))
 												{
-													UE_LOG(LogTemp, Warning, TEXT("[TIKTOK][WEBVIEW2] BLOCK nav '%s'"), *ShortUrl(Url));
+													UE_LOG(LogT66WebView2, Warning, TEXT("[TIKTOK][WEBVIEW2] BLOCK nav '%s'"), *ShortUrl(Url));
 													Args->put_Cancel(1);
 													return S_OK;
 												}
-												UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] NavStarting '%s'"), *ShortUrl(Url));
+												UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] NavStarting '%s'"), *ShortUrl(Url));
 											}
 											return S_OK;
 										}).Get(),
@@ -600,7 +602,7 @@ struct FT66WebView2Host::FImpl
 												CoTaskMemFree(Raw);
 											}
 
-											UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] NavCompleted '%s'"), *ShortUrl(Url));
+											UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] NavCompleted '%s'"), *ShortUrl(Url));
 
 											// Per-site CSS injection to make the video fill the viewport and hide platform chrome.
 											// Do NOT apply during login flows (QR page needs its UI).
@@ -893,7 +895,7 @@ struct FT66WebView2Host::FImpl
 
 		if (FAILED(Hr))
 		{
-			UE_LOG(LogTemp, Error, TEXT("[TIKTOK][WEBVIEW2] CreateEnvironmentWithOptions failed (0x%08x)."), static_cast<uint32>(Hr));
+			UE_LOG(LogT66WebView2, Error, TEXT("[TIKTOK][WEBVIEW2] CreateEnvironmentWithOptions failed (0x%08x)."), static_cast<uint32>(Hr));
 			return false;
 		}
 
@@ -909,13 +911,13 @@ struct FT66WebView2Host::FImpl
 		}
 		if (!IsAllowedUrl(Url))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[TIKTOK][WEBVIEW2] Refusing Navigate '%s'"), *ShortUrl(Url));
+			UE_LOG(LogT66WebView2, Warning, TEXT("[TIKTOK][WEBVIEW2] Refusing Navigate '%s'"), *ShortUrl(Url));
 			return;
 		}
 		bHasEverNavigated = true;
 		std::wstring Wide = ToWide(Url);
 		View->Navigate(Wide.c_str());
-		UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] Navigate '%s'"), *ShortUrl(Url));
+		UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] Navigate '%s'"), *ShortUrl(Url));
 	}
 
 	void ExecuteScriptNoResult(const TCHAR* Script, const TCHAR* DebugTag)
@@ -924,7 +926,7 @@ struct FT66WebView2Host::FImpl
 		View->ExecuteScript(Script, nullptr);
 		if (DebugTag)
 		{
-			UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] ExecuteScript '%s'"), DebugTag);
+			UE_LOG(LogT66WebView2, Log, TEXT("[TIKTOK][WEBVIEW2] ExecuteScript '%s'"), DebugTag);
 		}
 	}
 
@@ -1090,7 +1092,7 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 	Impl->bWantVisible = true;
 
 	UE_LOG(
-		LogTemp,
+		LogT66WebView2,
 		Log,
 		TEXT("[TIKTOK][WEBVIEW2] ShowAtScreenRect [%d,%d -> %d,%d] (%dx%d)"),
 		ScreenRectPx.Min.X,

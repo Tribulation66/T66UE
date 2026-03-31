@@ -8,6 +8,8 @@
 
 #include "Misc/App.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66MediaViewer, Log, All);
+
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 #include "Core/T66WebView2Host.h"
 #include "Framework/Application/SlateApplication.h"
@@ -74,7 +76,7 @@ void UT66MediaViewerSubsystem::PrewarmTikTok()
 	const HRESULT HrCo = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 	if (FAILED(HrCo) && HrCo != RPC_E_CHANGED_MODE)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed (0x%08x)."), static_cast<uint32>(HrCo));
+		UE_LOG(LogT66MediaViewer, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed (0x%08x)."), static_cast<uint32>(HrCo));
 	}
 
 	void* ParentHandle = nullptr;
@@ -156,7 +158,7 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 		const HRESULT HrCo = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 		if (FAILED(HrCo) && HrCo != RPC_E_CHANGED_MODE)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed (0x%08x)."), static_cast<uint32>(HrCo));
+			UE_LOG(LogT66MediaViewer, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed (0x%08x)."), static_cast<uint32>(HrCo));
 		}
 
 		void* ParentHandle = nullptr;
@@ -172,7 +174,7 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 				ParentHandle = Active->GetNativeWindow()->GetOSWindowHandle();
 			}
 		}
-		UE_LOG(LogTemp, Log, TEXT("[TIKTOK][WEBVIEW2] EnsureCreated parent hwnd=0x%p"), ParentHandle);
+		UE_LOG(LogT66MediaViewer, Log, TEXT("[TIKTOK][WEBVIEW2] EnsureCreated parent hwnd=0x%p"), ParentHandle);
 
 		// Persistent web profile so the user stays logged in.
 		// HARD RULE: keep WebView2 data inside the game folder (not user profile/AppData).

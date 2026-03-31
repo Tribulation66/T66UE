@@ -12,6 +12,8 @@
 #include "Serialization/JsonWriter.h"
 #include "Misc/ConfigCacheIni.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Backend, Log, All);
+
 void UT66BackendSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -21,7 +23,7 @@ void UT66BackendSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	if (BackendBaseUrl.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: BackendBaseUrl not configured in [T66.Online]. Online features disabled."));
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: BackendBaseUrl not configured in [T66.Online]. Online features disabled."));
 	}
 	else
 	{
@@ -30,14 +32,14 @@ void UT66BackendSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		{
 			BackendBaseUrl.LeftChopInline(1);
 		}
-		UE_LOG(LogTemp, Log, TEXT("Backend: configured URL = %s"), *BackendBaseUrl);
+		UE_LOG(LogT66Backend, Log, TEXT("Backend: configured URL = %s"), *BackendBaseUrl);
 	}
 }
 
 void UT66BackendSubsystem::SetSteamTicketHex(const FString& TicketHex)
 {
 	CachedSteamTicketHex = TicketHex;
-	UE_LOG(LogTemp, Log, TEXT("Backend: Steam ticket set (%d hex chars)"), TicketHex.Len());
+	UE_LOG(LogT66Backend, Log, TEXT("Backend: Steam ticket set (%d hex chars)"), TicketHex.Len());
 }
 
 TSharedRef<IHttpRequest, ESPMode::ThreadSafe> UT66BackendSubsystem::CreateRequest(const FString& Verb, const FString& Endpoint) const
@@ -99,14 +101,14 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 {
 	if (!IsBackendConfigured())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: cannot submit run — no backend URL configured."));
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: cannot submit run — no backend URL configured."));
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
 		return;
 	}
 
 	if (!HasSteamTicket())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: cannot submit run — no Steam ticket set."));
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: cannot submit run — no Steam ticket set."));
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
 		return;
 	}
@@ -237,7 +239,7 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnSubmitRunResponseReceived);
 	Request->ProcessRequest();
 
-	UE_LOG(LogTemp, Log, TEXT("Backend: submitting run (Score=%d, Difficulty=%s, Party=%s)"),
+	UE_LOG(LogT66Backend, Log, TEXT("Backend: submitting run (Score=%d, Difficulty=%s, Party=%s)"),
 		Score, *DifficultyToApiString(Difficulty), *PartySizeToApiString(PartySize));
 }
 
@@ -245,7 +247,7 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 {
 	if (!bConnectedSuccessfully || !Response.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: submit-run failed (connection error)."));
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run failed (connection error)."));
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
 		return;
 	}
@@ -257,7 +259,7 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Body);
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: submit-run failed to parse JSON. Code=%d"), Code);
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run failed to parse JSON. Code=%d"), Code);
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
 		return;
 	}
@@ -269,7 +271,7 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 		const int32 ScoreRankWeekly = static_cast<int32>(Json->GetNumberField(TEXT("score_rank_weekly")));
 		const bool bNewPB = Json->GetBoolField(TEXT("is_new_personal_best_score"));
 
-		UE_LOG(LogTemp, Log, TEXT("Backend: submit-run accepted. Alltime rank=%d, Weekly rank=%d, NewPB=%s"),
+		UE_LOG(LogT66Backend, Log, TEXT("Backend: submit-run accepted. Alltime rank=%d, Weekly rank=%d, NewPB=%s"),
 			ScoreRankAlltime, ScoreRankWeekly, bNewPB ? TEXT("true") : TEXT("false"));
 
 		OnSubmitRunComplete.Broadcast(true, ScoreRankAlltime, ScoreRankWeekly, bNewPB);
@@ -277,12 +279,12 @@ void UT66BackendSubsystem::OnSubmitRunResponseReceived(FHttpRequestPtr Request, 
 	else if (Status == TEXT("flagged") || Status == TEXT("banned"))
 	{
 		const FString Reason = Json->GetStringField(TEXT("reason"));
-		UE_LOG(LogTemp, Warning, TEXT("Backend: submit-run %s — %s"), *Status, *Reason);
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run %s — %s"), *Status, *Reason);
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: submit-run unexpected status=%s, code=%d"), *Status, Code);
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: submit-run unexpected status=%s, code=%d"), *Status, Code);
 		OnSubmitRunComplete.Broadcast(false, 0, 0, false);
 	}
 }
@@ -334,7 +336,7 @@ void UT66BackendSubsystem::OnMyRankResponseReceived(FHttpRequestPtr Request, FHt
 	}
 	const int32 Total = static_cast<int32>(Json->GetNumberField(TEXT("total_entries")));
 
-	UE_LOG(LogTemp, Log, TEXT("Backend: my-rank = %d / %d"), Rank, Total);
+	UE_LOG(LogT66Backend, Log, TEXT("Backend: my-rank = %d / %d"), Rank, Total);
 	OnMyRankComplete.Broadcast(true, Rank, Total);
 }
 
@@ -371,7 +373,7 @@ void UT66BackendSubsystem::OnAccountStatusResponseReceived(FHttpRequestPtr Reque
 	}
 
 	const FString Restriction = Json->GetStringField(TEXT("restriction"));
-	UE_LOG(LogTemp, Log, TEXT("Backend: account-status = %s"), *Restriction);
+	UE_LOG(LogT66Backend, Log, TEXT("Backend: account-status = %s"), *Restriction);
 	OnAccountStatusComplete.Broadcast(true, Restriction);
 }
 
@@ -381,7 +383,7 @@ void UT66BackendSubsystem::PingHealth()
 {
 	if (!IsBackendConfigured())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: health ping skipped — no URL configured."));
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: health ping skipped — no URL configured."));
 		return;
 	}
 
@@ -394,12 +396,12 @@ void UT66BackendSubsystem::OnHealthResponseReceived(FHttpRequestPtr Request, FHt
 {
 	if (!bConnectedSuccessfully || !Response.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: health ping FAILED (connection error)."));
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: health ping FAILED (connection error)."));
 		return;
 	}
 
 	const int32 Code = Response->GetResponseCode();
-	UE_LOG(LogTemp, Log, TEXT("Backend: health ping response code=%d body=%s"),
+	UE_LOG(LogT66Backend, Log, TEXT("Backend: health ping response code=%d body=%s"),
 		Code, *Response->GetContentAsString().Left(200));
 }
 
@@ -429,7 +431,7 @@ void UT66BackendSubsystem::FetchLeaderboard(
 	{
 		if (!HasSteamTicket())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Backend: cannot fetch friends leaderboard — no Steam ticket."));
+			UE_LOG(LogT66Backend, Warning, TEXT("Backend: cannot fetch friends leaderboard — no Steam ticket."));
 			PendingLeaderboardFetches.Remove(Key);
 			return;
 		}
@@ -454,7 +456,7 @@ void UT66BackendSubsystem::FetchLeaderboard(
 		Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, Key);
 		Request->ProcessRequest();
 
-		UE_LOG(LogTemp, Log, TEXT("Backend: fetching friends leaderboard key=%s (friends=%d)"),
+		UE_LOG(LogT66Backend, Log, TEXT("Backend: fetching friends leaderboard key=%s (friends=%d)"),
 			*Key, FriendIds.IsEmpty() ? 0 : FriendIds.Len());
 	}
 	else
@@ -468,7 +470,7 @@ void UT66BackendSubsystem::FetchLeaderboard(
 		Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, Key);
 		Request->ProcessRequest();
 
-		UE_LOG(LogTemp, Log, TEXT("Backend: fetching leaderboard key=%s"), *Key);
+		UE_LOG(LogT66Backend, Log, TEXT("Backend: fetching leaderboard key=%s"), *Key);
 	}
 }
 
@@ -523,7 +525,7 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 
 	if (!bConnectedSuccessfully || !Response.IsValid() || Response->GetResponseCode() != 200)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: leaderboard fetch failed for key=%s (code=%d)"),
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: leaderboard fetch failed for key=%s (code=%d)"),
 			*LeaderboardKey, Response.IsValid() ? Response->GetResponseCode() : 0);
 		return;
 	}
@@ -532,14 +534,14 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: leaderboard JSON parse failed for key=%s"), *LeaderboardKey);
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: leaderboard JSON parse failed for key=%s"), *LeaderboardKey);
 		return;
 	}
 
 	const TArray<TSharedPtr<FJsonValue>>* EntriesArray = nullptr;
 	if (!Json->TryGetArrayField(TEXT("entries"), EntriesArray) || !EntriesArray)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: leaderboard missing entries array for key=%s"), *LeaderboardKey);
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: leaderboard missing entries array for key=%s"), *LeaderboardKey);
 		return;
 	}
 
@@ -607,7 +609,7 @@ void UT66BackendSubsystem::OnLeaderboardResponseReceived(
 	const int32 TotalEntries = Cached.TotalEntries;
 	LeaderboardCache.Add(LeaderboardKey, MoveTemp(Cached));
 
-	UE_LOG(LogTemp, Log, TEXT("Backend: leaderboard fetched key=%s entries=%d total=%d"),
+	UE_LOG(LogT66Backend, Log, TEXT("Backend: leaderboard fetched key=%s entries=%d total=%d"),
 		*LeaderboardKey, NumEntries, TotalEntries);
 
 	// Notify listeners
@@ -634,7 +636,7 @@ void UT66BackendSubsystem::FetchRunSummary(const FString& EntryId)
 	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnRunSummaryResponseReceived, EntryId);
 	Request->ProcessRequest();
 
-	UE_LOG(LogTemp, Log, TEXT("Backend: fetching run summary for entry=%s"), *EntryId);
+	UE_LOG(LogT66Backend, Log, TEXT("Backend: fetching run summary for entry=%s"), *EntryId);
 }
 
 bool UT66BackendSubsystem::HasCachedRunSummary(const FString& EntryId) const
@@ -655,7 +657,7 @@ void UT66BackendSubsystem::OnRunSummaryResponseReceived(
 
 	if (!bConnectedSuccessfully || !Response.IsValid() || Response->GetResponseCode() != 200)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: run-summary fetch failed for entry=%s (code=%d)"),
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: run-summary fetch failed for entry=%s (code=%d)"),
 			*EntryId, Response.IsValid() ? Response->GetResponseCode() : 0);
 		return;
 	}
@@ -664,7 +666,7 @@ void UT66BackendSubsystem::OnRunSummaryResponseReceived(
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Backend: run-summary JSON parse failed for entry=%s"), *EntryId);
+		UE_LOG(LogT66Backend, Warning, TEXT("Backend: run-summary JSON parse failed for entry=%s"), *EntryId);
 		return;
 	}
 
@@ -672,7 +674,7 @@ void UT66BackendSubsystem::OnRunSummaryResponseReceived(
 	if (Snapshot)
 	{
 		RunSummaryCache.Add(EntryId, Snapshot);
-		UE_LOG(LogTemp, Log, TEXT("Backend: run summary cached for entry=%s (hero=%s, score=%d)"),
+		UE_LOG(LogT66Backend, Log, TEXT("Backend: run summary cached for entry=%s (hero=%s, score=%d)"),
 			*EntryId, *Snapshot->HeroID.ToString(), Snapshot->Score);
 		OnRunSummaryReady.Broadcast(EntryId);
 	}

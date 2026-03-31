@@ -32,6 +32,8 @@
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Style, Log, All);
+
 TSharedPtr<FSlateStyleSet> FT66Style::StyleInstance;
 
 // --- Colors (dark presentation) ---
@@ -110,7 +112,7 @@ namespace
 		if (GBtnDarkN) return;
 		auto Load = [](const TCHAR* Path) -> UTexture2D* {
 			UTexture2D* T = LoadObject<UTexture2D>(nullptr, Path);
-			UE_LOG(LogTemp, Log, TEXT("[T66Style] Load button tex %s -> %s"), Path, T ? TEXT("OK") : TEXT("MISS"));
+			UE_LOG(LogT66Style, Verbose, TEXT("[T66Style] Load button tex %s -> %s"), Path, T ? TEXT("OK") : TEXT("MISS"));
 			if (T)
 			{
 				T->Filter = TextureFilter::TF_Trilinear;
@@ -428,7 +430,7 @@ namespace
 		{
 			bCheckedButtonGlowMaterial = true;
 			GButtonGlowMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/UI/Materials/M_UI_Glow.M_UI_Glow"));
-			UE_LOG(LogTemp, Log, TEXT("[T66Style] Load UI glow material -> %s"), GButtonGlowMaterial ? TEXT("OK") : TEXT("MISS"));
+			UE_LOG(LogT66Style, Verbose, TEXT("[T66Style] Load UI glow material -> %s"), GButtonGlowMaterial ? TEXT("OK") : TEXT("MISS"));
 		}
 
 		return GButtonGlowMaterial.Get();
@@ -528,7 +530,7 @@ namespace
 		if (GPanelDark) return;
 		auto Load = [](const TCHAR* Path) -> UTexture2D* {
 			UTexture2D* T = LoadObject<UTexture2D>(nullptr, Path);
-			UE_LOG(LogTemp, Log, TEXT("[T66Style] Load panel tex %s -> %s"), Path, T ? TEXT("OK") : TEXT("MISS"));
+			UE_LOG(LogT66Style, Verbose, TEXT("[T66Style] Load panel tex %s -> %s"), Path, T ? TEXT("OK") : TEXT("MISS"));
 			if (T)
 			{
 				T->Filter = TextureFilter::TF_Trilinear;
@@ -913,7 +915,7 @@ void FT66Style::Initialize()
 		PanelTex = nullptr;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[T66Style] Resources: ButtonTex=%d  PanelTex=%d"),
+	UE_LOG(LogT66Style, Verbose, TEXT("[T66Style] Resources: ButtonTex=%d  PanelTex=%d"),
 		bUseButtonTextures ? 1 : 0, bUsePanelTextures ? 1 : 0);
 
 	// Panel brushes: prefer texture (9-slice with baked border/bevel), fallback to rounded box
@@ -1531,7 +1533,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 
 	if (ResolvedBorderVisual == ET66ButtonBorderVisual::RetroWood)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[BORDER] MakeButton: Label='%s' BrushSet=%d BrushSetValid=%d Thickness=%.1f"),
+		UE_LOG(LogT66Style, Verbose, TEXT("[BORDER] MakeButton: Label='%s' BrushSet=%d BrushSetValid=%d Thickness=%.1f"),
 			*Params.Label.ToString(),
 			BorderBrushSet.IsValid() ? 1 : 0,
 			(BorderBrushSet.IsValid() && BorderBrushSet->IsValid()) ? 1 : 0,

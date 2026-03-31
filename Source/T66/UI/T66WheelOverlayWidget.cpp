@@ -75,7 +75,9 @@ void UT66WheelOverlayWidget::NativeDestruct()
 
 TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 {
-	UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
 	const FText Title = Loc ? Loc->GetText_WheelSpinTitle() : NSLOCTEXT("T66.Wheel", "Title", "WHEEL SPIN");
 	const FText SpinTxt = Loc ? Loc->GetText_Spin() : NSLOCTEXT("T66.Wheel", "Spin", "SPIN");
@@ -272,12 +274,14 @@ void UT66WheelOverlayWidget::ResolveSpin()
 	if (!bSpinning) return;
 	bSpinning = false;
 
-	if (UWorld* World = GetWorld())
+	if (UWorld* ExistingWorld = GetWorld())
 	{
-		World->GetTimerManager().ClearTimer(SpinTickHandle);
+		ExistingWorld->GetTimerManager().ClearTimer(SpinTickHandle);
 	}
 
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState && PendingGold > 0)
 	{
 		RunState->AddGold(PendingGold);
@@ -285,7 +289,7 @@ void UT66WheelOverlayWidget::ResolveSpin()
 
 	if (StatusText.IsValid())
 	{
-		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 		const FText Fmt = Loc ? Loc->GetText_YouWonGoldFormat() : NSLOCTEXT("T66.Wheel", "YouWonGoldFormat", "You won {0} gold.");
 		StatusText->SetText(FText::Format(Fmt, FText::AsNumber(PendingGold)));
 	}
@@ -293,9 +297,9 @@ void UT66WheelOverlayWidget::ResolveSpin()
 	if (BackButton.IsValid()) BackButton->SetEnabled(true);
 
 	// Close a moment later so the result is visible.
-	if (UWorld* World = GetWorld())
+	if (UWorld* ExistingWorld = GetWorld())
 	{
-		World->GetTimerManager().SetTimer(CloseHandle, this, &UT66WheelOverlayWidget::CloseAfterResolve, 0.6f, false);
+		ExistingWorld->GetTimerManager().SetTimer(CloseHandle, this, &UT66WheelOverlayWidget::CloseAfterResolve, 0.6f, false);
 	}
 }
 
@@ -355,7 +359,8 @@ FReply UT66WheelOverlayWidget::OnSpin()
 
 	if (StatusText.IsValid())
 	{
-		UT66LocalizationSubsystem* Loc = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+		UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 		StatusText->SetText(Loc ? Loc->GetText_Spinning() : NSLOCTEXT("T66.Wheel", "Spinning", "Spinning..."));
 	}
 

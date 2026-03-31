@@ -43,11 +43,11 @@ void AT66GamblerBoss::BeginPlay()
 		VisualMesh->SetRelativeScale3D(FVector(4.f, 4.f, 4.f));
 		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 112.f));
 	}
-	if (UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial())
+	if (UMaterialInterface* ColorMat = FT66VisualUtil::GetFlatColorMaterial())
 	{
 		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, this))
 		{
-			Mat->SetVectorParameterValue(FName("Color"), FLinearColor(0.85f, 0.75f, 0.15f, 1.f));
+			FT66VisualUtil::ConfigureFlatColorMaterial(Mat, FLinearColor(0.85f, 0.75f, 0.15f, 1.f));
 			VisualMesh->SetMaterial(0, Mat);
 		}
 	}

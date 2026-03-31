@@ -3,6 +3,8 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "HAL/IConsoleManager.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66LagTracker, Log, All);
+
 static TAutoConsoleVariable<int32> CVarLagTrackerEnabled(
 	TEXT("T66.LagTracker.Enabled"),
 	1,
@@ -18,7 +20,7 @@ static TAutoConsoleVariable<float> CVarLagTrackerThresholdMs(
 void UT66LagTrackerSubsystem::ReportSlowOperation(const FString& Cause, float DurationMs)
 {
 	if (!IsEnabled() || DurationMs < GetThresholdMs()) return;
-	UE_LOG(LogTemp, Warning, TEXT("[LAG] %s: %.2fms"), *Cause, DurationMs);
+	UE_LOG(LogT66LagTracker, Warning, TEXT("[LAG] %s: %.2fms"), *Cause, DurationMs);
 }
 
 bool UT66LagTrackerSubsystem::IsEnabled() const

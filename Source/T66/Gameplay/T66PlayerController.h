@@ -15,9 +15,6 @@ class UT66LoadPreviewOverlayWidget;
 class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
 class UT66CircusOverlayWidget;
-class UT66CasinoOverlayWidget;
-class UT66CowardicePromptWidget;
-class AT66CowardiceGate;
 class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class AT66EnemyBase;
@@ -25,7 +22,6 @@ class UT66IdolAltarOverlayWidget;
 class UNiagaraSystem;
 class UT66VendorOverlayWidget;
 class UT66CollectorOverlayWidget;
-class UT66LoadPreviewOverlayWidget;
 class AT66LootBagPickup;
 class AT66HouseNPCBase;
 class AT66VendorNPC;
@@ -120,19 +116,12 @@ public:
 	/** Open the Gambler overlay (non-pausing). */
 	void OpenGamblerOverlay(int32 WinGoldAmount);
 
-	/** Open the shared casino overlay (gambling + vendor + alchemy). */
-	void OpenCasinoOverlay();
+	/** Open the shared circus shell overlay (gambling + vendor + alchemy). */
 	void OpenCircusOverlay();
 
-	/** Close the shared casino overlay and return to gameplay input. */
-	void CloseCasinoOverlay();
+	/** Close the shared circus shell overlay and return to gameplay input. */
 	void CloseCircusOverlay();
 
-	void SwitchCasinoOverlayToGambling();
-	void SwitchCasinoOverlayToVendor();
-	void SwitchCasinoOverlayToAlchemy();
-	bool IsCasinoOverlayOpen() const;
-	bool TriggerCasinoBossIfAngry();
 	void SwitchCircusOverlayToGambling();
 	void SwitchCircusOverlayToVendor();
 	void SwitchCircusOverlayToAlchemy();
@@ -299,7 +288,6 @@ private:
 
 	UNiagaraSystem* GetActiveJumpVFXSystem() const;
 
-	FDelegateHandle OnPlayerDiedHandle;
 	FTimerHandle DeathVFXTimerHandle;
 
 	void SetupGameplayHUD();

@@ -14,10 +14,17 @@
 
 static UNiagaraSystem* LoadPixelVFX_Debuff()
 {
-	UNiagaraSystem* Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
-	if (!Sys)
-		Sys = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
-	return Sys;
+	static TObjectPtr<UNiagaraSystem> CachedSystem = nullptr;
+	static TObjectPtr<UNiagaraSystem> CachedFallbackSystem = nullptr;
+	if (!CachedSystem)
+	{
+		CachedSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/NS_PixelParticle.NS_PixelParticle"));
+	}
+	if (!CachedSystem && !CachedFallbackSystem)
+	{
+		CachedFallbackSystem = LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/VFX/VFX_Attack1.VFX_Attack1"));
+	}
+	return CachedSystem ? CachedSystem.Get() : CachedFallbackSystem.Get();
 }
 
 AT66UniqueDebuffProjectile::AT66UniqueDebuffProjectile()

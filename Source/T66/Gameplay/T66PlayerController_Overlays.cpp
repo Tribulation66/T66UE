@@ -202,11 +202,6 @@ void AT66PlayerController::OpenCircusOverlay()
 	}
 }
 
-void AT66PlayerController::OpenCasinoOverlay()
-{
-	OpenCircusOverlay();
-}
-
 void AT66PlayerController::CloseCircusOverlay()
 {
 	if (CircusOverlayWidget && CircusOverlayWidget->IsInViewport())
@@ -214,11 +209,6 @@ void AT66PlayerController::CloseCircusOverlay()
 		CircusOverlayWidget->RemoveFromParent();
 	}
 	RestoreGameplayInputMode();
-}
-
-void AT66PlayerController::CloseCasinoOverlay()
-{
-	CloseCircusOverlay();
 }
 
 void AT66PlayerController::SwitchCircusOverlayToGambling()
@@ -229,22 +219,12 @@ void AT66PlayerController::SwitchCircusOverlayToGambling()
 	}
 }
 
-void AT66PlayerController::SwitchCasinoOverlayToGambling()
-{
-	SwitchCircusOverlayToGambling();
-}
-
 void AT66PlayerController::SwitchCircusOverlayToVendor()
 {
 	if (CircusOverlayWidget)
 	{
 		CircusOverlayWidget->OpenVendorTab();
 	}
-}
-
-void AT66PlayerController::SwitchCasinoOverlayToVendor()
-{
-	SwitchCircusOverlayToVendor();
 }
 
 void AT66PlayerController::SwitchCircusOverlayToAlchemy()
@@ -255,19 +235,9 @@ void AT66PlayerController::SwitchCircusOverlayToAlchemy()
 	}
 }
 
-void AT66PlayerController::SwitchCasinoOverlayToAlchemy()
-{
-	SwitchCircusOverlayToAlchemy();
-}
-
 bool AT66PlayerController::IsCircusOverlayOpen() const
 {
 	return CircusOverlayWidget && CircusOverlayWidget->IsInViewport();
-}
-
-bool AT66PlayerController::IsCasinoOverlayOpen() const
-{
-	return IsCircusOverlayOpen();
 }
 
 bool AT66PlayerController::TriggerCircusBossIfAngry()
@@ -345,11 +315,6 @@ bool AT66PlayerController::TriggerCircusBossIfAngry()
 	}
 	RestoreGameplayInputMode();
 	return true;
-}
-
-bool AT66PlayerController::TriggerCasinoBossIfAngry()
-{
-	return TriggerCircusBossIfAngry();
 }
 
 void AT66PlayerController::OpenVendorOverlay()
@@ -542,7 +507,9 @@ void AT66PlayerController::HandleQuickReviveStateChanged()
 		return;
 	}
 
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const bool bDowned = RunState && RunState->IsInQuickReviveDownedState();
 
 	if (bDowned)

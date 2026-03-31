@@ -258,7 +258,7 @@ namespace
 		}
 	}
 
-	void EnsureRuntimeImageBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize)
+	void EnsurePowerUpRuntimeImageBrush(const TSharedPtr<FSlateBrush>& Brush, const FVector2D& ImageSize)
 	{
 		if (!Brush.IsValid())
 		{
@@ -290,7 +290,7 @@ namespace
 			if (UTexture2D* Texture = LoadPowerUpFileTexture(SourcePath))
 			{
 				Brush = MakeShared<FSlateBrush>();
-				EnsureRuntimeImageBrush(Brush, ImageSize);
+				EnsurePowerUpRuntimeImageBrush(Brush, ImageSize);
 				Brush->SetResourceObject(Texture);
 				Brush->TintColor = FSlateColor(FLinearColor::White);
 			}
@@ -302,7 +302,7 @@ namespace
 		else if (bHasImportedTexture)
 		{
 			Brush = MakeShared<FSlateBrush>();
-			EnsureRuntimeImageBrush(Brush, ImageSize);
+			EnsurePowerUpRuntimeImageBrush(Brush, ImageSize);
 			const TSoftObjectPtr<UTexture2D> Soft{ FSoftObjectPath(ObjectPath) };
 			T66SlateTexture::BindSharedBrushAsync(TexPool, Soft, Requester, Brush, FName(*BrushKey), false);
 		}
@@ -399,7 +399,9 @@ FReply UT66PowerUpScreen::HandleUnlockClicked(ET66HeroStatType StatType)
 bool UT66PowerUpScreen::TryConvertPowerCoupons(int32 RequestedCoupons)
 {
 	UT66PowerUpSubsystem* PowerUp = GetPowerUpSubsystem();
-	UT66AchievementsSubsystem* Achievements = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	if (!PowerUp || !Achievements)
 	{
 		return false;
@@ -448,8 +450,10 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UT66PowerUpSubsystem* PowerUp = GetPowerUpSubsystem();
-	UT66AchievementsSubsystem* Achievements = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
-	UT66UITexturePoolSubsystem* TexPool = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	StatueBrushes.Reset();
 
 	const FText TitleText = NSLOCTEXT("T66.PowerUp", "Title", "POWER UP");

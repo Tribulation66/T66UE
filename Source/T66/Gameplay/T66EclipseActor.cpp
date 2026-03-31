@@ -11,6 +11,8 @@
 #include "Camera/CameraComponent.h"
 #include "EngineUtils.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Eclipse, Log, All);
+
 static const TCHAR* EclipseMaterialPath = TEXT("/Game/Lighting/M_EclipseCorona.M_EclipseCorona");
 
 AT66EclipseActor::AT66EclipseActor()
@@ -45,7 +47,7 @@ void AT66EclipseActor::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Eclipse] Failed to load material at %s"), EclipseMaterialPath);
+		UE_LOG(LogT66Eclipse, Warning, TEXT("[Eclipse] Failed to load material at %s"), EclipseMaterialPath);
 	}
 
 	// Find the moon directional light and position along its direction.

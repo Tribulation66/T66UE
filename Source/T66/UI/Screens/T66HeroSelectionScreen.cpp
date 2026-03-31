@@ -36,6 +36,8 @@
 #include "MediaTexture.h"
 #include "FileMediaSource.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66HeroSelection, Log, All);
+
 namespace
 {
 	class ST66DragRotatePreview : public SCompoundWidget
@@ -446,7 +448,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	{
 		PreviewedHeroID = AllHeroIDs[0];
 	}
-	UE_LOG(LogTemp, Log, TEXT("[BEACH] BuildSlateUI: PreviewedHeroID=%s"), *PreviewedHeroID.ToString());
+	UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] BuildSlateUI: PreviewedHeroID=%s"), *PreviewedHeroID.ToString());
 	if (!PreviewedHeroID.IsNone())
 	{
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
@@ -456,32 +458,32 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				// Check if the current SelectedHeroSkinID is owned by this hero.
 				// If not, reset to this hero's equipped skin (or Default).
 				const FName CurrentSkin = GI->SelectedHeroSkinID;
-				UE_LOG(LogTemp, Log, TEXT("[BEACH] BuildSlateUI: CurrentSkin (GI->SelectedHeroSkinID) = %s"), *CurrentSkin.ToString());
+				UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] BuildSlateUI: CurrentSkin (GI->SelectedHeroSkinID) = %s"), *CurrentSkin.ToString());
 				
 				const bool bIsNone = CurrentSkin.IsNone();
 				const bool bIsDefault = CurrentSkin == FName(TEXT("Default"));
 				const bool bIsOwned = SkinSub->IsHeroSkinOwned(PreviewedHeroID, CurrentSkin);
-				UE_LOG(LogTemp, Log, TEXT("[BEACH] BuildSlateUI: bIsNone=%d, bIsDefault=%d, bIsOwned=%d"),
+				UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] BuildSlateUI: bIsNone=%d, bIsDefault=%d, bIsOwned=%d"),
 					bIsNone ? 1 : 0, bIsDefault ? 1 : 0, bIsOwned ? 1 : 0);
 				
 				const bool bCurrentSkinOwned = bIsNone || bIsDefault || bIsOwned;
 				if (!bCurrentSkinOwned)
 				{
 					const FName NewSkin = SkinSub->GetEquippedHeroSkinID(PreviewedHeroID);
-					UE_LOG(LogTemp, Log, TEXT("[BEACH] BuildSlateUI: %s does NOT own %s, switching to equipped: %s"),
+					UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] BuildSlateUI: %s does NOT own %s, switching to equipped: %s"),
 						*PreviewedHeroID.ToString(), *CurrentSkin.ToString(), *NewSkin.ToString());
 					GI->SelectedHeroSkinID = NewSkin;
 				}
 				else
 				{
-					UE_LOG(LogTemp, Log, TEXT("[BEACH] BuildSlateUI: %s OWNS %s (or is Default/None), keeping it"),
+					UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] BuildSlateUI: %s OWNS %s (or is Default/None), keeping it"),
 						*PreviewedHeroID.ToString(), *CurrentSkin.ToString());
 				}
 				if (GI->SelectedHeroSkinID.IsNone())
 				{
 					GI->SelectedHeroSkinID = FName(TEXT("Default"));
 				}
-				UE_LOG(LogTemp, Log, TEXT("[BEACH] BuildSlateUI: final GI->SelectedHeroSkinID = %s"), *GI->SelectedHeroSkinID.ToString());
+				UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] BuildSlateUI: final GI->SelectedHeroSkinID = %s"), *GI->SelectedHeroSkinID.ToString());
 			}
 		}
 	}
@@ -1436,9 +1438,9 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				: PreviewSkinIDOverride;
 			if (EffectiveSkinID.IsNone()) EffectiveSkinID = FName(TEXT("Default"));
 			PreviewStage->SetPreviewDifficulty(SelectedDifficulty);
-			UE_LOG(LogTemp, Log, TEXT("[BEACH] UpdateHeroDisplay: PreviewSkinIDOverride=%s, GI->SelectedHeroSkinID=%s, EffectiveSkinID=%s"),
+			UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] UpdateHeroDisplay: PreviewSkinIDOverride=%s, GI->SelectedHeroSkinID=%s, EffectiveSkinID=%s"),
 				*PreviewSkinIDOverride.ToString(), GIPreview ? *GIPreview->SelectedHeroSkinID.ToString() : TEXT("(null GI)"), *EffectiveSkinID.ToString());
-			UE_LOG(LogTemp, Log, TEXT("[BEACH] UpdateHeroDisplay: calling SetPreviewHero HeroID=%s BodyType=%d SkinID=%s"),
+			UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] UpdateHeroDisplay: calling SetPreviewHero HeroID=%s BodyType=%d SkinID=%s"),
 				*PreviewedHeroID.ToString(), (int32)SelectedBodyType, *EffectiveSkinID.ToString());
 			FName CompanionID = GIPreview ? GIPreview->SelectedCompanionID : NAME_None;
 			PreviewStage->SetPreviewHero(PreviewedHeroID, SelectedBodyType, EffectiveSkinID, CompanionID);
@@ -1688,7 +1690,7 @@ bool UT66HeroSelectionScreen::GetSelectedCompanionData(FCompanionData& OutCompan
 
 void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 {
-	UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero START: switching to HeroID=%s"), *HeroID.ToString());
+	UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero START: switching to HeroID=%s"), *HeroID.ToString());
 	
 	PreviewedHeroID = HeroID;
 	CurrentHeroIndex = AllHeroIDs.IndexOfByKey(HeroID);
@@ -1696,7 +1698,7 @@ void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 	
 	// Clear any preview override when switching heroes (preview is hero-specific).
 	PreviewSkinIDOverride = NAME_None;
-	UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero: cleared PreviewSkinIDOverride"));
+	UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero: cleared PreviewSkinIDOverride"));
 	
 	// Sync selected skin to this hero's equipped skin so 3D preview and skin list match.
 	// If the previously selected skin is not owned by this hero, fall back to Default.
@@ -1707,47 +1709,47 @@ void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 			// First check if the current SelectedHeroSkinID is owned by this hero.
 			// If not, reset to this hero's equipped skin (or Default).
 			const FName CurrentSkin = GI->SelectedHeroSkinID;
-			UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero: CurrentSkin (GI->SelectedHeroSkinID) = %s"), *CurrentSkin.ToString());
+			UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero: CurrentSkin (GI->SelectedHeroSkinID) = %s"), *CurrentSkin.ToString());
 			
 			const bool bIsDefault = CurrentSkin == FName(TEXT("Default"));
 			const bool bIsOwned = SkinSub->IsHeroSkinOwned(HeroID, CurrentSkin);
-			UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero: bIsDefault=%d, bIsOwned=%d"), bIsDefault ? 1 : 0, bIsOwned ? 1 : 0);
+			UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero: bIsDefault=%d, bIsOwned=%d"), bIsDefault ? 1 : 0, bIsOwned ? 1 : 0);
 			
 			const bool bCurrentSkinOwned = bIsDefault || bIsOwned;
 			if (!bCurrentSkinOwned)
 			{
 				// Current skin not owned by this hero; switch to this hero's equipped skin.
 				const FName NewSkin = SkinSub->GetEquippedHeroSkinID(HeroID);
-				UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero: %s does NOT own %s, switching to equipped: %s"),
+				UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero: %s does NOT own %s, switching to equipped: %s"),
 					*HeroID.ToString(), *CurrentSkin.ToString(), *NewSkin.ToString());
 				GI->SelectedHeroSkinID = NewSkin;
 			}
 			else
 			{
-				UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero: %s OWNS %s, keeping it"),
+				UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero: %s OWNS %s, keeping it"),
 					*HeroID.ToString(), *CurrentSkin.ToString());
 			}
 			if (GI->SelectedHeroSkinID.IsNone())
 			{
 				GI->SelectedHeroSkinID = FName(TEXT("Default"));
 			}
-			UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero: final GI->SelectedHeroSkinID = %s"), *GI->SelectedHeroSkinID.ToString());
+			UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero: final GI->SelectedHeroSkinID = %s"), *GI->SelectedHeroSkinID.ToString());
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[BEACH] PreviewHero: SkinSubsystem is NULL!"));
+			UE_LOG(LogT66HeroSelection, Warning, TEXT("[BEACH] PreviewHero: SkinSubsystem is NULL!"));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[BEACH] PreviewHero: GI is NULL!"));
+		UE_LOG(LogT66HeroSelection, Warning, TEXT("[BEACH] PreviewHero: GI is NULL!"));
 	}
 	
 	FHeroData HeroData;
 	if (GetPreviewedHeroData(HeroData)) OnPreviewedHeroChanged(HeroData);
 	UpdateHeroDisplay();
 	UpdateHeroPreviewVideo();
-	UE_LOG(LogTemp, Log, TEXT("[BEACH] PreviewHero END"));
+	UE_LOG(LogT66HeroSelection, Verbose, TEXT("[BEACH] PreviewHero END"));
 }
 
 void UT66HeroSelectionScreen::PreviewNextHero()

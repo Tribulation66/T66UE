@@ -13,6 +13,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/UObjectGlobals.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66PreviewEnvironment, Log, All);
+
 namespace
 {
 	const TCHAR* PreviewFallbackGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
@@ -90,7 +92,7 @@ namespace
 			return ThemeTexture;
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("[PREVIEW] Missing preview block texture override: %s"), *AssetPath);
+		UE_LOG(LogT66PreviewEnvironment, Warning, TEXT("[PREVIEW] Missing preview block texture override: %s"), *AssetPath);
 		return LoadObject<UTexture>(nullptr, EasyBlockTexturePath);
 	}
 

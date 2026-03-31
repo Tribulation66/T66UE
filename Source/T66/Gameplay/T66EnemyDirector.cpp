@@ -16,6 +16,8 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66EnemyPoolSubsystem.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66EnemyDirector, Log, All);
+
 AT66EnemyDirector::AT66EnemyDirector()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -204,7 +206,7 @@ void AT66EnemyDirector::SpawnWave()
 		{
 			bWarnedEnemyClass = true;
 			const FString BadName = RegularClass ? RegularClass->GetName() : FString(TEXT("None"));
-			UE_LOG(LogTemp, Warning, TEXT("EnemyDirector: EnemyClass is '%s' (invalid for regular). Falling back to AT66EnemyBase for regular spawns."), *BadName);
+			UE_LOG(LogT66EnemyDirector, Warning, TEXT("EnemyDirector: EnemyClass is '%s' (invalid for regular). Falling back to AT66EnemyBase for regular spawns."), *BadName);
 		}
 		RegularClass = AT66EnemyBase::StaticClass();
 	}
@@ -231,7 +233,7 @@ void AT66EnemyDirector::SpawnWave()
 	if (LoggedMobWaves < 3)
 	{
 		++LoggedMobWaves;
-		UE_LOG(LogTemp, Warning, TEXT("[SPAWN] SpawnWave Stage=%d MobIDs: A=%s  B=%s  C=%s (generic fallback would be Mob_StageXX_X — if you see that, reimport DT_Stages)"),
+		UE_LOG(LogT66EnemyDirector, Warning, TEXT("[SPAWN] SpawnWave Stage=%d MobIDs: A=%s  B=%s  C=%s (generic fallback would be Mob_StageXX_X — if you see that, reimport DT_Stages)"),
 			StageNum, *MobA.ToString(), *MobB.ToString(), *MobC.ToString());
 	}
 #endif

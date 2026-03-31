@@ -53,7 +53,9 @@ TArray<FName> UT66LabOverlayWidget::GetUnlockedEnemyIDs() const
 
 UT66GameInstance* UT66LabOverlayWidget::GetT66GameInstance() const
 {
-	return GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	return Cast<UT66GameInstance>(GI);
 }
 
 AT66GameMode* UT66LabOverlayWidget::GetLabGameMode() const

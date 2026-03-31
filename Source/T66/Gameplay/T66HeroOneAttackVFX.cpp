@@ -12,16 +12,44 @@
 
 namespace
 {
+	DEFINE_LOG_CATEGORY_STATIC(LogT66HeroAttackVFX, Log, All);
+
 	const TCHAR* HeroOneStreakMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Streak.MI_Hero1_Attack_Streak");
 	const TCHAR* HeroOneImpactMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Impact.MI_Hero1_Attack_Impact");
 	const TCHAR* HeroOneSwordMeshPath = TEXT("/Game/VFX/Projectiles/Hero1/Arthur_Sword.Arthur_Sword");
 	const FName HeroOneID(TEXT("Hero_1"));
-	static TAutoConsoleVariable<int32> CVarT66VFXHero1SwordShape(
-		TEXT("T66.VFX.Hero1SwordShape"),
-		1,
-		TEXT("Use the stage-10 approximate sword silhouette for Hero_1 Example pierce."));
 
-	void BuildExamplePierceRuntimePalette(
+	UMaterialInterface* GetHeroOneStreakBaseMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		if (!Cached)
+		{
+			Cached = LoadObject<UMaterialInterface>(nullptr, HeroOneStreakMaterialPath);
+		}
+		return Cached.Get();
+	}
+
+	UMaterialInterface* GetHeroOneImpactBaseMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		if (!Cached)
+		{
+			Cached = LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
+		}
+		return Cached.Get();
+	}
+
+	UStaticMesh* GetArthurSwordMesh()
+	{
+		static TObjectPtr<UStaticMesh> Cached = nullptr;
+		if (!Cached)
+		{
+			Cached = LoadObject<UStaticMesh>(nullptr, HeroOneSwordMeshPath);
+		}
+		return Cached.Get();
+	}
+
+	void BuildHeroPierceRuntimePalette(
 		const FName HeroID,
 		const FLinearColor& SeedColor,
 		FLinearColor& OutTintColor,
@@ -116,44 +144,11 @@ AT66HeroOneAttackVFX::AT66HeroOneAttackVFX()
 	SwordMesh->SetMobility(EComponentMobility::Movable);
 	SwordMesh->SetHiddenInGame(true);
 
-	GuardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GuardMesh"));
-	GuardMesh->SetupAttachment(SceneRoot);
-	GuardMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GuardMesh->SetCastShadow(false);
-	GuardMesh->SetReceivesDecals(false);
-	GuardMesh->SetCanEverAffectNavigation(false);
-	GuardMesh->SetMobility(EComponentMobility::Movable);
-	GuardMesh->TranslucencySortPriority = 4;
-	GuardMesh->SetHiddenInGame(true);
-
-	GripMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GripMesh"));
-	GripMesh->SetupAttachment(SceneRoot);
-	GripMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GripMesh->SetCastShadow(false);
-	GripMesh->SetReceivesDecals(false);
-	GripMesh->SetCanEverAffectNavigation(false);
-	GripMesh->SetMobility(EComponentMobility::Movable);
-	GripMesh->TranslucencySortPriority = 2;
-	GripMesh->SetHiddenInGame(true);
-
-	PommelMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PommelMesh"));
-	PommelMesh->SetupAttachment(SceneRoot);
-	PommelMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	PommelMesh->SetCastShadow(false);
-	PommelMesh->SetReceivesDecals(false);
-	PommelMesh->SetCanEverAffectNavigation(false);
-	PommelMesh->SetMobility(EComponentMobility::Movable);
-	PommelMesh->TranslucencySortPriority = 3;
-	PommelMesh->SetHiddenInGame(true);
-
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneMesh(TEXT("/Engine/BasicShapes/Plane.Plane"));
 	if (PlaneMesh.Succeeded())
 	{
 		StreakMesh->SetStaticMesh(PlaneMesh.Object);
 		ImpactMesh->SetStaticMesh(PlaneMesh.Object);
-		GuardMesh->SetStaticMesh(PlaneMesh.Object);
-		GripMesh->SetStaticMesh(PlaneMesh.Object);
-		PommelMesh->SetStaticMesh(PlaneMesh.Object);
 	}
 }
 
@@ -180,9 +175,9 @@ void AT66HeroOneAttackVFX::InitEffect(const FVector& InStart, const FVector& InE
 	if (IsHeroOneStageVerbose())
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66HeroAttackVFX,
 			Log,
-			TEXT("[ATTACK VFX][ExamplePierce] Init Req=%d Source=%s Actor=%s Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Tint=(%.2f,%.2f,%.2f,%.2f)"),
+			TEXT("[ATTACK VFX][HeroPierce] Init Req=%d Source=%s Actor=%s Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Tint=(%.2f,%.2f,%.2f,%.2f)"),
 			DebugRequestId,
 			DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
 			*GetName(),
@@ -201,9 +196,7 @@ void AT66HeroOneAttackVFX::BeginPlay()
 
 	if (!StreakBaseMaterial)
 	{
-		StreakBaseMaterial = LoadObject<UMaterialInterface>(
-			nullptr,
-			HeroOneStreakMaterialPath);
+		StreakBaseMaterial = GetHeroOneStreakBaseMaterial();
 	}
 
 	if (StreakBaseMaterial)
@@ -212,17 +205,12 @@ void AT66HeroOneAttackVFX::BeginPlay()
 		if (StreakMID)
 		{
 			StreakMesh->SetMaterial(0, StreakMID);
-			GuardMesh->SetMaterial(0, StreakMID);
-			GripMesh->SetMaterial(0, StreakMID);
-			PommelMesh->SetMaterial(0, StreakMID);
 		}
 	}
 
 	if (!ImpactBaseMaterial)
 	{
-		ImpactBaseMaterial = LoadObject<UMaterialInterface>(
-			nullptr,
-			HeroOneImpactMaterialPath);
+		ImpactBaseMaterial = GetHeroOneImpactBaseMaterial();
 	}
 
 	if (ImpactBaseMaterial)
@@ -237,9 +225,9 @@ void AT66HeroOneAttackVFX::BeginPlay()
 	if (!StreakMID || !ImpactMID)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66HeroAttackVFX,
 			Warning,
-			TEXT("[ATTACK VFX][ExamplePierce] MissingMaterials Req=%d Source=%s Actor=%s StreakMID=%s ImpactMID=%s"),
+			TEXT("[ATTACK VFX][HeroPierce] MissingMaterials Req=%d Source=%s Actor=%s StreakMID=%s ImpactMID=%s"),
 			DebugRequestId,
 			DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
 			*GetName(),
@@ -251,23 +239,22 @@ void AT66HeroOneAttackVFX::BeginPlay()
 
 	if (!ArthurSwordStaticMesh)
 	{
-		ArthurSwordStaticMesh = LoadObject<UStaticMesh>(nullptr, HeroOneSwordMeshPath);
+		ArthurSwordStaticMesh = GetArthurSwordMesh();
 	}
-	if (SwordMesh && ArthurSwordStaticMesh)
-	{
-		SwordMesh->SetStaticMesh(ArthurSwordStaticMesh);
-	}
-	else if (UseArthurSwordSilhouette())
+	if (!SwordMesh || !ArthurSwordStaticMesh)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66HeroAttackVFX,
 			Warning,
-			TEXT("[ATTACK VFX][ExamplePierce] ImportedSwordMissing Req=%d Source=%s Actor=%s MeshPath=%s Fallback=PlaneSword"),
+			TEXT("[ATTACK VFX][HeroPierce] ImportedSwordMissing Req=%d Source=%s Actor=%s MeshPath=%s"),
 			DebugRequestId,
 			DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
 			*GetName(),
 			HeroOneSwordMeshPath);
+		Destroy();
+		return;
 	}
+	SwordMesh->SetStaticMesh(ArthurSwordStaticMesh);
 
 	if (bInitialized)
 	{
@@ -288,9 +275,9 @@ void AT66HeroOneAttackVFX::Tick(float DeltaSeconds)
 	if (IsHeroOneStageVerbose() && ElapsedSeconds <= DeltaSeconds + KINDA_SMALL_NUMBER)
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66HeroAttackVFX,
 			Log,
-			TEXT("[ATTACK VFX][ExamplePierce] Active Req=%d Source=%s Actor=%s Trace=%.1f ImpactDistance=%.1f"),
+			TEXT("[ATTACK VFX][HeroPierce] Active Req=%d Source=%s Actor=%s Trace=%.1f ImpactDistance=%.1f"),
 			DebugRequestId,
 			DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
 			*GetName(),
@@ -299,60 +286,26 @@ void AT66HeroOneAttackVFX::Tick(float DeltaSeconds)
 	}
 
 	const float Pulse = 1.f + FMath::Sin(Age01 * PI) * 0.24f;
-	if (UseArthurSwordSilhouette())
-	{
-		const bool bUseImportedSwordMesh = SwordMesh && SwordMesh->GetStaticMesh() != nullptr;
-		const float GuardOffset = FMath::Clamp(TraceLength * 0.04f, 12.f, 18.f);
-		const float BladeLength = FMath::Max(56.f, TraceLength - GuardOffset - 8.f);
-		const float SwordTravelDistance = FMath::Lerp(GuardOffset + 12.f, ImpactDistance, FMath::Clamp(Age01 * 1.08f, 0.f, 1.f));
+	const float GuardOffset = FMath::Clamp(TraceLength * 0.04f, 12.f, 18.f);
+	const float BladeLength = FMath::Max(56.f, TraceLength - GuardOffset - 8.f);
+	const float SwordTravelDistance = FMath::Lerp(GuardOffset + 12.f, ImpactDistance, FMath::Clamp(Age01 * 1.08f, 0.f, 1.f));
 
-		if (bUseImportedSwordMesh)
-		{
-			SwordMesh->SetHiddenInGame(false);
-			SwordMesh->SetRelativeLocation(FVector(SwordTravelDistance, 0.f, 2.f + (Pulse * 1.4f)));
-			SwordMesh->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
-			SwordMesh->SetRelativeScale3D(FVector(0.60f, 0.60f, 0.60f));
+	SwordMesh->SetHiddenInGame(false);
+	SwordMesh->SetRelativeLocation(FVector(SwordTravelDistance, 0.f, 2.f + (Pulse * 1.4f)));
+	SwordMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	SwordMesh->SetRelativeScale3D(FVector(0.60f, 0.60f, 0.60f));
 
-			StreakMesh->SetRelativeLocation(FVector(FMath::Max(18.f, SwordTravelDistance - (BladeLength * 0.32f)), 0.f, 0.f));
-			StreakMesh->SetRelativeRotation(FRotator::ZeroRotator);
-			StreakMesh->SetRelativeScale3D(FVector(FMath::Max(0.58f, (BladeLength * 0.34f) / 100.f), FMath::Lerp(0.07f, 0.11f, Age01) * Pulse, 1.f));
+	StreakMesh->SetRelativeLocation(FVector(FMath::Max(18.f, SwordTravelDistance - (BladeLength * 0.32f)), 0.f, 0.f));
+	StreakMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	StreakMesh->SetRelativeScale3D(FVector(FMath::Max(0.58f, (BladeLength * 0.34f) / 100.f), FMath::Lerp(0.07f, 0.11f, Age01) * Pulse, 1.f));
 
-			ImpactMesh->SetRelativeScale3D(FVector(FMath::Lerp(0.11f, 0.15f, Age01) * Pulse, FMath::Lerp(0.14f, 0.18f, Age01) * Pulse, 1.f));
-		}
-		else
-		{
-			const float BladeWidth = FMath::Lerp(0.11f, 0.15f, Age01) * Pulse;
-			const float TipScale = FMath::Lerp(0.12f, 0.16f, Age01) * Pulse;
-			const float GuardWidth = FMath::Lerp(0.30f, 0.36f, Age01) * Pulse;
-			const float GripLength = FMath::Lerp(0.22f, 0.26f, Age01);
-			const float GripWidth = FMath::Lerp(0.060f, 0.072f, Age01) * Pulse;
-			const float PommelScaleX = FMath::Lerp(0.075f, 0.090f, Age01) * Pulse;
-			const float PommelScaleY = FMath::Lerp(0.100f, 0.115f, Age01) * Pulse;
-
-			StreakMesh->SetRelativeScale3D(FVector(BladeLength / 100.f, BladeWidth, 1.f));
-			ImpactMesh->SetRelativeScale3D(FVector(TipScale, TipScale * 1.28f, 1.f));
-			GuardMesh->SetRelativeScale3D(FVector(0.075f, GuardWidth, 1.f));
-			GripMesh->SetRelativeScale3D(FVector(GripLength, GripWidth, 1.f));
-			PommelMesh->SetRelativeScale3D(FVector(PommelScaleX, PommelScaleY, 1.f));
-		}
-	}
-	else
-	{
-		SwordMesh->SetHiddenInGame(true);
-		const float LengthScale = FMath::Lerp(1.08f, 0.88f, Age01);
-		const float WidthScale = FMath::Lerp(BaseStreakWidthScale * 0.96f, BaseStreakWidthScale * 1.8f, Age01);
-		const float HeightScale = 1.f;
-		StreakMesh->SetRelativeScale3D(FVector((TraceLength * LengthScale) / 100.f, WidthScale, HeightScale));
-
-		const float ImpactScale = BaseImpactScale * FMath::Lerp(1.08f, 0.92f, Age01) * Pulse;
-		ImpactMesh->SetRelativeScale3D(FVector(ImpactScale, ImpactScale, 1.f));
-	}
+	ImpactMesh->SetRelativeScale3D(FVector(FMath::Lerp(0.11f, 0.15f, Age01) * Pulse, FMath::Lerp(0.14f, 0.18f, Age01) * Pulse, 1.f));
 
 	if (Age01 >= 1.f)
 	{
 		if (IsHeroOneStageVerbose())
 		{
-			UE_LOG(LogTemp, Log, TEXT("[ATTACK VFX][ExamplePierce] Complete Req=%d Source=%s Actor=%s Age01=%.2f Elapsed=%.3f"), DebugRequestId, DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(), *GetName(), Age01, ElapsedSeconds);
+			UE_LOG(LogT66HeroAttackVFX, Log, TEXT("[ATTACK VFX][HeroPierce] Complete Req=%d Source=%s Actor=%s Age01=%.2f Elapsed=%.3f"), DebugRequestId, DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(), *GetName(), Age01, ElapsedSeconds);
 		}
 		Destroy();
 	}
@@ -372,92 +325,36 @@ void AT66HeroOneAttackVFX::ApplyEffectTransforms()
 	const FVector LocalImpact = FRotationMatrix(GetActorRotation()).InverseTransformVector(ImpactLocation - StartLocation);
 	ImpactDistance = FMath::Clamp(LocalImpact.X, 12.f, TraceLength);
 
-	if (UseArthurSwordSilhouette())
-	{
-		const bool bUseImportedSwordMesh = SwordMesh && SwordMesh->GetStaticMesh() != nullptr;
-		const float GuardOffset = FMath::Clamp(TraceLength * 0.04f, 12.f, 18.f);
-		const float BladeLength = FMath::Max(56.f, TraceLength - GuardOffset - 8.f);
+	const float GuardOffset = FMath::Clamp(TraceLength * 0.04f, 12.f, 18.f);
+	const float BladeLength = FMath::Max(56.f, TraceLength - GuardOffset - 8.f);
 
-		SwordMesh->SetHiddenInGame(!bUseImportedSwordMesh);
-		GuardMesh->SetHiddenInGame(bUseImportedSwordMesh);
-		GripMesh->SetHiddenInGame(bUseImportedSwordMesh);
-		PommelMesh->SetHiddenInGame(bUseImportedSwordMesh);
+	SwordMesh->SetHiddenInGame(false);
+	SwordMesh->SetRelativeLocation(FVector(GuardOffset + 12.f, 0.f, 2.f));
+	SwordMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	SwordMesh->SetRelativeScale3D(FVector(0.60f, 0.60f, 0.60f));
 
-		if (bUseImportedSwordMesh)
-		{
-			SwordMesh->SetRelativeLocation(FVector(GuardOffset + 12.f, 0.f, 2.f));
-			SwordMesh->SetRelativeRotation(FRotator::ZeroRotator);
-			SwordMesh->SetRelativeScale3D(FVector(0.60f, 0.60f, 0.60f));
+	StreakMesh->SetRelativeLocation(FVector(FMath::Max(18.f, GuardOffset + (BladeLength * 0.18f)), 0.f, 0.f));
+	StreakMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	StreakMesh->SetRelativeScale3D(FVector(FMath::Max(0.58f, (BladeLength * 0.34f) / 100.f), 0.08f, 1.f));
 
-			StreakMesh->SetRelativeLocation(FVector(FMath::Max(18.f, GuardOffset + (BladeLength * 0.18f)), 0.f, 0.f));
-			StreakMesh->SetRelativeRotation(FRotator::ZeroRotator);
-			StreakMesh->SetRelativeScale3D(FVector(FMath::Max(0.58f, (BladeLength * 0.34f) / 100.f), 0.08f, 1.f));
-
-			ImpactMesh->SetRelativeLocation(FVector(ImpactDistance, 0.f, 2.f));
-			ImpactMesh->SetRelativeRotation(FRotator(0.f, 45.f, 0.f));
-			ImpactMesh->SetRelativeScale3D(FVector(0.13f, 0.17f, 1.f));
-		}
-		else
-		{
-			StreakMesh->SetRelativeLocation(FVector(GuardOffset + (BladeLength * 0.5f), 0.f, 0.f));
-			StreakMesh->SetRelativeRotation(FRotator::ZeroRotator);
-			StreakMesh->SetRelativeScale3D(FVector(BladeLength / 100.f, 0.12f, 1.f));
-
-			ImpactMesh->SetRelativeLocation(FVector(GuardOffset + BladeLength + 2.f, 0.f, 1.f));
-			ImpactMesh->SetRelativeRotation(FRotator(0.f, 45.f, 0.f));
-			ImpactMesh->SetRelativeScale3D(FVector(0.13f, 0.17f, 1.f));
-
-			GuardMesh->SetRelativeLocation(FVector(GuardOffset, 0.f, 0.f));
-			GuardMesh->SetRelativeRotation(FRotator::ZeroRotator);
-			GuardMesh->SetRelativeScale3D(FVector(0.075f, 0.32f, 1.f));
-
-			GripMesh->SetRelativeLocation(FVector(-12.f, 0.f, 0.f));
-			GripMesh->SetRelativeRotation(FRotator::ZeroRotator);
-			GripMesh->SetRelativeScale3D(FVector(0.22f, 0.065f, 1.f));
-
-			PommelMesh->SetRelativeLocation(FVector(-28.f, 0.f, 0.f));
-			PommelMesh->SetRelativeRotation(FRotator(0.f, 45.f, 0.f));
-			PommelMesh->SetRelativeScale3D(FVector(0.08f, 0.11f, 1.f));
-		}
-	}
-	else
-	{
-		SwordMesh->SetHiddenInGame(true);
-		GuardMesh->SetHiddenInGame(true);
-		GripMesh->SetHiddenInGame(true);
-		PommelMesh->SetHiddenInGame(true);
-
-		StreakMesh->SetRelativeLocation(FVector(TraceLength * 0.5f, 0.f, 0.f));
-		StreakMesh->SetRelativeRotation(FRotator::ZeroRotator);
-		StreakMesh->SetRelativeScale3D(FVector(TraceLength / 100.f, BaseStreakWidthScale, 1.f));
-
-		ImpactMesh->SetRelativeLocation(FVector(ImpactDistance, 0.f, 2.f));
-		ImpactMesh->SetRelativeRotation(FRotator::ZeroRotator);
-		ImpactMesh->SetRelativeScale3D(FVector(BaseImpactScale, BaseImpactScale, 1.f));
-	}
+	ImpactMesh->SetRelativeLocation(FVector(ImpactDistance, 0.f, 2.f));
+	ImpactMesh->SetRelativeRotation(FRotator(0.f, 45.f, 0.f));
+	ImpactMesh->SetRelativeScale3D(FVector(0.13f, 0.17f, 1.f));
 
 	if (IsHeroOneStageVerbose())
 	{
 		UE_LOG(
-			LogTemp,
+			LogT66HeroAttackVFX,
 			Log,
-			TEXT("[ATTACK VFX][ExamplePierce] Transforms Req=%d Source=%s Actor=%s ShapeMode=%s ImportedSword=%d Yaw=%.1f Trace=%.1f ImpactDistance=%.1f"),
+			TEXT("[ATTACK VFX][HeroPierce] Transforms Req=%d Source=%s Actor=%s ImportedSword=%d Yaw=%.1f Trace=%.1f ImpactDistance=%.1f"),
 			DebugRequestId,
 			DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
 			*GetName(),
-			UseArthurSwordSilhouette() ? TEXT("ArthurSword") : TEXT("DefaultPierce"),
 			(SwordMesh && SwordMesh->GetStaticMesh()) ? 1 : 0,
 			GetActorRotation().Yaw,
 			TraceLength,
 			ImpactDistance);
 	}
-}
-
-bool AT66HeroOneAttackVFX::UseArthurSwordSilhouette() const
-{
-	return !bUsePaletteOverride
-		&& DebugHeroID == HeroOneID
-		&& CVarT66VFXHero1SwordShape.GetValueOnGameThread() != 0;
 }
 
 void AT66HeroOneAttackVFX::ResolveRuntimePalette(FLinearColor& OutTintColor, FLinearColor& OutPrimaryColor, FLinearColor& OutSecondaryColor, FLinearColor& OutOutlineColor, float& OutGlowStrength, FString& OutPaletteMode) const
@@ -473,7 +370,7 @@ void AT66HeroOneAttackVFX::ResolveRuntimePalette(FLinearColor& OutTintColor, FLi
 		return;
 	}
 
-	BuildExamplePierceRuntimePalette(DebugHeroID, TintColor, OutTintColor, OutPrimaryColor, OutSecondaryColor, OutOutlineColor, OutGlowStrength);
+	BuildHeroPierceRuntimePalette(DebugHeroID, TintColor, OutTintColor, OutPrimaryColor, OutSecondaryColor, OutOutlineColor, OutGlowStrength);
 	OutPaletteMode = (DebugHeroID.IsNone() || DebugHeroID == HeroOneID) ? TEXT("Hero1Warm") : TEXT("DerivedFromHero");
 }
 
@@ -493,13 +390,12 @@ void AT66HeroOneAttackVFX::LogConfiguredBegin() const
 	ResolveRuntimePalette(RuntimeTintColor, RuntimePrimaryColor, RuntimeSecondaryColor, RuntimeOutlineColor, RuntimeGlowStrength, PaletteMode);
 
 	UE_LOG(
-		LogTemp,
+		LogT66HeroAttackVFX,
 		Log,
-		TEXT("[ATTACK VFX][ExamplePierce] Begin Req=%d Source=%s Actor=%s ShapeMode=%s PaletteMode=%s Lifetime=%.2f BaseWidth=%.2f BaseImpact=%.2f StreakMesh=%s ImpactMesh=%s SwordMesh=%s GuardMesh=%s GripMesh=%s PommelMesh=%s PaletteTint=(%.2f,%.2f,%.2f,%.2f) Primary=(%.2f,%.2f,%.2f,%.2f) Secondary=(%.2f,%.2f,%.2f,%.2f) Outline=(%.2f,%.2f,%.2f,%.2f) Glow=%.2f"),
+		TEXT("[ATTACK VFX][HeroPierce] Begin Req=%d Source=%s Actor=%s PaletteMode=%s Lifetime=%.2f BaseWidth=%.2f BaseImpact=%.2f StreakMesh=%s ImpactMesh=%s SwordMesh=%s PaletteTint=(%.2f,%.2f,%.2f,%.2f) Primary=(%.2f,%.2f,%.2f,%.2f) Secondary=(%.2f,%.2f,%.2f,%.2f) Outline=(%.2f,%.2f,%.2f,%.2f) Glow=%.2f"),
 		DebugRequestId,
 		DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
 		*GetName(),
-		UseArthurSwordSilhouette() ? TEXT("ArthurSword") : TEXT("DefaultPierce"),
 		*PaletteMode,
 		LifetimeSeconds,
 		BaseStreakWidthScale,
@@ -507,9 +403,6 @@ void AT66HeroOneAttackVFX::LogConfiguredBegin() const
 		(StreakMesh && StreakMesh->GetStaticMesh()) ? *StreakMesh->GetStaticMesh()->GetName() : TEXT("None"),
 		(ImpactMesh && ImpactMesh->GetStaticMesh()) ? *ImpactMesh->GetStaticMesh()->GetName() : TEXT("None"),
 		(SwordMesh && SwordMesh->GetStaticMesh()) ? *SwordMesh->GetStaticMesh()->GetName() : TEXT("None"),
-		(GuardMesh && GuardMesh->GetStaticMesh()) ? *GuardMesh->GetStaticMesh()->GetName() : TEXT("None"),
-		(GripMesh && GripMesh->GetStaticMesh()) ? *GripMesh->GetStaticMesh()->GetName() : TEXT("None"),
-		(PommelMesh && PommelMesh->GetStaticMesh()) ? *PommelMesh->GetStaticMesh()->GetName() : TEXT("None"),
 		RuntimeTintColor.R, RuntimeTintColor.G, RuntimeTintColor.B, RuntimeTintColor.A,
 		RuntimePrimaryColor.R, RuntimePrimaryColor.G, RuntimePrimaryColor.B, RuntimePrimaryColor.A,
 		RuntimeSecondaryColor.R, RuntimeSecondaryColor.G, RuntimeSecondaryColor.B, RuntimeSecondaryColor.A,

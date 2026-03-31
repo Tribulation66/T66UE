@@ -4,6 +4,8 @@
 #include "Materials/MaterialInterface.h"
 #include "UObject/UObjectGlobals.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66PreviewMaterials, Log, All);
+
 #if WITH_EDITORONLY_DATA
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
@@ -48,7 +50,7 @@ static UMaterial* CreateSimpleMaterial(
 	UMaterialEditorOnlyData* EdData = Mat->GetEditorOnlyData();
 	if (!EdData)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[PreviewMaterials] GetEditorOnlyData() null for %s"), *PackageName);
+		UE_LOG(LogT66PreviewMaterials, Error, TEXT("[PreviewMaterials] GetEditorOnlyData() null for %s"), *PackageName);
 		return Mat;
 	}
 
@@ -107,11 +109,11 @@ static UMaterial* CreateSimpleMaterial(
 
 	if (TrySavePackage(Package, Mat, PackageName))
 	{
-		UE_LOG(LogTemp, Log, TEXT("[PreviewMaterials] Created and saved %s"), *PackageName);
+		UE_LOG(LogT66PreviewMaterials, Log, TEXT("[PreviewMaterials] Created and saved %s"), *PackageName);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PreviewMaterials] Created %s in memory (save failed)"), *PackageName);
+		UE_LOG(LogT66PreviewMaterials, Warning, TEXT("[PreviewMaterials] Created %s in memory (save failed)"), *PackageName);
 	}
 	return Mat;
 }

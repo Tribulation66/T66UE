@@ -13,15 +13,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
-UMaterialInterface* FT66VisualUtil::GetPlaceholderColorMaterial()
-{
-	static TObjectPtr<UMaterialInterface> Cached = nullptr;
-	if (!Cached)
-	{
-		Cached = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor"));
-	}
-	return Cached.Get();
-}
+DEFINE_LOG_CATEGORY_STATIC(LogT66VisualUtil, Log, All);
 
 static UMaterialInterface* GetEnvironmentUnlitMaterial()
 {
@@ -47,6 +39,29 @@ static UTexture* GetWhiteFallbackTexture()
 	return Cached.Get();
 }
 
+UMaterialInterface* FT66VisualUtil::GetFlatColorMaterial()
+{
+	return GetEnvironmentUnlitMaterial();
+}
+
+void FT66VisualUtil::ConfigureFlatColorMaterial(UMaterialInstanceDynamic* Material, const FLinearColor& Color)
+{
+	if (!Material)
+	{
+		return;
+	}
+
+	if (UTexture* WhiteTexture = GetWhiteFallbackTexture())
+	{
+		Material->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
+		Material->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
+	}
+
+	Material->SetVectorParameterValue(FName("Color"), Color);
+	Material->SetVectorParameterValue(TEXT("BaseColor"), Color);
+	Material->SetVectorParameterValue(FName("Tint"), Color);
+}
+
 void FT66VisualUtil::ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, const FLinearColor& Color)
 {
 	if (!Mesh) return;
@@ -54,23 +69,15 @@ void FT66VisualUtil::ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, c
 	// Reuse an existing MID if one is already assigned.
 	if (UMaterialInstanceDynamic* Existing = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0)))
 	{
-		if (UTexture* WhiteTexture = GetWhiteFallbackTexture())
-		{
-			Existing->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
-			Existing->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
-		}
-		Existing->SetVectorParameterValue(FName("Color"), Color);
-		Existing->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		Existing->SetVectorParameterValue(FName("Tint"), Color);
+		ConfigureFlatColorMaterial(Existing, Color);
 		return;
 	}
 
-	// Prefer our placeholder material so the color parameter name is stable ("Color").
-	if (UMaterialInterface* ColorMat = GetPlaceholderColorMaterial())
+	if (UMaterialInterface* ColorMat = GetFlatColorMaterial())
 	{
 		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, Outer ? Outer : Mesh))
 		{
-			Mat->SetVectorParameterValue(FName("Color"), Color);
+			ConfigureFlatColorMaterial(Mat, Color);
 			Mesh->SetMaterial(0, Mat);
 			return;
 		}
@@ -270,7 +277,7 @@ void FT66VisualUtil::EnsureUnlitMaterials(UMeshComponent* Mesh, UObject* Outer)
 		if (!Mat || IsEngineMaterial(Mat))
 		{
 			AActor* Owner = Mesh->GetOwner();
-			UE_LOG(LogTemp, Warning, TEXT("[UnlitAudit] Actor=%s Comp=%s Slot=%d has engine/null material: %s"),
+			UE_LOG(LogT66VisualUtil, Warning, TEXT("[UnlitAudit] Actor=%s Comp=%s Slot=%d has engine/null material: %s"),
 				Owner ? *Owner->GetName() : TEXT("?"),
 				*Mesh->GetName(), i,
 				Mat ? *Mat->GetPathName() : TEXT("(null)"));
@@ -301,7 +308,7 @@ void FT66VisualUtil::EnsureAllWorldMeshesUnlit(UWorld* World)
 				UMaterialInterface* Mat = MC->GetMaterial(i);
 				if (!Mat || IsEngineMaterial(Mat))
 				{
-					UE_LOG(LogTemp, Warning, TEXT("[UnlitAudit] Actor=%s Comp=%s Slot=%d uses engine material: %s"),
+					UE_LOG(LogT66VisualUtil, Warning, TEXT("[UnlitAudit] Actor=%s Comp=%s Slot=%d uses engine material: %s"),
 						*Actor->GetName(), *MC->GetName(), i,
 						Mat ? *Mat->GetPathName() : TEXT("(null)"));
 					++EngineMatCount;
@@ -312,6 +319,6 @@ void FT66VisualUtil::EnsureAllWorldMeshesUnlit(UWorld* World)
 
 	if (EngineMatCount > 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[UnlitAudit] Found %d engine/null material slots. Run Scripts/ReparentToFBXUnlit.py to fix."), EngineMatCount);
+		UE_LOG(LogT66VisualUtil, Warning, TEXT("[UnlitAudit] Found %d engine/null material slots. Run Scripts/ReparentToFBXUnlit.py to fix."), EngineMatCount);
 	}
 }

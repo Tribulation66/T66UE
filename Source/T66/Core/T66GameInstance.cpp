@@ -369,10 +369,6 @@ bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
 	if (FoundRow)
 	{
 		OutHeroData = *FoundRow;
-		if (HeroID == FName(TEXT("Hero_1")))
-		{
-			OutHeroData.UltimateType = ET66UltimateType::ScopedSniper;
-		}
 		return true;
 	}
 	return false;
@@ -860,9 +856,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270")));
-
-	// Placeholder color material used during level setup.
-	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_PlaceholderColor.M_PlaceholderColor")));
 
 	// Retro sky material is spawned dynamically outside the farm flow.
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Sky/QuakeCanopy2/MI_QuakeSky_Canopy2.MI_QuakeSky_Canopy2")));

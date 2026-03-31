@@ -10,6 +10,8 @@
 #include "Engine/Texture2D.h"
 #include "TextureResource.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66WebImageCache, Log, All);
+
 UTexture2D* UT66WebImageCache::GetCachedImage(const FString& Url) const
 {
 	const TObjectPtr<UTexture2D>* Found = CachedTextures.Find(Url);
@@ -62,7 +64,7 @@ void UT66WebImageCache::RequestImage(const FString& Url, TFunction<void(UTexture
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("WebImageCache: download failed for %s (code=%d)"),
+				UE_LOG(LogT66WebImageCache, Warning, TEXT("WebImageCache: download failed for %s (code=%d)"),
 					*CapturedUrl, Resp.IsValid() ? Resp->GetResponseCode() : 0);
 				OnDownloadComplete(CapturedUrl, TArray<uint8>(), false);
 			}
@@ -109,21 +111,21 @@ UTexture2D* UT66WebImageCache::CreateTextureFromData(const TArray<uint8>& Data, 
 	EImageFormat Format = ImageWrapperModule.DetectImageFormat(Data.GetData(), Data.Num());
 	if (Format == EImageFormat::Invalid)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("WebImageCache: unknown image format for %s"), *Url);
+		UE_LOG(LogT66WebImageCache, Warning, TEXT("WebImageCache: unknown image format for %s"), *Url);
 		return nullptr;
 	}
 
 	TSharedPtr<IImageWrapper> Wrapper = ImageWrapperModule.CreateImageWrapper(Format);
 	if (!Wrapper.IsValid() || !Wrapper->SetCompressed(Data.GetData(), Data.Num()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("WebImageCache: failed to decompress image for %s"), *Url);
+		UE_LOG(LogT66WebImageCache, Warning, TEXT("WebImageCache: failed to decompress image for %s"), *Url);
 		return nullptr;
 	}
 
 	TArray<uint8> RawData;
 	if (!Wrapper->GetRaw(ERGBFormat::BGRA, 8, RawData))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("WebImageCache: failed to get raw data for %s"), *Url);
+		UE_LOG(LogT66WebImageCache, Warning, TEXT("WebImageCache: failed to get raw data for %s"), *Url);
 		return nullptr;
 	}
 

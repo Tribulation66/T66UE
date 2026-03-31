@@ -4,6 +4,8 @@
 #include "Core/T66PowerUpSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66PowerUp, Log, All);
+
 const FString UT66PowerUpSubsystem::PowerUpSaveSlotName(TEXT("T66_PowerUp"));
 
 void UT66PowerUpSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -20,11 +22,11 @@ void UT66PowerUpSubsystem::LoadOrCreateSave()
 	if (!SaveData)
 	{
 		SaveData = NewObject<UT66PowerUpSaveGame>(this);
-		UE_LOG(LogTemp, Log, TEXT("[PowerUp] LoadOrCreateSave: Created fresh save (no file found)."));
+		UE_LOG(LogT66PowerUp, Log, TEXT("[PowerUp] LoadOrCreateSave: Created fresh save (no file found)."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("[PowerUp] LoadOrCreateSave: Loaded existing save, balance=%d"), SaveData->PowerCrystalBalance);
+		UE_LOG(LogT66PowerUp, Log, TEXT("[PowerUp] LoadOrCreateSave: Loaded existing save, balance=%d"), SaveData->PowerCrystalBalance);
 	}
 
 	if (SaveData->SaveVersion < 2)
@@ -71,7 +73,7 @@ void UT66PowerUpSubsystem::MigrateV1ToV2WedgeTiers()
 	Migrate(SaveData->WedgeTiersArmor, SaveData->PowerupSlicesArmor);
 	Migrate(SaveData->WedgeTiersEvasion, SaveData->PowerupSlicesEvasion);
 	Migrate(SaveData->WedgeTiersLuck, SaveData->PowerupSlicesLuck);
-	UE_LOG(LogTemp, Log, TEXT("[PowerUp] Migrated v1 slice counts to v2 wedge tiers."));
+	UE_LOG(LogT66PowerUp, Log, TEXT("[PowerUp] Migrated v1 slice counts to v2 wedge tiers."));
 }
 
 void UT66PowerUpSubsystem::MigrateV2ToV3BodyParts()
@@ -113,7 +115,7 @@ void UT66PowerUpSubsystem::MigrateV2ToV3BodyParts()
 	Convert(SaveData->WedgeTiersEvasion, SaveData->RandomBonusEvasion);
 	Convert(SaveData->WedgeTiersLuck, SaveData->RandomBonusLuck);
 
-	UE_LOG(LogTemp, Log, TEXT("[PowerUp] Migrated v2 wedge tiers to v3 six-part statues."));
+	UE_LOG(LogT66PowerUp, Log, TEXT("[PowerUp] Migrated v2 wedge tiers to v3 six-part statues."));
 }
 
 void UT66PowerUpSubsystem::MigrateV3ToV4FillSteps()
@@ -151,14 +153,14 @@ void UT66PowerUpSubsystem::MigrateV3ToV4FillSteps()
 	Convert(SaveData->WedgeTiersEvasion, SaveData->RandomBonusEvasion);
 	Convert(SaveData->WedgeTiersLuck, SaveData->RandomBonusLuck);
 
-	UE_LOG(LogTemp, Log, TEXT("[PowerUp] Migrated v3 six-part statues to v4 ten-step fill progression."));
+	UE_LOG(LogT66PowerUp, Log, TEXT("[PowerUp] Migrated v3 six-part statues to v4 ten-step fill progression."));
 }
 
 void UT66PowerUpSubsystem::Save()
 {
 	if (SaveData)
 	{
-		UGameplayStatics::SaveGameToSlot(SaveData, PowerUpSaveSlotName, PowerUpSaveUserIndex);
+		UGameplayStatics::AsyncSaveGameToSlot(SaveData, PowerUpSaveSlotName, PowerUpSaveUserIndex);
 	}
 }
 

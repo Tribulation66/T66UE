@@ -137,7 +137,7 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
 {
 	if (!PlaceholderMesh) return;
-	UMaterialInterface* ColorMaterial = FT66VisualUtil::GetPlaceholderColorMaterial();
+	UMaterialInterface* ColorMaterial = FT66VisualUtil::GetFlatColorMaterial();
 	if (!ColorMaterial) ColorMaterial = PlaceholderMesh->GetMaterial(0);
 	if (ColorMaterial)
 	{
@@ -145,7 +145,7 @@ void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
 		if (PlaceholderMaterial)
 		{
 			PlaceholderMesh->SetMaterial(0, PlaceholderMaterial);
-			PlaceholderMaterial->SetVectorParameterValue(FName("Color"), Color);
+			FT66VisualUtil::ConfigureFlatColorMaterial(PlaceholderMaterial, Color);
 		}
 	}
 }

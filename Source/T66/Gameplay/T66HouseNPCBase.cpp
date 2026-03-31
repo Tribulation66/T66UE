@@ -124,7 +124,9 @@ void AT66HouseNPCBase::BeginPlay()
 
 void AT66HouseNPCBase::LoadFromDataTable()
 {
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	if (!GI || NPCID.IsNone()) return;
 
 	FHouseNPCData Data;
@@ -143,7 +145,7 @@ void AT66HouseNPCBase::ApplyNPCData(const FHouseNPCData& Data)
 
 void AT66HouseNPCBase::ApplyVisuals()
 {
-	UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial();
+	UMaterialInterface* ColorMat = FT66VisualUtil::GetFlatColorMaterial();
 
 	if (NameText)
 	{
@@ -166,7 +168,7 @@ void AT66HouseNPCBase::ApplyVisuals()
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, this);
 			if (Mat)
 			{
-				Mat->SetVectorParameterValue(FName("Color"), FLinearColor(NPCColor.R, NPCColor.G, NPCColor.B, 1.f));
+				FT66VisualUtil::ConfigureFlatColorMaterial(Mat, FLinearColor(NPCColor.R, NPCColor.G, NPCColor.B, 1.f));
 				SafeZoneVisual->SetMaterial(0, Mat);
 			}
 		}
@@ -178,7 +180,7 @@ void AT66HouseNPCBase::ApplyVisuals()
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, this);
 			if (Mat)
 			{
-				Mat->SetVectorParameterValue(FName("Color"), NPCColor);
+				FT66VisualUtil::ConfigureFlatColorMaterial(Mat, NPCColor);
 				VisualMesh->SetMaterial(0, Mat);
 			}
 		}

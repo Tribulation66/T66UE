@@ -14,6 +14,8 @@
 #include "Components/CapsuleComponent.h"
 #include "UObject/SoftObjectPath.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66CharacterVisuals, Log, All);
+
 static const TCHAR* T66_DefaultCharacterVisualsDTPath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
 static const FName T66_AnimSkeletonTag(TEXT("Skeleton"));
 static const FName T66_CharactersRootPath(TEXT("/Game/Characters"));
@@ -179,7 +181,7 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 				RowList += AllRows[i].ToString();
 			}
 			if (AllRows.Num() > 10) RowList += FString::Printf(TEXT("... +%d more"), AllRows.Num() - 10);
-			UE_LOG(LogTemp, Error, TEXT("[MESH] ResolveVisual: NO ROW for VisualID='%s' in DT_CharacterVisuals (%d rows). First rows: [%s]. Reimport via ImportData.py!"),
+			UE_LOG(LogT66CharacterVisuals, Error, TEXT("[MESH] ResolveVisual: NO ROW for VisualID='%s' in DT_CharacterVisuals (%d rows). First rows: [%s]. Reimport via ImportData.py!"),
 				*VisualID.ToString(), AllRows.Num(), *RowList);
 		}
 #endif
@@ -192,12 +194,12 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		if (!Res.Row.SkeletalMesh.IsNull())
 		{
 			Res.Mesh = Res.Row.SkeletalMesh.LoadSynchronous();
-			UE_LOG(LogTemp, Log, TEXT("[MESH] ResolveVisual VisualID=%s SkeletalMesh path=%s Loaded=%s"),
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[MESH] ResolveVisual VisualID=%s SkeletalMesh path=%s Loaded=%s"),
 				*VisualID.ToString(), *Res.Row.SkeletalMesh.ToString(), Res.Mesh ? TEXT("YES") : TEXT("NO"));
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[MESH] ResolveVisual VisualID=%s SkeletalMesh path is NULL in DataTable row!"), *VisualID.ToString());
+			UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ResolveVisual VisualID=%s SkeletalMesh path is NULL in DataTable row!"), *VisualID.ToString());
 		}
 		if (!Res.Row.LoopingAnimation.IsNull())
 		{
@@ -214,12 +216,12 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 				Res.AlertAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.AlertAnimation);
 			if (!Res.AlertAnim)
 				Res.AlertAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.AlertAnimation);
-			UE_LOG(LogTemp, Log, TEXT("[ANIM] ResolveVisual VisualID=%s AlertAnimation path=%s AlertAnim=%s"),
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] ResolveVisual VisualID=%s AlertAnimation path=%s AlertAnim=%s"),
 				*VisualID.ToString(), *Res.Row.AlertAnimation.ToString(), Res.AlertAnim ? *Res.AlertAnim->GetName() : TEXT("(null)"));
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("[ANIM] ResolveVisual VisualID=%s AlertAnimation is null (no alert anim row)"), *VisualID.ToString());
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] ResolveVisual VisualID=%s AlertAnimation is null (no alert anim row)"), *VisualID.ToString());
 		}
 		if (!Res.Row.RunAnimation.IsNull())
 		{
@@ -240,11 +242,11 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 	const double ResolveMs = (FPlatformTime::Seconds() - ResolveStart) * 1000.0;
 	if (ResolveMs > 1.0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[GOLD] ResolveVisual: %s took %.1fms (sync asset loads — consider preloading)"), *VisualID.ToString(), ResolveMs);
+		UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[GOLD] ResolveVisual: %s took %.1fms (sync asset loads — consider preloading)"), *VisualID.ToString(), ResolveMs);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("[GOLD] ResolveVisual: %s resolved in %.2fms (cached or no assets)"), *VisualID.ToString(), ResolveMs);
+		UE_LOG(LogT66CharacterVisuals, Log, TEXT("[GOLD] ResolveVisual: %s resolved in %.2fms (cached or no assets)"), *VisualID.ToString(), ResolveMs);
 	}
 
 	ResolvedCache.Add(VisualID, Res);
@@ -307,7 +309,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	const FT66ResolvedCharacterVisual Res = ResolveVisual(VisualID);
 	if (!Res.bHasRow || !Res.Mesh)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[MESH] ApplyCharacterVisual FAILED for VisualID=%s: bHasRow=%d, Mesh=%s"),
+		UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ApplyCharacterVisual FAILED for VisualID=%s: bHasRow=%d, Mesh=%s"),
 			*VisualID.ToString(), Res.bHasRow ? 1 : 0, Res.Mesh ? *Res.Mesh->GetName() : TEXT("(null)"));
 		return false;
 	}
@@ -347,7 +349,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 			RelLoc.Z = Res.Row.MeshRelativeLocation.Z - CapsuleHalfHeight;
 
 			const FBoxSphereBounds B = Res.Mesh->GetBounds();
-			UE_LOG(LogTemp, Warning, TEXT("[MESH ALIGN] %s: Pivot-at-feet approach. RelZ=%.2f CapsuleHH=%.2f | Bounds Origin.Z=%.2f Extent.Z=%.2f Scale=%.2f MeshHeight=%.2f"),
+			UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH ALIGN] %s: Pivot-at-feet approach. RelZ=%.2f CapsuleHH=%.2f | Bounds Origin.Z=%.2f Extent.Z=%.2f Scale=%.2f MeshHeight=%.2f"),
 				*VisualID.ToString(), RelLoc.Z, CapsuleHalfHeight,
 				B.Origin.Z, B.BoxExtent.Z, Scale.Z, B.BoxExtent.Z * 2.f * Scale.Z);
 		}
@@ -368,7 +370,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		for (int32 MatIdx = 0; MatIdx < NumMats; ++MatIdx)
 		{
 			UMaterialInterface* Mat = TargetMesh->GetMaterial(MatIdx);
-			UE_LOG(LogTemp, Log, TEXT("[MESH] Preview material slot %d/%d: %s (class=%s) for VisualID=%s"),
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[MESH] Preview material slot %d/%d: %s (class=%s) for VisualID=%s"),
 				MatIdx, NumMats,
 				Mat ? *Mat->GetName() : TEXT("(null)"),
 				Mat ? *Mat->GetClass()->GetName() : TEXT("N/A"),
@@ -394,7 +396,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 			AnimClass = AnimToPlay->GetClass()->GetName();
 			AnimDuration = AnimToPlay->GetPlayLength();
 		}
-		UE_LOG(LogTemp, Log, TEXT("[ANIM] ApplyCharacterVisual VisualID=%s bUseAlertAnimation=%d bIsPreviewContext=%d Res.AlertAnim=%s Res.LoopingAnim=%s AnimToPlay=%s Class=%s Duration=%.3f"),
+		UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] ApplyCharacterVisual VisualID=%s bUseAlertAnimation=%d bIsPreviewContext=%d Res.AlertAnim=%s Res.LoopingAnim=%s AnimToPlay=%s Class=%s Duration=%.3f"),
 			*VisualID.ToString(), bUseAlertAnimation ? 1 : 0, bIsPreviewContext ? 1 : 0,
 			Res.AlertAnim ? *Res.AlertAnim->GetName() : TEXT("(null)"),
 			Res.LoopingAnim ? *Res.LoopingAnim->GetName() : TEXT("(null)"),
@@ -417,7 +419,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 			const bool bLoop = bUseAlertAnimation ? true : Res.Row.bLoopAnimation;
 			TargetMesh->PlayAnimation(AnimToPlay, bLoop);
 			TargetMesh->SetPosition(0.f);
-			UE_LOG(LogTemp, Log, TEXT("[ANIM] PlayAnimation called: AnimMode=%d IsPlaying=%d Position=%.3f bLoop=%d"),
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] PlayAnimation called: AnimMode=%d IsPlaying=%d Position=%.3f bLoop=%d"),
 				(int32)TargetMesh->GetAnimationMode(), TargetMesh->IsPlaying() ? 1 : 0, TargetMesh->GetPosition(), bLoop ? 1 : 0);
 		}
 	}
@@ -452,7 +454,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 				const FString MeshPath = Res.Mesh ? Res.Mesh->GetPathName() : FString(TEXT("None"));
 				const FString OwnerName = Owner ? Owner->GetName() : FString(TEXT("None"));
 
-				UE_LOG(LogTemp, Error,
+				UE_LOG(LogT66CharacterVisuals, Error,
 					TEXT("[INVIS] Rejecting visual apply (fallback to placeholder). VisualID=%s Owner=%s Mesh=%s MeshPath=%s DistToOwner=%.1f BoundsCenter=(%.1f,%.1f,%.1f) BoundsExtent=(%.1f,%.1f,%.1f) SphereRadius=%.1f RelLoc=(%.1f,%.1f,%.1f) RelRot=(P=%.1f,Y=%.1f,R=%.1f) RelScale=(%.3f,%.3f,%.3f) AutoCenterXY=%d"),
 					*VisualID.ToString(),
 					*OwnerName,
@@ -484,4 +486,3 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 
 	return true;
 }
-

@@ -26,6 +26,7 @@ class AT66SpawnPlateau;
 class AT66TutorialManager;
 class UT66GameInstance;
 class AT66RecruitableCompanion;
+class UT66LoadingScreenWidget;
 class ADirectionalLight;
 class ASkyLight;
 class APlayerStart;
@@ -108,6 +109,9 @@ public:
 
 	/** Apply the shared gameplay haze/fog profile for the current theme and player settings. */
 	static void ConfigureGameplayFogForWorld(UWorld* World);
+
+	/** Ensure the shared gameplay/frontend sky, lights, fog, and post-process setup exists and is normalized. */
+	static void EnsureSharedLightingForWorld(UWorld* World);
 
 	/** Apply UI theme to SkyAtmosphere, SkyLight, fog, PostProcess color grading, and posterize. Shared with frontend. */
 	static void ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World);
@@ -205,6 +209,23 @@ protected:
 	void SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc);
 
 	void SpawnTricksterAndCowardiceGate();
+	void InitializeRunStateForBeginPlay();
+	bool HandleSpecialModeBeginPlay();
+	void HandleColiseumBeginPlay();
+	void HandleLabBeginPlay();
+	void ConsumePendingStageCatchUp();
+	void ScheduleDeferredGameplayLevelSpawn();
+	TWeakObjectPtr<UT66LoadingScreenWidget> CreateGameplayWarmupOverlay(UWorld* World, bool bUsingMainMapTerrain) const;
+	void ScheduleGameplayLightingRefresh(UWorld* World);
+	void ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay);
+	void SpawnStageStructuresAndInteractables(UWorld* World, bool bUsingMainMapTerrain);
+	void SpawnStageDecorativeProps(bool bUsingMainMapTerrain);
+	void PrepareMainMapStage(UWorld* World);
+	void ScheduleStandardStageCombatBootstrap(UWorld* World);
+	void PreloadStageCharacterVisuals();
+	void SpawnStageMiasmaSystems();
+	void SpawnStageEnemyDirector();
+	void FinalizeStandardStageCombatBootstrap();
 
 	bool IsColiseumStage() const;
 	/** True when current level is The Lab (practice room). */

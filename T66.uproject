@@ -44,13 +44,6 @@
 		{
 			"Name": "ProceduralMeshComponent",
 			"Enabled": true
-		},
-		{
-			"Name": "ZibraVDB",
-			"Enabled": true,
-			"TargetAllowList": [
-				"Editor"
-			]
 		}
 	]
 }

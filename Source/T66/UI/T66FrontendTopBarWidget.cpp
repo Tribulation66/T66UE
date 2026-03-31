@@ -16,6 +16,8 @@
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 #include "ImageUtils.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendTopBar, Log, All);
 #include "Kismet/GameplayStatics.h"
 #include "Misc/Paths.h"
 #include "Rendering/DrawElements.h"
@@ -611,7 +613,7 @@ namespace
 		const bool bFileExists = FPaths::FileExists(FullPath);
 		const FString AssetPath = ImportedAssetPath ? FString(ImportedAssetPath) : FString(TEXT("<null>"));
 		UE_LOG(
-			LogTemp,
+			LogT66FrontendTopBar,
 			Log,
 			TEXT("[TopBarBrushLoad] Begin RelativePath='%s' FullPath='%s' FileExists=%s AssetPath='%s' DesiredSize=(%.1f, %.1f)"),
 			*RelativePath,
@@ -642,7 +644,7 @@ namespace
 		}
 
 		UE_LOG(
-			LogTemp,
+			LogT66FrontendTopBar,
 			Log,
 			TEXT("[TopBarBrushLoad] Result RelativePath='%s' LoadedFrom=%s Texture=%s Resolution=%dx%d"),
 			*RelativePath,

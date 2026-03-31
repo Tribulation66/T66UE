@@ -14,6 +14,8 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66CompanionPreview, Log, All);
+
 AT66CompanionPreviewStage::AT66CompanionPreviewStage()
 {
 	PrimaryActorTick.bCanEverTick = false; // No tick needed — main viewport renders in real-time
@@ -151,7 +153,7 @@ void AT66CompanionPreviewStage::FrameCameraToPreview()
 		OrbitBottomZ = (B.Origin.Z - B.BoxExtent.Z);
 		bHasOrbitFrame = true;
 
-		UE_LOG(LogTemp, Log, TEXT("[PREVIEW] CompanionPreview orbit: Center=(%.1f,%.1f,%.1f) Radius=%.1f BottomZ=%.1f BoundsExtent=(%.1f,%.1f,%.1f)"),
+		UE_LOG(LogT66CompanionPreview, Verbose, TEXT("[PREVIEW] CompanionPreview orbit: Center=(%.1f,%.1f,%.1f) Radius=%.1f BottomZ=%.1f BoundsExtent=(%.1f,%.1f,%.1f)"),
 			OrbitCenter.X, OrbitCenter.Y, OrbitCenter.Z, OrbitRadius, OrbitBottomZ,
 			B.BoxExtent.X, B.BoxExtent.Y, B.BoxExtent.Z);
 	}

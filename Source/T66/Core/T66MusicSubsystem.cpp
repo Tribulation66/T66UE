@@ -12,6 +12,8 @@
 #include "UObject/SoftObjectPath.h"
 #include "UObject/UObjectGlobals.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Music, Log, All);
+
 // NOTE: This file must remain in the runtime module so the UHT-generated glue links correctly.
 
 static USoundBase* TryLoadFirstSoundAsset(const TArray<FSoftObjectPath>& Candidates, TSoftObjectPtr<USoundBase>& InOutSoftPtr)
@@ -330,7 +332,7 @@ void UT66MusicSubsystem::EnsureMainThemePlaying(UWorld* World)
 	{
 		if (!bMainThemeStarted)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("MainTheme not found. Import the MainTheme asset so one of these exists: /Game/Audio/OSTS/MainTheme, /Game/Audio/Music/MainTheme, /Game/Audio/MainTheme."));
+			UE_LOG(LogT66Music, Warning, TEXT("MainTheme not found. Import the MainTheme asset so one of these exists: /Game/Audio/OSTS/MainTheme, /Game/Audio/Music/MainTheme, /Game/Audio/MainTheme."));
 			bMainThemeStarted = true; // avoid spam
 		}
 		return;
@@ -368,7 +370,7 @@ void UT66MusicSubsystem::EnsureThemePlaying(UWorld* World)
 	{
 		if (!bThemeStarted)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Theme music not found. Import the Theme asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Theme, /Game/Audio/Music/Theme, /Game/Audio/Theme."));
+			UE_LOG(LogT66Music, Warning, TEXT("Theme music not found. Import the Theme asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Theme, /Game/Audio/Music/Theme, /Game/Audio/Theme."));
 			bThemeStarted = true; // avoid spam
 		}
 		return;
@@ -404,7 +406,7 @@ void UT66MusicSubsystem::EnsureSurvivalPlaying(UWorld* World)
 	USoundBase* Sound = ResolveAndLoadSurvivalSound();
 	if (!Sound)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Survival music not found. Import the Survival asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Survival, /Game/Audio/Music/Survival, /Game/Audio/Survival."));
+		UE_LOG(LogT66Music, Warning, TEXT("Survival music not found. Import the Survival asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Survival, /Game/Audio/Music/Survival, /Game/Audio/Survival."));
 		return;
 	}
 

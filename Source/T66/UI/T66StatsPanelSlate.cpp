@@ -595,10 +595,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 					const FText Label = Loc ? Loc->GetText_SecondaryStatName(SecType) : FText::FromString(TEXT("?"));
 					const float* P = Snapshot->SecondaryStatValues.Find(SecType);
 					const float Value = P ? *P : 0.f;
-					const bool bPercent = (SecType == ET66SecondaryStatType::CritChance || SecType == ET66SecondaryStatType::Crush
-						|| SecType == ET66SecondaryStatType::Invisibility || SecType == ET66SecondaryStatType::LifeSteal
-						|| SecType == ET66SecondaryStatType::Assassinate || SecType == ET66SecondaryStatType::Cheating
-						|| SecType == ET66SecondaryStatType::Stealing);
+					const bool bPercent = IsSecondaryPercent(SecType);
 					const FText SecDesc = Loc ? Loc->GetText_SecondaryStatDescription(SecType) : FText::GetEmpty();
 					AddStatLineFloat(Label, Value, bPercent, Label, SecDesc);
 				}

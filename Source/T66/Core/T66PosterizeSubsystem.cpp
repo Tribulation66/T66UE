@@ -9,6 +9,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "HAL/IConsoleManager.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Posterize, Log, All);
+
 static const TCHAR* PosterizeMaterialPath = TEXT("/Game/UI/M_PosterizePostProcess.M_PosterizePostProcess");
 static const FName ParamNameSteps(TEXT("Steps"));
 static const FName ParamNameIntensity(TEXT("Intensity"));
@@ -18,7 +20,7 @@ UMaterialInterface* UT66PosterizeSubsystem::GetOrCreatePosterizeMaterial()
 	UMaterialInterface* Loaded = LoadObject<UMaterialInterface>(nullptr, PosterizeMaterialPath);
 	if (!Loaded)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Posterize] Failed to load material at %s — posterization disabled."), PosterizeMaterialPath);
+		UE_LOG(LogT66Posterize, Warning, TEXT("[Posterize] Failed to load material at %s - posterization disabled."), PosterizeMaterialPath);
 	}
 	return Loaded;
 }

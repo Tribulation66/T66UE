@@ -8,6 +8,8 @@
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Pixelation, Log, All);
+
 static const TCHAR* PixelationMaterialPath = TEXT("/Game/UI/M_PixelationPostProcess.M_PixelationPostProcess");
 static const FName ParamNamePixelGridSize(TEXT("PixelGridSize"));
 
@@ -25,7 +27,7 @@ UMaterialInterface* UT66PixelationSubsystem::GetOrCreatePixelationMaterial()
 	UMaterialInterface* Loaded = LoadObject<UMaterialInterface>(nullptr, PixelationMaterialPath);
 	if (!Loaded)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Pixelation] Failed to load material at %s — pixelation disabled."), PixelationMaterialPath);
+		UE_LOG(LogT66Pixelation, Warning, TEXT("[Pixelation] Failed to load material at %s - pixelation disabled."), PixelationMaterialPath);
 	}
 	return Loaded;
 }

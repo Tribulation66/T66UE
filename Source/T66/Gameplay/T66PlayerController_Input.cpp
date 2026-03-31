@@ -16,6 +16,8 @@
 #include "UI/Screens/T66LobbyReadyCheckModal.h"
 #include "UI/Screens/T66LobbyBackConfirmModal.h"
 #include "UI/Screens/T66AchievementsScreen.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
@@ -25,7 +27,6 @@
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
-#include "UI/T66CasinoOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66LoadPreviewOverlayWidget.h"
@@ -288,7 +289,7 @@ void AT66PlayerController::HandleToggleMediaViewerPressed()
 	{
 		MV->ToggleMediaViewer();
 		const bool bNowOpen = MV->IsMediaViewerOpen();
-		UE_LOG(LogTemp, Log, TEXT("MediaViewer toggled: %s"), bNowOpen ? TEXT("OPEN") : TEXT("CLOSED"));
+		UE_LOG(LogT66PlayerInput, Log, TEXT("MediaViewer toggled: %s"), bNowOpen ? TEXT("OPEN") : TEXT("CLOSED"));
 	}
 }
 
@@ -331,7 +332,7 @@ void AT66PlayerController::HandleToggleGamerModePressed()
 	if (!IsGameplayLevel()) return;
 	if (IsPaused()) return;
 	// TODO: Implement hitbox + projectile hitbox visualization overlay (Stage 50 unlock in Bible).
-	UE_LOG(LogTemp, Log, TEXT("ToggleGamerMode pressed (not implemented yet)."));
+	UE_LOG(LogT66PlayerInput, Log, TEXT("ToggleGamerMode pressed (not implemented yet)."));
 }
 
 
@@ -362,7 +363,9 @@ void AT66PlayerController::HandleDashPressed()
 void AT66PlayerController::HandleToggleHUDPressed()
 {
 	if (!IsGameplayLevel()) return;
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState)
 	{
 		RunState->ToggleHUDPanels();
@@ -590,7 +593,7 @@ void AT66PlayerController::HandleJumpPressed()
 		const bool bOnGround = CMC ? CMC->IsMovingOnGround() : false;
 		const bool bFalling = CMC ? CMC->IsFalling() : false;
 		const FString MoveMode = CMC ? StaticEnum<EMovementMode>()->GetNameStringByValue(static_cast<int64>(CMC->MovementMode)) : TEXT("N/A");
-		UE_LOG(LogTemp, Warning, TEXT("[JUMP] Space pressed: JumpCount=%d/%d OnGround=%d Falling=%d MoveMode=%s Z=%.1f"),
+		UE_LOG(LogT66PlayerInput, Warning, TEXT("[JUMP] Space pressed: JumpCount=%d/%d OnGround=%d Falling=%d MoveMode=%s Z=%.1f"),
 			JumpCurrent, JumpMax, bOnGround ? 1 : 0, bFalling ? 1 : 0, *MoveMode, MyCharacter->GetActorLocation().Z);
 
 		MyCharacter->Jump();

@@ -27,7 +27,6 @@
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
-#include "UI/T66CasinoOverlayWidget.h"
 #include "UI/T66CircusOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
@@ -40,6 +39,8 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
@@ -554,7 +555,7 @@ void AT66PlayerController::OpenDevConsole()
 	bDevConsoleOpen = true;
 
 	ConsoleWidget->FocusInput();
-	UE_LOG(LogTemp, Log, TEXT("DevConsole: opened"));
+	UE_LOG(LogT66Frontend, Log, TEXT("DevConsole: opened"));
 #endif
 }
 
@@ -586,7 +587,7 @@ void AT66PlayerController::CloseDevConsole()
 	SetIgnoreLookInput(false);
 	SetIgnoreMoveInput(false);
 	RestoreGameplayInputMode();
-	UE_LOG(LogTemp, Log, TEXT("DevConsole: closed"));
+	UE_LOG(LogT66Frontend, Log, TEXT("DevConsole: closed"));
 #endif
 }
 
@@ -622,28 +623,28 @@ void AT66PlayerController::AutoLoadScreenClasses()
 		if (LoadedClass)
 		{
 			ScreenClasses.Add(Mapping.Type, LoadedClass);
-			UE_LOG(LogTemp, Log, TEXT("Auto-loaded screen class: %s"), Mapping.AssetPath);
+			UE_LOG(LogT66Frontend, Log, TEXT("Auto-loaded screen class: %s"), Mapping.AssetPath);
 		}
 		else
 		{
 			if (Mapping.Type == ET66ScreenType::HeroGrid)
 			{
 				ScreenClasses.Add(ET66ScreenType::HeroGrid, UT66HeroGridScreen::StaticClass());
-				UE_LOG(LogTemp, Log, TEXT("Using C++ HeroGrid screen (WBP not found)"));
+				UE_LOG(LogT66Frontend, Log, TEXT("Using C++ HeroGrid screen (WBP not found)"));
 			}
 			else if (Mapping.Type == ET66ScreenType::CompanionGrid)
 			{
 				ScreenClasses.Add(ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass());
-				UE_LOG(LogTemp, Log, TEXT("Using C++ CompanionGrid screen (WBP not found)"));
+				UE_LOG(LogT66Frontend, Log, TEXT("Using C++ CompanionGrid screen (WBP not found)"));
 			}
 			else if (Mapping.Type == ET66ScreenType::SaveSlots)
 			{
 				ScreenClasses.Add(ET66ScreenType::SaveSlots, UT66SaveSlotsScreen::StaticClass());
-				UE_LOG(LogTemp, Log, TEXT("Using C++ SaveSlots screen (WBP not found)"));
+				UE_LOG(LogT66Frontend, Log, TEXT("Using C++ SaveSlots screen (WBP not found)"));
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to auto-load screen class: %s"), Mapping.AssetPath);
+				UE_LOG(LogT66Frontend, Warning, TEXT("Failed to auto-load screen class: %s"), Mapping.AssetPath);
 			}
 		}
 	}
@@ -689,7 +690,7 @@ void AT66PlayerController::InitializeUI()
 	UIManager = NewObject<UT66UIManager>(this, UT66UIManager::StaticClass());
 	if (!UIManager)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to create UI Manager!"));
+		UE_LOG(LogT66Frontend, Error, TEXT("Failed to create UI Manager!"));
 		return;
 	}
 
@@ -701,7 +702,7 @@ void AT66PlayerController::InitializeUI()
 		if (TSubclassOf<UT66ScreenBase> ResolvedClass = ResolveScreenClass(Pair.Key))
 		{
 			UIManager->RegisterScreenClass(Pair.Key, ResolvedClass);
-			UE_LOG(LogTemp, Log, TEXT("Registered screen class for type %d"), static_cast<int32>(Pair.Key));
+			UE_LOG(LogT66Frontend, Log, TEXT("Registered screen class for type %d"), static_cast<int32>(Pair.Key));
 		}
 	}
 

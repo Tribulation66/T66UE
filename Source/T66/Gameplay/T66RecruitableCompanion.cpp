@@ -62,7 +62,7 @@ void AT66RecruitableCompanion::ApplyPlaceholderColor(const FLinearColor& Color)
 {
 	if (!VisualMesh) return;
 
-	UMaterialInterface* ColorMat = FT66VisualUtil::GetPlaceholderColorMaterial();
+	UMaterialInterface* ColorMat = FT66VisualUtil::GetFlatColorMaterial();
 	if (!ColorMat) ColorMat = VisualMesh->GetMaterial(0);
 	if (!ColorMat) return;
 
@@ -70,7 +70,7 @@ void AT66RecruitableCompanion::ApplyPlaceholderColor(const FLinearColor& Color)
 	if (!PlaceholderMaterial) return;
 
 	VisualMesh->SetMaterial(0, PlaceholderMaterial);
-	PlaceholderMaterial->SetVectorParameterValue(FName("Color"), Color);
+	FT66VisualUtil::ConfigureFlatColorMaterial(PlaceholderMaterial, Color);
 }
 
 void AT66RecruitableCompanion::InitializeRecruit(const FCompanionData& InData)

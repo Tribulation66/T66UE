@@ -24,9 +24,10 @@
 TArray<FName> UT66CollectorOverlayWidget::GetUnlockedItemIDs() const
 {
 	TArray<FName> Out;
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	UT66AchievementsSubsystem* Achieve = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
-	UT66GameInstance* T66GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	if (!Achieve || !Achieve->GetProfile() || !T66GI || !T66GI->GetItemsDataTable()) return Out;
 	for (const FName& ItemID : Achieve->GetProfile()->LabUnlockedItemIDs)
 	{
@@ -48,7 +49,9 @@ TArray<FName> UT66CollectorOverlayWidget::GetUnlockedEnemyIDs() const
 
 void UT66CollectorOverlayWidget::OnAddItem(FName ItemID)
 {
-	UT66RunStateSubsystem* RunState = GetWorld() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState && RunState->HasInventorySpace()) RunState->AddItem(ItemID);
 	RefreshContent();
 }
@@ -79,12 +82,14 @@ void UT66CollectorOverlayWidget::OnSpawnInteractable(FName InteractableID)
 
 void UT66CollectorOverlayWidget::OnExitLab()
 {
-	if (UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr)
+	UWorld* World = GetWorld();
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase))
 		GI->bIsLabLevel = false;
 	RemoveFromParent();
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 		PC->RestoreGameplayInputMode();
-	UGameplayStatics::OpenLevel(GetWorld(), FName(TEXT("FrontendLevel")));
+	UGameplayStatics::OpenLevel(World, FName(TEXT("FrontendLevel")));
 }
 
 void UT66CollectorOverlayWidget::CloseOverlay()
@@ -121,8 +126,10 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	const FText ExitLab = LOCTEXT("ExitLab", "Exit The Lab");
 	const FText CloseText = LOCTEXT("Close", "Close");
 
-	UT66GameInstance* GI = GetWorld() ? Cast<UT66GameInstance>(GetWorld()->GetGameInstance()) : nullptr;
-	UT66AchievementsSubsystem* Achieve = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
+	UT66AchievementsSubsystem* Achieve = GIBase ? GIBase->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 
 	ItemIconBrushes.Empty();
 
@@ -153,7 +160,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		if (GI && GI->GetItemData(ItemID, ItemData))
 		{
 			const TSoftObjectPtr<UTexture2D> ItemIconSoft = ItemData.GetIconForRarity(ET66ItemRarity::Black);
-			UT66UITexturePoolSubsystem* Pool = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+			UT66UITexturePoolSubsystem* Pool = GIBase ? GIBase->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 			if (Pool && !ItemIconSoft.IsNull()) T66SlateTexture::BindSharedBrushAsync(Pool, ItemIconSoft, this, IconBrush, ItemID, true);
 		}
 		Scroll->AddSlot().Padding(6.f)

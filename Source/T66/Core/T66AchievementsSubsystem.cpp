@@ -9,6 +9,8 @@
 #include "Core/T66SkinSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66Achievements, Log, All);
+
 const FString UT66AchievementsSubsystem::ProfileSaveSlotName(TEXT("T66_Profile"));
 
 namespace
@@ -187,11 +189,11 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	{
 		Profile = NewObject<UT66ProfileSaveGame>(this);
 		Profile->AchievementCoinsBalance = 10000; // Starting grant for new players only
-		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Created FRESH profile (no save file found, starting AC=%d)"), Profile->AchievementCoinsBalance);
+		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: Created FRESH profile (no save file found, starting AC=%d)"), Profile->AchievementCoinsBalance);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Loaded EXISTING profile from save file"));
+		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: Loaded EXISTING profile from save file"));
 	}
 
 	const int32 LoadedSaveVersion = Profile->SaveVersion;
@@ -238,13 +240,13 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Profile->EquippedHeroSkinIDByHero = MoveTemp(NewEquipped);
 		Profile->SaveVersion = 9;
 		bProfileDirty = true;
-		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: Applied HeroID renumber migration (SaveVersion 9)"));
+		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: Applied HeroID renumber migration (SaveVersion 9)"));
 	}
 
 	// Hero skins: log current state (no more auto-reset; purchases persist).
 	const FName DefaultSkin(TEXT("Default"));
 	
-	UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=%d, AC Balance=%d"),
+	UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=%d, AC Balance=%d"),
 		Profile->OwnedHeroSkinsByHero.Num(), Profile->AchievementCoinsBalance);
 	
 	// Log current owned skins
@@ -256,7 +258,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 			if (!SkinList.IsEmpty()) SkinList += TEXT(", ");
 			SkinList += S.ToString();
 		}
-		UE_LOG(LogTemp, Log, TEXT("[SKIN] LoadOrCreateProfile: %s owns [%s]"), *Pair.Key.ToString(), *SkinList);
+		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: %s owns [%s]"), *Pair.Key.ToString(), *SkinList);
 	}
 
 	// Union defaults: clamp to sane ranges so corrupted saves can't break gameplay math.
@@ -630,7 +632,7 @@ void UT66AchievementsSubsystem::SaveProfileIfNeeded(bool bForce)
 	if (bForce || !GetWorld())
 	{
 		// [GOLD] Async save: avoid blocking the game thread during profile writes.
-		UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: queuing async achievement profile save (forced=%d)"), bForce ? 1 : 0);
+		UE_LOG(LogT66Achievements, Verbose, TEXT("[GOLD] AsyncSave: queuing async achievement profile save (forced=%d)"), bForce ? 1 : 0);
 		UGameplayStatics::AsyncSaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);
 		bProfileDirty = false;
 		return;
@@ -639,7 +641,7 @@ void UT66AchievementsSubsystem::SaveProfileIfNeeded(bool bForce)
 	const float Now = static_cast<float>(GetWorld()->GetTimeSeconds());
 	if (bForce || (Now - LastProfileSaveWorldSeconds) >= SaveThrottleSeconds)
 	{
-		UE_LOG(LogTemp, Verbose, TEXT("[GOLD] AsyncSave: queuing async achievement profile save (throttled)"));
+		UE_LOG(LogT66Achievements, Verbose, TEXT("[GOLD] AsyncSave: queuing async achievement profile save (throttled)"));
 		UGameplayStatics::AsyncSaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);
 		LastProfileSaveWorldSeconds = Now;
 		bProfileDirty = false;
