@@ -55,6 +55,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
 	int32 CatchUpSelectionsRemaining = 0;
 
+	/** Tutorial mode: expose a single authored idol instead of the shared altar stock. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
+	bool bUseTutorialSingleOffer = false;
+
+	/** Idol offered when tutorial single-offer mode is enabled. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
+	FName TutorialOfferedIdolID = FName(TEXT("Idol_Electric"));
+
 	/** Apply simple placeholder visuals (color/material). */
 	void ApplyVisuals();
 

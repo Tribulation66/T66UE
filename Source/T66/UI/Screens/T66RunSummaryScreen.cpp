@@ -10,8 +10,16 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66PartySubsystem.h"
+#include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66RunSaveGame.h"
+#include "Core/T66SaveSubsystem.h"
 #include "Core/T66SaveMigration.h"
+#include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
@@ -55,6 +63,8 @@ UT66RunSummaryScreen::UT66RunSummaryScreen(const FObjectInitializer& ObjectIniti
 void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
+	bLiveRunSubmissionProcessed = false;
+	bDifficultyClearSummaryMode = false;
 
 	// If we were opened from a leaderboard row click, load the saved snapshot first.
 	const bool bWasViewingSaved = bViewingSavedLeaderboardRunSummary;
@@ -78,22 +88,14 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	{
 		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-		UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
-		if (RunState && LB)
+		bDifficultyClearSummaryMode = RunState && RunState->HasPendingDifficultyClearSummary();
+		if (!bDifficultyClearSummaryMode)
 		{
-			// High Score submission: subsystem only updates if it's a new personal best (and Practice Mode blocks).
-			LB->SubmitRunScore(RunState->GetCurrentScore());
-			bNewPersonalBestScore = LB->WasLastScoreNewPersonalBest();
-		}
-
-		// Speed Run banner: if any completed stage submission during this run set a new personal best time.
-		if (RunState)
-		{
-			bNewPersonalBestTime = RunState->DidThisRunSetNewPersonalBestTime();
+			ProcessLiveRunFinalSubmission();
 		}
 
 		// Power Coupons earned popup: show only when player earned at least 1 this run (beat at least one boss).
-		bShowPowerCouponsPopup = (RunState && RunState->GetPowerCrystalsEarnedThisRun() >= 1);
+		bShowPowerCouponsPopup = (!bDifficultyClearSummaryMode && RunState && RunState->GetPowerCrystalsEarnedThisRun() >= 1);
 	}
 	else
 	{
@@ -109,11 +111,41 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 	InventoryItemIconBrushes.Reset();
 	IdolIconBrushes.Reset();
 	PowerCouponSpriteBrush.Reset();
+	bLiveRunSubmissionProcessed = false;
+	bDifficultyClearSummaryMode = false;
 	Super::OnScreenDeactivated_Implementation();
 }
 
 namespace
 {
+	static bool T66GetNextDifficulty(const ET66Difficulty Current, ET66Difficulty& OutNextDifficulty)
+	{
+		switch (Current)
+		{
+		case ET66Difficulty::Easy: OutNextDifficulty = ET66Difficulty::Medium; return true;
+		case ET66Difficulty::Medium: OutNextDifficulty = ET66Difficulty::Hard; return true;
+		case ET66Difficulty::Hard: OutNextDifficulty = ET66Difficulty::VeryHard; return true;
+		case ET66Difficulty::VeryHard: OutNextDifficulty = ET66Difficulty::Impossible; return true;
+		default: break;
+		}
+
+		OutNextDifficulty = Current;
+		return false;
+	}
+
+	static FText T66DifficultyToDisplayText(const ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Easy: return NSLOCTEXT("T66.Common", "DifficultyEasy", "Easy");
+		case ET66Difficulty::Medium: return NSLOCTEXT("T66.Common", "DifficultyMedium", "Medium");
+		case ET66Difficulty::Hard: return NSLOCTEXT("T66.Common", "DifficultyHard", "Hard");
+		case ET66Difficulty::VeryHard: return NSLOCTEXT("T66.Common", "DifficultyVeryHard", "Very Hard");
+		case ET66Difficulty::Impossible: return NSLOCTEXT("T66.Common", "DifficultyImpossible", "Impossible");
+		default: return FText::GetEmpty();
+		}
+	}
+
 	template <typename TStage>
 	static TStage* FindStage(UWorld* World)
 	{
@@ -124,6 +156,80 @@ namespace
 		}
 		return nullptr;
 	}
+}
+
+void UT66RunSummaryScreen::ProcessLiveRunFinalSubmission()
+{
+	if (bLiveRunSubmissionProcessed || bViewingSavedLeaderboardRunSummary)
+	{
+		return;
+	}
+
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	FString SavedRunSummarySlotName;
+	if (RunState && LB)
+	{
+		(void)LB->SaveFinishedRunSummarySnapshot(SavedRunSummarySlotName);
+		LB->SubmitRunScore(RunState->GetCurrentScore(), SavedRunSummarySlotName);
+		bNewPersonalBestScore = LB->WasLastScoreNewPersonalBest();
+
+		if (RunState->DidRunEndInVictory() && PS && PS->GetSpeedRunMode())
+		{
+			LB->SubmitCompletedRunTime(RunState->GetFinalRunElapsedSeconds(), SavedRunSummarySlotName);
+			bNewPersonalBestTime = LB->WasLastCompletedRunTimeNewPersonalBest();
+		}
+	}
+
+	if (RunState && Achievements && T66GI)
+	{
+		if (!T66GI->SelectedHeroID.IsNone())
+		{
+			Achievements->AddHeroGamesPlayed(T66GI->SelectedHeroID, 1);
+		}
+		if (!T66GI->SelectedCompanionID.IsNone())
+		{
+			Achievements->AddCompanionGamesPlayed(T66GI->SelectedCompanionID, 1);
+		}
+
+		if (RunState->DidRunEndInVictory())
+		{
+			if (!T66GI->SelectedHeroID.IsNone())
+			{
+				Achievements->RecordHeroDifficultyClear(T66GI->SelectedHeroID, T66GI->SelectedDifficulty);
+			}
+			if (!T66GI->SelectedCompanionID.IsNone())
+			{
+				Achievements->RecordCompanionDifficultyClear(T66GI->SelectedCompanionID, T66GI->SelectedDifficulty);
+			}
+		}
+	}
+
+	bLiveRunSubmissionProcessed = true;
+}
+
+FText UT66RunSummaryScreen::GetContinueDifficultyButtonText() const
+{
+	UGameInstance* GI = GetGameInstance();
+	const UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	if (!T66GI)
+	{
+		return NSLOCTEXT("T66.RunSummary", "ContinueRunFallback", "CONTINUE RUN");
+	}
+
+	ET66Difficulty NextDifficulty = T66GI->SelectedDifficulty;
+	if (!T66GetNextDifficulty(T66GI->SelectedDifficulty, NextDifficulty))
+	{
+		return NSLOCTEXT("T66.RunSummary", "ContinueRunFallback", "CONTINUE RUN");
+	}
+
+	return FText::Format(
+		NSLOCTEXT("T66.RunSummary", "ContinueDifficultyFormat", "CONTINUE ON {0}"),
+		T66DifficultyToDisplayText(NextDifficulty));
 }
 
 void UT66RunSummaryScreen::EnsurePreviewCaptures()
@@ -492,10 +598,24 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			)
 		);
 
-	// Proof of run UI.
-	// NOTE: Today this is local-only, so we treat the player as the owner of viewed runs.
-	// When runs can be viewed cross-account, we'll gate edit/confirm by real ownership.
-	const bool bIsOwnerOfViewedRun = true;
+	// Proof of run UI is only editable by the owner of the viewed backend run
+	// or when we are viewing a locally saved snapshot.
+	bool bIsOwnerOfViewedRun = !bViewingSavedLeaderboardRunSummary;
+	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+	{
+		bIsOwnerOfViewedRun = !LoadedSavedSummarySlotName.IsEmpty();
+		if (!bIsOwnerOfViewedRun)
+		{
+			if (UGameInstance* LocalGI = GetGameInstance())
+			{
+				if (UT66SteamHelper* SteamHelper = LocalGI->GetSubsystem<UT66SteamHelper>())
+				{
+					const FString LocalSteamId = SteamHelper->GetLocalSteamId();
+					bIsOwnerOfViewedRun = !LocalSteamId.IsEmpty() && LocalSteamId == LoadedSavedSummary->OwnerSteamId;
+				}
+			}
+		}
+	}
 
 	TSharedRef<SWidget> ProofBody =
 		SNew(SVerticalBox)
@@ -849,23 +969,60 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				.SetMinWidth(160.f).SetPadding(FMargin(18.f, 10.f)))
 		];
 
-	// Buttons stacked vertically (Restart, Main Menu, Retry Level) — shown below Integrity when not viewing a saved run.
-	TSharedRef<SWidget> ButtonsStack =
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-		[
-			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66ButtonType::Success)
-				.SetMinWidth(180.f).SetPadding(FMargin(18.f, 10.f)))
-		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-		[
-			FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
-				.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
-		]
-		+ SVerticalBox::Slot().AutoHeight()
-		[
-			RetryLevelBlock
-		];
+	TSharedRef<SWidget> ButtonsStack = [&]() -> TSharedRef<SWidget>
+	{
+		if (bDifficultyClearSummaryMode)
+		{
+			TSharedRef<SVerticalBox> DifficultyClearButtons = SNew(SVerticalBox);
+
+			if (UGameInstance* LocalGI = GetGameInstance())
+			{
+				if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(LocalGI))
+				{
+					ET66Difficulty NextDifficulty = T66GI->SelectedDifficulty;
+					if (T66GetNextDifficulty(T66GI->SelectedDifficulty, NextDifficulty))
+					{
+						DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+						[
+							FT66Style::MakeButton(FT66ButtonParams(GetContinueDifficultyButtonText(), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleContinueDifficultyClicked), ET66ButtonType::Success)
+								.SetMinWidth(260.f).SetPadding(FMargin(18.f, 10.f)))
+						];
+					}
+				}
+			}
+
+			DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "SaveAndQuit", "SAVE AND QUIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSaveAndQuitClicked))
+					.SetMinWidth(240.f).SetPadding(FMargin(18.f, 10.f)))
+			];
+
+			DifficultyClearButtons->AddSlot().AutoHeight()
+			[
+				FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.RunSummary", "SubmitAndEnd", "SUBMIT SCORE AND END RUN"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSubmitAndEndRunClicked), ET66ButtonType::Primary)
+					.SetMinWidth(300.f).SetPadding(FMargin(18.f, 10.f)))
+			];
+
+			return StaticCastSharedRef<SWidget>(DifficultyClearButtons);
+		}
+
+		return StaticCastSharedRef<SWidget>(
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.RunSummary", "Restart", "RESTART"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), ET66ButtonType::Success)
+					.SetMinWidth(180.f).SetPadding(FMargin(18.f, 10.f)))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(Loc ? Loc->GetText_MainMenu() : NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked))
+					.SetMinWidth(200.f).SetPadding(FMargin(18.f, 10.f)))
+			]
+			+ SVerticalBox::Slot().AutoHeight()
+			[
+				RetryLevelBlock
+			]);
+	}();
 
 	// Placeholder panels (wiring for calculation will come later).
 	auto MakeBigCenteredValue = [](const FText& ValueText) -> TSharedRef<SWidget>
@@ -1317,13 +1474,25 @@ FReply UT66RunSummaryScreen::HandleProofConfirmClicked()
 		ProofUrlTextBox->SetText(FText::FromString(ProofOfRunUrl));
 	}
 
-	// Persist into the snapshot immediately (only when we're viewing a saved run summary).
-	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && !LoadedSavedSummarySlotName.IsEmpty())
+	UGameInstance* GI = GetGameInstance();
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+
+	// Persist into the snapshot immediately (viewer mode) and push to backend when this is
+	// an online leaderboard run.
+	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 	{
 		LoadedSavedSummary->SchemaVersion = FMath::Max(LoadedSavedSummary->SchemaVersion, 3);
 		LoadedSavedSummary->ProofOfRunUrl = ProofOfRunUrl;
 		LoadedSavedSummary->bProofOfRunLocked = bProofOfRunLocked;
-		UGameplayStatics::SaveGameToSlot(LoadedSavedSummary, LoadedSavedSummarySlotName, 0);
+
+		if (!LoadedSavedSummary->EntryId.IsEmpty() && Backend && Backend->IsBackendConfigured() && Backend->HasSteamTicket())
+		{
+			Backend->UpdateProofOfRun(LoadedSavedSummary->EntryId, ProofOfRunUrl);
+		}
+		else if (!LoadedSavedSummarySlotName.IsEmpty())
+		{
+			UGameplayStatics::SaveGameToSlot(LoadedSavedSummary, LoadedSavedSummarySlotName, 0);
+		}
 	}
 
 	InvalidateLayoutAndVolatility();
@@ -1357,15 +1526,18 @@ FReply UT66RunSummaryScreen::HandleReportCheatingClicked()
 FReply UT66RunSummaryScreen::HandleReportSubmitClicked()
 {
 	const FString Reason = ReportReasonTextBox.IsValid() ? ReportReasonTextBox->GetText().ToString() : FString();
-	const int32 StageReached = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached : 0;
-	const int32 ReportScore = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Score : 0;
-	const FName HeroID = (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID : NAME_None;
-
-	UE_LOG(LogT66RunSummary, Warning, TEXT("[CHEAT REPORT] Stage=%d Score=%d Hero=%s Reason=%s"),
-		StageReached,
-		ReportScore,
-		*HeroID.ToString(),
-		*Reason);
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary && !LoadedSavedSummary->EntryId.IsEmpty()
+				&& Backend->IsBackendConfigured() && Backend->HasSteamTicket())
+			{
+				Backend->SubmitRunReport(LoadedSavedSummary->EntryId, Reason);
+				UE_LOG(LogT66RunSummary, Log, TEXT("Run Summary: submitted backend run report for entry=%s"), *LoadedSavedSummary->EntryId);
+			}
+		}
+	}
 
 	bReportPromptVisible = false;
 	if (ReportReasonTextBox.IsValid())
@@ -1402,7 +1574,198 @@ FReply UT66RunSummaryScreen::HandleRetryLevelClicked()
 	}
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
-	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
+	return FReply::Handled();
+}
+
+bool UT66RunSummaryScreen::SaveCurrentRunToSlot(const bool bFromDifficultyClearSummary)
+{
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	APlayerController* PC = GetOwningPlayer();
+	if (!GI || !PC)
+	{
+		return false;
+	}
+
+	UT66SaveSubsystem* SaveSub = GI->GetSubsystem<UT66SaveSubsystem>();
+	if (!SaveSub)
+	{
+		return false;
+	}
+
+	int32 SlotIndex = GI->CurrentSaveSlotIndex;
+	if (SlotIndex < 0 || SlotIndex >= UT66SaveSubsystem::MaxSlots)
+	{
+		SlotIndex = SaveSub->FindFirstEmptySlot();
+		if (SlotIndex == INDEX_NONE)
+		{
+			SlotIndex = SaveSub->FindOldestOccupiedSlot();
+			if (SlotIndex == INDEX_NONE)
+			{
+				return false;
+			}
+		}
+		GI->CurrentSaveSlotIndex = SlotIndex;
+	}
+
+	UT66RunSaveGame* SaveObj = NewObject<UT66RunSaveGame>(this);
+	if (!SaveObj)
+	{
+		return false;
+	}
+
+	SaveObj->HeroID = GI->SelectedHeroID;
+	SaveObj->HeroBodyType = GI->SelectedHeroBodyType;
+	SaveObj->CompanionID = GI->SelectedCompanionID;
+	SaveObj->Difficulty = GI->SelectedDifficulty;
+	SaveObj->PartySize = GI->SelectedPartySize;
+	SaveObj->MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString();
+	SaveObj->LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
+	SaveObj->RunSeed = GI->RunSeed;
+	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
+
+	if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+	{
+		SaveObj->StageReached = RunState->GetCurrentStage();
+		RunState->ExportSavedRunSnapshot(SaveObj->RunSnapshot);
+		if (bFromDifficultyClearSummary)
+		{
+			SaveObj->RunSnapshot.bPendingDifficultyClearSummary = true;
+		}
+
+		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+		{
+			SaveObj->EquippedIdols = IdolManager->GetEquippedIdols();
+			SaveObj->EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+		}
+		else
+		{
+			SaveObj->EquippedIdols = RunState->GetEquippedIdols();
+			SaveObj->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
+		}
+	}
+
+	if (APawn* Pawn = PC->GetPawn())
+	{
+		SaveObj->PlayerTransform = Pawn->GetActorTransform();
+	}
+
+	const UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>();
+	SaveObj->OwnerPlayerId = !GI->CurrentRunOwnerPlayerId.IsEmpty()
+		? GI->CurrentRunOwnerPlayerId
+		: (PartySubsystem ? PartySubsystem->GetLocalPlayerId() : TEXT("local_player"));
+	SaveObj->OwnerDisplayName = !GI->CurrentRunOwnerDisplayName.IsEmpty()
+		? GI->CurrentRunOwnerDisplayName
+		: (PartySubsystem ? PartySubsystem->GetLocalDisplayName() : TEXT("You"));
+	SaveObj->PartyMemberIds = GI->CurrentRunPartyMemberIds.Num() > 0
+		? GI->CurrentRunPartyMemberIds
+		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberIds() : TArray<FString>());
+	SaveObj->PartyMemberDisplayNames = GI->CurrentRunPartyMemberDisplayNames.Num() > 0
+		? GI->CurrentRunPartyMemberDisplayNames
+		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberDisplayNames() : TArray<FString>());
+	if (SaveObj->PartyMemberIds.Num() == 0 && !SaveObj->OwnerPlayerId.IsEmpty())
+	{
+		SaveObj->PartyMemberIds.Add(SaveObj->OwnerPlayerId);
+	}
+	if (SaveObj->PartyMemberDisplayNames.Num() == 0 && !SaveObj->OwnerDisplayName.IsEmpty())
+	{
+		SaveObj->PartyMemberDisplayNames.Add(SaveObj->OwnerDisplayName);
+	}
+
+	return SaveSub->SaveToSlot(SlotIndex, SaveObj);
+}
+
+FReply UT66RunSummaryScreen::HandleContinueDifficultyClicked()
+{
+	DestroyPreviewCaptures();
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	if (!T66GI || !RunState || !PlayerExperience)
+	{
+		return FReply::Handled();
+	}
+
+	ET66Difficulty NextDifficulty = T66GI->SelectedDifficulty;
+	if (!T66GetNextDifficulty(T66GI->SelectedDifficulty, NextDifficulty))
+	{
+		return FReply::Handled();
+	}
+
+	RunState->SetPendingDifficultyClearSummary(false);
+	RunState->SetSaintBlessingActive(false);
+	RunState->SetFinalSurvivalEnemyScalar(1.f);
+	RunState->SetStageTimerActive(false);
+	RunState->ResetBossState();
+
+	T66GI->SelectedDifficulty = NextDifficulty;
+	T66GI->bIsStageTransition = true;
+	T66GI->bForceColiseumMode = false;
+	T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
+
+	const int32 NextStage = PlayerExperience->GetDifficultyStartStage(NextDifficulty);
+	RunState->SetCurrentStage(NextStage);
+	RunState->ResetStageTimerToFull();
+
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+	{
+		PC->SetPause(false);
+	}
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
+	return FReply::Handled();
+}
+
+FReply UT66RunSummaryScreen::HandleSaveAndQuitClicked()
+{
+	if (!SaveCurrentRunToSlot(true))
+	{
+		return FReply::Handled();
+	}
+
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+	{
+		PC->SetPause(false);
+	}
+	UGameplayStatics::OpenLevel(this, FName(TEXT("FrontendLevel")));
+	return FReply::Handled();
+}
+
+FReply UT66RunSummaryScreen::HandleSubmitAndEndRunClicked()
+{
+	DestroyPreviewCaptures();
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!GI || !RunState)
+	{
+		return FReply::Handled();
+	}
+
+	RunState->SetPendingDifficultyClearSummary(false);
+	RunState->SetSaintBlessingActive(false);
+	RunState->SetFinalSurvivalEnemyScalar(1.f);
+	RunState->MarkRunEnded(true);
+
+	if (UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>())
+	{
+		const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
+		if (Earned > 0)
+		{
+			PowerUpSub->AddPowerCrystals(Earned);
+		}
+	}
+
+	if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
+	{
+		Achievements->NotifyRunCompleted(RunState);
+	}
+
+	bDifficultyClearSummaryMode = false;
+	ProcessLiveRunFinalSubmission();
+	bShowPowerCouponsPopup = RunState->GetPowerCrystalsEarnedThisRun() >= 1;
+	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
@@ -1442,7 +1805,7 @@ void UT66RunSummaryScreen::OnRestartClicked()
 	}
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
-	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
 }
 
 void UT66RunSummaryScreen::OnMainMenuClicked()

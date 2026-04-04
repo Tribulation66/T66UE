@@ -248,6 +248,16 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 	const FText VendorTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
 	const FText AlchemyTabText = NSLOCTEXT("T66.Casino", "TabAlchemy", "ALCHEMY");
 	const FText CloseText = NSLOCTEXT("T66.Casino", "Close", "CLOSE");
+	const float HeaderPanelPaddingX = 8.f;
+	const float HeaderPanelPaddingY = 6.f;
+	const float HeaderLabelFontSize = 9.f;
+	const float HeaderValueFontSize = 11.f;
+	const float ShellTopPadding = 16.f;
+	const float ShellSectionGap = 10.f;
+	const float ShellOuterPadding = 16.f;
+	const float ShellButtonFontSize = 14.f;
+	const FMargin ShellButtonPadding(10.f, 6.f);
+	const FMargin ShellTopBarPadding(10.f, 8.f);
 
 	TSharedRef<SWidget> VendorPage = VendorTabWidget ? VendorTabWidget->TakeWidget() : SNullWidget::NullWidget;
 	TSharedRef<SWidget> GamblingPage = GamblerTabWidget ? GamblerTabWidget->TakeWidget() : SNullWidget::NullWidget;
@@ -262,14 +272,14 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Casino", "HeaderScoreLabel", "SCORE"))
-					.Font(FT66Style::Tokens::FontBold(15))
+					.Font(FT66Style::Tokens::FontBold(HeaderLabelFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 				[
 					SAssignNew(HeaderScoreText, STextBlock)
 					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(18))
+					.Font(FT66Style::Tokens::FontBold(HeaderValueFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			]
@@ -280,18 +290,18 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Casino", "HeaderTimeLabel", "TIME"))
-					.Font(FT66Style::Tokens::FontBold(15))
+					.Font(FT66Style::Tokens::FontBold(HeaderLabelFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 				[
 					SAssignNew(HeaderTimerText, STextBlock)
 					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(18))
+					.Font(FT66Style::Tokens::FontBold(HeaderValueFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f))
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(HeaderPanelPaddingX, HeaderPanelPaddingY))
 		);
 
 	const TAttribute<FMargin> VerticalSafeInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -316,7 +326,7 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
-					.Padding(24.f, 24.f, 24.f, 0.f)
+					.Padding(ShellOuterPadding, ShellTopPadding, ShellOuterPadding, 0.f)
 					[
 						FT66Style::MakePanel(
 							SNew(SHorizontalBox)
@@ -338,7 +348,8 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 											VendorTabText,
 											FOnClicked::CreateLambda([this]() { OpenVendorTab(); return FReply::Handled(); }),
 											ET66ButtonType::Primary)
-										.SetPadding(FMargin(18.f, 10.f))
+										.SetPadding(ShellButtonPadding)
+										.SetFontSize(ShellButtonFontSize)
 									)
 								]
 								+ SHorizontalBox::Slot().AutoWidth()
@@ -348,7 +359,8 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 											GamblingTabText,
 											FOnClicked::CreateLambda([this]() { OpenGamblingTab(); return FReply::Handled(); }),
 											ET66ButtonType::Primary)
-										.SetPadding(FMargin(18.f, 10.f))
+										.SetPadding(ShellButtonPadding)
+										.SetFontSize(ShellButtonFontSize)
 									)
 								]
 								+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
@@ -358,7 +370,8 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 											AlchemyTabText,
 											FOnClicked::CreateLambda([this]() { OpenAlchemyTab(); return FReply::Handled(); }),
 											ET66ButtonType::Primary)
-										.SetPadding(FMargin(18.f, 10.f))
+										.SetPadding(ShellButtonPadding)
+										.SetFontSize(ShellButtonFontSize)
 									)
 								]
 							]
@@ -373,14 +386,15 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 										CloseText,
 										FOnClicked::CreateLambda([this]() { CloseOverlay(); return FReply::Handled(); }),
 										ET66ButtonType::Danger)
-									.SetPadding(FMargin(18.f, 10.f))
+									.SetPadding(ShellButtonPadding)
+									.SetFontSize(ShellButtonFontSize)
 								)
 							],
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(16.f, 12.f))
+							FT66PanelParams(ET66PanelType::Panel2).SetPadding(ShellTopBarPadding)
 						)
 					]
 					+ SVerticalBox::Slot().FillHeight(1.f)
-					.Padding(24.f, 16.f, 24.f, 24.f)
+					.Padding(ShellOuterPadding, ShellSectionGap, ShellOuterPadding, ShellOuterPadding)
 					[
 						SAssignNew(TabSwitcher, SWidgetSwitcher)
 						+ SWidgetSwitcher::Slot()

@@ -17,9 +17,8 @@ class UT66LeaderboardRunSummarySaveGame;
 class UDataTable;
 
 /**
- * Foundation for leaderboard submission.
- * For now this provides a fully local (offline) "Top 15 + You" experience, with placeholder global targets.
- * Practice Mode blocks submission. "Anonymous" affects displayed name for the local entry.
+ * Handles local leaderboard persistence plus online backend sync for the
+ * frontend leaderboard, run summaries, and moderation surfaces.
  */
 UCLASS()
 class T66_API UT66LeaderboardSubsystem : public UGameInstanceSubsystem
@@ -31,7 +30,7 @@ public:
 
 	/** Submit a run score (local best). Returns false if blocked (e.g., Practice Mode). */
 	UFUNCTION(BlueprintCallable, Category = "Leaderboard")
-	bool SubmitRunScore(int32 Score);
+	bool SubmitRunScore(int32 Score, const FString& ExistingRunSummarySlotName);
 
 	/**
 	 * Submit a completed stage time (local best), keyed by current difficulty/party size.
@@ -56,11 +55,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
 	int32 GetLastSpeedRunSubmittedStage() const { return LastSpeedRunSubmittedStage; }
 
+	/** True if the most recent completed full-run time submit set a new personal best. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Leaderboard")
+	bool WasLastCompletedRunTimeNewPersonalBest() const { return bLastCompletedRunTimeWasNewBest; }
+
 	/**
 	 * UI helper: request opening the local-best score run summary.
 	 * `UT66RunSummaryScreen` will consume this request on activation.
 	 */
 	void RequestOpenLocalBestScoreRunSummary(ET66Difficulty Difficulty, ET66PartySize PartySize);
+
+	/** UI helper: request opening a specific saved run summary slot. */
+	bool RequestOpenRunSummarySlot(const FString& SlotName, ET66ScreenType ReturnModalAfterClose = ET66ScreenType::None);
 
 	/** Consume the pending "open run summary" request (returns true if one existed). */
 	bool ConsumePendingRunSummaryRequest(FString& OutSaveSlotName);
@@ -82,11 +88,30 @@ public:
 		ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize,
 		int32 Rank, int32 SlotIndex, const FString& PlayerDisplayName, int64 Score, float TimeSeconds) const;
 
+	/** Save a unique run-summary snapshot for the current run and append it to the recent-runs list. */
+	bool SaveFinishedRunSummarySnapshot(FString& OutSlotName);
+
+	/** Submit a completed full-run time PB (lower is better). */
+	bool SubmitCompletedRunTime(float Seconds, const FString& ExistingRunSummarySlotName);
+
+	/** Last completed runs, newest first, capped to 20 entries. */
+	TArray<FT66RecentRunRecord> GetRecentRuns() const;
+
+	/** Best score record for the requested difficulty + party size. */
+	bool GetLocalBestScoreRecord(ET66Difficulty Difficulty, ET66PartySize PartySize, FT66LocalScoreRecord& OutRecord) const;
+
+	/** Best completed full-run time record for the requested difficulty + party size. */
+	bool GetLocalBestCompletedRunTimeRecord(ET66Difficulty Difficulty, ET66PartySize PartySize, FT66LocalCompletedRunTimeRecord& OutRecord) const;
+
 	// ===== Account Status (Suspension / Appeal) =====
 
 	/** True when the Main Menu should show the Account Status button. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
 	bool ShouldShowAccountStatusButton() const;
+
+	/** Refresh backend-backed account restriction data when Steam auth is available. */
+	UFUNCTION(BlueprintCallable, Category = "AccountStatus")
+	void RefreshAccountStatusFromBackend();
 
 	/** Current account restriction record (local placeholder until backend exists). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
@@ -167,8 +192,19 @@ private:
 	static FString DifficultyKey(ET66Difficulty Difficulty);
 	static FString PartySizeKey(ET66PartySize PartySize);
 	static FString MakeLocalBestScoreRunSummarySlotName(ET66Difficulty Difficulty, ET66PartySize PartySize);
+	static FString MakeRecentRunSummarySlotName(const FGuid& RunId);
 
-	bool SaveLocalBestScoreRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score) const;
+	bool SaveLocalBestScoreRunSummarySnapshot(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score, const FString& ExistingRunSummarySlotName = FString()) const;
+	UT66LeaderboardRunSummarySaveGame* CreateCurrentRunSummarySnapshot(ET66LeaderboardType LeaderboardType, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score) const;
+	bool SaveRunSummarySnapshotToSlot(UT66LeaderboardRunSummarySaveGame* Snapshot, const FString& SlotName) const;
+	void AppendRecentRunRecord(const FString& RunSummarySlotName);
+	void PruneRecentRunsToLimit(int32 MaxRuns);
+	bool IsRunSummarySlotStillReferenced(const FString& SlotName) const;
+	bool DeleteRunSummarySlotIfUnreferenced(const FString& SlotName) const;
+	const FT66LocalScoreRecord* FindLocalScoreRecord(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	FT66LocalScoreRecord* FindLocalScoreRecordMutable(ET66Difficulty Difficulty, ET66PartySize PartySize);
+	const FT66LocalCompletedRunTimeRecord* FindLocalCompletedRunTimeRecord(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	FT66LocalCompletedRunTimeRecord* FindLocalCompletedRunTimeRecordMutable(ET66Difficulty Difficulty, ET66PartySize PartySize);
 
 	bool LoadTargetsFromDataTablesIfPresent();
 	void LoadTargetsFromCsv();
@@ -200,6 +236,12 @@ private:
 	// ===== Last submit results (for Run Summary "New Personal Best" banners) =====
 	bool bLastScoreWasNewBest = false;
 	bool bLastSpeedRunWasNewBest = false;
+	bool bLastCompletedRunTimeWasNewBest = false;
 	int32 LastSpeedRunSubmittedStage = 0;
+
+	UFUNCTION()
+	void HandleBackendAccountStatusComplete(bool bSuccess, const FString& Restriction);
+
+	bool bAccountStatusRefreshRequested = false;
 };
 

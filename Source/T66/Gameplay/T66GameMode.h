@@ -25,6 +25,7 @@ class AT66StageCatchUpLootInteractable;
 class AT66Shroom;
 class AT66SpawnPlateau;
 class AT66TutorialManager;
+class AT66SaintNPC;
 class UT66GameInstance;
 class AT66RecruitableCompanion;
 class UT66LoadingScreenWidget;
@@ -191,6 +192,12 @@ protected:
 	void SpawnColiseumArenaIfNeeded();
 	void SpawnTutorialArenaIfNeeded();
 	void SpawnAllOwedBossesInColiseum();
+	void SpawnFinalDifficultyBossInColiseum();
+	void BeginFinalDifficultySurvival(const FVector& BossDeathLocation);
+	void TickFinalDifficultySurvival(float DeltaTime);
+	void UpdateFinalDifficultySurvivalScaling(bool bForce = false);
+	void SpawnFinalDifficultyTotem(const FVector& SpawnLocation);
+	void SpawnFinalDifficultySaint(const FVector& SpawnLocation);
 	void SpawnTutorialIfNeeded();
 
 	/** Spawn boss for current stage (dormant until player approaches). */
@@ -231,6 +238,7 @@ protected:
 	void FinalizeStandardStageCombatBootstrap();
 
 	bool IsColiseumStage() const;
+	bool IsFinalDifficultyBossColiseumStage() const;
 	/** True when current level is The Lab (practice room). */
 	bool IsLabLevel() const;
 	/** True when current level is the demo map used for "Enter the Tribulation" (e.g. Map_Summer). */
@@ -356,6 +364,11 @@ private:
 	int32 ColiseumBossesRemaining = 0;
 	bool bColiseumExitGateSpawned = false;
 	FVector ColiseumCenter = FVector(-45455.f, -23636.f, 200.f);
+	bool bFinalDifficultySurvivalActive = false;
+	float FinalDifficultySurvivalElapsedSeconds = 0.f;
+	float LastAppliedFinalDifficultyEnemyScalar = 1.f;
+	TWeakObjectPtr<AActor> FinalDifficultyTotemActor;
+	TWeakObjectPtr<AT66SaintNPC> FinalDifficultySaintActor;
 
 	// The Lab: actors spawned from Lab panels (for Reset Enemies).
 	UPROPERTY()

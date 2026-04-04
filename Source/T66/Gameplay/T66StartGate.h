@@ -34,6 +34,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "StartGate")
 	float TriggerDistance2D = 90.f;
 
+	/** Once the run starts, seal the start corridor so the safe start room cannot be used as a permanent refuge. */
+	UPROPERTY(EditAnywhere, Category = "StartGate")
+	FVector SealedBoxExtent = FVector(140.f, 220.f, 220.f);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

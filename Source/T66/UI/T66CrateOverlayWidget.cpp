@@ -9,6 +9,7 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66GameplayHUDWidget.h"
+#include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 
@@ -16,6 +17,7 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Styling/CoreStyle.h"
@@ -54,6 +56,10 @@ namespace
 			NSLOCTEXT("T66.Crate", "SkipCountdown", "Skip {0}s"),
 			FText::FromString(FString::Printf(TEXT("%.1f"), FMath::Max(0.f, RemainingSeconds))));
 	}
+
+	static constexpr float CratePanelWidth = UT66GameplayHUDWidget::BottomRightInventoryPanelWidth;
+	static constexpr float CratePanelHeight = UT66GameplayHUDWidget::BottomRightInventoryPanelHeight;
+	static constexpr float CrateStripViewportWidth = 460.f;
 }
 
 void UT66CrateOverlayWidget::SetPresentationHost(UT66GameplayHUDWidget* InPresentationHost)
@@ -156,7 +162,7 @@ void UT66CrateOverlayWidget::GenerateStrip()
 		StripItems.Add(Entry);
 	}
 
-	const float VisibleWidth = static_cast<float>(VisibleTileCount) * ItemTileStride;
+	const float VisibleWidth = CrateStripViewportWidth;
 	const float WinnerCenterX = (static_cast<float>(WinnerPosition) * ItemTileStride) + (ItemTileGap * 0.5f) + (ItemTileWidth * 0.5f);
 	TotalScrollDistance = FMath::Max(0.f, WinnerCenterX - (VisibleWidth * 0.5f));
 }
@@ -181,7 +187,10 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 	GenerateStrip();
 
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
 
 	TSharedPtr<SHorizontalBox> StripRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < StripItems.Num(); ++i)
@@ -189,9 +198,24 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 		const FCrateItemEntry& Entry = StripItems[i];
 		const ET66ItemRarity ItemRarity = LootRarityToItemRarity(Entry.Rarity);
 		const FText ItemName = Loc ? Loc->GetText_ItemDisplayNameForRarity(Entry.ItemID, ItemRarity) : FText::FromName(Entry.ItemID);
-		const FText RarityName = Loc ? Loc->GetText_ItemRarityName(ItemRarity) : FText::GetEmpty();
-		const FLinearColor FrameColor = Entry.Color * 0.45f + FLinearColor(0.10f, 0.10f, 0.12f, 0.55f);
-		const FLinearColor NameplateColor = Entry.Color * 0.82f + FLinearColor(0.08f, 0.08f, 0.09f, 0.18f);
+		FItemData ItemData;
+		const bool bHasData = T66GI && T66GI->GetItemData(Entry.ItemID, ItemData);
+		int32 PreviewMinRoll = 1;
+		int32 PreviewMaxRoll = 1;
+		FItemData::GetLine1RollRange(ItemRarity, PreviewMinRoll, PreviewMaxRoll);
+		int32 PreviewMainValue = FMath::Max(1, FMath::RoundToInt(static_cast<float>(PreviewMinRoll + PreviewMaxRoll) * 0.5f));
+		if (bHasData && ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		{
+			PreviewMainValue = FMath::Clamp(PreviewMainValue, 1, 5);
+		}
+		FText ItemDesc = bHasData
+			? T66ItemCardTextUtils::BuildItemCardDescription(Loc, ItemData, ItemRarity, PreviewMainValue, ScaleMult)
+			: FText::GetEmpty();
+		if (ItemDesc.IsEmpty() && bHasData)
+		{
+			ItemDesc = T66ItemCardTextUtils::GetPrimaryStatLabel(Loc, ItemData.PrimaryStatType);
+		}
+		const FLinearColor FrameColor = Entry.Color * 0.45f + FLinearColor(0.06f, 0.06f, 0.08f, 0.55f);
 
 		StripRow->AddSlot()
 			.AutoWidth()
@@ -211,20 +235,12 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.76f, 0.76f, 0.78f, 1.f))
-							.Padding(FMargin(10.f, 8.f))
+							.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f))
+							.Padding(FMargin(6.f))
 							[
-								SNew(SOverlay)
-								+ SOverlay::Slot()
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.18f, 0.18f, 0.20f, 0.22f))
-									.Padding(FMargin(0.f))
-								]
-								+ SOverlay::Slot()
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
+								SNew(SScaleBox)
+								.Stretch(EStretch::ScaleToFit)
+								.StretchDirection(EStretchDirection::Both)
 								[
 									SNew(SBox)
 									.WidthOverride(ItemPreviewSize)
@@ -241,26 +257,29 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(NameplateColor)
-							.Padding(FMargin(8.f, 6.f))
+							.BorderBackgroundColor(FLinearColor::Black)
+							.Padding(FMargin(6.f, 4.f))
 							[
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
 									SNew(STextBlock)
 									.Text(ItemName)
-									.Font(FT66Style::Tokens::FontBold(11))
+									.Font(FT66Style::Tokens::FontBold(9))
 									.ColorAndOpacity(FLinearColor::White)
 									.Justification(ETextJustify::Left)
 									.AutoWrapText(true)
+									.WrapTextAt(ItemTileWidth - 12.f)
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 								[
 									SNew(STextBlock)
-									.Text(RarityName)
-									.Font(FT66Style::Tokens::FontRegular(9))
-									.ColorAndOpacity(FLinearColor(0.96f, 0.96f, 0.96f, 0.92f))
+									.Text(ItemDesc)
+									.Font(FT66Style::Tokens::FontRegular(7))
+									.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.88f))
 									.Justification(ETextJustify::Left)
+									.AutoWrapText(true)
+									.WrapTextAt(ItemTileWidth - 12.f)
 								]
 							]
 						]
@@ -275,80 +294,89 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 		.VAlign(VAlign_Bottom)
 		.Padding(TAttribute<FMargin>::CreateLambda([]() -> FMargin
 		{
-			return FT66Style::GetSafePadding(FMargin(16.f, 0.f, 16.f, 156.f));
+			return FT66Style::GetSafePadding(FMargin(
+				16.f,
+				0.f,
+				12.f,
+				UT66GameplayHUDWidget::BottomRightInventoryPanelHeight + UT66GameplayHUDWidget::BottomRightPresentationGap));
 		}))
 		[
-			FT66Style::MakePanel(
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.Crate", "Title", "OPEN CRATE"))
-					.Font(FT66Style::Tokens::FontBold(18))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
+			SNew(SBox)
+			.WidthOverride(CratePanelWidth)
+			.HeightOverride(CratePanelHeight)
+			[
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
 					[
-						SNew(SBox)
-						.WidthOverride(static_cast<float>(VisibleTileCount) * ItemTileStride)
-						.HeightOverride(ItemTileHeight + 8.f)
-						.Clipping(EWidgetClipping::ClipToBounds)
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.Crate", "Title", "OPEN CRATE"))
+						.Font(FT66Style::Tokens::FontBold(16))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center)
+					[
+						SNew(SOverlay)
+						+ SOverlay::Slot()
 						[
-							SAssignNew(StripContainer, SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-							.Padding(0.f)
+							SNew(SBox)
+							.WidthOverride(CrateStripViewportWidth)
+							.HeightOverride(ItemTileHeight + 4.f)
+							.Clipping(EWidgetClipping::ClipToBounds)
 							[
-								StripRow.ToSharedRef()
+								SAssignNew(StripContainer, SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+								.Padding(0.f)
+								[
+									StripRow.ToSharedRef()
+								]
+							]
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SBox)
+							.WidthOverride(ItemTileWidth + 4.f)
+							.HeightOverride(ItemTileHeight + 4.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(1.f, 0.83f, 0.24f, 0.14f))
+								.Padding(FMargin(0.f))
+							]
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Top)
+						[
+							SNew(SBox)
+							.WidthOverride(3.f)
+							.HeightOverride(ItemTileHeight + 4.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(1.f, 0.82f, 0.22f, 0.92f))
 							]
 						]
 					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 4.f, 0.f, 0.f)
 					[
-						SNew(SBox)
-						.WidthOverride(ItemTileWidth + 4.f)
-						.HeightOverride(ItemTileHeight + 8.f)
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.06f, 1.f))
+						.Padding(FMargin(6.f, 3.f))
 						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(1.f, 0.83f, 0.24f, 0.16f))
-							.Padding(FMargin(0.f))
+							SAssignNew(SkipText, STextBlock)
+							.Text(BuildSkipCountdownText(ScrollDuration))
+							.Font(FT66Style::Tokens::FontRegular(8))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.Justification(ETextJustify::Right)
 						]
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Top)
-					[
-						SNew(SBox)
-						.WidthOverride(3.f)
-						.HeightOverride(ItemTileHeight + 8.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(1.f, 0.82f, 0.22f, 0.92f))
-						]
-					]
-				]
-				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.12f, 0.16f, 0.14f, 0.92f))
-					.Padding(FMargin(8.f, 4.f))
-					[
-						SAssignNew(SkipText, STextBlock)
-						.Text(BuildSkipCountdownText(ScrollDuration))
-						.Font(FT66Style::Tokens::FontRegular(9))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						.Justification(ETextJustify::Right)
-					]
-				],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 12.f, 12.f, 8.f))
-			)
+					],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(6.f))
+				)
+			]
 		];
 
 	if (SkipText.IsValid())

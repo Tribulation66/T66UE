@@ -21,6 +21,28 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
+	enum class EAccountTab : uint8
+	{
+		Overview,
+		History,
+		Mains,
+	};
+
+	enum class EPBMode : uint8
+	{
+		Solo,
+		Party,
+	};
+
+	EAccountTab ActiveTab = EAccountTab::Overview;
+	EPBMode ActivePBMode = EPBMode::Solo;
+
 	FReply HandleBackClicked();
+	FReply HandleOverviewTabClicked();
+	FReply HandleHistoryTabClicked();
+	FReply HandleMainsTabClicked();
+	FReply HandleSoloPBModeClicked();
+	FReply HandlePartyPBModeClicked();
+	FReply HandleOpenRunSummaryClicked(FString SlotName);
 };
 

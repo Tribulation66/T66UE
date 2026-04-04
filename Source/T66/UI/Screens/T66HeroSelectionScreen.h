@@ -102,6 +102,9 @@ private:
 	TSharedPtr<STextBlock> HeroNameWidget;        // Hero name in right panel below Hero Info
 	TSharedPtr<STextBlock> HeroDescWidget;        // Description in right panel
 	TSharedPtr<STextBlock> HeroLoreWidget;        // Lore text when Lore panel is open
+	TSharedPtr<STextBlock> HeroRecordMedalWidget; // Record strip medal text
+	TSharedPtr<STextBlock> HeroRecordUnityWidget; // Record strip unity text
+	TSharedPtr<STextBlock> HeroRecordGamesWidget; // Record strip games played text
 	TSharedPtr<SBorder> HeroPreviewColorBox;      // Fallback colored box when no 3D preview
 	TSharedPtr<STextBlock> DifficultyDropdownText; // Current difficulty display
 

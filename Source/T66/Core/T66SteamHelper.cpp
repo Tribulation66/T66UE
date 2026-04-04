@@ -80,7 +80,9 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 		}
 	}
 
-	// Steam not available — check for dev ticket in DefaultGame.ini [T66.Online] DevTicket
+	// Steam not available — in non-shipping builds only, check for dev ticket in
+	// DefaultGame.ini [T66.Online] DevTicket so local backend work can continue.
+#if !UE_BUILD_SHIPPING
 	FString DevTicket;
 	GConfig->GetString(TEXT("T66.Online"), TEXT("DevTicket"), DevTicket, GGameIni);
 
@@ -130,6 +132,9 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: Steam not available and no DevTicket configured. Online features disabled."));
 	}
+#else
+	UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: Steam not available in shipping build. Online features disabled."));
+#endif
 }
 
 void UT66SteamHelper::Deinitialize()

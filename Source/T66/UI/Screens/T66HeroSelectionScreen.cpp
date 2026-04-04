@@ -39,6 +39,46 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66HeroSelection, Log, All);
 
 namespace
 {
+	FText HeroRecordMedalText(ET66AccountMedalTier Tier)
+	{
+		switch (Tier)
+		{
+		case ET66AccountMedalTier::Bronze:
+			return NSLOCTEXT("T66.HeroSelection", "MedalBronze", "Bronze");
+		case ET66AccountMedalTier::Silver:
+			return NSLOCTEXT("T66.HeroSelection", "MedalSilver", "Silver");
+		case ET66AccountMedalTier::Gold:
+			return NSLOCTEXT("T66.HeroSelection", "MedalGold", "Gold");
+		case ET66AccountMedalTier::Platinum:
+			return NSLOCTEXT("T66.HeroSelection", "MedalPlatinum", "Platinum");
+		case ET66AccountMedalTier::Diamond:
+			return NSLOCTEXT("T66.HeroSelection", "MedalDiamond", "Diamond");
+		case ET66AccountMedalTier::None:
+		default:
+			return NSLOCTEXT("T66.HeroSelection", "MedalNone", "Unproven");
+		}
+	}
+
+	FLinearColor HeroRecordMedalColor(ET66AccountMedalTier Tier)
+	{
+		switch (Tier)
+		{
+		case ET66AccountMedalTier::Bronze:
+			return FLinearColor(0.67f, 0.43f, 0.26f, 1.0f);
+		case ET66AccountMedalTier::Silver:
+			return FLinearColor(0.76f, 0.79f, 0.84f, 1.0f);
+		case ET66AccountMedalTier::Gold:
+			return FLinearColor(0.89f, 0.74f, 0.27f, 1.0f);
+		case ET66AccountMedalTier::Platinum:
+			return FLinearColor(0.56f, 0.77f, 0.88f, 1.0f);
+		case ET66AccountMedalTier::Diamond:
+			return FLinearColor(0.45f, 0.86f, 0.99f, 1.0f);
+		case ET66AccountMedalTier::None:
+		default:
+			return FLinearColor(0.74f, 0.74f, 0.74f, 1.0f);
+		}
+	}
+
 	class ST66DragRotatePreview : public SCompoundWidget
 	{
 	public:
@@ -1373,6 +1413,96 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 														.SetPadding(FMargin(5.0f)))
 											]
 											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+											[
+												FT66Style::MakePanel(
+													SNew(SVerticalBox)
+													+ SVerticalBox::Slot()
+													.AutoHeight()
+													.Padding(0.0f, 0.0f, 0.0f, 6.0f)
+													[
+														SNew(STextBlock)
+														.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordTitle", "HERO RECORD"))
+														.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize))
+														.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+													]
+													+ SVerticalBox::Slot()
+													.AutoHeight()
+													[
+														SNew(SHorizontalBox)
+														+ SHorizontalBox::Slot()
+														.FillWidth(1.15f)
+														[
+															SNew(SVerticalBox)
+															+ SVerticalBox::Slot()
+															.AutoHeight()
+															[
+																SNew(STextBlock)
+																.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordMedalLabel", "Highest Medal"))
+																.Font(FT66Style::Tokens::FontRegular(SecondaryButtonFontSize))
+																.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+															]
+															+ SVerticalBox::Slot()
+															.AutoHeight()
+															.Padding(0.0f, 2.0f, 0.0f, 0.0f)
+															[
+																SAssignNew(HeroRecordMedalWidget, STextBlock)
+																.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordMedalDefault", "Unproven"))
+																.Font(FT66Style::Tokens::FontBold(BodyTextFontSize + 2))
+																.ColorAndOpacity(FLinearColor(0.89f, 0.74f, 0.27f, 1.0f))
+															]
+														]
+														+ SHorizontalBox::Slot()
+														.FillWidth(0.85f)
+														[
+															SNew(SVerticalBox)
+															+ SVerticalBox::Slot()
+															.AutoHeight()
+															[
+																SNew(STextBlock)
+																.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordUnityLabel", "Unity"))
+																.Font(FT66Style::Tokens::FontRegular(SecondaryButtonFontSize))
+																.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+															]
+															+ SVerticalBox::Slot()
+															.AutoHeight()
+															.Padding(0.0f, 2.0f, 0.0f, 0.0f)
+															[
+																SAssignNew(HeroRecordUnityWidget, STextBlock)
+																.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordUnityDefault", "0"))
+																.Font(FT66Style::Tokens::FontBold(BodyTextFontSize + 2))
+																.ColorAndOpacity(FT66Style::Tokens::Text)
+															]
+														]
+														+ SHorizontalBox::Slot()
+														.FillWidth(0.95f)
+														[
+															SNew(SVerticalBox)
+															+ SVerticalBox::Slot()
+															.AutoHeight()
+															[
+																SNew(STextBlock)
+																.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordGamesLabel", "Games Played"))
+																.Font(FT66Style::Tokens::FontRegular(SecondaryButtonFontSize))
+																.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+															]
+															+ SVerticalBox::Slot()
+															.AutoHeight()
+															.Padding(0.0f, 2.0f, 0.0f, 0.0f)
+															[
+																SAssignNew(HeroRecordGamesWidget, STextBlock)
+																.Text(NSLOCTEXT("T66.HeroSelection", "HeroRecordGamesDefault", "0"))
+																.Font(FT66Style::Tokens::FontBold(BodyTextFontSize + 2))
+																.ColorAndOpacity(FT66Style::Tokens::Text)
+															]
+														]
+													],
+													FT66PanelParams(ET66PanelType::Panel)
+														.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+														.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
+											]
+											+ SVerticalBox::Slot()
 											.FillHeight(1.0f)
 											[
 												SNew(SScrollBox)
@@ -1619,6 +1749,28 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 
 			HeroDescWidget->SetText(FText::Join(NewLine, Lines));
 		}
+		if (HeroRecordMedalWidget.IsValid() || HeroRecordUnityWidget.IsValid() || HeroRecordGamesWidget.IsValid())
+		{
+			UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+			UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+			const ET66AccountMedalTier MedalTier = Achievements ? Achievements->GetHeroHighestMedal(PreviewedHeroID) : ET66AccountMedalTier::None;
+			const int32 UnityStages = Achievements ? Achievements->GetHeroUnityStagesCleared(PreviewedHeroID) : 0;
+			const int32 GamesPlayed = Achievements ? Achievements->GetHeroGamesPlayed(PreviewedHeroID) : 0;
+
+			if (HeroRecordMedalWidget.IsValid())
+			{
+				HeroRecordMedalWidget->SetText(HeroRecordMedalText(MedalTier));
+				HeroRecordMedalWidget->SetColorAndOpacity(HeroRecordMedalColor(MedalTier));
+			}
+			if (HeroRecordUnityWidget.IsValid())
+			{
+				HeroRecordUnityWidget->SetText(FText::AsNumber(UnityStages));
+			}
+			if (HeroRecordGamesWidget.IsValid())
+			{
+				HeroRecordGamesWidget->SetText(FText::AsNumber(GamesPlayed));
+			}
+		}
 		// Update 3D preview stage or fallback colored box (use preview skin override or selected skin)
 		if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
 		{
@@ -1653,6 +1805,19 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 		if (HeroLoreWidget.IsValid())
 		{
 			HeroLoreWidget->SetText(FText::GetEmpty());
+		}
+		if (HeroRecordMedalWidget.IsValid())
+		{
+			HeroRecordMedalWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordMedalEmpty", "Unproven"));
+			HeroRecordMedalWidget->SetColorAndOpacity(HeroRecordMedalColor(ET66AccountMedalTier::None));
+		}
+		if (HeroRecordUnityWidget.IsValid())
+		{
+			HeroRecordUnityWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordUnityEmpty", "0"));
+		}
+		if (HeroRecordGamesWidget.IsValid())
+		{
+			HeroRecordGamesWidget->SetText(NSLOCTEXT("T66.HeroSelection", "HeroRecordGamesEmpty", "0"));
 		}
 		if (AT66HeroPreviewStage* PreviewStage = GetHeroPreviewStage())
 		{
@@ -2011,7 +2176,7 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 	}
 	else
 	{
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
 	}
 }
 void UT66HeroSelectionScreen::OnBackClicked() { NavigateBack(); }

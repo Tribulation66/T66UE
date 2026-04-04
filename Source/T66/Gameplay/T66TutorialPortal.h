@@ -11,8 +11,8 @@ class UStaticMeshComponent;
 class AT66PlayerController;
 
 /**
- * Tutorial Portal: teleports the player to the main Stage 1 start area (no level load).
- * Spawned by AT66TutorialManager at the end of the tutorial wave.
+ * Tutorial Portal: marks the tutorial complete and opens a fresh Stage 1 gameplay level.
+ * Spawned by AT66TutorialManager at the end of the tutorial flow.
  */
 UCLASS(Blueprintable)
 class T66_API AT66TutorialPortal : public AActor

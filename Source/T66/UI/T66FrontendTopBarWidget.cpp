@@ -833,7 +833,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	const FText HomeText = NSLOCTEXT("T66.MainMenu", "Home", "CHADPOCALYPSE");
 	const FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
-	const FText AccountStatusText = NSLOCTEXT("T66.AccountStatus", "TopBarTitle", "ACCOUNT STATUS");
+	const FText AccountStatusText = NSLOCTEXT("T66.AccountStatus", "TopBarTitle", "ACCOUNT");
 	const FText QuitTooltipText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
 	const FVector2D ViewportLogicalSize = FT66Style::GetViewportLogicalSize();
 	const float LayoutWidthAlpha = FMath::Clamp(

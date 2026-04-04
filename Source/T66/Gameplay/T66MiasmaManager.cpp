@@ -1,15 +1,57 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66MiasmaManager.h"
-#include "Gameplay/T66MiasmaTile.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66MainMapTerrain.h"
+#include "Gameplay/T66VisualUtil.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
-#include "Algo/RandomShuffle.h"
+#include "Materials/MaterialInstanceDynamic.h"
+
+namespace
+{
+	static bool T66ShouldUseMainBoardCoverage(const UWorld* World)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+		return !MapName.Contains(TEXT("Coliseum"))
+			&& !MapName.Contains(TEXT("Tutorial"))
+			&& !MapName.Contains(TEXT("Lab"));
+	}
+}
 
 AT66MiasmaManager::AT66MiasmaManager()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+
+	TileInstances = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TileInstances"));
+	TileInstances->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TileInstances->SetGenerateOverlapEvents(false);
+	TileInstances->SetCanEverAffectNavigation(false);
+	RootComponent = TileInstances;
+
+	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
+	{
+		TileInstances->SetStaticMesh(Cube);
+	}
+
+	if (UMaterialInterface* FlatMaterial = FT66VisualUtil::GetFlatColorMaterial())
+	{
+		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(FlatMaterial, this))
+		{
+			FT66VisualUtil::ConfigureFlatColorMaterial(Mat, FLinearColor(0.96f, 0.33f, 0.08f, 1.f));
+			TileInstances->SetMaterial(0, Mat);
+		}
+	}
 }
 
 void AT66MiasmaManager::BeginPlay()
@@ -22,8 +64,93 @@ void AT66MiasmaManager::BeginPlay()
 	}
 }
 
+void AT66MiasmaManager::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	TickDamageOverActiveTiles(DeltaTime);
+}
+
+void AT66MiasmaManager::BuildMainMapSubcellGrid()
+{
+	TileCenters.Reset();
+
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!World || !T66GI)
+	{
+		return;
+	}
+
+	const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
+	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(T66GI->SelectedDifficulty, T66GI->RunSeed);
+	T66MainMapTerrain::FBoard Board;
+	if (!T66MainMapTerrain::Generate(Preset, Board))
+	{
+		return;
+	}
+
+	TileSize = Board.Settings.CellSize * 0.5f;
+	const float QuarterCellOffset = TileSize * 0.5f;
+
+	for (const T66MainMapTerrain::FCell& Cell : Board.Cells)
+	{
+		if (!Cell.bOccupied)
+		{
+			continue;
+		}
+
+		FVector CellCenter = FVector::ZeroVector;
+		if (!T66MainMapTerrain::TryGetCellLocation(Board, FIntPoint(Cell.X, Cell.Z), 0.f, CellCenter))
+		{
+			continue;
+		}
+
+		for (const float OffsetX : { -QuarterCellOffset, QuarterCellOffset })
+		{
+			for (const float OffsetY : { -QuarterCellOffset, QuarterCellOffset })
+			{
+				FVector SampleLocation = CellCenter + FVector(OffsetX, OffsetY, 0.f);
+				FHitResult Hit;
+				const FVector TraceStart = SampleLocation + FVector(0.f, 0.f, 4000.f);
+				const FVector TraceEnd = SampleLocation - FVector(0.f, 0.f, 9000.f);
+				if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+				{
+					SampleLocation.Z = Hit.ImpactPoint.Z + TileZ;
+				}
+				else
+				{
+					SampleLocation.Z = CellCenter.Z + TileZ;
+				}
+
+				TileCenters.Add(SampleLocation);
+			}
+		}
+	}
+
+	FRandomStream Stream(T66GI->RunSeed + (StageNum * 97));
+	for (int32 Index = TileCenters.Num() - 1; Index > 0; --Index)
+	{
+		const int32 SwapIndex = Stream.RandRange(0, Index);
+		if (Index != SwapIndex)
+		{
+			TileCenters.Swap(Index, SwapIndex);
+		}
+	}
+}
+
 void AT66MiasmaManager::BuildGrid()
 {
+	if (T66ShouldUseMainBoardCoverage(GetWorld()))
+	{
+		BuildMainMapSubcellGrid();
+		if (TileCenters.Num() > 0)
+		{
+			return;
+		}
+	}
+
 	TileCenters.Reset();
 
 	const int32 Num = FMath::Max(1, FMath::FloorToInt((CoverageHalfExtent * 2.f) / TileSize));
@@ -52,19 +179,33 @@ void AT66MiasmaManager::BuildGrid()
 
 void AT66MiasmaManager::UpdateFromRunState()
 {
-	if (bSpawningPaused) return;
+	if (bSpawningPaused)
+	{
+		return;
+	}
 
 	UWorld* World = GetWorld();
-	if (!World) return;
+	if (!World)
+	{
+		return;
+	}
+
+	if (TileCenters.Num() <= 0)
+	{
+		BuildGrid();
+	}
 
 	FLagScopedScope LagScope(World, TEXT("MiasmaManager::UpdateFromRunState (EnsureSpawnedCount)"));
 	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState) return;
+	if (!RunState || TileCenters.Num() <= 0)
+	{
+		return;
+	}
 
 	if (!RunState->GetStageTimerActive())
 	{
-		return; // frozen: no spawn until start gate
+		return;
 	}
 
 	const float Remaining = RunState->GetStageTimerSecondsRemaining();
@@ -74,14 +215,10 @@ void AT66MiasmaManager::UpdateFromRunState()
 
 	const int32 Total = TileCenters.Num();
 	int32 Desired = FMath::Clamp(FMath::FloorToInt(Alpha * static_cast<float>(Total)), 0, Total);
-
-	// As soon as the timer starts, we want some miasma to be present immediately.
 	if (Desired == 0)
 	{
 		Desired = 1;
 	}
-
-	// At timer end, ensure full coverage.
 	if (Remaining <= 0.05f)
 	{
 		Desired = Total;
@@ -90,43 +227,65 @@ void AT66MiasmaManager::UpdateFromRunState()
 	EnsureSpawnedCount(Desired);
 }
 
-static constexpr int32 MaxTilesToSpawnPerFrame = 8;
-
 void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
 {
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	int32 SpawnedThisCall = 0;
-	while (SpawnedTiles.Num() < DesiredCount && SpawnedTiles.Num() < TileCenters.Num() && SpawnedThisCall < MaxTilesToSpawnPerFrame)
+	if (!TileInstances)
 	{
-		const FVector Loc = TileCenters[SpawnedTiles.Num()];
-		FActorSpawnParameters Params;
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AT66MiasmaTile* Tile = World->SpawnActorDeferred<AT66MiasmaTile>(AT66MiasmaTile::StaticClass(), FTransform(FRotator::ZeroRotator, Loc), this, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (Tile)
+		return;
+	}
+
+	const FVector InstanceScale(TileSize / 100.f, TileSize / 100.f, 0.05f);
+	while (SpawnedTileCount < DesiredCount && SpawnedTileCount < TileCenters.Num())
+	{
+		const FVector& Location = TileCenters[SpawnedTileCount];
+		TileInstances->AddInstance(FTransform(FRotator::ZeroRotator, Location, InstanceScale));
+		++SpawnedTileCount;
+	}
+}
+
+void AT66MiasmaManager::TickDamageOverActiveTiles(float DeltaTime)
+{
+	if (bSpawningPaused || SpawnedTileCount <= 0 || DamageIntervalSeconds <= 0.f)
+	{
+		return;
+	}
+
+	DamageTickAccumulator += DeltaTime;
+	if (DamageTickAccumulator < DamageIntervalSeconds)
+	{
+		return;
+	}
+	DamageTickAccumulator = 0.f;
+
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (!RunState || !Hero)
+	{
+		return;
+	}
+
+	const FVector HeroLocation = Hero->GetActorLocation();
+	const float HalfExtent = TileSize * 0.5f;
+	for (int32 Index = 0; Index < SpawnedTileCount; ++Index)
+	{
+		const FVector& TileCenter = TileCenters[Index];
+		if (FMath::Abs(HeroLocation.X - TileCenter.X) <= HalfExtent
+			&& FMath::Abs(HeroLocation.Y - TileCenter.Y) <= HalfExtent)
 		{
-			Tile->TileSize = TileSize;
-			Tile->FinishSpawning(FTransform(FRotator::ZeroRotator, Loc));
-			SpawnedTiles.Add(Tile);
-			++SpawnedThisCall;
-		}
-		else
-		{
-			break;
+			RunState->ApplyDamage(20, this);
+			return;
 		}
 	}
 }
 
 void AT66MiasmaManager::ClearAllMiasma()
 {
-	for (TObjectPtr<AT66MiasmaTile>& Tile : SpawnedTiles)
+	if (TileInstances)
 	{
-		if (Tile)
-		{
-			Tile->Destroy();
-		}
+		TileInstances->ClearInstances();
 	}
-	SpawnedTiles.Reset();
+	SpawnedTileCount = 0;
+	DamageTickAccumulator = 0.f;
 }
-

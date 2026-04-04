@@ -3,11 +3,14 @@
 #include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66Style.h"
+#include "Core/T66BackendSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/DateTime.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Misc/EngineVersion.h"
@@ -117,6 +120,9 @@ void UT66ReportBugScreen::OnSubmitClicked()
 	int32 Hearts = -1, MaxHearts = -1, Gold = -1, Debt = -1, Stage = -1, Score = -1;
 	float TimerSeconds = -1.f;
 	bool bTimerActive = false;
+	FString DifficultyKey;
+	FString PartyKey;
+	FString HeroIdKey;
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
@@ -130,6 +136,30 @@ void UT66ReportBugScreen::OnSubmitClicked()
 			bTimerActive = RunState->GetStageTimerActive();
 			TimerSeconds = RunState->GetStageTimerSecondsRemaining();
 		}
+
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+		{
+			switch (T66GI->SelectedDifficulty)
+			{
+			case ET66Difficulty::Medium: DifficultyKey = TEXT("medium"); break;
+			case ET66Difficulty::Hard: DifficultyKey = TEXT("hard"); break;
+			case ET66Difficulty::VeryHard: DifficultyKey = TEXT("veryhard"); break;
+			case ET66Difficulty::Impossible: DifficultyKey = TEXT("impossible"); break;
+			case ET66Difficulty::Easy:
+			default: DifficultyKey = TEXT("easy"); break;
+			}
+
+			switch (T66GI->SelectedPartySize)
+			{
+			case ET66PartySize::Duo: PartyKey = TEXT("duo"); break;
+			case ET66PartySize::Trio: PartyKey = TEXT("trio"); break;
+			case ET66PartySize::Quad: PartyKey = TEXT("quad"); break;
+			case ET66PartySize::Solo:
+			default: PartyKey = TEXT("solo"); break;
+			}
+
+			HeroIdKey = T66GI->SelectedHeroID.ToString();
+		}
 	}
 
 	FString Report;
@@ -139,10 +169,14 @@ void UT66ReportBugScreen::OnSubmitClicked()
 	Report += FString::Printf(TEXT("OS: %s\n"), *FPlatformMisc::GetOSVersion());
 	Report += FString::Printf(TEXT("CPU: %s\n"), *FPlatformMisc::GetCPUBrand());
 	Report += FString::Printf(TEXT("Project: %s\n"), FApp::GetProjectName());
-	const FString BuildVersion = FApp::GetBuildVersion();
+	FString BuildVersion = FApp::GetBuildVersion();
+	if (BuildVersion.IsEmpty())
+	{
+		GConfig->GetString(TEXT("/Script/EngineSettings.GeneralProjectSettings"), TEXT("ProjectVersion"), BuildVersion, GGameIni);
+	}
 	Report += FString::Printf(TEXT("BuildVersion: %s\n"), *BuildVersion);
 	Report += FString::Printf(TEXT("EngineVersion: %s\n"), *FEngineVersion::Current().ToString());
-	Report += TEXT("Sentry: not configured (placeholder)\n");
+	Report += TEXT("Telemetry: backend submission + local backup\n");
 	Report += TEXT("\n-- Run Context (best effort) --\n");
 	Report += FString::Printf(TEXT("Stage: %d\n"), Stage);
 	Report += FString::Printf(TEXT("Hearts: %d / %d\n"), Hearts, MaxHearts);
@@ -159,6 +193,17 @@ void UT66ReportBugScreen::OnSubmitClicked()
 	IFileManager::Get().MakeDirectory(*Dir, true);
 	const FString FilePath = Dir / FString::Printf(TEXT("BugReport_%s.txt"), *Timestamp);
 	FFileHelper::SaveStringToFile(Report, *FilePath);
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			if (Backend->IsBackendConfigured() && Backend->HasSteamTicket())
+			{
+				Backend->SubmitBugReport(BugReportText, Stage, DifficultyKey, PartyKey, HeroIdKey);
+			}
+		}
+	}
 
 	UE_LOG(LogT66ReportBug, Log, TEXT("Report Bug saved: %s"), *FilePath);
 	CloseModal();

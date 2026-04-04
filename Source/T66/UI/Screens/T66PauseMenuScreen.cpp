@@ -791,6 +791,8 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 	SaveObj->PartySize = GI->SelectedPartySize;
 	SaveObj->MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString();
 	SaveObj->LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
+	SaveObj->RunSeed = GI->RunSeed;
+	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
 
 	if (UT66RunStateSubsystem* LocalRunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 	{
@@ -844,7 +846,7 @@ void UT66PauseMenuScreen::OnRestartClicked()
 {
 	AT66PlayerController* PC = GetT66PlayerController();
 	if (PC) PC->SetPause(false);
-	UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
 }
 
 void UT66PauseMenuScreen::OnSettingsClicked()

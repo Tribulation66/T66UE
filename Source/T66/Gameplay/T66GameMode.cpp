@@ -78,6 +78,7 @@
 #include "Components/SkyLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/BoxComponent.h"
@@ -318,6 +319,27 @@ namespace
 		return MapName.Contains(TEXT("Tutorial"));
 	}
 
+	static bool T66TryGetTaggedActorTransform(const UWorld* World, const FName Tag, FVector& OutLocation, FRotator& OutRotation)
+	{
+		if (!World || Tag.IsNone())
+		{
+			return false;
+		}
+
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (Actor && Actor->ActorHasTag(Tag))
+			{
+				OutLocation = Actor->GetActorLocation();
+				OutRotation = Actor->GetActorRotation();
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	struct FT66DifficultyGroundThemeAssetInfo
 	{
 		const TCHAR* FolderName = nullptr;
@@ -541,6 +563,19 @@ void AT66GameMode::InitializeRunStateForBeginPlay()
 		RunState->StageTimerChanged.AddDynamic(this, &AT66GameMode::HandleStageTimerChanged);
 		RunState->DifficultyChanged.AddDynamic(this, &AT66GameMode::HandleDifficultyChanged);
 
+		if (T66GI->bApplyLoadedRunSnapshot)
+		{
+			T66GI->bApplyLoadedRunSnapshot = false;
+			RunState->ResetForNewRun();
+			RunState->ImportSavedRunSnapshot(T66GI->PendingLoadedRunSnapshot);
+			T66GI->PendingLoadedRunSnapshot = FT66SavedRunSnapshot{};
+			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+			{
+				DamageLog->ResetForNewRun();
+			}
+			return;
+		}
+
 		// Robust: treat any stage > 1 as a stage transition even if a gate forgot to set the flag.
 		const bool bKeepProgress = T66GI->bIsStageTransition || (RunState->GetCurrentStage() > 1);
 		if (bKeepProgress)
@@ -598,7 +633,14 @@ void AT66GameMode::HandleColiseumBeginPlay()
 	}
 
 	SpawnColiseumArenaIfNeeded();
-	SpawnAllOwedBossesInColiseum();
+	if (IsFinalDifficultyBossColiseumStage())
+	{
+		SpawnFinalDifficultyBossInColiseum();
+	}
+	else
+	{
+		SpawnAllOwedBossesInColiseum();
+	}
 	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - Coliseum"));
 }
 
@@ -1021,6 +1063,14 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 	// The duplicated tutorial map should always run the tutorial flow.
 	if (!T66IsStandaloneTutorialMap(World) && !bForceSpawnInTutorialArea) return;
 
+	for (TActorIterator<AT66TutorialManager> It(World); It; ++It)
+	{
+		if (IsValid(*It))
+		{
+			return;
+		}
+	}
+
 	FActorSpawnParameters P;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	AT66TutorialManager* M = World->SpawnActor<AT66TutorialManager>(AT66TutorialManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, P);
@@ -1305,6 +1355,7 @@ void AT66GameMode::Tick(float DeltaTime)
 			RunState->TickStageTimer(DeltaTime);
 			RunState->TickSpeedRunTimer(DeltaTime);
 			RunState->TickHeroTimers(DeltaTime);
+			TickFinalDifficultySurvival(DeltaTime);
 
 			// Skill Rating: time is driven here; damage is an input event from RunState.
 			if (UT66SkillRatingSubsystem* Skill = GI->GetSubsystem<UT66SkillRatingSubsystem>())
@@ -1361,6 +1412,7 @@ void AT66GameMode::HandleDifficultyChanged()
 
 	const int32 Stage = RunState->GetCurrentStage();
 	const float Scalar = RunState->GetDifficultyScalar();
+	const float FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
 	UT66ActorRegistrySubsystem* Registry = GetWorld() ? GetWorld()->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
 	const TArray<TWeakObjectPtr<AT66EnemyBase>>& Enemies = Registry ? Registry->GetEnemies() : TArray<TWeakObjectPtr<AT66EnemyBase>>();
 	for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Enemies)
@@ -1369,6 +1421,7 @@ void AT66GameMode::HandleDifficultyChanged()
 		{
 			E->ApplyStageScaling(Stage);
 			E->ApplyDifficultyScalar(Scalar);
+			E->ApplyFinaleScaling(FinaleScalar);
 		}
 	}
 
@@ -1486,6 +1539,23 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 		}
 	}
 
+	if (GI && NewPlayer && !GI->bLoadAsPreview)
+	{
+		if (UGameInstance* GameInstance = GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				if (RunState->HasPendingDifficultyClearSummary())
+				{
+					if (AT66PlayerController* PC = Cast<AT66PlayerController>(NewPlayer))
+					{
+						PC->ShowDifficultyClearSummary();
+					}
+				}
+			}
+		}
+	}
+
 	MaintainPlayerTerrainSafety();
 
 }
@@ -1538,8 +1608,18 @@ bool AT66GameMode::IsColiseumStage() const
 
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		return GI->bForceColiseumMode;
+		return GI->bForceColiseumMode || GI->ColiseumFlowMode != ET66ColiseumFlowMode::None;
 	}
+	return false;
+}
+
+bool AT66GameMode::IsFinalDifficultyBossColiseumStage() const
+{
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		return GI->ColiseumFlowMode == ET66ColiseumFlowMode::FinalDifficultyBoss;
+	}
+
 	return false;
 }
 
@@ -1700,6 +1780,315 @@ void AT66GameMode::SpawnAllOwedBossesInColiseum()
 		bColiseumExitGateSpawned = true;
 		RunState->ClearOwedBosses();
 		SpawnStageGateAtLocation(ColiseumCenter);
+	}
+}
+
+void AT66GameMode::SpawnFinalDifficultyBossInColiseum()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!T66GI || !RunState) return;
+
+	const int32 StageNum = RunState->GetCurrentStage();
+
+	FStageData StageData;
+	StageData.StageNumber = StageNum;
+	StageData.BossID = FName(*FString::Printf(TEXT("Boss_%02d"), StageNum));
+	if (FStageData FromDT; T66GI->GetStageData(StageNum, FromDT))
+	{
+		StageData = FromDT;
+	}
+
+	FBossData BossData;
+	BossData.BossID = StageData.BossID;
+	BossData.MaxHP = 1000 + (StageNum * 250);
+	BossData.AwakenDistance = 999999.f;
+	BossData.MoveSpeed = 350.f + (StageNum * 2.f);
+	BossData.FireIntervalSeconds = FMath::Clamp(2.0f - (StageNum * 0.015f), 0.65f, 3.5f);
+	BossData.ProjectileSpeed = 900.f + (StageNum * 15.f);
+	BossData.ProjectileDamageHearts = 1 + (StageNum / 20);
+	BossData.PlaceholderColor = FLinearColor(0.95f, 0.18f, 0.10f, 1.f);
+
+	if (FBossData FromBossDT; !StageData.BossID.IsNone() && T66GI->GetBossData(StageData.BossID, FromBossDT))
+	{
+		BossData = FromBossDT;
+		BossData.AwakenDistance = 999999.f;
+	}
+
+	UClass* BossClass = AT66BossBase::StaticClass();
+	if (!BossData.BossClass.IsNull())
+	{
+		if (UClass* LoadedClass = BossData.BossClass.LoadSynchronous())
+		{
+			if (LoadedClass->IsChildOf(AT66BossBase::StaticClass()))
+			{
+				BossClass = LoadedClass;
+			}
+		}
+	}
+
+	FVector SpawnLoc = ColiseumCenter;
+	FHitResult Hit;
+	const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 4000.f);
+	const FVector TraceEnd = SpawnLoc - FVector(0.f, 0.f, 9000.f);
+	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+	{
+		SpawnLoc = Hit.ImpactPoint + FVector(0.f, 0.f, 150.f);
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AActor* Spawned = World->SpawnActor<AActor>(BossClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (AT66BossBase* Boss = Cast<AT66BossBase>(Spawned))
+	{
+		Boss->InitializeBoss(BossData);
+		Boss->ForceAwaken();
+		StageBoss = Boss;
+		ColiseumBossesRemaining = 1;
+		RunState->SetBossActiveWithId(BossData.BossID, Boss->MaxHP);
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned final-difficulty Coliseum boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
+	}
+}
+
+void AT66GameMode::SpawnFinalDifficultyTotem(const FVector& SpawnLocation)
+{
+	if (FinalDifficultyTotemActor.IsValid())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	FVector GroundedLocation = SpawnLocation + FVector(420.f, 0.f, 0.f);
+	FHitResult Hit;
+	const FVector TraceStart = GroundedLocation + FVector(0.f, 0.f, 3000.f);
+	const FVector TraceEnd = GroundedLocation - FVector(0.f, 0.f, 9000.f);
+	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+	{
+		GroundedLocation = Hit.ImpactPoint;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AStaticMeshActor* TotemActor = World->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), GroundedLocation, FRotator::ZeroRotator, SpawnParams);
+	if (!TotemActor)
+	{
+		return;
+	}
+
+	if (UStaticMeshComponent* SMC = TotemActor->GetStaticMeshComponent())
+	{
+		TSoftObjectPtr<UStaticMesh> TotemMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/Totem.Totem")));
+		if (UStaticMesh* LoadedMesh = TotemMesh.LoadSynchronous())
+		{
+			SMC->SetStaticMesh(LoadedMesh);
+			SMC->SetRelativeScale3D(FVector(2.4f, 2.4f, 4.2f));
+		}
+		else if (UStaticMesh* CubeMesh = GetCubeMesh())
+		{
+			SMC->SetStaticMesh(CubeMesh);
+			SMC->SetRelativeScale3D(FVector(0.8f, 0.8f, 10.f));
+		}
+
+		if (UMaterialInstanceDynamic* Mat = SMC->CreateAndSetMaterialInstanceDynamic(0))
+		{
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.86f, 0.72f, 0.18f, 1.f));
+		}
+	}
+
+	FinalDifficultyTotemActor = TotemActor;
+}
+
+void AT66GameMode::SpawnFinalDifficultySaint(const FVector& SpawnLocation)
+{
+	if (FinalDifficultySaintActor.IsValid())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	FVector GroundedLocation = SpawnLocation + FVector(-420.f, 0.f, 0.f);
+	FHitResult Hit;
+	const FVector TraceStart = GroundedLocation + FVector(0.f, 0.f, 3000.f);
+	const FVector TraceEnd = GroundedLocation - FVector(0.f, 0.f, 9000.f);
+	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+	{
+		GroundedLocation = Hit.ImpactPoint + FVector(0.f, 0.f, 5.f);
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AT66SaintNPC* Saint = World->SpawnActor<AT66SaintNPC>(AT66SaintNPC::StaticClass(), GroundedLocation, FRotator::ZeroRotator, SpawnParams))
+	{
+		if (Saint->InteractionSphere)
+		{
+			Saint->InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+		FinalDifficultySaintActor = Saint;
+	}
+}
+
+void AT66GameMode::BeginFinalDifficultySurvival(const FVector& BossDeathLocation)
+{
+	UGameInstance* GI = GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return;
+	}
+
+	bFinalDifficultySurvivalActive = true;
+	FinalDifficultySurvivalElapsedSeconds = 0.f;
+	LastAppliedFinalDifficultyEnemyScalar = 1.f;
+
+	RunState->SetBossInactive();
+	RunState->SetPendingDifficultyClearSummary(false);
+	RunState->SetSaintBlessingActive(true);
+	RunState->SetFinalSurvivalEnemyScalar(1.f);
+	RunState->SetStageTimerActive(true);
+
+	ClearMiasma();
+	SpawnFinalDifficultyTotem(BossDeathLocation);
+	SpawnFinalDifficultySaint(BossDeathLocation);
+
+	bool bHasEnemyDirector = false;
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
+		{
+			if (AT66EnemyDirector* ExistingDirector = *It)
+			{
+				ExistingDirector->SetSpawningPaused(false);
+				bHasEnemyDirector = true;
+			}
+		}
+
+		if (!bHasEnemyDirector)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			World->SpawnActor<AT66EnemyDirector>(AT66EnemyDirector::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		}
+	}
+
+	UpdateFinalDifficultySurvivalScaling(true);
+}
+
+void AT66GameMode::UpdateFinalDifficultySurvivalScaling(const bool bForce)
+{
+	UGameInstance* GI = GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return;
+	}
+
+	const float Alpha = FMath::Clamp(FinalDifficultySurvivalElapsedSeconds / 180.f, 0.f, 1.f);
+	const float NewScalar = FMath::Clamp(FMath::Pow(6.0f, Alpha), 1.f, 99.f);
+	RunState->SetFinalSurvivalEnemyScalar(NewScalar);
+
+	if (!bForce && FMath::IsNearlyEqual(NewScalar, LastAppliedFinalDifficultyEnemyScalar, 0.05f))
+	{
+		return;
+	}
+
+	LastAppliedFinalDifficultyEnemyScalar = NewScalar;
+
+	UWorld* World = GetWorld();
+	UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+	if (!Registry)
+	{
+		return;
+	}
+
+	const int32 Stage = RunState->GetCurrentStage();
+	const float BaseDifficultyScalar = RunState->GetDifficultyScalar();
+	for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+	{
+		if (AT66EnemyBase* Enemy = WeakEnemy.Get())
+		{
+			Enemy->ApplyStageScaling(Stage);
+			Enemy->ApplyDifficultyScalar(BaseDifficultyScalar);
+			Enemy->ApplyFinaleScaling(NewScalar);
+		}
+	}
+}
+
+void AT66GameMode::TickFinalDifficultySurvival(float DeltaTime)
+{
+	if (!bFinalDifficultySurvivalActive)
+	{
+		return;
+	}
+
+	UGameInstance* GI = GetGameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return;
+	}
+
+	FinalDifficultySurvivalElapsedSeconds = FMath::Min(180.f, FinalDifficultySurvivalElapsedSeconds + FMath::Max(0.f, DeltaTime));
+	UpdateFinalDifficultySurvivalScaling();
+
+	if (FinalDifficultySurvivalElapsedSeconds < 180.f)
+	{
+		return;
+	}
+
+	bFinalDifficultySurvivalActive = false;
+	RunState->SetSaintBlessingActive(false);
+	RunState->SetFinalSurvivalEnemyScalar(1.f);
+	RunState->SetPendingDifficultyClearSummary(true);
+	RunState->SetStageTimerActive(false);
+
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(this, 0))
+		{
+			FVector ExitLocation = ColiseumCenter + FVector(0.f, 0.f, 200.f);
+			Pawn->SetActorLocation(ExitLocation, false, nullptr, ETeleportType::TeleportPhysics);
+		}
+	}
+
+	if (UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+	{
+		if (const UT66GameInstance* T66GI = GetT66GameInstance())
+		{
+			if (!T66GI->SelectedHeroID.IsNone())
+			{
+				Achievements->RecordHeroDifficultyClear(T66GI->SelectedHeroID, T66GI->SelectedDifficulty);
+			}
+			if (!T66GI->SelectedCompanionID.IsNone())
+			{
+				Achievements->RecordCompanionDifficultyClear(T66GI->SelectedCompanionID, T66GI->SelectedDifficulty);
+			}
+		}
+	}
+
+	if (UT66GameInstance* T66GI = GetT66GameInstance())
+	{
+		T66GI->bForceColiseumMode = false;
+		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
+	}
+
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(World ? World->GetFirstPlayerController() : nullptr))
+	{
+		T66PC->ShowDifficultyClearSummary();
 	}
 }
 
@@ -2019,6 +2408,11 @@ void AT66GameMode::ResetColiseumState()
 {
 	ColiseumBossesRemaining = 0;
 	bColiseumExitGateSpawned = false;
+	bFinalDifficultySurvivalActive = false;
+	FinalDifficultySurvivalElapsedSeconds = 0.f;
+	LastAppliedFinalDifficultyEnemyScalar = 1.f;
+	FinalDifficultyTotemActor = nullptr;
+	FinalDifficultySaintActor = nullptr;
 }
 
 void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
@@ -2066,6 +2460,17 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 
 	if (IsColiseumStage())
 	{
+		if (IsFinalDifficultyBossColiseumStage())
+		{
+			if (RunState)
+			{
+				RunState->SetBossInactive();
+			}
+			ColiseumBossesRemaining = 0;
+			BeginFinalDifficultySurvival(Location);
+			return;
+		}
+
 		// Coliseum: keep the timer/miasma running; open the exit gate only when ALL owed bosses are dead.
 		if (RunState)
 		{
@@ -2093,6 +2498,17 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	{
 		RunState->SetBossInactive();
 		RunState->SetStageTimerActive(false);
+	}
+
+	bool bCompletedSelectedDifficulty = false;
+	if (RunState)
+	{
+		const ET66Difficulty SelectedDifficulty = GetT66GameInstance() ? GetT66GameInstance()->SelectedDifficulty : ET66Difficulty::Easy;
+		if (UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr)
+		{
+			const int32 DifficultyEndStage = PlayerExperience->GetDifficultyEndStage(SelectedDifficulty);
+			bCompletedSelectedDifficulty = (RunState->GetCurrentStage() >= DifficultyEndStage);
+		}
 	}
 
 	// First-time stage clear unlock => spawn recruitable companion for stages 1..23.
@@ -2134,6 +2550,17 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 
 	// Normal stage: boss dead => miasma disappears and Stage Gate appears.
 	ClearMiasma();
+	if (bCompletedSelectedDifficulty)
+	{
+		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(World->GetFirstPlayerController()))
+		{
+			T66PC->ShowVictoryRunSummary();
+			return;
+		}
+
+		UE_LOG(LogT66GameMode, Warning, TEXT("Difficulty clear reached but no T66PlayerController was available to open Run Summary."));
+	}
+
 	SpawnStageGateAtLocation(Location);
 
 	if (RunState)
@@ -2216,6 +2643,10 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 {
 	UT66GameInstance* GI = GetT66GameInstance();
 	if (!GI) return;
+	if (T66IsStandaloneTutorialMap(GetWorld()))
+	{
+		return;
+	}
 
 	const FName SelectedCompanionID = T66GetSelectedCompanionID(GI, Player);
 	if (SelectedCompanionID.IsNone()) return;
@@ -3578,7 +4009,14 @@ void AT66GameMode::SpawnBossForCurrentStage()
 
 	if (IsColiseumStage())
 	{
-		SpawnAllOwedBossesInColiseum();
+		if (IsFinalDifficultyBossColiseumStage())
+		{
+			SpawnFinalDifficultyBossInColiseum();
+		}
+		else
+		{
+			SpawnAllOwedBossesInColiseum();
+		}
 		return;
 	}
 
@@ -3855,6 +4293,13 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 		}
 		return false;
 	};
+
+	FVector AuthoredMapMarkerLocation = FVector::ZeroVector;
+	FRotator AuthoredMapMarkerRotation = FRotator::ZeroRotator;
+	if (T66TryGetTaggedActorTransform(World, FName(TEXT("T66_Tutorial_MapReady")), AuthoredMapMarkerLocation, AuthoredMapMarkerRotation))
+	{
+		return;
+	}
 
 	// Tutorial: to the side of the main map, separated by empty space. Scaled for 100k map.
 	const FVector TutorialCenter(0.f, 61364.f, -50.f);
@@ -6062,8 +6507,18 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		{
 			if (T66IsStandaloneTutorialMap(GetWorld()) || bForceSpawnInTutorialArea)
 			{
-				SpawnLocation = FVector(-3636.f, 56818.f, 200.f);
-				SpawnRotation = FRotator::ZeroRotator;
+				FVector TutorialSpawnLocation = FVector(-3636.f, 56818.f, 200.f);
+				FRotator TutorialSpawnRotation = FRotator::ZeroRotator;
+				if (T66TryGetTaggedActorTransform(GetWorld(), FName(TEXT("T66_Tutorial_PlayerSpawn")), TutorialSpawnLocation, TutorialSpawnRotation))
+				{
+					SpawnLocation = TutorialSpawnLocation;
+					SpawnRotation = TutorialSpawnRotation;
+				}
+				else
+				{
+					SpawnLocation = FVector(-3636.f, 56818.f, 200.f);
+					SpawnRotation = FRotator::ZeroRotator;
+				}
 			}
 		}
 	}
@@ -6072,7 +6527,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		// Forced coliseum mode uses an enclosed arena off to the side (not the main arena).
 		if (UT66GameInstance* T66GI = GetT66GameInstance())
 		{
-			if (T66GI->bForceColiseumMode)
+			if (T66GI->bForceColiseumMode || T66GI->ColiseumFlowMode != ET66ColiseumFlowMode::None)
 			{
 				SpawnLocation = ColiseumCenter;
 				SpawnRotation = FRotator::ZeroRotator;

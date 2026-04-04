@@ -4,6 +4,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -91,10 +92,11 @@ bool AT66StageGate::AdvanceToNextStage()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	if (!T66GI) return false;
 
-	// Special: Coliseum mode stage gate returns to the difficulty boss stage (do NOT increment).
-	if (T66GI->bForceColiseumMode)
+	// Special: Coliseum mode stage gate returns to the checkpointed gameplay stage (do NOT increment).
+	if (T66GI->bForceColiseumMode || T66GI->ColiseumFlowMode != ET66ColiseumFlowMode::None)
 	{
 		T66GI->bForceColiseumMode = false;
+		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 		T66GI->bIsStageTransition = true;
 		// Return to GameplayLevel (checkpoint stage is already set before entering Coliseum).
 		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
@@ -105,6 +107,10 @@ bool AT66StageGate::AdvanceToNextStage()
 	if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 	{
 		Ach->NotifyStageCleared(1);
+		if (!T66GI->SelectedHeroID.IsNone())
+		{
+			Ach->AddHeroUnityStagesCleared(T66GI->SelectedHeroID, 1);
+		}
 		if (!T66GI->SelectedCompanionID.IsNone())
 		{
 			Ach->AddCompanionUnionStagesCleared(T66GI->SelectedCompanionID, 1);
@@ -121,10 +127,24 @@ bool AT66StageGate::AdvanceToNextStage()
 
 	// Coliseum rule: before entering a difficulty boss stage (5, 10, 15, 20, 23), route to Coliseum if there are owed bosses.
 	const bool bIsDifficultyBossStage = (NextStage == 5 || NextStage == 10 || NextStage == 15 || NextStage == 20 || NextStage == 23);
+	int32 SelectedDifficultyEndStage = INDEX_NONE;
+	if (UT66PlayerExperienceSubSystem* PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
+	{
+		SelectedDifficultyEndStage = PlayerExperience->GetDifficultyEndStage(T66GI->SelectedDifficulty);
+	}
+	if (NextStage == SelectedDifficultyEndStage)
+	{
+		T66GI->bIsStageTransition = true;
+		T66GI->bForceColiseumMode = true;
+		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::FinalDifficultyBoss;
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetColiseumLevelName());
+		return true;
+	}
 	if (bIsDifficultyBossStage && RunState->GetOwedBossIDs().Num() > 0)
 	{
 		T66GI->bIsStageTransition = true;
 		T66GI->bForceColiseumMode = true;
+		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::OwedBosses;
 		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetColiseumLevelName());
 		return true;
 	}

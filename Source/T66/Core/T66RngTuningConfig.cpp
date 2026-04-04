@@ -32,7 +32,7 @@ namespace
 	}
 
 	template <typename StructType>
-	static void LoadStructValue(const FString& ConfigFilename, const TCHAR* Key, StructType& Value)
+	static void LoadRngStructValue(const FString& ConfigFilename, const TCHAR* Key, StructType& Value)
 	{
 		if (!GConfig)
 		{
@@ -66,8 +66,8 @@ void UT66RngTuningConfig::LoadFromConfig()
 	LoadFloatValue(ConfigFilename, TEXT("BernoulliBiasStrength"), BernoulliBiasStrength);
 
 	LoadFloatValue(ConfigFilename, TEXT("GoblinWaveChanceBase"), GoblinWaveChanceBase);
-	LoadStructValue(ConfigFilename, TEXT("GoblinCountPerWave"), GoblinCountPerWave);
-	LoadStructValue(ConfigFilename, TEXT("SpecialEnemyRarityBase"), SpecialEnemyRarityBase);
+	LoadRngStructValue(ConfigFilename, TEXT("GoblinCountPerWave"), GoblinCountPerWave);
+	LoadRngStructValue(ConfigFilename, TEXT("SpecialEnemyRarityBase"), SpecialEnemyRarityBase);
 
-	LoadStructValue(ConfigFilename, TEXT("TreesPerStage"), TreesPerStage);
+	LoadRngStructValue(ConfigFilename, TEXT("TreesPerStage"), TreesPerStage);
 }

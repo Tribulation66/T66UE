@@ -200,9 +200,17 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
 	int32 GetCompanionUnionStagesCleared(FName CompanionID) const;
 
+	/** Union: stages cleared with a specific hero (lifetime / profile). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
+	int32 GetHeroUnityStagesCleared(FName HeroID) const;
+
 	/** Union: increment stage-clears for a companion (e.g., when the player clears a stage with them). */
 	UFUNCTION(BlueprintCallable, Category = "Union")
 	void AddCompanionUnionStagesCleared(FName CompanionID, int32 DeltaStagesCleared = 1);
+
+	/** Union: increment stage-clears for a hero (e.g., when the player clears a stage with them). */
+	UFUNCTION(BlueprintCallable, Category = "Union")
+	void AddHeroUnityStagesCleared(FName HeroID, int32 DeltaStagesCleared = 1);
 
 	/** Union: healing interval in seconds per 1 heart (Basic/Good/Medium/Hyper). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
@@ -211,6 +219,45 @@ public:
 	/** Union: progress 0..1 toward Hyper tier (for UI bars). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
 	float GetCompanionUnionProgress01(FName CompanionID) const;
+
+	/** Union: progress 0..1 toward Hyper tier (for UI bars). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
+	float GetHeroUnityProgress01(FName HeroID) const;
+
+	/** Games played with a specific hero. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetHeroGamesPlayed(FName HeroID) const;
+
+	/** Games played with a specific companion. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetCompanionGamesPlayed(FName CompanionID) const;
+
+	/** Highest medal earned with a specific hero. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	ET66AccountMedalTier GetHeroHighestMedal(FName HeroID) const;
+
+	/** Highest medal earned with a specific companion. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	ET66AccountMedalTier GetCompanionHighestMedal(FName CompanionID) const;
+
+	/** Increment games-played for a hero. */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void AddHeroGamesPlayed(FName HeroID, int32 DeltaGamesPlayed = 1);
+
+	/** Increment games-played for a companion. */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void AddCompanionGamesPlayed(FName CompanionID, int32 DeltaGamesPlayed = 1);
+
+	/** Record a full-clear medal for a hero based on the cleared difficulty. */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void RecordHeroDifficultyClear(FName HeroID, ET66Difficulty Difficulty);
+
+	/** Record a full-clear medal for a companion based on the cleared difficulty. */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void RecordCompanionDifficultyClear(FName CompanionID, ET66Difficulty Difficulty);
+
+	/** Medal tier mapped from the selected difficulty. */
+	static ET66AccountMedalTier MedalTierForDifficulty(ET66Difficulty Difficulty);
 
 	/** For T66SkinSubsystem: access profile to read/write skin data. Returns null if not loaded. */
 	UT66ProfileSaveGame* GetProfile() { return Profile; }

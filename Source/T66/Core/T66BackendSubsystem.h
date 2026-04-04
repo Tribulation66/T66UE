@@ -31,12 +31,16 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	bool, bSuccess,
 	const FString&, Restriction);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+	FOnBackendActionResponse,
+	bool, bSuccess,
+	const FString&, Message);
+
 /**
  * Handles all HTTP communication with the T66 backend (Vercel).
  *
  * Reads BackendBaseUrl from DefaultGame.ini [T66.Online].
- * Uses a hex-encoded Steam session ticket for authentication
- * (placeholder until Steamworks SDK is integrated).
+ * Uses a hex-encoded Steam session ticket for authentication.
  */
 UCLASS()
 class T66_API UT66BackendSubsystem : public UGameInstanceSubsystem
@@ -111,6 +115,46 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Backend")
 	FOnAccountStatusResponse OnAccountStatusComplete;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Backend")
+	FString GetLastAccountStatusReason() const { return LastAccountStatusReason; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Backend")
+	FString GetLastAccountAppealStatus() const { return LastAccountAppealStatus; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Backend")
+	FString GetLastAccountRunSummaryId() const { return LastAccountRunSummaryId; }
+
+	// ── API: Moderation / Bug Report ─────────────────────────
+
+	UFUNCTION(BlueprintCallable, Category = "Backend")
+	void SubmitRunReport(const FString& TargetEntryId, const FString& Reason, FString EvidenceUrl = TEXT(""));
+
+	UFUNCTION(BlueprintCallable, Category = "Backend")
+	void SubmitAppeal(const FString& Message, FString EvidenceUrl = TEXT(""));
+
+	UFUNCTION(BlueprintCallable, Category = "Backend")
+	void UpdateProofOfRun(const FString& EntryId, const FString& ProofUrl);
+
+	UFUNCTION(BlueprintCallable, Category = "Backend")
+	void SubmitBugReport(
+		const FString& Message,
+		int32 Stage,
+		const FString& Difficulty,
+		const FString& Party,
+		const FString& HeroId);
+
+	UPROPERTY(BlueprintAssignable, Category = "Backend")
+	FOnBackendActionResponse OnRunReportComplete;
+
+	UPROPERTY(BlueprintAssignable, Category = "Backend")
+	FOnBackendActionResponse OnAppealSubmitComplete;
+
+	UPROPERTY(BlueprintAssignable, Category = "Backend")
+	FOnBackendActionResponse OnProofOfRunComplete;
+
+	UPROPERTY(BlueprintAssignable, Category = "Backend")
+	FOnBackendActionResponse OnBugReportComplete;
+
 	// ── API: Health Check ────────────────────────────────────
 
 	/** Quick connectivity check. Logs result. */
@@ -162,6 +206,9 @@ public:
 private:
 	FString BackendBaseUrl;
 	FString CachedSteamTicketHex;
+	FString LastAccountStatusReason;
+	FString LastAccountAppealStatus;
+	FString LastAccountRunSummaryId;
 
 	struct FCachedLeaderboard
 	{
@@ -184,12 +231,17 @@ private:
 	void OnSubmitRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnMyRankResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnAccountStatusResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnRunReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnAppealResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnProofOfRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnBugReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnHealthResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnLeaderboardResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString LeaderboardKey);
 	void OnRunSummaryResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EntryId);
 
 	static ET66Difficulty ApiStringToDifficulty(const FString& S);
 	static ET66PartySize ApiStringToPartySize(const FString& S);
+	static FString ExtractResponseMessage(const TSharedPtr<FJsonObject>& Json, const FString& FallbackMessage);
 
 	/** Parse a run-summary JSON object into a UT66LeaderboardRunSummarySaveGame. */
 	static UT66LeaderboardRunSummarySaveGame* ParseRunSummaryFromJson(const TSharedPtr<FJsonObject>& Json, UObject* Outer);

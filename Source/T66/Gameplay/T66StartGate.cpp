@@ -90,4 +90,12 @@ void AT66StartGate::TryTriggerForActor(AActor* OtherActor)
 	SetActorTickEnabled(false);
 	RunState->SetStageTimerActive(true);
 	RunState->AddStructuredEvent(ET66RunEventType::StageEntered, FString::Printf(TEXT("Stage=%d"), RunState->GetCurrentStage()));
+
+	if (TriggerBox)
+	{
+		TriggerBox->SetBoxExtent(SealedBoxExtent);
+		TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+		TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	}
 }

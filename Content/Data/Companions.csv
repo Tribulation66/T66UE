@@ -1,5 +1,5 @@
 ---,CompanionID,DisplayName,LoreText,PlaceholderColor,CompanionClass,Portrait,SelectionPortrait,bUnlockedByDefault
-Companion_01,Companion_01,"Aria","","(R=0.950,G=0.427,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_01/T_Companion_01.T_Companion_01,/Game/UI/Sprites/Companions/Companion_01/T_Companion_01_Selection.T_Companion_01_Selection,false
+Companion_01,Companion_01,"Aria","","(R=0.950,G=0.427,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_01/T_Companion_01.T_Companion_01,/Game/UI/Sprites/Companions/Companion_01/T_Companion_01_Selection.T_Companion_01_Selection,true
 Companion_02,Companion_02,"Blaze","","(R=0.950,G=0.493,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_02/T_Companion_02.T_Companion_02,/Game/UI/Sprites/Companions/Companion_02/T_Companion_02_Selection.T_Companion_02_Selection,false
 Companion_03,Companion_03,"Bone","","(R=0.950,G=0.558,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_03/T_Companion_03.T_Companion_03,/Game/UI/Sprites/Companions/Companion_03/T_Companion_03_Selection.T_Companion_03_Selection,false
 Companion_04,Companion_04,"Cinder","","(R=0.950,G=0.623,B=0.427,A=1.0)",,/Game/UI/Sprites/Companions/Companion_04/T_Companion_04.T_Companion_04,/Game/UI/Sprites/Companions/Companion_04/T_Companion_04_Selection.T_Companion_04_Selection,false

@@ -32,12 +32,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnQuickReviveChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnVendorChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStatusEffectsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialHintChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialSubtitleChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialInputChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDevCheatsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCowardiceGatesTakenChanged);
 
 class AActor;
 class FSubsystemCollectionBase;
+struct FT66SavedRunSnapshot;
 
 /** Single DOT instance on one target (idol DOT damage over time). */
 struct FT66DotInstance
@@ -195,6 +197,10 @@ public:
 	/** Tutorial hint text changed (above crosshair). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnTutorialHintChanged TutorialHintChanged;
+
+	/** Tutorial subtitle text changed (guide dialogue). */
+	UPROPERTY(BlueprintAssignable, Category = "RunState")
+	FOnTutorialSubtitleChanged TutorialSubtitleChanged;
 
 	/** Tutorial input progress changed (move/jump). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
@@ -460,7 +466,7 @@ public:
 	bool GetStageTimerActive() const { return bStageTimerActive; }
 
 	/** Stage timer duration in seconds (countdown from this; frozen until start gate). */
-	static constexpr float StageTimerDurationSeconds = 360.f; // 6:00
+	static constexpr float StageTimerDurationSeconds = 420.f; // 7:00
 
 	/** Seconds remaining on stage timer. When inactive, stays at full duration (frozen). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -474,6 +480,22 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetSpeedRunElapsedSeconds() const { return SpeedRunElapsedSeconds; }
 
+	/** Full active run time in seconds across all cleared stages plus the current stage. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetCurrentRunElapsedSeconds() const;
+
+	/** Final cached run duration in seconds once the run ends. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetFinalRunElapsedSeconds() const { return bRunEnded ? FinalRunElapsedSeconds : GetCurrentRunElapsedSeconds(); }
+
+	/** True once the run has ended and the run summary path has been entered. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	bool HasRunEnded() const { return bRunEnded; }
+
+	/** True when the run ended because the selected difficulty was fully cleared. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	bool DidRunEndInVictory() const { return bRunEnded && bRunEndedAsVictory; }
+
 	/** True if this run has produced a new personal-best speed run time for any completed stage (difficulty/party scoped). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|SpeedRun")
 	bool DidThisRunSetNewPersonalBestTime() const { return bThisRunSetNewPersonalBestSpeedRunTime; }
@@ -486,6 +508,16 @@ public:
 
 	/** Call every frame from GameMode Tick to tick ultimate + last-stand timers. */
 	void TickHeroTimers(float DeltaTime);
+
+	/** Mark the run as ended and cache the final active run duration. */
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void MarkRunEnded(bool bWasFullClear);
+
+	/** Export the resumable subset of run state used by chained-difficulty save and quit. */
+	void ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnapshot) const;
+
+	/** Restore a previously exported chained-difficulty save snapshot. */
+	void ImportSavedRunSnapshot(const FT66SavedRunSnapshot& Snapshot);
 
 	/** Reset timer to full duration and freeze (e.g. when entering next stage so start gate starts it again). */
 	void ResetStageTimerToFull();
@@ -792,6 +824,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
 	void AddPowerCrystalsEarnedThisRun(int32 Amount);
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
+	bool HasPendingDifficultyClearSummary() const { return bPendingDifficultyClearSummary; }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Finale")
+	void SetPendingDifficultyClearSummary(bool bPending);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
+	bool IsSaintBlessingActive() const { return bSaintBlessingActive; }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Finale")
+	void SetSaintBlessingActive(bool bActive);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
+	float GetFinalSurvivalEnemyScalar() const { return FMath::Max(1.f, FinalSurvivalEnemyScalar); }
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|Finale")
+	void SetFinalSurvivalEnemyScalar(float Scalar);
+
 	// ============================================
 	// Luck Rating (aggregated Luck/RNG outcomes)
 	// ============================================
@@ -829,14 +879,36 @@ public:
 	FText GetTutorialHintLine2() const { return TutorialHintLine2; }
 	bool IsTutorialHintVisible() const { return bTutorialHintVisible; }
 
+	/** Set the tutorial subtitle line (guide dialogue). */
+	void SetTutorialSubtitle(const FText& InSpeaker, const FText& InText);
+
+	/** Clear the tutorial subtitle line. */
+	void ClearTutorialSubtitle();
+
+	FText GetTutorialSubtitleSpeaker() const { return TutorialSubtitleSpeaker; }
+	FText GetTutorialSubtitleText() const { return TutorialSubtitleText; }
+	bool IsTutorialSubtitleVisible() const { return bTutorialSubtitleVisible; }
+
 	/** Mark that movement input has been used at least once (for tutorial flow). */
 	void NotifyTutorialMoveInput();
 
 	/** Mark that jump input has been used at least once (for tutorial flow). */
 	void NotifyTutorialJumpInput();
 
+	/** Mark that camera look input has been used at least once (for tutorial flow). */
+	void NotifyTutorialLookInput();
+
+	/** Mark that the player has manually locked a target at least once. */
+	void NotifyTutorialAttackLockInput();
+
+	/** Mark that the player has activated their ultimate at least once. */
+	void NotifyTutorialUltimateUsed();
+
 	bool HasSeenTutorialMoveInput() const { return bTutorialMoveInputSeen; }
 	bool HasSeenTutorialJumpInput() const { return bTutorialJumpInputSeen; }
+	bool HasSeenTutorialLookInput() const { return bTutorialLookInputSeen; }
+	bool HasSeenTutorialAttackLockInput() const { return bTutorialAttackLockInputSeen; }
+	bool HasSeenTutorialUltimateUsed() const { return bTutorialUltimateUsedSeen; }
 
 	/** Reset tutorial input flags (used when beginning tutorial). */
 	void ResetTutorialInputFlags();
@@ -1265,6 +1337,34 @@ private:
 	// Run Summary banner: set true if any completed stage submission set a new personal best time.
 	bool bThisRunSetNewPersonalBestSpeedRunTime = false;
 
+	/** Accumulated active time from all completed stages in the current run. */
+	UPROPERTY()
+	float CompletedStageActiveSeconds = 0.f;
+
+	/** Cached final active run duration once the run ends. */
+	UPROPERTY()
+	float FinalRunElapsedSeconds = 0.f;
+
+	/** True once death/victory has finalized the run. */
+	UPROPERTY()
+	bool bRunEnded = false;
+
+	/** True if the finalized run ended on a full clear instead of a death. */
+	UPROPERTY()
+	bool bRunEndedAsVictory = false;
+
+	/** True when the player should be shown the between-difficulties clear summary instead of ending the run. */
+	UPROPERTY()
+	bool bPendingDifficultyClearSummary = false;
+
+	/** Saint blessing used during the post-boss survival extraction. */
+	UPROPERTY()
+	bool bSaintBlessingActive = false;
+
+	/** Extra scalar applied only to the final-survival enemy escalation. */
+	UPROPERTY()
+	float FinalSurvivalEnemyScalar = 1.f;
+
 	UPROPERTY()
 	int32 CurrentScore = 0;
 
@@ -1281,12 +1381,30 @@ private:
 	UPROPERTY()
 	FText TutorialHintLine2;
 
+	UPROPERTY()
+	bool bTutorialSubtitleVisible = false;
+
+	UPROPERTY()
+	FText TutorialSubtitleSpeaker;
+
+	UPROPERTY()
+	FText TutorialSubtitleText;
+
 	// Tutorial input flags (first-time onboarding).
 	UPROPERTY()
 	bool bTutorialMoveInputSeen = false;
 
 	UPROPERTY()
 	bool bTutorialJumpInputSeen = false;
+
+	UPROPERTY()
+	bool bTutorialLookInputSeen = false;
+
+	UPROPERTY()
+	bool bTutorialAttackLockInputSeen = false;
+
+	UPROPERTY()
+	bool bTutorialUltimateUsedSeen = false;
 
 	// Dev toggles (debug/test).
 	UPROPERTY()

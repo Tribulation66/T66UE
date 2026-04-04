@@ -169,7 +169,7 @@ void UT66Button::ExecuteAction()
 		{
 			OwningScreen->UIManager->HideAllUI();
 		}
-		UGameplayStatics::OpenLevel(this, FName(TEXT("GameplayLevel")));
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
 		break;
 
 	case ET66ButtonAction::QuitGame:

@@ -418,17 +418,28 @@ void UT66SaveSlotsScreen::OnLoadClicked(int32 SlotIndex)
 	GI->SelectedCompanionID = Loaded->CompanionID;
 	GI->SelectedDifficulty = Loaded->Difficulty;
 	GI->SelectedPartySize = Loaded->PartySize;
+	GI->RunSeed = Loaded->RunSeed;
 	GI->PendingLoadedTransform = Loaded->PlayerTransform;
 	GI->bApplyLoadedTransform = true;
 	GI->bLoadAsPreview = false;
+	GI->PendingLoadedRunSnapshot = Loaded->RunSnapshot;
+	GI->bApplyLoadedRunSnapshot = Loaded->RunSnapshot.bValid;
 	GI->CurrentSaveSlotIndex = SlotIndex;
+	GI->bRunIneligibleForLeaderboard = Loaded->bRunIneligibleForLeaderboard;
 	GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
 	GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
 	GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;
 	GI->CurrentRunPartyMemberDisplayNames = Loaded->PartyMemberDisplayNames;
 
 	if (UIManager) UIManager->HideAllUI();
-	GI->TransitionToGameplayLevel();
+	if (Loaded->RunSnapshot.bValid)
+	{
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
+	}
+	else
+	{
+		GI->TransitionToGameplayLevel();
+	}
 }
 
 void UT66SaveSlotsScreen::OnSlotClicked(int32 SlotIndex)
@@ -452,17 +463,28 @@ void UT66SaveSlotsScreen::OnPreviewClicked(int32 SlotIndex)
 	GI->SelectedCompanionID = Loaded->CompanionID;
 	GI->SelectedDifficulty = Loaded->Difficulty;
 	GI->SelectedPartySize = Loaded->PartySize;
+	GI->RunSeed = Loaded->RunSeed;
 	GI->PendingLoadedTransform = Loaded->PlayerTransform;
 	GI->bApplyLoadedTransform = true;
 	GI->bLoadAsPreview = true;
+	GI->PendingLoadedRunSnapshot = Loaded->RunSnapshot;
+	GI->bApplyLoadedRunSnapshot = Loaded->RunSnapshot.bValid;
 	GI->CurrentSaveSlotIndex = SlotIndex;
+	GI->bRunIneligibleForLeaderboard = Loaded->bRunIneligibleForLeaderboard;
 	GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
 	GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
 	GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;
 	GI->CurrentRunPartyMemberDisplayNames = Loaded->PartyMemberDisplayNames;
 
 	if (UIManager) UIManager->HideAllUI();
-	GI->TransitionToGameplayLevel();
+	if (Loaded->RunSnapshot.bValid)
+	{
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
+	}
+	else
+	{
+		GI->TransitionToGameplayLevel();
+	}
 }
 
 bool UT66SaveSlotsScreen::IsSlotOccupied(int32 SlotIndex) const

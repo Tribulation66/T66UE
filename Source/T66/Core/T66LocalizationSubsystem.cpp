@@ -1906,7 +1906,7 @@ FText UT66LocalizationSubsystem::GetText_ReportBugSubmit() const
 
 FText UT66LocalizationSubsystem::GetText_AccountStatus() const
 {
-	return NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS");
+	return NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT");
 }
 
 FText UT66LocalizationSubsystem::GetText_AccountStatus_SuspicionHeadline() const

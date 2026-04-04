@@ -342,6 +342,8 @@ void AT66PlayerController::HandleUltimatePressed()
 	if (!RunState->TryActivateUltimate())
 		return;
 
+	RunState->NotifyTutorialUltimateUsed();
+
 	FHeroData HeroData;
 	const ET66UltimateType UltType = (T66GI && T66GI->GetSelectedHeroData(HeroData))
 		? HeroData.UltimateType
@@ -516,6 +518,13 @@ void AT66PlayerController::HandleAttackLockPressed()
 		}
 
 		SetLockedEnemy(Enemy, true);
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RunState->NotifyTutorialAttackLockInput();
+			}
+		}
 		return;
 	}
 
@@ -526,6 +535,13 @@ void AT66PlayerController::HandleAttackLockPressed()
 	}
 
 	SetLockedEnemy(Enemy, true);
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->NotifyTutorialAttackLockInput();
+		}
+	}
 }
 
 

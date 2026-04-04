@@ -92,6 +92,7 @@ namespace
 
 	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
 	static const bool bUseDemoMapForTribulation = false;  // GameplayLevel uses LowPolyNature procedural env
+	static const bool bAlwaysRouteTribulationToTutorial = true;
 	static const TCHAR* GameplayLevelName = TEXT("GameplayLevel");
 	static const TCHAR* ColiseumLevelName = TEXT("Gameplay_Coliseum");
 	static const TCHAR* TutorialLevelName = TEXT("Gameplay_Tutorial");
@@ -1007,6 +1008,21 @@ FName UT66GameInstance::GetGameplayLevelName()
 	return FName(GameplayLevelName);
 }
 
+FName UT66GameInstance::GetTribulationEntryLevelName()
+{
+	if (UseDemoMapForTribulation())
+	{
+		return GetDemoMapLevelNameForTribulation();
+	}
+
+	if (bAlwaysRouteTribulationToTutorial)
+	{
+		return GetTutorialLevelName();
+	}
+
+	return GetGameplayLevelName();
+}
+
 FName UT66GameInstance::GetColiseumLevelName()
 {
 	return FName(ColiseumLevelName);
@@ -1067,7 +1083,7 @@ void UT66GameInstance::TransitionToGameplayLevel()
 	{
 		PreloadGameplayAssets([this]()
 		{
-			const FName LevelToOpen = UseDemoMapForTribulation() ? GetDemoMapLevelNameForTribulation() : GetGameplayLevelName();
+			const FName LevelToOpen = GetTribulationEntryLevelName();
 			UGameplayStatics::OpenLevel(this, LevelToOpen);
 		});
 	}), 0.05f, false); // Small delay so the loading widget paints first.

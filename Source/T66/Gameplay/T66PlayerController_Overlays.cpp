@@ -461,6 +461,10 @@ void AT66PlayerController::OnPlayerDied()
 			{
 				UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 				UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>();
+				if (RunState)
+				{
+					RunState->MarkRunEnded(false);
+				}
 				if (RunState && PowerUpSub)
 				{
 					const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
@@ -488,6 +492,13 @@ void AT66PlayerController::OnPlayerDied()
 	{
 		SetPause(true);
 		EnsureGameplayUIManager();
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+			{
+				RunState->MarkRunEnded(false);
+			}
+		}
 		if (UIManager)
 		{
 			UIManager->ShowModal(ET66ScreenType::RunSummary);
@@ -497,6 +508,79 @@ void AT66PlayerController::OnPlayerDied()
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
 	}
+}
+
+void AT66PlayerController::ShowVictoryRunSummary()
+{
+	EndHeroOneScopedUlt();
+
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			if (MV->IsMediaViewerOpen())
+			{
+				MV->SetMediaViewerOpen(false);
+			}
+		}
+
+		UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+		UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>();
+		if (RunState)
+		{
+			RunState->MarkRunEnded(true);
+		}
+		if (RunState && PowerUpSub)
+		{
+			const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
+			if (Earned > 0)
+			{
+				PowerUpSub->AddPowerCrystals(Earned);
+			}
+		}
+		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Achieve->NotifyRunCompleted(RunState);
+		}
+	}
+
+	SetPause(true);
+	EnsureGameplayUIManager();
+	if (UIManager)
+	{
+		UIManager->ShowModal(ET66ScreenType::RunSummary);
+	}
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+}
+
+void AT66PlayerController::ShowDifficultyClearSummary()
+{
+	EndHeroOneScopedUlt();
+
+	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			if (MV->IsMediaViewerOpen())
+			{
+				MV->SetMediaViewerOpen(false);
+			}
+		}
+	}
+
+	SetPause(true);
+	EnsureGameplayUIManager();
+	if (UIManager)
+	{
+		UIManager->ShowModal(ET66ScreenType::RunSummary);
+	}
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
 }
 
 

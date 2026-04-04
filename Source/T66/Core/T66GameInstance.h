@@ -6,6 +6,7 @@
 #include "Engine/GameInstance.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66RunSaveGame.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "UI/T66UITypes.h"
 #include "T66GameInstance.generated.h"
@@ -20,6 +21,14 @@ enum class ET66HeroPortraitVariant : uint8
 	Low,
 	Half,
 	Full
+};
+
+UENUM(BlueprintType)
+enum class ET66ColiseumFlowMode : uint8
+{
+	None UMETA(DisplayName = "None"),
+	OwedBosses UMETA(DisplayName = "Owed Bosses"),
+	FinalDifficultyBoss UMETA(DisplayName = "Final Difficulty Boss")
 };
 
 /**
@@ -147,6 +156,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	bool bLoadAsPreview = false;
 
+	/** Full run snapshot to restore on the next gameplay load. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	FT66SavedRunSnapshot PendingLoadedRunSnapshot;
+
+	/** True when PendingLoadedRunSnapshot should be imported on the next gameplay BeginPlay. */
+	UPROPERTY(BlueprintReadWrite, Category = "Save")
+	bool bApplyLoadedRunSnapshot = false;
+
 	/** Owner ID of the current run/save context. */
 	UPROPERTY(BlueprintReadWrite, Category = "Party")
 	FString CurrentRunOwnerPlayerId;
@@ -180,6 +197,10 @@ public:
 	 */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bForceColiseumMode = false;
+
+	/** Distinguishes the owed-boss Coliseum route from the selected-difficulty final Coliseum route. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	ET66ColiseumFlowMode ColiseumFlowMode = ET66ColiseumFlowMode::None;
 
 	/** If true, the current level is The Lab (practice room). No rewards, no run save; exit returns to Hero Selection. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
@@ -350,6 +371,8 @@ public:
 	static bool UseDemoMapForTribulation();
 	/** Main gameplay map asset name. */
 	static FName GetGameplayLevelName();
+	/** Entry map for a brand-new Tribulation run. Temporary rule: always route through tutorial first. */
+	static FName GetTribulationEntryLevelName();
 	/** Standalone coliseum gameplay map asset name. */
 	static FName GetColiseumLevelName();
 	/** Standalone tutorial gameplay map asset name. */

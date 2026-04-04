@@ -156,6 +156,12 @@ public:
 	/** Crate open: play CS:GO-style item reveal HUD animation. */
 	void StartCrateOpenHUD();
 
+	/** Open the Run Summary after a full-clear victory. */
+	void ShowVictoryRunSummary();
+
+	/** Open the between-difficulties clear summary without ending the run. */
+	void ShowDifficultyClearSummary();
+
 	/** Loot proximity: HUD prompt + accept/reject input. */
 	void SetNearbyLootBag(AT66LootBagPickup* LootBag);
 	void ClearNearbyLootBag(AT66LootBagPickup* LootBag);

@@ -150,6 +150,9 @@ public:
 	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). HP/Armor are skipped if ApplyStageScaling was used. */
 	void ApplyDifficultyScalar(float Scalar);
 
+	/** Extra end-of-difficulty survival scaling layered on top of the normal stage + difficulty tuning. */
+	void ApplyFinaleScaling(float Scalar);
+
 	/** Apply difficulty tier (Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...). */
 	void ApplyDifficultyTier(int32 Tier);
 

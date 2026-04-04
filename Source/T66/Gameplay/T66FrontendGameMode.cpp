@@ -48,6 +48,7 @@ void AT66FrontendGameMode::BeginPlay()
 			{
 				T66GI->bIsStageTransition = false;
 				T66GI->bForceColiseumMode = false;
+				T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 			}
 		}
 	}

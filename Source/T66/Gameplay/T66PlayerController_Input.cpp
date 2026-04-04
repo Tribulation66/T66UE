@@ -341,7 +341,7 @@ void AT66PlayerController::HandleRestartRunPressed()
 	if (!IsGameplayLevel()) return;
 	// Bible: host-only in co-op. v0: solo only (no co-op yet).
 	if (IsPaused()) SetPause(false);
-	const FName LevelToOpen = UT66GameInstance::UseDemoMapForTribulation() ? UT66GameInstance::GetDemoMapLevelNameForTribulation() : FName(TEXT("GameplayLevel"));
+	const FName LevelToOpen = UT66GameInstance::GetTribulationEntryLevelName();
 	UGameplayStatics::OpenLevel(this, LevelToOpen);
 }
 
@@ -554,6 +554,13 @@ void AT66PlayerController::HandleLookUp(float Value)
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
 	// When the gameplay cursor is visible, mouse movement should not rotate the camera.
 	if (bShowMouseCursor) return;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->NotifyTutorialLookInput();
+		}
+	}
 	AddPitchInput(Value);
 }
 
@@ -563,6 +570,13 @@ void AT66PlayerController::HandleTurn(float Value)
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
 	// When the gameplay cursor is visible, mouse movement should not rotate the camera.
 	if (bShowMouseCursor) return;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->NotifyTutorialLookInput();
+		}
+	}
 	AddYawInput(Value);
 }
 

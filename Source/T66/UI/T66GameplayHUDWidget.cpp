@@ -36,6 +36,7 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
@@ -1389,6 +1390,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->StatusEffectsChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
+	RunState->TutorialSubtitleChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
 	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 
 	if (UGameInstance* GI = GetGameInstance())
@@ -1495,6 +1497,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->QuickReviveChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
+		RunState->TutorialSubtitleChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
 		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->StatusEffectsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshStatusEffects);
 	}
@@ -2211,6 +2214,25 @@ void UT66GameplayHUDWidget::RefreshTutorialHint()
 	}
 }
 
+void UT66GameplayHUDWidget::RefreshTutorialSubtitle()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState) return;
+
+	if (TutorialSubtitleBorder.IsValid() && TutorialSubtitleSpeakerText.IsValid() && TutorialSubtitleBodyText.IsValid())
+	{
+		const bool bShow = RunState->IsTutorialSubtitleVisible() && !RunState->GetTutorialSubtitleText().IsEmpty();
+		TutorialSubtitleBorder->SetVisibility(bShow ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+		if (bShow)
+		{
+			const FText Speaker = RunState->GetTutorialSubtitleSpeaker();
+			TutorialSubtitleSpeakerText->SetText(Speaker);
+			TutorialSubtitleSpeakerText->SetVisibility(Speaker.IsEmpty() ? EVisibility::Collapsed : EVisibility::Visible);
+			TutorialSubtitleBodyText->SetText(RunState->GetTutorialSubtitleText());
+		}
+	}
+}
+
 void UT66GameplayHUDWidget::RefreshStageAndTimer()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
@@ -2430,11 +2452,14 @@ void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity Item
 	}
 	if (PickupCardTileBorder.IsValid())
 	{
-		PickupCardTileBorder->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(ItemRarity) : FT66Style::Tokens::Panel);
+		const FLinearColor AccentColor = bHasData
+			? (FItemData::GetItemRarityColor(ItemRarity) * 0.52f + FLinearColor(0.05f, 0.05f, 0.06f, 0.48f))
+			: FT66Style::Tokens::Panel;
+		PickupCardTileBorder->SetBorderBackgroundColor(AccentColor);
 	}
 	if (PickupCardIconBorder.IsValid())
 	{
-		PickupCardIconBorder->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(ItemRarity) : FT66Style::Tokens::Panel2);
+		PickupCardIconBorder->SetBorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f));
 	}
 	if (PickupCardSkipText.IsValid())
 	{
@@ -2525,6 +2550,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 	RefreshEconomy();
 	RefreshTutorialHint();
+	RefreshTutorialSubtitle();
 
 	RefreshStageAndTimer();
 	RefreshSpeedRunTimers();
@@ -3125,7 +3151,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	}
 
 	// Difficulty row (5-slot skull sprites).
-	static constexpr float MinimapWidth = 164.f;
+	static constexpr float MinimapWidth = MinimapPanelWidth;
 	static constexpr float DiffGap = 1.f;
 	static constexpr float DiffSize = 30.f;
 	TSharedRef<SHorizontalBox> DifficultyRowRef = SNew(SHorizontalBox);
@@ -3245,7 +3271,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const float IdolPanelMinWidth = GT66BottomLeftSidePanelWidth;
 	const float HUDSidePanelMinHeight = GT66BottomLeftSidePanelHeight;
 	const float PortraitPanelSize = GT66BottomLeftPortraitPanelSize;
-	const float InventoryPanelVisibleHeight = FMath::RoundToFloat((PortraitPanelSize * GT66BottomLeftHudScale) + 14.f);
+	const float InventoryPanelVisibleWidth = BottomRightInventoryPanelWidth;
+	const float InventoryPanelVisibleHeight = BottomRightInventoryPanelHeight;
 	const float AbilityColumnWidth = GT66BottomLeftAbilityBoxSize;
 	const float AbilityIconSize = GT66BottomLeftAbilityBoxSize;
 	const float BottomLeftColumnGap = 0.f;
@@ -3520,7 +3547,19 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
 		+ SScrollBox::Slot()
 		[
-			InvGridRows
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[
+				SNew(SSpacer)
+			]
+			+ SHorizontalBox::Slot().AutoWidth()
+			[
+				InvGridRows
+			]
+			+ SHorizontalBox::Slot().FillWidth(1.f)
+			[
+				SNew(SSpacer)
+			]
 		];
 
 	const TAttribute<FMargin> TopCenterBossPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -3570,7 +3609,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 
 	const TAttribute<FMargin> BottomRightPickupPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FMargin(0.f, 0.f, 12.f, UT66GameplayHUDWidget::PickupCardBottomOffset);
+		return FMargin(
+			0.f,
+			0.f,
+			12.f,
+			UT66GameplayHUDWidget::BottomRightInventoryPanelHeight + UT66GameplayHUDWidget::BottomRightPresentationGap);
 	});
 
 	const TAttribute<FOptionalSize> FullMapWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
@@ -4486,6 +4529,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SAssignNew(InventoryPanelBox, SBox)
+				.WidthOverride(InventoryPanelVisibleWidth)
 				.HeightOverride(InventoryPanelVisibleHeight)
 				[
 					bDotaTheme
@@ -4645,60 +4689,121 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.WidthOverride(PickupCardWidth)
 			.HeightOverride(PickupCardHeight)
 			[
+				SAssignNew(PickupCardTileBorder, SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.Padding(2.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
+					.Padding(0.f)
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().FillHeight(1.f)
+						[
+							SAssignNew(PickupCardIconBorder, SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f))
+							.Padding(FMargin(6.f))
+							[
+								SNew(SBox)
+								.HeightOverride(104.f)
+								[
+									SNew(SScaleBox)
+									.Stretch(EStretch::ScaleToFit)
+									.StretchDirection(EStretchDirection::Both)
+									[
+										SAssignNew(PickupCardIconImage, SImage)
+										.Image(PickupCardIconBrush.Get())
+										.ColorAndOpacity(FLinearColor::White)
+										.Visibility(EVisibility::Collapsed)
+									]
+								]
+							]
+						]
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor::Black)
+							.Padding(FMargin(10.f, 8.f))
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight()
+								[
+									SAssignNew(PickupCardNameText, STextBlock)
+									.Text(FText::GetEmpty())
+									.Font(FT66Style::Tokens::FontBold(12))
+									.ColorAndOpacity(FLinearColor::White)
+									.AutoWrapText(true)
+									.WrapTextAt(PickupCardWidth - 20.f)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+								[
+									SAssignNew(PickupCardDescText, STextBlock)
+									.Text(FText::GetEmpty())
+									.Font(FT66Style::Tokens::FontRegular(10))
+									.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.92f))
+									.AutoWrapText(true)
+									.WrapTextAt(PickupCardWidth - 20.f)
+								]
+							]
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 1.f))
+							.Padding(FMargin(8.f, 4.f))
+							[
+								SAssignNew(PickupCardSkipText, STextBlock)
+								.Text(FText::GetEmpty())
+								.Font(FT66Style::Tokens::FontBold(11))
+								.ColorAndOpacity(FLinearColor::White)
+								.Justification(ETextJustify::Center)
+							]
+						]
+					]
+				]
+			]
+		]
+		// Tutorial subtitle (guide dialogue)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Bottom)
+		.Padding(0.f, 0.f, 0.f, 92.f)
+		[
+			SNew(SBox)
+			.MinDesiredWidth(860.f)
+			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SAssignNew(PickupCardNameText, STextBlock)
+						SAssignNew(TutorialSubtitleSpeakerText, STextBlock)
+						.Visibility(EVisibility::Collapsed)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(16))
+						.Font(FT66Style::Tokens::FontBold(18))
+						.ColorAndOpacity(FLinearColor(0.95f, 0.72f, 0.38f, 1.f))
+						.Justification(ETextJustify::Center)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+					[
+						SAssignNew(TutorialSubtitleBodyText, STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FT66Style::Tokens::FontRegular(18))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Justification(ETextJustify::Center)
 						.AutoWrapText(true)
-						.WrapTextAt(PickupCardWidth - 24.f)
+						.WrapTextAt(820.f)
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
-						[
-							FT66Style::MakePanel(
-								SNew(SBox)
-								.WidthOverride(PickupCardWidth)
-								.HeightOverride(PickupCardWidth)
-								[
-									SAssignNew(PickupCardIconImage, SImage)
-									.Image(PickupCardIconBrush.Get())
-									.ColorAndOpacity(FLinearColor::White)
-									.Visibility(EVisibility::Collapsed)
-								],
-								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
-								&PickupCardIconBorder)
-						]
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
-					[
-						SAssignNew(PickupCardDescText, STextBlock)
-						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontRegular(12))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						.AutoWrapText(true)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
-					[
-						FT66Style::MakePanel(
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
-							[
-								SAssignNew(PickupCardSkipText, STextBlock)
-								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(14))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-								.Justification(ETextJustify::Center)
-							],
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(8.f, 6.f)))
-					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4),
-					&PickupCardTileBorder)
+				,
+				FT66PanelParams(ET66PanelType::Panel)
+					.SetPadding(FMargin(18.f, 12.f))
+					.SetVisibility(EVisibility::Collapsed),
+				&TutorialSubtitleBorder
+			)
 			]
 		]
 		// Tutorial hint (above crosshair)

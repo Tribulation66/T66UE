@@ -10,6 +10,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RngSubsystem.h"
+#include "Core/T66RunSaveGame.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -703,6 +704,40 @@ void UT66RunStateSubsystem::AddPowerCrystalsEarnedThisRun(int32 Amount)
 {
 	if (Amount <= 0) return;
 	PowerCrystalsEarnedThisRun = FMath::Clamp(PowerCrystalsEarnedThisRun + Amount, 0, 2000000000);
+}
+
+void UT66RunStateSubsystem::SetPendingDifficultyClearSummary(const bool bPending)
+{
+	if (bPendingDifficultyClearSummary == bPending)
+	{
+		return;
+	}
+
+	bPendingDifficultyClearSummary = bPending;
+	StageChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::SetSaintBlessingActive(const bool bActive)
+{
+	if (bSaintBlessingActive == bActive)
+	{
+		return;
+	}
+
+	bSaintBlessingActive = bActive;
+	SurvivalChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::SetFinalSurvivalEnemyScalar(const float Scalar)
+{
+	const float ClampedScalar = FMath::Clamp(Scalar, 1.f, 99.f);
+	if (FMath::IsNearlyEqual(FinalSurvivalEnemyScalar, ClampedScalar, 0.05f))
+	{
+		return;
+	}
+
+	FinalSurvivalEnemyScalar = ClampedScalar;
+	DifficultyChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::RefreshPowerupBonusesFromProfile()
@@ -1838,6 +1873,11 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 {
 	if (DamageHP <= 0) return false;
 
+	if (bSaintBlessingActive)
+	{
+		return false;
+	}
+
 	// If we're in last-stand, we ignore damage (invincible).
 	if (bInLastStand) return false;
 
@@ -2564,6 +2604,27 @@ void UT66RunStateSubsystem::ClearTutorialHint()
 	TutorialHintChanged.Broadcast();
 }
 
+void UT66RunStateSubsystem::SetTutorialSubtitle(const FText& InSpeaker, const FText& InText)
+{
+	bTutorialSubtitleVisible = true;
+	TutorialSubtitleSpeaker = InSpeaker;
+	TutorialSubtitleText = InText;
+	TutorialSubtitleChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::ClearTutorialSubtitle()
+{
+	if (!bTutorialSubtitleVisible && TutorialSubtitleSpeaker.IsEmpty() && TutorialSubtitleText.IsEmpty())
+	{
+		return;
+	}
+
+	bTutorialSubtitleVisible = false;
+	TutorialSubtitleSpeaker = FText::GetEmpty();
+	TutorialSubtitleText = FText::GetEmpty();
+	TutorialSubtitleChanged.Broadcast();
+}
+
 void UT66RunStateSubsystem::NotifyTutorialMoveInput()
 {
 	if (bTutorialMoveInputSeen) return;
@@ -2578,13 +2639,40 @@ void UT66RunStateSubsystem::NotifyTutorialJumpInput()
 	TutorialInputChanged.Broadcast();
 }
 
+void UT66RunStateSubsystem::NotifyTutorialLookInput()
+{
+	if (bTutorialLookInputSeen) return;
+	bTutorialLookInputSeen = true;
+	TutorialInputChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::NotifyTutorialAttackLockInput()
+{
+	if (bTutorialAttackLockInputSeen) return;
+	bTutorialAttackLockInputSeen = true;
+	TutorialInputChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::NotifyTutorialUltimateUsed()
+{
+	if (bTutorialUltimateUsedSeen) return;
+	bTutorialUltimateUsedSeen = true;
+	TutorialInputChanged.Broadcast();
+}
+
 void UT66RunStateSubsystem::ResetTutorialInputFlags()
 {
 	const bool bWasMove = bTutorialMoveInputSeen;
 	const bool bWasJump = bTutorialJumpInputSeen;
+	const bool bWasLook = bTutorialLookInputSeen;
+	const bool bWasLock = bTutorialAttackLockInputSeen;
+	const bool bWasUltimate = bTutorialUltimateUsedSeen;
 	bTutorialMoveInputSeen = false;
 	bTutorialJumpInputSeen = false;
-	if (bWasMove || bWasJump)
+	bTutorialLookInputSeen = false;
+	bTutorialAttackLockInputSeen = false;
+	bTutorialUltimateUsedSeen = false;
+	if (bWasMove || bWasJump || bWasLook || bWasLock || bWasUltimate)
 	{
 		TutorialInputChanged.Broadcast();
 	}
@@ -2645,6 +2733,13 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	bSpeedRunStarted = false;
 	LastBroadcastSpeedRunSecond = -1;
 	bThisRunSetNewPersonalBestSpeedRunTime = false;
+	CompletedStageActiveSeconds = 0.f;
+	FinalRunElapsedSeconds = 0.f;
+	bRunEnded = false;
+	bRunEndedAsVictory = false;
+	bPendingDifficultyClearSummary = false;
+	bSaintBlessingActive = false;
+	FinalSurvivalEnemyScalar = 1.f;
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
 	PowerCrystalsEarnedThisRun = 0;
@@ -2660,6 +2755,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 
 	bHUDPanelsVisible = true;
 	ClearTutorialHint();
+	ClearTutorialSubtitle();
 	ResetTutorialInputFlags();
 
 	// Clear transient stage/status effects at run start.
@@ -2733,6 +2829,205 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	StatusEffectsChanged.Broadcast();
 }
 
+float UT66RunStateSubsystem::GetCurrentRunElapsedSeconds() const
+{
+	const float CurrentStageSeconds = (bSpeedRunStarted && SpeedRunStartWorldSeconds > 0.f && GetWorld())
+		? FMath::Max(0.f, static_cast<float>(GetWorld()->GetTimeSeconds()) - SpeedRunStartWorldSeconds)
+		: FMath::Max(0.f, SpeedRunElapsedSeconds);
+	return FMath::Max(0.f, CompletedStageActiveSeconds + CurrentStageSeconds);
+}
+
+void UT66RunStateSubsystem::MarkRunEnded(bool bWasFullClear)
+{
+	if (bRunEnded)
+	{
+		if (bWasFullClear)
+		{
+			bRunEndedAsVictory = true;
+		}
+		return;
+	}
+
+	FinalRunElapsedSeconds = GetCurrentRunElapsedSeconds();
+	bRunEnded = true;
+	bRunEndedAsVictory = bWasFullClear;
+}
+
+void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnapshot) const
+{
+	OutSnapshot = FT66SavedRunSnapshot{};
+	OutSnapshot.bValid = true;
+	OutSnapshot.CurrentStage = CurrentStage;
+	OutSnapshot.CurrentHP = CurrentHP;
+	OutSnapshot.MaxHP = MaxHP;
+	OutSnapshot.CurrentGold = CurrentGold;
+	OutSnapshot.CurrentDebt = CurrentDebt;
+	OutSnapshot.DifficultyTier = DifficultyTier;
+	OutSnapshot.DifficultySkulls = DifficultySkulls;
+	OutSnapshot.TotemsActivatedCount = TotemsActivatedCount;
+	OutSnapshot.GamblerAnger01 = GamblerAnger01;
+	OutSnapshot.OwedBossIDs = OwedBossIDs;
+	OutSnapshot.CowardiceGatesTakenCount = CowardiceGatesTakenCount;
+	OutSnapshot.InventorySlots = InventorySlots;
+	OutSnapshot.ActiveGamblersTokenLevel = ActiveGamblersTokenLevel;
+	OutSnapshot.EventLog = EventLog;
+	OutSnapshot.StructuredEventLog = StructuredEventLog;
+	OutSnapshot.bStageTimerActive = bStageTimerActive;
+	OutSnapshot.StageTimerSecondsRemaining = StageTimerSecondsRemaining;
+	OutSnapshot.SpeedRunElapsedSeconds = bSpeedRunStarted && GetWorld()
+		? FMath::Max(0.f, static_cast<float>(GetWorld()->GetTimeSeconds()) - SpeedRunStartWorldSeconds)
+		: SpeedRunElapsedSeconds;
+	OutSnapshot.bSpeedRunStarted = bSpeedRunStarted;
+	OutSnapshot.CompletedStageActiveSeconds = CompletedStageActiveSeconds;
+	OutSnapshot.FinalRunElapsedSeconds = FinalRunElapsedSeconds;
+	OutSnapshot.bRunEnded = bRunEnded;
+	OutSnapshot.bRunEndedAsVictory = bRunEndedAsVictory;
+	OutSnapshot.CurrentScore = CurrentScore;
+	OutSnapshot.HeroLevel = HeroLevel;
+	OutSnapshot.HeroXP = HeroXP;
+	OutSnapshot.XPToNextLevel = XPToNextLevel;
+	OutSnapshot.HeroStats = HeroStats;
+	OutSnapshot.PowerCrystalsEarnedThisRun = PowerCrystalsEarnedThisRun;
+	OutSnapshot.bBossActive = bBossActive;
+	OutSnapshot.ActiveBossID = ActiveBossID;
+	OutSnapshot.BossMaxHP = BossMaxHP;
+	OutSnapshot.BossCurrentHP = BossCurrentHP;
+	OutSnapshot.bPendingDifficultyClearSummary = bPendingDifficultyClearSummary;
+	OutSnapshot.bSaintBlessingActive = bSaintBlessingActive;
+	OutSnapshot.FinalSurvivalEnemyScalar = FinalSurvivalEnemyScalar;
+
+	if (const UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		OutSnapshot.EquippedIdols = IdolManager->GetEquippedIdols();
+		OutSnapshot.EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+		OutSnapshot.RemainingCatchUpIdolPicks = IdolManager->GetRemainingCatchUpIdolPicks();
+	}
+	else
+	{
+		OutSnapshot.EquippedIdols = GetEquippedIdols();
+		OutSnapshot.EquippedIdolTiers = GetEquippedIdolTierValues();
+	}
+
+	for (const TPair<FName, FT66LuckAccumulator>& Pair : LuckQuantityByCategory)
+	{
+		FT66SavedLuckAccumulator& Saved = OutSnapshot.LuckQuantityAccumulators.AddDefaulted_GetRef();
+		Saved.Category = Pair.Key;
+		Saved.Sum01 = static_cast<float>(Pair.Value.Sum01);
+		Saved.Count = Pair.Value.Count;
+	}
+
+	for (const TPair<FName, FT66LuckAccumulator>& Pair : LuckQualityByCategory)
+	{
+		FT66SavedLuckAccumulator& Saved = OutSnapshot.LuckQualityAccumulators.AddDefaulted_GetRef();
+		Saved.Category = Pair.Key;
+		Saved.Sum01 = static_cast<float>(Pair.Value.Sum01);
+		Saved.Count = Pair.Value.Count;
+	}
+}
+
+void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& Snapshot)
+{
+	if (!Snapshot.bValid)
+	{
+		return;
+	}
+
+	CurrentStage = FMath::Clamp(Snapshot.CurrentStage, 1, 23);
+	CurrentHP = FMath::Max(0.f, Snapshot.CurrentHP);
+	MaxHP = FMath::Max(1.f, Snapshot.MaxHP);
+	CurrentGold = FMath::Max(0, Snapshot.CurrentGold);
+	CurrentDebt = FMath::Max(0, Snapshot.CurrentDebt);
+	DifficultyTier = FMath::Max(0, Snapshot.DifficultyTier);
+	DifficultySkulls = FMath::Max(0, Snapshot.DifficultySkulls);
+	TotemsActivatedCount = FMath::Max(0, Snapshot.TotemsActivatedCount);
+	GamblerAnger01 = FMath::Clamp(Snapshot.GamblerAnger01, 0.f, 1.f);
+	OwedBossIDs = Snapshot.OwedBossIDs;
+	CowardiceGatesTakenCount = FMath::Max(0, Snapshot.CowardiceGatesTakenCount);
+	InventorySlots = Snapshot.InventorySlots;
+	ActiveGamblersTokenLevel = T66_ClampGamblersTokenLevel(Snapshot.ActiveGamblersTokenLevel);
+	EventLog = Snapshot.EventLog;
+	StructuredEventLog = Snapshot.StructuredEventLog;
+	bStageTimerActive = Snapshot.bStageTimerActive;
+	StageTimerSecondsRemaining = FMath::Clamp(Snapshot.StageTimerSecondsRemaining, 0.f, StageTimerDurationSeconds);
+	LastBroadcastStageTimerSecond = FMath::FloorToInt(StageTimerSecondsRemaining);
+	SpeedRunElapsedSeconds = FMath::Max(0.f, Snapshot.SpeedRunElapsedSeconds);
+	bSpeedRunStarted = Snapshot.bSpeedRunStarted;
+	if (bStageTimerActive && bSpeedRunStarted && GetWorld())
+	{
+		SpeedRunStartWorldSeconds = static_cast<float>(GetWorld()->GetTimeSeconds()) - SpeedRunElapsedSeconds;
+	}
+	else
+	{
+		SpeedRunStartWorldSeconds = 0.f;
+	}
+	LastBroadcastSpeedRunSecond = FMath::FloorToInt(SpeedRunElapsedSeconds);
+	CompletedStageActiveSeconds = FMath::Max(0.f, Snapshot.CompletedStageActiveSeconds);
+	FinalRunElapsedSeconds = FMath::Max(0.f, Snapshot.FinalRunElapsedSeconds);
+	bRunEnded = Snapshot.bRunEnded;
+	bRunEndedAsVictory = Snapshot.bRunEndedAsVictory;
+	bPendingDifficultyClearSummary = Snapshot.bPendingDifficultyClearSummary;
+	bSaintBlessingActive = Snapshot.bSaintBlessingActive;
+	FinalSurvivalEnemyScalar = FMath::Clamp(Snapshot.FinalSurvivalEnemyScalar, 1.f, 99.f);
+	CurrentScore = FMath::Max(0, Snapshot.CurrentScore);
+	HeroLevel = FMath::Max(1, Snapshot.HeroLevel);
+	HeroXP = FMath::Max(0, Snapshot.HeroXP);
+	XPToNextLevel = FMath::Max(1, Snapshot.XPToNextLevel);
+	HeroStats = Snapshot.HeroStats;
+	PowerCrystalsEarnedThisRun = FMath::Max(0, Snapshot.PowerCrystalsEarnedThisRun);
+	bBossActive = Snapshot.bBossActive;
+	ActiveBossID = Snapshot.ActiveBossID;
+	BossMaxHP = FMath::Max(1, Snapshot.BossMaxHP);
+	BossCurrentHP = FMath::Clamp(Snapshot.BossCurrentHP, 0, BossMaxHP);
+
+	LuckQuantityByCategory.Reset();
+	for (const FT66SavedLuckAccumulator& Saved : Snapshot.LuckQuantityAccumulators)
+	{
+		FT66LuckAccumulator Accumulator;
+		Accumulator.Sum01 = static_cast<double>(Saved.Sum01);
+		Accumulator.Count = FMath::Max(0, Saved.Count);
+		LuckQuantityByCategory.Add(Saved.Category, Accumulator);
+	}
+
+	LuckQualityByCategory.Reset();
+	for (const FT66SavedLuckAccumulator& Saved : Snapshot.LuckQualityAccumulators)
+	{
+		FT66LuckAccumulator Accumulator;
+		Accumulator.Sum01 = static_cast<double>(Saved.Sum01);
+		Accumulator.Count = FMath::Max(0, Saved.Count);
+		LuckQualityByCategory.Add(Saved.Category, Accumulator);
+	}
+
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		ET66Difficulty Difficulty = ET66Difficulty::Easy;
+		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+		{
+			Difficulty = T66GI->SelectedDifficulty;
+		}
+		IdolManager->RestoreState(Snapshot.EquippedIdols, Snapshot.EquippedIdolTiers, Difficulty, Snapshot.RemainingCatchUpIdolPicks);
+	}
+
+	RecomputeItemDerivedStats();
+	TrimLogsIfNeeded();
+
+	HeartsChanged.Broadcast();
+	GoldChanged.Broadcast();
+	DebtChanged.Broadcast();
+	DifficultyChanged.Broadcast();
+	GamblerAngerChanged.Broadcast();
+	InventoryChanged.Broadcast();
+	IdolsChanged.Broadcast();
+	ScoreChanged.Broadcast();
+	StageChanged.Broadcast();
+	StageTimerChanged.Broadcast();
+	SpeedRunTimerChanged.Broadcast();
+	BossChanged.Broadcast();
+	HeroProgressChanged.Broadcast();
+	SurvivalChanged.Broadcast();
+	VendorChanged.Broadcast();
+	StatusEffectsChanged.Broadcast();
+}
+
 void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 {
 	const int32 NewStage = FMath::Clamp(Stage, 1, 23);
@@ -2744,14 +3039,17 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 		UGameInstance* GI = GetGameInstance();
 		UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
 		const bool bSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
+		UWorld* World = GetWorld();
+		const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
+		const float Elapsed = (bSpeedRunStarted && SpeedRunStartWorldSeconds > 0.f)
+			? FMath::Max(0.f, Now - SpeedRunStartWorldSeconds)
+			: FMath::Max(0.f, SpeedRunElapsedSeconds);
+		CompletedStageActiveSeconds += Elapsed;
 		if (bSpeedRunMode)
 		{
 			const int32 CompletedStage = CurrentStage;
 			if (CompletedStage >= 1 && CompletedStage <= 5)
 			{
-				UWorld* World = GetWorld();
-				const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
-				const float Elapsed = (bSpeedRunStarted && SpeedRunStartWorldSeconds > 0.f) ? FMath::Max(0.f, Now - SpeedRunStartWorldSeconds) : SpeedRunElapsedSeconds;
 				if (UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr)
 				{
 					LB->SubmitStageSpeedRunTime(CompletedStage, Elapsed);

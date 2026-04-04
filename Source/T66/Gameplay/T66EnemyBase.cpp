@@ -412,6 +412,23 @@ void AT66EnemyBase::ApplyDifficultyScalar(float Scalar)
 	UpdateHealthBar();
 }
 
+void AT66EnemyBase::ApplyFinaleScaling(float Scalar)
+{
+	const float ClampedScalar = FMath::Clamp(Scalar, 1.0f, 99.0f);
+	if (ClampedScalar <= 1.001f)
+	{
+		return;
+	}
+
+	const float PrevMax = static_cast<float>(FMath::Max(1, MaxHP));
+	const float PrevCur = static_cast<float>(FMath::Clamp(CurrentHP, 0, MaxHP));
+	const float Pct = FMath::Clamp(PrevCur / PrevMax, 0.f, 1.f);
+	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * ClampedScalar));
+	CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(MaxHP) * Pct), 1, MaxHP);
+	TouchDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(TouchDamageHearts) * ClampedScalar));
+	UpdateHealthBar();
+}
+
 void AT66EnemyBase::ApplyDifficultyTier(int32 Tier)
 {
 	// Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...

@@ -35,6 +35,17 @@ struct T66_API FT66OwnedSkinsList
 	TArray<FName> SkinIDs;
 };
 
+UENUM(BlueprintType)
+enum class ET66AccountMedalTier : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Bronze UMETA(DisplayName = "Bronze"),
+	Silver UMETA(DisplayName = "Silver"),
+	Gold UMETA(DisplayName = "Gold"),
+	Platinum UMETA(DisplayName = "Platinum"),
+	Diamond UMETA(DisplayName = "Diamond"),
+};
+
 /**
  * Player profile save (not tied to run slots).
  * Stores lifetime meta-progression like Achievement Coins (AC) and achievement progress.
@@ -46,7 +57,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 10;
+	int32 SaveVersion = 11;
 
 	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
@@ -126,5 +137,28 @@ public:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Union")
 	TMap<FName, int32> CompanionUnionStagesClearedByID;
+
+	/**
+	 * Hero Unity progression (lifetime / profile).
+	 * Key: HeroID, Value: number of stages cleared while that hero was selected.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Union")
+	TMap<FName, int32> HeroUnityStagesClearedByID;
+
+	/** Lifetime games played per hero (increment once when a run reaches Run Summary). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, int32> HeroGamesPlayedByID;
+
+	/** Highest medal earned per hero from difficulty clears. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, ET66AccountMedalTier> HeroHighestMedalByID;
+
+	/** Lifetime games played per companion (increment once when a run reaches Run Summary). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, int32> CompanionGamesPlayedByID;
+
+	/** Highest medal earned per companion from difficulty clears. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, ET66AccountMedalTier> CompanionHighestMedalByID;
 };
 

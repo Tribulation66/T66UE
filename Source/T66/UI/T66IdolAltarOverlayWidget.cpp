@@ -260,6 +260,18 @@ bool UT66IdolAltarOverlayWidget::ConsumeSelectionBudget()
 	return Altar->RemainingSelections <= 0;
 }
 
+bool UT66IdolAltarOverlayWidget::IsTutorialSingleOfferMode() const
+{
+	const AT66IdolAltar* Altar = SourceAltar.Get();
+	return Altar && Altar->bUseTutorialSingleOffer;
+}
+
+FName UT66IdolAltarOverlayWidget::GetTutorialOfferedIdolID() const
+{
+	const AT66IdolAltar* Altar = SourceAltar.Get();
+	return Altar ? Altar->TutorialOfferedIdolID : NAME_None;
+}
+
 TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 {
 	UWorld* World = GetWorld();
@@ -642,6 +654,10 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 
 	SetActionButtonState(BackButton, BackButtonBorder, BackButtonText, true, false);
 	SetActionButtonState(RerollButton, RerollButtonBorder, RerollButtonText, true, false);
+	if (IsTutorialSingleOfferMode() && StatusText.IsValid())
+	{
+		StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "TutorialSingleOffer", "Aria prepared one idol for this lesson."));
+	}
 	RefreshStock();
 	RefreshViewState();
 	return FT66Style::MakeResponsiveRoot(Root);
@@ -663,22 +679,33 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 	const TArray<FName>& Equipped = IdolManager->GetEquippedIdols();
 	const bool bHasEmptySlot = Equipped.Contains(NAME_None);
 	const bool bHasSelectionAllowance = HasSelectionsRemaining();
+	const bool bTutorialSingleOffer = IsTutorialSingleOfferMode();
+	const FName TutorialOfferedIdolID = GetTutorialOfferedIdolID();
 
 	if (CategoryTitleText.IsValid())
 	{
-		CategoryTitleText->SetText(GetOfferSectionTitle(ActiveOfferCategoryIndex));
+		CategoryTitleText->SetText(
+			bTutorialSingleOffer
+				? NSLOCTEXT("T66.IdolAltar", "TutorialOfferSection", "GUIDE OFFER")
+				: GetOfferSectionTitle(ActiveOfferCategoryIndex));
 	}
 
 	for (int32 VisibleSlotIndex = 0; VisibleSlotIndex < OfferSlotsPerCategory; ++VisibleSlotIndex)
 	{
 		const int32 SlotIndex = GetOfferStockIndexForVisibleSlot(VisibleSlotIndex);
-		const bool bHasItem = Stock.IsValidIndex(SlotIndex) && !Stock[SlotIndex].IsNone();
-		const FName IdolID = bHasItem ? Stock[SlotIndex] : NAME_None;
-		const bool bSelected = IdolManager->IsIdolStockSlotSelected(SlotIndex);
+		const bool bHasItem = bTutorialSingleOffer
+			? (VisibleSlotIndex == 0 && !TutorialOfferedIdolID.IsNone())
+			: (Stock.IsValidIndex(SlotIndex) && !Stock[SlotIndex].IsNone());
+		const FName IdolID = bTutorialSingleOffer
+			? TutorialOfferedIdolID
+			: (bHasItem ? Stock[SlotIndex] : NAME_None);
+		const bool bSelected = bTutorialSingleOffer ? false : IdolManager->IsIdolStockSlotSelected(SlotIndex);
 		const int32 EquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
 		const bool bOwned = EquippedSlot != INDEX_NONE;
 		const int32 CurrentTierValue = bOwned ? IdolManager->GetEquippedIdolLevelInSlot(EquippedSlot) : 0;
-		const ET66ItemRarity OfferedRarity = bHasItem ? IdolManager->GetIdolStockRarityInSlot(SlotIndex) : ET66ItemRarity::Black;
+		const ET66ItemRarity OfferedRarity = bTutorialSingleOffer
+			? ET66ItemRarity::Black
+			: (bHasItem ? IdolManager->GetIdolStockRarityInSlot(SlotIndex) : ET66ItemRarity::Black);
 		const bool bAtMaxRarity = bOwned && CurrentTierValue >= UT66IdolManagerSubsystem::MaxIdolLevel;
 		const bool bCanTake = bHasItem
 			&& !bSelected
@@ -874,12 +901,18 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 	}
 
 	const TArray<FName>& EquippedBefore = IdolManager->GetEquippedIdols();
+	const bool bTutorialSingleOffer = IsTutorialSingleOfferMode();
 	const int32 StockIndex = GetOfferStockIndexForVisibleSlot(SlotIndex);
 	const TArray<FName>& Stock = IdolManager->GetIdolStockIDs();
-	const FName IdolID = Stock.IsValidIndex(StockIndex) ? Stock[StockIndex] : NAME_None;
+	const FName IdolID = bTutorialSingleOffer
+		? GetTutorialOfferedIdolID()
+		: (Stock.IsValidIndex(StockIndex) ? Stock[StockIndex] : NAME_None);
 	const bool bWasUpgrade = EquippedBefore.Contains(IdolID);
 
-	if (IdolManager->SelectIdolFromStock(StockIndex))
+	const bool bSelectionApplied = bTutorialSingleOffer
+		? IdolManager->SelectIdolFromAltar(IdolID)
+		: IdolManager->SelectIdolFromStock(StockIndex);
+	if (bSelectionApplied)
 	{
 		const bool bShouldClose = ConsumeSelectionBudget();
 		if (StatusText.IsValid())
@@ -914,6 +947,11 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 
 FReply UT66IdolAltarOverlayWidget::OnReroll()
 {
+	if (IsTutorialSingleOfferMode())
+	{
+		return FReply::Handled();
+	}
+
 	ActiveOfferCategoryIndex = (ActiveOfferCategoryIndex + 1) % OfferCategoryCount;
 	RefreshStock();
 	return FReply::Handled();
@@ -961,6 +999,11 @@ FReply UT66IdolAltarOverlayWidget::OnShowOffers()
 
 FReply UT66IdolAltarOverlayWidget::OnShowTrade()
 {
+	if (IsTutorialSingleOfferMode())
+	{
+		return FReply::Handled();
+	}
+
 	ActiveViewIndex = T66IdolAltarView_Trade;
 	RefreshViewState();
 	return FReply::Handled();

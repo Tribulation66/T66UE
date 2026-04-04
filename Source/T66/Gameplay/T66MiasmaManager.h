@@ -7,6 +7,7 @@
 #include "T66MiasmaManager.generated.h"
 
 class AT66MiasmaTile;
+class UInstancedStaticMeshComponent;
 
 /**
  * Spawns thin black miasma tiles as soon as the stage timer starts.
@@ -32,13 +33,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
 	float TileZ = 5.f;
 
+	/** Damage interval while the hero is standing on active lava/miasma tiles. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
+	float DamageIntervalSeconds = 1.0f;
+
 	/** Spawn order random seed. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
 	int32 Seed = 1337;
 
 	/** When true, no ground miasma tiles are spawned or updated. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Miasma")
-	bool bSpawningPaused = true;
+	bool bSpawningPaused = false;
 
 	/** Clears all spawned miasma tiles. */
 	void ClearAllMiasma();
@@ -48,15 +53,20 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 private:
 	UPROPERTY()
-	TArray<FVector> TileCenters;
+	TObjectPtr<UInstancedStaticMeshComponent> TileInstances;
 
 	UPROPERTY()
-	TArray<TObjectPtr<AT66MiasmaTile>> SpawnedTiles;
+	TArray<FVector> TileCenters;
+
+	int32 SpawnedTileCount = 0;
+	float DamageTickAccumulator = 0.f;
 
 	void BuildGrid();
 	void EnsureSpawnedCount(int32 DesiredCount);
+	void BuildMainMapSubcellGrid();
+	void TickDamageOverActiveTiles(float DeltaTime);
 };
-

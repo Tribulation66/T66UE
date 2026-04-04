@@ -137,6 +137,12 @@ namespace
 		A.RewardCoins = GetGeneratedRewardCoins(A.Tier);
 		Out.Add(A);
 	}
+
+	ET66AccountMedalTier ClampMedalTier(const ET66AccountMedalTier Tier)
+	{
+		const int32 Value = FMath::Clamp(static_cast<int32>(Tier), static_cast<int32>(ET66AccountMedalTier::None), static_cast<int32>(ET66AccountMedalTier::Diamond));
+		return static_cast<ET66AccountMedalTier>(Value);
+	}
 }
 
 UT66LocalizationSubsystem* UT66AchievementsSubsystem::GetLocSubsystem() const
@@ -267,7 +273,32 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
 	}
 
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 10);
+	for (TPair<FName, int32>& Pair : Profile->HeroUnityStagesClearedByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
+
+	for (TPair<FName, int32>& Pair : Profile->HeroGamesPlayedByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
+
+	for (TPair<FName, int32>& Pair : Profile->CompanionGamesPlayedByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
+
+	for (TPair<FName, ET66AccountMedalTier>& Pair : Profile->HeroHighestMedalByID)
+	{
+		Pair.Value = ClampMedalTier(Pair.Value);
+	}
+
+	for (TPair<FName, ET66AccountMedalTier>& Pair : Profile->CompanionHighestMedalByID)
+	{
+		Pair.Value = ClampMedalTier(Pair.Value);
+	}
+
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 11);
 }
 
 int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
@@ -918,6 +949,11 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	Profile->LifetimeVendorPurchases = 0;
 	Profile->LifetimeGamblerWins = 0;
 	Profile->CompanionUnionStagesClearedByID.Reset();
+	Profile->HeroUnityStagesClearedByID.Reset();
+	Profile->HeroGamesPlayedByID.Reset();
+	Profile->HeroHighestMedalByID.Reset();
+	Profile->CompanionGamesPlayedByID.Reset();
+	Profile->CompanionHighestMedalByID.Reset();
 
 	MarkDirtyAndMaybeSave(true);
 	AchievementCoinsChanged.Broadcast();
@@ -933,10 +969,26 @@ int32 UT66AchievementsSubsystem::GetCompanionUnionStagesCleared(FName CompanionI
 	return Found ? FMath::Max(0, *Found) : 0;
 }
 
+int32 UT66AchievementsSubsystem::GetHeroUnityStagesCleared(FName HeroID) const
+{
+	if (!Profile || HeroID.IsNone()) return 0;
+	const int32* Found = Profile->HeroUnityStagesClearedByID.Find(HeroID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
 float UT66AchievementsSubsystem::GetCompanionUnionProgress01(FName CompanionID) const
 {
 	if (CompanionID.IsNone()) return 0.f;
 	const int32 Stages = GetCompanionUnionStagesCleared(CompanionID);
+	return (UnionTier_HyperStages <= 0)
+		? 0.f
+		: FMath::Clamp(static_cast<float>(Stages) / static_cast<float>(UnionTier_HyperStages), 0.f, 1.f);
+}
+
+float UT66AchievementsSubsystem::GetHeroUnityProgress01(FName HeroID) const
+{
+	if (HeroID.IsNone()) return 0.f;
+	const int32 Stages = GetHeroUnityStagesCleared(HeroID);
 	return (UnionTier_HyperStages <= 0)
 		? 0.f
 		: FMath::Clamp(static_cast<float>(Stages) / static_cast<float>(UnionTier_HyperStages), 0.f, 1.f);
@@ -981,5 +1033,141 @@ void UT66AchievementsSubsystem::AddCompanionUnionStagesCleared(FName CompanionID
 		(Prev < UnionTier_HyperStages && Next >= UnionTier_HyperStages);
 	if (bTierCrossed || bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); if (NewlyUnlocked.Num() > 0) AchievementsUnlocked.Broadcast(NewlyUnlocked); }
 	else MarkDirtyAndMaybeSave(false);
+}
+
+void UT66AchievementsSubsystem::AddHeroUnityStagesCleared(FName HeroID, int32 DeltaStagesCleared)
+{
+	if (HeroID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaStagesCleared, 0, 1000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetHeroUnityStagesCleared(HeroID);
+	const int32 Next = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	Profile->HeroUnityStagesClearedByID.FindOrAdd(HeroID) = Next;
+
+	const bool bTierCrossed =
+		(Prev < UnionTier_GoodStages && Next >= UnionTier_GoodStages) ||
+		(Prev < UnionTier_MediumStages && Next >= UnionTier_MediumStages) ||
+		(Prev < UnionTier_HyperStages && Next >= UnionTier_HyperStages);
+
+	MarkDirtyAndMaybeSave(bTierCrossed);
+	if (bTierCrossed)
+	{
+		AchievementsStateChanged.Broadcast();
+	}
+}
+
+int32 UT66AchievementsSubsystem::GetHeroGamesPlayed(FName HeroID) const
+{
+	if (!Profile || HeroID.IsNone()) return 0;
+	const int32* Found = Profile->HeroGamesPlayedByID.Find(HeroID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
+int32 UT66AchievementsSubsystem::GetCompanionGamesPlayed(FName CompanionID) const
+{
+	if (!Profile || CompanionID.IsNone()) return 0;
+	const int32* Found = Profile->CompanionGamesPlayedByID.Find(CompanionID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
+ET66AccountMedalTier UT66AchievementsSubsystem::GetHeroHighestMedal(FName HeroID) const
+{
+	if (!Profile || HeroID.IsNone()) return ET66AccountMedalTier::None;
+	const ET66AccountMedalTier* Found = Profile->HeroHighestMedalByID.Find(HeroID);
+	return Found ? ClampMedalTier(*Found) : ET66AccountMedalTier::None;
+}
+
+ET66AccountMedalTier UT66AchievementsSubsystem::GetCompanionHighestMedal(FName CompanionID) const
+{
+	if (!Profile || CompanionID.IsNone()) return ET66AccountMedalTier::None;
+	const ET66AccountMedalTier* Found = Profile->CompanionHighestMedalByID.Find(CompanionID);
+	return Found ? ClampMedalTier(*Found) : ET66AccountMedalTier::None;
+}
+
+void UT66AchievementsSubsystem::AddHeroGamesPlayed(FName HeroID, int32 DeltaGamesPlayed)
+{
+	if (HeroID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaGamesPlayed, 0, 1000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetHeroGamesPlayed(HeroID);
+	Profile->HeroGamesPlayedByID.FindOrAdd(HeroID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	MarkDirtyAndMaybeSave(false);
+}
+
+void UT66AchievementsSubsystem::AddCompanionGamesPlayed(FName CompanionID, int32 DeltaGamesPlayed)
+{
+	if (CompanionID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaGamesPlayed, 0, 1000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetCompanionGamesPlayed(CompanionID);
+	Profile->CompanionGamesPlayedByID.FindOrAdd(CompanionID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	MarkDirtyAndMaybeSave(false);
+}
+
+ET66AccountMedalTier UT66AchievementsSubsystem::MedalTierForDifficulty(ET66Difficulty Difficulty)
+{
+	switch (Difficulty)
+	{
+	case ET66Difficulty::Easy:
+		return ET66AccountMedalTier::Bronze;
+	case ET66Difficulty::Medium:
+		return ET66AccountMedalTier::Silver;
+	case ET66Difficulty::Hard:
+		return ET66AccountMedalTier::Gold;
+	case ET66Difficulty::VeryHard:
+		return ET66AccountMedalTier::Platinum;
+	case ET66Difficulty::Impossible:
+		return ET66AccountMedalTier::Diamond;
+	default:
+		return ET66AccountMedalTier::None;
+	}
+}
+
+void UT66AchievementsSubsystem::RecordHeroDifficultyClear(FName HeroID, ET66Difficulty Difficulty)
+{
+	if (HeroID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const ET66AccountMedalTier NewTier = MedalTierForDifficulty(Difficulty);
+	const ET66AccountMedalTier PrevTier = GetHeroHighestMedal(HeroID);
+	if (static_cast<int32>(NewTier) <= static_cast<int32>(PrevTier))
+	{
+		return;
+	}
+
+	Profile->HeroHighestMedalByID.FindOrAdd(HeroID) = NewTier;
+	MarkDirtyAndMaybeSave(true);
+	AchievementsStateChanged.Broadcast();
+}
+
+void UT66AchievementsSubsystem::RecordCompanionDifficultyClear(FName CompanionID, ET66Difficulty Difficulty)
+{
+	if (CompanionID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const ET66AccountMedalTier NewTier = MedalTierForDifficulty(Difficulty);
+	const ET66AccountMedalTier PrevTier = GetCompanionHighestMedal(CompanionID);
+	if (static_cast<int32>(NewTier) <= static_cast<int32>(PrevTier))
+	{
+		return;
+	}
+
+	Profile->CompanionHighestMedalByID.FindOrAdd(CompanionID) = NewTier;
+	MarkDirtyAndMaybeSave(true);
+	AchievementsStateChanged.Broadcast();
 }
 

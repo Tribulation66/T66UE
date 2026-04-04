@@ -50,6 +50,7 @@ public:
 	bool SelectIdolFromStock(int32 SlotIndex);
 	bool IsIdolStockSlotSelected(int32 SlotIndex) const;
 	bool SellEquippedIdolInSlot(int32 SlotIndex);
+	void RestoreState(const TArray<FName>& InEquippedIdols, const TArray<uint8>& InEquippedIdolTiers, ET66Difficulty Difficulty, int32 InRemainingCatchUpIdolPicks);
 
 	void ResetForNewRun(ET66Difficulty Difficulty);
 	void HandleStageChanged(int32 NewStage);

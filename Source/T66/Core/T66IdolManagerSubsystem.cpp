@@ -455,6 +455,21 @@ bool UT66IdolManagerSubsystem::SellEquippedIdolInSlot(const int32 SlotIndex)
 	return true;
 }
 
+void UT66IdolManagerSubsystem::RestoreState(
+	const TArray<FName>& InEquippedIdols,
+	const TArray<uint8>& InEquippedIdolTiers,
+	const ET66Difficulty Difficulty,
+	const int32 InRemainingCatchUpIdolPicks)
+{
+	CurrentDifficulty = Difficulty;
+	EquippedIdolIDs = InEquippedIdols;
+	EquippedIdolLevels = InEquippedIdolTiers;
+	NormalizeEquippedArrays();
+	ClearIdolStock();
+	RemainingCatchUpIdolPicks = FMath::Max(0, InRemainingCatchUpIdolPicks);
+	BroadcastIdolStateChanged();
+}
+
 void UT66IdolManagerSubsystem::ResetForNewRun(const ET66Difficulty Difficulty)
 {
 	CurrentDifficulty = Difficulty;

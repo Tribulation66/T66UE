@@ -38,7 +38,7 @@ namespace
 	const FLinearColor LeaderboardShellFill(0.004f, 0.005f, 0.010f, 0.985f);
 	const FLinearColor LeaderboardFilterBorder(0.22f, 0.24f, 0.28f, 1.0f);
 	const FLinearColor LeaderboardSelectedBorder(114.f / 255.f, 174.f / 255.f, 124.f / 255.f, 1.0f);
-	constexpr bool GMirrorWeeklyToAllTime = true;
+	constexpr bool GMirrorWeeklyToAllTime = false;
 
 	int32 GetPartyMemberCount(ET66PartySize PartySize)
 	{
@@ -275,8 +275,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	// Initialize dropdown options
 	PartySizeOptions.Add(MakeShared<FString>(TEXT("Solo")));
 	PartySizeOptions.Add(MakeShared<FString>(TEXT("Duo")));
-	PartySizeOptions.Add(MakeShared<FString>(TEXT("Trio")));
-	PartySizeOptions.Add(MakeShared<FString>(TEXT("Quad")));
 	SelectedPartySizeOption = PartySizeOptions[0];
 
 	DifficultyOptions.Add(MakeShared<FString>(TEXT("Easy")));
@@ -569,7 +567,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 					[
 					FT66Style::MakeButton(
 						FT66ButtonParams(
-							LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT STATUS"),
+							LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT"),
 							FOnClicked::CreateLambda([this]()
 							{
 								if (UIManager)
@@ -1000,12 +998,15 @@ void ST66LeaderboardPanel::RebuildEntryList()
 				]
 			];
 
+		const bool bCanOpenSummary = Entry.bIsLocalPlayer || (Entry.bHasRunSummary && !Entry.EntryId.IsEmpty());
+
 		const TSharedRef<SWidget> RowWidget =
 			SNew(SButton)
 			.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
 			.ContentPadding(FMargin(0.f))
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
+			.IsEnabled(bCanOpenSummary)
 			.OnHovered(FSimpleDelegate::CreateLambda([bIsRowHovered]() { *bIsRowHovered = true; }))
 			.OnUnhovered(FSimpleDelegate::CreateLambda([bIsRowHovered]() { *bIsRowHovered = false; }))
 			.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }))
@@ -1098,6 +1099,11 @@ void ST66LeaderboardPanel::SetTimeFilter(ET66LeaderboardTime NewTime)
 
 void ST66LeaderboardPanel::SetPartySize(ET66PartySize NewPartySize)
 {
+	if (NewPartySize == ET66PartySize::Trio || NewPartySize == ET66PartySize::Quad)
+	{
+		NewPartySize = ET66PartySize::Duo;
+	}
+
 	CurrentPartySize = NewPartySize;
 	RefreshLeaderboard();
 }
@@ -1117,8 +1123,6 @@ void ST66LeaderboardPanel::SetLeaderboardType(ET66LeaderboardType NewType)
 
 void ST66LeaderboardPanel::RefreshLeaderboard()
 {
-	// Temporary frontend art pass: weekly mirrors all-time so the menu always has data
-	// and we do not visually reset the board while weekly backend content is still pending.
 	const TArray<FLeaderboardEntry> PreviousEntries = LeaderboardEntries;
 
 	// Convert current filters to backend API strings
@@ -1132,11 +1136,16 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 		}
 		return (CurrentTimeFilter == ET66LeaderboardTime::AllTime) ? TEXT("alltime") : TEXT("weekly");
 	};
+	if (CurrentPartySize == ET66PartySize::Trio || CurrentPartySize == ET66PartySize::Quad)
+	{
+		CurrentPartySize = ET66PartySize::Duo;
+	}
+
 	auto PartyStr = [this]() -> FString {
 		switch (CurrentPartySize) {
 		case ET66PartySize::Duo: return TEXT("duo");
-		case ET66PartySize::Trio: return TEXT("trio");
-		case ET66PartySize::Quad: return TEXT("quad");
+		case ET66PartySize::Trio: return TEXT("duo");
+		case ET66PartySize::Quad: return TEXT("duo");
 		default: return TEXT("solo");
 		}
 	};
@@ -1163,76 +1172,28 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 	// Try to get backend data
 	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
 	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
-	const TArray<FLeaderboardEntry> LocalFallbackEntries = LeaderboardSubsystem
+	const bool bUseOfflineFallback = !Backend || !Backend->IsBackendConfigured();
+	const TArray<FLeaderboardEntry> LocalFallbackEntries = (bUseOfflineFallback && LeaderboardSubsystem)
 		? LeaderboardSubsystem->BuildEntriesForFilter(CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize, CurrentSpeedRunStage)
 		: TArray<FLeaderboardEntry>();
 
 	if (Backend && Backend->IsBackendConfigured() && Backend->HasCachedLeaderboard(CacheKey))
 	{
 		const TArray<FLeaderboardEntry> CachedEntries = Backend->GetCachedLeaderboard(CacheKey);
-		const int32 CachedTotalEntries = Backend->GetCachedTotalEntries(CacheKey);
 
 		if (CachedEntries.Num() > 0)
 		{
 			// Use backend data when the backend actually has something for this key.
 			LeaderboardEntries = CachedEntries;
-			while (LeaderboardEntries.Num() < LeaderboardVisibleEntryCount)
-			{
-				const int32 NextRankToFill = LeaderboardEntries.Num() + 1;
-				const FLeaderboardEntry* FallbackEntry = LocalFallbackEntries.FindByPredicate([NextRankToFill](const FLeaderboardEntry& Entry)
-				{
-					return !Entry.bIsLocalPlayer && Entry.Rank == NextRankToFill;
-				});
-				if (!FallbackEntry)
-				{
-					break;
-				}
-				LeaderboardEntries.Add(*FallbackEntry);
-			}
-
-			// Find the local player entry from local data
-			const FLeaderboardEntry* LocalYou = nullptr;
-			for (const FLeaderboardEntry& E : LocalFallbackEntries)
-			{
-				if (E.bIsLocalPlayer)
-				{
-					LocalYou = &E;
-					break;
-				}
-			}
-
-			const bool bHasLocalResult =
-				LocalYou && ((CurrentType == ET66LeaderboardType::Score && LocalYou->Score > 0)
-					|| (CurrentType == ET66LeaderboardType::SpeedRun && LocalYou->TimeSeconds > 0.01f));
-
-			if (bHasLocalResult)
-			{
-				// Check if local player is already in the backend entries (by checking rank vs score)
-				bool bAlreadyInList = false;
-				for (const FLeaderboardEntry& E : LeaderboardEntries)
-				{
-					// Can't compare by SteamID from local, so skip for now; just append as rank 11
-				}
-
-				if (!bAlreadyInList)
-				{
-					FLeaderboardEntry You = *LocalYou;
-					You.Rank = LeaderboardVisibleEntryCount + 1;
-					LeaderboardEntries.Add(You);
-				}
-			}
 		}
 		else
 		{
-			// Empty backend payload should never blank the board, even if the backend reported a non-zero total.
-			// Keep the local/generated data on screen until we have actual rows to render.
-			LeaderboardEntries = LocalFallbackEntries;
+			LeaderboardEntries.Reset();
 		}
 	}
 	else if (Backend && Backend->IsBackendConfigured())
 	{
-		// While the async fetch is pending, keep the local/generated board visible.
-		LeaderboardEntries = LocalFallbackEntries;
+		LeaderboardEntries.Reset();
 	}
 	else
 	{
@@ -1241,7 +1202,9 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 
 	if (LeaderboardEntries.Num() == 0)
 	{
-		LeaderboardEntries = LocalFallbackEntries.Num() > 0 ? LocalFallbackEntries : PreviousEntries;
+		LeaderboardEntries = bUseOfflineFallback
+			? (LocalFallbackEntries.Num() > 0 ? LocalFallbackEntries : PreviousEntries)
+			: TArray<FLeaderboardEntry>();
 	}
 
 	auto HasVisibleResult = [this](const FLeaderboardEntry& Entry) -> bool
@@ -1263,8 +1226,8 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 		return nullptr;
 	};
 
-	const FLeaderboardEntry* LocalVisibleEntry = FindLocalEntry(LeaderboardEntries);
-	if (LocalVisibleEntry == nullptr)
+	const FLeaderboardEntry* LocalVisibleEntry = bUseOfflineFallback ? FindLocalEntry(LeaderboardEntries) : nullptr;
+	if (LocalVisibleEntry == nullptr && bUseOfflineFallback)
 	{
 		LocalVisibleEntry = FindLocalEntry(LocalFallbackEntries);
 	}
@@ -1524,50 +1487,6 @@ FReply ST66LeaderboardPanel::HandleEntryClicked(const FLeaderboardEntry& Entry)
 			Backend->FetchRunSummary(Entry.EntryId);
 			return FReply::Handled();
 		}
-	}
-
-	const int32 PartyCount =
-		(Entry.PartySize == ET66PartySize::Quad) ? 4 :
-		(Entry.PartySize == ET66PartySize::Trio) ? 3 :
-		(Entry.PartySize == ET66PartySize::Duo) ? 2 : 1;
-
-	if (PartyCount == 1)
-	{
-		// Solo: open Run Summary with one fake snapshot.
-		if (UT66LeaderboardRunSummarySaveGame* Snap = LeaderboardSubsystem->CreateFakeRunSummarySnapshot(
-			CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize,
-			Entry.Rank, 0, Entry.PlayerName, Entry.Score, Entry.TimeSeconds))
-		{
-			if (UIManager->GetCurrentModalType() == ET66ScreenType::Leaderboard)
-			{
-				LeaderboardSubsystem->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::Leaderboard);
-			}
-			LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
-			UIManager->ShowModal(ET66ScreenType::RunSummary);
-		}
-		return FReply::Handled();
-	}
-
-	// Duo / Trio / Quad: open Pick the Player with one snapshot per party member.
-	TArray<UT66LeaderboardRunSummarySaveGame*> Snapshots;
-	for (int32 i = 0; i < PartyCount; ++i)
-	{
-		const FString DisplayName = Entry.PlayerNames.IsValidIndex(i) ? Entry.PlayerNames[i] : Entry.PlayerName;
-		if (UT66LeaderboardRunSummarySaveGame* Snap = LeaderboardSubsystem->CreateFakeRunSummarySnapshot(
-			CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize,
-			Entry.Rank, i, DisplayName, Entry.Score, Entry.TimeSeconds))
-		{
-			Snapshots.Add(Snap);
-		}
-	}
-	if (Snapshots.Num() == PartyCount)
-	{
-		if (UIManager->GetCurrentModalType() == ET66ScreenType::Leaderboard)
-		{
-			LeaderboardSubsystem->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::Leaderboard);
-		}
-		LeaderboardSubsystem->SetPendingPickerSnapshots(Snapshots);
-		UIManager->ShowModal(ET66ScreenType::PlayerSummaryPicker);
 	}
 	return FReply::Handled();
 }

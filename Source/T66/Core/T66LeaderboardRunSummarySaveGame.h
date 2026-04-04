@@ -21,7 +21,15 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 6;
+	int32 SchemaVersion = 7;
+
+	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
+	UPROPERTY(SaveGame)
+	FString EntryId;
+
+	/** SteamID that owns this run summary when sourced from the online backend. */
+	UPROPERTY(SaveGame)
+	FString OwnerSteamId;
 
 	/** What kind of leaderboard this run belongs to (Score or SpeedRun). */
 	UPROPERTY(SaveGame)
@@ -36,6 +44,22 @@ public:
 	/** UTC timestamp for provenance/debug. */
 	UPROPERTY(SaveGame)
 	FDateTime SavedAtUtc = FDateTime::MinValue();
+
+	/** UTC timestamp for when the run ended. */
+	UPROPERTY(SaveGame)
+	FDateTime RunEndedAtUtc = FDateTime::MinValue();
+
+	/** Active run duration in seconds at the moment the run ended. */
+	UPROPERTY(SaveGame)
+	float RunDurationSeconds = 0.f;
+
+	/** True when the player fully cleared the selected difficulty. */
+	UPROPERTY(SaveGame)
+	bool bWasFullClear = false;
+
+	/** True when Speed Run mode was enabled for this run. */
+	UPROPERTY(SaveGame)
+	bool bWasSpeedRunMode = false;
 
 	// ===== Core run summary =====
 

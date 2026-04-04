@@ -51,8 +51,14 @@ private:
 	FReply HandleReportCloseClicked();
 	FReply HandlePowerCouponsThankYouClicked();
 	FReply HandleRetryLevelClicked();
+	FReply HandleContinueDifficultyClicked();
+	FReply HandleSaveAndQuitClicked();
+	FReply HandleSubmitAndEndRunClicked();
 
 	void HandleProofLinkNavigate() const;
+	void ProcessLiveRunFinalSubmission();
+	FText GetContinueDifficultyButtonText() const;
+	bool SaveCurrentRunToSlot(bool bFromDifficultyClearSummary);
 
 	void RebuildLogItems();
 	TSharedRef<ITableRow> GenerateLogRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable);
@@ -67,6 +73,8 @@ private:
 	// Run Summary banners (set on activation for the most recent run).
 	bool bNewPersonalBestScore = false;
 	bool bNewPersonalBestTime = false;
+	bool bLiveRunSubmissionProcessed = false;
+	bool bDifficultyClearSummaryMode = false;
 
 	/** When true, show "Power Coupons earned" popup (only when earned >= 1 this run, not when viewing saved). */
 	bool bShowPowerCouponsPopup = false;

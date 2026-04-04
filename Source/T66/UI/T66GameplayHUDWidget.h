@@ -67,6 +67,9 @@ public:
 	void RefreshTutorialHint();
 
 	UFUNCTION()
+	void RefreshTutorialSubtitle();
+
+	UFUNCTION()
 	void RefreshHearts();
 
 	UFUNCTION()
@@ -109,6 +112,11 @@ public:
 
 	/** Crate open: show CS:GO-style item reveal overlay. */
 	void StartCrateOpen();
+
+	static constexpr float MinimapPanelWidth = 164.f;
+	static constexpr float BottomRightInventoryPanelWidth = 472.f;
+	static constexpr float BottomRightInventoryPanelHeight = 132.f;
+	static constexpr float BottomRightPresentationGap = 8.f;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -165,15 +173,17 @@ protected:
 	TSharedPtr<STextBlock> PickupCardNameText;
 	TSharedPtr<STextBlock> PickupCardDescText;
 	TSharedPtr<STextBlock> PickupCardSkipText;
-	static constexpr float PickupCardWidth = 184.f;
-	static constexpr float PickupCardHeight = 312.f;
-	static constexpr float PickupCardBottomOffset = 150.f;
+	static constexpr float PickupCardWidth = MinimapPanelWidth;
+	static constexpr float PickupCardHeight = 216.f;
 	static constexpr float PickupCardDisplaySeconds = 5.f;
 	static constexpr float PickupCardFadeOutSeconds = 0.6f;
 	void HidePickupCard();
 	TSharedPtr<SBorder> TutorialHintBorder;
 	TSharedPtr<STextBlock> TutorialHintLine1Text;
 	TSharedPtr<STextBlock> TutorialHintLine2Text;
+	TSharedPtr<SBorder> TutorialSubtitleBorder;
+	TSharedPtr<STextBlock> TutorialSubtitleSpeakerText;
+	TSharedPtr<STextBlock> TutorialSubtitleBodyText;
 	TSharedPtr<SBox> CenterCrosshairBox;
 	TSharedPtr<SBorder> ScopedSniperOverlayBorder;
 	TSharedPtr<STextBlock> ScopedUltTimerText;

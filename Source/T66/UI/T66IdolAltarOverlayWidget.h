@@ -82,6 +82,8 @@ private:
 	bool HasSelectionsRemaining() const;
 	bool ConsumeSelectionBudget();
 	int32 GetOfferStockIndexForVisibleSlot(int32 VisibleSlotIndex) const;
+	bool IsTutorialSingleOfferMode() const;
+	FName GetTutorialOfferedIdolID() const;
 
 	UFUNCTION()
 	void HandleIdolsChanged();

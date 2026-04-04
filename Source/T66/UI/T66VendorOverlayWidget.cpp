@@ -173,10 +173,38 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FTextBlockStyle& TextHeading = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
 	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+	const bool bCompactCircusLayout = bEmbeddedInCircusShell;
+	const float OverlayPadding = bCompactCircusLayout ? 12.f : FT66Style::Tokens::NPCOverlayPadding;
+	const float AngerFaceSize = bCompactCircusLayout ? 85.f : FT66Style::Tokens::NPCAngerCircleSize;
+	const float StatsPanelWidth = bCompactCircusLayout ? 150.f : FT66Style::Tokens::NPCVendorStatsPanelWidth;
+	const float RightPanelWidth = bCompactCircusLayout ? 190.f : FT66Style::Tokens::NPCRightPanelWidth;
+	const float MainRowHeight = bCompactCircusLayout ? 300.f : FT66Style::Tokens::NPCMainRowHeight;
+	const float ShopCardSize = bCompactCircusLayout ? 124.f : FT66Style::Tokens::NPCShopCardWidth;
+	const float ShopCardHeight = bCompactCircusLayout ? 250.f : FT66Style::Tokens::NPCShopCardHeight;
+	const float ShopCardGap = bCompactCircusLayout ? FT66Style::Tokens::Space2 : FT66Style::Tokens::Space4;
+	const float ShopCardPadding = bCompactCircusLayout ? FT66Style::Tokens::Space2 : FT66Style::Tokens::Space4;
+	const float ShopNameBoxHeight = bCompactCircusLayout ? 30.f : 60.f;
+	const float ShopIconSize = ShopCardSize - ShopCardPadding * 2.f;
+	const float InventorySlotSize = bCompactCircusLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
+	const float AngerImageSize = bCompactCircusLayout ? 136.f : 260.f;
+	const float SellPanelSize = bCompactCircusLayout ? 88.f : 160.f;
+	const float BankSpinBoxWidth = bCompactCircusLayout ? 68.f : FT66Style::Tokens::NPCBankSpinBoxWidth;
+	const float BankSpinBoxHeight = bCompactCircusLayout ? 28.f : FT66Style::Tokens::NPCBankSpinBoxHeight;
+	const float CardButtonMinWidth = bCompactCircusLayout ? 0.f : 100.f;
+	const FMargin ShopButtonPadding = bCompactCircusLayout ? FMargin(6.f, 4.f) : FMargin(8.f, 6.f);
+	const FMargin ActionButtonPadding = bCompactCircusLayout ? FMargin(10.f, 6.f) : FMargin(16.f, 10.f);
+	const int32 CardHeadingFontSize = bCompactCircusLayout ? 10 : 16;
+	const int32 CardBodyFontSize = bCompactCircusLayout ? 8 : 12;
+	const int32 CardButtonFontSize = bCompactCircusLayout ? 10 : 14;
+	const int32 InventoryCountFontSize = bCompactCircusLayout ? 8 : 14;
+	const int32 InventoryDashFontSize = bCompactCircusLayout ? 10 : 16;
+	const int32 SectionHeadingFontSize = bCompactCircusLayout ? 10 : 16;
+	const int32 PageTitleFontSize = bCompactCircusLayout ? 32 : 64;
+	const int32 StatusFontSize = bCompactCircusLayout ? 8 : 12;
+	const int32 SpinBoxFontSize = bCompactCircusLayout ? 10 : 16;
 
 	// --- NPC anger face sprites ---
-	const float AngerFaceSize = FT66Style::Tokens::NPCAngerCircleSize;
-	auto InitFaceBrush = [](FSlateBrush& B) {
+	auto InitFaceBrush = [AngerFaceSize](FSlateBrush& B) {
 		B = FSlateBrush();
 		B.ImageSize = FVector2D(AngerFaceSize, AngerFaceSize);
 		B.DrawAs = ESlateBrushDrawType::Image;
@@ -225,10 +253,6 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
-	const float ShopCardSize = FT66Style::Tokens::NPCShopCardWidth;
-	const float ShopCardHeight = FT66Style::Tokens::NPCShopCardHeight;
-	const float ShopIconSize = ShopCardSize - FT66Style::Tokens::Space4 * 2.f;
-
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
 		ItemIconBrushes[i] = MakeShared<FSlateBrush>();
@@ -239,7 +263,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	{
 		InventorySlotIconBrushes[i] = MakeShared<FSlateBrush>();
 		InventorySlotIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		InventorySlotIconBrushes[i]->ImageSize = FVector2D(160.f, 160.f);
+		InventorySlotIconBrushes[i]->ImageSize = FVector2D(InventorySlotSize, InventorySlotSize);
 	}
 
 	TSharedRef<SHorizontalBox> ShopRow = SNew(SHorizontalBox);
@@ -251,12 +275,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuySlot, i),
 				ET66ButtonType::Primary)
-			.SetMinWidth(100.f)
-			.SetPadding(FMargin(8.f, 6.f))
+			.SetMinWidth(CardButtonMinWidth)
+			.SetPadding(ShopButtonPadding)
+			.SetFontSize(CardButtonFontSize)
 			.SetContent(
 				SAssignNew(BuyButtonTexts[i], STextBlock)
 				.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
-				.Font(FT66Style::Tokens::FontBold(14))
+				.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			)
 		);
@@ -267,15 +292,15 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				Loc ? Loc->GetText_Steal() : NSLOCTEXT("T66.Vendor", "Steal", "STEAL"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnStealSlot, i),
 				ET66ButtonType::Danger)
-			.SetMinWidth(100.f)
-			.SetPadding(FMargin(8.f, 6.f))
-			.SetFontSize(14)
+			.SetMinWidth(CardButtonMinWidth)
+			.SetPadding(ShopButtonPadding)
+			.SetFontSize(CardButtonFontSize)
 		);
 		StealButtons[i] = StealBtnWidget;
 
 		ShopRow->AddSlot()
 			.AutoWidth()
-			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
+			.Padding(i > 0 ? FMargin(ShopCardGap, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
 			.WidthOverride(ShopCardSize)
@@ -287,14 +312,15 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(SBox)
-						.HeightOverride(60.f)
+						.HeightOverride(ShopNameBoxHeight)
 						[
 							SAssignNew(ItemNameTexts[i], STextBlock)
 							.Text(FText::GetEmpty())
 							.TextStyle(&TextHeading)
+							.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 							.AutoWrapText(true)
-							.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
+							.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 						]
 					]
 					// 2. Large image below name (centered)
@@ -322,9 +348,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						SAssignNew(ItemDescTexts[i], STextBlock)
 						.Text(FText::GetEmpty())
 						.TextStyle(&TextBody)
+						.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
-						.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
+						.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 					]
 					// 4. Buy and Steal side by side
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
@@ -339,7 +366,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						[ StealBtnWidget ]
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4),
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(ShopCardPadding),
 					&ItemTileBorders[i])
 			]
 		];
@@ -370,19 +397,20 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBuybackSlot, i),
 				ET66ButtonType::Primary)
-			.SetMinWidth(100.f)
-			.SetPadding(FMargin(8.f, 6.f))
+			.SetMinWidth(CardButtonMinWidth)
+			.SetPadding(ShopButtonPadding)
+			.SetFontSize(CardButtonFontSize)
 			.SetContent(
 				SAssignNew(BuybackPriceTexts[i], STextBlock)
 				.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
-				.Font(FT66Style::Tokens::FontBold(14))
+				.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			)
 		);
 		BuybackBuyButtons[i] = BuybackBtnWidget;
 		BuybackRow->AddSlot()
 			.AutoWidth()
-			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
+			.Padding(i > 0 ? FMargin(ShopCardGap, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
 			.WidthOverride(ShopCardSize)
@@ -393,14 +421,15 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(SBox)
-						.HeightOverride(60.f)
+						.HeightOverride(ShopNameBoxHeight)
 						[
 							SAssignNew(BuybackNameTexts[i], STextBlock)
 							.Text(FText::GetEmpty())
 							.TextStyle(&TextHeading)
+							.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
 							.ColorAndOpacity(FT66Style::Tokens::Text)
 							.AutoWrapText(true)
-							.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
+							.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
@@ -426,16 +455,17 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						SAssignNew(BuybackDescTexts[i], STextBlock)
 						.Text(FText::GetEmpty())
 						.TextStyle(&TextBody)
+						.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
-						.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
+						.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
 						BuybackBtnWidget
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4),
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(ShopCardPadding),
 					&BuybackTileBorders[i])
 			]
 		];
@@ -444,8 +474,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	// Steal prompt (created once, overlaid and toggled visible when needed).
 	TSharedRef<SWidget> StealPromptWidget =
 		SAssignNew(StealPromptContainer, SBox)
-		.WidthOverride(560.f)
-		.HeightOverride(220.f)
+		.WidthOverride(bCompactCircusLayout ? 360.f : 560.f)
+		.HeightOverride(bCompactCircusLayout ? 160.f : 220.f)
 		.Visibility(EVisibility::Collapsed)
 		[
 			FT66Style::MakePanel(
@@ -455,12 +485,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Vendor", "StealTimingTitle", "STEAL (TIMING)"))
 					.TextStyle(&TextHeading)
+					.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(SBox)
-					.WidthOverride(360.f)
+					.WidthOverride(bCompactCircusLayout ? 220.f : 360.f)
 					.HeightOverride(28.f)
 					[
 						SNew(SOverlay)
@@ -570,7 +601,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				FText::GetEmpty(),
 				FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSelectInventorySlot, Inv),
 				ET66ButtonType::Neutral)
-			.SetMinWidth(FT66Style::Tokens::InventorySlotSize).SetHeight(FT66Style::Tokens::InventorySlotSize)
+			.SetMinWidth(InventorySlotSize).SetHeight(InventorySlotSize)
 			.SetPadding(FMargin(0.f))
 			.SetContent(
 				FT66Style::MakePanel(
@@ -585,7 +616,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					[
 						SAssignNew(InventorySlotCountTexts[Inv], STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(14))
+						.Font(FT66Style::Tokens::FontBold(InventoryCountFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 						.ShadowOffset(FVector2D(1.f, 1.f))
 						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
@@ -596,6 +627,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						SAssignNew(InventorySlotTexts[Inv], STextBlock)
 						.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 						.TextStyle(&TextChip)
+						.Font(FT66Style::Tokens::FontBold(InventoryDashFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				,
@@ -607,8 +639,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		InventoryGrid->AddSlot(Inv, 0)
 		[
 			SNew(SBox)
-			.WidthOverride(FT66Style::Tokens::InventorySlotSize)
-			.HeightOverride(FT66Style::Tokens::InventorySlotSize)
+			.WidthOverride(InventorySlotSize)
+			.HeightOverride(InventorySlotSize)
 			[
 				SlotBtn
 			]
@@ -622,7 +654,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnSellSelectedClicked),
 			ET66ButtonType::Primary)
 		.SetMinWidth(0.f)
-		.SetPadding(FMargin(18.f, 10.f))
+		.SetPadding(ActionButtonPadding)
+		.SetFontSize(CardButtonFontSize)
 	);
 	SellItemButton = SellBtnWidget;
 
@@ -671,7 +704,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			}),
 			ET66ButtonType::Neutral)
 		.SetMinWidth(0.f)
-		.SetPadding(FMargin(12.f, 8.f))
+		.SetPadding(bCompactCircusLayout ? FMargin(8.f, 5.f) : FMargin(12.f, 8.f))
+		.SetFontSize(bCompactCircusLayout ? 11 : 16)
 		.SetDynamicLabel(TAttribute<FText>::CreateLambda([this, ShopTitle, BuybackTitle]() -> FText
 		{
 			const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
@@ -685,7 +719,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
 			ET66ButtonType::Neutral)
 		.SetMinWidth(0.f)
-		.SetPadding(FMargin(16.f, 10.f))
+		.SetPadding(ActionButtonPadding)
+		.SetFontSize(bCompactCircusLayout ? 11 : 16)
 		.SetEnabled(TAttribute<bool>::CreateLambda([this]()
 		{
 			UT66RunStateSubsystem* RS = GetRunStateFromWorld(GetWorld());
@@ -703,19 +738,19 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	// Build main 3-column row (Stats | Shop | Bank) as a separate widget to avoid Slate parser issues with SBox::FArguments.
 	TSharedRef<SWidget> MainRowContent = SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
 		[
 			SAssignNew(StatsPanelBox, SBox)
-			.WidthOverride(FT66Style::Tokens::NPCVendorStatsPanelWidth)
-			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
+			.WidthOverride(StatsPanelWidth)
+			.HeightOverride(MainRowHeight)
 			[
-				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), FT66Style::Tokens::NPCVendorStatsPanelWidth, true)
+				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), StatsPanelWidth, true)
 			]
 		]
-		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
+		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
 		[
 			SNew(SBox)
-			.MinDesiredHeight(FT66Style::Tokens::NPCMainRowHeight)
+			.MinDesiredHeight(MainRowHeight)
 			[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left)
@@ -749,16 +784,16 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 0.f, 0.f)
 		[
 			SNew(SBox)
-			.WidthOverride(FT66Style::Tokens::NPCRightPanelWidth)
-			.MinDesiredHeight(FT66Style::Tokens::NPCMainRowHeight)
+			.WidthOverride(RightPanelWidth)
+			.MinDesiredHeight(MainRowHeight)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 					[
 						SNew(SBox)
-						.WidthOverride(260.f)
-						.HeightOverride(260.f)
+						.WidthOverride(AngerImageSize)
+						.HeightOverride(AngerImageSize)
 						[
 							SAssignNew(AngerCircleImage, SImage)
 							.Image(&AngerFace_Happy)
@@ -777,6 +812,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								SNew(STextBlock)
 								.Text(BankTitle)
 								.TextStyle(&TextHeading)
+								.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
@@ -785,12 +821,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
 									SNew(SBox)
-									.WidthOverride(FT66Style::Tokens::NPCBankSpinBoxWidth)
-									.HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
+									.WidthOverride(BankSpinBoxWidth)
+									.HeightOverride(BankSpinBoxHeight)
 									[
 										SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
-										.Font(FT66Style::Tokens::FontBold(16))
+										.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
 										.Value_Lambda([this]() { return BorrowAmount; })
 										.OnValueChanged_Lambda([this](int32 V)
 										{
@@ -811,7 +847,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBorrowClicked),
 											ET66ButtonType::Neutral)
 										.SetMinWidth(0.f)
-										.SetPadding(FMargin(16.f, 10.f))
+										.SetPadding(ActionButtonPadding)
+										.SetFontSize(CardButtonFontSize)
 									)
 								]
 							]
@@ -821,12 +858,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 								[
 									SNew(SBox)
-									.WidthOverride(FT66Style::Tokens::NPCBankSpinBoxWidth)
-									.HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
+									.WidthOverride(BankSpinBoxWidth)
+									.HeightOverride(BankSpinBoxHeight)
 									[
 										SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
-										.Font(FT66Style::Tokens::FontBold(16))
+										.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
 										.Value_Lambda([this]() { return PaybackAmount; })
 										.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
 									]
@@ -839,15 +876,16 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 											FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnPaybackClicked),
 											ET66ButtonType::Neutral)
 										.SetMinWidth(0.f)
-										.SetPadding(FMargin(16.f, 10.f))
+										.SetPadding(ActionButtonPadding)
+										.SetFontSize(CardButtonFontSize)
 									)
 								]
 							]
 						,
-							FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66Style::Tokens::Space5))
+							FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5))
 					]
 				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
 			]
 		];
 
@@ -865,21 +903,23 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					return bShowingBuyback ? BuybackTitle : ShopTitle;
 				})
 				.TextStyle(&TextTitle)
+				.Font(FT66Style::Tokens::FontBold(PageTitleFontSize))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? 8.f : 12.f, 0.f, 0.f)
 		[
 			SAssignNew(StatusText, STextBlock)
 			.Text(FText::GetEmpty())
 			.TextStyle(&TextBody)
+			.Font(FT66Style::Tokens::FontRegular(StatusFontSize))
 			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
 			MainRowContent
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
 			FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -891,24 +931,27 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							SNew(STextBlock)
 								.Text(InventoryTitle)
 								.TextStyle(&TextHeading)
+								.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(18.f, 0.f, 16.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(bCompactCircusLayout ? 10.f : 18.f, 0.f, bCompactCircusLayout ? 10.f : 16.f, 0.f)
 					[
 						SAssignNew(NetWorthText, STextBlock)
 						.Text(FText::Format(
 							Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}"),
 							FText::AsNumber(0)))
 						.TextStyle(&TextHeading)
+						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 16.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, bCompactCircusLayout ? 10.f : 16.f, 0.f)
 					[
 						SAssignNew(GoldText, STextBlock)
 						.Text(FText::Format(
 							Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
 							FText::AsNumber(0)))
 						.TextStyle(&TextHeading)
+						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
@@ -918,6 +961,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}"),
 							FText::AsNumber(0)))
 						.TextStyle(&TextHeading)
+						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Danger)
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
@@ -938,12 +982,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 							InventoryGrid
 						]
 					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
 					[
 						// Sell details for selected item (sized to match inventory slot: 160x160)
 						SAssignNew(SellPanelContainer, SBox)
-						.WidthOverride(160.f)
-						.HeightOverride(160.f)
+						.WidthOverride(SellPanelSize)
+						.HeightOverride(SellPanelSize)
 						.Visibility(EVisibility::Visible)
 						[
 							FT66Style::MakePanel(
@@ -953,6 +997,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 									SAssignNew(SellItemNameText, STextBlock)
 									.Text(FText::GetEmpty())
 									.TextStyle(&TextHeading)
+									.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
 									.ColorAndOpacity(FT66Style::Tokens::Text)
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -960,6 +1005,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 									SAssignNew(SellItemDescText, STextBlock)
 									.Text(FText::GetEmpty())
 									.TextStyle(&TextBody)
+									.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
 									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 									.AutoWrapText(true)
 								]
@@ -968,25 +1014,26 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 									SAssignNew(SellItemPriceText, STextBlock)
 									.Text(FText::GetEmpty())
 									.TextStyle(&TextChip)
+									.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
 									.ColorAndOpacity(FT66Style::Tokens::Accent2)
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 								[ SellBtnWidget ]
 							,
-								FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66Style::Tokens::Space4))
+								FT66PanelParams(ET66PanelType::Panel2).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
 						]
 					]
 				]
 			,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4).SetColor(FT66Style::Tokens::Panel))
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4).SetColor(FT66Style::Tokens::Panel))
 		];
 
-	const TAttribute<FOptionalSize> ShopPageWidthAttr = TAttribute<FOptionalSize>::CreateLambda([this]() -> FOptionalSize
+	const TAttribute<FOptionalSize> ShopPageWidthAttr = TAttribute<FOptionalSize>::CreateLambda([this, OverlayPadding]() -> FOptionalSize
 	{
 		const FVector2D Bounds = bEmbeddedInCircusShell ? FT66Style::GetViewportLogicalSize() : FT66Style::GetSafeFrameSize();
 		const float HorizontalMargins = bEmbeddedInCircusShell
-			? (FT66Style::Tokens::NPCOverlayPadding * 4.f)
-			: (FT66Style::Tokens::NPCOverlayPadding * 2.f);
+			? (OverlayPadding * 4.f)
+			: (OverlayPadding * 2.f);
 		return FOptionalSize(FMath::Max(1.f, Bounds.X - HorizontalMargins));
 	});
 
@@ -1007,12 +1054,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		return bEmbeddedInCircusShell ? FMargin(0.f) : FT66Style::GetSafeFrameInsets();
 	});
 
-	const TAttribute<FMargin> SafeClosePadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+	const TAttribute<FMargin> SafeClosePadding = TAttribute<FMargin>::CreateLambda([this, OverlayPadding]() -> FMargin
 	{
 		const FMargin LocalPadding(
-			FT66Style::Tokens::NPCOverlayPadding,
-			FT66Style::Tokens::NPCOverlayPadding,
-			FT66Style::Tokens::NPCOverlayPadding,
+			OverlayPadding,
+			OverlayPadding,
+			OverlayPadding,
 			0.f);
 		return bEmbeddedInCircusShell ? LocalPadding : FT66Style::GetSafePadding(LocalPadding);
 	});
@@ -1037,7 +1084,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					]
 				]
 			,
-				FT66PanelParams(ET66PanelType::Bg).SetPadding(FT66Style::Tokens::NPCOverlayPadding).SetColor(FT66Style::Tokens::Bg))
+				FT66PanelParams(ET66PanelType::Bg).SetPadding(OverlayPadding).SetColor(FT66Style::Tokens::Bg))
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)

@@ -25,6 +25,14 @@ struct T66_API FT66LocalScoreRecord
 	/** Whether the best score was submitted as anonymous. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	bool bSubmittedAnonymous = false;
+
+	/** Saved run summary snapshot associated with this PB (viewer opens this slot). */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString RunSummarySlotName;
+
+	/** UTC timestamp for when the PB was achieved. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FDateTime AchievedAtUtc = FDateTime::MinValue();
 };
 
 USTRUCT(BlueprintType)
@@ -49,6 +57,76 @@ struct T66_API FT66LocalSpeedRunStageRecord
 	/** Whether the best time was submitted as anonymous. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	bool bSubmittedAnonymous = false;
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66LocalCompletedRunTimeRecord
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	ET66Difficulty Difficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	ET66PartySize PartySize = ET66PartySize::Solo;
+
+	/** Best completed full-run time in seconds (lower is better). */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	float BestCompletedSeconds = 0.f;
+
+	/** Whether the best completed time was submitted as anonymous. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	bool bSubmittedAnonymous = false;
+
+	/** Saved run summary snapshot associated with this PB (viewer opens this slot). */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString RunSummarySlotName;
+
+	/** UTC timestamp for when the PB was achieved. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FDateTime AchievedAtUtc = FDateTime::MinValue();
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66RecentRunRecord
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FGuid RunId;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FDateTime EndedAtUtc = FDateTime::MinValue();
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString RunSummarySlotName;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	ET66Difficulty Difficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	ET66PartySize PartySize = ET66PartySize::Solo;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FName HeroID = NAME_None;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FName CompanionID = NAME_None;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 Score = 0;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 StageReached = 1;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	float DurationSeconds = 0.f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	bool bWasFullClear = false;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	bool bWasSpeedRunMode = false;
 };
 
 UENUM(BlueprintType)
@@ -113,13 +191,20 @@ class T66_API UT66LocalLeaderboardSaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 1;
+	int32 SchemaVersion = 2;
 
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalScoreRecord> ScoreRecords;
 
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalSpeedRunStageRecord> SpeedRunStageRecords;
+
+	UPROPERTY(SaveGame)
+	TArray<FT66LocalCompletedRunTimeRecord> CompletedRunTimeRecords;
+
+	/** Most recent completed runs, newest first, capped to the latest 20. */
+	UPROPERTY(SaveGame)
+	TArray<FT66RecentRunRecord> RecentRuns;
 
 	/** Placeholder local account restriction state (for the Main Menu Account Status panel). */
 	UPROPERTY(SaveGame)

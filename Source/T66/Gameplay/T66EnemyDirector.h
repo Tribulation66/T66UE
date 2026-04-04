@@ -20,6 +20,7 @@ struct FPendingEnemySpawn
 	FName MobID;
 	bool bIsMiniBoss = false;
 	float DifficultyScalar = 1.f;
+	float FinaleScalar = 1.f;
 	int32 StageNum = 1;
 };
 

@@ -163,12 +163,14 @@ void AT66EnemyDirector::SpawnWave()
 
 	// Difficulty scaling affects enemy count (waves + max alive).
 	const float Scalar = RunState->GetDifficultyScalar();
+	const float FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
+	const float SpawnScalar = Scalar * FinaleScalar;
 	int32 EffectivePerWave = FMath::Clamp(
-		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * Scalar * SpawnDensityMultiplier),
+		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseEnemiesPerWave)) * SpawnScalar * SpawnDensityMultiplier),
 		1,
 		600);
 	int32 EffectiveMaxAlive = FMath::Clamp(
-		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseMaxAliveEnemies)) * Scalar * SpawnDensityMultiplier),
+		FMath::RoundToInt(static_cast<float>(FMath::Max(1, BaseMaxAliveEnemies)) * SpawnScalar * SpawnDensityMultiplier),
 		1,
 		1500);
 	EffectiveMaxAlive = FMath::Max(EffectiveMaxAlive, EffectivePerWave);
@@ -474,6 +476,7 @@ void AT66EnemyDirector::SpawnWave()
 		Slot.MobID = MobID;
 		Slot.bIsMiniBoss = bIsMiniBossSlot;
 		Slot.DifficultyScalar = Scalar;
+		Slot.FinaleScalar = FinaleScalar;
 		Slot.StageNum = RunState ? RunState->GetCurrentStage() : 1;
 		PendingSpawns.Add(Slot);
 	}
@@ -570,6 +573,7 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 				Enemy->ApplyMiniBossMultipliers(MiniBossHPScalar, MiniBossDamageScalar, MiniBossScale);
 				ActiveMiniBoss = Enemy;
 			}
+			Enemy->ApplyFinaleScaling(Slot.FinaleScalar);
 			AliveCount++;
 			Enemy->StartRiseFromGround(Slot.GroundLocation.Z);
 		}

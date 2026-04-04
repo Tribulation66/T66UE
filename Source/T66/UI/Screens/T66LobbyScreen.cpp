@@ -132,7 +132,7 @@ void UT66LobbyScreen::StartRunFromLobby()
 	}
 	else
 	{
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
+		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
 	}
 }
 

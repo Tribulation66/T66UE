@@ -59,6 +59,28 @@ void UT66BackendSubsystem::SetAuthHeaders(TSharedRef<IHttpRequest, ESPMode::Thre
 	}
 }
 
+FString UT66BackendSubsystem::ExtractResponseMessage(const TSharedPtr<FJsonObject>& Json, const FString& FallbackMessage)
+{
+	if (!Json.IsValid())
+	{
+		return FallbackMessage;
+	}
+
+	FString Message;
+	if (Json->TryGetStringField(TEXT("message"), Message) && !Message.IsEmpty())
+	{
+		return Message;
+	}
+
+	FString Status;
+	if (Json->TryGetStringField(TEXT("status"), Status) && !Status.IsEmpty())
+	{
+		return Status;
+	}
+
+	return FallbackMessage;
+}
+
 FString UT66BackendSubsystem::DifficultyToApiString(ET66Difficulty Diff)
 {
 	switch (Diff)
@@ -360,6 +382,9 @@ void UT66BackendSubsystem::OnAccountStatusResponseReceived(FHttpRequestPtr Reque
 {
 	if (!bConnectedSuccessfully || !Response.IsValid() || Response->GetResponseCode() != 200)
 	{
+		LastAccountStatusReason.Reset();
+		LastAccountAppealStatus.Reset();
+		LastAccountRunSummaryId.Reset();
 		OnAccountStatusComplete.Broadcast(false, TEXT(""));
 		return;
 	}
@@ -368,13 +393,255 @@ void UT66BackendSubsystem::OnAccountStatusResponseReceived(FHttpRequestPtr Reque
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	if (!FJsonSerializer::Deserialize(Reader, Json) || !Json.IsValid())
 	{
+		LastAccountStatusReason.Reset();
+		LastAccountAppealStatus.Reset();
+		LastAccountRunSummaryId.Reset();
 		OnAccountStatusComplete.Broadcast(false, TEXT(""));
 		return;
 	}
 
 	const FString Restriction = Json->GetStringField(TEXT("restriction"));
+	Json->TryGetStringField(TEXT("reason"), LastAccountStatusReason);
+	Json->TryGetStringField(TEXT("appeal_status"), LastAccountAppealStatus);
+	Json->TryGetStringField(TEXT("run_summary_id"), LastAccountRunSummaryId);
 	UE_LOG(LogT66Backend, Log, TEXT("Backend: account-status = %s"), *Restriction);
 	OnAccountStatusComplete.Broadcast(true, Restriction);
+}
+
+void UT66BackendSubsystem::SubmitRunReport(const FString& TargetEntryId, const FString& Reason, FString EvidenceUrl)
+{
+	if (!IsBackendConfigured() || !HasSteamTicket() || TargetEntryId.IsEmpty())
+	{
+		OnRunReportComplete.Broadcast(false, TEXT("Run report unavailable."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("target_entry_id"), TargetEntryId);
+	if (!Reason.TrimStartAndEnd().IsEmpty())
+	{
+		Root->SetStringField(TEXT("reason"), Reason.TrimStartAndEnd());
+	}
+	if (!EvidenceUrl.TrimStartAndEnd().IsEmpty())
+	{
+		Root->SetStringField(TEXT("evidence_url"), EvidenceUrl.TrimStartAndEnd());
+	}
+
+	FString Payload;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("POST"), TEXT("/api/report-run"));
+	SetAuthHeaders(Request);
+	Request->SetContentAsString(Payload);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnRunReportResponseReceived);
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::SubmitAppeal(const FString& Message, FString EvidenceUrl)
+{
+	if (!IsBackendConfigured() || !HasSteamTicket())
+	{
+		OnAppealSubmitComplete.Broadcast(false, TEXT("Appeals unavailable."));
+		return;
+	}
+
+	FString TrimmedMessage = Message;
+	TrimmedMessage.TrimStartAndEndInline();
+	if (TrimmedMessage.IsEmpty())
+	{
+		OnAppealSubmitComplete.Broadcast(false, TEXT("Appeal message is required."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("message"), TrimmedMessage);
+	if (!EvidenceUrl.TrimStartAndEnd().IsEmpty())
+	{
+		Root->SetStringField(TEXT("evidence_url"), EvidenceUrl.TrimStartAndEnd());
+	}
+
+	FString Payload;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("POST"), TEXT("/api/submit-appeal"));
+	SetAuthHeaders(Request);
+	Request->SetContentAsString(Payload);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnAppealResponseReceived);
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::UpdateProofOfRun(const FString& EntryId, const FString& ProofUrl)
+{
+	if (!IsBackendConfigured() || !HasSteamTicket() || EntryId.IsEmpty())
+	{
+		OnProofOfRunComplete.Broadcast(false, TEXT("Proof of run unavailable."));
+		return;
+	}
+
+	FString TrimmedUrl = ProofUrl;
+	TrimmedUrl.TrimStartAndEndInline();
+	if (TrimmedUrl.IsEmpty())
+	{
+		OnProofOfRunComplete.Broadcast(false, TEXT("Proof URL is required."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("entry_id"), EntryId);
+	Root->SetStringField(TEXT("proof_url"), TrimmedUrl);
+
+	FString Payload;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("PUT"), TEXT("/api/proof-of-run"));
+	SetAuthHeaders(Request);
+	Request->SetContentAsString(Payload);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnProofOfRunResponseReceived);
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::SubmitBugReport(
+	const FString& Message,
+	int32 Stage,
+	const FString& Difficulty,
+	const FString& Party,
+	const FString& HeroId)
+{
+	if (!IsBackendConfigured() || !HasSteamTicket())
+	{
+		OnBugReportComplete.Broadcast(false, TEXT("Bug reports unavailable."));
+		return;
+	}
+
+	FString TrimmedMessage = Message;
+	TrimmedMessage.TrimStartAndEndInline();
+	if (TrimmedMessage.IsEmpty())
+	{
+		OnBugReportComplete.Broadcast(false, TEXT("Bug report message is required."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("message"), TrimmedMessage);
+
+	TSharedPtr<FJsonObject> RunContext = MakeShared<FJsonObject>();
+	if (Stage > 0)
+	{
+		RunContext->SetNumberField(TEXT("stage"), Stage);
+	}
+	if (!Difficulty.TrimStartAndEnd().IsEmpty())
+	{
+		RunContext->SetStringField(TEXT("difficulty"), Difficulty.TrimStartAndEnd());
+	}
+	if (!Party.TrimStartAndEnd().IsEmpty())
+	{
+		RunContext->SetStringField(TEXT("party_size"), Party.TrimStartAndEnd());
+	}
+	if (!HeroId.TrimStartAndEnd().IsEmpty())
+	{
+		RunContext->SetStringField(TEXT("hero_id"), HeroId.TrimStartAndEnd());
+	}
+	if (RunContext->Values.Num() > 0)
+	{
+		Root->SetObjectField(TEXT("run_context"), RunContext);
+	}
+
+	FString Payload;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Payload);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("POST"), TEXT("/api/bug-report"));
+	SetAuthHeaders(Request);
+	Request->SetContentAsString(Payload);
+	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnBugReportResponseReceived);
+	Request->ProcessRequest();
+}
+
+void UT66BackendSubsystem::OnRunReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		OnRunReportComplete.Broadcast(false, TEXT("Run report failed."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
+	const int32 Code = Response->GetResponseCode();
+	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	{
+		OnRunReportComplete.Broadcast(true, TEXT("Run reported."));
+		return;
+	}
+
+	OnRunReportComplete.Broadcast(false, ExtractResponseMessage(Json, TEXT("Run report failed.")));
+}
+
+void UT66BackendSubsystem::OnAppealResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		OnAppealSubmitComplete.Broadcast(false, TEXT("Appeal submission failed."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
+	const int32 Code = Response->GetResponseCode();
+	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	{
+		OnAppealSubmitComplete.Broadcast(true, TEXT("Appeal submitted."));
+		return;
+	}
+
+	OnAppealSubmitComplete.Broadcast(false, ExtractResponseMessage(Json, TEXT("Appeal submission failed.")));
+}
+
+void UT66BackendSubsystem::OnProofOfRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		OnProofOfRunComplete.Broadcast(false, TEXT("Proof of run update failed."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
+	const int32 Code = Response->GetResponseCode();
+	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("updated"))
+	{
+		OnProofOfRunComplete.Broadcast(true, TEXT("Proof of run updated."));
+		return;
+	}
+
+	OnProofOfRunComplete.Broadcast(false, ExtractResponseMessage(Json, TEXT("Proof of run update failed.")));
+}
+
+void UT66BackendSubsystem::OnBugReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+{
+	if (!bConnectedSuccessfully || !Response.IsValid())
+	{
+		OnBugReportComplete.Broadcast(false, TEXT("Bug report failed."));
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Json;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	const bool bParsed = FJsonSerializer::Deserialize(Reader, Json) && Json.IsValid();
+	const int32 Code = Response->GetResponseCode();
+	if (Code == 200 && bParsed && Json->GetStringField(TEXT("status")) == TEXT("submitted"))
+	{
+		OnBugReportComplete.Broadcast(true, TEXT("Bug report submitted."));
+		return;
+	}
+
+	OnBugReportComplete.Broadcast(false, ExtractResponseMessage(Json, TEXT("Bug report failed.")));
 }
 
 // ── Health Check ─────────────────────────────────────────────
@@ -689,8 +956,11 @@ UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::ParseRunSummaryFromJson
 	UT66LeaderboardRunSummarySaveGame* S = NewObject<UT66LeaderboardRunSummarySaveGame>(Outer);
 
 	S->SchemaVersion = Json->HasField(TEXT("schema_version")) ? static_cast<int32>(Json->GetNumberField(TEXT("schema_version"))) : 6;
+	S->EntryId = Json->HasField(TEXT("entry_id")) ? Json->GetStringField(TEXT("entry_id")) : FString();
+	S->OwnerSteamId = Json->HasField(TEXT("steam_id")) ? Json->GetStringField(TEXT("steam_id")) : FString();
 	S->StageReached = Json->HasField(TEXT("stage_reached")) ? static_cast<int32>(Json->GetNumberField(TEXT("stage_reached"))) : 1;
 	S->Score = Json->HasField(TEXT("score")) ? static_cast<int32>(Json->GetNumberField(TEXT("score"))) : 0;
+	S->RunDurationSeconds = Json->HasField(TEXT("time_seconds")) ? static_cast<float>(Json->GetNumberField(TEXT("time_seconds"))) : 0.f;
 
 	const FString HeroIdStr = Json->GetStringField(TEXT("hero_id"));
 	S->HeroID = HeroIdStr.IsEmpty() ? NAME_None : FName(*HeroIdStr);
@@ -839,7 +1109,14 @@ UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::ParseRunSummaryFromJson
 	}
 
 	// Proof of run
-	S->ProofOfRunUrl = Json->GetStringField(TEXT("proof_of_run_url"));
+	if (Json->HasField(TEXT("proof_of_run_url")))
+	{
+		S->ProofOfRunUrl = Json->GetStringField(TEXT("proof_of_run_url"));
+	}
+	S->bProofOfRunLocked =
+		Json->HasField(TEXT("proof_locked"))
+		? Json->GetBoolField(TEXT("proof_locked"))
+		: !S->ProofOfRunUrl.IsEmpty();
 
 	return S;
 }
