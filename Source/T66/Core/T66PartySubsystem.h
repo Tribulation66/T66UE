@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Containers/Ticker.h"
+#include "Delegates/Delegate.h"
 #include "Data/T66DataTypes.h"
 #include "T66PartySubsystem.generated.h"
 
@@ -43,6 +45,12 @@ struct T66_API FT66PartyMemberEntry
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
 	bool bOnline = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	bool bReady = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	bool bIsPartyHost = false;
 };
 
 DECLARE_MULTICAST_DELEGATE(FOnT66PartyStateChanged);
@@ -96,9 +104,11 @@ public:
 	FOnT66PartyStateChanged& OnPartyStateChanged() { return PartyStateChanged; }
 
 private:
-	static constexpr int32 MaxPartyMembers = 4;
-
-	void BuildPlaceholderState();
+	bool HandlePartyTicker(float DeltaTime);
+	void RefreshPartyState(bool bBroadcastChanges);
+	void RebuildFriendList();
+	void RebuildPartyMembers();
+	int32 GetMaxPartyMembers() const;
 	void SyncSelectedPartySize();
 	const FT66PartyFriendEntry* FindFriend(const FString& PlayerId) const;
 	int32 FindPartyMemberIndex(const FString& PlayerId) const;
@@ -108,4 +118,5 @@ private:
 	FString LocalPlayerId;
 	FString LocalDisplayName;
 	FOnT66PartyStateChanged PartyStateChanged;
+	FTSTicker::FDelegateHandle PartyTickerHandle;
 };

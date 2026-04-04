@@ -119,8 +119,8 @@ bool AT66StageGate::AdvanceToNextStage()
 
 	T66GI->bIsStageTransition = true;
 
-	// Coliseum rule: before entering a difficulty boss stage (5, 10, 15, 20, 25, 30, 33), route to Coliseum if there are owed bosses.
-	const bool bIsDifficultyBossStage = (NextStage == 5 || NextStage == 10 || NextStage == 15 || NextStage == 20 || NextStage == 25 || NextStage == 30 || NextStage == 33);
+	// Coliseum rule: before entering a difficulty boss stage (5, 10, 15, 20, 23), route to Coliseum if there are owed bosses.
+	const bool bIsDifficultyBossStage = (NextStage == 5 || NextStage == 10 || NextStage == 15 || NextStage == 20 || NextStage == 23);
 	if (bIsDifficultyBossStage && RunState->GetOwedBossIDs().Num() > 0)
 	{
 		T66GI->bIsStageTransition = true;

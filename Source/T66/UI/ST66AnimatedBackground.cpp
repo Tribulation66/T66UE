@@ -73,7 +73,7 @@ EActiveTimerReturnType ST66AnimatedBackground::HandleActiveTimer(double InCurren
 
 void ST66AnimatedBackground::TickLayer(FRuntimeLayer& Layer, float DeltaTime)
 {
-	Layer.CurrentOffset = FVector2D(Layer.SwayXTween.Tick(DeltaTime), Layer.SwayYTween.Tick(DeltaTime));
+	Layer.CurrentOffset = Layer.Definition.BaseOffset + FVector2D(Layer.SwayXTween.Tick(DeltaTime), Layer.SwayYTween.Tick(DeltaTime));
 	Layer.CurrentScale = 1.f + Layer.ScaleTween.Tick(DeltaTime);
 	Layer.CurrentOpacity = FMath::Clamp(
 		Layer.OpacityBias + Layer.OpacityTween.Tick(DeltaTime),

@@ -26,9 +26,6 @@ public:
 
 	virtual bool Interact(APlayerController* PC) override;
 
-	/** Luck multiplier from items (multiplies spawn quantity for fountains). */
-	float GetLuckFountainMultiplier() const;
-
 protected:
 	virtual void ApplyRarityVisuals() override;
 };

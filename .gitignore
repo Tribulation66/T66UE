@@ -26,6 +26,8 @@ Build/
 # Python cache (scripts)
 **/__pycache__/
 *.pyc
+.venv/
+Tools/ChatGPTBridge/output/
 
 # Source art / raw imports (optional: remove line below to track SourceAssets for hero/character pipeline)
 # SourceAssets/

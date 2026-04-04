@@ -64,17 +64,8 @@ void UT66FloatingCombatTextSubsystem::ShowDamageTaken(AActor* Target, int32 Amou
 
 void UT66FloatingCombatTextSubsystem::ShowStatusEvent(AActor* Target, FName EventType)
 {
-	if (!Target || EventType != EventType_LevelUp) return;
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	UT66FloatingCombatTextPoolSubsystem* Pool = World->GetSubsystem<UT66FloatingCombatTextPoolSubsystem>();
-	if (!Pool) return;
-
-	AT66FloatingCombatTextActor* Actor = Pool->AcquireActor(Target, FVector(0.f, 0.f, OffsetAboveHead + 50.f), 1.8f);
-	if (Actor)
-	{
-		Actor->SetStatusEvent(EventType);
-	}
+	// Per current UX direction, only numeric damage text should be visible.
+	// Keep callers intact, but suppress standalone status-word popups globally.
+	(void)Target;
+	(void)EventType;
 }

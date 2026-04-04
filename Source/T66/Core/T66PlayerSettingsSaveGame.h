@@ -19,7 +19,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 9;
+	int32 SchemaVersion = 10;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -46,6 +46,10 @@ public:
 
 	UPROPERTY(SaveGame)
 	int32 UIThemeIndex = 1; // Legacy-only. Unified style always normalizes to Dota/current theme.
+
+	/** Player-facing UI scale multiplier applied on top of engine DPI scaling. */
+	UPROPERTY(SaveGame)
+	float UIScale = 1.0f;
 
 	// ===== Legacy (not surfaced in Settings UI) =====
 	// Kept for backward compatibility with existing saves / future VFX tuning.

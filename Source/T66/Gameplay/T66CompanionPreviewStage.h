@@ -79,6 +79,12 @@ protected:
 	UPROPERTY()
 	TObjectPtr<AT66CompanionBase> PreviewPawn;
 
+	UPROPERTY(Transient)
+	FName ActivePreviewCompanionID = NAME_None;
+
+	UPROPERTY(Transient)
+	FName ActivePreviewSkinID = NAME_None;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
 	FVector PreviewPawnOffset = FVector::ZeroVector;
 

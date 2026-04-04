@@ -34,6 +34,11 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/Texture2D.h"
 
+static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
+{
+	return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
+}
+
 void UT66GamblerOverlayWidget::NativeDestruct()
 {
 	if (UWorld* World = GetWorld())
@@ -78,6 +83,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotButtons.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotCountTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 
@@ -1185,10 +1191,11 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		,
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel));
 
-	// Buyback row (3 slots, same card layout as Vendor buyback)
-	static constexpr int32 BuybackSlotCount = 3;
-	static constexpr float BuybackCardSize = 260.f;
-	static constexpr float BuybackCardHeight = 460.f;
+	// Buyback row (shared slot count with vendor buyback)
+	static constexpr int32 BuybackSlotCount = UT66RunStateSubsystem::BuybackDisplaySlotCount;
+	const float BuybackCardSize = FT66Style::Tokens::NPCShopCardWidth;
+	const float BuybackCardHeight = FT66Style::Tokens::NPCShopCardHeight;
+	const float BuybackIconSize = BuybackCardSize - FT66Style::Tokens::Space4 * 2.f;
 	BuybackNameTexts.SetNum(BuybackSlotCount);
 	BuybackDescTexts.SetNum(BuybackSlotCount);
 	BuybackPriceTexts.SetNum(BuybackSlotCount);
@@ -1201,7 +1208,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	{
 		BuybackIconBrushes[i] = MakeShared<FSlateBrush>();
 		BuybackIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		BuybackIconBrushes[i]->ImageSize = FVector2D(BuybackCardSize, BuybackCardSize);
+		BuybackIconBrushes[i]->ImageSize = FVector2D(BuybackIconSize, BuybackIconSize);
 	}
 	TSharedRef<SHorizontalBox> BuybackRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < BuybackSlotCount; ++i)
@@ -1233,10 +1240,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SAssignNew(BuybackNameTexts[i], STextBlock)
-						.Text(FText::GetEmpty())
-						.TextStyle(&TextHeading)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						SNew(SBox)
+						.HeightOverride(60.f)
+						[
+							SAssignNew(BuybackNameTexts[i], STextBlock)
+							.Text(FText::GetEmpty())
+							.TextStyle(&TextHeading)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.AutoWrapText(true)
+							.WrapTextAt(BuybackCardSize - FT66Style::Tokens::Space4 * 2.f)
+						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
 					[
@@ -1245,8 +1258,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(BuybackCardSize)
-								.HeightOverride(BuybackCardSize)
+								.WidthOverride(BuybackIconSize)
+								.HeightOverride(BuybackIconSize)
 								[
 									SAssignNew(BuybackIconImages[i], SImage)
 									.Image(BuybackIconBrushes[i].Get())
@@ -1263,6 +1276,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						.TextStyle(&TextBody)
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
+						.WrapTextAt(BuybackCardSize - FT66Style::Tokens::Space4 * 2.f)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
@@ -1307,12 +1321,29 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
 			[
 				SAssignNew(CasinoBuybackSwitcher, SWidgetSwitcher)
-				+ SWidgetSwitcher::Slot() [ CasinoCenterContent ]
+				+ SWidgetSwitcher::Slot()
+				[
+					SNew(SScrollBox)
+					.Orientation(Orient_Horizontal)
+					.ScrollBarVisibility(EVisibility::Visible)
+					+ SScrollBox::Slot()
+					[
+						CasinoCenterContent
+					]
+				]
 				+ SWidgetSwitcher::Slot()
 				[
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 0.f)
-					[ BuybackRow ]
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill).Padding(0.f, 0.f, 0.f, 0.f)
+					[
+						SNew(SScrollBox)
+						.Orientation(Orient_Horizontal)
+						.ScrollBarVisibility(EVisibility::Visible)
+						+ SScrollBox::Slot()
+						[
+							BuybackRow
+						]
+					]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
 					[
 						FT66Style::MakeButton(
@@ -1327,7 +1358,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							.SetPadding(FMargin(16.f, 10.f))
 							.SetEnabled(TAttribute<bool>::CreateLambda([this]() {
 								UT66RunStateSubsystem* RS = GetWorld() && GetWorld()->GetGameInstance() ? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-								return RS && RS->GetBuybackPoolSize() > 3;
+								return RS && RS->GetBuybackPoolSize() > UT66RunStateSubsystem::BuybackDisplaySlotCount;
 							}))
 						)
 					]
@@ -1354,6 +1385,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							SAssignNew(InventorySlotIconImages[i], SImage)
 							.Image(InventorySlotIconBrushes[i].Get())
 							.ColorAndOpacity(FLinearColor::White)
+						]
+						+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0.f, 6.f, 8.f, 0.f)
+						[
+							SAssignNew(InventorySlotCountTexts[i], STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66Style::Tokens::FontBold(14))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.ShadowOffset(FVector2D(1.f, 1.f))
+							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
+							.Visibility(EVisibility::Hidden)
 						]
 						+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
 						[
@@ -1432,7 +1473,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					SNew(SSpacer)
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f)
@@ -1486,9 +1527,9 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				]
 			]
 		,
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel));
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4).SetColor(FT66Style::Tokens::Panel));
 
-	TSharedRef<SWidget> CasinoPage =
+	TSharedRef<SWidget> CasinoPageBody =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
 		[
@@ -1499,9 +1540,6 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space6)
 		[
-			SNew(SBox)
-			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
-			[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 			[
@@ -1512,75 +1550,103 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), FT66Style::Tokens::NPCGamblerStatsPanelWidth, true)
 				]
 			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 			[
 				SNew(SBox)
-				.WidthOverride(FT66Style::Tokens::NPCCenterPanelTotalWidth)
-				.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
+				.MinDesiredHeight(FT66Style::Tokens::NPCMainRowHeight)
 				[
 					CenterPanel
 				]
-			]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[
-				SNew(SSpacer)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 0.f, 0.f)
 			[
 				SNew(SBox)
 				.WidthOverride(FT66Style::Tokens::NPCRightPanelWidth)
+				.MinDesiredHeight(FT66Style::Tokens::NPCMainRowHeight)
 				[
 					RightPanel
 				]
 			]
-			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 		[
+			InventoryPanel
+		];
+
+	TSharedRef<SWidget> CasinoPage =
+		SNew(SScrollBox)
+		.Orientation(Orient_Vertical)
+		+ SScrollBox::Slot()
+		[
 			SNew(SBox)
-			.HeightOverride(FT66Style::Tokens::NPCGamblerInventoryPanelHeight)
+			.WidthOverride(TAttribute<FOptionalSize>::CreateLambda([this]() -> FOptionalSize
+			{
+				const FVector2D Bounds = bEmbeddedInCasinoShell ? FT66Style::GetViewportLogicalSize() : FT66Style::GetSafeFrameSize();
+				const float HorizontalMargins = bEmbeddedInCasinoShell ? 128.f : 80.f;
+				return FOptionalSize(FMath::Max(1.f, Bounds.X - HorizontalMargins));
+			}))
 			[
-				InventoryPanel
+				CasinoPageBody
 			]
 		];
+
+	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+	{
+		return bEmbeddedInCasinoShell ? FMargin(0.f) : FT66Style::GetSafeFrameInsets();
+	});
+
+	const TAttribute<FMargin> SafeClosePadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+	{
+		const FMargin LocalPadding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, FT66Style::Tokens::Space6, 0.f);
+		return bEmbeddedInCasinoShell ? LocalPadding : FT66Style::GetSafePadding(LocalPadding);
+	});
 
 	TSharedRef<SWidget> Root =
 		FT66Style::MakePanel(
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight().Padding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, FT66Style::Tokens::Space6, FT66Style::Tokens::Space2)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(SafeContentInsets)
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight().Padding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, FT66Style::Tokens::Space6, FT66Style::Tokens::Space2)
 					[
-						SAssignNew(StatusText, STextBlock)
-						.Text(FText::GetEmpty())
-						.TextStyle(&TextBody)
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+						[
+							SAssignNew(StatusText, STextBlock)
+							.Text(FText::GetEmpty())
+							.TextStyle(&TextBody)
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
 					]
-				]
-				+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Top).Padding(40.f, 16.f, 40.f, 0.f)
-				[
-					SAssignNew(PageSwitcher, SWidgetSwitcher)
-					+ SWidgetSwitcher::Slot()
-					[ DialoguePage ]
-					+ SWidgetSwitcher::Slot()
-					[ CasinoPage ]
+					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Top).Padding(40.f, 16.f, 40.f, 0.f)
+					[
+						SAssignNew(PageSwitcher, SWidgetSwitcher)
+						+ SWidgetSwitcher::Slot()
+						[ DialoguePage ]
+						+ SWidgetSwitcher::Slot()
+						[ CasinoPage ]
+					]
 				]
 			]
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
+			.HAlign(HAlign_Right)
 			.VAlign(VAlign_Top)
-			.Padding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, 0.f, 0.f)
+			.Padding(SafeClosePadding)
 			[
 				FT66Style::MakeButton(FT66ButtonParams(
-					Loc ? Loc->GetText_Back() : FText::GetEmpty(),
+					NSLOCTEXT("T66.Common", "Close", "CLOSE"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBack),
-					ET66ButtonType::Neutral)
+					ET66ButtonType::Danger)
 					.SetMinWidth(0.f)
-					.SetPadding(FMargin(18.f, 10.f)))
+					.SetPadding(FMargin(18.f, 10.f))
+					.SetVisibility(TAttribute<EVisibility>::CreateLambda([this]()
+					{
+						return bEmbeddedInCasinoShell ? EVisibility::Collapsed : EVisibility::Visible;
+					})))
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Center)
@@ -1639,7 +1705,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	RefreshTopBar();
 	RefreshInventory();
 	RefreshSellPanel();
-	return Root;
+	return bEmbeddedInCasinoShell ? Root : FT66Style::MakeResponsiveRoot(Root);
 }
 
 FReply UT66GamblerOverlayWidget::OnBack()
@@ -2319,7 +2385,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FT66InventorySlot>& Slots = RunState->GetBuybackDisplaySlots();
-	const int32 SlotCount = FMath::Min(BuybackNameTexts.Num(), 3);
+	const int32 SlotCount = BuybackNameTexts.Num();
 	for (int32 i = 0; i < SlotCount; ++i)
 	{
 		const bool bHasSlot = Slots.IsValidIndex(i) && Slots[i].IsValid();
@@ -2331,7 +2397,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		if (BuybackNameTexts.IsValidIndex(i) && BuybackNameTexts[i].IsValid())
 		{
 			BuybackNameTexts[i]->SetText(bHasSlot
-				? (Loc ? Loc->GetText_ItemDisplayName(Slots[i].ItemTemplateID) : FText::FromName(Slots[i].ItemTemplateID))
+				? (Loc ? Loc->GetText_ItemDisplayNameForRarity(Slots[i].ItemTemplateID, SlotRarity) : FText::FromName(Slots[i].ItemTemplateID))
 				: NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
 		}
 		if (BuybackDescTexts.IsValidIndex(i) && BuybackDescTexts[i].IsValid())
@@ -2344,7 +2410,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 			{
 				const int32 MainValue = Slots[i].Line1RolledValue;
 				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-				BuybackDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult));
+				BuybackDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult, Slots[i].GetLine2Multiplier()));
 			}
 		}
 		if (BuybackIconBorders.IsValidIndex(i) && BuybackIconBorders[i].IsValid())
@@ -2370,7 +2436,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackTileBorders.IsValidIndex(i) && BuybackTileBorders[i].IsValid())
 		{
-			BuybackTileBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66Style::Tokens::Panel2);
+			BuybackTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
 		}
 		if (BuybackPriceTexts.IsValidIndex(i) && BuybackPriceTexts[i].IsValid())
 		{
@@ -2451,6 +2517,14 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	const TArray<FName>& Inv = RunState->GetInventory();
 	const TArray<FT66InventorySlot>& InvSlots = RunState->GetInventorySlots();
+	TMap<FString, int32> StackCounts;
+	for (const FT66InventorySlot& InventorySlotData : InvSlots)
+	{
+		if (InventorySlotData.IsValid())
+		{
+			StackCounts.FindOrAdd(MakeInventoryStackKey(InventorySlotData))++;
+		}
+	}
 
 	// Auto-select the first valid item so the details panel is "big" immediately.
 	if (SelectedInventoryIndex < 0)
@@ -2481,23 +2555,26 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 		{
 			InventorySlotButtons[i]->SetEnabled(bHasItem && !IsBossActive());
 		}
+		const int32 StackCount = (bHasItem && InvSlots.IsValidIndex(i) && InvSlots[i].IsValid())
+			? StackCounts.FindRef(MakeInventoryStackKey(InvSlots[i]))
+			: 0;
+		if (InventorySlotCountTexts.IsValidIndex(i) && InventorySlotCountTexts[i].IsValid())
+		{
+			InventorySlotCountTexts[i]->SetText(
+				StackCount > 1
+					? FText::Format(NSLOCTEXT("T66.Inventory", "StackCountFormat", "{0}x"), FText::AsNumber(StackCount))
+					: FText::GetEmpty());
+			InventorySlotCountTexts[i]->SetVisibility(StackCount > 1 ? EVisibility::Visible : EVisibility::Hidden);
+		}
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
-			const bool bDotaTheme = FT66Style::IsDotaTheme();
-			FLinearColor Fill = bDotaTheme ? FT66Style::SlotFill() : FT66Style::Tokens::Panel2;
+			FLinearColor Fill = FT66Style::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && T66GI && T66GI->GetItemData(Inv[i], D);
-			if (bHasData && InvSlots.IsValidIndex(i))
-			{
-				const FLinearColor RarityColor = FItemData::GetItemRarityColor(InvSlots[i].Rarity);
-				Fill = bDotaTheme ? FLinearColor::LerpUsingHSV(FT66Style::SlotInner(), RarityColor, 0.75f) : RarityColor;
-			}
 
 			if (i == SelectedInventoryIndex)
 			{
-				Fill = bDotaTheme
-					? FLinearColor::LerpUsingHSV(Fill, FT66Style::SelectionFill(), 0.65f)
-					: (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
+				Fill = (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
 
@@ -2566,11 +2643,24 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	FItemData D;
 	const bool bHasData = T66GI && T66GI->GetItemData(Inv[SelectedInventoryIndex], D);
+	ET66ItemRarity SelectedRarity = ET66ItemRarity::Black;
+	int32 MainValue = 0;
+	float Line2Multiplier = 0.f;
+	if (RunState)
+	{
+		const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+		if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
+		{
+			MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
+			SelectedRarity = Slots[SelectedInventoryIndex].Rarity;
+			Line2Multiplier = Slots[SelectedInventoryIndex].GetLine2Multiplier();
+		}
+	}
 
 	UT66LocalizationSubsystem* Loc = GI0 ? GI0->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	if (SellItemNameText.IsValid())
 	{
-		SellItemNameText->SetText(Loc ? Loc->GetText_ItemDisplayName(Inv[SelectedInventoryIndex]) : FText::FromName(Inv[SelectedInventoryIndex]));
+		SellItemNameText->SetText(Loc ? Loc->GetText_ItemDisplayNameForRarity(Inv[SelectedInventoryIndex], SelectedRarity) : FText::FromName(Inv[SelectedInventoryIndex]));
 	}
 
 	if (SellItemDescText.IsValid())
@@ -2581,19 +2671,8 @@ void UT66GamblerOverlayWidget::RefreshSellPanel()
 		}
 		else
 		{
-			int32 MainValue = 0;
-			ET66ItemRarity SelectedRarity = ET66ItemRarity::Black;
-			if (RunState)
-			{
-				const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
-				if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
-				{
-					MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
-					SelectedRarity = Slots[SelectedInventoryIndex].Rarity;
-				}
-			}
 			const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-			SellItemDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SelectedRarity, MainValue, ScaleMult));
+			SellItemDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SelectedRarity, MainValue, ScaleMult, Line2Multiplier));
 		}
 	}
 

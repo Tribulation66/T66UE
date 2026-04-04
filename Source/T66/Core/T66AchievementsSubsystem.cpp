@@ -206,7 +206,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	Profile->LifetimeRunsCompleted = FMath::Max(0, Profile->LifetimeRunsCompleted);
 	Profile->LifetimeVendorPurchases = FMath::Max(0, Profile->LifetimeVendorPurchases);
 	Profile->LifetimeGamblerWins = FMath::Max(0, Profile->LifetimeGamblerWins);
-	Profile->GamblersTokenUnlockedLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 6);
+	Profile->GamblersTokenUnlockedLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5);
 
 	// Migration: Hero renumbering (Hero_1 removed, Hero_2..5 -> Hero_1..4). SaveVersion 9.
 	if (LoadedSaveVersion < 9)
@@ -839,13 +839,13 @@ void UT66AchievementsSubsystem::NotifyGamblerWin()
 
 int32 UT66AchievementsSubsystem::GetGamblersTokenUnlockedLevel() const
 {
-	return Profile ? FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 6) : 0;
+	return Profile ? FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5) : 0;
 }
 
 int32 UT66AchievementsSubsystem::GetGamblersTokenDifficultyFloor(ET66Difficulty Difficulty)
 {
 	const int32 DifficultyIndex = static_cast<int32>(Difficulty);
-	return FMath::Clamp(DifficultyIndex + 1, 1, 6);
+	return FMath::Clamp(DifficultyIndex + 1, 1, 5);
 }
 
 int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficulty Difficulty)
@@ -856,10 +856,10 @@ int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficult
 		return 0;
 	}
 
-	const int32 CurrentLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 6);
-	const int32 NextSequentialLevel = FMath::Clamp(CurrentLevel + 1, 1, 6);
+	const int32 CurrentLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5);
+	const int32 NextSequentialLevel = FMath::Clamp(CurrentLevel + 1, 1, 5);
 	const int32 DifficultyFloor = GetGamblersTokenDifficultyFloor(Difficulty);
-	const int32 NewLevel = FMath::Clamp(FMath::Max(NextSequentialLevel, DifficultyFloor), 1, 6);
+	const int32 NewLevel = FMath::Clamp(FMath::Max(NextSequentialLevel, DifficultyFloor), 1, 5);
 
 	if (NewLevel == CurrentLevel)
 	{

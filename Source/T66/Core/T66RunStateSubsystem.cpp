@@ -38,6 +38,106 @@ namespace
 		return FMath::Clamp(Level, 0, UT66RunStateSubsystem::MaxGamblersTokenLevel);
 	}
 
+	static bool T66_IsAlchemyEligibleSlot(const FT66InventorySlot& Slot, const UT66GameInstance* GI)
+	{
+		if (!Slot.IsValid() || Slot.Rarity == ET66ItemRarity::White || T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+		{
+			return false;
+		}
+
+		if (!GI)
+		{
+			return true;
+		}
+
+		FItemData ItemData;
+		return const_cast<UT66GameInstance*>(GI)->GetItemData(Slot.ItemTemplateID, ItemData)
+			&& ItemData.SecondaryStatType != ET66SecondaryStatType::GamblerToken;
+	}
+
+	static bool T66_IsAlchemyMatch(const FT66InventorySlot& A, const FT66InventorySlot& B)
+	{
+		return A.IsValid() && B.IsValid() && A.ItemTemplateID == B.ItemTemplateID && A.Rarity == B.Rarity;
+	}
+
+	static TArray<int32> T66_GatherAlchemySourceIndices(const TArray<FT66InventorySlot>& InventorySlots, const int32 TargetIndex)
+	{
+		TArray<int32> SourceIndices;
+		if (!InventorySlots.IsValidIndex(TargetIndex))
+		{
+			return SourceIndices;
+		}
+
+		const FT66InventorySlot& TargetSlot = InventorySlots[TargetIndex];
+		if (!TargetSlot.IsValid())
+		{
+			return SourceIndices;
+		}
+
+		SourceIndices.Add(TargetIndex);
+
+		TArray<int32> MatchingOthers;
+		for (int32 Index = 0; Index < InventorySlots.Num(); ++Index)
+		{
+			if (Index == TargetIndex || !T66_IsAlchemyMatch(TargetSlot, InventorySlots[Index]))
+			{
+				continue;
+			}
+
+			MatchingOthers.Add(Index);
+		}
+
+		MatchingOthers.Sort([&InventorySlots](const int32 A, const int32 B)
+		{
+			const FT66InventorySlot& SlotA = InventorySlots[A];
+			const FT66InventorySlot& SlotB = InventorySlots[B];
+			if (SlotA.Line1RolledValue != SlotB.Line1RolledValue)
+			{
+				return SlotA.Line1RolledValue > SlotB.Line1RolledValue;
+			}
+
+			const float Line2A = SlotA.GetLine2Multiplier();
+			const float Line2B = SlotB.GetLine2Multiplier();
+			if (!FMath::IsNearlyEqual(Line2A, Line2B))
+			{
+				return Line2A > Line2B;
+			}
+
+			return A < B;
+		});
+
+		for (const int32 Index : MatchingOthers)
+		{
+			if (SourceIndices.Num() >= UT66RunStateSubsystem::AlchemyCopiesRequired)
+			{
+				break;
+			}
+
+			SourceIndices.Add(Index);
+		}
+
+		return SourceIndices;
+	}
+
+	static FT66InventorySlot T66_BuildAlchemyUpgradeSlot(const FT66InventorySlot& TargetSlot, const TArray<FT66InventorySlot>& SourceSlots)
+	{
+		FT66InventorySlot UpgradedSlot = TargetSlot;
+		UpgradedSlot.Rarity = UT66RunStateSubsystem::GetNextItemRarity(TargetSlot.Rarity);
+
+		int32 TotalPrimaryValue = 0;
+		float TotalSecondaryBonusRatio = 0.f;
+		for (const FT66InventorySlot& SourceSlot : SourceSlots)
+		{
+			TotalPrimaryValue += FMath::Max(0, SourceSlot.Line1RolledValue);
+			TotalSecondaryBonusRatio += FMath::Max(0.f, SourceSlot.GetLine2Multiplier() - 1.f);
+		}
+
+		UpgradedSlot.Line1RolledValue = FMath::Max(1, FMath::CeilToInt(static_cast<float>(TotalPrimaryValue) * 1.10f));
+		const float DefaultMultiplier = FItemData::GetLine2RarityMultiplier(UpgradedSlot.Rarity);
+		UpgradedSlot.Line2MultiplierOverride = FMath::Max(DefaultMultiplier, 1.f + (TotalSecondaryBonusRatio * 1.10f));
+		return UpgradedSlot;
+	}
+
 	static float T66_GetSellFractionForTokenLevel(const int32 TokenLevel)
 	{
 		return FMath::Clamp(0.40f + 0.10f * static_cast<float>(T66_ClampGamblersTokenLevel(TokenLevel)), 0.40f, 1.00f);
@@ -214,7 +314,9 @@ void UT66RunStateSubsystem::ApplyDOT(AActor* Target, float Duration, float TickI
 	Inst.NextTickTime = World->GetTimeSeconds() + Inst.TickInterval;
 	Inst.SourceIdolID = SourceIdolID;
 
-	TWeakObjectPtr<AActor> Key(Target);
+	FT66DotKey Key;
+	Key.Target = TWeakObjectPtr<AActor>(Target);
+	Key.SourceIdolID = SourceIdolID;
 	ActiveDOTs.FindOrAdd(Key) = Inst;
 
 	// Start timer if not already running.
@@ -229,10 +331,10 @@ void UT66RunStateSubsystem::TickDOT()
 	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
 	const double Now = World ? World->GetTimeSeconds() : 0.0;
 
-	TArray<TWeakObjectPtr<AActor>> ToRemove;
+	TArray<FT66DotKey> ToRemove;
 	for (auto& Pair : ActiveDOTs)
 	{
-		if (!Pair.Key.IsValid())
+		if (!Pair.Key.Target.IsValid())
 		{
 			ToRemove.Add(Pair.Key);
 			continue;
@@ -249,14 +351,14 @@ void UT66RunStateSubsystem::TickDOT()
 			const int32 Damage = FMath::Max(1, FMath::RoundToInt(Inst.DamagePerTick));
 			if (DOTDamageApplier)
 			{
-				DOTDamageApplier(Pair.Key.Get(), Damage, Inst.SourceIdolID);
+				DOTDamageApplier(Pair.Key.Target.Get(), Damage, Inst.SourceIdolID);
 			}
 			Inst.NextTickTime = Now + Inst.TickInterval;
 		}
 	}
-	for (const TWeakObjectPtr<AActor>& K : ToRemove)
+	for (const FT66DotKey& Key : ToRemove)
 	{
-		ActiveDOTs.Remove(K);
+		ActiveDOTs.Remove(Key);
 	}
 	if (ActiveDOTs.Num() == 0 && World && DOTTimerHandle.IsValid())
 	{
@@ -716,6 +818,8 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	const float DamageMult = GetHeroDamageMultiplier();
 	const float AttackSpeedMult = GetHeroAttackSpeedMultiplier();
 	const float ScaleMult = GetHeroScaleMultiplier();
+	const float BaseArmorReduction = FMath::Clamp(static_cast<float>(GetArmorStat() - 1) * 0.008f, 0.f, 0.80f);
+	const float BaseEvasionChance = FMath::Clamp(static_cast<float>(GetEvasionStat() - 1) * 0.006f, 0.f, 0.60f);
 
 	switch (StatType)
 	{
@@ -756,6 +860,8 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	case ET66SecondaryStatType::Stealing:         return FMath::Clamp(HeroBaseStealChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::MovementSpeed:    return 1.f * M;
 	case ET66SecondaryStatType::LootCrate:        return 1.f * M;
+	case ET66SecondaryStatType::DamageReduction:  return BaseArmorReduction * FMath::Max(0.f, M - 1.f);
+	case ET66SecondaryStatType::EvasionChance:    return BaseEvasionChance * FMath::Max(0.f, M - 1.f);
 	default: return 1.f;
 	}
 }
@@ -798,6 +904,8 @@ float UT66RunStateSubsystem::GetSecondaryStatBaselineValue(ET66SecondaryStatType
 	case ET66SecondaryStatType::Stealing:        return FMath::Clamp(HeroBaseStealChance, 0.f, 1.f);
 	case ET66SecondaryStatType::MovementSpeed:   return 1.f;
 	case ET66SecondaryStatType::LootCrate:       return 1.f;
+	case ET66SecondaryStatType::DamageReduction: return 0.f;
+	case ET66SecondaryStatType::EvasionChance:   return 0.f;
 	default:                                     return 1.f;
 	}
 }
@@ -910,18 +1018,18 @@ float UT66RunStateSubsystem::GetHeroScaleMultiplier() const
 
 float UT66RunStateSubsystem::GetArmorReduction01() const
 {
-	// Damage reduction derived from Armor stat, clamped.
-	const int32 A = GetArmorStat();
-	const float Base = static_cast<float>(A - 1) * 0.008f;
-	return FMath::Clamp(Base + ItemArmorBonus01, 0.f, 0.80f);
+	const int32 ArmorStat = GetArmorStat();
+	const float Base = static_cast<float>(ArmorStat - 1) * 0.008f;
+	const float Bonus = GetSecondaryStatValue(ET66SecondaryStatType::DamageReduction);
+	return FMath::Clamp(Base + Bonus + ItemArmorBonus01, 0.f, 0.80f);
 }
 
 float UT66RunStateSubsystem::GetEvasionChance01() const
 {
-	// Dodge chance derived from Evasion stat, clamped.
-	const int32 E = GetEvasionStat();
-	const float Base = static_cast<float>(E - 1) * 0.006f;
-	return FMath::Clamp(Base + ItemEvasionBonus01, 0.f, 0.60f);
+	const int32 EvasionStat = GetEvasionStat();
+	const float Base = static_cast<float>(EvasionStat - 1) * 0.006f;
+	const float Bonus = GetSecondaryStatValue(ET66SecondaryStatType::EvasionChance);
+	return FMath::Clamp(Base + Bonus + ItemEvasionBonus01, 0.f, 0.60f);
 }
 
 void UT66RunStateSubsystem::NotifyEnemyKilledByHero()
@@ -954,9 +1062,15 @@ float UT66RunStateSubsystem::GetRallyAttackSpeedMultiplier() const
 bool UT66RunStateSubsystem::HasActiveDOT(AActor* Target) const
 {
 	if (!Target) return false;
-	TWeakObjectPtr<AActor> Key(Target);
-	const FT66DotInstance* Inst = ActiveDOTs.Find(Key);
-	return Inst && Inst->RemainingDuration > 0.f;
+	const TWeakObjectPtr<AActor> Key(Target);
+	for (const auto& Pair : ActiveDOTs)
+	{
+		if (Pair.Key.Target == Key && Pair.Value.RemainingDuration > 0.f)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 float UT66RunStateSubsystem::GetToxinStackingDamageMultiplier(AActor* Target) const
@@ -1060,6 +1174,10 @@ void UT66RunStateSubsystem::AddHeroXP(int32 Amount)
 		ApplyOneHeroLevelUp();
 		bLeveled = true;
 	}
+	if (bLeveled)
+	{
+		HealToFull();
+	}
 	HeroProgressChanged.Broadcast();
 	if (bLeveled)
 	{
@@ -1122,7 +1240,7 @@ void UT66RunStateSubsystem::ApplyStatusCurse(float /*DurationSeconds*/) {}
 
 void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 {
-	const int32 Stage = FMath::Clamp(CurrentStage, 1, 33);
+	const int32 Stage = FMath::Clamp(CurrentStage, 1, 23);
 	if (VendorStockStage == Stage && VendorStockItemIDs.Num() > 0 && VendorStockSold.Num() == VendorStockItemIDs.Num())
 	{
 		return;
@@ -1144,11 +1262,20 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	if (!GI)
 	{
-		// Fallback: keep deterministic placeholder behavior (3 slots).
-		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::Black, 2));
-		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_CritDamage")), ET66ItemRarity::Red, 5));
-		VendorStockSlots.Add(FT66InventorySlot(FName(TEXT("Item_LifeSteal")), ET66ItemRarity::Yellow, 8));
-		for (const FT66InventorySlot& S : VendorStockSlots) VendorStockItemIDs.Add(S.ItemTemplateID);
+		// Fallback: keep deterministic placeholder behavior with the live slot count.
+		const FT66InventorySlot FallbackStock[] =
+		{
+			FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::Black, 2),
+			FT66InventorySlot(FName(TEXT("Item_BounceScale")), ET66ItemRarity::Black, 2),
+			FT66InventorySlot(FName(TEXT("Item_DamageReduction")), ET66ItemRarity::Black, 2),
+			FT66InventorySlot(FName(TEXT("Item_CritDamage")), ET66ItemRarity::Red, 5),
+			FT66InventorySlot(FName(TEXT("Item_LifeSteal")), ET66ItemRarity::Yellow, 8),
+		};
+		for (const FT66InventorySlot& Slot : FallbackStock)
+		{
+			VendorStockSlots.Add(Slot);
+			VendorStockItemIDs.Add(Slot.ItemTemplateID);
+		}
 		VendorStockSold.Init(false, VendorStockSlots.Num());
 		VendorChanged.Broadcast();
 		return;
@@ -1169,7 +1296,14 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	}
 	if (TemplatePool.Num() == 0)
 	{
-		TemplatePool = { FName(TEXT("Item_AoeDamage")), FName(TEXT("Item_CritDamage")), FName(TEXT("Item_LifeSteal")) };
+		TemplatePool =
+		{
+			FName(TEXT("Item_AoeDamage")),
+			FName(TEXT("Item_BounceScale")),
+			FName(TEXT("Item_DamageReduction")),
+			FName(TEXT("Item_CritDamage")),
+			FName(TEXT("Item_LifeSteal"))
+		};
 	}
 
 	// Seed: per-stage and per-reroll, plus run seed so the first shop display is randomized each run.
@@ -1180,7 +1314,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	}
 	FRandomStream Rng(Seed);
 
-	// Smart reroll: weight = 1/(1 + SeenCount*Decay), floor 0.05. Build weights and pick 3 unique.
+	// Smart reroll: weight = 1/(1 + SeenCount*Decay), floor 0.05. Build weights and pick unique cards.
 	constexpr float DecayFactor = 2.0f;
 	constexpr float WeightFloor = 0.05f;
 	TArray<float> Weights;
@@ -1191,9 +1325,16 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 		Weights[p] = FMath::Max(WeightFloor, 1.0f / (1.0f + static_cast<float>(Seen) * DecayFactor));
 	}
 
-	const ET66ItemRarity SlotRarities[] = { ET66ItemRarity::Black, ET66ItemRarity::Black, ET66ItemRarity::Red };
+	const ET66ItemRarity SlotRarities[VendorDisplaySlotCount] =
+	{
+		ET66ItemRarity::Black,
+		ET66ItemRarity::Black,
+		ET66ItemRarity::Black,
+		ET66ItemRarity::Red,
+		ET66ItemRarity::Yellow
+	};
 
-	for (int32 i = 0; i < 3; ++i)
+	for (int32 i = 0; i < VendorDisplaySlotCount; ++i)
 	{
 		float TotalWeight = 0.f;
 		for (int32 p = 0; p < TemplatePool.Num(); ++p)
@@ -1235,7 +1376,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 
 void UT66RunStateSubsystem::RerollVendorStockForCurrentStage()
 {
-	const int32 Stage = FMath::Clamp(CurrentStage, 1, 33);
+	const int32 Stage = FMath::Clamp(CurrentStage, 1, 23);
 	if (VendorStockRerollStage != Stage)
 	{
 		VendorStockRerollStage = Stage;
@@ -1372,12 +1513,12 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 
 void UT66RunStateSubsystem::GenerateBuybackDisplay()
 {
-	BuybackDisplaySlots.SetNum(3);
+	BuybackDisplaySlots.SetNum(BuybackDisplaySlotCount);
 	const int32 PoolNum = BuybackPool.Num();
-	const int32 MaxPage = PoolNum > 0 ? FMath::Max(0, (PoolNum + 2) / 3 - 1) : 0;
+	const int32 MaxPage = PoolNum > 0 ? FMath::Max(0, (PoolNum + BuybackDisplaySlotCount - 1) / BuybackDisplaySlotCount - 1) : 0;
 	BuybackDisplayPage = FMath::Clamp(BuybackDisplayPage, 0, MaxPage);
-	const int32 Start = BuybackDisplayPage * 3;
-	for (int32 i = 0; i < 3; ++i)
+	const int32 Start = BuybackDisplayPage * BuybackDisplaySlotCount;
+	for (int32 i = 0; i < BuybackDisplaySlotCount; ++i)
 	{
 		const int32 Idx = Start + i;
 		if (Idx < PoolNum)
@@ -1395,7 +1536,7 @@ void UT66RunStateSubsystem::GenerateBuybackDisplay()
 void UT66RunStateSubsystem::RerollBuybackDisplay()
 {
 	const int32 PoolNum = BuybackPool.Num();
-	const int32 MaxPage = PoolNum > 0 ? FMath::Max(0, (PoolNum + 2) / 3 - 1) : 0;
+	const int32 MaxPage = PoolNum > 0 ? FMath::Max(0, (PoolNum + BuybackDisplaySlotCount - 1) / BuybackDisplaySlotCount - 1) : 0;
 	if (MaxPage > 0)
 	{
 		BuybackDisplayPage = (BuybackDisplayPage + 1) % (MaxPage + 1);
@@ -1405,10 +1546,10 @@ void UT66RunStateSubsystem::RerollBuybackDisplay()
 
 bool UT66RunStateSubsystem::TryBuybackSlot(int32 DisplayIndex)
 {
-	if (DisplayIndex < 0 || DisplayIndex >= 3) return false;
+	if (DisplayIndex < 0 || DisplayIndex >= BuybackDisplaySlotCount) return false;
 	if (!HasInventorySpace()) return false;
 
-	const int32 PoolIndex = BuybackDisplayPage * 3 + DisplayIndex;
+	const int32 PoolIndex = BuybackDisplayPage * BuybackDisplaySlotCount + DisplayIndex;
 	if (PoolIndex < 0 || PoolIndex >= BuybackPool.Num()) return false;
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
@@ -2015,12 +2156,6 @@ void UT66RunStateSubsystem::AddItemWithRarity(FName ItemID, ET66ItemRarity Rarit
 		ApplyGamblersTokenPickup(1);
 		return;
 	}
-	if (InventorySlots.Num() >= MaxInventorySlots)
-	{
-		AddLogEntry(TEXT("Inventory full."));
-		LogAdded.Broadcast();
-		return;
-	}
 
 	// Auto-generate the Line 1 roll for the provided rarity.
 	int32 RolledMin = 1, RolledMax = 3;
@@ -2038,12 +2173,6 @@ void UT66RunStateSubsystem::AddItemSlot(const FT66InventorySlot& Slot)
 	if (T66_IsGamblersTokenItem(Slot.ItemTemplateID))
 	{
 		ApplyGamblersTokenPickup(Slot.Line1RolledValue);
-		return;
-	}
-	if (InventorySlots.Num() >= MaxInventorySlots)
-	{
-		AddLogEntry(TEXT("Inventory full."));
-		LogAdded.Broadcast();
 		return;
 	}
 	InventorySlots.Add(Slot);
@@ -2199,79 +2328,146 @@ ET66ItemRarity UT66RunStateSubsystem::GetNextItemRarity(ET66ItemRarity Rarity)
 
 bool UT66RunStateSubsystem::CanAlchemyUpgradeInventoryItemAt(const int32 InventoryIndex) const
 {
-	if (InventoryIndex < 0 || InventoryIndex >= InventorySlots.Num())
+	FT66InventorySlot PreviewSlot;
+	int32 MatchingCount = 0;
+	return GetAlchemyUpgradePreviewAt(InventoryIndex, PreviewSlot, MatchingCount);
+}
+
+int32 UT66RunStateSubsystem::GetAlchemyMatchingInventoryCount(const int32 InventoryIndex) const
+{
+	if (!InventorySlots.IsValidIndex(InventoryIndex))
+	{
+		return 0;
+	}
+
+	const UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	const FT66InventorySlot& TargetSlot = InventorySlots[InventoryIndex];
+	if (!T66_IsAlchemyEligibleSlot(TargetSlot, GI))
+	{
+		return 0;
+	}
+
+	int32 MatchingCount = 0;
+	for (const FT66InventorySlot& Slot : InventorySlots)
+	{
+		if (T66_IsAlchemyMatch(TargetSlot, Slot))
+		{
+			++MatchingCount;
+		}
+	}
+
+	return MatchingCount;
+}
+
+bool UT66RunStateSubsystem::GetAlchemyUpgradePreviewAt(const int32 InventoryIndex, FT66InventorySlot& OutUpgradedSlot, int32& OutMatchingCount) const
+{
+	OutUpgradedSlot = FT66InventorySlot();
+	OutMatchingCount = GetAlchemyMatchingInventoryCount(InventoryIndex);
+	if (!InventorySlots.IsValidIndex(InventoryIndex))
 	{
 		return false;
 	}
 
-	const FT66InventorySlot& Slot = InventorySlots[InventoryIndex];
-	return Slot.IsValid() && Slot.Rarity != ET66ItemRarity::White;
+	const UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	const FT66InventorySlot& TargetSlot = InventorySlots[InventoryIndex];
+	if (!T66_IsAlchemyEligibleSlot(TargetSlot, GI) || OutMatchingCount < AlchemyCopiesRequired)
+	{
+		return false;
+	}
+
+	const TArray<int32> SourceIndices = T66_GatherAlchemySourceIndices(InventorySlots, InventoryIndex);
+	if (SourceIndices.Num() < AlchemyCopiesRequired)
+	{
+		return false;
+	}
+
+	TArray<FT66InventorySlot> SourceSlots;
+	SourceSlots.Reserve(SourceIndices.Num());
+	for (const int32 SourceIndex : SourceIndices)
+	{
+		SourceSlots.Add(InventorySlots[SourceIndex]);
+	}
+
+	OutUpgradedSlot = T66_BuildAlchemyUpgradeSlot(TargetSlot, SourceSlots);
+	return true;
 }
 
 bool UT66RunStateSubsystem::TryAlchemyUpgradeInventoryItems(int32 TargetIndex, int32 SacrificeIndex, FT66InventorySlot& OutUpgradedSlot)
 {
 	OutUpgradedSlot = FT66InventorySlot();
+	(void)SacrificeIndex;
 
 	if (TargetIndex < 0 || TargetIndex >= InventorySlots.Num())
-	{
-		return false;
-	}
-	if (SacrificeIndex < 0 || SacrificeIndex >= InventorySlots.Num())
-	{
-		return false;
-	}
-	if (TargetIndex == SacrificeIndex)
-	{
-		return false;
-	}
-	if (!CanAlchemyUpgradeInventoryItemAt(TargetIndex))
 	{
 		return false;
 	}
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	const FT66InventorySlot OriginalTargetSlot = InventorySlots[TargetIndex];
-	const FT66InventorySlot SacrificeSlot = InventorySlots[SacrificeIndex];
-	if (!OriginalTargetSlot.IsValid() || !SacrificeSlot.IsValid())
+	if (!OriginalTargetSlot.IsValid())
 	{
 		return false;
 	}
 
-	FT66InventorySlot UpgradedSlot = OriginalTargetSlot;
-	UpgradedSlot.Rarity = GetNextItemRarity(OriginalTargetSlot.Rarity);
+	int32 MatchingCount = 0;
+	FT66InventorySlot UpgradedSlot;
+	if (!GetAlchemyUpgradePreviewAt(TargetIndex, UpgradedSlot, MatchingCount))
+	{
+		return false;
+	}
 
-	int32 RollMin = 1;
-	int32 RollMax = 3;
-	FItemData::GetLine1RollRange(UpgradedSlot.Rarity, RollMin, RollMax);
-	const int32 ForcedMin = FMath::Clamp(FMath::Max(RollMin, OriginalTargetSlot.Line1RolledValue + 1), RollMin, RollMax);
-	FRandomStream Local(FPlatformTime::Cycles64());
-	UpgradedSlot.Line1RolledValue = Local.RandRange(ForcedMin, RollMax);
+	const TArray<int32> SourceIndices = T66_GatherAlchemySourceIndices(InventorySlots, TargetIndex);
+	if (SourceIndices.Num() < AlchemyCopiesRequired)
+	{
+		return false;
+	}
 
-	int32 AngerGold = 25;
+	int32 AngerGold = 0;
 	if (GI)
 	{
-		FItemData SacrificeItemData;
-		if (GI->GetItemData(SacrificeSlot.ItemTemplateID, SacrificeItemData))
+		for (const int32 SourceIndex : SourceIndices)
 		{
-			AngerGold = FMath::Max(1, SacrificeItemData.GetBuyGoldForRarity(SacrificeSlot.Rarity));
+			if (!InventorySlots.IsValidIndex(SourceIndex))
+			{
+				continue;
+			}
+
+			FItemData SourceItemData;
+			if (GI->GetItemData(InventorySlots[SourceIndex].ItemTemplateID, SourceItemData))
+			{
+				AngerGold += FMath::Max(1, SourceItemData.GetBuyGoldForRarity(InventorySlots[SourceIndex].Rarity));
+			}
 		}
 	}
 
-	InventorySlots.RemoveAt(SacrificeIndex);
-	if (SacrificeIndex < TargetIndex)
+	int32 InsertIndex = TargetIndex;
+	for (const int32 SourceIndex : SourceIndices)
 	{
-		TargetIndex -= 1;
+		if (SourceIndex < TargetIndex)
+		{
+			--InsertIndex;
+		}
 	}
-	InventorySlots[TargetIndex] = UpgradedSlot;
+
+	TArray<int32> RemovalIndices = SourceIndices;
+	RemovalIndices.Sort([](const int32 A, const int32 B) { return A > B; });
+	for (const int32 RemovalIndex : RemovalIndices)
+	{
+		InventorySlots.RemoveAt(RemovalIndex);
+	}
+	InsertIndex = FMath::Clamp(InsertIndex, 0, InventorySlots.Num());
+	InventorySlots.Insert(UpgradedSlot, InsertIndex);
 
 	RecomputeItemDerivedStats();
 	AddCasinoAngerFromGold(AngerGold);
 	AddStructuredEvent(
 		ET66RunEventType::ItemAcquired,
 		FString::Printf(
-			TEXT("ItemID=%s,Source=Alchemy,SacrificeID=%s"),
+			TEXT("ItemID=%s,Source=Alchemy,Copies=%d,FromRarity=%d,ToRarity=%d"),
 			*UpgradedSlot.ItemTemplateID.ToString(),
-			*SacrificeSlot.ItemTemplateID.ToString()));
+			AlchemyCopiesRequired,
+			static_cast<int32>(OriginalTargetSlot.Rarity),
+			static_cast<int32>(UpgradedSlot.Rarity)));
 	InventoryChanged.Broadcast();
 	LogAdded.Broadcast();
 
@@ -2539,7 +2735,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 
 void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 {
-	const int32 NewStage = FMath::Clamp(Stage, 1, 33);
+	const int32 NewStage = FMath::Clamp(Stage, 1, 23);
 	if (CurrentStage == NewStage) return;
 
 	// If Speed Run Mode is enabled, record the stage completion time for the stage we're leaving.

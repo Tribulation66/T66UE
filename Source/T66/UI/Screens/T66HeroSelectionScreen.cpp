@@ -19,7 +19,6 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
-#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
@@ -201,6 +200,14 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	const FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	const FButtonStyle& PrimaryButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
+	const float ActionMinHeight = 34.f;
+	const float ActionMinWidth = 132.f;
+	const float EquippedMinWidth = 138.f;
+	const float BuyButtonMinWidth = 138.f;
+	const float BuyButtonHeight = 42.f;
+	const int32 SkinActionFontSize = 7;
+	const int32 SkinPriceFontSize = 7;
+	const int32 SkinTitleFontSize = 9;
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
 		FText SkinDisplayName = Loc ? Loc->GetText_SkinName(Skin.SkinID) : FText::FromName(Skin.SkinID);
@@ -219,7 +226,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 		{
 			ButtonRow->AddSlot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+					SNew(SBox).MinDesiredWidth(EquippedMinWidth).MinDesiredHeight(ActionMinHeight)
 					[
 						SNew(SWidgetSwitcher)
 						.WidgetIndex(bIsEquipped ? 1 : 0)
@@ -248,13 +255,15 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 								return FReply::Handled();
 							}),
 							ET66ButtonType::Primary)
-							.SetMinWidth(0.f)
-							.SetContent(SNew(STextBlock).Text(EquipText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")))
+							.SetMinWidth(ActionMinWidth)
+							.SetHeight(ActionMinHeight)
+							.SetPadding(FMargin(8.f, 4.f))
+							.SetContent(SNew(STextBlock).Text(EquipText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center))
 						)
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+							SNew(SBox).MinDesiredWidth(EquippedMinWidth).HeightOverride(ActionMinHeight)
 							[
 								SNew(SBorder)
 								.BorderImage(&PrimaryButtonStyle.Normal)
@@ -262,11 +271,12 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 									? FSlateColor(FLinearColor(0.075f, 0.075f, 0.08f, 1.0f))
 									: FT66Style::Tokens::Accent2)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.Padding(FMargin(4.0f, 2.0f))
+								.Padding(FMargin(10.0f, 4.0f))
 								[
 									SNew(STextBlock)
 									.Text(EquippedText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+									.Font(FT66Style::Tokens::FontBold(SkinActionFontSize))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 									.Justification(ETextJustify::Center)
 								]
 							]
@@ -293,13 +303,15 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 						return FReply::Handled();
 					}),
 					ET66ButtonType::Neutral)
-					.SetMinWidth(80.f)
-					.SetContent(SNew(STextBlock).Text(PreviewText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")))
+					.SetMinWidth(ActionMinWidth)
+					.SetHeight(ActionMinHeight)
+					.SetPadding(FMargin(8.f, 4.f))
+					.SetContent(SNew(STextBlock).Text(PreviewText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center))
 				)
 				];
 			ButtonRow->AddSlot().AutoWidth().Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).MinDesiredWidth(90.0f).HeightOverride(36.0f)
+					SNew(SBox).MinDesiredWidth(EquippedMinWidth).MinDesiredHeight(BuyButtonHeight)
 					[
 						SNew(SWidgetSwitcher)
 						.WidgetIndex(!bIsOwned ? 0 : (bIsEquipped ? 2 : 1))
@@ -325,12 +337,14 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 								return FReply::Handled();
 							}),
 							ET66ButtonType::Primary)
-							.SetMinWidth(0.f)
+							.SetMinWidth(BuyButtonMinWidth)
+							.SetHeight(BuyButtonHeight)
 							.SetColor(FT66Style::Tokens::Accent)
+							.SetPadding(FMargin(12.f, 6.f, 12.f, 4.f))
 							.SetContent(
 								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BuyText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(PriceText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::Text) ]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BuyText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center) ]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(PriceText).Font(FT66Style::Tokens::FontRegular(SkinPriceFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center) ]
 							)
 						)
 						]
@@ -357,13 +371,15 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 								return FReply::Handled();
 							}),
 							ET66ButtonType::Primary)
-							.SetMinWidth(0.f)
-							.SetContent(SNew(STextBlock).Text(EquipText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")))
+							.SetMinWidth(ActionMinWidth)
+							.SetHeight(ActionMinHeight)
+							.SetPadding(FMargin(8.f, 4.f))
+							.SetContent(SNew(STextBlock).Text(EquipText).Font(FT66Style::Tokens::FontBold(SkinActionFontSize)).ColorAndOpacity(FT66Style::Tokens::Text).Justification(ETextJustify::Center))
 						)
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+							SNew(SBox).MinDesiredWidth(EquippedMinWidth).HeightOverride(ActionMinHeight)
 							[
 								SNew(SBorder)
 								.BorderImage(&PrimaryButtonStyle.Normal)
@@ -371,11 +387,12 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 									? FSlateColor(FLinearColor(0.075f, 0.075f, 0.08f, 1.0f))
 									: FT66Style::Tokens::Accent2)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.Padding(FMargin(4.0f, 2.0f))
+								.Padding(FMargin(10.0f, 4.0f))
 								[
 									SNew(STextBlock)
 									.Text(EquippedText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+									.Font(FT66Style::Tokens::FontBold(SkinActionFontSize))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 									.Justification(ETextJustify::Center)
 								]
 							]
@@ -396,7 +413,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 					[
 						SNew(STextBlock)
 						.Text(SkinDisplayName)
-						.Font(FT66Style::Tokens::FontRegular(16))
+						.Font(FT66Style::Tokens::FontRegular(SkinTitleFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot()
@@ -425,7 +442,7 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 	{
 		TArray<ET66Difficulty> Difficulties = {
 			ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard,
-			ET66Difficulty::VeryHard, ET66Difficulty::Impossible, ET66Difficulty::Perdition, ET66Difficulty::Final
+			ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 		};
 		if (Index < Difficulties.Num())
 		{
@@ -496,7 +513,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.HeroSelection", "Skins", "SKINS");
 	FText HeroInfoText = Loc ? Loc->GetText_HeroInfo() : NSLOCTEXT("T66.HeroSelection", "HeroInfo", "HERO INFO");
 	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.HeroSelection", "Lore", "LORE");
-	FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.Common", "Settings", "SETTINGS");
 	FText DemoText = Loc ? Loc->GetText_Demo() : NSLOCTEXT("T66.HeroSelection", "Demo", "Demo");
 	FText BackToLobbyText = Loc ? Loc->GetText_BackToLobby() : NSLOCTEXT("T66.Lobby", "BackToLobby", "BACK TO LOBBY");
 	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
@@ -515,7 +531,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	DifficultyOptions.Empty();
 	TArray<ET66Difficulty> Difficulties = {
 		ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard,
-		ET66Difficulty::VeryHard, ET66Difficulty::Impossible, ET66Difficulty::Perdition, ET66Difficulty::Final
+		ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 	};
 	for (ET66Difficulty Diff : Difficulties)
 	{
@@ -545,6 +561,36 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const FText ACBalanceText = Loc
 		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
 		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(ACBalance));
+
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	UT66PartySubsystem* PartySubsystem = T66GI ? T66GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	const int32 ActivePartySlots = PartySubsystem ? FMath::Clamp(PartySubsystem->GetPartyMemberCount(), 1, 4) : 1;
+
+	if (!PartyHeroPortraitBrush.IsValid())
+	{
+		PartyHeroPortraitBrush = MakeShared<FSlateBrush>();
+	}
+	PartyHeroPortraitBrush->DrawAs = ESlateBrushDrawType::Image;
+	PartyHeroPortraitBrush->Tiling = ESlateBrushTileType::NoTile;
+	PartyHeroPortraitBrush->ImageSize = FVector2D(76.f, 76.f);
+	PartyHeroPortraitBrush->SetResourceObject(nullptr);
+
+	if (T66GI && T66GI->GetSubsystem<UT66UITexturePoolSubsystem>())
+	{
+		FHeroData HeroData;
+		TSoftObjectPtr<UTexture2D> HeroPortraitSoft;
+		if (T66GI->GetHeroData(T66GI->SelectedHeroID, HeroData))
+		{
+			HeroPortraitSoft = T66GI->ResolveHeroPortrait(HeroData, T66GI->SelectedHeroBodyType, ET66HeroPortraitVariant::Half);
+		}
+		if (!HeroPortraitSoft.IsNull())
+		{
+			TArray<FSoftObjectPath> PortraitPaths;
+			PortraitPaths.AddUnique(HeroPortraitSoft.ToSoftObjectPath());
+			T66GI->GetSubsystem<UT66UITexturePoolSubsystem>()->EnsureTexturesLoadedSync(PortraitPaths);
+		}
+		PartyHeroPortraitBrush->SetResourceObject(T66SlateTexture::GetLoaded(T66GI->GetSubsystem<UT66UITexturePoolSubsystem>(), HeroPortraitSoft));
+	}
 
 	// Build skins list (Default + Beachgoer only). Refreshed in place via RefreshSkinsList() when Equip/Buy.
 	SAssignNew(SkinsListBoxWidget, SVerticalBox);
@@ -577,7 +623,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		{
 			HeroCarouselPortraitBrushes[i] = MakeShared<FSlateBrush>();
 			HeroCarouselPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-			HeroCarouselPortraitBrushes[i]->ImageSize = FVector2D(60.f, 60.f);
+			HeroCarouselPortraitBrushes[i]->ImageSize = FVector2D(48.f, 48.f);
 		}
 	}
 	RefreshHeroCarouselPortraits();
@@ -587,7 +633,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	{
 		if (AllHeroIDs.Num() == 0) break;
 
-		const float BoxSize = (Offset == 0) ? 60.0f : 45.0f; // Current hero is larger
+		const float BoxSize = (Offset == 0) ? 48.0f : 36.0f; // Current hero is larger
 		const float Opacity = (Offset == 0) ? 1.0f : 0.6f;
 		const int32 SlotIdx = Offset + 2;
 		const TSharedRef<SWidget> CarouselSlotWidget = bDotaTheme
@@ -653,10 +699,41 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		];
 	}
 
-	const FTextBlockStyle& TxtHeading = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
-	const FTextBlockStyle& TxtBody = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
 	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
-	const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+	const float CenterPanelFill = 0.40f;
+	const float TopBarBottomGap = 0.f;
+	const float ContentTopGap = 0.f;
+	const float PanelBottomInset = 0.f;
+	const float PanelGap = 0.f;
+	const auto ShrinkFont = [](int32 BaseSize, int32 Minimum = 7) -> int32 { return FMath::Max(Minimum, BaseSize - 4); };
+	const float SidePanelMinWidth = 380.f;
+	const float TopBarSideWidth = 112.f;
+	const float FooterToggleWidth = 98.f;
+	const float FooterToggleHeight = 40.f;
+	const float FooterPanelWidth = 248.f;
+	const float FooterActionHeight = 46.f;
+	const float PartyPanelWidth = 300.f;
+	const float RunControlsWidth = 424.f;
+	const float PreviewToggleBottomPadding = 14.f;
+	const int32 ScreenHeaderFontSize = ShrinkFont(15, 10);
+	const int32 BodyToggleFontSize = ShrinkFont(9, 7);
+	const int32 PrimaryCtaFontSize = ShrinkFont(11, 7);
+	const int32 HeroGridLabelFontSize = ShrinkFont(10, 7);
+	const int32 HeroArrowFontSize = ShrinkFont(12, 8);
+	const int32 ACBalanceFontSize = ShrinkFont(14, 10);
+	const int32 HeroNameFontSize = ShrinkFont(13, 9);
+	const int32 SecondaryButtonFontSize = ShrinkFont(9, 7);
+	const int32 BodyTextFontSize = ShrinkFont(10, 7);
+	const int32 BackToLobbyFontSize = ShrinkFont(12, 8);
+	const int32 BackButtonFontSize = ShrinkFont(14, 10);
+	const float HeroGridButtonWidth = bDotaTheme ? 110.f : 86.f;
+	const FMargin HeroGridButtonPadding = bDotaTheme ? FMargin(7.f, 4.f) : FMargin(6.f, 4.f);
+	const float HeroArrowButtonWidth = bDotaTheme ? 30.f : 28.f;
+	const float HeroArrowButtonHeight = bDotaTheme ? 26.f : 24.f;
+	const TAttribute<FMargin> ScreenSafePadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FMargin(0.f, 0.f, 0.f, 0.f);
+	});
 
 	auto MakeFocusMaskFill = [SelectionShellFill]() -> TSharedRef<SWidget>
 	{
@@ -665,7 +742,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			.BorderBackgroundColor(SelectionShellFill);
 	};
 
-	auto MakePreviewFocusMask = [bDotaTheme, &MakeFocusMaskFill]() -> TSharedRef<SWidget>
+	auto MakePreviewFocusMask = [bDotaTheme, &MakeFocusMaskFill, SidePanelMinWidth, TopBarBottomGap, PanelGap]() -> TSharedRef<SWidget>
 	{
 		if (!bDotaTheme)
 		{
@@ -675,10 +752,10 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		return SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+			.Padding(0.0f, 0.0f, 0.0f, TopBarBottomGap)
 			[
 				SNew(SBox)
-				.HeightOverride(56.f)
+				.HeightOverride(40.f)
 				[
 					MakeFocusMaskFill()
 				]
@@ -689,39 +766,382 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
-				.FillWidth(0.28f)
-				.Padding(0.0f, 0.0f, 10.0f, 0.0f)
+				.AutoWidth()
+				.Padding(0.0f, 0.0f, PanelGap, 0.0f)
 				[
-					MakeFocusMaskFill()
+					SNew(SBox)
+					.WidthOverride(SidePanelMinWidth)
+					[
+						MakeFocusMaskFill()
+					]
 				]
 				+ SHorizontalBox::Slot()
-				.FillWidth(0.44f)
-				.Padding(10.0f, 0.0f)
+				.FillWidth(1.0f)
+				.Padding(PanelGap, 0.0f)
 				[
 					SNew(SBox)
 				]
 				+ SHorizontalBox::Slot()
-				.FillWidth(0.28f)
-				.Padding(10.0f, 0.0f, 0.0f, 0.0f)
+				.AutoWidth()
+				.Padding(PanelGap, 0.0f, 0.0f, 0.0f)
 				[
-					MakeFocusMaskFill()
+					SNew(SBox)
+					.WidthOverride(SidePanelMinWidth)
+					[
+						MakeFocusMaskFill()
+					]
 				]
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Padding(0.0f, 10.0f, 0.0f, 0.0f)
+			.Padding(0.0f, TopBarBottomGap, 0.0f, 0.0f)
 			[
 				SNew(SBox)
-				.HeightOverride(86.f)
+				.HeightOverride(64.f)
 				[
 					MakeFocusMaskFill()
 				]
 			];
 	};
 
+	auto MakeBodyTogglePanel = [this,
+		bDotaTheme,
+		FooterToggleWidth,
+		FooterToggleHeight,
+		BodyToggleFontSize,
+		SelectionToggleFill,
+		SelectionPanelFill]() -> TSharedRef<SWidget>
+	{
+		const FSlateColor TogglePanelColor = bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel2;
+		const FSlateColor ToggleActiveColor = bDotaTheme ? SelectionToggleFill : FT66Style::Tokens::Accent2;
+
+		auto MakeBodyToggleButton = [this, FooterToggleWidth, FooterToggleHeight, BodyToggleFontSize, ToggleActiveColor, TogglePanelColor](const TCHAR* Label, ET66BodyType BodyType) -> TSharedRef<SWidget>
+		{
+			const FOnClicked OnClicked = (BodyType == ET66BodyType::TypeA)
+				? FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeAClicked)
+				: FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeBClicked);
+
+			return FT66Style::MakeButton(FT66ButtonParams(
+				FText::AsCultureInvariant(Label),
+				OnClicked,
+				ET66ButtonType::Neutral)
+				.SetMinWidth(FooterToggleWidth)
+				.SetHeight(FooterToggleHeight)
+				.SetFontSize(BodyToggleFontSize)
+				.SetPadding(FMargin(10.f, 7.f, 10.f, 6.f))
+				.SetColor(TAttribute<FSlateColor>::CreateLambda([this, BodyType, ToggleActiveColor, TogglePanelColor]() -> FSlateColor
+				{
+					return SelectedBodyType == BodyType ? ToggleActiveColor : TogglePanelColor;
+				}))
+				.SetContent(
+					SNew(STextBlock)
+					.Text(FText::AsCultureInvariant(Label))
+					.Font(FT66Style::Tokens::FontBold(BodyToggleFontSize))
+					.ColorAndOpacity(FT66Style::Tokens::Text)));
+		};
+
+		return FT66Style::MakePanel(
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0.0f)
+			[
+				MakeBodyToggleButton(TEXT("CHAD"), ET66BodyType::TypeA)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0.0f)
+			[
+				MakeBodyToggleButton(TEXT("STACY"), ET66BodyType::TypeB)
+			],
+			FT66PanelParams(ET66PanelType::Panel)
+				.SetColor(TogglePanelColor)
+				.SetPadding(FMargin(4.f, 4.f, 4.f, 3.f)));
+	};
+
+	auto MakeChooseCompanionPanel = [this,
+		bDotaTheme,
+		ChooseCompanionText,
+		FooterPanelWidth,
+		FooterActionHeight,
+		PrimaryCtaFontSize,
+		SelectionPanelFill]() -> TSharedRef<SWidget>
+	{
+		const FSlateColor CompanionPanelColor = bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel;
+		const FSlateColor CompanionButtonColor = bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel2;
+
+		return FT66Style::MakePanel(
+			SNew(SBox)
+			.WidthOverride(FooterPanelWidth)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					ChooseCompanionText,
+					FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked),
+					ET66ButtonType::Neutral)
+					.SetMinWidth(0.f)
+					.SetHeight(FooterActionHeight)
+					.SetFontSize(PrimaryCtaFontSize)
+					.SetPadding(FMargin(12.f, 8.f))
+					.SetColor(CompanionButtonColor))
+			],
+			FT66PanelParams(ET66PanelType::Panel)
+				.SetColor(CompanionPanelColor)
+				.SetPadding(FMargin(6.f, 6.f)));
+	};
+
 	auto MakeWorldScrim = []() -> TSharedRef<SWidget>
 	{
 		return SNew(SBox).Visibility(EVisibility::Collapsed);
+	};
+
+	auto MakeSelectionBar = [bDotaTheme, SelectionPanelFill](TSharedRef<SWidget> Content) -> TSharedRef<SWidget>
+	{
+		if (bDotaTheme)
+		{
+			return FT66Style::MakeViewportFrame(Content, FMargin(6.f, 6.f));
+		}
+
+		return FT66Style::MakePanel(
+			Content,
+			FT66PanelParams(ET66PanelType::Panel)
+				.SetColor(SelectionPanelFill)
+				.SetPadding(FMargin(6.f, 6.f)));
+	};
+
+	auto MakeHeroStripControls = [this,
+		HeroGridText,
+		HeroGridButtonWidth,
+		HeroGridButtonPadding,
+		HeroGridLabelFontSize,
+		HeroArrowButtonWidth,
+		HeroArrowButtonHeight,
+		HeroArrowFontSize,
+		HeroCarousel]() -> TSharedRef<SWidget>
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(6.0f, 0.0f, 6.0f, 0.0f)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(HeroGridText,
+					FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroGridClicked),
+					ET66ButtonType::Neutral)
+					.SetMinWidth(HeroGridButtonWidth)
+					.SetPadding(HeroGridButtonPadding)
+					.SetContent(SNew(STextBlock)
+						.Text(HeroGridText)
+						.Font(FT66Style::Tokens::FontBold(HeroGridLabelFontSize))
+						.ColorAndOpacity(FT66Style::Tokens::Text)))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0.0f, 0.0f, 8.0f, 0.0f)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					NSLOCTEXT("T66.Common", "Prev", "<"),
+					FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandlePrevClicked),
+					ET66ButtonType::Neutral)
+					.SetMinWidth(HeroArrowButtonWidth)
+					.SetHeight(HeroArrowButtonHeight)
+					.SetFontSize(HeroArrowFontSize))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				HeroCarousel
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+			[
+				FT66Style::MakeButton(FT66ButtonParams(
+					NSLOCTEXT("T66.Common", "Next", ">"),
+					FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleNextClicked),
+					ET66ButtonType::Neutral)
+					.SetMinWidth(HeroArrowButtonWidth)
+					.SetHeight(HeroArrowButtonHeight)
+					.SetFontSize(HeroArrowFontSize))
+			];
+	};
+
+	auto MakePartyBox = [this,
+		PartyPanelWidth,
+		ActivePartySlots]() -> TSharedRef<SWidget>
+	{
+		const FLinearColor ShellFill(0.004f, 0.005f, 0.010f, 0.985f);
+		const FLinearColor LeaderSlotAccent(0.29f, 0.24f, 0.13f, 1.0f);
+		const FLinearColor PartySlotAccent(0.15f, 0.17f, 0.19f, 1.0f);
+		const FLinearColor PartySlotAccentInactive(0.08f, 0.09f, 0.10f, 1.0f);
+		const FLinearColor PlaceholderTint(0.20f, 0.22f, 0.24f, 0.55f);
+
+		TSharedRef<SHorizontalBox> PartySlots = SNew(SHorizontalBox);
+		for (int32 SlotIndex = 0; SlotIndex < 4; ++SlotIndex)
+		{
+			const bool bPartyEnabledSlot = SlotIndex < ActivePartySlots;
+			const bool bLeaderSlot = SlotIndex == 0;
+			const FLinearColor SlotAccent = bLeaderSlot
+				? LeaderSlotAccent
+				: (bPartyEnabledSlot ? PartySlotAccent : PartySlotAccentInactive);
+			const float PlaceholderOpacity = bPartyEnabledSlot ? 0.55f : 0.28f;
+
+			const TSharedRef<SWidget> SlotContent =
+				bLeaderSlot
+				? StaticCastSharedRef<SWidget>(
+					SNew(SImage)
+					.Image(PartyHeroPortraitBrush.Get()))
+				: StaticCastSharedRef<SWidget>(
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Top)
+					.Padding(0.f, 10.f, 0.f, 0.f)
+					[
+						SNew(SBox)
+						.WidthOverride(12.f)
+						.HeightOverride(12.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(PlaceholderTint.R, PlaceholderTint.G, PlaceholderTint.B, PlaceholderOpacity))
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Bottom)
+					.Padding(0.f, 0.f, 0.f, 10.f)
+					[
+						SNew(SBox)
+						.WidthOverride(20.f)
+						.HeightOverride(14.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(PlaceholderTint.R, PlaceholderTint.G, PlaceholderTint.B, PlaceholderOpacity))
+						]
+					]);
+
+			PartySlots->AddSlot()
+				.AutoWidth()
+				.Padding(SlotIndex > 0 ? FMargin(5.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+				[
+					SNew(SBox)
+					.WidthOverride(52.f)
+					.HeightOverride(52.f)
+					[
+						FT66Style::MakeSlotFrame(SlotContent, SlotAccent, bLeaderSlot ? FMargin(1.f) : FMargin(6.f))
+					]
+				];
+		}
+
+		return SNew(SBox)
+			.WidthOverride(PartyPanelWidth)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(ShellFill)
+				.Padding(FMargin(12.f, 10.f, 12.f, 8.f))
+				[
+					PartySlots
+				]
+			];
+	};
+
+	auto MakeRunControls = [this,
+		bHideEnterFromLobby,
+		BackToLobbyText,
+		BackToLobbyFontSize,
+		EnterText,
+		PrimaryCtaFontSize,
+		FooterActionHeight,
+		Loc,
+		RunControlsWidth]() -> TSharedRef<SWidget>
+	{
+		if (bHideEnterFromLobby)
+		{
+			return SNew(SBox)
+				.WidthOverride(RunControlsWidth)
+				[
+					FT66Style::MakeButton(FT66ButtonParams(
+						BackToLobbyText,
+						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackToLobbyClicked),
+						ET66ButtonType::Danger)
+						.SetMinWidth(0.f)
+						.SetHeight(FooterActionHeight)
+						.SetPadding(FMargin(12.f, 8.f))
+						.SetFontSize(BackToLobbyFontSize))
+				];
+		}
+
+		return SNew(SBox)
+			.WidthOverride(RunControlsWidth)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.FillWidth(0.34f)
+				.VAlign(VAlign_Center)
+				.Padding(0.0f, 0.0f, 8.0f, 0.0f)
+				[
+					FT66Style::MakeDropdown(FT66DropdownParams(
+						SNew(STextBlock)
+						.Text_Lambda([this, Loc]() -> FText
+						{
+							return CurrentDifficultyOption.IsValid()
+								? FText::FromString(*CurrentDifficultyOption)
+								: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
+						})
+						.Font(FT66Style::Tokens::FontBold(PrimaryCtaFontSize))
+						.ColorAndOpacity(FT66Style::Tokens::Text),
+						[this]()
+						{
+							TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
+							for (const TSharedPtr<FString>& Opt : DifficultyOptions)
+							{
+								if (!Opt.IsValid())
+								{
+									continue;
+								}
+
+								TSharedPtr<FString> Captured = Opt;
+								Box->AddSlot()
+									.AutoHeight()
+									[
+										FT66Style::MakeButton(FT66ButtonParams(
+											FText::FromString(*Opt),
+											FOnClicked::CreateLambda([this, Captured]()
+											{
+												OnDifficultyChanged(Captured, ESelectInfo::Direct);
+												FSlateApplication::Get().DismissAllMenus();
+												return FReply::Handled();
+											}),
+											ET66ButtonType::Neutral)
+											.SetMinWidth(0.f))
+									];
+							}
+							return Box;
+						})
+						.SetMinWidth(0.f)
+						.SetHeight(FooterActionHeight)
+						.SetPadding(FMargin(10.f, 8.f)))
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(0.66f)
+				[
+					FT66Style::MakeButton(FT66ButtonParams(
+						EnterText,
+						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleEnterClicked),
+						ET66ButtonType::Primary)
+						.SetMinWidth(0.f)
+						.SetHeight(FooterActionHeight)
+						.SetPadding(FMargin(12.f, 8.f))
+						.SetFontSize(PrimaryCtaFontSize)
+						.SetContent(SNew(STextBlock)
+							.Text(EnterText)
+							.Font(FT66Style::Tokens::FontBold(PrimaryCtaFontSize))
+							.ColorAndOpacity(FT66Style::Tokens::Text)))
+				]
+			];
 	};
 
 	TSharedRef<SWidget> Root = SNew(SBorder)
@@ -740,570 +1160,341 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			]
 			+ SOverlay::Slot()
 			[
-				SNew(SVerticalBox)
-				// === TOP BAR: Hero Grid Button + Hero Sprite Carousel ===
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(ScreenSafePadding)
 				[
-					bDotaTheme
-						? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.0f, 0.0f, 0.0f, TopBarBottomGap)
+					[
+						MakeSelectionBar(
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot()
-							.FillWidth(1.0f)
-							.HAlign(HAlign_Center)
+							.AutoWidth()
 							.VAlign(VAlign_Center)
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.0f, 0.0f, 10.0f, 0.0f)
+								SNew(SBox)
+								.WidthOverride(TopBarSideWidth)
 								[
-								FT66Style::MakeButton(FT66ButtonParams(HeroGridText,
-									FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroGridClicked),
-									ET66ButtonType::Neutral)
-									.SetMinWidth(176.f)
-									.SetPadding(FMargin(16.f, 10.f))
-									.SetContent(SNew(STextBlock).Text(HeroGridText).TextStyle(&TxtChip))
-								)
+									FT66Style::MakeButton(FT66ButtonParams(
+										BackText,
+										FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackClicked),
+										ET66ButtonType::Neutral)
+										.SetMinWidth(0.f)
+										.SetFontSize(BackButtonFontSize))
 								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(0.0f, 0.0f, 12.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(
-									NSLOCTEXT("T66.Common", "Prev", "<"),
-									FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandlePrevClicked),
-									ET66ButtonType::Neutral)
-									.SetMinWidth(52.f).SetHeight(48.f)
-									.SetFontSize(22)
-								)
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-								[
-									HeroCarousel
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(
-									NSLOCTEXT("T66.Common", "Next", ">"),
-									FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleNextClicked),
-									ET66ButtonType::Neutral)
-									.SetMinWidth(52.f).SetHeight(48.f)
-									.SetFontSize(22)
-								)
-								]
-							],
-							FMargin(18.f, 12.f)))
-						: StaticCastSharedRef<SWidget>(SNew(SHorizontalBox)
+							]
 							+ SHorizontalBox::Slot()
 							.FillWidth(1.0f)
 							.HAlign(HAlign_Center)
 							.VAlign(VAlign_Center)
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.0f, 0.0f, 10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(HeroGridText,
-									FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroGridClicked),
-									ET66ButtonType::Neutral)
-									.SetMinWidth(120.f)
-									.SetPadding(FMargin(12.f, 8.f))
-									.SetContent(SNew(STextBlock).Text(HeroGridText).TextStyle(&TxtChip))
-								)
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(0.0f, 0.0f, 12.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(
-									NSLOCTEXT("T66.Common", "Prev", "<"),
-									FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandlePrevClicked),
-									ET66ButtonType::Neutral)
-									.SetMinWidth(40.f).SetHeight(40.f)
-									.SetFontSize(20)
-								)
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-								[
-									HeroCarousel
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(
-									NSLOCTEXT("T66.Common", "Next", ">"),
-									FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleNextClicked),
-									ET66ButtonType::Neutral)
-									.SetMinWidth(40.f).SetHeight(40.f)
-									.SetFontSize(20)
-								)
-								]
-							])
-				]
-				// === MAIN CONTENT: Left Panel | Center Preview | Right Panel (equal side panels, center centered) ===
-				+ SVerticalBox::Slot()
-				.FillHeight(1.0f)
-				.Padding(0.0f, 10.0f, 0.0f, 0.0f)
-				[
-					SNew(SHorizontalBox)
-					// LEFT PANEL: Skins (same width as right)
-					+ SHorizontalBox::Slot()
-					.FillWidth(0.28f)
-					.VAlign(VAlign_Fill)
-					.Padding(0.0f, 0.0f, 10.0f, 80.0f)
-					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-						[
-							FT66Style::MakeButton(FT66ButtonParams(SettingsText,
-								FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleSettingsClicked),
-								ET66ButtonType::Neutral)
-								.SetMinWidth(0.f))
-						]
-						+ SVerticalBox::Slot()
-						.FillHeight(1.0f)
-						[
-							FT66Style::MakePanel(
-								SNew(SVerticalBox)
-								// Skins header
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-								[
-									SNew(SOverlay)
-									+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
-									[
-										SNew(STextBlock).Text(SkinsText)
-										.TextStyle(&TxtHeading)
-									]
-									+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
-									[
-										FT66Style::MakePanel(
-											SAssignNew(ACBalanceTextBlock, STextBlock)
-											.Text(ACBalanceText)
-											.Font(FT66Style::Tokens::FontBold(22))
-											.ColorAndOpacity(FT66Style::Tokens::Text),
-											FT66PanelParams(ET66PanelType::Panel)
-												.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
-												.SetPadding(FMargin(15.0f, 8.0f)))
-									]
-								]
-								// Skins list
-								+ SVerticalBox::Slot()
-								.FillHeight(1.0f)
-								[
-									SkinsListBoxWidget.ToSharedRef()
-								],
-								FT66PanelParams(ET66PanelType::Panel)
-									.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
-									.SetPadding(FMargin(FT66Style::Tokens::Space3)))
-						]
+								MakeHeroStripControls()
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
+							[
+								SNew(SBox)
+								.WidthOverride(TopBarSideWidth)
+							]
+						)
 					]
-					// CENTER: Hero Preview (3D render target or colored box fallback)
-					+ SHorizontalBox::Slot()
-					.FillWidth(0.44f)
-					.Padding(10.0f, 0.0f, 10.0f, 80.0f)
+					+ SVerticalBox::Slot()
+					.FillHeight(1.0f)
+					.Padding(0.0f, ContentTopGap, 0.0f, 0.0f)
 					[
-						SNew(SVerticalBox)
-						// Hero Preview Area - 3D preview image or colored box
-						+ SVerticalBox::Slot()
-						.FillHeight(1.0f)
-						.HAlign(HAlign_Fill)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
 						.VAlign(VAlign_Fill)
 						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot()
-							.FillHeight(1.0f)
-							.HAlign(HAlign_Fill)
-							.VAlign(VAlign_Fill)
+							SNew(SBox)
+							.WidthOverride(SidePanelMinWidth)
+							[
+								FT66Style::MakePanel(
+									SNew(SVerticalBox)
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									.Padding(0.0f, 0.0f, 0.0f, 8.0f)
+									[
+										SNew(SOverlay)
+										+ SOverlay::Slot()
+										.HAlign(HAlign_Center)
+										.VAlign(VAlign_Center)
+										[
+											SNew(STextBlock)
+											.Text(SkinsText)
+											.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
+										+ SOverlay::Slot()
+										.HAlign(HAlign_Right)
+										.VAlign(VAlign_Center)
+										[
+											FT66Style::MakePanel(
+												SAssignNew(ACBalanceTextBlock, STextBlock)
+												.Text(ACBalanceText)
+												.Font(FT66Style::Tokens::FontBold(ACBalanceFontSize))
+												.ColorAndOpacity(FT66Style::Tokens::Text),
+												FT66PanelParams(ET66PanelType::Panel)
+													.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+													.SetPadding(FMargin(10.0f, 5.0f)))
+										]
+									]
+									+ SVerticalBox::Slot()
+									.FillHeight(1.0f)
+									[
+										SNew(SScrollBox)
+										+ SScrollBox::Slot()
+										[
+											SkinsListBoxWidget.ToSharedRef()
+										]
+									],
+									FT66PanelParams(ET66PanelType::Panel)
+										.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
+										.SetPadding(FMargin(FT66Style::Tokens::Space3)))
+							]
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(CenterPanelFill)
+						.Padding(PanelGap, 0.0f, PanelGap, PanelBottomInset)
+						[
+							SNew(SOverlay)
+							+ SOverlay::Slot()
 							[
 								SNew(SBox)
 								.HAlign(HAlign_Fill)
 								.VAlign(VAlign_Fill)
 								[
-									bDotaTheme
-										? StaticCastSharedRef<SWidget>(CreateHeroPreviewWidget(HeroPreviewColor))
-										: StaticCastSharedRef<SWidget>(CreateHeroPreviewWidget(HeroPreviewColor))
+									CreateHeroPreviewWidget(HeroPreviewColor)
 								]
 							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.HAlign(HAlign_Fill)
-							.Padding(0.0f, -72.0f, 0.0f, 0.0f)
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Bottom)
+							.Padding(0.0f, 0.0f, 0.0f, PreviewToggleBottomPadding)
 							[
-								bDotaTheme
-									? StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
-										SNew(SVerticalBox)
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.HAlign(HAlign_Fill)
+								MakeBodyTogglePanel()
+							]
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Fill)
+						.Padding(PanelGap, 0.0f, 0.0f, PanelBottomInset)
+						[
+							SNew(SBox)
+							.WidthOverride(SidePanelMinWidth)
+							[
+								FT66Style::MakePanel(
+									SNew(SVerticalBox)
+									+ SVerticalBox::Slot()
+									.FillHeight(1.0f)
+									[
+										SNew(SWidgetSwitcher)
+										.WidgetIndex_Lambda([this]() -> int32 { return bShowingLore ? 1 : 0; })
+										+ SWidgetSwitcher::Slot()
 										[
-											SNew(SHorizontalBox)
-											+ SHorizontalBox::Slot()
-											.FillWidth(1.0f)
-											.Padding(4.0f, 0.0f)
+											SNew(SVerticalBox)
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.HAlign(HAlign_Center)
+											.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 											[
-											FT66Style::MakeButton(FT66ButtonParams(
-												FText::AsCultureInvariant(TEXT("CHAD")),
-												FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeAClicked),
-												ET66ButtonType::Neutral)
-												.SetMinWidth(0.f)
-												.SetColor(TAttribute<FSlateColor>::CreateLambda([this, SelectionToggleFill, SelectionPanelFill]() -> FSlateColor {
-													return SelectedBodyType == ET66BodyType::TypeA
-														? SelectionToggleFill
-														: SelectionPanelFill;
-												}))
-												.SetContent(SNew(STextBlock).Text(FText::AsCultureInvariant(TEXT("CHAD"))).TextStyle(&TxtChip))
-											)
+												SNew(STextBlock)
+												.Text(HeroInfoText)
+												.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize))
+												.ColorAndOpacity(FT66Style::Tokens::Text)
 											]
-											+ SHorizontalBox::Slot()
-											.FillWidth(1.0f)
-											.Padding(4.0f, 0.0f)
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.Padding(0.0f, 0.0f, 0.0f, 10.0f)
 											[
-											FT66Style::MakeButton(FT66ButtonParams(
-												FText::AsCultureInvariant(TEXT("STACY")),
-												FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeBClicked),
-												ET66ButtonType::Neutral)
-												.SetMinWidth(0.f)
-												.SetColor(TAttribute<FSlateColor>::CreateLambda([this, SelectionToggleFill, SelectionPanelFill]() -> FSlateColor {
-													return SelectedBodyType == ET66BodyType::TypeB
-														? SelectionToggleFill
-														: SelectionPanelFill;
-												}))
-												.SetContent(SNew(STextBlock).Text(FText::AsCultureInvariant(TEXT("STACY"))).TextStyle(&TxtChip))
-											)
+												SNew(SHorizontalBox)
+												+ SHorizontalBox::Slot()
+												.FillWidth(1.0f)
+												.VAlign(VAlign_Center)
+												[
+													FT66Style::MakeButton(FT66ButtonParams(
+														Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"),
+														FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked),
+														ET66ButtonType::Neutral)
+														.SetContent(SAssignNew(HeroNameWidget, STextBlock)
+															.Text(Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"))
+															.Font(FT66Style::Tokens::FontBold(HeroNameFontSize))
+															.ColorAndOpacity(FT66Style::Tokens::Text)
+															.Justification(ETextJustify::Center)))
+												]
+												+ SHorizontalBox::Slot()
+												.AutoWidth()
+												.VAlign(VAlign_Center)
+												.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+												[
+													FT66Style::MakeButton(FT66ButtonParams(
+														DemoText,
+														FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
+														ET66ButtonType::Neutral)
+														.SetMinWidth(64.f)
+														.SetContent(SNew(STextBlock)
+															.Text(DemoText)
+															.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize))
+															.ColorAndOpacity(FT66Style::Tokens::Text)))
+												]
+											]
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+											[
+												FT66Style::MakePanel(
+													SNew(SBox)
+													.HeightOverride(204.0f)
+													[
+														SNew(SOverlay)
+														+ SOverlay::Slot()
+														[
+															SAssignNew(HeroPreviewVideoImage, SImage)
+															.Image(HeroPreviewVideoBrush.IsValid() ? HeroPreviewVideoBrush.Get() : nullptr)
+														]
+														+ SOverlay::Slot()
+														.HAlign(HAlign_Center)
+														.VAlign(VAlign_Center)
+														[
+															SAssignNew(HeroPreviewPlaceholderText, STextBlock)
+															.Text(NSLOCTEXT("T66.HeroSelection", "VideoPreview", "[VIDEO PREVIEW]"))
+															.Font(FT66Style::Tokens::FontRegular(SecondaryButtonFontSize))
+															.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+															.Justification(ETextJustify::Center)
+														]
+													],
+													FT66PanelParams(ET66PanelType::Panel)
+														.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+														.SetPadding(FMargin(5.0f)))
+											]
+											+ SVerticalBox::Slot()
+											.FillHeight(1.0f)
+											[
+												SNew(SScrollBox)
+												+ SScrollBox::Slot()
+												[
+													SAssignNew(HeroDescWidget, STextBlock)
+													.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroDescriptionHint", "Select a hero to view their description."))
+													.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize))
+													.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+													.AutoWrapText(true)
+												]
 											]
 										]
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.HAlign(HAlign_Fill)
-										.Padding(0.0f, 10.0f, 0.0f, 0.0f)
+										+ SWidgetSwitcher::Slot()
 										[
-											SNew(SHorizontalBox)
-											+ SHorizontalBox::Slot()
-											.FillWidth(1.0f)
+											SNew(SVerticalBox)
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.HAlign(HAlign_Center)
+											.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 											[
-												FT66Style::MakeButton(FT66ButtonParams(ChooseCompanionText,
-													FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked),
-													ET66ButtonType::Primary)
-													.SetMinWidth(0.f)
-												)
+												SNew(STextBlock)
+												.Text(LoreText)
+												.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize))
+												.ColorAndOpacity(FT66Style::Tokens::Text)
 											]
-										],
-										FT66PanelParams(ET66PanelType::Panel)
-											.SetColor(SelectionPanelFill)
-											.SetPadding(FMargin(16.f, 14.f))))
-									: StaticCastSharedRef<SWidget>(SNew(SVerticalBox)
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.HAlign(HAlign_Center)
-										[
-											SNew(SHorizontalBox)
-											+ SHorizontalBox::Slot()
-											.AutoWidth()
-											.Padding(4.0f, 0.0f)
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.Padding(0.0f, 0.0f, 0.0f, 12.0f)
 											[
-											FT66Style::MakeButton(FT66ButtonParams(
-												FText::AsCultureInvariant(TEXT("CHAD")),
-												FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeAClicked),
-												ET66ButtonType::Neutral)
-												.SetMinWidth(100.f)
-												.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor {
-													return SelectedBodyType == ET66BodyType::TypeA
-														? FT66Style::Tokens::Accent2
-														: FT66Style::Tokens::Panel2;
-												}))
-												.SetContent(SNew(STextBlock).Text(FText::AsCultureInvariant(TEXT("CHAD"))).TextStyle(&TxtChip))
-											)
+												SNew(SHorizontalBox)
+												+ SHorizontalBox::Slot()
+												.FillWidth(1.0f)
+												.VAlign(VAlign_Center)
+												[
+													FT66Style::MakePanel(
+														SNew(STextBlock)
+														.Text_Lambda([this, Loc]() -> FText
+														{
+															FHeroData HeroData;
+															if (GetPreviewedHeroData(HeroData))
+															{
+																return Loc ? Loc->GetHeroDisplayName(HeroData) : HeroData.DisplayName;
+															}
+															return Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero");
+														})
+														.Font(FT66Style::Tokens::FontBold(HeroNameFontSize))
+														.ColorAndOpacity(FT66Style::Tokens::Text)
+														.Justification(ETextJustify::Center),
+														FT66PanelParams(ET66PanelType::Panel)
+															.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+															.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
+												]
+												+ SHorizontalBox::Slot()
+												.AutoWidth()
+												.VAlign(VAlign_Center)
+												.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+												[
+													FT66Style::MakeButton(FT66ButtonParams(
+														BackText,
+														FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked),
+														ET66ButtonType::Neutral)
+														.SetMinWidth(64.f)
+														.SetContent(SNew(STextBlock)
+															.Text(BackText)
+															.Font(FT66Style::Tokens::FontBold(SecondaryButtonFontSize))
+															.ColorAndOpacity(FT66Style::Tokens::Text)))
+												]
 											]
-											+ SHorizontalBox::Slot()
-											.AutoWidth()
-											.Padding(4.0f, 0.0f)
+											+ SVerticalBox::Slot()
+											.FillHeight(1.0f)
 											[
-											FT66Style::MakeButton(FT66ButtonParams(
-												FText::AsCultureInvariant(TEXT("STACY")),
-												FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBodyTypeBClicked),
-												ET66ButtonType::Neutral)
-												.SetMinWidth(100.f)
-												.SetColor(TAttribute<FSlateColor>::CreateLambda([this]() -> FSlateColor {
-													return SelectedBodyType == ET66BodyType::TypeB
-														? FT66Style::Tokens::Accent2
-														: FT66Style::Tokens::Panel2;
-												}))
-												.SetContent(SNew(STextBlock).Text(FText::AsCultureInvariant(TEXT("STACY"))).TextStyle(&TxtChip))
-											)
+												SNew(SScrollBox)
+												+ SScrollBox::Slot()
+												[
+													SAssignNew(HeroLoreWidget, STextBlock)
+													.Text(FText::GetEmpty())
+													.Font(FT66Style::Tokens::FontRegular(BodyTextFontSize))
+													.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+													.AutoWrapText(true)
+												]
 											]
 										]
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.HAlign(HAlign_Center)
-										.Padding(0.0f, 8.0f, 0.0f, 0.0f)
-										[
-										FT66Style::MakeButton(FT66ButtonParams(ChooseCompanionText,
-											FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked),
-											ET66ButtonType::Primary)
-											.SetMinWidth(240.f)
-										)
-										])
+									],
+									FT66PanelParams(ET66PanelType::Panel)
+										.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
+										.SetPadding(FMargin(FT66Style::Tokens::Space4)))
 							]
 						]
 					]
-					// RIGHT PANEL: Hero Info (same width as left)
-					+ SHorizontalBox::Slot()
-					.FillWidth(0.28f)
-					.VAlign(VAlign_Fill)
-					.Padding(10.0f, 0.0f, 0.0f, 80.0f)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.0f, TopBarBottomGap, 0.0f, 0.0f)
 					[
-						FT66Style::MakePanel(
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot()
-							.FillHeight(1.0f)
+						MakeSelectionBar(
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+							.FillWidth(0.34f)
+							.HAlign(HAlign_Left)
+							.VAlign(VAlign_Bottom)
+							.Padding(0.0f, 0.0f, 8.0f, 0.0f)
 							[
-								SNew(SWidgetSwitcher)
-								.WidgetIndex_Lambda([this]() -> int32 { return bShowingLore ? 1 : 0; })
-								// 0) HERO INFO view
-								+ SWidgetSwitcher::Slot()
-								[
-									SNew(SVerticalBox)
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.HAlign(HAlign_Center)
-								.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-								[
-									SNew(STextBlock).Text(HeroInfoText)
-									.TextStyle(&TxtHeading)
-								]
-								// Hero name (button → Lore) + Demo (button → Lab) on same row
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-								[
-									SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot()
-									.FillWidth(1.0f)
-									.VAlign(VAlign_Center)
-									[
-										FT66Style::MakeButton(FT66ButtonParams(
-											Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"),
-											FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked),
-											ET66ButtonType::Neutral)
-											.SetContent(SAssignNew(HeroNameWidget, STextBlock)
-												.Text(Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero"))
-												.TextStyle(&TxtButton)
-												.Justification(ETextJustify::Center))
-										)
-									]
-									+ SHorizontalBox::Slot()
-									.AutoWidth()
-									.VAlign(VAlign_Center)
-									.Padding(8.0f, 0.0f, 0.0f, 0.0f)
-									[
-										FT66Style::MakeButton(FT66ButtonParams(DemoText,
-											FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTheLabClicked),
-											ET66ButtonType::Neutral)
-											.SetMinWidth(110.f)
-											.SetContent(SNew(STextBlock).Text(DemoText).TextStyle(&TxtChip))
-										)
-									]
-								]
-								// Video placeholder or hero preview video (Knight = KnightClip on loop)
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-								[
-									FT66Style::MakePanel(
-										SNew(SBox).HeightOverride(360.0f)
-										[
-											SNew(SOverlay)
-											+ SOverlay::Slot()
-											[
-												SAssignNew(HeroPreviewVideoImage, SImage)
-												.Image(HeroPreviewVideoBrush.IsValid() ? HeroPreviewVideoBrush.Get() : nullptr)
-											]
-											+ SOverlay::Slot()
-											.HAlign(HAlign_Center)
-											.VAlign(VAlign_Center)
-											[
-												SAssignNew(HeroPreviewPlaceholderText, STextBlock)
-												.Text(NSLOCTEXT("T66.HeroSelection", "VideoPreview", "[VIDEO PREVIEW]"))
-												.TextStyle(&TxtBody)
-												.Justification(ETextJustify::Center)
-											]
-										],
-									FT66PanelParams(ET66PanelType::Panel)
-										.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
-										.SetPadding(FMargin(5.0f)))
-								]
-								// Quote + Base Stats (replaces short description here)
-								+ SVerticalBox::Slot()
-								.FillHeight(1.0f)
-								.Padding(0.0f, 0.0f, 0.0f, 0.0f)
-								[
-									SNew(SScrollBox)
-									+ SScrollBox::Slot()
-									[
-										SAssignNew(HeroDescWidget, STextBlock)
-										.Text(NSLOCTEXT("T66.HeroSelection", "SelectHeroDescriptionHint", "Select a hero to view their description."))
-										.Font(FT66Style::Tokens::FontRegular(14))
-										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-										.AutoWrapText(true)
-									]
-								]
-								]
-								// 1) LORE view (same panel size)
-								+ SWidgetSwitcher::Slot()
-								[
-									SNew(SVerticalBox)
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.HAlign(HAlign_Center)
-								.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-								[
-									SNew(STextBlock).Text(LoreText)
-									.TextStyle(&TxtHeading)
-								]
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-								[
-									SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot()
-									.FillWidth(1.0f)
-									.VAlign(VAlign_Center)
-									[
-										FT66Style::MakePanel(
-											SNew(STextBlock)
-											.Text_Lambda([this, Loc]() -> FText
-											{
-												FHeroData HeroData;
-												if (GetPreviewedHeroData(HeroData))
-												{
-													return Loc ? Loc->GetHeroDisplayName(HeroData) : HeroData.DisplayName;
-												}
-												return Loc ? Loc->GetText_SelectYourHero() : NSLOCTEXT("T66.HeroSelection", "SelectHero", "Select a Hero");
-											})
-											.TextStyle(&TxtButton)
-											.Justification(ETextJustify::Center),
-											FT66PanelParams(ET66PanelType::Panel)
-												.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
-												.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
-									]
-									+ SHorizontalBox::Slot()
-									.AutoWidth()
-									.VAlign(VAlign_Center)
-									.Padding(8.0f, 0.0f, 0.0f, 0.0f)
-									[
-									FT66Style::MakeButton(FT66ButtonParams(BackText,
-										FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLoreClicked),
-										ET66ButtonType::Neutral)
-										.SetMinWidth(110.f)
-										.SetContent(SNew(STextBlock).Text(BackText).TextStyle(&TxtChip))
-									)
-									]
-								]
-								+ SVerticalBox::Slot()
-								.FillHeight(1.0f)
-								[
-									SNew(SScrollBox)
-									+ SScrollBox::Slot()
-									[
-										SAssignNew(HeroLoreWidget, STextBlock)
-										.Text(FText::GetEmpty())
-										.Font(FT66Style::Tokens::FontRegular(14))
-										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-										.AutoWrapText(true)
-									]
-								]
-								]
+								MakePartyBox()
 							]
-							// From Lobby (co-op): BACK TO LOBBY only. Solo: difficulty dropdown + ENTER THE TRIBULATION.
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.0f, 10.0f, 0.0f, 0.0f)
+							+ SHorizontalBox::Slot()
+							.FillWidth(0.32f)
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Bottom)
 							[
-								bHideEnterFromLobby
-									? static_cast<TSharedRef<SWidget>>(SNew(SVerticalBox)
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.Padding(0.0f, 0.0f, 0.0f, 0.0f)
-										[
-										FT66Style::MakeButton(FT66ButtonParams(BackToLobbyText,
-											FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackToLobbyClicked),
-											ET66ButtonType::Danger)
-											.SetMinWidth(0.f)
-											.SetPadding(FMargin(12.f, 8.f))
-											.SetFontSize(12)
-										)
-										]
-									)
-									: static_cast<TSharedRef<SWidget>>(SNew(SVerticalBox)
-										+ SVerticalBox::Slot()
-										.AutoHeight()
-										.Padding(0.0f, 0.0f, 0.0f, 0.0f)
-										[
-											SNew(SHorizontalBox)
-											+ SHorizontalBox::Slot()
-											.FillWidth(0.42f)
-											.VAlign(VAlign_Center)
-											.Padding(0.0f, 0.0f, 8.0f, 0.0f)
-											[
-												FT66Style::MakeDropdown(FT66DropdownParams(
-													SNew(STextBlock)
-														.Text_Lambda([this, Loc]() -> FText {
-															return CurrentDifficultyOption.IsValid()
-																? FText::FromString(*CurrentDifficultyOption)
-																: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
-														})
-														.Font(FT66Style::Tokens::FontBold(12))
-														.ColorAndOpacity(FT66Style::Tokens::Text),
-													[this]()
-													{
-														TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
-														for (const TSharedPtr<FString>& Opt : DifficultyOptions)
-														{
-															if (!Opt.IsValid()) continue;
-															TSharedPtr<FString> Captured = Opt;
-															Box->AddSlot().AutoHeight()
-																[
-																	FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
-																	{
-																		OnDifficultyChanged(Captured, ESelectInfo::Direct);
-																		FSlateApplication::Get().DismissAllMenus();
-																		return FReply::Handled();
-																	}), ET66ButtonType::Neutral).SetMinWidth(0.f))
-																];
-														}
-														return Box;
-													}).SetMinWidth(0.f).SetHeight(40.0f))
-											]
-											+ SHorizontalBox::Slot()
-											.FillWidth(0.58f)
-											[
-											FT66Style::MakeButton(FT66ButtonParams(EnterText,
-												FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleEnterClicked),
-												ET66ButtonType::Primary)
-												.SetMinWidth(0.f)
-												.SetPadding(FMargin(12.f, 8.f))
-												.SetFontSize(12)
-											)
-											]
-										]
-									)
+								MakeChooseCompanionPanel()
 							]
-						,
-						FT66PanelParams(ET66PanelType::Panel)
-							.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
-							.SetPadding(FMargin(FT66Style::Tokens::Space4)))
+							+ SHorizontalBox::Slot()
+							.FillWidth(0.34f)
+							.HAlign(HAlign_Right)
+							.VAlign(VAlign_Bottom)
+							.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+							[
+								MakeRunControls()
+							]
+						)
 					]
 				]
-			]
-			// Back button (bottom-left overlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Left)
-			.VAlign(VAlign_Bottom)
-			.Padding(20.0f, 0.0f, 0.0f, 20.0f)
-			[
-			FT66Style::MakeButton(FT66ButtonParams(BackText,
-				FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackClicked),
-				ET66ButtonType::Neutral)
-				.SetMinWidth(120.f)
-			)
 			]
 		];
 	UpdateHeroDisplay();
@@ -1334,7 +1525,6 @@ FReply UT66HeroSelectionScreen::HandleLoreClicked()
 FReply UT66HeroSelectionScreen::HandleTheLabClicked() { OnTheLabClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
-FReply UT66HeroSelectionScreen::HandleSettingsClicked() { OnSettingsClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackToLobbyClicked()
 {
 	NavigateTo(ET66ScreenType::Lobby);
@@ -1769,7 +1959,6 @@ void UT66HeroSelectionScreen::PreviewPreviousHero()
 void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty) { SelectedDifficulty = Difficulty; }
 void UT66HeroSelectionScreen::ToggleBodyType() { SelectedBodyType = (SelectedBodyType == ET66BodyType::TypeA) ? ET66BodyType::TypeB : ET66BodyType::TypeA; }
 void UT66HeroSelectionScreen::OnHeroGridClicked() { ShowModal(ET66ScreenType::HeroGrid); }
-void UT66HeroSelectionScreen::OnSettingsClicked() { ShowModal(ET66ScreenType::Settings); }
 void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
@@ -1805,6 +1994,9 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
 		GI->bStageCatchUpPending = false;
+		GI->PendingLoadedTransform = FTransform();
+		GI->bApplyLoadedTransform = false;
+		GI->bLoadAsPreview = false;
 		// New seed each time so procedural terrain layout differs per run
 		GI->RunSeed = FMath::Rand();
 		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())

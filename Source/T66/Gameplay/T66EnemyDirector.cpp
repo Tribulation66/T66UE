@@ -5,6 +5,7 @@
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Core/T66GameplayLayout.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -126,12 +127,25 @@ void AT66EnemyDirector::HandleStageTimerChanged()
 		// Timer frozen: don't spawn waves.
 		bSpawningArmed = false;
 		World->GetTimerManager().ClearTimer(SpawnTimerHandle);
+		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
+		PendingSpawns.Empty();
 	}
 }
 
 void AT66EnemyDirector::SpawnWave()
 {
 	if (bSpawningPaused) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	// Let the current staggered wave finish before planning another one.
+	if (PendingSpawns.Num() > 0 || World->GetTimerManager().IsTimerActive(StaggeredSpawnTimerHandle))
+	{
+		return;
+	}
+
+	FLagScopedScope LagScope(GetWorld(), TEXT("EnemyDirector::SpawnWave"));
 
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!PlayerPawn) return;
@@ -162,7 +176,6 @@ void AT66EnemyDirector::SpawnWave()
 	int32 ToSpawn = FMath::Min(EffectivePerWave, EffectiveMaxAlive - AliveCount);
 	if (ToSpawn <= 0) return;
 
-	UWorld* World = GetWorld();
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 
 	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
@@ -465,6 +478,7 @@ void AT66EnemyDirector::SpawnWave()
 		PendingSpawns.Add(Slot);
 	}
 
+	World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
 	SpawnNextStaggeredBatch();
 }
 
@@ -482,8 +496,9 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
 
+	const int32 BatchSize = FMath::Max(1, MaxSpawnsPerStaggeredBatch);
 	int32 ProcessedCount = 0;
-	while (ProcessedCount < PendingSpawns.Num())
+	while (ProcessedCount < PendingSpawns.Num() && ProcessedCount < BatchSize)
 	{
 		const FPendingEnemySpawn Slot = PendingSpawns[ProcessedCount];
 		++ProcessedCount;
@@ -563,5 +578,19 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 	if (ProcessedCount > 0)
 	{
 		PendingSpawns.RemoveAt(0, ProcessedCount, EAllowShrinking::No);
+	}
+
+	if (PendingSpawns.Num() > 0)
+	{
+		World->GetTimerManager().SetTimer(
+			StaggeredSpawnTimerHandle,
+			this,
+			&AT66EnemyDirector::SpawnNextStaggeredBatch,
+			FMath::Max(0.0f, StaggeredSpawnIntervalSeconds),
+			false);
+	}
+	else
+	{
+		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
 	}
 }

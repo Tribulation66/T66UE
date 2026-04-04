@@ -7,6 +7,7 @@
 #include "Gameplay/T66CombatComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66HeroSpeedSubsystem.h"
+#include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Components/CapsuleComponent.h"
@@ -470,6 +471,8 @@ void AT66HeroBase::SetQuickReviveDowned(bool bDowned)
 void AT66HeroBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	FLagScopedScope LagScope(GetWorld(), TEXT("HeroBase::Tick"));
 
 	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
 	{

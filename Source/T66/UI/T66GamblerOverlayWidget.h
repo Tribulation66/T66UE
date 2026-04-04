@@ -70,6 +70,7 @@ public:
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SWidget>> InventorySlotButtons;
 	TArray<TSharedPtr<STextBlock>> InventorySlotTexts;
+	TArray<TSharedPtr<STextBlock>> InventorySlotCountTexts;
 	TArray<TSharedPtr<SImage>> InventorySlotIconImages;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotIconBrushes;
 	int32 SelectedInventoryIndex = -1;

@@ -5,6 +5,8 @@
 #include "Engine/DataTable.h"
 #include "Engine/AssetManager.h"
 #include "Engine/SkeletalMesh.h"
+#include "Engine/Texture.h"
+#include "Engine/Texture2D.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -12,6 +14,9 @@
 #include "Modules/ModuleManager.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
+#include "Misc/PackageName.h"
 #include "UObject/SoftObjectPath.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66CharacterVisuals, Log, All);
@@ -19,6 +24,411 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66CharacterVisuals, Log, All);
 static const TCHAR* T66_DefaultCharacterVisualsDTPath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
 static const FName T66_AnimSkeletonTag(TEXT("Skeleton"));
 static const FName T66_CharactersRootPath(TEXT("/Game/Characters"));
+static const TCHAR* T66_CharacterBaseMaterialPath = TEXT("/Game/Materials/M_Character_Unlit.M_Character_Unlit");
+static const TCHAR* T66_FbxBaseMaterialPath = TEXT("/Game/Materials/M_FBX_Unlit.M_FBX_Unlit");
+
+struct FT66ResolvedImportedTextureSet
+{
+	TWeakObjectPtr<UTexture> DiffuseTexture;
+	TWeakObjectPtr<UTexture> NormalTexture;
+};
+
+static UTexture* GetWhiteFallbackTexture()
+{
+	static TWeakObjectPtr<UTexture> CachedTexture;
+	if (CachedTexture.IsValid())
+	{
+		return CachedTexture.Get();
+	}
+
+	UTexture* LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+	if (!LoadedTexture)
+	{
+		LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+	}
+
+	CachedTexture = LoadedTexture;
+	return LoadedTexture;
+}
+
+static FString GetMaterialBasePath(const UMaterialInterface* Material)
+{
+	if (!Material)
+	{
+		return FString();
+	}
+
+	UMaterialInterface* MutableMaterial = const_cast<UMaterialInterface*>(Material);
+	if (const UMaterialInterface* BaseMaterial = MutableMaterial ? MutableMaterial->GetBaseMaterial() : nullptr)
+	{
+		return BaseMaterial->GetPathName();
+	}
+
+	return Material->GetPathName();
+}
+
+static bool T66IsUsableImportedTexture(const UTexture* Texture)
+{
+	return IsValid(Texture) && Texture != GetWhiteFallbackTexture();
+}
+
+static bool T66ShouldRebuildImportedCharacterMaterial(const UMaterialInterface* Material)
+{
+	const FString BasePath = GetMaterialBasePath(Material);
+	return BasePath.Equals(T66_CharacterBaseMaterialPath) || BasePath.Equals(T66_FbxBaseMaterialPath);
+}
+
+static void T66GetPreferredTextureNamesForMaterial(const FString& MaterialName, FString& OutDiffuseName, FString& OutNormalName)
+{
+	OutDiffuseName.Reset();
+	OutNormalName.Reset();
+
+	if (MaterialName.StartsWith(TEXT("Material_0_")))
+	{
+		const FString Suffix = MaterialName.RightChop(11);
+		OutDiffuseName = FString::Printf(TEXT("Image_0_%s"), *Suffix);
+		OutNormalName = FString::Printf(TEXT("Image_2_%s"), *Suffix);
+		return;
+	}
+
+	if (MaterialName.StartsWith(TEXT("Material_")))
+	{
+		OutDiffuseName = TEXT("Image_0");
+		OutNormalName = TEXT("Image_2");
+	}
+}
+
+static int32 T66ScoreTextureAssetForMaterial(const FString& AssetNameLower, const FString& PreferredNameLower, bool bNormalTexture)
+{
+	int32 Score = 0;
+
+	if (!PreferredNameLower.IsEmpty())
+	{
+		if (AssetNameLower == PreferredNameLower)
+		{
+			Score += 1000;
+		}
+		else if (AssetNameLower.StartsWith(PreferredNameLower))
+		{
+			Score += 700;
+		}
+	}
+
+	const bool bLooksNormal = AssetNameLower.Contains(TEXT("normal")) || AssetNameLower.Contains(TEXT("image_2"));
+	const bool bLooksDiffuse = AssetNameLower.Contains(TEXT("image_0"))
+		|| AssetNameLower.Contains(TEXT("basecolor"))
+		|| AssetNameLower.Contains(TEXT("albedo"))
+		|| AssetNameLower.Contains(TEXT("diffuse"))
+		|| AssetNameLower.Contains(TEXT("texture_pbr"));
+	const bool bLooksAuxiliary = AssetNameLower.Contains(TEXT("rough"))
+		|| AssetNameLower.Contains(TEXT("metal"))
+		|| AssetNameLower.Contains(TEXT("spec"));
+
+	if (bNormalTexture)
+	{
+		if (bLooksNormal)
+		{
+			Score += 350;
+		}
+		if (bLooksDiffuse)
+		{
+			Score -= 250;
+		}
+		if (bLooksAuxiliary)
+		{
+			Score -= 100;
+		}
+	}
+	else
+	{
+		if (bLooksDiffuse)
+		{
+			Score += 300;
+		}
+		if (bLooksNormal || bLooksAuxiliary)
+		{
+			Score -= 350;
+		}
+	}
+
+	return Score;
+}
+
+static void T66TryReadTextureParameter(
+	const UMaterialInterface* SourceMaterial,
+	const TCHAR* ParameterName,
+	TWeakObjectPtr<UTexture>& OutTexture)
+{
+	if (OutTexture.IsValid() || !SourceMaterial || !ParameterName)
+	{
+		return;
+	}
+
+	UTexture* Value = nullptr;
+	if (SourceMaterial->GetTextureParameterValue(FHashedMaterialParameterInfo(FMaterialParameterInfo(ParameterName)), Value)
+		&& T66IsUsableImportedTexture(Value))
+	{
+		OutTexture = Value;
+	}
+}
+
+static FT66ResolvedImportedTextureSet T66ExtractImportedCharacterTexturesFromMaterial(const UMaterialInterface* SourceMaterial)
+{
+	FT66ResolvedImportedTextureSet ExtractedTextures;
+	if (!SourceMaterial)
+	{
+		return ExtractedTextures;
+	}
+
+	static const TCHAR* DiffuseParameterNames[] = {
+		TEXT("DiffuseColorMap"),
+		TEXT("BaseColorTexture"),
+		TEXT("BaseColorMap"),
+		TEXT("DiffuseTexture"),
+		TEXT("Albedo"),
+		TEXT("Texture")
+	};
+	static const TCHAR* NormalParameterNames[] = {
+		TEXT("NormalMap"),
+		TEXT("NormalTexture"),
+		TEXT("Normal")
+	};
+
+	for (const TCHAR* ParameterName : DiffuseParameterNames)
+	{
+		T66TryReadTextureParameter(SourceMaterial, ParameterName, ExtractedTextures.DiffuseTexture);
+	}
+	for (const TCHAR* ParameterName : NormalParameterNames)
+	{
+		T66TryReadTextureParameter(SourceMaterial, ParameterName, ExtractedTextures.NormalTexture);
+	}
+
+	if (ExtractedTextures.DiffuseTexture.IsValid() && ExtractedTextures.NormalTexture.IsValid())
+	{
+		return ExtractedTextures;
+	}
+
+	TArray<FMaterialParameterInfo> ParameterInfos;
+	TArray<FGuid> ParameterIds;
+	SourceMaterial->GetAllTextureParameterInfo(ParameterInfos, ParameterIds);
+
+	int32 BestDiffuseScore = MIN_int32;
+	int32 BestNormalScore = MIN_int32;
+	UTexture* BestDiffuseTexture = nullptr;
+	UTexture* BestNormalTexture = nullptr;
+
+	for (const FMaterialParameterInfo& Info : ParameterInfos)
+	{
+		UTexture* Value = nullptr;
+		if (!SourceMaterial->GetTextureParameterValue(FHashedMaterialParameterInfo(Info), Value) || !T66IsUsableImportedTexture(Value))
+		{
+			continue;
+		}
+
+		const FString ParameterNameLower = Info.Name.ToString().ToLower();
+		const int32 DiffuseScore = T66ScoreTextureAssetForMaterial(ParameterNameLower, FString(), false);
+		if (DiffuseScore > BestDiffuseScore)
+		{
+			BestDiffuseScore = DiffuseScore;
+			BestDiffuseTexture = Value;
+		}
+
+		const int32 NormalScore = T66ScoreTextureAssetForMaterial(ParameterNameLower, FString(), true);
+		if (NormalScore > BestNormalScore)
+		{
+			BestNormalScore = NormalScore;
+			BestNormalTexture = Value;
+		}
+	}
+
+	if (!ExtractedTextures.DiffuseTexture.IsValid() && T66IsUsableImportedTexture(BestDiffuseTexture))
+	{
+		ExtractedTextures.DiffuseTexture = BestDiffuseTexture;
+	}
+	if (!ExtractedTextures.NormalTexture.IsValid() && T66IsUsableImportedTexture(BestNormalTexture))
+	{
+		ExtractedTextures.NormalTexture = BestNormalTexture;
+	}
+
+	return ExtractedTextures;
+}
+
+static FT66ResolvedImportedTextureSet T66ResolveImportedCharacterTextures(const UMaterialInterface* SourceMaterial)
+{
+	static TMap<FString, FT66ResolvedImportedTextureSet> CachedTexturesByMaterialPath;
+
+	FT66ResolvedImportedTextureSet EmptyResult;
+	if (!SourceMaterial)
+	{
+		return EmptyResult;
+	}
+
+	const FString MaterialPath = SourceMaterial->GetPathName();
+	if (const FT66ResolvedImportedTextureSet* Cached = CachedTexturesByMaterialPath.Find(MaterialPath))
+	{
+		return *Cached;
+	}
+
+	FT66ResolvedImportedTextureSet ResolvedTextures = T66ExtractImportedCharacterTexturesFromMaterial(SourceMaterial);
+	const FString PackageName = FPackageName::ObjectPathToPackageName(MaterialPath);
+	const FString PackagePath = FPackageName::GetLongPackagePath(PackageName);
+	if (PackagePath.IsEmpty())
+	{
+		CachedTexturesByMaterialPath.Add(MaterialPath, ResolvedTextures);
+		return ResolvedTextures;
+	}
+
+	FString PreferredDiffuseName;
+	FString PreferredNormalName;
+	T66GetPreferredTextureNamesForMaterial(SourceMaterial->GetName(), PreferredDiffuseName, PreferredNormalName);
+
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+
+	FARFilter Filter;
+	Filter.bRecursiveClasses = true;
+	Filter.bRecursivePaths = false;
+	Filter.PackagePaths.Add(FName(*PackagePath));
+	Filter.ClassPaths.Add(UTexture::StaticClass()->GetClassPathName());
+
+	TArray<FAssetData> TextureAssets;
+	AssetRegistry.GetAssets(Filter, TextureAssets);
+
+	int32 BestDiffuseScore = MIN_int32;
+	int32 BestNormalScore = MIN_int32;
+	FAssetData BestDiffuseAsset;
+	FAssetData BestNormalAsset;
+	const FString PreferredDiffuseLower = PreferredDiffuseName.ToLower();
+	const FString PreferredNormalLower = PreferredNormalName.ToLower();
+
+	for (const FAssetData& Asset : TextureAssets)
+	{
+		const FString AssetNameLower = Asset.AssetName.ToString().ToLower();
+
+		const int32 DiffuseScore = T66ScoreTextureAssetForMaterial(AssetNameLower, PreferredDiffuseLower, false);
+		if (DiffuseScore > BestDiffuseScore)
+		{
+			BestDiffuseScore = DiffuseScore;
+			BestDiffuseAsset = Asset;
+		}
+
+		const int32 NormalScore = T66ScoreTextureAssetForMaterial(AssetNameLower, PreferredNormalLower, true);
+		if (NormalScore > BestNormalScore)
+		{
+			BestNormalScore = NormalScore;
+			BestNormalAsset = Asset;
+		}
+	}
+
+	if (!ResolvedTextures.DiffuseTexture.IsValid() && BestDiffuseScore > 0)
+	{
+		ResolvedTextures.DiffuseTexture = Cast<UTexture>(BestDiffuseAsset.GetAsset());
+	}
+	if (!ResolvedTextures.NormalTexture.IsValid() && BestNormalScore > 0)
+	{
+		ResolvedTextures.NormalTexture = Cast<UTexture>(BestNormalAsset.GetAsset());
+	}
+
+	CachedTexturesByMaterialPath.Add(MaterialPath, ResolvedTextures);
+	return ResolvedTextures;
+}
+
+static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* TargetMesh, FName VisualID)
+{
+	if (!TargetMesh)
+	{
+		return;
+	}
+
+	static TSet<FString> LoggedMaterialRebuilds;
+	static TSet<FString> LoggedMaterialRebuildSkips;
+	UTexture* WhiteTexture = GetWhiteFallbackTexture();
+
+	for (int32 MaterialIndex = 0; MaterialIndex < TargetMesh->GetNumMaterials(); ++MaterialIndex)
+	{
+		UMaterialInterface* SourceMaterial = TargetMesh->GetMaterial(MaterialIndex);
+		if (!T66ShouldRebuildImportedCharacterMaterial(SourceMaterial))
+		{
+			continue;
+		}
+
+		UMaterialInterface* BaseMaterial = SourceMaterial ? SourceMaterial->GetBaseMaterial() : nullptr;
+		if (!BaseMaterial)
+		{
+			continue;
+		}
+
+		const FT66ResolvedImportedTextureSet TextureSet = T66ResolveImportedCharacterTextures(SourceMaterial);
+		UTexture* DiffuseTexture = TextureSet.DiffuseTexture.Get();
+		UTexture* NormalTexture = TextureSet.NormalTexture.Get();
+		if (!DiffuseTexture)
+		{
+			const FString SourceMaterialPath = SourceMaterial->GetPathName();
+			if (!LoggedMaterialRebuildSkips.Contains(SourceMaterialPath))
+			{
+				LoggedMaterialRebuildSkips.Add(SourceMaterialPath);
+				UE_LOG(
+					LogT66CharacterVisuals,
+					Warning,
+					TEXT("[MATERIAL] Skipped imported material rebuild for VisualID=%s Slot=%d Source=%s because no usable diffuse texture was found. Keeping original material."),
+					*VisualID.ToString(),
+					MaterialIndex,
+					*SourceMaterialPath);
+			}
+			continue;
+		}
+		if (!NormalTexture)
+		{
+			NormalTexture = WhiteTexture;
+		}
+
+		UMaterialInstanceDynamic* SafeMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, TargetMesh);
+		if (!SafeMaterial)
+		{
+			continue;
+		}
+
+		SafeMaterial->SetTextureParameterValue(TEXT("DiffuseColorMap"), DiffuseTexture);
+		SafeMaterial->SetTextureParameterValue(TEXT("BaseColorTexture"), DiffuseTexture);
+		SafeMaterial->SetTextureParameterValue(TEXT("NormalMap"), NormalTexture);
+		SafeMaterial->SetTextureParameterValue(TEXT("SpecularColorMap"), WhiteTexture);
+		SafeMaterial->SetTextureParameterValue(TEXT("EmissiveColorMap"), WhiteTexture);
+		SafeMaterial->SetTextureParameterValue(TEXT("ShininessMap"), WhiteTexture);
+		SafeMaterial->SetScalarParameterValue(TEXT("DiffuseColorMapWeight"), 1.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("NormalMapWeight"), TextureSet.NormalTexture.IsValid() ? 1.0f : 0.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("SpecularColorMapWeight"), 0.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("EmissiveColorMapWeight"), 0.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("ShininessMapWeight"), 0.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("AmbientColorMapWeight"), 0.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("Opacity"), 1.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("OpacityMapWeight"), 0.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("OpacityMaskMapWeight"), 0.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
+		SafeMaterial->SetScalarParameterValue(TEXT("Shininess"), 0.5f);
+		SafeMaterial->SetVectorParameterValue(TEXT("AmbientColor"), FLinearColor::White);
+		SafeMaterial->SetVectorParameterValue(TEXT("SpecularColor"), FLinearColor::White);
+		SafeMaterial->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
+		SafeMaterial->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
+		SafeMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor::White);
+		SafeMaterial->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor::Black);
+		TargetMesh->SetMaterial(MaterialIndex, SafeMaterial);
+
+		const FString SourceMaterialPath = SourceMaterial->GetPathName();
+		if (!LoggedMaterialRebuilds.Contains(SourceMaterialPath))
+		{
+			LoggedMaterialRebuilds.Add(SourceMaterialPath);
+			UE_LOG(
+				LogT66CharacterVisuals,
+				Warning,
+				TEXT("[MATERIAL] Rebuilt imported material for VisualID=%s Slot=%d Source=%s Diffuse=%s Normal=%s"),
+				*VisualID.ToString(),
+				MaterialIndex,
+				*SourceMaterialPath,
+				DiffuseTexture ? *DiffuseTexture->GetPathName() : TEXT("(fallback white)"),
+				TextureSet.NormalTexture.IsValid() ? *TextureSet.NormalTexture->GetPathName() : TEXT("(fallback white)"));
+		}
+	}
+}
 
 /** If the given path points to a non-animation (e.g. SkeletalMesh), try the same path with _Anim suffix (e.g. AM_X.AM_X -> AM_X_Anim.AM_X_Anim). */
 static UAnimationAsset* LoadAnimationFallbackWithAnimSuffix(const TSoftObjectPtr<UAnimationAsset>& SoftPath)
@@ -355,6 +765,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		}
 	}
 	TargetMesh->SetRelativeLocation(RelLoc);
+	T66ApplySafeCharacterMaterialOverrides(TargetMesh, VisualID);
 
 	TargetMesh->SetHiddenInGame(false, true);
 	TargetMesh->SetVisibility(true, true);

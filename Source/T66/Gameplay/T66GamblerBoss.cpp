@@ -103,7 +103,7 @@ void AT66GamblerBoss::Die()
 			Difficulty = T66GI->SelectedDifficulty;
 		}
 
-		int32 TokenLevelToDrop = FMath::Clamp(static_cast<int32>(Difficulty) + 1, 1, 6);
+		int32 TokenLevelToDrop = FMath::Clamp(static_cast<int32>(Difficulty) + 1, 1, 5);
 		if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
 			TokenLevelToDrop = FMath::Max(1, Achievements->UpgradeGamblersTokenForDifficulty(Difficulty));

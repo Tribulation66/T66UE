@@ -35,7 +35,7 @@ SKIP_DIRS = [
     "/Game/Materials/",
     "/Game/Lighting/",
     "/Game/UI/",
-    "/Game/World/Ground/",
+    "/Game/World/Terrain/",
 ]
 
 

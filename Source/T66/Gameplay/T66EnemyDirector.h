@@ -60,6 +60,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float SpawnIntervalSeconds = 2.f;
 
+	/** Enemies spawned per staggered batch while a wave is being materialized. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	int32 MaxSpawnsPerStaggeredBatch = 2;
+
+	/** Delay between staggered spawn batches so large waves do not land in one frame. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float StaggeredSpawnIntervalSeconds = 0.05f;
+
 	/** Enemies spawned per tick. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	int32 EnemiesPerWave = 1;

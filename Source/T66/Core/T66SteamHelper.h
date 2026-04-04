@@ -11,6 +11,24 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	bool, bSuccess,
 	const FString&, TicketHex);
 
+USTRUCT(BlueprintType)
+struct T66_API FT66SteamFriendInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
+	FString SteamId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
+	FString DisplayName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
+	FString PresenceText;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
+	bool bOnline = false;
+};
+
 /**
  * Manages Steam identity for the T66 backend.
  *
@@ -50,6 +68,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Steam")
 	TArray<FString> GetFriendSteamIds() const { return FriendSteamIds; }
 
+	UFUNCTION(BlueprintCallable, Category = "Steam")
+	TArray<FT66SteamFriendInfo> GetFriendInfos() const { return FriendInfos; }
+
 	/** Request a new session ticket (call again if the old one expired). */
 	UFUNCTION(BlueprintCallable, Category = "Steam")
 	void RequestNewTicket();
@@ -63,6 +84,7 @@ private:
 	FString LocalDisplayName;
 	FString TicketHex;
 	TArray<FString> FriendSteamIds;
+	TArray<FT66SteamFriendInfo> FriendInfos;
 
 	// Steamworks ticket handle (needed to cancel)
 	uint32 TicketHandle = 0;

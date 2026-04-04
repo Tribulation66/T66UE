@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "GameFramework/PlayerController.h"
 #include "UI/T66UITypes.h"
 #include "T66PlayerController.generated.h"
@@ -105,10 +106,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void RebuildThemeAwareUI();
 
+	void PushLobbyProfileToServer(const FT66LobbyPlayerInfo& LobbyInfo);
+
 	bool IsHeroOneScopedUltActive() const { return bHeroOneScopedUltActive; }
 	bool IsHeroOneScopeViewEnabled() const { return bHeroOneScopeViewEnabled; }
 	float GetHeroOneScopedUltRemainingSeconds() const;
 	float GetHeroOneScopedShotCooldownRemainingSeconds() const;
+	bool HasAttackLockedEnemy() const;
+	bool GetAttackLockScreenPosition(FVector2D& OutScreenPosition) const;
 
 	/** Dev console overlay: Enter to open, Esc to close. Non-shipping builds only. */
 	void ToggleDevConsole();
@@ -162,7 +167,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnPossess(APawn* InPawn) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
 
 	/** Called when in gameplay mode to set up game input */
@@ -221,7 +228,7 @@ protected:
 	/** Restart run (instant) (placeholder, host-only later). */
 	void HandleRestartRunPressed();
 
-	/** Manual attack lock (LMB) / unlock (RMB) */
+	/** Manual attack lock (LMB) / unlock (default: Mouse Button 5). */
 	void HandleAttackLockPressed();
 	void HandleAttackUnlockPressed();
 
@@ -233,6 +240,9 @@ protected:
 
 	UFUNCTION()
 	void HandleQuickReviveStateChanged();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSubmitLobbyProfile(const FT66LobbyPlayerInfo& LobbyInfo);
 
 private:
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
@@ -311,6 +321,8 @@ private:
 	void AutoLoadScreenClasses();
 
 	bool CanUseCombatMouseInput() const;
+	void SetLockedEnemy(AT66EnemyBase* NewLockedEnemy, bool bPropagateToCombatTarget);
+	void SyncLockedEnemyFromCombat();
 
 	/** Enhanced Input: create and register gameplay mouse actions (attack lock, unlock, toggle mouse lock). */
 	void SetupGameplayEnhancedInputMappings();

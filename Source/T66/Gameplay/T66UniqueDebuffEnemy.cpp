@@ -48,7 +48,7 @@ void AT66UniqueDebuffEnemy::BeginPlay()
 			StageNum = RunState->GetCurrentStage();
 		}
 	}
-	StageNum = FMath::Clamp(StageNum, 1, 33);
+	StageNum = FMath::Clamp(StageNum, 1, 23);
 
 	Super::BeginPlay();
 
@@ -119,4 +119,3 @@ void AT66UniqueDebuffEnemy::FireAtPlayer()
 	}
 	Proj->SetActorRotation(Dir.Rotation());
 }
-

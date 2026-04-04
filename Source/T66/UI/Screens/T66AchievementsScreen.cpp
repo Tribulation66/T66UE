@@ -179,7 +179,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
-					.Padding(30.f, 25.f, 30.f, 20.f)
+					.Padding(24.f, 18.f, 24.f, 14.f)
 					[
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
@@ -192,19 +192,19 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 							[
 								SNew(STextBlock)
 								.Text(AchievementsText)
-								.Font(FT66Style::Tokens::FontBold(50))
+								.Font(FT66Style::Tokens::FontBold(40))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 18.f, 0.f, 0.f)
+						.Padding(0.f, 14.f, 0.f, 0.f)
 						[
 							FT66Style::MakePanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot()
 								.AutoHeight()
-								.Padding(14.f, 0.f, 14.f, 10.f)
+								.Padding(12.f, 0.f, 12.f, 8.f)
 								[
 									SNew(SHorizontalBox)
 									+ SHorizontalBox::Slot()
@@ -218,7 +218,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 												FText::AsNumber(GetUnlockedAchievementCount()),
 												FText::AsNumber(AllAchievements.Num()));
 										})
-										.Font(FT66Style::Tokens::FontBold(22))
+										.Font(FT66Style::Tokens::FontBold(18))
 										.ColorAndOpacity(FT66Style::Tokens::Text)
 									]
 									+ SHorizontalBox::Slot()
@@ -233,7 +233,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 												: 0.f;
 											return FText::AsPercent(Progress);
 										})
-										.Font(FT66Style::Tokens::FontBold(20))
+										.Font(FT66Style::Tokens::FontBold(17))
 										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 									]
 								]
@@ -251,12 +251,12 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 								],
 								FT66PanelParams(ET66PanelType::Panel)
 									.SetColor(InsetFill)
-									.SetPadding(FMargin(14.f, 14.f)))
+									.SetPadding(FMargin(12.f, 12.f)))
 						]
 					]
 					+ SVerticalBox::Slot()
 					.FillHeight(1.f)
-					.Padding(30.f, 0.f, 30.f, 20.f)
+					.Padding(24.f, 0.f, 24.f, 16.f)
 					[
 						SNew(SScrollBox)
 						+ SScrollBox::Slot()
@@ -268,7 +268,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Bottom)
-				.Padding(20.f, 0.f, 0.f, 20.f)
+				.Padding(18.f, 0.f, 0.f, 18.f)
 				[
 					SNew(SBox)
 					.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
@@ -278,8 +278,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 								BackText,
 								FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked),
 								ET66ButtonType::Neutral)
-							.SetMinWidth(120.f)
-							.SetFontSize(20))
+							.SetMinWidth(108.f)
+							.SetFontSize(18))
 					]
 				],
 				FT66PanelParams(ET66PanelType::Panel).SetColor(ShellFill))
@@ -321,11 +321,11 @@ void UT66AchievementsScreen::RebuildAchievementList()
 
 		AchievementListBox->AddSlot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 6.f)
+		.Padding(0.f, 0.f, 0.f, 5.f)
 		[
 			SNew(SBorder)
 			.BorderBackgroundColor(RowBackground)
-			.Padding(FMargin(20.f, 14.f))
+			.Padding(FMargin(16.f, 12.f))
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
@@ -338,16 +338,16 @@ void UT66AchievementsScreen::RebuildAchievementList()
 					[
 						SNew(STextBlock)
 						.Text(Achievement.DisplayName)
-						.Font(FT66Style::Tokens::FontBold(22))
+						.Font(FT66Style::Tokens::FontBold(19))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
-					.Padding(0.f, 4.f, 0.f, 0.f)
+					.Padding(0.f, 3.f, 0.f, 0.f)
 					[
 						SNew(STextBlock)
 						.Text(Achievement.Description)
-						.Font(FT66Style::Tokens::FontRegular(19))
+						.Font(FT66Style::Tokens::FontRegular(16))
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
 					]
@@ -359,7 +359,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(ProgressString))
-					.Font(FT66Style::Tokens::FontBold(22))
+					.Font(FT66Style::Tokens::FontBold(19))
 					.ColorAndOpacity(ProgressColor)
 				]
 				+ SHorizontalBox::Slot()
@@ -385,13 +385,13 @@ void UT66AchievementsScreen::RebuildAchievementList()
 							}
 							return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Achievement.RewardCoins));
 						})
-						.Font(FT66Style::Tokens::FontBold(22))
+						.Font(FT66Style::Tokens::FontBold(19))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					.HAlign(HAlign_Right)
-					.Padding(0.f, 6.f, 0.f, 0.f)
+					.Padding(0.f, 4.f, 0.f, 0.f)
 					[
 						FT66Style::MakeButton(
 							FT66ButtonParams(
@@ -399,7 +399,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 								FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, Achievement.AchievementID),
 								ET66ButtonType::Primary)
 							.SetMinWidth(0.f)
-							.SetFontSize(20)
+							.SetFontSize(18)
 							.SetEnabled(bCanClaim)
 							.SetVisibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed))
 					]

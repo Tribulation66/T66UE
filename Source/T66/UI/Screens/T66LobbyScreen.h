@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Delegates/Delegate.h"
 #include "UI/T66ScreenBase.h"
 #include "Data/T66DataTypes.h"
 #include "T66LobbyScreen.generated.h"
@@ -55,6 +56,9 @@ private:
 	FReply HandleBackClicked();
 
 	void StartRunFromLobby();
+	void HandlePartyStateChanged();
+	void HandleSessionStateChanged();
+	bool IsLocalPlayerHost() const;
 
 	/** Number of slots (3 for co-op). */
 	int32 GetPartySlotCount() const;
@@ -70,6 +74,8 @@ private:
 	/** Difficulty dropdown (same list as Hero Selection). */
 	TArray<TSharedPtr<FString>> LobbyDifficultyOptions;
 	TSharedPtr<FString> LobbyCurrentDifficultyOption;
+	FDelegateHandle PartyStateChangedHandle;
+	FDelegateHandle SessionStateChangedHandle;
 
 	void OnLobbyDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);
 };

@@ -14,16 +14,6 @@ DEST_ROOT = "/Game/World/Terrain/MegabonkThemes"
 
 THEME_IMPORTS = [
     {
-        "source_dir": "medium_ocean",
-        "dest_dir": f"{DEST_ROOT}/MediumOcean",
-        "suffix": "MediumOcean",
-    },
-    {
-        "source_dir": "hard_mountain",
-        "dest_dir": f"{DEST_ROOT}/HardMountain",
-        "suffix": "HardMountain",
-    },
-    {
         "source_dir": "veryhard_graveyard",
         "dest_dir": f"{DEST_ROOT}/VeryHardGraveyard",
         "suffix": "VeryHardGraveyard",

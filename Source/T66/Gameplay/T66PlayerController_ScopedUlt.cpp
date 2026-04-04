@@ -131,12 +131,7 @@ void AT66PlayerController::ActivateHeroOneScopedUlt(AT66HeroBase* Hero, UT66Comb
 
 	Combat->SetAutoAttackSuppressed(true);
 	Combat->ClearLockedTarget();
-
-	if (LockedEnemy.IsValid())
-	{
-		LockedEnemy->SetLockedIndicator(false);
-		LockedEnemy.Reset();
-	}
+	SetLockedEnemy(nullptr, false);
 
 	RestoreGameplayInputMode();
 	World->GetTimerManager().SetTimer(HeroOneScopedUltTimerHandle, this, &AT66PlayerController::EndHeroOneScopedUlt, HeroOneScopedUltDurationSeconds, false);

@@ -46,32 +46,84 @@ static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Desc
 }
 
 /** Per-category stat indices (ET66SecondaryStatType enum values). Crit Damage under Damage, Crit Chance under Attack Speed. */
+enum class EDerivedStatLine : uint8
+{
+	None,
+	ArmorReduction,
+	EvasionChance,
+};
+
 struct FSecondaryStatCategory
 {
 	FText Header;
 	const int32* Indices;
 	int32 Num;
+	EDerivedStatLine DerivedLine = EDerivedStatLine::None;
 };
 
-static const int32 CatDamage[]         = { 1, 2, 3, 4, 13 };  // AOE, Bounce, Pierce, Dot, Crit Damage
-static const int32 CatAttackSpeed[]    = { 5, 6, 7, 8, 14 };  // AOE, Bounce, Pierce, Dot Speed, Crit Chance
-static const int32 CatAttackScale[]    = { 9, 10, 11, 12 };
-static const int32 CatRange[]         = { 15, 16, 17 };      // Close Range, Long Range, Attack Range
-static const int32 CatArmor[]         = { 18, 19, 20, 21 };
-static const int32 CatEvasion[]       = { 22, 23, 24, 25 };
-static const int32 CatLuck[]          = { 26, 29, 30, 31, 32, 34 };
-static const int32 CatMovement[]      = { 33 };
+static const int32 CatDamage[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::AoeDamage),
+	static_cast<int32>(ET66SecondaryStatType::BounceDamage),
+	static_cast<int32>(ET66SecondaryStatType::PierceDamage),
+	static_cast<int32>(ET66SecondaryStatType::DotDamage),
+	static_cast<int32>(ET66SecondaryStatType::CritDamage),
+	static_cast<int32>(ET66SecondaryStatType::CloseRangeDamage),
+	static_cast<int32>(ET66SecondaryStatType::LongRangeDamage),
+};
+static const int32 CatAttackSpeed[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::AoeSpeed),
+	static_cast<int32>(ET66SecondaryStatType::BounceSpeed),
+	static_cast<int32>(ET66SecondaryStatType::PierceSpeed),
+	static_cast<int32>(ET66SecondaryStatType::DotSpeed),
+	static_cast<int32>(ET66SecondaryStatType::CritChance),
+};
+static const int32 CatAttackScale[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::AoeScale),
+	static_cast<int32>(ET66SecondaryStatType::BounceScale),
+	static_cast<int32>(ET66SecondaryStatType::PierceScale),
+	static_cast<int32>(ET66SecondaryStatType::DotScale),
+	static_cast<int32>(ET66SecondaryStatType::AttackRange),
+};
+static const int32 CatArmor[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::Taunt),
+	static_cast<int32>(ET66SecondaryStatType::ReflectDamage),
+	static_cast<int32>(ET66SecondaryStatType::HpRegen),
+	static_cast<int32>(ET66SecondaryStatType::Crush),
+	static_cast<int32>(ET66SecondaryStatType::DamageReduction),
+};
+static const int32 CatEvasion[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::Invisibility),
+	static_cast<int32>(ET66SecondaryStatType::CounterAttack),
+	static_cast<int32>(ET66SecondaryStatType::LifeSteal),
+	static_cast<int32>(ET66SecondaryStatType::Assassinate),
+	static_cast<int32>(ET66SecondaryStatType::EvasionChance),
+};
+static const int32 CatLuck[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::SpinWheel),
+	static_cast<int32>(ET66SecondaryStatType::TreasureChest),
+	static_cast<int32>(ET66SecondaryStatType::Cheating),
+	static_cast<int32>(ET66SecondaryStatType::LootCrate),
+};
+static const int32 CatMovement[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::MovementSpeed),
+};
 
 static const FSecondaryStatCategory SecondaryStatCategories[] =
 {
-	{ NSLOCTEXT("T66.StatsPanel", "CatDamage",      "Damage"),         CatDamage,      UE_ARRAY_COUNT(CatDamage) },
-	{ NSLOCTEXT("T66.StatsPanel", "CatAttackSpeed", "Attack Speed"),   CatAttackSpeed, UE_ARRAY_COUNT(CatAttackSpeed) },
-	{ NSLOCTEXT("T66.StatsPanel", "CatAttackScale", "Attack Scale"),   CatAttackScale, UE_ARRAY_COUNT(CatAttackScale) },
-	{ NSLOCTEXT("T66.StatsPanel", "CatRange",       "Range"),          CatRange,       UE_ARRAY_COUNT(CatRange) },
-	{ NSLOCTEXT("T66.StatsPanel", "CatArmor",       "Armor"),          CatArmor,       UE_ARRAY_COUNT(CatArmor) },
-	{ NSLOCTEXT("T66.StatsPanel", "CatEvasion",     "Evasion"),        CatEvasion,     UE_ARRAY_COUNT(CatEvasion) },
-	{ NSLOCTEXT("T66.StatsPanel", "CatLuck",        "Luck"),           CatLuck,        UE_ARRAY_COUNT(CatLuck) },
-	{ NSLOCTEXT("T66.StatsPanel", "CatMovement",    "Movement"),      CatMovement,    UE_ARRAY_COUNT(CatMovement) },
+	{ NSLOCTEXT("T66.StatsPanel", "CatDamage",      "Damage"),         CatDamage,      UE_ARRAY_COUNT(CatDamage), EDerivedStatLine::None },
+	{ NSLOCTEXT("T66.StatsPanel", "CatAttackSpeed", "Attack Speed"),   CatAttackSpeed, UE_ARRAY_COUNT(CatAttackSpeed), EDerivedStatLine::None },
+	{ NSLOCTEXT("T66.StatsPanel", "CatAttackScale", "Attack Scale"),   CatAttackScale, UE_ARRAY_COUNT(CatAttackScale), EDerivedStatLine::None },
+	{ NSLOCTEXT("T66.StatsPanel", "CatArmor",       "Armor"),          CatArmor,       UE_ARRAY_COUNT(CatArmor), EDerivedStatLine::ArmorReduction },
+	{ NSLOCTEXT("T66.StatsPanel", "CatEvasion",     "Evasion"),        CatEvasion,     UE_ARRAY_COUNT(CatEvasion), EDerivedStatLine::EvasionChance },
+	{ NSLOCTEXT("T66.StatsPanel", "CatLuck",        "Luck"),           CatLuck,        UE_ARRAY_COUNT(CatLuck), EDerivedStatLine::None },
+	{ NSLOCTEXT("T66.StatsPanel", "CatMovement",    "Movement"),       CatMovement,    UE_ARRAY_COUNT(CatMovement), EDerivedStatLine::None },
 };
 static constexpr int32 NumSecondaryStatCategories = UE_ARRAY_COUNT(SecondaryStatCategories);
 
@@ -103,12 +155,105 @@ static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
 		|| SecType == ET66SecondaryStatType::LifeSteal
 		|| SecType == ET66SecondaryStatType::Assassinate
 		|| SecType == ET66SecondaryStatType::Cheating
-		|| SecType == ET66SecondaryStatType::Stealing;
+		|| SecType == ET66SecondaryStatType::Stealing
+		|| SecType == ET66SecondaryStatType::DamageReduction
+		|| SecType == ET66SecondaryStatType::EvasionChance;
 }
 
 static FText FormatBonusPercent(float BonusRatio)
 {
 	return FText::FromString(FString::Printf(TEXT("+%d%%"), FMath::RoundToInt(FMath::Max(0.f, BonusRatio) * 100.f)));
+}
+
+static FText FormatPercent01(float Value01)
+{
+	return FText::FromString(FString::Printf(TEXT("%d%%"), FMath::RoundToInt(FMath::Max(0.f, Value01) * 100.f)));
+}
+
+static float GetArmorReductionFromStatValue(int32 ArmorStat)
+{
+	const float Base = static_cast<float>(FMath::Max(1, ArmorStat) - 1) * 0.008f;
+	return FMath::Clamp(Base, 0.f, 0.80f);
+}
+
+static float GetEvasionChanceFromStatValue(int32 EvasionStat)
+{
+	const float Base = static_cast<float>(FMath::Max(1, EvasionStat) - 1) * 0.006f;
+	return FMath::Clamp(Base, 0.f, 0.60f);
+}
+
+static FText GetDerivedStatLabel(EDerivedStatLine DerivedLine)
+{
+	switch (DerivedLine)
+	{
+	case EDerivedStatLine::ArmorReduction:
+		return NSLOCTEXT("T66.StatsPanel", "ArmorReduction", "Total Damage Reduction");
+	case EDerivedStatLine::EvasionChance:
+		return NSLOCTEXT("T66.StatsPanel", "EvasionChance", "Total Evasion Chance");
+	case EDerivedStatLine::None:
+	default:
+		return FText::GetEmpty();
+	}
+}
+
+static FText GetDerivedStatDescription(EDerivedStatLine DerivedLine)
+{
+	switch (DerivedLine)
+	{
+	case EDerivedStatLine::ArmorReduction:
+		return NSLOCTEXT("T66.StatsPanel", "ArmorReductionDesc", "Total incoming damage reduction from your Armor stat and Damage Reduction items.");
+	case EDerivedStatLine::EvasionChance:
+		return NSLOCTEXT("T66.StatsPanel", "EvasionChanceDesc", "Total chance to fully dodge an incoming hit from your Evasion stat and Evasion Chance items.");
+	case EDerivedStatLine::None:
+	default:
+		return FText::GetEmpty();
+	}
+}
+
+static float GetDerivedStatValue(const UT66RunStateSubsystem* RunState, EDerivedStatLine DerivedLine)
+{
+	if (!RunState)
+	{
+		return 0.f;
+	}
+
+	switch (DerivedLine)
+	{
+	case EDerivedStatLine::ArmorReduction:
+		return RunState->GetArmorReduction01();
+	case EDerivedStatLine::EvasionChance:
+		return RunState->GetEvasionChance01();
+	case EDerivedStatLine::None:
+	default:
+		return 0.f;
+	}
+}
+
+static float GetDerivedStatValueFromSnapshot(const UT66LeaderboardRunSummarySaveGame* Snapshot, EDerivedStatLine DerivedLine)
+{
+	if (!Snapshot)
+	{
+		return 0.f;
+	}
+
+	switch (DerivedLine)
+	{
+	case EDerivedStatLine::ArmorReduction:
+		if (const float* Bonus = Snapshot->SecondaryStatValues.Find(ET66SecondaryStatType::DamageReduction))
+		{
+			return FMath::Clamp(GetArmorReductionFromStatValue(Snapshot->ArmorStat) + *Bonus, 0.f, 0.80f);
+		}
+		return GetArmorReductionFromStatValue(Snapshot->ArmorStat);
+	case EDerivedStatLine::EvasionChance:
+		if (const float* Bonus = Snapshot->SecondaryStatValues.Find(ET66SecondaryStatType::EvasionChance))
+		{
+			return FMath::Clamp(GetEvasionChanceFromStatValue(Snapshot->EvasionStat) + *Bonus, 0.f, 0.60f);
+		}
+		return GetEvasionChanceFromStatValue(Snapshot->EvasionStat);
+	case EDerivedStatLine::None:
+	default:
+		return 0.f;
+	}
 }
 
 static FText FormatSecondaryValue(const UT66RunStateSubsystem* RunState, ET66SecondaryStatType SecType, float Value)
@@ -135,6 +280,8 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Reset()
 	PrimaryLines.Empty();
 	PrimaryLines.SetNum(8);
 	SecondaryLines.Reset();
+	ArmorReductionLine.Reset();
+	EvasionChanceLine.Reset();
 }
 
 void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc) const
@@ -168,6 +315,14 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 				Pair.Value->SetText(FText::GetEmpty());
 			}
 		}
+		if (ArmorReductionLine.IsValid())
+		{
+			ArmorReductionLine->SetText(FText::GetEmpty());
+		}
+		if (EvasionChanceLine.IsValid())
+		{
+			EvasionChanceLine->SetText(FText::GetEmpty());
+		}
 		return;
 	}
 
@@ -179,6 +334,22 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 	SetPrimaryLine(5, RunState->GetEvasionStat());
 	SetPrimaryLine(6, RunState->GetLuckStat());
 	SetPrimaryLine(7, RunState->GetSpeedStat());
+
+	if (ArmorReductionLine.IsValid())
+	{
+		ArmorReductionLine->SetText(FText::Format(
+			StatFmt,
+			GetDerivedStatLabel(EDerivedStatLine::ArmorReduction),
+			FormatPercent01(GetDerivedStatValue(RunState, EDerivedStatLine::ArmorReduction))));
+	}
+
+	if (EvasionChanceLine.IsValid())
+	{
+		EvasionChanceLine->SetText(FText::Format(
+			StatFmt,
+			GetDerivedStatLabel(EDerivedStatLine::EvasionChance),
+			FormatPercent01(GetDerivedStatValue(RunState, EDerivedStatLine::EvasionChance))));
+	}
 
 	for (const TPair<ET66SecondaryStatType, TSharedPtr<STextBlock>>& Pair : SecondaryLines)
 	{
@@ -299,6 +470,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				const FSecondaryStatCategory& Cat = SecondaryStatCategories[c];
 				AddHorizontalLine();
 				AddCategoryHeader(Cat.Header);
+				if (Cat.DerivedLine != EDerivedStatLine::None)
+				{
+					const FText DerivedLabel = GetDerivedStatLabel(Cat.DerivedLine);
+					const FText DerivedDesc = GetDerivedStatDescription(Cat.DerivedLine);
+					AddStatLineFloat(DerivedLabel, GetDerivedStatValue(RunState, Cat.DerivedLine), true, DerivedLabel, DerivedDesc);
+				}
 				for (int32 k = 0; k < Cat.Num; ++k)
 				{
 					const int32 i = Cat.Indices[k];
@@ -421,6 +598,36 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 			const FSecondaryStatCategory& Cat = SecondaryStatCategories[c];
 			AddHorizontalLine();
 			AddCategoryHeader(Cat.Header);
+
+			if (Cat.DerivedLine != EDerivedStatLine::None)
+			{
+				const FText DerivedLabel = GetDerivedStatLabel(Cat.DerivedLine);
+				const FText Description = GetDerivedStatDescription(Cat.DerivedLine);
+				TSharedPtr<STextBlock> DerivedLineText;
+
+				StatsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(0.f)
+					.ToolTip(MakeT66Tooltip(DerivedLabel, Description))
+					[
+						SAssignNew(DerivedLineText, STextBlock)
+						.Text(FText::GetEmpty())
+						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+				];
+
+				if (Cat.DerivedLine == EDerivedStatLine::ArmorReduction)
+				{
+					LivePanel->ArmorReductionLine = DerivedLineText;
+				}
+				else if (Cat.DerivedLine == EDerivedStatLine::EvasionChance)
+				{
+					LivePanel->EvasionChanceLine = DerivedLineText;
+				}
+			}
 
 			for (int32 k = 0; k < Cat.Num; ++k)
 			{
@@ -588,6 +795,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 				const FSecondaryStatCategory& Cat = SecondaryStatCategories[c];
 				AddHorizontalLine();
 				AddCategoryHeader(Cat.Header);
+				if (Cat.DerivedLine != EDerivedStatLine::None)
+				{
+					const FText DerivedLabel = GetDerivedStatLabel(Cat.DerivedLine);
+					const FText DerivedDesc = GetDerivedStatDescription(Cat.DerivedLine);
+					AddStatLineFloat(DerivedLabel, GetDerivedStatValueFromSnapshot(Snapshot, Cat.DerivedLine), true, DerivedLabel, DerivedDesc);
+				}
 				for (int32 k = 0; k < Cat.Num; ++k)
 				{
 					const int32 i = Cat.Indices[k];

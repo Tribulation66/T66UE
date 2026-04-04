@@ -3,10 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Containers/Ticker.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Engine/World.h"
 #include "HAL/PlatformTime.h"
 #include "T66LagTrackerSubsystem.generated.h"
+
+class FSubsystemCollectionBase;
 
 /**
  * Tracks slow operations and logs them under [LAG] with the cause.
@@ -20,15 +23,65 @@ class T66_API UT66LagTrackerSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+
+	/** Record an operation for session summaries and hitch correlation. */
+	void RecordOperation(const FString& Cause, float DurationMs);
+
 	/** Report a slow operation. Logs [LAG] Cause: X.XXms when duration exceeds threshold. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Lag")
 	void ReportSlowOperation(const FString& Cause, float DurationMs);
+
+	/** Reset the in-memory session capture. */
+	void ResetSession();
+
+	/** Dump the current session summary to the log. */
+	void DumpSummary(bool bResetAfterDump = false);
 
 	/** Whether lag tracking is enabled (respects CVar). */
 	bool IsEnabled() const;
 
 	/** Threshold in ms above which an operation is logged. */
 	float GetThresholdMs() const;
+
+	/** Threshold in ms above which operations are recorded into the session summary. */
+	float GetRecordThresholdMs() const;
+
+	/** Threshold in ms above which frame hitches are logged. */
+	float GetFrameHitchThresholdMs() const;
+
+	/** Window in ms used to correlate recent operations with a frame hitch. */
+	float GetRecentWindowMs() const;
+
+private:
+	struct FLagCauseStats
+	{
+		int32 Count = 0;
+		double TotalMs = 0.0;
+		float MaxMs = 0.f;
+		double LastSeenSeconds = 0.0;
+	};
+
+	struct FRecentLagOperation
+	{
+		FString Cause;
+		float DurationMs = 0.f;
+		double TimestampSeconds = 0.0;
+	};
+
+	bool TickFrame(float DeltaSeconds);
+	void PruneRecentOperations(double NowSeconds);
+	void LogFrameHitch(double FrameMs, double NowSeconds);
+
+	TMap<FString, FLagCauseStats> CauseStats;
+	TArray<FRecentLagOperation> RecentOperations;
+	FTSTicker::FDelegateHandle FrameTickerHandle;
+	double SessionStartSeconds = 0.0;
+	double LastFrameTimestampSeconds = 0.0;
+	int32 TotalRecordedOperations = 0;
+	int32 TotalLoggedSlowOperations = 0;
+	int32 HitchCount = 0;
 };
 
 /**
@@ -55,6 +108,8 @@ struct FLagScopedScope
 		if (!Lag || !Lag->IsEnabled()) return;
 
 		const float DurationMs = static_cast<float>((FPlatformTime::Seconds() - StartSeconds) * 1000.0);
+		Lag->RecordOperation(CauseStr, DurationMs);
+
 		const float Thresh = (ThresholdMs > 0.f) ? ThresholdMs : Lag->GetThresholdMs();
 		if (DurationMs >= Thresh)
 		{

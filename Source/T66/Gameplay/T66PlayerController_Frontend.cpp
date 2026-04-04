@@ -736,9 +736,19 @@ void AT66PlayerController::InitializeUI()
 	bUIInitialized = true;
 
 	// Show the initial screen
-	if (InitialScreen != ET66ScreenType::None)
+	ET66ScreenType ScreenToShow = InitialScreen;
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
-		UIManager->ShowScreen(InitialScreen);
+		if (GI->PendingFrontendScreen != ET66ScreenType::None)
+		{
+			ScreenToShow = GI->PendingFrontendScreen;
+			GI->PendingFrontendScreen = ET66ScreenType::None;
+		}
+	}
+
+	if (ScreenToShow != ET66ScreenType::None)
+	{
+		UIManager->ShowScreen(ScreenToShow);
 	}
 }
 

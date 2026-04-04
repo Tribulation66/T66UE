@@ -22,11 +22,9 @@ class SBorder;
 
 /**
  * Hero Selection Screen - Bible 1.10 Layout
- * Top: Hero belt carousel with HERO GRID button
- * Center: 3D preview area with CHOOSE COMPANION button
- * Left: Skins panel
- * Right: Hero info panel (name button → Lore, Demo button → Lab, video, description)
- * Bottom: Difficulty selector, ENTER THE TRIBULATION button
+ * Top: Back button plus hero belt carousel with HERO GRID button
+ * Middle: Skins panel, 3D preview area, and hero info panel aligned to preview height
+ * Bottom: Full-width control bar with party box, companion controls, and run controls
  */
 UCLASS(Blueprintable)
 class T66_API UT66HeroSelectionScreen : public UT66ScreenBase
@@ -87,9 +85,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void OnBackClicked();
 
-	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
-	void OnSettingsClicked();
-
 	UFUNCTION(BlueprintImplementableEvent, Category = "Hero Selection")
 	void OnPreviewedHeroChanged(const FHeroData& NewHeroData);
 
@@ -130,6 +125,8 @@ private:
 	TObjectPtr<UFileMediaSource> KnightPreviewMediaSource;
 	/** Brush bound to HeroPreviewMediaTexture for Slate SImage; kept alive so Slate does not hold raw UObject. */
 	TSharedPtr<FSlateBrush> HeroPreviewVideoBrush;
+	/** Brush for the bottom party leader portrait; must outlive BuildSlateUI because Slate stores a raw brush pointer. */
+	TSharedPtr<FSlateBrush> PartyHeroPortraitBrush;
 	TSharedPtr<FStreamableHandle> KnightPreviewMediaSourceHandle;
 	TSoftObjectPtr<UFileMediaSource> KnightPreviewMediaSourceAsset;
 
@@ -192,7 +189,6 @@ private:
 	FReply HandleTheLabClicked();
 	FReply HandleEnterClicked();
 	FReply HandleBackClicked();
-	FReply HandleSettingsClicked();
 	FReply HandleBackToLobbyClicked();
 
 	// Difficulty dropdown

@@ -11,7 +11,6 @@
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
-#include "GameFramework/GameUserSettings.h"
 #include "HAL/FileManager.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
@@ -24,6 +23,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendTopBar, Log, All);
 #include "Styling/CoreStyle.h"
 #include "TextureResource.h"
 #include "UObject/StrongObjectPtr.h"
+#include "UObject/GarbageCollection.h"
 #include "Widgets/SLeafWidget.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -37,17 +37,17 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendTopBar, Log, All);
 namespace
 {
 	constexpr float GTopBarReservedHeight = 146.f;
-	constexpr float GTopBarButtonWidth = 92.f;
+	constexpr float GTopBarButtonWidth = 84.f;
 	constexpr float GTopBarButtonHeight = 78.f;
 	constexpr float GTopBarSurfaceHeight = 118.f;
 	constexpr float GTopBarPlateVisibleHeightRatio = 98.f / 108.f;
-	constexpr float GTopBarInactiveNavHeight = 72.f;
-	constexpr float GTopBarActiveNavHeight = 80.f;
-	constexpr float GTopBarInactiveNavMinWidth = 176.f;
-	constexpr float GTopBarActiveNavMinWidth = 188.f;
-	constexpr float GTopBarIconOnlyNavWidth = 80.f;
-	constexpr float GTopBarNavSeparatorHorizontalPadding = 10.f;
-	constexpr float GTopBarRightClusterGap = 12.f;
+	constexpr float GTopBarInactiveNavHeight = 70.f;
+	constexpr float GTopBarActiveNavHeight = 76.f;
+	constexpr float GTopBarInactiveNavMinWidth = 156.f;
+	constexpr float GTopBarActiveNavMinWidth = 168.f;
+	constexpr float GTopBarIconOnlyNavWidth = 72.f;
+	constexpr float GTopBarNavSeparatorHorizontalPadding = 8.f;
+	constexpr float GTopBarRightClusterGap = 10.f;
 	constexpr int32 GTopBarViewportZOrder = 50;
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GTopBarFileTextureCache;
 
@@ -518,38 +518,7 @@ namespace
 
 	FVector2D GetEffectiveFrontendViewportSize()
 	{
-		FVector2D EffectiveSize = FT66Style::GetViewportSize();
-
-		if (GEngine)
-		{
-			if (UGameUserSettings* GameUserSettings = GEngine->GetGameUserSettings())
-			{
-				const FIntPoint ScreenResolution = GameUserSettings->GetScreenResolution();
-				if (ScreenResolution.X > 0 && ScreenResolution.Y > 0
-					&& GameUserSettings->GetFullscreenMode() != EWindowMode::Windowed)
-				{
-					EffectiveSize.X = FMath::Max(EffectiveSize.X, static_cast<float>(ScreenResolution.X));
-					EffectiveSize.Y = FMath::Max(EffectiveSize.Y, static_cast<float>(ScreenResolution.Y));
-				}
-			}
-		}
-
-		return EffectiveSize;
-	}
-
-	float GetTopBarLayoutScale()
-	{
-		const FVector2D ReferenceViewportSize(1920.f, 1080.f);
-		const FVector2D EffectiveViewportSize = GetEffectiveFrontendViewportSize();
-		const float WidthScale = EffectiveViewportSize.X / FMath::Max(ReferenceViewportSize.X, 1.f);
-		const float HeightScale = EffectiveViewportSize.Y / FMath::Max(ReferenceViewportSize.Y, 1.f);
-		const float Scale = FMath::Clamp(FMath::Sqrt(WidthScale * HeightScale), 0.70f, 3.0f);
-		if (EffectiveViewportSize.X >= 1600.f && EffectiveViewportSize.Y >= 900.f && Scale <= 1.f)
-		{
-			return 1.f;
-		}
-
-		return Scale;
+		return FT66Style::GetViewportSize();
 	}
 
 	UTexture2D* LoadTopBarFileTexture(const FString& FilePath, TextureFilter Filter = TextureFilter::TF_Trilinear)
@@ -676,17 +645,18 @@ UT66FrontendTopBarWidget::UT66FrontendTopBarWidget(const FObjectInitializer& Obj
 
 float UT66FrontendTopBarWidget::GetReservedHeight()
 {
-	return GTopBarReservedHeight * GetTopBarLayoutScale();
+	return GTopBarReservedHeight;
 }
 
 float UT66FrontendTopBarWidget::GetVisibleContentHeight()
 {
-	return (GTopBarSurfaceHeight * GTopBarPlateVisibleHeightRatio) * GetTopBarLayoutScale();
+	return GTopBarSurfaceHeight * GTopBarPlateVisibleHeightRatio;
 }
 
 TSharedRef<SWidget> UT66FrontendTopBarWidget::RebuildWidget()
 {
-	// The top bar computes its own resolution-aware scale and reserved height.
+	// The top bar already sizes itself against the live safe-frame width.
+	// Applying the shared responsive root here compresses it twice.
 	return BuildSlateUI();
 }
 
@@ -754,30 +724,12 @@ FText UT66FrontendTopBarWidget::GetPowerCouponsValueText() const
 
 void UT66FrontendTopBarWidget::RequestTopBarAssets()
 {
-#if WITH_EDITOR
-	TopBarPlateBrush.Reset();
-	InactiveTabBrush.Reset();
-	ActiveTabBrush.Reset();
-	HomeInactiveTabBrush.Reset();
-	HomeActiveTabBrush.Reset();
-	NavSeparatorBrush.Reset();
-	SettingsSlotBrush.Reset();
-	UtilitySlotBrush.Reset();
-	QuitSlotBrush.Reset();
-	SettingsIconBrush.Reset();
-	LanguageIconBrush.Reset();
-	AchievementCoinsIconBrush.Reset();
-	PowerCouponsIconBrush.Reset();
-	QuitIconBrush.Reset();
-	QuitGlowBrush.Reset();
-	GTopBarFileTextureCache.Empty();
-#endif
-
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_plate.png"), TopBarPlateBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_nav_tab.png"), InactiveTabBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_active_tab.png"), ActiveTabBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_tab.png"), HomeInactiveTabBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_active_tab.png"), HomeActiveTabBrush);
+	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_home_icon.frontend_topbar_home_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_icon.png"), HomeIconBrush, FVector2D(72.f, 72.f), TextureFilter::TF_Trilinear);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_separator.png"), NavSeparatorBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_settings_slot.png"), SettingsSlotBrush, FVector2D(78.f, 78.f));
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_utility_slot.png"), UtilitySlotBrush, FVector2D(78.f, 78.f));
@@ -820,9 +772,47 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	}
 }
 
+void UT66FrontendTopBarWidget::ReleaseTopBarBrushes()
+{
+	auto ReleaseBrush = [](TSharedPtr<FSlateBrush>& Brush)
+	{
+		if (Brush.IsValid())
+		{
+			Brush->SetResourceObject(nullptr);
+			Brush.Reset();
+		}
+	};
+
+	ReleaseBrush(TopBarPlateBrush);
+	ReleaseBrush(InactiveTabBrush);
+	ReleaseBrush(ActiveTabBrush);
+	ReleaseBrush(HomeInactiveTabBrush);
+	ReleaseBrush(HomeActiveTabBrush);
+	ReleaseBrush(HomeIconBrush);
+	ReleaseBrush(NavSeparatorBrush);
+	ReleaseBrush(SettingsSlotBrush);
+	ReleaseBrush(UtilitySlotBrush);
+	ReleaseBrush(QuitSlotBrush);
+	ReleaseBrush(SettingsIconBrush);
+	ReleaseBrush(LanguageIconBrush);
+	ReleaseBrush(AchievementCoinsIconBrush);
+	ReleaseBrush(PowerCouponsIconBrush);
+	ReleaseBrush(QuitIconBrush);
+	ReleaseBrush(QuitGlowBrush);
+}
+
 void UT66FrontendTopBarWidget::RefreshScreen_Implementation()
 {
 	Super::RefreshScreen_Implementation();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (World->bIsTearingDown || GExitPurge || IsGarbageCollecting())
+		{
+			return;
+		}
+	}
+
 	FT66Style::DeferRebuild(this, GTopBarViewportZOrder);
 }
 
@@ -845,42 +835,59 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
 	const FText AccountStatusText = NSLOCTEXT("T66.AccountStatus", "TopBarTitle", "ACCOUNT STATUS");
 	const FText QuitTooltipText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
+	const FVector2D ViewportLogicalSize = FT66Style::GetViewportLogicalSize();
+	const float LayoutWidthAlpha = FMath::Clamp(
+		(ViewportLogicalSize.X - FT66Style::Tokens::ReferenceLayoutWidth) / 640.f,
+		0.f,
+		1.f);
+	auto LerpDimension = [LayoutWidthAlpha](float CompactValue, float FullValue) -> float
+	{
+		return FMath::Lerp(CompactValue, FullValue, LayoutWidthAlpha);
+	};
+	auto LerpInt = [LayoutWidthAlpha](int32 CompactValue, int32 FullValue) -> int32
+	{
+		return FMath::RoundToInt(FMath::Lerp(static_cast<float>(CompactValue), static_cast<float>(FullValue), LayoutWidthAlpha));
+	};
 
 	const FButtonStyle& FlatButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>(TEXT("T66.Button.FlatTransparent"));
-	const float LayoutScale = GetTopBarLayoutScale();
-	const float TopBarButtonWidth = SnapPixel(GTopBarButtonWidth * LayoutScale);
-	const float TopBarButtonHeight = SnapPixel(GTopBarButtonHeight * LayoutScale);
-	const float TopBarSurfaceHeight = SnapPixel(GTopBarSurfaceHeight * LayoutScale);
-	const float InactiveNavHeight = SnapPixel(GTopBarInactiveNavHeight * LayoutScale);
-	const float ActiveNavHeight = SnapPixel(GTopBarActiveNavHeight * LayoutScale);
-	const float InactiveNavMinWidth = SnapPixel(GTopBarInactiveNavMinWidth * LayoutScale);
-	const float ActiveNavMinWidth = SnapPixel(GTopBarActiveNavMinWidth * LayoutScale);
-	const float UtilityClusterGap = SnapPixel(12.f * LayoutScale);
-	const float ClusterGap = SnapPixel(18.f * LayoutScale);
-	const float NavButtonGap = SnapPixel(8.f * LayoutScale);
-	const float ReadoutGap = SnapPixel(10.f * LayoutScale);
-	const float QuitGap = SnapPixel(12.f * LayoutScale);
-	const float RowHorizontalPadding = SnapPixel(18.f * LayoutScale);
-	const float RowTopPadding = SnapPixel(8.f * LayoutScale);
-	const FVector2D UtilitySlotSize = SnapPixelSize(FVector2D(78.f, 78.f) * LayoutScale);
-	const FVector2D SettingsIconSize = SnapPixelSize(FVector2D(44.f, 44.f) * LayoutScale);
-	const FVector2D LanguageIconSize = SnapPixelSize(FVector2D(48.f, 48.f) * LayoutScale);
-	const FVector2D AchievementCoinIconSize = SnapPixelSize(FVector2D(48.f, 48.f) * LayoutScale);
-	const FVector2D PowerCouponIconSize = SnapPixelSize(FVector2D(58.f, 38.f) * LayoutScale);
-	const FVector2D QuitIconSize = SnapPixelSize(FVector2D(44.f, 44.f) * LayoutScale);
-	const FVector2D QuitGlowSize = SnapPixelSize(FVector2D(70.f, 70.f) * LayoutScale);
-	constexpr int32 TopBarTitleFontSize = 16;
+	const float TopBarButtonWidth = LerpDimension(78.f, 88.f);
+	const float TopBarButtonHeight = LerpDimension(76.f, 82.f);
+	const float TopBarSurfaceHeight = GTopBarSurfaceHeight;
+	const float InactiveNavHeight = LerpDimension(64.f, GTopBarInactiveNavHeight);
+	const float ActiveNavHeight = LerpDimension(70.f, GTopBarActiveNavHeight);
+	const float InactiveNavMinWidth = LerpDimension(144.f, GTopBarInactiveNavMinWidth);
+	const float ActiveNavMinWidth = LerpDimension(156.f, GTopBarActiveNavMinWidth);
+	const float UtilityClusterGap = LerpDimension(12.f, 14.f);
+	const float ClusterGap = LerpDimension(10.f, 14.f);
+	const float NavButtonGap = LerpDimension(4.f, 5.f);
+	const float ReadoutGap = LerpDimension(20.f, 24.f);
+	const float QuitGap = LerpDimension(8.f, 10.f);
+	const float RowHorizontalPadding = LerpDimension(10.f, 14.f);
+	const float RowTopPadding = LerpDimension(4.f, 6.f);
+	const FVector2D UtilitySlotSize(LerpDimension(70.f, 76.f), LerpDimension(70.f, 76.f));
+	const FVector2D SettingsIconSize(LerpDimension(46.f, 50.f), LerpDimension(46.f, 50.f));
+	const FVector2D LanguageIconSize(LerpDimension(48.f, 52.f), LerpDimension(48.f, 52.f));
+	const FVector2D AchievementCoinIconSize(LerpDimension(38.f, 44.f), LerpDimension(38.f, 44.f));
+	const FVector2D PowerCouponIconSize(LerpDimension(62.f, 70.f), LerpDimension(36.f, 40.f));
+	const FVector2D QuitIconSize(LerpDimension(32.f, 38.f), LerpDimension(32.f, 38.f));
+	const FVector2D QuitGlowSize(LerpDimension(56.f, 62.f), LerpDimension(56.f, 62.f));
+	const FVector2D HomeLogoIconSize(LerpDimension(58.f, 66.f), LerpDimension(58.f, 66.f));
+	const FVector2D HomeButtonHitSize(LerpDimension(82.f, 90.f), TopBarButtonHeight);
+	const int32 TopBarTitleFontSize = LerpInt(13, 15);
+	const float AccountStatusTabWidth = LerpDimension(212.f, 224.f);
+	const float PowerUpTabWidth = LerpDimension(160.f, 174.f);
+	const float AchievementsTabWidth = LerpDimension(194.f, 208.f);
 
 	FSlateFontInfo NavFont = FT66Style::MakeFont(TEXT("Bold"), TopBarTitleFontSize);
-	NavFont.LetterSpacing = 14;
+	NavFont.LetterSpacing = LerpInt(0, 2);
 
 	FSlateFontInfo ActiveNavFont = FT66Style::MakeFont(TEXT("Bold"), TopBarTitleFontSize + 1);
-	ActiveNavFont.LetterSpacing = 16;
+	ActiveNavFont.LetterSpacing = LerpInt(0, 3);
 
-	FSlateFontInfo BalanceFont = FT66Style::MakeFont(TEXT("Bold"), TopBarTitleFontSize);
-	BalanceFont.LetterSpacing = 8;
+	FSlateFontInfo BalanceFont = FT66Style::MakeFont(TEXT("Bold"), LerpInt(12, 14));
+	BalanceFont.LetterSpacing = LerpInt(1, 3);
 
-	auto MakeFallbackIconLabel = [](const FText& FallbackText) -> TSharedRef<SWidget>
+	auto MakeFallbackIconLabel = [TopBarTitleFontSize](const FText& FallbackText) -> TSharedRef<SWidget>
 	{
 		return SNew(STextBlock)
 			.Text(FallbackText)
@@ -920,6 +927,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.Text(Text)
 			.Font(bActive ? ActiveNavFont : NavFont)
 			.ColorAndOpacity(bActive ? FT66Style::Text() : FLinearColor(0.80f, 0.82f, 0.84f, 0.94f))
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
 			.Justification(ETextJustify::Center);
 	};
 
@@ -930,36 +939,47 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			const TSharedPtr<FSlateBrush>& IconBrush,
 			const FVector2D& IconSize,
 			const FText& IconFallbackText,
-			bool bIconOnly) -> TSharedRef<SWidget>
+			bool bIconOnly,
+			float WidthBudget) -> TSharedRef<SWidget>
 	{
 		if (bIconOnly)
 		{
 			return MakeBrushIconWidget(IconBrush, IconSize, IconFallbackText);
 		}
 
+		const float MaxContentWidth = FMath::Max(1.f, WidthBudget);
+
 		if (!IconBrush.IsValid())
 		{
-			return MakeNavLabel(Text, bActive);
+			return SNew(SBox)
+				.MaxDesiredWidth(MaxContentWidth)
+				[
+					MakeNavLabel(Text, bActive)
+				];
 		}
 
-		return SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
-			.Padding(0.f, 0.f, 10.f, 0.f)
+		return SNew(SBox)
+			.MaxDesiredWidth(MaxContentWidth)
 			[
-				MakeBrushIconWidget(IconBrush, IconSize, IconFallbackText)
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
-			[
-				MakeNavLabel(Text, bActive)
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				.Padding(0.f, 0.f, 6.f, 0.f)
+				[
+					MakeBrushIconWidget(IconBrush, IconSize, IconFallbackText)
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				.VAlign(VAlign_Center)
+				[
+					MakeNavLabel(Text, bActive)
+				]
 			];
 	};
 
 	auto MakeNavButton =
-		[this, &FlatButtonStyle, &MakeNavContent, LayoutScale, TopBarButtonWidth = TopBarButtonWidth, LanguageIconSize = LanguageIconSize, ActiveNavMinWidth = ActiveNavMinWidth, ActiveNavHeight = ActiveNavHeight, InactiveNavMinWidth = InactiveNavMinWidth, InactiveNavHeight = InactiveNavHeight](
+		[this, &FlatButtonStyle, &MakeNavContent, ActiveNavMinWidth = ActiveNavMinWidth, ActiveNavHeight = ActiveNavHeight, InactiveNavMinWidth = InactiveNavMinWidth, InactiveNavHeight = InactiveNavHeight](
 			const FText& Text,
 			FReply (UT66FrontendTopBarWidget::*ClickFunc)(),
 			bool bActive,
@@ -969,9 +989,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			const FLinearColor& BackgroundTint = FLinearColor::White,
 			bool bIconOnly = false,
 			const FSlateBrush* InactiveBackgroundBrush = nullptr,
-			const FSlateBrush* ActiveBackgroundBrush = nullptr) -> TSharedRef<SWidget>
+			const FSlateBrush* ActiveBackgroundBrush = nullptr,
+			float CustomButtonWidth = 0.f) -> TSharedRef<SWidget>
 	{
-		const float IconOnlyNavWidth = FMath::Max(TopBarButtonWidth, LanguageIconSize.X + (28.f * LayoutScale));
 		const FSlateBrush* BackgroundBrush = nullptr;
 		if (bActive)
 		{
@@ -985,10 +1005,16 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				? InactiveBackgroundBrush
 				: (InactiveTabBrush.IsValid() ? InactiveTabBrush.Get() : ActiveTabBrush.Get());
 		}
-		const float ButtonMinWidth = bActive ? ActiveNavMinWidth : InactiveNavMinWidth;
+		const float ButtonWidth = (CustomButtonWidth > 0.f)
+			? CustomButtonWidth
+			: (bIconOnly
+				? GTopBarIconOnlyNavWidth
+				: (bActive ? ActiveNavMinWidth : InactiveNavMinWidth));
 		const float ButtonHeight = bActive ? ActiveNavHeight : InactiveNavHeight;
+		const float HorizontalContentPadding = bIconOnly ? 10.f : 4.f;
+		const float ContentWidthBudget = ButtonWidth - (HorizontalContentPadding * 2.f);
 		return SNew(SBox)
-			.MinDesiredWidth(bIconOnly ? IconOnlyNavWidth : ButtonMinWidth)
+			.WidthOverride(ButtonWidth)
 			.HeightOverride(ButtonHeight)
 			[
 				SNew(SOverlay)
@@ -1010,9 +1036,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 					.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
-					.ContentPadding(bIconOnly ? FMargin(18.f * LayoutScale) : FMargin(24.f * LayoutScale, 12.f * LayoutScale, 24.f * LayoutScale, 12.f * LayoutScale))
+					.ContentPadding(bIconOnly ? FMargin(14.f) : FMargin(HorizontalContentPadding, 8.f, HorizontalContentPadding, 8.f))
 					[
-						MakeNavContent(Text, bActive, IconBrush, IconSize, IconFallbackText, bIconOnly)
+						MakeNavContent(Text, bActive, IconBrush, IconSize, IconFallbackText, bIconOnly, ContentWidthBudget)
 					]
 				]
 			];
@@ -1072,8 +1098,33 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			];
 	};
 
+	auto MakeStandaloneIconButton =
+		[this, &FlatButtonStyle, &MakeBrushIconWidget, HomeButtonHitSize](
+			const FText& TooltipText,
+			const TSharedPtr<FSlateBrush>& IconBrush,
+			const FVector2D& IconSize,
+			const FText& FallbackText,
+			FReply (UT66FrontendTopBarWidget::*ClickFunc)()) -> TSharedRef<SWidget>
+	{
+		return SNew(SBox)
+			.WidthOverride(HomeButtonHitSize.X)
+			.HeightOverride(HomeButtonHitSize.Y)
+			[
+				SNew(SButton)
+				.ButtonStyle(&FlatButtonStyle)
+				.ToolTipText(TooltipText)
+				.OnClicked(FOnClicked::CreateUObject(this, ClickFunc))
+				.ContentPadding(FMargin(0.f))
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					MakeBrushIconWidget(IconBrush, IconSize, FallbackText)
+				]
+			];
+	};
+
 	auto MakeBalanceReadout =
-		[this, &BalanceFont, LayoutScale, InactiveNavHeight = InactiveNavHeight](
+		[this, &BalanceFont, InactiveNavHeight = InactiveNavHeight](
 			const TSharedRef<SWidget>& IconWidget,
 			const FText& TooltipText,
 			FText (UT66FrontendTopBarWidget::*ValueGetter)() const) -> TSharedRef<SWidget>
@@ -1094,7 +1145,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
-				.Padding(8.f * LayoutScale, 0.f, 0.f, 0.f)
+				.Padding(8.f, 0.f, 0.f, 0.f)
 				[
 					SNew(STextBlock)
 					.Text_Lambda([this, ValueGetter]() -> FText
@@ -1160,29 +1211,27 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 						? FLinearColor(0.84f, 0.94f, 0.72f, 1.0f)
 						: FLinearColor(0.76f, 0.89f, 0.66f, 1.0f))
 					: FLinearColor::White,
-				false)
-		]
-		+ SHorizontalBox::Slot().AutoWidth().Padding(NavButtonGap, 0.f, 0.f, 0.f)
-		[
-			MakeNavButton(
-				HomeText,
-				&UT66FrontendTopBarWidget::HandleHomeClicked,
-				ActiveSection == ETopBarSection::Home,
-				TSharedPtr<FSlateBrush>(),
-				FVector2D::ZeroVector,
-				FText::GetEmpty(),
-				FLinearColor::White,
 				false,
-				HomeInactiveTabBrush.Get(),
-				HomeActiveTabBrush.Get())
+				nullptr,
+				nullptr,
+				AccountStatusTabWidth)
 		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(NavButtonGap, 0.f, 0.f, 0.f)
 		[
-			MakeNavButton(PowerUpText, &UT66FrontendTopBarWidget::HandlePowerUpClicked, ActiveSection == ETopBarSection::PowerUp, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), FLinearColor::White, false)
+			MakeStandaloneIconButton(
+				HomeText,
+				HomeIconBrush,
+				HomeLogoIconSize,
+				NSLOCTEXT("T66.MainMenu", "HomeIconFallback", "C"),
+				&UT66FrontendTopBarWidget::HandleHomeClicked)
 		]
 		+ SHorizontalBox::Slot().AutoWidth().Padding(NavButtonGap, 0.f, 0.f, 0.f)
 		[
-			MakeNavButton(AchievementsText, &UT66FrontendTopBarWidget::HandleAchievementsClicked, ActiveSection == ETopBarSection::Achievements, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), FLinearColor::White, false)
+			MakeNavButton(PowerUpText, &UT66FrontendTopBarWidget::HandlePowerUpClicked, ActiveSection == ETopBarSection::PowerUp, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), FLinearColor::White, false, nullptr, nullptr, PowerUpTabWidth)
+		]
+		+ SHorizontalBox::Slot().AutoWidth().Padding(NavButtonGap, 0.f, 0.f, 0.f)
+		[
+			MakeNavButton(AchievementsText, &UT66FrontendTopBarWidget::HandleAchievementsClicked, ActiveSection == ETopBarSection::Achievements, TSharedPtr<FSlateBrush>(), FVector2D::ZeroVector, FText::GetEmpty(), FLinearColor::White, false, nullptr, nullptr, AchievementsTabWidth)
 		];
 
 	const TSharedRef<SWidget> RightUtilityCluster =
@@ -1240,10 +1289,13 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Top)
-			.Padding(RowHorizontalPadding, RowTopPadding, RowHorizontalPadding, 0.f)
 			[
-				TopBarRow
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(FMargin(RowHorizontalPadding, RowTopPadding, RowHorizontalPadding, 0.f))
+				[
+					TopBarRow
+				]
 			]
 		];
 
@@ -1275,18 +1327,44 @@ void UT66FrontendTopBarWidget::NativeTick(const FGeometry& MyGeometry, float InD
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
+	if (UWorld* World = GetWorld())
+	{
+		if (World->bIsTearingDown || GExitPurge || IsGarbageCollecting())
+		{
+			bViewportResponsiveRebuildQueued = false;
+			return;
+		}
+	}
+
 	if (bViewportResponsiveRebuildQueued)
 	{
 		return;
 	}
 
 	const FVector2D CurrentViewportSize = GetEffectiveFrontendViewportSize();
+	if (CurrentViewportSize.IsNearlyZero())
+	{
+		return;
+	}
+
 	if (!CurrentViewportSize.Equals(CachedViewportSize, 1.0f))
 	{
 		CachedViewportSize = CurrentViewportSize;
 		bViewportResponsiveRebuildQueued = true;
 		ForceRebuildSlate();
 	}
+}
+
+void UT66FrontendTopBarWidget::NativeDestruct()
+{
+	ReleaseTopBarBrushes();
+	Super::NativeDestruct();
+}
+
+void UT66FrontendTopBarWidget::ReleaseSlateResources(bool bReleaseChildren)
+{
+	ReleaseTopBarBrushes();
+	Super::ReleaseSlateResources(bReleaseChildren);
 }
 
 FReply UT66FrontendTopBarWidget::HandleSettingsClicked()

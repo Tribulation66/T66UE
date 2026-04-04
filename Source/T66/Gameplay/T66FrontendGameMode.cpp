@@ -4,6 +4,7 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -22,6 +23,8 @@ AT66FrontendGameMode::AT66FrontendGameMode()
 {
 	// No default pawn in frontend
 	DefaultPawnClass = nullptr;
+	PlayerStateClass = AT66SessionPlayerState::StaticClass();
+	bUseSeamlessTravel = true;
 }
 
 void AT66FrontendGameMode::BeginPlay()

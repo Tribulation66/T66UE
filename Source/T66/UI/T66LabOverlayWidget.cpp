@@ -294,8 +294,13 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 			];
 	}
 
+	const TAttribute<FMargin> SafePanelPadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+	{
+		return FT66Style::GetSafePadding(FMargin(24.f, LabPanelTopOffset, 24.f, 0.f));
+	});
+
 	// Full-screen overlay: transparent, only the right-side panel has content (between Power and inventory)
-	return SNew(SBox)
+	TSharedRef<SWidget> Root = SNew(SBox)
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
 		[
@@ -303,7 +308,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Right)
 			.VAlign(VAlign_Top)
-			.Padding(24.f, LabPanelTopOffset, 24.f, 0.f)
+			.Padding(SafePanelPadding)
 			[
 				SNew(SBox)
 				.WidthOverride(LabPanelWidth)
@@ -316,6 +321,8 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 				]
 			]
 		];
+
+	return FT66Style::MakeResponsiveRoot(Root);
 }
 
 #undef LOCTEXT_NAMESPACE

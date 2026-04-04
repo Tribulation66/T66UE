@@ -17,7 +17,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PreviewEnvironment, Log, All);
 
 namespace
 {
-	const TCHAR* PreviewFallbackGroundMaterialPath = TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1");
 	const TCHAR* PreviewFallbackBlockMaterialPath = TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock");
 	const TCHAR* PreviewGroundBaseMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
 	const TCHAR* EasyBlockTexturePath = TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock");
@@ -55,12 +54,10 @@ namespace
 	{
 		switch (Difficulty)
 		{
-		case ET66Difficulty::Medium: return { TEXT("MediumOcean"), TEXT("MediumOcean") };
-		case ET66Difficulty::Hard: return { TEXT("HardMountain"), TEXT("HardMountain") };
-		case ET66Difficulty::VeryHard: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
-		case ET66Difficulty::Impossible: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
-		case ET66Difficulty::Perdition: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
-		case ET66Difficulty::Final: return { TEXT("FinalHell"), TEXT("FinalHell") };
+		case ET66Difficulty::Medium: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
+		case ET66Difficulty::Hard: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
+		case ET66Difficulty::VeryHard: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
+		case ET66Difficulty::Impossible: return { TEXT("FinalHell"), TEXT("FinalHell") };
 		case ET66Difficulty::Easy:
 		default:
 			return {};
@@ -123,7 +120,7 @@ namespace
 			return FallbackBlockMaterial;
 		}
 
-		return LoadObject<UMaterialInterface>(nullptr, PreviewFallbackGroundMaterialPath);
+		return nullptr;
 	}
 
 	UStaticMeshComponent* CreatePreviewPropComponent(

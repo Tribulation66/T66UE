@@ -22,13 +22,3 @@ Stage_20,20,Boss_20,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.94,G=0.43,B=0.17,A=1
 Stage_21,21,Boss_21,"(X=2500.0,Y=0.0,Z=200.0)",Slide,"(R=0.94,G=0.90,B=0.17,A=1.0)",1.31,Roost,Cow,Goat
 Stage_22,22,Boss_22,"(X=2500.0,Y=0.0,Z=200.0)",Speed,"(R=0.50,G=0.94,B=0.17,A=1.0)",1.32,Cow,Goat,Pig
 Stage_23,23,Boss_23,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.17,G=0.94,B=0.31,A=1.0)",1.34,Goat,Pig,Roost
-Stage_24,24,Boss_24,"(X=2500.0,Y=0.0,Z=200.0)",Slide,"(R=0.17,G=0.94,B=0.79,A=1.0)",1.35,Pig,Roost,Cow
-Stage_25,25,Boss_25,"(X=2500.0,Y=0.0,Z=200.0)",Speed,"(R=0.17,G=0.62,B=0.94,A=1.0)",1.37,Roost,Cow,Goat
-Stage_26,26,Boss_26,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.19,G=0.17,B=0.94,A=1.0)",1.38,Cow,Goat,Pig
-Stage_27,27,Boss_27,"(X=2500.0,Y=0.0,Z=200.0)",Slide,"(R=0.67,G=0.17,B=0.94,A=1.0)",1.40,Goat,Pig,Roost
-Stage_28,28,Boss_28,"(X=2500.0,Y=0.0,Z=200.0)",Speed,"(R=0.94,G=0.17,B=0.73,A=1.0)",1.42,Pig,Roost,Cow
-Stage_29,29,Boss_29,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.94,G=0.17,B=0.26,A=1.0)",1.43,Roost,Cow,Goat
-Stage_30,30,Boss_30,"(X=2500.0,Y=0.0,Z=200.0)",Slide,"(R=0.94,G=0.55,B=0.17,A=1.0)",1.45,Cow,Goat,Pig
-Stage_31,31,Boss_31,"(X=2500.0,Y=0.0,Z=200.0)",Speed,"(R=0.85,G=0.94,B=0.17,A=1.0)",1.46,Goat,Pig,Roost
-Stage_32,32,Boss_32,"(X=2500.0,Y=0.0,Z=200.0)",Launch,"(R=0.37,G=0.94,B=0.17,A=1.0)",1.48,Pig,Roost,Cow
-Stage_33,33,Boss_33,"(X=2500.0,Y=0.0,Z=200.0)",Slide,"(R=0.17,G=0.94,B=0.44,A=1.0)",1.49,Roost,Cow,Goat

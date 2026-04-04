@@ -12,6 +12,7 @@ struct FSlateBrush;
 struct FT66AnimatedBackgroundLayer
 {
 	FSlateBrush* Brush = nullptr;
+	FVector2D BaseOffset = FVector2D::ZeroVector;
 	FVector2D SwayAmplitude = FVector2D::ZeroVector;
 	float SwayFrequency = 0.f;
 	float ScalePulseAmplitude = 0.f;

@@ -19,6 +19,8 @@ namespace T66StatsPanelSlate
 	{
 		TArray<TSharedPtr<class STextBlock>> PrimaryLines;
 		TMap<ET66SecondaryStatType, TSharedPtr<class STextBlock>> SecondaryLines;
+		TSharedPtr<class STextBlock> ArmorReductionLine;
+		TSharedPtr<class STextBlock> EvasionChanceLine;
 
 		void Reset();
 		void Update(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc) const;

@@ -21,6 +21,7 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "UI/T66EnemyHealthBarWidget.h"
+#include "UI/T66EnemyLockWidget.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
@@ -34,6 +35,39 @@
 // [GOLD] EngineUtils.h removed — no more TActorIterator in this file (using ActorRegistry instead).
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Enemy, Log, All);
+
+namespace
+{
+	void T66ApplyCharacterDisplacement(ACharacter* Character, const FVector& Origin, float Distance, const bool bTowardOrigin)
+	{
+		if (!Character || FMath::IsNearlyZero(Distance))
+		{
+			return;
+		}
+
+		FVector Dir = Origin - Character->GetActorLocation();
+		Dir.Z = 0.f;
+		const float Magnitude = Dir.Size();
+		if (Magnitude <= KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
+
+		Dir /= Magnitude;
+		const float ClampedDistance = FMath::Clamp(FMath::Abs(Distance), 0.f, bTowardOrigin ? FMath::Max(0.f, Magnitude - 50.f) : FMath::Abs(Distance));
+		if (ClampedDistance <= 0.f)
+		{
+			return;
+		}
+
+		const FVector Delta = (bTowardOrigin ? Dir : -Dir) * ClampedDistance;
+		Character->SetActorLocation(Character->GetActorLocation() + Delta, true);
+		if (UCharacterMovementComponent* Move = Character->GetCharacterMovement())
+		{
+			Move->StopMovementImmediately();
+		}
+	}
+}
 
 AT66EnemyBase::AT66EnemyBase()
 {
@@ -79,6 +113,17 @@ AT66EnemyBase::AT66EnemyBase()
 	HealthBarWidget->SetDrawAtDesiredSize(true);
 	// Height includes space for lock indicator above the bar.
 	HealthBarWidget->SetDrawSize(FVector2D(120.f, 28.f));
+	HealthBarWidget->SetWidgetClass(UT66EnemyHealthBarWidget::StaticClass());
+
+	LockIndicatorWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockIndicatorWidget"));
+	LockIndicatorWidget->SetupAttachment(RootComponent);
+	LockIndicatorWidget->SetRelativeLocation(FVector(0.f, 0.f, 225.f));
+	LockIndicatorWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	LockIndicatorWidget->SetDrawAtDesiredSize(true);
+	LockIndicatorWidget->SetDrawSize(FVector2D(52.f, 52.f));
+	LockIndicatorWidget->SetWidgetClass(UT66EnemyLockWidget::StaticClass());
+	LockIndicatorWidget->SetHiddenInGame(true, true);
+	LockIndicatorWidget->SetVisibility(false, true);
 
 	// Prepare built-in SkeletalMeshComponent for imported models.
 	if (USkeletalMeshComponent* Skel = GetMesh())
@@ -205,6 +250,11 @@ void AT66EnemyBase::BeginPlay()
 	{
 		HealthBarWidget->SetHiddenInGame(true, true);
 		HealthBarWidget->SetVisibility(false, true);
+	}
+	if (LockIndicatorWidget)
+	{
+		LockIndicatorWidget->SetHiddenInGame(true, true);
+		LockIndicatorWidget->SetVisibility(false, true);
 	}
 
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
@@ -385,6 +435,9 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	MoveSlowMultiplier = 1.f;
 	MoveSlowSecondsRemaining = 0.f;
 	ForcedRunAwaySecondsRemaining = 0.f;
+	StunSecondsRemaining = 0.f;
+	RootSecondsRemaining = 0.f;
+	FreezeSecondsRemaining = 0.f;
 	AutoAttackKnockbackSecondsRemaining = 0.f;
 	bIsMiniBoss = false;
 	MiniBossHPScalarApplied = 1.0f;
@@ -399,6 +452,7 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	SafeZoneCheckAccumSeconds = 0.f;
 	bRisingFromGround = false;
 	RiseElapsed = 0.f;
+	SetLockedIndicator(false);
 
 	SetActorLocation(NewLocation);
 	SetActorHiddenInGame(false);
@@ -444,6 +498,8 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	if (CurrentHP <= 0) return;
+
+	FLagScopedScope LagScope(GetWorld(), TEXT("EnemyBase::Tick"));
 
 	// Rise-from-ground animation: lerp Z up, then re-enable collision.
 	if (bRisingFromGround)
@@ -567,6 +623,21 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		ForcedRunAwaySecondsRemaining = FMath::Max(0.f, ForcedRunAwaySecondsRemaining - DeltaSeconds);
 	}
 
+	if (StunSecondsRemaining > 0.f)
+	{
+		StunSecondsRemaining = FMath::Max(0.f, StunSecondsRemaining - DeltaSeconds);
+	}
+
+	if (RootSecondsRemaining > 0.f)
+	{
+		RootSecondsRemaining = FMath::Max(0.f, RootSecondsRemaining - DeltaSeconds);
+	}
+
+	if (FreezeSecondsRemaining > 0.f)
+	{
+		FreezeSecondsRemaining = FMath::Max(0.f, FreezeSecondsRemaining - DeltaSeconds);
+	}
+
 	const bool bShouldRunAwayFromPlayer = bRunAwayFromPlayer || ForcedRunAwaySecondsRemaining > 0.f;
 
 	float FarChaseMultiplier = 1.f;
@@ -577,7 +648,22 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		FarChaseMultiplier = FMath::Lerp(1.f, FMath::Max(1.f, FarChaseSpeedMultiplier), RampAlpha);
 	}
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-		MoveComp->MaxWalkSpeed = BaseMaxWalkSpeed * MoveSlowMultiplier * FarChaseMultiplier;
+	{
+		const float ControlMultiplier = (FreezeSecondsRemaining > 0.f) ? 0.f : MoveSlowMultiplier;
+		MoveComp->MaxWalkSpeed = BaseMaxWalkSpeed * ControlMultiplier * FarChaseMultiplier;
+	}
+
+	if (FreezeSecondsRemaining > 0.f || StunSecondsRemaining > 0.f)
+	{
+		Move->StopMovementImmediately();
+		return;
+	}
+
+	if (RootSecondsRemaining > 0.f)
+	{
+		Move->StopMovementImmediately();
+		return;
+	}
 
 	// Tick confusion timer.
 	if (bIsConfused)
@@ -762,6 +848,71 @@ void AT66EnemyBase::ApplyForcedRunAway(float DurationSeconds)
 	ForcedRunAwaySecondsRemaining = FMath::Max(ForcedRunAwaySecondsRemaining, Dur);
 }
 
+void AT66EnemyBase::ApplyStun(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 5.f);
+	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround)
+	{
+		return;
+	}
+
+	StunSecondsRemaining = FMath::Max(StunSecondsRemaining, Dur);
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+	}
+}
+
+void AT66EnemyBase::ApplyRoot(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 6.f);
+	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround)
+	{
+		return;
+	}
+
+	RootSecondsRemaining = FMath::Max(RootSecondsRemaining, Dur);
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+	}
+}
+
+void AT66EnemyBase::ApplyFreeze(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 4.f);
+	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround)
+	{
+		return;
+	}
+
+	FreezeSecondsRemaining = FMath::Max(FreezeSecondsRemaining, Dur);
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+	}
+}
+
+void AT66EnemyBase::ApplyPullTowards(const FVector& PullOrigin, float Distance)
+{
+	if (CurrentHP <= 0 || bRisingFromGround)
+	{
+		return;
+	}
+
+	T66ApplyCharacterDisplacement(this, PullOrigin, Distance, true);
+}
+
+void AT66EnemyBase::ApplyPushAwayFrom(const FVector& PushOrigin, float Distance)
+{
+	if (CurrentHP <= 0 || bRisingFromGround)
+	{
+		return;
+	}
+
+	T66ApplyCharacterDisplacement(this, PushOrigin, Distance, false);
+}
+
 void AT66EnemyBase::UpdateHealthBar()
 {
 	if (!HealthBarWidget) return;
@@ -773,6 +924,12 @@ void AT66EnemyBase::UpdateHealthBar()
 
 void AT66EnemyBase::SetLockedIndicator(bool bLocked)
 {
+	if (LockIndicatorWidget)
+	{
+		LockIndicatorWidget->SetHiddenInGame(!bLocked, true);
+		LockIndicatorWidget->SetVisibility(bLocked, true);
+	}
+
 	if (!HealthBarWidget) return;
 	UT66EnemyHealthBarWidget* W = Cast<UT66EnemyHealthBarWidget>(HealthBarWidget->GetUserWidgetObject());
 	if (!W) return;
@@ -781,6 +938,8 @@ void AT66EnemyBase::SetLockedIndicator(bool bLocked)
 
 void AT66EnemyBase::OnDeath()
 {
+	SetLockedIndicator(false);
+
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;

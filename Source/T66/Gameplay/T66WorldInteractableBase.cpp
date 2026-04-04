@@ -60,9 +60,10 @@ AT66WorldInteractableBase::AT66WorldInteractableBase()
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TriggerBox->SetGenerateOverlapEvents(true);
+	TriggerBox->SetCollisionObjectType(ECC_WorldDynamic);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	TriggerBox->SetBoxExtent(FVector(320.f, 320.f, 220.f));
+	TriggerBox->SetBoxExtent(GetMinimumInteractionExtent());
 	RootComponent = TriggerBox;
 
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
@@ -108,6 +109,7 @@ void AT66WorldInteractableBase::BeginPlay()
 	{
 		LocalHeroOverlapCount = (TriggerBox && TriggerBox->IsOverlappingActor(LocalHero)) ? 1 : 0;
 	}
+	UpdateInteractionBounds();
 	RefreshInteractionPrompt();
 }
 
@@ -126,6 +128,7 @@ void AT66WorldInteractableBase::SetRarity(ET66Rarity InRarity)
 {
 	Rarity = InRarity;
 	ApplyRarityVisuals();
+	UpdateInteractionBounds();
 	RefreshInteractionPrompt();
 }
 
@@ -235,8 +238,70 @@ bool AT66WorldInteractableBase::TryApplyImportedMesh()
 	{
 		FT66VisualUtil::SnapToGround(this, GetWorld());
 	}
+	UpdateInteractionBounds();
 	UpdateInteractionPromptPlacement();
 	return true;
+}
+
+void AT66WorldInteractableBase::UpdateInteractionBounds()
+{
+	if (!TriggerBox)
+	{
+		return;
+	}
+
+	TInlineComponentArray<UPrimitiveComponent*> PrimitiveComponents;
+	GetComponents(PrimitiveComponents);
+
+	const FTransform ActorTransform = GetActorTransform();
+	const FVector MinimumExtent = GetMinimumInteractionExtent();
+	const FVector Padding = GetInteractionBoundsPadding();
+	FVector RequiredExtent = MinimumExtent;
+
+	for (UPrimitiveComponent* Primitive : PrimitiveComponents)
+	{
+		if (!Primitive
+			|| Primitive == TriggerBox
+			|| Primitive == PromptText
+			|| Primitive == PromptTextBack
+			|| !Primitive->IsRegistered())
+		{
+			continue;
+		}
+
+		const bool bVisible = Primitive->IsVisible() && !Primitive->bHiddenInGame;
+		if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Primitive))
+		{
+			if (bVisible)
+			{
+				StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				StaticMeshComponent->SetCollisionObjectType(ECC_WorldDynamic);
+				StaticMeshComponent->SetCollisionResponseToAllChannels(ECR_Block);
+				StaticMeshComponent->SetCanEverAffectNavigation(false);
+			}
+			else
+			{
+				StaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
+		}
+
+		if (!bVisible)
+		{
+			continue;
+		}
+
+		const FBoxSphereBounds Bounds = Primitive->CalcBounds(Primitive->GetComponentTransform());
+		const FVector LocalCenter = ActorTransform.InverseTransformPosition(Bounds.Origin);
+		const FVector PrimitiveExtent(
+			FMath::Abs(LocalCenter.X) + Bounds.SphereRadius,
+			FMath::Abs(LocalCenter.Y) + Bounds.SphereRadius,
+			FMath::Abs(LocalCenter.Z) + Bounds.SphereRadius);
+		RequiredExtent.X = FMath::Max(RequiredExtent.X, PrimitiveExtent.X + Padding.X);
+		RequiredExtent.Y = FMath::Max(RequiredExtent.Y, PrimitiveExtent.Y + Padding.Y);
+		RequiredExtent.Z = FMath::Max(RequiredExtent.Z, PrimitiveExtent.Z + Padding.Z);
+	}
+
+	TriggerBox->SetBoxExtent(RequiredExtent);
 }
 
 void AT66WorldInteractableBase::UpdateInteractionPromptFacing() const

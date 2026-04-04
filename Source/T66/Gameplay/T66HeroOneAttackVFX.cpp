@@ -21,32 +21,17 @@ namespace
 
 	UMaterialInterface* GetHeroOneStreakBaseMaterial()
 	{
-		static TObjectPtr<UMaterialInterface> Cached = nullptr;
-		if (!Cached)
-		{
-			Cached = LoadObject<UMaterialInterface>(nullptr, HeroOneStreakMaterialPath);
-		}
-		return Cached.Get();
+		return LoadObject<UMaterialInterface>(nullptr, HeroOneStreakMaterialPath);
 	}
 
 	UMaterialInterface* GetHeroOneImpactBaseMaterial()
 	{
-		static TObjectPtr<UMaterialInterface> Cached = nullptr;
-		if (!Cached)
-		{
-			Cached = LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
-		}
-		return Cached.Get();
+		return LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
 	}
 
 	UStaticMesh* GetArthurSwordMesh()
 	{
-		static TObjectPtr<UStaticMesh> Cached = nullptr;
-		if (!Cached)
-		{
-			Cached = LoadObject<UStaticMesh>(nullptr, HeroOneSwordMeshPath);
-		}
-		return Cached.Get();
+		return LoadObject<UStaticMesh>(nullptr, HeroOneSwordMeshPath);
 	}
 
 	void BuildHeroPierceRuntimePalette(
@@ -194,12 +179,28 @@ void AT66HeroOneAttackVFX::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!StreakBaseMaterial)
+	if (!IsValid(StreakMesh) || !IsValid(ImpactMesh) || !IsValid(SwordMesh))
+	{
+		UE_LOG(
+			LogT66HeroAttackVFX,
+			Warning,
+			TEXT("[ATTACK VFX][HeroPierce] MissingComponents Req=%d Source=%s Actor=%s StreakMesh=%s ImpactMesh=%s SwordMesh=%s"),
+			DebugRequestId,
+			DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
+			*GetName(),
+			IsValid(StreakMesh) ? TEXT("OK") : TEXT("MISSING"),
+			IsValid(ImpactMesh) ? TEXT("OK") : TEXT("MISSING"),
+			IsValid(SwordMesh) ? TEXT("OK") : TEXT("MISSING"));
+		Destroy();
+		return;
+	}
+
+	if (!IsValid(StreakBaseMaterial))
 	{
 		StreakBaseMaterial = GetHeroOneStreakBaseMaterial();
 	}
 
-	if (StreakBaseMaterial)
+	if (IsValid(StreakBaseMaterial))
 	{
 		StreakMID = UMaterialInstanceDynamic::Create(StreakBaseMaterial, this, TEXT("Hero1AttackStreakMID"));
 		if (StreakMID)
@@ -208,12 +209,12 @@ void AT66HeroOneAttackVFX::BeginPlay()
 		}
 	}
 
-	if (!ImpactBaseMaterial)
+	if (!IsValid(ImpactBaseMaterial))
 	{
 		ImpactBaseMaterial = GetHeroOneImpactBaseMaterial();
 	}
 
-	if (ImpactBaseMaterial)
+	if (IsValid(ImpactBaseMaterial))
 	{
 		ImpactMID = UMaterialInstanceDynamic::Create(ImpactBaseMaterial, this, TEXT("Hero1AttackImpactMID"));
 		if (ImpactMID)
@@ -237,11 +238,11 @@ void AT66HeroOneAttackVFX::BeginPlay()
 		return;
 	}
 
-	if (!ArthurSwordStaticMesh)
+	if (!IsValid(ArthurSwordStaticMesh))
 	{
 		ArthurSwordStaticMesh = GetArthurSwordMesh();
 	}
-	if (!SwordMesh || !ArthurSwordStaticMesh)
+	if (!IsValid(ArthurSwordStaticMesh))
 	{
 		UE_LOG(
 			LogT66HeroAttackVFX,

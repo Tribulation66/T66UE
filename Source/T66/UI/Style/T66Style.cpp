@@ -2,9 +2,12 @@
 
 #include "UI/Style/T66Style.h"
 #include "UI/Style/T66ButtonVisuals.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "T66.h"
 
 #include "Engine/Texture2D.h"
+#include "Engine/UserInterfaceSettings.h"
+#include "Engine/GameViewportClient.h"
 #include "ImageUtils.h"
 #include "HAL/IConsoleManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -17,11 +20,12 @@
 #include "Styling/SlateTypes.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Brushes/SlateColorBrush.h"
+#include "Engine/World.h"
+#include "UObject/GarbageCollection.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SDPIScaler.h"
-#include "Widgets/Layout/SScaleBox.h"
 #include "Layout/Visibility.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
@@ -140,10 +144,20 @@ namespace
 
 	struct FT66OptionalTextureBrush
 	{
-		TObjectPtr<UTexture2D> ImportedTexture = nullptr;
+		TStrongObjectPtr<UTexture2D> ImportedTexture;
 		TStrongObjectPtr<UTexture2D> FileTexture;
 		TSharedPtr<FSlateBrush> Brush;
 		bool bChecked = false;
+
+		UTexture2D* GetTexture() const
+		{
+			if (ImportedTexture.IsValid())
+			{
+				return ImportedTexture.Get();
+			}
+
+			return FileTexture.IsValid() ? FileTexture.Get() : nullptr;
+		}
 	};
 
 	const FSlateBrush* GetWhiteBrush()
@@ -174,9 +188,19 @@ namespace
 		const FString& FallbackFilePath,
 		const FMargin& Margin)
 	{
+		UTexture2D* Texture = Entry.GetTexture();
 		if (Entry.Brush.IsValid())
 		{
-			return Cast<UTexture2D>(Entry.Brush->GetResourceObject());
+			if (Texture)
+			{
+				if (Entry.Brush->GetResourceObject() != Texture)
+				{
+					Entry.Brush->SetResourceObject(Texture);
+				}
+				return Texture;
+			}
+
+			Entry.Brush.Reset();
 		}
 
 		if (!Entry.bChecked)
@@ -184,8 +208,8 @@ namespace
 			Entry.bChecked = true;
 			if (ImportedAssetPath && *ImportedAssetPath)
 			{
-				Entry.ImportedTexture = LoadObject<UTexture2D>(nullptr, ImportedAssetPath);
-				if (Entry.ImportedTexture.Get())
+				Entry.ImportedTexture.Reset(LoadObject<UTexture2D>(nullptr, ImportedAssetPath));
+				if (Entry.ImportedTexture.IsValid())
 				{
 					Entry.ImportedTexture->Filter = TextureFilter::TF_Trilinear;
 					Entry.ImportedTexture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
@@ -193,29 +217,30 @@ namespace
 				}
 			}
 
-			UTexture2D* Texture = Entry.ImportedTexture.Get();
+			Texture = Entry.GetTexture();
 			if (!Texture && !FallbackFilePath.IsEmpty() && FPaths::FileExists(FallbackFilePath))
 			{
-			Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
-			if (Texture)
-			{
-				Texture->SRGB = true;
-				Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-				Texture->NeverStream = true;
-				Texture->Filter = TextureFilter::TF_Trilinear;
-				Texture->CompressionSettings = TC_EditorIcon;
-				Texture->UpdateResource();
-				Entry.FileTexture.Reset(Texture);
-			}
+				Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
+				if (Texture)
+				{
+					Texture->SRGB = true;
+					Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+					Texture->NeverStream = true;
+					Texture->Filter = TextureFilter::TF_Trilinear;
+					Texture->CompressionSettings = TC_EditorIcon;
+					Texture->UpdateResource();
+					Entry.FileTexture.Reset(Texture);
+				}
 			}
 
+			Texture = Entry.GetTexture();
 			if (Texture)
 			{
 				Entry.Brush = MakeShared<FSlateBrush>(MakeNineSliceBrush(Texture, Margin));
 			}
 		}
 
-		return Entry.Brush.IsValid() ? Cast<UTexture2D>(Entry.Brush->GetResourceObject()) : nullptr;
+		return Entry.GetTexture();
 	}
 
 	const FSlateBrush* ResolveOptionalTextureBrush(
@@ -656,33 +681,60 @@ namespace
 			}
 		}
 
-		return FVector2D(1920.f, 1080.f);
+		return FVector2D(FT66Style::Tokens::ReferenceLayoutWidth, FT66Style::Tokens::ReferenceLayoutHeight);
+	}
+
+	float GetConfiguredDPIScale(const FVector2D& ViewportSize)
+	{
+		const UUserInterfaceSettings* UISettings = GetDefault<UUserInterfaceSettings>();
+		if (!UISettings)
+		{
+			return 1.0f;
+		}
+
+		const FIntPoint PixelSize(
+			FMath::Max(1, FMath::RoundToInt(ViewportSize.X)),
+			FMath::Max(1, FMath::RoundToInt(ViewportSize.Y)));
+		return FMath::Max(0.01f, UISettings->GetDPIScaleBasedOnSize(PixelSize));
+	}
+
+	float GetPlayerUIScaleOrDefault()
+	{
+		if (GEngine && GEngine->GameViewport)
+		{
+			if (UWorld* World = GEngine->GameViewport->GetWorld())
+			{
+				if (UGameInstance* GI = World->GetGameInstance())
+				{
+					if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+					{
+						return PlayerSettings->GetUIScale();
+					}
+				}
+			}
+		}
+
+		return 1.0f;
 	}
 
 	float ComputeResponsiveScale(const FVector2D& ReferenceResolution, bool bAllowUpscale)
 	{
-		const FVector2D SafeReference(
-			FMath::Max(ReferenceResolution.X, 1.f),
-			FMath::Max(ReferenceResolution.Y, 1.f));
 		const FVector2D ViewportSize = GetViewportSizeOrFallback();
+		float Scale = GetConfiguredDPIScale(ViewportSize) * GetPlayerUIScaleOrDefault();
+		if (Scale <= 0.f)
+		{
+			const FVector2D SafeReference(
+				FMath::Max(ReferenceResolution.X, 1.f),
+				FMath::Max(ReferenceResolution.Y, 1.f));
+			Scale = FMath::Min(ViewportSize.X / SafeReference.X, ViewportSize.Y / SafeReference.Y);
+		}
 
-		float Scale = FMath::Min(ViewportSize.X / SafeReference.X, ViewportSize.Y / SafeReference.Y);
 		if (!bAllowUpscale)
 		{
 			Scale = FMath::Min(Scale, 1.f);
 		}
 
-		const float MaxScale = bAllowUpscale ? 1.35f : 1.f;
-		Scale = FMath::Clamp(Scale, 0.70f, MaxScale);
-
-		// Avoid slight fractional desktop downscales that soften Slate text, borders, and small portraits.
-		// Below this threshold we still scale down so smaller windows remain usable.
-		if (ViewportSize.X >= 1600.f && ViewportSize.Y >= 900.f && Scale <= 1.f)
-		{
-			return 1.f;
-		}
-
-		return Scale;
+		return FMath::Max(0.01f, Scale);
 	}
 
 	void ToggleForceBoldFont()
@@ -1457,53 +1509,39 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			const float PrimaryClipHeight = FMath::Max(1.f, FMath::RoundToFloat(static_cast<float>(TextFont.Size) * Params.TextDualToneSplit));
 
 			return StaticCastSharedRef<SWidget>(
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::DownOnly)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
+				SNew(SOverlay)
+				+ SOverlay::Slot()
 				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
+					SNew(STextBlock)
+					.Text(TextAttr)
+					.Font(TextFont)
+					.ColorAndOpacity(SecondaryTextColor)
+					.Justification(ETextJustify::Center)
+				]
+				+ SOverlay::Slot()
+				.VAlign(VAlign_Top)
+				[
+					SNew(SBox)
+					.Clipping(EWidgetClipping::ClipToBounds)
+					.HeightOverride(PrimaryClipHeight)
 					[
 						SNew(STextBlock)
 						.Text(TextAttr)
 						.Font(TextFont)
-						.ColorAndOpacity(SecondaryTextColor)
+						.ColorAndOpacity(TextColor)
 						.Justification(ETextJustify::Center)
-					]
-					+ SOverlay::Slot()
-					.VAlign(VAlign_Top)
-					[
-						SNew(SBox)
-						.Clipping(EWidgetClipping::ClipToBounds)
-						.HeightOverride(PrimaryClipHeight)
-						[
-							SNew(STextBlock)
-							.Text(TextAttr)
-							.Font(TextFont)
-							.ColorAndOpacity(TextColor)
-							.Justification(ETextJustify::Center)
-						]
 					]
 				]);
 		}
 
 		return StaticCastSharedRef<SWidget>(
-			SNew(SScaleBox)
-			.Stretch(EStretch::ScaleToFit)
-			.StretchDirection(EStretchDirection::DownOnly)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(TextAttr)
-				.Font(TextFont)
-				.ColorAndOpacity(TextColor)
-				.ShadowOffset(TextShadowOffset)
-				.ShadowColorAndOpacity(TextShadowColor)
-				.Justification(ETextJustify::Center)
-			]
+			SNew(STextBlock)
+			.Text(TextAttr)
+			.Font(TextFont)
+			.ColorAndOpacity(TextColor)
+			.ShadowOffset(TextShadowOffset)
+			.ShadowColorAndOpacity(TextShadowColor)
+			.Justification(ETextJustify::Center)
 		);
 	}();
 
@@ -2525,11 +2563,11 @@ TSharedRef<SWidget> FT66Style::MakeHudPanel(const TSharedRef<SWidget>& Content, 
 			[
 				SNew(STextBlock)
 				.Text(Title)
-				.Font(FT66Style::MakeFont(TEXT("Bold"), 18))
+				.Font(FT66Style::MakeFont(TEXT("Bold"), 14))
 				.ColorAndOpacity(FT66Style::TextMuted())
 				.Justification(ETextJustify::Center)
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 8.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 4.f)
 			[
 				MakeDivider()
 			]
@@ -2656,6 +2694,108 @@ FVector2D FT66Style::GetViewportSize()
 	return GetViewportSizeOrFallback();
 }
 
+FVector2D FT66Style::GetViewportLogicalSize()
+{
+	const float GlobalScale = GetGlobalUIScale();
+	if (GlobalScale <= KINDA_SMALL_NUMBER)
+	{
+		return GetViewportSize();
+	}
+
+	return GetViewportSize() / GlobalScale;
+}
+
+float FT66Style::GetEngineDPIScale()
+{
+	return GetConfiguredDPIScale(GetViewportSize());
+}
+
+float FT66Style::GetPlayerUIScale()
+{
+	return GetPlayerUIScaleOrDefault();
+}
+
+float FT66Style::GetGlobalUIScale()
+{
+	return GetEngineDPIScale() * GetPlayerUIScale();
+}
+
+FVector2D FT66Style::GetSafeFrameSize(float AspectRatio)
+{
+	const FVector2D LogicalViewport = GetViewportLogicalSize();
+	const float SafeAspect = FMath::Max(AspectRatio, 0.1f);
+	const float Width = FMath::Min(LogicalViewport.X, LogicalViewport.Y * SafeAspect);
+	const float Height = FMath::Min(LogicalViewport.Y, LogicalViewport.X / SafeAspect);
+	return FVector2D(FMath::Max(1.f, Width), FMath::Max(1.f, Height));
+}
+
+FMargin FT66Style::GetSafeFrameInsets(float AspectRatio)
+{
+	const FVector2D LogicalViewport = GetViewportLogicalSize();
+	const FVector2D SafeFrame = GetSafeFrameSize(AspectRatio);
+	const float HorizontalInset = FMath::Max(0.f, (LogicalViewport.X - SafeFrame.X) * 0.5f);
+	const float VerticalInset = FMath::Max(0.f, (LogicalViewport.Y - SafeFrame.Y) * 0.5f);
+	return FMargin(HorizontalInset, VerticalInset, HorizontalInset, VerticalInset);
+}
+
+FMargin FT66Style::GetSafePadding(const FMargin& Padding, float AspectRatio)
+{
+	const FMargin SafeInsets = GetSafeFrameInsets(AspectRatio);
+	return FMargin(
+		SafeInsets.Left + Padding.Left,
+		SafeInsets.Top + Padding.Top,
+		SafeInsets.Right + Padding.Right,
+		SafeInsets.Bottom + Padding.Bottom);
+}
+
+TSharedRef<SWidget> FT66Style::MakeSafeFrame(
+	const TSharedRef<SWidget>& Content,
+	const FMargin& Padding,
+	float MaxWidth,
+	float MaxHeight,
+	float AspectRatio)
+{
+	const TAttribute<FOptionalSize> WidthAttr = TAttribute<FOptionalSize>::CreateLambda([Padding, MaxWidth, AspectRatio]() -> FOptionalSize
+	{
+		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize(AspectRatio);
+		float Width = FMath::Max(1.f, SafeFrame.X - (Padding.Left + Padding.Right));
+		if (MaxWidth > 0.f)
+		{
+			Width = FMath::Min(Width, MaxWidth);
+		}
+		return FOptionalSize(Width);
+	});
+
+	const TAttribute<FOptionalSize> HeightAttr = TAttribute<FOptionalSize>::CreateLambda([Padding, MaxHeight, AspectRatio]() -> FOptionalSize
+	{
+		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize(AspectRatio);
+		float Height = FMath::Max(1.f, SafeFrame.Y - (Padding.Top + Padding.Bottom));
+		if (MaxHeight > 0.f)
+		{
+			Height = FMath::Min(Height, MaxHeight);
+		}
+		return FOptionalSize(Height);
+	});
+
+	return SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SBox)
+			.WidthOverride(WidthAttr)
+			.HeightOverride(HeightAttr)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(Padding)
+				[
+					Content
+				]
+			]
+		];
+}
+
 // ---------------------------------------------------------------------------
 // DeferRebuild — safe, next-tick widget rebuild for any UUserWidget.
 // ---------------------------------------------------------------------------
@@ -2663,20 +2803,25 @@ void FT66Style::DeferRebuild(UUserWidget* Widget, int32 ZOrder)
 {
 	if (!Widget) return;
 	UWorld* World = Widget->GetWorld();
-	if (!World) return;
+	if (!World || World->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;
 
 	TWeakObjectPtr<UUserWidget> Weak(Widget);
+	TWeakObjectPtr<UWorld> WeakWorld(World);
 	World->GetTimerManager().SetTimerForNextTick(
-		FTimerDelegate::CreateLambda([Weak, ZOrder]()
+		FTimerDelegate::CreateLambda([Weak, WeakWorld, ZOrder]()
 		{
+			UWorld* LocalWorld = WeakWorld.Get();
 			UUserWidget* W = Weak.Get();
-			if (!W || !W->GetCachedWidget().IsValid()) return;
+			if (!W || !LocalWorld || LocalWorld->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;
+			if (!W->GetCachedWidget().IsValid()) return;
 
 			const bool bInViewport = W->IsInViewport();
 			if (bInViewport) W->RemoveFromParent();
+			if (LocalWorld->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;
 
 			W->ReleaseSlateResources(true);
 			W->TakeWidget();
+			if (LocalWorld->bIsTearingDown || GExitPurge || IsGarbageCollecting()) return;
 
 			if (bInViewport) W->AddToViewport(ZOrder);
 		}));

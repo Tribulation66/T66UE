@@ -603,7 +603,7 @@ enum class ET66SecondaryStatType : uint8
 	// Range-conditional (3)
 	CloseRangeDamage UMETA(DisplayName = "Close Range Damage"),
 	LongRangeDamage UMETA(DisplayName = "Long Range Damage"),
-	AttackRange UMETA(DisplayName = "Attack Range"),
+	AttackRange UMETA(DisplayName = "Range"),
 	// Armor-defensive (4)
 	Taunt UMETA(DisplayName = "Taunt"),
 	ReflectDamage UMETA(DisplayName = "Reflect Damage"),
@@ -619,19 +619,24 @@ enum class ET66SecondaryStatType : uint8
 	Goblin UMETA(Hidden),
 	Leprechaun UMETA(Hidden),
 	TreasureChest UMETA(DisplayName = "Treasure Chest"),
-	Fountain UMETA(DisplayName = "Fountain"),
+	Fountain UMETA(Hidden),
 	Cheating UMETA(DisplayName = "Cheating"),
 	Stealing UMETA(DisplayName = "Stealing"),
 	// Speed (1)
 	MovementSpeed UMETA(DisplayName = "Movement Speed"),
 	// Luck-world (crate rewards)
 	LootCrate UMETA(DisplayName = "Loot Crate"),
+	// Defensive item-only bonuses that scale from their parent primary stat.
+	DamageReduction UMETA(DisplayName = "Damage Reduction"),
+	EvasionChance UMETA(DisplayName = "Evasion Chance"),
 	GamblerToken UMETA(DisplayName = "Gambler's Token"),
 };
 
 FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType)
 {
-	return StatType == ET66SecondaryStatType::Goblin || StatType == ET66SecondaryStatType::Leprechaun;
+	return StatType == ET66SecondaryStatType::Goblin
+		|| StatType == ET66SecondaryStatType::Leprechaun
+		|| StatType == ET66SecondaryStatType::Fountain;
 }
 
 FORCEINLINE bool T66IsLiveSecondaryStatType(ET66SecondaryStatType StatType)
@@ -660,12 +665,14 @@ enum class ET66HeroStatusEffectType : uint8
 /**
  * Item template data row for the Items DataTable.
  *
- * There are 32 live item templates (rarity-agnostic). Each template defines:
+ * There are 34 live item templates (33 regular items + Gambler's Token).
+ * Each template defines:
  *   - Line 1: a primary stat type (one of the 7 foundational stats including Speed)
- *   - Line 2: a secondary stat type (one of 32 live effects)
+ *   - Line 2: a secondary stat type (one of 33 live effects)
  *
  * Rarity and Line 1 rolled value are stored at runtime in FT66InventorySlot.
- * Line 2 multiplier is derived from rarity: Black 1.1x, Red 1.2x, Yellow 1.5x, White 2.0x.
+ * Line 2 multiplier is typically derived from rarity: Black 1.1x, Red 1.2x, Yellow 1.5x, White 2.0x.
+ * Specific items may override the line 2 multiplier at runtime (for example, alchemy fusion results).
  */
 USTRUCT(BlueprintType)
 struct T66_API FItemData : public FTableRowBase
@@ -818,22 +825,28 @@ struct T66_API FT66InventorySlot
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	int32 Line1RolledValue = 1;
 
+	/** Optional runtime override for Line 2 multiplier. <= 0 means use the default rarity multiplier. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	float Line2MultiplierOverride = 0.f;
+
 	FT66InventorySlot()
 		: ItemTemplateID(NAME_None)
 		, Rarity(ET66ItemRarity::Black)
 		, Line1RolledValue(1)
+		, Line2MultiplierOverride(0.f)
 	{}
 
-	FT66InventorySlot(FName InTemplateID, ET66ItemRarity InRarity, int32 InRolledValue)
+	FT66InventorySlot(FName InTemplateID, ET66ItemRarity InRarity, int32 InRolledValue, float InLine2MultiplierOverride = 0.f)
 		: ItemTemplateID(InTemplateID)
 		, Rarity(InRarity)
 		, Line1RolledValue(InRolledValue)
+		, Line2MultiplierOverride(InLine2MultiplierOverride)
 	{}
 
 	bool IsValid() const { return !ItemTemplateID.IsNone(); }
 
 	/** Get the Line 2 multiplier for this slot's rarity. */
-	float GetLine2Multiplier() const { return FItemData::GetLine2RarityMultiplier(Rarity); }
+	float GetLine2Multiplier() const { return Line2MultiplierOverride > 0.f ? Line2MultiplierOverride : FItemData::GetLine2RarityMultiplier(Rarity); }
 };
 
 /**
@@ -899,7 +912,7 @@ struct T66_API FStageData : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** Stage number (1..33) */
+	/** Stage number (1..23) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage")
 	int32 StageNumber = 1;
 
@@ -944,10 +957,11 @@ struct T66_API FStageData : public FTableRowBase
  *
  * Each idol is an independent attack source (fires alongside the hero's basic attack).
  * Category determines the type of effect (Pierce/Bounce/AOE/DOT).
- * Level determines the strength: damage scales linearly, and the category property
- * (bounce count, pierce count, AOE radius, DOT duration) scales linearly.
+ * Rarity determines the strength: black/red/yellow/white map directly to tiers 1..4.
+ * Damage scales linearly, and the category property (bounce count, pierce count,
+ * AOE radius, DOT duration) scales linearly.
  *
- * Formula: ValueAtLevel(L) = Base + (L - 1) * PerLevel
+ * Formula: ValueAtTier(T) = Base + (T - 1) * PerTier
  */
 USTRUCT(BlueprintType)
 struct T66_API FIdolData : public FTableRowBase
@@ -978,19 +992,19 @@ struct T66_API FIdolData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> WhiteIcon;
 
-	/** Maximum level (10). */
+	/** Deprecated legacy field. Idol progression now uses the four live rarity tiers directly. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
-	int32 MaxLevel = 10;
+	int32 MaxLevel = 4;
 
 	// ============================================
-	// Damage scaling (linear: Base + (Level-1) * PerLevel)
+	// Damage scaling (linear: Base + (Tier-1) * PerTier)
 	// ============================================
 
-	/** Base damage at level 1 (before hero stat multipliers). */
+	/** Base damage at black rarity (before hero stat multipliers). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
 	float BaseDamage = 8.f;
 
-	/** Additional damage per level above 1. */
+	/** Additional damage per rarity tier above black. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
 	float DamagePerLevel = 4.f;
 
@@ -1000,11 +1014,11 @@ struct T66_API FIdolData : public FTableRowBase
 	//   AOE: explosion radius (UU)|  DOT: duration (seconds)
 	// ============================================
 
-	/** Base property value at level 1. */
+	/** Base property value at black rarity. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
 	float BaseProperty = 1.f;
 
-	/** Additional property per level above 1. */
+	/** Additional property per rarity tier above black. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
 	float PropertyPerLevel = 1.f;
 
@@ -1048,20 +1062,6 @@ struct T66_API FIdolData : public FTableRowBase
 		}
 	}
 
-	int32 GetLegacyLevelForRarity(ET66ItemRarity Rarity) const
-	{
-		const int32 ClampedMaxLevel = FMath::Max(1, MaxLevel);
-		if (ClampedMaxLevel <= 1)
-		{
-			return 1;
-		}
-
-		const float MaxOffset = static_cast<float>(ClampedMaxLevel - 1);
-		const float StepOffset = MaxOffset / 3.f;
-		const float TargetOffset = static_cast<float>(GetRarityStepIndex(Rarity)) * StepOffset;
-		return 1 + FMath::RoundToInt(TargetOffset);
-	}
-
 	TSoftObjectPtr<UTexture2D> GetIconForRarity(ET66ItemRarity Rarity) const
 	{
 		switch (Rarity)
@@ -1079,26 +1079,26 @@ struct T66_API FIdolData : public FTableRowBase
 		}
 	}
 
-	/** Get damage at a given level. */
-	float GetDamageAtLevel(int32 Level) const
+	/** Get damage at a live rarity tier (1=black .. 4=white). */
+	float GetDamageAtTier(int32 Tier) const
 	{
-		return BaseDamage + FMath::Max(0, Level - 1) * DamagePerLevel;
+		return BaseDamage + FMath::Max(0, FMath::Clamp(Tier, 1, 4) - 1) * DamagePerLevel;
 	}
 
-	/** Get category property value at a given level. */
-	float GetPropertyAtLevel(int32 Level) const
+	/** Get category property value at a live rarity tier (1=black .. 4=white). */
+	float GetPropertyAtTier(int32 Tier) const
 	{
-		return BaseProperty + FMath::Max(0, Level - 1) * PropertyPerLevel;
+		return BaseProperty + FMath::Max(0, FMath::Clamp(Tier, 1, 4) - 1) * PropertyPerLevel;
 	}
 
 	float GetDamageAtRarity(ET66ItemRarity Rarity) const
 	{
-		return GetDamageAtLevel(GetLegacyLevelForRarity(Rarity));
+		return GetDamageAtTier(GetRarityStepIndex(Rarity) + 1);
 	}
 
 	float GetPropertyAtRarity(ET66ItemRarity Rarity) const
 	{
-		return GetPropertyAtLevel(GetLegacyLevelForRarity(Rarity));
+		return GetPropertyAtTier(GetRarityStepIndex(Rarity) + 1);
 	}
 
 	FIdolData()
@@ -1282,9 +1282,7 @@ enum class ET66Difficulty : uint8
 	Medium UMETA(DisplayName = "Medium"),
 	Hard UMETA(DisplayName = "Hard"),
 	VeryHard UMETA(DisplayName = "Very Hard"),
-	Impossible UMETA(DisplayName = "Impossible"),
-	Perdition UMETA(DisplayName = "Perdition"),
-	Final UMETA(DisplayName = "Final")
+	Impossible UMETA(DisplayName = "Impossible")
 };
 
 /**
@@ -1369,7 +1367,7 @@ struct T66_API FLeaderboardEntry : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
 
-	/** Stage reached (1-33) */
+	/** Stage reached (1-23) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	int32 StageReached = 0;
 

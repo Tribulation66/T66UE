@@ -11,6 +11,7 @@
 class SBorder;
 class SImage;
 class STextBlock;
+class SWidget;
 class SWidgetSwitcher;
 class FDragDropEvent;
 struct FGeometry;
@@ -85,6 +86,7 @@ private:
 	TSharedPtr<STextBlock> AlchemyAngerText;
 	TSharedPtr<STextBlock> AlchemyStatusText;
 	TSharedPtr<STextBlock> AlchemyTargetText;
+	TSharedPtr<STextBlock> AlchemyTargetCountText;
 	TSharedPtr<STextBlock> AlchemySacrificeText;
 	TSharedPtr<STextBlock> AlchemyResultText;
 	TSharedPtr<SBorder> AlchemyTargetBorder;
@@ -95,9 +97,12 @@ private:
 	TSharedPtr<FSlateBrush> AlchemySacrificeIconBrush;
 
 	TArray<TSharedPtr<SBorder>> AlchemyInventorySlotBorders;
+	TArray<TSharedPtr<SWidget>> AlchemyInventorySlotButtons;
+	TArray<TSharedPtr<STextBlock>> AlchemyInventorySlotCountTexts;
 	TArray<TSharedPtr<STextBlock>> AlchemyInventorySlotTexts;
 	TArray<TSharedPtr<SImage>> AlchemyInventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> AlchemyInventorySlotBrushes;
+	TSharedPtr<SWidget> AlchemyUpgradeButton;
 
 	int32 AlchemyTargetInventoryIndex = INDEX_NONE;
 	int32 AlchemySacrificeInventoryIndex = INDEX_NONE;

@@ -16,5 +16,6 @@ namespace T66ItemCardTextUtils
 		const FItemData& ItemData,
 		ET66ItemRarity ItemRarity,
 		int32 MainValue,
-		float CurrentHeroScaleMultiplier);
+		float CurrentHeroScaleMultiplier,
+		float Line2MultiplierOverride = 0.f);
 }

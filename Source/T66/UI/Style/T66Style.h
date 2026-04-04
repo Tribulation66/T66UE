@@ -338,10 +338,24 @@ public:
 		static FLinearColor Border;
 
 		// Sizing
+		static constexpr float ReferenceLayoutWidth = 1280.f;
+		static constexpr float ReferenceLayoutHeight = 720.f;
+		static constexpr float SafeFrameAspectRatio = 16.f / 9.f;
 		static constexpr float CornerRadius = 10.f;
 		static constexpr float CornerRadiusSmall = 8.f;
 		static constexpr float StrokeWidth = 1.f;
 		static constexpr float BorderWidth = 1.f;   // White outline around panels/buttons
+		static constexpr float DefaultPanelPadding = 16.f;
+		static constexpr float ButtonMinWidth = 120.f;
+		static constexpr float ButtonMaxWidth = 420.f;
+		static constexpr float ButtonMinHeight = 44.f;
+		static constexpr float ButtonTallHeight = 56.f;
+		static constexpr float TopBarReservedHeight = 146.f;
+		static constexpr float TopBarSurfaceHeight = 118.f;
+		static constexpr float ModalMaxWidth = 1120.f;
+		static constexpr float ModalMaxHeight = 640.f;
+		static constexpr float ReadableLineWidth = 760.f;
+		static constexpr float HUDSafeInset = 20.f;
 
 		// Vendor/Gambler shared layout — all fixed sizes (no FillWidth/FillHeight in main row).
 		// See Tokens docs or this file for full width/height list.
@@ -368,8 +382,8 @@ public:
 		/** Gambler stats panel width (same as NPCStatsPanelWidth). */
 		static constexpr float NPCGamblerStatsPanelWidth = NPCStatsPanelWidth;
 		/** Vendor shop item card: width and height (each of the 3 cards). */
-		static constexpr float NPCShopCardWidth = 220.f;
-		static constexpr float NPCShopCardHeight = 420.f;
+		static constexpr float NPCShopCardWidth = 248.f;
+		static constexpr float NPCShopCardHeight = 500.f;
 		/** Anger face circle size (Vendor and Gambler right panel). */
 		static constexpr float NPCAngerCircleSize = 170.f;
 		/** Bank spinbox width (Borrow/Payback amount). */
@@ -474,16 +488,47 @@ public:
 	/** Wrap a Slate subtree in a viewport-aware DPI scaler using the given design resolution. */
 	static TSharedRef<SWidget> MakeResponsiveRoot(
 		const TSharedRef<SWidget>& Content,
-		const FVector2D& ReferenceResolution = FVector2D(1920.f, 1080.f),
+		const FVector2D& ReferenceResolution = FVector2D(Tokens::ReferenceLayoutWidth, Tokens::ReferenceLayoutHeight),
 		bool bAllowUpscale = true);
 
 	/** Compute the current viewport scale relative to the supplied design resolution. */
 	static float GetViewportResponsiveScale(
-		const FVector2D& ReferenceResolution = FVector2D(1920.f, 1080.f),
+		const FVector2D& ReferenceResolution = FVector2D(Tokens::ReferenceLayoutWidth, Tokens::ReferenceLayoutHeight),
 		bool bAllowUpscale = true);
 
-	/** Get the current game viewport size, or a 1920x1080 fallback if unavailable. */
+	/** Get the current game viewport size in physical pixels, or the baseline reference size if unavailable. */
 	static FVector2D GetViewportSize();
+
+	/** Get the current viewport size expressed in Slate units after engine/player scaling. */
+	static FVector2D GetViewportLogicalSize();
+
+	/** Get the current engine DPI scale derived from /Script/Engine.UserInterfaceSettings. */
+	static float GetEngineDPIScale();
+
+	/** Get the persisted player UI scale multiplier. */
+	static float GetPlayerUIScale();
+
+	/** Get the combined engine DPI scale and player UI scale multiplier. */
+	static float GetGlobalUIScale();
+
+	/** Get the centered safe-frame size in Slate units for a target aspect ratio. */
+	static FVector2D GetSafeFrameSize(float AspectRatio = Tokens::SafeFrameAspectRatio);
+
+	/** Get the centered safe-frame gutters for a target aspect ratio. */
+	static FMargin GetSafeFrameInsets(float AspectRatio = Tokens::SafeFrameAspectRatio);
+
+	/** Apply safe-frame gutters to a local padding value. */
+	static FMargin GetSafePadding(
+		const FMargin& Padding,
+		float AspectRatio = Tokens::SafeFrameAspectRatio);
+
+	/** Center content inside the shared safe frame with optional padding and max logical size caps. */
+	static TSharedRef<SWidget> MakeSafeFrame(
+		const TSharedRef<SWidget>& Content,
+		const FMargin& Padding = FMargin(0.f),
+		float MaxWidth = 0.f,
+		float MaxHeight = 0.f,
+		float AspectRatio = Tokens::SafeFrameAspectRatio);
 
 	/**
 	 * Schedule a safe widget rebuild for the next tick.

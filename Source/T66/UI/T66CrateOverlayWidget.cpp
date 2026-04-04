@@ -188,7 +188,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 	{
 		const FCrateItemEntry& Entry = StripItems[i];
 		const ET66ItemRarity ItemRarity = LootRarityToItemRarity(Entry.Rarity);
-		const FText ItemName = Loc ? Loc->GetText_ItemDisplayName(Entry.ItemID) : FText::FromName(Entry.ItemID);
+		const FText ItemName = Loc ? Loc->GetText_ItemDisplayNameForRarity(Entry.ItemID, ItemRarity) : FText::FromName(Entry.ItemID);
 		const FText RarityName = Loc ? Loc->GetText_ItemRarityName(ItemRarity) : FText::GetEmpty();
 		const FLinearColor FrameColor = Entry.Color * 0.45f + FLinearColor(0.10f, 0.10f, 0.12f, 0.55f);
 		const FLinearColor NameplateColor = Entry.Color * 0.82f + FLinearColor(0.08f, 0.08f, 0.09f, 0.18f);
@@ -273,7 +273,10 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Bottom)
-		.Padding(24.f, 0.f, 24.f, 520.f)
+		.Padding(TAttribute<FMargin>::CreateLambda([]() -> FMargin
+		{
+			return FT66Style::GetSafePadding(FMargin(16.f, 0.f, 16.f, 156.f));
+		}))
 		[
 			FT66Style::MakePanel(
 				SNew(SVerticalBox)
@@ -281,7 +284,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Crate", "Title", "OPEN CRATE"))
-					.Font(FT66Style::Tokens::FontBold(22))
+					.Font(FT66Style::Tokens::FontBold(18))
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
@@ -339,12 +342,12 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					[
 						SAssignNew(SkipText, STextBlock)
 						.Text(BuildSkipCountdownText(ScrollDuration))
-						.Font(FT66Style::Tokens::FontRegular(10))
+						.Font(FT66Style::Tokens::FontRegular(9))
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.Justification(ETextJustify::Right)
 					]
 				],
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(14.f, 14.f, 14.f, 10.f))
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 12.f, 12.f, 8.f))
 			)
 		];
 
@@ -359,7 +362,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 		World->GetTimerManager().SetTimer(StartHandle, this, &UT66CrateOverlayWidget::StartScrolling, 0.05f, false);
 	}
 
-	return Root;
+	return FT66Style::MakeResponsiveRoot(Root);
 }
 
 void UT66CrateOverlayWidget::UpdateSkipText()

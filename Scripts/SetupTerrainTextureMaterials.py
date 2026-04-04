@@ -17,16 +17,16 @@ MASTER_PATH = "/Game/Materials/M_Environment_Unlit"
 
 TERRAIN_SETS = [
     {
-        "source_prefix": "GroundTile",
-        "dest_dir": "/Game/World/Ground",
-        "texture_prefix": "T_GroundTile",
-        "material_prefix": "MI_GroundTile",
+        "source_prefix": "MegabonkBlock",
+        "dest_dir": "/Game/World/Terrain/Megabonk",
+        "texture_prefix": "T_MegabonkBlock",
+        "material_prefix": "MI_MegabonkBlock",
     },
     {
-        "source_prefix": "HillTile",
-        "dest_dir": "/Game/World/Cliffs",
-        "texture_prefix": "T_HillTile",
-        "material_prefix": "MI_HillTile",
+        "source_prefix": "MegabonkSlope",
+        "dest_dir": "/Game/World/Terrain/Megabonk",
+        "texture_prefix": "T_MegabonkSlope",
+        "material_prefix": "MI_MegabonkSlope",
     },
 ]
 

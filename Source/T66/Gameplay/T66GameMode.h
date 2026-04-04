@@ -9,6 +9,7 @@
 class AActor;
 class AT66HeroBase;
 class AT66CompanionBase;
+class AT66EnemyBase;
 class AT66StartGate;
 class AT66StageGate;
 class AT66BossBase;
@@ -58,10 +59,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	bool bAutoSetupLevel = true;
 
-	/** Ground material variants used by runtime floors and as a fallback for terrain tops. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
-	TArray<TSoftObjectPtr<UMaterialInterface>> GroundFloorMaterials;
-
 	/** Hill-side material variants used for terrain walls and ramp side faces. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Setup")
 	TArray<TSoftObjectPtr<UMaterialInterface>> CliffSideMaterials;
@@ -84,6 +81,10 @@ public:
 	/** Cowardice gate / Trickster spawn is placed before the boss area. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
 	FVector CowardiceGateSpawnOffset = FVector(5200.f, 0.f, 200.f);
+
+	/** Development/test helper: spawn a cow, pig, and goat near the stage-start altar as stationary idol test dummies. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Idols")
+	bool bSpawnIdolVFXTestTargetsAtStageStart = true;
 
 	/**
 	 * Spawn the hero based on current Game Instance selections
@@ -176,8 +177,10 @@ protected:
 
 	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
 	void SpawnStartGateForPlayer(AController* Player);
+	/** Spawn the stage-entry idol altar near the start area. */
 	void SpawnIdolAltarForPlayer(AController* Player);
 	void SpawnIdolAltarAtLocation(const FVector& Location);
+	void SpawnIdolVFXTestTargets();
 
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
@@ -301,6 +304,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<AT66IdolAltar> IdolAltar;
 
+	UPROPERTY()
+	TArray<TObjectPtr<AT66EnemyBase>> IdolVFXTestTargets;
+
 	// Async load tracking (prevents gameplay hitching from sync loads).
 	TArray<TSharedPtr<FStreamableHandle>> ActiveAsyncLoadHandles;
 
@@ -329,8 +335,6 @@ private:
 	bool TryGetMainMapStartPlacementLocation(float SideCells, float InwardCells, FVector& OutLocation) const;
 	bool TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector& OutLocation, float ExtraSafeBubbleMargin = 0.f) const;
 
-	// Floor material soft-load.
-	bool bGroundFloorMaterialLoadRequested = false;
 	bool bTerrainCollisionReady = false;
 	bool bMainMapCombatStarted = false;
 	bool bHasMainMapSpawnSurfaceLocation = false;

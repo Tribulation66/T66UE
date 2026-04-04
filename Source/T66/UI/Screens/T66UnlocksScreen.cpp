@@ -69,19 +69,14 @@ namespace
 			return INDEX_NONE;
 		}
 
-		int32 CompanionCount = 0;
-		for (int32 Stage = 1; Stage <= 30; ++Stage)
+		if (TargetIndex <= 23)
 		{
-			if ((Stage % 5) == 0)
-			{
-				continue;
-			}
+			return TargetIndex;
+		}
 
-			++CompanionCount;
-			if (CompanionCount == TargetIndex)
-			{
-				return Stage;
-			}
+		if (TargetIndex == 24)
+		{
+			return 23;
 		}
 
 		return INDEX_NONE;
@@ -288,6 +283,16 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 		? static_cast<float>(UnlockedCount) / static_cast<float>(TotalUnlockCount)
 		: 0.f;
 
+	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FT66Style::GetSafeFrameInsets();
+	});
+
+	const TAttribute<FMargin> SafeBackPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FT66Style::GetSafePadding(FMargin(20.f, 0.f, 0.f, 20.f));
+	});
+
 	auto MakeTabButton = [this](const FText& Text, EUnlockCategory Category) -> TSharedRef<SWidget>
 	{
 		const TAttribute<EVisibility> SelectedVisibility = TAttribute<EVisibility>::CreateLambda([this, Category]() -> EVisibility
@@ -336,98 +341,103 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 				SNew(SOverlay)
 				+ SOverlay::Slot()
 				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(30.f, 25.f, 30.f, 20.f)
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(SafeContentInsets)
 					[
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
 						.AutoHeight()
+						.Padding(30.f, 25.f, 30.f, 20.f)
 						[
-							SNew(STextBlock)
-							.Text(TitleText)
-							.Font(FT66Style::Tokens::FontBold(50))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-							.Justification(ETextJustify::Center)
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								SNew(STextBlock)
+								.Text(TitleText)
+								.Font(FT66Style::Tokens::FontBold(50))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Justification(ETextJustify::Center)
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0.f, 18.f, 0.f, 0.f)
+							[
+								FT66Style::MakePanel(
+									SNew(SVerticalBox)
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									.Padding(14.f, 0.f, 14.f, 10.f)
+									[
+										SNew(SHorizontalBox)
+										+ SHorizontalBox::Slot()
+										.FillWidth(1.f)
+										[
+											SNew(STextBlock)
+											.Text(FText::Format(
+												NSLOCTEXT("T66.Unlocks", "CompletionLabel", "{0}/{1} UNLOCKS"),
+												FText::AsNumber(UnlockedCount),
+												FText::AsNumber(TotalUnlockCount)))
+											.Font(FT66Style::Tokens::FontBold(22))
+											.ColorAndOpacity(FT66Style::Tokens::Text)
+										]
+										+ SHorizontalBox::Slot()
+										.AutoWidth()
+										.HAlign(HAlign_Right)
+										[
+											SNew(STextBlock)
+											.Text(FText::AsPercent(UnlockProgress))
+											.Font(FT66Style::Tokens::FontBold(20))
+											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+										]
+									]
+									+ SVerticalBox::Slot()
+									.AutoHeight()
+									[
+										SNew(SProgressBar)
+										.Percent(UnlockProgress)
+										.FillColorAndOpacity(FLinearColor(0.40f, 0.68f, 0.41f, 1.0f))
+									],
+									FT66PanelParams(ET66PanelType::Panel)
+										.SetColor(T66UnlocksInsetFill())
+										.SetPadding(FMargin(14.f, 14.f)))
+							]
 						]
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(0.f, 18.f, 0.f, 0.f)
+						.Padding(30.f, 0.f, 30.f, 15.f)
 						[
-							FT66Style::MakePanel(
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								.Padding(14.f, 0.f, 14.f, 10.f)
-								[
-									SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot()
-									.FillWidth(1.f)
-									[
-										SNew(STextBlock)
-										.Text(FText::Format(
-											NSLOCTEXT("T66.Unlocks", "CompletionLabel", "{0}/{1} UNLOCKS"),
-											FText::AsNumber(UnlockedCount),
-											FText::AsNumber(TotalUnlockCount)))
-										.Font(FT66Style::Tokens::FontBold(22))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
-									]
-									+ SHorizontalBox::Slot()
-									.AutoWidth()
-									.HAlign(HAlign_Right)
-									[
-										SNew(STextBlock)
-										.Text(FText::AsPercent(UnlockProgress))
-										.Font(FT66Style::Tokens::FontBold(20))
-										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-									]
-								]
-								+ SVerticalBox::Slot()
-								.AutoHeight()
-								[
-									SNew(SProgressBar)
-									.Percent(UnlockProgress)
-									.FillColorAndOpacity(FLinearColor(0.40f, 0.68f, 0.41f, 1.0f))
-								],
-								FT66PanelParams(ET66PanelType::Panel)
-									.SetColor(T66UnlocksInsetFill())
-									.SetPadding(FMargin(14.f, 14.f)))
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								MakeTabButton(NSLOCTEXT("T66.Unlocks", "HeroesTab", "HEROES"), EUnlockCategory::Heroes)
+							]
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								MakeTabButton(NSLOCTEXT("T66.Unlocks", "CompanionsTab", "COMPANIONS"), EUnlockCategory::Companions)
+							]
+							+ SHorizontalBox::Slot().AutoWidth()
+							[
+								MakeTabButton(NSLOCTEXT("T66.Unlocks", "ItemsTab", "ITEMS"), EUnlockCategory::Items)
+							]
 						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(30.f, 0.f, 30.f, 15.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth()
+						+ SVerticalBox::Slot()
+						.FillHeight(1.f)
+						.Padding(30.f, 0.f, 30.f, 20.f)
 						[
-							MakeTabButton(NSLOCTEXT("T66.Unlocks", "HeroesTab", "HEROES"), EUnlockCategory::Heroes)
-						]
-						+ SHorizontalBox::Slot().AutoWidth()
-						[
-							MakeTabButton(NSLOCTEXT("T66.Unlocks", "CompanionsTab", "COMPANIONS"), EUnlockCategory::Companions)
-						]
-						+ SHorizontalBox::Slot().AutoWidth()
-						[
-							MakeTabButton(NSLOCTEXT("T66.Unlocks", "ItemsTab", "ITEMS"), EUnlockCategory::Items)
-						]
-					]
-					+ SVerticalBox::Slot()
-					.FillHeight(1.f)
-					.Padding(30.f, 0.f, 30.f, 20.f)
-					[
-						SNew(SScrollBox)
-						+ SScrollBox::Slot()
-						[
-							SAssignNew(UnlockListBox, SVerticalBox)
+							SNew(SScrollBox)
+							+ SScrollBox::Slot()
+							[
+								SAssignNew(UnlockListBox, SVerticalBox)
+							]
 						]
 					]
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Bottom)
-				.Padding(20.f, 0.f, 0.f, 20.f)
+				.Padding(SafeBackPadding)
 				[
 					SNew(SBox)
 					.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)

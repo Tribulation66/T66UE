@@ -18,6 +18,7 @@ void UT66PlayerSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 	Super::Initialize(Collection);
 	LoadOrCreate();
 	ApplyUITheme();
+	ApplyUIScale();
 
 	ApplyAudioToEngine();
 	ApplyUnfocusedAudioToEngine();
@@ -74,6 +75,13 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	{
 		SettingsObj->SchemaVersion = 9;
 		SettingsObj->UIThemeIndex = static_cast<int32>(ET66UITheme::Dota);
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 10)
+	{
+		SettingsObj->SchemaVersion = 10;
+		SettingsObj->UIScale = 1.0f;
 		bNeedsSave = true;
 	}
 
@@ -134,6 +142,26 @@ void UT66PlayerSettingsSubsystem::SetUITheme(ET66UITheme NewTheme)
 ET66UITheme UT66PlayerSettingsSubsystem::GetUITheme() const
 {
 	return ET66UITheme::Dota;
+}
+
+void UT66PlayerSettingsSubsystem::SetUIScale(float NewScale)
+{
+	if (!SettingsObj) return;
+
+	const float ClampedScale = FMath::Clamp(NewScale, 0.75f, 1.50f);
+	if (FMath::IsNearlyEqual(SettingsObj->UIScale, ClampedScale, KINDA_SMALL_NUMBER))
+	{
+		return;
+	}
+
+	SettingsObj->UIScale = ClampedScale;
+	ApplyUIScale();
+	Save();
+}
+
+float UT66PlayerSettingsSubsystem::GetUIScale() const
+{
+	return SettingsObj ? FMath::Clamp(SettingsObj->UIScale, 0.75f, 1.50f) : 1.0f;
 }
 
 bool UT66PlayerSettingsSubsystem::GetPracticeMode() const
@@ -399,6 +427,20 @@ void UT66PlayerSettingsSubsystem::ApplyUITheme()
 {
 	FT66Style::SetActiveTheme(GetUITheme());
 
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UWorld* World = GI->GetWorld())
+		{
+			if (AT66PlayerController* PC = Cast<AT66PlayerController>(World->GetFirstPlayerController()))
+			{
+				PC->RebuildThemeAwareUI();
+			}
+		}
+	}
+}
+
+void UT66PlayerSettingsSubsystem::ApplyUIScale()
+{
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UWorld* World = GI->GetWorld())

@@ -9,9 +9,10 @@
 class UBoxComponent;
 class UStaticMeshComponent;
 class UStaticMesh;
+class UPrimitiveComponent;
 
 /**
- * Stage 1 Start Area Idol Altar.
+ * Stage-entry Idol Altar.
  * Visual: 3 stacked rectangles (pyramid feel).
  * Interaction: Press Interact near it to open the Idol Altar overlay.
  */
@@ -43,14 +44,25 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "IdolAltar")
 	TSoftObjectPtr<UStaticMesh> AltarMeshOverride;
 
-	/** Start-area catch-up altars consume the stored pre-run idol picks; boss-clear altars do not. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "IdolAltar")
+	float VisualScaleMultiplier = 4.0f;
+
+	/** Remaining selections granted by this altar visit. The altar destroys itself when this hits zero. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
-	bool bConsumesCatchUpIdolPicks = false;
+	int32 RemainingSelections = 1;
+
+	/** Extra selections granted to catch up with skipped starting stages on higher difficulties. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
+	int32 CatchUpSelectionsRemaining = 0;
 
 	/** Apply simple placeholder visuals (color/material). */
 	void ApplyVisuals();
 
 protected:
 	virtual void BeginPlay() override;
+
+private:
+	void UpdateInteractionBounds();
+	void ConfigureVisualCollision(UPrimitiveComponent* Primitive, bool bEnableCollision) const;
 };
 

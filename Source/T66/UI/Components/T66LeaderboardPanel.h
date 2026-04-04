@@ -71,7 +71,7 @@ private:
 	TSharedPtr<FString> SelectedTypeOption;
 	TSharedPtr<FString> SelectedStageOption;
 
-	// Only used for Speed Run leaderboard (stage 1..5 per difficulty).
+	// Only used for Speed Run leaderboard (absolute stage within the selected difficulty segment).
 	int32 CurrentSpeedRunStage = 1;
 
 	// Generate placeholder data
@@ -101,6 +101,8 @@ private:
 	void OnDifficultyChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	void OnTypeChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	void OnStageChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+	void UpdateStageOptionsForDifficulty();
+	static void GetStageRangeForDifficulty(ET66Difficulty Difficulty, int32& OutStartStage, int32& OutEndStage);
 
 	// Get localized text
 	FText GetFilterText(ET66LeaderboardFilter Filter) const;

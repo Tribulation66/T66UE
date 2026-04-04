@@ -269,7 +269,12 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			[FT66Style::MakeButton(ExitLab, FOnClicked::CreateLambda([this]() { OnExitLab(); return FReply::Handled(); }), ET66ButtonType::Danger)]
 		];
 
-	return SNew(SBox).HAlign(HAlign_Fill).VAlign(VAlign_Fill)
+	const TAttribute<FMargin> SafePanelPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FT66Style::GetSafePadding(FMargin(40.f));
+	});
+
+	TSharedRef<SWidget> Root = SNew(SBox).HAlign(HAlign_Fill).VAlign(VAlign_Fill)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -278,7 +283,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.85f))
 			]
-			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(40.f)
+			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(SafePanelPadding)
 			[
 				SNew(SBox).WidthOverride(520.f)
 				[
@@ -286,6 +291,8 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 				]
 			]
 		];
+
+	return FT66Style::MakeResponsiveRoot(Root);
 }
 
 #undef LOCTEXT_NAMESPACE

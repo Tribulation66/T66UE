@@ -19,9 +19,9 @@ class T66_API UT66IdolManagerSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	static constexpr int32 MaxEquippedIdolSlots = 6;
+	static constexpr int32 MaxEquippedIdolSlots = 4;
 	static constexpr int32 MaxIdolLevel = 4;
-	static constexpr int32 IdolStockSlotCount = 3;
+	static constexpr int32 IdolStockSlotCount = 16;
 
 	UPROPERTY(BlueprintAssignable, Category = "Idols")
 	FOnIdolStateChanged IdolStateChanged;
@@ -49,12 +49,11 @@ public:
 	ET66ItemRarity GetIdolStockRarityInSlot(int32 SlotIndex) const;
 	bool SelectIdolFromStock(int32 SlotIndex);
 	bool IsIdolStockSlotSelected(int32 SlotIndex) const;
+	bool SellEquippedIdolInSlot(int32 SlotIndex);
 
 	void ResetForNewRun(ET66Difficulty Difficulty);
 	void HandleStageChanged(int32 NewStage);
 
-	bool ShouldSpawnBossClearAltarForClearedStage(int32 ClearedStage) const;
-	int32 GetDifficultySegmentIdolPickCount(ET66Difficulty Difficulty) const;
 	int32 GetCatchUpIdolPickCountForDifficulty(ET66Difficulty Difficulty) const;
 	int32 GetRemainingCatchUpIdolPicks() const { return RemainingCatchUpIdolPicks; }
 	bool HasCatchUpIdolPicksRemaining() const { return RemainingCatchUpIdolPicks > 0; }
@@ -66,6 +65,7 @@ private:
 	void NormalizeEquippedArrays();
 	void ClearIdolStock();
 	void BroadcastIdolStateChanged();
+	bool ApplyStockOfferToEquipped(int32 SlotIndex);
 	int32 GetCurrentStage() const;
 	int32 GetDifficultyStartStage(ET66Difficulty Difficulty) const;
 	int32 GetDifficultyEndStage(ET66Difficulty Difficulty) const;

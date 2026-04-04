@@ -91,12 +91,10 @@ namespace T66MainMapTerrain
 		{
 			switch (Difficulty)
 			{
-			case ET66Difficulty::Medium: return { TEXT("MediumOcean"), TEXT("MediumOcean") };
-			case ET66Difficulty::Hard: return { TEXT("HardMountain"), TEXT("HardMountain") };
-			case ET66Difficulty::VeryHard: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
-			case ET66Difficulty::Impossible: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
-			case ET66Difficulty::Perdition: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
-			case ET66Difficulty::Final: return { TEXT("FinalHell"), TEXT("FinalHell") };
+			case ET66Difficulty::Medium: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
+			case ET66Difficulty::Hard: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
+			case ET66Difficulty::VeryHard: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
+			case ET66Difficulty::Impossible: return { TEXT("FinalHell"), TEXT("FinalHell") };
 			case ET66Difficulty::Easy:
 			default:
 				return {};
@@ -782,32 +780,9 @@ namespace T66MainMapTerrain
 
 			OutAssets.PlaneMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
 			OutAssets.GrassMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Grass.Grass"));
-			if (!OutAssets.GrassMesh)
+			if (UMaterialInterface* GrassMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Props/Grass/Materials/Material_0_014.Material_0_014")))
 			{
-				OutAssets.GrassMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/T66MapAssets/Grass/SM_Grass_02.SM_Grass_02"));
-			}
-			if (UMaterialInterface* GrassMaterial1 = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Ground/MI_Grass1.MI_Grass1")))
-			{
-				OutAssets.GrassMaterials.Add(GrassMaterial1);
-			}
-			if (UMaterialInterface* GrassMaterial2 = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Ground/MI_Grass2.MI_Grass2")))
-			{
-				OutAssets.GrassMaterials.Add(GrassMaterial2);
-			}
-			if (UMaterialInterface* GrassMaterial3 = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Ground/MI_Grass3.MI_Grass3")))
-			{
-				OutAssets.GrassMaterials.Add(GrassMaterial3);
-			}
-			if (UMaterialInterface* GrassMaterial4 = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Ground/MI_Grass4.MI_Grass4")))
-			{
-				OutAssets.GrassMaterials.Add(GrassMaterial4);
-			}
-			if (OutAssets.GrassMaterials.Num() == 0)
-			{
-				if (UMaterialInterface* FallbackGrassMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Props/Grass/Materials/Material_0_014.Material_0_014")))
-				{
-					OutAssets.GrassMaterials.Add(FallbackGrassMaterial);
-				}
+				OutAssets.GrassMaterials.Add(GrassMaterial);
 			}
 
 			OutAssets.TreeMesh1 = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Tree.Tree"));
@@ -845,21 +820,11 @@ namespace T66MainMapTerrain
 
 		switch (Difficulty)
 		{
-		case ET66Difficulty::Medium:
-			Preset.ElevationMin = -10000.0f;
-			Preset.ElevationMax = 0.0f;
-			break;
-
-		case ET66Difficulty::Hard:
-			Preset.ElevationMin = 0.0f;
-			Preset.ElevationMax = 10000.0f;
-			break;
-
 		case ET66Difficulty::Easy:
+		case ET66Difficulty::Medium:
+		case ET66Difficulty::Hard:
 		case ET66Difficulty::VeryHard:
 		case ET66Difficulty::Impossible:
-		case ET66Difficulty::Perdition:
-		case ET66Difficulty::Final:
 		default:
 			Preset.ElevationMin = -5000.0f;
 			Preset.ElevationMax = 5000.0f;

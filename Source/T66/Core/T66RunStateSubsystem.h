@@ -49,6 +49,23 @@ struct FT66DotInstance
 	FName SourceIdolID = NAME_None;
 };
 
+/** DOT key allows multiple named DOT sources to coexist on the same target. */
+struct FT66DotKey
+{
+	TWeakObjectPtr<AActor> Target;
+	FName SourceIdolID = NAME_None;
+
+	bool operator==(const FT66DotKey& Other) const
+	{
+		return Target == Other.Target && SourceIdolID == Other.SourceIdolID;
+	}
+};
+
+FORCEINLINE uint32 GetTypeHash(const FT66DotKey& Key)
+{
+	return HashCombine(GetTypeHash(Key.Target.Get()), GetTypeHash(Key.SourceIdolID));
+}
+
 /** Result of a vendor steal attempt (used by UI feedback). */
 enum class ET66VendorStealOutcome : uint8
 {
@@ -90,6 +107,8 @@ public:
 	static constexpr float LastStandDurationSeconds = 10.f;
 	static constexpr float QuickReviveDownedDurationSeconds = 3.f;
 	static constexpr int32 VendorAngerThresholdGold = 100;
+	static constexpr int32 VendorDisplaySlotCount = 5;
+	static constexpr int32 BuybackDisplaySlotCount = 5;
 	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
 	static constexpr int32 MaxEventLogEntries = 400;
 	static constexpr int32 MaxStructuredEventLogEntries = 800;
@@ -490,7 +509,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FRunEvent>& GetStructuredEventLog() const { return StructuredEventLog; }
 
-	/** Set current stage (1–33). */
+	/** Set current stage (1–23). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void SetCurrentStage(int32 Stage);
 
@@ -561,7 +580,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItemSlot(const FT66InventorySlot& Slot);
 
-	/** Activates the Gambler's Token for the current run (1..6 => 50%..100% sell value). */
+	/** Activates the Gambler's Token for the current run (1..5 => 50%..90% sell value). */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Items")
 	void ApplyGamblersTokenPickup(int32 TokenLevel);
 
@@ -577,7 +596,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
 	int32 GetSellGoldForInventorySlot(const FT66InventorySlot& Slot) const;
 
-	static constexpr int32 MaxGamblersTokenLevel = 6;
+	static constexpr int32 MaxGamblersTokenLevel = 5;
 
 	/** Clear inventory only (e.g. Lab "Reset Items"). Recomputes stats and broadcasts. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -591,18 +610,27 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	bool SellInventoryItemAt(int32 InventoryIndex);
 
-	/** True if the item can still be upgraded in casino alchemy. */
+	static constexpr int32 AlchemyCopiesRequired = 3;
+
+	/** True if the item is a valid alchemy target and enough matching copies exist to fuse it. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Casino|Alchemy")
 	bool CanAlchemyUpgradeInventoryItemAt(int32 InventoryIndex) const;
 
-	/** Consume one sacrifice item to increase a target item by one rarity step. */
+	/** Count matching inventory copies usable for alchemy (same item template and rarity). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Casino|Alchemy")
+	int32 GetAlchemyMatchingInventoryCount(int32 InventoryIndex) const;
+
+	/** Preview the fused result for a target item. Returns true only when enough matching copies exist. */
+	bool GetAlchemyUpgradePreviewAt(int32 InventoryIndex, FT66InventorySlot& OutUpgradedSlot, int32& OutMatchingCount) const;
+
+	/** Consume three matching copies to increase an item by one rarity step. SacrificeIndex is ignored for compatibility. */
 	bool TryAlchemyUpgradeInventoryItems(int32 TargetIndex, int32 SacrificeIndex, FT66InventorySlot& OutUpgradedSlot);
 
 	static ET66ItemRarity GetNextItemRarity(ET66ItemRarity Rarity);
 
 	/** True if there is space in the inventory (max 20). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
-	bool HasInventorySpace() const { return InventorySlots.Num() < MaxInventorySlots; }
+	bool HasInventorySpace() const { return true; }
 
 	// ============================================
 	// Hero Level / Stats
@@ -892,11 +920,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState|Buyback")
 	FOnBuybackChanged BuybackChanged;
 
-	/** Refresh the 3-slot buyback display from the pool (call when opening buyback tab or after buyback/reroll). */
+	/** Refresh the buyback display from the pool (call when opening buyback tab or after buyback/reroll). */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Buyback")
 	void GenerateBuybackDisplay();
 
-	/** Cycle to next page of buyback items (same layout as shop: 3 panels + reroll). */
+	/** Cycle to the next page of buyback items (same layout as shop + reroll). */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Buyback")
 	void RerollBuybackDisplay();
 
@@ -906,7 +934,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Buyback")
 	const TArray<FT66InventorySlot>& GetBuybackDisplaySlots() const { return BuybackDisplaySlots; }
 
-	/** Attempt to buy back a display slot (Index 0..2). Price = sell price of that item. Returns true if purchased. */
+	/** Attempt to buy back a display slot. Price = sell price of that item. Returns true if purchased. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Buyback")
 	bool TryBuybackSlot(int32 DisplayIndex);
 
@@ -1196,8 +1224,8 @@ private:
 	/** Active Gambler's Token level for this run. It behaves like a special run upgrade, not a regular slot item. */
 	int32 ActiveGamblersTokenLevel = 0;
 
-	/** Active DOTs (idol): target -> instance. Keys are weak so destroyed actors drop out. */
-	TMap<TWeakObjectPtr<AActor>, FT66DotInstance> ActiveDOTs;
+	/** Active DOTs (idol): one per target+source pair so distinct idols do not overwrite each other. */
+	TMap<FT66DotKey, FT66DotInstance> ActiveDOTs;
 
 	TFunction<void(AActor*, int32, FName)> DOTDamageApplier;
 	FTimerHandle DOTTimerHandle;

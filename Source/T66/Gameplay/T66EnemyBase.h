@@ -55,6 +55,21 @@ public:
 	/** Force this enemy to flee from the player for a short duration without changing its default AI tuning. */
 	void ApplyForcedRunAway(float DurationSeconds);
 
+	/** Hard crowd control that fully interrupts enemy movement for a short duration. */
+	void ApplyStun(float DurationSeconds);
+
+	/** Bind/root effect: enemy cannot move but may still remain active. */
+	void ApplyRoot(float DurationSeconds);
+
+	/** Freeze is a stronger immobilize that also visually reads as a full stop. */
+	void ApplyFreeze(float DurationSeconds);
+
+	/** Pull the enemy toward a point by a short swept displacement. */
+	void ApplyPullTowards(const FVector& PullOrigin, float Distance);
+
+	/** Push the enemy away from a point by a short swept displacement. */
+	void ApplyPushAwayFrom(const FVector& PushOrigin, float Distance);
+
 	/** Point value for wave budget and score (Bible 2.9) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
 	int32 PointValue = 10;
@@ -78,6 +93,10 @@ public:
 	/** Health bar widget above head */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> HealthBarWidget;
+
+	/** Dedicated bullseye widget shown when this enemy is manually locked. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UWidgetComponent> LockIndicatorWidget;
 
 	/** Director that spawned this enemy (for death notification) */
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
@@ -201,6 +220,9 @@ private:
 	float MoveSlowSecondsRemaining = 0.f;
 	float BaseMaxWalkSpeed = 350.f;
 	float ForcedRunAwaySecondsRemaining = 0.f;
+	float StunSecondsRemaining = 0.f;
+	float RootSecondsRemaining = 0.f;
+	float FreezeSecondsRemaining = 0.f;
 	float AutoAttackKnockbackSecondsRemaining = 0.f;
 
 	/** Cached player pawn reference (avoid UGameplayStatics::GetPlayerPawn every tick per enemy). */

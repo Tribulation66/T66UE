@@ -16,7 +16,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
-#include "GameFramework/GameUserSettings.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
 #include "ImageUtils.h"
@@ -27,7 +26,6 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
-#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SInvalidationPanel.h"
@@ -147,23 +145,7 @@ namespace
 
 	FVector2D GetEffectiveFrontendViewportSize()
 	{
-		FVector2D EffectiveSize = FT66Style::GetViewportSize();
-
-		if (GEngine)
-		{
-			if (UGameUserSettings* GameUserSettings = GEngine->GetGameUserSettings())
-			{
-				const FIntPoint ScreenResolution = GameUserSettings->GetScreenResolution();
-				if (ScreenResolution.X > 0 && ScreenResolution.Y > 0
-					&& GameUserSettings->GetFullscreenMode() != EWindowMode::Windowed)
-				{
-					EffectiveSize.X = FMath::Max(EffectiveSize.X, static_cast<float>(ScreenResolution.X));
-					EffectiveSize.Y = FMath::Max(EffectiveSize.Y, static_cast<float>(ScreenResolution.Y));
-				}
-			}
-		}
-
-		return EffectiveSize;
+		return FT66Style::GetViewportSize();
 	}
 }
 
@@ -185,8 +167,8 @@ UT66LocalizationSubsystem* UT66MainMenuScreen::GetLocSubsystem() const
 
 TSharedRef<SWidget> UT66MainMenuScreen::RebuildWidget()
 {
-	// This screen already computes its own viewport-relative layout, so applying
-	// the shared responsive root would scale the entire menu a second time.
+	// This screen already computes its layout from the live safe-frame size.
+	// Wrapping it in the shared responsive root shrinks it a second time.
 	return BuildSlateUI();
 }
 
@@ -376,7 +358,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	LastRunHeroBrush = MakeShared<FSlateBrush>();
 	LastRunHeroBrush->DrawAs = ESlateBrushDrawType::Image;
 	LastRunHeroBrush->Tiling = ESlateBrushTileType::NoTile;
-	LastRunHeroBrush->ImageSize = FVector2D(84.f, 84.f);
+	LastRunHeroBrush->ImageSize = FVector2D(76.f, 76.f);
 	LastRunHeroBrush->SetResourceObject(TexPool ? T66SlateTexture::GetLoaded(TexPool, LastRunPortraitSoft) : nullptr);
 
 	FriendPortraitBrushes.Reset();
@@ -385,7 +367,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
 		Brush->DrawAs = ESlateBrushDrawType::Image;
 		Brush->Tiling = ESlateBrushTileType::NoTile;
-		Brush->ImageSize = FVector2D(44.f, 44.f);
+		Brush->ImageSize = FVector2D(40.f, 40.f);
 		const TSoftObjectPtr<UTexture2D> FriendPortraitSoft = ResolvePortraitSoft(Friend.HeroID, Friend.BodyType, ET66HeroPortraitVariant::Low);
 		Brush->SetResourceObject(TexPool ? T66SlateTexture::GetLoaded(TexPool, FriendPortraitSoft) : nullptr);
 		FriendPortraitBrushes.Add(Brush);
@@ -405,46 +387,79 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const FLinearColor PartySlotAccent(0.15f, 0.17f, 0.19f, 1.0f);
 	const FLinearColor PartySlotAccentInactive(0.08f, 0.09f, 0.10f, 1.0f);
 	const FLinearColor PlaceholderTint(0.20f, 0.22f, 0.24f, 0.55f);
-	const float CenterColumnWidth = 500.f;
-	const float ColumnHeight = 770.f;
-	const float CenterButtonWidth = 500.f;
-	const float CenterButtonHeight = 114.f;
-	const float CenterButtonGap = 26.f;
-	const float CenterColumnHeight = (CenterButtonHeight * 2.f) + CenterButtonGap;
 	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
-	const FVector2D ViewportSize = GetEffectiveFrontendViewportSize();
-	const float HorizontalFramePadding = 44.f;
-	const float BottomFramePadding = 34.f;
-	const FVector2D ReferenceViewportSize(1920.f, 1080.f);
-	const float ReferenceTopInset = 118.f;
+	const float TopReservedInset = UIManager ? UIManager->GetFrontendTopBarReservedHeight() : TopInset;
+	const FVector2D ViewportLogicalSize = FT66Style::GetViewportLogicalSize();
+	const float HorizontalFramePadding = 0.f;
+	const float BottomFramePadding = 0.f;
+	const FVector2D ReferenceViewportSize(FT66Style::Tokens::ReferenceLayoutWidth, FT66Style::Tokens::ReferenceLayoutHeight);
+	const float ReferenceTopInset = 107.f;
 	const float ReferenceContentWidthBudget = ReferenceViewportSize.X - (HorizontalFramePadding * 2.f);
-	const float AvailableColumnHeight = FMath::Max(1.f, ViewportSize.Y - TopInset - BottomFramePadding);
+	const float AvailableColumnHeight = FMath::Max(1.f, ViewportLogicalSize.Y - TopInset - BottomFramePadding);
 	const float ReferenceAvailableColumnHeight = FMath::Max(1.f, ReferenceViewportSize.Y - ReferenceTopInset - BottomFramePadding);
-	const float AvailableContentWidth = FMath::Max(1.f, ViewportSize.X - (HorizontalFramePadding * 2.f));
+	const float AvailableContentWidth = FMath::Max(1.f, ViewportLogicalSize.X - (HorizontalFramePadding * 2.f));
 	const float WidthResponsiveScale = AvailableContentWidth / FMath::Max(ReferenceContentWidthBudget, 1.f);
 	const float HeightResponsiveScale = AvailableColumnHeight / FMath::Max(ReferenceAvailableColumnHeight, 1.f);
 	const float LayoutResponsiveScale = FMath::Clamp(
 		FMath::Sqrt(WidthResponsiveScale * HeightResponsiveScale),
-		0.70f,
-		3.0f);
-	const float LeaderboardPanelTargetWidth = FMath::Max(300.f, (ReferenceContentWidthBudget * 0.31f) * LayoutResponsiveScale);
-	const float ColumnTargetHeight = FMath::Min(AvailableColumnHeight, FMath::Max(540.f, ColumnHeight * LayoutResponsiveScale));
-	const float SidePanelTargetHeight = ColumnTargetHeight;
-	const float CenterSlotMinimumWidth = 280.f;
-	const float UnifiedSidePanelTargetWidth = LeaderboardPanelTargetWidth + HorizontalFramePadding;
-	const float LeaderboardShellTargetWidth = FMath::Max(340.f, UnifiedSidePanelTargetWidth * 0.84f);
-	const float SocialPanelTargetWidth = FMath::Max(280.f, UnifiedSidePanelTargetWidth * 0.76f);
-	const float SideColumnsCombinedTargetWidth = SocialPanelTargetWidth + LeaderboardShellTargetWidth;
-	const float SideColumnsMaxWidth = FMath::Max(1.f, AvailableContentWidth - CenterSlotMinimumWidth - (HorizontalFramePadding * 2.f));
-	const float SideColumnsWidthScale = SideColumnsCombinedTargetWidth > 1.f
-		? FMath::Min(1.f, SideColumnsMaxWidth / SideColumnsCombinedTargetWidth)
-		: 1.f;
-	const float ResolvedSidePanelWidth = SocialPanelTargetWidth * SideColumnsWidthScale;
-	const float ResolvedLeaderboardPanelWidth = LeaderboardShellTargetWidth * SideColumnsWidthScale;
-	const float CenterButtonLift = FMath::Max(80.f, (ColumnTargetHeight - CenterColumnHeight) * 0.30f);
-	const int32 LeftPanelBodyFontSize = 14;
-	const int32 LeftPanelTitleFontSize = 14;
-	const int32 CenterButtonFontSize = 42;
+		0.85f,
+		1.35f);
+	const float WidthLayoutAlpha = FMath::Clamp((AvailableContentWidth - ReferenceContentWidthBudget) / 640.f, 0.f, 1.f);
+	auto LerpDimension = [WidthLayoutAlpha](float CompactValue, float FullValue) -> float
+	{
+		return FMath::Lerp(CompactValue, FullValue, WidthLayoutAlpha);
+	};
+	auto LerpInt = [WidthLayoutAlpha](int32 CompactValue, int32 FullValue) -> int32
+	{
+		return FMath::RoundToInt(FMath::Lerp(static_cast<float>(CompactValue), static_cast<float>(FullValue), WidthLayoutAlpha));
+	};
+
+	float CenterColumnWidth = LerpDimension(304.f, 372.f);
+	float ResolvedSidePanelWidth = LerpDimension(284.f, 328.f);
+	float ResolvedLeaderboardPanelWidth = ResolvedSidePanelWidth;
+	const float ColumnGap = LerpDimension(18.f, 28.f);
+
+	float WidthBudgetShortfall = FMath::Max(
+		0.f,
+		((ResolvedSidePanelWidth * 2.f) + CenterColumnWidth + (ColumnGap * 2.f)) - AvailableContentWidth);
+	auto ConsumeWidthBudget = [&WidthBudgetShortfall](float& Value, float MinValue)
+	{
+		if (WidthBudgetShortfall <= 0.f)
+		{
+			return;
+		}
+
+		const float Reduction = FMath::Min(WidthBudgetShortfall, FMath::Max(0.f, Value - MinValue));
+		Value -= Reduction;
+		WidthBudgetShortfall -= Reduction;
+	};
+
+	ConsumeWidthBudget(CenterColumnWidth, 292.f);
+	if (WidthBudgetShortfall > 0.f)
+	{
+		const float MirroredSideReduction = FMath::Min(
+			WidthBudgetShortfall * 0.5f,
+			FMath::Max(0.f, ResolvedSidePanelWidth - 252.f));
+		ResolvedSidePanelWidth -= MirroredSideReduction;
+		WidthBudgetShortfall -= MirroredSideReduction * 2.f;
+	}
+	ResolvedLeaderboardPanelWidth = ResolvedSidePanelWidth;
+
+	const float ColumnTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(500.f, 540.f) * LayoutResponsiveScale);
+	const float SidePanelTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(430.f, 490.f));
+	const float LeaderboardChromeHeight = LerpDimension(52.f, 58.f);
+	const float LeaderboardShellTargetHeight = SidePanelTargetHeight + LeaderboardChromeHeight;
+	const float CenterButtonWidth = CenterColumnWidth;
+	const float CenterButtonHeight = LerpDimension(68.f, 80.f);
+	const float CenterButtonGap = LerpDimension(10.f, 14.f);
+	const float CenterColumnHeight = (CenterButtonHeight * 2.f) + CenterButtonGap;
+	const float CenterButtonLift = FMath::Max(LerpDimension(38.f, 52.f), (ColumnTargetHeight - CenterColumnHeight) * 0.24f);
+	const float SceneVerticalOffset = LerpDimension(96.f, 128.f);
+	const float SceneTitleTopPadding = TopReservedInset + LerpDimension(8.f, 12.f);
+	const int32 LeftPanelBodyFontSize = LerpInt(11, 12);
+	const int32 LeftPanelTitleFontSize = LerpInt(11, 12);
+	const int32 CenterButtonFontSize = LerpInt(24, 28);
+	const int32 SceneTitleFontSize = LerpInt(42, 52);
 
 	auto MakeRadianceFont = [](int32 Size, int32 LetterSpacing = 0) -> FSlateFontInfo
 	{
@@ -456,7 +471,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	auto MakeSectionTitle = [HeaderText, LeftPanelTitleFontSize](const FText& Text) -> TSharedRef<SWidget>
 	{
 		FSlateFontInfo HeaderFont = FT66Style::MakeFont(TEXT("Bold"), LeftPanelTitleFontSize + 2);
-		HeaderFont.LetterSpacing = 140;
+		HeaderFont.LetterSpacing = 112;
 
 		return SNew(STextBlock)
 			.Text(Text)
@@ -478,7 +493,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	auto MakeFriendGroupHeader = [this, HeaderText, LeftPanelTitleFontSize](const FText& Label, int32 Count, const FLinearColor& CountColor, bool bOnlineGroup) -> TSharedRef<SWidget>
 	{
 		FSlateFontInfo GroupFont = FT66Style::MakeFont(TEXT("Bold"), LeftPanelTitleFontSize + 2);
-		GroupFont.LetterSpacing = 120;
+		GroupFont.LetterSpacing = 96;
 		const bool bExpanded = bOnlineGroup ? bShowOnlineFriends : bShowOfflineFriends;
 		const FSlateBrush* DownArrowBrush = &FCoreStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").DownArrowImage;
 
@@ -518,14 +533,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					]
 				]
 			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
 				.Text(Label)
 				.Font(GroupFont)
 				.ColorAndOpacity(HeaderText)
 			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
 				.Text(FText::Format(NSLOCTEXT("T66.MainMenu", "FriendsGroupCount", "({0})"), FText::AsNumber(Count)))
@@ -551,8 +566,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			: FLinearColor(0.88f, 0.90f, 0.84f, 0.72f);
 
 		return SNew(SBox)
-			.WidthOverride(100.f)
-			.HeightOverride(38.f)
+			.WidthOverride(80.f)
+			.HeightOverride(30.f)
 			[
 				SNew(SButton)
 				.ButtonStyle(&NoBorderButtonStyle)
@@ -563,7 +578,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 					.BorderBackgroundColor(FillColor)
-					.Padding(FMargin(12.f, 7.f))
+					.Padding(FMargin(8.f, 5.f))
 					[
 						SNew(STextBlock)
 						.Text(Text)
@@ -593,14 +608,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		return SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(bInParty ? FLinearColor(0.10f, 0.14f, 0.18f, 0.55f) : FLinearColor(0.f, 0.f, 0.f, 0.20f))
-			.Padding(8.f, 6.f)
+			.Padding(6.f, 4.f)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SNew(SBox)
-					.WidthOverride(54.f)
-					.HeightOverride(54.f)
+					.WidthOverride(44.f)
+					.HeightOverride(44.f)
 					[
 						FT66Style::MakeSlotFrame(
 							SNew(SImage)
@@ -610,7 +625,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 							FMargin(1.f))
 					]
 				]
-				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(12.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 				[
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
@@ -628,7 +643,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 						.ColorAndOpacity(StatusColor)
 					]
 				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(12.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 				[
 					MakeFlatActionButton(
 						ActionText,
@@ -669,7 +684,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.SetMinWidth(CenterButtonWidth)
 			.SetHeight(CenterButtonHeight)
 			.SetFontSize(CenterButtonFontSize)
-			.SetPadding(FMargin(28.f, 22.f, 28.f, 18.f))
+			.SetPadding(FMargin(16.f, 10.f, 16.f, 8.f))
 			.SetUseGlow(false)
 			.SetUseDotaPlateOverlay(bUseDotaPlateOverlay)
 			.SetDotaPlateOverrideBrush(PrimaryCTAFillBrush.Get())
@@ -763,7 +778,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				continue;
 			}
 
-			FriendsList->AddSlot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+			FriendsList->AddSlot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 			[
 				MakeFriendRow(Friend, FriendIndex)
 			];
@@ -771,7 +786,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	};
 
 	AddFriendGroup(true);
-	FriendsList->AddSlot().AutoHeight().Padding(0.f, 26.f, 0.f, 0.f)[SNew(SSpacer).Size(FVector2D(1.f, 1.f))];
+	FriendsList->AddSlot().AutoHeight().Padding(0.f, 20.f, 0.f, 0.f)[SNew(SSpacer).Size(FVector2D(1.f, 1.f))];
 	AddFriendGroup(false);
 
 	TSharedRef<SHorizontalBox> PartySlots = SNew(SHorizontalBox);
@@ -794,11 +809,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Top)
-				.Padding(0.f, 12.f, 0.f, 0.f)
+				.Padding(0.f, 10.f, 0.f, 0.f)
 				[
 					SNew(SBox)
-					.WidthOverride(14.f)
-					.HeightOverride(14.f)
+					.WidthOverride(12.f)
+					.HeightOverride(12.f)
 					[
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -808,11 +823,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Bottom)
-				.Padding(0.f, 0.f, 0.f, 12.f)
+				.Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(SBox)
-					.WidthOverride(26.f)
-					.HeightOverride(18.f)
+					.WidthOverride(20.f)
+					.HeightOverride(14.f)
 					[
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -822,13 +837,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 		PartySlots->AddSlot()
 		.AutoWidth()
-		.Padding(SlotIndex > 0 ? FMargin(8.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+		.Padding(SlotIndex > 0 ? FMargin(5.f, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
-			.WidthOverride(70.f)
-			.HeightOverride(70.f)
+			.WidthOverride(52.f)
+			.HeightOverride(52.f)
 			[
-				FT66Style::MakeSlotFrame(SlotContent, SlotAccent, bLeaderSlot ? FMargin(1.f) : FMargin(7.f))
+				FT66Style::MakeSlotFrame(SlotContent, SlotAccent, bLeaderSlot ? FMargin(1.f) : FMargin(6.f))
 			]
 		];
 	}
@@ -838,8 +853,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 		[
 			SNew(SBox)
-			.WidthOverride(78.f)
-			.HeightOverride(78.f)
+			.WidthOverride(60.f)
+			.HeightOverride(60.f)
 			[
 				FT66Style::MakeSlotFrame(
 					SNew(SImage)
@@ -848,7 +863,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					FMargin(1.f))
 			]
 		]
-		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(14.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(12.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 		[
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
@@ -883,36 +898,48 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(ShellFill)
-		.Padding(FMargin(18.f, 18.f, 18.f, 16.f))
+		.Padding(FMargin(12.f, 12.f, 12.f, 10.f))
 		[
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight()
-			[
-				MakeSectionTitle(NSLOCTEXT("T66.MainMenu", "LastRunSection", "LAST RUN"))
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
-			[
-				LastRunRow
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 20.f, 0.f, 0.f)
-			[
-				MakeSubtleDivider()
-			]
-			+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 18.f, 0.f, 0.f)
+			+ SVerticalBox::Slot()
+			.FillHeight(1.f)
 			[
 				SNew(SScrollBox)
+				.ScrollBarVisibility(EVisibility::Visible)
 				+ SScrollBox::Slot()
 				[
-					FriendsList
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						MakeSectionTitle(NSLOCTEXT("T66.MainMenu", "LastRunSection", "LAST RUN"))
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+					[
+						LastRunRow
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
+					[
+						MakeSubtleDivider()
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+					[
+						FriendsList
+					]
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 14.f, 0.f, 0.f)
 			[
-				MakeSectionTitle(NSLOCTEXT("T66.MainMenu", "PartySection", "PARTY"))
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-			[
-				PartySlots
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					MakeSectionTitle(NSLOCTEXT("T66.MainMenu", "PartySection", "PARTY"))
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+				[
+					PartySlots
+				]
 			]
 		];
 
@@ -929,6 +956,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 	FT66AnimatedBackgroundLayer& FireMoonLayer = BackgroundLayers.AddDefaulted_GetRef();
 	FireMoonLayer.Brush = FireMoonBrush.Get();
+	FireMoonLayer.BaseOffset = FVector2D(0.f, SceneVerticalOffset * 0.72f);
 	FireMoonLayer.SwayAmplitude = FVector2D(3.f, 2.f);
 	FireMoonLayer.SwayFrequency = 0.10f;
 	FireMoonLayer.ScalePulseAmplitude = 0.05f;
@@ -940,6 +968,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 	FT66AnimatedBackgroundLayer& PyramidLayer = BackgroundLayers.AddDefaulted_GetRef();
 	PyramidLayer.Brush = PyramidChadBrush.Get();
+	PyramidLayer.BaseOffset = FVector2D(0.f, SceneVerticalOffset);
 	PyramidLayer.SwayAmplitude = FVector2D(2.f, 1.f);
 	PyramidLayer.SwayFrequency = 0.08f;
 	PyramidLayer.OpacityMin = 1.f;
@@ -968,18 +997,54 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.36f))
 			]
 			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Top)
+			.Padding(0.f, SceneTitleTopPadding, 0.f, 0.f)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.MainMenu", "SceneTitle", "CHADPOCALYPSE"))
+					.Font([SceneTitleFontSize]()
+					{
+						FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), SceneTitleFontSize);
+						Font.LetterSpacing = 104;
+						return Font;
+					}())
+					.ColorAndOpacity(FLinearColor(0.98f, 0.68f, 0.18f, 0.30f))
+					.ShadowOffset(FVector2D(0.f, 0.f))
+					.RenderTransform(FSlateRenderTransform(FVector2D(2.f, 2.f)))
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.MainMenu", "SceneTitle", "CHADPOCALYPSE"))
+					.Font([SceneTitleFontSize]()
+					{
+						FSlateFontInfo Font = FT66Style::MakeFont(TEXT("Black"), SceneTitleFontSize);
+						Font.LetterSpacing = 104;
+						return Font;
+					}())
+					.ColorAndOpacity(FLinearColor(0.02f, 0.01f, 0.01f, 0.98f))
+					.ShadowOffset(FVector2D(2.f, 2.f))
+					.ShadowColorAndOpacity(FLinearColor(1.0f, 0.72f, 0.18f, 0.42f))
+				]
+			]
+			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
-			.Padding(0.f, TopInset, 0.f, 0.f)
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Bottom)
+				.Padding(FMargin(-1.f, 0.f, 0.f, -1.f))
 				[
 					SNew(SBox)
 					.WidthOverride(ResolvedSidePanelWidth)
 					.HeightOverride(SidePanelTargetHeight)
+					.Clipping(EWidgetClipping::ClipToBounds)
 					[
 						SNew(SInvalidationPanel)
 						[
@@ -990,32 +1055,27 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Bottom)
-				.Padding(0.f, 0.f, 0.f, BottomFramePadding + CenterButtonLift)
+				.Padding(0.f, 0.f, 0.f, CenterButtonLift)
 				[
-					SNew(SScaleBox)
-					.Stretch(EStretch::ScaleToFit)
-					.StretchDirection(EStretchDirection::DownOnly)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Bottom)
+					SNew(SBox)
+					.WidthOverride(CenterColumnWidth)
+					.HeightOverride(CenterColumnHeight)
 					[
-						SNew(SBox)
-						.WidthOverride(CenterColumnWidth)
-						.HeightOverride(CenterColumnHeight)
+						SNew(SInvalidationPanel)
 						[
-							SNew(SInvalidationPanel)
-							[
-								CenterMenuButtons
-							]
+							CenterMenuButtons
 						]
 					]
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Right)
 				.VAlign(VAlign_Bottom)
+				.Padding(FMargin(0.f, 0.f, -1.f, -1.f))
 				[
 					SNew(SBox)
 					.WidthOverride(ResolvedLeaderboardPanelWidth)
-					.HeightOverride(SidePanelTargetHeight)
+					.HeightOverride(LeaderboardShellTargetHeight)
+					.Clipping(EWidgetClipping::ClipToBounds)
 					[
 						SNew(SInvalidationPanel)
 						[

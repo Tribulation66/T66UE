@@ -17,7 +17,11 @@
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/FileHelper.h"
 #include "Misc/PackageName.h"
+#include "Misc/Paths.h"
+#include "Styling/CoreStyle.h"
+#include "Widgets/Layout/SBorder.h"
 
 namespace
 {
@@ -46,16 +50,44 @@ namespace
 
 		OutItemData = FItemData{};
 		OutItemData.ItemID = GamblersTokenItemID;
-		OutItemData.Icon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_white.Item_Cheating_white")));
-		OutItemData.BlackIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_black.Item_Cheating_black")));
-		OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_red.Item_Cheating_red")));
-		OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_yellow.Item_Cheating_yellow")));
-		OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Cheating_white.Item_Cheating_white")));
+		OutItemData.Icon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_black.Item_GamblersToken_black")));
+		OutItemData.BlackIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_black.Item_GamblersToken_black")));
+		OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_red.Item_GamblersToken_red")));
+		OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_yellow.Item_GamblersToken_yellow")));
+		OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_white.Item_GamblersToken_white")));
 		OutItemData.PrimaryStatType = ET66HeroStatType::Luck;
 		OutItemData.SecondaryStatType = ET66SecondaryStatType::GamblerToken;
 		OutItemData.BaseBuyGold = 100;
 		OutItemData.BaseSellGold = 0;
 		return true;
+	}
+
+	static void TryApplyDataTableCsvOverride(
+		UDataTable* DataTable,
+		const TCHAR* RelativeCsvPath,
+		bool& bOverrideAttempted,
+		const TCHAR* TableLabel)
+	{
+		if (bOverrideAttempted || !DataTable)
+		{
+			return;
+		}
+
+		bOverrideAttempted = true;
+
+		const FString CsvPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / RelativeCsvPath);
+		FString CsvContent;
+		if (!FFileHelper::LoadFileToString(CsvContent, *CsvPath) || CsvContent.IsEmpty())
+		{
+			return;
+		}
+
+		DataTable->EmptyTable();
+		const TArray<FString> Problems = DataTable->CreateTableFromCSVString(CsvContent);
+		for (const FString& Problem : Problems)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[%s CSV Override] %s"), TableLabel, *Problem);
+		}
 	}
 
 	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
@@ -226,19 +258,23 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 	{
 		CachedHeroDataTable = HeroDataTable.Get();
 	}
+	if (!CachedCompanionDataTable && !CompanionDataTable.IsNull())
+	{
+		CachedCompanionDataTable = CompanionDataTable.Get();
+	}
 	if (!CachedCharacterVisualsDataTable && !CharacterVisualsDataTable.IsNull())
 	{
 		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
 	}
 
-	if (!CachedHeroDataTable || !CachedCharacterVisualsDataTable)
+	if (!CachedHeroDataTable || !CachedCompanionDataTable || !CachedCharacterVisualsDataTable)
 	{
 		PrimeCoreDataTablesAsync();
 		return;
 	}
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(256);
+	Paths.Reserve(384);
 
 	auto AddPath = [&](const FSoftObjectPath& Path)
 	{
@@ -265,9 +301,23 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(HeroRow->PortraitTypeBFull.ToSoftObjectPath());
 	}
 
+	TArray<FCompanionData*> CompanionRows;
+	CachedCompanionDataTable->GetAllRows(TEXT("PrimeHeroSelectionAssetsAsync"), CompanionRows);
+	for (const FCompanionData* CompanionRow : CompanionRows)
+	{
+		if (!CompanionRow)
+		{
+			continue;
+		}
+
+		AddPath(CompanionRow->Portrait.ToSoftObjectPath());
+		AddPath(CompanionRow->SelectionPortrait.ToSoftObjectPath());
+	}
+
 	for (const FName& RowName : CachedCharacterVisualsDataTable->GetRowNames())
 	{
-		if (!RowName.ToString().StartsWith(TEXT("Hero_")))
+		const FString RowNameString = RowName.ToString();
+		if (!RowNameString.StartsWith(TEXT("Hero_")) && !RowNameString.StartsWith(TEXT("Companion_")))
 		{
 			continue;
 		}
@@ -349,6 +399,7 @@ UDataTable* UT66GameInstance::GetIdolsDataTable()
 			CachedIdolsDataTable = IdolsDataTable.LoadSynchronous();
 		}
 	}
+	TryApplyDataTableCsvOverride(CachedIdolsDataTable, TEXT("Data/Idols.csv"), bIdolsDataTableCsvOverrideAttempted, TEXT("Idols"));
 	return CachedIdolsDataTable;
 }
 
@@ -482,6 +533,7 @@ UDataTable* UT66GameInstance::GetBossesDataTable()
 			CachedBossesDataTable = BossesDataTable.LoadSynchronous();
 		}
 	}
+	TryApplyDataTableCsvOverride(CachedBossesDataTable, TEXT("Data/Bosses.csv"), bBossesDataTableCsvOverrideAttempted, TEXT("Bosses"));
 	return CachedBossesDataTable;
 }
 
@@ -496,6 +548,7 @@ UDataTable* UT66GameInstance::GetStagesDataTable()
 			CachedStagesDataTable = StagesDataTable.LoadSynchronous();
 		}
 	}
+	TryApplyDataTableCsvOverride(CachedStagesDataTable, TEXT("Data/Stages.csv"), bStagesDataTableCsvOverrideAttempted, TEXT("Stages"));
 	return CachedStagesDataTable;
 }
 
@@ -851,12 +904,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	// Engine cube mesh (used ~6 times in GameMode for walls/floors/arenas).
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
 
-	// Ground floor materials (4 rotation variants).
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R0.M_GroundAtlas_2x2_R0")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R90.M_GroundAtlas_2x2_R90")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R180.M_GroundAtlas_2x2_R180")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/M_GroundAtlas_2x2_R270.M_GroundAtlas_2x2_R270")));
-
 	// Retro sky material is spawned dynamically outside the farm flow.
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Sky/QuakeCanopy2/MI_QuakeSky_Canopy2.MI_QuakeSky_Canopy2")));
 
@@ -871,8 +918,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
-	AddDifficultyThemeTextures(TEXT("MediumOcean"), TEXT("MediumOcean"));
-	AddDifficultyThemeTextures(TEXT("HardMountain"), TEXT("HardMountain"));
 	AddDifficultyThemeTextures(TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard"));
 	AddDifficultyThemeTextures(TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole"));
 	AddDifficultyThemeTextures(TEXT("PerditionMars"), TEXT("PerditionMars"));
@@ -880,10 +925,7 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass1.MI_Grass1")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass2.MI_Grass2")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass3.MI_Grass3")));
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Ground/MI_Grass4.MI_Grass4")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass/Materials/Material_0_014.Material_0_014")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree.Tree")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree2.Tree2")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree3.Tree3")));
@@ -909,6 +951,10 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 			AddVisualAssets(StageData.EnemyB);
 			AddVisualAssets(StageData.EnemyC);
 		}
+		AddVisualAssets(FName(TEXT("GoblinThief_Black")));
+		AddVisualAssets(FName(TEXT("GoblinThief_Red")));
+		AddVisualAssets(FName(TEXT("GoblinThief_Yellow")));
+		AddVisualAssets(FName(TEXT("GoblinThief_White")));
 		AddVisualAssets(FName(TEXT("Boss")));
 	}
 
@@ -1005,6 +1051,8 @@ void UT66GameInstance::TransitionToGameplayLevel()
 		}
 	}
 
+	ShowPersistentGameplayTransitionCurtain();
+
 	// Show loading screen immediately so the player sees feedback instead of a frozen frame.
 	UT66LoadingScreenWidget* LoadingWidget = CreateWidget<UT66LoadingScreenWidget>(World, UT66LoadingScreenWidget::StaticClass());
 	if (LoadingWidget)
@@ -1023,4 +1071,35 @@ void UT66GameInstance::TransitionToGameplayLevel()
 			UGameplayStatics::OpenLevel(this, LevelToOpen);
 		});
 	}), 0.05f, false); // Small delay so the loading widget paints first.
+}
+
+void UT66GameInstance::ShowPersistentGameplayTransitionCurtain()
+{
+	if (PersistentGameplayTransitionCurtain.IsValid())
+	{
+		return;
+	}
+
+	if (!GEngine || !GEngine->GameViewport)
+	{
+		return;
+	}
+
+	SAssignNew(PersistentGameplayTransitionCurtain, SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FLinearColor::Black);
+
+	GEngine->GameViewport->AddViewportWidgetContent(
+		PersistentGameplayTransitionCurtain.ToSharedRef(),
+		9500);
+}
+
+void UT66GameInstance::HidePersistentGameplayTransitionCurtain()
+{
+	if (GEngine && GEngine->GameViewport && PersistentGameplayTransitionCurtain.IsValid())
+	{
+		GEngine->GameViewport->RemoveViewportWidgetContent(PersistentGameplayTransitionCurtain.ToSharedRef());
+	}
+
+	PersistentGameplayTransitionCurtain.Reset();
 }

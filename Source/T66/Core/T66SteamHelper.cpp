@@ -10,6 +10,31 @@ THIRD_PARTY_INCLUDES_END
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Steam, Log, All);
 
+namespace
+{
+	static FString T66PresenceFromPersonaState(EPersonaState PersonaState)
+	{
+		switch (PersonaState)
+		{
+		case k_EPersonaStateOnline:
+			return TEXT("Online");
+		case k_EPersonaStateBusy:
+			return TEXT("Busy");
+		case k_EPersonaStateAway:
+			return TEXT("Away");
+		case k_EPersonaStateSnooze:
+			return TEXT("Snooze");
+		case k_EPersonaStateLookingToTrade:
+			return TEXT("Looking to trade");
+		case k_EPersonaStateLookingToPlay:
+			return TEXT("Looking to play");
+		case k_EPersonaStateOffline:
+		default:
+			return TEXT("Offline");
+		}
+	}
+}
+
 static void T66_SetDevTicket(const TArray<FString>& Args, UWorld* World)
 {
 	if (!World) return;
@@ -81,6 +106,11 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 				if (!Trimmed.IsEmpty())
 				{
 					FriendSteamIds.Add(Trimmed);
+					FT66SteamFriendInfo& FriendInfo = FriendInfos.AddDefaulted_GetRef();
+					FriendInfo.SteamId = Trimmed;
+					FriendInfo.DisplayName = FString::Printf(TEXT("Friend %d"), FriendInfos.Num());
+					FriendInfo.PresenceText = TEXT("Online");
+					FriendInfo.bOnline = true;
 				}
 			}
 			UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: dev friends loaded: %d IDs"), FriendSteamIds.Num());
@@ -185,6 +215,7 @@ void UT66SteamHelper::ObtainTicket()
 void UT66SteamHelper::CollectFriendsList()
 {
 	FriendSteamIds.Reset();
+	FriendInfos.Reset();
 
 	ISteamFriends* Friends = SteamFriends();
 	if (!Friends) return;
@@ -195,7 +226,14 @@ void UT66SteamHelper::CollectFriendsList()
 	for (int32 i = 0; i < Count; ++i)
 	{
 		const CSteamID FriendId = Friends->GetFriendByIndex(i, k_EFriendFlagImmediate);
-		FriendSteamIds.Add(FString::Printf(TEXT("%llu"), FriendId.ConvertToUint64()));
+		const FString FriendIdString = FString::Printf(TEXT("%llu"), FriendId.ConvertToUint64());
+		FriendSteamIds.Add(FriendIdString);
+
+		FT66SteamFriendInfo& FriendInfo = FriendInfos.AddDefaulted_GetRef();
+		FriendInfo.SteamId = FriendIdString;
+		FriendInfo.DisplayName = FString(UTF8_TO_TCHAR(Friends->GetFriendPersonaName(FriendId)));
+		FriendInfo.PresenceText = T66PresenceFromPersonaState(Friends->GetFriendPersonaState(FriendId));
+		FriendInfo.bOnline = Friends->GetFriendPersonaState(FriendId) != k_EPersonaStateOffline;
 	}
 
 	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: collected %d friends."), FriendSteamIds.Num());

@@ -32,7 +32,7 @@ struct T66_API FT66PlayerExperienceDifficultyTuning
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "1", ClampMax = "33"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "1", ClampMax = "23"))
 	int32 StartStage = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "0"))
@@ -113,8 +113,6 @@ public:
 	FT66PlayerExperienceDifficultyTuning Hard;
 	FT66PlayerExperienceDifficultyTuning VeryHard;
 	FT66PlayerExperienceDifficultyTuning Impossible;
-	FT66PlayerExperienceDifficultyTuning Perdition;
-	FT66PlayerExperienceDifficultyTuning Final;
 
 	FT66PlayerExperienceTuningTable();
 
@@ -142,6 +140,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
 	int32 GetDifficultyStartStage(ET66Difficulty Difficulty) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
+	int32 GetDifficultyEndStage(ET66Difficulty Difficulty) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
 	int32 GetDifficultyStartGoldBonus(ET66Difficulty Difficulty) const;

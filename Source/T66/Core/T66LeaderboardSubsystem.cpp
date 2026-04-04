@@ -76,8 +76,6 @@ static bool ParseDifficulty(const FString& In, ET66Difficulty& Out)
 	if (S.Equals(TEXT("Hard"), ESearchCase::IgnoreCase)) { Out = ET66Difficulty::Hard; return true; }
 	if (S.Equals(TEXT("VeryHard"), ESearchCase::IgnoreCase) || S.Equals(TEXT("Very Hard"), ESearchCase::IgnoreCase)) { Out = ET66Difficulty::VeryHard; return true; }
 	if (S.Equals(TEXT("Impossible"), ESearchCase::IgnoreCase)) { Out = ET66Difficulty::Impossible; return true; }
-	if (S.Equals(TEXT("Perdition"), ESearchCase::IgnoreCase)) { Out = ET66Difficulty::Perdition; return true; }
-	if (S.Equals(TEXT("Final"), ESearchCase::IgnoreCase)) { Out = ET66Difficulty::Final; return true; }
 	return false;
 }
 
@@ -95,10 +93,13 @@ void UT66LeaderboardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	LoadOrCreateLocalSave();
-	// Load packaged DataTables first, then let CSV fill any gaps that are still missing
-	// (for example, newly added target rows that have not been reimported into DT assets yet).
-	LoadTargetsFromDataTablesIfPresent();
 	LoadTargetsFromCsv();
+	// CSVs are the live source of truth for targets after the difficulty rewrite.
+	// Only fall back to imported DT assets if the CSVs failed to populate anything.
+	if (ScoreTarget10ByKey.Num() <= 0 || SpeedRunTarget10ByKey_DiffStage.Num() <= 0)
+	{
+		LoadTargetsFromDataTablesIfPresent();
+	}
 }
 
 bool UT66LeaderboardSubsystem::GetSettingsPracticeAndAnon(bool& bOutPractice, bool& bOutAnon) const
@@ -153,8 +154,6 @@ void UT66LeaderboardSubsystem::DebugClearLocalLeaderboard()
 		ET66Difficulty::Hard,
 		ET66Difficulty::VeryHard,
 		ET66Difficulty::Impossible,
-		ET66Difficulty::Perdition,
-		ET66Difficulty::Final,
 	};
 
 	static const ET66PartySize Parties[] =
@@ -196,8 +195,6 @@ FString UT66LeaderboardSubsystem::DifficultyKey(ET66Difficulty Difficulty)
 	case ET66Difficulty::Hard: return TEXT("Hard");
 	case ET66Difficulty::VeryHard: return TEXT("VeryHard");
 	case ET66Difficulty::Impossible: return TEXT("Impossible");
-	case ET66Difficulty::Perdition: return TEXT("Perdition");
-	case ET66Difficulty::Final: return TEXT("Final");
 	default: return TEXT("Unknown");
 	}
 }
@@ -249,14 +246,14 @@ bool UT66LeaderboardSubsystem::SaveLocalBestScoreRunSummarySnapshot(ET66Difficul
 	Snapshot->PartySize = PartySize;
 	Snapshot->SavedAtUtc = FDateTime::UtcNow();
 
-	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 33);
+	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 23);
 	Snapshot->Score = FMath::Max(0, Score);
 
 	Snapshot->SecondaryStatValues.Reset();
-	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::LootCrate); ++i)
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::EvasionChance); ++i)
 	{
 		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
-		if (!T66IsLiveSecondaryStatType(SecType))
+		if (!T66IsLiveSecondaryStatType(SecType) || SecType == ET66SecondaryStatType::GamblerToken)
 		{
 			continue;
 		}
@@ -332,14 +329,23 @@ void UT66LeaderboardSubsystem::LoadTargetsFromCsv()
 
 bool UT66LeaderboardSubsystem::LoadTargetsFromDataTablesIfPresent()
 {
-	ScoreTarget10ByKey.Reset();
-	SpeedRunTarget10ByKey_DiffStage.Reset();
+	const bool bNeedScoreTargets = ScoreTarget10ByKey.Num() <= 0;
+	const bool bNeedSpeedRunTargets = SpeedRunTarget10ByKey_DiffStage.Num() <= 0;
 
-	TSoftObjectPtr<UDataTable> ScoreDT = TSoftObjectPtr<UDataTable>(FSoftObjectPath(ScoreTargetsDTPath));
-	TSoftObjectPtr<UDataTable> SpeedDT = TSoftObjectPtr<UDataTable>(FSoftObjectPath(SpeedRunTargetsDTPath));
+	if (!bNeedScoreTargets && !bNeedSpeedRunTargets)
+	{
+		return true;
+	}
 
-	UDataTable* SrcDT = ScoreDT.LoadSynchronous();
-	UDataTable* SDT = SpeedDT.LoadSynchronous();
+	TSoftObjectPtr<UDataTable> ScoreDT = bNeedScoreTargets
+		? TSoftObjectPtr<UDataTable>(FSoftObjectPath(ScoreTargetsDTPath))
+		: TSoftObjectPtr<UDataTable>();
+	TSoftObjectPtr<UDataTable> SpeedDT = bNeedSpeedRunTargets
+		? TSoftObjectPtr<UDataTable>(FSoftObjectPath(SpeedRunTargetsDTPath))
+		: TSoftObjectPtr<UDataTable>();
+
+	UDataTable* SrcDT = bNeedScoreTargets ? ScoreDT.LoadSynchronous() : nullptr;
+	UDataTable* SDT = bNeedSpeedRunTargets ? SpeedDT.LoadSynchronous() : nullptr;
 
 	// If neither exists, caller should fall back to CSV.
 	if (!SrcDT && !SDT)
@@ -387,8 +393,9 @@ bool UT66LeaderboardSubsystem::LoadTargetsFromDataTablesIfPresent()
 		}
 	}
 
-	// Success if we loaded at least one target from DTs.
-	return (ScoreTarget10ByKey.Num() > 0) || (SpeedRunTarget10ByKey_DiffStage.Num() > 0);
+	// Success if we loaded the missing target set(s) from DTs.
+	return (!bNeedScoreTargets || ScoreTarget10ByKey.Num() > 0)
+		&& (!bNeedSpeedRunTargets || SpeedRunTarget10ByKey_DiffStage.Num() > 0);
 }
 
 void UT66LeaderboardSubsystem::LoadScoreTargetsFromCsv(const FString& AbsPath)
@@ -509,7 +516,7 @@ float UT66LeaderboardSubsystem::GetSpeedRunTarget10(ET66Difficulty Difficulty, E
 	{
 		// Fallback tuning: stage-based, difficulty-based, and scaled slightly by party size.
 		const int32 DiffIndex = FMath::Clamp(static_cast<int32>(Difficulty), 0, 999);
-		const int32 S = FMath::Clamp(Stage, 1, 33);
+		const int32 S = FMath::Clamp(Stage, 1, 23);
 		Base = 35.f + (static_cast<float>(S) * 12.f) + (static_cast<float>(DiffIndex) * 6.f);
 	}
 
@@ -634,10 +641,10 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score)
 				BackendSnapshot->LuckStat = FMath::Max(1, RunState->GetLuckStat());
 				BackendSnapshot->SpeedStat = FMath::Max(1, RunState->GetSpeedStat());
 
-				for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::LootCrate); ++i)
+				for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::EvasionChance); ++i)
 				{
 					const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
-					if (!T66IsLiveSecondaryStatType(SecType))
+					if (!T66IsLiveSecondaryStatType(SecType) || SecType == ET66SecondaryStatType::GamblerToken)
 					{
 						continue;
 					}
@@ -691,7 +698,7 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	LoadOrCreateLocalSave();
 	if (!LocalSave) return false;
 
-	Stage = FMath::Clamp(Stage, 1, 33);
+	Stage = FMath::Clamp(Stage, 1, 23);
 	Seconds = FMath::Max(0.f, Seconds);
 	if (Seconds <= 0.01f) return false;
 	bLastSpeedRunWasNewBest = false;
@@ -940,7 +947,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
 	Snapshot->SavedAtUtc = FDateTime::UtcNow();
-	Snapshot->StageReached = FMath::Clamp(1 + Rng.RandRange(0, 32), 1, 33);
+	Snapshot->StageReached = FMath::Clamp(1 + Rng.RandRange(0, 22), 1, 23);
 	Snapshot->Score = (Type == ET66LeaderboardType::Score) ? FMath::Max(0, static_cast<int32>(Score)) : 0;
 	Snapshot->HeroID = HeroIDs.Num() > 0 ? HeroIDs[Rng.RandRange(0, HeroIDs.Num() - 1)] : NAME_None;
 	Snapshot->HeroBodyType = Rng.FRand() < 0.5f ? ET66BodyType::TypeA : ET66BodyType::TypeB;
@@ -960,10 +967,10 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 	Snapshot->SecondaryStatValues.Reset();
 	auto AddPercent = [&Rng](ET66SecondaryStatType T) { return Rng.FRandRange(0.05f, 0.45f); };
 	auto AddScalar = [&Rng](float Min, float Max) { return Rng.FRandRange(Min, Max); };
-	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::LootCrate); ++i)
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::EvasionChance); ++i)
 	{
 		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
-		if (!T66IsLiveSecondaryStatType(SecType))
+		if (!T66IsLiveSecondaryStatType(SecType) || SecType == ET66SecondaryStatType::GamblerToken)
 		{
 			continue;
 		}
@@ -977,6 +984,8 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateFakeRunSummar
 		case ET66SecondaryStatType::Assassinate:
 		case ET66SecondaryStatType::Cheating:
 		case ET66SecondaryStatType::Stealing:
+		case ET66SecondaryStatType::DamageReduction:
+		case ET66SecondaryStatType::EvasionChance:
 			V = AddPercent(SecType);
 			break;
 		case ET66SecondaryStatType::AoeDamage:
@@ -1287,7 +1296,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildSpeedRunEntries(ET66Dif
 	TArray<FLeaderboardEntry> Out;
 	Out.Reserve(GVisibleLeaderboardEntryCountWithLocal);
 
-	Stage = FMath::Clamp(Stage, 1, 33);
+	Stage = FMath::Clamp(Stage, 1, 23);
 
 	const float Target10 = GetSpeedRunTarget10(Difficulty, PartySize, Stage);
 
@@ -1401,7 +1410,7 @@ int32 UT66LeaderboardSubsystem::GetLocalScoreRank(ET66Difficulty Difficulty, ET6
 
 int32 UT66LeaderboardSubsystem::GetLocalSpeedRunRank(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const
 {
-	Stage = FMath::Clamp(Stage, 1, 33);
+	Stage = FMath::Clamp(Stage, 1, 23);
 	const TArray<FLeaderboardEntry> Entries = BuildSpeedRunEntries(Difficulty, PartySize, Stage);
 	for (const FLeaderboardEntry& E : Entries)
 	{
@@ -1465,7 +1474,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 
 		if (Type == ET66LeaderboardType::SpeedRun)
 		{
-			const int32 Stage = FMath::Clamp(SpeedRunStage, 1, 33);
+			const int32 Stage = FMath::Clamp(SpeedRunStage, 1, 23);
 			Entry.StageReached = Stage;
 			Entry.Score = 0;
 
@@ -1478,7 +1487,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 		}
 	}
 
-	ExtendSeedEntriesForDisplay(Out, Type, Difficulty, PartySize, FMath::Clamp(SpeedRunStage, 1, 33));
+	ExtendSeedEntriesForDisplay(Out, Type, Difficulty, PartySize, FMath::Clamp(SpeedRunStage, 1, 23));
 	if (Out.Num() == 0)
 	{
 		return Out;
@@ -1561,7 +1570,7 @@ TArray<FLeaderboardEntry> UT66LeaderboardSubsystem::BuildEntriesForFilter(ET66Le
 	}
 	else // SpeedRun
 	{
-		int32 Stage = FMath::Clamp(SpeedRunStage, 1, 33);
+		int32 Stage = FMath::Clamp(SpeedRunStage, 1, 23);
 		float LocalBest = 0.f;
 		bool bLocalAnonStored = false;
 		if (LocalSave)

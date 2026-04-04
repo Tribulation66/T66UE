@@ -24,10 +24,20 @@ namespace
 
 	struct FT66OptionalTextureBrush
 	{
-		TObjectPtr<UTexture2D> ImportedTexture = nullptr;
+		TStrongObjectPtr<UTexture2D> ImportedTexture;
 		TStrongObjectPtr<UTexture2D> FileTexture;
 		TSharedPtr<FSlateBrush> Brush;
 		bool bChecked = false;
+
+		UTexture2D* GetTexture() const
+		{
+			if (ImportedTexture.IsValid())
+			{
+				return ImportedTexture.Get();
+			}
+
+			return FileTexture.IsValid() ? FileTexture.Get() : nullptr;
+		}
 	};
 
 	FSlateBrush MakeNineSliceBrush(UTexture2D* Texture, const FMargin& Margin)
@@ -53,9 +63,19 @@ namespace
 		const FString& FallbackFilePath,
 		const FMargin& Margin)
 	{
+		UTexture2D* Texture = Entry.GetTexture();
 		if (Entry.Brush.IsValid())
 		{
-			return Cast<UTexture2D>(Entry.Brush->GetResourceObject());
+			if (Texture)
+			{
+				if (Entry.Brush->GetResourceObject() != Texture)
+				{
+					Entry.Brush->SetResourceObject(Texture);
+				}
+				return Texture;
+			}
+
+			Entry.Brush.Reset();
 		}
 
 		if (!Entry.bChecked)
@@ -63,8 +83,8 @@ namespace
 			Entry.bChecked = true;
 			if (ImportedAssetPath && *ImportedAssetPath)
 			{
-				Entry.ImportedTexture = LoadObject<UTexture2D>(nullptr, ImportedAssetPath);
-				if (Entry.ImportedTexture.Get())
+				Entry.ImportedTexture.Reset(LoadObject<UTexture2D>(nullptr, ImportedAssetPath));
+				if (Entry.ImportedTexture.IsValid())
 				{
 					Entry.ImportedTexture->Filter = TextureFilter::TF_Trilinear;
 					Entry.ImportedTexture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
@@ -72,29 +92,30 @@ namespace
 				}
 			}
 
-			UTexture2D* Texture = Entry.ImportedTexture.Get();
+			Texture = Entry.GetTexture();
 			if (!Texture && !FallbackFilePath.IsEmpty() && FPaths::FileExists(FallbackFilePath))
 			{
-			Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
-			if (Texture)
-			{
-				Texture->SRGB = true;
-				Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-				Texture->NeverStream = true;
-				Texture->Filter = TextureFilter::TF_Trilinear;
-				Texture->CompressionSettings = TC_EditorIcon;
-				Texture->UpdateResource();
-				Entry.FileTexture.Reset(Texture);
-			}
+				Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
+				if (Texture)
+				{
+					Texture->SRGB = true;
+					Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+					Texture->NeverStream = true;
+					Texture->Filter = TextureFilter::TF_Trilinear;
+					Texture->CompressionSettings = TC_EditorIcon;
+					Texture->UpdateResource();
+					Entry.FileTexture.Reset(Texture);
+				}
 			}
 
+			Texture = Entry.GetTexture();
 			if (Texture)
 			{
 				Entry.Brush = MakeShared<FSlateBrush>(MakeNineSliceBrush(Texture, Margin));
 			}
 		}
 
-		return Entry.Brush.IsValid() ? Cast<UTexture2D>(Entry.Brush->GetResourceObject()) : nullptr;
+		return Entry.GetTexture();
 	}
 
 	const FSlateBrush* ResolveOptionalTextureBrush(

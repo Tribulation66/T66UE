@@ -68,8 +68,6 @@ FString UT66BackendSubsystem::DifficultyToApiString(ET66Difficulty Diff)
 	case ET66Difficulty::Hard: return TEXT("hard");
 	case ET66Difficulty::VeryHard: return TEXT("veryhard");
 	case ET66Difficulty::Impossible: return TEXT("impossible");
-	case ET66Difficulty::Perdition: return TEXT("perdition");
-	case ET66Difficulty::Final: return TEXT("final");
 	default: return TEXT("easy");
 	}
 }
@@ -180,6 +178,8 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 			case ET66SecondaryStatType::Stealing: KeyName = TEXT("Stealing"); break;
 			case ET66SecondaryStatType::MovementSpeed: KeyName = TEXT("MovementSpeed"); break;
 			case ET66SecondaryStatType::LootCrate: KeyName = TEXT("LootCrate"); break;
+			case ET66SecondaryStatType::DamageReduction: KeyName = TEXT("DamageReduction"); break;
+			case ET66SecondaryStatType::EvasionChance: KeyName = TEXT("EvasionChance"); break;
 			default: continue;
 			}
 			SecObj->SetNumberField(KeyName, Pair.Value);
@@ -504,8 +504,6 @@ ET66Difficulty UT66BackendSubsystem::ApiStringToDifficulty(const FString& S)
 	if (S == TEXT("hard")) return ET66Difficulty::Hard;
 	if (S == TEXT("veryhard")) return ET66Difficulty::VeryHard;
 	if (S == TEXT("impossible")) return ET66Difficulty::Impossible;
-	if (S == TEXT("perdition")) return ET66Difficulty::Perdition;
-	if (S == TEXT("final")) return ET66Difficulty::Final;
 	return ET66Difficulty::Easy;
 }
 
@@ -766,6 +764,8 @@ UT66LeaderboardRunSummarySaveGame* UT66BackendSubsystem::ParseRunSummaryFromJson
 				else if (Key == TEXT("Fountain")) StatType = ET66SecondaryStatType::Fountain;
 				else if (Key == TEXT("MovementSpeed")) StatType = ET66SecondaryStatType::MovementSpeed;
 				else if (Key == TEXT("LootCrate")) StatType = ET66SecondaryStatType::LootCrate;
+				else if (Key == TEXT("DamageReduction")) StatType = ET66SecondaryStatType::DamageReduction;
+				else if (Key == TEXT("EvasionChance")) StatType = ET66SecondaryStatType::EvasionChance;
 				else { bFound = false; }
 
 				if (bFound)

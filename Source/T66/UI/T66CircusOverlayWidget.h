@@ -44,6 +44,7 @@ private:
 
 	TSharedRef<SWidget> BuildAlchemyPage(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc);
 	void SetActiveTab(ECasinoTab NewTab);
+	void RefreshHeaderSummary();
 	void RefreshAlchemy();
 	void RefreshAlchemyTopBar();
 	void RefreshAlchemyInventory();
@@ -71,6 +72,12 @@ private:
 	UFUNCTION()
 	void HandleBossChanged();
 
+	UFUNCTION()
+	void HandleScoreChanged();
+
+	UFUNCTION()
+	void HandleStageTimerChanged();
+
 	UPROPERTY()
 	TObjectPtr<UT66GamblerOverlayWidget> GamblerTabWidget;
 
@@ -78,6 +85,8 @@ private:
 	TObjectPtr<UT66VendorOverlayWidget> VendorTabWidget;
 
 	TSharedPtr<SWidgetSwitcher> TabSwitcher;
+	TSharedPtr<STextBlock> HeaderTimerText;
+	TSharedPtr<STextBlock> HeaderScoreText;
 
 	TSharedPtr<STextBlock> AlchemyNetWorthText;
 	TSharedPtr<STextBlock> AlchemyGoldText;
@@ -95,6 +104,7 @@ private:
 	TSharedPtr<FSlateBrush> AlchemySacrificeIconBrush;
 
 	TArray<TSharedPtr<SBorder>> AlchemyInventorySlotBorders;
+	TArray<TSharedPtr<STextBlock>> AlchemyInventorySlotCountTexts;
 	TArray<TSharedPtr<STextBlock>> AlchemyInventorySlotTexts;
 	TArray<TSharedPtr<SImage>> AlchemyInventorySlotImages;
 	TArray<TSharedPtr<FSlateBrush>> AlchemyInventorySlotBrushes;

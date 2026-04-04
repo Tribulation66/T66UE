@@ -223,12 +223,11 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 	};
 
 	// Build the widget switcher with all tab content (stored as class member)
-	FDisplayMetrics DisplayMetrics;
-	FSlateApplication::Get().GetCachedDisplayMetrics(DisplayMetrics);
-	const float PanelW = 0.8f * static_cast<float>(DisplayMetrics.PrimaryDisplayWidth);
-	const float PanelH = 0.8f * static_cast<float>(DisplayMetrics.PrimaryDisplayHeight);
 	const bool bModalPresentation = (UIManager && UIManager->GetCurrentModalType() == ScreenType) || (!UIManager && GetOwningPlayer() && GetOwningPlayer()->IsPaused());
 	const float TopInset = bModalPresentation ? 0.f : (UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f);
+	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
+	const float PanelW = FMath::Min(FMath::Max(720.f, SafeFrameSize.X * 0.94f), FT66Style::Tokens::ModalMaxWidth);
+	const float PanelH = FMath::Min(FMath::Max(460.f, (SafeFrameSize.Y - TopInset) * 0.92f), FT66Style::Tokens::ModalMaxHeight);
 
 	const TSharedRef<SWidget> SettingsContent =
 		SNew(SVerticalBox)
@@ -363,25 +362,14 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 				[
 					SNew(SOverlay)
 					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
 					[
-						SNew(SBox)
-						.WidthOverride(PanelW)
-						.HeightOverride(PanelH)
-						[
-							SettingsSurface
-						]
+						FT66Style::MakeSafeFrame(SettingsSurface, FMargin(0.f), PanelW, PanelH)
 					]
 				]
 			];
 	}
 
-	return SNew(SBox)
-		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
-		[
-			SettingsSurface
-		];
+	return FT66Style::MakeSafeFrame(SettingsSurface, FMargin(0.f, TopInset, 0.f, 24.f), PanelW, PanelH);
 }
 
 FReply UT66SettingsScreen::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
@@ -1507,6 +1495,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildHUDTab()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UT66PlayerSettingsSubsystem* PS = GetPlayerSettings();
+	InitializeUIScaleFromPlayerSettingsIfNeeded();
 
 	auto MakeToggleRow = [this, Loc](const FText& Label, TFunction<bool()> GetValue, TFunction<void(bool)> SetValue) -> TSharedRef<SWidget>
 	{
@@ -1557,6 +1546,73 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildHUDTab()
 		+ SScrollBox::Slot()
 		[
 			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				SNew(SBorder)
+				.BorderBackgroundColor(T66SettingsRowFill())
+				.Padding(FMargin(15.0f, 12.0f))
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().FillWidth(0.3f).VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("T66.Settings", "UIScale", "UI Scale"))
+							.Font(FT66Style::Tokens::FontRegular(28))
+							.ColorAndOpacity(GetSettingsPageText())
+						]
+						+ SHorizontalBox::Slot().FillWidth(0.55f).VAlign(VAlign_Center).Padding(10.0f, 0.0f)
+						[
+							SNew(SSlider)
+							.Value_Lambda([this]()
+							{
+								return (FMath::Clamp(PendingUIScale, 0.75f, 1.50f) - 0.75f) / 0.75f;
+							})
+							.OnValueChanged_Lambda([this](float V)
+							{
+								PendingUIScale = FMath::Clamp(FMath::Lerp(0.75f, 1.50f, V), 0.75f, 1.50f);
+							})
+							.OnMouseCaptureEnd_Lambda([this, PS]()
+							{
+								if (PS)
+								{
+									PS->SetUIScale(PendingUIScale);
+									bUIScaleInitialized = false;
+								}
+							})
+							.OnControllerCaptureEnd_Lambda([this, PS]()
+							{
+								if (PS)
+								{
+									PS->SetUIScale(PendingUIScale);
+									bUIScaleInitialized = false;
+								}
+							})
+						]
+						+ SHorizontalBox::Slot().FillWidth(0.15f).VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text_Lambda([this]()
+							{
+								return FText::FromString(FString::Printf(TEXT("%.2fx"), FMath::Clamp(PendingUIScale, 0.75f, 1.50f)));
+							})
+							.Font(FT66Style::Tokens::FontRegular(26))
+							.ColorAndOpacity(GetSettingsPageText())
+							.Justification(ETextJustify::Right)
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 8.0f, 0.0f, 0.0f)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.Settings", "UIScaleHelp", "Scales the entire HUD and menu UI on top of the automatic DPI scale."))
+						.Font(FT66Style::Tokens::FontRegular(22))
+						.ColorAndOpacity(GetSettingsPageMuted())
+						.AutoWrapText(true)
+					]
+				]
+			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 12.0f)
 			[
 				SNew(STextBlock)
@@ -2641,6 +2697,25 @@ void UT66SettingsScreen::InitializeGraphicsFromUserSettingsIfNeeded()
 		PendingGraphics.MonitorIndex = 0;
 	}
 	PendingGraphics.bDirty = false;
+}
+
+void UT66SettingsScreen::InitializeUIScaleFromPlayerSettingsIfNeeded()
+{
+	if (bUIScaleInitialized)
+	{
+		return;
+	}
+
+	if (UT66PlayerSettingsSubsystem* PS = GetPlayerSettings())
+	{
+		PendingUIScale = PS->GetUIScale();
+	}
+	else
+	{
+		PendingUIScale = 1.0f;
+	}
+
+	bUIScaleInitialized = true;
 }
 
 void UT66SettingsScreen::ApplyPendingGraphics(bool bForceConfirmPrompt)

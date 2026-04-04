@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66IdolAltar.h"
 #include "Components/BoxComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -15,9 +16,10 @@ AT66IdolAltar::AT66IdolAltar()
 
 	InteractTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractTrigger"));
 	InteractTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	InteractTrigger->SetCollisionObjectType(ECC_WorldDynamic);
 	InteractTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
 	InteractTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	InteractTrigger->SetBoxExtent(FVector(180.f, 180.f, 140.f));
+	InteractTrigger->SetBoxExtent(FVector(420.f, 420.f, 320.f));
 	RootComponent = InteractTrigger;
 
 	BaseRect = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseRect"));
@@ -36,6 +38,7 @@ AT66IdolAltar::AT66IdolAltar()
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	VisualMesh->SetVisibility(false, true);
+	VisualMesh->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 
 	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
@@ -49,14 +52,14 @@ AT66IdolAltar::AT66IdolAltar()
 
 	// Pyramid-like stacking: wide base, smaller mid, smallest top.
 	// Grounded stack (bottom of base at Z=0).
-	BaseRect->SetRelativeLocation(FVector(0.f, 0.f, 12.5f));
-	BaseRect->SetRelativeScale3D(FVector(3.2f, 2.2f, 0.25f));
+	BaseRect->SetRelativeLocation(FVector(0.f, 0.f, 12.5f * VisualScaleMultiplier));
+	BaseRect->SetRelativeScale3D(FVector(3.2f, 2.2f, 0.25f) * VisualScaleMultiplier);
 
-	MidRect->SetRelativeLocation(FVector(0.f, 0.f, 36.f));
-	MidRect->SetRelativeScale3D(FVector(2.2f, 1.5f, 0.22f));
+	MidRect->SetRelativeLocation(FVector(0.f, 0.f, 36.f * VisualScaleMultiplier));
+	MidRect->SetRelativeScale3D(FVector(2.2f, 1.5f, 0.22f) * VisualScaleMultiplier);
 
-	TopRect->SetRelativeLocation(FVector(0.f, 0.f, 57.f));
-	TopRect->SetRelativeScale3D(FVector(1.4f, 0.95f, 0.20f));
+	TopRect->SetRelativeLocation(FVector(0.f, 0.f, 57.f * VisualScaleMultiplier));
+	TopRect->SetRelativeScale3D(FVector(1.4f, 0.95f, 0.20f) * VisualScaleMultiplier);
 
 	ApplyVisuals();
 }
@@ -71,7 +74,8 @@ void AT66IdolAltar::BeginPlay()
 		if (UStaticMesh* M = AltarMeshOverride.LoadSynchronous())
 		{
 			VisualMesh->SetStaticMesh(M);
-			VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+			VisualMesh->SetRelativeScale3D(FVector(VisualScaleMultiplier));
+			VisualMesh->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 			FT66VisualUtil::GroundMeshToActorOrigin(VisualMesh, M);
 			VisualMesh->SetVisibility(true, true);
 
@@ -83,6 +87,7 @@ void AT66IdolAltar::BeginPlay()
 	}
 
 	FT66VisualUtil::SnapToGround(this, GetWorld());
+	UpdateInteractionBounds();
 }
 
 void AT66IdolAltar::ApplyVisuals()
@@ -109,5 +114,64 @@ void AT66IdolAltar::ApplyVisuals()
 	{
 		M->SetVectorParameterValue(TEXT("BaseColor"), C2);
 	}
+}
+
+void AT66IdolAltar::ConfigureVisualCollision(UPrimitiveComponent* Primitive, bool bEnableCollision) const
+{
+	if (!Primitive)
+	{
+		return;
+	}
+
+	if (bEnableCollision)
+	{
+		Primitive->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Primitive->SetCollisionObjectType(ECC_WorldDynamic);
+		Primitive->SetCollisionResponseToAllChannels(ECR_Block);
+		Primitive->SetCanEverAffectNavigation(false);
+	}
+	else
+	{
+		Primitive->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void AT66IdolAltar::UpdateInteractionBounds()
+{
+	if (!InteractTrigger)
+	{
+		return;
+	}
+
+	const FTransform ActorTransform = GetActorTransform();
+	FVector RequiredExtent(420.f, 420.f, 320.f);
+
+	TArray<UPrimitiveComponent*> VisualPrimitives = { BaseRect, MidRect, TopRect, VisualMesh };
+	for (UPrimitiveComponent* Primitive : VisualPrimitives)
+	{
+		if (!Primitive || !Primitive->IsRegistered())
+		{
+			continue;
+		}
+
+		const bool bVisible = Primitive->IsVisible() && !Primitive->bHiddenInGame;
+		ConfigureVisualCollision(Primitive, bVisible);
+		if (!bVisible)
+		{
+			continue;
+		}
+
+		const FBoxSphereBounds Bounds = Primitive->CalcBounds(Primitive->GetComponentTransform());
+		const FVector LocalCenter = ActorTransform.InverseTransformPosition(Bounds.Origin);
+		const FVector PrimitiveExtent(
+			FMath::Abs(LocalCenter.X) + Bounds.SphereRadius + 120.f,
+			FMath::Abs(LocalCenter.Y) + Bounds.SphereRadius + 120.f,
+			FMath::Abs(LocalCenter.Z) + Bounds.SphereRadius + 80.f);
+		RequiredExtent.X = FMath::Max(RequiredExtent.X, PrimitiveExtent.X);
+		RequiredExtent.Y = FMath::Max(RequiredExtent.Y, PrimitiveExtent.Y);
+		RequiredExtent.Z = FMath::Max(RequiredExtent.Z, PrimitiveExtent.Z);
+	}
+
+	InteractTrigger->SetBoxExtent(RequiredExtent);
 }
 

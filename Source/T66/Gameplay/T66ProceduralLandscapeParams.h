@@ -8,9 +8,7 @@
 UENUM(BlueprintType)
 enum class ET66MapTheme : uint8
 {
-	Farm     UMETA(DisplayName = "Farm"),
-	Ocean    UMETA(DisplayName = "Ocean (Legacy)"),
-	Mountain UMETA(DisplayName = "Mountain (Legacy)"),
+	Farm UMETA(DisplayName = "Farm"),
 };
 
 USTRUCT(BlueprintType)

@@ -305,7 +305,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::RebuildWidget()
 	// Critical: Slate is built before OnScreenActivated() (AddToViewport/TakeWidget).
 	// Load any pending leaderboard snapshot here so the first render is correct (no "empty run" flash).
 	LoadSavedRunSummaryIfRequested();
-	return BuildSlateUI();
+	return FT66Style::MakeResponsiveRoot(BuildSlateUI());
 }
 
 void UT66RunSummaryScreen::RebuildLogItems()
@@ -946,10 +946,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		UT66DamageLogSubsystem::SourceID_AutoAttack,
 		FName(TEXT("Idol_Star")),
 		FName(TEXT("Idol_Curse")),
-		FName(TEXT("Idol_Rubber")),
+		FName(TEXT("Idol_Shadow")),
 		FName(TEXT("Idol_Lava")),
 		FName(TEXT("Idol_Electric")),
-		FName(TEXT("Idol_Fire"))
+		FName(TEXT("Idol_BlackHole"))
 	};
 	static const int32 DummyDamage[7] = { 520, 380, 290, 210, 150, 85, 42 };
 	TMap<FName, int32> DamageMap;
@@ -1013,6 +1013,33 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		DamageBySourceBox
 	);
 
+	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FT66Style::GetSafeFrameInsets();
+	});
+
+	const TAttribute<FMargin> SafeBackPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FT66Style::GetSafePadding(FMargin(20.f, 0.f, 0.f, 20.f));
+	});
+
+	const TAttribute<FMargin> SafeDrawerPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FT66Style::GetSafePadding(FMargin(0.f, 70.f, 0.f, 0.f));
+	});
+
+	const TAttribute<FOptionalSize> EventLogWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
+	{
+		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		return FOptionalSize(FMath::Clamp(SafeFrame.X * 0.42f, 420.f, 520.f));
+	});
+
+	const TAttribute<FOptionalSize> EventLogHeightAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
+	{
+		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		return FOptionalSize(FMath::Clamp(SafeFrame.Y - 140.f, 420.f, 620.f));
+	});
+
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(bDotaTheme ? FT66Style::ScreenBackground() : FT66Style::Tokens::Bg)
@@ -1028,160 +1055,165 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			// Main full-screen panel
 			+ SOverlay::Slot()
 			[
-				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					// Header row: title left, Event Log button right
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-							.Text(TitleText)
-							.Font(FT66Style::Tokens::FontBold(40))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-						[
-							MakeEventLogButton(NSLOCTEXT("T66.RunSummary", "EventLogTitle", "EVENT LOG"))
-						]
-					]
-					// Stage reached / high score line
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
-					[
-						SNew(STextBlock)
-						.Text(StageScoreText)
-						.Font(FT66Style::Tokens::FontBold(18))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-					]
-					// Global ranking (high score + speed run when mode on) — only for current run, not when viewing saved.
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-					[
-						SNew(SBox)
-						.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(SafeContentInsets)
+				[
+					FT66Style::MakePanel(
+						SNew(SVerticalBox)
+						// Header row: title left, Event Log button right
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 						[
 							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+							[
+								SNew(STextBlock)
+								.Text(TitleText)
+								.Font(FT66Style::Tokens::FontBold(40))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+							[
+								MakeEventLogButton(NSLOCTEXT("T66.RunSummary", "EventLogTitle", "EVENT LOG"))
+							]
+						]
+						// Stage reached / high score line
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+						[
+							SNew(STextBlock)
+							.Text(StageScoreText)
+							.Font(FT66Style::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+						// Global ranking (high score + speed run when mode on) — only for current run, not when viewing saved.
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+						[
+							SNew(SBox)
+							.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
+								[
+									SNew(SHorizontalBox)
+									+ SHorizontalBox::Slot().AutoWidth()
+									[
+										SNew(STextBlock)
+										.Text(ScoreRankLabelText)
+										.Font(FT66Style::Tokens::FontRegular(14))
+										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									]
+									+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+									[
+										SNew(STextBlock)
+										.Text(ScoreRankValueText)
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+								]
+								+ SHorizontalBox::Slot().AutoWidth()
+								[
+									SNew(SHorizontalBox)
+									.Visibility_Lambda([bSpeedRunMode]() { return bSpeedRunMode ? EVisibility::Visible : EVisibility::Collapsed; })
+									+ SHorizontalBox::Slot().AutoWidth()
+									[
+										SNew(STextBlock)
+										.Text(SpeedRunRankLabelText)
+										.Font(FT66Style::Tokens::FontRegular(14))
+										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									]
+									+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+									[
+										SNew(STextBlock)
+										.Text(SpeedRunRankValueText)
+										.Font(FT66Style::Tokens::FontBold(14))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+									]
+								]
+							]
+						]
+						// Personal best banners (only for newly-finished runs)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, -10.f, 0.f, 6.f)
+						[
+							SNew(STextBlock)
+							.Visibility_Lambda([this]() { return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
+							.Text_Lambda([this, Loc]()
+							{
+								return Loc ? Loc->GetText_NewPersonalBestScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestScore", "New Personal Score");
+							})
+							.Font(FT66Style::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66Style::Tokens::Success)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+						[
+							SNew(STextBlock)
+							.Visibility_Lambda([this]() { return (bNewPersonalBestTime && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
+							.Text_Lambda([this, Loc]()
+							{
+								return Loc ? Loc->GetText_NewPersonalBestTime() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestTime", "New Personal Best Time");
+							})
+							.Font(FT66Style::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66Style::Tokens::Success)
+						]
+						// Main content: Left = Luck, Skill, Integrity, Proof of Run, They're cheating. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
+						+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, 18.f)
+						[
+							SNew(SHorizontalBox)
+							// Left side: Luck Rating, Skill Rating, Probability of Cheating, Proof of Run, They're cheating
 							+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth()
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[LuckRatingPanel]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[SkillRatingPanel]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[CheatProbabilityPanel]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
 								[
-									SNew(STextBlock)
-									.Text(ScoreRankLabelText)
-									.Font(FT66Style::Tokens::FontRegular(14))
-									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
+									[ButtonsStack]
 								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 								[
-									SNew(STextBlock)
-									.Text(ScoreRankValueText)
-									.Font(FT66Style::Tokens::FontBold(14))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })[ProofOfRunPanel]
 								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								SNew(SHorizontalBox)
-								.Visibility_Lambda([bSpeedRunMode]() { return bSpeedRunMode ? EVisibility::Visible : EVisibility::Collapsed; })
-								+ SHorizontalBox::Slot().AutoWidth()
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 								[
-									SNew(STextBlock)
-									.Text(SpeedRunRankLabelText)
-									.Font(FT66Style::Tokens::FontRegular(14))
-									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
+									[ReportCheatButton]
 								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(6.f, 0.f, 0.f, 0.f)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 								[
-									SNew(STextBlock)
-									.Text(SpeedRunRankValueText)
-									.Font(FT66Style::Tokens::FontBold(14))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									SNew(SBox).Visibility_Lambda([this]() { return bReportPromptVisible ? EVisibility::Visible : EVisibility::Collapsed; })
+									[ReportPrompt]
 								]
+								+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SSpacer)]
 							]
-						]
-					]
-					// Personal best banners (only for newly-finished runs)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, -10.f, 0.f, 6.f)
-					[
-						SNew(STextBlock)
-						.Visibility_Lambda([this]() { return (bNewPersonalBestScore && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
-						.Text_Lambda([this, Loc]()
-						{
-							return Loc ? Loc->GetText_NewPersonalBestScore() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestScore", "New Personal Score");
-						})
-						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FT66Style::Tokens::Success)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
-					[
-						SNew(STextBlock)
-						.Visibility_Lambda([this]() { return (bNewPersonalBestTime && !bViewingSavedLeaderboardRunSummary) ? EVisibility::Visible : EVisibility::Collapsed; })
-						.Text_Lambda([this, Loc]()
-						{
-							return Loc ? Loc->GetText_NewPersonalBestTime() : NSLOCTEXT("T66.RunSummary", "NewPersonalBestTime", "New Personal Best Time");
-						})
-						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FT66Style::Tokens::Success)
-					]
-					// Main content: Left = Luck, Skill, Integrity, Proof of Run, They're cheating. Center = Hero (middle), idols (1x6), inventory. Right = Stats, Damage.
-					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 0.f, 0.f, 18.f)
-					[
-						SNew(SHorizontalBox)
-						// Left side: Luck Rating, Skill Rating, Probability of Cheating, Proof of Run, They're cheating
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 24.f, 0.f)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[LuckRatingPanel]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[SkillRatingPanel]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[CheatProbabilityPanel]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 18.f)
+							// Center: Hero preview (middle), then idols (1 row x 6), then inventory
+							+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 							[
-								SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Collapsed : EVisibility::Visible; })
-								[ButtonsStack]
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
+								[MakeHeroPreview(HeroPreviewBrush)]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
+								[IdolsBorderedGrid]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+								[InventorySlotGrid]
 							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
+							// Right: Stats, Damage by source
+							+ SHorizontalBox::Slot().AutoWidth().Padding(24.f, 0.f, 0.f, 0.f)
 							[
-								SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })[ProofOfRunPanel]
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[BaseStatsPanel]
+								+ SVerticalBox::Slot().FillHeight(1.f)[DamageBySourcePanel]
 							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-							[
-								SNew(SBox).Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
-								[ReportCheatButton]
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
-							[
-								SNew(SBox).Visibility_Lambda([this]() { return bReportPromptVisible ? EVisibility::Visible : EVisibility::Collapsed; })
-								[ReportPrompt]
-							]
-							+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SSpacer)]
-						]
-						// Center: Hero preview (middle), then idols (1 row x 6), then inventory
-						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
-							[MakeHeroPreview(HeroPreviewBrush)]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
-							[IdolsBorderedGrid]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-							[InventorySlotGrid]
-						]
-						// Right: Stats, Damage by source
-						+ SHorizontalBox::Slot().AutoWidth().Padding(24.f, 0.f, 0.f, 0.f)
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[BaseStatsPanel]
-							+ SVerticalBox::Slot().FillHeight(1.f)[DamageBySourcePanel]
-						]
-					],
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6)
-				)
+						],
+						FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6)
+					)
+				]
 			]
 			// Back button (bottom-left) — when viewing a saved leaderboard run
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Bottom)
-			.Padding(20.f, 0.f, 0.f, 20.f)
+			.Padding(SafeBackPadding)
 			[
 				SNew(SBox)
 				.Visibility_Lambda([this]() { return bViewingSavedLeaderboardRunSummary ? EVisibility::Visible : EVisibility::Collapsed; })
@@ -1193,11 +1225,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Right)
 			.VAlign(VAlign_Top)
-			.Padding(0.f, 70.f, 0.f, 0.f)
+			.Padding(SafeDrawerPadding)
 			[
 				SNew(SBox)
-				.WidthOverride(520.f)
-				.HeightOverride(620.f)
+				.WidthOverride(EventLogWidthAttr)
+				.HeightOverride(EventLogHeightAttr)
 				.Visibility_Lambda([this]() { return bLogVisible ? EVisibility::Visible : EVisibility::Collapsed; })
 				[
 					EventLogPanel

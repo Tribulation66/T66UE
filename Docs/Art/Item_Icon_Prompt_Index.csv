@@ -1,0 +1,35 @@
+Category,ItemName,ItemID,Object
+Damage,AOE Damage,Item_AoeDamage,Titan Hammer
+Damage,Bounce Damage,Item_BounceDamage,Moon Shuriken
+Damage,Pierce Damage,Item_PierceDamage,Falchion
+Damage,DOT Damage,Item_DotDamage,Arcane Wand
+Damage,Crit Damage,Item_CritDamage,Executioner Axe
+Damage,Close Range Damage,Item_CloseRangeDmg,Boxing Gloves
+Damage,Long Range Damage,Item_LongRangeDmg,Sniper Rifle
+Attack Speed,AOE Speed,Item_AoeSpeed,War Drum
+Attack Speed,Bounce Speed,Item_BounceSpeed,Trickster Bracer
+Attack Speed,Pierce Speed,Item_PierceSpeed,Repeater Crossbow
+Attack Speed,DOT Speed,Item_DotSpeed,Ritual Censer
+Attack Speed,Crit Chance,Item_CritChance,Duelist Gloves
+Attack Scale,AOE Scale,Item_AoeScale,Earthshaker Totem
+Attack Scale,Bounce Scale,Item_BounceScale,Storm Ring
+Attack Scale,Pierce Scale,Item_PierceScale,Dragon Lance
+Attack Scale,DOT Scale,Item_DotScale,Venom Orb
+Attack Scale,Range,Item_AttackRange,Sniper Scope
+Armor,Taunt,Item_Taunt,Red Matador Cape
+Armor,Reflect Damage,Item_ReflectDmg,Mirror Shield
+Armor,HP Regen,Item_HpRegen,Blessed Cuirass
+Armor,Crush,Item_Crush,Spiked Tower Shield
+Armor,Damage Reduction,Item_DamageReduction,Bulwark Plate
+Evasion,Invisibility,Item_Invisibility,Veil Cloak
+Evasion,Counter Attack,Item_CounterAttack,Parrying Dagger
+Evasion,Life Steal,Item_LifeSteal,Vampiric Mask
+Evasion,Assassinate,Item_Assassinate,Assassin Dagger
+Evasion,Evasion Chance,Item_EvasionChance,Feathered Mantle
+Luck,Spin Wheel,Item_SpinWheel,Spin Wheel
+Luck,Loot Crate,Item_LootCrate,Loot Crate
+Luck,Treasure Chest,Item_TreasureChest,Treasure Compass
+Luck,Cheating,Item_Cheating,Loaded Dice
+Luck,Stealing,Item_Stealing,Wallet
+Speed,Movement Speed,Item_MovementSpeed,Hermes Sandals
+Special,Gambler's Token,Item_GamblersToken,Infernal Casino Token

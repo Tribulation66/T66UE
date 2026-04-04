@@ -37,6 +37,35 @@ static UT66RunStateSubsystem* GetRunStateFromWorld(UWorld* World)
 	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 }
 
+static FString MakeInventoryStackKey(const FT66InventorySlot& Slot)
+{
+	return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
+}
+
+static void AddItemIconPath(
+	UT66GameInstance* GI,
+	FName ItemID,
+	ET66ItemRarity Rarity,
+	TArray<FSoftObjectPath>& OutPaths)
+{
+	if (!GI || ItemID.IsNone())
+	{
+		return;
+	}
+
+	FItemData ItemData;
+	if (!GI->GetItemData(ItemID, ItemData))
+	{
+		return;
+	}
+
+	const TSoftObjectPtr<UTexture2D> IconSoft = ItemData.GetIconForRarity(Rarity);
+	if (!IconSoft.IsNull())
+	{
+		OutPaths.AddUnique(IconSoft.ToSoftObjectPath());
+	}
+}
+
 void UT66VendorOverlayWidget::NativeDestruct()
 {
 	// Stop any steal prompt ticking.
@@ -169,7 +198,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const FText VendorTitle = Loc ? Loc->GetText_Vendor() : NSLOCTEXT("T66.Vendor", "VendorTitle", "VENDOR");
 	const FText ShopTitle = Loc ? Loc->GetText_Shop() : NSLOCTEXT("T66.Vendor", "ShopTitle", "SHOP");
 	const FText BankTitle = Loc ? Loc->GetText_Bank() : NSLOCTEXT("T66.Vendor", "BankTitle", "BANK");
-	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
+	const FText CloseText = NSLOCTEXT("T66.Common", "Close", "CLOSE");
 	const FText InventoryTitle = Loc ? Loc->GetText_YourItems() : NSLOCTEXT("T66.Vendor", "InventoryTitle", "INVENTORY");
 	const FText RerollText = Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.Vendor", "Reroll", "REROLL");
 	LiveStatsPanel = MakeShared<T66StatsPanelSlate::FT66LiveStatsPanel>();
@@ -177,7 +206,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const TArray<FName> EmptyStock;
 	const TArray<FName>& Stock = RunState ? RunState->GetVendorStockItemIDs() : EmptyStock;
 
-	static constexpr int32 ShopSlotCount = 3;
+	static constexpr int32 ShopSlotCount = UT66RunStateSubsystem::VendorDisplaySlotCount;
 	ItemNameTexts.SetNum(ShopSlotCount);
 	ItemDescTexts.SetNum(ShopSlotCount);
 	ItemPriceTexts.SetNum(ShopSlotCount);
@@ -192,14 +221,19 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	InventorySlotBorders.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotButtons.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	InventorySlotCountTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	InventorySlotIconBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+
+	const float ShopCardSize = FT66Style::Tokens::NPCShopCardWidth;
+	const float ShopCardHeight = FT66Style::Tokens::NPCShopCardHeight;
+	const float ShopIconSize = ShopCardSize - FT66Style::Tokens::Space4 * 2.f;
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
 		ItemIconBrushes[i] = MakeShared<FSlateBrush>();
 		ItemIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		ItemIconBrushes[i]->ImageSize = FVector2D(260.f, 260.f);  // Match Gambler game panel icon size
+		ItemIconBrushes[i]->ImageSize = FVector2D(ShopIconSize, ShopIconSize);
 	}
 	for (int32 i = 0; i < InventorySlotIconBrushes.Num(); ++i)
 	{
@@ -207,10 +241,6 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		InventorySlotIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
 		InventorySlotIconBrushes[i]->ImageSize = FVector2D(160.f, 160.f);
 	}
-
-	// Shop item card size matches Gambler game panels (260×260 icon).
-	static constexpr float ShopCardSize = 260.f;
-	static constexpr float ShopCardHeight = 460.f;
 
 	TSharedRef<SHorizontalBox> ShopRow = SNew(SHorizontalBox);
 
@@ -256,10 +286,16 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					// 1. Name at top
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SAssignNew(ItemNameTexts[i], STextBlock)
-						.Text(FText::GetEmpty())
-						.TextStyle(&TextHeading)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						SNew(SBox)
+						.HeightOverride(60.f)
+						[
+							SAssignNew(ItemNameTexts[i], STextBlock)
+							.Text(FText::GetEmpty())
+							.TextStyle(&TextHeading)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.AutoWrapText(true)
+							.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
+						]
 					]
 					// 2. Large image below name (centered)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
@@ -269,8 +305,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(ShopCardSize)
-								.HeightOverride(ShopCardSize)
+								.WidthOverride(ShopIconSize)
+								.HeightOverride(ShopIconSize)
 								[
 									SAssignNew(ItemIconImages[i], SImage)
 									.Image(ItemIconBrushes[i].Get())
@@ -288,6 +324,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						.TextStyle(&TextBody)
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
+						.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
 					]
 					// 4. Buy and Steal side by side
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
@@ -308,8 +345,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		];
 	}
 
-	// Buyback row (3 slots, same card layout; BUY only, price = sell price)
-	static constexpr int32 BuybackSlotCount = 3;
+	// Buyback row (shared slot count; BUY only, price = sell price)
+	static constexpr int32 BuybackSlotCount = UT66RunStateSubsystem::BuybackDisplaySlotCount;
 	BuybackNameTexts.SetNum(BuybackSlotCount);
 	BuybackDescTexts.SetNum(BuybackSlotCount);
 	BuybackPriceTexts.SetNum(BuybackSlotCount);
@@ -322,7 +359,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	{
 		BuybackIconBrushes[i] = MakeShared<FSlateBrush>();
 		BuybackIconBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-		BuybackIconBrushes[i]->ImageSize = FVector2D(260.f, 260.f);
+		BuybackIconBrushes[i]->ImageSize = FVector2D(ShopIconSize, ShopIconSize);
 	}
 	const FText BuybackTitle = NSLOCTEXT("T66.Vendor", "Buyback", "BUYBACK");
 	TSharedRef<SHorizontalBox> BuybackRow = SNew(SHorizontalBox);
@@ -355,10 +392,16 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SAssignNew(BuybackNameTexts[i], STextBlock)
-						.Text(FText::GetEmpty())
-						.TextStyle(&TextHeading)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						SNew(SBox)
+						.HeightOverride(60.f)
+						[
+							SAssignNew(BuybackNameTexts[i], STextBlock)
+							.Text(FText::GetEmpty())
+							.TextStyle(&TextHeading)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.AutoWrapText(true)
+							.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
+						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
 					[
@@ -367,8 +410,8 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						[
 							FT66Style::MakePanel(
 								SNew(SBox)
-								.WidthOverride(ShopCardSize)
-								.HeightOverride(ShopCardSize)
+								.WidthOverride(ShopIconSize)
+								.HeightOverride(ShopIconSize)
 								[
 									SAssignNew(BuybackIconImages[i], SImage)
 									.Image(BuybackIconBrushes[i].Get())
@@ -385,6 +428,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						.TextStyle(&TextBody)
 						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 						.AutoWrapText(true)
+						.WrapTextAt(ShopCardSize - FT66Style::Tokens::Space4 * 2.f)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 					[
@@ -537,6 +581,16 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						.Image(InventorySlotIconBrushes[Inv].Get())
 						.ColorAndOpacity(FLinearColor::White)
 					]
+					+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0.f, 6.f, 8.f, 0.f)
+					[
+						SAssignNew(InventorySlotCountTexts[Inv], STextBlock)
+						.Text(FText::GetEmpty())
+						.Font(FT66Style::Tokens::FontBold(14))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ShadowOffset(FVector2D(1.f, 1.f))
+						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
+						.Visibility(EVisibility::Hidden)
+					]
 					+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
 					[
 						SAssignNew(InventorySlotTexts[Inv], STextBlock)
@@ -572,6 +626,81 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	);
 	SellItemButton = SellBtnWidget;
 
+	TSharedRef<SWidget> ShopCardsScroller =
+		SNew(SScrollBox)
+		.Orientation(Orient_Horizontal)
+		.ScrollBarVisibility(EVisibility::Visible)
+		+ SScrollBox::Slot()
+		[
+			ShopRow
+		];
+
+	TSharedRef<SWidget> BuybackCardsScroller =
+		SNew(SScrollBox)
+		.Orientation(Orient_Horizontal)
+		.ScrollBarVisibility(EVisibility::Visible)
+		+ SScrollBox::Slot()
+		[
+			BuybackRow
+		];
+
+	TSharedRef<SWidget> ShopModeToggleButton = FT66Style::MakeButton(
+		FT66ButtonParams(
+			BuybackTitle,
+			FOnClicked::CreateLambda([this]()
+			{
+				const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
+				if (ShopBuybackSwitcher.IsValid())
+				{
+					ShopBuybackSwitcher->SetActiveWidgetIndex(bShowingBuyback ? 0 : 1);
+				}
+
+				if (bShowingBuyback)
+				{
+					RefreshStock();
+				}
+				else
+				{
+					if (UT66RunStateSubsystem* RS = GetRunStateFromWorld(GetWorld()))
+					{
+						RS->GenerateBuybackDisplay();
+					}
+					RefreshBuyback();
+				}
+				return FReply::Handled();
+			}),
+			ET66ButtonType::Neutral)
+		.SetMinWidth(0.f)
+		.SetPadding(FMargin(12.f, 8.f))
+		.SetDynamicLabel(TAttribute<FText>::CreateLambda([this, ShopTitle, BuybackTitle]() -> FText
+		{
+			const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
+			return bShowingBuyback ? ShopTitle : BuybackTitle;
+		}))
+	);
+
+	TSharedRef<SWidget> ContextRerollButton = FT66Style::MakeButton(
+		FT66ButtonParams(
+			RerollText,
+			FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
+			ET66ButtonType::Neutral)
+		.SetMinWidth(0.f)
+		.SetPadding(FMargin(16.f, 10.f))
+		.SetEnabled(TAttribute<bool>::CreateLambda([this]()
+		{
+			UT66RunStateSubsystem* RS = GetRunStateFromWorld(GetWorld());
+			if (!RS)
+			{
+				return false;
+			}
+
+			const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
+			return bShowingBuyback
+				? RS->GetBuybackPoolSize() > UT66RunStateSubsystem::BuybackDisplaySlotCount
+				: !bCachedBossActive;
+		}))
+	);
+
 	// Build main 3-column row (Stats | Shop | Bank) as a separate widget to avoid Slate parser issues with SBox::FArguments.
 	TSharedRef<SWidget> MainRowContent = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
@@ -583,94 +712,45 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), FT66Style::Tokens::NPCVendorStatsPanelWidth, true)
 			]
 		]
-		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
+		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, FT66Style::Tokens::Space6, 0.f)
 		[
 			SNew(SBox)
-			.WidthOverride(FT66Style::Tokens::NPCCenterPanelTotalWidth)
-			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
+			.MinDesiredHeight(FT66Style::Tokens::NPCMainRowHeight)
 			[
-				FT66Style::MakePanel(
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
 						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(ShopTitle, FOnClicked::CreateLambda([this]() {
-									if (ShopBuybackSwitcher.IsValid()) { ShopBuybackSwitcher->SetActiveWidgetIndex(0); }
-									RefreshStock();
-									return FReply::Handled();
-								}), ET66ButtonType::Neutral)
-								.SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f))
-							)
+							ShopModeToggleButton
 						]
 						+ SHorizontalBox::Slot().AutoWidth()
 						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(BuybackTitle, FOnClicked::CreateLambda([this]() {
-									if (ShopBuybackSwitcher.IsValid()) { ShopBuybackSwitcher->SetActiveWidgetIndex(1); }
-									if (UT66RunStateSubsystem* RS = GetRunStateFromWorld(GetWorld())) { RS->GenerateBuybackDisplay(); }
-									RefreshBuyback();
-									return FReply::Handled();
-								}), ET66ButtonType::Neutral)
-								.SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f))
-							)
+							ContextRerollButton
 						]
 					]
 					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
 					[
-						SAssignNew(ShopBuybackSwitcher, SWidgetSwitcher)
-						+ SWidgetSwitcher::Slot()
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 0.f)
-							[ ShopRow ]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+						FT66Style::MakePanel(
+							SAssignNew(ShopBuybackSwitcher, SWidgetSwitcher)
+							+ SWidgetSwitcher::Slot()
 							[
-								FT66Style::MakeButton(
-									FT66ButtonParams(RerollText,
-										FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnReroll),
-										ET66ButtonType::Neutral)
-									.SetMinWidth(0.f)
-									.SetPadding(FMargin(16.f, 10.f))
-									.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return !bCachedBossActive; }))
-								)
+								ShopCardsScroller
 							]
-						]
-						+ SWidgetSwitcher::Slot()
-						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 0.f)
-							[ BuybackRow ]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+							+ SWidgetSwitcher::Slot()
 							[
-								FT66Style::MakeButton(
-									FT66ButtonParams(RerollText,
-										FOnClicked::CreateLambda([this]() {
-											if (UT66RunStateSubsystem* RS = GetRunStateFromWorld(GetWorld())) { RS->RerollBuybackDisplay(); }
-											RefreshBuyback();
-											return FReply::Handled();
-										}),
-										ET66ButtonType::Neutral)
-									.SetMinWidth(0.f)
-									.SetPadding(FMargin(16.f, 10.f))
-									.SetEnabled(TAttribute<bool>::CreateLambda([this]() {
-										UT66RunStateSubsystem* RS = GetRunStateFromWorld(GetWorld());
-										return RS && RS->GetBuybackPoolSize() > 3;
-									}))
-								)
-							]
-						]
+								BuybackCardsScroller
+							],
+							FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6))
 					]
-				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
-			]
-		]
-		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 0.f, 0.f)
+					]
+				]
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 0.f, 0.f)
 		[
 			SNew(SBox)
 			.WidthOverride(FT66Style::Tokens::NPCRightPanelWidth)
+			.MinDesiredHeight(FT66Style::Tokens::NPCMainRowHeight)
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
@@ -771,7 +851,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			]
 		];
 
-	TSharedRef<SWidget> ShopPage =
+	TSharedRef<SWidget> ShopPageBody =
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight()
 		[
@@ -779,7 +859,11 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(ShopTitle)
+				.Text_Lambda([this, ShopTitle, BuybackTitle]() -> FText
+				{
+					const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
+					return bShowingBuyback ? BuybackTitle : ShopTitle;
+				})
 				.TextStyle(&TextTitle)
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
@@ -793,17 +877,11 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
-			SNew(SBox)
-			.HeightOverride(FT66Style::Tokens::NPCMainRowHeight)
-			[
-				MainRowContent
-			]
+			MainRowContent
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
 		[
-			SNew(SBox)
-			.HeightOverride(FT66Style::Tokens::NPCGamblerInventoryPanelHeight)[
-				FT66Style::MakePanel(
+			FT66Style::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -847,7 +925,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 						SNew(SSpacer)
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f)
@@ -900,38 +978,82 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 					]
 				]
 			,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space6).SetColor(FT66Style::Tokens::Panel))
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FT66Style::Tokens::Space4).SetColor(FT66Style::Tokens::Panel))
+		];
+
+	const TAttribute<FOptionalSize> ShopPageWidthAttr = TAttribute<FOptionalSize>::CreateLambda([this]() -> FOptionalSize
+	{
+		const FVector2D Bounds = bEmbeddedInCircusShell ? FT66Style::GetViewportLogicalSize() : FT66Style::GetSafeFrameSize();
+		const float HorizontalMargins = bEmbeddedInCircusShell
+			? (FT66Style::Tokens::NPCOverlayPadding * 4.f)
+			: (FT66Style::Tokens::NPCOverlayPadding * 2.f);
+		return FOptionalSize(FMath::Max(1.f, Bounds.X - HorizontalMargins));
+	});
+
+	TSharedRef<SWidget> ShopPage =
+		SNew(SScrollBox)
+		.Orientation(Orient_Vertical)
+		+ SScrollBox::Slot()
+		[
+			SNew(SBox)
+			.WidthOverride(ShopPageWidthAttr)
+			[
+				ShopPageBody
 			]
 		];
+
+	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+	{
+		return bEmbeddedInCircusShell ? FMargin(0.f) : FT66Style::GetSafeFrameInsets();
+	});
+
+	const TAttribute<FMargin> SafeClosePadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
+	{
+		const FMargin LocalPadding(
+			FT66Style::Tokens::NPCOverlayPadding,
+			FT66Style::Tokens::NPCOverlayPadding,
+			FT66Style::Tokens::NPCOverlayPadding,
+			0.f);
+		return bEmbeddedInCircusShell ? LocalPadding : FT66Style::GetSafePadding(LocalPadding);
+	});
 
 	TSharedRef<SWidget> Root =
 		SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
 			FT66Style::MakePanel(
-				SAssignNew(PageSwitcher, SWidgetSwitcher)
-				+ SWidgetSwitcher::Slot()
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(SafeContentInsets)
 				[
-					DialoguePage
-				]
-				+ SWidgetSwitcher::Slot()
-				[
-					ShopPage
+					SAssignNew(PageSwitcher, SWidgetSwitcher)
+					+ SWidgetSwitcher::Slot()
+					[
+						DialoguePage
+					]
+					+ SWidgetSwitcher::Slot()
+					[
+						ShopPage
+					]
 				]
 			,
 				FT66PanelParams(ET66PanelType::Bg).SetPadding(FT66Style::Tokens::NPCOverlayPadding).SetColor(FT66Style::Tokens::Bg))
 		]
 		+ SOverlay::Slot()
-		.HAlign(HAlign_Left)
+		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Top)
-		.Padding(FT66Style::Tokens::NPCOverlayPadding, FT66Style::Tokens::NPCOverlayPadding, 0.f, 0.f)
+		.Padding(SafeClosePadding)
 		[
 			FT66Style::MakeButton(
-				FT66ButtonParams(BackText,
+				FT66ButtonParams(CloseText,
 					FOnClicked::CreateUObject(this, &UT66VendorOverlayWidget::OnBack),
-					ET66ButtonType::Neutral)
+					ET66ButtonType::Danger)
 				.SetMinWidth(0.f)
 				.SetPadding(FMargin(20.f, 12.f))
+				.SetVisibility(TAttribute<EVisibility>::CreateLambda([this]()
+				{
+					return bEmbeddedInCircusShell ? EVisibility::Collapsed : EVisibility::Visible;
+				}))
 			)
 		]
 		+ SOverlay::Slot()
@@ -943,7 +1065,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 
 	SetPage(EVendorPage::Dialogue);
 	RefreshAll();
-	return Root;
+	return bEmbeddedInCircusShell ? Root : FT66Style::MakeResponsiveRoot(Root);
 }
 
 void UT66VendorOverlayWidget::HandleGoldOrDebtChanged()
@@ -953,6 +1075,7 @@ void UT66VendorOverlayWidget::HandleGoldOrDebtChanged()
 
 void UT66VendorOverlayWidget::HandleInventoryChanged()
 {
+	PrimeVisibleItemIconTextures();
 	RefreshTopBar();
 	RefreshInventory();
 	RefreshSellPanel();
@@ -961,24 +1084,83 @@ void UT66VendorOverlayWidget::HandleInventoryChanged()
 
 void UT66VendorOverlayWidget::HandleVendorChanged()
 {
+	PrimeVisibleItemIconTextures();
 	RefreshTopBar();
 	RefreshStock();
 }
 
 void UT66VendorOverlayWidget::HandleBuybackChanged()
 {
+	PrimeVisibleItemIconTextures();
 	RefreshTopBar();
 	RefreshBuyback();
 }
 
 void UT66VendorOverlayWidget::RefreshAll()
 {
+	PrimeVisibleItemIconTextures();
 	RefreshTopBar();
 	RefreshStock();
 	RefreshBuyback();
 	RefreshInventory();
 	RefreshSellPanel();
 	RefreshStatsPanel();
+}
+
+void UT66VendorOverlayWidget::PrimeVisibleItemIconTextures()
+{
+	UWorld* World = GetWorld();
+	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
+	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+	if (!RunState || !GI || !TexPool)
+	{
+		return;
+	}
+
+	TArray<FSoftObjectPath> IconPaths;
+	IconPaths.Reserve(
+		UT66RunStateSubsystem::VendorDisplaySlotCount +
+		UT66RunStateSubsystem::BuybackDisplaySlotCount +
+		UT66RunStateSubsystem::MaxInventorySlots);
+
+	const TArray<FT66InventorySlot>& StockSlots = RunState->GetVendorStockSlots();
+	for (const FT66InventorySlot& StockSlot : StockSlots)
+	{
+		if (!StockSlot.IsValid())
+		{
+			continue;
+		}
+
+		AddItemIconPath(GI, StockSlot.ItemTemplateID, StockSlot.Rarity, IconPaths);
+	}
+
+	const TArray<FT66InventorySlot>& BuybackSlots = RunState->GetBuybackDisplaySlots();
+	for (const FT66InventorySlot& BuybackSlot : BuybackSlots)
+	{
+		if (!BuybackSlot.IsValid())
+		{
+			continue;
+		}
+
+		AddItemIconPath(GI, BuybackSlot.ItemTemplateID, BuybackSlot.Rarity, IconPaths);
+	}
+
+	const TArray<FT66InventorySlot>& InventorySlots = RunState->GetInventorySlots();
+	for (const FT66InventorySlot& InventorySlot : InventorySlots)
+	{
+		if (!InventorySlot.IsValid())
+		{
+			continue;
+		}
+
+		AddItemIconPath(GI, InventorySlot.ItemTemplateID, InventorySlot.Rarity, IconPaths);
+	}
+
+	if (IconPaths.Num() > 0)
+	{
+		TexPool->EnsureTexturesLoadedSync(IconPaths);
+	}
 }
 
 void UT66VendorOverlayWidget::RefreshStatsPanel()
@@ -1052,14 +1234,23 @@ void UT66VendorOverlayWidget::RefreshTopBar()
 
 FReply UT66VendorOverlayWidget::OnReroll()
 {
-	if (IsBossActive())
-	{
-		return FReply::Handled();
-	}
 	if (UWorld* World = GetWorld())
 	{
 		if (UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World))
 		{
+			const bool bShowingBuyback = ShopBuybackSwitcher.IsValid() && ShopBuybackSwitcher->GetActiveWidgetIndex() == 1;
+			if (bShowingBuyback)
+			{
+				RunState->RerollBuybackDisplay();
+				RefreshBuyback();
+				return FReply::Handled();
+			}
+
+			if (IsBossActive())
+			{
+				return FReply::Handled();
+			}
+
 			RunState->RerollVendorStockForCurrentStage();
 		}
 	}
@@ -1090,7 +1281,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 		if (ItemNameTexts.IsValidIndex(i) && ItemNameTexts[i].IsValid())
 		{
 			ItemNameTexts[i]->SetText(bHasItem
-				? (Loc ? Loc->GetText_ItemDisplayName(Stock[i]) : FText::FromName(Stock[i]))
+				? (Loc ? Loc->GetText_ItemDisplayNameForRarity(Stock[i], SlotRarity) : FText::FromName(Stock[i]))
 				: NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
 		}
 		if (ItemDescTexts.IsValidIndex(i) && ItemDescTexts[i].IsValid())
@@ -1103,7 +1294,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 			{
 				const int32 MainValue = StockSlots.IsValidIndex(i) ? StockSlots[i].Line1RolledValue : 0;
 				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-				ItemDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult));
+				ItemDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult, StockSlots.IsValidIndex(i) ? StockSlots[i].GetLine2Multiplier() : 0.f));
 			}
 		}
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
@@ -1115,7 +1306,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 			const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
 			if (!SlotIconSoft.IsNull() && TexPool)
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, ItemIconBrushes[i], FName(TEXT("VendorStock"), i + 1), /*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, ItemIconBrushes[i], FName(TEXT("VendorStock"), i + 1), /*bClearWhileLoading*/ false);
 			}
 			else
 			{
@@ -1129,19 +1320,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (ItemTileBorders.IsValidIndex(i) && ItemTileBorders[i].IsValid())
 		{
-			// Shop item card border uses rarity color (same as inventory) when slot has an item and not sold.
-			if (bSold)
-			{
-				ItemTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
-			}
-			else if (bHasData)
-			{
-				ItemTileBorders[i]->SetBorderBackgroundColor(FItemData::GetItemRarityColor(SlotRarity));
-			}
-			else
-			{
-				ItemTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel);
-			}
+			ItemTileBorders[i]->SetBorderBackgroundColor(bHasItem ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel);
 		}
 		if (BuyButtons.IsValidIndex(i) && BuyButtons[i].IsValid())
 		{
@@ -1167,7 +1346,7 @@ void UT66VendorOverlayWidget::RefreshStock()
 		}
 		if (StealButtons.IsValidIndex(i) && StealButtons[i].IsValid())
 		{
-			StealButtons[i]->SetVisibility(bVendorAllowsSteal ? EVisibility::Visible : EVisibility::Hidden);
+			StealButtons[i]->SetVisibility(bVendorAllowsSteal ? EVisibility::Visible : EVisibility::Collapsed);
 			StealButtons[i]->SetEnabled(bVendorAllowsSteal && bHasItem && !bSold && bBoughtSomethingThisVisit && !IsBossActive());
 		}
 	}
@@ -1183,7 +1362,7 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FT66InventorySlot>& Slots = RunState->GetBuybackDisplaySlots();
-	const int32 SlotCount = FMath::Min(BuybackNameTexts.Num(), 3);
+	const int32 SlotCount = BuybackNameTexts.Num();
 	for (int32 i = 0; i < SlotCount; ++i)
 	{
 		const bool bHasSlot = Slots.IsValidIndex(i) && Slots[i].IsValid();
@@ -1195,7 +1374,7 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 		if (BuybackNameTexts.IsValidIndex(i) && BuybackNameTexts[i].IsValid())
 		{
 			BuybackNameTexts[i]->SetText(bHasSlot
-				? (Loc ? Loc->GetText_ItemDisplayName(Slots[i].ItemTemplateID) : FText::FromName(Slots[i].ItemTemplateID))
+				? (Loc ? Loc->GetText_ItemDisplayNameForRarity(Slots[i].ItemTemplateID, SlotRarity) : FText::FromName(Slots[i].ItemTemplateID))
 				: NSLOCTEXT("T66.Common", "Empty", "EMPTY"));
 		}
 		if (BuybackDescTexts.IsValidIndex(i) && BuybackDescTexts[i].IsValid())
@@ -1208,7 +1387,7 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 			{
 				const int32 MainValue = Slots[i].Line1RolledValue;
 				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-				BuybackDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult));
+				BuybackDescTexts[i]->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult, Slots[i].GetLine2Multiplier()));
 			}
 		}
 		if (BuybackIconBorders.IsValidIndex(i) && BuybackIconBorders[i].IsValid())
@@ -1220,7 +1399,7 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 			const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
 			if (!SlotIconSoft.IsNull() && TexPool)
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, BuybackIconBrushes[i], FName(TEXT("VendorBuyback"), i + 1), /*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, BuybackIconBrushes[i], FName(TEXT("VendorBuyback"), i + 1), /*bClearWhileLoading*/ false);
 			}
 			else
 			{
@@ -1234,7 +1413,7 @@ void UT66VendorOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackTileBorders.IsValidIndex(i) && BuybackTileBorders[i].IsValid())
 		{
-			BuybackTileBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66Style::Tokens::Panel2);
+			BuybackTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
 		}
 		if (BuybackPriceTexts.IsValidIndex(i) && BuybackPriceTexts[i].IsValid())
 		{
@@ -1258,12 +1437,20 @@ void UT66VendorOverlayWidget::SetPage(EVendorPage Page)
 void UT66VendorOverlayWidget::OpenShopPage()
 {
 	SetPage(EVendorPage::Shop);
+	if (ShopBuybackSwitcher.IsValid())
+	{
+		ShopBuybackSwitcher->SetActiveWidgetIndex(0);
+	}
 	RefreshAll();
 }
 
 FReply UT66VendorOverlayWidget::OnDialogueShop()
 {
 	SetPage(EVendorPage::Shop);
+	if (ShopBuybackSwitcher.IsValid())
+	{
+		ShopBuybackSwitcher->SetActiveWidgetIndex(0);
+	}
 	RefreshAll();
 	return FReply::Handled();
 }
@@ -1337,6 +1524,14 @@ void UT66VendorOverlayWidget::RefreshInventory()
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FName>& Inv = RunState->GetInventory();
 	const TArray<FT66InventorySlot>& InvSlots = RunState->GetInventorySlots();
+	TMap<FString, int32> StackCounts;
+	for (const FT66InventorySlot& InventorySlotData : InvSlots)
+	{
+		if (InventorySlotData.IsValid())
+		{
+			StackCounts.FindOrAdd(MakeInventoryStackKey(InventorySlotData))++;
+		}
+	}
 
 	// Auto-select the first valid item so the details panel is "big" immediately.
 	if (SelectedInventoryIndex < 0)
@@ -1367,24 +1562,26 @@ void UT66VendorOverlayWidget::RefreshInventory()
 		{
 			InventorySlotButtons[i]->SetEnabled(bHasItem && !IsBossActive());
 		}
+		const int32 StackCount = (bHasItem && InvSlots.IsValidIndex(i) && InvSlots[i].IsValid())
+			? StackCounts.FindRef(MakeInventoryStackKey(InvSlots[i]))
+			: 0;
+		if (InventorySlotCountTexts.IsValidIndex(i) && InventorySlotCountTexts[i].IsValid())
+		{
+			InventorySlotCountTexts[i]->SetText(
+				StackCount > 1
+					? FText::Format(NSLOCTEXT("T66.Inventory", "StackCountFormat", "{0}x"), FText::AsNumber(StackCount))
+					: FText::GetEmpty());
+			InventorySlotCountTexts[i]->SetVisibility(StackCount > 1 ? EVisibility::Visible : EVisibility::Hidden);
+		}
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
-			const bool bDotaTheme = FT66Style::IsDotaTheme();
-			FLinearColor Fill = bDotaTheme ? FT66Style::SlotFill() : FT66Style::Tokens::Panel2;
+			FLinearColor Fill = FT66Style::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && GI && GI->GetItemData(Inv[i], D);
-			if (bHasData && InvSlots.IsValidIndex(i))
-			{
-				const FLinearColor RarityColor = FItemData::GetItemRarityColor(InvSlots[i].Rarity);
-				Fill = bDotaTheme ? FLinearColor::LerpUsingHSV(FT66Style::SlotInner(), RarityColor, 0.75f) : RarityColor;
-			}
 
-			// If selected, tint toward accent for readability.
 			if (i == SelectedInventoryIndex)
 			{
-				Fill = bDotaTheme
-					? FLinearColor::LerpUsingHSV(Fill, FT66Style::SelectionFill(), 0.65f)
-					: (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
+				Fill = (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
 
@@ -1394,7 +1591,7 @@ void UT66VendorOverlayWidget::RefreshInventory()
 				const TSoftObjectPtr<UTexture2D> SlotIconSoft = bHasData ? D.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
 				if (!SlotIconSoft.IsNull() && TexPool)
 				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, InventorySlotIconBrushes[i], FName(TEXT("VendorInv"), i + 1), /*bClearWhileLoading*/ true);
+					T66SlateTexture::BindSharedBrushAsync(TexPool, SlotIconSoft, this, InventorySlotIconBrushes[i], FName(TEXT("VendorInv"), i + 1), /*bClearWhileLoading*/ false);
 				}
 				else
 				{
@@ -1437,6 +1634,19 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	FItemData D;
 	const bool bHasData = GI && GI->GetItemData(Inv[SelectedInventoryIndex], D);
+	ET66ItemRarity SelectedRarity = ET66ItemRarity::Black;
+	int32 MainValue = 0;
+	float Line2Multiplier = 0.f;
+	if (RunState)
+	{
+		const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
+		if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
+		{
+			MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
+			SelectedRarity = Slots[SelectedInventoryIndex].Rarity;
+			Line2Multiplier = Slots[SelectedInventoryIndex].GetLine2Multiplier();
+		}
+	}
 	UT66LocalizationSubsystem* Loc = nullptr;
 	if (UGameInstance* GI2 = World ? World->GetGameInstance() : nullptr)
 	{
@@ -1445,7 +1655,7 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 
 	if (SellItemNameText.IsValid())
 	{
-		SellItemNameText->SetText(Loc ? Loc->GetText_ItemDisplayName(Inv[SelectedInventoryIndex]) : FText::FromName(Inv[SelectedInventoryIndex]));
+		SellItemNameText->SetText(Loc ? Loc->GetText_ItemDisplayNameForRarity(Inv[SelectedInventoryIndex], SelectedRarity) : FText::FromName(Inv[SelectedInventoryIndex]));
 	}
 	if (SellItemDescText.IsValid())
 	{
@@ -1455,20 +1665,8 @@ void UT66VendorOverlayWidget::RefreshSellPanel()
 		}
 		else
 		{
-			// Get the rolled value from the inventory slot.
-			int32 MainValue = 0;
-			ET66ItemRarity SelectedRarity = ET66ItemRarity::Black;
-			if (RunState)
-			{
-				const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
-				if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
-				{
-					MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
-					SelectedRarity = Slots[SelectedInventoryIndex].Rarity;
-				}
-			}
 			const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-			SellItemDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SelectedRarity, MainValue, ScaleMult));
+			SellItemDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SelectedRarity, MainValue, ScaleMult, Line2Multiplier));
 		}
 	}
 	if (SellItemPriceText.IsValid())

@@ -6,6 +6,7 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
@@ -209,7 +210,8 @@ void UT66PartySizePickerScreen::OnScreenActivated_Implementation()
 
 void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 {
-	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (GI)
 	{
 		GI->SelectedPartySize = PartySize;
 	}
@@ -222,8 +224,17 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 		}
 		else
 		{
-			// Co-op now routes to the max-party lobby size.
-			NavigateTo(ET66ScreenType::Lobby);
+			if (UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr)
+			{
+				if (!SessionSubsystem->PrepareToHostFrontendLobby(PartySize))
+				{
+					NavigateTo(ET66ScreenType::Lobby);
+				}
+			}
+			else
+			{
+				NavigateTo(ET66ScreenType::Lobby);
+			}
 		}
 	}
 	else
@@ -233,5 +244,5 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 }
 
 void UT66PartySizePickerScreen::OnSoloClicked() { SelectPartySize(ET66PartySize::Solo); }
-void UT66PartySizePickerScreen::OnCoopClicked() { SelectPartySize(ET66PartySize::Quad); } // Co-op UI → Quad lobby (4 slots)
+void UT66PartySizePickerScreen::OnCoopClicked() { SelectPartySize(ET66PartySize::Duo); }
 void UT66PartySizePickerScreen::OnBackClicked() { NavigateBack(); }

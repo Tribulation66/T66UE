@@ -9,6 +9,7 @@ SOURCE_RELATIVE = ("SourceAssets", "UI", "Dota", "Generated")
 TEXTURES = {
     "frontend_topbar_settings_icon.png": "frontend_topbar_settings_icon",
     "frontend_topbar_language_icon.png": "frontend_topbar_language_icon",
+    "frontend_topbar_home_icon.png": "frontend_topbar_home_icon",
     "frontend_topbar_achievement_coins_icon.png": "frontend_topbar_achievement_coins_icon",
     "frontend_topbar_power_coupons_icon.png": "frontend_topbar_power_coupons_icon",
     "frontend_topbar_quit_icon.png": "frontend_topbar_quit_icon",

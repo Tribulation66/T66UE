@@ -654,13 +654,24 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
 	FText GetText_ItemRarityName(ET66ItemRarity Rarity) const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
+	FText GetText_ItemRarityAdjective(ET66ItemRarity Rarity) const;
+
 	/** Format string: "{0} {1}" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
 	FText GetText_ItemNameFormat() const;
 
-	/** Player-facing item name derived from ItemID: "Black 1", etc. */
+	/** Player-facing base item name derived from ItemID, such as "Hammer" or "Sniper". */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
+	FText GetText_ItemBaseName(FName ItemID) const;
+
+	/** Player-facing item name without rarity adjective. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
 	FText GetText_ItemDisplayName(FName ItemID) const;
+
+	/** Full player-facing item name including the standardized rarity adjective. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data|Items")
+	FText GetText_ItemDisplayNameForRarity(FName ItemID, ET66ItemRarity Rarity) const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Data")
 	FText GetText_CompanionName(FName CompanionID) const;
@@ -847,12 +858,6 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Difficulty")
 	FText GetText_Impossible() const;
-	
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Difficulty")
-	FText GetText_Perdition() const;
-	
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Difficulty")
-	FText GetText_Final() const;
 	
 	// Save Slots
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|SaveSlots")

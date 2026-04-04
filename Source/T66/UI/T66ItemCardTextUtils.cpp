@@ -75,11 +75,12 @@ namespace T66ItemCardTextUtils
 		const UT66LocalizationSubsystem* Loc,
 		const FItemData& ItemData,
 		ET66ItemRarity ItemRarity,
-		int32 MainValue)
+		int32 MainValue,
+		float Line2MultiplierOverride)
 	{
 		if (ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
 		{
-			const int32 TokenLevel = FMath::Clamp(MainValue, 1, 6);
+			const int32 TokenLevel = FMath::Clamp(MainValue, 1, 5);
 			const int32 SellPercent = 40 + TokenLevel * 10;
 			return FText::Format(
 				NSLOCTEXT("T66.ItemTooltip", "GamblerTokenLineFormat", "Level {0}: sell items for {1}% of buy value."),
@@ -101,7 +102,10 @@ namespace T66ItemCardTextUtils
 			return Options;
 		}();
 
-		const float BonusRatio = FMath::Max(0.f, FItemData::GetLine2RarityMultiplier(ItemRarity) - 1.f);
+		const float EffectiveLine2Multiplier = Line2MultiplierOverride > 0.f
+			? Line2MultiplierOverride
+			: FItemData::GetLine2RarityMultiplier(ItemRarity);
+		const float BonusRatio = FMath::Max(0.f, EffectiveLine2Multiplier - 1.f);
 		const FText BonusPercentText = FText::Format(
 			NSLOCTEXT("T66.ItemTooltip", "SecondaryBonusPercentFormat", "+{0}"),
 			FText::AsPercent(BonusRatio, &PercentFormatting));
@@ -115,15 +119,16 @@ namespace T66ItemCardTextUtils
 		const FItemData& ItemData,
 		ET66ItemRarity ItemRarity,
 		int32 MainValue,
-		float CurrentHeroScaleMultiplier)
+		float CurrentHeroScaleMultiplier,
+		float Line2MultiplierOverride)
 	{
 		if (ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
 		{
-			return BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue);
+			return BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
 		}
 
 		const FText Line1 = BuildPrimaryStatLine(Loc, ItemData, MainValue, CurrentHeroScaleMultiplier);
-		const FText Line2 = BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue);
+		const FText Line2 = BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
 
 		if (!Line1.IsEmpty() && !Line2.IsEmpty())
 		{

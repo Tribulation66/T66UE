@@ -538,11 +538,7 @@ void AT66PlayerController::HandleQuickReviveStateChanged()
 		}
 	}
 
-	if (LockedEnemy.IsValid())
-	{
-		LockedEnemy->SetLockedIndicator(false);
-		LockedEnemy.Reset();
-	}
+	SetLockedEnemy(nullptr, false);
 }
 
 

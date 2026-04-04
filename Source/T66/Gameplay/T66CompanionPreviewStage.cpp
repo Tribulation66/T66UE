@@ -65,17 +65,23 @@ void AT66CompanionPreviewStage::BeginPlay()
 
 void AT66CompanionPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ActivePreviewCompanionID = NAME_None;
+	ActivePreviewSkinID = NAME_None;
 	Super::EndPlay(EndPlayReason);
 }
 
 void AT66CompanionPreviewStage::SetPreviewCompanion(FName CompanionID, FName SkinID)
 {
-	PreviewYawDegrees = 0.f;
-	OrbitPitchDegrees = 15.f;
-	PreviewZoomMultiplier = 1.0f;
 	const FName EffectiveSkin = SkinID.IsNone() ? FName(TEXT("Default")) : SkinID;
-	UpdatePreviewPawn(CompanionID, EffectiveSkin);
-	bHasOrbitFrame = false;
+	const bool bPreviewChanged = (CompanionID != ActivePreviewCompanionID) || (EffectiveSkin != ActivePreviewSkinID);
+	if (bPreviewChanged)
+	{
+		PreviewYawDegrees = 0.f;
+		OrbitPitchDegrees = 15.f;
+		PreviewZoomMultiplier = 1.0f;
+		UpdatePreviewPawn(CompanionID, EffectiveSkin);
+		bHasOrbitFrame = false;
+	}
 	FrameCameraToPreview();
 }
 
@@ -203,6 +209,8 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID, FName SkinI
 	if (CompanionID.IsNone())
 	{
 		if (PreviewPawn) PreviewPawn->SetActorHiddenInGame(true);
+		ActivePreviewCompanionID = NAME_None;
+		ActivePreviewSkinID = NAME_None;
 		return;
 	}
 
@@ -210,6 +218,8 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID, FName SkinI
 	if (!GI->GetCompanionData(CompanionID, CompanionData))
 	{
 		if (PreviewPawn) PreviewPawn->SetActorHiddenInGame(true);
+		ActivePreviewCompanionID = NAME_None;
+		ActivePreviewSkinID = NAME_None;
 		return;
 	}
 
@@ -259,6 +269,9 @@ void AT66CompanionPreviewStage::UpdatePreviewPawn(FName CompanionID, FName SkinI
 			PreviewPawn->SkeletalMesh->bForceMipStreaming = true;
 			PreviewPawn->SkeletalMesh->StreamingDistanceMultiplier = 50.f;
 		}
+
+		ActivePreviewCompanionID = CompanionID;
+		ActivePreviewSkinID = EffectiveSkin;
 	}
 }
 

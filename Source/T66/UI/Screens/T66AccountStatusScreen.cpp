@@ -102,77 +102,87 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	const bool bShowBackButton = bModalPresentation;
 
 	TSharedRef<SWidget> Content =
-		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 16.f)
+		SNew(SBox)
+		.MaxDesiredWidth(760.f)
 		[
-			SNew(STextBlock)
-			.Text(TitleText)
-			.Font(FT66Style::Tokens::FontBold(42))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-			.Justification(ETextJustify::Center)
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
-		[
-			SNew(STextBlock)
-			.Text(StatusHeadlineText)
-			.Font(FT66Style::Tokens::FontBold(30))
-			.ColorAndOpacity(StatusColor)
-			.Justification(ETextJustify::Center)
-		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, bShowReason ? 12.f : 26.f)
-		[
-			SNew(STextBlock)
-			.Text(StatusBodyText)
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
-			.AutoWrapText(true)
-		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 26.f)
-		[
-			SNew(SBox)
-			.Visibility(bShowReason ? EVisibility::Visible : EVisibility::Collapsed)
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 			[
-				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-					[
-						SNew(STextBlock)
-						.Text(Loc ? Loc->GetText_AccountStatus_ReasonLabel() : NSLOCTEXT("T66.AccountStatus", "ReasonLabel", "Reason"))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(Record.RestrictionReason))
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-						.AutoWrapText(true)
-					],
-					FT66PanelParams(ET66PanelType::Panel)
-						.SetBorderVisual(ET66ButtonBorderVisual::None)
-						.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
-						.SetColor(T66AccountStatusPanelFill())
-						.SetPadding(FT66Style::Tokens::Space3)
-				)
+				SNew(STextBlock)
+				.Text(TitleText)
+				.Font(FT66Style::Tokens::FontBold(34))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Justification(ETextJustify::Center)
 			]
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
-		[
-			SNew(SBox)
-			.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				MakeAccountStatusButton(
-					FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked))
-					.SetPadding(FMargin(18.f, 10.f))
-					.SetColor(T66AccountStatusNeutralButtonFill()))
+				SNew(STextBlock)
+				.Text(StatusHeadlineText)
+				.Font(FT66Style::Tokens::FontBold(24))
+				.ColorAndOpacity(StatusColor)
+				.Justification(ETextJustify::Center)
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, bShowReason ? 10.f : 20.f)
+			[
+				SNew(SBox)
+				.MaxDesiredWidth(620.f)
+				[
+					SNew(STextBlock)
+					.Text(StatusBodyText)
+					.Font(FT66Style::Tokens::FontRegular(18))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.AutoWrapText(true)
+					.Justification(ETextJustify::Center)
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 20.f)
+			[
+				SNew(SBox)
+				.Visibility(bShowReason ? EVisibility::Visible : EVisibility::Collapsed)
+				[
+					FT66Style::MakePanel(
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+						[
+							SNew(STextBlock)
+							.Text(Loc ? Loc->GetText_AccountStatus_ReasonLabel() : NSLOCTEXT("T66.AccountStatus", "ReasonLabel", "Reason"))
+							.Font(FT66Style::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(Record.RestrictionReason))
+							.Font(FT66Style::Tokens::FontRegular(16))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.AutoWrapText(true)
+						],
+						FT66PanelParams(ET66PanelType::Panel)
+							.SetBorderVisual(ET66ButtonBorderVisual::None)
+							.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
+							.SetColor(T66AccountStatusPanelFill())
+							.SetPadding(FMargin(16.f, 14.f))
+					)
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)
+			[
+				SNew(SBox)
+				.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
+				[
+					MakeAccountStatusButton(
+						FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleBackClicked))
+						.SetFontSize(18)
+						.SetPadding(FMargin(16.f, 8.f))
+						.SetColor(T66AccountStatusNeutralButtonFill()))
+				]
 			]
 		];
 
-	if (bModalPresentation)
-	{
-		// Modal overlay: dim background + centered panel.
-		return SNew(SOverlay)
+	const TSharedRef<SWidget> Root =
+		bModalPresentation
+		? StaticCastSharedRef<SWidget>(
+			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
 				SNew(SBorder)
@@ -182,46 +192,49 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
-			.Padding(FMargin(60.f))
+			.Padding(FMargin(48.f))
 			[
 				MakeAccountStatusPanel(
 					SNew(SBox)
-					.WidthOverride(780.f)
+					.WidthOverride(700.f)
 					[
 						MakeAccountStatusPanel(
 							SNew(SBox)
-							.Padding(FMargin(34.f, 28.f, 34.f, 30.f))
+							.HAlign(HAlign_Center)
+							.Padding(FMargin(28.f, 24.f, 28.f, 24.f))
 							[
 								Content
 							],
 							ET66PanelType::Panel2,
 							T66AccountStatusPanelFill(),
-							FMargin(20.f))
+							FMargin(16.f))
 					],
 					ET66PanelType::Panel,
 					T66AccountStatusShellFill(),
-					FMargin(FT66Style::Tokens::Space5)
+					FMargin(24.f)
 				)
-			];
-	}
-
-	return SNew(SBox)
-		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
-		[
-			MakeAccountStatusPanel(
+			])
+		: StaticCastSharedRef<SWidget>(
+			SNew(SBox)
+			.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
+			[
 				MakeAccountStatusPanel(
-					SNew(SBox)
-					.Padding(FMargin(34.f, 28.f, 34.f, 30.f))
-					[
-						Content
-					],
-					ET66PanelType::Panel2,
-					T66AccountStatusPanelFill(),
-					FMargin(20.f)),
-				ET66PanelType::Panel,
-				T66AccountStatusShellFill(),
-				FMargin(FT66Style::Tokens::Space5))
-		];
+					MakeAccountStatusPanel(
+						SNew(SBox)
+						.HAlign(HAlign_Center)
+						.Padding(FMargin(28.f, 24.f, 28.f, 24.f))
+						[
+							Content
+						],
+						ET66PanelType::Panel2,
+						T66AccountStatusPanelFill(),
+						FMargin(16.f)),
+					ET66PanelType::Panel,
+					T66AccountStatusShellFill(),
+					FMargin(24.f))
+			]);
+
+	return Root;
 }
 
 FReply UT66AccountStatusScreen::HandleBackClicked()

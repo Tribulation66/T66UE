@@ -62,6 +62,7 @@
 #include "Core/T66PropSubsystem.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "UI/T66LoadingScreenWidget.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
@@ -126,9 +127,14 @@ namespace
 
 	static bool T66_IsCompanionUnlockStage(int32 StageNum)
 	{
-		// Per design: 24 total companions unlock on every non-boss stage in 1..30.
-		// Stages 31..33 never unlock companions.
-		return StageNum >= 1 && StageNum <= 30 && (StageNum % 5) != 0;
+		// Stage clears unlock Companion_01..Companion_23 directly.
+		// Companion_24 is granted as a bonus unlock on stage 23.
+		return StageNum >= 1 && StageNum <= 23;
+	}
+
+	static bool T66_IsDifficultyBossStage(int32 StageNum)
+	{
+		return StageNum == 5 || StageNum == 10 || StageNum == 15 || StageNum == 20 || StageNum == 23;
 	}
 
 	static int32 T66_CompanionIndexForStage(int32 StageNum)
@@ -146,7 +152,7 @@ namespace
 				++Count;
 			}
 		}
-		return Count; // 1..24
+		return Count; // 1..23
 	}
 
 	static FName T66_CompanionIDForStage(int32 StageNum)
@@ -244,6 +250,63 @@ namespace
 		return T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, T66EnsureRunSeed(GI));
 	}
 
+	static const AT66SessionPlayerState* T66GetSessionPlayerState(const AController* Controller)
+	{
+		return Controller ? Controller->GetPlayerState<AT66SessionPlayerState>() : nullptr;
+	}
+
+	static FName T66GetSelectedHeroID(const UT66GameInstance* GI, const AController* Controller)
+	{
+		if (const AT66SessionPlayerState* SessionPlayerState = T66GetSessionPlayerState(Controller))
+		{
+			if (!SessionPlayerState->GetSelectedHeroID().IsNone())
+			{
+				return SessionPlayerState->GetSelectedHeroID();
+			}
+		}
+
+		return (GI && !GI->SelectedHeroID.IsNone()) ? GI->SelectedHeroID : FName(TEXT("Hero_1"));
+	}
+
+	static FName T66GetSelectedCompanionID(const UT66GameInstance* GI, const AController* Controller)
+	{
+		if (const AT66SessionPlayerState* SessionPlayerState = T66GetSessionPlayerState(Controller))
+		{
+			return SessionPlayerState->GetSelectedCompanionID();
+		}
+
+		return GI ? GI->SelectedCompanionID : NAME_None;
+	}
+
+	static ET66BodyType T66GetSelectedHeroBodyType(const UT66GameInstance* GI, const AController* Controller)
+	{
+		if (const AT66SessionPlayerState* SessionPlayerState = T66GetSessionPlayerState(Controller))
+		{
+			return SessionPlayerState->GetSelectedHeroBodyType();
+		}
+
+		return GI ? GI->SelectedHeroBodyType : ET66BodyType::TypeA;
+	}
+
+	static FName T66GetSelectedHeroSkinID(const UT66GameInstance* GI, const AController* Controller)
+	{
+		if (const AT66SessionPlayerState* SessionPlayerState = T66GetSessionPlayerState(Controller))
+		{
+			const FName SkinID = SessionPlayerState->GetSelectedHeroSkinID();
+			if (!SkinID.IsNone())
+			{
+				return SkinID;
+			}
+		}
+
+		if (GI && !GI->SelectedHeroSkinID.IsNone())
+		{
+			return GI->SelectedHeroSkinID;
+		}
+
+		return FName(TEXT("Default"));
+	}
+
 	static bool T66IsStandaloneTutorialMap(const UWorld* World)
 	{
 		if (!World)
@@ -255,6 +318,152 @@ namespace
 		return MapName.Contains(TEXT("Tutorial"));
 	}
 
+	struct FT66DifficultyGroundThemeAssetInfo
+	{
+		const TCHAR* FolderName = nullptr;
+		const TCHAR* AssetSuffix = nullptr;
+	};
+
+	static FT66DifficultyGroundThemeAssetInfo T66GetDifficultyGroundThemeAssetInfo(const ET66Difficulty Difficulty)
+	{
+		switch (Difficulty)
+		{
+		case ET66Difficulty::Medium: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
+		case ET66Difficulty::Hard: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
+		case ET66Difficulty::VeryHard: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
+		case ET66Difficulty::Impossible: return { TEXT("FinalHell"), TEXT("FinalHell") };
+		case ET66Difficulty::Easy:
+		default:
+			return {};
+		}
+	}
+
+	static UTexture* T66LoadDifficultyGroundTexture(const ET66Difficulty Difficulty)
+	{
+		static TMap<FString, TWeakObjectPtr<UTexture>> CachedTextures;
+
+		FString TexturePath = TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock");
+		if (Difficulty != ET66Difficulty::Easy)
+		{
+			const FT66DifficultyGroundThemeAssetInfo ThemeInfo = T66GetDifficultyGroundThemeAssetInfo(Difficulty);
+			if (ThemeInfo.FolderName && ThemeInfo.AssetSuffix)
+			{
+				const FString AssetName = FString::Printf(TEXT("T_MegabonkBlock_%s"), ThemeInfo.AssetSuffix);
+				TexturePath = FString::Printf(
+					TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
+					ThemeInfo.FolderName,
+					*AssetName,
+					*AssetName);
+			}
+		}
+
+		if (const TWeakObjectPtr<UTexture>* Existing = CachedTextures.Find(TexturePath))
+		{
+			if (Existing->IsValid())
+			{
+				return Existing->Get();
+			}
+		}
+
+		UTexture* LoadedTexture = LoadObject<UTexture>(nullptr, *TexturePath);
+		if (!LoadedTexture && Difficulty != ET66Difficulty::Easy)
+		{
+			LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
+		}
+
+		CachedTextures.Add(TexturePath, LoadedTexture);
+		return LoadedTexture;
+	}
+
+	static UMaterialInterface* T66ResolveDifficultyGroundMaterial(UObject* Outer, const ET66Difficulty Difficulty)
+	{
+		static TMap<int32, TWeakObjectPtr<UMaterialInterface>> CachedMaterials;
+		const int32 CacheKey = static_cast<int32>(Difficulty);
+		if (const TWeakObjectPtr<UMaterialInterface>* Existing = CachedMaterials.Find(CacheKey))
+		{
+			if (Existing->IsValid())
+			{
+				return Existing->Get();
+			}
+		}
+
+		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+		UTexture* DifficultyTexture = T66LoadDifficultyGroundTexture(Difficulty);
+		if (BaseMaterial && DifficultyTexture)
+		{
+			if (UMaterialInstanceDynamic* GroundMID = UMaterialInstanceDynamic::Create(BaseMaterial, Outer ? Outer : GetTransientPackage()))
+			{
+				GroundMID->SetTextureParameterValue(TEXT("DiffuseColorMap"), DifficultyTexture);
+				GroundMID->SetTextureParameterValue(TEXT("BaseColorTexture"), DifficultyTexture);
+				GroundMID->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
+				GroundMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
+				GroundMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
+				CachedMaterials.Add(CacheKey, GroundMID);
+				return GroundMID;
+			}
+		}
+
+		UMaterialInterface* FallbackMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
+		CachedMaterials.Add(CacheKey, FallbackMaterial);
+		return FallbackMaterial;
+	}
+
+	static void T66FaceActorTowardLocation2D(AActor* Actor, const FVector& TargetLocation)
+	{
+		if (!Actor)
+		{
+			return;
+		}
+
+		FVector FacingDirection = TargetLocation - Actor->GetActorLocation();
+		FacingDirection.Z = 0.f;
+		if (FacingDirection.IsNearlyZero())
+		{
+			return;
+		}
+
+		Actor->SetActorRotation(FacingDirection.Rotation());
+	}
+
+	static bool T66TryBuildFacingRotation2D(const FVector& FromLocation, const FVector& TargetLocation, FRotator& OutRotation)
+	{
+		FVector FacingDirection = TargetLocation - FromLocation;
+		FacingDirection.Z = 0.f;
+		if (FacingDirection.IsNearlyZero())
+		{
+			return false;
+		}
+
+		OutRotation = FacingDirection.Rotation();
+		OutRotation.Pitch = 0.f;
+		OutRotation.Roll = 0.f;
+		return true;
+	}
+
+	static void T66SyncPawnAndControllerRotation(APawn* Pawn, AController* Controller, const FRotator& DesiredRotation)
+	{
+		if (!Pawn)
+		{
+			return;
+		}
+
+		FRotator FlatRotation = DesiredRotation;
+		FlatRotation.Pitch = 0.f;
+		FlatRotation.Roll = 0.f;
+		Pawn->SetActorRotation(FlatRotation, ETeleportType::TeleportPhysics);
+
+		if (!Controller)
+		{
+			return;
+		}
+
+		Controller->SetControlRotation(FlatRotation);
+		if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+		{
+			PlayerController->ClientSetRotation(FlatRotation, true);
+		}
+	}
+
 }
 
 AT66GameMode::AT66GameMode()
@@ -263,17 +472,11 @@ AT66GameMode::AT66GameMode()
 	// Default to our hero base class
 	DefaultPawnClass = AT66HeroBase::StaticClass();
 	DefaultHeroClass = AT66HeroBase::StaticClass();
+	PlayerStateClass = AT66SessionPlayerState::StaticClass();
+	bUseSeamlessTravel = true;
 
 	// Coliseum arena lives inside GameplayLevel, off to the side (walled off). Scaled for 100k map.
 	ColiseumCenter = FVector(-45455.f, -23636.f, 200.f);
-
-	// Default terrain materials; used as a fallback for runtime floors and terrain when source files are absent.
-	GroundFloorMaterials.Empty();
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile1.MI_GroundTile1"))));
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile2.MI_GroundTile2"))));
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile3.MI_GroundTile3"))));
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile4.MI_GroundTile4"))));
-	GroundFloorMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Ground/MI_GroundTile5.MI_GroundTile5"))));
 
 	CliffSideMaterials.Empty();
 	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1"))));
@@ -529,7 +732,7 @@ void AT66GameMode::ScheduleGameplayLightingRefresh(UWorld* World)
 
 void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay)
 {
-	if (!World || !GameplayWarmupOverlay.IsValid())
+	if (!World)
 	{
 		return;
 	}
@@ -556,7 +759,16 @@ void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectP
 			const bool bTimedOut = *OverlayPollCount >= 50;
 			if (bMaterialsReady || bTimedOut)
 			{
-				GameplayWarmupOverlay->RemoveFromParent();
+				if (GameplayWarmupOverlay.IsValid())
+				{
+					GameplayWarmupOverlay->RemoveFromParent();
+				}
+
+				if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+				{
+					T66GI->HidePersistentGameplayTransitionCurtain();
+				}
+
 				World->GetTimerManager().ClearTimer(*HideOverlayHandle);
 				if (bTimedOut && !bMaterialsReady)
 				{
@@ -849,8 +1061,6 @@ void AT66GameMode::SpawnStageEffectsForStage()
 	case ET66Difficulty::Hard:       LavaPatchCount = 6;  break;
 	case ET66Difficulty::VeryHard:   LavaPatchCount = 7;  break;
 	case ET66Difficulty::Impossible: LavaPatchCount = 8;  break;
-	case ET66Difficulty::Perdition:  LavaPatchCount = 9;  break;
-	case ET66Difficulty::Final:      LavaPatchCount = 10; break;
 	default:                         LavaPatchCount = 5;  break;
 	}
 
@@ -965,8 +1175,6 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		case ET66Difficulty::Hard:       return 10;
 		case ET66Difficulty::VeryHard:   return 12;
 		case ET66Difficulty::Impossible: return 14;
-		case ET66Difficulty::Perdition:  return 16;
-		case ET66Difficulty::Final:      return 18;
 		default:                         return 8;
 		}
 	};
@@ -1262,7 +1470,9 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 	APawn* Pawn = NewPlayer ? NewPlayer->GetPawn() : nullptr;
 	if (GI && Pawn && GI->bApplyLoadedTransform)
 	{
+		const FRotator LoadedRotation = GI->PendingLoadedTransform.Rotator();
 		Pawn->SetActorTransform(GI->PendingLoadedTransform);
+		T66SyncPawnAndControllerRotation(Pawn, NewPlayer, LoadedRotation);
 		GI->bApplyLoadedTransform = false;
 		GI->PendingLoadedTransform = FTransform();
 	}
@@ -1501,8 +1711,8 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	if (!RunState) return;
 
 	const int32 StageNum = RunState->GetCurrentStage();
-	// Only on normal stages (NOT ending in 5 or 0) => stage % 5 != 0
-	if ((StageNum % 5) == 0) return;
+	// Only on non-boss stages. Stage 23 is also a difficulty boss.
+	if (T66_IsDifficultyBossStage(StageNum)) return;
 
 	UWorld* World = GetWorld();
 	UT66GameInstance* T66GI = GetT66GameInstance();
@@ -1885,7 +2095,7 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		RunState->SetStageTimerActive(false);
 	}
 
-	// First-time boss defeat unlock => spawn recruitable companion (stages 1..60 excluding 0/5).
+	// First-time stage clear unlock => spawn recruitable companion for stages 1..23.
 	if (RunState)
 	{
 		const int32 StageNum = RunState->GetCurrentStage();
@@ -1913,6 +2123,13 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 				}
 			}
 		}
+		if (StageNum == 23)
+		{
+			if (UT66CompanionUnlockSubsystem* Unlocks = GI ? GI->GetSubsystem<UT66CompanionUnlockSubsystem>() : nullptr)
+			{
+				Unlocks->UnlockCompanion(FName(TEXT("Companion_24")));
+			}
+		}
 	}
 
 	// Normal stage: boss dead => miasma disappears and Stage Gate appears.
@@ -1922,11 +2139,7 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	if (RunState)
 	{
 		const int32 ClearedStage = RunState->GetCurrentStage();
-		UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
-		if (IdolManager && IdolManager->ShouldSpawnBossClearAltarForClearedStage(ClearedStage))
-		{
-			SpawnIdolAltarAtLocation(Location);
-		}
+		UE_LOG(LogT66GameMode, Verbose, TEXT("Stage %d cleared; idol altar progression now happens at stage entry."), ClearedStage);
 	}
 }
 
@@ -2002,10 +2215,13 @@ void AT66GameMode::ClearMiasma()
 void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 {
 	UT66GameInstance* GI = GetT66GameInstance();
-	if (!GI || GI->SelectedCompanionID.IsNone()) return;
+	if (!GI) return;
+
+	const FName SelectedCompanionID = T66GetSelectedCompanionID(GI, Player);
+	if (SelectedCompanionID.IsNone()) return;
 
 	FCompanionData CompanionData;
-	if (!GI->GetCompanionData(GI->SelectedCompanionID, CompanionData)) return;
+	if (!GI->GetCompanionData(SelectedCompanionID, CompanionData)) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -2049,7 +2265,7 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 	{
 		if (UT66AchievementsSubsystem* Ach = GII->GetSubsystem<UT66AchievementsSubsystem>())
 		{
-			CompanionSkinID = Ach->GetEquippedCompanionSkinID(GI->SelectedCompanionID);
+			CompanionSkinID = Ach->GetEquippedCompanionSkinID(SelectedCompanionID);
 		}
 	}
 
@@ -2763,10 +2979,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 	for (int32 i = 0; i < CountFountains; ++i)
 	{
-		if (AT66FountainOfLifeInteractable* Fountain = Cast<AT66FountainOfLifeInteractable>(SpawnOne(AT66FountainOfLifeInteractable::StaticClass())))
-		{
-			Fountain->SetRarity(ET66Rarity::Black);
-		}
+		SpawnOne(AT66FountainOfLifeInteractable::StaticClass());
 	}
 	for (int32 i = 0; i < CountChests; ++i)
 	{
@@ -3018,22 +3231,50 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 
 	UGameInstance* GI = World->GetGameInstance();
 	UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
-	if (!IdolManager || !IdolManager->HasCatchUpIdolPicksRemaining())
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!IdolManager)
 	{
 		return;
 	}
 
+	int32 SelectionBudget = 1;
+	int32 CatchUpSelections = 0;
+	if (IdolManager->HasCatchUpIdolPicksRemaining())
+	{
+		CatchUpSelections = IdolManager->GetRemainingCatchUpIdolPicks();
+		SelectionBudget += CatchUpSelections;
+	}
+
+	const int32 CurrentStage = RunState ? RunState->GetCurrentStage() : 1;
+	UE_LOG(
+		LogT66GameMode,
+		Log,
+		TEXT("Spawning stage-entry idol altar for stage %d with %d total selections (%d catch-up)."),
+		CurrentStage,
+		SelectionBudget,
+		CatchUpSelections);
+
 	FVector SpawnLoc = FVector::ZeroVector;
+	FRotator SpawnRotation = FRotator::ZeroRotator;
 	if (T66UsesMainMapTerrainStage(World))
 	{
-		if (!TryGetMainMapStartPlacementLocation(-1.2f, 0.35f, SpawnLoc))
+		if (!TryGetMainMapStartPlacementLocation(0.f, 0.f, SpawnLoc))
 		{
 			return;
+		}
+
+		FVector Center = FVector::ZeroVector;
+		FVector InwardDirection = FVector::ForwardVector;
+		FVector SideDirection = FVector::RightVector;
+		float CellSize = 0.f;
+		if (TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize) && !InwardDirection.IsNearlyZero())
+		{
+			SpawnRotation = (-InwardDirection).Rotation();
 		}
 	}
 	else
 	{
-		SpawnLoc = T66GameplayLayout::GetStartAreaCenter() + FVector(-900.f, 1250.f, 0.f);
+		SpawnLoc = T66GameplayLayout::GetStartAreaCenter();
 
 		FHitResult Hit;
 		const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 3000.f);
@@ -3047,10 +3288,166 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
 	if (IdolAltar)
 	{
-		IdolAltar->bConsumesCatchUpIdolPicks = true;
+		if (APawn* PlayerPawn = Player->GetPawn())
+		{
+			T66FaceActorTowardLocation2D(IdolAltar, PlayerPawn->GetActorLocation());
+			if (RunState && RunState->GetCurrentStage() <= 1)
+			{
+				FRotator FacingRotation = PlayerPawn->GetActorRotation();
+				if (T66TryBuildFacingRotation2D(PlayerPawn->GetActorLocation(), IdolAltar->GetActorLocation(), FacingRotation))
+				{
+					T66SyncPawnAndControllerRotation(PlayerPawn, Player, FacingRotation);
+				}
+			}
+		}
+
+		IdolAltar->RemainingSelections = FMath::Max(1, SelectionBudget);
+		IdolAltar->CatchUpSelectionsRemaining = FMath::Max(0, CatchUpSelections);
+		SpawnIdolVFXTestTargets();
+	}
+}
+
+void AT66GameMode::SpawnIdolVFXTestTargets()
+{
+	if (!bSpawnIdolVFXTestTargetsAtStageStart || IsColiseumStage() || IsLabLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (AT66EnemyBase* ExistingTarget : IdolVFXTestTargets)
+	{
+		if (ExistingTarget)
+		{
+			ExistingTarget->Destroy();
+		}
+	}
+	IdolVFXTestTargets.Reset();
+
+	TArray<FVector> SpawnLocations;
+	SpawnLocations.Reserve(3);
+
+	APawn* HeroPawn = UGameplayStatics::GetPlayerPawn(World, 0);
+	const FVector HeroLocation = HeroPawn ? HeroPawn->GetActorLocation() : FVector::ZeroVector;
+	FVector ForwardDirection = HeroPawn ? HeroPawn->GetActorForwardVector().GetSafeNormal2D() : FVector::ZeroVector;
+	FVector SideDirection = FVector::RightVector;
+	float CellSize = 400.f;
+	FVector ThresholdMidpoint = FVector::ZeroVector;
+	bool bHasMainMapThreshold = false;
+	if (T66UsesMainMapTerrainStage(World))
+	{
+		FVector Center = FVector::ZeroVector;
+		FVector InwardDirection = FVector::ForwardVector;
+		if (TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize))
+		{
+			ForwardDirection = InwardDirection.GetSafeNormal2D();
+			if (!MainMapStartAnchorSurfaceLocation.IsNearlyZero() && !MainMapStartPathSurfaceLocation.IsNearlyZero())
+			{
+				ThresholdMidpoint = (MainMapStartAnchorSurfaceLocation + MainMapStartPathSurfaceLocation) * 0.5f;
+				bHasMainMapThreshold = true;
+			}
+		}
+	}
+	if (ForwardDirection.IsNearlyZero() && IdolAltar && !HeroLocation.IsNearlyZero())
+	{
+		ForwardDirection = (IdolAltar->GetActorLocation() - HeroLocation).GetSafeNormal2D();
+	}
+	if (ForwardDirection.IsNearlyZero())
+	{
+		ForwardDirection = FVector::ForwardVector;
+	}
+
+	SideDirection = FVector::CrossProduct(FVector::UpVector, ForwardDirection).GetSafeNormal();
+	if (SideDirection.IsNearlyZero())
+	{
+		SideDirection = FVector::RightVector;
+	}
+
+	const FVector StartCenter = !MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+		? MainMapStartAreaCenterSurfaceLocation
+		: T66GameplayLayout::GetStartAreaCenter(DefaultSpawnHeight);
+	const FVector AnchorCenter = IdolAltar ? IdolAltar->GetActorLocation() : StartCenter;
+	FVector FrontCenter = AnchorCenter + ForwardDirection * 650.f + FVector(0.f, 0.f, 180.f);
+	if (bHasMainMapThreshold)
+	{
+		const float SafeSideOffset = FMath::Max(140.f, CellSize * 0.40f);
+		FrontCenter = ThresholdMidpoint - ForwardDirection * SafeSideOffset + FVector(0.f, 0.f, 180.f);
+	}
+	static constexpr float TargetSideSpacing = 340.f;
+	SpawnLocations.Add(FrontCenter - SideDirection * TargetSideSpacing);
+	SpawnLocations.Add(FrontCenter);
+	SpawnLocations.Add(FrontCenter + SideDirection * TargetSideSpacing);
+
+	static const FName TargetIds[] = {
+		FName(TEXT("Cow")),
+		FName(TEXT("Pig")),
+		FName(TEXT("Goat"))
+	};
+
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(TargetIds) && SpawnLocations.IsValidIndex(Index); ++Index)
+	{
+		FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocations[Index]);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AT66EnemyBase* TargetEnemy = World->SpawnActorDeferred<AT66EnemyBase>(
+			AT66EnemyBase::StaticClass(),
+			SpawnTransform,
+			this,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (!TargetEnemy)
+		{
+			continue;
+		}
+
+		TargetEnemy->CharacterVisualID = TargetIds[Index];
+		TargetEnemy->MobID = TargetIds[Index];
+		TargetEnemy->MaxHP = 20000;
+		TargetEnemy->CurrentHP = 20000;
+		TargetEnemy->TouchDamageHearts = 0;
+		TargetEnemy->PointValue = 0;
+		TargetEnemy->XPValue = 0;
+		TargetEnemy->bDropsLoot = false;
+		TargetEnemy->Armor = 0.f;
+
+		UGameplayStatics::FinishSpawningActor(TargetEnemy, SpawnTransform);
+		TargetEnemy->ConfigureAsMob(TargetIds[Index]);
+		TrySnapActorToTerrainAtLocation(TargetEnemy, SpawnLocations[Index]);
+
+		if (UCharacterMovementComponent* Movement = TargetEnemy->GetCharacterMovement())
+		{
+			Movement->MaxWalkSpeed = 0.f;
+			Movement->StopMovementImmediately();
+			Movement->DisableMovement();
+			Movement->SetMovementMode(MOVE_None);
+		}
+
+		if (!HeroLocation.IsNearlyZero())
+		{
+			FVector Facing = HeroLocation - TargetEnemy->GetActorLocation();
+			Facing.Z = 0.f;
+			if (!Facing.Normalize())
+			{
+				Facing = FVector::BackwardVector;
+			}
+			TargetEnemy->SetActorRotation(Facing.Rotation());
+		}
+
+		TargetEnemy->CurrentHP = TargetEnemy->MaxHP;
+		TargetEnemy->UpdateHealthBar();
+		TargetEnemy->Tags.AddUnique(FName(TEXT("IdolVFXTestTarget")));
+		UE_LOG(LogT66GameMode, Log, TEXT("Spawned idol VFX test target %s at %s"), *TargetIds[Index].ToString(), *TargetEnemy->GetActorLocation().ToCompactString());
+		IdolVFXTestTargets.Add(TargetEnemy);
 	}
 }
 
@@ -3060,7 +3457,7 @@ void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
 
 	UWorld* World = GetWorld();
 	if (!World) return;
-	if (IsValid(IdolAltar) && !IdolAltar->bConsumesCatchUpIdolPicks) return;
+	if (IsValid(IdolAltar)) return;
 	IdolAltar = nullptr;
 
 	// Place near boss death, but offset so it doesn't overlap the Stage Gate.
@@ -3080,7 +3477,8 @@ void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
 	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 	if (IdolAltar)
 	{
-		IdolAltar->bConsumesCatchUpIdolPicks = false;
+		IdolAltar->RemainingSelections = 1;
+		IdolAltar->CatchUpSelectionsRemaining = 0;
 	}
 }
 
@@ -3099,7 +3497,7 @@ void AT66GameMode::SpawnStageCatchUpPlatformAndInteractables()
 	const int32 DiffIndex = FMath::Max(0, static_cast<int32>(T66GI->SelectedDifficulty));
 	const int32 StartStage = PlayerExperience
 		? PlayerExperience->GetDifficultyStartStage(T66GI->SelectedDifficulty)
-		: FMath::Clamp(1 + (DiffIndex * 5), 1, 33);
+		: FMath::Clamp(1 + (DiffIndex * 5), 1, 23);
 
 	const int32 GoldAmount = PlayerExperience
 		? PlayerExperience->GetDifficultyStartGoldBonus(T66GI->SelectedDifficulty)
@@ -3223,9 +3621,9 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	FBossData BossData;
 	BossData.BossID = StageData.BossID;
 	{
-		// Stage-scaled fallback so all 33 stages work even if DT_Bosses isn't reimported yet.
-		const int32 S = FMath::Clamp(StageNum, 1, 33);
-		const float T = static_cast<float>(S - 1) / 32.f; // 0..1
+		// Stage-scaled fallback so all 23 stages work even if DT_Bosses isn't reimported yet.
+		const int32 S = FMath::Clamp(StageNum, 1, 23);
+		const float T = static_cast<float>(S - 1) / 22.f; // 0..1
 
 		// Bosses are intended to be 1000+ HP always (BossBase will clamp too).
 		BossData.MaxHP = 1000 + (S * 250);
@@ -3393,49 +3791,11 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	const int32 GroundVariantCount = GroundFloorMaterials.Num();
-	if (GroundVariantCount == 0)
+	const UT66GameInstance* T66GI = GetT66GameInstance();
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	UMaterialInterface* DifficultyFloorMaterial = T66ResolveDifficultyGroundMaterial(this, Difficulty);
+	if (!DifficultyFloorMaterial)
 	{
-		return;
-	}
-
-	// Check if all configured materials are loaded
-	bool bAllLoaded = true;
-	for (int32 i = 0; i < GroundVariantCount; ++i)
-	{
-		if (!GroundFloorMaterials[i].Get())
-		{
-			bAllLoaded = false;
-			break;
-		}
-	}
-
-	if (!bAllLoaded)
-	{
-		if (!bGroundFloorMaterialLoadRequested)
-		{
-			bGroundFloorMaterialLoadRequested = true;
-			TArray<FSoftObjectPath> Paths;
-			for (int32 i = 0; i < GroundVariantCount; ++i)
-			{
-				if (!GroundFloorMaterials[i].IsNull())
-				{
-					Paths.Add(GroundFloorMaterials[i].ToSoftObjectPath());
-				}
-			}
-			if (Paths.Num() > 0)
-			{
-				TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-					Paths, FStreamableDelegate::CreateWeakLambda(this, [this]()
-					{
-						TryApplyGroundFloorMaterialToAllFloors();
-					}));
-				if (Handle.IsValid())
-				{
-					ActiveAsyncLoadHandles.Add(Handle);
-				}
-			}
-		}
 		return;
 	}
 
@@ -3446,40 +3806,27 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 		if (!T66_HasAnyFloorTag(A)) continue;
 		if (UStaticMeshComponent* SMC = A->GetStaticMeshComponent())
 		{
-			UMaterialInterface* Mat = GroundFloorMaterials[0].Get();  // fallback
-			const FVector Loc = A->GetActorLocation();
-			const float Seed = Loc.X * 0.000123f + Loc.Y * 0.000456f;
-			const int32 Idx = FMath::Clamp(
-				FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * static_cast<float>(GroundVariantCount)),
-				0,
-				GroundVariantCount - 1);
-			if (Idx < GroundFloorMaterials.Num())
-			{
-				UMaterialInterface* M = GroundFloorMaterials[Idx].Get();
-				if (M) Mat = M;
-			}
-			SMC->SetMaterial(0, Mat);
+			SMC->SetMaterial(0, DifficultyFloorMaterial);
 		}
 	}
 
-	// Also apply to non-StaticMeshActor floor-tagged actors (HISM walls, ProceduralMesh tops/ramps).
-	UMaterialInterface* FallbackMat = GroundFloorMaterials[0].Get();
-	if (FallbackMat)
+	// Do not touch the runtime main-map terrain actor here; it owns its own
+	// difficulty-specific block/slope/dirt materials and this pass used to
+	// flatten the entire terrain into one old ground material on first load.
+	for (TActorIterator<AActor> It(World); It; ++It)
 	{
-		for (TActorIterator<AActor> It(World); It; ++It)
-		{
-			AActor* A = *It;
-			if (!A || Cast<AStaticMeshActor>(A)) continue;
-			if (!T66_HasAnyFloorTag(A)) continue;
+		AActor* A = *It;
+		if (!A || Cast<AStaticMeshActor>(A)) continue;
+		if (!T66_HasAnyFloorTag(A)) continue;
+		if (A->ActorHasTag(T66MainMapTerrainVisualTag)) continue;
 
-			TArray<UMeshComponent*> MeshComps;
-			A->GetComponents<UMeshComponent>(MeshComps);
-			for (UMeshComponent* MC : MeshComps)
+		TArray<UMeshComponent*> MeshComps;
+		A->GetComponents<UMeshComponent>(MeshComps);
+		for (UMeshComponent* MC : MeshComps)
+		{
+			if (MC)
 			{
-				if (MC)
-				{
-					MC->SetMaterial(0, FallbackMat);
-				}
+				MC->SetMaterial(0, DifficultyFloorMaterial);
 			}
 		}
 	}
@@ -3958,15 +4305,9 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 		return false;
 	};
 
-	// Force synchronous load of ground materials so walls get the same Unlit atlas as platform walls.
-	for (int32 i = 0; i < GroundFloorMaterials.Num(); ++i)
-	{
-		if (!GroundFloorMaterials[i].IsNull() && !GroundFloorMaterials[i].Get())
-		{
-			GroundFloorMaterials[i].LoadSynchronous();
-		}
-	}
-	UMaterialInterface* FloorMat = (GroundFloorMaterials.Num() > 0) ? GroundFloorMaterials[0].Get() : nullptr;
+	const UT66GameInstance* T66GI = GetT66GameInstance();
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	UMaterialInterface* FloorMat = T66ResolveDifficultyGroundMaterial(this, Difficulty);
 
 	// Boss area: right after the boss pillars, inside safe zone. Scaled for 100k map.
 	static constexpr float FloorTopZ = 0.f;
@@ -4104,55 +4445,15 @@ void AT66GameMode::SpawnFloorIfNeeded()
 		Floor->SetActorScale3D(Spec.Scale);
 		T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 
-		// Pick one of the available ground material variants by floor position (deterministic variety).
-		UMaterialInterface* GroundMat = nullptr;
-		const int32 GroundVariantCount = GroundFloorMaterials.Num();
-		if (GroundVariantCount > 0)
-		{
-			const float Seed = Spec.Location.X * 0.000123f + Spec.Location.Y * 0.000456f;
-			const int32 Idx = FMath::Clamp(
-				FMath::FloorToInt(FMath::Frac(FMath::Abs(Seed)) * static_cast<float>(GroundVariantCount)),
-				0,
-				GroundVariantCount - 1);
-			GroundMat = GroundFloorMaterials[Idx].Get();
-		}
+		const UT66GameInstance* T66GI = GetT66GameInstance();
+		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+		UMaterialInterface* GroundMat = T66ResolveDifficultyGroundMaterial(this, Difficulty);
 		if (GroundMat)
 		{
 			Floor->GetStaticMeshComponent()->SetMaterial(0, GroundMat);
 		}
 		else
 		{
-			// Kick off async load once, then rerun SpawnFloorIfNeeded() to apply material to tagged floors.
-			if (!bGroundFloorMaterialLoadRequested)
-			{
-				bool bAnyToLoad = false;
-				for (int32 i = 0; i < GroundFloorMaterials.Num(); ++i)
-				{
-					if (!GroundFloorMaterials[i].IsNull()) bAnyToLoad = true;
-				}
-				if (bAnyToLoad)
-				{
-					bGroundFloorMaterialLoadRequested = true;
-					TArray<FSoftObjectPath> Paths;
-					for (int32 i = 0; i < GroundFloorMaterials.Num(); ++i)
-					{
-						if (!GroundFloorMaterials[i].IsNull())
-						{
-							Paths.Add(GroundFloorMaterials[i].ToSoftObjectPath());
-						}
-					}
-					if (Paths.Num() > 0)
-					{
-						TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-							Paths, FStreamableDelegate::CreateWeakLambda(this, [this]() { SpawnFloorIfNeeded(); }));
-						if (Handle.IsValid())
-						{
-							ActiveAsyncLoadHandles.Add(Handle);
-						}
-					}
-				}
-			}
-
 			if (UMaterialInstanceDynamic* FloorMat = Floor->GetStaticMeshComponent()->CreateAndSetMaterialInstanceDynamic(0))
 			{
 				FloorMat->SetVectorParameterValue(TEXT("BaseColor"), Spec.Color);
@@ -5253,9 +5554,11 @@ void AT66GameMode::SpawnLabFloorIfNeeded()
 	Floor->GetStaticMeshComponent()->SetCollisionResponseToAllChannels(ECR_Block);
 	T66_SetStaticMeshActorMobility(Floor, EComponentMobility::Static);
 
-	if (GroundFloorMaterials.Num() > 0 && GroundFloorMaterials[0].Get())
+	const UT66GameInstance* T66GI = GetT66GameInstance();
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	if (UMaterialInterface* LabFloorMaterial = T66ResolveDifficultyGroundMaterial(this, Difficulty))
 	{
-		Floor->GetStaticMeshComponent()->SetMaterial(0, GroundFloorMaterials[0].Get());
+		Floor->GetStaticMeshComponent()->SetMaterial(0, LabFloorMaterial);
 	}
 	SpawnedSetupActors.Add(Floor);
 	UE_LOG(LogT66GameMode, Log, TEXT("Spawned Lab central floor (half-extent %.0f, top Z %.0f)"), LabHalfExtent, LabFloorHeight);
@@ -5616,8 +5919,9 @@ UClass* AT66GameMode::GetDefaultPawnClassForController_Implementation(AControlle
 	// Check if we have a specific hero class from the DataTable
 	if (UT66GameInstance* GI = GetT66GameInstance())
 	{
+		const FName EffectiveHeroID = T66GetSelectedHeroID(GI, InController);
 		FHeroData HeroData;
-		if (GI->GetSelectedHeroData(HeroData))
+		if (!EffectiveHeroID.IsNone() && GI->GetHeroData(EffectiveHeroID, HeroData))
 		{
 			// If the hero has a specific class defined, use that
 			if (!HeroData.HeroClass.IsNull())
@@ -5658,6 +5962,9 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	FVector SpawnLocation;
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(GetWorld());
+	FVector MainMapSafeSpawnLocation = FVector::ZeroVector;
+	const bool bHasMainMapSafeSpawnLocation = bUsingMainMapTerrain
+		&& TryGetMainMapStartPlacementLocation(0.f, -1.10f, MainMapSafeSpawnLocation);
 
 	if (bUsingMainMapTerrain && !bTerrainCollisionReady)
 	{
@@ -5667,8 +5974,19 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 	if (bUsingMainMapTerrain && bHasMainMapSpawnSurfaceLocation)
 	{
-		SpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, DefaultSpawnHeight);
-		SpawnRotation = FRotator::ZeroRotator;
+		SpawnLocation = (bHasMainMapSafeSpawnLocation ? MainMapSafeSpawnLocation : MainMapSpawnSurfaceLocation) + FVector(0.f, 0.f, DefaultSpawnHeight);
+		FVector Center = FVector::ZeroVector;
+		FVector InwardDirection = FVector::ForwardVector;
+		FVector SideDirection = FVector::RightVector;
+		float CellSize = 0.f;
+		if (TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize) && !InwardDirection.IsNearlyZero())
+		{
+			SpawnRotation = InwardDirection.Rotation();
+		}
+		else
+		{
+			SpawnRotation = FRotator::ZeroRotator;
+		}
 	}
 	else if (StartSpot)
 	{
@@ -5709,7 +6027,11 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	}
 	else if (bUsingMainMapTerrain)
 	{
-		if (bHasMainMapSpawnSurfaceLocation)
+		if (bHasMainMapSafeSpawnLocation)
+		{
+			SpawnLocation = MainMapSafeSpawnLocation + FVector(0.f, 0.f, 200.f);
+		}
+		else if (bHasMainMapSpawnSurfaceLocation)
 		{
 			SpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, 200.f);
 		}
@@ -5718,7 +6040,18 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
 			SpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 200.f);
 		}
-		SpawnRotation = FRotator::ZeroRotator;
+		FVector Center = FVector::ZeroVector;
+		FVector InwardDirection = FVector::ForwardVector;
+		FVector SideDirection = FVector::RightVector;
+		float CellSize = 0.f;
+		if (TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize) && !InwardDirection.IsNearlyZero())
+		{
+			SpawnRotation = InwardDirection.Rotation();
+		}
+		else
+		{
+			SpawnRotation = FRotator::ZeroRotator;
+		}
 	}
 	else if (!IsColiseumStage())
 	{
@@ -5747,6 +6080,20 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		}
 	}
 
+	if (bUsingMainMapTerrain)
+	{
+		const FVector FacingTarget = !MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+			? MainMapStartAreaCenterSurfaceLocation
+			: (!MainMapStartAnchorSurfaceLocation.IsNearlyZero()
+				? MainMapStartAnchorSurfaceLocation
+				: MainMapSpawnSurfaceLocation);
+		FRotator FacingRotation = SpawnRotation;
+		if (T66TryBuildFacingRotation2D(SpawnLocation, FacingTarget, FacingRotation))
+		{
+			SpawnRotation = FacingRotation;
+		}
+	}
+
 	// Sky-drop: spawn the hero at a comfortable altitude; gravity + Landed() handle the rest.
 	// This avoids trace-before-terrain-exists timing issues and gives a cinematic entrance.
 
@@ -5762,6 +6109,8 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 	if (SpawnedPawn)
 	{
+		T66SyncPawnAndControllerRotation(SpawnedPawn, NewPlayer, SpawnRotation);
+
 		const bool bNeedsProceduralTerrain = !IsLabLevel() && !IsColiseumStage();
 		if (bUsingMainMapTerrain && bTerrainCollisionReady)
 		{
@@ -5772,7 +6121,11 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			}
 
 			FVector ExactSpawnLocation = SpawnLocation;
-			if (bHasMainMapSpawnSurfaceLocation)
+			if (bHasMainMapSafeSpawnLocation)
+			{
+				ExactSpawnLocation = MainMapSafeSpawnLocation + FVector(0.f, 0.f, HalfHeight + 5.f);
+			}
+			else if (bHasMainMapSpawnSurfaceLocation)
 			{
 				ExactSpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, HalfHeight + 5.f);
 			}
@@ -5782,6 +6135,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 				ExactSpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, HalfHeight + 5.f);
 			}
 			SpawnedPawn->SetActorLocation(ExactSpawnLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			T66SyncPawnAndControllerRotation(SpawnedPawn, NewPlayer, SpawnRotation);
 			if (ACharacter* Character = Cast<ACharacter>(SpawnedPawn))
 			{
 				if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
@@ -5808,6 +6162,11 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		}
 	}
 
+	if (SpawnedPawn && IsValid(IdolAltar))
+	{
+		T66FaceActorTowardLocation2D(IdolAltar, SpawnedPawn->GetActorLocation());
+	}
+
 	// If it's our hero class, initialize it with hero data and body type
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(SpawnedPawn))
 	{
@@ -5815,13 +6174,17 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		if (UT66GameInstance* GI = GetT66GameInstance())
 		{
 			FHeroData HeroData;
-			const FName EffectiveHeroID = GI->SelectedHeroID;
+			const FName EffectiveHeroID = T66GetSelectedHeroID(GI, NewPlayer);
 
 			if (!EffectiveHeroID.IsNone() && GI->GetHeroData(EffectiveHeroID, HeroData))
 			{
-				// Pass hero data, body type, and skin from Game Instance
-				ET66BodyType SelectedBodyType = GI->SelectedHeroBodyType;
-				FName SelectedSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
+				if (GI->SelectedHeroID.IsNone() && NewPlayer && NewPlayer->IsLocalController())
+				{
+					GI->SelectedHeroID = EffectiveHeroID;
+				}
+
+				ET66BodyType SelectedBodyType = T66GetSelectedHeroBodyType(GI, NewPlayer);
+				FName SelectedSkinID = T66GetSelectedHeroSkinID(GI, NewPlayer);
 				Hero->InitializeHero(HeroData, SelectedBodyType, SelectedSkinID, false);
 
 				UE_LOG(LogT66GameMode, Log, TEXT("Spawned hero: %s (%s), BodyType: %s, Skin: %s, Color: (%.2f, %.2f, %.2f)"),
@@ -5959,7 +6322,6 @@ AActor* AT66GameMode::SpawnLabFountainOfLife()
 	AT66FountainOfLifeInteractable* Fountain = World->SpawnActor<AT66FountainOfLifeInteractable>(AT66FountainOfLifeInteractable::StaticClass(), Loc, Rot, SpawnParams);
 	if (Fountain)
 	{
-		Fountain->SetRarity(ET66Rarity::Black);
 		LabSpawnedActors.Add(Fountain);
 	}
 	return Fountain;

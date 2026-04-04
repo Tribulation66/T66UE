@@ -25,6 +25,8 @@ protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeDestruct() override;
+	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	virtual void RefreshScreen_Implementation() override;
 
 	private:
@@ -44,6 +46,7 @@ protected:
 	FText GetAchievementCoinsValueText() const;
 	FText GetPowerCouponsValueText() const;
 	void RequestTopBarAssets();
+	void ReleaseTopBarBrushes();
 
 	FReply HandleSettingsClicked();
 	FReply HandleLanguageClicked();
@@ -60,6 +63,7 @@ protected:
 	TSharedPtr<FSlateBrush> ActiveTabBrush;
 	TSharedPtr<FSlateBrush> HomeInactiveTabBrush;
 	TSharedPtr<FSlateBrush> HomeActiveTabBrush;
+	TSharedPtr<FSlateBrush> HomeIconBrush;
 	TSharedPtr<FSlateBrush> NavSeparatorBrush;
 	TSharedPtr<FSlateBrush> SettingsSlotBrush;
 	TSharedPtr<FSlateBrush> UtilitySlotBrush;

@@ -81,6 +81,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void ApplyArmorDebuff(float ReductionAmount, float DurationSeconds);
 
+	void ApplyConfusion(float DurationSeconds);
+	void ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds);
+	void ApplyForcedRunAway(float DurationSeconds);
+	void ApplyStun(float DurationSeconds);
+	void ApplyRoot(float DurationSeconds);
+	void ApplyFreeze(float DurationSeconds);
+	void ApplyPullTowards(const FVector& PullOrigin, float Distance);
+	void ApplyPushAwayFrom(const FVector& PushOrigin, float Distance);
+
 	/** Initialize boss from data table (optional). */
 	void InitializeBoss(const FBossData& BossData);
 
@@ -118,9 +127,19 @@ private:
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseProjectileDamageHearts = 0;
+	float BaseMoveSpeed = 350.f;
 
 	float ArmorDebuffAmount = 0.f;
 	float ArmorDebuffSecondsRemaining = 0.f;
+	float ConfusionSecondsRemaining = 0.f;
+	float MoveSlowMultiplier = 1.f;
+	float MoveSlowSecondsRemaining = 0.f;
+	float ForcedRunAwaySecondsRemaining = 0.f;
+	float StunSecondsRemaining = 0.f;
+	float RootSecondsRemaining = 0.f;
+	float FreezeSecondsRemaining = 0.f;
+	FVector CachedWanderDir = FVector::ZeroVector;
+	float WanderDirRefreshAccum = 0.f;
 	TWeakObjectPtr<APawn> CachedPlayerPawn;
 };
 

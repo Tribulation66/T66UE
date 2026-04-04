@@ -48,6 +48,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
@@ -115,6 +116,20 @@ AT66PlayerController::AT66PlayerController()
 void AT66PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (UWorld* World = GetWorld())
+			{
+				World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [SessionSubsystem]()
+				{
+					SessionSubsystem->SyncLocalLobbyProfile();
+				}));
+			}
+		}
+	}
 
 	if (IsGameplayLevel())
 	{
@@ -184,6 +199,26 @@ void AT66PlayerController::BeginPlay()
 	}
 }
 
+void AT66PlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (!InPawn || !IsGameplayLevel())
+	{
+		return;
+	}
+
+	FRotator DesiredRotation = InPawn->GetActorRotation();
+	DesiredRotation.Roll = 0.f;
+	if (DesiredRotation.Pitch > 45.f || DesiredRotation.Pitch < -45.f)
+	{
+		DesiredRotation.Pitch = 0.f;
+	}
+
+	SetControlRotation(DesiredRotation);
+	ClientSetRotation(DesiredRotation, true);
+}
+
 
 void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
@@ -201,6 +236,29 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void AT66PlayerController::PushLobbyProfileToServer(const FT66LobbyPlayerInfo& LobbyInfo)
+{
+	if (AT66SessionPlayerState* SessionPlayerState = GetPlayerState<AT66SessionPlayerState>())
+	{
+		if (HasAuthority())
+		{
+			SessionPlayerState->ApplyLobbyInfo(LobbyInfo);
+		}
+		else
+		{
+			ServerSubmitLobbyProfile(LobbyInfo);
+		}
+	}
+}
+
+void AT66PlayerController::ServerSubmitLobbyProfile_Implementation(const FT66LobbyPlayerInfo& LobbyInfo)
+{
+	if (AT66SessionPlayerState* SessionPlayerState = GetPlayerState<AT66SessionPlayerState>())
+	{
+		SessionPlayerState->ApplyLobbyInfo(LobbyInfo);
+	}
 }
 
 

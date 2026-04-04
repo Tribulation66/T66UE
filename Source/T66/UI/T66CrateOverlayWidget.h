@@ -53,11 +53,11 @@ private:
 	float TotalScrollDistance = 0.f;
 	float CurrentScrollOffset = 0.f;
 
-	static constexpr float ItemTileWidth = 132.f;
-	static constexpr float ItemTileHeight = 164.f;
+	static constexpr float ItemTileWidth = 112.f;
+	static constexpr float ItemTileHeight = 140.f;
 	static constexpr float ItemTileGap = 8.f;
 	static constexpr float ItemTileStride = ItemTileWidth + ItemTileGap;
-	static constexpr float ItemPreviewSize = 92.f;
+	static constexpr float ItemPreviewSize = 76.f;
 	static constexpr int32 VisibleTileCount = 5;
 	static constexpr int32 StripItemCount = 34;
 	static constexpr int32 WinnerPosition = 29;

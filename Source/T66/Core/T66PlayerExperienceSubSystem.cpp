@@ -51,7 +51,9 @@ namespace
 	static FT66PlayerExperienceDifficultyTuning MakeDefaultDifficultyTuning(const int32 DifficultyIndex)
 	{
 		FT66PlayerExperienceDifficultyTuning Tuning;
-		Tuning.StartStage = FMath::Clamp(1 + (DifficultyIndex * 5), 1, 33);
+		static constexpr int32 DefaultStartStages[] = { 1, 6, 11, 16, 21 };
+		const int32 SafeIndex = FMath::Clamp(DifficultyIndex, 0, UE_ARRAY_COUNT(DefaultStartStages) - 1);
+		Tuning.StartStage = DefaultStartStages[SafeIndex];
 		Tuning.StartGoldBonus = 200 * DifficultyIndex;
 		Tuning.StartLootBags = 2 + (DifficultyIndex * 2);
 		Tuning.StartHeroBonusLevels = DifficultyIndex * 10;
@@ -88,8 +90,6 @@ FT66PlayerExperienceTuningTable::FT66PlayerExperienceTuningTable()
 	, Hard(MakeDefaultDifficultyTuning(2))
 	, VeryHard(MakeDefaultDifficultyTuning(3))
 	, Impossible(MakeDefaultDifficultyTuning(4))
-	, Perdition(MakeDefaultDifficultyTuning(5))
-	, Final(MakeDefaultDifficultyTuning(6))
 {
 }
 
@@ -101,8 +101,6 @@ void FT66PlayerExperienceTuningTable::LoadFromConfig()
 	LoadStructValue(ConfigFilename, TEXT("Hard"), Hard);
 	LoadStructValue(ConfigFilename, TEXT("VeryHard"), VeryHard);
 	LoadStructValue(ConfigFilename, TEXT("Impossible"), Impossible);
-	LoadStructValue(ConfigFilename, TEXT("Perdition"), Perdition);
-	LoadStructValue(ConfigFilename, TEXT("Final"), Final);
 }
 
 const FT66PlayerExperienceDifficultyTuning& FT66PlayerExperienceTuningTable::Get(const ET66Difficulty Difficulty) const
@@ -114,8 +112,6 @@ const FT66PlayerExperienceDifficultyTuning& FT66PlayerExperienceTuningTable::Get
 	case ET66Difficulty::Hard: return Hard;
 	case ET66Difficulty::VeryHard: return VeryHard;
 	case ET66Difficulty::Impossible: return Impossible;
-	case ET66Difficulty::Perdition: return Perdition;
-	case ET66Difficulty::Final: return Final;
 	default: return Easy;
 	}
 }
@@ -138,7 +134,20 @@ const FT66PlayerExperienceDifficultyTuning& UT66PlayerExperienceSubSystem::GetDi
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyStartStage(const ET66Difficulty Difficulty) const
 {
-	return FMath::Clamp(GetDifficultyTuning(Difficulty).StartStage, 1, 33);
+	return FMath::Clamp(GetDifficultyTuning(Difficulty).StartStage, 1, 23);
+}
+
+int32 UT66PlayerExperienceSubSystem::GetDifficultyEndStage(const ET66Difficulty Difficulty) const
+{
+	switch (Difficulty)
+	{
+	case ET66Difficulty::Easy: return 5;
+	case ET66Difficulty::Medium: return 10;
+	case ET66Difficulty::Hard: return 15;
+	case ET66Difficulty::VeryHard: return 20;
+	case ET66Difficulty::Impossible: return 23;
+	default: return 5;
+	}
 }
 
 int32 UT66PlayerExperienceSubSystem::GetDifficultyStartGoldBonus(const ET66Difficulty Difficulty) const

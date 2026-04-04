@@ -197,6 +197,11 @@ private:
 	void StartVideoModeConfirmPrompt();
 	void EndVideoModeConfirmPrompt(bool bKeepNewSettings);
 
+	// ===== UI scale staging =====
+	float PendingUIScale = 1.0f;
+	bool bUIScaleInitialized = false;
+	void InitializeUIScaleFromPlayerSettingsIfNeeded();
+
 	// ===== Retro FX staging =====
 	FT66RetroFXSettings PendingRetroFXSettings;
 	bool bRetroFXInitialized = false;

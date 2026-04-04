@@ -101,6 +101,11 @@
 
 namespace
 {
+	static float T66GetAttackReticleYOffset(const int32 ViewportHeight)
+	{
+		return FMath::Clamp(-0.18f * static_cast<float>(ViewportHeight), -220.f, -140.f);
+	}
+
 	static ET66ItemRarity LootRarityToItemRarity(ET66Rarity Rarity)
 	{
 		switch (Rarity)
@@ -169,6 +174,102 @@ namespace
 	}
 }
 
+void AT66PlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+	SyncLockedEnemyFromCombat();
+}
+
+bool AT66PlayerController::HasAttackLockedEnemy() const
+{
+	const APawn* ControlledPawn = GetPawn();
+	const AT66HeroBase* Hero = Cast<AT66HeroBase>(ControlledPawn);
+	const UT66CombatComponent* Combat = Hero ? Hero->CombatComponent : nullptr;
+	const AT66EnemyBase* CombatLockedEnemy = Combat ? Cast<AT66EnemyBase>(Combat->GetLockedTarget()) : nullptr;
+	return CombatLockedEnemy && CombatLockedEnemy->CurrentHP > 0;
+}
+
+bool AT66PlayerController::GetAttackLockScreenPosition(FVector2D& OutScreenPosition) const
+{
+	int32 SizeX = 0;
+	int32 SizeY = 0;
+	GetViewportSize(SizeX, SizeY);
+	if (SizeX <= 0 || SizeY <= 0)
+	{
+		OutScreenPosition = FVector2D::ZeroVector;
+		return false;
+	}
+
+	OutScreenPosition = FVector2D(
+		static_cast<float>(SizeX) * 0.5f,
+		(static_cast<float>(SizeY) * 0.5f) + T66GetAttackReticleYOffset(SizeY));
+	return true;
+}
+
+void AT66PlayerController::SetLockedEnemy(AT66EnemyBase* NewLockedEnemy, const bool bPropagateToCombatTarget)
+{
+	if (NewLockedEnemy && NewLockedEnemy->CurrentHP <= 0)
+	{
+		NewLockedEnemy = nullptr;
+	}
+
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
+	UT66CombatComponent* Combat = Hero ? Hero->CombatComponent : nullptr;
+
+	if (LockedEnemy.Get() == NewLockedEnemy)
+	{
+		if (bPropagateToCombatTarget && Combat)
+		{
+			if (NewLockedEnemy)
+			{
+				Combat->SetLockedTarget(NewLockedEnemy);
+			}
+			else
+			{
+				Combat->ClearLockedTarget();
+			}
+		}
+		return;
+	}
+
+	if (LockedEnemy.IsValid())
+	{
+		LockedEnemy->SetLockedIndicator(false);
+	}
+
+	LockedEnemy = NewLockedEnemy;
+
+	if (LockedEnemy.IsValid())
+	{
+		LockedEnemy->SetLockedIndicator(true);
+	}
+
+	if (bPropagateToCombatTarget && Combat)
+	{
+		if (NewLockedEnemy)
+		{
+			Combat->SetLockedTarget(NewLockedEnemy);
+		}
+		else
+		{
+			Combat->ClearLockedTarget();
+		}
+	}
+}
+
+void AT66PlayerController::SyncLockedEnemyFromCombat()
+{
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
+	UT66CombatComponent* Combat = Hero ? Hero->CombatComponent : nullptr;
+	AT66EnemyBase* CombatLockedEnemy = Combat ? Cast<AT66EnemyBase>(Combat->GetLockedTarget()) : nullptr;
+	if (CombatLockedEnemy && CombatLockedEnemy->CurrentHP <= 0)
+	{
+		CombatLockedEnemy = nullptr;
+	}
+
+	SetLockedEnemy(CombatLockedEnemy, false);
+}
+
 
 void AT66PlayerController::RefreshGameplayMouseMappings()
 {
@@ -216,8 +317,8 @@ void AT66PlayerController::RefreshGameplayMouseMappings()
 				};
 
 				MapActionKeys(IA_AttackLock, FName(TEXT("AttackLock")), EKeys::LeftMouseButton);
-				MapActionKeys(IA_AttackUnlock, FName(TEXT("AttackUnlock")), EKeys::RightMouseButton);
-				MapActionKeys(IA_ToggleMouseLock, FName(TEXT("ToggleMouseLock")), EKeys::ThumbMouseButton2);
+				MapActionKeys(IA_AttackUnlock, FName(TEXT("AttackUnlock")), EKeys::ThumbMouseButton2);
+				MapActionKeys(IA_ToggleMouseLock, FName(TEXT("ToggleMouseLock")), EKeys::RightMouseButton);
 				Sub->AddMappingContext(IMC_GameplayMouse, 0);
 			}
 		}
@@ -391,41 +492,40 @@ void AT66PlayerController::HandleAttackLockPressed()
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(P);
 	if (!Hero || !Hero->CombatComponent) return;
 
-	int32 SizeX = 0, SizeY = 0;
-	GetViewportSize(SizeX, SizeY);
-	if (SizeX <= 0 || SizeY <= 0) return;
+	FVector2D CrosshairScreenPosition = FVector2D::ZeroVector;
+	if (!GetAttackLockScreenPosition(CrosshairScreenPosition)) return;
 
-	// Crosshair is slightly above screen-center (matches HUD crosshair placement).
-	static constexpr float CrosshairYOffset = -140.f;
-	const FVector2D Center(static_cast<float>(SizeX) * 0.5f, (static_cast<float>(SizeY) * 0.5f) + CrosshairYOffset);
 	FHitResult Hit;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(AimLock), false);
 	Params.AddIgnoredActor(Hero);
-	const bool bHit = GetHitResultAtScreenPosition(Center, ECC_Visibility, Params, Hit);
+	const bool bHit = GetHitResultAtScreenPosition(CrosshairScreenPosition, ECC_Visibility, Params, Hit);
 
 	AT66EnemyBase* Enemy = bHit ? Cast<AT66EnemyBase>(Hit.GetActor()) : nullptr;
-	if (!Enemy || Enemy->CurrentHP <= 0)
-	{
-		// Clicking empty space does nothing.
-		return;
-	}
-
-	// Toggle if clicking the same enemy.
-	if (LockedEnemy.IsValid() && LockedEnemy.Get() == Enemy)
-	{
-		HandleAttackUnlockPressed();
-		return;
-	}
-
-	// Clear previous indicator.
 	if (LockedEnemy.IsValid())
 	{
-		LockedEnemy->SetLockedIndicator(false);
+		if (!Enemy || Enemy->CurrentHP <= 0)
+		{
+			SetLockedEnemy(nullptr, true);
+			return;
+		}
+
+		if (LockedEnemy.Get() == Enemy)
+		{
+			SetLockedEnemy(nullptr, true);
+			return;
+		}
+
+		SetLockedEnemy(Enemy, true);
+		return;
 	}
 
-	LockedEnemy = Enemy;
-	Enemy->SetLockedIndicator(true);
-	Hero->CombatComponent->SetLockedTarget(Enemy);
+	if (!Enemy || Enemy->CurrentHP <= 0)
+	{
+		// Clicking empty space does nothing when no lock is active.
+		return;
+	}
+
+	SetLockedEnemy(Enemy, true);
 }
 
 
@@ -457,14 +557,12 @@ void AT66PlayerController::HandleAttackUnlockPressed()
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(P);
 	if (Hero && Hero->CombatComponent)
 	{
-		Hero->CombatComponent->ClearLockedTarget();
+		SetLockedEnemy(nullptr, true);
 	}
-
-	if (LockedEnemy.IsValid())
+	else
 	{
-		LockedEnemy->SetLockedIndicator(false);
+		SetLockedEnemy(nullptr, false);
 	}
-	LockedEnemy.Reset();
 }
 
 
@@ -484,6 +582,8 @@ void AT66PlayerController::HandleToggleMouseLockPressed()
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = true;
 	}
 	if (GameplayHUDWidget)
 	{
@@ -536,7 +636,7 @@ void AT66PlayerController::HandleInteractPressed()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	const float InteractRadius = 300.f;
+	const float InteractRadius = 450.f;
 	FVector Loc = ControlledPawn->GetActorLocation();
 	TArray<FOverlapResult> Overlaps;
 	FCollisionQueryParams Params;

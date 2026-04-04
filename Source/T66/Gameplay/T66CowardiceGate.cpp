@@ -14,6 +14,14 @@
 #include "CollisionQueryParams.h"
 #include "Gameplay/T66VisualUtil.h"
 
+namespace
+{
+	bool T66IsDifficultyBossStage(const int32 StageNum)
+	{
+		return StageNum == 5 || StageNum == 10 || StageNum == 15 || StageNum == 20 || StageNum == 23;
+	}
+}
+
 AT66CowardiceGate::AT66CowardiceGate()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -65,8 +73,7 @@ bool AT66CowardiceGate::Interact(APlayerController* PC)
 	if (!RunState) return false;
 	// Cannot skip the difficulty boss (last stage of each difficulty block).
 	const int32 CurrentStage = RunState->GetCurrentStage();
-	const bool bIsDifficultyBossStage = (CurrentStage == 5 || CurrentStage == 10 || CurrentStage == 15 || CurrentStage == 20 || CurrentStage == 25 || CurrentStage == 30 || CurrentStage == 33);
-	if (bIsDifficultyBossStage) return false;
+	if (T66IsDifficultyBossStage(CurrentStage)) return false;
 
 	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
 	if (!T66PC) return false;
@@ -104,8 +111,7 @@ bool AT66CowardiceGate::ConfirmCowardice()
 	T66GI->bIsStageTransition = true;
 
 	// Coliseum rule: before entering a difficulty boss stage, route to Coliseum if there are owed bosses.
-	const bool bIsDifficultyBossStage = (NextStage == 5 || NextStage == 10 || NextStage == 15 || NextStage == 20 || NextStage == 25 || NextStage == 30 || NextStage == 33);
-	if (bIsDifficultyBossStage && RunState->GetOwedBossIDs().Num() > 0)
+	if (T66IsDifficultyBossStage(NextStage) && RunState->GetOwedBossIDs().Num() > 0)
 	{
 		T66GI->bForceColiseumMode = true;
 		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetColiseumLevelName());

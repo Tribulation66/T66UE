@@ -19,7 +19,6 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SScrollBox.h"
-#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
@@ -206,6 +205,11 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 	const FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	const FButtonStyle& PrimaryButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
 	static constexpr int32 BeachgoerPriceAC = 250;
+	const float ActionMinHeight = 28.f;
+	const float ActionMinWidth = 72.f;
+	const float EquippedMinWidth = 84.f;
+	const float BuyButtonMinWidth = 88.f;
+	const float BuyButtonHeight = 34.f;
 	const FText BeachgoerPriceText = Loc
 		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(BeachgoerPriceAC))
 		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(BeachgoerPriceAC));
@@ -223,7 +227,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 			[
 				SNew(STextBlock)
 				.Text(Loc ? Loc->GetText_SkinName(SkinIDCopy) : FText::FromName(SkinIDCopy))
-				.Font(FT66Style::Tokens::FontRegular(16))
+				.Font(FT66Style::Tokens::FontRegular(13))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			];
 
@@ -231,7 +235,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 		{
 			Row->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(5.0f, 0.0f)
 				[
-					SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+					SNew(SBox).MinDesiredWidth(EquippedMinWidth).MinDesiredHeight(ActionMinHeight)
 					[
 						SNew(SWidgetSwitcher)
 						.WidgetIndex(bIsEquipped ? 1 : 0)
@@ -249,11 +253,11 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 								}
 								return FReply::Handled();
 							}),
-							ET66ButtonType::Primary).SetMinWidth(0.f))
+							ET66ButtonType::Primary).SetMinWidth(ActionMinWidth).SetHeight(ActionMinHeight))
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+							SNew(SBox).MinDesiredWidth(EquippedMinWidth).HeightOverride(ActionMinHeight)
 							[
 								SNew(SBorder)
 								.BorderImage(&PrimaryButtonStyle.Normal)
@@ -261,11 +265,12 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 									? FSlateColor(FLinearColor(0.075f, 0.075f, 0.08f, 1.0f))
 									: FT66Style::Tokens::Accent2)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.Padding(FMargin(4.0f, 2.0f))
+								.Padding(FMargin(10.0f, 4.0f))
 								[
 									SNew(STextBlock)
 									.Text(EquippedText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+									.Font(FT66Style::Tokens::FontBold(10))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 									.Justification(ETextJustify::Center)
 								]
 							]
@@ -284,11 +289,11 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 						UpdateCompanionDisplay();
 						return FReply::Handled();
 					}),
-					ET66ButtonType::Neutral).SetMinWidth(80.f))
+					ET66ButtonType::Neutral).SetMinWidth(ActionMinWidth).SetHeight(ActionMinHeight))
 				];
 			Row->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(4.0f, 0.0f)
 				[
-					SNew(SBox).MinDesiredWidth(90.0f).HeightOverride(36.0f)
+					SNew(SBox).MinDesiredWidth(EquippedMinWidth).MinDesiredHeight(BuyButtonHeight)
 					[
 						SNew(SWidgetSwitcher)
 						.WidgetIndex(!bIsOwned ? 0 : (bIsEquipped ? 2 : 1))
@@ -306,12 +311,14 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 								return FReply::Handled();
 							}),
 							ET66ButtonType::Primary)
-							.SetMinWidth(0.f)
+							.SetMinWidth(BuyButtonMinWidth)
+							.SetHeight(BuyButtonHeight)
 							.SetColor(FT66Style::Tokens::Accent)
+							.SetPadding(FMargin(12.f, 6.f, 12.f, 4.f))
 							.SetContent(
 								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BuyText).TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip")) ]
-								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BeachgoerPriceText).Font(FT66Style::Tokens::FontRegular(10)).ColorAndOpacity(FT66Style::Tokens::Text) ]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BuyText).Font(FT66Style::Tokens::FontBold(9)).ColorAndOpacity(FT66Style::Tokens::Text) ]
+								+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[ SNew(STextBlock).Text(BeachgoerPriceText).Font(FT66Style::Tokens::FontRegular(8)).ColorAndOpacity(FT66Style::Tokens::Text) ]
 							))
 						]
 						+ SWidgetSwitcher::Slot()
@@ -328,11 +335,11 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 								}
 								return FReply::Handled();
 							}),
-							ET66ButtonType::Primary).SetMinWidth(0.f))
+							ET66ButtonType::Primary).SetMinWidth(ActionMinWidth).SetHeight(ActionMinHeight))
 						]
 						+ SWidgetSwitcher::Slot()
 						[
-							SNew(SBox).WidthOverride(90.0f).HeightOverride(36.0f)
+							SNew(SBox).MinDesiredWidth(EquippedMinWidth).HeightOverride(ActionMinHeight)
 							[
 								SNew(SBorder)
 								.BorderImage(&PrimaryButtonStyle.Normal)
@@ -340,11 +347,12 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 									? FSlateColor(FLinearColor(0.075f, 0.075f, 0.08f, 1.0f))
 									: FT66Style::Tokens::Accent2)
 								.HAlign(HAlign_Center).VAlign(VAlign_Center)
-								.Padding(FMargin(4.0f, 2.0f))
+								.Padding(FMargin(10.0f, 4.0f))
 								[
 									SNew(STextBlock)
 									.Text(EquippedText)
-									.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip"))
+									.Font(FT66Style::Tokens::FontBold(10))
+									.ColorAndOpacity(FT66Style::Tokens::Text)
 									.Justification(ETextJustify::Center)
 								]
 							]
@@ -372,23 +380,20 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	GeneratePlaceholderSkins();
 
-	// Get localized text
-	FText TitleText = Loc ? Loc->GetText_SelectCompanion() : NSLOCTEXT("T66.CompanionSelection", "Title", "SELECT COMPANION");
 	FText CompanionGridText = Loc ? Loc->GetText_CompanionGrid() : NSLOCTEXT("T66.CompanionSelection", "Grid", "COMPANION GRID");
 	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanion", "NO COMPANION");
 	FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.CompanionSelection", "Skins", "SKINS");
 	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.CompanionSelection", "Lore", "LORE");
 	FText ConfirmText = Loc ? Loc->GetText_ConfirmCompanion() : NSLOCTEXT("T66.CompanionSelection", "ConfirmCompanion", "CONFIRM COMPANION");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
-	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 
-	// AC balance and skins list (same pattern as hero selection)
 	int32 ACBalance = 0;
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
 		if (UT66SkinSubsystem* SkinSub = GI->GetSubsystem<UT66SkinSubsystem>())
+		{
 			ACBalance = SkinSub->GetAchievementCoinsBalance();
+		}
 	}
 	const FText ACBalanceText = Loc
 		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
@@ -396,13 +401,13 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 
 	SAssignNew(SkinsListBoxWidget, SVerticalBox);
 	AddSkinRowsToBox(SkinsListBoxWidget);
+
 	const bool bDotaTheme = FT66Style::IsDotaTheme();
 	const FLinearColor SelectionShellFill = FLinearColor::Black;
 	const FSlateColor SelectionPanelFill = FLinearColor(0.022f, 0.022f, 0.024f, 1.0f);
 	const FSlateColor SelectionInsetFill = FLinearColor(0.032f, 0.032f, 0.036f, 1.0f);
 	const FSlateColor SelectionToggleFill = FLinearColor(0.055f, 0.055f, 0.06f, 1.0f);
 
-	// Carousel list: [NO COMPANION] + companions
 	UT66GameInstance* GICheck = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	TArray<FName> CarouselIDs;
 	CarouselIDs.Add(NAME_None);
@@ -410,7 +415,6 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const int32 NumCarousel = CarouselIDs.Num();
 	const int32 CarouselIndex = FMath::Clamp(CurrentCompanionIndex + 1, 0, NumCarousel > 0 ? NumCarousel - 1 : 0);
 
-	// Ensure we have stable brushes for the 5 visible slots (portraits).
 	CompanionCarouselPortraitBrushes.SetNum(5);
 	for (int32 i = 0; i < CompanionCarouselPortraitBrushes.Num(); ++i)
 	{
@@ -418,18 +422,17 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		{
 			CompanionCarouselPortraitBrushes[i] = MakeShared<FSlateBrush>();
 			CompanionCarouselPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-			CompanionCarouselPortraitBrushes[i]->ImageSize = FVector2D(60.f, 60.f);
+			CompanionCarouselPortraitBrushes[i]->ImageSize = FVector2D(48.f, 48.f);
 		}
 	}
 	RefreshCompanionCarouselPortraits();
 
-	// Build carousel (5 tiles: prev2, prev1, current, next1, next2) — portrait or colored fallback
 	TSharedRef<SHorizontalBox> CompanionCarousel = SNew(SHorizontalBox);
 	for (int32 Offset = -2; Offset <= 2; Offset++)
 	{
 		const int32 SlotIdx = Offset + 2;
-		int32 Idx = NumCarousel > 0 ? (CarouselIndex + Offset + NumCarousel * 2) % NumCarousel : 0;
-		FName CompanionID = NumCarousel > 0 ? CarouselIDs[Idx] : NAME_None;
+		const int32 Idx = NumCarousel > 0 ? (CarouselIndex + Offset + NumCarousel * 2) % NumCarousel : 0;
+		const FName CompanionID = NumCarousel > 0 ? CarouselIDs[Idx] : NAME_None;
 		FCompanionData Data;
 		FLinearColor SpriteColor = FLinearColor(0.35f, 0.25f, 0.25f, 1.0f);
 		if (!CompanionID.IsNone() && GICheck && GICheck->GetCompanionData(CompanionID, Data))
@@ -441,7 +444,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		{
 			SpriteColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 		}
-		const float BoxSize = (Offset == 0) ? 60.0f : 45.0f;
+
+		const float BoxSize = (Offset == 0) ? 48.0f : 36.0f;
 		const float Opacity = (Offset == 0) ? 1.0f : 0.6f;
 		const TSharedRef<SWidget> CarouselSlotWidget = bDotaTheme
 			? StaticCastSharedRef<SWidget>(FT66Style::MakeSlotFrame(
@@ -461,7 +465,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 				.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity)),
 				SpriteColor * Opacity,
 				FMargin(2.f)))
-			: StaticCastSharedRef<SWidget>(SNew(SOverlay)
+			: StaticCastSharedRef<SWidget>(
+				SNew(SOverlay)
 				+ SOverlay::Slot()
 				[
 					SNew(SBorder)
@@ -485,19 +490,21 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 					})
 					.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, Opacity))
 				]);
+
 		CompanionCarousel->AddSlot()
 			.AutoWidth()
 			.Padding(4.0f, 0.0f)
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBox).WidthOverride(BoxSize).HeightOverride(BoxSize)
+				SNew(SBox)
+				.WidthOverride(BoxSize)
+				.HeightOverride(BoxSize)
 				[
 					CarouselSlotWidget
 				]
 			];
 	}
 
-	// Current display name/lore for right panel
 	FText CurrentCompanionName = NoCompanionText;
 	FText CurrentCompanionLore = NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no companion means you face the tribulation alone.");
 	if (!PreviewedCompanionID.IsNone())
@@ -510,21 +517,44 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		}
 	}
 
-	// Preview color for center (fallback when no 3D stage)
 	FLinearColor PreviewColor = FLinearColor(0.3f, 0.3f, 0.4f, 1.0f);
 	if (!PreviewedCompanionID.IsNone())
 	{
 		FCompanionData Data;
 		if (GetPreviewedCompanionData(Data))
+		{
 			PreviewColor = Data.PlaceholderColor;
+		}
 	}
 	if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
 	{
 		PreviewColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 	}
 
-	const FTextBlockStyle& TxtHeading = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
 	const FTextBlockStyle& TxtButton = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Button");
+	const float SidePanelFill = 0.30f;
+	const float CenterPanelFill = 0.40f;
+	const float TopBarBottomGap = 2.f;
+	const float ContentTopGap = 2.f;
+	const float PanelBottomInset = 0.f;
+	const float PanelGap = 0.f;
+	const int32 ScreenHeaderFontSize = 16;
+	const int32 CompactButtonFontSize = 9;
+	const int32 PrimaryCtaFontSize = 11;
+	const float CompanionGridButtonWidth = bDotaTheme ? 114.f : 90.f;
+	const float NoCompanionButtonWidth = bDotaTheme ? 118.f : 94.f;
+	const FMargin TopBarButtonPadding = bDotaTheme ? FMargin(7.f, 4.f) : FMargin(6.f, 4.f);
+	const float ArrowButtonWidth = bDotaTheme ? 30.f : 28.f;
+	const float ArrowButtonHeight = bDotaTheme ? 26.f : 24.f;
+	const int32 ArrowFontSize = 12;
+	const TAttribute<FMargin> ScreenSafePadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FMargin(0.f, 2.f, 0.f, 0.f);
+	});
+	const TAttribute<FMargin> BackButtonPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FMargin(0.f, 0.f, 0.f, 0.f);
+	});
 
 	auto MakeFocusMaskFill = [SelectionShellFill]() -> TSharedRef<SWidget>
 	{
@@ -533,7 +563,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			.BorderBackgroundColor(SelectionShellFill);
 	};
 
-	auto MakePreviewFocusMask = [bDotaTheme, &MakeFocusMaskFill]() -> TSharedRef<SWidget>
+	auto MakePreviewFocusMask = [bDotaTheme, &MakeFocusMaskFill, SidePanelFill, CenterPanelFill, TopBarBottomGap, PanelGap]() -> TSharedRef<SWidget>
 	{
 		if (!bDotaTheme)
 		{
@@ -543,10 +573,10 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		return SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+			.Padding(0.0f, 0.0f, 0.0f, TopBarBottomGap)
 			[
 				SNew(SBox)
-				.HeightOverride(56.f)
+				.HeightOverride(40.f)
 				[
 					MakeFocusMaskFill()
 				]
@@ -557,30 +587,30 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
-				.FillWidth(0.28f)
-				.Padding(0.0f, 0.0f, 10.0f, 0.0f)
+				.FillWidth(SidePanelFill)
+				.Padding(0.0f, 0.0f, PanelGap, 0.0f)
 				[
 					MakeFocusMaskFill()
 				]
 				+ SHorizontalBox::Slot()
-				.FillWidth(0.44f)
-				.Padding(10.0f, 0.0f)
+				.FillWidth(CenterPanelFill)
+				.Padding(PanelGap, 0.0f)
 				[
 					SNew(SBox)
 				]
 				+ SHorizontalBox::Slot()
-				.FillWidth(0.28f)
-				.Padding(10.0f, 0.0f, 0.0f, 0.0f)
+				.FillWidth(SidePanelFill)
+				.Padding(PanelGap, 0.0f, 0.0f, 0.0f)
 				[
 					MakeFocusMaskFill()
 				]
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Padding(0.0f, 10.0f, 0.0f, 0.0f)
+			.Padding(0.0f, TopBarBottomGap, 0.0f, 0.0f)
 			[
 				SNew(SBox)
-				.HeightOverride(86.f)
+				.HeightOverride(64.f)
 				[
 					MakeFocusMaskFill()
 				]
@@ -591,6 +621,455 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	{
 		return SNew(SBox).Visibility(EVisibility::Collapsed);
 	};
+
+	const TSharedRef<SWidget> TopBarContent =
+		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.0f)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(0.0f, 0.0f, 8.0f, 0.0f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						CompanionGridText,
+						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleCompanionGridClicked),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(CompanionGridButtonWidth)
+					.SetPadding(TopBarButtonPadding)
+					.SetFontSize(CompactButtonFontSize))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(8.0f, 0.0f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						NSLOCTEXT("T66.Common", "Prev", "<"),
+						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandlePrevClicked),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(ArrowButtonWidth)
+					.SetHeight(ArrowButtonHeight)
+					.SetFontSize(ArrowFontSize))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				CompanionCarousel
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(8.0f, 0.0f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						NSLOCTEXT("T66.Common", "Next", ">"),
+						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNextClicked),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(ArrowButtonWidth)
+					.SetHeight(ArrowButtonHeight)
+					.SetFontSize(ArrowFontSize))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(14.0f, 0.0f, 0.0f, 0.0f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						NoCompanionText,
+						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNoCompanionClicked),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(NoCompanionButtonWidth)
+					.SetPadding(TopBarButtonPadding)
+					.SetFontSize(CompactButtonFontSize)
+					.SetColor(PreviewedCompanionID.IsNone() ? SelectionToggleFill : SelectionPanelFill))
+			]
+		];
+
+	const TSharedRef<SWidget> TopBarWidget = bDotaTheme
+		? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(TopBarContent, FMargin(6.f, 6.f)))
+		: StaticCastSharedRef<SWidget>(TopBarContent);
+
+	const TSharedRef<SWidget> LeftPanelWidget = FT66Style::MakePanel(
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(SkinsText)
+				.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize))
+				.ColorAndOpacity(FT66Style::Tokens::Text)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Center)
+			[
+				FT66Style::MakePanel(
+					SAssignNew(ACBalanceTextBlock, STextBlock)
+					.Text(ACBalanceText)
+					.Font(FT66Style::Tokens::FontBold(13))
+					.ColorAndOpacity(FT66Style::Tokens::Text),
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+						.SetPadding(FMargin(10.0f, 5.0f)))
+			]
+		]
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		[
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				SkinsListBoxWidget.ToSharedRef()
+			]
+		],
+		FT66PanelParams(ET66PanelType::Panel)
+			.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
+			.SetPadding(FMargin(FT66Style::Tokens::Space3)));
+
+	TSharedRef<SWidget> PreviewWidget =
+		SNew(SBox)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			CreateCompanionPreviewWidget(PreviewColor)
+		];
+
+	const TSharedRef<SWidget> CompanionInfoView =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionInfo", "COMPANION INFO"))
+			.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 0.0f, 0.0f, 12.0f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			.VAlign(VAlign_Center)
+			[
+				FT66Style::MakePanel(
+					SAssignNew(CompanionNameWidget, STextBlock)
+					.Text(CurrentCompanionName)
+					.Font(FT66Style::Tokens::FontBold(13))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+					.AutoWrapText(true),
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+						.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						LoreText,
+						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(64.f)
+					.SetFontSize(CompactButtonFontSize))
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
+		[
+			SAssignNew(CompanionLoreWidget, STextBlock)
+			.Text(CurrentCompanionLore)
+			.Font(FT66Style::Tokens::FontRegular(9))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.AutoWrapText(true)
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(bDotaTheme
+				? FSlateColor(FLinearColor(0.032f, 0.032f, 0.036f, 1.0f))
+				: FSlateColor(FLinearColor(0.1f, 0.15f, 0.1f, 1.0f)))
+			.Padding(FMargin(8.0f))
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionPassivePlaceholder", "Passive: Heals the player during combat"))
+				.Font(FT66Style::Tokens::FontRegular(8))
+				.ColorAndOpacity(bDotaTheme
+					? FLinearColor(0.75f, 0.75f, 0.78f, 1.0f)
+					: FLinearColor(0.6f, 0.9f, 0.6f, 1.0f))
+				.AutoWrapText(true)
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
+		[
+			SAssignNew(CompanionUnionBox, SBox)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				[
+					SAssignNew(CompanionUnionText, STextBlock)
+					.Text(FText::GetEmpty())
+					.Font(FT66Style::Tokens::FontBold(9))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0.f, 6.f)
+				[
+					SNew(SBox)
+					.WidthOverride(180.f)
+					.HeightOverride(9.f)
+					[
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SAssignNew(CompanionUnionProgressBar, SProgressBar)
+							.Percent_Lambda([this]() -> TOptional<float>
+							{
+								return FMath::Clamp(CompanionUnionProgress01, 0.f, 1.f);
+							})
+							.FillColorAndOpacity(FLinearColor(0.20f, 0.65f, 0.35f, 1.0f))
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Left)
+						.Padding(FMargin(180.f * 0.25f - 1.f, 0.f, 0.f, 0.f))
+						[
+							SNew(SBox)
+							.WidthOverride(2.f)
+							.HeightOverride(9.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+							]
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Left)
+						.Padding(FMargin(180.f * 0.50f - 1.f, 0.f, 0.f, 0.f))
+						[
+							SNew(SBox)
+							.WidthOverride(2.f)
+							.HeightOverride(9.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+							]
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Right)
+						[
+							SNew(SBox)
+							.WidthOverride(2.f)
+							.HeightOverride(9.f)
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
+							]
+						]
+					]
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				[
+					SAssignNew(CompanionUnionHealingText, STextBlock)
+					.Text(FText::GetEmpty())
+					.Font(FT66Style::Tokens::FontBold(9))
+					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				]
+			]
+		]
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		[
+			SNew(SBox)
+		];
+
+	const TSharedRef<SWidget> CompanionLoreView =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Center)
+		.Padding(0.0f, 0.0f, 0.0f, 8.0f)
+		[
+			SNew(STextBlock)
+			.Text(LoreText)
+			.Font(FT66Style::Tokens::FontBold(ScreenHeaderFontSize))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 0.0f, 0.0f, 12.0f)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			.VAlign(VAlign_Center)
+			[
+				FT66Style::MakePanel(
+					SNew(STextBlock)
+					.Text_Lambda([this, Loc, NoCompanionText]() -> FText
+					{
+						if (PreviewedCompanionID.IsNone())
+						{
+							return NoCompanionText;
+						}
+
+						FCompanionData Data;
+						if (GetPreviewedCompanionData(Data))
+						{
+							return Loc ? Loc->GetCompanionDisplayName(Data) : Data.DisplayName;
+						}
+
+						return NoCompanionText;
+					})
+					.Font(FT66Style::Tokens::FontBold(13))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center),
+					FT66PanelParams(ET66PanelType::Panel)
+						.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
+						.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+			[
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						BackText,
+						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(64.f)
+					.SetFontSize(CompactButtonFontSize))
+			]
+		]
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		[
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			[
+				SAssignNew(CompanionLoreDetailWidget, STextBlock)
+				.Text_Lambda([this, Loc]() -> FText
+				{
+					return Loc
+						? Loc->GetText_CompanionLore(PreviewedCompanionID)
+						: NSLOCTEXT("T66.CompanionLore", "FallbackLore", "No lore available.");
+				})
+				.Font(FT66Style::Tokens::FontRegular(10))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.AutoWrapText(true)
+			]
+		];
+
+	const TSharedRef<SWidget> RightPanelWidget = FT66Style::MakePanel(
+		SNew(SWidgetSwitcher)
+		.WidgetIndex_Lambda([this]() -> int32
+		{
+			return bShowingLore ? 1 : 0;
+		})
+		+ SWidgetSwitcher::Slot()
+		[
+			CompanionInfoView
+		]
+		+ SWidgetSwitcher::Slot()
+		[
+			CompanionLoreView
+		],
+		FT66PanelParams(ET66PanelType::Panel)
+			.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
+			.SetPadding(FMargin(FT66Style::Tokens::Space4)));
+
+	const TSharedRef<SWidget> ConfirmButtonWidget = bDotaTheme
+		? StaticCastSharedRef<SWidget>(
+			FT66Style::MakeButton(
+				FT66ButtonParams(
+					ConfirmText,
+					FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
+					ET66ButtonType::Primary)
+				.SetMinWidth(208.f)
+				.SetFontSize(PrimaryCtaFontSize)
+				.SetEnabled(TAttribute<bool>::CreateLambda([this]() -> bool
+				{
+					return PreviewedCompanionID.IsNone() || IsCompanionUnlocked(PreviewedCompanionID);
+				}))))
+		: StaticCastSharedRef<SWidget>(
+			FT66Style::MakeButton(
+				FT66ButtonParams(
+					ConfirmText,
+					FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
+					ET66ButtonType::Primary)
+				.SetMinWidth(168.f)
+				.SetFontSize(PrimaryCtaFontSize)
+				.SetEnabled(TAttribute<bool>::CreateLambda([this]() -> bool
+				{
+					return PreviewedCompanionID.IsNone() || IsCompanionUnlocked(PreviewedCompanionID);
+				}))));
+
+	PreviewWidget =
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		[
+			SNew(SBox)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				CreateCompanionPreviewWidget(PreviewColor)
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Fill)
+		.Padding(0.0f, -4.0f, 0.0f, 0.0f)
+		[
+			FT66Style::MakePanel(
+				SNew(SBox)
+				.HAlign(HAlign_Center)
+				[
+					SNew(SBox)
+					.WidthOverride(240.f)
+					[
+						ConfirmButtonWidget
+					]
+				],
+				FT66PanelParams(ET66PanelType::Panel)
+					.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
+					.SetPadding(FMargin(6.f, 6.f)))
+		];
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
@@ -608,444 +1087,59 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			]
 			+ SOverlay::Slot()
 			[
-				SNew(SVerticalBox)
-				// === TOP BAR: Companion Grid (next to left arrow) + Carousel + No Companion ===
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.Padding(0.0f, 0.0f, 0.0f, 10.0f)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+				.Padding(ScreenSafePadding)
 				[
-					bDotaTheme
-						? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot()
-							.FillWidth(1.0f)
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.0f, 0.0f, 10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(CompanionGridText,
-									FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleCompanionGridClicked),
-									ET66ButtonType::Neutral).SetMinWidth(180.f).SetPadding(FMargin(16.f, 10.f)))
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.Common", "Prev", "<"),
-									FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandlePrevClicked),
-									ET66ButtonType::Neutral).SetMinWidth(52.f).SetHeight(48.f).SetFontSize(22))
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-								[
-									CompanionCarousel
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.Common", "Next", ">"),
-									FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNextClicked),
-									ET66ButtonType::Neutral).SetMinWidth(52.f).SetHeight(48.f).SetFontSize(22))
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(20.0f, 0.0f, 0.0f, 0.0f)
-							[
-							FT66Style::MakeButton(FT66ButtonParams(NoCompanionText,
-								FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNoCompanionClicked),
-								ET66ButtonType::Neutral)
-								.SetMinWidth(180.f)
-								.SetPadding(FMargin(16.f, 10.f))
-								.SetColor(PreviewedCompanionID.IsNone() ? SelectionToggleFill : SelectionPanelFill))
-							],
-							FMargin(18.f, 12.f)))
-						: StaticCastSharedRef<SWidget>(SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot()
-							.FillWidth(1.0f)
-							.HAlign(HAlign_Center)
-							.VAlign(VAlign_Center)
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.0f, 0.0f, 10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(CompanionGridText,
-									FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleCompanionGridClicked),
-									ET66ButtonType::Neutral).SetMinWidth(160.f).SetPadding(FMargin(12.f, 8.f)))
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.Common", "Prev", "<"),
-									FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandlePrevClicked),
-									ET66ButtonType::Neutral).SetMinWidth(40.f).SetHeight(40.f).SetFontSize(20))
-								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-								[
-									CompanionCarousel
-								]
-								+ SHorizontalBox::Slot().AutoWidth().Padding(10.0f, 0.0f)
-								[
-								FT66Style::MakeButton(FT66ButtonParams(NSLOCTEXT("T66.Common", "Next", ">"),
-									FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNextClicked),
-									ET66ButtonType::Neutral).SetMinWidth(40.f).SetHeight(40.f).SetFontSize(20))
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(20.0f, 0.0f, 0.0f, 0.0f)
-							[
-							FT66Style::MakeButton(FT66ButtonParams(NoCompanionText,
-								FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleNoCompanionClicked),
-								ET66ButtonType::Neutral)
-								.SetMinWidth(160.f)
-								.SetPadding(FMargin(12.f, 8.f))
-								.SetColor(PreviewedCompanionID.IsNone() ? SelectionToggleFill : SelectionPanelFill))
-							])
-				]
-				// === MAIN CONTENT: Left 0.28 | Center 0.44 | Right 0.28 (same size as hero selection) ===
-				+ SVerticalBox::Slot()
-				.FillHeight(1.0f)
-				.Padding(0.0f, 10.0f, 0.0f, 0.0f)
-				[
-					SNew(SHorizontalBox)
-					// LEFT PANEL: Skins (same width and padding as hero selection)
-					+ SHorizontalBox::Slot()
-					.FillWidth(0.28f)
-					.VAlign(VAlign_Fill)
-					.Padding(0.0f, 0.0f, 10.0f, 80.0f)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.0f, 0.0f, 0.0f, TopBarBottomGap)
 					[
-						FT66Style::MakePanel(
-							SNew(SVerticalBox)
-							// Skins header + AC balance (match hero selection)
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-							[
-								SNew(SOverlay)
-								+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Center)
-								[
-									SNew(STextBlock).Text(SkinsText)
-									.TextStyle(&TxtHeading)
-								]
-								+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Center)
-								[
-									FT66Style::MakePanel(
-										SAssignNew(ACBalanceTextBlock, STextBlock)
-										.Text(ACBalanceText)
-										.Font(FT66Style::Tokens::FontBold(22))
-										.ColorAndOpacity(FT66Style::Tokens::Text),
-										FT66PanelParams(ET66PanelType::Panel)
-											.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
-											.SetPadding(FMargin(15.0f, 8.0f)))
-								]
-							]
-							+ SVerticalBox::Slot()
-							.FillHeight(1.0f)
-							[
-								SkinsListBoxWidget.ToSharedRef()
-							],
-							FT66PanelParams(ET66PanelType::Panel)
-								.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
-								.SetPadding(FMargin(FT66Style::Tokens::Space3)))
+						TopBarWidget
 					]
-					// CENTER: Companion Preview (3D or colored box)
-					+ SHorizontalBox::Slot()
-					.FillWidth(0.44f)
-					.Padding(10.0f, 0.0f)
+					+ SVerticalBox::Slot()
+					.FillHeight(1.0f)
+					.Padding(0.0f, ContentTopGap, 0.0f, 0.0f)
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot()
-						.FillHeight(1.0f)
-					.HAlign(HAlign_Fill)
-					.VAlign(VAlign_Fill)
-						[
-						SNew(SBox)
-						.HAlign(HAlign_Fill)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.FillWidth(SidePanelFill)
 						.VAlign(VAlign_Fill)
+						.Padding(0.0f, 0.0f, PanelGap, PanelBottomInset)
 						[
-							bDotaTheme
-								? StaticCastSharedRef<SWidget>(CreateCompanionPreviewWidget(PreviewColor))
-								: StaticCastSharedRef<SWidget>(CreateCompanionPreviewWidget(PreviewColor))
+							LeftPanelWidget
 						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(CenterPanelFill)
+						.Padding(PanelGap, 0.0f, PanelGap, PanelBottomInset)
+						[
+							PreviewWidget
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(SidePanelFill)
+						.Padding(PanelGap, 0.0f, 0.0f, PanelBottomInset)
+						[
+							RightPanelWidget
 						]
 					]
-					// RIGHT PANEL: Companion Info / Lore (SWidgetSwitcher, same pattern as hero selection)
-					+ SHorizontalBox::Slot()
-					.FillWidth(0.28f)
-					.Padding(10.0f, 0.0f, 0.0f, 0.0f)
-					[
-						FT66Style::MakePanel(
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot()
-							.FillHeight(1.0f)
-							[
-								SNew(SWidgetSwitcher)
-								.WidgetIndex_Lambda([this]() -> int32 { return bShowingLore ? 1 : 0; })
-								// 0) COMPANION INFO view
-								+ SWidgetSwitcher::Slot()
-								[
-									SNew(SVerticalBox)
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.HAlign(HAlign_Center)
-									.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-									[
-										SNew(STextBlock)
-										.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionInfo", "COMPANION INFO"))
-										.TextStyle(&TxtHeading)
-									]
-									// Name + LORE button same row
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-									[
-										SNew(SHorizontalBox)
-										+ SHorizontalBox::Slot()
-										.FillWidth(1.0f)
-										.VAlign(VAlign_Center)
-										[
-											FT66Style::MakePanel(
-												SAssignNew(CompanionNameWidget, STextBlock)
-												.Text(CurrentCompanionName)
-												.TextStyle(&TxtButton)
-												.Justification(ETextJustify::Center)
-												.AutoWrapText(true),
-												FT66PanelParams(ET66PanelType::Panel)
-													.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
-													.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
-										]
-										+ SHorizontalBox::Slot()
-										.AutoWidth()
-										.VAlign(VAlign_Center)
-										.Padding(8.0f, 0.0f, 0.0f, 0.0f)
-										[
-										FT66Style::MakeButton(FT66ButtonParams(LoreText,
-											FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked),
-											ET66ButtonType::Neutral)
-											.SetMinWidth(110.f)
-											.SetDynamicLabel(TAttribute<FText>::CreateLambda([this, LoreText, BackText]() -> FText { return bShowingLore ? BackText : LoreText; })))
-										]
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-									[
-										SAssignNew(CompanionLoreWidget, STextBlock)
-										.Text(CurrentCompanionLore)
-										.Font(FT66Style::Tokens::FontRegular(12))
-										.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f))
-										.AutoWrapText(true)
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-									[
-										SNew(SBorder)
-										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-										.BorderBackgroundColor(bDotaTheme
-											? FSlateColor(FLinearColor(0.032f, 0.032f, 0.036f, 1.0f))
-											: FSlateColor(FLinearColor(0.1f, 0.15f, 0.1f, 1.0f)))
-										.Padding(FMargin(10.0f))
-										[
-											SNew(STextBlock)
-											.Text(NSLOCTEXT("T66.CompanionSelection", "CompanionPassivePlaceholder", "Passive: Heals the player during combat"))
-											.Font(FT66Style::Tokens::FontRegular(11))
-											.ColorAndOpacity(bDotaTheme
-												? FLinearColor(0.75f, 0.75f, 0.78f, 1.0f)
-												: FLinearColor(0.6f, 0.9f, 0.6f, 1.0f))
-											.AutoWrapText(true)
-										]
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.HAlign(HAlign_Center)
-									.Padding(0.0f, 0.0f, 0.0f, 10.0f)
-									[
-										SAssignNew(CompanionUnionBox, SBox)
-										[
-											SNew(SVerticalBox)
-											+ SVerticalBox::Slot()
-											.AutoHeight()
-											.HAlign(HAlign_Center)
-											[
-												SAssignNew(CompanionUnionText, STextBlock)
-												.Text(FText::GetEmpty())
-												.Font(FT66Style::Tokens::FontBold(12))
-												.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-											]
-											+ SVerticalBox::Slot()
-											.AutoHeight()
-											.HAlign(HAlign_Center)
-											.Padding(0.f, 6.f)
-											[
-												SNew(SBox)
-												.WidthOverride(240.f)
-												.HeightOverride(14.f)
-												[
-													SNew(SOverlay)
-													+ SOverlay::Slot()
-													[
-														SAssignNew(CompanionUnionProgressBar, SProgressBar)
-														.Percent_Lambda([this]() -> TOptional<float> { return FMath::Clamp(CompanionUnionProgress01, 0.f, 1.f); })
-														.FillColorAndOpacity(FLinearColor(0.20f, 0.65f, 0.35f, 1.0f))
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Left)
-													.Padding(FMargin(240.f * 0.25f - 1.f, 0.f, 0.f, 0.f))
-													[
-														SNew(SBox).WidthOverride(2.f).HeightOverride(14.f)
-														[
-															SNew(SBorder)
-															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
-														]
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Left)
-													.Padding(FMargin(240.f * 0.50f - 1.f, 0.f, 0.f, 0.f))
-													[
-														SNew(SBox).WidthOverride(2.f).HeightOverride(14.f)
-														[
-															SNew(SBorder)
-															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
-														]
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Right)
-													[
-														SNew(SBox).WidthOverride(2.f).HeightOverride(14.f)
-														[
-															SNew(SBorder)
-															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FLinearColor(0.95f, 0.95f, 0.98f, 0.65f))
-														]
-													]
-												]
-											]
-											+ SVerticalBox::Slot()
-											.AutoHeight()
-											.HAlign(HAlign_Center)
-											[
-												SAssignNew(CompanionUnionHealingText, STextBlock)
-												.Text(FText::GetEmpty())
-												.Font(FT66Style::Tokens::FontBold(12))
-												.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-											]
-										]
-									]
-									+ SVerticalBox::Slot().FillHeight(1.0f)
-									[
-										SNew(SBox)
-									]
-								]
-								// 1) LORE view (same panel size, same theme as hero selection)
-								+ SWidgetSwitcher::Slot()
-								[
-									SNew(SVerticalBox)
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.HAlign(HAlign_Center)
-									.Padding(0.0f, 0.0f, 0.0f, 8.0f)
-									[
-										SNew(STextBlock).Text(LoreText)
-										.TextStyle(&TxtHeading)
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.0f, 0.0f, 0.0f, 12.0f)
-									[
-										SNew(SHorizontalBox)
-									+ SHorizontalBox::Slot()
-									.FillWidth(1.0f)
-									.VAlign(VAlign_Center)
-									[
-										FT66Style::MakePanel(
-											SNew(STextBlock)
-											.Text_Lambda([this, Loc, NoCompanionText]() -> FText
-											{
-												if (PreviewedCompanionID.IsNone()) return NoCompanionText;
-												FCompanionData Data;
-												if (GetPreviewedCompanionData(Data))
-													return Loc ? Loc->GetCompanionDisplayName(Data) : Data.DisplayName;
-												return NoCompanionText;
-											})
-											.TextStyle(&TxtButton)
-											.Justification(ETextJustify::Center),
-											FT66PanelParams(ET66PanelType::Panel)
-												.SetColor(bDotaTheme ? SelectionInsetFill : FT66Style::Tokens::Panel)
-												.SetPadding(FMargin(FT66Style::Tokens::Space3, FT66Style::Tokens::Space2)))
-									]
-									+ SHorizontalBox::Slot()
-									.AutoWidth()
-									.VAlign(VAlign_Center)
-									.Padding(8.0f, 0.0f, 0.0f, 0.0f)
-									[
-									FT66Style::MakeButton(FT66ButtonParams(BackText,
-											FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleLoreClicked),
-											ET66ButtonType::Neutral).SetMinWidth(110.f))
-										]
-									]
-									+ SVerticalBox::Slot()
-									.FillHeight(1.0f)
-									[
-										SNew(SScrollBox)
-										+ SScrollBox::Slot()
-										[
-											SAssignNew(CompanionLoreDetailWidget, STextBlock)
-											.Text_Lambda([this, Loc]() -> FText
-											{
-												return Loc ? Loc->GetText_CompanionLore(PreviewedCompanionID) : NSLOCTEXT("T66.CompanionLore", "FallbackLore", "No lore available.");
-											})
-											.Font(FT66Style::Tokens::FontRegular(14))
-											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-											.AutoWrapText(true)
-										]
-									]
-								]
-							]
-					,
-					FT66PanelParams(ET66PanelType::Panel)
-						.SetColor(bDotaTheme ? SelectionPanelFill : FT66Style::Tokens::Panel)
-						.SetPadding(FMargin(FT66Style::Tokens::Space4)))
 				]
 			]
-			// === BOTTOM BAR: Confirm (same font as Choose Companion) ===
-				+ SVerticalBox::Slot()
-				.AutoHeight()
-				.HAlign(HAlign_Center)
-				.Padding(20.0f, 10.0f, 20.0f, 20.0f)
-				[
-				bDotaTheme
-					? StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
-						FT66Style::MakeButton(FT66ButtonParams(ConfirmText,
-							FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
-							ET66ButtonType::Primary)
-							.SetMinWidth(320.f)
-							.SetEnabled(TAttribute<bool>::CreateLambda([this]() -> bool
-							{
-								return PreviewedCompanionID.IsNone() || IsCompanionUnlocked(PreviewedCompanionID);
-							}))),
-						FT66PanelParams(ET66PanelType::Panel)
-							.SetColor(SelectionPanelFill)
-							.SetPadding(FMargin(16.f, 14.f))))
-					: StaticCastSharedRef<SWidget>(FT66Style::MakeButton(FT66ButtonParams(ConfirmText,
-						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
-						ET66ButtonType::Primary)
-						.SetMinWidth(240.f)
-						.SetEnabled(TAttribute<bool>::CreateLambda([this]() -> bool
-						{
-							return PreviewedCompanionID.IsNone() || IsCompanionUnlocked(PreviewedCompanionID);
-						}))))
-				]
-			]
-			// Back button (bottom-left overlay, same theme as hero selection)
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Bottom)
-			.Padding(20.0f, 0.0f, 0.0f, 20.0f)
+			.Padding(BackButtonPadding)
 			[
-			FT66Style::MakeButton(FT66ButtonParams(BackText,
-				FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleBackClicked),
-				ET66ButtonType::Neutral).SetMinWidth(120.f))
+				FT66Style::MakeButton(
+					FT66ButtonParams(
+						BackText,
+						FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleBackClicked),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(72.f)
+					.SetFontSize(12))
 			]
 		];
 }
-
 FReply UT66CompanionSelectionScreen::HandlePrevClicked() { PreviewPreviousCompanion(); return FReply::Handled(); }
 FReply UT66CompanionSelectionScreen::HandleNextClicked() { PreviewNextCompanion(); return FReply::Handled(); }
 FReply UT66CompanionSelectionScreen::HandleCompanionGridClicked() { OnCompanionGridClicked(); return FReply::Handled(); }
@@ -1235,7 +1329,7 @@ void UT66CompanionSelectionScreen::RefreshCompanionCarouselPortraits()
 		{
 			CompanionCarouselPortraitBrushes[i] = MakeShared<FSlateBrush>();
 			CompanionCarouselPortraitBrushes[i]->DrawAs = ESlateBrushDrawType::Image;
-			CompanionCarouselPortraitBrushes[i]->ImageSize = FVector2D(60.f, 60.f);
+			CompanionCarouselPortraitBrushes[i]->ImageSize = FVector2D(48.f, 48.f);
 		}
 	}
 
@@ -1267,7 +1361,7 @@ void UT66CompanionSelectionScreen::RefreshCompanionCarouselPortraits()
 			}
 			else
 			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, CompanionCarouselPortraitBrushes[SlotIdx], FName(TEXT("CompanionCarousel"), SlotIdx + 1), /*bClearWhileLoading*/ true);
+				T66SlateTexture::BindSharedBrushAsync(TexPool, PortraitSoft, this, CompanionCarouselPortraitBrushes[SlotIdx], FName(TEXT("CompanionCarousel"), SlotIdx + 1), /*bClearWhileLoading*/ false);
 			}
 			CompanionCarouselPortraitBrushes[SlotIdx]->ImageSize = FVector2D(BoxSize, BoxSize);
 		}
@@ -1284,6 +1378,7 @@ void UT66CompanionSelectionScreen::OnScreenActivated_Implementation()
 	RefreshCompanionList();
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		GI->PrimeHeroSelectionAssetsAsync();
 		if (!GI->SelectedCompanionID.IsNone() && AllCompanionIDs.Contains(GI->SelectedCompanionID))
 			PreviewCompanion(GI->SelectedCompanionID);
 		else

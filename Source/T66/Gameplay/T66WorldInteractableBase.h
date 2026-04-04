@@ -66,6 +66,8 @@ protected:
 	virtual FText BuildInteractionPromptText() const;
 	virtual float GetInteractionPromptWorldSize() const { return 68.f; }
 	virtual float GetInteractionPromptVerticalPadding() const { return 120.f; }
+	virtual FVector GetMinimumInteractionExtent() const { return FVector(260.f, 260.f, 180.f); }
+	virtual FVector GetInteractionBoundsPadding() const { return FVector(120.f, 120.f, 80.f); }
 
 	void RefreshInteractionPrompt();
 	bool IsLocalHeroOverlapping() const { return LocalHeroOverlapCount > 0; }
@@ -78,6 +80,7 @@ protected:
 private:
 	void UpdateInteractionPromptFacing() const;
 	void UpdateInteractionPromptPlacement();
+	void UpdateInteractionBounds();
 	void HideInteractionPrompt();
 	bool IsLocalHeroActor(const AActor* OtherActor) const;
 

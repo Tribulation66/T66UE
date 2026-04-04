@@ -23,6 +23,7 @@
 #include "Components/CapsuleComponent.h"
 #include "HAL/IConsoleManager.h"
 #include "Sound/SoundBase.h"
+#include "TimerManager.h"
 #include "UObject/SoftObjectPath.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Combat, Log, All);
@@ -116,6 +117,337 @@ namespace
 		case ET66ItemRarity::White:  return TEXT("White");
 		default:                     return TEXT("Unknown");
 		}
+	}
+
+	float GetIdolTierFloat(const ET66ItemRarity Rarity, const float Black, const float Red, const float Yellow, const float White)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return Black;
+		case ET66ItemRarity::Red:    return Red;
+		case ET66ItemRarity::Yellow: return Yellow;
+		case ET66ItemRarity::White:  return White;
+		default:                     return Black;
+		}
+	}
+
+	int32 GetIdolTierInt(const ET66ItemRarity Rarity, const int32 Black, const int32 Red, const int32 Yellow, const int32 White)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return Black;
+		case ET66ItemRarity::Red:    return Red;
+		case ET66ItemRarity::Yellow: return Yellow;
+		case ET66ItemRarity::White:  return White;
+		default:                     return Black;
+		}
+	}
+
+	bool RollTierChance(const float Chance01)
+	{
+		return Chance01 > 0.f && FMath::FRand() < FMath::Clamp(Chance01, 0.f, 1.f);
+	}
+
+	ET66SecondaryStatType GetScaleSecondaryForCategory(const ET66AttackCategory Category)
+	{
+		switch (Category)
+		{
+		case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeScale;
+		case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceScale;
+		case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceScale;
+		case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotScale;
+		default:                         return ET66SecondaryStatType::AttackRange;
+		}
+	}
+
+	float GetCategorySubScaleMultiplier(const UT66RunStateSubsystem* RunState, const ET66AttackCategory Category)
+	{
+		if (!RunState)
+		{
+			return 1.f;
+		}
+
+		const ET66SecondaryStatType StatType = GetScaleSecondaryForCategory(Category);
+		const float Baseline = RunState->GetSecondaryStatBaselineValue(StatType);
+		const float HeroScaleMult = FMath::Max(0.01f, RunState->GetHeroScaleMultiplier());
+		const float Value = RunState->GetSecondaryStatValue(StatType);
+		if (Baseline <= KINDA_SMALL_NUMBER)
+		{
+			return 1.f;
+		}
+
+		return FMath::Clamp(Value / (Baseline * HeroScaleMult), 0.25f, 5.f);
+	}
+
+	float GetIdolRarityVisualScale(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return 1.00f;
+		case ET66ItemRarity::Red:    return 1.18f;
+		case ET66ItemRarity::Yellow: return 1.38f;
+		case ET66ItemRarity::White:  return 1.60f;
+		default:                     return 1.00f;
+		}
+	}
+
+	float GetIdolRarityVisualQuantity(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:  return 1.00f;
+		case ET66ItemRarity::Red:    return 1.35f;
+		case ET66ItemRarity::Yellow: return 1.75f;
+		case ET66ItemRarity::White:  return 2.20f;
+		default:                     return 1.00f;
+		}
+	}
+
+	UNiagaraSystem* LoadNiagaraSystemCached(const TCHAR* AssetPath)
+	{
+		static TMap<FString, TWeakObjectPtr<UNiagaraSystem>> Cache;
+		if (!AssetPath || !*AssetPath)
+		{
+			return nullptr;
+		}
+
+		const FString Key(AssetPath);
+		if (const TWeakObjectPtr<UNiagaraSystem>* Found = Cache.Find(Key))
+		{
+			if (Found->IsValid())
+			{
+				return Found->Get();
+			}
+		}
+
+		UNiagaraSystem* Loaded = LoadObject<UNiagaraSystem>(nullptr, AssetPath);
+		Cache.Add(Key, Loaded);
+		return Loaded;
+	}
+
+	UClass* LoadEffectBlueprintClassCached(const TCHAR* ClassPath)
+	{
+		static TMap<FString, TWeakObjectPtr<UClass>> Cache;
+		if (!ClassPath || !*ClassPath)
+		{
+			return nullptr;
+		}
+
+		const FString Key(ClassPath);
+		if (const TWeakObjectPtr<UClass>* Found = Cache.Find(Key))
+		{
+			if (Found->IsValid())
+			{
+				return Found->Get();
+			}
+		}
+
+		UClass* Loaded = StaticLoadClass(AActor::StaticClass(), nullptr, ClassPath);
+		Cache.Add(Key, Loaded);
+		return Loaded;
+	}
+
+	void ScheduleNiagaraDeactivate(UWorld* World, UNiagaraComponent* NiagaraComponent, const float DelaySeconds)
+	{
+		if (!World || !NiagaraComponent || DelaySeconds <= 0.f)
+		{
+			return;
+		}
+
+		TWeakObjectPtr<UNiagaraComponent> WeakComponent = NiagaraComponent;
+		FTimerHandle Handle;
+		World->GetTimerManager().SetTimer(
+			Handle,
+			FTimerDelegate::CreateLambda([WeakComponent]()
+			{
+				if (WeakComponent.IsValid())
+				{
+					WeakComponent->Deactivate();
+					WeakComponent->SetAutoDestroy(true);
+				}
+			}),
+			DelaySeconds,
+			false);
+	}
+
+	UNiagaraComponent* SpawnImportedNiagaraAtLocation(
+		UWorld* World,
+		const TCHAR* AssetPath,
+		const FVector& Location,
+		const FRotator& Rotation,
+		const FVector& Scale,
+		const float ActiveDurationSeconds = 0.f)
+	{
+		UNiagaraSystem* System = LoadNiagaraSystemCached(AssetPath);
+		if (!World || !System)
+		{
+			return nullptr;
+		}
+
+		UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			World,
+			System,
+			Location,
+			Rotation,
+			Scale,
+			false,
+			true,
+			ENCPoolMethod::None,
+			true);
+		if (NiagaraComponent)
+		{
+			NiagaraComponent->SetAutoDestroy(ActiveDurationSeconds <= 0.f);
+			if (ActiveDurationSeconds > 0.f)
+			{
+				ScheduleNiagaraDeactivate(World, NiagaraComponent, ActiveDurationSeconds);
+			}
+		}
+		return NiagaraComponent;
+	}
+
+	UNiagaraComponent* SpawnImportedNiagaraAttached(
+		UWorld* World,
+		const TCHAR* AssetPath,
+		USceneComponent* AttachComponent,
+		const FVector& RelativeLocation,
+		const FRotator& RelativeRotation,
+		const FVector& Scale,
+		const float ActiveDurationSeconds)
+	{
+		UNiagaraSystem* System = LoadNiagaraSystemCached(AssetPath);
+		if (!World || !System || !AttachComponent)
+		{
+			return nullptr;
+		}
+
+		UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			System,
+			AttachComponent,
+			NAME_None,
+			RelativeLocation,
+			RelativeRotation,
+			Scale,
+			EAttachLocation::KeepRelativeOffset,
+			false,
+			ENCPoolMethod::None,
+			true,
+			true);
+		if (NiagaraComponent)
+		{
+			NiagaraComponent->SetAutoDestroy(ActiveDurationSeconds <= 0.f);
+			if (ActiveDurationSeconds > 0.f)
+			{
+				ScheduleNiagaraDeactivate(World, NiagaraComponent, ActiveDurationSeconds);
+			}
+		}
+		return NiagaraComponent;
+	}
+
+	bool SpawnImportedEffectBlueprint(
+		UWorld* World,
+		const TCHAR* ClassPath,
+		const FVector& Location,
+		const FRotator& Rotation,
+		const FVector& Scale,
+		const float LifeSpanSeconds)
+	{
+		UClass* EffectClass = LoadEffectBlueprintClassCached(ClassPath);
+		if (!World || !EffectClass)
+		{
+			return false;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AActor* EffectActor = World->SpawnActor<AActor>(EffectClass, Location, Rotation, SpawnParams))
+		{
+			EffectActor->SetActorScale3D(Scale);
+			if (LifeSpanSeconds > 0.f)
+			{
+				EffectActor->SetLifeSpan(LifeSpanSeconds);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	void SpawnImportedEffectAlongLine(
+		UWorld* World,
+		const TCHAR* AssetPath,
+		const FVector& Start,
+		const FVector& End,
+		const float VisualScale,
+		const float QuantityMultiplier)
+	{
+		UNiagaraSystem* System = LoadNiagaraSystemCached(AssetPath);
+		if (!World || !System)
+		{
+			return;
+		}
+
+		const FVector Delta = End - Start;
+		const float Distance = Delta.Size();
+		if (Distance <= KINDA_SMALL_NUMBER)
+		{
+			SpawnImportedNiagaraAtLocation(World, AssetPath, Start, FRotator::ZeroRotator, FVector(VisualScale));
+			return;
+		}
+
+		const FRotator Rotation = Delta.Rotation();
+		const int32 SpawnCount = FMath::Clamp(FMath::RoundToInt((Distance / 150.f) * FMath::Max(0.5f, QuantityMultiplier)), 1, 18);
+		for (int32 Index = 0; Index < SpawnCount; ++Index)
+		{
+			const float T = (SpawnCount > 1) ? static_cast<float>(Index) / static_cast<float>(SpawnCount - 1) : 0.5f;
+			const FVector SpawnLocation = FMath::Lerp(Start, End, T);
+			SpawnImportedNiagaraAtLocation(World, AssetPath, SpawnLocation, Rotation, FVector(VisualScale));
+		}
+	}
+
+	void SpawnImportedEffectAlongChain(
+		UWorld* World,
+		const TCHAR* AssetPath,
+		const TArray<FVector>& Points,
+		const float VisualScale,
+		const float QuantityMultiplier)
+	{
+		if (!World || Points.Num() < 2)
+		{
+			return;
+		}
+
+		for (int32 Index = 0; Index < Points.Num() - 1; ++Index)
+		{
+			SpawnImportedEffectAlongLine(World, AssetPath, Points[Index], Points[Index + 1], VisualScale, QuantityMultiplier);
+		}
+	}
+
+	const TCHAR* GetIdolNiagaraEffectPath(const FName& IdolID)
+	{
+		if (IdolID == FName(TEXT("Idol_Curse")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal");
+		if (IdolID == FName(TEXT("Idol_Lava")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire");
+		if (IdolID == FName(TEXT("Idol_Poison")))    return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Poison_02.P_Poison_02");
+		if (IdolID == FName(TEXT("Idol_Bleed")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Liquid_Hit_03.P_Liquid_Hit_03");
+		if (IdolID == FName(TEXT("Idol_Electric")))  return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Electric_Projectile_02.P_Electric_Projectile_02");
+		if (IdolID == FName(TEXT("Idol_Ice")))       return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Ice_Projectile_02.P_Ice_Projectile_02");
+		if (IdolID == FName(TEXT("Idol_Shadow")))    return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_02.P_Cosmic_Projectile_02");
+		if (IdolID == FName(TEXT("Idol_Star")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_03.P_Cosmic_Projectile_03");
+		if (IdolID == FName(TEXT("Idol_Earth")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02");
+		if (IdolID == FName(TEXT("Idol_Water")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Splash_02.P_Splash_02");
+		if (IdolID == FName(TEXT("Idol_BlackHole"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal");
+		if (IdolID == FName(TEXT("Idol_Light")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Laser_02.P_Laser_02");
+		if (IdolID == FName(TEXT("Idol_Steel")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_01.P_Weapon_01");
+		if (IdolID == FName(TEXT("Idol_Wood")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Web_Projectile_01.P_Web_Projectile_01");
+		if (IdolID == FName(TEXT("Idol_Bone")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_02.P_Weapon_02");
+		return nullptr;
+	}
+
+	const TCHAR* GetIdolBlueprintEffectClassPath(const FName& IdolID)
+	{
+		if (IdolID == FName(TEXT("Idol_Storm")))
+		{
+			return TEXT("/Game/Stylized_VFX_StPack/Blueprints/BP_Storm.BP_Storm_C");
+		}
+		return nullptr;
 	}
 
 	FVector ResolveGroundAnchor(UWorld* World, const FVector& ApproxLocation, const AActor* IgnoreActor)
@@ -526,7 +858,7 @@ void UT66CombatComponent::BeginPlay()
 			CachedRunState->DevCheatsChanged.AddDynamic(this, &UT66CombatComponent::HandleInventoryChanged);
 			CachedRunState->SetDOTDamageApplier([this](AActor* Target, int32 Damage, FName SourceIdolID)
 			{
-				ApplyDamageToActor(Target, Damage, NAME_None, SourceIdolID);
+				ApplyDamageToActor(Target, Damage, UT66FloatingCombatTextSubsystem::EventType_DoT, SourceIdolID);
 			});
 		}
 		if (CachedIdolManager)
@@ -1217,6 +1549,7 @@ void UT66CombatComponent::TryFire()
 	auto PerformDOT = [&](AActor* PrimaryTarget, float PrimaryDamageMult) -> bool
 	{
 		if (!PrimaryTarget || !CachedRunState) return false;
+		static const FName HeroPrimaryDotSource(TEXT("HeroPrimaryDot"));
 		const float Duration = (bHaveHeroData && HeroDataForPrimary.DotDuration > 0.f) ? HeroDataForPrimary.DotDuration : 3.f;
 		const float TickInterval = (bHaveHeroData && HeroDataForPrimary.DotTickInterval > 0.f) ? HeroDataForPrimary.DotTickInterval : 0.5f;
 		const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
@@ -1229,7 +1562,7 @@ void UT66CombatComponent::TryFire()
 			const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 			ApplyDamageToActor(PrimaryTarget, Resolved.Key, Resolved.Value, NAME_None, RangeEvent);
 		}
-		CachedRunState->ApplyDOT(PrimaryTarget, Duration, TickInterval, DamagePerTick, NAME_None);
+		CachedRunState->ApplyDOT(PrimaryTarget, Duration, TickInterval, DamagePerTick, HeroPrimaryDotSource);
 		// Frostbite: DOT attacks slow enemy move speed by 30%.
 		if (CachedRunState->HasFrostbite())
 		{
@@ -1242,6 +1575,439 @@ void UT66CombatComponent::TryFire()
 		return true;
 	};
 
+	auto ShowTargetStatus = [&](AActor* Target, const FName EventType)
+	{
+		if (CachedFloatingCombatText && Target && !EventType.IsNone())
+		{
+			CachedFloatingCombatText->ShowStatusEvent(Target, EventType);
+		}
+	};
+
+	auto ApplyMoveSlowToTarget = [&](AActor* Target, const float SpeedMultiplier, const float DurationSeconds)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyMoveSlow(SpeedMultiplier, DurationSeconds);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyMoveSlow(SpeedMultiplier, DurationSeconds);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyConfusionToTarget = [&](AActor* Target, const float DurationSeconds)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyConfusion(DurationSeconds);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyConfusion(DurationSeconds);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyFearToTarget = [&](AActor* Target, const float DurationSeconds)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyForcedRunAway(DurationSeconds);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyForcedRunAway(DurationSeconds);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyArmorBreakToTarget = [&](AActor* Target, const float ReductionAmount, const float DurationSeconds)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyArmorDebuff(ReductionAmount, DurationSeconds);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyArmorDebuff(ReductionAmount, DurationSeconds);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyStunToTarget = [&](AActor* Target, const float DurationSeconds)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyStun(DurationSeconds);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyStun(DurationSeconds);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyRootToTarget = [&](AActor* Target, const float DurationSeconds)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyRoot(DurationSeconds);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyRoot(DurationSeconds);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyFreezeToTarget = [&](AActor* Target, const float DurationSeconds)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyFreeze(DurationSeconds);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyFreeze(DurationSeconds);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyPullToTarget = [&](AActor* Target, const FVector& Origin, const float Distance)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyPullTowards(Origin, Distance);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyPullTowards(Origin, Distance);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyPushToTarget = [&](AActor* Target, const FVector& Origin, const float Distance)
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			Enemy->ApplyPushAwayFrom(Origin, Distance);
+			return true;
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			Boss->ApplyPushAwayFrom(Origin, Distance);
+			return true;
+		}
+		return false;
+	};
+
+	auto ApplyExtraDOTToTarget = [&](AActor* Target, const FName& SourceId, const float Duration, const float TickInterval, const float TotalDamage)
+	{
+		if (!CachedRunState || !Target || Duration <= 0.f || TickInterval <= 0.f || TotalDamage <= 0.f)
+		{
+			return;
+		}
+
+		const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
+		CachedRunState->ApplyDOT(Target, Duration, TickInterval, TotalDamage / static_cast<float>(Ticks), SourceId);
+	};
+
+	auto TryExecuteTarget = [&](AActor* Target, const FName& SourceId, const float Chance01)
+	{
+		if (!Target || !RollTierChance(Chance01))
+		{
+			return false;
+		}
+
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+		{
+			if (Enemy->CurrentHP > 0)
+			{
+				ApplyDamageToActor(Target, Enemy->CurrentHP + 9999, FName(TEXT("Execute")), SourceId);
+				ShowTargetStatus(Target, FName(TEXT("Execute")));
+				return true;
+			}
+			return false;
+		}
+
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+		{
+			if (Boss->IsAlive())
+			{
+				const int32 BurstDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Boss->CurrentHP) * 0.12f));
+				ApplyDamageToActor(Target, BurstDamage, FName(TEXT("Execute")), SourceId);
+				ShowTargetStatus(Target, FName(TEXT("Execute")));
+				return true;
+			}
+		}
+		return false;
+	};
+
+	auto ApplyIdolSpecialBehavior = [&](AActor* Target, const FName& IdolID, const ET66ItemRarity IdolRarity, const int32 IdolDamage, const FVector& EffectOrigin)
+	{
+		if (!Target || IdolID.IsNone())
+		{
+			return;
+		}
+
+		if (IdolID == FName(TEXT("Idol_Curse")))
+		{
+			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.20f, 0.35f, 0.42f);
+			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.3f, 1.8f, 2.2f);
+			if (RollTierChance(ConfuseChance) && ApplyConfusionToTarget(Target, ConfuseDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Confusion")));
+			}
+			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.24f);
+			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.0f, 1.3f);
+			if (RollTierChance(FearChance) && ApplyFearToTarget(Target, FearDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Fear")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.035f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Lava")))
+		{
+			const float SlowMult = GetIdolTierFloat(IdolRarity, 1.f, 0.80f, 0.72f, 0.68f);
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.1f, 1.5f, 1.8f);
+			if (SlowDuration > 0.f)
+			{
+				ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
+			}
+			const float ArmorBreakAmount = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.12f, 0.18f);
+			const float ArmorBreakDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 2.2f, 3.0f);
+			if (ArmorBreakAmount > 0.f && ApplyArmorBreakToTarget(Target, ArmorBreakAmount, ArmorBreakDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Armor Break")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Poison")))
+		{
+			const float SlowMult = GetIdolTierFloat(IdolRarity, 1.f, 0.78f, 0.72f, 0.66f);
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.8f, 2.2f, 2.6f);
+			if (SlowDuration > 0.f)
+			{
+				ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
+			}
+			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.22f, 0.32f);
+			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.5f, 2.0f);
+			if (RollTierChance(ConfuseChance) && ApplyConfusionToTarget(Target, ConfuseDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Confusion")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.028f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Bleed")))
+		{
+			const float SlowMult = GetIdolTierFloat(IdolRarity, 1.f, 0.86f, 0.78f, 0.72f);
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.0f, 1.3f, 1.6f);
+			if (SlowDuration > 0.f)
+			{
+				ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
+			}
+			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.26f);
+			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.8f, 1.1f);
+			if (RollTierChance(FearChance) && ApplyFearToTarget(Target, FearDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Fear")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.050f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Electric")))
+		{
+			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.18f, 0.28f, 0.36f);
+			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.20f, 0.42f, 0.65f);
+			if (RollTierChance(StunChance) && ApplyStunToTarget(Target, StunDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Stun")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.040f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Ice")))
+		{
+			const float SlowMult = GetIdolTierFloat(IdolRarity, 0.84f, 0.72f, 0.66f, 0.58f);
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 1.0f, 1.4f, 1.8f, 2.2f);
+			ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
+			const float FreezeChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.24f);
+			const float FreezeDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.55f, 0.80f);
+			if (RollTierChance(FreezeChance) && ApplyFreezeToTarget(Target, FreezeDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Freeze")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Shadow")))
+		{
+			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.14f, 0.25f, 0.30f, 0.36f);
+			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 1.0f, 1.4f, 1.6f, 1.8f);
+			if (RollTierChance(ConfuseChance) && ApplyConfusionToTarget(Target, ConfuseDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Confusion")));
+			}
+			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.25f);
+			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.0f, 1.25f);
+			if (RollTierChance(FearChance) && ApplyFearToTarget(Target, FearDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Fear")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.035f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Star")))
+		{
+			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.12f, 0.18f, 0.22f);
+			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.8f, 1.0f, 1.2f);
+			if (RollTierChance(ConfuseChance) && ApplyConfusionToTarget(Target, ConfuseDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Confusion")));
+			}
+			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.22f);
+			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.50f, 0.65f);
+			if (RollTierChance(StunChance) && ApplyStunToTarget(Target, StunDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Stun")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Earth")))
+		{
+			const float RootChance = GetIdolTierFloat(IdolRarity, 0.25f, 0.35f, 0.40f, 0.46f);
+			const float RootDuration = GetIdolTierFloat(IdolRarity, 0.45f, 0.75f, 0.95f, 1.10f);
+			if (RollTierChance(RootChance) && ApplyRootToTarget(Target, RootDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Root")));
+			}
+			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.24f);
+			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.45f, 0.60f);
+			if (RollTierChance(StunChance) && ApplyStunToTarget(Target, StunDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Stun")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Water")))
+		{
+			const float SlowMult = GetIdolTierFloat(IdolRarity, 0.82f, 0.70f, 0.64f, 0.58f);
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 1.2f, 1.7f, 2.1f, 2.5f);
+			ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
+			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.24f);
+			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.1f, 1.4f);
+			if (RollTierChance(ConfuseChance) && ApplyConfusionToTarget(Target, ConfuseDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Confusion")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.025f));
+		}
+		else if (IdolID == FName(TEXT("Idol_BlackHole")))
+		{
+			const float PullDistance = GetIdolTierFloat(IdolRarity, 120.f, 185.f, 240.f, 280.f);
+			if (ApplyPullToTarget(Target, EffectOrigin, PullDistance))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Pull")));
+			}
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.2f, 1.5f, 1.8f);
+			if (SlowDuration > 0.f)
+			{
+				ApplyMoveSlowToTarget(Target, GetIdolTierFloat(IdolRarity, 1.f, 0.78f, 0.72f, 0.65f), SlowDuration);
+			}
+			const float RootDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.90f, 1.15f);
+			if (RootDuration > 0.f && ApplyRootToTarget(Target, RootDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Root")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.020f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Storm")))
+		{
+			const float SlowMult = GetIdolTierFloat(IdolRarity, 0.86f, 0.72f, 0.68f, 0.60f);
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.8f, 1.4f, 1.8f, 2.1f);
+			ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
+			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.15f, 0.22f);
+			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.45f, 0.65f);
+			if (RollTierChance(StunChance) && ApplyStunToTarget(Target, StunDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Stun")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Light")))
+		{
+			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.15f, 0.20f, 0.25f);
+			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.8f, 1.0f, 1.2f);
+			if (RollTierChance(ConfuseChance) && ApplyConfusionToTarget(Target, ConfuseDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Confusion")));
+			}
+			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.22f);
+			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.40f, 0.55f);
+			if (RollTierChance(StunChance) && ApplyStunToTarget(Target, StunDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Stun")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.040f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Steel")))
+		{
+			const float BleedDuration = GetIdolTierFloat(IdolRarity, 2.2f, 2.6f, 3.0f, 3.4f);
+			const float BleedDamage = static_cast<float>(IdolDamage) * GetIdolTierFloat(IdolRarity, 0.35f, 0.45f, 0.55f, 0.65f);
+			ApplyExtraDOTToTarget(Target, IdolID, BleedDuration, 0.35f, BleedDamage);
+			ShowTargetStatus(Target, FName(TEXT("Bleed")));
+			const float ArmorBreakAmount = GetIdolTierFloat(IdolRarity, 0.f, 0.12f, 0.20f, 0.24f);
+			const float ArmorBreakDuration = GetIdolTierFloat(IdolRarity, 0.f, 2.0f, 3.0f, 3.4f);
+			if (ArmorBreakAmount > 0.f && ApplyArmorBreakToTarget(Target, ArmorBreakAmount, ArmorBreakDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Armor Break")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.035f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Wood")))
+		{
+			const float RootChance = GetIdolTierFloat(IdolRarity, 0.22f, 0.32f, 0.36f, 0.40f);
+			const float RootDuration = GetIdolTierFloat(IdolRarity, 0.45f, 0.75f, 0.95f, 1.15f);
+			if (RollTierChance(RootChance) && ApplyRootToTarget(Target, RootDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Root")));
+			}
+			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.5f, 1.9f);
+			if (SlowDuration > 0.f)
+			{
+				ApplyMoveSlowToTarget(Target, GetIdolTierFloat(IdolRarity, 1.f, 1.f, 0.78f, 0.70f), SlowDuration);
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
+		}
+		else if (IdolID == FName(TEXT("Idol_Bone")))
+		{
+			const float BleedDuration = GetIdolTierFloat(IdolRarity, 1.8f, 2.4f, 2.8f, 3.2f);
+			const float BleedDamage = static_cast<float>(IdolDamage) * GetIdolTierFloat(IdolRarity, 0.30f, 0.45f, 0.52f, 0.60f);
+			ApplyExtraDOTToTarget(Target, IdolID, BleedDuration, 0.4f, BleedDamage);
+			ShowTargetStatus(Target, FName(TEXT("Bleed")));
+			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.24f);
+			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.0f, 1.3f);
+			if (RollTierChance(FearChance) && ApplyFearToTarget(Target, FearDuration))
+			{
+				ShowTargetStatus(Target, FName(TEXT("Fear")));
+			}
+			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
+		}
+	};
+
 	// ---------------------------------------------------------------------------
 	// Resolve primary target: locked > closest in EnemiesInRange.
 	// No TActorIterator — just walk the small overlap list.
@@ -1249,11 +2015,18 @@ void UT66CombatComponent::TryFire()
 	AActor* PrimaryTarget = nullptr;
 	if (AActor* Locked = LockedTarget.Get())
 	{
-		const float DistSq = FVector::DistSquared(MyLoc, Locked->GetActorLocation());
-		if (DistSq <= RangeSq && IsValidAutoTarget(Locked))
-			PrimaryTarget = Locked;
+		if (IsValidAutoTarget(Locked))
+		{
+			const float DistSq = FVector::DistSquared(MyLoc, Locked->GetActorLocation());
+			if (DistSq <= RangeSq)
+			{
+				PrimaryTarget = Locked;
+			}
+		}
 		else
+		{
 			ClearLockedTarget();
+		}
 	}
 	if (!PrimaryTarget)
 	{
@@ -1320,18 +2093,20 @@ void UT66CombatComponent::TryFire()
 		// Evasive: if flagged, apply bonus 3s DOT to the primary target (50% of hit damage).
 		if (CachedRunState && CachedRunState->ConsumeEvasiveBonusDOT() && PrimaryTarget)
 		{
+			static const FName EvasiveDotSource(TEXT("Passive_EvasiveDOT"));
 			const float BonusDotDamage = static_cast<float>(EffectiveDamagePerShot) * 0.5f;
 			const float EvasiveTicks = 6.f;
-			CachedRunState->ApplyDOT(PrimaryTarget, 3.f, 0.5f, BonusDotDamage / EvasiveTicks, NAME_None);
+			CachedRunState->ApplyDOT(PrimaryTarget, 3.f, 0.5f, BonusDotDamage / EvasiveTicks, EvasiveDotSource);
 			SpawnDOTVFX(PrimaryTarget->GetActorLocation(), 3.f, 60.f, FLinearColor(0.6f, 0.2f, 0.8f));
 		}
 
 		// RabidFrenzy ultimate buff: every hit applies a short DOT.
 		if (RabidFrenzyEndTime > Now && CachedRunState && PrimaryTarget)
 		{
+			static const FName RabidFrenzyDotSource(TEXT("Ultimate_RabidFrenzyDOT"));
 			const float FrenzyDotDmg = static_cast<float>(EffectiveDamagePerShot) * 0.3f;
 			const float FrenzyTicks = 4.f;
-			CachedRunState->ApplyDOT(PrimaryTarget, 2.f, 0.5f, FrenzyDotDmg / FrenzyTicks, NAME_None);
+			CachedRunState->ApplyDOT(PrimaryTarget, 2.f, 0.5f, FrenzyDotDmg / FrenzyTicks, RabidFrenzyDotSource);
 			SpawnDOTVFX(PrimaryTarget->GetActorLocation(), 2.f, 50.f, FLinearColor(0.9f, 0.3f, 0.1f));
 		}
 
@@ -1357,6 +2132,9 @@ void UT66CombatComponent::TryFire()
 				const ET66ItemRarity IdolRarity = CachedIdolSlot.Rarity;
 				const FIdolData& IdolData = CachedIdolSlot.IdolData;
 				const float IdolVisualDelay = static_cast<float>(IdolVisualIndex) * 0.035f;
+				const float IdolGlobalScale = FMath::Max(0.1f, ProjectileScaleMultiplier);
+				const float IdolCategorySubScale = GetCategorySubScaleMultiplier(CachedRunState, IdolData.Category);
+				const float IdolBehaviorScale = IdolGlobalScale * IdolCategorySubScale;
 
 				const int32 IdolDamage = FMath::Max(1, FMath::RoundToInt(IdolData.GetDamageAtRarity(IdolRarity)));
 				const FVector PrimaryLoc = PrimaryTargetImpactLocation;
@@ -1378,11 +2156,17 @@ void UT66CombatComponent::TryFire()
 				{
 				case ET66AttackCategory::Pierce:
 				{
-					const float LineLength = IdolRange;
-					const float PierceRadius = 60.f;
+					const float LineLength = IdolRange * IdolCategorySubScale;
+					const float PierceRadius = 60.f * IdolBehaviorScale;
+					const int32 PierceCount = FMath::Max(0, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity)));
 					FVector Dir = FVector::ForwardVector;
 					TArray<AActor*> InLine;
 					BuildPierceTargets(PrimaryTarget, LineLength, PierceRadius, InLine, Dir, &PrimaryLoc);
+					const int32 MaxTargets = FMath::Max(1, PierceCount + 1);
+					if (InLine.Num() > MaxTargets)
+					{
+						InLine.SetNum(MaxTargets, EAllowShrinking::No);
+					}
 					for (int32 i = 0; i < InLine.Num(); ++i)
 					{
 						const float Mult = FMath::Max(0.1f, 1.f - 0.1f * static_cast<float>(i));
@@ -1391,19 +2175,21 @@ void UT66CombatComponent::TryFire()
 						const int32 RangeDmg = GetRangeMultipliedDamage(Dmg, InLine[i], &RangeEvent);
 						const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 						ApplyDamageToActor(InLine[i], Resolved.Key, Resolved.Value, IdolID, RangeEvent);
+						ApplyIdolSpecialBehavior(InLine[i], IdolID, IdolRarity, Dmg, PrimaryLoc);
 					}
 					SpawnIdolPierceVFX(IdolID, IdolRarity, PrimaryVFXLoc, PrimaryVFXLoc + Dir * (LineLength * 0.5f), PrimaryVFXLoc, IdolVisualDelay);
 					break;
 				}
 				case ET66AttackCategory::AOE:
 				{
-					const float Radius = FMath::Max(50.f, IdolData.GetPropertyAtRarity(IdolRarity));
+					const float Radius = FMath::Max(50.f, IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale);
 					if (IsValidAutoTarget(PrimaryTarget))
 					{
 						FName RangeEvent;
 						const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, PrimaryTarget, &RangeEvent);
 						const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 						ApplyDamageToActor(PrimaryTarget, Resolved.Key, Resolved.Value, IdolID, RangeEvent);
+						ApplyIdolSpecialBehavior(PrimaryTarget, IdolID, IdolRarity, IdolDamage, PrimaryLoc);
 					}
 					TArray<AActor*> SlashTargets;
 					BuildSlashTargets(PrimaryTarget, Radius, SlashTargets, &PrimaryLoc);
@@ -1419,6 +2205,7 @@ void UT66CombatComponent::TryFire()
 							const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, Hit, &RangeEvent);
 							const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 							ApplyDamageToActor(Hit, Resolved.Key, Resolved.Value, IdolID, RangeEvent);
+							ApplyIdolSpecialBehavior(Hit, IdolID, IdolRarity, IdolDamage, PrimaryLoc);
 						}
 					}
 					SpawnIdolAOEVFX(IdolID, IdolRarity, PrimaryVFXLoc, Radius, IdolVisualDelay);
@@ -1428,7 +2215,7 @@ void UT66CombatComponent::TryFire()
 				{
 					// BounceCount = number of jumps FROM the primary target to other enemies.
 					// At Black rarity (BaseProperty=1) the bolt bounces once (hits 1 extra enemy).
-					const int32 BounceCount = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity)));
+					const int32 BounceCount = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale));
 					const float IdolFalloff = FMath::Clamp(IdolData.FalloffPerHit, 0.f, 0.95f);
 					const float BounceRangeSq = BounceSearchRadius * BounceSearchRadius;
 
@@ -1439,6 +2226,7 @@ void UT66CombatComponent::TryFire()
 						const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, PrimaryTarget, &RangeEvent);
 						const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 						ApplyDamageToActor(PrimaryTarget, Resolved.Key, Resolved.Value, IdolID, RangeEvent);
+						ApplyIdolSpecialBehavior(PrimaryTarget, IdolID, IdolRarity, IdolDamage, PrimaryLoc);
 					}
 
 					// Chain starts FROM the primary target (not from the hero).
@@ -1463,6 +2251,7 @@ void UT66CombatComponent::TryFire()
 						const int32 RangeDmg = GetRangeMultipliedDamage(BounceDmg, Next, &RangeEvent);
 						const TPair<int32, FName> Resolved = ResolveCrit(RangeDmg);
 						ApplyDamageToActor(Next, Resolved.Key, Resolved.Value, IdolID, RangeEvent);
+						ApplyIdolSpecialBehavior(Next, IdolID, IdolRarity, BounceDmg, CurrentLoc);
 						CurrentLoc = Next->GetActorLocation();
 						IdolDamageMult *= (1.f - IdolFalloff);
 						--BouncesLeft;
@@ -1472,13 +2261,14 @@ void UT66CombatComponent::TryFire()
 				}
 				case ET66AttackCategory::DOT:
 				{
-					const float Duration = FMath::Max(0.5f, IdolData.GetPropertyAtRarity(IdolRarity));
+					const float Duration = FMath::Max(0.5f, IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale);
 					const float TickInterval = FMath::Max(0.1f, IdolData.DotTickInterval);
 					const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
 					const float DamagePerTick = static_cast<float>(IdolDamage) / static_cast<float>(Ticks);
 					if (IsValidAutoTarget(PrimaryTarget))
 					{
 						CachedRunState->ApplyDOT(PrimaryTarget, Duration, TickInterval, DamagePerTick, IdolID);
+						ApplyIdolSpecialBehavior(PrimaryTarget, IdolID, IdolRarity, IdolDamage, PrimaryLoc);
 					}
 					SpawnIdolDOTVFX(IdolID, IdolRarity, IsValidAutoTarget(PrimaryTarget) ? PrimaryTarget : nullptr, PrimaryVFXLoc, Duration, 80.f, IdolVisualDelay);
 					break;
@@ -1515,6 +2305,10 @@ void UT66CombatComponent::ApplyDamageToActor(AActor* Target, int32 DamageAmount,
 		if (E->CurrentHP > 0)
 		{
 			const bool bEnemyDied = E->TakeDamageFromHero(DamageAmount, ResolvedSource, EventType);
+			if (bEnemyDied && LockedTarget.Get() == E)
+			{
+				ClearLockedTarget();
+			}
 			if (!bEnemyDied && ResolvedSource == UT66DamageLogSubsystem::SourceID_AutoAttack && Hero)
 			{
 				E->ApplyAutoAttackKnockback(Hero->GetActorLocation());
@@ -1993,6 +2787,17 @@ void UT66CombatComponent::SpawnIdolPierceVFX(const FName& IdolID, const ET66Item
 			StartDelaySeconds);
 	}
 
+	const float VisualScale = FMath::Clamp(
+		GetIdolRarityVisualScale(Rarity) * FMath::Max(0.1f, ProjectileScaleMultiplier) * GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::Pierce),
+		0.35f,
+		8.0f);
+	const float Quantity = GetIdolRarityVisualQuantity(Rarity) * GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::Pierce);
+	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
+	{
+		SpawnImportedEffectAlongLine(World, AssetPath, Start + FVector(0.f, 0.f, 18.f), End + FVector(0.f, 0.f, 18.f), VisualScale, Quantity);
+		return;
+	}
+
 	SpawnPierceVFX(Start, End, IdolColor);
 }
 
@@ -2022,6 +2827,26 @@ void UT66CombatComponent::SpawnIdolAOEVFX(const FName& IdolID, const ET66ItemRar
 			StartDelaySeconds,
 			Location.X, Location.Y, Location.Z,
 			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A);
+	}
+
+	const float RadiusVisualFactor = FMath::Clamp(Radius / 260.f, 0.55f, 4.5f);
+	const float VisualScale = FMath::Clamp(
+		GetIdolRarityVisualScale(Rarity) * RadiusVisualFactor * FMath::Max(0.1f, ProjectileScaleMultiplier) * GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::AOE),
+		0.35f,
+		10.0f);
+	if (const TCHAR* BlueprintClassPath = GetIdolBlueprintEffectClassPath(IdolID))
+	{
+		if (SpawnImportedEffectBlueprint(World, BlueprintClassPath, Location + FVector(0.f, 0.f, 6.f), FRotator::ZeroRotator, FVector(VisualScale), FMath::Max(2.0f, 2.5f * VisualScale)))
+		{
+			return;
+		}
+	}
+	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
+	{
+		if (SpawnImportedNiagaraAtLocation(World, AssetPath, Location + FVector(0.f, 0.f, 8.f), FRotator::ZeroRotator, FVector(VisualScale)))
+		{
+			return;
+		}
 	}
 
 	SpawnSlashVFX(Location, Radius, IdolColor);
@@ -2054,6 +2879,23 @@ void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66Item
 			ChainPositions[0].X, ChainPositions[0].Y, ChainPositions[0].Z,
 			ChainPositions.Last().X, ChainPositions.Last().Y, ChainPositions.Last().Z,
 			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A);
+	}
+
+	const float VisualScale = FMath::Clamp(
+		GetIdolRarityVisualScale(Rarity) * FMath::Max(0.1f, ProjectileScaleMultiplier) * GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::Bounce),
+		0.35f,
+		6.0f);
+	const float Quantity = GetIdolRarityVisualQuantity(Rarity) * GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::Bounce);
+	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
+	{
+		TArray<FVector> ElevatedPositions;
+		ElevatedPositions.Reserve(ChainPositions.Num());
+		for (const FVector& Pos : ChainPositions)
+		{
+			ElevatedPositions.Add(Pos + FVector(0.f, 0.f, 24.f));
+		}
+		SpawnImportedEffectAlongChain(World, AssetPath, ElevatedPositions, VisualScale, Quantity);
+		return;
 	}
 
 	TArray<FVector> ElevatedPositions;
@@ -2093,6 +2935,30 @@ void UT66CombatComponent::SpawnIdolDOTVFX(const FName& IdolID, const ET66ItemRar
 			StartDelaySeconds,
 			Location.X, Location.Y, Location.Z,
 			IdolColor.R, IdolColor.G, IdolColor.B, IdolColor.A);
+	}
+
+	const float DurationVisualFactor = FMath::Clamp(Duration / 3.0f, 0.75f, 4.5f);
+	const float VisualScale = FMath::Clamp(
+		GetIdolRarityVisualScale(Rarity) * DurationVisualFactor * FMath::Max(0.1f, ProjectileScaleMultiplier) * GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::DOT),
+		0.25f,
+		5.0f);
+	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
+	{
+		if (FollowTarget)
+		{
+			if (USceneComponent* AttachComp = FollowTarget->GetRootComponent())
+			{
+				const FVector RelativeOffset(0.f, 0.f, 40.f);
+				if (SpawnImportedNiagaraAttached(World, AssetPath, AttachComp, RelativeOffset, FRotator::ZeroRotator, FVector(VisualScale), Duration))
+				{
+					return;
+				}
+			}
+		}
+		if (SpawnImportedNiagaraAtLocation(World, AssetPath, Location + FVector(0.f, 0.f, 28.f), FRotator::ZeroRotator, FVector(VisualScale), Duration))
+		{
+			return;
+		}
 	}
 
 	SpawnDOTVFX(Location + FVector(0.f, 0.f, 28.f), FMath::Min(Duration, 1.6f), Radius, IdolColor);
@@ -2670,7 +3536,10 @@ void UT66CombatComponent::PerformUltimateMiasmaBomb(int32 UltimateDamage)
 	{
 		AActor* A = O.GetActor();
 		if (A && IsValidAutoTarget(A))
-			CachedRunState->ApplyDOT(A, Duration, TickInterval, DmgPerTick, NAME_None);
+		{
+			static const FName PoisonCloudSource(TEXT("Ultimate_PoisonCloudDOT"));
+			CachedRunState->ApplyDOT(A, Duration, TickInterval, DmgPerTick, PoisonCloudSource);
+		}
 	}
 	SpawnDOTVFX(Center, Duration, Radius, FLinearColor(0.5f, 0.9f, 0.2f));
 }
@@ -2706,7 +3575,8 @@ void UT66CombatComponent::PerformUltimateBlizzard(int32 UltimateDamage)
 		AActor* A = O.GetActor();
 		if (A && IsValidAutoTarget(A))
 		{
-			CachedRunState->ApplyDOT(A, Duration, TickInterval, DmgPerTick, NAME_None);
+			static const FName BlizzardSource(TEXT("Ultimate_BlizzardDOT"));
+			CachedRunState->ApplyDOT(A, Duration, TickInterval, DmgPerTick, BlizzardSource);
 			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(A))
 				E->ApplyMoveSlow(0.6f, Duration);
 		}

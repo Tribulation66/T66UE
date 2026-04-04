@@ -2,7 +2,6 @@
 
 #include "Gameplay/T66TreeOfLifeInteractable.h"
 #include "Core/T66RunStateSubsystem.h"
-#include "Data/T66DataTypes.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -61,14 +60,5 @@ bool AT66TreeOfLifeInteractable::Interact(APlayerController* PC)
 	bConsumed = true;
 	Destroy();
 	return true;
-}
-
-float AT66TreeOfLifeInteractable::GetLuckFountainMultiplier() const
-{
-	UWorld* World = GetWorld();
-	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState) return 1.f;
-	return RunState->GetSecondaryStatValue(ET66SecondaryStatType::Fountain);
 }
 

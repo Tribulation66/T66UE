@@ -86,7 +86,7 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 	// Visual: a wheel disk that we rotate while spinning.
 	const FLinearColor WheelC = FT66RarityUtil::GetRarityColor(WheelRarity);
 
-	return SNew(SBorder)
+	TSharedRef<SWidget> Root = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.9f))
 		[
@@ -242,6 +242,8 @@ TSharedRef<SWidget> UT66WheelOverlayWidget::RebuildWidget()
 				]
 			]
 		];
+
+	return FT66Style::MakeResponsiveRoot(Root);
 }
 
 void UT66WheelOverlayWidget::TickSpin()

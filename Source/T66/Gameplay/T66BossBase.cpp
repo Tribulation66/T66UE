@@ -19,6 +19,39 @@
 #include "Kismet/GameplayStatics.h"
 #include "Gameplay/T66VisualUtil.h"
 
+namespace
+{
+	void T66ApplyBossDisplacement(ACharacter* Character, const FVector& Origin, float Distance, const bool bTowardOrigin)
+	{
+		if (!Character || FMath::IsNearlyZero(Distance))
+		{
+			return;
+		}
+
+		FVector Dir = Origin - Character->GetActorLocation();
+		Dir.Z = 0.f;
+		const float Magnitude = Dir.Size();
+		if (Magnitude <= KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
+
+		Dir /= Magnitude;
+		const float ClampedDistance = FMath::Clamp(FMath::Abs(Distance), 0.f, bTowardOrigin ? FMath::Max(0.f, Magnitude - 80.f) : FMath::Abs(Distance));
+		if (ClampedDistance <= 0.f)
+		{
+			return;
+		}
+
+		const FVector Delta = (bTowardOrigin ? Dir : -Dir) * ClampedDistance;
+		Character->SetActorLocation(Character->GetActorLocation() + Delta, true);
+		if (UCharacterMovementComponent* Move = Character->GetCharacterMovement())
+		{
+			Move->StopMovementImmediately();
+		}
+	}
+}
+
 AT66BossBase::AT66BossBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -32,6 +65,7 @@ AT66BossBase::AT66BossBase()
 		Move->MaxWalkSpeed = 350.f;
 		Move->bOrientRotationToMovement = true;
 		Move->RotationRate = FRotator(0.f, 720.f, 0.f);
+		BaseMoveSpeed = Move->MaxWalkSpeed;
 	}
 	bUseControllerRotationYaw = false;
 
@@ -84,6 +118,7 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
 		Move->MaxWalkSpeed = BossData.MoveSpeed;
+		BaseMoveSpeed = BossData.MoveSpeed;
 	}
 	if (VisualMesh)
 	{
@@ -158,6 +193,21 @@ void AT66BossBase::BeginPlay()
 
 	bAwakened = false;
 	CurrentHP = 0;
+	ArmorDebuffAmount = 0.f;
+	ArmorDebuffSecondsRemaining = 0.f;
+	ConfusionSecondsRemaining = 0.f;
+	MoveSlowMultiplier = 1.f;
+	MoveSlowSecondsRemaining = 0.f;
+	ForcedRunAwaySecondsRemaining = 0.f;
+	StunSecondsRemaining = 0.f;
+	RootSecondsRemaining = 0.f;
+	FreezeSecondsRemaining = 0.f;
+	CachedWanderDir = FVector::ZeroVector;
+	WanderDirRefreshAccum = 0.f;
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		BaseMoveSpeed = Move->MaxWalkSpeed;
+	}
 }
 
 void AT66BossBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -203,6 +253,72 @@ void AT66BossBase::Tick(float DeltaSeconds)
 		}
 	}
 
+	if (MoveSlowSecondsRemaining > 0.f)
+	{
+		MoveSlowSecondsRemaining = FMath::Max(0.f, MoveSlowSecondsRemaining - DeltaSeconds);
+		if (MoveSlowSecondsRemaining <= 0.f)
+		{
+			MoveSlowMultiplier = 1.f;
+		}
+	}
+
+	if (ForcedRunAwaySecondsRemaining > 0.f)
+	{
+		ForcedRunAwaySecondsRemaining = FMath::Max(0.f, ForcedRunAwaySecondsRemaining - DeltaSeconds);
+	}
+
+	if (ConfusionSecondsRemaining > 0.f)
+	{
+		ConfusionSecondsRemaining = FMath::Max(0.f, ConfusionSecondsRemaining - DeltaSeconds);
+	}
+
+	if (StunSecondsRemaining > 0.f)
+	{
+		StunSecondsRemaining = FMath::Max(0.f, StunSecondsRemaining - DeltaSeconds);
+	}
+
+	if (RootSecondsRemaining > 0.f)
+	{
+		RootSecondsRemaining = FMath::Max(0.f, RootSecondsRemaining - DeltaSeconds);
+	}
+
+	if (FreezeSecondsRemaining > 0.f)
+	{
+		FreezeSecondsRemaining = FMath::Max(0.f, FreezeSecondsRemaining - DeltaSeconds);
+	}
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		const float ControlMultiplier = (FreezeSecondsRemaining > 0.f) ? 0.f : MoveSlowMultiplier;
+		Move->MaxWalkSpeed = BaseMoveSpeed * ControlMultiplier;
+		if (FreezeSecondsRemaining > 0.f || StunSecondsRemaining > 0.f)
+		{
+			Move->StopMovementImmediately();
+			return;
+		}
+		if (RootSecondsRemaining > 0.f)
+		{
+			Move->StopMovementImmediately();
+			return;
+		}
+	}
+
+	const bool bRunAway = ForcedRunAwaySecondsRemaining > 0.f;
+	if (ConfusionSecondsRemaining > 0.f)
+	{
+		WanderDirRefreshAccum += DeltaSeconds;
+		if (WanderDirRefreshAccum >= 0.9f || CachedWanderDir.IsNearlyZero())
+		{
+			WanderDirRefreshAccum = 0.f;
+			CachedWanderDir = FVector(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f).GetSafeNormal();
+		}
+		if (!CachedWanderDir.IsNearlyZero())
+		{
+			AddMovementInput(CachedWanderDir, 0.45f);
+		}
+		return;
+	}
+
 	// Chase player
 	FVector ToPlayer = PlayerLoc - MyLoc;
 	ToPlayer.Z = 0.f;
@@ -210,7 +326,7 @@ void AT66BossBase::Tick(float DeltaSeconds)
 	if (Len > 10.f)
 	{
 		ToPlayer /= Len;
-		AddMovementInput(ToPlayer, 1.f);
+		AddMovementInput(bRunAway ? -ToPlayer : ToPlayer, 1.f);
 	}
 }
 
@@ -221,6 +337,106 @@ void AT66BossBase::ApplyArmorDebuff(float ReductionAmount, float DurationSeconds
 	if (Amt <= 0.f || Dur <= 0.f) return;
 	ArmorDebuffAmount = FMath::Max(ArmorDebuffAmount, Amt);
 	ArmorDebuffSecondsRemaining = FMath::Max(ArmorDebuffSecondsRemaining, Dur);
+}
+
+void AT66BossBase::ApplyConfusion(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds * 0.6f, 0.f, 3.f);
+	if (Dur <= 0.f || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	ConfusionSecondsRemaining = FMath::Max(ConfusionSecondsRemaining, Dur);
+}
+
+void AT66BossBase::ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds)
+{
+	const float Mult = FMath::Clamp(SpeedMultiplier, 0.25f, 1.f);
+	const float Dur = FMath::Clamp(DurationSeconds * 0.75f, 0.f, 8.f);
+	if (Dur <= 0.f || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	MoveSlowMultiplier = FMath::Min(MoveSlowMultiplier, Mult);
+	MoveSlowSecondsRemaining = FMath::Max(MoveSlowSecondsRemaining, Dur);
+}
+
+void AT66BossBase::ApplyForcedRunAway(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds * 0.55f, 0.f, 3.f);
+	if (Dur <= 0.f || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	ForcedRunAwaySecondsRemaining = FMath::Max(ForcedRunAwaySecondsRemaining, Dur);
+}
+
+void AT66BossBase::ApplyStun(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds * 0.55f, 0.f, 1.5f);
+	if (Dur <= 0.f || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	StunSecondsRemaining = FMath::Max(StunSecondsRemaining, Dur);
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+	}
+}
+
+void AT66BossBase::ApplyRoot(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds * 0.65f, 0.f, 2.5f);
+	if (Dur <= 0.f || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	RootSecondsRemaining = FMath::Max(RootSecondsRemaining, Dur);
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+	}
+}
+
+void AT66BossBase::ApplyFreeze(float DurationSeconds)
+{
+	const float Dur = FMath::Clamp(DurationSeconds * 0.5f, 0.f, 1.5f);
+	if (Dur <= 0.f || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	FreezeSecondsRemaining = FMath::Max(FreezeSecondsRemaining, Dur);
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+	}
+}
+
+void AT66BossBase::ApplyPullTowards(const FVector& PullOrigin, float Distance)
+{
+	if (CurrentHP <= 0)
+	{
+		return;
+	}
+
+	T66ApplyBossDisplacement(this, PullOrigin, Distance * 0.5f, true);
+}
+
+void AT66BossBase::ApplyPushAwayFrom(const FVector& PushOrigin, float Distance)
+{
+	if (CurrentHP <= 0)
+	{
+		return;
+	}
+
+	T66ApplyBossDisplacement(this, PushOrigin, Distance * 0.45f, false);
 }
 
 void AT66BossBase::Awaken()
@@ -251,7 +467,7 @@ void AT66BossBase::Awaken()
 
 void AT66BossBase::FireAtPlayer()
 {
-	if (!bAwakened || CurrentHP <= 0) return;
+	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -316,7 +532,7 @@ float AT66BossBase::GetEffectiveArmor() const
 
 void AT66BossBase::SpawnGroundAOE()
 {
-	if (!bAwakened || CurrentHP <= 0) return;
+	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;

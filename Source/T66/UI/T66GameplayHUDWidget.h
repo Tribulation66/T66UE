@@ -117,7 +117,6 @@ protected:
 
 	UT66RunStateSubsystem* GetRunState() const;
 	UT66DamageLogSubsystem* GetDamageLog() const;
-	void RefreshCooldownBar();
 	void RefreshDPS();
 	void RefreshHeroStats();
 
@@ -166,9 +165,9 @@ protected:
 	TSharedPtr<STextBlock> PickupCardNameText;
 	TSharedPtr<STextBlock> PickupCardDescText;
 	TSharedPtr<STextBlock> PickupCardSkipText;
-	static constexpr float PickupCardWidth = 260.f;
-	static constexpr float PickupCardHeight = 460.f;
-	static constexpr float PickupCardBottomOffset = 310.f;
+	static constexpr float PickupCardWidth = 184.f;
+	static constexpr float PickupCardHeight = 312.f;
+	static constexpr float PickupCardBottomOffset = 150.f;
 	static constexpr float PickupCardDisplaySeconds = 5.f;
 	static constexpr float PickupCardFadeOutSeconds = 0.6f;
 	void HidePickupCard();
@@ -219,10 +218,6 @@ protected:
 	TSharedPtr<SBorder> PortraitBorder;
 	TSharedPtr<SImage> PortraitImage;
 	TSharedPtr<FSlateBrush> PortraitBrush;
-	TSharedPtr<SBox> CooldownBarFillBox;
-	TSharedPtr<STextBlock> CooldownTimeText;
-	static constexpr float CooldownBarWidth = 200.f;
-	static constexpr float CooldownBarHeight = 6.f;
 	TSharedPtr<SBox> PortraitStatPanelBox;
 	TSharedPtr<STextBlock> StatDamageText;
 	TSharedPtr<STextBlock> StatAttackSpeedText;
@@ -230,7 +225,6 @@ protected:
 	TSharedPtr<STextBlock> StatArmorText;
 	TSharedPtr<STextBlock> StatEvasionText;
 	TSharedPtr<STextBlock> StatLuckText;
-	TSharedPtr<STextBlock> StatSpeedText;
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SBox>> InventorySlotContainers;
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
@@ -263,8 +257,6 @@ protected:
 	float DPSRefreshAccumSeconds = 0.f;
 	float PickupCardRemainingSeconds = 0.f;
 	static constexpr float DPSRefreshIntervalSeconds = 0.2f;
-	int32 LastDisplayedCooldownBarWidthPx = -1;
-	int32 LastDisplayedCooldownRemainingCs = -1;
 	int32 LastDisplayedDPS = -1;
 	FLinearColor LastDisplayedDPSColor = FLinearColor::Transparent;
 	int32 LastDisplayedSpeedRunTotalCs = -1;

@@ -44,6 +44,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|UI")
 	ET66UITheme GetUITheme() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Settings|UI")
+	void SetUIScale(float NewScale);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|UI")
+	float GetUIScale() const;
+
 	// ===== Gameplay =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
 	void SetPracticeMode(bool bEnabled);
@@ -192,6 +198,7 @@ private:
 	void LoadOrCreate();
 	void Save();
 	void ApplyUITheme();
+	void ApplyUIScale();
 
 	void ApplyAudioToEngine();
 	void ApplyUnfocusedAudioToEngine();

@@ -7,11 +7,13 @@
 #include "Data/T66DataTypes.h"
 #include "Core/T66Rarity.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
+#include "UI/T66UITypes.h"
 #include "T66GameInstance.generated.h"
 
 class UDataTable;
 class UTexture2D;
 struct FStreamableHandle;
+class SBorder;
 
 enum class ET66HeroPortraitVariant : uint8
 {
@@ -187,6 +189,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bHeroSelectionFromLobby = false;
 
+	/** Frontend screen to show immediately after the next frontend-level BeginPlay. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	ET66ScreenType PendingFrontendScreen = ET66ScreenType::None;
+
 	// ============================================
 	// DataTable Access Helpers
 	// ============================================
@@ -331,7 +337,13 @@ public:
 	 */
 	void TransitionToGameplayLevel();
 
-	/** Warm hero-selection portraits + visuals asynchronously so first open does not hitch. */
+	/** Cover the viewport with a persistent blackout that survives level transitions. */
+	void ShowPersistentGameplayTransitionCurtain();
+
+	/** Remove the persistent gameplay transition blackout, if present. */
+	void HidePersistentGameplayTransitionCurtain();
+
+	/** Warm hero/companion selection portraits + visuals asynchronously so first open does not hitch. */
 	void PrimeHeroSelectionAssetsAsync();
 
 	/** When true, Enter the Tribulation opens the demo map instead of GameplayLevel. Flip in T66GameInstance.cpp. */
@@ -378,6 +390,8 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedIdolsDataTable;
 
+	bool bIdolsDataTableCsvOverrideAttempted = false;
+
 	/** Cached item row names (built once per runtime session). */
 	UPROPERTY(Transient)
 	TArray<FName> CachedItemIDs;
@@ -403,9 +417,13 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedBossesDataTable;
 
+	bool bBossesDataTableCsvOverrideAttempted = false;
+
 	/** Cached loaded Stages DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedStagesDataTable;
+
+	bool bStagesDataTableCsvOverrideAttempted = false;
 
 	/** Cached loaded House NPCs DataTable */
 	UPROPERTY(Transient)
@@ -424,4 +442,5 @@ private:
 	TSharedPtr<FStreamableHandle> GameplayAssetsPreloadHandle;
 	TFunction<void()> GameplayAssetsPreloadCallback;
 	void HandleGameplayAssetsPreloaded();
+	TSharedPtr<SBorder> PersistentGameplayTransitionCurtain;
 };

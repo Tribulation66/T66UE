@@ -6,6 +6,7 @@
 #include "UI/Style/T66Style.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -99,6 +100,11 @@ FReply UT66LobbyBackConfirmModal::HandleLeaveClicked()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->bHeroSelectionFromLobby = false;
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->LeaveFrontendLobby(ET66ScreenType::PartySizePicker);
+			return FReply::Handled();
+		}
 	}
 	if (UIManager)
 	{
@@ -121,6 +127,11 @@ void UT66LobbyBackConfirmModal::OnLeaveClicked()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->bHeroSelectionFromLobby = false;
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->LeaveFrontendLobby(ET66ScreenType::PartySizePicker);
+			return;
+		}
 	}
 	if (UIManager)
 	{
