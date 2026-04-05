@@ -65,10 +65,10 @@ namespace
 		Tuning.CatchUpLootBagRarityWeights = MakeRarityWeights(0.70f, 0.20f, 0.09f, 0.01f);
 		Tuning.ChestsPerStage = { 4, 10 };
 		Tuning.ChestRarityWeights = MakeRarityWeights(0.70f, 0.20f, 0.09f, 0.01f);
-		Tuning.ChestGoldByRarity.Black = 50;
-		Tuning.ChestGoldByRarity.Red = 150;
-		Tuning.ChestGoldByRarity.Yellow = 300;
-		Tuning.ChestGoldByRarity.White = 600;
+		Tuning.ChestGoldRangeByRarity.Black = { 35, 75 };
+		Tuning.ChestGoldRangeByRarity.Red = { 100, 180 };
+		Tuning.ChestGoldRangeByRarity.Yellow = { 220, 380 };
+		Tuning.ChestGoldRangeByRarity.White = { 450, 750 };
 		Tuning.ChestMimicChance = 0.20f;
 		Tuning.WheelsPerStage = { 5, 11 };
 		Tuning.WheelRarityWeights = MakeRarityWeights(0.80f, 0.15f, 0.045f, 0.005f);
@@ -205,16 +205,16 @@ FT66RarityWeights UT66PlayerExperienceSubSystem::GetDifficultyChestRarityWeights
 	return GetDifficultyTuning(Difficulty).ChestRarityWeights;
 }
 
-int32 UT66PlayerExperienceSubSystem::GetDifficultyChestGoldForRarity(const ET66Difficulty Difficulty, const ET66Rarity Rarity) const
+FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyChestGoldRange(const ET66Difficulty Difficulty, const ET66Rarity Rarity) const
 {
-	const FT66RarityIntValues& GoldByRarity = GetDifficultyTuning(Difficulty).ChestGoldByRarity;
+	const FT66RarityIntRanges& GoldByRarity = GetDifficultyTuning(Difficulty).ChestGoldRangeByRarity;
 	switch (Rarity)
 	{
-	case ET66Rarity::Black: return FMath::Max(0, GoldByRarity.Black);
-	case ET66Rarity::Red: return FMath::Max(0, GoldByRarity.Red);
-	case ET66Rarity::Yellow: return FMath::Max(0, GoldByRarity.Yellow);
-	case ET66Rarity::White: return FMath::Max(0, GoldByRarity.White);
-	default: return FMath::Max(0, GoldByRarity.Black);
+	case ET66Rarity::Black: return GoldByRarity.Black;
+	case ET66Rarity::Red: return GoldByRarity.Red;
+	case ET66Rarity::Yellow: return GoldByRarity.Yellow;
+	case ET66Rarity::White: return GoldByRarity.White;
+	default: return GoldByRarity.Black;
 	}
 }
 

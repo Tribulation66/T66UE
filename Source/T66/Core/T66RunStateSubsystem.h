@@ -95,6 +95,7 @@ public:
 	/** HP per heart by tier: red=20, blue=25, green=31.25, purple=39.0625, gold=48.828125. */
 	static constexpr float HPPerRedHeart = 20.f;
 	static constexpr float HeartTierScale = 1.25f;
+	static constexpr int32 MaxHeartTier = 4;
 	/** Default max HP at run start (5 red hearts). */
 	static constexpr float DefaultMaxHP = 100.f;
 	static constexpr float DefaultInvulnDurationSeconds = 0.75f;
@@ -218,9 +219,13 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetMaxHP() const { return MaxHP; }
 
-	/** Heart display tier from MaxHP (0=red, 1=blue, 2=green, 3=purple, 4=gold). */
+	/** Highest heart display tier across the 5 slots (0=red, 1=blue, 2=green, 3=purple, 4=gold). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetHeartDisplayTier() const;
+
+	/** Display tier for one of the 5 heart slots (0=red, 1=blue, 2=green, 3=purple, 4=gold). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetHeartSlotTier(int32 SlotIndex) const;
 
 	/** Fill amount for one of the 5 heart slots (0..1). SlotIndex 0..4. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -274,7 +279,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddDifficultySkulls(int32 DeltaSkulls);
 
-	/** Increase max hearts and also grant the new hearts immediately (clamped). */
+	/** Upgrade N heart slots by one tier and also grant the added HP immediately (clamped). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddMaxHearts(int32 DeltaHearts);
 
@@ -836,6 +841,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|Finale")
 	void SetSaintBlessingActive(bool bActive);
 
+	/** Temporarily upgrades the current inventory + equipped idols to White rarity until EndSaintBlessingEmpowerment is called. */
+	void BeginSaintBlessingEmpowerment();
+
+	/** Restores the inventory + equipped idols that were active before BeginSaintBlessingEmpowerment. */
+	void EndSaintBlessingEmpowerment();
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
 	float GetFinalSurvivalEnemyScalar() const { return FMath::Max(1.f, FinalSurvivalEnemyScalar); }
 
@@ -1256,12 +1267,22 @@ private:
 	void ApplyOneHeroLevelUp();
 	void RefreshPowerupBonusesFromProfile();
 	static bool IsBossDamageSource(const AActor* Attacker);
+	static float GetHPForHeartTier(int32 Tier);
+	float GetHeartSlotCapacity(int32 SlotIndex) const;
+	float GetTotalHeartCapacity() const;
+	void ResetHeartSlotTiers();
+	void SyncMaxHPToHeartTiers();
+	void RebuildHeartSlotTiersFromMaxHP();
+	int32 FindUpgradeableHeartSlot() const;
 
 	UPROPERTY()
 	float CurrentHP = DefaultMaxHP;
 
 	UPROPERTY()
 	float MaxHP = DefaultMaxHP;
+
+	UPROPERTY()
+	TArray<uint8> HeartSlotTiers;
 
 	UPROPERTY()
 	int32 CurrentGold = 0;
@@ -1360,6 +1381,21 @@ private:
 	/** Saint blessing used during the post-boss survival extraction. */
 	UPROPERTY()
 	bool bSaintBlessingActive = false;
+
+	/** Exact inventory state before the temporary Saint blessing upgrade was applied. */
+	UPROPERTY()
+	TArray<FT66InventorySlot> SaintBlessingInventorySnapshot;
+
+	/** Exact idol IDs before the temporary Saint blessing upgrade was applied. */
+	UPROPERTY()
+	TArray<FName> SaintBlessingEquippedIdolsSnapshot;
+
+	/** Exact idol tiers before the temporary Saint blessing upgrade was applied. */
+	UPROPERTY()
+	TArray<uint8> SaintBlessingEquippedIdolTiersSnapshot;
+
+	UPROPERTY()
+	bool bSaintBlessingLoadoutSnapshotValid = false;
 
 	/** Extra scalar applied only to the final-survival enemy escalation. */
 	UPROPERTY()

@@ -507,3 +507,9 @@ bool UT66IdolManagerSubsystem::ConsumeCatchUpIdolPick()
 	BroadcastIdolStateChanged();
 	return true;
 }
+
+void UT66IdolManagerSubsystem::SetRemainingCatchUpIdolPicks(const int32 NewRemainingCatchUpIdolPicks)
+{
+	const int32 MaxCatchUpIdolPicks = GetCatchUpIdolPickCountForDifficulty(CurrentDifficulty);
+	RemainingCatchUpIdolPicks = FMath::Clamp(NewRemainingCatchUpIdolPicks, 0, MaxCatchUpIdolPicks);
+}

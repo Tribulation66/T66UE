@@ -83,6 +83,9 @@ public:
 
 	/** Show the item card popup for a just-picked-up item (above inventory, skippable, then fades out). */
 	void ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity);
+
+	/** Show the chest gold reward presentation in the same above-inventory lane. */
+	void StartChestReward(ET66Rarity ChestRarity, int32 GoldAmount);
 	bool TrySkipActivePresentation();
 	void ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay);
 
@@ -115,7 +118,7 @@ public:
 
 	static constexpr float MinimapPanelWidth = 164.f;
 	static constexpr float BottomRightInventoryPanelWidth = 472.f;
-	static constexpr float BottomRightInventoryPanelHeight = 132.f;
+	static constexpr float BottomRightInventoryPanelHeight = 160.f;
 	static constexpr float BottomRightPresentationGap = 8.f;
 
 protected:
@@ -143,6 +146,9 @@ protected:
 	void TickWheelSpin();
 	void ResolveWheelSpin();
 	void CloseWheelSpin();
+	void TickChestRewardPresentation(float InDeltaTime);
+	void HideChestReward();
+	void TryShowQueuedPresentation();
 
 	FReply OnToggleImmortality();
 	FReply OnTogglePower();
@@ -173,10 +179,27 @@ protected:
 	TSharedPtr<STextBlock> PickupCardNameText;
 	TSharedPtr<STextBlock> PickupCardDescText;
 	TSharedPtr<STextBlock> PickupCardSkipText;
+	TSharedPtr<SBox> ChestRewardBox;
+	TSharedPtr<SBorder> ChestRewardTileBorder;
+	TSharedPtr<SBox> ChestRewardClosedBox;
+	TSharedPtr<SBox> ChestRewardOpenBox;
+	TSharedPtr<FSlateBrush> ChestRewardClosedBrush;
+	TSharedPtr<FSlateBrush> ChestRewardOpenBrush;
+	TSharedPtr<FSlateBrush> GoldCurrencyBrush;
+	TSharedPtr<FSlateBrush> DebtCurrencyBrush;
+	TSharedPtr<SImage> ChestRewardClosedImage;
+	TSharedPtr<SImage> ChestRewardOpenImage;
+	TSharedPtr<STextBlock> ChestRewardCounterText;
+	TSharedPtr<STextBlock> ChestRewardSkipText;
+	TArray<TSharedPtr<SBox>> ChestRewardCoinBoxes;
+	TArray<TSharedPtr<SImage>> ChestRewardCoinImages;
 	static constexpr float PickupCardWidth = MinimapPanelWidth;
 	static constexpr float PickupCardHeight = 216.f;
 	static constexpr float PickupCardDisplaySeconds = 5.f;
 	static constexpr float PickupCardFadeOutSeconds = 0.6f;
+	static constexpr float ChestRewardDisplaySeconds = 2.4f;
+	static constexpr float ChestRewardFadeOutSeconds = 0.35f;
+	static constexpr int32 ChestRewardCoinCount = 7;
 	void HidePickupCard();
 	TSharedPtr<SBorder> TutorialHintBorder;
 	TSharedPtr<STextBlock> TutorialHintLine1Text;
@@ -254,6 +277,7 @@ protected:
 	TSharedPtr<SBox> WheelSpinBox;
 	TSharedPtr<SImage> WheelSpinDisk;
 	TSharedPtr<STextBlock> WheelSpinText;
+	TSharedPtr<STextBlock> WheelSpinSkipText;
 	FSlateBrush WheelTextureBrush;
 	TSharedPtr<ST66WorldMapWidget> MinimapWidget;
 	TSharedPtr<ST66WorldMapWidget> FullMapWidget;
@@ -261,14 +285,36 @@ protected:
 	TArray<TSharedPtr<SBorder>> WorldDialogueOptionBorders;
 	TArray<TSharedPtr<STextBlock>> WorldDialogueOptionTexts;
 
+	struct FQueuedChestReward
+	{
+		ET66Rarity Rarity = ET66Rarity::Black;
+		int32 GoldAmount = 0;
+	};
+
+	struct FQueuedPickupCard
+	{
+		FName ItemID = NAME_None;
+		ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
+	};
+
 	bool bFullMapOpen = false;
 	bool bHUDDirty = false;
 	bool bPickupCardVisible = false;
+	bool bChestRewardVisible = false;
 	float DPSRefreshAccumSeconds = 0.f;
 	float PickupCardRemainingSeconds = 0.f;
+	float ChestRewardRemainingSeconds = 0.f;
+	float ChestRewardElapsedSeconds = 0.f;
 	static constexpr float DPSRefreshIntervalSeconds = 0.2f;
 	int32 LastDisplayedDPS = -1;
 	FLinearColor LastDisplayedDPSColor = FLinearColor::Transparent;
+	FName ActivePickupCardItemID = NAME_None;
+	ET66ItemRarity ActivePickupCardRarity = ET66ItemRarity::Black;
+	ET66Rarity ActiveChestRewardRarity = ET66Rarity::Black;
+	int32 ChestRewardTargetGold = 0;
+	int32 ChestRewardDisplayedGold = 0;
+	TArray<FQueuedChestReward> QueuedChestRewards;
+	TArray<FQueuedPickupCard> QueuedPickupCards;
 	int32 LastDisplayedSpeedRunTotalCs = -1;
 	bool bPortraitStateInitialized = false;
 	bool bLastPortraitHasRef = false;

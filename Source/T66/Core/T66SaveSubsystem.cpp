@@ -160,6 +160,32 @@ UT66RunSaveGame* UT66SaveSubsystem::LoadFromSlot(int32 SlotIndex)
 		{
 			RunSave->PartyMemberDisplayNames.Insert(RunSave->OwnerDisplayName, 0);
 		}
+
+		if (RunSave->SavedPartyPlayers.Num() == 0)
+		{
+			FT66SavedPartyPlayerState& LegacyHost = RunSave->SavedPartyPlayers.AddDefaulted_GetRef();
+			LegacyHost.PlayerId = RunSave->OwnerPlayerId;
+			LegacyHost.DisplayName = RunSave->OwnerDisplayName;
+			LegacyHost.HeroID = RunSave->HeroID;
+			LegacyHost.HeroBodyType = RunSave->HeroBodyType;
+			LegacyHost.HeroSkinID = FName(TEXT("Default"));
+			LegacyHost.CompanionID = RunSave->CompanionID;
+			LegacyHost.PlayerTransform = RunSave->PlayerTransform;
+			LegacyHost.bIsPartyHost = true;
+		}
+
+		for (const FT66SavedPartyPlayerState& SavedPlayer : RunSave->SavedPartyPlayers)
+		{
+			if (!SavedPlayer.PlayerId.IsEmpty() && !RunSave->PartyMemberIds.Contains(SavedPlayer.PlayerId))
+			{
+				RunSave->PartyMemberIds.Add(SavedPlayer.PlayerId);
+			}
+
+			if (!SavedPlayer.DisplayName.IsEmpty() && !RunSave->PartyMemberDisplayNames.Contains(SavedPlayer.DisplayName))
+			{
+				RunSave->PartyMemberDisplayNames.Add(SavedPlayer.DisplayName);
+			}
+		}
 	}
 	return RunSave;
 }

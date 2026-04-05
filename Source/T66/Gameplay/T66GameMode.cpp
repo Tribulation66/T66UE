@@ -27,6 +27,7 @@
 #include "Gameplay/T66FountainOfLifeInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66WheelSpinInteractable.h"
+#include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66CircusInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
@@ -229,6 +230,8 @@ namespace
 		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
 		return MapName.Contains(TEXT("Coliseum"));
 	}
+
+	static constexpr float T66FinalDifficultySurvivalDurationSeconds = 60.f;
 
 	static int32 T66EnsureRunSeed(UT66GameInstance* GI)
 	{
@@ -779,6 +782,17 @@ void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectP
 		return;
 	}
 
+	// Tutorial / non-main-map stages do not create the terrain warmup overlay, but they
+	// still need to clear the persistent black transition curtain after the level loads.
+	if (!GameplayWarmupOverlay.IsValid())
+	{
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+		{
+			T66GI->HidePersistentGameplayTransitionCurtain();
+		}
+		return;
+	}
+
 	TSharedPtr<int32> OverlayPollCount = MakeShared<int32>(0);
 	TSharedPtr<FTimerHandle> HideOverlayHandle = MakeShared<FTimerHandle>();
 	World->GetTimerManager().SetTimer(
@@ -832,20 +846,19 @@ void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsi
 		}
 	}
 
-	SpawnCornerHousesAndNPCs();
 	SpawnCircusInteractableIfNeeded();
 	SpawnSupportVendorAtStartIfNeeded();
 	if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
 	{
 		SpawnIdolAltarForPlayer(PC);
 	}
+	SpawnGuaranteedStartAreaInteractables();
 
 	if (!bUsingMainMapTerrain)
 	{
 		SpawnTricksterAndCowardiceGate();
 		SpawnBossBeaconIfNeeded();
 		SpawnWorldInteractablesForStage();
-		SpawnStageEffectsForStage();
 		SpawnTutorialIfNeeded();
 	}
 }
@@ -1954,6 +1967,7 @@ void AT66GameMode::BeginFinalDifficultySurvival(const FVector& BossDeathLocation
 	FinalDifficultySurvivalElapsedSeconds = 0.f;
 	LastAppliedFinalDifficultyEnemyScalar = 1.f;
 
+	RunState->BeginSaintBlessingEmpowerment();
 	RunState->SetBossInactive();
 	RunState->SetPendingDifficultyClearSummary(false);
 	RunState->SetSaintBlessingActive(true);
@@ -1996,7 +2010,7 @@ void AT66GameMode::UpdateFinalDifficultySurvivalScaling(const bool bForce)
 		return;
 	}
 
-	const float Alpha = FMath::Clamp(FinalDifficultySurvivalElapsedSeconds / 180.f, 0.f, 1.f);
+	const float Alpha = FMath::Clamp(FinalDifficultySurvivalElapsedSeconds / T66FinalDifficultySurvivalDurationSeconds, 0.f, 1.f);
 	const float NewScalar = FMath::Clamp(FMath::Pow(6.0f, Alpha), 1.f, 99.f);
 	RunState->SetFinalSurvivalEnemyScalar(NewScalar);
 
@@ -2041,15 +2055,16 @@ void AT66GameMode::TickFinalDifficultySurvival(float DeltaTime)
 		return;
 	}
 
-	FinalDifficultySurvivalElapsedSeconds = FMath::Min(180.f, FinalDifficultySurvivalElapsedSeconds + FMath::Max(0.f, DeltaTime));
+	FinalDifficultySurvivalElapsedSeconds = FMath::Min(T66FinalDifficultySurvivalDurationSeconds, FinalDifficultySurvivalElapsedSeconds + FMath::Max(0.f, DeltaTime));
 	UpdateFinalDifficultySurvivalScaling();
 
-	if (FinalDifficultySurvivalElapsedSeconds < 180.f)
+	if (FinalDifficultySurvivalElapsedSeconds < T66FinalDifficultySurvivalDurationSeconds)
 	{
 		return;
 	}
 
 	bFinalDifficultySurvivalActive = false;
+	RunState->EndSaintBlessingEmpowerment();
 	RunState->SetSaintBlessingActive(false);
 	RunState->SetFinalSurvivalEnemyScalar(1.f);
 	RunState->SetPendingDifficultyClearSummary(true);
@@ -2406,6 +2421,16 @@ void AT66GameMode::TryActivateMainMapCombat()
 
 void AT66GameMode::ResetColiseumState()
 {
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunState->EndSaintBlessingEmpowerment();
+			RunState->SetSaintBlessingActive(false);
+			RunState->SetFinalSurvivalEnemyScalar(1.f);
+		}
+	}
+
 	ColiseumBossesRemaining = 0;
 	bColiseumExitGateSpawned = false;
 	bFinalDifficultySurvivalActive = false;
@@ -2810,128 +2835,6 @@ void AT66GameMode::SpawnVendorForPlayer(AController* Player)
 	}
 }
 
-void AT66GameMode::SpawnCornerHousesAndNPCs()
-{
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
-	if (bUsingMainMapTerrain)
-	{
-		FVector SaintLoc = FVector::ZeroVector;
-		if (!TryFindRandomMainMapSurfaceLocation(3101, SaintLoc, 150.f))
-		{
-			return;
-		}
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		if (AActor* SpawnedNPC = World->SpawnActor<AActor>(AT66SaintNPC::StaticClass(), SaintLoc, FRotator::ZeroRotator, SpawnParams))
-		{
-			if (AT66HouseNPCBase* NPC = Cast<AT66HouseNPCBase>(SpawnedNPC))
-			{
-				NPC->NPCName = NSLOCTEXT("T66.NPC", "Saint", "Saint");
-				NPC->NPCColor = FLinearColor(0.9f, 0.9f, 0.9f, 1.f);
-				NPC->ApplyVisuals();
-			}
-		}
-		return;
-	}
-
-	float TraceStartZ = 2000.f;
-	float TraceEndZ = -4000.f;
-
-	// Hero spawn location (same as PlayerStart / default spawn); NPCs spawn around it.
-	float HeroX = -35455.f;
-	float HeroY = 0.f;
-	for (TActorIterator<APlayerStart> It(World); It; ++It)
-	{
-		const FVector Loc = (*It)->GetActorLocation();
-		HeroX = Loc.X;
-		HeroY = Loc.Y;
-		break;
-	}
-
-	const float Offset = 600.f;
-	struct FNPCPosition { float X; float Y; };
-	const FNPCPosition NPCPositions[] = {
-		{ HeroX + Offset, HeroY },
-		{ HeroX - Offset, HeroY },
-		{ HeroX, HeroY + Offset },
-		{ HeroX, HeroY - Offset },
-	};
-
-	struct FNPCDef
-	{
-		TSubclassOf<AActor> NPCClass;
-		FText Name;
-		FLinearColor Color;
-	};
-	TArray<FNPCDef> NPCDefs = {
-		{ AT66OuroborosNPC::StaticClass(), NSLOCTEXT("T66.NPC", "Ouroboros", "Ouroboros"),  FLinearColor(0.1f,0.8f,0.2f,1.f) },
-		{ AT66SaintNPC::StaticClass(),     NSLOCTEXT("T66.NPC", "Saint", "Saint"),          FLinearColor(0.9f,0.9f,0.9f,1.f) },
-	};
-
-	// Shuffle NPC assignment to corners so each run has different NPCs at each corner.
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	const int32 RunSeed = (T66GI && T66GI->RunSeed != 0) ? T66GI->RunSeed : FMath::Rand();
-	FRandomStream ShuffleRng(RunSeed + 991);
-	for (int32 i = NPCDefs.Num() - 1; i > 0; --i)
-	{
-		const int32 j = ShuffleRng.RandRange(0, i);
-		NPCDefs.Swap(i, j);
-	}
-
-	// Find closest flat surface to a reference point (flat = normal nearly vertical). Search in rings outward.
-	auto FindClosestFlatSurface = [World, TraceStartZ, TraceEndZ](float RefX, float RefY) -> FVector
-	{
-		static constexpr float MinNormalZ = 0.92f;   // ~22?? max slope
-		static constexpr float SearchRadiusMax = 1200.f;
-		static constexpr float RadiusStep = 120.f;
-		static constexpr int32 NumAngles = 16;
-
-		FVector Fallback(RefX, RefY, 60.f);
-		FHitResult Hit;
-		if (World->LineTraceSingleByChannel(Hit, FVector(RefX, RefY, TraceStartZ), FVector(RefX, RefY, TraceEndZ), ECC_WorldStatic))
-		{
-			Fallback = Hit.ImpactPoint;
-		}
-
-		for (float R = 0.f; R <= SearchRadiusMax; R += RadiusStep)
-		{
-			const int32 AngleSteps = (R <= 0.f) ? 1 : NumAngles;
-			for (int32 a = 0; a < AngleSteps; ++a)
-			{
-				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(a) / static_cast<float>(AngleSteps));
-				const float X = RefX + R * FMath::Cos(Angle);
-				const float Y = RefY + R * FMath::Sin(Angle);
-				const FVector Start(X, Y, TraceStartZ);
-				const FVector End(X, Y, TraceEndZ);
-				if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic) && Hit.ImpactNormal.Z >= MinNormalZ)
-				{
-					return Hit.ImpactPoint;
-				}
-			}
-		}
-		return Fallback;
-	};
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	for (int32 i = 0; i < NPCDefs.Num(); ++i)
-	{
-		const FVector FlatLoc = FindClosestFlatSurface(NPCPositions[i].X, NPCPositions[i].Y);
-		AActor* SpawnedNPC = World->SpawnActor<AActor>(NPCDefs[i].NPCClass, FlatLoc, FRotator::ZeroRotator, SpawnParams);
-		if (AT66HouseNPCBase* NPC = Cast<AT66HouseNPCBase>(SpawnedNPC))
-		{
-			NPC->NPCName = NPCDefs[i].Name;
-			NPC->NPCColor = NPCDefs[i].Color;
-			NPC->ApplyVisuals();
-		}
-	}
-}
-
 void AT66GameMode::SpawnCircusInteractableIfNeeded()
 {
 	if (IsColiseumStage() || IsLabLevel())
@@ -3183,6 +3086,284 @@ void AT66GameMode::SpawnPlateauAtLocation(UWorld* World, const FVector& TopCente
 	FActorSpawnParameters P;
 	P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	World->SpawnActor<AT66SpawnPlateau>(AT66SpawnPlateau::StaticClass(), PlateauLoc, FRotator::ZeroRotator, P);
+}
+
+void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
+{
+	if (IsColiseumStage() || IsLabLevel())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!T66GI)
+	{
+		return;
+	}
+
+	UT66RunStateSubsystem* RunState = T66GI->GetSubsystem<UT66RunStateSubsystem>();
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>();
+	UT66RngSubsystem* RngSub = T66GI->GetSubsystem<UT66RngSubsystem>();
+	if (!RunState)
+	{
+		return;
+	}
+
+	if (RngSub)
+	{
+		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+	}
+
+	const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
+	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+	const int32 RunSeed = T66EnsureRunSeed(T66GI);
+	const int32 StageNum = RunState->GetCurrentStage();
+	FRandomStream Rng(RunSeed + StageNum * 1337 + 807);
+
+	FVector StartCenter = FVector::ZeroVector;
+	if (bUsingMainMapTerrain)
+	{
+		StartCenter = MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+			? MainMapSpawnSurfaceLocation
+			: MainMapStartAreaCenterSurfaceLocation;
+	}
+	else
+	{
+		StartCenter = T66GameplayLayout::GetStartAreaCenter();
+
+		FHitResult Hit;
+		const FVector TraceStart = StartCenter + FVector(0.f, 0.f, 3000.f);
+		const FVector TraceEnd = StartCenter - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic)
+			|| World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility))
+		{
+			StartCenter = Hit.ImpactPoint;
+		}
+	}
+
+	auto FindExistingTaggedActor = [World](const FName Tag) -> AActor*
+	{
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Existing = *It;
+			if (IsValid(Existing) && Existing->ActorHasTag(Tag))
+			{
+				return Existing;
+			}
+		}
+		return nullptr;
+	};
+
+	auto FindClassicStartAreaSurface = [World](const FVector& DesiredLoc) -> FVector
+	{
+		static constexpr float TraceStartZ = 8000.f;
+		static constexpr float TraceEndZ = -16000.f;
+		static constexpr float MinNormalZ = 0.92f;
+		static constexpr float SearchRadiusMax = 650.f;
+		static constexpr float RadiusStep = 100.f;
+		static constexpr int32 NumAngles = 12;
+
+		FVector Fallback = DesiredLoc;
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(
+			Hit,
+			FVector(DesiredLoc.X, DesiredLoc.Y, TraceStartZ),
+			FVector(DesiredLoc.X, DesiredLoc.Y, TraceEndZ),
+			ECC_WorldStatic))
+		{
+			Fallback = Hit.ImpactPoint;
+		}
+
+		for (float Radius = 0.f; Radius <= SearchRadiusMax; Radius += RadiusStep)
+		{
+			const int32 AngleSteps = (Radius <= 0.f) ? 1 : NumAngles;
+			for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
+			{
+				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
+				const float X = DesiredLoc.X + Radius * FMath::Cos(Angle);
+				const float Y = DesiredLoc.Y + Radius * FMath::Sin(Angle);
+				if (World->LineTraceSingleByChannel(Hit, FVector(X, Y, TraceStartZ), FVector(X, Y, TraceEndZ), ECC_WorldStatic)
+					&& Hit.ImpactNormal.Z >= MinNormalZ)
+				{
+					return Hit.ImpactPoint;
+				}
+			}
+		}
+
+		return Fallback;
+	};
+
+	auto ResolveStartSpawnLocation = [&](const FVector& ClassicOffset, float SideCells, float InwardCells, FVector& OutLocation) -> bool
+	{
+		if (bUsingMainMapTerrain)
+		{
+			return TryGetMainMapStartPlacementLocation(SideCells, InwardCells, OutLocation);
+		}
+
+		OutLocation = FindClassicStartAreaSurface(StartCenter + ClassicOffset);
+		return true;
+	};
+
+	auto BuildFacingRotation = [&](const FVector& SpawnLocation) -> FRotator
+	{
+		FRotator FacingRotation = FRotator::ZeroRotator;
+		if (!T66TryBuildFacingRotation2D(SpawnLocation, StartCenter, FacingRotation))
+		{
+			FacingRotation = FRotator::ZeroRotator;
+		}
+		return FacingRotation;
+	};
+
+	auto RollWeightedRarity = [&](const FT66RarityWeights& Weights) -> ET66Rarity
+	{
+		return (RngSub && PlayerExperience)
+			? RngSub->RollRarityWeighted(Weights, Rng)
+			: FT66RarityUtil::RollDefaultRarity(Rng);
+	};
+
+	enum class EGuaranteedStartInteractable : uint8
+	{
+		QuickRevive,
+		Fountain,
+		Chest,
+		Wheel,
+		LootBag,
+		Crate,
+	};
+
+	struct FGuaranteedStartSpec
+	{
+		EGuaranteedStartInteractable Kind;
+		const TCHAR* TagName = nullptr;
+		FVector ClassicOffset = FVector::ZeroVector;
+		float SideCells = 0.f;
+		float InwardCells = 0.f;
+	};
+
+	const FGuaranteedStartSpec SpawnSpecs[] = {
+		{ EGuaranteedStartInteractable::QuickRevive, TEXT("T66_StartGuaranteed_QuickRevive"), FVector(-900.f, -1400.f, 0.f), -1.10f, -0.35f },
+		{ EGuaranteedStartInteractable::Fountain,    TEXT("T66_StartGuaranteed_Fountain"),    FVector(-900.f,  1400.f, 0.f), -1.10f,  0.75f },
+		{ EGuaranteedStartInteractable::Chest,       TEXT("T66_StartGuaranteed_Chest"),       FVector(   0.f,  1800.f, 0.f), -0.20f,  1.30f },
+		{ EGuaranteedStartInteractable::Wheel,       TEXT("T66_StartGuaranteed_Wheel"),       FVector( 900.f,  1400.f, 0.f),  0.75f,  1.05f },
+		{ EGuaranteedStartInteractable::LootBag,     TEXT("T66_StartGuaranteed_LootBag"),     FVector( 900.f, -1400.f, 0.f),  0.35f,  0.45f },
+		{ EGuaranteedStartInteractable::Crate,       TEXT("T66_StartGuaranteed_Crate"),       FVector(   0.f, -1800.f, 0.f),  0.00f,  0.55f },
+	};
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (const FGuaranteedStartSpec& Spec : SpawnSpecs)
+	{
+		if (Spec.TagName == nullptr)
+		{
+			continue;
+		}
+
+		const FName Tag(Spec.TagName);
+		if (FindExistingTaggedActor(Tag))
+		{
+			continue;
+		}
+
+		FVector SpawnLoc = FVector::ZeroVector;
+		if (!ResolveStartSpawnLocation(Spec.ClassicOffset, Spec.SideCells, Spec.InwardCells, SpawnLoc))
+		{
+			continue;
+		}
+
+		const FRotator SpawnRotation = BuildFacingRotation(SpawnLoc);
+		AActor* SpawnedActor = nullptr;
+
+		switch (Spec.Kind)
+		{
+		case EGuaranteedStartInteractable::QuickRevive:
+			SpawnedActor = World->SpawnActor<AT66QuickReviveVendingMachine>(
+				AT66QuickReviveVendingMachine::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+			break;
+
+		case EGuaranteedStartInteractable::Fountain:
+			SpawnedActor = World->SpawnActor<AT66FountainOfLifeInteractable>(
+				AT66FountainOfLifeInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+			break;
+
+		case EGuaranteedStartInteractable::Chest:
+			if (AT66ChestInteractable* Chest = World->SpawnActor<AT66ChestInteractable>(
+				AT66ChestInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
+			{
+				const FT66RarityWeights Weights = PlayerExperience
+					? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
+					: FT66RarityWeights{};
+				const ET66Rarity ChestRarity = RollWeightedRarity(Weights);
+				Chest->bIsMimic = false;
+				Chest->SetRarity(ChestRarity);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), ChestRarity);
+				}
+				SpawnedActor = Chest;
+			}
+			break;
+
+		case EGuaranteedStartInteractable::Wheel:
+			if (AT66WheelSpinInteractable* Wheel = World->SpawnActor<AT66WheelSpinInteractable>(
+				AT66WheelSpinInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
+			{
+				const FT66RarityWeights Weights = PlayerExperience
+					? PlayerExperience->GetDifficultyWheelRarityWeights(Difficulty)
+					: FT66RarityWeights{};
+				const ET66Rarity WheelRarity = RollWeightedRarity(Weights);
+				Wheel->SetRarity(WheelRarity);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), WheelRarity);
+				}
+				SpawnedActor = Wheel;
+			}
+			break;
+
+		case EGuaranteedStartInteractable::LootBag:
+			if (AT66LootBagPickup* LootBag = World->SpawnActor<AT66LootBagPickup>(
+				AT66LootBagPickup::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
+			{
+				const FT66RarityWeights Weights = PlayerExperience
+					? PlayerExperience->GetDifficultyEnemyLootBagRarityWeights(Difficulty)
+					: FT66RarityWeights{};
+				const ET66Rarity BagRarity = RollWeightedRarity(Weights);
+				LootBag->SetLootRarity(BagRarity);
+				LootBag->SetItemID(T66GI->GetRandomItemIDForLootRarity(BagRarity));
+				SpawnedActor = LootBag;
+			}
+			break;
+
+		case EGuaranteedStartInteractable::Crate:
+			if (AT66CrateInteractable* Crate = World->SpawnActor<AT66CrateInteractable>(
+				AT66CrateInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
+			{
+				const FT66RarityWeights Weights = PlayerExperience
+					? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
+					: FT66RarityWeights{};
+				const ET66Rarity CrateRarity = RollWeightedRarity(Weights);
+				Crate->SetRarity(CrateRarity);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), CrateRarity);
+				}
+				SpawnedActor = Crate;
+			}
+			break;
+		}
+
+		if (SpawnedActor)
+		{
+			SpawnedActor->Tags.AddUnique(Tag);
+		}
+	}
 }
 
 void AT66GameMode::SpawnWorldInteractablesForStage()
@@ -3473,46 +3654,6 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				AT66PilotableTractor::StaticClass(), TractorLoc, FRotator::ZeroRotator, TractorSpawnParams))
 			{
 				UsedLocs.Add(TractorLoc);
-			}
-		}
-
-		FVector VendingLoc = FVector::ZeroVector;
-		bool bShouldSpawnGuaranteedVending = false;
-		if (bUsingMainMapTerrain)
-		{
-			const FSpawnHitResult VendingFallback = FindSpawnLoc();
-			if (VendingFallback.bFound)
-			{
-				VendingLoc = VendingFallback.Loc;
-				bShouldSpawnGuaranteedVending = true;
-			}
-		}
-		else
-		{
-			static constexpr float GuaranteedVendingOffsetX = 1450.f;
-			static constexpr float GuaranteedVendingOffsetY = -950.f;
-			const FVector StartGateLoc = T66GameplayLayout::GetStartGateLocation();
-			const float VendingX = StartGateLoc.X + GuaranteedVendingOffsetX;
-			const float VendingY = StartGateLoc.Y + GuaranteedVendingOffsetY;
-			VendingLoc = FVector(VendingX, VendingY, SpawnZ);
-			FHitResult VendingHit;
-			const FVector VendingTraceStart(VendingX, VendingY, 8000.f);
-			const FVector VendingTraceEnd(VendingX, VendingY, -16000.f);
-			if (World->LineTraceSingleByChannel(VendingHit, VendingTraceStart, VendingTraceEnd, ECC_WorldStatic))
-			{
-				VendingLoc = VendingHit.ImpactPoint;
-			}
-			bShouldSpawnGuaranteedVending = true;
-		}
-
-		if (bShouldSpawnGuaranteedVending)
-		{
-			FActorSpawnParameters VendingSpawnParams;
-			VendingSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			if (AT66QuickReviveVendingMachine* Vending = World->SpawnActor<AT66QuickReviveVendingMachine>(
-				AT66QuickReviveVendingMachine::StaticClass(), VendingLoc, FRotator::ZeroRotator, VendingSpawnParams))
-			{
-				UsedLocs.Add(VendingLoc);
 			}
 		}
 

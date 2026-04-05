@@ -83,18 +83,13 @@ public:
 	/** Clear picker snapshots (call after user selects one and you've set PendingFakeSnapshot). */
 	void ClearPendingPickerSnapshots();
 
-	/** Create a fake run summary snapshot for a leaderboard entry (random hero, idols, items; full slots). Caller owns result. */
-	UT66LeaderboardRunSummarySaveGame* CreateFakeRunSummarySnapshot(
-		ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize,
-		int32 Rank, int32 SlotIndex, const FString& PlayerDisplayName, int64 Score, float TimeSeconds) const;
-
 	/** Save a unique run-summary snapshot for the current run and append it to the recent-runs list. */
 	bool SaveFinishedRunSummarySnapshot(FString& OutSlotName);
 
 	/** Submit a completed full-run time PB (lower is better). */
 	bool SubmitCompletedRunTime(float Seconds, const FString& ExistingRunSummarySlotName);
 
-	/** Last completed runs, newest first, capped to 20 entries. */
+	/** Completed runs, newest first, with no hard history cap. */
 	TArray<FT66RecentRunRecord> GetRecentRuns() const;
 
 	/** Best score record for the requested difficulty + party size. */
@@ -145,18 +140,6 @@ public:
 	/** Consume the "return to modal after viewer-mode Run Summary" request. */
 	ET66ScreenType ConsumePendingReturnModalAfterViewerRunSummary();
 
-	/** Build menu entries for Score: Top 15 + local entry ("You") at rank 16 unless in Top 15. */
-	TArray<FLeaderboardEntry> BuildScoreEntries(ET66Difficulty Difficulty, ET66PartySize PartySize) const;
-
-	/** Build menu entries for Speed Run: per-stage Top 15 + local entry ("You") at rank 16 unless in Top 15. */
-	TArray<FLeaderboardEntry> BuildSpeedRunEntries(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
-
-	/**
-	 * Build leaderboard entries for the current filter (Global / Friends / Streamers).
-	 * Global uses the existing built list (Score or SpeedRun). Friends/Streamers load from DT_Leaderboard_Friends / DT_Leaderboard_Streamers.
-	 */
-	TArray<FLeaderboardEntry> BuildEntriesForFilter(ET66LeaderboardFilter Filter, ET66LeaderboardType Type, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 SpeedRunStage) const;
-
 	/** Returns the 10th-place target time for this stage (used by HUD "time to beat"). */
 	bool GetSpeedRunTarget10Seconds(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage, float& OutSeconds) const;
 
@@ -175,8 +158,6 @@ private:
 	static constexpr const TCHAR* LocalSaveSlotName = TEXT("T66_LocalLeaderboard");
 	static constexpr const TCHAR* ScoreTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_ScoreTargets.DT_Leaderboard_ScoreTargets");
 	static constexpr const TCHAR* SpeedRunTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets");
-	static constexpr const TCHAR* FriendsDTPath = TEXT("/Game/Data/DT_Leaderboard_Friends.DT_Leaderboard_Friends");
-	static constexpr const TCHAR* StreamersDTPath = TEXT("/Game/Data/DT_Leaderboard_Streamers.DT_Leaderboard_Streamers");
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LocalLeaderboardSaveGame> LocalSave;
@@ -198,7 +179,6 @@ private:
 	UT66LeaderboardRunSummarySaveGame* CreateCurrentRunSummarySnapshot(ET66LeaderboardType LeaderboardType, ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Score) const;
 	bool SaveRunSummarySnapshotToSlot(UT66LeaderboardRunSummarySaveGame* Snapshot, const FString& SlotName) const;
 	void AppendRecentRunRecord(const FString& RunSummarySlotName);
-	void PruneRecentRunsToLimit(int32 MaxRuns);
 	bool IsRunSummarySlotStillReferenced(const FString& SlotName) const;
 	bool DeleteRunSummarySlotIfUnreferenced(const FString& SlotName) const;
 	const FT66LocalScoreRecord* FindLocalScoreRecord(ET66Difficulty Difficulty, ET66PartySize PartySize) const;

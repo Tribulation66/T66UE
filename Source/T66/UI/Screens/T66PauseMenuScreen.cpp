@@ -12,6 +12,7 @@
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66UIManager.h"
@@ -19,6 +20,8 @@
 
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
 #include "Engine/DataTable.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Images/SImage.h"
@@ -29,115 +32,6 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
-
-namespace
-{
-	static bool HasAnyNamedEntries(const TArray<FName>& IDs)
-	{
-		for (const FName& ID : IDs)
-		{
-			if (!ID.IsNone())
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	static ET66ItemRarity GetPreviewRarityByIndex(const int32 Index)
-	{
-		switch (Index % 4)
-		{
-		case 1:
-			return ET66ItemRarity::Red;
-		case 2:
-			return ET66ItemRarity::Yellow;
-		case 3:
-			return ET66ItemRarity::White;
-		case 0:
-		default:
-			return ET66ItemRarity::Black;
-		}
-	}
-
-	static void BuildPreviewInventoryDisplay(UT66GameInstance* GI, TArray<FName>& OutIDs, TArray<FT66InventorySlot>& OutSlots)
-	{
-		OutIDs.Init(NAME_None, UT66RunStateSubsystem::MaxInventorySlots);
-		OutSlots.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-
-		if (!GI)
-		{
-			return;
-		}
-
-		TArray<FName> CandidateIDs;
-		if (UDataTable* ItemsDT = GI->GetItemsDataTable())
-		{
-			for (const FName RowName : ItemsDT->GetRowNames())
-			{
-				FItemData ItemData;
-				if (GI->GetItemData(RowName, ItemData))
-				{
-					CandidateIDs.Add(RowName);
-				}
-			}
-		}
-
-		if (CandidateIDs.Num() == 0)
-		{
-			CandidateIDs = {
-				FName(TEXT("Item_AoeDamage")),
-				FName(TEXT("Item_CritDamage")),
-				FName(TEXT("Item_LifeSteal")),
-				FName(TEXT("Item_MovementSpeed"))
-			};
-		}
-
-		if (CandidateIDs.Num() == 0)
-		{
-			return;
-		}
-
-		for (int32 SlotIndex = 0; SlotIndex < UT66RunStateSubsystem::MaxInventorySlots; ++SlotIndex)
-		{
-			const FName ItemID = CandidateIDs[SlotIndex % CandidateIDs.Num()];
-			const ET66ItemRarity Rarity = GetPreviewRarityByIndex(SlotIndex);
-			OutIDs[SlotIndex] = ItemID;
-			OutSlots[SlotIndex] = FT66InventorySlot(ItemID, Rarity, 8 + (SlotIndex * 3));
-		}
-	}
-
-	static void BuildPreviewIdolDisplay(UT66GameInstance* GI, TArray<FName>& OutIDs, TArray<ET66ItemRarity>& OutRarities)
-	{
-		OutIDs.Init(NAME_None, UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
-		OutRarities.Init(ET66ItemRarity::Black, UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
-
-		if (!GI)
-		{
-			return;
-		}
-
-		const TArray<FName>& AllIdolIDs = UT66IdolManagerSubsystem::GetAllIdolIDs();
-		if (AllIdolIDs.Num() == 0)
-		{
-			return;
-		}
-
-		for (int32 SlotIndex = 0; SlotIndex < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++SlotIndex)
-		{
-			const FName IdolID = AllIdolIDs[SlotIndex % AllIdolIDs.Num()];
-			FIdolData IdolData;
-			if (!GI->GetIdolData(IdolID, IdolData))
-			{
-				continue;
-			}
-
-			OutIDs[SlotIndex] = IdolID;
-			OutRarities[SlotIndex] = GetPreviewRarityByIndex(SlotIndex);
-		}
-	}
-}
 
 UT66PauseMenuScreen::UT66PauseMenuScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -158,9 +52,21 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	UT66LocalizationSubsystem* Loc = GameInstance ? GameInstance->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66RunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GameInstance ? GameInstance->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+	const bool bDotaTheme = FT66Style::IsDotaTheme();
+	const float SideColumnWidth = bDotaTheme ? 300.f : 340.f;
+	const float ButtonColumnWidth = bDotaTheme ? 320.f : 360.f;
+	const float ButtonMinWidth = bDotaTheme ? 280.f : 312.f;
+	const float PanelGap = bDotaTheme ? 18.f : 24.f;
+	const float PortraitSize = bDotaTheme ? 176.f : 208.f;
+	const float HeartSize = bDotaTheme ? 34.f : 40.f;
+	const float IdolSlotSize = bDotaTheme ? 40.f : 46.f;
+	const float InventorySlotSize = bDotaTheme ? 34.f : 40.f;
+	const float StatsPanelWidth = bDotaTheme ? 300.f : 340.f;
+	const int32 InventoryColumns = 5;
+	const int32 InventoryRows = FMath::DivideAndRoundUp(UT66RunStateSubsystem::MaxInventorySlots, InventoryColumns);
 
 	const FText ResumeText = Loc ? Loc->GetText_Resume() : NSLOCTEXT("T66.PauseMenu", "Resume", "RESUME GAME");
-	const FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT GAME");
+	const FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT");
 	const FText RestartText = Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.PauseMenu", "Restart", "RESTART");
 	const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
@@ -169,20 +75,20 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	const FText InventoryTitleText = NSLOCTEXT("T66.GameplayHUD", "InventoryTitle", "Inventory");
 	const FText IdolsTitleText = NSLOCTEXT("T66.GameplayHUD", "IdolsTitle", "IDOLS");
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
-	const bool bDotaTheme = FT66Style::IsDotaTheme();
 
-	auto MakePauseButton = [this, bDotaTheme](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), ET66ButtonType Type) -> TSharedRef<SWidget>
+	auto MakePauseButton = [this, bDotaTheme, ButtonMinWidth](const FText& Text, FReply (UT66PauseMenuScreen::*ClickFunc)(), ET66ButtonType Type) -> TSharedRef<SWidget>
 	{
 		return SNew(SBox)
 			.HAlign(HAlign_Fill)
-			.Padding(FMargin(0.f, bDotaTheme ? 5.f : 6.f))
+			.Padding(FMargin(0.f, bDotaTheme ? 4.f : 6.f))
 			[
 				FT66Style::MakeButton(
 					FT66ButtonParams(Text, FOnClicked::CreateUObject(this, ClickFunc), Type)
-					.SetFontSize(bDotaTheme ? 28 : 44)
-					.SetPadding(bDotaTheme ? FMargin(22.f, 14.f, 22.f, 12.f) : FMargin(18.f))
-					.SetMinWidth(bDotaTheme ? 360.f : 340.f)
-					.SetHeight(bDotaTheme ? 76.f : 0.f))
+					.SetFontSize(bDotaTheme ? 20 : 28)
+					.SetFontWeight(bDotaTheme ? TEXT("Regular") : TEXT("Bold"))
+					.SetPadding(bDotaTheme ? FMargin(18.f, 10.f, 18.f, 8.f) : FMargin(18.f, 12.f))
+					.SetMinWidth(ButtonMinWidth)
+					.SetHeight(bDotaTheme ? 60.f : 66.f))
 			];
 	};
 
@@ -268,7 +174,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		{
 			IdolSlotBrushes[Index] = MakeShared<FSlateBrush>();
 			IdolSlotBrushes[Index]->DrawAs = ESlateBrushDrawType::Image;
-			IdolSlotBrushes[Index]->ImageSize = FVector2D(48.f, 48.f);
+			IdolSlotBrushes[Index]->ImageSize = FVector2D(IdolSlotSize, IdolSlotSize);
 		}
 	}
 
@@ -279,26 +185,32 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		{
 			InventorySlotBrushes[Index] = MakeShared<FSlateBrush>();
 			InventorySlotBrushes[Index]->DrawAs = ESlateBrushDrawType::Image;
-			InventorySlotBrushes[Index]->ImageSize = FVector2D(42.f, 42.f);
+			InventorySlotBrushes[Index]->ImageSize = FVector2D(InventorySlotSize, InventorySlotSize);
 		}
 	}
 
 	const int32 HeartTier = RunState ? RunState->GetHeartDisplayTier() : 0;
-	const FLinearColor FilledHeartColor = FT66RarityUtil::GetTierColor(HeartTier);
+	const FLinearColor FilledHeartColor = (RunState && RunState->IsSaintBlessingActive())
+		? FLinearColor(0.95f, 0.95f, 1.00f, 1.f)
+		: FT66RarityUtil::GetTierColor(HeartTier);
 	const FLinearColor EmptyHeartColor(0.25f, 0.25f, 0.28f, 0.35f);
 	const FLinearColor PortraitBorderColor = RunState
-		? (RunState->GetMaxHP() > 0.f ? FT66RarityUtil::GetTierColor(HeartTier) : (FT66Style::IsDotaTheme() ? FT66Style::Border() : FLinearColor(0.12f, 0.12f, 0.14f, 1.f)))
+		? (RunState->IsSaintBlessingActive()
+			? FLinearColor(0.92f, 0.92f, 0.98f, 1.f)
+			: (RunState->GetMaxHP() > 0.f ? FT66RarityUtil::GetTierColor(HeartTier) : (FT66Style::IsDotaTheme() ? FT66Style::Border() : FLinearColor(0.12f, 0.12f, 0.14f, 1.f))))
 		: (FT66Style::IsDotaTheme() ? FT66Style::Border() : FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
 
 	bool bHasPortrait = false;
 	if (GI && RunState)
 	{
-		ET66HeroPortraitVariant PortraitVariant = ET66HeroPortraitVariant::Half;
-		if (RunState->GetCurrentHearts() <= 1)
+		ET66HeroPortraitVariant PortraitVariant = RunState->IsSaintBlessingActive()
+			? ET66HeroPortraitVariant::Invincible
+			: ET66HeroPortraitVariant::Half;
+		if (!RunState->IsSaintBlessingActive() && RunState->GetCurrentHearts() <= 1)
 		{
 			PortraitVariant = ET66HeroPortraitVariant::Low;
 		}
-		else if (RunState->GetCurrentHearts() >= 5)
+		else if (!RunState->IsSaintBlessingActive() && RunState->GetCurrentHearts() >= 5)
 		{
 			PortraitVariant = ET66HeroPortraitVariant::Full;
 		}
@@ -325,17 +237,20 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	{
 		const float Fill = RunState ? RunState->GetHeartSlotFill(HeartIndex) : 0.f;
 		const bool bFilled = Fill > 0.01f;
+		const FLinearColor HeartColor = (RunState && RunState->IsSaintBlessingActive())
+			? FLinearColor(0.95f, 0.95f, 1.00f, 1.f)
+			: (RunState ? FT66RarityUtil::GetTierColor(RunState->GetHeartSlotTier(HeartIndex)) : FilledHeartColor);
 		HeartsRow->AddSlot()
 			.AutoWidth()
 			.Padding(2.f, 0.f)
 			[
 				SNew(SBox)
-				.WidthOverride(44.f)
-				.HeightOverride(44.f)
+				.WidthOverride(HeartSize)
+				.HeightOverride(HeartSize)
 				[
 					SNew(SImage)
 					.Image(HeartBrush.Get())
-					.ColorAndOpacity(bFilled ? FilledHeartColor : EmptyHeartColor)
+					.ColorAndOpacity(bFilled ? HeartColor : EmptyHeartColor)
 				]
 			];
 	}
@@ -387,8 +302,8 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		+ SVerticalBox::Slot().AutoHeight()
 		[
 			SNew(SBox)
-			.WidthOverride(230.f)
-			.HeightOverride(230.f)
+			.WidthOverride(PortraitSize)
+			.HeightOverride(PortraitSize)
 			[
 				SNew(SOverlay)
 				+ SOverlay::Slot()
@@ -410,7 +325,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(PortraitLabel)
-					.Font(FT66Style::Tokens::FontBold(12))
+					.Font(FT66Style::Tokens::FontBold(11))
 					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 					.Justification(ETextJustify::Center)
 					.Visibility(bHasPortrait ? EVisibility::Collapsed : EVisibility::Visible)
@@ -420,38 +335,27 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f)));
 
 	TSharedRef<SUniformGridPanel> IdolGrid = SNew(SUniformGridPanel)
-		.SlotPadding(FMargin(4.f));
+		.SlotPadding(FMargin(3.f));
 
-	static constexpr int32 IdolColumns = 3;
-	static constexpr float IdolSlotSize = 50.f;
 	UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
-	const TArray<FName>& EquippedIdols = IdolManager ? IdolManager->GetEquippedIdols() : (RunState ? RunState->GetEquippedIdols() : TArray<FName>());
-	TArray<FName> PreviewIdolIDs;
-	TArray<ET66ItemRarity> PreviewIdolRarities;
-	const TArray<FName>* DisplayIdols = &EquippedIdols;
-	const TArray<ET66ItemRarity>* DisplayIdolRarities = nullptr;
-	if (!HasAnyNamedEntries(EquippedIdols))
-	{
-		BuildPreviewIdolDisplay(GI, PreviewIdolIDs, PreviewIdolRarities);
-		if (HasAnyNamedEntries(PreviewIdolIDs))
-		{
-			DisplayIdols = &PreviewIdolIDs;
-			DisplayIdolRarities = &PreviewIdolRarities;
-		}
-	}
+	static const TArray<FName> EmptyIdolIDs;
+	static const TArray<uint8> EmptyIdolTierValues;
+	const TArray<FName>& EquippedIdols = IdolManager ? IdolManager->GetEquippedIdols() : (RunState ? RunState->GetEquippedIdols() : EmptyIdolIDs);
+	const TArray<uint8>& EquippedIdolTierValues = IdolManager ? IdolManager->GetEquippedIdolTierValues() : (RunState ? RunState->GetEquippedIdolTierValues() : EmptyIdolTierValues);
 	for (int32 SlotIndex = 0; SlotIndex < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++SlotIndex)
 	{
 		FLinearColor IdolSlotColor(0.10f, 0.16f, 0.14f, 0.92f);
 		TSoftObjectPtr<UTexture2D> IdolIconSoft;
 
-		if (GI && DisplayIdols->IsValidIndex(SlotIndex) && !(*DisplayIdols)[SlotIndex].IsNone())
+		if (GI && EquippedIdols.IsValidIndex(SlotIndex) && !EquippedIdols[SlotIndex].IsNone())
 		{
 			FIdolData IdolData;
-			if (GI->GetIdolData((*DisplayIdols)[SlotIndex], IdolData))
+			if (GI->GetIdolData(EquippedIdols[SlotIndex], IdolData))
 			{
-				const ET66ItemRarity IdolRarity = (DisplayIdolRarities && DisplayIdolRarities->IsValidIndex(SlotIndex))
-					? (*DisplayIdolRarities)[SlotIndex]
-					: (IdolManager ? IdolManager->GetEquippedIdolRarityInSlot(SlotIndex) : (RunState ? RunState->GetEquippedIdolRarityInSlot(SlotIndex) : ET66ItemRarity::Black));
+				const int32 IdolTierValue = EquippedIdolTierValues.IsValidIndex(SlotIndex)
+					? FMath::Clamp(static_cast<int32>(EquippedIdolTierValues[SlotIndex]), 1, UT66IdolManagerSubsystem::MaxIdolLevel)
+					: 1;
+				const ET66ItemRarity IdolRarity = UT66IdolManagerSubsystem::IdolTierValueToRarity(IdolTierValue);
 				IdolSlotColor = FItemData::GetItemRarityColor(IdolRarity);
 				IdolIconSoft = IdolData.GetIconForRarity(IdolRarity);
 			}
@@ -469,7 +373,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			}
 		}
 
-		IdolGrid->AddSlot(SlotIndex % IdolColumns, SlotIndex / IdolColumns)
+		IdolGrid->AddSlot(SlotIndex, 0)
 		[
 			MakeIconSlot(
 				IdolSlotBrushes.IsValidIndex(SlotIndex) ? IdolSlotBrushes[SlotIndex] : nullptr,
@@ -484,36 +388,23 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(IdolsTitleText)
-			.Font(FT66Style::Tokens::FontBold(18))
+			.Font(FT66Style::Tokens::FontBold(16))
 			.ColorAndOpacity(bDotaTheme ? FT66Style::Text() : FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 		[
 			IdolGrid
 		],
-		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f, 12.f)));
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f)));
 
-	static constexpr int32 InventoryColumns = 10;
-	static constexpr float InventorySlotSize = 42.f;
 	static constexpr float InventorySlotPad = 2.f;
 	TSharedRef<SVerticalBox> InventoryGrid = SNew(SVerticalBox);
 	const TArray<FName> InventoryIDs = RunState ? RunState->GetInventory() : TArray<FName>();
 	const TArray<FT66InventorySlot> InventorySlots = RunState ? RunState->GetInventorySlots() : TArray<FT66InventorySlot>();
-	TArray<FName> PreviewInventoryIDs;
-	TArray<FT66InventorySlot> PreviewInventorySlots;
 	const TArray<FName>* DisplayInventoryIDs = &InventoryIDs;
 	const TArray<FT66InventorySlot>* DisplayInventorySlots = &InventorySlots;
-	if (!HasAnyNamedEntries(InventoryIDs))
-	{
-		BuildPreviewInventoryDisplay(GI, PreviewInventoryIDs, PreviewInventorySlots);
-		if (HasAnyNamedEntries(PreviewInventoryIDs))
-		{
-			DisplayInventoryIDs = &PreviewInventoryIDs;
-			DisplayInventorySlots = &PreviewInventorySlots;
-		}
-	}
 
-	for (int32 Row = 0; Row < 2; ++Row)
+	for (int32 Row = 0; Row < InventoryRows; ++Row)
 	{
 		TSharedRef<SHorizontalBox> RowBox = SNew(SHorizontalBox);
 		for (int32 Column = 0; Column < InventoryColumns; ++Column)
@@ -565,42 +456,42 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(InventoryTitleText)
-			.Font(FT66Style::Tokens::FontBold(18))
+			.Font(FT66Style::Tokens::FontBold(16))
 			.ColorAndOpacity(bDotaTheme ? FT66Style::Text() : FLinearColor(0.75f, 0.82f, 0.78f, 1.f))
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 8.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 6.f)
 		[
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(RunState ? FText::Format(Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthInit", "Net Worth: 0"), FText::AsNumber(RunState->GetNetWorth())) : FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(16))
+				.Font(FT66Style::Tokens::FontBold(14))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(RunState ? FText::Format(Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldInit", "Gold: 0"), FText::AsNumber(RunState->GetCurrentGold())) : FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(16))
+				.Font(FT66Style::Tokens::FontBold(14))
 				.ColorAndOpacity(FLinearColor(0.85f, 0.75f, 0.20f, 1.f))
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(RunState ? FText::Format(Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweInit", "Debt: 0"), FText::AsNumber(RunState->GetCurrentDebt())) : FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(16))
+				.Font(FT66Style::Tokens::FontBold(14))
 				.ColorAndOpacity(FT66Style::Tokens::Danger)
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 		[
 			InventoryGrid
 		],
-		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f, 12.f)));
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 10.f)));
 
 	TSharedRef<SWidget> StatsPanel = RunState
-		? T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, 320.f, false)
+		? T66StatsPanelSlate::MakeEssentialStatsPanel(RunState, Loc, StatsPanelWidth, false)
 		: FT66Style::MakePanel(
 			SNew(STextBlock)
 			.Text(NSLOCTEXT("T66.PauseMenu", "StatsUnavailable", "Stats unavailable"))
@@ -608,15 +499,15 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			.ColorAndOpacity(FT66Style::Tokens::Text),
 			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(16.f)));
 
-	FSlateFontInfo PauseTitleFont = FT66Style::Tokens::FontBold(bDotaTheme ? 56 : 48);
+	FSlateFontInfo PauseTitleFont = FT66Style::Tokens::FontBold(bDotaTheme ? 48 : 44);
 	if (bDotaTheme)
 	{
-		PauseTitleFont.LetterSpacing = 160;
+		PauseTitleFont.LetterSpacing = 120;
 	}
 
 	TSharedRef<SWidget> ButtonsPanel = FT66Style::MakePanel(
 		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 24.f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 18.f)
 		[
 			SNew(STextBlock)
 			.Text(NSLOCTEXT("T66.PauseMenu", "PausedTitle", "PAUSED"))
@@ -635,7 +526,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 		[ MakePauseButton(AchievementsText, &UT66PauseMenuScreen::HandleAchievementsClicked, ET66ButtonType::Neutral) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill)
 		[ MakePauseButton(LeaderboardText, &UT66PauseMenuScreen::HandleLeaderboardClicked, ET66ButtonType::Neutral) ],
-		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space8, FT66Style::Tokens::Space6)));
+		FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(FT66Style::Tokens::Space5, FT66Style::Tokens::Space4)));
 
 	TSharedRef<SWidget> LeftColumn = SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight()
@@ -657,11 +548,52 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			InventoryPanel
 		];
 
-	static constexpr float SideColumnWidth = 460.f;
-	static constexpr float ButtonColumnWidth = 420.f;
 	const FLinearColor ScrimColor = FT66Style::IsDotaTheme()
 		? FT66Style::Scrim()
 		: FLinearColor(FT66Style::Tokens::Scrim.R, FT66Style::Tokens::Scrim.G, FT66Style::Tokens::Scrim.B, 0.88f);
+	const FMargin ScorePadding = FT66Style::GetSafePadding(FMargin(20.f, 18.f, 0.f, 0.f));
+
+	TSharedRef<SWidget> MainRow = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(0.f, 0.f, PanelGap, 0.f)
+		[
+			SNew(SBox)
+			.WidthOverride(SideColumnWidth)
+			[
+				LeftColumn
+			]
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Top)
+		.Padding(0.f, 0.f, PanelGap, 0.f)
+		[
+			SNew(SBox)
+			.WidthOverride(ButtonColumnWidth)
+			[
+				ButtonsPanel
+			]
+		]
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Top)
+		[
+			SNew(SBox)
+			.WidthOverride(SideColumnWidth)
+			[
+				RightColumn
+			]
+		];
+
+	TSharedRef<SWidget> PauseSurface = bDotaTheme
+		? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(MainRow, FMargin(22.f, 20.f)))
+		: StaticCastSharedRef<SWidget>(FT66Style::MakePanel(
+			MainRow,
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(22.f, 20.f))));
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(ScrimColor)
@@ -670,74 +602,15 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Left)
 			.VAlign(VAlign_Top)
-			.Padding(40.f, 40.f, 0.f, 0.f)
+			.Padding(ScorePadding)
 			[
 				ScorePanel
 			]
 			+ SOverlay::Slot()
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			.Padding(50.f, 40.f)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
 			[
-				bDotaTheme
-					? StaticCastSharedRef<SWidget>(FT66Style::MakeViewportFrame(
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 28.f, 0.f)
-						[
-							SNew(SBox)
-							.WidthOverride(SideColumnWidth)
-							.HAlign(HAlign_Left)
-							[
-								LeftColumn
-							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 28.f, 0.f)
-						[
-							SNew(SBox)
-							.WidthOverride(ButtonColumnWidth)
-							.HAlign(HAlign_Center)
-							[
-								ButtonsPanel
-							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-						[
-							SNew(SBox)
-							.WidthOverride(SideColumnWidth)
-							.HAlign(HAlign_Left)
-							[
-								RightColumn
-							]
-						],
-						FMargin(26.f, 24.f)))
-					: StaticCastSharedRef<SWidget>(SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 28.f, 0.f)
-						[
-							SNew(SBox)
-							.WidthOverride(SideColumnWidth)
-							.HAlign(HAlign_Left)
-							[
-								LeftColumn
-							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 28.f, 0.f)
-						[
-							SNew(SBox)
-							.WidthOverride(ButtonColumnWidth)
-							.HAlign(HAlign_Center)
-							[
-								ButtonsPanel
-							]
-						]
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-						[
-							SNew(SBox)
-							.WidthOverride(SideColumnWidth)
-							.HAlign(HAlign_Left)
-							[
-								RightColumn
-							]
-						])
+				FT66Style::MakeSafeFrame(PauseSurface, FMargin(18.f, 18.f))
 			]
 		];
 }
@@ -834,6 +707,94 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 	if (SaveObj->PartyMemberDisplayNames.Num() == 0 && !SaveObj->OwnerDisplayName.IsEmpty())
 	{
 		SaveObj->PartyMemberDisplayNames.Add(SaveObj->OwnerDisplayName);
+	}
+
+	SaveObj->SavedPartyPlayers.Reset();
+	if (UWorld* World = GetWorld())
+	{
+		if (AGameStateBase* GameState = World->GetGameState())
+		{
+			for (APlayerState* PlayerState : GameState->PlayerArray)
+			{
+				const AT66SessionPlayerState* SessionPlayerState = Cast<AT66SessionPlayerState>(PlayerState);
+				if (!SessionPlayerState)
+				{
+					continue;
+				}
+
+				const FT66LobbyPlayerInfo& LobbyInfo = SessionPlayerState->GetLobbyInfo();
+				if (LobbyInfo.SteamId.IsEmpty())
+				{
+					continue;
+				}
+
+				FT66SavedPartyPlayerState& SavedPlayer = SaveObj->SavedPartyPlayers.AddDefaulted_GetRef();
+				SavedPlayer.PlayerId = LobbyInfo.SteamId;
+				SavedPlayer.DisplayName = LobbyInfo.DisplayName;
+				SavedPlayer.HeroID = LobbyInfo.SelectedHeroID;
+				SavedPlayer.HeroBodyType = LobbyInfo.SelectedHeroBodyType;
+				SavedPlayer.HeroSkinID = LobbyInfo.SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : LobbyInfo.SelectedHeroSkinID;
+				SavedPlayer.CompanionID = LobbyInfo.SelectedCompanionID;
+				SavedPlayer.CompanionBodyType = LobbyInfo.SelectedCompanionBodyType;
+				SavedPlayer.bIsPartyHost = LobbyInfo.bPartyHost;
+			}
+		}
+	}
+
+	if (SaveObj->SavedPartyPlayers.Num() == 0)
+	{
+		FT66SavedPartyPlayerState& LocalSavedPlayer = SaveObj->SavedPartyPlayers.AddDefaulted_GetRef();
+		LocalSavedPlayer.PlayerId = SaveObj->OwnerPlayerId;
+		LocalSavedPlayer.DisplayName = SaveObj->OwnerDisplayName;
+		LocalSavedPlayer.HeroID = SaveObj->HeroID;
+		LocalSavedPlayer.HeroBodyType = SaveObj->HeroBodyType;
+		LocalSavedPlayer.HeroSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
+		LocalSavedPlayer.CompanionID = SaveObj->CompanionID;
+		LocalSavedPlayer.PlayerTransform = SaveObj->PlayerTransform;
+		LocalSavedPlayer.bIsPartyHost = true;
+	}
+	else
+	{
+		for (FT66SavedPartyPlayerState& SavedPlayer : SaveObj->SavedPartyPlayers)
+		{
+			if (SavedPlayer.PlayerId == SaveObj->OwnerPlayerId)
+			{
+				SavedPlayer.PlayerTransform = SaveObj->PlayerTransform;
+				SavedPlayer.bIsPartyHost = true;
+				break;
+			}
+		}
+	}
+
+	SaveObj->PartyMemberIds.Reset();
+	SaveObj->PartyMemberDisplayNames.Reset();
+	for (const FT66SavedPartyPlayerState& SavedPlayer : SaveObj->SavedPartyPlayers)
+	{
+		if (!SavedPlayer.PlayerId.IsEmpty())
+		{
+			SaveObj->PartyMemberIds.AddUnique(SavedPlayer.PlayerId);
+		}
+		if (!SavedPlayer.DisplayName.IsEmpty())
+		{
+			SaveObj->PartyMemberDisplayNames.AddUnique(SavedPlayer.DisplayName);
+		}
+	}
+
+	switch (SaveObj->SavedPartyPlayers.Num())
+	{
+	case 4:
+		SaveObj->PartySize = ET66PartySize::Quad;
+		break;
+	case 3:
+		SaveObj->PartySize = ET66PartySize::Trio;
+		break;
+	case 2:
+		SaveObj->PartySize = ET66PartySize::Duo;
+		break;
+	case 1:
+	default:
+		SaveObj->PartySize = ET66PartySize::Solo;
+		break;
 	}
 
 	if (!SaveSub->SaveToSlot(SlotIndex, SaveObj)) return;

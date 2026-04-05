@@ -12,9 +12,6 @@
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
-#include "UI/Screens/T66LobbyScreen.h"
-#include "UI/Screens/T66LobbyReadyCheckModal.h"
-#include "UI/Screens/T66LobbyBackConfirmModal.h"
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
@@ -419,6 +416,16 @@ void AT66PlayerController::StartCrateOpenHUD()
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->StartCrateOpen();
+	}
+}
+
+void AT66PlayerController::StartChestRewardHUD(ET66Rarity Rarity, int32 GoldAmount)
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->StartChestReward(Rarity, GoldAmount);
 	}
 }
 

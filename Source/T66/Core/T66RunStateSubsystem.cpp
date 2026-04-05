@@ -61,6 +61,28 @@ namespace
 		return A.IsValid() && B.IsValid() && A.ItemTemplateID == B.ItemTemplateID && A.Rarity == B.Rarity;
 	}
 
+	static int32 T66_MapBlessingRollToWhiteRange(const FT66InventorySlot& Slot)
+	{
+		int32 SourceMin = 1;
+		int32 SourceMax = 3;
+		FItemData::GetLine1RollRange(Slot.Rarity, SourceMin, SourceMax);
+
+		int32 WhiteMin = 20;
+		int32 WhiteMax = 30;
+		FItemData::GetLine1RollRange(ET66ItemRarity::White, WhiteMin, WhiteMax);
+
+		if (SourceMax <= SourceMin)
+		{
+			return WhiteMax;
+		}
+
+		const float Alpha = FMath::Clamp(
+			static_cast<float>(Slot.Line1RolledValue - SourceMin) / static_cast<float>(SourceMax - SourceMin),
+			0.f,
+			1.f);
+		return FMath::RoundToInt(FMath::Lerp(static_cast<float>(WhiteMin), static_cast<float>(WhiteMax), Alpha));
+	}
+
 	static TArray<int32> T66_GatherAlchemySourceIndices(const TArray<FT66InventorySlot>& InventorySlots, const int32 TargetIndex)
 	{
 		TArray<int32> SourceIndices;
@@ -181,6 +203,10 @@ namespace
 void UT66RunStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	ResetHeartSlotTiers();
+	SyncMaxHPToHeartTiers();
+	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
 
 	Collection.InitializeDependency<UT66IdolManagerSubsystem>();
 	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
@@ -563,31 +589,171 @@ void UT66RunStateSubsystem::AddDifficultySkulls(int32 DeltaSkulls)
 
 int32 UT66RunStateSubsystem::GetHeartDisplayTier() const
 {
-	if (MaxHP <= 0.f) return 0;
-	const float T = FMath::LogX(HeartTierScale, MaxHP / DefaultMaxHP);
-	return FMath::Clamp(FMath::RoundToInt(T), 0, 4);
+	int32 HighestTier = 0;
+	for (int32 SlotIndex = 0; SlotIndex < DefaultMaxHearts; ++SlotIndex)
+	{
+		HighestTier = FMath::Max(HighestTier, GetHeartSlotTier(SlotIndex));
+	}
+	return HighestTier;
+}
+
+int32 UT66RunStateSubsystem::GetHeartSlotTier(int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= DefaultMaxHearts)
+	{
+		return 0;
+	}
+
+	const int32 StoredTier = HeartSlotTiers.IsValidIndex(SlotIndex)
+		? static_cast<int32>(HeartSlotTiers[SlotIndex])
+		: 0;
+	return FMath::Clamp(StoredTier, 0, MaxHeartTier);
+}
+
+float UT66RunStateSubsystem::GetHPForHeartTier(const int32 Tier)
+{
+	return HPPerRedHeart * FMath::Pow(HeartTierScale, static_cast<float>(FMath::Clamp(Tier, 0, MaxHeartTier)));
+}
+
+float UT66RunStateSubsystem::GetHeartSlotCapacity(const int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= DefaultMaxHearts)
+	{
+		return 0.f;
+	}
+
+	return GetHPForHeartTier(GetHeartSlotTier(SlotIndex));
+}
+
+float UT66RunStateSubsystem::GetTotalHeartCapacity() const
+{
+	float TotalCapacity = 0.f;
+	for (int32 SlotIndex = 0; SlotIndex < DefaultMaxHearts; ++SlotIndex)
+	{
+		TotalCapacity += GetHeartSlotCapacity(SlotIndex);
+	}
+	return TotalCapacity;
+}
+
+void UT66RunStateSubsystem::ResetHeartSlotTiers()
+{
+	HeartSlotTiers.Init(0, DefaultMaxHearts);
+}
+
+void UT66RunStateSubsystem::SyncMaxHPToHeartTiers()
+{
+	MaxHP = FMath::Max(DefaultMaxHP, GetTotalHeartCapacity());
+}
+
+int32 UT66RunStateSubsystem::FindUpgradeableHeartSlot() const
+{
+	int32 BestSlot = INDEX_NONE;
+	int32 LowestTier = MaxHeartTier + 1;
+	for (int32 SlotIndex = 0; SlotIndex < DefaultMaxHearts; ++SlotIndex)
+	{
+		const int32 Tier = GetHeartSlotTier(SlotIndex);
+		if (Tier >= MaxHeartTier)
+		{
+			continue;
+		}
+
+		if (Tier < LowestTier)
+		{
+			LowestTier = Tier;
+			BestSlot = SlotIndex;
+		}
+	}
+
+	return BestSlot;
+}
+
+void UT66RunStateSubsystem::RebuildHeartSlotTiersFromMaxHP()
+{
+	ResetHeartSlotTiers();
+
+	MaxHP = FMath::Max(DefaultMaxHP, MaxHP);
+	float RemainingExtraHP = MaxHP - DefaultMaxHP;
+	while (RemainingExtraHP > KINDA_SMALL_NUMBER)
+	{
+		const int32 SlotIndex = FindUpgradeableHeartSlot();
+		if (SlotIndex == INDEX_NONE)
+		{
+			break;
+		}
+
+		const int32 CurrentTier = GetHeartSlotTier(SlotIndex);
+		const float UpgradeDelta = GetHPForHeartTier(CurrentTier + 1) - GetHPForHeartTier(CurrentTier);
+		if (RemainingExtraHP + 0.01f < UpgradeDelta)
+		{
+			break;
+		}
+
+		HeartSlotTiers[SlotIndex] = static_cast<uint8>(CurrentTier + 1);
+		RemainingExtraHP -= UpgradeDelta;
+	}
+
+	SyncMaxHPToHeartTiers();
+	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
 }
 
 float UT66RunStateSubsystem::GetHeartSlotFill(int32 SlotIndex) const
 {
-	const int32 Tier = GetHeartDisplayTier();
-	const float HPPerHeart = HPPerRedHeart * FMath::Pow(HeartTierScale, static_cast<float>(Tier));
-	if (HPPerHeart <= 0.f || SlotIndex < 0 || SlotIndex >= 5) return 0.f;
-	const float SlotStart = static_cast<float>(SlotIndex) * HPPerHeart;
-	const float SlotEnd = SlotStart + HPPerHeart;
+	if (SlotIndex < 0 || SlotIndex >= DefaultMaxHearts)
+	{
+		return 0.f;
+	}
+
+	float SlotStart = 0.f;
+	for (int32 Index = 0; Index < SlotIndex; ++Index)
+	{
+		SlotStart += GetHeartSlotCapacity(Index);
+	}
+
+	const float SlotCapacity = GetHeartSlotCapacity(SlotIndex);
+	if (SlotCapacity <= 0.f)
+	{
+		return 0.f;
+	}
+
+	const float SlotEnd = SlotStart + SlotCapacity;
 	if (CurrentHP <= SlotStart) return 0.f;
 	if (CurrentHP >= SlotEnd) return 1.f;
-	return (CurrentHP - SlotStart) / HPPerHeart;
+	return (CurrentHP - SlotStart) / SlotCapacity;
 }
 
 void UT66RunStateSubsystem::AddMaxHearts(int32 DeltaHearts)
 {
-	if (DeltaHearts <= 0) return;
-	const int32 Tier = GetHeartDisplayTier();
-	const float HPPerHeart = HPPerRedHeart * FMath::Pow(HeartTierScale, static_cast<float>(Tier));
-	const float Added = HPPerHeart * static_cast<float>(DeltaHearts);
-	MaxHP = FMath::Clamp(MaxHP + Added, DefaultMaxHP, 99999.f);
-	CurrentHP = FMath::Clamp(CurrentHP + Added, 0.f, MaxHP);
+	if (DeltaHearts <= 0)
+	{
+		return;
+	}
+
+	if (HeartSlotTiers.Num() != DefaultMaxHearts)
+	{
+		RebuildHeartSlotTiersFromMaxHP();
+	}
+
+	const float PreviousMaxHP = MaxHP;
+	bool bUpgraded = false;
+	for (int32 UpgradeIndex = 0; UpgradeIndex < DeltaHearts; ++UpgradeIndex)
+	{
+		const int32 SlotIndex = FindUpgradeableHeartSlot();
+		if (SlotIndex == INDEX_NONE)
+		{
+			break;
+		}
+
+		HeartSlotTiers[SlotIndex] = static_cast<uint8>(GetHeartSlotTier(SlotIndex) + 1);
+		bUpgraded = true;
+	}
+
+	if (!bUpgraded)
+	{
+		return;
+	}
+
+	SyncMaxHPToHeartTiers();
+	CurrentHP = FMath::Clamp(CurrentHP + (MaxHP - PreviousMaxHP), 0.f, MaxHP);
 	HeartsChanged.Broadcast();
 }
 
@@ -726,6 +892,97 @@ void UT66RunStateSubsystem::SetSaintBlessingActive(const bool bActive)
 
 	bSaintBlessingActive = bActive;
 	SurvivalChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::BeginSaintBlessingEmpowerment()
+{
+	if (bSaintBlessingLoadoutSnapshotValid)
+	{
+		return;
+	}
+
+	bSaintBlessingLoadoutSnapshotValid = true;
+	SaintBlessingInventorySnapshot = InventorySlots;
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+		{
+			SaintBlessingEquippedIdolsSnapshot = IdolManager->GetEquippedIdols();
+			SaintBlessingEquippedIdolTiersSnapshot = IdolManager->GetEquippedIdolTierValues();
+
+			TArray<uint8> BlessedTiers = SaintBlessingEquippedIdolTiersSnapshot;
+			const int32 MaxCount = FMath::Min(BlessedTiers.Num(), SaintBlessingEquippedIdolsSnapshot.Num());
+			for (int32 Index = 0; Index < MaxCount; ++Index)
+			{
+				if (!SaintBlessingEquippedIdolsSnapshot[Index].IsNone())
+				{
+					BlessedTiers[Index] = static_cast<uint8>(UT66IdolManagerSubsystem::MaxIdolLevel);
+				}
+			}
+
+			IdolManager->RestoreState(
+				SaintBlessingEquippedIdolsSnapshot,
+				BlessedTiers,
+				IdolManager->GetCurrentDifficulty(),
+				IdolManager->GetRemainingCatchUpIdolPicks());
+		}
+	}
+
+	bool bInventoryChanged = false;
+	for (FT66InventorySlot& Slot : InventorySlots)
+	{
+		if (!Slot.IsValid() || T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+		{
+			continue;
+		}
+
+		Slot.Line1RolledValue = T66_MapBlessingRollToWhiteRange(Slot);
+		Slot.Line2MultiplierOverride = FMath::Max(Slot.GetLine2Multiplier(), FItemData::GetLine2RarityMultiplier(ET66ItemRarity::White));
+		Slot.Rarity = ET66ItemRarity::White;
+		bInventoryChanged = true;
+	}
+
+	if (bInventoryChanged)
+	{
+		RecomputeItemDerivedStats();
+		InventoryChanged.Broadcast();
+	}
+}
+
+void UT66RunStateSubsystem::EndSaintBlessingEmpowerment()
+{
+	if (!bSaintBlessingLoadoutSnapshotValid)
+	{
+		return;
+	}
+
+	TArray<FT66InventorySlot> RestoredInventory = SaintBlessingInventorySnapshot;
+	for (int32 Index = SaintBlessingInventorySnapshot.Num(); Index < InventorySlots.Num(); ++Index)
+	{
+		RestoredInventory.Add(InventorySlots[Index]);
+	}
+
+	InventorySlots = MoveTemp(RestoredInventory);
+	RecomputeItemDerivedStats();
+	InventoryChanged.Broadcast();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+		{
+			IdolManager->RestoreState(
+				SaintBlessingEquippedIdolsSnapshot,
+				SaintBlessingEquippedIdolTiersSnapshot,
+				IdolManager->GetCurrentDifficulty(),
+				IdolManager->GetRemainingCatchUpIdolPicks());
+		}
+	}
+
+	SaintBlessingInventorySnapshot.Reset();
+	SaintBlessingEquippedIdolsSnapshot.Reset();
+	SaintBlessingEquippedIdolTiersSnapshot.Reset();
+	bSaintBlessingLoadoutSnapshotValid = false;
 }
 
 void UT66RunStateSubsystem::SetFinalSurvivalEnemyScalar(const float Scalar)
@@ -1806,9 +2063,12 @@ void UT66RunStateSubsystem::EndQuickReviveDownedAndRevive()
 	QuickReviveDownedSecondsRemaining = 0.f;
 	LastBroadcastQuickReviveSecond = 0;
 
-	const int32 Tier = GetHeartDisplayTier();
-	const float HPPerHeart = HPPerRedHeart * FMath::Pow(HeartTierScale, static_cast<float>(Tier));
-	CurrentHP = FMath::Clamp(HPPerHeart, 1.f, MaxHP);
+	if (HeartSlotTiers.Num() != DefaultMaxHearts)
+	{
+		RebuildHeartSlotTiersFromMaxHP();
+	}
+
+	CurrentHP = FMath::Clamp(GetHeartSlotCapacity(0), 1.f, MaxHP);
 
 	if (UWorld* World = GetWorld())
 	{
@@ -2692,7 +2952,8 @@ void UT66RunStateSubsystem::ToggleDevPower()
 
 void UT66RunStateSubsystem::ResetForNewRun()
 {
-	MaxHP = DefaultMaxHP;
+	ResetHeartSlotTiers();
+	SyncMaxHPToHeartTiers();
 	CurrentHP = MaxHP;
 	CurrentGold = DefaultStartGold;
 	CurrentDebt = 0;
@@ -2739,6 +3000,10 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	bRunEndedAsVictory = false;
 	bPendingDifficultyClearSummary = false;
 	bSaintBlessingActive = false;
+	SaintBlessingInventorySnapshot.Reset();
+	SaintBlessingEquippedIdolsSnapshot.Reset();
+	SaintBlessingEquippedIdolTiersSnapshot.Reset();
+	bSaintBlessingLoadoutSnapshotValid = false;
 	FinalSurvivalEnemyScalar = 1.f;
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
@@ -2860,6 +3125,11 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.CurrentStage = CurrentStage;
 	OutSnapshot.CurrentHP = CurrentHP;
 	OutSnapshot.MaxHP = MaxHP;
+	OutSnapshot.HeartSlotTiers.Reset();
+	for (int32 SlotIndex = 0; SlotIndex < DefaultMaxHearts; ++SlotIndex)
+	{
+		OutSnapshot.HeartSlotTiers.Add(static_cast<uint8>(GetHeartSlotTier(SlotIndex)));
+	}
 	OutSnapshot.CurrentGold = CurrentGold;
 	OutSnapshot.CurrentDebt = CurrentDebt;
 	OutSnapshot.DifficultyTier = DifficultyTier;
@@ -2935,6 +3205,21 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	CurrentStage = FMath::Clamp(Snapshot.CurrentStage, 1, 23);
 	CurrentHP = FMath::Max(0.f, Snapshot.CurrentHP);
 	MaxHP = FMath::Max(1.f, Snapshot.MaxHP);
+	if (Snapshot.HeartSlotTiers.Num() >= DefaultMaxHearts)
+	{
+		HeartSlotTiers = Snapshot.HeartSlotTiers;
+		HeartSlotTiers.SetNum(DefaultMaxHearts);
+		for (uint8& TierValue : HeartSlotTiers)
+		{
+			TierValue = static_cast<uint8>(FMath::Clamp(static_cast<int32>(TierValue), 0, MaxHeartTier));
+		}
+		SyncMaxHPToHeartTiers();
+		CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+	}
+	else
+	{
+		RebuildHeartSlotTiersFromMaxHP();
+	}
 	CurrentGold = FMath::Max(0, Snapshot.CurrentGold);
 	CurrentDebt = FMath::Max(0, Snapshot.CurrentDebt);
 	DifficultyTier = FMath::Max(0, Snapshot.DifficultyTier);

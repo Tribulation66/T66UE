@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Delegates/Delegate.h"
 #include "UI/T66ScreenBase.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "UObject/StrongObjectPtr.h"
@@ -59,6 +60,7 @@ public:
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
+	virtual void OnScreenDeactivated_Implementation() override;
 	virtual void RefreshScreen_Implementation() override;
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
@@ -92,12 +94,18 @@ private:
 	FReply HandleSettingsClicked();
 	FReply HandleLanguageClicked();
 	FReply HandleQuitClicked();
+	FReply HandleLeavePartyClicked();
 
 	/** Load or bind the main menu animated background layers. */
 	void RequestBackgroundTexture();
 	void RequestUtilityButtonIcons();
+	void HandlePartyStateChanged();
+	void HandleSessionStateChanged();
 
 	// Handle language change to rebuild UI
 	UFUNCTION()
 	void OnLanguageChanged(ET66Language NewLanguage);
+
+	FDelegateHandle PartyStateChangedHandle;
+	FDelegateHandle SessionStateChangedHandle;
 };

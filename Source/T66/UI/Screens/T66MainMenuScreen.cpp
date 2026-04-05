@@ -7,10 +7,13 @@
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SaveSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
+#include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -184,6 +187,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66SaveSubsystem* SaveSubsystem = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
 	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
 
 	const FText NewGameText = Loc ? Loc->GetText_NewGame() : NSLOCTEXT("T66.MainMenu", "NewGame", "NEW GAME");
 	const FText LoadGameText = Loc ? Loc->GetText_LoadGame() : NSLOCTEXT("T66.MainMenu", "LoadGame", "LOAD GAME");
@@ -193,6 +198,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		TEXT("SourceAssets/UI/MainMenuGenerated/mainmenu_cta_fill_green.png"),
 		FVector2D(1024.f, 232.f));
 
+	enum class ELastRunStatus : uint8
+	{
+		None,
+		InProgress,
+		Completed,
+		NotCompleted
+	};
+
 	struct FLastRunSnapshot
 	{
 		FName HeroID = NAME_None;
@@ -200,7 +213,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		ET66Difficulty Difficulty = ET66Difficulty::Easy;
 		ET66PartySize PartySize = ET66PartySize::Solo;
 		int32 StageReached = 1;
-		bool bHasSave = false;
+		ELastRunStatus Status = ELastRunStatus::None;
+		int32 SaveSlotIndex = INDEX_NONE;
+		FString RunSummarySlotName;
+		FDateTime Timestamp = FDateTime::MinValue();
 	};
 
 	struct FMenuFriendEntry
@@ -213,9 +229,49 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		ET66BodyType BodyType = ET66BodyType::TypeA;
 	};
 
-	FLastRunSnapshot LastRun;
-	FString LatestUtc;
-	int32 LatestSlot = INDEX_NONE;
+	struct FMenuPartyEntry
+	{
+		FString PlayerId;
+		FString DisplayName;
+		bool bIsLocal = false;
+		bool bIsPartyHost = false;
+		bool bOnline = false;
+		TSharedPtr<FSlateBrush> AvatarBrush;
+	};
+
+	auto MakeAvatarBrush = [](UTexture2D* AvatarTexture, const FVector2D& ImageSize) -> TSharedPtr<FSlateBrush>
+	{
+		if (!AvatarTexture)
+		{
+			return nullptr;
+		}
+
+		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+		Brush->DrawAs = ESlateBrushDrawType::Image;
+		Brush->Tiling = ESlateBrushTileType::NoTile;
+		Brush->ImageSize = ImageSize;
+		Brush->SetResourceObject(AvatarTexture);
+		return Brush;
+	};
+
+	auto ParseIsoUtc = [](const FString& IsoString) -> FDateTime
+	{
+		FDateTime Parsed = FDateTime::MinValue();
+		if (!IsoString.IsEmpty())
+		{
+			FDateTime::ParseIso8601(*IsoString, Parsed);
+		}
+		return Parsed;
+	};
+
+	auto IsLastRunSet = [](const FLastRunSnapshot& Snapshot) -> bool
+	{
+		return Snapshot.Status != ELastRunStatus::None;
+	};
+
+	FLastRunSnapshot LatestSaveRun;
+	FDateTime LatestSaveUtc = FDateTime::MinValue();
+	int32 LatestSaveSlot = INDEX_NONE;
 	if (SaveSubsystem)
 	{
 		for (int32 SlotIndex = 0; SlotIndex < UT66SaveSubsystem::MaxSlots; ++SlotIndex)
@@ -226,42 +282,75 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			FString MapName;
 			if (SaveSubsystem->GetSlotMeta(SlotIndex, bOccupied, SlotUtc, HeroDisplayName, MapName) && bOccupied)
 			{
-				if (LatestSlot == INDEX_NONE || (!SlotUtc.IsEmpty() && (LatestUtc.IsEmpty() || SlotUtc > LatestUtc)))
+				const FDateTime ParsedUtc = ParseIsoUtc(SlotUtc);
+				if (LatestSaveSlot == INDEX_NONE || ParsedUtc > LatestSaveUtc)
 				{
-					LatestSlot = SlotIndex;
-					LatestUtc = SlotUtc;
+					LatestSaveSlot = SlotIndex;
+					LatestSaveUtc = ParsedUtc;
 				}
 			}
 		}
 	}
 
-	if (LatestSlot != INDEX_NONE)
+	if (LatestSaveSlot != INDEX_NONE)
 	{
-		if (UT66RunSaveGame* LatestSave = SaveSubsystem ? SaveSubsystem->LoadFromSlot(LatestSlot) : nullptr)
+		if (UT66RunSaveGame* LatestSave = SaveSubsystem ? SaveSubsystem->LoadFromSlot(LatestSaveSlot) : nullptr)
 		{
-			LastRun.HeroID = LatestSave->HeroID;
-			LastRun.HeroBodyType = LatestSave->HeroBodyType;
-			LastRun.Difficulty = LatestSave->Difficulty;
-			LastRun.PartySize = LatestSave->PartySize;
-			LastRun.StageReached = LatestSave->StageReached;
-			LastRun.bHasSave = true;
+			LatestSaveRun.HeroID = LatestSave->HeroID;
+			LatestSaveRun.HeroBodyType = LatestSave->HeroBodyType;
+			LatestSaveRun.Difficulty = LatestSave->Difficulty;
+			LatestSaveRun.PartySize = LatestSave->PartySize;
+			LatestSaveRun.StageReached = LatestSave->StageReached;
+			LatestSaveRun.Status = ELastRunStatus::InProgress;
+			LatestSaveRun.SaveSlotIndex = LatestSaveSlot;
+			LatestSaveRun.Timestamp = LatestSaveUtc;
 		}
 	}
 
-	if (!LastRun.bHasSave && T66GI)
+	FLastRunSnapshot LatestFinishedRun;
+	if (LB)
 	{
-		LastRun.HeroID = T66GI->SelectedHeroID;
-		LastRun.HeroBodyType = T66GI->SelectedHeroBodyType;
-		LastRun.Difficulty = T66GI->SelectedDifficulty;
-		LastRun.PartySize = T66GI->SelectedPartySize;
-		LastRun.StageReached = 1;
+		const TArray<FT66RecentRunRecord> RecentRuns = LB->GetRecentRuns();
+		for (const FT66RecentRunRecord& Run : RecentRuns)
+		{
+			if (!IsLastRunSet(LatestFinishedRun) || Run.EndedAtUtc > LatestFinishedRun.Timestamp)
+			{
+				LatestFinishedRun.HeroID = Run.HeroID;
+				LatestFinishedRun.Difficulty = Run.Difficulty;
+				LatestFinishedRun.PartySize = Run.PartySize;
+				LatestFinishedRun.StageReached = Run.StageReached;
+				LatestFinishedRun.Status = Run.bWasFullClear ? ELastRunStatus::Completed : ELastRunStatus::NotCompleted;
+				LatestFinishedRun.RunSummarySlotName = Run.RunSummarySlotName;
+				LatestFinishedRun.Timestamp = Run.EndedAtUtc;
+			}
+		}
+	}
+
+	FLastRunSnapshot LastRun;
+	if (IsLastRunSet(LatestSaveRun) && IsLastRunSet(LatestFinishedRun))
+	{
+		LastRun = (LatestSaveRun.Timestamp >= LatestFinishedRun.Timestamp) ? LatestSaveRun : LatestFinishedRun;
+	}
+	else if (IsLastRunSet(LatestSaveRun))
+	{
+		LastRun = LatestSaveRun;
+	}
+	else if (IsLastRunSet(LatestFinishedRun))
+	{
+		LastRun = LatestFinishedRun;
+	}
+
+	if ((LastRun.Status == ELastRunStatus::Completed || LastRun.Status == ELastRunStatus::NotCompleted)
+		&& !LastRun.RunSummarySlotName.IsEmpty())
+	{
+		if (UT66LeaderboardRunSummarySaveGame* LatestSummary = Cast<UT66LeaderboardRunSummarySaveGame>(UGameplayStatics::LoadGameFromSlot(LastRun.RunSummarySlotName, 0)))
+		{
+			LastRun.HeroBodyType = LatestSummary->HeroBodyType;
+		}
 	}
 
 	TArray<FName> AllHeroIDs = T66GI ? T66GI->GetAllHeroIDs() : TArray<FName>();
-	if (LastRun.HeroID.IsNone() && AllHeroIDs.Num() > 0)
-	{
-		LastRun.HeroID = AllHeroIDs[0];
-	}
+	const FName FallbackHeroID = AllHeroIDs.Num() > 0 ? AllHeroIDs[0] : NAME_None;
 
 	auto GetPartySizeText = [Loc](ET66PartySize PartySize) -> FText
 	{
@@ -307,16 +396,17 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		return T66GI ? T66GI->ResolveHeroPortrait(HeroID, BodyType, Variant) : TSoftObjectPtr<UTexture2D>();
 	};
 
-	auto PickHeroID = [&AllHeroIDs, &LastRun](int32 Index) -> FName
+	auto PickHeroID = [&AllHeroIDs, FallbackHeroID](int32 Index) -> FName
 	{
 		if (AllHeroIDs.IsValidIndex(Index) && !AllHeroIDs[Index].IsNone())
 		{
 			return AllHeroIDs[Index];
 		}
-		return LastRun.HeroID;
+		return FallbackHeroID;
 	};
 
 	TArray<FMenuFriendEntry> Friends;
+	TArray<FMenuPartyEntry> PartyEntries;
 	if (PartySubsystem)
 	{
 		const TArray<FT66PartyFriendEntry>& PartyFriends = PartySubsystem->GetFriends();
@@ -330,6 +420,21 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				Friend.bOnline,
 				PickHeroID(FriendIndex),
 				(FriendIndex % 2 == 0) ? ET66BodyType::TypeA : ET66BodyType::TypeB
+			});
+		}
+
+		const TArray<FT66PartyMemberEntry>& PartyMembers = PartySubsystem->GetPartyMembers();
+		PartyEntries.Reserve(PartyMembers.Num());
+		for (const FT66PartyMemberEntry& Member : PartyMembers)
+		{
+			UTexture2D* AvatarTexture = SteamHelper ? SteamHelper->GetAvatarTextureForSteamId(Member.PlayerId) : nullptr;
+			PartyEntries.Add({
+				Member.PlayerId,
+				Member.DisplayName,
+				Member.bIsLocal,
+				Member.bIsPartyHost,
+				Member.bOnline,
+				MakeAvatarBrush(AvatarTexture, FVector2D(60.f, 60.f))
 			});
 		}
 	}
@@ -368,8 +473,15 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		Brush->DrawAs = ESlateBrushDrawType::Image;
 		Brush->Tiling = ESlateBrushTileType::NoTile;
 		Brush->ImageSize = FVector2D(40.f, 40.f);
-		const TSoftObjectPtr<UTexture2D> FriendPortraitSoft = ResolvePortraitSoft(Friend.HeroID, Friend.BodyType, ET66HeroPortraitVariant::Low);
-		Brush->SetResourceObject(TexPool ? T66SlateTexture::GetLoaded(TexPool, FriendPortraitSoft) : nullptr);
+		if (UTexture2D* SteamAvatarTexture = SteamHelper ? SteamHelper->GetAvatarTextureForSteamId(Friend.PlayerId) : nullptr)
+		{
+			Brush->SetResourceObject(SteamAvatarTexture);
+		}
+		else
+		{
+			const TSoftObjectPtr<UTexture2D> FriendPortraitSoft = ResolvePortraitSoft(Friend.HeroID, Friend.BodyType, ET66HeroPortraitVariant::Low);
+			Brush->SetResourceObject(TexPool ? T66SlateTexture::GetLoaded(TexPool, FriendPortraitSoft) : nullptr);
+		}
 		FriendPortraitBrushes.Add(Brush);
 	}
 
@@ -385,13 +497,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const FLinearColor AvatarAccentOffline(0.08f, 0.09f, 0.11f, 1.0f);
 	const FLinearColor LeaderSlotAccent(0.29f, 0.24f, 0.13f, 1.0f);
 	const FLinearColor PartySlotAccent(0.15f, 0.17f, 0.19f, 1.0f);
-	const FLinearColor PartySlotAccentInactive(0.08f, 0.09f, 0.10f, 1.0f);
-	const FLinearColor PlaceholderTint(0.20f, 0.22f, 0.24f, 0.55f);
 	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
 	const float TopReservedInset = UIManager ? UIManager->GetFrontendTopBarReservedHeight() : TopInset;
 	const FVector2D ViewportLogicalSize = FT66Style::GetViewportLogicalSize();
-	const float HorizontalFramePadding = 0.f;
-	const float BottomFramePadding = 0.f;
+	const float HorizontalFramePadding = 20.f;
+	const float BottomFramePadding = 16.f;
 	const FVector2D ReferenceViewportSize(FT66Style::Tokens::ReferenceLayoutWidth, FT66Style::Tokens::ReferenceLayoutHeight);
 	const float ReferenceTopInset = 107.f;
 	const float ReferenceContentWidthBudget = ReferenceViewportSize.X - (HorizontalFramePadding * 2.f);
@@ -415,7 +525,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	};
 
 	float CenterColumnWidth = LerpDimension(304.f, 372.f);
-	float ResolvedSidePanelWidth = LerpDimension(284.f, 328.f);
+	float ResolvedSidePanelWidth = LerpDimension(298.f, 342.f);
 	float ResolvedLeaderboardPanelWidth = ResolvedSidePanelWidth;
 	const float ColumnGap = LerpDimension(18.f, 28.f);
 
@@ -446,7 +556,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	ResolvedLeaderboardPanelWidth = ResolvedSidePanelWidth;
 
 	const float ColumnTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(500.f, 540.f) * LayoutResponsiveScale);
-	const float SidePanelTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(430.f, 490.f));
+	const float SidePanelTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(448.f, 508.f));
 	const float LeaderboardChromeHeight = LerpDimension(52.f, 58.f);
 	const float LeaderboardShellTargetHeight = SidePanelTargetHeight + LeaderboardChromeHeight;
 	const float CenterButtonWidth = CenterColumnWidth;
@@ -456,8 +566,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	const float CenterButtonLift = FMath::Max(LerpDimension(38.f, 52.f), (ColumnTargetHeight - CenterColumnHeight) * 0.24f);
 	const float SceneVerticalOffset = LerpDimension(96.f, 128.f);
 	const float SceneTitleTopPadding = TopReservedInset + LerpDimension(8.f, 12.f);
-	const int32 LeftPanelBodyFontSize = LerpInt(11, 12);
-	const int32 LeftPanelTitleFontSize = LerpInt(11, 12);
+	const int32 LeftPanelBodyFontSize = LerpInt(10, 11);
+	const int32 LeftPanelTitleFontSize = LerpInt(10, 11);
 	const int32 CenterButtonFontSize = LerpInt(24, 28);
 	const int32 SceneTitleFontSize = LerpInt(42, 52);
 
@@ -550,10 +660,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	};
 
 	const FText InviteFriendText = NSLOCTEXT("T66.MainMenu", "InviteFriend", "INVITE");
-	const FText RemoveFriendText = NSLOCTEXT("T66.MainMenu", "RemoveFriend", "REMOVE");
 	const FText InPartyText = NSLOCTEXT("T66.MainMenu", "InParty", "In Party");
 	const FText PartyFullText = NSLOCTEXT("T66.MainMenu", "PartyFull", "PARTY FULL");
 	const FText OfflineActionText = NSLOCTEXT("T66.MainMenu", "FriendOffline", "OFFLINE");
+	const FText LeavePartyButtonText = NSLOCTEXT("T66.MainMenu", "LeavePartyButton", "X");
 	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
 
 	auto MakeFlatActionButton = [LeftPanelBodyFontSize, &NoBorderButtonStyle](const FText& Text, const FOnClicked& OnClicked, bool bEnabled, bool bPrimary) -> TSharedRef<SWidget>
@@ -600,7 +710,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		const bool bInParty = PartySubsystem && PartySubsystem->IsFriendInParty(Friend.PlayerId);
 		const bool bCanInvite = PartySubsystem && Friend.bOnline && !bInParty && PartySubsystem->GetPartyMemberCount() < 4;
 		const FText ActionText = bInParty
-			? RemoveFriendText
+			? InPartyText
 			: (!Friend.bOnline
 				? OfflineActionText
 				: ((PartySubsystem && PartySubsystem->GetPartyMemberCount() >= 4) ? PartyFullText : InviteFriendText));
@@ -647,26 +757,19 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				[
 					MakeFlatActionButton(
 						ActionText,
-						FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, bInParty]()
+						FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId]()
 						{
 							if (!PartySubsystem)
 							{
 								return FReply::Handled();
 							}
 
-							if (bInParty)
-							{
-								PartySubsystem->RemovePartyMember(PlayerId);
-							}
-							else
-							{
-								PartySubsystem->InviteFriend(PlayerId);
-							}
+							PartySubsystem->InviteFriend(PlayerId);
 
 							ForceRebuildSlate();
 							return FReply::Handled();
 						}),
-						bCanInvite || bInParty,
+						bCanInvite,
 						!bInParty && Friend.bOnline)
 				]
 			];
@@ -743,10 +846,6 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				]
 		];
 
-	const int32 ActivePartySlots = PartySubsystem
-		? FMath::Clamp(PartySubsystem->GetPartyMemberCount(), 1, 4)
-		: 1;
-
 	const int32 OnlineCount = Algo::CountIf(Friends, [](const FMenuFriendEntry& Entry) { return Entry.bOnline; });
 	const int32 OfflineCount = Friends.Num() - OnlineCount;
 
@@ -789,66 +888,120 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	FriendsList->AddSlot().AutoHeight().Padding(0.f, 20.f, 0.f, 0.f)[SNew(SSpacer).Size(FVector2D(1.f, 1.f))];
 	AddFriendGroup(false);
 
-	TSharedRef<SHorizontalBox> PartySlots = SNew(SHorizontalBox);
-	for (int32 SlotIndex = 0; SlotIndex < 4; ++SlotIndex)
+	const bool bCanLeaveParty = SessionSubsystem
+		&& (SessionSubsystem->IsPartySessionActive() || (PartySubsystem && PartySubsystem->HasRemotePartyMembers()));
+
+	auto MakePartyMemberSlot = [LeaderSlotAccent, PartySlotAccent](const FMenuPartyEntry* Member) -> TSharedRef<SWidget>
 	{
-		const bool bPartyEnabledSlot = SlotIndex < ActivePartySlots;
-		const bool bLeaderSlot = SlotIndex == 0;
-		const FLinearColor SlotAccent = bLeaderSlot
-			? LeaderSlotAccent
-			: (bPartyEnabledSlot ? PartySlotAccent : PartySlotAccentInactive);
-		const float PlaceholderOpacity = bPartyEnabledSlot ? 0.55f : 0.28f;
+		const bool bOccupied = Member != nullptr;
+		const bool bHost = bOccupied && Member->bIsPartyHost;
+		const FLinearColor SlotAccent = !bOccupied
+			? FLinearColor(0.12f, 0.13f, 0.15f, 0.95f)
+			: (bHost ? LeaderSlotAccent : PartySlotAccent);
+		const FLinearColor FillColor = bOccupied
+			? FLinearColor(0.04f, 0.05f, 0.07f, 1.0f)
+			: FLinearColor(0.06f, 0.07f, 0.09f, 0.88f);
+		const FText TooltipText = bOccupied
+			? FText::FromString(Member->DisplayName)
+			: FText::GetEmpty();
 
-		const TSharedRef<SWidget> SlotContent =
-			bLeaderSlot
-			? StaticCastSharedRef<SWidget>(
-				SNew(SImage)
-				.Image(LastRunHeroBrush.Get()))
-			: StaticCastSharedRef<SWidget>(
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Top)
-				.Padding(0.f, 10.f, 0.f, 0.f)
+		return SNew(SBox)
+			.WidthOverride(64.f)
+			.HeightOverride(64.f)
+			[
+				SNew(SBorder)
+				.ToolTipText(TooltipText)
+				.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
+				.BorderBackgroundColor(FLinearColor::Transparent)
+				.Padding(0.f)
 				[
-					SNew(SBox)
-					.WidthOverride(12.f)
-					.HeightOverride(12.f)
-					[
+					FT66Style::MakeSlotFrame(
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(PlaceholderTint.R, PlaceholderTint.G, PlaceholderTint.B, PlaceholderOpacity))
-					]
+						.BorderBackgroundColor(FillColor)
+						.Padding(2.f)
+						[
+							SNew(SImage)
+							.Image((bOccupied && Member->AvatarBrush.IsValid()) ? Member->AvatarBrush.Get() : nullptr)
+							.ColorAndOpacity(bOccupied ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.f))
+						],
+						SlotAccent,
+						FMargin(1.f))
 				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Bottom)
-				.Padding(0.f, 0.f, 0.f, 10.f)
-				[
-					SNew(SBox)
-					.WidthOverride(20.f)
-					.HeightOverride(14.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(PlaceholderTint.R, PlaceholderTint.G, PlaceholderTint.B, PlaceholderOpacity))
-					]
-				]);
+			];
+	};
 
+	constexpr int32 MaxPartySlots = 4;
+	TSharedRef<SHorizontalBox> PartySlots = SNew(SHorizontalBox);
+	for (int32 SlotIndex = 0; SlotIndex < MaxPartySlots; ++SlotIndex)
+	{
 		PartySlots->AddSlot()
 		.AutoWidth()
-		.Padding(SlotIndex > 0 ? FMargin(5.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+		.Padding(SlotIndex == 0 ? FMargin(0.f) : FMargin(8.f, 0.f, 0.f, 0.f))
 		[
-			SNew(SBox)
-			.WidthOverride(52.f)
-			.HeightOverride(52.f)
-			[
-				FT66Style::MakeSlotFrame(SlotContent, SlotAccent, bLeaderSlot ? FMargin(1.f) : FMargin(6.f))
-			]
+			MakePartyMemberSlot(PartyEntries.IsValidIndex(SlotIndex) ? &PartyEntries[SlotIndex] : nullptr)
 		];
 	}
 
-	const TSharedRef<SWidget> LastRunRow =
+	const FLinearColor LastRunInProgressText(0.86f, 0.73f, 0.42f, 1.0f);
+	const FLinearColor LastRunCompletedText(0.44f, 0.80f, 0.43f, 1.0f);
+	const FLinearColor LastRunFailedText(0.84f, 0.31f, 0.25f, 1.0f);
+
+	auto GetLastRunStatusText = [](ELastRunStatus Status) -> FText
+	{
+		switch (Status)
+		{
+		case ELastRunStatus::InProgress:
+			return NSLOCTEXT("T66.MainMenu", "LastRunStatusInProgress", "In Progress");
+		case ELastRunStatus::Completed:
+			return NSLOCTEXT("T66.MainMenu", "LastRunStatusCompleted", "Completed");
+		case ELastRunStatus::NotCompleted:
+			return NSLOCTEXT("T66.MainMenu", "LastRunStatusNotCompleted", "Not Completed");
+		case ELastRunStatus::None:
+		default:
+			return NSLOCTEXT("T66.MainMenu", "LastRunStatusNone", "No Run Data");
+		}
+	};
+
+	auto GetLastRunStatusColor = [&](ELastRunStatus Status) -> FLinearColor
+	{
+		switch (Status)
+		{
+		case ELastRunStatus::InProgress:
+			return LastRunInProgressText;
+		case ELastRunStatus::Completed:
+			return LastRunCompletedText;
+		case ELastRunStatus::NotCompleted:
+			return LastRunFailedText;
+		case ELastRunStatus::None:
+		default:
+			return MutedText;
+		}
+	};
+
+	const bool bHasLastRunData = IsLastRunSet(LastRun);
+	const bool bCanResumeLastRun = LastRun.Status == ELastRunStatus::InProgress && LastRun.SaveSlotIndex != INDEX_NONE;
+	const bool bCanViewLastRunSummary = (LastRun.Status == ELastRunStatus::Completed || LastRun.Status == ELastRunStatus::NotCompleted)
+		&& !LastRun.RunSummarySlotName.IsEmpty();
+	const bool bCanActivateLastRun = bCanResumeLastRun || bCanViewLastRunSummary;
+
+	const FText LastRunHeroText = bHasLastRunData
+		? ResolveHeroName(LastRun.HeroID)
+		: NSLOCTEXT("T66.MainMenu", "LastRunEmptyTitle", "No runs recorded yet");
+	const FText LastRunStatusText = bHasLastRunData
+		? GetLastRunStatusText(LastRun.Status)
+		: NSLOCTEXT("T66.MainMenu", "LastRunEmptyBody", "Start, save, or finish a run to populate this panel.");
+	const FText LastRunStageText = bHasLastRunData
+		? FText::Format(NSLOCTEXT("T66.MainMenu", "LastRunStage", "Stage {0}"), FText::AsNumber(LastRun.StageReached))
+		: FText::GetEmpty();
+	const FText LastRunMetaText = bHasLastRunData
+		? FText::Format(
+			NSLOCTEXT("T66.MainMenu", "LastRunMeta", "{0}  |  {1}"),
+			Loc ? Loc->GetText_Difficulty(LastRun.Difficulty) : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"),
+			GetPartySizeText(LastRun.PartySize))
+		: FText::GetEmpty();
+
+	const TSharedRef<SWidget> LastRunRowContent =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 		[
@@ -869,30 +1022,126 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
-				.Text(ResolveHeroName(LastRun.HeroID))
+				.Text(LastRunHeroText)
 				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
 				.ColorAndOpacity(BrightText)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
-				.Text(FText::Format(
-					NSLOCTEXT("T66.MainMenu", "LastRunStage", "Stage {0}"),
-					FText::AsNumber(LastRun.StageReached)))
+				.Text(LastRunStatusText)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
+				.ColorAndOpacity(GetLastRunStatusColor(LastRun.Status))
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
+			[
+				SNew(STextBlock)
+				.Text(LastRunStageText)
 				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
 				.ColorAndOpacity(MutedText)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
-				.Text(FText::Format(
-					NSLOCTEXT("T66.MainMenu", "LastRunMeta", "{0}  |  {1}"),
-					Loc ? Loc->GetText_Difficulty(LastRun.Difficulty) : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"),
-					GetPartySizeText(LastRun.PartySize)))
+				.Text(LastRunMetaText)
 				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
 				.ColorAndOpacity(MutedText)
+				.Visibility(bHasLastRunData ? EVisibility::Visible : EVisibility::Collapsed)
 			]
 		];
+
+	const TSharedRef<SWidget> LastRunRow =
+		bCanActivateLastRun
+		? StaticCastSharedRef<SWidget>(
+			SNew(SButton)
+			.ButtonStyle(&NoBorderButtonStyle)
+			.ContentPadding(FMargin(0.f))
+			.ToolTipText(
+				bCanResumeLastRun
+					? NSLOCTEXT("T66.MainMenu", "ResumeLastRunTooltip", "Resume this saved run")
+					: NSLOCTEXT("T66.MainMenu", "OpenLastRunTooltip", "Open this run summary"))
+			.OnClicked(FOnClicked::CreateLambda([this, LB, SaveSubsystem, PartySubsystem, SessionSubsystem, SlotIndex = LastRun.SaveSlotIndex, RunSummarySlotName = LastRun.RunSummarySlotName, Status = LastRun.Status]()
+			{
+				if (Status == ELastRunStatus::InProgress)
+				{
+					UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+					if (!GI || !SaveSubsystem || SlotIndex == INDEX_NONE)
+					{
+						return FReply::Handled();
+					}
+
+					UT66RunSaveGame* Loaded = SaveSubsystem->LoadFromSlot(SlotIndex);
+					if (!Loaded)
+					{
+						return FReply::Handled();
+					}
+
+					const bool bIsPartyResumeFlow = PartySubsystem && SessionSubsystem
+						&& SessionSubsystem->IsPartySessionActive()
+						&& PartySubsystem->HasRemotePartyMembers();
+					if (bIsPartyResumeFlow)
+					{
+						if (!SessionSubsystem->IsHostingPartySession())
+						{
+							return FReply::Handled();
+						}
+
+						if (SessionSubsystem->StartLoadedGameplayTravel(Loaded, SlotIndex))
+						{
+							if (UIManager)
+							{
+								UIManager->HideAllUI();
+							}
+							return FReply::Handled();
+						}
+					}
+
+					GI->SelectedHeroID = Loaded->HeroID;
+					GI->SelectedHeroBodyType = Loaded->HeroBodyType;
+					GI->SelectedCompanionID = Loaded->CompanionID;
+					GI->SelectedDifficulty = Loaded->Difficulty;
+					GI->SelectedPartySize = Loaded->PartySize;
+					GI->RunSeed = Loaded->RunSeed;
+					GI->PendingLoadedTransform = Loaded->PlayerTransform;
+					GI->bApplyLoadedTransform = true;
+					GI->bLoadAsPreview = false;
+					GI->PendingLoadedRunSnapshot = Loaded->RunSnapshot;
+					GI->bApplyLoadedRunSnapshot = Loaded->RunSnapshot.bValid;
+					GI->CurrentSaveSlotIndex = SlotIndex;
+					GI->bRunIneligibleForLeaderboard = Loaded->bRunIneligibleForLeaderboard;
+					GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
+					GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
+					GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;
+					GI->CurrentRunPartyMemberDisplayNames = Loaded->PartyMemberDisplayNames;
+
+					if (UIManager)
+					{
+						UIManager->HideAllUI();
+					}
+
+					if (Loaded->RunSnapshot.bValid)
+					{
+						UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
+					}
+					else
+					{
+						GI->TransitionToGameplayLevel();
+					}
+
+					return FReply::Handled();
+				}
+
+				if (LB && LB->RequestOpenRunSummarySlot(RunSummarySlotName, ET66ScreenType::None))
+				{
+					ShowModal(ET66ScreenType::RunSummary);
+				}
+
+				return FReply::Handled();
+			}))
+			[
+				LastRunRowContent
+			])
+		: LastRunRowContent;
 
 	const TSharedRef<SWidget> LeftSocialShell =
 		SNew(SBorder)
@@ -934,7 +1183,38 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
-					MakeSectionTitle(NSLOCTEXT("T66.MainMenu", "PartySection", "PARTY"))
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
+					[
+						MakeSectionTitle(NSLOCTEXT("T66.MainMenu", "PartySection", "PARTY"))
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(SBox)
+						.WidthOverride(30.f)
+						.HeightOverride(30.f)
+						[
+							SNew(SButton)
+							.ButtonStyle(&NoBorderButtonStyle)
+							.ContentPadding(FMargin(0.f))
+							.IsEnabled(bCanLeaveParty)
+							.ToolTipText(NSLOCTEXT("T66.MainMenu", "LeavePartyTooltip", "Leave party"))
+							.OnClicked(FOnClicked::CreateUObject(this, &UT66MainMenuScreen::HandleLeavePartyClicked))
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(bCanLeaveParty ? FLinearColor(0.70f, 0.16f, 0.16f, 0.95f) : FLinearColor(0.32f, 0.19f, 0.19f, 0.55f))
+								.Padding(FMargin(0.f))
+								[
+									SNew(STextBlock)
+									.Text(LeavePartyButtonText)
+									.Font(FT66Style::MakeFont(TEXT("Bold"), LeftPanelBodyFontSize + 1))
+									.ColorAndOpacity(FLinearColor(0.96f, 0.96f, 0.96f, 1.0f))
+									.Justification(ETextJustify::Center)
+								]
+							]
+						]
+					]
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 				[
@@ -1039,7 +1319,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Bottom)
-				.Padding(FMargin(-1.f, 0.f, 0.f, -1.f))
+				.Padding(FMargin(HorizontalFramePadding, 0.f, 0.f, BottomFramePadding))
 				[
 					SNew(SBox)
 					.WidthOverride(ResolvedSidePanelWidth)
@@ -1055,7 +1335,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Bottom)
-				.Padding(0.f, 0.f, 0.f, CenterButtonLift)
+				.Padding(0.f, 0.f, 0.f, CenterButtonLift + BottomFramePadding)
 				[
 					SNew(SBox)
 					.WidthOverride(CenterColumnWidth)
@@ -1070,7 +1350,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Right)
 				.VAlign(VAlign_Bottom)
-				.Padding(FMargin(0.f, 0.f, -1.f, -1.f))
+				.Padding(FMargin(0.f, 0.f, HorizontalFramePadding, BottomFramePadding))
 				[
 					SNew(SBox)
 					.WidthOverride(ResolvedLeaderboardPanelWidth)
@@ -1117,11 +1397,46 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 		LeaderboardPanel->SetUIManager(UIManager);
 	}
 
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartyStateChangedHandle = PartySubsystem->OnPartyStateChanged().AddUObject(this, &UT66MainMenuScreen::HandlePartyStateChanged);
+			PartySubsystem->ApplyCurrentPartyToGameInstanceRunContext();
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MainMenuScreen::HandleSessionStateChanged);
+			SessionSubsystem->HandlePartyHubScreenActivated();
+		}
+	}
+
 	// Subscribe to language changes
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
 	{
 		Loc->OnLanguageChanged.AddUniqueDynamic(this, &UT66MainMenuScreen::OnLanguageChanged);
 	}
+}
+
+void UT66MainMenuScreen::OnScreenDeactivated_Implementation()
+{
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartySubsystem->OnPartyStateChanged().Remove(PartyStateChangedHandle);
+			PartyStateChangedHandle.Reset();
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->OnSessionStateChanged().Remove(SessionStateChangedHandle);
+			SessionStateChangedHandle.Reset();
+		}
+	}
+
+	Super::OnScreenDeactivated_Implementation();
 }
 
 void UT66MainMenuScreen::RefreshScreen_Implementation()
@@ -1144,6 +1459,24 @@ void UT66MainMenuScreen::OnLanguageChanged(ET66Language NewLanguage)
 	{
 		LeaderboardPanel->SetUIManager(UIManager);
 	}
+}
+
+void UT66MainMenuScreen::HandlePartyStateChanged()
+{
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartySubsystem->ApplyCurrentPartyToGameInstanceRunContext();
+		}
+	}
+
+	ForceRebuildSlate();
+}
+
+void UT66MainMenuScreen::HandleSessionStateChanged()
+{
+	ForceRebuildSlate();
 }
 
 void UT66MainMenuScreen::RequestBackgroundTexture()
@@ -1270,21 +1603,40 @@ FReply UT66MainMenuScreen::HandleQuitClicked()
 	return FReply::Handled();
 }
 
+FReply UT66MainMenuScreen::HandleLeavePartyClicked()
+{
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (SessionSubsystem->LeaveFrontendLobby(ET66ScreenType::MainMenu))
+			{
+				return FReply::Handled();
+			}
+		}
+
+		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartySubsystem->ResetToLocalParty();
+		}
+	}
+
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
+
 // UFUNCTION handlers (call navigation)
 void UT66MainMenuScreen::OnNewGameClicked()
 {
-	bool bShouldOpenLobby = false;
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->bIsNewGameFlow = true;
-		GI->bHeroSelectionFromLobby = false;
 		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
 		{
 			PartySubsystem->ApplyCurrentPartyToGameInstanceRunContext();
-			bShouldOpenLobby = PartySubsystem->HasRemotePartyMembers();
 		}
 	}
-	NavigateTo(bShouldOpenLobby ? ET66ScreenType::Lobby : ET66ScreenType::HeroSelection);
+	NavigateTo(ET66ScreenType::HeroSelection);
 }
 
 void UT66MainMenuScreen::OnLoadGameClicked()
@@ -1292,6 +1644,10 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->bIsNewGameFlow = false;
+		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
+		{
+			PartySubsystem->ApplyCurrentPartyToGameInstanceRunContext();
+		}
 	}
 	NavigateTo(ET66ScreenType::SaveSlots);
 }

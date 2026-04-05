@@ -10,21 +10,21 @@
 #include "T66PlayerExperienceSubSystem.generated.h"
 
 USTRUCT(BlueprintType)
-struct T66_API FT66RarityIntValues
+struct T66_API FT66RarityIntRanges
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience", meta = (ClampMin = "0"))
-	int32 Black = 50;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience")
+	FT66IntRange Black = { 35, 75 };
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience", meta = (ClampMin = "0"))
-	int32 Red = 150;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience")
+	FT66IntRange Red = { 100, 180 };
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience", meta = (ClampMin = "0"))
-	int32 Yellow = 300;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience")
+	FT66IntRange Yellow = { 220, 380 };
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience", meta = (ClampMin = "0"))
-	int32 White = 600;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience")
+	FT66IntRange White = { 450, 750 };
 };
 
 USTRUCT(BlueprintType)
@@ -69,7 +69,7 @@ struct T66_API FT66PlayerExperienceDifficultyTuning
 	FT66RarityWeights ChestRarityWeights;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
-	FT66RarityIntValues ChestGoldByRarity;
+	FT66RarityIntRanges ChestGoldRangeByRarity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float ChestMimicChance = 0.20f;
@@ -166,7 +166,7 @@ public:
 	FT66RarityWeights GetDifficultyCatchUpLootBagRarityWeights(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyChestCountRange(ET66Difficulty Difficulty) const;
 	FT66RarityWeights GetDifficultyChestRarityWeights(ET66Difficulty Difficulty) const;
-	int32 GetDifficultyChestGoldForRarity(ET66Difficulty Difficulty, ET66Rarity Rarity) const;
+	FT66IntRange GetDifficultyChestGoldRange(ET66Difficulty Difficulty, ET66Rarity Rarity) const;
 	float GetDifficultyChestMimicChance(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyWheelCountRange(ET66Difficulty Difficulty) const;
 	FT66RarityWeights GetDifficultyWheelRarityWeights(ET66Difficulty Difficulty) const;

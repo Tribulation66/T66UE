@@ -578,7 +578,7 @@ namespace
 		}
 
 		UTexture2D* Texture = nullptr;
-		const FString FullPath = FPaths::ProjectDir() / RelativePath;
+		const FString FullPath = FPaths::ProjectContentDir() / RelativePath;
 		const bool bFileExists = FPaths::FileExists(FullPath);
 		const FString AssetPath = ImportedAssetPath ? FString(ImportedAssetPath) : FString(TEXT("<null>"));
 		UE_LOG(
@@ -729,7 +729,7 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_active_tab.png"), ActiveTabBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_tab.png"), HomeInactiveTabBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_active_tab.png"), HomeActiveTabBrush);
-	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_home_icon.frontend_topbar_home_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_icon.png"), HomeIconBrush, FVector2D(72.f, 72.f), TextureFilter::TF_Trilinear);
+	LoadBrushFromRelativePath(TEXT("/Game/UI/Assets/TopBar/frontend_topbar_home_icon.frontend_topbar_home_icon"), TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_home_icon.png"), HomeIconBrush, FVector2D(112.f, 112.f), TextureFilter::TF_Trilinear);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_separator.png"), NavSeparatorBrush);
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_settings_slot.png"), SettingsSlotBrush, FVector2D(78.f, 78.f));
 	LoadBrushFromRelativePath(nullptr, TEXT("SourceAssets/UI/Dota/Generated/frontend_topbar_utility_slot.png"), UtilitySlotBrush, FVector2D(78.f, 78.f));
@@ -871,8 +871,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 	const FVector2D PowerCouponIconSize(LerpDimension(62.f, 70.f), LerpDimension(36.f, 40.f));
 	const FVector2D QuitIconSize(LerpDimension(32.f, 38.f), LerpDimension(32.f, 38.f));
 	const FVector2D QuitGlowSize(LerpDimension(56.f, 62.f), LerpDimension(56.f, 62.f));
-	const FVector2D HomeLogoIconSize(LerpDimension(58.f, 66.f), LerpDimension(58.f, 66.f));
-	const FVector2D HomeButtonHitSize(LerpDimension(82.f, 90.f), TopBarButtonHeight);
+	const FVector2D HomeLogoIconSize(LerpDimension(102.f, 110.f), LerpDimension(102.f, 110.f));
+	const FVector2D HomeButtonHitSize(LerpDimension(136.f, 148.f), LerpDimension(102.f, 110.f));
 	const int32 TopBarTitleFontSize = LerpInt(13, 15);
 	const float AccountStatusTabWidth = LerpDimension(212.f, 224.f);
 	const float PowerUpTabWidth = LerpDimension(160.f, 174.f);

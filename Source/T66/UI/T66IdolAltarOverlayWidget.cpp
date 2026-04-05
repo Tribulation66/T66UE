@@ -9,7 +9,6 @@
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66PlayerController.h"
-#include "UI/Dota/T66DotaSlate.h"
 #include "UI/Dota/T66DotaTheme.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
@@ -17,22 +16,21 @@
 #include "Engine/Texture2D.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
+#include "Styling/SlateStyle.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSpacer.h"
-#include "Widgets/Layout/SWidgetSwitcher.h"
+#include "Widgets/Layout/SWrapBox.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/SToolTip.h"
+#include "Widgets/Text/SRichTextBlock.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
 {
-	static constexpr int32 T66IdolAltarView_Offers = 0;
-	static constexpr int32 T66IdolAltarView_Trade = 1;
-
 	UT66IdolManagerSubsystem* GetIdolManager(UWorld* World)
 	{
 		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
@@ -72,51 +70,83 @@ namespace
 		return INDEX_NONE;
 	}
 
-	FText GetOfferSectionTitle(int32 CategoryIndex)
+	FTextBlockStyle BuildIdolCardBodyStyle()
 	{
-		switch (CategoryIndex)
+		FTextBlockStyle Style = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+		Style.SetFont(FT66DotaTheme::MakeFont(TEXT("Regular"), 15));
+		Style.SetColorAndOpacity(FT66DotaTheme::TextMuted());
+		return Style;
+	}
+
+	const FTextBlockStyle& GetIdolCardBodyStyle()
+	{
+		static const FTextBlockStyle Style = BuildIdolCardBodyStyle();
+		return Style;
+	}
+
+	const ISlateStyle& GetIdolCardRichTextStyle()
+	{
+		static TSharedPtr<FSlateStyleSet> StyleInstance;
+		if (!StyleInstance.IsValid())
 		{
-		case 0: return NSLOCTEXT("T66.IdolAltar", "PierceSection", "PIERCE");
-		case 1: return NSLOCTEXT("T66.IdolAltar", "AOESection", "AOE");
-		case 2: return NSLOCTEXT("T66.IdolAltar", "BounceSection", "BOUNCE");
-		case 3: return NSLOCTEXT("T66.IdolAltar", "DotSection", "DOT");
-		default: return FText::GetEmpty();
+			StyleInstance = MakeShared<FSlateStyleSet>(TEXT("T66.IdolAltarCardRichText"));
+
+			const FTextBlockStyle BodyStyle = BuildIdolCardBodyStyle();
+			FTextBlockStyle StrongStyle = BodyStyle;
+			StrongStyle.SetFont(FT66DotaTheme::MakeFont(TEXT("Bold"), 15));
+			StrongStyle.SetColorAndOpacity(FT66DotaTheme::Text());
+
+			StyleInstance->Set("strong", StrongStyle);
+		}
+
+		return *StyleInstance.Get();
+	}
+
+	TArray<FString> GetHighlightCandidates(const ET66AttackCategory Category)
+	{
+		switch (Category)
+		{
+		case ET66AttackCategory::Pierce:
+			return { TEXT("pierces"), TEXT("pierce") };
+		case ET66AttackCategory::Bounce:
+			return { TEXT("bounces"), TEXT("bounce") };
+		case ET66AttackCategory::AOE:
+			return { TEXT("aoe") };
+		case ET66AttackCategory::DOT:
+			return { TEXT("damage over time"), TEXT("over time") };
+		default:
+			return {};
 		}
 	}
 
-	TSharedPtr<IToolTip> MakeIdolTooltip(const FText& Title, const FText& Description)
+	FText BuildIdolCardDescriptionMarkup(
+		UT66LocalizationSubsystem* Loc,
+		const FName IdolID,
+		const ET66AttackCategory Category)
 	{
-		if (Title.IsEmpty() && Description.IsEmpty())
+		const FText Description = Loc ? Loc->GetText_IdolTooltip(IdolID) : FText::GetEmpty();
+		FString DescriptionString = Description.ToString();
+		if (DescriptionString.IsEmpty())
 		{
-			return nullptr;
+			return Description;
 		}
 
-		return SNew(SToolTip)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
-				.BorderBackgroundColor(FT66Style::Tokens::Bg)
-				.Padding(FMargin(10.f, 8.f))
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[
-						SNew(STextBlock)
-						.Text(Title)
-						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(Description)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						.AutoWrapText(true)
-						.WrapTextAt(280.f)
-					]
-				]
-			];
+		const FString SearchString = DescriptionString.ToLower();
+		for (const FString& Candidate : GetHighlightCandidates(Category))
+		{
+			const int32 MatchIndex = SearchString.Find(Candidate, ESearchCase::IgnoreCase);
+			if (MatchIndex == INDEX_NONE)
+			{
+				continue;
+			}
+
+			const FString MatchedText = DescriptionString.Mid(MatchIndex, Candidate.Len());
+			const FString Markup = FString::Printf(TEXT("<strong>%s</>"), *MatchedText.ToUpper());
+			DescriptionString = DescriptionString.Left(MatchIndex) + Markup + DescriptionString.Mid(MatchIndex + Candidate.Len());
+			return FText::FromString(DescriptionString);
+		}
+
+		return Description;
 	}
 
 	TSharedRef<SWidget> MakeAltarButton(
@@ -175,22 +205,6 @@ namespace
 			Text->SetColorAndOpacity(bEnabled ? FT66DotaTheme::Text() : FT66DotaTheme::TextMuted());
 		}
 	}
-
-	void SetTabButtonState(
-		const TSharedPtr<SBorder>& Background,
-		const TSharedPtr<STextBlock>& Text,
-		const bool bActive)
-	{
-		if (Background.IsValid())
-		{
-			Background->SetBorderBackgroundColor(bActive ? FT66DotaTheme::Accent() : FT66DotaTheme::ButtonNeutral());
-		}
-
-		if (Text.IsValid())
-		{
-			Text->SetColorAndOpacity(bActive ? FT66DotaTheme::Text() : FT66DotaTheme::TextMuted());
-		}
-	}
 }
 
 void UT66IdolAltarOverlayWidget::NativeDestruct()
@@ -231,24 +245,17 @@ bool UT66IdolAltarOverlayWidget::HasSelectionsRemaining() const
 	return !Altar || Altar->RemainingSelections > 0;
 }
 
-bool UT66IdolAltarOverlayWidget::ConsumeSelectionBudget()
+void UT66IdolAltarOverlayWidget::ConsumeSelectionBudget(const int32 SlotIndex)
 {
 	AT66IdolAltar* Altar = SourceAltar.Get();
 	if (!Altar)
 	{
-		return false;
+		return;
 	}
 
-	if (Altar->CatchUpSelectionsRemaining > 0)
+	const bool bConsumedCatchUp = Altar->CatchUpSelectionsRemaining > 0;
+	if (bConsumedCatchUp)
 	{
-		if (UWorld* World = GetWorld())
-		{
-			if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
-			{
-				IdolManager->ConsumeCatchUpIdolPick();
-			}
-		}
-
 		Altar->CatchUpSelectionsRemaining = FMath::Max(0, Altar->CatchUpSelectionsRemaining - 1);
 	}
 
@@ -257,7 +264,58 @@ bool UT66IdolAltarOverlayWidget::ConsumeSelectionBudget()
 		Altar->RemainingSelections = FMath::Max(0, Altar->RemainingSelections - 1);
 	}
 
-	return Altar->RemainingSelections <= 0;
+	if (IsTutorialSingleOfferMode())
+	{
+		Altar->SetTutorialOfferConsumedCatchUp(bConsumedCatchUp);
+	}
+	else
+	{
+		Altar->SetSelectedStockSlotConsumedCatchUp(SlotIndex, bConsumedCatchUp);
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
+		{
+			IdolManager->SetRemainingCatchUpIdolPicks(Altar->CatchUpSelectionsRemaining);
+		}
+	}
+}
+
+void UT66IdolAltarOverlayWidget::RefundSelectionBudget(const int32 SlotIndex)
+{
+	AT66IdolAltar* Altar = SourceAltar.Get();
+	if (!Altar)
+	{
+		return;
+	}
+
+	bool bRefundCatchUp = false;
+	if (IsTutorialSingleOfferMode())
+	{
+		bRefundCatchUp = Altar->DidTutorialOfferConsumeCatchUp();
+		Altar->SetTutorialOfferConsumedCatchUp(false);
+	}
+	else
+	{
+		bRefundCatchUp = Altar->DidSelectedStockSlotConsumeCatchUp(SlotIndex);
+		Altar->SetSelectedStockSlotConsumedCatchUp(SlotIndex, false);
+	}
+
+	if (bRefundCatchUp)
+	{
+		++Altar->CatchUpSelectionsRemaining;
+	}
+
+	++Altar->RemainingSelections;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
+		{
+			IdolManager->SetRemainingCatchUpIdolPicks(Altar->CatchUpSelectionsRemaining);
+		}
+	}
 }
 
 bool UT66IdolAltarOverlayWidget::IsTutorialSingleOfferMode() const
@@ -294,14 +352,11 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 
 	const FText AltarTitle = Loc ? Loc->GetText_IdolAltarTitle() : NSLOCTEXT("T66.IdolAltar", "Title", "IDOL ALTAR");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	OffersButtonLabel = NSLOCTEXT("T66.IdolAltar", "Offers", "OFFERS");
-	TradeButtonLabel = NSLOCTEXT("T66.IdolAltar", "Trade", "TRADE");
 	const FText TakeLabel = NSLOCTEXT("T66.IdolAltar", "Take", "TAKE");
-	const FText ReturnLabel = NSLOCTEXT("T66.IdolAltar", "Return", "RETURN");
-	const FText RerollLabel = Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.IdolAltar", "Reroll", "REROLL");
 
 	OfferCardBoxes.SetNum(OfferSlotsPerCategory);
 	OfferNameTexts.SetNum(OfferSlotsPerCategory);
+	OfferDescriptionTexts.SetNum(OfferSlotsPerCategory);
 	OfferIconImages.SetNum(OfferSlotsPerCategory);
 	OfferIconBrushes.SetNum(OfferSlotsPerCategory);
 	OfferTileBorders.SetNum(OfferSlotsPerCategory);
@@ -310,245 +365,111 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	OfferButtonBorders.SetNum(OfferSlotsPerCategory);
 	OfferButtonTexts.SetNum(OfferSlotsPerCategory);
 
-	TradeCardBoxes.SetNum(TradeSlotCount);
-	TradeNameTexts.SetNum(TradeSlotCount);
-	TradeIconImages.SetNum(TradeSlotCount);
-	TradeIconBrushes.SetNum(TradeSlotCount);
-	TradeTileBorders.SetNum(TradeSlotCount);
-	TradeIconBorders.SetNum(TradeSlotCount);
-	TradeButtons.SetNum(TradeSlotCount);
-	TradeButtonBorders.SetNum(TradeSlotCount);
-	TradeButtonTexts.SetNum(TradeSlotCount);
-
 	for (int32 SlotIndex = 0; SlotIndex < OfferSlotsPerCategory; ++SlotIndex)
 	{
 		OfferIconBrushes[SlotIndex] = MakeShared<FSlateBrush>();
 		OfferIconBrushes[SlotIndex]->DrawAs = ESlateBrushDrawType::Image;
-		OfferIconBrushes[SlotIndex]->ImageSize = FVector2D(220.f, 220.f);
+		OfferIconBrushes[SlotIndex]->ImageSize = FVector2D(184.f, 184.f);
 	}
 
-	for (int32 SlotIndex = 0; SlotIndex < TradeSlotCount; ++SlotIndex)
-	{
-		TradeIconBrushes[SlotIndex] = MakeShared<FSlateBrush>();
-		TradeIconBrushes[SlotIndex]->DrawAs = ESlateBrushDrawType::Image;
-		TradeIconBrushes[SlotIndex]->ImageSize = FVector2D(220.f, 220.f);
-	}
-
-	TSharedRef<SVerticalBox> OffersContent = SNew(SVerticalBox);
-	TSharedRef<SHorizontalBox> CategoryRow = SNew(SHorizontalBox);
+	TSharedRef<SHorizontalBox> CardRow = SNew(SHorizontalBox);
 	for (int32 SlotIndex = 0; SlotIndex < OfferSlotsPerCategory; ++SlotIndex)
 	{
 		TSharedRef<SWidget> ActionButton = MakeAltarButton(
 			TakeLabel,
-			FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnSelectSlot, SlotIndex),
+			FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnToggleSlot, SlotIndex),
 			OfferButtons[SlotIndex],
 			OfferButtonBorders[SlotIndex],
 			OfferButtonTexts[SlotIndex],
 			200.f);
 
-		CategoryRow->AddSlot()
-			.FillWidth(1.f)
-			.Padding(SlotIndex > 0 ? FMargin(14.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+		CardRow->AddSlot()
+		.AutoWidth()
+		.Padding(SlotIndex > 0 ? FMargin(14.f, 0.f, 0.f, 0.f) : FMargin(0.f))
+		[
+			SAssignNew(OfferCardBoxes[SlotIndex], SBox)
+			.WidthOverride(272.f)
+			.HeightOverride(452.f)
 			[
-				SAssignNew(OfferCardBoxes[SlotIndex], SBox)
-				.MinDesiredHeight(470.f)
+				SNew(SBorder)
+				.BorderImage(GetWhiteBrush())
+				.BorderBackgroundColor(FT66DotaTheme::SlotOuter())
+				.Padding(1.f)
 				[
-					SNew(SBorder)
+					SAssignNew(OfferTileBorders[SlotIndex], SBorder)
 					.BorderImage(GetWhiteBrush())
-					.BorderBackgroundColor(FT66DotaTheme::SlotOuter())
+					.BorderBackgroundColor(FT66DotaTheme::Border())
 					.Padding(1.f)
 					[
-						SAssignNew(OfferTileBorders[SlotIndex], SBorder)
+						SNew(SBorder)
 						.BorderImage(GetWhiteBrush())
-						.BorderBackgroundColor(FT66DotaTheme::Border())
-						.Padding(1.f)
+						.BorderBackgroundColor(FT66DotaTheme::SlotFill())
+						.Padding(FMargin(16.f))
 						[
-							SNew(SBorder)
-							.BorderImage(GetWhiteBrush())
-							.BorderBackgroundColor(FT66DotaTheme::SlotFill())
-							.Padding(FMargin(16.f))
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight()
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight()
+								SNew(SBox)
+								.HeightOverride(74.f)
+								.VAlign(VAlign_Center)
 								[
 									SAssignNew(OfferNameTexts[SlotIndex], STextBlock)
 									.Text(FText::GetEmpty())
-									.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 22))
+									.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 18))
 									.ColorAndOpacity(FT66DotaTheme::Text())
 									.Justification(ETextJustify::Center)
 									.AutoWrapText(true)
 								]
-								+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(0.f, 20.f, 0.f, 20.f)
-								[
-									SAssignNew(OfferIconBorders[SlotIndex], SBorder)
-									.BorderImage(GetWhiteBrush())
-									.BorderBackgroundColor(FT66DotaTheme::Border())
-									.Padding(3.f)
-									[
-										SNew(SBorder)
-										.BorderImage(GetWhiteBrush())
-										.BorderBackgroundColor(FT66DotaTheme::PanelInner())
-										.Padding(8.f)
-										[
-											SNew(SBox)
-											.WidthOverride(220.f)
-											.HeightOverride(220.f)
-											[
-												SAssignNew(OfferIconImages[SlotIndex], SImage)
-												.Image(OfferIconBrushes[SlotIndex].Get())
-												.ColorAndOpacity(FLinearColor::White)
-											]
-										]
-									]
-								]
-								+ SVerticalBox::Slot().FillHeight(1.f)
-								[
-									SNew(SSpacer)
-								]
-								+ SVerticalBox::Slot().AutoHeight()
-								[
-									ActionButton
-								]
 							]
-						]
-					]
-				]
-			];
-	}
-
-	OffersContent->AddSlot().AutoHeight()
-	[
-		SAssignNew(CategoryTitleText, STextBlock)
-		.Text(GetOfferSectionTitle(ActiveOfferCategoryIndex))
-		.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 20))
-		.ColorAndOpacity(FT66DotaTheme::Accent2())
-	];
-
-	OffersContent->AddSlot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
-	[
-		CategoryRow
-	];
-
-	OffersContent->AddSlot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 18.f, 0.f, 0.f)
-	[
-		MakeAltarButton(
-			RerollLabel,
-			FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnReroll),
-			RerollButton,
-			RerollButtonBorder,
-			RerollButtonText,
-			180.f)
-	];
-
-	TSharedRef<SHorizontalBox> TradeRow = SNew(SHorizontalBox);
-	for (int32 SlotIndex = 0; SlotIndex < TradeSlotCount; ++SlotIndex)
-	{
-		TSharedRef<SWidget> ActionButton = MakeAltarButton(
-			ReturnLabel,
-			FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnSellSlot, SlotIndex),
-			TradeButtons[SlotIndex],
-			TradeButtonBorders[SlotIndex],
-			TradeButtonTexts[SlotIndex],
-			200.f);
-
-		TradeRow->AddSlot()
-			.FillWidth(1.f)
-			.Padding(SlotIndex > 0 ? FMargin(14.f, 0.f, 0.f, 0.f) : FMargin(0.f))
-			[
-				SAssignNew(TradeCardBoxes[SlotIndex], SBox)
-				.MinDesiredHeight(470.f)
-				[
-					SNew(SBorder)
-					.BorderImage(GetWhiteBrush())
-					.BorderBackgroundColor(FT66DotaTheme::SlotOuter())
-					.Padding(1.f)
-					[
-						SAssignNew(TradeTileBorders[SlotIndex], SBorder)
-						.BorderImage(GetWhiteBrush())
-						.BorderBackgroundColor(FT66DotaTheme::Border())
-						.Padding(1.f)
-						[
-							SNew(SBorder)
-							.BorderImage(GetWhiteBrush())
-							.BorderBackgroundColor(FT66DotaTheme::SlotFill())
-							.Padding(FMargin(16.f))
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 14.f, 0.f, 0.f)
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight()
+								SAssignNew(OfferIconBorders[SlotIndex], SBorder)
+								.BorderImage(GetWhiteBrush())
+								.BorderBackgroundColor(FT66DotaTheme::Border())
+								.Padding(4.f)
 								[
-									SAssignNew(TradeNameTexts[SlotIndex], STextBlock)
-									.Text(FText::GetEmpty())
-									.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 22))
-									.ColorAndOpacity(FT66DotaTheme::Text())
-									.Justification(ETextJustify::Center)
-									.AutoWrapText(true)
-								]
-								+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(0.f, 20.f, 0.f, 20.f)
-								[
-									SAssignNew(TradeIconBorders[SlotIndex], SBorder)
-									.BorderImage(GetWhiteBrush())
-									.BorderBackgroundColor(FT66DotaTheme::Border())
-									.Padding(3.f)
+									SNew(SBox)
+									.WidthOverride(184.f)
+									.HeightOverride(184.f)
 									[
-										SNew(SBorder)
-										.BorderImage(GetWhiteBrush())
-										.BorderBackgroundColor(FT66DotaTheme::PanelInner())
-										.Padding(8.f)
-										[
-											SNew(SBox)
-											.WidthOverride(220.f)
-											.HeightOverride(220.f)
-											[
-												SAssignNew(TradeIconImages[SlotIndex], SImage)
-												.Image(TradeIconBrushes[SlotIndex].Get())
-												.ColorAndOpacity(FLinearColor::White)
-											]
-										]
+										SAssignNew(OfferIconImages[SlotIndex], SImage)
+										.Image(OfferIconBrushes[SlotIndex].Get())
+										.ColorAndOpacity(FLinearColor::White)
 									]
 								]
-								+ SVerticalBox::Slot().FillHeight(1.f)
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+							[
+								SNew(SBox)
+								.HeightOverride(92.f)
+								.VAlign(VAlign_Center)
 								[
-									SNew(SSpacer)
+									SAssignNew(OfferDescriptionTexts[SlotIndex], SRichTextBlock)
+									.Text(FText::GetEmpty())
+									.TextStyle(&GetIdolCardBodyStyle())
+									.DecoratorStyleSet(&GetIdolCardRichTextStyle())
+									.AutoWrapText(true)
+									.Justification(ETextJustify::Center)
 								]
-								+ SVerticalBox::Slot().AutoHeight()
-								[
-									ActionButton
-								]
+							]
+							+ SVerticalBox::Slot().FillHeight(1.f)
+							[
+								SNew(SSpacer)
+							]
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
+							[
+								ActionButton
 							]
 						]
 					]
 				]
-			];
+			]
+		];
 	}
-
-	TSharedRef<SWidget> OffersView = SNew(SScrollBox)
-		+ SScrollBox::Slot()
-		[
-			OffersContent
-		];
-
-	TSharedRef<SWidget> TradeView = SNew(SScrollBox)
-		+ SScrollBox::Slot()
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight()
-			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.IdolAltar", "CurrentIdols", "CURRENT IDOLS"))
-				.Font(FT66DotaTheme::MakeFont(TEXT("Bold"), 18))
-				.ColorAndOpacity(FT66DotaTheme::Accent2())
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-			[
-				TradeRow
-			]
-		];
 
 	TSharedPtr<SButton> BackButton;
 	TSharedPtr<SBorder> BackButtonBorder;
 	TSharedPtr<STextBlock> BackButtonText;
-	TSharedPtr<SButton> OffersTabButton;
-	TSharedPtr<SButton> TradeTabButton;
 
 	const TAttribute<FMargin> VerticalSafeInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
@@ -603,27 +524,8 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								MakeAltarButton(
-									OffersButtonLabel,
-									FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnShowOffers),
-									OffersTabButton,
-									OffersTabBorder,
-									OffersTabText,
-									120.f)
-							]
-							+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
-							[
-								MakeAltarButton(
-									TradeButtonLabel,
-									FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnShowTrade),
-									TradeTabButton,
-									TradeTabBorder,
-									TradeTabText,
-									120.f)
-							]
+							SNew(SBox)
+							.WidthOverride(110.f)
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
@@ -633,33 +535,39 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 						.Font(FT66DotaTheme::MakeFont(TEXT("Regular"), 15))
 						.ColorAndOpacity(FT66DotaTheme::TextMuted())
 					]
-					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 18.f, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f).HAlign(HAlign_Center)
 					[
-						SAssignNew(ViewSwitcher, SWidgetSwitcher)
-						+ SWidgetSwitcher::Slot()
-						[
-							OffersView
-						]
-						+ SWidgetSwitcher::Slot()
-						[
-							TradeView
-						]
+						CardRow
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f).HAlign(HAlign_Center)
+					[
+						MakeAltarButton(
+							Loc ? Loc->GetText_Reroll() : NSLOCTEXT("T66.IdolAltar", "Reroll", "REROLL"),
+							FOnClicked::CreateUObject(this, &UT66IdolAltarOverlayWidget::OnReroll),
+							RerollButton,
+							RerollButtonBorder,
+							RerollButtonText,
+							180.f)
+					]
+					+ SVerticalBox::Slot().FillHeight(1.f)
+					[
+						SNew(SSpacer)
 					],
 					FT66PanelParams(ET66PanelType::Panel)
-						.SetColor(FT66Style::Tokens::Panel)
+						.SetColor(FLinearColor::Black)
 						.SetPadding(FMargin(28.f)))
 				]
 			]
 		];
 
 	SetActionButtonState(BackButton, BackButtonBorder, BackButtonText, true, false);
-	SetActionButtonState(RerollButton, RerollButtonBorder, RerollButtonText, true, false);
+	SetActionButtonState(RerollButton, RerollButtonBorder, RerollButtonText, !IsTutorialSingleOfferMode(), false);
 	if (IsTutorialSingleOfferMode() && StatusText.IsValid())
 	{
 		StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "TutorialSingleOffer", "Aria prepared one idol for this lesson."));
 	}
+
 	RefreshStock();
-	RefreshViewState();
 	return FT66Style::MakeResponsiveRoot(Root);
 }
 
@@ -682,12 +590,9 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 	const bool bTutorialSingleOffer = IsTutorialSingleOfferMode();
 	const FName TutorialOfferedIdolID = GetTutorialOfferedIdolID();
 
-	if (CategoryTitleText.IsValid())
+	if (RerollButton.IsValid())
 	{
-		CategoryTitleText->SetText(
-			bTutorialSingleOffer
-				? NSLOCTEXT("T66.IdolAltar", "TutorialOfferSection", "GUIDE OFFER")
-				: GetOfferSectionTitle(ActiveOfferCategoryIndex));
+		RerollButton->SetVisibility(IsTutorialSingleOfferMode() ? EVisibility::Collapsed : EVisibility::Visible);
 	}
 
 	for (int32 VisibleSlotIndex = 0; VisibleSlotIndex < OfferSlotsPerCategory; ++VisibleSlotIndex)
@@ -699,9 +604,11 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		const FName IdolID = bTutorialSingleOffer
 			? TutorialOfferedIdolID
 			: (bHasItem ? Stock[SlotIndex] : NAME_None);
-		const bool bSelected = bTutorialSingleOffer ? false : IdolManager->IsIdolStockSlotSelected(SlotIndex);
 		const int32 EquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
 		const bool bOwned = EquippedSlot != INDEX_NONE;
+		const bool bSelected = bTutorialSingleOffer
+			? (bOwned && !HasSelectionsRemaining())
+			: IdolManager->IsIdolStockSlotSelected(SlotIndex);
 		const int32 CurrentTierValue = bOwned ? IdolManager->GetEquippedIdolLevelInSlot(EquippedSlot) : 0;
 		const ET66ItemRarity OfferedRarity = bTutorialSingleOffer
 			? ET66ItemRarity::Black
@@ -714,16 +621,13 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 
 		if (OfferCardBoxes.IsValidIndex(VisibleSlotIndex) && OfferCardBoxes[VisibleSlotIndex].IsValid())
 		{
-			OfferCardBoxes[VisibleSlotIndex]->SetVisibility((bHasItem && !bSelected) ? EVisibility::Visible : EVisibility::Collapsed);
+			OfferCardBoxes[VisibleSlotIndex]->SetVisibility(bHasItem ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 
 		FIdolData IdolData;
 		const bool bHasData = bHasItem && GI && GI->GetIdolData(IdolID, IdolData);
 		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasData ? IdolData.GetIconForRarity(OfferedRarity) : TSoftObjectPtr<UTexture2D>();
 		const FLinearColor RarityColor = bHasItem ? FItemData::GetItemRarityColor(OfferedRarity) : FT66DotaTheme::Border();
-		const TSharedPtr<IToolTip> IdolTooltip = (bHasData && Loc)
-			? MakeIdolTooltip(Loc->GetText_IdolDisplayName(IdolID), Loc->GetText_IdolTooltip(IdolID))
-			: nullptr;
 
 		if (OfferNameTexts.IsValidIndex(VisibleSlotIndex) && OfferNameTexts[VisibleSlotIndex].IsValid())
 		{
@@ -733,16 +637,25 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 					: FText::GetEmpty());
 		}
 
+		if (OfferDescriptionTexts.IsValidIndex(VisibleSlotIndex) && OfferDescriptionTexts[VisibleSlotIndex].IsValid())
+		{
+			OfferDescriptionTexts[VisibleSlotIndex]->SetText(
+				bHasData
+					? BuildIdolCardDescriptionMarkup(Loc, IdolID, IdolData.Category)
+					: FText::GetEmpty());
+			OfferDescriptionTexts[VisibleSlotIndex]->SetVisibility(bHasData ? EVisibility::Visible : EVisibility::Collapsed);
+		}
+
 		if (OfferTileBorders.IsValidIndex(VisibleSlotIndex) && OfferTileBorders[VisibleSlotIndex].IsValid())
 		{
-			OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(DarkenColor(RarityColor, 0.72f));
-			OfferTileBorders[VisibleSlotIndex]->SetToolTip(IdolTooltip);
+			OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(DarkenColor(RarityColor, bSelected ? 0.92f : 0.72f));
+			OfferTileBorders[VisibleSlotIndex]->SetToolTip(nullptr);
 		}
 
 		if (OfferIconBorders.IsValidIndex(VisibleSlotIndex) && OfferIconBorders[VisibleSlotIndex].IsValid())
 		{
 			OfferIconBorders[VisibleSlotIndex]->SetBorderBackgroundColor(RarityColor);
-			OfferIconBorders[VisibleSlotIndex]->SetToolTip(IdolTooltip);
+			OfferIconBorders[VisibleSlotIndex]->SetToolTip(nullptr);
 		}
 
 		if (OfferIconBrushes.IsValidIndex(VisibleSlotIndex) && OfferIconBrushes[VisibleSlotIndex].IsValid())
@@ -760,123 +673,27 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		if (OfferIconImages.IsValidIndex(VisibleSlotIndex) && OfferIconImages[VisibleSlotIndex].IsValid())
 		{
 			OfferIconImages[VisibleSlotIndex]->SetVisibility(!IdolIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Hidden);
-			OfferIconImages[VisibleSlotIndex]->SetToolTip(IdolTooltip);
+			OfferIconImages[VisibleSlotIndex]->SetToolTip(nullptr);
 		}
 
 		if (OfferButtonTexts.IsValidIndex(VisibleSlotIndex) && OfferButtonTexts[VisibleSlotIndex].IsValid())
 		{
-			OfferButtonTexts[VisibleSlotIndex]->SetText(NSLOCTEXT("T66.IdolAltar", "Take", "TAKE"));
+			OfferButtonTexts[VisibleSlotIndex]->SetText(
+				bSelected
+					? NSLOCTEXT("T66.IdolAltar", "Return", "RETURN")
+					: NSLOCTEXT("T66.IdolAltar", "Take", "TAKE"));
 		}
 
 		SetActionButtonState(
 			OfferButtons.IsValidIndex(VisibleSlotIndex) ? OfferButtons[VisibleSlotIndex] : TSharedPtr<SButton>(),
 			OfferButtonBorders.IsValidIndex(VisibleSlotIndex) ? OfferButtonBorders[VisibleSlotIndex] : TSharedPtr<SBorder>(),
 			OfferButtonTexts.IsValidIndex(VisibleSlotIndex) ? OfferButtonTexts[VisibleSlotIndex] : TSharedPtr<STextBlock>(),
-			bCanTake,
-			false);
-	}
-
-	RefreshTrade();
-	RefreshViewState();
-}
-
-void UT66IdolAltarOverlayWidget::RefreshTrade()
-{
-	UWorld* World = GetWorld();
-	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
-	if (!IdolManager)
-	{
-		return;
-	}
-
-	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
-	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-	const TArray<FName>& Equipped = IdolManager->GetEquippedIdols();
-
-	for (int32 SlotIndex = 0; SlotIndex < TradeSlotCount; ++SlotIndex)
-	{
-		const bool bHasItem = Equipped.IsValidIndex(SlotIndex) && !Equipped[SlotIndex].IsNone();
-		const FName IdolID = bHasItem ? Equipped[SlotIndex] : NAME_None;
-		const ET66ItemRarity CurrentRarity = bHasItem ? IdolManager->GetEquippedIdolRarityInSlot(SlotIndex) : ET66ItemRarity::Black;
-		const FLinearColor RarityColor = bHasItem ? FItemData::GetItemRarityColor(CurrentRarity) : FT66DotaTheme::Border();
-
-		if (TradeCardBoxes.IsValidIndex(SlotIndex) && TradeCardBoxes[SlotIndex].IsValid())
-		{
-			TradeCardBoxes[SlotIndex]->SetVisibility(bHasItem ? EVisibility::Visible : EVisibility::Collapsed);
-		}
-
-		FIdolData IdolData;
-		const bool bHasData = bHasItem && GI && GI->GetIdolData(IdolID, IdolData);
-		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasData ? IdolData.GetIconForRarity(CurrentRarity) : TSoftObjectPtr<UTexture2D>();
-		const TSharedPtr<IToolTip> IdolTooltip = (bHasData && Loc)
-			? MakeIdolTooltip(Loc->GetText_IdolDisplayName(IdolID), Loc->GetText_IdolTooltip(IdolID))
-			: nullptr;
-
-		if (TradeNameTexts.IsValidIndex(SlotIndex) && TradeNameTexts[SlotIndex].IsValid())
-		{
-			TradeNameTexts[SlotIndex]->SetText(
-				bHasItem
-					? (Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID))
-					: FText::GetEmpty());
-		}
-
-		if (TradeTileBorders.IsValidIndex(SlotIndex) && TradeTileBorders[SlotIndex].IsValid())
-		{
-			TradeTileBorders[SlotIndex]->SetBorderBackgroundColor(DarkenColor(RarityColor, 0.72f));
-			TradeTileBorders[SlotIndex]->SetToolTip(IdolTooltip);
-		}
-
-		if (TradeIconBorders.IsValidIndex(SlotIndex) && TradeIconBorders[SlotIndex].IsValid())
-		{
-			TradeIconBorders[SlotIndex]->SetBorderBackgroundColor(RarityColor);
-			TradeIconBorders[SlotIndex]->SetToolTip(IdolTooltip);
-		}
-
-		if (TradeIconBrushes.IsValidIndex(SlotIndex) && TradeIconBrushes[SlotIndex].IsValid())
-		{
-			if (!IdolIconSoft.IsNull() && TexPool)
-			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, IdolIconSoft, this, TradeIconBrushes[SlotIndex], FName(TEXT("IdolTrade"), SlotIndex + 1), true);
-			}
-			else
-			{
-				TradeIconBrushes[SlotIndex]->SetResourceObject(nullptr);
-			}
-		}
-
-		if (TradeIconImages.IsValidIndex(SlotIndex) && TradeIconImages[SlotIndex].IsValid())
-		{
-			TradeIconImages[SlotIndex]->SetVisibility(!IdolIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Hidden);
-			TradeIconImages[SlotIndex]->SetToolTip(IdolTooltip);
-		}
-
-		if (TradeButtonTexts.IsValidIndex(SlotIndex) && TradeButtonTexts[SlotIndex].IsValid())
-		{
-			TradeButtonTexts[SlotIndex]->SetText(NSLOCTEXT("T66.IdolAltar", "Return", "RETURN"));
-		}
-
-		SetActionButtonState(
-			TradeButtons.IsValidIndex(SlotIndex) ? TradeButtons[SlotIndex] : TSharedPtr<SButton>(),
-			TradeButtonBorders.IsValidIndex(SlotIndex) ? TradeButtonBorders[SlotIndex] : TSharedPtr<SBorder>(),
-			TradeButtonTexts.IsValidIndex(SlotIndex) ? TradeButtonTexts[SlotIndex] : TSharedPtr<STextBlock>(),
-			bHasItem,
-			true);
+			bSelected || bCanTake,
+			bSelected);
 	}
 }
 
-void UT66IdolAltarOverlayWidget::RefreshViewState()
-{
-	if (ViewSwitcher.IsValid())
-	{
-		ViewSwitcher->SetActiveWidgetIndex(FMath::Clamp(ActiveViewIndex, T66IdolAltarView_Offers, T66IdolAltarView_Trade));
-	}
-
-	SetTabButtonState(OffersTabBorder, OffersTabText, ActiveViewIndex == T66IdolAltarView_Offers);
-	SetTabButtonState(TradeTabBorder, TradeTabText, ActiveViewIndex == T66IdolAltarView_Trade);
-}
-
-FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
+FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 {
 	UWorld* World = GetWorld();
 	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
@@ -885,10 +702,46 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 		return FReply::Handled();
 	}
 
-	UT66LocalizationSubsystem* Loc = nullptr;
-	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
+	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	const bool bTutorialSingleOffer = IsTutorialSingleOfferMode();
+	const int32 StockIndex = GetOfferStockIndexForVisibleSlot(SlotIndex);
+	const TArray<FName>& Stock = IdolManager->GetIdolStockIDs();
+	const FName IdolID = bTutorialSingleOffer
+		? GetTutorialOfferedIdolID()
+		: (Stock.IsValidIndex(StockIndex) ? Stock[StockIndex] : NAME_None);
+	const bool bSelected = bTutorialSingleOffer
+		? (FindEquippedSlotByIdolID(IdolManager, IdolID) != INDEX_NONE && !HasSelectionsRemaining())
+		: IdolManager->IsIdolStockSlotSelected(StockIndex);
+
+	if (IdolID.IsNone())
 	{
-		Loc = GI->GetSubsystem<UT66LocalizationSubsystem>();
+		return FReply::Handled();
+	}
+
+	if (bSelected)
+	{
+		const int32 EquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
+		if (EquippedSlot == INDEX_NONE || !IdolManager->SellEquippedIdolInSlot(EquippedSlot))
+		{
+			if (StatusText.IsValid())
+			{
+				StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "ReturnFailed", "Nothing to return."));
+			}
+			return FReply::Handled();
+		}
+
+		RefundSelectionBudget(StockIndex);
+
+		if (StatusText.IsValid())
+		{
+			StatusText->SetText(FText::Format(
+				NSLOCTEXT("T66.IdolAltar", "ReturnSuccess", "Returned {0}."),
+				Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID)));
+		}
+
+		RefreshStock();
+		return FReply::Handled();
 	}
 
 	if (!HasSelectionsRemaining())
@@ -901,44 +754,28 @@ FReply UT66IdolAltarOverlayWidget::OnSelectSlot(int32 SlotIndex)
 	}
 
 	const TArray<FName>& EquippedBefore = IdolManager->GetEquippedIdols();
-	const bool bTutorialSingleOffer = IsTutorialSingleOfferMode();
-	const int32 StockIndex = GetOfferStockIndexForVisibleSlot(SlotIndex);
-	const TArray<FName>& Stock = IdolManager->GetIdolStockIDs();
-	const FName IdolID = bTutorialSingleOffer
-		? GetTutorialOfferedIdolID()
-		: (Stock.IsValidIndex(StockIndex) ? Stock[StockIndex] : NAME_None);
 	const bool bWasUpgrade = EquippedBefore.Contains(IdolID);
 
 	const bool bSelectionApplied = bTutorialSingleOffer
 		? IdolManager->SelectIdolFromAltar(IdolID)
 		: IdolManager->SelectIdolFromStock(StockIndex);
-	if (bSelectionApplied)
-	{
-		const bool bShouldClose = ConsumeSelectionBudget();
-		if (StatusText.IsValid())
-		{
-			StatusText->SetText(
-				bWasUpgrade
-					? NSLOCTEXT("T66.IdolAltar", "UpgradeApplied", "Upgraded idol.")
-					: (Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped.")));
-		}
-
-		if (bShouldClose)
-		{
-			if (AT66IdolAltar* Altar = SourceAltar.Get())
-			{
-				Altar->Destroy();
-			}
-			SourceAltar.Reset();
-			return OnBack();
-		}
-	}
-	else
+	if (!bSelectionApplied)
 	{
 		if (StatusText.IsValid())
 		{
 			StatusText->SetText(Loc ? Loc->GetText_IdolAltarNoEmptySlot() : NSLOCTEXT("T66.IdolAltar", "NoEmptySlot", "No empty idol slot."));
 		}
+		return FReply::Handled();
+	}
+
+	ConsumeSelectionBudget(StockIndex);
+
+	if (StatusText.IsValid())
+	{
+		StatusText->SetText(
+			bWasUpgrade
+				? NSLOCTEXT("T66.IdolAltar", "UpgradeApplied", "Upgraded idol.")
+				: (Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped.")));
 	}
 
 	RefreshStock();
@@ -954,58 +791,6 @@ FReply UT66IdolAltarOverlayWidget::OnReroll()
 
 	ActiveOfferCategoryIndex = (ActiveOfferCategoryIndex + 1) % OfferCategoryCount;
 	RefreshStock();
-	return FReply::Handled();
-}
-
-FReply UT66IdolAltarOverlayWidget::OnSellSlot(int32 SlotIndex)
-{
-	UWorld* World = GetWorld();
-	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
-	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
-	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	if (!IdolManager)
-	{
-		return FReply::Handled();
-	}
-
-	const TArray<FName>& Equipped = IdolManager->GetEquippedIdols();
-	const FName IdolID = Equipped.IsValidIndex(SlotIndex) ? Equipped[SlotIndex] : NAME_None;
-	if (!IdolManager->SellEquippedIdolInSlot(SlotIndex))
-	{
-		if (StatusText.IsValid())
-		{
-			StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "ReturnFailed", "Nothing to return."));
-		}
-		return FReply::Handled();
-	}
-
-	if (StatusText.IsValid())
-	{
-		StatusText->SetText(FText::Format(
-			NSLOCTEXT("T66.IdolAltar", "ReturnSuccess", "Returned {0}."),
-			Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID)));
-	}
-
-	RefreshStock();
-	return FReply::Handled();
-}
-
-FReply UT66IdolAltarOverlayWidget::OnShowOffers()
-{
-	ActiveViewIndex = T66IdolAltarView_Offers;
-	RefreshViewState();
-	return FReply::Handled();
-}
-
-FReply UT66IdolAltarOverlayWidget::OnShowTrade()
-{
-	if (IsTutorialSingleOfferMode())
-	{
-		return FReply::Handled();
-	}
-
-	ActiveViewIndex = T66IdolAltarView_Trade;
-	RefreshViewState();
 	return FReply::Handled();
 }
 

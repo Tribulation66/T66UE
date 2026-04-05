@@ -163,7 +163,11 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FLinearColor ShellFill = T66AchievementsShellFill();
 	const FLinearColor InsetFill = T66AchievementsInsetFill();
-	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
+	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
+	const float TopBarOverlapPx = 22.f;
+	const float TopInset = UIManager
+		? FMath::Max(0.f, (UIManager->GetFrontendTopBarContentHeight() - TopBarOverlapPx) / ResponsiveScale)
+		: 0.f;
 	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	RefreshAchievements();

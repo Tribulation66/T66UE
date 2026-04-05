@@ -63,6 +63,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
 	FName TutorialOfferedIdolID = FName(TEXT("Idol_Electric"));
 
+	bool DidSelectedStockSlotConsumeCatchUp(int32 SlotIndex) const
+	{
+		return SelectedStockSlotsConsumedCatchUp.IsValidIndex(SlotIndex) && SelectedStockSlotsConsumedCatchUp[SlotIndex];
+	}
+
+	void SetSelectedStockSlotConsumedCatchUp(int32 SlotIndex, bool bConsumed)
+	{
+		if (SlotIndex < 0)
+		{
+			return;
+		}
+
+		if (!SelectedStockSlotsConsumedCatchUp.IsValidIndex(SlotIndex))
+		{
+			SelectedStockSlotsConsumedCatchUp.SetNumZeroed(SlotIndex + 1);
+		}
+
+		SelectedStockSlotsConsumedCatchUp[SlotIndex] = bConsumed;
+	}
+
+	bool DidTutorialOfferConsumeCatchUp() const { return bTutorialOfferConsumedCatchUp; }
+	void SetTutorialOfferConsumedCatchUp(bool bConsumed) { bTutorialOfferConsumedCatchUp = bConsumed; }
+
 	/** Apply simple placeholder visuals (color/material). */
 	void ApplyVisuals();
 
@@ -72,5 +95,8 @@ protected:
 private:
 	void UpdateInteractionBounds();
 	void ConfigureVisualCollision(UPrimitiveComponent* Primitive, bool bEnableCollision) const;
+
+	TArray<bool> SelectedStockSlotsConsumedCatchUp;
+	bool bTutorialOfferConsumedCatchUp = false;
 };
 

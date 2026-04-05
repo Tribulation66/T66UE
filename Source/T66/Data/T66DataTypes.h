@@ -125,6 +125,14 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> PortraitTypeBFull;
 
+	/** Hero invincible/blessed portrait texture for Type A (used during the Saint blessing). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> PortraitInvincible;
+
+	/** Hero invincible/blessed portrait texture for Type B (used during the Saint blessing). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> PortraitTypeBInvincible;
+
 	/** Map theme associated with this hero (for Solo runs) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	FName MapTheme;

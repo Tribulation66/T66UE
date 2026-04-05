@@ -1257,86 +1257,6 @@ FText UT66LocalizationSubsystem::GetText_Coop() const
 	return NSLOCTEXT("T66.PartySize", "Coop", "CO-OP");
 }
 
-FText UT66LocalizationSubsystem::GetText_LobbyTitle() const
-{
-	return NSLOCTEXT("T66.Lobby", "Title", "LOBBY");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyYou() const
-{
-	return NSLOCTEXT("T66.Lobby", "You", "You");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyWaitingForPlayer() const
-{
-	return NSLOCTEXT("T66.Lobby", "WaitingForPlayer", "Waiting for player...");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyInviteFriend() const
-{
-	return NSLOCTEXT("T66.Lobby", "InviteFriend", "INVITE FRIEND");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyContinue() const
-{
-	return NSLOCTEXT("T66.Lobby", "Continue", "CONTINUE");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbySelectHero() const
-{
-	return NSLOCTEXT("T66.Lobby", "SelectHero", "SELECT HERO");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyReadyCheck() const
-{
-	return NSLOCTEXT("T66.Lobby", "ReadyCheck", "READY CHECK");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyReadyToStart() const
-{
-	return NSLOCTEXT("T66.Lobby", "ReadyToStart", "Ready to start?");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyFriends() const
-{
-	return NSLOCTEXT("T66.Lobby", "Friends", "FRIENDS");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyReady() const
-{
-	return NSLOCTEXT("T66.Lobby", "Ready", "READY");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyNotReady() const
-{
-	return NSLOCTEXT("T66.Lobby", "NotReady", "Not Ready");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyLeaveConfirmTitle() const
-{
-	return NSLOCTEXT("T66.Lobby", "LeaveConfirmTitle", "Leave lobby?");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyLeaveConfirmMessage() const
-{
-	return NSLOCTEXT("T66.Lobby", "LeaveConfirmMessage", "Are you sure you want to leave the lobby?");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyLeaveStay() const
-{
-	return NSLOCTEXT("T66.Lobby", "LeaveStay", "STAY");
-}
-
-FText UT66LocalizationSubsystem::GetText_LobbyLeaveLeave() const
-{
-	return NSLOCTEXT("T66.Lobby", "LeaveLeave", "LEAVE");
-}
-
-FText UT66LocalizationSubsystem::GetText_BackToLobby() const
-{
-	return NSLOCTEXT("T66.Lobby", "BackToLobby", "BACK TO LOBBY");
-}
-
 // ========== Hero Selection ==========
 
 FText UT66LocalizationSubsystem::GetText_SelectYourHero() const
@@ -1710,10 +1630,10 @@ FText UT66LocalizationSubsystem::GetText_IdolTooltip(FName IdolID) const
 	if (IdolID == FName(TEXT("Idol_Star")))      return NSLOCTEXT("T66.IdolAltar", "Idol_Star_Tooltip", "Fires a star shard that bounces between enemies.");
 
 	// AOE idols
-	if (IdolID == FName(TEXT("Idol_Earth")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Earth_Tooltip", "Triggers a shockwave at the point of impact.");
-	if (IdolID == FName(TEXT("Idol_Water")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Water_Tooltip", "Creates a water burst at the point of impact.");
-	if (IdolID == FName(TEXT("Idol_BlackHole"))) return NSLOCTEXT("T66.IdolAltar", "Idol_BlackHole_Tooltip", "Opens a void at the point of impact.");
-	if (IdolID == FName(TEXT("Idol_Storm")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Storm_Tooltip", "Summons a storm burst at the point of impact.");
+	if (IdolID == FName(TEXT("Idol_Earth")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Earth_Tooltip", "Triggers an AOE shockwave.");
+	if (IdolID == FName(TEXT("Idol_Water")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Water_Tooltip", "Creates an AOE water burst.");
+	if (IdolID == FName(TEXT("Idol_BlackHole"))) return NSLOCTEXT("T66.IdolAltar", "Idol_BlackHole_Tooltip", "Opens an AOE black hole.");
+	if (IdolID == FName(TEXT("Idol_Storm")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Storm_Tooltip", "Summons an AOE storm burst.");
 
 	// Pierce idols
 	if (IdolID == FName(TEXT("Idol_Light")))     return NSLOCTEXT("T66.IdolAltar", "Idol_Light_Tooltip", "Fires a beam that pierces through enemies.");
@@ -1877,7 +1797,7 @@ FText UT66LocalizationSubsystem::GetText_Resume() const
 
 FText UT66LocalizationSubsystem::GetText_SaveAndQuit() const
 {
-	return NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT GAME");
+	return NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT");
 }
 
 FText UT66LocalizationSubsystem::GetText_Restart() const

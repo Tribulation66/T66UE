@@ -12,9 +12,6 @@
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
-#include "UI/Screens/T66LobbyScreen.h"
-#include "UI/Screens/T66LobbyReadyCheckModal.h"
-#include "UI/Screens/T66LobbyBackConfirmModal.h"
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/Screens/T66PauseMenuScreen.h"
 #include "UI/Screens/T66ReportBugScreen.h"
@@ -382,11 +379,13 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 	case ET66ScreenType::SaveSlots:
 		return UT66SaveSlotsScreen::StaticClass();
 	case ET66ScreenType::Lobby:
-		return UT66LobbyScreen::StaticClass();
 	case ET66ScreenType::LobbyReadyCheck:
-		return UT66LobbyReadyCheckModal::StaticClass();
 	case ET66ScreenType::LobbyBackConfirm:
-		return UT66LobbyBackConfirmModal::StaticClass();
+		if (const TSubclassOf<UT66ScreenBase>* MainMenuClass = ScreenClasses.Find(ET66ScreenType::MainMenu))
+		{
+			return *MainMenuClass;
+		}
+		return nullptr;
 	case ET66ScreenType::PauseMenu:
 		return UT66PauseMenuScreen::StaticClass();
 	case ET66ScreenType::Achievements:
@@ -658,18 +657,9 @@ void AT66PlayerController::AutoLoadScreenClasses()
 	{
 		ScreenClasses.Add(ET66ScreenType::CompanionGrid, UT66CompanionGridScreen::StaticClass());
 	}
-	if (!ScreenClasses.Contains(ET66ScreenType::Lobby) || ScreenClasses[ET66ScreenType::Lobby] == nullptr)
-	{
-		ScreenClasses.Add(ET66ScreenType::Lobby, UT66LobbyScreen::StaticClass());
-	}
-	if (!ScreenClasses.Contains(ET66ScreenType::LobbyReadyCheck) || ScreenClasses[ET66ScreenType::LobbyReadyCheck] == nullptr)
-	{
-		ScreenClasses.Add(ET66ScreenType::LobbyReadyCheck, UT66LobbyReadyCheckModal::StaticClass());
-	}
-	if (!ScreenClasses.Contains(ET66ScreenType::LobbyBackConfirm) || ScreenClasses[ET66ScreenType::LobbyBackConfirm] == nullptr)
-	{
-		ScreenClasses.Add(ET66ScreenType::LobbyBackConfirm, UT66LobbyBackConfirmModal::StaticClass());
-	}
+	ScreenClasses.Remove(ET66ScreenType::Lobby);
+	ScreenClasses.Remove(ET66ScreenType::LobbyReadyCheck);
+	ScreenClasses.Remove(ET66ScreenType::LobbyBackConfirm);
 }
 
 

@@ -5,11 +5,9 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66GameInstance.h"
-#include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66GameplayHUDWidget.h"
-#include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 
@@ -186,35 +184,10 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 {
 	GenerateStrip();
 
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
-	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-
 	TSharedPtr<SHorizontalBox> StripRow = SNew(SHorizontalBox);
 	for (int32 i = 0; i < StripItems.Num(); ++i)
 	{
 		const FCrateItemEntry& Entry = StripItems[i];
-		const ET66ItemRarity ItemRarity = LootRarityToItemRarity(Entry.Rarity);
-		const FText ItemName = Loc ? Loc->GetText_ItemDisplayNameForRarity(Entry.ItemID, ItemRarity) : FText::FromName(Entry.ItemID);
-		FItemData ItemData;
-		const bool bHasData = T66GI && T66GI->GetItemData(Entry.ItemID, ItemData);
-		int32 PreviewMinRoll = 1;
-		int32 PreviewMaxRoll = 1;
-		FItemData::GetLine1RollRange(ItemRarity, PreviewMinRoll, PreviewMaxRoll);
-		int32 PreviewMainValue = FMath::Max(1, FMath::RoundToInt(static_cast<float>(PreviewMinRoll + PreviewMaxRoll) * 0.5f));
-		if (bHasData && ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
-		{
-			PreviewMainValue = FMath::Clamp(PreviewMainValue, 1, 5);
-		}
-		FText ItemDesc = bHasData
-			? T66ItemCardTextUtils::BuildItemCardDescription(Loc, ItemData, ItemRarity, PreviewMainValue, ScaleMult)
-			: FText::GetEmpty();
-		if (ItemDesc.IsEmpty() && bHasData)
-		{
-			ItemDesc = T66ItemCardTextUtils::GetPrimaryStatLabel(Loc, ItemData.PrimaryStatType);
-		}
 		const FLinearColor FrameColor = Entry.Color * 0.45f + FLinearColor(0.06f, 0.06f, 0.08f, 0.55f);
 
 		StripRow->AddSlot()
@@ -230,13 +203,15 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 					.BorderBackgroundColor(FrameColor)
 					.Padding(FMargin(2.f))
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().FillHeight(1.f)
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f))
+						.Padding(FMargin(6.f))
 						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f))
-							.Padding(FMargin(6.f))
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
 							[
 								SNew(SScaleBox)
 								.Stretch(EStretch::ScaleToFit)
@@ -252,34 +227,17 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 									]
 								]
 							]
-						]
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor::Black)
-							.Padding(FMargin(6.f, 4.f))
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Left)
+							.VAlign(VAlign_Top)
 							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight()
+								SNew(SBox)
+								.WidthOverride(10.f)
+								.HeightOverride(10.f)
 								[
-									SNew(STextBlock)
-									.Text(ItemName)
-									.Font(FT66Style::Tokens::FontBold(9))
-									.ColorAndOpacity(FLinearColor::White)
-									.Justification(ETextJustify::Left)
-									.AutoWrapText(true)
-									.WrapTextAt(ItemTileWidth - 12.f)
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
-								[
-									SNew(STextBlock)
-									.Text(ItemDesc)
-									.Font(FT66Style::Tokens::FontRegular(7))
-									.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.88f))
-									.Justification(ETextJustify::Left)
-									.AutoWrapText(true)
-									.WrapTextAt(ItemTileWidth - 12.f)
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(Entry.Color)
 								]
 							]
 						]
@@ -294,11 +252,11 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 		.VAlign(VAlign_Bottom)
 		.Padding(TAttribute<FMargin>::CreateLambda([]() -> FMargin
 		{
-			return FT66Style::GetSafePadding(FMargin(
-				16.f,
+			return FMargin(
+				0.f,
 				0.f,
 				12.f,
-				UT66GameplayHUDWidget::BottomRightInventoryPanelHeight + UT66GameplayHUDWidget::BottomRightPresentationGap));
+				UT66GameplayHUDWidget::BottomRightInventoryPanelHeight + UT66GameplayHUDWidget::BottomRightPresentationGap);
 		}))
 		[
 			SNew(SBox)
@@ -307,14 +265,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 			[
 				FT66Style::MakePanel(
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Crate", "Title", "OPEN CRATE"))
-						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center)
+					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Center)
 					[
 						SNew(SOverlay)
 						+ SOverlay::Slot()
@@ -360,7 +311,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 							]
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right).Padding(0.f, 4.f, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
 					[
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -371,7 +322,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 							.Text(BuildSkipCountdownText(ScrollDuration))
 							.Font(FT66Style::Tokens::FontRegular(8))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-							.Justification(ETextJustify::Right)
+							.Justification(ETextJustify::Center)
 						]
 					],
 					FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(6.f))
@@ -415,7 +366,7 @@ void UT66CrateOverlayWidget::TickScroll()
 	UpdateSkipText();
 
 	const float Alpha = FMath::Clamp(ScrollElapsed / FMath::Max(0.01f, ScrollDuration), 0.f, 1.f);
-	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f);
+	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 5.2f);
 	CurrentScrollOffset = TotalScrollDistance * Ease;
 
 	const FMargin Margin(-CurrentScrollOffset, 0.f, 0.f, 0.f);

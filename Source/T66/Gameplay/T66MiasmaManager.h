@@ -8,6 +8,8 @@
 
 class AT66MiasmaTile;
 class UInstancedStaticMeshComponent;
+class UMaterialInstanceDynamic;
+class UTexture2D;
 
 /**
  * Spawns thin black miasma tiles as soon as the stage timer starts.
@@ -41,6 +43,54 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
 	int32 Seed = 1337;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "16", ClampMax = "256"))
+	int32 TextureResolution = 64;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "4", ClampMax = "64"))
+	int32 AnimationFrames = 18;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "1.0", ClampMax = "60.0"))
+	float AnimationFPS = 12.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "0.0", ClampMax = "5.0"))
+	float WarpSpeed = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "0.0", ClampMax = "1.5"))
+	float WarpIntensity = 0.12f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "0.01", ClampMax = "10.0"))
+	float WarpCloseness = 2.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation")
+	FVector2D FlowDir = FVector2D(1.0f, 0.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "0.0", ClampMax = "5.0"))
+	float FlowSpeed = 0.18f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "0.1", ClampMax = "30.0"))
+	float UVScale = 4.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Look", meta = (ClampMin = "1.0", ClampMax = "24.0"))
+	float CellDensity = 6.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Look", meta = (ClampMin = "1.0", ClampMax = "18.0"))
+	float EdgeContrast = 7.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Look", meta = (ClampMin = "0.1", ClampMax = "6.0"))
+	float Brightness = 2.2f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Look")
+	FVector2D PatternOffset = FVector2D::ZeroVector;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Look")
+	FLinearColor CoreColor = FLinearColor(0.09f, 0.01f, 0.00f, 1.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Look")
+	FLinearColor MidColor = FLinearColor(0.78f, 0.11f, 0.02f, 1.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Look")
+	FLinearColor GlowColor = FLinearColor(1.00f, 0.47f, 0.08f, 1.0f);
+
 	/** When true, no ground miasma tiles are spawned or updated. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Miasma")
 	bool bSpawningPaused = false;
@@ -59,14 +109,27 @@ private:
 	UPROPERTY()
 	TObjectPtr<UInstancedStaticMeshComponent> TileInstances;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> LavaMID = nullptr;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTexture2D>> GeneratedFrames;
+
 	UPROPERTY()
 	TArray<FVector> TileCenters;
 
 	int32 SpawnedTileCount = 0;
 	float DamageTickAccumulator = 0.f;
+	float AnimationStartTimeSeconds = 0.f;
+	int32 CurrentFrameIndex = INDEX_NONE;
 
 	void BuildGrid();
 	void EnsureSpawnedCount(int32 DesiredCount);
 	void BuildMainMapSubcellGrid();
 	void TickDamageOverActiveTiles(float DeltaTime);
+	void EnsureVisualMaterial();
+	void GenerateAnimationFrames();
+	UTexture2D* BuildFrameTexture(int32 FrameIndex, int32 ClampedFrames, int32 Resolution) const;
+	FLinearColor SampleLavaColor(const FVector2D& BaseUV, float Phase) const;
+	void ApplyAnimationFrame(int32 FrameIndex);
 };

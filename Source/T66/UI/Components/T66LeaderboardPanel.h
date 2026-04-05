@@ -74,8 +74,6 @@ private:
 	// Only used for Speed Run leaderboard (absolute stage within the selected difficulty segment).
 	int32 CurrentSpeedRunStage = 1;
 
-	// Generate placeholder data
-	void GeneratePlaceholderData();
 	void RebuildEntryList();
 	FReply HandleEntryClicked(const FLeaderboardEntry& Entry);
 	FReply HandleLocalEntryClicked(const FLeaderboardEntry& Entry);

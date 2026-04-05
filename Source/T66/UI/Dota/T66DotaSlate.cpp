@@ -128,7 +128,7 @@ namespace
 		return Entry.Brush.IsValid() ? Entry.Brush.Get() : nullptr;
 	}
 
-	const FString GDotaGeneratedSourceDir = FPaths::ProjectDir() / TEXT("SourceAssets/UI/Dota/Generated");
+	const FString GDotaGeneratedSourceDir = FPaths::ProjectContentDir() / TEXT("SourceAssets/UI/Dota/Generated");
 
 	FT66OptionalTextureBrush& GetButtonPlateEntry(ET66DotaButtonPlateType Type)
 	{

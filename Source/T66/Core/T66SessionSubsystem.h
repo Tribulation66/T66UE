@@ -24,11 +24,14 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+	bool EnsurePartySessionReady(ET66PartySize DesiredPartySize = ET66PartySize::Duo, ET66ScreenType PartyHubScreen = ET66ScreenType::MainMenu);
 	bool PrepareToHostFrontendLobby(ET66PartySize DesiredPartySize);
+	void HandlePartyHubScreenActivated();
 	void HandleLobbyScreenActivated();
 	bool SendInviteToFriend(const FString& FriendPlayerId);
+	bool StartLoadedGameplayTravel(const class UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex);
 	bool StartGameplayTravel();
-	bool LeaveFrontendLobby(ET66ScreenType ReturnScreen = ET66ScreenType::PartySizePicker);
+	bool LeaveFrontendLobby(ET66ScreenType ReturnScreen = ET66ScreenType::MainMenu);
 	bool SyncLocalLobbyProfile();
 	void SetLocalLobbyReady(bool bReady);
 
@@ -58,6 +61,9 @@ private:
 	void UpdateSteamRichPresence();
 	void ClearSteamRichPresence();
 	struct FT66LobbyPlayerInfo BuildLocalLobbyProfile() const;
+	bool SendInviteToFriendInternal(const FString& FriendPlayerId);
+	void ApplyLoadedRunToGameInstance(const class UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex) const;
+	void ApplySavedPartyProfilesToCurrentSession(const class UT66RunSaveGame* LoadedSave) const;
 
 	void HandleCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void HandleDestroySessionComplete(FName SessionName, bool bWasSuccessful);
@@ -85,7 +91,9 @@ private:
 	bool bPendingTravelToStandaloneFrontendAfterDestroy = false;
 	bool bLocalReadyState = false;
 	FOnlineSessionSearchResult PendingJoinSearchResult;
-	ET66ScreenType PendingFrontendReturnScreen = ET66ScreenType::PartySizePicker;
+	ET66ScreenType PendingFrontendReturnScreen = ET66ScreenType::MainMenu;
+	ET66ScreenType PartyHubScreenType = ET66ScreenType::MainMenu;
+	FString PendingInviteFriendPlayerId;
 	FString LastStatusText;
 	FOnT66SessionStateChanged SessionStateChanged;
 };

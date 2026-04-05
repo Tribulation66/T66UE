@@ -192,7 +192,7 @@ private:
 	FReply HandleTheLabClicked();
 	FReply HandleEnterClicked();
 	FReply HandleBackClicked();
-	FReply HandleBackToLobbyClicked();
+	FReply HandleBackToPartyClicked();
 
 	// Difficulty dropdown
 	void OnDifficultyChanged(TSharedPtr<FString> NewValue, ESelectInfo::Type SelectInfo);

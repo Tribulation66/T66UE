@@ -226,15 +226,10 @@ void UT66PartySizePickerScreen::SelectPartySize(ET66PartySize PartySize)
 		{
 			if (UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr)
 			{
-				if (!SessionSubsystem->PrepareToHostFrontendLobby(PartySize))
-				{
-					NavigateTo(ET66ScreenType::Lobby);
-				}
+				SessionSubsystem->EnsurePartySessionReady(PartySize, ET66ScreenType::MainMenu);
 			}
-			else
-			{
-				NavigateTo(ET66ScreenType::Lobby);
-			}
+
+			NavigateTo(ET66ScreenType::HeroSelection);
 		}
 	}
 	else

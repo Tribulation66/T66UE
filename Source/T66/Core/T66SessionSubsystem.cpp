@@ -2,8 +2,10 @@
 
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66RunSaveGame.h"
 #include "Core/T66SteamHelper.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Gameplay/T66SessionPlayerState.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineIdentityInterface.h"
@@ -12,6 +14,7 @@
 #include "OnlineSessionSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "GameFramework/GameStateBase.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "steam/steam_api.h"
@@ -74,7 +77,13 @@ void UT66SessionSubsystem::Deinitialize()
 
 bool UT66SessionSubsystem::PrepareToHostFrontendLobby(ET66PartySize DesiredPartySize)
 {
+	return EnsurePartySessionReady(DesiredPartySize, ET66ScreenType::MainMenu);
+}
+
+bool UT66SessionSubsystem::EnsurePartySessionReady(ET66PartySize DesiredPartySize, ET66ScreenType PartyHubScreen)
+{
 	PendingPartySize = DesiredPartySize;
+	PartyHubScreenType = PartyHubScreen;
 	bLocalReadyState = false;
 
 	UWorld* World = GetWorld();
@@ -93,16 +102,18 @@ bool UT66SessionSubsystem::PrepareToHostFrontendLobby(ET66PartySize DesiredParty
 	{
 		if (UT66GameInstance* GI = GetT66GameInstance())
 		{
-			GI->PendingFrontendScreen = ET66ScreenType::Lobby;
+			GI->PendingFrontendScreen = PartyHubScreenType;
 		}
-		BroadcastStateChanged(TEXT("Lobby already active."));
-		return false;
+		SyncLocalLobbyProfile();
+		UpdateSteamRichPresence();
+		BroadcastStateChanged(TEXT("Party session already active."));
+		return true;
 	}
 
 	bPendingCreateLobbySession = true;
 	if (UT66GameInstance* GI = GetT66GameInstance())
 	{
-		GI->PendingFrontendScreen = ET66ScreenType::Lobby;
+		GI->PendingFrontendScreen = PartyHubScreenType;
 	}
 
 	if (World->GetNetMode() == NM_Standalone)
@@ -112,10 +123,10 @@ bool UT66SessionSubsystem::PrepareToHostFrontendLobby(ET66PartySize DesiredParty
 		return true;
 	}
 
-	return false;
+	return CreatePartySession();
 }
 
-void UT66SessionSubsystem::HandleLobbyScreenActivated()
+void UT66SessionSubsystem::HandlePartyHubScreenActivated()
 {
 	if (bPendingCreateLobbySession && !IsPartySessionActive())
 	{
@@ -126,7 +137,29 @@ void UT66SessionSubsystem::HandleLobbyScreenActivated()
 	UpdateSteamRichPresence();
 }
 
+void UT66SessionSubsystem::HandleLobbyScreenActivated()
+{
+	HandlePartyHubScreenActivated();
+}
+
 bool UT66SessionSubsystem::SendInviteToFriend(const FString& FriendPlayerId)
+{
+	if (FriendPlayerId.IsEmpty())
+	{
+		return false;
+	}
+
+	if (!IsPartySessionActive())
+	{
+		PendingInviteFriendPlayerId = FriendPlayerId;
+		const ET66PartySize DesiredPartySize = GetMaxPartyMembers() > 1 ? PendingPartySize : ET66PartySize::Duo;
+		return EnsurePartySessionReady(DesiredPartySize, ET66ScreenType::MainMenu);
+	}
+
+	return SendInviteToFriendInternal(FriendPlayerId);
+}
+
+bool UT66SessionSubsystem::SendInviteToFriendInternal(const FString& FriendPlayerId)
 {
 	if (FriendPlayerId.IsEmpty() || !CanSendInvites())
 	{
@@ -152,6 +185,24 @@ bool UT66SessionSubsystem::SendInviteToFriend(const FString& FriendPlayerId)
 	const bool bSent = SessionInterface->SendSessionInviteToFriend(0, PartySessionName, *FriendNetId);
 	BroadcastStateChanged(bSent ? TEXT("Invite sent.") : TEXT("Steam invite send failed."));
 	return bSent;
+}
+
+bool UT66SessionSubsystem::StartLoadedGameplayTravel(const UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex)
+{
+	if (!LoadedSave || !IsPartySessionActive())
+	{
+		return false;
+	}
+
+	if (!IsHostingPartySession())
+	{
+		BroadcastStateChanged(TEXT("Only the host can load a party save."));
+		return false;
+	}
+
+	ApplyLoadedRunToGameInstance(LoadedSave, SaveSlotIndex);
+	ApplySavedPartyProfilesToCurrentSession(LoadedSave);
+	return StartGameplayTravel();
 }
 
 bool UT66SessionSubsystem::StartGameplayTravel()
@@ -372,7 +423,7 @@ bool UT66SessionSubsystem::JoinPartySession(const FOnlineSessionSearchResult& Se
 	bJoinInProgress = true;
 	if (UT66GameInstance* GI = GetT66GameInstance())
 	{
-		GI->PendingFrontendScreen = ET66ScreenType::Lobby;
+		GI->PendingFrontendScreen = PartyHubScreenType;
 	}
 
 	const bool bStarted = SessionInterface->JoinSession(0, PartySessionName, SearchResult);
@@ -505,6 +556,88 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 	return LobbyInfo;
 }
 
+void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex) const
+{
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!GI || !LoadedSave)
+	{
+		return;
+	}
+
+	GI->SelectedHeroID = LoadedSave->HeroID;
+	GI->SelectedHeroBodyType = LoadedSave->HeroBodyType;
+	GI->SelectedCompanionID = LoadedSave->CompanionID;
+	GI->SelectedDifficulty = LoadedSave->Difficulty;
+	GI->SelectedPartySize = LoadedSave->PartySize;
+	GI->RunSeed = LoadedSave->RunSeed;
+	GI->PendingLoadedTransform = LoadedSave->PlayerTransform;
+	GI->bApplyLoadedTransform = true;
+	GI->bLoadAsPreview = false;
+	GI->PendingLoadedRunSnapshot = LoadedSave->RunSnapshot;
+	GI->bApplyLoadedRunSnapshot = LoadedSave->RunSnapshot.bValid;
+	GI->CurrentSaveSlotIndex = SaveSlotIndex;
+	GI->bRunIneligibleForLeaderboard = LoadedSave->bRunIneligibleForLeaderboard;
+	GI->CurrentRunOwnerPlayerId = LoadedSave->OwnerPlayerId;
+	GI->CurrentRunOwnerDisplayName = LoadedSave->OwnerDisplayName;
+	GI->CurrentRunPartyMemberIds = LoadedSave->PartyMemberIds;
+	GI->CurrentRunPartyMemberDisplayNames = LoadedSave->PartyMemberDisplayNames;
+}
+
+void UT66SessionSubsystem::ApplySavedPartyProfilesToCurrentSession(const UT66RunSaveGame* LoadedSave) const
+{
+	if (!LoadedSave)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	AGameStateBase* GameState = World ? World->GetGameState() : nullptr;
+	if (!GameState)
+	{
+		return;
+	}
+
+	TMap<FString, FT66SavedPartyPlayerState> SavedPlayersById;
+	for (const FT66SavedPartyPlayerState& SavedPlayer : LoadedSave->SavedPartyPlayers)
+	{
+		if (!SavedPlayer.PlayerId.IsEmpty())
+		{
+			SavedPlayersById.Add(SavedPlayer.PlayerId, SavedPlayer);
+		}
+	}
+
+	if (SavedPlayersById.Num() == 0)
+	{
+		return;
+	}
+
+	for (APlayerState* PlayerState : GameState->PlayerArray)
+	{
+		AT66SessionPlayerState* SessionPlayerState = Cast<AT66SessionPlayerState>(PlayerState);
+		if (!SessionPlayerState)
+		{
+			continue;
+		}
+
+		const FT66SavedPartyPlayerState* SavedPlayer = SavedPlayersById.Find(SessionPlayerState->GetSteamId());
+		if (!SavedPlayer)
+		{
+			continue;
+		}
+
+		FT66LobbyPlayerInfo LobbyInfo = SessionPlayerState->GetLobbyInfo();
+		LobbyInfo.SteamId = SavedPlayer->PlayerId;
+		LobbyInfo.DisplayName = SavedPlayer->DisplayName;
+		LobbyInfo.SelectedHeroID = SavedPlayer->HeroID;
+		LobbyInfo.SelectedHeroBodyType = SavedPlayer->HeroBodyType;
+		LobbyInfo.SelectedHeroSkinID = SavedPlayer->HeroSkinID.IsNone() ? FName(TEXT("Default")) : SavedPlayer->HeroSkinID;
+		LobbyInfo.SelectedCompanionID = SavedPlayer->CompanionID;
+		LobbyInfo.SelectedCompanionBodyType = SavedPlayer->CompanionBodyType;
+		LobbyInfo.bPartyHost = SavedPlayer->bIsPartyHost;
+		SessionPlayerState->ApplyLobbyInfo(LobbyInfo);
+	}
+}
+
 void UT66SessionSubsystem::HandleCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	if (SessionName != PartySessionName)
@@ -516,6 +649,13 @@ void UT66SessionSubsystem::HandleCreateSessionComplete(FName SessionName, bool b
 	BroadcastStateChanged(bWasSuccessful ? TEXT("Steam lobby ready.") : TEXT("Steam lobby creation failed."));
 	SyncLocalLobbyProfile();
 	UpdateSteamRichPresence();
+
+	if (bWasSuccessful && !PendingInviteFriendPlayerId.IsEmpty())
+	{
+		const FString FriendPlayerId = PendingInviteFriendPlayerId;
+		PendingInviteFriendPlayerId.Reset();
+		SendInviteToFriendInternal(FriendPlayerId);
+	}
 }
 
 void UT66SessionSubsystem::HandleDestroySessionComplete(FName SessionName, bool bWasSuccessful)

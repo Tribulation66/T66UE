@@ -11,9 +11,9 @@ class SBorder;
 class SBox;
 class SButton;
 class SImage;
+class SRichTextBlock;
 class STextBlock;
 class SWidget;
-class SWidgetSwitcher;
 struct FSlateBrush;
 class AT66IdolAltar;
 
@@ -31,11 +31,10 @@ private:
 	static constexpr int32 OfferSlotCount = 16;
 	static constexpr int32 OfferSlotsPerCategory = 4;
 	static constexpr int32 OfferCategoryCount = 4;
-	static constexpr int32 TradeSlotCount = 4;
 
-	TSharedPtr<STextBlock> CategoryTitleText;
 	TArray<TSharedPtr<SBox>> OfferCardBoxes;
 	TArray<TSharedPtr<STextBlock>> OfferNameTexts;
+	TArray<TSharedPtr<SRichTextBlock>> OfferDescriptionTexts;
 	TArray<TSharedPtr<SImage>> OfferIconImages;
 	TArray<TSharedPtr<FSlateBrush>> OfferIconBrushes;
 	TArray<TSharedPtr<SBorder>> OfferTileBorders;
@@ -44,43 +43,21 @@ private:
 	TArray<TSharedPtr<SBorder>> OfferButtonBorders;
 	TArray<TSharedPtr<STextBlock>> OfferButtonTexts;
 
-	TArray<TSharedPtr<SBox>> TradeCardBoxes;
-	TArray<TSharedPtr<STextBlock>> TradeNameTexts;
-	TArray<TSharedPtr<SImage>> TradeIconImages;
-	TArray<TSharedPtr<FSlateBrush>> TradeIconBrushes;
-	TArray<TSharedPtr<SBorder>> TradeTileBorders;
-	TArray<TSharedPtr<SBorder>> TradeIconBorders;
-	TArray<TSharedPtr<SButton>> TradeButtons;
-	TArray<TSharedPtr<SBorder>> TradeButtonBorders;
-	TArray<TSharedPtr<STextBlock>> TradeButtonTexts;
-
 	TSharedPtr<STextBlock> StatusText;
-	TSharedPtr<STextBlock> OffersTabText;
-	TSharedPtr<STextBlock> TradeTabText;
-	TSharedPtr<SBorder> OffersTabBorder;
-	TSharedPtr<SBorder> TradeTabBorder;
-	TSharedPtr<SWidgetSwitcher> ViewSwitcher;
 	TSharedPtr<SButton> RerollButton;
 	TSharedPtr<SBorder> RerollButtonBorder;
 	TSharedPtr<STextBlock> RerollButtonText;
 	TWeakObjectPtr<AT66IdolAltar> SourceAltar;
-	int32 ActiveViewIndex = 0;
 	int32 ActiveOfferCategoryIndex = 0;
-	FText OffersButtonLabel;
-	FText TradeButtonLabel;
 
-	FReply OnSelectSlot(int32 SlotIndex);
-	FReply OnSellSlot(int32 SlotIndex);
 	FReply OnReroll();
-	FReply OnShowOffers();
-	FReply OnShowTrade();
+	FReply OnToggleSlot(int32 SlotIndex);
 	FReply OnBack();
 
 	void RefreshStock();
-	void RefreshTrade();
-	void RefreshViewState();
 	bool HasSelectionsRemaining() const;
-	bool ConsumeSelectionBudget();
+	void ConsumeSelectionBudget(int32 SlotIndex);
+	void RefundSelectionBudget(int32 SlotIndex);
 	int32 GetOfferStockIndexForVisibleSlot(int32 VisibleSlotIndex) const;
 	bool IsTutorialSingleOfferMode() const;
 	FName GetTutorialOfferedIdolID() const;

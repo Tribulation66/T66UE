@@ -20,7 +20,8 @@ enum class ET66HeroPortraitVariant : uint8
 {
 	Low,
 	Half,
-	Full
+	Full,
+	Invincible
 };
 
 UENUM(BlueprintType)
@@ -205,10 +206,6 @@ public:
 	/** If true, the current level is The Lab (practice room). No rewards, no run save; exit returns to Hero Selection. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsLabLevel = false;
-
-	/** When true, Hero Selection was opened from the co-op Lobby; hide Enter the Tribulation and Back returns to Lobby. */
-	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	bool bHeroSelectionFromLobby = false;
 
 	/** Frontend screen to show immediately after the next frontend-level BeginPlay. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")

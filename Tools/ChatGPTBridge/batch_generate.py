@@ -20,6 +20,8 @@ from server import (
     connect_and_generate,
     fetch_image_from_page,
     fill_and_send_prompt,
+    get_assistant_image_candidates,
+    get_assistant_turn_count,
     get_image_candidates,
     open_generation_page,
     save_output,
@@ -274,12 +276,21 @@ def persist_candidates(page, candidates, prompt_stem: str) -> list[GeneratedAsse
     return assets
 
 
-def harvest_assets_since_baseline(page, baseline_keys: set[str], prompt_stem: str) -> list[GeneratedAsset]:
-    candidates = [
-        candidate
-        for candidate in get_image_candidates(page)
-        if candidate.key not in baseline_keys
-    ]
+def harvest_assets_since_baseline(
+    page,
+    baseline_assistant_turn_count: int,
+    baseline_page_image_keys: set[str],
+    prompt_stem: str,
+) -> list[GeneratedAsset]:
+    current_page_candidates = get_image_candidates(page)
+    current_page_keys = {candidate.key for candidate in current_page_candidates}
+    if (
+        get_assistant_turn_count(page) <= baseline_assistant_turn_count
+        and not (current_page_keys - baseline_page_image_keys)
+    ):
+        return []
+
+    candidates = get_assistant_image_candidates(page) or current_page_candidates
     if not candidates:
         return []
     candidates = sorted(candidates, key=lambda candidate: (candidate.dom_index, -candidate.score))
@@ -447,19 +458,30 @@ def main() -> int:
             while True:
                 try:
                     if page is not None:
-                        baseline_keys = {candidate.key for candidate in get_image_candidates(page)}
+                        baseline_assistant_turn_count = get_assistant_turn_count(page)
+                        baseline_page_image_keys = {candidate.key for candidate in get_image_candidates(page)}
                         fill_and_send_prompt(page, full_prompt)
 
                         rate_limit_retries = 0
                         while True:
                             try:
-                                candidates = wait_for_new_images(page, baseline_keys, args.timeout_seconds)
+                                candidates = wait_for_new_images(
+                                    page,
+                                    baseline_assistant_turn_count,
+                                    baseline_page_image_keys,
+                                    args.timeout_seconds,
+                                )
                                 assets = persist_candidates(page, candidates, prompt_stem)
                                 break
                             except RateLimitError as exc:
                                 rate_limit_retries += 1
                                 if rate_limit_retries > args.max_rate_limit_retries:
-                                    salvaged_assets = harvest_assets_since_baseline(page, baseline_keys, prompt_stem)
+                                    salvaged_assets = harvest_assets_since_baseline(
+                                        page,
+                                        baseline_assistant_turn_count,
+                                        baseline_page_image_keys,
+                                        prompt_stem,
+                                    )
                                     if salvaged_assets:
                                         assets = salvaged_assets
                                         break
@@ -473,7 +495,12 @@ def main() -> int:
                                 )
                                 time.sleep(exc.retry_after_seconds)
                             except BridgeError:
-                                salvaged_assets = harvest_assets_since_baseline(page, baseline_keys, prompt_stem)
+                                salvaged_assets = harvest_assets_since_baseline(
+                                    page,
+                                    baseline_assistant_turn_count,
+                                    baseline_page_image_keys,
+                                    prompt_stem,
+                                )
                                 if salvaged_assets:
                                     assets = salvaged_assets
                                     break

@@ -156,6 +156,9 @@ public:
 	/** Crate open: play CS:GO-style item reveal HUD animation. */
 	void StartCrateOpenHUD();
 
+	/** Chest open: play an above-inventory gold reward HUD presentation. */
+	void StartChestRewardHUD(ET66Rarity Rarity, int32 GoldAmount);
+
 	/** Open the Run Summary after a full-clear victory. */
 	void ShowVictoryRunSummary();
 

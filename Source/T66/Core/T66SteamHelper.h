@@ -6,6 +6,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66SteamHelper.generated.h"
 
+class UTexture2D;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnSteamTicketReady,
 	bool, bSuccess,
@@ -71,6 +73,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Steam")
 	TArray<FT66SteamFriendInfo> GetFriendInfos() const { return FriendInfos; }
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
+	UTexture2D* GetLocalAvatarTexture() const { return LocalAvatarTexture; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
+	UTexture2D* GetAvatarTextureForSteamId(const FString& SteamId) const;
+
 	/** Request a new session ticket (call again if the old one expired). */
 	UFUNCTION(BlueprintCallable, Category = "Steam")
 	void RequestNewTicket();
@@ -86,9 +94,17 @@ private:
 	TArray<FString> FriendSteamIds;
 	TArray<FT66SteamFriendInfo> FriendInfos;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> LocalAvatarTexture;
+
+	UPROPERTY(Transient)
+	TMap<FString, TObjectPtr<UTexture2D>> FriendAvatarTextures;
+
 	// Steamworks ticket handle (needed to cancel)
 	uint32 TicketHandle = 0;
 
 	void ObtainTicket();
 	void CollectFriendsList();
+	void CacheAvatarForSteamId(const FString& SteamId, int32 ImageHandle);
+	UTexture2D* CreateTextureFromSteamImage(int32 ImageHandle) const;
 };

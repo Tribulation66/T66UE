@@ -2,8 +2,10 @@
 
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66ChestMimicEnemy.h"
+#include "Gameplay/T66PlayerController.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
+#include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -51,11 +53,30 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	}
 
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	int32 Gold = PlayerExperience
-		? PlayerExperience->GetDifficultyChestGoldForRarity(Difficulty, Rarity)
-		: 50;
+	const FT66IntRange GoldRange = PlayerExperience
+		? PlayerExperience->GetDifficultyChestGoldRange(Difficulty, Rarity)
+		: FT66IntRange{ 35, 75 };
+	const int32 MinGold = FMath::Max(0, FMath::Min(GoldRange.Min, GoldRange.Max));
+	const int32 MaxGold = FMath::Max(MinGold, FMath::Max(GoldRange.Min, GoldRange.Max));
+
+	int32 Gold = MaxGold;
+	if (UT66RngSubsystem* RngSub = T66GI ? T66GI->GetSubsystem<UT66RngSubsystem>() : nullptr)
+	{
+		RngSub->UpdateLuckStat(RunState->GetLuckStat());
+		FRandomStream& Stream = RngSub->GetRunStream();
+		Gold = FMath::Max(0, RngSub->RollIntRangeBiased(GoldRange, Stream));
+	}
+	else
+	{
+		Gold = FMath::RandRange(MinGold, MaxGold);
+	}
 
 	RunState->AddGold(Gold);
+	RunState->RecordLuckQuantityRoll(FName(TEXT("ChestGold")), Gold, MinGold, MaxGold);
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC))
+	{
+		T66PC->StartChestRewardHUD(Rarity, Gold);
+	}
 	bConsumed = true;
 	Destroy();
 	return true;

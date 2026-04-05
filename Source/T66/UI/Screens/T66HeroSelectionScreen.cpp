@@ -554,18 +554,14 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	FText HeroInfoText = Loc ? Loc->GetText_HeroInfo() : NSLOCTEXT("T66.HeroSelection", "HeroInfo", "HERO INFO");
 	FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.HeroSelection", "Lore", "LORE");
 	FText DemoText = Loc ? Loc->GetText_Demo() : NSLOCTEXT("T66.HeroSelection", "Demo", "Demo");
-	FText BackToLobbyText = Loc ? Loc->GetText_BackToLobby() : NSLOCTEXT("T66.Lobby", "BackToLobby", "BACK TO LOBBY");
+	FText BackToPartyText = NSLOCTEXT("T66.MainMenu", "BackToParty", "BACK TO PARTY");
 	FText EnterText = Loc ? Loc->GetText_EnterTheTribulation() : NSLOCTEXT("T66.HeroSelection", "EnterTheTribulation", "ENTER THE TRIBULATION");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	FText EquipText = Loc ? Loc->GetText_Equip() : NSLOCTEXT("T66.Common", "Equip", "EQUIP");
 	FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 
-	bool bHideEnterFromLobby = false;
-	if (UT66GameInstance* GIFlow = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
-	{
-		bHideEnterFromLobby = GIFlow->bHeroSelectionFromLobby;
-	}
+	const bool bHideEnterFromLobby = false;
 
 	// Initialize difficulty dropdown options
 	DifficultyOptions.Empty();
@@ -764,7 +760,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const int32 HeroNameFontSize = ShrinkFont(13, 9);
 	const int32 SecondaryButtonFontSize = ShrinkFont(9, 7);
 	const int32 BodyTextFontSize = ShrinkFont(10, 7);
-	const int32 BackToLobbyFontSize = ShrinkFont(12, 8);
+	const int32 BackToPartyFontSize = ShrinkFont(12, 8);
 	const int32 BackButtonFontSize = ShrinkFont(14, 10);
 	const float HeroGridButtonWidth = bDotaTheme ? 110.f : 86.f;
 	const FMargin HeroGridButtonPadding = bDotaTheme ? FMargin(7.f, 4.f) : FMargin(6.f, 4.f);
@@ -1090,8 +1086,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 
 	auto MakeRunControls = [this,
 		bHideEnterFromLobby,
-		BackToLobbyText,
-		BackToLobbyFontSize,
+		BackToPartyText,
+		BackToPartyFontSize,
 		EnterText,
 		PrimaryCtaFontSize,
 		FooterActionHeight,
@@ -1104,13 +1100,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 				.WidthOverride(RunControlsWidth)
 				[
 					FT66Style::MakeButton(FT66ButtonParams(
-						BackToLobbyText,
-						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackToLobbyClicked),
+						BackToPartyText,
+						FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleBackToPartyClicked),
 						ET66ButtonType::Danger)
 						.SetMinWidth(0.f)
 						.SetHeight(FooterActionHeight)
 						.SetPadding(FMargin(12.f, 8.f))
-						.SetFontSize(BackToLobbyFontSize))
+						.SetFontSize(BackToPartyFontSize))
 				];
 		}
 
@@ -1655,9 +1651,9 @@ FReply UT66HeroSelectionScreen::HandleLoreClicked()
 FReply UT66HeroSelectionScreen::HandleTheLabClicked() { OnTheLabClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleEnterClicked() { OnEnterTribulationClicked(); return FReply::Handled(); }
 FReply UT66HeroSelectionScreen::HandleBackClicked() { OnBackClicked(); return FReply::Handled(); }
-FReply UT66HeroSelectionScreen::HandleBackToLobbyClicked()
+FReply UT66HeroSelectionScreen::HandleBackToPartyClicked()
 {
-	NavigateTo(ET66ScreenType::Lobby);
+	NavigateTo(ET66ScreenType::MainMenu);
 	return FReply::Handled();
 }
 
@@ -1923,23 +1919,12 @@ void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
 		HeroPreviewMediaPlayer->Close();
 	}
 	KnightPreviewMediaSourceHandle.Reset();
-	// When opened from Lobby, persist current selection so Lobby can show hero portrait (and so returning from Companion Selection still shows co-op layout).
-	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
-	{
-		if (GI->bHeroSelectionFromLobby)
-		{
-			GI->SelectedHeroID = PreviewedHeroID;
-			GI->SelectedDifficulty = SelectedDifficulty;
-			GI->SelectedHeroBodyType = SelectedBodyType;
-			// Do not clear bHeroSelectionFromLobby here: we may be navigating to Companion Selection and will return to this screen still in co-op flow. Cleared when leaving Lobby (Lobby::OnScreenDeactivated).
-		}
-	}
 }
 
 void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
-	// Rebuild Slate so co-op vs solo layout is correct (Lab + Back to Lobby only when from Lobby; difficulty + Enter when solo). Reuse is not enough—cached tree may be from the other flow.
+	// Rebuild Slate so the current standalone/frontend flow is reflected correctly.
 	FT66Style::DeferRebuild(this);
 	PreviewSkinIDOverride = NAME_None;
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())

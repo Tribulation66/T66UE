@@ -8,6 +8,7 @@
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66SaveSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -37,6 +38,12 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+	const bool bIsPartyResumeFlow = PartySubsystem && SessionSubsystem
+		&& SessionSubsystem->IsPartySessionActive()
+		&& PartySubsystem->HasRemotePartyMembers();
+	const bool bHostCanStartPartyLoad = !bIsPartyResumeFlow || (SessionSubsystem && SessionSubsystem->IsHostingPartySession());
 
 	FText TitleText = Loc ? Loc->GetText_SaveSlots() : NSLOCTEXT("T66.SaveSlots", "Title", "SAVE SLOTS");
 	FText EmptyText = Loc ? Loc->GetText_EmptySlot() : NSLOCTEXT("T66.SaveSlots", "EmptySlot", "EMPTY SLOT");
@@ -97,7 +104,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	const float PortraitSize = 80.f;
 	const bool bHasVisibleSaves = VisibleSlotIndices.Num() > 0;
 
-	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, EmptyText, PreviewText, LoadText, PortraitSize](
+	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, EmptyText, PreviewText, LoadText, PortraitSize, bIsPartyResumeFlow, bHostCanStartPartyLoad](
 		int32 LocalIndex) -> TSharedRef<SWidget>
 	{
 		const int32 SlotIndex = GetVisibleSlotIndexForPageEntry(LocalIndex);
@@ -185,6 +192,9 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				];
 		}
 
+		const bool bCanPreview = bOccupied && bSlotVisible && !bIsPartyResumeFlow;
+		const bool bCanLoad = bOccupied && bSlotVisible && bHostCanStartPartyLoad;
+
 		TSharedRef<SVerticalBox> CardContent = SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f)
 			[PortraitWidget]
@@ -211,11 +221,11 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 0.f)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral).SetMinWidth(90.f).SetEnabled(bOccupied && bSlotVisible))
+					FT66Style::MakeButton(FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral).SetMinWidth(90.f).SetEnabled(bCanPreview))
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 0.f)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), ET66ButtonType::Success).SetMinWidth(90.f).SetEnabled(bOccupied && bSlotVisible))
+					FT66Style::MakeButton(FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), ET66ButtonType::Success).SetMinWidth(90.f).SetEnabled(bCanLoad))
 				]
 			];
 
@@ -408,10 +418,29 @@ void UT66SaveSlotsScreen::OnLoadClicked(int32 SlotIndex)
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
+	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	if (!GI || !SaveSub) return;
 
 	UT66RunSaveGame* Loaded = SaveSub->LoadFromSlot(SlotIndex);
 	if (!Loaded) return;
+
+	const bool bIsPartyResumeFlow = PartySubsystem && SessionSubsystem
+		&& SessionSubsystem->IsPartySessionActive()
+		&& PartySubsystem->HasRemotePartyMembers();
+	if (bIsPartyResumeFlow)
+	{
+		if (!SessionSubsystem->IsHostingPartySession())
+		{
+			return;
+		}
+
+		if (SessionSubsystem->StartLoadedGameplayTravel(Loaded, SlotIndex))
+		{
+			if (UIManager) UIManager->HideAllUI();
+			return;
+		}
+	}
 
 	GI->SelectedHeroID = Loaded->HeroID;
 	GI->SelectedHeroBodyType = Loaded->HeroBodyType;
@@ -453,7 +482,16 @@ void UT66SaveSlotsScreen::OnPreviewClicked(int32 SlotIndex)
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
+	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	if (!GI || !SaveSub) return;
+
+	if (PartySubsystem && SessionSubsystem
+		&& SessionSubsystem->IsPartySessionActive()
+		&& PartySubsystem->HasRemotePartyMembers())
+	{
+		return;
+	}
 
 	UT66RunSaveGame* Loaded = SaveSub->LoadFromSlot(SlotIndex);
 	if (!Loaded) return;

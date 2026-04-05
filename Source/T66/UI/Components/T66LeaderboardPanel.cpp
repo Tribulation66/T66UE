@@ -32,8 +32,8 @@ namespace
 	constexpr float RankColumnWidth = 60.0f;   // content + padding to name
 	constexpr float ScoreColumnWidth = 98.0f; // content + padding, aligned with score digits (used for both Score and Time)
 	constexpr float RowPortraitSize = 30.0f;
-	constexpr int32 LeaderboardBodyFontSize = 13;
-	constexpr int32 LeaderboardTitleFontSize = 13;
+	constexpr int32 LeaderboardBodyFontSize = 12;
+	constexpr int32 LeaderboardTitleFontSize = 12;
 	constexpr int32 LeaderboardVisibleEntryCount = 10;
 	const FLinearColor LeaderboardShellFill(0.004f, 0.005f, 0.010f, 0.985f);
 	const FLinearColor LeaderboardFilterBorder(0.22f, 0.24f, 0.28f, 1.0f);
@@ -362,7 +362,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	};
 	const FSlateFontInfo LeaderboardTitleFont = MakeRadianceFont(LeaderboardTitleFontSize, 88);
 	const FSlateFontInfo LeaderboardBodyFont = MakeRadianceFont(LeaderboardBodyFontSize);
-	const FSlateFontInfo LeaderboardDropdownFont = MakeRadianceFont(13);
+	const FSlateFontInfo LeaderboardDropdownFont = MakeRadianceFont(12);
 	const FSlateFontInfo LeaderboardTimeToggleFont = MakeReaverBoldFont(LeaderboardTitleFontSize, 88);
 
 	auto MakeIconButton = [this, SquareIconSize, LeaderboardTitleFont](ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)(), const FString& FallbackLetter, TSharedPtr<FSlateBrush> IconBrush) -> TSharedRef<SWidget>
@@ -559,37 +559,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				+ SScrollBox::Slot()
 				[
 					SNew(SVerticalBox)
-					// Account Status button (only visible when account is restricted)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Right)
-					.Padding(0.f, 0.f, 0.f, 10.f)
-					[
-					FT66Style::MakeButton(
-						FT66ButtonParams(
-							LocSubsystem ? LocSubsystem->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT"),
-							FOnClicked::CreateLambda([this]()
-							{
-								if (UIManager)
-								{
-									UIManager->ShowScreen(ET66ScreenType::AccountStatus);
-								}
-								return FReply::Handled();
-							})
-						)
-						.SetMinWidth(128.f)
-						.SetFontWeight(TEXT("Regular"))
-						.SetPadding(FMargin(10.f, 5.f))
-						.SetColor(LeaderboardShellFill)
-						.SetEnabled(TAttribute<bool>::CreateLambda([this]() { return UIManager != nullptr; }))
-						.SetVisibility(TAttribute<EVisibility>::CreateLambda([this]()
-						{
-							return (LeaderboardSubsystem && LeaderboardSubsystem->ShouldShowAccountStatusButton())
-								? EVisibility::Visible
-								: EVisibility::Collapsed;
-						})
-					))
-					]
 					// Time toggles (Weekly | All Time)
 					+ SVerticalBox::Slot()
 					.AutoHeight()
@@ -806,34 +775,11 @@ void ST66LeaderboardPanel::SetUIManager(UT66UIManager* InUIManager)
 	// No rebuild required; click handlers will now be able to open modals.
 }
 
-void ST66LeaderboardPanel::GeneratePlaceholderData()
-{
-	// Placeholder data has been replaced by backend data. This stub is kept
-	// only as a compile-time safety net; it should never be reached at runtime
-	// when the backend is configured.
-	LeaderboardEntries.Empty();
-}
-
 void ST66LeaderboardPanel::RebuildEntryList()
 {
 	if (!EntryListBox.IsValid()) return;
 
 	EntryListBox->ClearChildren();
-
-	if (LeaderboardEntries.Num() == 0 && LeaderboardSubsystem)
-	{
-		LeaderboardEntries = LeaderboardSubsystem->BuildEntriesForFilter(
-			CurrentFilter,
-			CurrentType,
-			CurrentDifficulty,
-			CurrentPartySize,
-			CurrentSpeedRunStage);
-
-		for (int32 EntryIndex = 0; EntryIndex < LeaderboardEntries.Num(); ++EntryIndex)
-		{
-			NormalizeEntryIdentity(LeaderboardEntries[EntryIndex], EntryIndex);
-		}
-	}
 
 	if (LeaderboardEntries.Num() == 0)
 	{
@@ -851,6 +797,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 
 	for (const FLeaderboardEntry& Entry : LeaderboardEntries)
 	{
+		const FLinearColor LeaderboardNameText(0.86f, 0.88f, 0.92f, 1.0f);
 		const FLinearColor BaseRowColor = Entry.bIsLocalPlayer
 			? FLinearColor(0.2f, 0.4f, 0.3f, 0.35f)
 			: FLinearColor::Transparent;
@@ -925,7 +872,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 					SNew(STextBlock)
 					.Text(FText::FromString(DisplayName))
 					.Font(FT66Style::Tokens::FontRegular(NameFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(LeaderboardNameText)
 				]
 			];
 		}
@@ -1123,8 +1070,6 @@ void ST66LeaderboardPanel::SetLeaderboardType(ET66LeaderboardType NewType)
 
 void ST66LeaderboardPanel::RefreshLeaderboard()
 {
-	const TArray<FLeaderboardEntry> PreviousEntries = LeaderboardEntries;
-
 	// Convert current filters to backend API strings
 	auto TypeStr = [this]() -> FString {
 		return (CurrentType == ET66LeaderboardType::Score) ? TEXT("score") : TEXT("speedrun");
@@ -1172,11 +1117,6 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 	// Try to get backend data
 	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
 	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
-	const bool bUseOfflineFallback = !Backend || !Backend->IsBackendConfigured();
-	const TArray<FLeaderboardEntry> LocalFallbackEntries = (bUseOfflineFallback && LeaderboardSubsystem)
-		? LeaderboardSubsystem->BuildEntriesForFilter(CurrentFilter, CurrentType, CurrentDifficulty, CurrentPartySize, CurrentSpeedRunStage)
-		: TArray<FLeaderboardEntry>();
-
 	if (Backend && Backend->IsBackendConfigured() && Backend->HasCachedLeaderboard(CacheKey))
 	{
 		const TArray<FLeaderboardEntry> CachedEntries = Backend->GetCachedLeaderboard(CacheKey);
@@ -1197,45 +1137,11 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 	}
 	else
 	{
-		LeaderboardEntries = LocalFallbackEntries;
-	}
-
-	if (LeaderboardEntries.Num() == 0)
-	{
-		LeaderboardEntries = bUseOfflineFallback
-			? (LocalFallbackEntries.Num() > 0 ? LocalFallbackEntries : PreviousEntries)
-			: TArray<FLeaderboardEntry>();
-	}
-
-	auto HasVisibleResult = [this](const FLeaderboardEntry& Entry) -> bool
-	{
-		return (CurrentType == ET66LeaderboardType::Score && Entry.Score > 0)
-			|| (CurrentType == ET66LeaderboardType::SpeedRun && Entry.TimeSeconds > 0.01f);
-	};
-
-	auto FindLocalEntry = [&HasVisibleResult](const TArray<FLeaderboardEntry>& Entries) -> const FLeaderboardEntry*
-	{
-		for (const FLeaderboardEntry& Entry : Entries)
-		{
-			if (Entry.bIsLocalPlayer && HasVisibleResult(Entry))
-			{
-				return &Entry;
-			}
-		}
-
-		return nullptr;
-	};
-
-	const FLeaderboardEntry* LocalVisibleEntry = bUseOfflineFallback ? FindLocalEntry(LeaderboardEntries) : nullptr;
-	if (LocalVisibleEntry == nullptr && bUseOfflineFallback)
-	{
-		LocalVisibleEntry = FindLocalEntry(LocalFallbackEntries);
+		LeaderboardEntries.Reset();
 	}
 
 	TArray<FLeaderboardEntry> LimitedEntries;
-	LimitedEntries.Reserve(LeaderboardVisibleEntryCount + 1);
-
-	bool bLocalAlreadyVisible = false;
+	LimitedEntries.Reserve(LeaderboardVisibleEntryCount);
 	for (const FLeaderboardEntry& Entry : LeaderboardEntries)
 	{
 		if (LimitedEntries.Num() >= LeaderboardVisibleEntryCount)
@@ -1243,23 +1149,7 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 			break;
 		}
 
-		if (Entry.bIsLocalPlayer)
-		{
-			bLocalAlreadyVisible = true;
-		}
-
 		LimitedEntries.Add(Entry);
-	}
-
-	if (!bLocalAlreadyVisible && LocalVisibleEntry != nullptr)
-	{
-		FLeaderboardEntry LocalRow = *LocalVisibleEntry;
-		if (LocalRow.Rank <= 0)
-		{
-			LocalRow.Rank = LeaderboardVisibleEntryCount + 1;
-		}
-		LocalRow.bIsLocalPlayer = true;
-		LimitedEntries.Add(LocalRow);
 	}
 
 	LeaderboardEntries = MoveTemp(LimitedEntries);

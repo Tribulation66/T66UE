@@ -59,6 +59,7 @@ public:
 	int32 GetRemainingCatchUpIdolPicks() const { return RemainingCatchUpIdolPicks; }
 	bool HasCatchUpIdolPicksRemaining() const { return RemainingCatchUpIdolPicks > 0; }
 	bool ConsumeCatchUpIdolPick();
+	void SetRemainingCatchUpIdolPicks(int32 NewRemainingCatchUpIdolPicks);
 
 	ET66Difficulty GetCurrentDifficulty() const { return CurrentDifficulty; }
 

@@ -3,6 +3,7 @@
 #include "Core/T66SteamHelper.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Engine/Texture2D.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "steam/steam_api.h"
@@ -33,6 +34,25 @@ namespace
 			return TEXT("Offline");
 		}
 	}
+
+	static int32 T66ResolveAvatarImageHandle(ISteamFriends* Friends, const CSteamID& SteamId)
+	{
+		if (!Friends)
+		{
+			return 0;
+		}
+
+		int32 ImageHandle = Friends->GetLargeFriendAvatar(SteamId);
+		if (ImageHandle <= 0)
+		{
+			ImageHandle = Friends->GetMediumFriendAvatar(SteamId);
+		}
+		if (ImageHandle <= 0)
+		{
+			ImageHandle = Friends->GetSmallFriendAvatar(SteamId);
+		}
+		return ImageHandle;
+	}
 }
 
 static void T66_SetDevTicket(const TArray<FString>& Args, UWorld* World)
@@ -56,6 +76,8 @@ static FAutoConsoleCommandWithWorldAndArgs T66SetTicketCommand(
 void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	LocalAvatarTexture = nullptr;
+	FriendAvatarTextures.Reset();
 
 	// Try real Steam first
 	if (SteamAPI_Init())
@@ -70,6 +92,8 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 			if (Friends)
 			{
 				LocalDisplayName = FString(UTF8_TO_TCHAR(Friends->GetPersonaName()));
+				CacheAvatarForSteamId(LocalSteamIdStr, T66ResolveAvatarImageHandle(Friends, LocalId));
+				LocalAvatarTexture = FriendAvatarTextures.FindRef(LocalSteamIdStr);
 			}
 
 			UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: local SteamID=%s Name=%s"), *LocalSteamIdStr, *LocalDisplayName);
@@ -171,6 +195,22 @@ void UT66SteamHelper::RequestNewTicket()
 	ObtainTicket();
 }
 
+UTexture2D* UT66SteamHelper::GetAvatarTextureForSteamId(const FString& SteamId) const
+{
+	if (SteamId.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	if (SteamId == LocalSteamIdStr)
+	{
+		return LocalAvatarTexture;
+	}
+
+	const TObjectPtr<UTexture2D>* FoundTexture = FriendAvatarTextures.Find(SteamId);
+	return FoundTexture ? FoundTexture->Get() : nullptr;
+}
+
 void UT66SteamHelper::ObtainTicket()
 {
 	ISteamUser* User = SteamUser();
@@ -233,6 +273,7 @@ void UT66SteamHelper::CollectFriendsList()
 		const CSteamID FriendId = Friends->GetFriendByIndex(i, k_EFriendFlagImmediate);
 		const FString FriendIdString = FString::Printf(TEXT("%llu"), FriendId.ConvertToUint64());
 		FriendSteamIds.Add(FriendIdString);
+		CacheAvatarForSteamId(FriendIdString, T66ResolveAvatarImageHandle(Friends, FriendId));
 
 		FT66SteamFriendInfo& FriendInfo = FriendInfos.AddDefaulted_GetRef();
 		FriendInfo.SteamId = FriendIdString;
@@ -242,4 +283,79 @@ void UT66SteamHelper::CollectFriendsList()
 	}
 
 	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: collected %d friends."), FriendSteamIds.Num());
+}
+
+void UT66SteamHelper::CacheAvatarForSteamId(const FString& SteamId, int32 ImageHandle)
+{
+	if (SteamId.IsEmpty() || ImageHandle <= 0)
+	{
+		return;
+	}
+
+	if (FriendAvatarTextures.Contains(SteamId))
+	{
+		return;
+	}
+
+	if (UTexture2D* AvatarTexture = CreateTextureFromSteamImage(ImageHandle))
+	{
+		FriendAvatarTextures.Add(SteamId, AvatarTexture);
+	}
+}
+
+UTexture2D* UT66SteamHelper::CreateTextureFromSteamImage(int32 ImageHandle) const
+{
+	if (ImageHandle <= 0)
+	{
+		return nullptr;
+	}
+
+	ISteamUtils* SteamUtilsApi = SteamUtils();
+	if (!SteamUtilsApi)
+	{
+		return nullptr;
+	}
+
+	uint32 Width = 0;
+	uint32 Height = 0;
+	if (!SteamUtilsApi->GetImageSize(ImageHandle, &Width, &Height) || Width == 0 || Height == 0)
+	{
+		return nullptr;
+	}
+
+	TArray<uint8> RawRgba;
+	RawRgba.SetNumUninitialized(static_cast<int32>(Width * Height * 4));
+	if (!SteamUtilsApi->GetImageRGBA(ImageHandle, RawRgba.GetData(), RawRgba.Num()))
+	{
+		return nullptr;
+	}
+
+	TArray<uint8> RawBgra;
+	RawBgra.SetNumUninitialized(RawRgba.Num());
+	for (int32 ByteIndex = 0; ByteIndex < RawRgba.Num(); ByteIndex += 4)
+	{
+		RawBgra[ByteIndex + 0] = RawRgba[ByteIndex + 2];
+		RawBgra[ByteIndex + 1] = RawRgba[ByteIndex + 1];
+		RawBgra[ByteIndex + 2] = RawRgba[ByteIndex + 0];
+		RawBgra[ByteIndex + 3] = RawRgba[ByteIndex + 3];
+	}
+
+	UTexture2D* Texture = UTexture2D::CreateTransient(static_cast<int32>(Width), static_cast<int32>(Height), PF_B8G8R8A8);
+	if (!Texture || !Texture->GetPlatformData() || Texture->GetPlatformData()->Mips.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	Texture->SRGB = true;
+	Texture->Filter = TextureFilter::TF_Trilinear;
+	Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+	Texture->CompressionSettings = TC_EditorIcon;
+	Texture->NeverStream = true;
+
+	void* MipData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	FMemory::Memcpy(MipData, RawBgra.GetData(), RawBgra.Num());
+	Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
+	Texture->UpdateResource();
+
+	return Texture;
 }

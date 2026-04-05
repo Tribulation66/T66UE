@@ -59,7 +59,7 @@ const FMargin FT66Style::Tokens::ButtonPaddingPressed(12.f, 5.f, 12.f, 3.f);
 namespace
 {
 	static ET66UITheme GActiveUITheme = ET66UITheme::Dota;
-	static const FString GDotaGeneratedSourceDir = FPaths::ProjectDir() / TEXT("SourceAssets/UI/Dota/Generated");
+	static const FString GDotaGeneratedSourceDir = FPaths::ProjectContentDir() / TEXT("SourceAssets/UI/Dota/Generated");
 
 	// Keep recent old style sets alive so existing Slate widgets' brush/style
 	// raw pointers remain valid until the UI is rebuilt with fresh widgets.

@@ -66,6 +66,111 @@ namespace
 		return Out;
 	}
 
+	static TMap<FString, TStrongObjectPtr<UTexture2D>> GHudRuntimeTextureCache;
+
+	static UTexture2D* LoadRuntimeHudFileTexture(const FString& RelativePath, TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		const TArray<FString> CandidatePaths = {
+			FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / RelativePath),
+			FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / RelativePath)
+		};
+
+		for (const FString& FullPath : CandidatePaths)
+		{
+			if (!FPaths::FileExists(FullPath))
+			{
+				continue;
+			}
+
+			const FString CacheKey = FString::Printf(TEXT("%s|%d"), *FullPath, static_cast<int32>(Filter));
+			if (const TStrongObjectPtr<UTexture2D>* CachedTexture = GHudRuntimeTextureCache.Find(CacheKey))
+			{
+				return CachedTexture->Get();
+			}
+
+			UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(FullPath);
+			if (!Texture)
+			{
+				continue;
+			}
+
+			Texture->SRGB = true;
+			Texture->Filter = Filter;
+			Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+			Texture->CompressionSettings = TC_EditorIcon;
+			Texture->NeverStream = true;
+			Texture->AddressX = TextureAddress::TA_Clamp;
+			Texture->AddressY = TextureAddress::TA_Clamp;
+			Texture->UpdateResource();
+
+			GHudRuntimeTextureCache.Add(CacheKey, TStrongObjectPtr<UTexture2D>(Texture));
+			return Texture;
+		}
+
+		return nullptr;
+	}
+
+	static void BindRuntimeHudBrush(
+		const TSharedPtr<FSlateBrush>& Brush,
+		const FString& RelativePath,
+		const FVector2D& DesiredSize,
+		TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		if (!Brush.IsValid())
+		{
+			return;
+		}
+
+		Brush->ImageSize = DesiredSize;
+		Brush->SetResourceObject(LoadRuntimeHudFileTexture(RelativePath, Filter));
+	}
+
+	static FString GetChestRewardClosedRelativePath(const ET66Rarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Red: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_red_closed.png");
+		case ET66Rarity::Yellow: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_yellow_closed.png");
+		case ET66Rarity::White: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_white_closed.png");
+		case ET66Rarity::Black:
+		default: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_black_closed.png");
+		}
+	}
+
+	static FString GetChestRewardOpenRelativePath(const ET66Rarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Red: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_red_open.png");
+		case ET66Rarity::Yellow: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_yellow_open.png");
+		case ET66Rarity::White: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_white_open.png");
+		case ET66Rarity::Black:
+		default: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_black_open.png");
+		}
+	}
+
+	static FString GetChestRewardFallbackRelativePath(const ET66Rarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Red: return TEXT("SourceAssets/ItemSprites/Item_TreasureChest_red.png");
+		case ET66Rarity::Yellow: return TEXT("SourceAssets/ItemSprites/Item_TreasureChest_yellow.png");
+		case ET66Rarity::White: return TEXT("SourceAssets/ItemSprites/Item_TreasureChest_white.png");
+		case ET66Rarity::Black:
+		default: return TEXT("SourceAssets/ItemSprites/Item_TreasureChest_black.png");
+		}
+	}
+
+	static FString GetGoldCurrencyRelativePath()
+	{
+		return TEXT("SourceAssets/UI/Currency/gold_icon.png");
+	}
+
+	static FString GetDebtCurrencyRelativePath()
+	{
+		return TEXT("SourceAssets/UI/Currency/debt_icon.png");
+	}
+
 	enum class ET66MapMarkerVisual : uint8
 	{
 		Dot,
@@ -269,6 +374,7 @@ namespace
 	static constexpr float GT66BottomLeftIdolSlotSize = 58.f;
 	static constexpr float GT66BottomLeftIdolSlotPad = 1.f;
 	static constexpr float GT66BottomLeftAbilityGap = 4.f;
+	static constexpr float GT66BottomLeftLevelBadgeSize = 42.f;
 	static constexpr float GT66BottomLeftAbilityColumnHeight = GT66BottomLeftPortraitPanelSize;
 	static constexpr float GT66BottomLeftAbilityBoxSize = (GT66BottomLeftAbilityColumnHeight - GT66BottomLeftAbilityGap) * 0.5f;
 
@@ -1265,6 +1371,9 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		}
 	}
 
+	TickChestRewardPresentation(InDeltaTime);
+	TryShowQueuedPresentation();
+
 	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
 		const bool bScoped = T66PC->IsHeroOneScopeViewEnabled();
@@ -1463,6 +1572,9 @@ void UT66GameplayHUDWidget::NativeDestruct()
 	}
 
 	HidePickupCard();
+	HideChestReward();
+	QueuedChestRewards.Reset();
+	QueuedPickupCards.Reset();
 	if (UT66CrateOverlayWidget* Overlay = ActiveCrateOverlay.Get())
 	{
 		Overlay->RemoveFromParent();
@@ -1719,10 +1831,24 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	if (!World) return;
 
 	// Ensure panels exist.
-	if (!WheelSpinBox.IsValid() || !WheelSpinDisk.IsValid() || !WheelSpinText.IsValid())
+	if (!WheelSpinBox.IsValid() || !WheelSpinDisk.IsValid() || !WheelSpinText.IsValid() || !WheelSpinSkipText.IsValid())
 	{
 		return;
 	}
+
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
+	{
+		return;
+	}
+
+	if (bPickupCardVisible && !ActivePickupCardItemID.IsNone())
+	{
+		QueuedPickupCards.InsertDefaulted(0, 1);
+		FQueuedPickupCard& QueuedPickup = QueuedPickupCards[0];
+		QueuedPickup.ItemID = ActivePickupCardItemID;
+		QueuedPickup.ItemRarity = ActivePickupCardRarity;
+	}
+	HidePickupCard();
 
 	// Reset any previous state.
 	World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
@@ -1733,7 +1859,7 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	bWheelPanelOpen = true;
 	bWheelSpinning = true;
 	WheelSpinElapsed = 0.f;
-	WheelSpinDuration = 2.0f;
+	WheelSpinDuration = ChestRewardDisplaySeconds;
 	WheelStartAngleDeg = 0.f;
 	WheelTotalAngleDeg = 0.f;
 	WheelLastTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
@@ -1778,11 +1904,22 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 	}
 	WheelPendingGold = PendingGold;
 
+	if (GoldCurrencyBrush.IsValid())
+	{
+		BindRuntimeHudBrush(GoldCurrencyBrush, GetGoldCurrencyRelativePath(), FVector2D(32.f, 32.f));
+	}
+
 	// Tint the wheel texture by rarity color.
 	WheelSpinDisk->SetColorAndOpacity(FT66RarityUtil::GetRarityColor(WheelRarity));
-	WheelSpinText->SetText(NSLOCTEXT("T66.Wheel", "Spinning", "Spinning..."));
+	WheelSpinDisk->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+	WheelSpinDisk->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	WheelSpinText->SetText(FText::Format(
+		NSLOCTEXT("T66.Wheel", "GoldCounterFormat", "+{0}"),
+		FText::AsNumber(0)));
+	WheelSpinSkipText->SetText(BuildSkipCountdownText(WheelSpinDuration, FName(TEXT("Interact"))));
 
 	WheelSpinBox->SetVisibility(EVisibility::Visible);
+	WheelSpinBox->SetRenderOpacity(1.f);
 
 	// Big spin: multiple rotations + random offset.
 	WheelTotalAngleDeg = static_cast<float>(SpinRng.RandRange(5, 9)) * 360.f + static_cast<float>(SpinRng.RandRange(0, 359));
@@ -1797,7 +1934,7 @@ void UT66GameplayHUDWidget::StartCrateOpen()
 	if (!PC) return;
 
 	HidePickupCard();
-	if (ActiveCrateOverlay.IsValid())
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
 	{
 		return;
 	}
@@ -1812,11 +1949,152 @@ void UT66GameplayHUDWidget::StartCrateOpen()
 	}
 }
 
+void UT66GameplayHUDWidget::StartChestReward(const ET66Rarity ChestRarity, const int32 GoldAmount)
+{
+	if (!ChestRewardBox.IsValid())
+	{
+		return;
+	}
+
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
+	{
+		FQueuedChestReward& QueuedReward = QueuedChestRewards.AddDefaulted_GetRef();
+		QueuedReward.Rarity = ChestRarity;
+		QueuedReward.GoldAmount = GoldAmount;
+		return;
+	}
+
+	if (bPickupCardVisible && !ActivePickupCardItemID.IsNone())
+	{
+		QueuedPickupCards.InsertDefaulted(0, 1);
+		FQueuedPickupCard& QueuedPickup = QueuedPickupCards[0];
+		QueuedPickup.ItemID = ActivePickupCardItemID;
+		QueuedPickup.ItemRarity = ActivePickupCardRarity;
+	}
+	HidePickupCard();
+
+	if (GoldCurrencyBrush.IsValid())
+	{
+		BindRuntimeHudBrush(GoldCurrencyBrush, GetGoldCurrencyRelativePath(), FVector2D(32.f, 32.f));
+	}
+
+	const FVector2D ChestImageSize(108.f, 108.f);
+	if (ChestRewardClosedBrush.IsValid())
+	{
+		BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardClosedRelativePath(ChestRarity), ChestImageSize);
+		if (!ChestRewardClosedBrush->GetResourceObject())
+		{
+			BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardFallbackRelativePath(ChestRarity), ChestImageSize);
+		}
+	}
+	if (ChestRewardOpenBrush.IsValid())
+	{
+		BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardOpenRelativePath(ChestRarity), ChestImageSize);
+		if (!ChestRewardOpenBrush->GetResourceObject())
+		{
+			BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardFallbackRelativePath(ChestRarity), ChestImageSize);
+		}
+	}
+
+	if (ChestRewardClosedImage.IsValid())
+	{
+		ChestRewardClosedImage->SetImage(ChestRewardClosedBrush.Get());
+	}
+	if (ChestRewardOpenImage.IsValid())
+	{
+		ChestRewardOpenImage->SetImage(ChestRewardOpenBrush.Get());
+	}
+	if (ChestRewardClosedBox.IsValid())
+	{
+		ChestRewardClosedBox->SetRenderOpacity(1.f);
+	}
+	if (ChestRewardOpenBox.IsValid())
+	{
+		ChestRewardOpenBox->SetRenderOpacity(0.f);
+	}
+
+	if (ChestRewardTileBorder.IsValid())
+	{
+		const FLinearColor AccentColor = FT66RarityUtil::GetRarityColor(ChestRarity) * 0.58f + FLinearColor(0.06f, 0.05f, 0.04f, 0.52f);
+		ChestRewardTileBorder->SetBorderBackgroundColor(AccentColor);
+	}
+
+	ActiveChestRewardRarity = ChestRarity;
+	ChestRewardTargetGold = FMath::Max(0, GoldAmount);
+	ChestRewardDisplayedGold = 0;
+	ChestRewardElapsedSeconds = 0.f;
+	ChestRewardRemainingSeconds = ChestRewardDisplaySeconds;
+	bChestRewardVisible = true;
+
+	if (ChestRewardCounterText.IsValid())
+	{
+		ChestRewardCounterText->SetText(FText::Format(
+			NSLOCTEXT("T66.ChestReward", "GoldCounterFormat", "+{0}"),
+			FText::AsNumber(0)));
+	}
+	if (ChestRewardSkipText.IsValid())
+	{
+		ChestRewardSkipText->SetText(BuildSkipCountdownText(ChestRewardDisplaySeconds, FName(TEXT("Interact"))));
+	}
+
+	if (ChestRewardBox.IsValid())
+	{
+		ChestRewardBox->SetVisibility(EVisibility::Visible);
+		ChestRewardBox->SetRenderOpacity(1.f);
+	}
+
+	for (int32 CoinIndex = 0; CoinIndex < ChestRewardCoinBoxes.Num(); ++CoinIndex)
+	{
+		if (ChestRewardCoinBoxes[CoinIndex].IsValid())
+		{
+			ChestRewardCoinBoxes[CoinIndex]->SetVisibility(EVisibility::Visible);
+			ChestRewardCoinBoxes[CoinIndex]->SetRenderOpacity(0.f);
+		}
+		if (ChestRewardCoinImages.IsValidIndex(CoinIndex) && ChestRewardCoinImages[CoinIndex].IsValid())
+		{
+			ChestRewardCoinImages[CoinIndex]->SetImage(GoldCurrencyBrush.Get());
+		}
+	}
+}
+
 bool UT66GameplayHUDWidget::TrySkipActivePresentation()
 {
 	if (UT66CrateOverlayWidget* Overlay = ActiveCrateOverlay.Get())
 	{
 		Overlay->RequestSkip();
+		return true;
+	}
+
+	if (bWheelPanelOpen)
+	{
+		if (bWheelSpinning)
+		{
+			WheelSpinElapsed = WheelSpinDuration;
+			if (WheelSpinText.IsValid())
+			{
+				WheelSpinText->SetText(FText::Format(
+					NSLOCTEXT("T66.Wheel", "GoldCounterFormat", "+{0}"),
+					FText::AsNumber(WheelPendingGold)));
+			}
+			ResolveWheelSpin();
+		}
+		else
+		{
+			CloseWheelSpin();
+		}
+		return true;
+	}
+
+	if (bChestRewardVisible)
+	{
+		ChestRewardDisplayedGold = ChestRewardTargetGold;
+		if (ChestRewardCounterText.IsValid())
+		{
+			ChestRewardCounterText->SetText(FText::Format(
+				NSLOCTEXT("T66.ChestReward", "GoldCounterFormat", "+{0}"),
+				FText::AsNumber(ChestRewardTargetGold)));
+		}
+		HideChestReward();
 		return true;
 	}
 
@@ -1850,11 +2128,23 @@ void UT66GameplayHUDWidget::TickWheelSpin()
 
 	WheelSpinElapsed += Delta;
 	const float Alpha = FMath::Clamp(WheelSpinElapsed / FMath::Max(0.01f, WheelSpinDuration), 0.f, 1.f);
-	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f);
+	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 4.2f);
 	const float Angle = WheelStartAngleDeg + (WheelTotalAngleDeg * Ease);
 
 	WheelSpinDisk->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
 	WheelSpinDisk->SetRenderTransform(FSlateRenderTransform(FTransform2D(FQuat2D(FMath::DegreesToRadians(Angle)))));
+	if (WheelSpinText.IsValid())
+	{
+		const float CounterEase = FMath::InterpEaseOut(0.f, 1.f, Alpha, 2.5f);
+		const int32 DisplayedGold = FMath::RoundToInt(static_cast<float>(WheelPendingGold) * CounterEase);
+		WheelSpinText->SetText(FText::Format(
+			NSLOCTEXT("T66.Wheel", "GoldCounterFormat", "+{0}"),
+			FText::AsNumber(DisplayedGold)));
+	}
+	if (WheelSpinSkipText.IsValid())
+	{
+		WheelSpinSkipText->SetText(BuildSkipCountdownText(FMath::Max(0.f, WheelSpinDuration - WheelSpinElapsed), FName(TEXT("Interact"))));
+	}
 
 	if (Alpha >= 1.f)
 	{
@@ -1879,26 +2169,193 @@ void UT66GameplayHUDWidget::ResolveWheelSpin()
 			RunState->AddGold(WheelPendingGold);
 		}
 	}
-
-	if (WheelSpinText.IsValid())
-	{
-		WheelSpinText->SetText(FText::Format(
-			NSLOCTEXT("T66.Wheel", "YouWonGoldFormat", "You won {0} gold."),
-			FText::AsNumber(WheelPendingGold)));
-	}
-
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimer(WheelCloseHandle, this, &UT66GameplayHUDWidget::CloseWheelSpin, 1.0f, false);
-	}
+	CloseWheelSpin();
 }
 
 void UT66GameplayHUDWidget::CloseWheelSpin()
 {
 	bWheelPanelOpen = false;
+	bWheelSpinning = false;
+	WheelSpinElapsed = 0.f;
+	WheelPendingGold = 0;
+	WheelLastTickTimeSeconds = 0.f;
+	WheelTotalAngleDeg = 0.f;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(WheelSpinTickHandle);
+		World->GetTimerManager().ClearTimer(WheelResolveHandle);
+		World->GetTimerManager().ClearTimer(WheelCloseHandle);
+	}
 	if (WheelSpinBox.IsValid())
 	{
 		WheelSpinBox->SetVisibility(EVisibility::Collapsed);
+		WheelSpinBox->SetRenderOpacity(1.f);
+	}
+	if (WheelSpinDisk.IsValid())
+	{
+		WheelSpinDisk->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+	if (WheelSpinText.IsValid())
+	{
+		WheelSpinText->SetText(FText::GetEmpty());
+	}
+	if (WheelSpinSkipText.IsValid())
+	{
+		WheelSpinSkipText->SetText(FText::GetEmpty());
+	}
+
+	TryShowQueuedPresentation();
+}
+
+void UT66GameplayHUDWidget::TickChestRewardPresentation(const float InDeltaTime)
+{
+	if (!bChestRewardVisible || !ChestRewardBox.IsValid())
+	{
+		return;
+	}
+
+	ChestRewardElapsedSeconds += InDeltaTime;
+	ChestRewardRemainingSeconds = FMath::Max(0.f, ChestRewardRemainingSeconds - InDeltaTime);
+
+	const float CounterProgress = FMath::Clamp(ChestRewardElapsedSeconds / 1.05f, 0.f, 1.f);
+	const float CounterEase = FMath::InterpEaseOut(0.f, 1.f, CounterProgress, 2.5f);
+	ChestRewardDisplayedGold = FMath::RoundToInt(static_cast<float>(ChestRewardTargetGold) * CounterEase);
+	if (ChestRewardRemainingSeconds <= 0.f)
+	{
+		ChestRewardDisplayedGold = ChestRewardTargetGold;
+	}
+
+	if (ChestRewardCounterText.IsValid())
+	{
+		ChestRewardCounterText->SetText(FText::Format(
+			NSLOCTEXT("T66.ChestReward", "GoldCounterFormat", "+{0}"),
+			FText::AsNumber(ChestRewardDisplayedGold)));
+	}
+	if (ChestRewardSkipText.IsValid())
+	{
+		ChestRewardSkipText->SetText(BuildSkipCountdownText(ChestRewardRemainingSeconds, FName(TEXT("Interact"))));
+	}
+
+	const float FadeAlpha = (ChestRewardRemainingSeconds > ChestRewardFadeOutSeconds)
+		? 1.f
+		: FMath::Clamp(ChestRewardRemainingSeconds / ChestRewardFadeOutSeconds, 0.f, 1.f);
+	ChestRewardBox->SetRenderOpacity(FadeAlpha);
+
+	const float OpenAlpha = FMath::Clamp((ChestRewardElapsedSeconds - 0.08f) / 0.16f, 0.f, 1.f);
+	if (ChestRewardClosedBox.IsValid())
+	{
+		ChestRewardClosedBox->SetRenderOpacity(1.f - OpenAlpha);
+		ChestRewardClosedBox->SetWidthOverride(92.f + (1.f - OpenAlpha) * 12.f);
+		ChestRewardClosedBox->SetHeightOverride(92.f + (1.f - OpenAlpha) * 12.f);
+		ChestRewardClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, (1.f - OpenAlpha) * 4.f)));
+	}
+	if (ChestRewardOpenBox.IsValid())
+	{
+		const float OpenScaleAlpha = FMath::Clamp((ChestRewardElapsedSeconds - 0.02f) / 0.22f, 0.f, 1.f);
+		ChestRewardOpenBox->SetRenderOpacity(OpenAlpha);
+		ChestRewardOpenBox->SetWidthOverride(96.f + OpenScaleAlpha * 16.f);
+		ChestRewardOpenBox->SetHeightOverride(96.f + OpenScaleAlpha * 16.f);
+		ChestRewardOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, (1.f - OpenScaleAlpha) * 8.f)));
+	}
+
+	const float CoinStartTime = 0.12f;
+	const float CoinLoopSeconds = 1.1f;
+	for (int32 CoinIndex = 0; CoinIndex < ChestRewardCoinBoxes.Num(); ++CoinIndex)
+	{
+		TSharedPtr<SBox> CoinBox = ChestRewardCoinBoxes[CoinIndex];
+		if (!CoinBox.IsValid())
+		{
+			continue;
+		}
+
+		const float PerCoinDelay = CoinStartTime + (CoinIndex * 0.06f);
+		const float LocalTime = ChestRewardElapsedSeconds - PerCoinDelay;
+		if (LocalTime <= 0.f || ChestRewardRemainingSeconds <= 0.08f)
+		{
+			CoinBox->SetRenderOpacity(0.f);
+			continue;
+		}
+
+		const float LoopProgress = FMath::Fmod(LocalTime, CoinLoopSeconds) / CoinLoopSeconds;
+		const float ArcAlpha = FMath::Sin(LoopProgress * PI);
+		const float Spread = 10.f + CoinIndex * 4.f;
+		const float LateralDrift = FMath::Sin((CoinIndex * 0.85f) + (LoopProgress * PI * 2.1f)) * Spread;
+		const float VerticalDrift = -58.f * LoopProgress - (CoinIndex % 2 == 0 ? 8.f : 0.f);
+		const float CoinSize = 10.f + (ArcAlpha * 12.f);
+
+		CoinBox->SetWidthOverride(CoinSize);
+		CoinBox->SetHeightOverride(CoinSize);
+		CoinBox->SetRenderTransform(FSlateRenderTransform(FVector2D(LateralDrift, VerticalDrift)));
+		CoinBox->SetRenderOpacity(ArcAlpha * OpenAlpha * FadeAlpha);
+	}
+
+	if (ChestRewardRemainingSeconds <= 0.f)
+	{
+		HideChestReward();
+	}
+}
+
+void UT66GameplayHUDWidget::HideChestReward()
+{
+	bChestRewardVisible = false;
+	ChestRewardRemainingSeconds = 0.f;
+	ChestRewardElapsedSeconds = 0.f;
+	ChestRewardTargetGold = 0;
+	ChestRewardDisplayedGold = 0;
+	if (ChestRewardBox.IsValid())
+	{
+		ChestRewardBox->SetVisibility(EVisibility::Collapsed);
+		ChestRewardBox->SetRenderOpacity(1.f);
+	}
+	if (ChestRewardClosedBox.IsValid())
+	{
+		ChestRewardClosedBox->SetRenderOpacity(1.f);
+		ChestRewardClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+	if (ChestRewardOpenBox.IsValid())
+	{
+		ChestRewardOpenBox->SetRenderOpacity(0.f);
+		ChestRewardOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+	if (ChestRewardCounterText.IsValid())
+	{
+		ChestRewardCounterText->SetText(FText::GetEmpty());
+	}
+	if (ChestRewardSkipText.IsValid())
+	{
+		ChestRewardSkipText->SetText(FText::GetEmpty());
+	}
+	for (const TSharedPtr<SBox>& CoinBox : ChestRewardCoinBoxes)
+	{
+		if (CoinBox.IsValid())
+		{
+			CoinBox->SetVisibility(EVisibility::Collapsed);
+			CoinBox->SetRenderOpacity(0.f);
+			CoinBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+		}
+	}
+}
+
+void UT66GameplayHUDWidget::TryShowQueuedPresentation()
+{
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible || bWheelPanelOpen)
+	{
+		return;
+	}
+
+	if (QueuedChestRewards.Num() > 0)
+	{
+		const FQueuedChestReward NextChestReward = QueuedChestRewards[0];
+		QueuedChestRewards.RemoveAt(0);
+		StartChestReward(NextChestReward.Rarity, NextChestReward.GoldAmount);
+		return;
+	}
+
+	if (QueuedPickupCards.Num() > 0)
+	{
+		const FQueuedPickupCard NextPickup = QueuedPickupCards[0];
+		QueuedPickupCards.RemoveAt(0);
+		ShowPickupItemCard(NextPickup.ItemID, NextPickup.ItemRarity);
 	}
 }
 
@@ -2153,14 +2610,12 @@ void UT66GameplayHUDWidget::RefreshEconomy()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
-	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 
 	// Net Worth
 	if (NetWorthText.IsValid())
 	{
 		const int32 NetWorth = RunState->GetNetWorth();
-		const FText Fmt = Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
-		NetWorthText->SetText(FText::Format(Fmt, FText::AsNumber(NetWorth)));
+		NetWorthText->SetText(FText::AsNumber(NetWorth));
 
 		const FLinearColor NetWorthColor = NetWorth > 0
 			? FT66Style::Tokens::Success
@@ -2171,15 +2626,13 @@ void UT66GameplayHUDWidget::RefreshEconomy()
 	// Gold
 	if (GoldText.IsValid())
 	{
-		const FText Fmt = Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
-		GoldText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentGold())));
+		GoldText->SetText(FText::AsNumber(RunState->GetCurrentGold()));
 	}
 
 	// Owe (Debt) in red
 	if (DebtText.IsValid())
 	{
-		const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
-		DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
+		DebtText->SetText(FText::AsNumber(RunState->GetCurrentDebt()));
 	}
 
 	// Score
@@ -2388,6 +2841,13 @@ void UT66GameplayHUDWidget::RefreshLootPrompt()
 void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity)
 {
 	if (ItemID.IsNone() || !PickupCardBox.IsValid()) return;
+	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bWheelPanelOpen)
+	{
+		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
+		QueuedPickup.ItemID = ItemID;
+		QueuedPickup.ItemRarity = ItemRarity;
+		return;
+	}
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -2466,6 +2926,8 @@ void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity Item
 		PickupCardSkipText->SetText(BuildSkipCountdownText(PickupCardDisplaySeconds, FName(TEXT("Interact"))));
 	}
 
+	ActivePickupCardItemID = ItemID;
+	ActivePickupCardRarity = ItemRarity;
 	bPickupCardVisible = true;
 	PickupCardRemainingSeconds = PickupCardDisplaySeconds;
 	PickupCardBox->SetVisibility(EVisibility::Visible);
@@ -2476,6 +2938,8 @@ void UT66GameplayHUDWidget::HidePickupCard()
 {
 	bPickupCardVisible = false;
 	PickupCardRemainingSeconds = 0.f;
+	ActivePickupCardItemID = NAME_None;
+	ActivePickupCardRarity = ET66ItemRarity::Black;
 	if (PickupCardBox.IsValid())
 	{
 		PickupCardBox->SetVisibility(EVisibility::Collapsed);
@@ -2492,16 +2956,17 @@ void UT66GameplayHUDWidget::RefreshHearts()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 
-	// Hearts: 5 slots driven by numerical HP; tier from MaxHP (red/blue/green/purple/gold).
-	const int32 Tier = RunState->GetHeartDisplayTier();
-	const FLinearColor TierC = FT66RarityUtil::GetTierColor(Tier);
+	// Hearts: 5 slots driven by numerical HP, each with its own rarity tier.
 	const FLinearColor EmptyC(0.25f, 0.25f, 0.28f, 0.35f);
 	for (int32 i = 0; i < HeartImages.Num(); ++i)
 	{
 		if (!HeartImages[i].IsValid()) continue;
 		const float Fill = RunState->GetHeartSlotFill(i);
 		const bool bFilled = (Fill > 0.01f);
-		HeartImages[i]->SetColorAndOpacity(bFilled ? TierC : EmptyC);
+		const FLinearColor FilledC = RunState->IsSaintBlessingActive()
+			? FLinearColor(0.95f, 0.95f, 1.00f, 1.f)
+			: FT66RarityUtil::GetTierColor(RunState->GetHeartSlotTier(i));
+		HeartImages[i]->SetColorAndOpacity(bFilled ? FilledC : EmptyC);
 	}
 }
 
@@ -2566,19 +3031,23 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	// Portrait frame stays neutral; heart tier is already conveyed by the heart row and other HUD accents.
 	if (PortraitBorder.IsValid())
 	{
-		PortraitBorder->SetBorderBackgroundColor(FT66Style::IsDotaTheme()
-			? FT66Style::PanelInner()
-			: FLinearColor(0.12f, 0.12f, 0.14f, 1.f));
+		PortraitBorder->SetBorderBackgroundColor(RunState->IsSaintBlessingActive()
+			? FLinearColor(0.92f, 0.92f, 0.98f, 1.f)
+			: (FT66Style::IsDotaTheme()
+				? FT66Style::PanelInner()
+				: FLinearColor(0.12f, 0.12f, 0.14f, 1.f)));
 	}
 	const FName DesiredPortraitHeroID = GIAsT66 ? GIAsT66->SelectedHeroID : NAME_None;
 	const ET66BodyType DesiredPortraitBodyType = GIAsT66 ? GIAsT66->SelectedHeroBodyType : ET66BodyType::TypeA;
-	ET66HeroPortraitVariant DesiredPortraitVariant = ET66HeroPortraitVariant::Half;
+	ET66HeroPortraitVariant DesiredPortraitVariant = RunState->IsSaintBlessingActive()
+		? ET66HeroPortraitVariant::Invincible
+		: ET66HeroPortraitVariant::Half;
 	const int32 HeartsRemaining = RunState->GetCurrentHearts();
-	if (HeartsRemaining <= 1)
+	if (!RunState->IsSaintBlessingActive() && HeartsRemaining <= 1)
 	{
 		DesiredPortraitVariant = ET66HeroPortraitVariant::Low;
 	}
-	else if (HeartsRemaining >= 5)
+	else if (!RunState->IsSaintBlessingActive() && HeartsRemaining >= 5)
 	{
 		DesiredPortraitVariant = ET66HeroPortraitVariant::Full;
 	}
@@ -2956,9 +3425,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	const FText StageInit = Loc ? FText::Format(Loc->GetText_StageNumberFormat(), FText::AsNumber(1)) : NSLOCTEXT("T66.GameplayHUD", "StageNumberInit", "Stage number: 1");
-	const FText NetWorthInit = Loc ? FText::Format(Loc->GetText_NetWorthFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "NetWorthInit", "Net Worth: 0");
-	const FText GoldInit = Loc ? FText::Format(Loc->GetText_GoldFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "GoldInit", "Gold: 0");
-	const FText OweInit = Loc ? FText::Format(Loc->GetText_OweFormat(), FText::AsNumber(0)) : NSLOCTEXT("T66.GameplayHUD", "OweInit", "Debt: 0");
+	const FText NetWorthInit = FText::AsNumber(0);
+	const FText GoldInit = FText::AsNumber(0);
+	const FText OweInit = FText::AsNumber(0);
 	const FText ScoreLabelText = Loc ? Loc->GetText_ScoreLabel() : NSLOCTEXT("T66.GameplayHUD", "ScoreLabel", "Score:");
 	const FText PortraitLabel = Loc ? Loc->GetText_PortraitPlaceholder() : NSLOCTEXT("T66.GameplayHUD", "PortraitLabel", "PORTRAIT");
 	NetWorthText.Reset();
@@ -2972,8 +3441,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FLinearColor BossBarFillColor = bDotaTheme ? FT66Style::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
 	const FLinearColor PromptBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.02f, 0.02f, 0.03f, 0.65f);
 	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f);
-	const int32 CurrentInventoryCount = GetRunState() ? FMath::Max(0, GetRunState()->GetInventorySlots().Num()) : 0;
-	const int32 InventorySlotWidgetCount = FMath::Max(25, FMath::DivideAndRoundUp(CurrentInventoryCount + 5, 5) * 5);
+	const int32 InventorySlotWidgetCount = UT66RunStateSubsystem::MaxInventorySlots;
 
 	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
 	HeartImages.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
@@ -2991,6 +3459,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	InventorySlotImages.SetNum(InventorySlotWidgetCount);
 	InventorySlotBrushes.SetNum(InventorySlotWidgetCount);
 	CachedInventorySlotIDs.SetNum(InventorySlotWidgetCount);
+	ChestRewardCoinBoxes.SetNum(ChestRewardCoinCount);
+	ChestRewardCoinImages.SetNum(ChestRewardCoinCount);
 	StatusEffectDots.SetNum(3);
 	StatusEffectDotBoxes.SetNum(3);
 	WorldDialogueOptionBorders.SetNum(3);
@@ -3003,6 +3473,40 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		LootPromptIconBrush = MakeShared<FSlateBrush>();
 		LootPromptIconBrush->DrawAs = ESlateBrushDrawType::Image;
 		LootPromptIconBrush->ImageSize = FVector2D(28.f, 28.f);
+	}
+	if (!GoldCurrencyBrush.IsValid())
+	{
+		GoldCurrencyBrush = MakeShared<FSlateBrush>();
+		GoldCurrencyBrush->DrawAs = ESlateBrushDrawType::Image;
+		GoldCurrencyBrush->ImageSize = FVector2D(20.f, 20.f);
+		GoldCurrencyBrush->Tiling = ESlateBrushTileType::NoTile;
+		GoldCurrencyBrush->SetResourceObject(nullptr);
+	}
+	if (!DebtCurrencyBrush.IsValid())
+	{
+		DebtCurrencyBrush = MakeShared<FSlateBrush>();
+		DebtCurrencyBrush->DrawAs = ESlateBrushDrawType::Image;
+		DebtCurrencyBrush->ImageSize = FVector2D(20.f, 20.f);
+		DebtCurrencyBrush->Tiling = ESlateBrushTileType::NoTile;
+		DebtCurrencyBrush->SetResourceObject(nullptr);
+	}
+	BindRuntimeHudBrush(GoldCurrencyBrush, GetGoldCurrencyRelativePath(), FVector2D(20.f, 20.f));
+	BindRuntimeHudBrush(DebtCurrencyBrush, GetDebtCurrencyRelativePath(), FVector2D(20.f, 20.f));
+	if (!ChestRewardClosedBrush.IsValid())
+	{
+		ChestRewardClosedBrush = MakeShared<FSlateBrush>();
+		ChestRewardClosedBrush->DrawAs = ESlateBrushDrawType::Image;
+		ChestRewardClosedBrush->ImageSize = FVector2D(108.f, 108.f);
+		ChestRewardClosedBrush->Tiling = ESlateBrushTileType::NoTile;
+		ChestRewardClosedBrush->SetResourceObject(nullptr);
+	}
+	if (!ChestRewardOpenBrush.IsValid())
+	{
+		ChestRewardOpenBrush = MakeShared<FSlateBrush>();
+		ChestRewardOpenBrush->DrawAs = ESlateBrushDrawType::Image;
+		ChestRewardOpenBrush->ImageSize = FVector2D(108.f, 108.f);
+		ChestRewardOpenBrush->Tiling = ESlateBrushTileType::NoTile;
+		ChestRewardOpenBrush->SetResourceObject(nullptr);
 	}
 	if (!PortraitBrush.IsValid())
 	{
@@ -3030,7 +3534,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	// Wheel spin texture
 	{
 		WheelTextureBrush = FSlateBrush();
-		WheelTextureBrush.ImageSize = FVector2D(120.f, 120.f);
+		WheelTextureBrush.ImageSize = FVector2D(124.f, 124.f);
 		WheelTextureBrush.DrawAs = ESlateBrushDrawType::Image;
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (TexPool)
@@ -3200,7 +3704,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	// Build hearts row first (5 sprite icons). Portrait width should match this row width.
 	static constexpr float HeartSize = 28.f;
 	static constexpr float HeartPad = 0.f;
-	const float HeartsRowWidth = (HeartSize + (HeartPad * 2.f)) * static_cast<float>(UT66RunStateSubsystem::DefaultMaxHearts);
+	static constexpr float TopStripPanelHeight = GT66BottomLeftAbilityBoxSize;
 	TSharedRef<SHorizontalBox> HeartsRowRef = SNew(SHorizontalBox);
 	for (int32 i = 0; i < UT66RunStateSubsystem::DefaultMaxHearts; ++i)
 	{
@@ -3224,20 +3728,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	TSharedRef<SWidget> QuickReviveIconRowRef =
 		SAssignNew(QuickReviveIconRowBox, SBox)
 		.Visibility(EVisibility::Collapsed)
-		.WidthOverride(HeartsRowWidth)
+		.WidthOverride(GT66BottomLeftAbilityBoxSize)
+		.HeightOverride(GT66BottomLeftAbilityBoxSize)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth()
-			[
-				SNew(SBox)
-				.WidthOverride(26.f)
-				.HeightOverride(26.f)
-				[
-					SAssignNew(QuickReviveIconImage, SImage)
-					.Image(QuickReviveBrush.Get())
-					.ColorAndOpacity(FLinearColor::White)
-				]
-			]
+			SAssignNew(QuickReviveIconImage, SImage)
+			.Image(QuickReviveBrush.Get())
+			.ColorAndOpacity(FLinearColor::White)
 		];
 
 	// Status effect dots row (above hearts): burn / chill / curse
@@ -3269,8 +3765,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	static constexpr float IdolSlotSize = GT66BottomLeftIdolSlotSize;
 	const int32 IdolRows = FMath::DivideAndRoundUp(UT66IdolManagerSubsystem::MaxEquippedIdolSlots, IdolColumns);
 	const float IdolPanelMinWidth = GT66BottomLeftSidePanelWidth;
-	const float HUDSidePanelMinHeight = GT66BottomLeftSidePanelHeight;
 	const float PortraitPanelSize = GT66BottomLeftPortraitPanelSize;
+	const float HeroColumnHeight = TopStripPanelHeight + PortraitPanelSize;
 	const float InventoryPanelVisibleWidth = BottomRightInventoryPanelWidth;
 	const float InventoryPanelVisibleHeight = BottomRightInventoryPanelHeight;
 	const float AbilityColumnWidth = GT66BottomLeftAbilityBoxSize;
@@ -3285,6 +3781,28 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FLinearColor AbilitySectionBorderColor(0.54f, 0.74f, 0.94f, 0.95f);
 	const FLinearColor HeartsSectionBorderColor(0.72f, 0.34f, 0.34f, 0.95f);
 	const FLinearColor SharedSectionFillColor(0.03f, 0.03f, 0.04f, 1.f);
+	const FLinearColor LevelTextColor = bDotaTheme ? FT66Style::Accent2() : FLinearColor(0.90f, 0.75f, 0.20f, 1.f);
+	TSharedRef<SWidget> LevelBadgeRef =
+		SNew(SBox)
+		.WidthOverride(GT66BottomLeftLevelBadgeSize)
+		.HeightOverride(GT66BottomLeftLevelBadgeSize)
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				SAssignNew(LevelRingWidget, ST66RingWidget)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(LevelText, STextBlock)
+				.Text(FText::AsNumber(1))
+				.Font(FT66Style::Tokens::FontBold(11))
+				.ColorAndOpacity(LevelTextColor)
+				.Justification(ETextJustify::Center)
+			]
+		];
 	auto MakeBottomLeftBlackPanel = [&](const FText& Title, const TSharedRef<SWidget>& Content, const FMargin& InnerPadding) -> TSharedRef<SWidget>
 	{
 		return SNew(SOverlay)
@@ -3363,6 +3881,28 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			];
 	};
+	auto MakeCurrencyReadout = [&](const TSharedPtr<FSlateBrush>& IconBrush, TSharedPtr<STextBlock>& OutValueText, const FText& InitialValue, const FLinearColor& ValueColor) -> TSharedRef<SWidget>
+	{
+		return SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 4.f, 0.f)
+			[
+				SNew(SBox)
+				.WidthOverride(18.f)
+				.HeightOverride(18.f)
+				[
+					SNew(SImage)
+					.Image(IconBrush.Get())
+					.ColorAndOpacity(FLinearColor::White)
+				]
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SAssignNew(OutValueText, STextBlock)
+				.Text(InitialValue)
+				.Font(FT66Style::Tokens::FontBold(13))
+				.ColorAndOpacity(ValueColor)
+			];
+	};
 	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		TSharedPtr<SBorder> IdolBorder;
@@ -3434,17 +3974,17 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		IdolSlotBorders[i] = IdolBorder;
 	}
 
-	// Inventory: larger visible slots with vertical scrolling.
-	static constexpr int32 InvCols = 5;
+	// Inventory: fixed two-row strip, stretched edge-to-edge so the full inventory fits without scrolling.
+	static constexpr int32 InvCols = 10;
 	const int32 InvRows = FMath::Max(1, FMath::DivideAndRoundUp(InventorySlotBorders.Num(), InvCols));
-	static constexpr float InvSlotSize = 36.f;
-	static constexpr float InvSlotPad = 3.f;
+	static constexpr float InvSlotSize = 40.f;
+	static constexpr float InvSlotPad = 2.f;
 	const FLinearColor InvSlotBorderColor = SlotFrameColor;
 	for (int32 i = 0; i < InventorySlotBrushes.Num(); ++i)
 	{
 		if (InventorySlotBrushes[i].IsValid())
 		{
-			InventorySlotBrushes[i]->ImageSize = FVector2D(InvSlotSize, InvSlotSize);
+			InventorySlotBrushes[i]->ImageSize = FVector2D(InvSlotSize - 4.f, InvSlotSize - 4.f);
 		}
 	}
 	TSharedRef<SVerticalBox> InvGridRows = SNew(SVerticalBox);
@@ -3462,11 +4002,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			TSharedPtr<SImage> SlotImage;
 			const int32 ThisSlotIndex = SlotIndex;
 			RowBox->AddSlot()
-				.AutoWidth()
+				.FillWidth(1.f)
 				.Padding(InvSlotPad, InvSlotPad)
 				[
 					SAssignNew(InventorySlotContainers[ThisSlotIndex], SBox)
-					.WidthOverride(InvSlotSize)
 					.HeightOverride(InvSlotSize)
 					[
 						SNew(SOverlay)
@@ -3540,27 +4079,52 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			}
 			SlotIndex++;
 		}
-		InvGridRows->AddSlot().AutoHeight()[ RowBox ];
+		InvGridRows->AddSlot().AutoHeight().HAlign(HAlign_Fill)[ RowBox ];
 	}
-	TSharedRef<SScrollBox> InvGridRef = SNew(SScrollBox)
-		.Orientation(Orient_Vertical)
-		.ConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible)
-		+ SScrollBox::Slot()
+	TSharedRef<SWidget> InvGridRef =
+		SNew(SBox)
+		.HAlign(HAlign_Fill)
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[
-				SNew(SSpacer)
-			]
-			+ SHorizontalBox::Slot().AutoWidth()
-			[
-				InvGridRows
-			]
-			+ SHorizontalBox::Slot().FillWidth(1.f)
-			[
-				SNew(SSpacer)
-			]
+			InvGridRows
 		];
+	auto MakeInventoryEconomySection = [&](const FLinearColor& GoldValueColor, const FLinearColor& DebtValueColor, const FLinearColor& NetWorthValueColor, const FLinearColor& DividerColor) -> TSharedRef<SWidget>
+	{
+		return SNew(SVerticalBox)
+			+ SVerticalBox::Slot().AutoHeight().Padding(2.f, 0.f, 2.f, 6.f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
+				[
+					MakeCurrencyReadout(GoldCurrencyBrush, GoldText, GoldInit, GoldValueColor)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
+				[
+					MakeCurrencyReadout(DebtCurrencyBrush, DebtText, OweInit, DebtValueColor)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					MakeCurrencyReadout(DebtCurrencyBrush, NetWorthText, NetWorthInit, NetWorthValueColor)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.f)
+				[
+					SNew(SSpacer)
+				]
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(SBox)
+				.HeightOverride(1.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(DividerColor)
+				]
+			]
+			+ SVerticalBox::Slot().FillHeight(1.f)
+			[
+				InvGridRef
+			];
+	};
 
 	const TAttribute<FMargin> TopCenterBossPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
@@ -3629,6 +4193,51 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		const float Height = FMath::Clamp(SafeFrame.Y - 88.f, 420.f, 680.f);
 		return FOptionalSize(Height);
 	});
+
+	TSharedRef<SOverlay> ChestRewardArtOverlay = SNew(SOverlay);
+	ChestRewardArtOverlay->AddSlot()
+	.HAlign(HAlign_Center)
+	.VAlign(VAlign_Center)
+	[
+		SAssignNew(ChestRewardClosedBox, SBox)
+		.WidthOverride(104.f)
+		.HeightOverride(104.f)
+		[
+			SAssignNew(ChestRewardClosedImage, SImage)
+			.Image(ChestRewardClosedBrush.Get())
+			.ColorAndOpacity(FLinearColor::White)
+		]
+	];
+	ChestRewardArtOverlay->AddSlot()
+	.HAlign(HAlign_Center)
+	.VAlign(VAlign_Center)
+		[
+			SAssignNew(ChestRewardOpenBox, SBox)
+			.WidthOverride(112.f)
+			.HeightOverride(112.f)
+			[
+				SAssignNew(ChestRewardOpenImage, SImage)
+				.Image(ChestRewardOpenBrush.Get())
+				.ColorAndOpacity(FLinearColor::White)
+			]
+		];
+	for (int32 CoinIndex = 0; CoinIndex < ChestRewardCoinCount; ++CoinIndex)
+	{
+		ChestRewardArtOverlay->AddSlot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SAssignNew(ChestRewardCoinBoxes[CoinIndex], SBox)
+			.WidthOverride(18.f)
+			.HeightOverride(18.f)
+			.Visibility(EVisibility::Collapsed)
+			[
+				SAssignNew(ChestRewardCoinImages[CoinIndex], SImage)
+				.Image(GoldCurrencyBrush.Get())
+				.ColorAndOpacity(FLinearColor::White)
+			]
+		];
+	}
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay)
 		+ SOverlay::Slot()
@@ -3941,48 +4550,99 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				)
 		]
 
-		// Wheel spin HUD animation (right side)
+		// Wheel spin HUD animation (same lane/layout as chest reward)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
-		.VAlign(VAlign_Center)
-		.Padding(RightCenterHudPadding)
+		.VAlign(VAlign_Bottom)
+		.Padding(BottomRightPickupPadding)
 		[
 			SAssignNew(WheelSpinBox, SBox)
-			.WidthOverride(128.f)
-			.HeightOverride(128.f)
+			.WidthOverride(PickupCardWidth)
+			.HeightOverride(PickupCardHeight)
 			.Visibility(EVisibility::Collapsed)
 			[
-				FT66Style::MakePanel(
-					SNew(SOverlay)
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.24f, 0.24f, 0.28f, 1.f))
+				.Padding(2.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
+					.Padding(0.f)
 					[
-					SNew(SBox)
-					.WidthOverride(92.f)
-					.HeightOverride(92.f)
-					[
-						SAssignNew(WheelSpinDisk, SImage)
-						.Image(&WheelTextureBrush)
-					]
-					]
-					+ SOverlay::Slot()
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						SNew(SBox)
-						.WidthOverride(108.f)
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SAssignNew(WheelSpinText, STextBlock)
-							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(12))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-							.Justification(ETextJustify::Center)
-							.AutoWrapText(true)
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor::Black)
+							.Padding(FMargin(8.f, 6.f))
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+								[
+									SNew(SHorizontalBox)
+									+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+									[
+										SNew(SBox)
+										.WidthOverride(18.f)
+										.HeightOverride(18.f)
+										[
+											SNew(SImage)
+											.Image(GoldCurrencyBrush.Get())
+											.ColorAndOpacity(FLinearColor::White)
+										]
+									]
+									+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(6.f, 0.f, 0.f, 0.f)
+									[
+										SAssignNew(WheelSpinText, STextBlock)
+										.Text(FText::GetEmpty())
+										.Font(FT66Style::Tokens::FontBold(18))
+										.ColorAndOpacity(FLinearColor(0.98f, 0.83f, 0.24f, 1.f))
+										.Justification(ETextJustify::Center)
+									]
+								]
+							]
+						]
+						+ SVerticalBox::Slot().FillHeight(1.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.f))
+							.Padding(FMargin(6.f))
+							[
+								SNew(SOverlay)
+								+ SOverlay::Slot()
+								.HAlign(HAlign_Center)
+								.VAlign(VAlign_Center)
+								[
+									SNew(SBox)
+									.WidthOverride(124.f)
+									.HeightOverride(124.f)
+									[
+										SAssignNew(WheelSpinDisk, SImage)
+										.Image(&WheelTextureBrush)
+									]
+								]
+							]
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 1.f))
+							.Padding(FMargin(8.f, 4.f))
+							[
+								SAssignNew(WheelSpinSkipText, STextBlock)
+								.Text(FText::GetEmpty())
+								.Font(FT66Style::Tokens::FontBold(11))
+								.ColorAndOpacity(FLinearColor::White)
+								.Justification(ETextJustify::Center)
+							]
 						]
 					]
-				,
-					FT66PanelParams(ET66PanelType::Panel).SetPadding(10.f))
+				]
 			]
 		]
 
@@ -4028,302 +4688,295 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					[
 						MakeBottomLeftBlackPanelNoTitle(
 							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom)
+							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top)
 							[
 								SNew(SBox)
 								.WidthOverride(IdolPanelMinWidth)
-								.HeightOverride(HUDSidePanelMinHeight)
+								.HeightOverride(HeroColumnHeight)
 								[
 									MakeBottomLeftSectionPanel(
-										SNew(SBox)
-										.HAlign(HAlign_Center)
-										.VAlign(VAlign_Center)
+										SNew(SVerticalBox)
+										+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).VAlign(VAlign_Top)
 										[
 											IdolSlotsRef
+										]
+										+ SVerticalBox::Slot().FillHeight(1.f)
+										[
+											SNew(SSpacer)
 										],
 										FMargin(3.f),
 										IdolSectionBorderColor)
 								]
 							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
-							[
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight()
-								[
-									SNew(SBox)
-									.WidthOverride(PortraitPanelSize)
-									[
-										MakeBottomLeftSectionPanel(
-											SNew(SVerticalBox)
-											+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
-											[
-												StatusDotsRowRef
-											]
-											+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
-											[
-												QuickReviveIconRowRef
-											]
-											+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-											[
-												HeartsRowRef
-											],
-											FMargin(0.f, 4.f, 0.f, 3.f),
-											HeartsSectionBorderColor)
-									]
-								]
-								+ SVerticalBox::Slot().AutoHeight()
-								[
-									SNew(SBox)
-									.WidthOverride(PortraitPanelSize)
-									.HeightOverride(PortraitPanelSize)
-									[
-										MakeBottomLeftSectionPanel(
-											bDotaTheme
-												? StaticCastSharedRef<SWidget>(
-													SNew(SOverlay)
-													+ SOverlay::Slot()
-													[
-														SNew(SBorder)
-														.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-														.BorderBackgroundColor(FT66Style::PanelOuter())
-														.Padding(1.f)
-														[
-															SNew(SBorder)
-															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FT66Style::Border())
-															.Padding(1.f)
-															[
-																SAssignNew(PortraitBorder, SBorder)
-																.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-																.BorderBackgroundColor(FT66Style::PanelInner())
-															]
-														]
-													]
-													+ SOverlay::Slot()
-													[
-														SAssignNew(PortraitImage, SImage)
-														.Image(PortraitBrush.Get())
-														.ColorAndOpacity(FLinearColor::White)
-														.Visibility(EVisibility::Collapsed)
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Center)
-													.VAlign(VAlign_Center)
-													[
-														SNew(STextBlock)
-														.Text(PortraitLabel)
-														.Font(FT66Style::Tokens::FontBold(11))
-														.ColorAndOpacity(FT66Style::TextMuted())
-														.Justification(ETextJustify::Center)
-														.Visibility_Lambda([this]() -> EVisibility
-														{
-															return (PortraitBrush.IsValid() && PortraitBrush->GetResourceObject()) ? EVisibility::Collapsed : EVisibility::Visible;
-														})
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Right)
-													.VAlign(VAlign_Top)
-													.Padding(0.f, 2.f, 2.f, 0.f)
-													[
-														SNew(SBox)
-														.WidthOverride(42.f)
-														.HeightOverride(42.f)
-														[
-															SNew(SOverlay)
-															+ SOverlay::Slot()
-															[
-																SAssignNew(LevelRingWidget, ST66RingWidget)
-															]
-															+ SOverlay::Slot()
-															.HAlign(HAlign_Center)
-															.VAlign(VAlign_Center)
-															[
-																SAssignNew(LevelText, STextBlock)
-																.Text(FText::AsNumber(1))
-																.Font(FT66Style::Tokens::FontBold(11))
-																.ColorAndOpacity(FT66Style::Accent2())
-																.Justification(ETextJustify::Center)
-															]
-														]
-													])
-												: StaticCastSharedRef<SWidget>(
-													SNew(SOverlay)
-													+ SOverlay::Slot()
-													[
-														SAssignNew(PortraitBorder, SBorder)
-														.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-														.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.14f, 1.f))
-													]
-													+ SOverlay::Slot()
-													[
-														SAssignNew(PortraitImage, SImage)
-														.Image(PortraitBrush.Get())
-														.ColorAndOpacity(FLinearColor::White)
-														.Visibility(EVisibility::Collapsed)
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Center)
-													.VAlign(VAlign_Center)
-													[
-														SNew(STextBlock)
-														.Text(PortraitLabel)
-														.Font(FT66Style::Tokens::FontBold(11))
-														.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-														.Justification(ETextJustify::Center)
-														.Visibility_Lambda([this]() -> EVisibility
-														{
-															return (PortraitBrush.IsValid() && PortraitBrush->GetResourceObject()) ? EVisibility::Collapsed : EVisibility::Visible;
-														})
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Right)
-													.VAlign(VAlign_Top)
-													.Padding(0.f, 2.f, 2.f, 0.f)
-													[
-														SNew(SBox)
-														.WidthOverride(42.f)
-														.HeightOverride(42.f)
-														[
-															SNew(SOverlay)
-															+ SOverlay::Slot()
-															[
-																SAssignNew(LevelRingWidget, ST66RingWidget)
-															]
-															+ SOverlay::Slot()
-															.HAlign(HAlign_Center)
-															.VAlign(VAlign_Center)
-															[
-																SAssignNew(LevelText, STextBlock)
-																.Text(FText::AsNumber(1))
-																.Font(FT66Style::Tokens::FontBold(11))
-																.ColorAndOpacity(FLinearColor(0.90f, 0.75f, 0.20f, 1.f))
-																.Justification(ETextJustify::Center)
-															]
-														]
-													]),
-											FMargin(2.f),
-											PortraitSectionBorderColor)
-									]
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Bottom).Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
+							+ SHorizontalBox::Slot().AutoWidth().Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
 							[
 								SNew(SBox)
-								.WidthOverride(AbilityColumnWidth)
-								.HeightOverride(PortraitPanelSize)
+								.WidthOverride(PortraitPanelSize)
 								[
-									MakeBottomLeftSectionPanel(
-										SNew(SVerticalBox)
-										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, GT66BottomLeftAbilityGap)
+									SNew(SVerticalBox)
+									+ SVerticalBox::Slot().AutoHeight()
+									[
+										SNew(SBox)
+										.WidthOverride(PortraitPanelSize)
+										.HeightOverride(TopStripPanelHeight)
 										[
-											SNew(SBox)
-											.WidthOverride(AbilityIconSize)
-											.HeightOverride(AbilityIconSize)
-											[
-												SNew(SOverlay)
-												+ SOverlay::Slot()
+											MakeBottomLeftSectionPanel(
+												SNew(SVerticalBox)
+												+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
 												[
-													SAssignNew(PassiveBorder, SBorder)
-													.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-													.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
-													.Padding(0.f)
-													[
-														SAssignNew(PassiveImage, SImage)
-														.Image(UltimateBrush.Get())
-														.ColorAndOpacity(FLinearColor::White)
-													]
+													StatusDotsRowRef
 												]
-												+ SOverlay::Slot()
-												.HAlign(HAlign_Right)
-												.VAlign(VAlign_Bottom)
-												.Padding(0.f, 0.f, 4.f, 4.f)
+												+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 												[
-													SAssignNew(PassiveStackBadgeBox, SBox)
-													.WidthOverride(20.f)
-													.HeightOverride(20.f)
-													[
+													HeartsRowRef
+												],
+												FMargin(0.f, 4.f, 0.f, 3.f),
+												HeartsSectionBorderColor)
+										]
+									]
+									+ SVerticalBox::Slot().AutoHeight()
+									[
+										SNew(SBox)
+										.WidthOverride(PortraitPanelSize)
+										.HeightOverride(PortraitPanelSize)
+										[
+											MakeBottomLeftSectionPanel(
+												bDotaTheme
+													? StaticCastSharedRef<SWidget>(
 														SNew(SOverlay)
 														+ SOverlay::Slot()
 														[
 															SNew(SBorder)
-															.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Circle"))
-															.BorderBackgroundColor(FLinearColor(0.12f, 0.10f, 0.08f, 0.95f))
-															.Padding(0.f)
-															.HAlign(HAlign_Center)
-															.VAlign(VAlign_Center)
+															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+															.BorderBackgroundColor(FT66Style::PanelOuter())
+															.Padding(1.f)
 															[
-																SAssignNew(PassiveStackText, STextBlock)
-																.Text(FText::AsNumber(0))
-																.Font(FT66Style::Tokens::FontBold(9))
-																.ColorAndOpacity(FLinearColor(0.95f, 0.75f, 0.25f, 1.f))
-																.Justification(ETextJustify::Center)
+																SNew(SBorder)
+																.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+																.BorderBackgroundColor(FT66Style::Border())
+																.Padding(1.f)
+																[
+																	SAssignNew(PortraitBorder, SBorder)
+																	.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+																	.BorderBackgroundColor(FT66Style::PanelInner())
+																]
 															]
 														]
-													]
-												]
-											]
-										]
-										+ SVerticalBox::Slot().AutoHeight()
-										[
-											SNew(SBox)
-											.WidthOverride(AbilityIconSize)
-											.HeightOverride(AbilityIconSize)
-											[
-												SAssignNew(UltimateBorder, SBorder)
-												.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-												.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
-												.Padding(0.f)
-												[
-													SNew(SOverlay)
-													+ SOverlay::Slot()
-													[
-														SAssignNew(UltimateImage, SImage)
-														.Image(UltimateBrush.Get())
-														.ColorAndOpacity(FLinearColor::White)
-													]
-													+ SOverlay::Slot()
-													[
-														SAssignNew(UltimateCooldownOverlay, SBorder)
-														.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-														.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
+														+ SOverlay::Slot()
+														[
+															SAssignNew(PortraitImage, SImage)
+															.Image(PortraitBrush.Get())
+															.ColorAndOpacity(FLinearColor::White)
+															.Visibility(EVisibility::Collapsed)
+														]
+														+ SOverlay::Slot()
+														.HAlign(HAlign_Right)
+														.VAlign(VAlign_Top)
+														.Padding(4.f)
+														[
+															LevelBadgeRef
+														]
+														+ SOverlay::Slot()
 														.HAlign(HAlign_Center)
 														.VAlign(VAlign_Center)
-														.Visibility(EVisibility::Collapsed)
 														[
-															SAssignNew(UltimateText, STextBlock)
-															.Text(FText::GetEmpty())
-															.Font(FT66Style::Tokens::FontBold(16))
-															.ColorAndOpacity(FLinearColor::White)
+															SNew(STextBlock)
+															.Text(PortraitLabel)
+															.Font(FT66Style::Tokens::FontBold(11))
+															.ColorAndOpacity(FT66Style::TextMuted())
 															.Justification(ETextJustify::Center)
+															.Visibility_Lambda([this]() -> EVisibility
+															{
+																return (PortraitBrush.IsValid() && PortraitBrush->GetResourceObject()) ? EVisibility::Collapsed : EVisibility::Visible;
+															})
 														]
-													]
-													+ SOverlay::Slot()
-													.HAlign(HAlign_Left)
-													.VAlign(VAlign_Top)
-													[
-														SNew(SBox)
-														.WidthOverride(18.f)
-														.HeightOverride(18.f)
+														)
+													: StaticCastSharedRef<SWidget>(
+														SNew(SOverlay)
+														+ SOverlay::Slot()
 														[
-															SNew(SBorder)
+															SAssignNew(PortraitBorder, SBorder)
 															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.75f))
-															.HAlign(HAlign_Center)
-															.VAlign(VAlign_Center)
+															.BorderBackgroundColor(FLinearColor(0.12f, 0.12f, 0.14f, 1.f))
+														]
+														+ SOverlay::Slot()
+														[
+															SAssignNew(PortraitImage, SImage)
+															.Image(PortraitBrush.Get())
+															.ColorAndOpacity(FLinearColor::White)
+															.Visibility(EVisibility::Collapsed)
+														]
+														+ SOverlay::Slot()
+														.HAlign(HAlign_Right)
+														.VAlign(VAlign_Top)
+														.Padding(4.f)
+														[
+															LevelBadgeRef
+														]
+														+ SOverlay::Slot()
+														.HAlign(HAlign_Center)
+														.VAlign(VAlign_Center)
+														[
+															SNew(STextBlock)
+															.Text(PortraitLabel)
+															.Font(FT66Style::Tokens::FontBold(11))
+															.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+															.Justification(ETextJustify::Center)
+															.Visibility_Lambda([this]() -> EVisibility
+															{
+																return (PortraitBrush.IsValid() && PortraitBrush->GetResourceObject()) ? EVisibility::Collapsed : EVisibility::Visible;
+															})
+														]
+														),
+												FMargin(2.f),
+												PortraitSectionBorderColor)
+										]
+									]
+								]
+							]
+							+ SHorizontalBox::Slot().AutoWidth().Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
+							[
+								SNew(SBox)
+								.WidthOverride(AbilityColumnWidth)
+								[
+									SNew(SVerticalBox)
+									+ SVerticalBox::Slot().AutoHeight()
+									[
+										SNew(SBox)
+										.WidthOverride(AbilityColumnWidth)
+										.HeightOverride(TopStripPanelHeight)
+										[
+											MakeBottomLeftSectionPanel(
+												SNew(SBox)
+												.HAlign(HAlign_Center)
+												.VAlign(VAlign_Center)
+												[
+													QuickReviveIconRowRef
+												],
+												FMargin(3.f),
+												AbilitySectionBorderColor)
+										]
+									]
+									+ SVerticalBox::Slot().AutoHeight()
+									[
+										SNew(SBox)
+										.WidthOverride(AbilityColumnWidth)
+										.HeightOverride(PortraitPanelSize)
+										[
+											MakeBottomLeftSectionPanel(
+												SNew(SVerticalBox)
+												+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, GT66BottomLeftAbilityGap)
+												[
+													SNew(SBox)
+													.WidthOverride(AbilityIconSize)
+													.HeightOverride(AbilityIconSize)
+													[
+														SAssignNew(UltimateBorder, SBorder)
+														.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+														.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
+														.Padding(0.f)
+														[
+															SNew(SOverlay)
+															+ SOverlay::Slot()
 															[
-																SNew(STextBlock)
-																.Text(NSLOCTEXT("T66.GameplayHUD", "UltKeybind", "R"))
-																.Font(FT66Style::Tokens::FontBold(9))
+																SAssignNew(UltimateImage, SImage)
+																.Image(UltimateBrush.Get())
 																.ColorAndOpacity(FLinearColor::White)
-																.Justification(ETextJustify::Center)
+															]
+															+ SOverlay::Slot()
+															[
+																SAssignNew(UltimateCooldownOverlay, SBorder)
+																.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+																.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.65f))
+																.HAlign(HAlign_Center)
+																.VAlign(VAlign_Center)
+																.Visibility(EVisibility::Collapsed)
+																[
+																	SAssignNew(UltimateText, STextBlock)
+																	.Text(FText::GetEmpty())
+																	.Font(FT66Style::Tokens::FontBold(16))
+																	.ColorAndOpacity(FLinearColor::White)
+																	.Justification(ETextJustify::Center)
+																]
+															]
+															+ SOverlay::Slot()
+															.HAlign(HAlign_Left)
+															.VAlign(VAlign_Top)
+															[
+																SNew(SBox)
+																.WidthOverride(18.f)
+																.HeightOverride(18.f)
+																[
+																	SNew(SBorder)
+																	.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+																	.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.75f))
+																	.HAlign(HAlign_Center)
+																	.VAlign(VAlign_Center)
+																	[
+																		SNew(STextBlock)
+																		.Text(NSLOCTEXT("T66.GameplayHUD", "UltKeybind", "R"))
+																		.Font(FT66Style::Tokens::FontBold(9))
+																		.ColorAndOpacity(FLinearColor::White)
+																		.Justification(ETextJustify::Center)
+																	]
+																]
 															]
 														]
 													]
 												]
-											]
-										],
-										FMargin(2.f),
-										AbilitySectionBorderColor)
+												+ SVerticalBox::Slot().AutoHeight()
+												[
+													SNew(SBox)
+													.WidthOverride(AbilityIconSize)
+													.HeightOverride(AbilityIconSize)
+													[
+														SNew(SOverlay)
+														+ SOverlay::Slot()
+														[
+															SAssignNew(PassiveBorder, SBorder)
+															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+															.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
+															.Padding(0.f)
+															[
+																SAssignNew(PassiveImage, SImage)
+																.Image(UltimateBrush.Get())
+																.ColorAndOpacity(FLinearColor::White)
+															]
+														]
+														+ SOverlay::Slot()
+														.HAlign(HAlign_Right)
+														.VAlign(VAlign_Bottom)
+														.Padding(0.f, 0.f, 4.f, 4.f)
+														[
+															SAssignNew(PassiveStackBadgeBox, SBox)
+															.WidthOverride(20.f)
+															.HeightOverride(20.f)
+															[
+																SNew(SOverlay)
+																+ SOverlay::Slot()
+																[
+																	SNew(SBorder)
+																	.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Circle"))
+																	.BorderBackgroundColor(FLinearColor(0.12f, 0.10f, 0.08f, 0.95f))
+																	.Padding(0.f)
+																	.HAlign(HAlign_Center)
+																	.VAlign(VAlign_Center)
+																	[
+																		SAssignNew(PassiveStackText, STextBlock)
+																		.Text(FText::AsNumber(0))
+																		.Font(FT66Style::Tokens::FontBold(9))
+																		.ColorAndOpacity(FLinearColor(0.95f, 0.75f, 0.25f, 1.f))
+																		.Justification(ETextJustify::Center)
+																	]
+																]
+															]
+														]
+													]
+												],
+												FMargin(2.f),
+												AbilitySectionBorderColor)
+										]
+									]
 								]
 							],
 							FMargin(2.f, 2.f))
@@ -4534,29 +5187,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				[
 					bDotaTheme
 						? FT66Style::MakeHudPanel(
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().Padding(4.f, 0.f, 4.f, 8.f)
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Left)
-								[
-									SAssignNew(GoldText, STextBlock)
-									.Text(GoldInit)
-									.Font(FT66Style::Tokens::FontBold(13))
-									.ColorAndOpacity(FT66Style::Accent2())
-								]
-								+ SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Right)
-								[
-									SAssignNew(DebtText, STextBlock)
-									.Text(OweInit)
-									.Font(FT66Style::Tokens::FontBold(13))
-									.ColorAndOpacity(FT66Style::Danger())
-								]
-							]
-							+ SVerticalBox::Slot().FillHeight(1.0f)
-							[
-								InvGridRef
-							],
+							MakeInventoryEconomySection(
+								FT66Style::Accent2(),
+								FT66Style::Danger(),
+								FT66Style::Tokens::Success,
+								WithAlpha(FT66Style::Border(), 0.65f)),
 							FMargin(8.f, 6.f))
 						: StaticCastSharedRef<SWidget>(
 							SNew(SOverlay)
@@ -4572,29 +5207,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									.BorderBackgroundColor(FLinearColor(0.08f, 0.14f, 0.12f, 0.92f))
 									.Padding(FMargin(10.f, 8.f))
 									[
-										SNew(SVerticalBox)
-										+ SVerticalBox::Slot().AutoHeight().Padding(4.f, 0.f, 4.f, 8.f)
-										[
-											SNew(SHorizontalBox)
-											+ SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Left)
-											[
-												SAssignNew(GoldText, STextBlock)
-												.Text(GoldInit)
-												.Font(FT66Style::Tokens::FontBold(13))
-												.ColorAndOpacity(FLinearColor(0.85f, 0.75f, 0.20f, 1.f))
-											]
-											+ SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Right)
-											[
-												SAssignNew(DebtText, STextBlock)
-												.Text(OweInit)
-												.Font(FT66Style::Tokens::FontBold(13))
-												.ColorAndOpacity(FT66Style::Tokens::Danger)
-											]
-										]
-										+ SVerticalBox::Slot().FillHeight(1.0f)
-										[
-											InvGridRef
-										]
+										MakeInventoryEconomySection(
+											FLinearColor(0.85f, 0.75f, 0.20f, 1.f),
+											FT66Style::Tokens::Danger,
+											FT66Style::Tokens::Success,
+											FLinearColor(0.55f, 0.65f, 0.58f, 0.55f))
 									]
 								]
 							]
@@ -4673,6 +5290,84 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							.Text(NSLOCTEXT("T66.GameplayHUD", "AchievementUnlocked", "Unlocked!"))
 							.Font(FT66Style::Tokens::FontRegular(14))
 							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+					]
+				]
+			]
+		]
+		// Chest reward presentation (same lane as pickup card, non-pausing)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.Padding(BottomRightPickupPadding)
+		[
+			SAssignNew(ChestRewardBox, SBox)
+			.Visibility(EVisibility::Collapsed)
+			.WidthOverride(PickupCardWidth)
+			.HeightOverride(PickupCardHeight)
+			[
+				SAssignNew(ChestRewardTileBorder, SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FT66Style::Tokens::Panel)
+				.Padding(2.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
+					.Padding(0.f)
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor::Black)
+							.Padding(FMargin(8.f, 6.f))
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+								[
+									SNew(SBox)
+									.WidthOverride(18.f)
+									.HeightOverride(18.f)
+									[
+										SNew(SImage)
+										.Image(GoldCurrencyBrush.Get())
+										.ColorAndOpacity(FLinearColor::White)
+									]
+								]
+								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(6.f, 0.f, 0.f, 0.f)
+								[
+									SAssignNew(ChestRewardCounterText, STextBlock)
+									.Text(FText::GetEmpty())
+									.Font(FT66Style::Tokens::FontBold(18))
+									.ColorAndOpacity(FLinearColor(0.98f, 0.83f, 0.24f, 1.f))
+								]
+							]
+						]
+						+ SVerticalBox::Slot().FillHeight(1.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.05f, 0.04f, 0.02f, 1.f))
+							.Padding(FMargin(4.f, 6.f))
+							[
+								ChestRewardArtOverlay
+							]
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.08f, 1.f))
+							.Padding(FMargin(8.f, 4.f))
+							[
+								SAssignNew(ChestRewardSkipText, STextBlock)
+								.Text(FText::GetEmpty())
+								.Font(FT66Style::Tokens::FontBold(11))
+								.ColorAndOpacity(FLinearColor::White)
+								.Justification(ETextJustify::Center)
+							]
 						]
 					]
 				]

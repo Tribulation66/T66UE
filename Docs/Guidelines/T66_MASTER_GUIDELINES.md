@@ -1,5 +1,7 @@
 # T66 Master Guidelines
 
+Hard rule: Assume multiple agents are always working in parallel. Never overwrite, revert, or force changes through files that are dirty from another agent's task or are blocking the build for a separate in-flight problem; stop, preserve their work, and wait until that task is resolved instead.
+
 This file is the canonical project policy for engineering, content, and UI work in T66. When a rule here conflicts with an older note, this file wins.
 
 ## 1. Scope

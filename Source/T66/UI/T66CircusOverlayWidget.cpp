@@ -30,7 +30,7 @@ namespace
 {
 	DECLARE_DELEGATE_RetVal_TwoParams(FReply, FCircusAlchemyOnBeginDrag, const FGeometry&, const FPointerEvent&);
 
-	static FString MakeAlchemyStackKey(const FT66InventorySlot& Slot)
+	static FString MakeCircusAlchemyStackKey(const FT66InventorySlot& Slot)
 	{
 		return FString::Printf(TEXT("%s|%d"), *Slot.ItemTemplateID.ToString(), static_cast<int32>(Slot.Rarity));
 	}
@@ -852,7 +852,7 @@ void UT66CircusOverlayWidget::RefreshAlchemyInventory()
 	{
 		if (InventorySlotData.IsValid())
 		{
-			StackCounts.FindOrAdd(MakeAlchemyStackKey(InventorySlotData))++;
+			StackCounts.FindOrAdd(MakeCircusAlchemyStackKey(InventorySlotData))++;
 		}
 	}
 
@@ -869,7 +869,7 @@ void UT66CircusOverlayWidget::RefreshAlchemyInventory()
 			AlchemyInventorySlotBorders[Index]->SetBorderBackgroundColor(bSelected ? (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f) : Fill);
 		}
 		const int32 StackCount = (bHasItem && InventorySlots.IsValidIndex(Index) && InventorySlots[Index].IsValid())
-			? StackCounts.FindRef(MakeAlchemyStackKey(InventorySlots[Index]))
+			? StackCounts.FindRef(MakeCircusAlchemyStackKey(InventorySlots[Index]))
 			: 0;
 		if (AlchemyInventorySlotCountTexts.IsValidIndex(Index) && AlchemyInventorySlotCountTexts[Index].IsValid())
 		{

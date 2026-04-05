@@ -11,6 +11,33 @@
 
 namespace
 {
+	TArray<FString> T66BuildNormalizedPartyIdSet(const TArray<FString>& SourceIds, const FString& FallbackId = FString())
+	{
+		TArray<FString> Result;
+		for (const FString& Id : SourceIds)
+		{
+			if (!Id.IsEmpty())
+			{
+				Result.Add(Id);
+			}
+		}
+
+		if (Result.Num() == 0 && !FallbackId.IsEmpty())
+		{
+			Result.Add(FallbackId);
+		}
+
+		Result.Sort();
+		for (int32 Index = Result.Num() - 1; Index > 0; --Index)
+		{
+			if (Result[Index] == Result[Index - 1])
+			{
+				Result.RemoveAt(Index);
+			}
+		}
+		return Result;
+	}
+
 	bool T66AreFriendListsEqual(const TArray<FT66PartyFriendEntry>& A, const TArray<FT66PartyFriendEntry>& B)
 	{
 		if (A.Num() != B.Num())
@@ -146,7 +173,7 @@ void UT66PartySubsystem::ResetToLocalParty()
 		{
 			if (SessionSubsystem->IsPartySessionActive())
 			{
-				SessionSubsystem->LeaveFrontendLobby(ET66ScreenType::PartySizePicker);
+				SessionSubsystem->LeaveFrontendLobby(ET66ScreenType::MainMenu);
 				return;
 			}
 		}
@@ -217,34 +244,14 @@ bool UT66PartySubsystem::DoesSaveMatchCurrentParty(const UT66RunSaveGame* SaveGa
 		return false;
 	}
 
-	const TArray<FString> CurrentPartyIds = GetCurrentPartyMemberIds();
+	const TArray<FString> CurrentPartyIds = T66BuildNormalizedPartyIdSet(GetCurrentPartyMemberIds(), LocalPlayerId);
 	if (CurrentPartyIds.Num() == 0)
 	{
 		return true;
 	}
 
-	TArray<FString> SavePartyIds = SaveGame->PartyMemberIds;
-	if (SavePartyIds.Num() == 0)
-	{
-		if (!SaveGame->OwnerPlayerId.IsEmpty())
-		{
-			SavePartyIds.Add(SaveGame->OwnerPlayerId);
-		}
-		else
-		{
-			SavePartyIds.Add(LocalPlayerId);
-		}
-	}
-
-	for (const FString& SavePartyId : SavePartyIds)
-	{
-		if (!CurrentPartyIds.Contains(SavePartyId))
-		{
-			return false;
-		}
-	}
-
-	return SavePartyIds.Num() > 0;
+	const TArray<FString> SavePartyIds = T66BuildNormalizedPartyIdSet(SaveGame->PartyMemberIds, SaveGame->OwnerPlayerId.IsEmpty() ? LocalPlayerId : SaveGame->OwnerPlayerId);
+	return SavePartyIds.Num() > 0 && SavePartyIds == CurrentPartyIds;
 }
 
 bool UT66PartySubsystem::HandlePartyTicker(float DeltaTime)

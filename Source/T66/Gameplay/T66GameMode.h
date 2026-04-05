@@ -186,6 +186,7 @@ protected:
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
 	void SpawnWorldInteractablesForStage();
+	void SpawnGuaranteedStartAreaInteractables();
 	void SpawnModelShowcaseRow();
 	void SpawnStageCatchUpPlatformAndInteractables();
 	void SpawnStageEffectsForStage();
@@ -204,8 +205,6 @@ protected:
 	void SpawnBossForCurrentStage();
 	void SpawnBossBeaconIfNeeded();
 
-	/** Spawn the 4 corner houses + 4 NPC cylinders (vendor/gambler/ouroboros/saint). */
-	void SpawnCornerHousesAndNPCs();
 	void SpawnCircusInteractableIfNeeded();
 	void SpawnSupportVendorAtStartIfNeeded();
 

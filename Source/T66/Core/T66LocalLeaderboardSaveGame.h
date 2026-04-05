@@ -202,7 +202,7 @@ public:
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalCompletedRunTimeRecord> CompletedRunTimeRecords;
 
-	/** Most recent completed runs, newest first, capped to the latest 20. */
+	/** Completed runs, newest first, saved locally with no hard history cap. */
 	UPROPERTY(SaveGame)
 	TArray<FT66RecentRunRecord> RecentRuns;
 

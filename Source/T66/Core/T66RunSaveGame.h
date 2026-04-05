@@ -40,6 +40,9 @@ struct T66_API FT66SavedRunSnapshot
 	float MaxHP = 100.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<uint8> HeartSlotTiers;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 CurrentGold = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
@@ -154,6 +157,39 @@ struct T66_API FT66SavedRunSnapshot
 	TArray<FT66SavedLuckAccumulator> LuckQualityAccumulators;
 };
 
+USTRUCT(BlueprintType)
+struct T66_API FT66SavedPartyPlayerState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FString PlayerId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FString DisplayName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FName HeroID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	ET66BodyType HeroBodyType = ET66BodyType::TypeA;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FName HeroSkinID = FName(TEXT("Default"));
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FName CompanionID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	ET66BodyType CompanionBodyType = ET66BodyType::TypeA;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FTransform PlayerTransform;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	bool bIsPartyHost = false;
+};
+
 UCLASS(BlueprintType)
 class T66_API UT66RunSaveGame : public USaveGame
 {
@@ -161,7 +197,7 @@ class T66_API UT66RunSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 4;
+	int32 SaveVersion = 5;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName HeroID;
@@ -216,6 +252,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	bool bRunIneligibleForLeaderboard = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<FT66SavedPartyPlayerState> SavedPartyPlayers;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FT66SavedRunSnapshot RunSnapshot;

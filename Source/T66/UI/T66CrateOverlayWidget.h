@@ -48,16 +48,16 @@ private:
 	bool bScrolling = false;
 	bool bResolved = false;
 	float ScrollElapsed = 0.f;
-	float ScrollDuration = 3.0f;
+	float ScrollDuration = 2.8f;
 	float LastTickTimeSeconds = 0.f;
 	float TotalScrollDistance = 0.f;
 	float CurrentScrollOffset = 0.f;
 
 	static constexpr float ItemTileWidth = 88.f;
-	static constexpr float ItemTileHeight = 86.f;
+	static constexpr float ItemTileHeight = 88.f;
 	static constexpr float ItemTileGap = 4.f;
 	static constexpr float ItemTileStride = ItemTileWidth + ItemTileGap;
-	static constexpr float ItemPreviewSize = 52.f;
+	static constexpr float ItemPreviewSize = 68.f;
 	static constexpr int32 VisibleTileCount = 5;
 	static constexpr int32 StripItemCount = 34;
 	static constexpr int32 WinnerPosition = 29;

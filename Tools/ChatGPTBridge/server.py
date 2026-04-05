@@ -39,6 +39,7 @@ DEFAULT_CDP_URL = os.getenv("CHATGPT_CDP_URL", "http://127.0.0.1:9222")
 DEFAULT_BASE_URL = os.getenv("CHATGPT_BASE_URL", "https://chatgpt.com/")
 DEFAULT_TIMEOUT_SECONDS = int(os.getenv("CHATGPT_IMAGE_TIMEOUT", "180"))
 DEFAULT_PAGE_TIMEOUT_MS = int(os.getenv("CHATGPT_PAGE_TIMEOUT_MS", "45000"))
+DEFAULT_RENDER_SETTLE_SECONDS = float(os.getenv("CHATGPT_RENDER_SETTLE_SECONDS", "3.0"))
 AUTH_TOKEN = os.getenv("CHATGPT_BRIDGE_TOKEN", "").strip()
 
 app = Flask(__name__)
@@ -47,6 +48,7 @@ generation_lock = threading.Lock()
 
 @dataclass(frozen=True)
 class ImageCandidate:
+    scope: str
     dom_index: int
     src: str
     href: str | None
@@ -125,6 +127,32 @@ def coerce_timeout(payload: dict[str, Any]) -> int:
     return max(30, min(timeout, 600))
 
 
+def coerce_image_paths(payload: dict[str, Any]) -> list[str]:
+    raw_value = payload.get("image_paths", [])
+    if raw_value is None:
+        return []
+    if not isinstance(raw_value, list) or not all(isinstance(item, str) for item in raw_value):
+        raise BridgeError("image_paths must be a list of local file paths.")
+    return [item.strip() for item in raw_value if item.strip()]
+
+
+def build_image_candidates(raw_candidates: list[dict[str, Any]], scope: str) -> list[ImageCandidate]:
+    return [
+        ImageCandidate(
+            scope=scope,
+            dom_index=int(item["domIndex"]),
+            src=str(item["src"]),
+            href=str(item["href"]) if item["href"] else None,
+            alt=str(item["alt"]),
+            natural_width=int(item["naturalWidth"]),
+            natural_height=int(item["naturalHeight"]),
+            rendered_width=float(item["renderedWidth"]),
+            rendered_height=float(item["renderedHeight"]),
+        )
+        for item in raw_candidates
+    ]
+
+
 def get_image_candidates(page: Any) -> list[ImageCandidate]:
     raw_candidates = page.evaluate(
         """
@@ -145,24 +173,122 @@ def get_image_candidates(page: Any) -> list[ImageCandidate]:
   }).filter((candidate) => {
     const width = Math.max(candidate.naturalWidth, candidate.renderedWidth);
     const height = Math.max(candidate.naturalHeight, candidate.renderedHeight);
+    const alt = (candidate.alt || "").toLowerCase();
+    return width >= 256 && height >= 256 && !!candidate.src && alt.includes("generated image");
+  });
+}
+"""
+    )
+    return build_image_candidates(raw_candidates, scope="page")
+
+
+def get_assistant_turn_count(page: Any) -> int:
+    return int(
+        page.evaluate(
+            """
+() => Array.from(document.querySelectorAll("section[data-testid^='conversation-turn-']"))
+  .filter((section) => !!section.querySelector("[data-message-author-role='assistant']"))
+  .length
+"""
+        )
+    )
+
+
+def get_latest_assistant_turn_locator(page: Any) -> Any:
+    return page.locator("section[data-testid^='conversation-turn-']").filter(
+        has=page.locator("[data-message-author-role='assistant']")
+    ).last
+
+
+def get_latest_assistant_image_candidates(page: Any) -> list[ImageCandidate]:
+    turn = get_latest_assistant_turn_locator(page)
+    if turn.count() == 0:
+        return []
+
+    raw_candidates = turn.evaluate(
+        """
+(root) => {
+  const nodes = Array.from(root.querySelectorAll("img"));
+  return nodes.map((img, domIndex) => {
+    const rect = img.getBoundingClientRect();
+    return {
+      domIndex,
+      src: img.currentSrc || img.src || "",
+      href: img.closest("a") ? img.closest("a").href : null,
+      alt: img.alt || "",
+      naturalWidth: img.naturalWidth || 0,
+      naturalHeight: img.naturalHeight || 0,
+      renderedWidth: rect.width || 0,
+      renderedHeight: rect.height || 0
+    };
+  }).filter((candidate) => {
+    const width = Math.max(candidate.naturalWidth, candidate.renderedWidth);
+    const height = Math.max(candidate.naturalHeight, candidate.renderedHeight);
     return width >= 256 && height >= 256 && !!candidate.src;
   });
 }
 """
     )
-    return [
-        ImageCandidate(
-            dom_index=int(item["domIndex"]),
-            src=str(item["src"]),
-            href=str(item["href"]) if item["href"] else None,
-            alt=str(item["alt"]),
-            natural_width=int(item["naturalWidth"]),
-            natural_height=int(item["naturalHeight"]),
-            rendered_width=float(item["renderedWidth"]),
-            rendered_height=float(item["renderedHeight"]),
-        )
-        for item in raw_candidates
-    ]
+
+    return build_image_candidates(raw_candidates, scope="assistant")
+
+
+def get_assistant_image_candidates(page: Any) -> list[ImageCandidate]:
+    return get_latest_assistant_image_candidates(page)
+
+
+def get_candidate_locator(page: Any, candidate: ImageCandidate) -> Any:
+    if candidate.scope == "assistant":
+        turn = get_latest_assistant_turn_locator(page)
+        return turn.locator("img").nth(candidate.dom_index)
+    return page.locator("main img").nth(candidate.dom_index)
+
+
+def get_active_image_candidates(page: Any) -> list[ImageCandidate]:
+    assistant_candidates = get_latest_assistant_image_candidates(page)
+    if assistant_candidates:
+        return assistant_candidates
+    return get_image_candidates(page)
+
+
+def wait_for_render_stability(page: Any, timeout_seconds: float, stable_seconds: float = DEFAULT_RENDER_SETTLE_SECONDS) -> list[ImageCandidate]:
+    deadline = time.monotonic() + timeout_seconds
+    last_signature: tuple[str, ...] = tuple()
+    last_change = time.monotonic()
+    stable_candidates: list[ImageCandidate] = []
+
+    while time.monotonic() < deadline:
+        candidates = get_active_image_candidates(page)
+        if not candidates:
+            time.sleep(0.75)
+            continue
+
+        signature: list[str] = []
+        usable_candidates: list[ImageCandidate] = []
+
+        for candidate in candidates:
+            try:
+                screenshot_bytes = get_candidate_locator(page, candidate).screenshot(type="png")
+            except PlaywrightError:
+                continue
+            signature.append(hashlib.sha256(screenshot_bytes).hexdigest())
+            usable_candidates.append(candidate)
+
+        if not usable_candidates:
+            time.sleep(0.75)
+            continue
+
+        current_signature = tuple(signature)
+        if current_signature != last_signature:
+            last_signature = current_signature
+            last_change = time.monotonic()
+            stable_candidates = usable_candidates
+        elif time.monotonic() - last_change >= stable_seconds:
+            return stable_candidates
+
+        time.sleep(0.75)
+
+    raise BridgeError(f"Timed out after {timeout_seconds:.0f} seconds waiting for the rendered image to settle.")
 
 
 def wait_for_composer(page: Any) -> Any:
@@ -173,8 +299,26 @@ def wait_for_composer(page: Any) -> Any:
     return composer
 
 
-def fill_and_send_prompt(page: Any, prompt: str) -> None:
+def attach_images_to_prompt(page: Any, image_paths: list[str]) -> None:
+    if not image_paths:
+        return
+
+    resolved_paths: list[str] = []
+    for raw_path in image_paths:
+        path = Path(raw_path).expanduser().resolve()
+        if not path.is_file():
+            raise BridgeError(f"Reference image not found: {path}")
+        resolved_paths.append(str(path))
+
+    file_input = page.locator("input[type='file'][accept*='image']").first
+    file_input.set_input_files(resolved_paths)
+    page.wait_for_timeout(1500)
+
+
+def fill_and_send_prompt(page: Any, prompt: str, image_paths: list[str] | None = None) -> None:
     composer = wait_for_composer(page)
+    if image_paths:
+        attach_images_to_prompt(page, image_paths)
     composer.click()
     page.keyboard.press("Control+A")
     page.keyboard.press("Backspace")
@@ -222,13 +366,11 @@ def get_page_issue(page: Any) -> tuple[str, str, int | None] | None:
 
 def wait_for_new_images(
     page: Any,
-    baseline_keys: set[str],
+    baseline_assistant_turn_count: int,
+    baseline_page_image_keys: set[str],
     timeout_seconds: int,
-    settle_seconds: float = 5.0,
 ) -> list[ImageCandidate]:
     deadline = time.monotonic() + timeout_seconds
-    last_signature: tuple[tuple[Any, ...], ...] = tuple()
-    last_change = time.monotonic()
 
     while time.monotonic() < deadline:
         issue = get_page_issue(page)
@@ -238,33 +380,17 @@ def wait_for_new_images(
                 raise RateLimitError(message, retry_after_seconds or 125)
             raise BridgeError(message)
 
-        current_candidates = get_image_candidates(page)
-        new_candidates = [
-            candidate for candidate in current_candidates if candidate.key not in baseline_keys
-        ]
-
-        if new_candidates:
-            signature = tuple(
-                sorted(
-                    (
-                        candidate.key,
-                        candidate.natural_width,
-                        candidate.natural_height,
-                        round(candidate.rendered_width, 1),
-                        round(candidate.rendered_height, 1),
-                        candidate.dom_index,
-                    )
-                    for candidate in new_candidates
-                )
+        current_page_candidates = get_image_candidates(page)
+        current_page_keys = {candidate.key for candidate in current_page_candidates}
+        if (
+            get_assistant_turn_count(page) > baseline_assistant_turn_count
+            or bool(current_page_keys - baseline_page_image_keys)
+        ):
+            settled_candidates = wait_for_render_stability(page, deadline - time.monotonic())
+            return sorted(
+                settled_candidates,
+                key=lambda candidate: (candidate.dom_index, -candidate.score),
             )
-            if signature != last_signature:
-                last_signature = signature
-                last_change = time.monotonic()
-            elif time.monotonic() - last_change >= settle_seconds:
-                return sorted(
-                    new_candidates,
-                    key=lambda candidate: (candidate.dom_index, -candidate.score),
-                )
 
         time.sleep(1.0)
 
@@ -273,6 +399,14 @@ def wait_for_new_images(
 
 def fetch_image_from_page(page: Any, candidate: ImageCandidate) -> tuple[bytes, str]:
     target_url = candidate.href or candidate.src
+    try:
+        response = page.request.get(target_url)
+        if response.ok:
+            mime_type = response.headers.get("content-type", "image/png").split(";")[0].strip()
+            return response.body(), mime_type
+    except Exception:
+        pass
+
     try:
         data_url = page.evaluate(
             """
@@ -301,7 +435,7 @@ async (url) => {
         payload = base64.b64decode(match.group(2))
         return payload, mime_type
     except Exception:
-        screenshot_bytes = page.locator("main img").nth(candidate.dom_index).screenshot(type="png")
+        screenshot_bytes = get_candidate_locator(page, candidate).screenshot(type="png")
         return screenshot_bytes, "image/png"
 
 
@@ -331,10 +465,11 @@ def open_generation_page(playwright: Any) -> tuple[Any, Any, Any]:
     return browser, context, page
 
 
-def generate_on_page(page: Any, prompt: str, timeout_seconds: int) -> list[GeneratedAsset]:
-    baseline_keys = {candidate.key for candidate in get_image_candidates(page)}
-    fill_and_send_prompt(page, prompt)
-    candidates = wait_for_new_images(page, baseline_keys, timeout_seconds)
+def generate_on_page(page: Any, prompt: str, timeout_seconds: int, image_paths: list[str] | None = None) -> list[GeneratedAsset]:
+    baseline_assistant_turn_count = get_assistant_turn_count(page)
+    baseline_page_image_keys = {candidate.key for candidate in get_image_candidates(page)}
+    fill_and_send_prompt(page, prompt, image_paths=image_paths)
+    candidates = wait_for_new_images(page, baseline_assistant_turn_count, baseline_page_image_keys, timeout_seconds)
 
     prompt_stem = f"{now_stamp()}-{slugify(prompt)}"
     assets: list[GeneratedAsset] = []
@@ -353,11 +488,11 @@ def generate_on_page(page: Any, prompt: str, timeout_seconds: int) -> list[Gener
     return assets
 
 
-def connect_and_generate(prompt: str, timeout_seconds: int) -> list[GeneratedAsset]:
+def connect_and_generate(prompt: str, timeout_seconds: int, image_paths: list[str] | None = None) -> list[GeneratedAsset]:
     with sync_playwright() as playwright:
         browser, _context, page = open_generation_page(playwright)
         try:
-            return generate_on_page(page, prompt, timeout_seconds)
+            return generate_on_page(page, prompt, timeout_seconds, image_paths=image_paths)
         finally:
             page.close()
 
@@ -396,12 +531,13 @@ def generate():
         raise BridgeError("Missing prompt.")
 
     timeout_seconds = coerce_timeout(payload)
+    image_paths = coerce_image_paths(payload)
 
     if not generation_lock.acquire(blocking=False):
         return jsonify({"error": "Bridge is busy with another generation request."}), 409
 
     try:
-        assets = connect_and_generate(prompt, timeout_seconds)
+        assets = connect_and_generate(prompt, timeout_seconds, image_paths=image_paths)
     finally:
         generation_lock.release()
 
@@ -411,6 +547,7 @@ def generate():
             {
                 "ok": True,
                 "prompt": prompt,
+                "image_paths": image_paths,
                 "count": len(assets),
                 "files": [
                     {

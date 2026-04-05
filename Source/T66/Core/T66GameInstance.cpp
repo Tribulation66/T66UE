@@ -92,7 +92,7 @@ namespace
 
 	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
 	static const bool bUseDemoMapForTribulation = false;  // GameplayLevel uses LowPolyNature procedural env
-	static const bool bAlwaysRouteTribulationToTutorial = true;
+	static const bool bAlwaysRouteTribulationToTutorial = false;
 	static const TCHAR* GameplayLevelName = TEXT("GameplayLevel");
 	static const TCHAR* ColiseumLevelName = TEXT("Gameplay_Coliseum");
 	static const TCHAR* TutorialLevelName = TEXT("Gameplay_Tutorial");
@@ -300,6 +300,13 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(HeroRow->PortraitFull.ToSoftObjectPath());
 		AddPath(HeroRow->PortraitTypeBLow.ToSoftObjectPath());
 		AddPath(HeroRow->PortraitTypeBFull.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitInvincible.ToSoftObjectPath());
+		AddPath(HeroRow->PortraitTypeBInvincible.ToSoftObjectPath());
+		if (HeroRow->HeroID == FName(TEXT("Hero_1")))
+		{
+			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeA_Invincible.T_Hero_1_TypeA_Invincible")));
+			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeB_Invincible.T_Hero_1_TypeB_Invincible")));
+		}
 	}
 
 	TArray<FCompanionData*> CompanionRows;
@@ -759,6 +766,10 @@ TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(const FHeroData
 		? HeroData.PortraitTypeBFull
 		: HeroData.PortraitFull;
 
+	const TSoftObjectPtr<UTexture2D>& Invincible = bUseTypeB
+		? HeroData.PortraitTypeBInvincible
+		: HeroData.PortraitInvincible;
+
 	switch (Variant)
 	{
 	case ET66HeroPortraitVariant::Low:
@@ -767,6 +778,19 @@ TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(const FHeroData
 		return Full;
 
 	case ET66HeroPortraitVariant::Full:
+		if (!Full.IsNull()) return Full;
+		if (!Half.IsNull()) return Half;
+		return Low;
+
+	case ET66HeroPortraitVariant::Invincible:
+		if (!Invincible.IsNull()) return Invincible;
+		if (HeroData.HeroID == FName(TEXT("Hero_1")))
+		{
+			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(
+				bUseTypeB
+					? TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeB_Invincible.T_Hero_1_TypeB_Invincible")
+					: TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_TypeA_Invincible.T_Hero_1_TypeA_Invincible")));
+		}
 		if (!Full.IsNull()) return Full;
 		if (!Half.IsNull()) return Half;
 		return Low;
