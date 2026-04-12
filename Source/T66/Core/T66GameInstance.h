@@ -33,13 +33,6 @@ enum class ET66ColiseumFlowMode : uint8
 	FinalDifficultyBoss UMETA(DisplayName = "Final Difficulty Boss")
 };
 
-UENUM(BlueprintType)
-enum class ET66LightingPreset : uint8
-{
-	Eclipse UMETA(DisplayName = "Eclipse"),
-	Dungeon UMETA(DisplayName = "Dungeon"),
-};
-
 /**
  * Game Instance for Tribulation 66
  * Persists across level loads and holds:
@@ -131,7 +124,7 @@ public:
 
 	/** Active main gameplay terrain layout for the current run. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	ET66MainMapLayoutVariant CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Hilly;
+	ET66MainMapLayoutVariant CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 
 	/** Legacy terrain theme selector kept for compatibility. Main gameplay now always uses T66MainMapTerrain. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
@@ -385,16 +378,8 @@ public:
 	/** Warm the full hero/companion preview visual library asynchronously after the selection screen is already visible. */
 	void PrimeHeroSelectionPreviewVisualsAsync();
 
-	/** Default main-map layout variant for brand-new runs. Reads config and optional console override. */
-	static ET66MainMapLayoutVariant GetConfiguredMainMapLayoutVariant();
-	/** Resolve the active main-map layout variant, falling back to the configured default when no GI is available. */
-	static ET66MainMapLayoutVariant ResolveMainMapLayoutVariant(const UT66GameInstance* GameInstance);
-	/** Apply the configured default main-map layout variant to the current run state. */
+	/** Apply the finalized tower layout to the current run state. */
 	void ApplyConfiguredMainMapLayoutVariant();
-	/** Lighting preset configured for gameplay worlds. Reads config and optional console override. */
-	static ET66LightingPreset GetConfiguredLightingPreset();
-	/** Resolve the effective lighting preset for a given world, applying frontend-safe fallbacks. */
-	static ET66LightingPreset GetEffectiveLightingPreset(const UWorld* World);
 
 	/** Frontend map package path. */
 	static FName GetFrontendLevelName();

@@ -50,12 +50,6 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|UI")
 	float GetUIScale() const;
 
-	UFUNCTION(BlueprintCallable, Category = "Settings|UI")
-	void SetUIFontPreset(ET66UIFontPreset NewPreset);
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|UI")
-	ET66UIFontPreset GetUIFontPreset() const;
-
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Social")
 	bool IsFavoriteFriend(const FString& FriendSteamId) const;
 
@@ -265,9 +259,8 @@ private:
 
 	void LoadOrCreate();
 	void Save();
-	void ApplyUIFontPreset();
-	void ApplyUITheme();
 	void ApplyUIScale();
+	void RebuildThemeAwareUI();
 
 	void ApplyAudioToEngine();
 	void ApplyUnfocusedAudioToEngine();

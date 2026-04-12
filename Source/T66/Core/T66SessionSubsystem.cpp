@@ -1283,7 +1283,7 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	GI->SelectedDifficulty = LoadedSave->Difficulty;
 	GI->SelectedPartySize = LoadedSave->PartySize;
 	GI->RunSeed = LoadedSave->RunSeed;
-	GI->CurrentMainMapLayoutVariant = LoadedSave->MainMapLayoutVariant;
+	GI->CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 	GI->PendingLoadedTransform = LoadedSave->PlayerTransform;
 	GI->bApplyLoadedTransform = true;
 	GI->PendingLoadedRunSnapshot = LoadedSave->RunSnapshot;

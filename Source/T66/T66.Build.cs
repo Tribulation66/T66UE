@@ -71,7 +71,7 @@ public class T66 : ModuleRules
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/ThemeFonts/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/Statues/forbidden_chad/...");
-		AddLooseRuntimeDependency("SourceAssets/Archive/OuterWallTexture.png");
+		AddLooseRuntimeDependency("SourceAssets/OuterWallTexture.png");
 
 		// Add all subdirectories as include paths
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

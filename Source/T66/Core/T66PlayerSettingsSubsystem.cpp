@@ -16,18 +16,6 @@ const FString UT66PlayerSettingsSubsystem::SlotName(TEXT("T66_PlayerSettings"));
 
 namespace
 {
-	ET66UIFontPreset SanitizeFontPresetIndex(int32 RawValue)
-	{
-		switch (static_cast<ET66UIFontPreset>(RawValue))
-		{
-		case ET66UIFontPreset::Current:
-			return ET66UIFontPreset::Current;
-		case ET66UIFontPreset::Alagard:
-		default:
-			return ET66UIFontPreset::Current;
-		}
-	}
-
 	ET66MediaViewerSource SanitizeMediaViewerSourceIndex(int32 RawValue)
 	{
 		switch (static_cast<ET66MediaViewerSource>(RawValue))
@@ -106,8 +94,6 @@ void UT66PlayerSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 {
 	Super::Initialize(Collection);
 	LoadOrCreate();
-	ApplyUIFontPreset();
-	ApplyUITheme();
 	ApplyUIScale();
 
 	ApplyAudioToEngine();
@@ -147,27 +133,6 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
-	if (SettingsObj->SchemaVersion < 7)
-	{
-		SettingsObj->SchemaVersion = 7;
-		SettingsObj->UIThemeIndex = static_cast<int32>(ET66UITheme::Dota);
-		bNeedsSave = true;
-	}
-
-	if (SettingsObj->SchemaVersion < 8)
-	{
-		SettingsObj->SchemaVersion = 8;
-		SettingsObj->UIThemeIndex = static_cast<int32>(ET66UITheme::Dota);
-		bNeedsSave = true;
-	}
-
-	if (SettingsObj->SchemaVersion < 9)
-	{
-		SettingsObj->SchemaVersion = 9;
-		SettingsObj->UIThemeIndex = static_cast<int32>(ET66UITheme::Dota);
-		bNeedsSave = true;
-	}
-
 	if (SettingsObj->SchemaVersion < 10)
 	{
 		SettingsObj->SchemaVersion = 10;
@@ -187,13 +152,6 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		SettingsObj->SchemaVersion = 12;
 		SettingsObj->bSpeedRunMode = true;
 		SettingsObj->MasterVolume = 0.0f;
-		bNeedsSave = true;
-	}
-
-	if (SettingsObj->SchemaVersion < 13)
-	{
-		SettingsObj->SchemaVersion = 13;
-		SettingsObj->UIFontPresetIndex = static_cast<int32>(ET66UIFontPreset::Current);
 		bNeedsSave = true;
 	}
 
@@ -224,23 +182,9 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
-	if (SettingsObj->bLightTheme)
+	if (SettingsObj->SchemaVersion < 17)
 	{
-		SettingsObj->bLightTheme = false;
-		bNeedsSave = true;
-	}
-
-	const int32 ForcedThemeIndex = static_cast<int32>(ET66UITheme::Dota);
-	if (SettingsObj->UIThemeIndex != ForcedThemeIndex)
-	{
-		SettingsObj->UIThemeIndex = ForcedThemeIndex;
-		bNeedsSave = true;
-	}
-
-	const ET66UIFontPreset SanitizedPreset = SanitizeFontPresetIndex(SettingsObj->UIFontPresetIndex);
-	if (SettingsObj->UIFontPresetIndex != static_cast<int32>(SanitizedPreset))
-	{
-		SettingsObj->UIFontPresetIndex = static_cast<int32>(SanitizedPreset);
+		SettingsObj->SchemaVersion = 17;
 		bNeedsSave = true;
 	}
 
@@ -312,18 +256,13 @@ void UT66PlayerSettingsSubsystem::SetLastSettingsTabIndex(int32 TabIndex)
 
 void UT66PlayerSettingsSubsystem::SetUITheme(ET66UITheme NewTheme)
 {
-	if (!SettingsObj) return;
 	(void)NewTheme;
-
-	const int32 NewThemeIndex = static_cast<int32>(ET66UITheme::Dota);
-	if (SettingsObj->UIThemeIndex == NewThemeIndex)
+	if (!SettingsObj)
 	{
 		return;
 	}
 
-	SettingsObj->UIThemeIndex = NewThemeIndex;
-	ApplyUITheme();
-	Save();
+	RebuildThemeAwareUI();
 }
 
 ET66UITheme UT66PlayerSettingsSubsystem::GetUITheme() const
@@ -349,26 +288,6 @@ void UT66PlayerSettingsSubsystem::SetUIScale(float NewScale)
 float UT66PlayerSettingsSubsystem::GetUIScale() const
 {
 	return SettingsObj ? FMath::Clamp(SettingsObj->UIScale, 0.75f, 1.50f) : 1.0f;
-}
-
-void UT66PlayerSettingsSubsystem::SetUIFontPreset(ET66UIFontPreset NewPreset)
-{
-	if (!SettingsObj) return;
-
-	const ET66UIFontPreset SanitizedPreset = SanitizeFontPresetIndex(static_cast<int32>(NewPreset));
-	if (SettingsObj->UIFontPresetIndex == static_cast<int32>(SanitizedPreset))
-	{
-		return;
-	}
-
-	SettingsObj->UIFontPresetIndex = static_cast<int32>(SanitizedPreset);
-	ApplyUIFontPreset();
-	Save();
-}
-
-ET66UIFontPreset UT66PlayerSettingsSubsystem::GetUIFontPreset() const
-{
-	return SettingsObj ? SanitizeFontPresetIndex(SettingsObj->UIFontPresetIndex) : ET66UIFontPreset::Current;
 }
 
 bool UT66PlayerSettingsSubsystem::IsFavoriteFriend(const FString& FriendSteamId) const
@@ -919,39 +838,12 @@ void UT66PlayerSettingsSubsystem::ResetRetroFXSettingsToDefaults()
 	Save();
 }
 
-void UT66PlayerSettingsSubsystem::ApplyUIFontPreset()
-{
-	FT66Style::SetActiveFontPreset(GetUIFontPreset());
-
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UWorld* World = GI->GetWorld())
-		{
-			if (AT66PlayerController* PC = Cast<AT66PlayerController>(World->GetFirstPlayerController()))
-			{
-				PC->RebuildThemeAwareUI();
-			}
-		}
-	}
-}
-
-void UT66PlayerSettingsSubsystem::ApplyUITheme()
-{
-	FT66Style::SetActiveTheme(GetUITheme());
-
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UWorld* World = GI->GetWorld())
-		{
-			if (AT66PlayerController* PC = Cast<AT66PlayerController>(World->GetFirstPlayerController()))
-			{
-				PC->RebuildThemeAwareUI();
-			}
-		}
-	}
-}
-
 void UT66PlayerSettingsSubsystem::ApplyUIScale()
+{
+	RebuildThemeAwareUI();
+}
+
+void UT66PlayerSettingsSubsystem::RebuildThemeAwareUI()
 {
 	if (UGameInstance* GI = GetGameInstance())
 	{

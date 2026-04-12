@@ -1062,12 +1062,12 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			ACBalanceIconBrush->SetResourceObject(T66SlateTexture::GetLoaded(SelectionTexPool, BalanceIconSoft));
 		}
 	}
-	const TArray<ET66SecondaryStatType> ActiveTempBuffPresetSlots = TempBuffSubsystem ? TempBuffSubsystem->GetActiveTemporaryBuffPresetSlots() : TArray<ET66SecondaryStatType>{};
+	const TArray<ET66SecondaryStatType> ActiveTempBuffSlots = TempBuffSubsystem ? TempBuffSubsystem->GetSelectedSingleUseBuffSlots() : TArray<ET66SecondaryStatType>{};
 	SelectedTemporaryBuffBrushes.Reset();
 	SelectedTemporaryBuffBrushes.SetNum(UT66BuffSubsystem::MaxSelectedSingleUseBuffs);
 	for (int32 SlotIndex = 0; SlotIndex < UT66BuffSubsystem::MaxSelectedSingleUseBuffs; ++SlotIndex)
 	{
-		const ET66SecondaryStatType SlotStat = ActiveTempBuffPresetSlots.IsValidIndex(SlotIndex) ? ActiveTempBuffPresetSlots[SlotIndex] : ET66SecondaryStatType::None;
+		const ET66SecondaryStatType SlotStat = ActiveTempBuffSlots.IsValidIndex(SlotIndex) ? ActiveTempBuffSlots[SlotIndex] : ET66SecondaryStatType::None;
 		SelectedTemporaryBuffBrushes[SlotIndex] = T66IsLiveSecondaryStatType(SlotStat)
 			? T66TemporaryBuffUI::CreateSecondaryBuffBrush(SelectionTexPool, this, SlotStat, FVector2D(30.f, 30.f))
 			: nullptr;
@@ -1081,7 +1081,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	auto MakeSelectedTemporaryBuffSlot = [&](int32 SlotIndex) -> TSharedRef<SWidget>
 	{
 		const bool bFilled = SelectedTemporaryBuffBrushes.IsValidIndex(SlotIndex) && SelectedTemporaryBuffBrushes[SlotIndex].IsValid();
-		const bool bOwnedForSlot = TempBuffSubsystem ? TempBuffSubsystem->IsActiveTemporaryBuffPresetSlotOwned(SlotIndex) : true;
+		const bool bOwnedForSlot = TempBuffSubsystem ? TempBuffSubsystem->IsSelectedSingleUseBuffSlotOwned(SlotIndex) : true;
 		return FT66Style::MakeButton(
 			FT66ButtonParams(
 				FText::GetEmpty(),
@@ -2797,17 +2797,11 @@ FReply UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked(int32 SlotIndex)
 	{
 		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
-			Buffs->SetTemporaryBuffPresetEditSlotIndex(SlotIndex);
+			Buffs->SetSelectedSingleUseBuffEditSlotIndex(SlotIndex);
 		}
 	}
 
 	ShowModal(ET66ScreenType::TemporaryBuffSelection);
-	return FReply::Handled();
-}
-
-FReply UT66HeroSelectionScreen::HandleTemporaryBuffPresetCreateClicked()
-{
-	ShowModal(ET66ScreenType::TemporaryBuffPresetCreate);
 	return FReply::Handled();
 }
 

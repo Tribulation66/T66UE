@@ -18,7 +18,6 @@
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
-#include "Misc/ConfigCacheIni.h"
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
@@ -161,50 +160,6 @@ namespace
 	static const TCHAR* GameplayLevelName = TEXT("/Game/Maps/GameplayLevel");
 	static const TCHAR* ColiseumLevelName = TEXT("/Game/Maps/Gameplay_Coliseum");
 	static const TCHAR* TutorialLevelName = TEXT("/Game/Maps/Gameplay_Tutorial");
-	static const TCHAR* T66GameplayConfigSection = TEXT("T66.Gameplay");
-	static const TCHAR* T66MainMapLayoutVariantConfigKey = TEXT("TribulationMainMapLayout");
-	static const TCHAR* T66LightingPresetConfigKey = TEXT("TribulationLightingPreset");
-	static int32 GT66MainMapLayoutVariantOverride = -1;
-	static FAutoConsoleVariableRef CVarT66MainMapLayoutVariant(
-		TEXT("t66.TribulationMainMapLayout"),
-		GT66MainMapLayoutVariantOverride,
-		TEXT("-1 = use config, 0 = hilly, 1 = flat, 2 = tower."),
-		ECVF_Default);
-	static int32 GT66LightingPresetOverride = -1;
-	static FAutoConsoleVariableRef CVarT66LightingPreset(
-		TEXT("t66.TribulationLightingPreset"),
-		GT66LightingPresetOverride,
-		TEXT("-1 = use config, 0 = eclipse, 1 = dungeon."),
-		ECVF_Default);
-
-	static ET66MainMapLayoutVariant ParseMainMapLayoutVariant(const FString& RawValue)
-	{
-		FString Normalized = RawValue;
-		Normalized.TrimStartAndEndInline();
-		if (Normalized.Equals(TEXT("Tower"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("2")))
-		{
-			return ET66MainMapLayoutVariant::Tower;
-		}
-
-		if (Normalized.Equals(TEXT("Flat"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("1")))
-		{
-			return ET66MainMapLayoutVariant::Flat;
-		}
-
-		return ET66MainMapLayoutVariant::Hilly;
-	}
-
-	static ET66LightingPreset ParseLightingPreset(const FString& RawValue)
-	{
-		FString Normalized = RawValue;
-		Normalized.TrimStartAndEndInline();
-		if (Normalized.Equals(TEXT("Dungeon"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("1")))
-		{
-			return ET66LightingPreset::Dungeon;
-		}
-
-		return ET66LightingPreset::Eclipse;
-	}
 
 	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
 	// Do this once on boot (no per-frame work).
@@ -1220,9 +1175,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cylinder.Cylinder")));
 
-	// Retro sky material is spawned dynamically outside the farm flow.
-	AddPath(FSoftObjectPath(TEXT("/Game/World/Sky/QuakeCanopy2/MI_QuakeSky_Canopy2.MI_QuakeSky_Canopy2")));
-
 	// Main gameplay uses a dedicated terrain asset set. Preload the full terrain/prop contract
 	// before opening the gameplay level so the first entry does not depend on cold material state.
 	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
@@ -1234,10 +1186,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
-	if (GetConfiguredLightingPreset() == ET66LightingPreset::Dungeon)
-	{
-		AddPath(FSoftObjectPath(TEXT("/Game/UI/M_DungeonVisionPostProcess.M_DungeonVisionPostProcess")));
-	}
 	AddCurrentDifficultyThemeTextures();
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
@@ -1309,77 +1257,9 @@ void UT66GameInstance::HandleGameplayAssetsPreloaded()
 	}
 }
 
-ET66MainMapLayoutVariant UT66GameInstance::GetConfiguredMainMapLayoutVariant()
-{
-	if (GT66MainMapLayoutVariantOverride == 2)
-	{
-		return ET66MainMapLayoutVariant::Tower;
-	}
-
-	if (GT66MainMapLayoutVariantOverride == 1)
-	{
-		return ET66MainMapLayoutVariant::Flat;
-	}
-
-	if (GT66MainMapLayoutVariantOverride == 0)
-	{
-		return ET66MainMapLayoutVariant::Hilly;
-	}
-
-	FString ConfiguredValue;
-	if (GConfig && GConfig->GetString(T66GameplayConfigSection, T66MainMapLayoutVariantConfigKey, ConfiguredValue, GGameIni))
-	{
-		return ParseMainMapLayoutVariant(ConfiguredValue);
-	}
-
-	return ET66MainMapLayoutVariant::Hilly;
-}
-
-ET66MainMapLayoutVariant UT66GameInstance::ResolveMainMapLayoutVariant(const UT66GameInstance* GameInstance)
-{
-	return GameInstance ? GameInstance->CurrentMainMapLayoutVariant : GetConfiguredMainMapLayoutVariant();
-}
-
 void UT66GameInstance::ApplyConfiguredMainMapLayoutVariant()
 {
-	CurrentMainMapLayoutVariant = GetConfiguredMainMapLayoutVariant();
-}
-
-ET66LightingPreset UT66GameInstance::GetConfiguredLightingPreset()
-{
-	if (GT66LightingPresetOverride == 1)
-	{
-		return ET66LightingPreset::Dungeon;
-	}
-
-	if (GT66LightingPresetOverride == 0)
-	{
-		return ET66LightingPreset::Eclipse;
-	}
-
-	FString ConfiguredValue;
-	if (GConfig && GConfig->GetString(T66GameplayConfigSection, T66LightingPresetConfigKey, ConfiguredValue, GGameIni))
-	{
-		return ParseLightingPreset(ConfiguredValue);
-	}
-
-	return ET66LightingPreset::Eclipse;
-}
-
-ET66LightingPreset UT66GameInstance::GetEffectiveLightingPreset(const UWorld* World)
-{
-	if (!World)
-	{
-		return GetConfiguredLightingPreset();
-	}
-
-	const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-	if (MapName.Contains(TEXT("Frontend")))
-	{
-		return ET66LightingPreset::Eclipse;
-	}
-
-	return GetConfiguredLightingPreset();
+	CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 }
 
 FName UT66GameInstance::GetFrontendLevelName()

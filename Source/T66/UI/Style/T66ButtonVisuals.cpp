@@ -1,7 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Style/T66ButtonVisuals.h"
-#include "UI/Style/T66LegacyUITextureAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
@@ -95,7 +95,7 @@ namespace
 			return CachedTexture.Get();
 		}
 
-		UTexture2D* Texture = T66LegacyUITextureAccess::ImportFileTexture(
+		UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 			FilePath,
 			TextureFilter::TF_Nearest,
 			false,
@@ -112,17 +112,17 @@ namespace
 
 	static FString GetMainMenuArcaneFillFilePath(const TCHAR* FileName)
 	{
-		return T66LegacyUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuArcaneFill")) / FileName;
+		return T66RuntimeUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuArcaneFill")) / FileName;
 	}
 
 	static FString GetMainMenuBlueTrimFilePath(const TCHAR* FileName)
 	{
-		return T66LegacyUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuBlueTrim")) / FileName;
+		return T66RuntimeUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuBlueTrim")) / FileName;
 	}
 
 	static FString GetMainMenuBlueWoodFillFilePath(const TCHAR* FileName)
 	{
-		return T66LegacyUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuBlueWoodFill")) / FileName;
+		return T66RuntimeUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuBlueWoodFill")) / FileName;
 	}
 
 	static void LoadRetroSkyMaterialsOnce()

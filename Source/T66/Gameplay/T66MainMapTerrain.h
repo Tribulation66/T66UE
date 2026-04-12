@@ -116,7 +116,7 @@ namespace T66MainMapTerrain
 		}
 	};
 
-	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed = 0, ET66MainMapLayoutVariant LayoutVariant = ET66MainMapLayoutVariant::Hilly);
+	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed = 0);
 	FSettings MakeSettings(const FT66MapPreset& Preset);
 	FVector GetBoardOrigin(const FT66MapPreset& Preset);
 	FVector GetCellCenter(const FT66MapPreset& Preset, int32 Row, int32 Col, float Z);

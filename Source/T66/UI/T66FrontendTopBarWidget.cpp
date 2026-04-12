@@ -7,7 +7,7 @@
 #include "Core/T66BuffSubsystem.h"
 #include "UI/ST66PulsingIcon.h"
 #include "UI/T66UIManager.h"
-#include "UI/Style/T66LegacyUITextureAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
@@ -389,7 +389,7 @@ namespace
 			return nullptr;
 		}
 
-		UTexture2D* Texture = T66LegacyUITextureAccess::ImportFileTextureWithGeneratedMips(
+		UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
 			FilePath,
 			Filter,
 			TEXT("FrontendTopBar"));
@@ -434,7 +434,7 @@ namespace
 		}
 
 		UTexture2D* Texture = nullptr;
-		const FString FullPath = T66LegacyUITextureAccess::MakeProjectContentPath(RelativePath);
+		const FString FullPath = T66RuntimeUITextureAccess::MakeProjectContentPath(RelativePath);
 		const bool bFileExists = IFileManager::Get().FileExists(*FullPath);
 		const FString AssetPath = ResolveTopBarAssetPath(ImportedAssetPath, RelativePath);
 		UE_LOG(
@@ -450,7 +450,7 @@ namespace
 
 		if (!AssetPath.IsEmpty())
 		{
-			Texture = T66LegacyUITextureAccess::LoadAssetTexture(*AssetPath, Filter, TEXT("FrontendTopBar"));
+			Texture = T66RuntimeUITextureAccess::LoadAssetTexture(*AssetPath, Filter, TEXT("FrontendTopBar"));
 		}
 
 		FString LoadedFrom = TEXT("none");

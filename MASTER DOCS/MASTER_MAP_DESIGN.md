@@ -1,45 +1,29 @@
 # T66 Master Map Design
 
-**Last updated:** 2026-04-11  
-**Scope:** Single-source handoff for map layout presets, stage-space flow, traversal structure, minimap behavior, miasma/blood pressure design, and the implementation plan for the new tower preset.  
-**Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/T66_PROJECT_CATALOGUE.md`, `Docs/Systems/lighting.md`  
+**Last updated:** 2026-04-12  
+**Scope:** Single-source handoff for the live tower-only Tribulation map runtime, stage-space flow, traversal structure, minimap behavior, miasma/blood pressure design, and the historical implementation plan that led to the tower layout.  
+**Companion docs:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`, `MASTER DOCS/T66_PROJECT_CATALOGUE.md`, `MASTER DOCS/MASTER_LIGHTING.md`  
 **Maintenance rule:** Update this file after every material map-layout, terrain-generation, stage-space, minimap, traversal-gate, floor-transition, miasma/blood-pressure, or preset-selection change.
 
 ## 1. Executive Summary
 
-- The current runtime supports two main gameplay layout variants:
-  - `Hilly`
-  - `Flat`
-- Those are not two separate map systems. They are two settings on the same main-board generator in `Source/T66/Gameplay/T66MainMapTerrain.cpp`.
-- The current board still assumes one continuous stage space:
-  - start area
-  - start path
-  - main board
-  - boss path
-  - boss area
-- The existing `Hilly` variant is the Megabonk-style ramp / stepped board.
-- The existing `Flat` variant is the same board with hilliness forced to `0`.
-- The requested new design should be implemented as a third preserved preset, not a replacement:
-  - recommended enum label: `Tower`
-- The clean implementation path is:
-  - keep `Hilly` and `Flat` intact
-  - keep preset selection/persistence shared
-  - build the tower layout as a separate runtime map family instead of forcing `T66MainMapTerrain` to pretend a vertical cylinder is still the same board
-- Recommended first playable tower pacing:
+- The live Tribulation runtime is now `Tower`-only.
+- Runtime map-layout selection has been removed:
+  - no `Hilly`
+  - no `Flat`
+  - no config or console layout override
+- New runs and save-load restore now coerce the main gameplay map to the tower layout.
+- The active gameplay map family is the tower generator and floor-based traversal path, not the old one-board Megabonk preset selection flow.
+- The old `Hilly` / `Flat` discussion below is retained only as historical design context for how the tower split was originally planned.
+- Current tower pacing still follows the same high-level runtime structure:
   - `1` start floor
   - `4` gameplay floors
   - `1` boss floor
-  - stage total remains `7:00`
-  - boss budget remains `~3:00`
-  - recommended first-pass interpretation is:
-    - top start floor behaves like the current start area and does not carry the main combat timer
-    - the `4` gameplay floors share the remaining `~4:00`
-    - that is roughly `~60s` per gameplay floor before boss entry
 
 ### 1.1 Current tower implementation status
 
-- The `Tower` preset is now wired into runtime preset selection and terrain spawning.
-- New Tribulation runs now default to the `Tower` preset through `Config/DefaultGame.ini` unless a save/load path explicitly restores a different layout variant.
+- The runtime now hard-locks Tribulation gameplay to the tower layout.
+- Save/load compatibility still persists a layout field, but load paths sanitize back to `Tower`.
 - The first playable tower pass currently does all of the following:
   - now uses a `400m x 400m` tower footprint so each gameplay floor has enough room for a real maze layout without the oversized first expansion pass
   - now uses a square tower shell with square floor footprints so the walls and floors meet directly without polygon-gap cleanup work
@@ -97,26 +81,18 @@
 
 - `Source/T66/Gameplay/T66ProceduralLandscapeParams.h`
   - defines `ET66MainMapLayoutVariant`
-  - current values are:
-    - `Hilly`
-    - `Flat`
+  - current live value is:
     - `Tower`
 - `Source/T66/Core/T66GameInstance.cpp`
-  - reads config key `T66.Gameplay:TribulationMainMapLayout`
-  - supports console override `t66.TribulationMainMapLayout`
-  - currently parses:
-    - `Hilly`
-    - `Flat`
-    - `Tower`
-    - numeric `0/1/2`
-- `Config/DefaultGame.ini`
-  - current default is `TribulationMainMapLayout=Tower`
+  - no longer reads map-layout config
+  - no longer supports a map-layout console override
+  - applies the finalized tower layout directly to runtime run state
 - Save/load already persists the chosen layout variant:
   - `Source/T66/Core/T66RunSaveGame.h`
   - `Source/T66/UI/Screens/T66PauseMenuScreen.cpp`
   - `Source/T66/UI/Screens/T66SaveSlotsScreen.cpp`
 - Important limitation:
-  - saves know the layout preset
+  - saves still carry a layout field for compatibility
   - saves do **not** know a concept like `current floor inside a tower stage`
 
 ### 2.2 Current main-stage geometry model
@@ -185,7 +161,7 @@
   - markers come from actor positions, not explored floor tiles
 - Current limitation:
   - normal layouts do not have per-floor reveal memory because they are still single-board stages
-  - tower still uses a lightweight reveal-point mask, not authored tile-by-tile fog
+  - tower reveal is marker- and floor-memory-based; it no longer depends on a lighting or fog visibility mask
 
 ### 2.6 Current NPC / interactable placement
 

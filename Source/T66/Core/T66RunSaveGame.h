@@ -588,7 +588,7 @@ public:
 	int32 RunSeed = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	ET66MainMapLayoutVariant MainMapLayoutVariant = ET66MainMapLayoutVariant::Hilly;
+	ET66MainMapLayoutVariant MainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	bool bRunIneligibleForLeaderboard = false;

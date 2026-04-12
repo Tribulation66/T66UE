@@ -8,7 +8,7 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/Style/T66LegacyUITextureAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
@@ -126,14 +126,14 @@ namespace
 			return CachedTexture->Get();
 		}
 
-	UTexture2D* Texture = T66LegacyUITextureAccess::ImportFileTexture(
+	UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 			FilePath,
 			TextureFilter::TF_Trilinear,
 			false,
 			TEXT("ShopTexture"));
 		if (!Texture)
 		{
-			Texture = T66LegacyUITextureAccess::ImportFileTextureWithGeneratedMips(
+			Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
 				FilePath,
 				TextureFilter::TF_Trilinear,
 				TEXT("ShopTexture"));
@@ -327,7 +327,7 @@ namespace
 		const FString& ObjectPath,
 		const FVector2D& ImageSize)
 	{
-		const TArray<FString> CandidateSourcePaths = T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath);
+		const TArray<FString> CandidateSourcePaths = T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath);
 		const bool bHasSourceFile = CandidateSourcePaths.ContainsByPredicate([](const FString& CandidatePath)
 		{
 			return FPaths::FileExists(CandidatePath);
@@ -337,7 +337,7 @@ namespace
 
 		if (bHasImportedTexture)
 		{
-			if (UTexture2D* AssetTexture = T66LegacyUITextureAccess::LoadAssetTexture(*ObjectPath, TextureFilter::TF_Trilinear, TEXT("ShopTexture")))
+			if (UTexture2D* AssetTexture = T66RuntimeUITextureAccess::LoadAssetTexture(*ObjectPath, TextureFilter::TF_Trilinear, TEXT("ShopTexture")))
 			{
 				Brush = MakeShared<FSlateBrush>();
 				EnsureShopRuntimeImageBrush(Brush, ResolveShopImageSize(AssetTexture, ImageSize));

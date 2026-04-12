@@ -118,49 +118,31 @@ public:
 	TArray<ET66SecondaryStatType> GetSelectedSingleUseBuffs() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetTemporaryBuffPresetCount() const;
+	TArray<ET66SecondaryStatType> GetSelectedSingleUseBuffSlots() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	TArray<FString> GetTemporaryBuffPresetNames() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetActiveTemporaryBuffPresetIndex() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	FString GetActiveTemporaryBuffPresetName() const;
+	ET66SecondaryStatType GetSelectedSingleUseBuffSlot(int32 SlotIndex) const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool SetActiveTemporaryBuffPresetIndex(int32 NewIndex);
+	bool SetSelectedSingleUseBuffSlot(int32 SlotIndex, ET66SecondaryStatType StatType);
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	int32 CreateTemporaryBuffPreset(const FString& PresetName);
+	bool ClearSelectedSingleUseBuffSlot(int32 SlotIndex);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	TArray<ET66SecondaryStatType> GetActiveTemporaryBuffPresetSlots() const;
+	bool IsSelectedSingleUseBuffSlotOwned(int32 SlotIndex) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	ET66SecondaryStatType GetActiveTemporaryBuffPresetSlot(int32 SlotIndex) const;
+	int32 GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66SecondaryStatType StatType) const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool SetActiveTemporaryBuffPresetSlot(int32 SlotIndex, ET66SecondaryStatType StatType);
+	bool PurchaseSelectedSingleUseBuffSlot(int32 SlotIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool ClearActiveTemporaryBuffPresetSlot(int32 SlotIndex);
+	void SetSelectedSingleUseBuffEditSlotIndex(int32 SlotIndex);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	bool IsActiveTemporaryBuffPresetSlotOwned(int32 SlotIndex) const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetActiveTemporaryBuffPresetAssignedCountForStat(ET66SecondaryStatType StatType) const;
-
-	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool PurchaseActiveTemporaryBuffPresetSlot(int32 SlotIndex);
-
-	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	void SetTemporaryBuffPresetEditSlotIndex(int32 SlotIndex);
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetTemporaryBuffPresetEditSlotIndex() const;
+	int32 GetSelectedSingleUseBuffEditSlotIndex() const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool SetSingleUseBuffSelected(ET66SecondaryStatType StatType, bool bSelected);
@@ -186,12 +168,12 @@ public:
 private:
 	static constexpr int32 LegacyV2SlotsPerStat = 10;
 	static constexpr int32 SingleUseBuffCount = 31;
-	static constexpr int32 PresetSlotCount = 5;
+	static constexpr int32 SelectedSingleUseBuffSlotCount = MaxSelectedSingleUseBuffs;
 
 	UPROPERTY()
 	TObjectPtr<UT66BuffSaveGame> SaveData;
 
-	int32 ActiveTemporaryBuffPresetEditSlotIndex = 0;
+	int32 ActiveSelectedSingleUseBuffEditSlotIndex = 0;
 
 	void LoadOrCreateSave();
 	void MigrateV1ToV2WedgeTiers();
@@ -202,6 +184,7 @@ private:
 	void MigrateV6ToV7SelectedSingleUseBuffs();
 	void MigrateV7ToV8TemporaryBuffPresets();
 	void MigrateV8ToV9PrimaryAccuracy();
+	void MigrateV9ToV10SingleLoadoutSlots();
 	void Save();
 	TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType);
 	const TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType) const;
@@ -213,12 +196,10 @@ private:
 	const TArray<uint8>* GetSelectedSingleUseStates() const;
 	void EnsureSelectedSingleUseStatesSize(TArray<uint8>& Arr) const;
 	void SanitizeSelectedSingleUseStates(TArray<uint8>& SelectedStates, const TArray<uint8>& OwnedStates) const;
-	void EnsureTemporaryBuffPresetSlotsSize(TArray<ET66SecondaryStatType>& Slots) const;
-	bool EnsureTemporaryBuffPresetsValid();
-	bool RebuildSelectedSingleUseStatesFromActivePreset();
-	FString BuildDefaultTemporaryBuffPresetName(int32 PresetNumber) const;
-	struct FT66TemporaryBuffPreset* GetActiveTemporaryBuffPreset();
-	const struct FT66TemporaryBuffPreset* GetActiveTemporaryBuffPreset() const;
+	void EnsureSelectedSingleUseBuffSlotsSize(TArray<ET66SecondaryStatType>& Slots) const;
+	void BuildSelectedSingleUseStateSnapshot(const TArray<uint8>& OwnedStates, TArray<uint8>& OutSelectedStates) const;
+	bool EnsureSelectedSingleUseBuffLoadoutValid();
+	bool RebuildSelectedSingleUseStatesFromLoadout();
 	int32 GetRandomBonusForStat(ET66HeroStatType StatType) const;
 	int32 GetStatIndex(ET66HeroStatType StatType) const;
 	int32 GetSingleUseBuffIndex(ET66SecondaryStatType StatType) const;

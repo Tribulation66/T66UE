@@ -41,14 +41,11 @@
 #include "Gameplay/T66LavaPatch.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
-#include "Gameplay/T66QuakeSkyActor.h"
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RetroFXSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
-#include "Core/T66PosterizeSubsystem.h"
-#include "Gameplay/T66EclipseActor.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
@@ -74,12 +71,6 @@
 #include "HAL/IConsoleManager.h"
 #include "TimerManager.h"
 #include "GameFramework/PlayerStart.h"
-#include "Engine/DirectionalLight.h"
-#include "Engine/SkyLight.h"
-#include "Components/LightComponent.h"
-#include "Components/DirectionalLightComponent.h"
-#include "Components/SkyLightComponent.h"
-#include "Components/SkyAtmosphereComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -88,9 +79,6 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
-#include "Engine/ExponentialHeightFog.h"
-#include "Components/ExponentialHeightFogComponent.h"
-#include "Engine/PostProcessVolume.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -103,8 +91,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Landscape.h"
 #include "UI/Style/T66Style.h"
-#include "Gameplay/T66LightingSubsystem.h"
 #include "Gameplay/T66TerrainThemeAssets.h"
+#include "Gameplay/T66WorldVisualSetup.h"
 #include "T66.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66GameMode, Log, All);
@@ -390,22 +378,12 @@ namespace
 	static FT66MapPreset T66BuildMainMapPreset(UT66GameInstance* GI)
 	{
 		const ET66Difficulty Difficulty = GI ? GI->SelectedDifficulty : ET66Difficulty::Easy;
-		const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(GI);
-		return T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, T66EnsureRunSeed(GI), LayoutVariant);
+		return T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, T66EnsureRunSeed(GI));
 	}
 
-	static const TCHAR* T66GetMainMapLayoutVariantLabel(const ET66MainMapLayoutVariant LayoutVariant)
+	static const TCHAR* T66GetMainMapLayoutVariantLabel()
 	{
-		switch (LayoutVariant)
-		{
-		case ET66MainMapLayoutVariant::Tower:
-			return TEXT("Tower");
-		case ET66MainMapLayoutVariant::Flat:
-			return TEXT("Flat");
-		case ET66MainMapLayoutVariant::Hilly:
-		default:
-			return TEXT("Hilly");
-		}
+		return TEXT("Tower");
 	}
 
 	static const AT66SessionPlayerState* T66GetSessionPlayerState(const AController* Controller)
@@ -834,7 +812,7 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 		PrepareMainMapStage(World);
 		UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] PrepareMainMapStage finished in %.1f ms."),
 			(FPlatformTime::Seconds() - PrepareStageStartSeconds) * 1000.0);
-		ScheduleGameplayLightingRefresh(World);
+		ScheduleGameplayVisualCleanup(World);
 		ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
 		UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
 		return;
@@ -846,7 +824,7 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 		(FPlatformTime::Seconds() - PropSpawnStartSeconds) * 1000.0);
 	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
 	ScheduleStandardStageCombatBootstrap(World);
-	ScheduleGameplayLightingRefresh(World);
+	ScheduleGameplayVisualCleanup(World);
 	ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
 }
 
@@ -872,35 +850,35 @@ TWeakObjectPtr<UT66LoadingScreenWidget> AT66GameMode::CreateGameplayWarmupOverla
 	return nullptr;
 }
 
-void AT66GameMode::ScheduleGameplayLightingRefresh(UWorld* World)
+void AT66GameMode::ScheduleGameplayVisualCleanup(UWorld* World)
 {
 	if (!World)
 	{
 		return;
 	}
 
-	// Recapture after runtime terrain/props register so first PIE does not keep a cold sky capture.
+	// Re-run world visual cleanup after runtime terrain/props register so no legacy sky/light actors survive PIE startup.
 	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		ApplyThemeToAtmosphereAndLighting();
+		FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
 	}));
 
-	FTimerHandle DelayedLightingRefreshHandle;
+	FTimerHandle DelayedVisualCleanupHandle;
 	World->GetTimerManager().SetTimer(
-		DelayedLightingRefreshHandle,
+		DelayedVisualCleanupHandle,
 		FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			ApplyThemeToAtmosphereAndLighting();
+			FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
 		}),
 		0.35f,
 		false);
 
-	FTimerHandle FinalLightingRefreshHandle;
+	FTimerHandle FinalVisualCleanupHandle;
 	World->GetTimerManager().SetTimer(
-		FinalLightingRefreshHandle,
+		FinalVisualCleanupHandle,
 		FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			ApplyThemeToAtmosphereAndLighting();
+			FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
 		}),
 		0.65f,
 		false);
@@ -5626,8 +5604,7 @@ void AT66GameMode::EnsureLevelSetup()
 	if (IsLabLevel())
 	{
 		SpawnLabFloorIfNeeded();
-		SpawnLightingIfNeeded();  // Same sky and lighting as gameplay: SkyAtmosphere (blue sky), sun, sky light, fog, post process
-		SpawnQuakeSkyIfNeeded();
+		FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
 		SpawnLabCollectorIfNeeded();
 		SpawnPlayerStartIfNeeded();
 		return;
@@ -5642,8 +5619,7 @@ void AT66GameMode::EnsureLevelSetup()
 		SpawnBossAreaWallsIfNeeded();
 	}
 	TryApplyGroundFloorMaterialToAllFloors();
-	SpawnLightingIfNeeded();
-	SpawnQuakeSkyIfNeeded();
+	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
 	SpawnPlayerStartIfNeeded();
 }
 
@@ -6438,7 +6414,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Generating main map terrain (layout=%s, seed=%d, hilliness=%.2f, grid=%d, cell=%.0f, step=%.0f, scale=%.2f)"),
-		T66GetMainMapLayoutVariantLabel(Preset.LayoutVariant),
+		T66GetMainMapLayoutVariantLabel(),
 		Preset.Seed,
 		Preset.FarmHilliness,
 		MainMapSettings.BoardSize,
@@ -6571,74 +6547,9 @@ void AT66GameMode::SpawnMainMapTerrain()
 		Board.Settings.CellSize);
 }
 
-void AT66GameMode::SpawnLightingIfNeeded()
-{
-	UT66LightingSubsystem::EnsureSharedLightingForWorld(GetWorld());
-}
-
-void AT66GameMode::SpawnQuakeSkyIfNeeded()
-{
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	const bool bUseDungeonLighting = UT66GameInstance::GetEffectiveLightingPreset(World) == ET66LightingPreset::Dungeon;
-	if (T66UsesMainMapTerrainStage(World) || bUseDungeonLighting)
-	{
-		TArray<AT66QuakeSkyActor*> SkyActorsToDestroy;
-		for (TActorIterator<AT66QuakeSkyActor> It(World); It; ++It)
-		{
-			SkyActorsToDestroy.Add(*It);
-		}
-		for (AT66QuakeSkyActor* SkyActor : SkyActorsToDestroy)
-		{
-			if (SkyActor)
-			{
-				SkyActor->Destroy();
-			}
-		}
-		if (SkyActorsToDestroy.Num() > 0)
-		{
-			UE_LOG(LogT66GameMode, Log, TEXT("[QuakeSky] Removed %d Quake sky actor(s) for current lighting preset"), SkyActorsToDestroy.Num());
-		}
-		return;
-	}
-
-	for (TActorIterator<AT66QuakeSkyActor> It(World); It; ++It)
-	{
-		return;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AT66QuakeSkyActor* SkyActor = World->SpawnActor<AT66QuakeSkyActor>(
-		AT66QuakeSkyActor::StaticClass(),
-		FVector::ZeroVector,
-		FRotator::ZeroRotator,
-		SpawnParams);
-	if (!SkyActor) return;
-
-#if WITH_EDITOR
-	SkyActor->SetActorLabel(TEXT("DEV_QuakeSky"));
-#endif
-	SpawnedSetupActors.Add(SkyActor);
-	UE_LOG(LogT66GameMode, Log, TEXT("[QuakeSky] Spawned retro sky dome"));
-}
-
-void AT66GameMode::ApplyThemeToDirectionalLights()
-{
-	UT66LightingSubsystem::ApplyThemeToDirectionalLightsForWorld(GetWorld());
-}
-
-void AT66GameMode::ApplyThemeToAtmosphereAndLighting()
-{
-	UT66LightingSubsystem::ApplyThemeToAtmosphereAndLightingForWorld(GetWorld());
-}
-
 void AT66GameMode::HandleSettingsChanged()
 {
-	ApplyThemeToDirectionalLights();
-	ApplyThemeToAtmosphereAndLighting();
+	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
 
 	if (UGameInstance* GI = GetGameInstance())
 	{

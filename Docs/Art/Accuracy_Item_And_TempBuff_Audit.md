@@ -258,7 +258,6 @@ Relevant existing references:
 
 - `C:\UE\T66\Docs\Art\Secondary_Buff_Icon_Index.csv`
 - `C:\UE\T66\Docs\Art\Secondary_Buff_Icon_Prompt_Pack.md`
-- `C:\UE\T66\Docs\Art\Secondary_Buff_Icon_Prompt_Pack_remaining.md`
 
 Current runtime source path for temp-buff icons:
 

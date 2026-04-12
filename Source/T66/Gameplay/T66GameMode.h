@@ -32,8 +32,6 @@ class APawn;
 class UT66GameInstance;
 class AT66RecruitableCompanion;
 class UT66LoadingScreenWidget;
-class ADirectionalLight;
-class ASkyLight;
 class APlayerStart;
 class UMaterialInterface;
 struct FStreamableHandle;
@@ -145,20 +143,8 @@ protected:
 	/** Spawn a very short red wall fully around the boss area (same style as start). */
 	void SpawnBossAreaWallsIfNeeded();
 
-	/** Ensure world lighting exists through the dedicated lighting subsystem. */
-	void SpawnLightingIfNeeded();
-
-	/** Spawn the non-lighting Quake-style moving sky if none exists. */
-	void SpawnQuakeSkyIfNeeded();
-
 	/** Spawn a PlayerStart if none exists */
 	void SpawnPlayerStartIfNeeded();
-
-	/** Apply theme to this world's directional lights via the lighting subsystem. */
-	void ApplyThemeToDirectionalLights();
-
-	/** Apply theme to this world's atmosphere, sky, fog, PP, posterize via the lighting subsystem. */
-	void ApplyThemeToAtmosphereAndLighting();
 
 	UFUNCTION()
 	void HandleSettingsChanged();
@@ -225,7 +211,7 @@ protected:
 	void ConsumePendingStageCatchUp();
 	void ScheduleDeferredGameplayLevelSpawn();
 	TWeakObjectPtr<UT66LoadingScreenWidget> CreateGameplayWarmupOverlay(UWorld* World, bool bUsingMainMapTerrain) const;
-	void ScheduleGameplayLightingRefresh(UWorld* World);
+	void ScheduleGameplayVisualCleanup(UWorld* World);
 	void ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay);
 	void SpawnStageStructuresAndInteractables(UWorld* World, bool bUsingMainMapTerrain);
 	void SpawnStageDecorativeProps(bool bUsingMainMapTerrain);

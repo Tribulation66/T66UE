@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UI/T66UITypes.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateTypes.h"     // FComboButtonStyle for GetDropdownComboButtonStyle
 #include "Widgets/Input/SButton.h"  // FOnClicked used by MakeButton helper
@@ -258,16 +257,6 @@ public:
 	static void Initialize();
 	static void Shutdown();
 
-	/** Cycle to the next UI font. Call after changing to refresh style. */
-	static void CycleToNextFont();
-
-	/** Toggle force-bold: when on, all UI text uses the bold variant of the current font (if available). Console: T66Bold */
-	static void ToggleBoldFont();
-
-	static void SetActiveTheme(ET66UITheme InTheme);
-	static ET66UITheme GetActiveTheme();
-	static void SetActiveFontPreset(ET66UIFontPreset InPreset);
-	static ET66UIFontPreset GetActiveFontPreset();
 	static bool IsDotaTheme();
 	static FSlateFontInfo MakeFont(const TCHAR* Weight, int32 Size);
 	static FLinearColor Background();
@@ -415,7 +404,7 @@ public:
 		static constexpr float ButtonPressedGlowIntensity = 1.10f;
 		static constexpr float ButtonGlowFallbackOpacity = 0.28f;
 
-		// Font: all text uses the selected font. In T66Style.cpp set GThemeFontIndex.
+		// Font: all text uses the finalized Radiance/Reaver stack.
 		static FSlateFontInfo FontRegular(int32 Size);
 		static FSlateFontInfo FontBold(int32 Size);
 		static FSlateFontInfo FontTitle();

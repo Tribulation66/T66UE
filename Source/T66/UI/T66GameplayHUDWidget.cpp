@@ -33,7 +33,7 @@
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66UIManager.h"
-#include "UI/Style/T66LegacyUITextureAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Components/CapsuleComponent.h"
@@ -199,7 +199,7 @@ namespace
 
 	static UTexture2D* LoadRuntimeHudFileTexture(const FString& RelativePath, TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
-		const TArray<FString> CandidatePaths = T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath);
+		const TArray<FString> CandidatePaths = T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath);
 
 		for (const FString& FullPath : CandidatePaths)
 		{
@@ -214,7 +214,7 @@ namespace
 				return CachedTexture->Get();
 			}
 
-			UTexture2D* Texture = T66LegacyUITextureAccess::ImportFileTexture(
+			UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 				FullPath,
 				Filter,
 				true,
@@ -258,7 +258,7 @@ namespace
 		}
 
 		Brush->ImageSize = DesiredSize;
-		Brush->SetResourceObject(T66LegacyUITextureAccess::LoadAssetTexture(AssetPath, Filter, TEXT("HudAssetTexture")));
+		Brush->SetResourceObject(T66RuntimeUITextureAccess::LoadAssetTexture(AssetPath, Filter, TEXT("HudAssetTexture")));
 	}
 
 	static FString GetChestRewardClosedRelativePath(const ET66Rarity Rarity)
@@ -333,7 +333,7 @@ namespace
 		if (!bTriedMinimapIconAtlasLoad)
 		{
 			bTriedMinimapIconAtlasLoad = true;
-			for (const FString& AtlasPath : T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(
+			for (const FString& AtlasPath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(
 				TEXT("RuntimeDependencies/T66/UI/Minimap/#1 - Transparent Icons.png")))
 			{
 				if (!FPaths::FileExists(AtlasPath))
@@ -341,7 +341,7 @@ namespace
 					continue;
 				}
 
-				GMinimapIconAtlas = T66LegacyUITextureAccess::ImportFileTexture(
+				GMinimapIconAtlas = T66RuntimeUITextureAccess::ImportFileTexture(
 					AtlasPath,
 					TextureFilter::TF_Trilinear,
 					false,

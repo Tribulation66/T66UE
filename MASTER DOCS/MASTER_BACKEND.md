@@ -1,18 +1,16 @@
 # T66 Master Backend
 
-**Last updated:** 2026-04-09
+**Last updated:** 2026-04-12
 **Scope:** Single-source handoff for T66 online state: Steam, Steamworks, Steam AppIDs, Vercel, backend services, live status, and the recommended path to private multiplayer testing under the real Steam AppID.
 **Companion policy doc:** `MASTER DOCS/T66_MASTER_GUIDELINES.md`
 **Companion anti-cheat doc:** `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md`
+**Historical predecessor docs:** `Docs/Archive/Systems/backend_architecture_historical.md`, `Docs/Archive/Systems/backend_0.1_checklist_historical.md`, `Docs/Archive/Systems/version_0.1_full_checklist_historical.md`
 **Maintenance rule:** Update this file after every Steam, backend, online, multiplayer, upload, deployment, or other internet-connected systems change. If the change also affects project policy, workflow, or anti-cheat enforcement, update `MASTER DOCS/T66_MASTER_GUIDELINES.md` and `MASTER DOCS/Anti Cheat/MASTER_ANTI_CHEAT.md` in the same pass.
 
 ## 1. Primary Source Files
 
-This document consolidates the current state from these local files plus direct live checks:
+This document consolidates the current state from these checked-in sources plus direct live checks:
 
-- `Docs/Systems/backend.md`
-- `Docs/Systems/backend_0.1_checklist.md`
-- `Docs/Systems/version_0.1_full_checklist.md`
 - `Config/DefaultEngine.ini`
 - `Config/DefaultGame.ini`
 - `steam_appid.txt`
@@ -27,7 +25,7 @@ This document consolidates the current state from these local files plus direct 
 - `C:\UE\Backend\src\app\api\client-diagnostics\route.ts`
 - `C:\SteamworksSDK\sdk\tools\ContentBuilder\scripts\CHADPOCALYPSE\app_build_4464300.vdf`
 
-Where this document contradicts older checklists, prefer this document. It is based on the currently checked-in config and current live backend response.
+Where this document contradicts the archived backend/reference docs, prefer this document. It is based on the currently checked-in config and current live backend response.
 
 ## 2. Executive Summary
 

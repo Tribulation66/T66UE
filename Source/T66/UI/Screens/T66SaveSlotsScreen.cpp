@@ -415,7 +415,7 @@ void UT66SaveSlotsScreen::OnLoadClicked(int32 SlotIndex)
 	GI->SelectedDifficulty = Loaded->Difficulty;
 	GI->SelectedPartySize = Loaded->PartySize;
 	GI->RunSeed = Loaded->RunSeed;
-	GI->CurrentMainMapLayoutVariant = Loaded->MainMapLayoutVariant;
+	GI->CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 	GI->PendingLoadedTransform = Loaded->PlayerTransform;
 	GI->bApplyLoadedTransform = true;
 	GI->PendingLoadedRunSnapshot = Loaded->RunSnapshot;

@@ -250,7 +250,6 @@ private:
 	FReply HandleCompanionGridClicked();
 	FReply HandleCompanionClicked();
 	FReply HandleTemporaryBuffSlotClicked(int32 SlotIndex);
-	FReply HandleTemporaryBuffPresetCreateClicked();
 	FReply HandleSelectBuffsClicked();
 	FReply HandleLoreClicked();
 	FReply HandleStatsClicked();

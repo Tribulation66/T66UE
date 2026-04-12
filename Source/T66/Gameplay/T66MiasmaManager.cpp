@@ -124,8 +124,7 @@ void AT66MiasmaManager::BuildMainMapCellGrid()
 	}
 
 	const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
-	const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(T66GI);
-	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(T66GI->SelectedDifficulty, T66GI->RunSeed, LayoutVariant);
+	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(T66GI->SelectedDifficulty, T66GI->RunSeed);
 	T66MainMapTerrain::FBoard Board;
 	if (!T66MainMapTerrain::Generate(Preset, Board))
 	{

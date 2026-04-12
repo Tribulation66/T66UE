@@ -66,8 +66,8 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 	const int32 Columns = 5;
 	const float CardGap = 10.0f;
 	const float CardWidth = (ModalWidth - 96.0f - CardGap * (Columns - 1)) / Columns;
-	const int32 FocusedSlotIndex = Buffs ? Buffs->GetTemporaryBuffPresetEditSlotIndex() : 0;
-	const TArray<ET66SecondaryStatType> ActivePresetSlots = Buffs ? Buffs->GetActiveTemporaryBuffPresetSlots() : TArray<ET66SecondaryStatType>{};
+	const int32 FocusedSlotIndex = Buffs ? Buffs->GetSelectedSingleUseBuffEditSlotIndex() : 0;
+	const TArray<ET66SecondaryStatType> ActiveLoadoutSlots = Buffs ? Buffs->GetSelectedSingleUseBuffSlots() : TArray<ET66SecondaryStatType>{};
 
 	const FText TitleText = NSLOCTEXT("T66.TempBuffs", "EditTitle", "SELECT TEMP BUFFS");
 	const FText BuyMoreText = NSLOCTEXT("T66.TempBuffs", "BuyMore", "BUY MORE");
@@ -81,23 +81,23 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 
 	BuffIconBrushes.Reset();
 
-	TArray<TSharedPtr<FSlateBrush>> PresetSlotBrushes;
-	PresetSlotBrushes.SetNum(UT66BuffSubsystem::MaxSelectedSingleUseBuffs);
+	TArray<TSharedPtr<FSlateBrush>> LoadoutSlotBrushes;
+	LoadoutSlotBrushes.SetNum(UT66BuffSubsystem::MaxSelectedSingleUseBuffs);
 	for (int32 SlotIndex = 0; SlotIndex < UT66BuffSubsystem::MaxSelectedSingleUseBuffs; ++SlotIndex)
 	{
-		const ET66SecondaryStatType SlotStat = ActivePresetSlots.IsValidIndex(SlotIndex) ? ActivePresetSlots[SlotIndex] : ET66SecondaryStatType::None;
+		const ET66SecondaryStatType SlotStat = ActiveLoadoutSlots.IsValidIndex(SlotIndex) ? ActiveLoadoutSlots[SlotIndex] : ET66SecondaryStatType::None;
 		if (T66IsLiveSecondaryStatType(SlotStat))
 		{
-			PresetSlotBrushes[SlotIndex] = T66TemporaryBuffUI::CreateSecondaryBuffBrush(TexPool, this, SlotStat, FVector2D(42.f, 42.f));
-			BuffIconBrushes.Add(PresetSlotBrushes[SlotIndex]);
+			LoadoutSlotBrushes[SlotIndex] = T66TemporaryBuffUI::CreateSecondaryBuffBrush(TexPool, this, SlotStat, FVector2D(42.f, 42.f));
+			BuffIconBrushes.Add(LoadoutSlotBrushes[SlotIndex]);
 		}
 	}
 
-	auto MakePresetSlotWidget = [this, Buffs, FocusedSlotIndex, ActivePresetSlots, PresetSlotBrushes, BuySlotText, ClearSlotText, EmptySlotText](int32 SlotIndex) -> TSharedRef<SWidget>
+	auto MakeLoadoutSlotWidget = [this, Buffs, FocusedSlotIndex, ActiveLoadoutSlots, LoadoutSlotBrushes, BuySlotText, ClearSlotText, EmptySlotText](int32 SlotIndex) -> TSharedRef<SWidget>
 	{
-		const ET66SecondaryStatType SlotStat = ActivePresetSlots.IsValidIndex(SlotIndex) ? ActivePresetSlots[SlotIndex] : ET66SecondaryStatType::None;
+		const ET66SecondaryStatType SlotStat = ActiveLoadoutSlots.IsValidIndex(SlotIndex) ? ActiveLoadoutSlots[SlotIndex] : ET66SecondaryStatType::None;
 		const bool bFilled = T66IsLiveSecondaryStatType(SlotStat);
-		const bool bOwnedForSlot = Buffs ? Buffs->IsActiveTemporaryBuffPresetSlotOwned(SlotIndex) : true;
+		const bool bOwnedForSlot = Buffs ? Buffs->IsSelectedSingleUseBuffSlotOwned(SlotIndex) : true;
 		const bool bFocused = SlotIndex == FocusedSlotIndex;
 		const FLinearColor ShellColor = bFocused ? FLinearColor(0.22f, 0.28f, 0.36f, 1.0f) : FT66Style::Tokens::Panel;
 		const FLinearColor InnerColor = bFilled
@@ -106,11 +106,11 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 
 		const TSharedRef<SWidget> SlotContent = bFilled
 			? StaticCastSharedRef<SWidget>(
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				[
-					SNew(SImage)
-					.Image(PresetSlotBrushes.IsValidIndex(SlotIndex) && PresetSlotBrushes[SlotIndex].IsValid() ? PresetSlotBrushes[SlotIndex].Get() : nullptr)
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					[
+						SNew(SImage)
+					.Image(LoadoutSlotBrushes.IsValidIndex(SlotIndex) && LoadoutSlotBrushes[SlotIndex].IsValid() ? LoadoutSlotBrushes[SlotIndex].Get() : nullptr)
 					.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, bOwnedForSlot ? 1.0f : 0.55f))
 				])
 			: StaticCastSharedRef<SWidget>(
@@ -124,13 +124,13 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 				SNew(SBox)
 				.HeightOverride(22.f))
 			: StaticCastSharedRef<SWidget>(
-				FT66Style::MakeButton(
-					FT66ButtonParams(
-						bOwnedForSlot ? ClearSlotText : BuySlotText,
-						bOwnedForSlot
-							? FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandlePresetSlotCleared, SlotIndex)
-							: FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandlePresetSlotPurchased, SlotIndex),
-						bOwnedForSlot ? ET66ButtonType::Neutral : ET66ButtonType::Primary)
+						FT66Style::MakeButton(
+							FT66ButtonParams(
+								bOwnedForSlot ? ClearSlotText : BuySlotText,
+								bOwnedForSlot
+									? FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotCleared, SlotIndex)
+									: FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotPurchased, SlotIndex),
+								bOwnedForSlot ? ET66ButtonType::Neutral : ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
 					.SetHeight(22.f)
 					.SetFontSize(9)
@@ -143,7 +143,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 			.AutoHeight()
 			[
 				FT66Style::MakeButton(
-					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandlePresetSlotClicked, SlotIndex), ET66ButtonType::Neutral)
+					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotClicked, SlotIndex), ET66ButtonType::Neutral)
 					.SetMinWidth(0.f)
 					.SetHeight(60.f)
 					.SetPadding(FMargin(0.f))
@@ -180,8 +180,8 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 	{
 		const ET66SecondaryStatType StatType = AllBuffs[Index];
 		const int32 OwnedCount = Buffs ? Buffs->GetOwnedSingleUseBuffCount(StatType) : 0;
-		const int32 AssignedCount = Buffs ? Buffs->GetActiveTemporaryBuffPresetAssignedCountForStat(StatType) : 0;
-		const bool bFocusedSlotMatches = ActivePresetSlots.IsValidIndex(FocusedSlotIndex) && ActivePresetSlots[FocusedSlotIndex] == StatType;
+		const int32 AssignedCount = Buffs ? Buffs->GetSelectedSingleUseBuffSlotAssignedCountForStat(StatType) : 0;
+		const bool bFocusedSlotMatches = ActiveLoadoutSlots.IsValidIndex(FocusedSlotIndex) && ActiveLoadoutSlots[FocusedSlotIndex] == StatType;
 		const FText NameText = Loc ? Loc->GetText_SecondaryStatName(StatType) : FText::FromString(TEXT("?"));
 		const FText DescText = Loc ? Loc->GetText_SecondaryStatDescription(StatType) : FText::GetEmpty();
 		const FText OwnedCountText = FText::Format(NSLOCTEXT("T66.TempBuffs", "OwnedCount", "Owned: {0}"), FText::AsNumber(OwnedCount));
@@ -267,7 +267,7 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 						.Padding(0.f, 8.f, 0.f, 0.f)
 						[
 							FT66Style::MakeButton(
-								FT66ButtonParams(SetSlotText, FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandleAssignBuffToFocusedSlot, StatType), ET66ButtonType::Neutral)
+								FT66ButtonParams(SetSlotText, FOnClicked::CreateUObject(this, &UT66TemporaryBuffSelectionScreen::HandleAssignBuffToFocusedLoadoutSlot, StatType), ET66ButtonType::Neutral)
 								.SetMinWidth(0.f)
 								.SetHeight(34.f)
 								.SetFontSize(10)
@@ -367,11 +367,11 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 					.Padding(0.f, 14.f, 0.f, 16.f)
 					[
 						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakePresetSlotWidget(0)]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakePresetSlotWidget(1)]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakePresetSlotWidget(2)]
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakePresetSlotWidget(3)]
-						+ SHorizontalBox::Slot().AutoWidth()[MakePresetSlotWidget(4)]
+						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeLoadoutSlotWidget(0)]
+						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeLoadoutSlotWidget(1)]
+						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeLoadoutSlotWidget(2)]
+						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 8.f, 0.f)[MakeLoadoutSlotWidget(3)]
+						+ SHorizontalBox::Slot().AutoWidth()[MakeLoadoutSlotWidget(4)]
 					]
 					+ SVerticalBox::Slot()
 					.FillHeight(1.f)
@@ -394,22 +394,22 @@ TSharedRef<SWidget> UT66TemporaryBuffSelectionScreen::BuildSlateUI()
 		];
 }
 
-FReply UT66TemporaryBuffSelectionScreen::HandlePresetSlotClicked(int32 SlotIndex)
+FReply UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotClicked(int32 SlotIndex)
 {
 	if (UT66BuffSubsystem* Buffs = GetBuffSubsystem())
 	{
-		Buffs->SetTemporaryBuffPresetEditSlotIndex(SlotIndex);
+		Buffs->SetSelectedSingleUseBuffEditSlotIndex(SlotIndex);
 	}
 
 	RefreshScreen();
 	return FReply::Handled();
 }
 
-FReply UT66TemporaryBuffSelectionScreen::HandlePresetSlotCleared(int32 SlotIndex)
+FReply UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotCleared(int32 SlotIndex)
 {
 	if (UT66BuffSubsystem* Buffs = GetBuffSubsystem())
 	{
-		if (Buffs->ClearActiveTemporaryBuffPresetSlot(SlotIndex))
+		if (Buffs->ClearSelectedSingleUseBuffSlot(SlotIndex))
 		{
 			RefreshScreen();
 		}
@@ -418,11 +418,11 @@ FReply UT66TemporaryBuffSelectionScreen::HandlePresetSlotCleared(int32 SlotIndex
 	return FReply::Handled();
 }
 
-FReply UT66TemporaryBuffSelectionScreen::HandlePresetSlotPurchased(int32 SlotIndex)
+FReply UT66TemporaryBuffSelectionScreen::HandleLoadoutSlotPurchased(int32 SlotIndex)
 {
 	if (UT66BuffSubsystem* Buffs = GetBuffSubsystem())
 	{
-		if (Buffs->PurchaseActiveTemporaryBuffPresetSlot(SlotIndex))
+		if (Buffs->PurchaseSelectedSingleUseBuffSlot(SlotIndex))
 		{
 			RefreshScreen();
 		}
@@ -431,18 +431,18 @@ FReply UT66TemporaryBuffSelectionScreen::HandlePresetSlotPurchased(int32 SlotInd
 	return FReply::Handled();
 }
 
-FReply UT66TemporaryBuffSelectionScreen::HandleAssignBuffToFocusedSlot(ET66SecondaryStatType StatType)
+FReply UT66TemporaryBuffSelectionScreen::HandleAssignBuffToFocusedLoadoutSlot(ET66SecondaryStatType StatType)
 {
 	if (UT66BuffSubsystem* Buffs = GetBuffSubsystem())
 	{
-		if (Buffs->SetActiveTemporaryBuffPresetSlot(Buffs->GetTemporaryBuffPresetEditSlotIndex(), StatType))
+		if (Buffs->SetSelectedSingleUseBuffSlot(Buffs->GetSelectedSingleUseBuffEditSlotIndex(), StatType))
 		{
-			const TArray<ET66SecondaryStatType> Slots = Buffs->GetActiveTemporaryBuffPresetSlots();
+			const TArray<ET66SecondaryStatType> Slots = Buffs->GetSelectedSingleUseBuffSlots();
 			for (int32 SlotIndex = 0; SlotIndex < Slots.Num(); ++SlotIndex)
 			{
 				if (Slots[SlotIndex] == ET66SecondaryStatType::None)
 				{
-					Buffs->SetTemporaryBuffPresetEditSlotIndex(SlotIndex);
+					Buffs->SetSelectedSingleUseBuffEditSlotIndex(SlotIndex);
 					break;
 				}
 			}

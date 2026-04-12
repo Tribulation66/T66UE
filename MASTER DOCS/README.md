@@ -4,7 +4,7 @@ This folder is the canonical home for active master handoff and policy documents
 
 - `T66_MASTER_GUIDELINES.md`: project-wide engineering, workflow, and runtime rules.
 - `MASTER_COMBAT.md`: combat runtime, targeting, damage routing, hit zones, and boss-part combat plan.
-- `MASTER_LIGHTING.md`: runtime lighting, atmosphere, fog, posterize, eclipse, and lighting/material interaction.
+- `MASTER_LIGHTING.md`: runtime visual setup, post-process baseline, removed lighting-stack systems, and lighting/material interaction.
 - `MASTER_MAP_DESIGN.md`: map presets, stage-space layout, minimap behavior, hazard pressure, and tower-preset implementation plan.
 - `MASTER_TRAPS.md`: trap subsystem ownership, trap runtime rules, and current trap-family implementation details.
 - `MASTER_BACKEND.md`: live Steam, backend, multiplayer, and online-service state.

@@ -142,11 +142,18 @@ void UT66BuffSubsystem::LoadOrCreateSave()
 		bNeedsSave = true;
 	}
 
+	if (SaveData->SaveVersion < 10)
+	{
+		MigrateV9ToV10SingleLoadoutSlots();
+		SaveData->SaveVersion = 10;
+		bNeedsSave = true;
+	}
+
 	EnsurePendingSingleUseStatesSize(SaveData->PendingSingleUseBuffStates);
 	EnsureSelectedSingleUseStatesSize(SaveData->SelectedSingleUseBuffStates);
 	SanitizeSelectedSingleUseStates(SaveData->SelectedSingleUseBuffStates, SaveData->PendingSingleUseBuffStates);
-	bNeedsSave |= EnsureTemporaryBuffPresetsValid();
-	bNeedsSave |= RebuildSelectedSingleUseStatesFromActivePreset();
+	bNeedsSave |= EnsureSelectedSingleUseBuffLoadoutValid();
+	bNeedsSave |= RebuildSelectedSingleUseStatesFromLoadout();
 
 	if (bNeedsSave)
 	{
@@ -326,8 +333,8 @@ void UT66BuffSubsystem::MigrateV7ToV8TemporaryBuffPresets()
 	SanitizeSelectedSingleUseStates(SaveData->SelectedSingleUseBuffStates, SaveData->PendingSingleUseBuffStates);
 
 	FT66TemporaryBuffPreset DefaultPreset;
-	DefaultPreset.PresetName = BuildDefaultTemporaryBuffPresetName(1);
-	EnsureTemporaryBuffPresetSlotsSize(DefaultPreset.SlotBuffs);
+	DefaultPreset.PresetName = TEXT("Preset 1");
+	EnsureSelectedSingleUseBuffSlotsSize(DefaultPreset.SlotBuffs);
 
 	int32 SlotIndex = 0;
 	for (ET66SecondaryStatType StatType : GetAllSingleUseBuffTypes())
@@ -339,12 +346,12 @@ void UT66BuffSubsystem::MigrateV7ToV8TemporaryBuffPresets()
 		}
 
 		const int32 SelectedCount = FMath::Max(0, static_cast<int32>(SaveData->SelectedSingleUseBuffStates[StatArrayIndex]));
-		for (int32 CopyIndex = 0; CopyIndex < SelectedCount && SlotIndex < PresetSlotCount; ++CopyIndex)
+		for (int32 CopyIndex = 0; CopyIndex < SelectedCount && SlotIndex < SelectedSingleUseBuffSlotCount; ++CopyIndex)
 		{
 			DefaultPreset.SlotBuffs[SlotIndex++] = StatType;
 		}
 
-		if (SlotIndex >= PresetSlotCount)
+		if (SlotIndex >= SelectedSingleUseBuffSlotCount)
 		{
 			break;
 		}
@@ -363,6 +370,67 @@ void UT66BuffSubsystem::MigrateV8ToV9PrimaryAccuracy()
 	EnsureFillStepStatesSize(SaveData->WedgeTiersAccuracy);
 	SaveData->RandomBonusAccuracy = FMath::Max(0, SaveData->RandomBonusAccuracy);
 	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v8 saves to v9 primary Accuracy progression."));
+}
+
+void UT66BuffSubsystem::MigrateV9ToV10SingleLoadoutSlots()
+{
+	if (!SaveData)
+	{
+		return;
+	}
+
+	EnsurePendingSingleUseStatesSize(SaveData->PendingSingleUseBuffStates);
+	EnsureSelectedSingleUseStatesSize(SaveData->SelectedSingleUseBuffStates);
+	SanitizeSelectedSingleUseStates(SaveData->SelectedSingleUseBuffStates, SaveData->PendingSingleUseBuffStates);
+
+	SaveData->SelectedSingleUseBuffSlots.Init(ET66SecondaryStatType::None, SelectedSingleUseBuffSlotCount);
+	int32 SlotIndex = 0;
+
+	if (SaveData->TemporaryBuffPresets.Num() > 0)
+	{
+		const int32 LegacyPresetIndex = FMath::Clamp(
+			SaveData->ActiveTemporaryBuffPresetIndex,
+			0,
+			SaveData->TemporaryBuffPresets.Num() - 1);
+		TArray<ET66SecondaryStatType> LegacySlots = SaveData->TemporaryBuffPresets[LegacyPresetIndex].SlotBuffs;
+		EnsureSelectedSingleUseBuffSlotsSize(LegacySlots);
+		for (ET66SecondaryStatType SlotStat : LegacySlots)
+		{
+			if (SlotIndex >= SelectedSingleUseBuffSlotCount)
+			{
+				break;
+			}
+
+			SaveData->SelectedSingleUseBuffSlots[SlotIndex++] = T66IsLiveSecondaryStatType(SlotStat)
+				? SlotStat
+				: ET66SecondaryStatType::None;
+		}
+	}
+	else
+	{
+		for (ET66SecondaryStatType StatType : GetAllSingleUseBuffTypes())
+		{
+			const int32 StatArrayIndex = GetSingleUseBuffIndex(StatType);
+			if (StatArrayIndex == INDEX_NONE || !SaveData->SelectedSingleUseBuffStates.IsValidIndex(StatArrayIndex))
+			{
+				continue;
+			}
+
+			const int32 SelectedCount = FMath::Max(0, static_cast<int32>(SaveData->SelectedSingleUseBuffStates[StatArrayIndex]));
+			for (int32 CopyIndex = 0; CopyIndex < SelectedCount && SlotIndex < SelectedSingleUseBuffSlotCount; ++CopyIndex)
+			{
+				SaveData->SelectedSingleUseBuffSlots[SlotIndex++] = StatType;
+			}
+
+			if (SlotIndex >= SelectedSingleUseBuffSlotCount)
+			{
+				break;
+			}
+		}
+	}
+
+	EnsureSelectedSingleUseBuffSlotsSize(SaveData->SelectedSingleUseBuffSlots);
+	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v9 temp-buff presets to v10 single 5-slot loadout."));
 }
 
 void UT66BuffSubsystem::Save()
@@ -519,20 +587,20 @@ void UT66BuffSubsystem::SanitizeSelectedSingleUseStates(TArray<uint8>& SelectedS
 	}
 }
 
-void UT66BuffSubsystem::EnsureTemporaryBuffPresetSlotsSize(TArray<ET66SecondaryStatType>& Slots) const
+void UT66BuffSubsystem::EnsureSelectedSingleUseBuffSlotsSize(TArray<ET66SecondaryStatType>& Slots) const
 {
-	if (Slots.Num() < PresetSlotCount)
+	if (Slots.Num() < SelectedSingleUseBuffSlotCount)
 	{
 		const int32 OriginalNum = Slots.Num();
-		Slots.SetNum(PresetSlotCount);
-		for (int32 Index = OriginalNum; Index < PresetSlotCount; ++Index)
+		Slots.SetNum(SelectedSingleUseBuffSlotCount);
+		for (int32 Index = OriginalNum; Index < SelectedSingleUseBuffSlotCount; ++Index)
 		{
 			Slots[Index] = ET66SecondaryStatType::None;
 		}
 	}
-	else if (Slots.Num() > PresetSlotCount)
+	else if (Slots.Num() > SelectedSingleUseBuffSlotCount)
 	{
-		Slots.SetNum(PresetSlotCount);
+		Slots.SetNum(SelectedSingleUseBuffSlotCount);
 	}
 
 	for (ET66SecondaryStatType& SlotStat : Slots)
@@ -544,119 +612,84 @@ void UT66BuffSubsystem::EnsureTemporaryBuffPresetSlotsSize(TArray<ET66SecondaryS
 	}
 }
 
-FString UT66BuffSubsystem::BuildDefaultTemporaryBuffPresetName(int32 PresetNumber) const
-{
-	return FString::Printf(TEXT("Preset %d"), FMath::Max(1, PresetNumber));
-}
-
-bool UT66BuffSubsystem::EnsureTemporaryBuffPresetsValid()
-{
-	if (!SaveData)
+	void UT66BuffSubsystem::BuildSelectedSingleUseStateSnapshot(const TArray<uint8>& OwnedStates, TArray<uint8>& OutSelectedStates) const
 	{
-		return false;
-	}
-
-	bool bChanged = false;
-	if (SaveData->TemporaryBuffPresets.Num() == 0)
-	{
-		FT66TemporaryBuffPreset DefaultPreset;
-		DefaultPreset.PresetName = BuildDefaultTemporaryBuffPresetName(1);
-		EnsureTemporaryBuffPresetSlotsSize(DefaultPreset.SlotBuffs);
-		SaveData->TemporaryBuffPresets.Add(DefaultPreset);
-		SaveData->ActiveTemporaryBuffPresetIndex = 0;
-		bChanged = true;
-	}
-
-	for (int32 PresetIndex = 0; PresetIndex < SaveData->TemporaryBuffPresets.Num(); ++PresetIndex)
-	{
-		FT66TemporaryBuffPreset& Preset = SaveData->TemporaryBuffPresets[PresetIndex];
-		if (Preset.PresetName.TrimStartAndEnd().IsEmpty())
+		OutSelectedStates.Init(0, SingleUseBuffCount);
+		if (!SaveData)
 		{
-			Preset.PresetName = BuildDefaultTemporaryBuffPresetName(PresetIndex + 1);
-			bChanged = true;
+			return;
 		}
 
-		const TArray<ET66SecondaryStatType> OriginalSlots = Preset.SlotBuffs;
-		EnsureTemporaryBuffPresetSlotsSize(Preset.SlotBuffs);
-		if (Preset.SlotBuffs != OriginalSlots)
+		TArray<uint8> NormalizedOwned = OwnedStates;
+		EnsurePendingSingleUseStatesSize(NormalizedOwned);
+
+		TArray<ET66SecondaryStatType> Slots = SaveData->SelectedSingleUseBuffSlots;
+		const_cast<UT66BuffSubsystem*>(this)->EnsureSelectedSingleUseBuffSlotsSize(Slots);
+
+		int32 TotalSelected = 0;
+		for (ET66SecondaryStatType SlotStat : Slots)
 		{
-			bChanged = true;
+			if (!T66IsLiveSecondaryStatType(SlotStat) || TotalSelected >= MaxSelectedSingleUseBuffs)
+			{
+				continue;
+			}
+
+			const int32 StatIndex = GetSingleUseBuffIndex(SlotStat);
+			if (StatIndex == INDEX_NONE || !NormalizedOwned.IsValidIndex(StatIndex) || !OutSelectedStates.IsValidIndex(StatIndex))
+			{
+				continue;
+			}
+
+			if (static_cast<int32>(NormalizedOwned[StatIndex]) > static_cast<int32>(OutSelectedStates[StatIndex]))
+			{
+				OutSelectedStates[StatIndex] = static_cast<uint8>(static_cast<int32>(OutSelectedStates[StatIndex]) + 1);
+				++TotalSelected;
+			}
 		}
 	}
 
-	const int32 SanitizedPresetIndex = FMath::Clamp(SaveData->ActiveTemporaryBuffPresetIndex, 0, SaveData->TemporaryBuffPresets.Num() - 1);
-	if (SaveData->ActiveTemporaryBuffPresetIndex != SanitizedPresetIndex)
+	bool UT66BuffSubsystem::EnsureSelectedSingleUseBuffLoadoutValid()
 	{
-		SaveData->ActiveTemporaryBuffPresetIndex = SanitizedPresetIndex;
-		bChanged = true;
-	}
-
-	const int32 SanitizedEditSlotIndex = FMath::Clamp(ActiveTemporaryBuffPresetEditSlotIndex, 0, PresetSlotCount - 1);
-	if (ActiveTemporaryBuffPresetEditSlotIndex != SanitizedEditSlotIndex)
-	{
-		ActiveTemporaryBuffPresetEditSlotIndex = SanitizedEditSlotIndex;
-	}
-
-	return bChanged;
-}
-
-FT66TemporaryBuffPreset* UT66BuffSubsystem::GetActiveTemporaryBuffPreset()
-{
-	return (!SaveData || SaveData->TemporaryBuffPresets.Num() == 0)
-		? nullptr
-		: &SaveData->TemporaryBuffPresets[FMath::Clamp(SaveData->ActiveTemporaryBuffPresetIndex, 0, SaveData->TemporaryBuffPresets.Num() - 1)];
-}
-
-const FT66TemporaryBuffPreset* UT66BuffSubsystem::GetActiveTemporaryBuffPreset() const
-{
-	return const_cast<UT66BuffSubsystem*>(this)->GetActiveTemporaryBuffPreset();
-}
-
-bool UT66BuffSubsystem::RebuildSelectedSingleUseStatesFromActivePreset()
-{
-	TArray<uint8>* OwnedStates = GetPendingSingleUseStates();
-	TArray<uint8>* SelectedStates = GetSelectedSingleUseStates();
-	const FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset();
-	if (!SaveData || !OwnedStates || !SelectedStates || !ActivePreset)
-	{
-		return false;
-	}
-
-	EnsurePendingSingleUseStatesSize(*OwnedStates);
-	EnsureSelectedSingleUseStatesSize(*SelectedStates);
-
-	TArray<uint8> NewSelectedStates;
-	NewSelectedStates.Init(0, SingleUseBuffCount);
-
-	int32 TotalSelected = 0;
-	for (ET66SecondaryStatType SlotStat : ActivePreset->SlotBuffs)
-	{
-		if (!T66IsLiveSecondaryStatType(SlotStat) || TotalSelected >= MaxSelectedSingleUseBuffs)
+		if (!SaveData)
 		{
-			continue;
+			return false;
 		}
 
-		const int32 StatIndex = GetSingleUseBuffIndex(SlotStat);
-		if (StatIndex == INDEX_NONE || !OwnedStates->IsValidIndex(StatIndex) || !NewSelectedStates.IsValidIndex(StatIndex))
+		const TArray<ET66SecondaryStatType> OriginalSlots = SaveData->SelectedSingleUseBuffSlots;
+		EnsureSelectedSingleUseBuffSlotsSize(SaveData->SelectedSingleUseBuffSlots);
+		const bool bSlotsChanged = SaveData->SelectedSingleUseBuffSlots != OriginalSlots;
+
+		const int32 SanitizedEditSlotIndex = FMath::Clamp(ActiveSelectedSingleUseBuffEditSlotIndex, 0, SelectedSingleUseBuffSlotCount - 1);
+		if (ActiveSelectedSingleUseBuffEditSlotIndex != SanitizedEditSlotIndex)
 		{
-			continue;
+			ActiveSelectedSingleUseBuffEditSlotIndex = SanitizedEditSlotIndex;
 		}
 
-		if (static_cast<int32>((*OwnedStates)[StatIndex]) > static_cast<int32>(NewSelectedStates[StatIndex]))
-		{
-			NewSelectedStates[StatIndex] = static_cast<uint8>(static_cast<int32>(NewSelectedStates[StatIndex]) + 1);
-			++TotalSelected;
-		}
+		return bSlotsChanged;
 	}
 
-	if (*SelectedStates == NewSelectedStates)
+	bool UT66BuffSubsystem::RebuildSelectedSingleUseStatesFromLoadout()
 	{
-		return false;
-	}
+		TArray<uint8>* OwnedStates = GetPendingSingleUseStates();
+		TArray<uint8>* SelectedStates = GetSelectedSingleUseStates();
+		if (!SaveData || !OwnedStates || !SelectedStates)
+		{
+			return false;
+		}
 
-	*SelectedStates = MoveTemp(NewSelectedStates);
-	return true;
-}
+		EnsurePendingSingleUseStatesSize(*OwnedStates);
+		EnsureSelectedSingleUseStatesSize(*SelectedStates);
+
+		TArray<uint8> NewSelectedStates;
+		BuildSelectedSingleUseStateSnapshot(*OwnedStates, NewSelectedStates);
+		if (*SelectedStates == NewSelectedStates)
+		{
+			return false;
+		}
+
+		*SelectedStates = MoveTemp(NewSelectedStates);
+		return true;
+	}
 
 int32 UT66BuffSubsystem::GetStatIndex(ET66HeroStatType StatType) const
 {
@@ -889,8 +922,7 @@ bool UT66BuffSubsystem::IsSingleUseBuffSelected(ET66SecondaryStatType StatType) 
 int32 UT66BuffSubsystem::GetSelectedSingleUseBuffCountForStat(ET66SecondaryStatType StatType) const
 {
 	const TArray<uint8>* OwnedStates = GetPendingSingleUseStates();
-	const TArray<uint8>* SelectedStates = GetSelectedSingleUseStates();
-	if (!OwnedStates || !SelectedStates)
+	if (!OwnedStates)
 	{
 		return 0;
 	}
@@ -901,22 +933,21 @@ int32 UT66BuffSubsystem::GetSelectedSingleUseBuffCountForStat(ET66SecondaryStatT
 		return 0;
 	}
 
-	TArray<uint8> NormalizedSelected = *SelectedStates;
-	SanitizeSelectedSingleUseStates(NormalizedSelected, *OwnedStates);
+	TArray<uint8> NormalizedSelected;
+	BuildSelectedSingleUseStateSnapshot(*OwnedStates, NormalizedSelected);
 	return NormalizedSelected.IsValidIndex(StatIndex) ? FMath::Max(0, static_cast<int32>(NormalizedSelected[StatIndex])) : 0;
 }
 
 int32 UT66BuffSubsystem::GetSelectedSingleUseBuffCount() const
 {
 	const TArray<uint8>* OwnedStates = GetPendingSingleUseStates();
-	const TArray<uint8>* SelectedStates = GetSelectedSingleUseStates();
-	if (!OwnedStates || !SelectedStates)
+	if (!OwnedStates)
 	{
 		return 0;
 	}
 
-	TArray<uint8> NormalizedSelected = *SelectedStates;
-	SanitizeSelectedSingleUseStates(NormalizedSelected, *OwnedStates);
+	TArray<uint8> NormalizedSelected;
+	BuildSelectedSingleUseStateSnapshot(*OwnedStates, NormalizedSelected);
 
 	int32 Count = 0;
 	for (uint8 State : NormalizedSelected)
@@ -953,169 +984,65 @@ TArray<ET66SecondaryStatType> UT66BuffSubsystem::GetSelectedSingleUseBuffs() con
 	return SelectedBuffs;
 }
 
-int32 UT66BuffSubsystem::GetTemporaryBuffPresetCount() const
+TArray<ET66SecondaryStatType> UT66BuffSubsystem::GetSelectedSingleUseBuffSlots() const
 {
-	return SaveData ? SaveData->TemporaryBuffPresets.Num() : 0;
-}
-
-TArray<FString> UT66BuffSubsystem::GetTemporaryBuffPresetNames() const
-{
-	TArray<FString> Names;
-	if (!SaveData)
-	{
-		return Names;
-	}
-
-	Names.Reserve(SaveData->TemporaryBuffPresets.Num());
-	for (const FT66TemporaryBuffPreset& Preset : SaveData->TemporaryBuffPresets)
-	{
-		Names.Add(Preset.PresetName);
-	}
-	return Names;
-}
-
-int32 UT66BuffSubsystem::GetActiveTemporaryBuffPresetIndex() const
-{
-	return (!SaveData || SaveData->TemporaryBuffPresets.Num() == 0)
-		? 0
-		: FMath::Clamp(SaveData->ActiveTemporaryBuffPresetIndex, 0, SaveData->TemporaryBuffPresets.Num() - 1);
-}
-
-FString UT66BuffSubsystem::GetActiveTemporaryBuffPresetName() const
-{
-	const FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset();
-	return ActivePreset ? ActivePreset->PresetName : BuildDefaultTemporaryBuffPresetName(1);
-}
-
-bool UT66BuffSubsystem::SetActiveTemporaryBuffPresetIndex(int32 NewIndex)
-{
-	if (!SaveData)
-	{
-		return false;
-	}
-
-	EnsureTemporaryBuffPresetsValid();
-	if (SaveData->TemporaryBuffPresets.Num() == 0)
-	{
-		return false;
-	}
-
-	const int32 SanitizedIndex = FMath::Clamp(NewIndex, 0, SaveData->TemporaryBuffPresets.Num() - 1);
-	if (SaveData->ActiveTemporaryBuffPresetIndex == SanitizedIndex)
-	{
-		return false;
-	}
-
-	SaveData->ActiveTemporaryBuffPresetIndex = SanitizedIndex;
-	ActiveTemporaryBuffPresetEditSlotIndex = 0;
-	RebuildSelectedSingleUseStatesFromActivePreset();
-	Save();
-	return true;
-}
-
-int32 UT66BuffSubsystem::CreateTemporaryBuffPreset(const FString& PresetName)
-{
-	if (!SaveData)
-	{
-		return INDEX_NONE;
-	}
-
-	EnsureTemporaryBuffPresetsValid();
-
-	FT66TemporaryBuffPreset NewPreset;
-	NewPreset.PresetName = PresetName.TrimStartAndEnd();
-	if (NewPreset.PresetName.IsEmpty())
-	{
-		NewPreset.PresetName = BuildDefaultTemporaryBuffPresetName(SaveData->TemporaryBuffPresets.Num() + 1);
-	}
-	EnsureTemporaryBuffPresetSlotsSize(NewPreset.SlotBuffs);
-
-	const int32 NewIndex = SaveData->TemporaryBuffPresets.Add(NewPreset);
-	SaveData->ActiveTemporaryBuffPresetIndex = NewIndex;
-	ActiveTemporaryBuffPresetEditSlotIndex = 0;
-	RebuildSelectedSingleUseStatesFromActivePreset();
-	Save();
-	return NewIndex;
-}
-
-TArray<ET66SecondaryStatType> UT66BuffSubsystem::GetActiveTemporaryBuffPresetSlots() const
-{
-	TArray<ET66SecondaryStatType> Slots;
-	Slots.Init(ET66SecondaryStatType::None, PresetSlotCount);
-
-	if (const FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset())
-	{
-		Slots = ActivePreset->SlotBuffs;
-		const_cast<UT66BuffSubsystem*>(this)->EnsureTemporaryBuffPresetSlotsSize(Slots);
-	}
-
+	TArray<ET66SecondaryStatType> Slots = SaveData ? SaveData->SelectedSingleUseBuffSlots : TArray<ET66SecondaryStatType>{};
+	const_cast<UT66BuffSubsystem*>(this)->EnsureSelectedSingleUseBuffSlotsSize(Slots);
 	return Slots;
 }
 
-ET66SecondaryStatType UT66BuffSubsystem::GetActiveTemporaryBuffPresetSlot(int32 SlotIndex) const
+ET66SecondaryStatType UT66BuffSubsystem::GetSelectedSingleUseBuffSlot(int32 SlotIndex) const
 {
-	if (SlotIndex < 0 || SlotIndex >= PresetSlotCount)
+	if (SlotIndex < 0 || SlotIndex >= SelectedSingleUseBuffSlotCount || !SaveData)
 	{
 		return ET66SecondaryStatType::None;
 	}
 
-	const FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset();
-	if (!ActivePreset || !ActivePreset->SlotBuffs.IsValidIndex(SlotIndex))
-	{
-		return ET66SecondaryStatType::None;
-	}
-
-	const ET66SecondaryStatType SlotStat = ActivePreset->SlotBuffs[SlotIndex];
-	return T66IsLiveSecondaryStatType(SlotStat) ? SlotStat : ET66SecondaryStatType::None;
+	TArray<ET66SecondaryStatType> Slots = SaveData->SelectedSingleUseBuffSlots;
+	const_cast<UT66BuffSubsystem*>(this)->EnsureSelectedSingleUseBuffSlotsSize(Slots);
+	return Slots.IsValidIndex(SlotIndex) ? Slots[SlotIndex] : ET66SecondaryStatType::None;
 }
 
-bool UT66BuffSubsystem::SetActiveTemporaryBuffPresetSlot(int32 SlotIndex, ET66SecondaryStatType StatType)
+bool UT66BuffSubsystem::SetSelectedSingleUseBuffSlot(int32 SlotIndex, ET66SecondaryStatType StatType)
 {
-	if (!SaveData || SlotIndex < 0 || SlotIndex >= PresetSlotCount)
+	if (!SaveData || SlotIndex < 0 || SlotIndex >= SelectedSingleUseBuffSlotCount)
 	{
 		return false;
 	}
 
-	EnsureTemporaryBuffPresetsValid();
-	FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset();
-	if (!ActivePreset)
-	{
-		return false;
-	}
-
-	EnsureTemporaryBuffPresetSlotsSize(ActivePreset->SlotBuffs);
+	EnsureSelectedSingleUseBuffLoadoutValid();
 	const ET66SecondaryStatType SanitizedStatType = (StatType == ET66SecondaryStatType::None || T66IsLiveSecondaryStatType(StatType))
 		? StatType
 		: ET66SecondaryStatType::None;
-	if (ActivePreset->SlotBuffs[SlotIndex] == SanitizedStatType)
+	if (SaveData->SelectedSingleUseBuffSlots[SlotIndex] == SanitizedStatType)
 	{
 		return false;
 	}
 
-	ActivePreset->SlotBuffs[SlotIndex] = SanitizedStatType;
-	ActiveTemporaryBuffPresetEditSlotIndex = SlotIndex;
-	RebuildSelectedSingleUseStatesFromActivePreset();
+	SaveData->SelectedSingleUseBuffSlots[SlotIndex] = SanitizedStatType;
+	ActiveSelectedSingleUseBuffEditSlotIndex = SlotIndex;
+	RebuildSelectedSingleUseStatesFromLoadout();
 	Save();
 	return true;
 }
 
-bool UT66BuffSubsystem::ClearActiveTemporaryBuffPresetSlot(int32 SlotIndex)
+bool UT66BuffSubsystem::ClearSelectedSingleUseBuffSlot(int32 SlotIndex)
 {
-	return SetActiveTemporaryBuffPresetSlot(SlotIndex, ET66SecondaryStatType::None);
+	return SetSelectedSingleUseBuffSlot(SlotIndex, ET66SecondaryStatType::None);
 }
 
-bool UT66BuffSubsystem::IsActiveTemporaryBuffPresetSlotOwned(int32 SlotIndex) const
+bool UT66BuffSubsystem::IsSelectedSingleUseBuffSlotOwned(int32 SlotIndex) const
 {
-	const ET66SecondaryStatType SlotStat = GetActiveTemporaryBuffPresetSlot(SlotIndex);
+	const ET66SecondaryStatType SlotStat = GetSelectedSingleUseBuffSlot(SlotIndex);
 	if (!T66IsLiveSecondaryStatType(SlotStat))
 	{
 		return true;
 	}
 
 	int32 RequiredCopies = 0;
-	for (int32 Index = 0; Index <= SlotIndex && Index < PresetSlotCount; ++Index)
+	for (int32 Index = 0; Index <= SlotIndex && Index < SelectedSingleUseBuffSlotCount; ++Index)
 	{
-		if (GetActiveTemporaryBuffPresetSlot(Index) == SlotStat)
+		if (GetSelectedSingleUseBuffSlot(Index) == SlotStat)
 		{
 			++RequiredCopies;
 		}
@@ -1124,7 +1051,7 @@ bool UT66BuffSubsystem::IsActiveTemporaryBuffPresetSlotOwned(int32 SlotIndex) co
 	return GetOwnedSingleUseBuffCount(SlotStat) >= RequiredCopies;
 }
 
-int32 UT66BuffSubsystem::GetActiveTemporaryBuffPresetAssignedCountForStat(ET66SecondaryStatType StatType) const
+int32 UT66BuffSubsystem::GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66SecondaryStatType StatType) const
 {
 	if (!T66IsLiveSecondaryStatType(StatType))
 	{
@@ -1132,7 +1059,7 @@ int32 UT66BuffSubsystem::GetActiveTemporaryBuffPresetAssignedCountForStat(ET66Se
 	}
 
 	int32 Count = 0;
-	for (ET66SecondaryStatType SlotStat : GetActiveTemporaryBuffPresetSlots())
+	for (ET66SecondaryStatType SlotStat : GetSelectedSingleUseBuffSlots())
 	{
 		if (SlotStat == StatType)
 		{
@@ -1142,20 +1069,20 @@ int32 UT66BuffSubsystem::GetActiveTemporaryBuffPresetAssignedCountForStat(ET66Se
 	return Count;
 }
 
-bool UT66BuffSubsystem::PurchaseActiveTemporaryBuffPresetSlot(int32 SlotIndex)
+bool UT66BuffSubsystem::PurchaseSelectedSingleUseBuffSlot(int32 SlotIndex)
 {
-	const ET66SecondaryStatType SlotStat = GetActiveTemporaryBuffPresetSlot(SlotIndex);
+	const ET66SecondaryStatType SlotStat = GetSelectedSingleUseBuffSlot(SlotIndex);
 	return T66IsLiveSecondaryStatType(SlotStat) ? PurchaseSingleUseBuff(SlotStat) : false;
 }
 
-void UT66BuffSubsystem::SetTemporaryBuffPresetEditSlotIndex(int32 SlotIndex)
+void UT66BuffSubsystem::SetSelectedSingleUseBuffEditSlotIndex(int32 SlotIndex)
 {
-	ActiveTemporaryBuffPresetEditSlotIndex = FMath::Clamp(SlotIndex, 0, PresetSlotCount - 1);
+	ActiveSelectedSingleUseBuffEditSlotIndex = FMath::Clamp(SlotIndex, 0, SelectedSingleUseBuffSlotCount - 1);
 }
 
-int32 UT66BuffSubsystem::GetTemporaryBuffPresetEditSlotIndex() const
+int32 UT66BuffSubsystem::GetSelectedSingleUseBuffEditSlotIndex() const
 {
-	return FMath::Clamp(ActiveTemporaryBuffPresetEditSlotIndex, 0, PresetSlotCount - 1);
+	return FMath::Clamp(ActiveSelectedSingleUseBuffEditSlotIndex, 0, SelectedSingleUseBuffSlotCount - 1);
 }
 
 bool UT66BuffSubsystem::SetSingleUseBuffSelected(ET66SecondaryStatType StatType, bool bSelected)
@@ -1170,16 +1097,9 @@ bool UT66BuffSubsystem::SetSingleUseBuffSelected(ET66SecondaryStatType StatType,
 		return false;
 	}
 
-	EnsureTemporaryBuffPresetsValid();
-	FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset();
-	if (!ActivePreset)
-	{
-		return false;
-	}
-
+	EnsureSelectedSingleUseBuffLoadoutValid();
 	bool bChanged = false;
-	EnsureTemporaryBuffPresetSlotsSize(ActivePreset->SlotBuffs);
-	for (ET66SecondaryStatType& SlotStat : ActivePreset->SlotBuffs)
+	for (ET66SecondaryStatType& SlotStat : SaveData->SelectedSingleUseBuffSlots)
 	{
 		if (SlotStat == StatType)
 		{
@@ -1193,7 +1113,7 @@ bool UT66BuffSubsystem::SetSingleUseBuffSelected(ET66SecondaryStatType StatType,
 		return false;
 	}
 
-	RebuildSelectedSingleUseStatesFromActivePreset();
+	RebuildSelectedSingleUseStatesFromLoadout();
 	Save();
 	return true;
 }
@@ -1205,21 +1125,14 @@ bool UT66BuffSubsystem::AddSelectedSingleUseBuff(ET66SecondaryStatType StatType)
 		return false;
 	}
 
-	EnsureTemporaryBuffPresetsValid();
-	FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset();
-	if (!ActivePreset)
+	EnsureSelectedSingleUseBuffLoadoutValid();
+	for (int32 SlotIndex = 0; SlotIndex < SaveData->SelectedSingleUseBuffSlots.Num(); ++SlotIndex)
 	{
-		return false;
-	}
-
-	EnsureTemporaryBuffPresetSlotsSize(ActivePreset->SlotBuffs);
-	for (int32 SlotIndex = 0; SlotIndex < ActivePreset->SlotBuffs.Num(); ++SlotIndex)
-	{
-		if (ActivePreset->SlotBuffs[SlotIndex] == ET66SecondaryStatType::None)
+		if (SaveData->SelectedSingleUseBuffSlots[SlotIndex] == ET66SecondaryStatType::None)
 		{
-			ActivePreset->SlotBuffs[SlotIndex] = StatType;
-			ActiveTemporaryBuffPresetEditSlotIndex = SlotIndex;
-			RebuildSelectedSingleUseStatesFromActivePreset();
+			SaveData->SelectedSingleUseBuffSlots[SlotIndex] = StatType;
+			ActiveSelectedSingleUseBuffEditSlotIndex = SlotIndex;
+			RebuildSelectedSingleUseStatesFromLoadout();
 			Save();
 			return true;
 		}
@@ -1235,21 +1148,14 @@ bool UT66BuffSubsystem::RemoveSelectedSingleUseBuff(ET66SecondaryStatType StatTy
 		return false;
 	}
 
-	EnsureTemporaryBuffPresetsValid();
-	FT66TemporaryBuffPreset* ActivePreset = GetActiveTemporaryBuffPreset();
-	if (!ActivePreset)
+	EnsureSelectedSingleUseBuffLoadoutValid();
+	for (int32 SlotIndex = SaveData->SelectedSingleUseBuffSlots.Num() - 1; SlotIndex >= 0; --SlotIndex)
 	{
-		return false;
-	}
-
-	EnsureTemporaryBuffPresetSlotsSize(ActivePreset->SlotBuffs);
-	for (int32 SlotIndex = ActivePreset->SlotBuffs.Num() - 1; SlotIndex >= 0; --SlotIndex)
-	{
-		if (ActivePreset->SlotBuffs[SlotIndex] == StatType)
+		if (SaveData->SelectedSingleUseBuffSlots[SlotIndex] == StatType)
 		{
-			ActivePreset->SlotBuffs[SlotIndex] = ET66SecondaryStatType::None;
-			ActiveTemporaryBuffPresetEditSlotIndex = SlotIndex;
-			RebuildSelectedSingleUseStatesFromActivePreset();
+			SaveData->SelectedSingleUseBuffSlots[SlotIndex] = ET66SecondaryStatType::None;
+			ActiveSelectedSingleUseBuffEditSlotIndex = SlotIndex;
+			RebuildSelectedSingleUseStatesFromLoadout();
 			Save();
 			return true;
 		}
@@ -1287,7 +1193,7 @@ bool UT66BuffSubsystem::PurchaseSingleUseBuff(ET66SecondaryStatType StatType)
 	}
 
 	(*PendingStates)[StatIndex] = static_cast<uint8>(FMath::Min<int32>(255, static_cast<int32>((*PendingStates)[StatIndex]) + 1));
-	RebuildSelectedSingleUseStatesFromActivePreset();
+	RebuildSelectedSingleUseStatesFromLoadout();
 	Save();
 	return true;
 }
@@ -1302,8 +1208,8 @@ TMap<ET66SecondaryStatType, float> UT66BuffSubsystem::GetPendingSingleUseBuffMul
 		return Bonuses;
 	}
 
-	TArray<uint8> NormalizedSelected = *SelectedStates;
-	SanitizeSelectedSingleUseStates(NormalizedSelected, *OwnedStates);
+	TArray<uint8> NormalizedSelected;
+	BuildSelectedSingleUseStateSnapshot(*OwnedStates, NormalizedSelected);
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(GSingleUseBuffStats); ++Index)
 	{
 		if (NormalizedSelected.IsValidIndex(Index) && NormalizedSelected[Index] > 0)
@@ -1327,24 +1233,25 @@ TMap<ET66SecondaryStatType, float> UT66BuffSubsystem::ConsumePendingSingleUseBuf
 
 	EnsurePendingSingleUseStatesSize(*OwnedStates);
 	EnsureSelectedSingleUseStatesSize(*SelectedStates);
-	SanitizeSelectedSingleUseStates(*SelectedStates, *OwnedStates);
+	TArray<uint8> SelectedSnapshot;
+	BuildSelectedSingleUseStateSnapshot(*OwnedStates, SelectedSnapshot);
 	bool bConsumedAny = false;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(GSingleUseBuffStats); ++Index)
 	{
-		const int32 SelectedCount = SelectedStates->IsValidIndex(Index) ? static_cast<int32>((*SelectedStates)[Index]) : 0;
+		const int32 SelectedCount = SelectedSnapshot.IsValidIndex(Index) ? static_cast<int32>(SelectedSnapshot[Index]) : 0;
 		const int32 OwnedCount = OwnedStates->IsValidIndex(Index) ? static_cast<int32>((*OwnedStates)[Index]) : 0;
 		const int32 ConsumedCount = FMath::Min(SelectedCount, OwnedCount);
 		if (ConsumedCount > 0)
 		{
 			Bonuses.Add(GSingleUseBuffStats[Index], FMath::Pow(SingleUseSecondaryBuffMultiplier, static_cast<float>(ConsumedCount)));
 			(*OwnedStates)[Index] = static_cast<uint8>(OwnedCount - ConsumedCount);
-			(*SelectedStates)[Index] = 0;
 			bConsumedAny = true;
 		}
 	}
 
 	if (bConsumedAny)
 	{
+		RebuildSelectedSingleUseStatesFromLoadout();
 		Save();
 	}
 

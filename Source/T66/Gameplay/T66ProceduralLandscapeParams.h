@@ -14,8 +14,6 @@ enum class ET66MapTheme : uint8
 UENUM(BlueprintType)
 enum class ET66MainMapLayoutVariant : uint8
 {
-	Hilly UMETA(DisplayName = "Hilly"),
-	Flat UMETA(DisplayName = "Flat"),
 	Tower UMETA(DisplayName = "Tower"),
 };
 
@@ -31,7 +29,7 @@ struct FT66MapPreset
 	ET66MapTheme Theme = ET66MapTheme::Farm;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	ET66MainMapLayoutVariant LayoutVariant = ET66MainMapLayoutVariant::Hilly;
+	ET66MainMapLayoutVariant LayoutVariant = ET66MainMapLayoutVariant::Tower;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float ElevationMin = -1400.f;
@@ -128,7 +126,7 @@ struct FT66MapPreset
 	{
 		FT66MapPreset P;
 		P.Theme = InTheme;
-		P.LayoutVariant       = ET66MainMapLayoutVariant::Hilly;
+		P.LayoutVariant       = ET66MainMapLayoutVariant::Tower;
 		// Legacy theme variants now collapse to the single main-map terrain family.
 		P.ElevationMin         = -5000.f;
 		P.ElevationMax         = 5000.f;

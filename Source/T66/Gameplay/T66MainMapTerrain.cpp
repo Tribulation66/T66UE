@@ -999,11 +999,11 @@ namespace T66MainMapTerrain
 		}
 	}
 
-	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed, ET66MainMapLayoutVariant LayoutVariant)
+	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed)
 	{
 		FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
 		Preset.Seed = Seed;
-		Preset.LayoutVariant = LayoutVariant;
+		Preset.LayoutVariant = ET66MainMapLayoutVariant::Tower;
 
 		switch (Difficulty)
 		{
@@ -1018,11 +1018,7 @@ namespace T66MainMapTerrain
 			break;
 		}
 
-		if (LayoutVariant == ET66MainMapLayoutVariant::Flat
-			|| LayoutVariant == ET66MainMapLayoutVariant::Tower)
-		{
-			Preset.FarmHilliness = 0.0f;
-		}
+		Preset.FarmHilliness = 0.0f;
 
 		return Preset;
 	}

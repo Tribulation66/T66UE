@@ -11,38 +11,39 @@
 UENUM(BlueprintType)
 enum class ET66ScreenType : uint8
 {
-	None UMETA(DisplayName = "None"),
-	MainMenu UMETA(DisplayName = "Main Menu"),
-	PartySizePicker UMETA(DisplayName = "Party Size Picker"),
-	Lobby UMETA(DisplayName = "Lobby"),
-	SaveSlots UMETA(DisplayName = "Save Slots"),
-	HeroSelection UMETA(DisplayName = "Hero Selection"),
-	CompanionSelection UMETA(DisplayName = "Companion Selection"),
-	Settings UMETA(DisplayName = "Settings"),
-	Achievements UMETA(DisplayName = "Achievements"),
-	Unlocks UMETA(DisplayName = "Unlocks"),
-	Leaderboard UMETA(DisplayName = "Leaderboard Modal"),
-	PauseMenu UMETA(DisplayName = "Pause Menu Modal"),
-	ReportBug UMETA(DisplayName = "Report Bug Modal"),
-	RunSummary UMETA(DisplayName = "Run Summary Modal"),
+	None = 0 UMETA(DisplayName = "None"),
+	MainMenu = 1 UMETA(DisplayName = "Main Menu"),
+	PartySizePicker = 2 UMETA(DisplayName = "Party Size Picker"),
+	Lobby = 3 UMETA(DisplayName = "Lobby"),
+	SaveSlots = 4 UMETA(DisplayName = "Save Slots"),
+	HeroSelection = 5 UMETA(DisplayName = "Hero Selection"),
+	CompanionSelection = 6 UMETA(DisplayName = "Companion Selection"),
+	Settings = 7 UMETA(DisplayName = "Settings"),
+	Achievements = 8 UMETA(DisplayName = "Achievements"),
+	Unlocks = 9 UMETA(DisplayName = "Unlocks"),
+	Leaderboard = 10 UMETA(DisplayName = "Leaderboard Modal"),
+	PauseMenu = 11 UMETA(DisplayName = "Pause Menu Modal"),
+	ReportBug = 12 UMETA(DisplayName = "Report Bug Modal"),
+	RunSummary = 13 UMETA(DisplayName = "Run Summary Modal"),
 	// Legacy enum key retained for compatibility with existing assets and Blueprint references.
-	PowerUp UMETA(DisplayName = "Shop"),
+	PowerUp = 14 UMETA(DisplayName = "Shop"),
 	// Modals (overlays on top of other screens)
-	HeroGrid UMETA(DisplayName = "Hero Grid Modal"),
-	HeroLore UMETA(DisplayName = "Hero Lore Modal"),
-	CompanionGrid UMETA(DisplayName = "Companion Grid Modal"),
-	CompanionLore UMETA(DisplayName = "Companion Lore Modal"),
-	TemporaryBuffSelection UMETA(DisplayName = "Temporary Buff Selection Modal"),
-	TemporaryBuffPresetCreate UMETA(DisplayName = "Temporary Buff Preset Create Modal"),
-	TemporaryBuffShop UMETA(DisplayName = "Temporary Buff Shop Modal"),
-	LanguageSelect UMETA(DisplayName = "Language Select Modal"),
-	QuitConfirmation UMETA(DisplayName = "Quit Confirmation Modal"),
-	PartyInvite UMETA(DisplayName = "Party Invite Modal"),
-	SnakeGame UMETA(DisplayName = "Snake Game Modal"),
-	LobbyReadyCheck UMETA(DisplayName = "Lobby Ready Check Modal"),
-	LobbyBackConfirm UMETA(DisplayName = "Lobby Back Confirm Modal"),
-	AccountStatus UMETA(DisplayName = "Account Status Panel"),
-	PlayerSummaryPicker UMETA(DisplayName = "Player Summary Picker")
+	HeroGrid = 15 UMETA(DisplayName = "Hero Grid Modal"),
+	HeroLore = 16 UMETA(DisplayName = "Hero Lore Modal"),
+	CompanionGrid = 17 UMETA(DisplayName = "Companion Grid Modal"),
+	CompanionLore = 18 UMETA(DisplayName = "Companion Lore Modal"),
+	TemporaryBuffSelection = 19 UMETA(DisplayName = "Temporary Buff Selection Modal"),
+	// Reserved compatibility slot: screen class and flow are deleted, but the value stays hidden so older assets do not shift.
+	TemporaryBuffPresetCreate = 20 UMETA(Hidden),
+	TemporaryBuffShop = 21 UMETA(DisplayName = "Temporary Buff Shop Modal"),
+	LanguageSelect = 22 UMETA(DisplayName = "Language Select Modal"),
+	QuitConfirmation = 23 UMETA(DisplayName = "Quit Confirmation Modal"),
+	PartyInvite = 24 UMETA(DisplayName = "Party Invite Modal"),
+	SnakeGame = 25 UMETA(DisplayName = "Snake Game Modal"),
+	LobbyReadyCheck = 26 UMETA(DisplayName = "Lobby Ready Check Modal"),
+	LobbyBackConfirm = 27 UMETA(DisplayName = "Lobby Back Confirm Modal"),
+	AccountStatus = 28 UMETA(DisplayName = "Account Status Panel"),
+	PlayerSummaryPicker = 29 UMETA(DisplayName = "Player Summary Picker")
 };
 
 UENUM(BlueprintType)
@@ -50,12 +51,4 @@ enum class ET66UITheme : uint8
 {
 	Classic UMETA(DisplayName = "Classic"),
 	Dota UMETA(DisplayName = "Dota")
-};
-
-UENUM(BlueprintType)
-enum class ET66UIFontPreset : uint8
-{
-	Current UMETA(DisplayName = "Current"),
-	// Legacy enum key retained for compatibility with old saved settings values.
-	Alagard UMETA(DisplayName = "Alagard")
 };

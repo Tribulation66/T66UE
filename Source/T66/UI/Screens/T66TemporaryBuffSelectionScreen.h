@@ -26,10 +26,10 @@ private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	UT66BuffSubsystem* GetBuffSubsystem() const;
 
-	FReply HandlePresetSlotClicked(int32 SlotIndex);
-	FReply HandlePresetSlotCleared(int32 SlotIndex);
-	FReply HandlePresetSlotPurchased(int32 SlotIndex);
-	FReply HandleAssignBuffToFocusedSlot(ET66SecondaryStatType StatType);
+	FReply HandleLoadoutSlotClicked(int32 SlotIndex);
+	FReply HandleLoadoutSlotCleared(int32 SlotIndex);
+	FReply HandleLoadoutSlotPurchased(int32 SlotIndex);
+	FReply HandleAssignBuffToFocusedLoadoutSlot(ET66SecondaryStatType StatType);
 	FReply HandleBuyMoreClicked();
 	FReply HandleCloseClicked();
 

@@ -127,7 +127,7 @@ This folder is the project’s service layer. It contains persistent state, prof
   - Embedded short-form media viewer plumbing
 - `T66MusicSubsystem`
   - Music state
-- `T66RetroFXSubsystem`, `T66PosterizeSubsystem`, `T66PixelationSubsystem`, `T66PixelVFXSubsystem`
+- `T66RetroFXSubsystem`, `T66PixelationSubsystem`, `T66PixelVFXSubsystem`
   - Retro/post-process presentation stack
 - `T66UITexturePoolSubsystem`
   - Keeps UI textures alive for Slate brushes
@@ -293,8 +293,8 @@ This folder contains world actors, the main run flow, player/avatar logic, enemi
   - Difficulty escalation interactable
 - `T66MegabonkFarm`
   - Special map/mode support
-- `T66QuakeSkyActor`, `T66EclipseActor`, `T66LavaPatch`
-  - Presentation and hazard/world-effect actors
+- `T66LavaPatch`
+  - Hazard/world-effect actor
 
 ### Frontend preview actors
 

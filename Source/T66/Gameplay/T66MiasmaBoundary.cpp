@@ -213,9 +213,8 @@ void AT66MiasmaBoundary::BuildBoundaryWalls()
 	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 	const int32 RunSeed = T66GI ? T66GI->RunSeed : 0;
-	const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(T66GI);
 
-	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, RunSeed, LayoutVariant);
+	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, RunSeed);
 	T66MainMapTerrain::FBoard Board;
 	if (!T66MainMapTerrain::Generate(Preset, Board))
 	{

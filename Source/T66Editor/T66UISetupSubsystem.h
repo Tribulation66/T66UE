@@ -73,13 +73,6 @@ public:
 	void PrintSetupStatus();
 
 	/**
-	 * Create the posterize post-process material (full-screen color banding).
-	 * Loaded at runtime by T66PosterizeSubsystem.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
-	bool CreatePosterizeMaterial();
-
-	/**
 	 * Create the retro chromatic-aberration post-process material.
 	 * Loaded at runtime by T66RetroFXSubsystem.
 	 */

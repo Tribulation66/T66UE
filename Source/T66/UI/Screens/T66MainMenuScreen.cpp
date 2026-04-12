@@ -16,7 +16,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/Style/T66LegacyUITextureAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
@@ -81,7 +81,7 @@ namespace
 
 		if (!TextureHandle.IsValid())
 		{
-			if (UTexture2D* AssetTexture = T66LegacyUITextureAccess::LoadAssetTexture(
+			if (UTexture2D* AssetTexture = T66RuntimeUITextureAccess::LoadAssetTexture(
 				ObjectPath,
 				TextureFilter::TF_Trilinear,
 				TEXT("MainMenuBackgroundLayer")))
@@ -139,7 +139,7 @@ namespace
 		{
 			if (AssetPath && *AssetPath)
 			{
-				if (UTexture2D* AssetTexture = T66LegacyUITextureAccess::LoadAssetTexture(
+				if (UTexture2D* AssetTexture = T66RuntimeUITextureAccess::LoadAssetTexture(
 					AssetPath,
 					TextureFilter::TF_Trilinear,
 					TEXT("MainMenuRuntimeImage")))
@@ -150,14 +150,14 @@ namespace
 
 			if (!TextureHandle.IsValid() && StagedRelativePath && *StagedRelativePath)
 			{
-				for (const FString& CandidatePath : T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(StagedRelativePath))
+				for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(StagedRelativePath))
 				{
 					if (!FPaths::FileExists(CandidatePath))
 					{
 						continue;
 					}
 
-					if (UTexture2D* FileTexture = T66LegacyUITextureAccess::ImportFileTexture(
+					if (UTexture2D* FileTexture = T66RuntimeUITextureAccess::ImportFileTexture(
 						CandidatePath,
 						TextureFilter::TF_Trilinear,
 						false,
@@ -1548,14 +1548,14 @@ void UT66MainMenuScreen::RequestUtilityButtonIcons()
 	{
 		if (!IconBrush.IsValid())
 		{
-			for (const FString& IconPath : T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+			for (const FString& IconPath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
 				if (!FPaths::FileExists(IconPath))
 				{
 					continue;
 				}
 
-				if (UTexture2D* IconTexture = T66LegacyUITextureAccess::ImportFileTexture(
+				if (UTexture2D* IconTexture = T66RuntimeUITextureAccess::ImportFileTexture(
 					IconPath,
 					TextureFilter::TF_Trilinear,
 					false,

@@ -289,11 +289,9 @@ void UT66PropSubsystem::SpawnMainMapPropsForStage(UWorld* World, int32 Seed, con
 	}
 
 	const UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
-	const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(T66GI);
 	const FT66MapPreset MainMapPreset = T66MainMapTerrain::BuildPresetForDifficulty(
 		T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy,
-		Seed,
-		LayoutVariant);
+		Seed);
 
 	const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(MainMapPreset);
 	const float MainHalfExtent = FMath::Max(0.0f, MainMapSettings.HalfExtent - MainMapSettings.CellSize * 1.75f);
@@ -350,11 +348,9 @@ bool UT66PropSubsystem::SpawnMainMapGroupedProps(
 	}
 
 	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
-	const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(T66GI);
 	const FT66MapPreset MainMapPreset = T66MainMapTerrain::BuildPresetForDifficulty(
 		T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy,
-		Seed,
-		LayoutVariant);
+		Seed);
 
 	T66MainMapTerrain::FBoard Board;
 	if (!T66MainMapTerrain::Generate(MainMapPreset, Board))

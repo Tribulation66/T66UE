@@ -3,7 +3,7 @@
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/Style/T66LegacyUITextureAccess.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Engine/Texture2D.h"
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
@@ -55,14 +55,14 @@ namespace
 			return Cached->Get();
 		}
 
-		UTexture2D* Texture = T66LegacyUITextureAccess::ImportFileTexture(
+		UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
 			FilePath,
 			TextureFilter::TF_Trilinear,
 			false,
 			TEXT("TempBuffTexture"));
 		if (!Texture)
 		{
-			Texture = T66LegacyUITextureAccess::ImportFileTextureWithGeneratedMips(
+			Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(
 				FilePath,
 				TextureFilter::TF_Trilinear,
 				TEXT("TempBuffTexture"));
@@ -133,7 +133,7 @@ TSharedPtr<FSlateBrush> T66TemporaryBuffUI::CreateSecondaryBuffBrush(
 	const FString PackagePath = FString::Printf(TEXT("/Game/UI/PowerUp/SecondaryBuffs/%s"), *FileStem);
 	const FString ObjectPath = FString::Printf(TEXT("%s.%s"), *PackagePath, *FileStem);
 
-	const TArray<FString> CandidateSourcePaths = T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath);
+	const TArray<FString> CandidateSourcePaths = T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(SourceRelativePath);
 	const bool bHasSourceFile = CandidateSourcePaths.ContainsByPredicate([](const FString& CandidatePath)
 	{
 		return FPaths::FileExists(CandidatePath);
@@ -143,7 +143,7 @@ TSharedPtr<FSlateBrush> T66TemporaryBuffUI::CreateSecondaryBuffBrush(
 	TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
 	if (bHasImportedTexture)
 	{
-		if (UTexture2D* AssetTexture = T66LegacyUITextureAccess::LoadAssetTexture(*ObjectPath, TextureFilter::TF_Trilinear, TEXT("TempBuffTexture")))
+		if (UTexture2D* AssetTexture = T66RuntimeUITextureAccess::LoadAssetTexture(*ObjectPath, TextureFilter::TF_Trilinear, TEXT("TempBuffTexture")))
 		{
 			InitializeRuntimeImageBrush(Brush, ResolveImageSize(AssetTexture, ImageSize));
 			Brush->SetResourceObject(AssetTexture);

@@ -86,21 +86,6 @@ static FAutoConsoleCommand T66CreateLabLevelCommand(
 	})
 );
 
-static FAutoConsoleCommand T66CreatePosterizeMaterialCommand(
-	TEXT("T66CreatePosterizeMaterial"),
-	TEXT("Creates M_PosterizePostProcess (full-screen color banding post-process material)."),
-	FConsoleCommandDelegate::CreateLambda([]()
-	{
-		if (GEditor)
-		{
-			if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
-			{
-				Sub->CreatePosterizeMaterial();
-			}
-		}
-	})
-);
-
 static FAutoConsoleCommand T66CreateRetroChromaticAberrationMaterialCommand(
 	TEXT("T66CreateRetroChromaticAberrationMaterial"),
 	TEXT("Creates M_RetroChromaticAberrationPostProcess (full-screen radial chromatic aberration / distortion post-process material)."),
@@ -133,15 +118,6 @@ void UT66UISetupSubsystem::RunFullSetup()
 	UE_LOG(LogT66Editor, Log, TEXT("=== T66 Full Setup Starting ==="));
 	
 	bool bAllSuccess = true;
-
-	if (CreatePosterizeMaterial())
-	{
-		UE_LOG(LogT66Editor, Log, TEXT("[OK] PosterizeMaterial created"));
-	}
-	else
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("[SKIP] PosterizeMaterial (may already exist)"));
-	}
 
 	if (CreateRetroChromaticAberrationMaterial())
 	{
@@ -649,110 +625,6 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	}
 
 	return SaveBlueprint(Blueprint);
-}
-
-bool UT66UISetupSubsystem::CreatePosterizeMaterial()
-{
-	const FString MaterialPath = TEXT("/Game/UI/M_PosterizePostProcess");
-	UMaterial* ExistingMaterial = LoadObject<UMaterial>(nullptr, *(MaterialPath + TEXT(".M_PosterizePostProcess")));
-	if (ExistingMaterial)
-	{
-		UE_LOG(LogT66Editor, Log, TEXT("PosterizeMaterial already exists at %s"), *MaterialPath);
-		return true;
-	}
-
-	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-	UMaterialFactoryNew* MaterialFactory = NewObject<UMaterialFactoryNew>();
-	UObject* NewAsset = AssetTools.CreateAsset(TEXT("M_PosterizePostProcess"), TEXT("/Game/UI"), UMaterial::StaticClass(), MaterialFactory);
-	UMaterial* Mat = Cast<UMaterial>(NewAsset);
-	if (!Mat)
-	{
-		UE_LOG(LogT66Editor, Error, TEXT("Failed to create PosterizeMaterial"));
-		return false;
-	}
-
-	Mat->MaterialDomain = MD_PostProcess;
-	Mat->BlendableLocation = BL_SceneColorAfterTonemapping;
-
-	auto* EdData = Mat->GetEditorOnlyData();
-
-	// SceneTexture: PostProcessInput0
-	UMaterialExpressionSceneTexture* SceneTex = NewObject<UMaterialExpressionSceneTexture>(Mat);
-	SceneTex->SceneTextureId = PPI_PostProcessInput0;
-	SceneTex->MaterialExpressionEditorX = -800;
-	SceneTex->MaterialExpressionEditorY = 0;
-	EdData->ExpressionCollection.Expressions.Add(SceneTex);
-
-	// Scalar Parameter: Steps (default 10)
-	UMaterialExpressionScalarParameter* StepsParam = NewObject<UMaterialExpressionScalarParameter>(Mat);
-	StepsParam->ParameterName = FName("Steps");
-	StepsParam->DefaultValue = 10.f;
-	StepsParam->MaterialExpressionEditorX = -800;
-	StepsParam->MaterialExpressionEditorY = 200;
-	EdData->ExpressionCollection.Expressions.Add(StepsParam);
-
-	// Scalar Parameter: Intensity (default 1.0)
-	UMaterialExpressionScalarParameter* IntensityParam = NewObject<UMaterialExpressionScalarParameter>(Mat);
-	IntensityParam->ParameterName = FName("Intensity");
-	IntensityParam->DefaultValue = 1.f;
-	IntensityParam->MaterialExpressionEditorX = -800;
-	IntensityParam->MaterialExpressionEditorY = 400;
-	EdData->ExpressionCollection.Expressions.Add(IntensityParam);
-
-	// Multiply: SceneColor * Steps
-	UMaterialExpressionMultiply* Multiply = NewObject<UMaterialExpressionMultiply>(Mat);
-	Multiply->MaterialExpressionEditorX = -500;
-	Multiply->MaterialExpressionEditorY = 0;
-	Multiply->A.Expression = SceneTex;
-	Multiply->B.Expression = StepsParam;
-	EdData->ExpressionCollection.Expressions.Add(Multiply);
-
-	// Floor(SceneColor * Steps)
-	UMaterialExpressionFloor* FloorNode = NewObject<UMaterialExpressionFloor>(Mat);
-	FloorNode->MaterialExpressionEditorX = -300;
-	FloorNode->MaterialExpressionEditorY = 0;
-	FloorNode->Input.Expression = Multiply;
-	EdData->ExpressionCollection.Expressions.Add(FloorNode);
-
-	// Floor(...) / Steps
-	UMaterialExpressionDivide* Divide = NewObject<UMaterialExpressionDivide>(Mat);
-	Divide->MaterialExpressionEditorX = -100;
-	Divide->MaterialExpressionEditorY = 0;
-	Divide->A.Expression = FloorNode;
-	Divide->B.Expression = StepsParam;
-	EdData->ExpressionCollection.Expressions.Add(Divide);
-
-	// Lerp(Original, Posterized, Intensity)
-	UMaterialExpressionLinearInterpolate* Lerp = NewObject<UMaterialExpressionLinearInterpolate>(Mat);
-	Lerp->MaterialExpressionEditorX = 100;
-	Lerp->MaterialExpressionEditorY = 0;
-	Lerp->A.Expression = SceneTex;
-	Lerp->B.Expression = Divide;
-	Lerp->Alpha.Expression = IntensityParam;
-	EdData->ExpressionCollection.Expressions.Add(Lerp);
-
-	// Output: Emissive Color
-	EdData->EmissiveColor.Expression = Lerp;
-
-	Mat->PreEditChange(nullptr);
-	Mat->PostEditChange();
-	Mat->MarkPackageDirty();
-
-	UPackage* Package = Mat->GetOutermost();
-	if (Package)
-	{
-		FSavePackageArgs SaveArgs;
-		SaveArgs.TopLevelFlags = RF_Standalone;
-		FString PackageFileName = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
-		if (UPackage::SavePackage(Package, Mat, *PackageFileName, SaveArgs))
-		{
-			UE_LOG(LogT66Editor, Log, TEXT("Created and saved PosterizeMaterial at %s"), *MaterialPath);
-			return true;
-		}
-	}
-
-	UE_LOG(LogT66Editor, Warning, TEXT("Failed to save PosterizeMaterial"));
-	return false;
 }
 
 bool UT66UISetupSubsystem::CreateRetroChromaticAberrationMaterial()

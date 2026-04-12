@@ -21,7 +21,6 @@
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66TemporaryBuffSelectionScreen.h"
-#include "UI/Screens/T66TemporaryBuffPresetCreateScreen.h"
 #include "UI/Screens/T66TemporaryBuffShopScreen.h"
 #include "UI/Screens/T66UnlocksScreen.h"
 #include "UI/Screens/T66SnakeGameModal.h"
@@ -416,8 +415,6 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66ShopScreen::StaticClass();
 	case ET66ScreenType::TemporaryBuffSelection:
 		return UT66TemporaryBuffSelectionScreen::StaticClass();
-	case ET66ScreenType::TemporaryBuffPresetCreate:
-		return UT66TemporaryBuffPresetCreateScreen::StaticClass();
 	case ET66ScreenType::TemporaryBuffShop:
 		return UT66TemporaryBuffShopScreen::StaticClass();
 	case ET66ScreenType::Leaderboard:
@@ -729,10 +726,6 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> TemporaryBuffSelectionClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffSelection))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffSelection, TemporaryBuffSelectionClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> TemporaryBuffPresetCreateClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffPresetCreate))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffPresetCreate, TemporaryBuffPresetCreateClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> TemporaryBuffShopClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffShop))
 	{

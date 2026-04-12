@@ -4,7 +4,7 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
-#include "Gameplay/T66LightingSubsystem.h"
+#include "Gameplay/T66WorldVisualSetup.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -55,8 +55,8 @@ void AT66FrontendGameMode::BeginPlay()
 	}
 
 	UWorld* World = GetWorld();
-	// Match gameplay lighting so frontend previews render under the same ambient setup.
-	UT66LightingSubsystem::EnsureSharedLightingForWorld(World);
+	// Match gameplay's neutral visual setup so previews are not dependent on a separate sky/light stack.
+	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
@@ -168,8 +168,7 @@ void AT66FrontendGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AT66FrontendGameMode::HandleSettingsChanged()
 {
 	UWorld* World = GetWorld();
-	UT66LightingSubsystem::ApplyThemeToDirectionalLightsForWorld(World);
-	UT66LightingSubsystem::ApplyThemeToAtmosphereAndLightingForWorld(World);
+	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
