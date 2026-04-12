@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Core/T66Rarity.h"
+#include "Core/T66RngTuningConfig.h"
 #include "Styling/SlateBrush.h"
 #include "T66CrateOverlayWidget.generated.h"
 
@@ -37,6 +38,10 @@ private:
 	int32 WinnerIndex = 0;
 	FName WinnerItemID;
 	ET66Rarity WinnerRarity = ET66Rarity::Black;
+	int32 WinnerRarityDrawIndex = INDEX_NONE;
+	int32 WinnerRarityPreDrawSeed = 0;
+	bool bWinnerRarityHasReplayWeights = false;
+	FT66RarityWeights WinnerRarityReplayWeights;
 	TWeakObjectPtr<UT66GameplayHUDWidget> PresentationHost;
 
 	TSharedPtr<SBorder> StripContainer;

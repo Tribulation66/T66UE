@@ -68,6 +68,7 @@ protected:
 	virtual float GetInteractionPromptVerticalPadding() const { return 120.f; }
 	virtual FVector GetMinimumInteractionExtent() const { return FVector(260.f, 260.f, 180.f); }
 	virtual FVector GetInteractionBoundsPadding() const { return FVector(120.f, 120.f, 80.f); }
+	virtual FVector GetImportedVisualScale() const { return FVector(1.f, 1.f, 1.f); }
 
 	void RefreshInteractionPrompt();
 	bool IsLocalHeroOverlapping() const { return LocalHeroOverlapCount > 0; }

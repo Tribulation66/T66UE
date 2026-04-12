@@ -80,6 +80,10 @@ def utc_now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def now_stamp() -> str:
+    return datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+
+
 def parse_prompt_pack(pack_path: Path) -> tuple[str, list[tuple[str, str]]]:
     text = pack_path.read_text(encoding="utf-8")
 
@@ -276,6 +280,16 @@ def persist_candidates(page, candidates, prompt_stem: str) -> list[GeneratedAsse
     return assets
 
 
+def filter_candidates_since_baseline(candidates, baseline_page_image_keys: set[str]):
+    fresh_candidates = [candidate for candidate in candidates if candidate.key not in baseline_page_image_keys]
+    return fresh_candidates or candidates
+
+
+def is_closed_page_error(exc: Exception) -> bool:
+    message = str(exc)
+    return "Target page, context or browser has been closed" in message or "Browser has been closed" in message
+
+
 def harvest_assets_since_baseline(
     page,
     baseline_assistant_turn_count: int,
@@ -293,6 +307,7 @@ def harvest_assets_since_baseline(
     candidates = get_assistant_image_candidates(page) or current_page_candidates
     if not candidates:
         return []
+    candidates = filter_candidates_since_baseline(candidates, baseline_page_image_keys)
     candidates = sorted(candidates, key=lambda candidate: (candidate.dom_index, -candidate.score))
     return persist_candidates(page, candidates, prompt_stem)
 
@@ -455,6 +470,7 @@ def main() -> int:
             print(f"[{index}/{total}] Generating {title}...", flush=True)
             started = time.monotonic()
             prompt_stem = f"{now_stamp()}-{slugify(full_prompt)}"
+            page_reset_attempts = 0
             while True:
                 try:
                     if page is not None:
@@ -546,6 +562,18 @@ def main() -> int:
                     time.sleep(exc.retry_after_seconds)
                     continue
                 except Exception as exc:
+                    if page is not None and playwright is not None and is_closed_page_error(exc) and page_reset_attempts < 1:
+                        page_reset_attempts += 1
+                        try:
+                            page.close()
+                        except Exception:
+                            pass
+                        _browser, _context, page = open_generation_page(playwright)
+                        print(
+                            f"[{index}/{total}] Page session closed on {title}; reopened generation page and retrying.",
+                            flush=True,
+                        )
+                        continue
                     failures += 1
                     duration = round(time.monotonic() - started, 2)
                     result = {

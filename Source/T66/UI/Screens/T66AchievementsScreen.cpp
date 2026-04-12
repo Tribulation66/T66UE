@@ -3,10 +3,13 @@
 #include "UI/Screens/T66AchievementsScreen.h"
 
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UIManager.h"
+#include "Styling/CoreStyle.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -18,6 +21,8 @@
 
 namespace
 {
+	constexpr int32 T66AchievementsFontDelta = -6;
+
 	bool T66IsPausedGameplayWidget(const UUserWidget* Widget)
 	{
 		const APlayerController* PC = Widget ? Widget->GetOwningPlayer() : nullptr;
@@ -72,6 +77,21 @@ namespace
 
 		return bHasDigit ? NumericPart : MAX_int32;
 	}
+
+	int32 AdjustAchievementsFontSize(int32 BaseSize)
+	{
+		return FMath::Max(8, BaseSize + T66AchievementsFontDelta);
+	}
+
+	FSlateFontInfo AchievementsBoldFont(int32 BaseSize)
+	{
+		return FT66Style::Tokens::FontBold(AdjustAchievementsFontSize(BaseSize));
+	}
+
+	FSlateFontInfo AchievementsRegularFont(int32 BaseSize)
+	{
+		return FT66Style::Tokens::FontRegular(AdjustAchievementsFontSize(BaseSize));
+	}
 }
 
 UT66AchievementsScreen::UT66AchievementsScreen(const FObjectInitializer& ObjectInitializer)
@@ -95,6 +115,15 @@ UT66AchievementsSubsystem* UT66AchievementsScreen::GetAchievementsSubsystem() co
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
 		return GI->GetSubsystem<UT66AchievementsSubsystem>();
+	}
+	return nullptr;
+}
+
+UT66PlayerSettingsSubsystem* UT66AchievementsScreen::GetPlayerSettingsSubsystem() const
+{
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		return GI->GetSubsystem<UT66PlayerSettingsSubsystem>();
 	}
 	return nullptr;
 }
@@ -155,6 +184,101 @@ int32 UT66AchievementsScreen::GetUnlockedAchievementCount() const
 	return UnlockedCount;
 }
 
+int32 UT66AchievementsScreen::GetUnlockedAchievementCountForCategory(const ET66AchievementCategory Category) const
+{
+	int32 UnlockedCount = 0;
+	for (const FAchievementData& Achievement : AllAchievements)
+	{
+		if (Achievement.Category == Category && Achievement.bIsUnlocked)
+		{
+			++UnlockedCount;
+		}
+	}
+	return UnlockedCount;
+}
+
+TArray<FAchievementData> UT66AchievementsScreen::GetAchievementsForCategory(const ET66AchievementCategory Category) const
+{
+	TArray<FAchievementData> FilteredAchievements;
+	for (const FAchievementData& Achievement : AllAchievements)
+	{
+		if (Achievement.Category == Category)
+		{
+			FilteredAchievements.Add(Achievement);
+		}
+	}
+	return FilteredAchievements;
+}
+
+FText UT66AchievementsScreen::BuildAchievementRewardText(const FAchievementData& Achievement) const
+{
+	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	if (Achievement.RewardType == ET66AchievementRewardType::SkinUnlock)
+	{
+		const FText SkinName = Loc
+			? Loc->GetText_SkinName(Achievement.RewardSkinID)
+			: FText::FromName(Achievement.RewardSkinID);
+
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			if (Achievement.RewardEntityType == ET66AchievementRewardEntityType::Hero)
+			{
+				FHeroData HeroData;
+				if (T66GI->GetHeroData(Achievement.RewardEntityID, HeroData))
+				{
+					const FText HeroName = Loc
+						? Loc->GetHeroDisplayName(HeroData)
+						: (!HeroData.DisplayName.IsEmpty() ? HeroData.DisplayName : FText::FromName(Achievement.RewardEntityID));
+					return FText::Format(
+						NSLOCTEXT("T66.Achievements", "SkinRewardHeroFormat", "{0} Outfit: {1}"),
+						SkinName,
+						HeroName);
+				}
+			}
+			else if (Achievement.RewardEntityType == ET66AchievementRewardEntityType::Companion)
+			{
+				FCompanionData CompanionData;
+				if (T66GI->GetCompanionData(Achievement.RewardEntityID, CompanionData))
+				{
+					const FText CompanionName = Loc
+						? Loc->GetCompanionDisplayName(CompanionData)
+						: (!CompanionData.DisplayName.IsEmpty() ? CompanionData.DisplayName : FText::FromName(Achievement.RewardEntityID));
+					return FText::Format(
+						NSLOCTEXT("T66.Achievements", "SkinRewardCompanionFormat", "{0} Outfit: {1}"),
+						SkinName,
+						CompanionName);
+				}
+			}
+		}
+
+		return FText::Format(
+			NSLOCTEXT("T66.Achievements", "SkinRewardFormat", "{0} Outfit"),
+			SkinName);
+	}
+
+	if (Loc)
+	{
+		return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Achievement.RewardCoins));
+	}
+
+	return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} CC"), FText::AsNumber(Achievement.RewardCoins));
+}
+
+FText UT66AchievementsScreen::GetAchievementActionText(const FAchievementData& Achievement) const
+{
+	if (Achievement.RewardType == ET66AchievementRewardType::SkinUnlock)
+	{
+		return NSLOCTEXT("T66.Achievements", "UnlockReward", "UNLOCK");
+	}
+
+	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
+	{
+		return Loc->GetText_Claim();
+	}
+
+	return NSLOCTEXT("T66.Achievements", "Claim", "CLAIM");
+}
+
 TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
@@ -171,6 +295,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	RefreshAchievements();
+	const TArray<FAchievementData> StandardAchievements = GetAchievementsForCategory(ET66AchievementCategory::Standard);
+	const TArray<FAchievementData> SpecialAchievements = GetAchievementsForCategory(ET66AchievementCategory::Special);
 
 	const TSharedRef<SWidget> Root =
 		SNew(SBox)
@@ -196,7 +322,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 							[
 								SNew(STextBlock)
 								.Text(AchievementsText)
-								.Font(FT66Style::Tokens::FontBold(40))
+								.Font(AchievementsBoldFont(40))
 								.ColorAndOpacity(FT66Style::Tokens::Text)
 							]
 						]
@@ -222,7 +348,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 												FText::AsNumber(GetUnlockedAchievementCount()),
 												FText::AsNumber(AllAchievements.Num()));
 										})
-										.Font(FT66Style::Tokens::FontBold(18))
+										.Font(AchievementsBoldFont(18))
 										.ColorAndOpacity(FT66Style::Tokens::Text)
 									]
 									+ SHorizontalBox::Slot()
@@ -237,7 +363,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 												: 0.f;
 											return FText::AsPercent(Progress);
 										})
-										.Font(FT66Style::Tokens::FontBold(17))
+										.Font(AchievementsBoldFont(17))
 										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 									]
 								]
@@ -256,6 +382,35 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 								FT66PanelParams(ET66PanelType::Panel)
 									.SetColor(InsetFill)
 									.SetPadding(FMargin(12.f, 12.f)))
+						]
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.f, 10.f, 0.f, 0.f)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+							.FillWidth(1.f)
+							[
+								SNew(STextBlock)
+								.Text(FText::Format(
+									NSLOCTEXT("T66.Achievements", "StandardCompletion", "Standard {0}/{1}"),
+									FText::AsNumber(GetUnlockedAchievementCountForCategory(ET66AchievementCategory::Standard)),
+									FText::AsNumber(StandardAchievements.Num())))
+								.Font(AchievementsRegularFont(15))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.HAlign(HAlign_Right)
+							[
+								SNew(STextBlock)
+								.Text(FText::Format(
+									NSLOCTEXT("T66.Achievements", "SpecialCompletion", "Special {0}/{1}"),
+									FText::AsNumber(GetUnlockedAchievementCountForCategory(ET66AchievementCategory::Special)),
+									FText::AsNumber(SpecialAchievements.Num())))
+								.Font(AchievementsRegularFont(15))
+								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							]
 						]
 					]
 					+ SVerticalBox::Slot()
@@ -277,13 +432,13 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 					SNew(SBox)
 					.Visibility(bShowBackButton ? EVisibility::Visible : EVisibility::Collapsed)
 					[
-						FT66Style::MakeButton(
-							FT66ButtonParams(
-								BackText,
-								FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked),
-								ET66ButtonType::Neutral)
+							FT66Style::MakeButton(
+								FT66ButtonParams(
+									BackText,
+									FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked),
+									ET66ButtonType::Neutral)
 							.SetMinWidth(108.f)
-							.SetFontSize(18))
+							.SetFontSize(AdjustAchievementsFontSize(18)))
 					]
 				],
 				FT66PanelParams(ET66PanelType::Panel).SetColor(ShellFill))
@@ -304,113 +459,194 @@ void UT66AchievementsScreen::RebuildAchievementList()
 	RefreshAchievements();
 
 	UT66AchievementsSubsystem* Achievements = GetAchievementsSubsystem();
-	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
+	UT66PlayerSettingsSubsystem* PlayerSettings = GetPlayerSettingsSubsystem();
+	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+	const FText FavoriteAchievementTooltip = NSLOCTEXT("T66.Achievements", "FavoriteAchievementTooltip", "Favorite achievement");
+	const FText UnfavoriteAchievementTooltip = NSLOCTEXT("T66.Achievements", "UnfavoriteAchievementTooltip", "Remove favorite");
 
-	for (const FAchievementData& Achievement : AllAchievements)
+	auto AddAchievementSection = [this, Achievements, PlayerSettings, &NoBorderButtonStyle, &FavoriteAchievementTooltip, &UnfavoriteAchievementTooltip](const FText& SectionTitle, const TArray<FAchievementData>& SectionAchievements)
 	{
-		const FLinearColor RowBackground = Achievement.bIsUnlocked
-			? T66AchievementsUnlockedRowFill()
-			: T66AchievementsRowFill();
-		const FLinearColor ProgressColor = Achievement.bIsUnlocked
-			? FT66Style::Tokens::Success
-			: FT66Style::Tokens::TextMuted;
+		if (!AchievementListBox.IsValid())
+		{
+			return;
+		}
 
-		const FString ProgressString = FString::Printf(
-			TEXT("%d/%d"),
-			FMath::Min(Achievement.CurrentProgress, Achievement.RequirementCount),
-			FMath::Max(1, Achievement.RequirementCount));
-
-		const bool bClaimed = Achievements ? Achievements->IsAchievementClaimed(Achievement.AchievementID) : false;
-		const bool bCanClaim = Achievement.bIsUnlocked && !bClaimed;
+		int32 UnlockedInSection = 0;
+		for (const FAchievementData& Achievement : SectionAchievements)
+		{
+			if (Achievement.bIsUnlocked)
+			{
+				++UnlockedInSection;
+			}
+		}
 
 		AchievementListBox->AddSlot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 5.f)
+		.Padding(0.f, 0.f, 0.f, 10.f)
 		[
-			SNew(SBorder)
-			.BorderBackgroundColor(RowBackground)
-			.Padding(FMargin(16.f, 12.f))
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.FillWidth(0.55f)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(Achievement.DisplayName)
-						.Font(FT66Style::Tokens::FontBold(19))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(0.f, 3.f, 0.f, 0.f)
-					[
-						SNew(STextBlock)
-						.Text(Achievement.Description)
-						.Font(FT66Style::Tokens::FontRegular(16))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						.AutoWrapText(true)
-					]
-				]
-				+ SHorizontalBox::Slot()
-				.FillWidth(0.17f)
-				.VAlign(VAlign_Center)
-				.HAlign(HAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(ProgressString))
-					.Font(FT66Style::Tokens::FontBold(19))
-					.ColorAndOpacity(ProgressColor)
-				]
-				+ SHorizontalBox::Slot()
-				.FillWidth(0.28f)
-				.VAlign(VAlign_Center)
-				.HAlign(HAlign_Right)
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Right)
-					[
-						SNew(STextBlock)
-						.Text_Lambda([Loc, Achievement, bClaimed]() -> FText
-						{
-							if (bClaimed)
-							{
-								return Loc ? Loc->GetText_Claimed() : NSLOCTEXT("T66.Achievements", "Claimed", "CLAIMED");
-							}
-							if (Loc)
-							{
-								return FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(Achievement.RewardCoins));
-							}
-							return FText::Format(NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC"), FText::AsNumber(Achievement.RewardCoins));
-						})
-						.Font(FT66Style::Tokens::FontBold(19))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Right)
-					.Padding(0.f, 4.f, 0.f, 0.f)
-					[
-						FT66Style::MakeButton(
-							FT66ButtonParams(
-								Loc ? Loc->GetText_Claim() : NSLOCTEXT("T66.Achievements", "Claim", "CLAIM"),
-								FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, Achievement.AchievementID),
-								ET66ButtonType::Primary)
-							.SetMinWidth(0.f)
-							.SetFontSize(18)
-							.SetEnabled(bCanClaim)
-							.SetVisibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed))
-					]
-				]
-			]
+			SNew(STextBlock)
+			.Text(FText::Format(
+				NSLOCTEXT("T66.Achievements", "SectionTitleFormat", "{0}  {1}/{2}"),
+				SectionTitle,
+				FText::AsNumber(UnlockedInSection),
+				FText::AsNumber(SectionAchievements.Num())))
+			.Font(AchievementsBoldFont(22))
+			.ColorAndOpacity(FT66Style::Tokens::Text)
 		];
-	}
+
+		for (const FAchievementData& Achievement : SectionAchievements)
+		{
+			const FLinearColor RowBackground = Achievement.bIsUnlocked
+				? T66AchievementsUnlockedRowFill()
+				: T66AchievementsRowFill();
+			const FLinearColor ProgressColor = Achievement.bIsUnlocked
+				? FT66Style::Tokens::Success
+				: FT66Style::Tokens::TextMuted;
+			const FString ProgressString = FString::Printf(
+				TEXT("%d/%d"),
+				FMath::Min(Achievement.CurrentProgress, Achievement.RequirementCount),
+				FMath::Max(1, Achievement.RequirementCount));
+			const bool bClaimed = Achievements ? Achievements->IsAchievementClaimed(Achievement.AchievementID) : false;
+			const bool bCanClaim = Achievement.bIsUnlocked && !bClaimed;
+			const bool bIsFavorited = PlayerSettings && PlayerSettings->IsFavoriteAchievement(Achievement.AchievementID);
+			const FText RewardText = BuildAchievementRewardText(Achievement);
+			const FText ActionText = GetAchievementActionText(Achievement);
+			const FText FavoriteGlyph = FText::FromString(bIsFavorited ? TEXT("\u2605") : TEXT("\u2606"));
+			const FLinearColor FavoriteGlyphColor = bIsFavorited
+				? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
+				: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f);
+
+			AchievementListBox->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 5.f)
+			[
+				SNew(SBorder)
+				.BorderBackgroundColor(RowBackground)
+				.Padding(FMargin(16.f, 12.f))
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.FillWidth(0.55f)
+					.VAlign(VAlign_Center)
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						[
+							SNew(STextBlock)
+							.Text(Achievement.DisplayName)
+							.Font(AchievementsBoldFont(19))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.f, 3.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(Achievement.Description)
+							.Font(AchievementsRegularFont(16))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.AutoWrapText(true)
+						]
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(0.17f)
+					.VAlign(VAlign_Center)
+					.HAlign(HAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(ProgressString))
+						.Font(AchievementsBoldFont(19))
+						.ColorAndOpacity(ProgressColor)
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(0.28f)
+					.VAlign(VAlign_Center)
+					.HAlign(HAlign_Right)
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						[  
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+							.FillWidth(1.f)
+							.VAlign(VAlign_Center)
+							.HAlign(HAlign_Right)
+							[
+								SNew(STextBlock)
+								.Text(bClaimed
+									? (GetLocSubsystem() ? GetLocSubsystem()->GetText_Claimed() : NSLOCTEXT("T66.Achievements", "Claimed", "CLAIMED"))
+									: RewardText)
+								.Font(AchievementsBoldFont(19))
+								.ColorAndOpacity(FT66Style::Tokens::Text)
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							.Padding(10.f, 0.f, 0.f, 0.f)
+							.VAlign(VAlign_Center)
+							[
+								SNew(SBox)
+								.WidthOverride(28.f)
+								.HeightOverride(28.f)
+								[
+									SNew(SButton)
+									.ButtonStyle(&NoBorderButtonStyle)
+									.ContentPadding(FMargin(0.f))
+									.IsEnabled(PlayerSettings != nullptr)
+									.ToolTipText(bIsFavorited ? UnfavoriteAchievementTooltip : FavoriteAchievementTooltip)
+									.OnClicked(FOnClicked::CreateLambda([this, PlayerSettings, AchievementID = Achievement.AchievementID]()
+									{
+										if (PlayerSettings)
+										{
+											PlayerSettings->SetFavoriteAchievement(AchievementID, !PlayerSettings->IsFavoriteAchievement(AchievementID));
+											ForceRebuildSlate();
+										}
+										return FReply::Handled();
+									}))
+									[
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+										.BorderBackgroundColor(FLinearColor(0.10f, 0.11f, 0.14f, 0.94f))
+										.Padding(FMargin(0.f))
+										[
+											SNew(STextBlock)
+											.Text(FavoriteGlyph)
+											.Font(FT66Style::Tokens::FontRegular(20))
+											.ColorAndOpacity(FavoriteGlyphColor)
+											.Justification(ETextJustify::Center)
+										]
+									]
+								]
+							]
+						]
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.HAlign(HAlign_Right)
+						.Padding(0.f, 4.f, 0.f, 0.f)
+						[
+							FT66Style::MakeButton(
+								FT66ButtonParams(
+									ActionText,
+									FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, Achievement.AchievementID),
+									ET66ButtonType::Primary)
+								.SetMinWidth(0.f)
+								.SetFontSize(AdjustAchievementsFontSize(18))
+								.SetEnabled(bCanClaim)
+								.SetVisibility(bCanClaim ? EVisibility::Visible : EVisibility::Collapsed))
+						]
+					]
+				]
+			];
+		}
+	};
+
+	AddAchievementSection(
+		NSLOCTEXT("T66.Achievements", "StandardHeader", "STANDARD ACHIEVEMENTS"),
+		GetAchievementsForCategory(ET66AchievementCategory::Standard));
+	AddAchievementSection(
+		NSLOCTEXT("T66.Achievements", "SpecialHeader", "SPECIAL ACHIEVEMENTS"),
+		GetAchievementsForCategory(ET66AchievementCategory::Special));
 }
 
 void UT66AchievementsScreen::OnScreenActivated_Implementation()

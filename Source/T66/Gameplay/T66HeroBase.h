@@ -230,7 +230,7 @@ private:
 	FRotator DefaultSkeletalMeshRelativeRotation = FRotator::ZeroRotator;
 	TWeakObjectPtr<AT66PilotableTractor> MountedTractor;
 
-	float BaseMaxWalkSpeed = 2400.f;
+	float BaseMaxWalkSpeed = 1800.f;
 	FVector QuickReviveDownedVisualOffset = FVector(0.f, 0.f, -58.f);
 	FRotator QuickReviveDownedVisualRotation = FRotator(0.f, 0.f, 90.f);
 

@@ -47,6 +47,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "IdolAltar")
 	float VisualScaleMultiplier = 4.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "IdolAltar|Interaction")
+	FVector MinimumInteractionExtent = FVector(240.f, 240.f, 200.f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "IdolAltar|Interaction")
+	FVector InteractionBoundsPadding = FVector(45.f, 45.f, 35.f);
+
 	/** Remaining selections granted by this altar visit. The altar destroys itself when this hits zero. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
 	int32 RemainingSelections = 1;

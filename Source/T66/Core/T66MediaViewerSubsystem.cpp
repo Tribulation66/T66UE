@@ -5,6 +5,7 @@
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
+#include "HAL/PlatformTime.h"
 
 #include "Misc/App.h"
 
@@ -49,13 +50,35 @@ const TCHAR* UT66MediaViewerSubsystem::GetUrlForSource(ET66MediaViewerSource Sou
 		return TEXT("https://www.tiktok.com/login/qrcode");
 	case ET66MediaViewerSource::Shorts:
 		return TEXT("https://www.youtube.com/shorts/");
+	case ET66MediaViewerSource::Reels:
+		return TEXT("https://www.instagram.com/reels/");
 	default:
 		return TEXT("https://www.tiktok.com/login/qrcode");
 	}
 }
 
+void UT66MediaViewerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+		{
+			ActiveSource = PS->GetMediaViewerSource();
+		}
+	}
+}
+
 void UT66MediaViewerSubsystem::ToggleMediaViewer()
 {
+	const double NowSeconds = FPlatformTime::Seconds();
+	if ((NowSeconds - LastToggleRealtimeSeconds) < ToggleDebounceSeconds)
+	{
+		return;
+	}
+
+	LastToggleRealtimeSeconds = NowSeconds;
 	SetMediaViewerOpen(!bIsOpen);
 }
 
@@ -104,12 +127,6 @@ void UT66MediaViewerSubsystem::PrewarmTikTok()
 	{
 		bHasPrewarmedTikTok = true;
 
-		// Preload initial source so session + CSS injection are ready before first toggle.
-		if (!TikTokWebView2->HasEverNavigated())
-		{
-			TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
-		}
-
 		// Keep hidden (and hard-muted) until the player opens it.
 		TikTokWebView2->Hide();
 	}
@@ -125,6 +142,11 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 	{
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
+			if (bIsOpen)
+			{
+				ActiveSource = PS->GetMediaViewerSource();
+			}
+
 			// Capture current player settings at open time so we can restore exactly on close.
 			if (bIsOpen)
 			{
@@ -194,12 +216,17 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 				TikTokWebView2->ShowAtScreenRect(TikTokWebView2Rect);
 			}
 
-		// Only navigate on the first ever open. Subsequent toggles should simply show/hide the existing session
-		// (so we don't force a relogin mid-run).
-		if (!TikTokWebView2->HasEverNavigated())
-		{
-			TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
-		}
+			const double NowSeconds = FPlatformTime::Seconds();
+			const bool bShouldRefreshTikTokQr = ActiveSource == ET66MediaViewerSource::TikTok
+				&& (NowSeconds - LastTikTokQrNavigationRealtimeSeconds) > TikTokQrRefreshSeconds;
+			if (!TikTokWebView2->HasEverNavigated() || bShouldRefreshTikTokQr)
+			{
+				TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
+				if (ActiveSource == ET66MediaViewerSource::TikTok)
+				{
+					LastTikTokQrNavigationRealtimeSeconds = NowSeconds;
+				}
+			}
 		}
 	}
 	else
@@ -266,6 +293,10 @@ void UT66MediaViewerSubsystem::SetMediaViewerSource(ET66MediaViewerSource NewSou
 	if (TikTokWebView2 && TikTokWebView2->IsReady())
 	{
 		TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
+		if (ActiveSource == ET66MediaViewerSource::TikTok)
+		{
+			LastTikTokQrNavigationRealtimeSeconds = FPlatformTime::Seconds();
+		}
 	}
 #endif
 

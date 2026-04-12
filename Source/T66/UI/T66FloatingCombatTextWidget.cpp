@@ -16,6 +16,11 @@ void UT66FloatingCombatTextWidget::SetDamageNumber(int32 Amount, FName EventType
 		Size = 24;
 		Color = FLinearColor(1.f, 0.4f, 0.2f, 1.f); // orange-red for crit
 	}
+	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_Headshot)
+	{
+		Size = 22;
+		Color = FLinearColor(1.f, 0.7f, 0.25f, 1.f); // warm gold for headshot
+	}
 	else if (EventType == UT66FloatingCombatTextSubsystem::EventType_DoT)
 	{
 		Size = 16;

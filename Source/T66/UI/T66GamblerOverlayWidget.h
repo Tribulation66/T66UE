@@ -214,10 +214,14 @@ public:
 	bool bPendingWin = false;
 	bool bPendingDraw = false;
 	bool bPendingCheat = false;
+	bool bPendingCheatSucceeded = false;
 	bool bPendingCoinFlipChoseHeads = true;
 	bool bPendingCoinFlipResultHeads = false;
 	int32 PendingRpsPlayerChoice = 0;
 	int32 PendingRpsOppChoice = 0;
+	int32 PendingOutcomePreDrawSeed = 0;
+	int32 PendingOutcomeDrawIndex = INDEX_NONE;
+	float PendingOutcomeExpectedChance01 = -1.f;
 
 	// Black Jack state (replaces Find-the-Ball)
 	enum class EBlackJackPhase : uint8 { WaitingForAction, PlayerBusted, DealerPlaying, RoundOver };
@@ -230,6 +234,19 @@ public:
 	EBlackJackPhase BJPhase = EBlackJackPhase::WaitingForAction;
 	int32 BJWinAmount = 0;         // positive=win, negative=loss, 0=push (for reveal display)
 	bool bBJPlayerBusted = false;
+	int32 BJShufflePreDrawSeed = 0;
+	int32 BJShuffleStartDrawIndex = INDEX_NONE;
+	FString BJActionSequence;
+
+	int32 LotteryShufflePreDrawSeed = 0;
+	int32 LotteryShuffleStartDrawIndex = INDEX_NONE;
+
+	int32 PlinkoPreDrawSeed = 0;
+	int32 PlinkoStartDrawIndex = INDEX_NONE;
+	int32 PlinkoPathBits = 0;
+
+	int32 BoxOpeningPreDrawSeed = 0;
+	int32 BoxOpeningDrawIndex = INDEX_NONE;
 
 	FTimerHandle RevealTimerHandle;
 	void RevealPendingOutcome();

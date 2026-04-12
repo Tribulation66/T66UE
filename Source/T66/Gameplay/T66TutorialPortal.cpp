@@ -75,6 +75,10 @@ bool AT66TutorialPortal::Interact(AT66PlayerController* PC)
 	// Persist tutorial completion (profile) and clear any active tutorial hint.
 	if (UGameInstance* GI = World->GetGameInstance())
 	{
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+		{
+			T66GI->ApplyConfiguredMainMapLayoutVariant();
+		}
 		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
 			Ach->MarkTutorialCompleted();

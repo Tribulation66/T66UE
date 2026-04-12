@@ -48,15 +48,25 @@ namespace
 		switch (Tier)
 		{
 		case ET66AchievementTier::White:
-			return 750;
+			return 50;
 		case ET66AchievementTier::Yellow:
-			return 400;
+			return 30;
 		case ET66AchievementTier::Red:
-			return 200;
+			return 15;
 		case ET66AchievementTier::Black:
 		default:
-			return 100;
+			return 5;
 		}
+	}
+
+	int32 NormalizeLegacyRewardCoins(const int32 LegacyRewardCoins)
+	{
+		if (LegacyRewardCoins <= 0)
+		{
+			return 0;
+		}
+
+		return FMath::Clamp(FMath::RoundToInt(static_cast<float>(LegacyRewardCoins) / 15.f), 5, 50);
 	}
 
 	const TArray<int32>& GetExtraEnemyKillThresholds()
@@ -119,6 +129,15 @@ namespace
 		return Thresholds;
 	}
 
+	constexpr int32 SpecialCompanionSkinRequirement = UT66AchievementsSubsystem::UnionTier_MediumStages;
+
+	FName MakeSpecialCompanionSkinAchievementID(const FName CompanionID)
+	{
+		return CompanionID.IsNone()
+			? NAME_None
+			: FName(*FString::Printf(TEXT("ACH_SPC_COMP_%s"), *CompanionID.ToString()));
+	}
+
 	void AddGeneratedAchievement(
 		TArray<FAchievementData>& Out,
 		FName Id,
@@ -133,8 +152,36 @@ namespace
 		A.RequirementCount = RequirementCount;
 		A.DisplayName = DisplayName;
 		A.Description = Description;
+		A.Category = ET66AchievementCategory::Standard;
+		A.RewardType = ET66AchievementRewardType::ChadCoupons;
 		A.Tier = GetGeneratedAchievementTier(Index, Total);
 		A.RewardCoins = GetGeneratedRewardCoins(A.Tier);
+		Out.Add(A);
+	}
+
+	void AddSpecialSkinAchievement(
+		TArray<FAchievementData>& Out,
+		FName Id,
+		ET66AchievementTier Tier,
+		int32 RequirementCount,
+		ET66AchievementRewardEntityType RewardEntityType,
+		FName RewardEntityID,
+		FName RewardSkinID,
+		const FText& DisplayName,
+		const FText& Description)
+	{
+		FAchievementData A;
+		A.AchievementID = Id;
+		A.Tier = Tier;
+		A.Category = ET66AchievementCategory::Special;
+		A.RewardType = ET66AchievementRewardType::SkinUnlock;
+		A.RewardCoins = 0;
+		A.RewardEntityType = RewardEntityType;
+		A.RewardEntityID = RewardEntityID;
+		A.RewardSkinID = RewardSkinID;
+		A.RequirementCount = RequirementCount;
+		A.DisplayName = DisplayName;
+		A.Description = Description;
 		Out.Add(A);
 	}
 
@@ -194,12 +241,13 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	if (!Profile)
 	{
 		Profile = NewObject<UT66ProfileSaveGame>(this);
-		Profile->AchievementCoinsBalance = 10000; // Starting grant for new players only
-		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: Created FRESH profile (no save file found, starting AC=%d)"), Profile->AchievementCoinsBalance);
+		Profile->ChadCouponsBalance = 10;
+		Profile->AchievementCoinsBalance = 0;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Progression] LoadOrCreateProfile: Created fresh profile (starting CC=%d)"), Profile->ChadCouponsBalance);
 	}
 	else
 	{
-		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: Loaded EXISTING profile from save file"));
+		UE_LOG(LogT66Achievements, Log, TEXT("[Progression] LoadOrCreateProfile: Loaded existing profile from save file"));
 	}
 
 	const int32 LoadedSaveVersion = Profile->SaveVersion;
@@ -249,11 +297,27 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: Applied HeroID renumber migration (SaveVersion 9)"));
 	}
 
+	if (LoadedSaveVersion < 12)
+	{
+		Profile->ChadCouponsBalance = 10;
+		Profile->AchievementCoinsBalance = 0;
+		Profile->SaveVersion = 12;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Progression] LoadOrCreateProfile: Reset legacy AC/PC economy to Chad Coupons (SaveVersion 12)."));
+	}
+
+	if (LoadedSaveVersion < 13)
+	{
+		Profile->SaveVersion = 13;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Account] LoadOrCreateProfile: Added cumulative score tracking (SaveVersion 13)."));
+	}
+
 	// Hero skins: log current state (no more auto-reset; purchases persist).
 	const FName DefaultSkin(TEXT("Default"));
 	
-	UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=%d, AC Balance=%d"),
-		Profile->OwnedHeroSkinsByHero.Num(), Profile->AchievementCoinsBalance);
+	UE_LOG(LogT66Achievements, Log, TEXT("[SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=%d, CC Balance=%d"),
+		Profile->OwnedHeroSkinsByHero.Num(), Profile->ChadCouponsBalance);
 	
 	// Log current owned skins
 	for (const auto& Pair : Profile->OwnedHeroSkinsByHero)
@@ -298,29 +362,39 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Pair.Value = ClampMedalTier(Pair.Value);
 	}
 
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 11);
+	for (TPair<FName, int32>& Pair : Profile->HeroCumulativeScoreByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
+
+	for (TPair<FName, int32>& Pair : Profile->CompanionCumulativeScoreByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
+
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, 13);
 }
 
-int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
+int32 UT66AchievementsSubsystem::GetChadCouponBalance() const
 {
-	return Profile ? FMath::Max(0, Profile->AchievementCoinsBalance) : 0;
+	return Profile ? FMath::Max(0, Profile->ChadCouponsBalance) : 0;
 }
 
-bool UT66AchievementsSubsystem::SpendAchievementCoins(int32 Amount)
+bool UT66AchievementsSubsystem::SpendChadCoupons(int32 Amount)
 {
 	if (!Profile)
 	{
 		LoadOrCreateProfile();
 	}
-	if (!Profile || Amount <= 0 || Profile->AchievementCoinsBalance < Amount) return false;
-	Profile->AchievementCoinsBalance -= Amount;
+	if (!Profile || Amount <= 0 || Profile->ChadCouponsBalance < Amount) return false;
+	Profile->ChadCouponsBalance -= Amount;
 	bProfileDirty = true;
 	SaveProfileIfNeeded(true);
 	AchievementCoinsChanged.Broadcast();
 	return true;
 }
 
-void UT66AchievementsSubsystem::AddAchievementCoins(int32 Amount)
+void UT66AchievementsSubsystem::AddChadCoupons(int32 Amount)
 {
 	if (!Profile)
 	{
@@ -331,10 +405,25 @@ void UT66AchievementsSubsystem::AddAchievementCoins(int32 Amount)
 		return;
 	}
 
-	Profile->AchievementCoinsBalance = FMath::Clamp(Profile->AchievementCoinsBalance + Amount, 0, 2000000000);
+	Profile->ChadCouponsBalance = FMath::Clamp(Profile->ChadCouponsBalance + Amount, 0, 2000000000);
 	bProfileDirty = true;
 	SaveProfileIfNeeded(true);
 	AchievementCoinsChanged.Broadcast();
+}
+
+int32 UT66AchievementsSubsystem::GetAchievementCoinsBalance() const
+{
+	return GetChadCouponBalance();
+}
+
+bool UT66AchievementsSubsystem::SpendAchievementCoins(int32 Amount)
+{
+	return SpendChadCoupons(Amount);
+}
+
+void UT66AchievementsSubsystem::AddAchievementCoins(int32 Amount)
+{
+	AddChadCoupons(Amount);
 }
 
 bool UT66AchievementsSubsystem::IsHeroSkinOwned(FName HeroID, FName SkinID) const
@@ -434,8 +523,10 @@ static void AddAchievement(TArray<FAchievementData>& Out, UT66LocalizationSubsys
 	FAchievementData A;
 	A.AchievementID = Id;
 	A.Tier = Tier;
+	A.Category = ET66AchievementCategory::Standard;
+	A.RewardType = ET66AchievementRewardType::ChadCoupons;
 	A.RequirementCount = RequirementCount;
-	A.RewardCoins = RewardCoins;
+	A.RewardCoins = NormalizeLegacyRewardCoins(RewardCoins);
 	A.DisplayName = Loc ? Loc->GetText_AchievementName(Id) : FText::FromString(Id.ToString());
 	A.Description = Loc ? Loc->GetText_AchievementDescription(Id) : FText::FromString(Id.ToString());
 	Out.Add(A);
@@ -607,6 +698,43 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenDesc", "Unlock Gambler's Token level {0}."), FText::AsNumber(Requirement)));
 	}
 
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		const FText BeachgoerSkinName = Loc
+			? Loc->GetText_SkinName(UT66SkinSubsystem::BeachgoerSkinID)
+			: FText::FromName(UT66SkinSubsystem::BeachgoerSkinID);
+		for (const FName CompanionID : GI->GetAllCompanionIDs())
+		{
+			if (CompanionID.IsNone())
+			{
+				continue;
+			}
+
+			FCompanionData CompanionData;
+			const bool bHasCompanionData = GI->GetCompanionData(CompanionID, CompanionData);
+			const FText CompanionName = bHasCompanionData
+				? (Loc ? Loc->GetCompanionDisplayName(CompanionData) : (!CompanionData.DisplayName.IsEmpty() ? CompanionData.DisplayName : FText::FromName(CompanionID)))
+				: FText::FromName(CompanionID);
+
+			AddSpecialSkinAchievement(
+				CachedDefinitions,
+				MakeSpecialCompanionSkinAchievementID(CompanionID),
+				ET66AchievementTier::White,
+				SpecialCompanionSkinRequirement,
+				ET66AchievementRewardEntityType::Companion,
+				CompanionID,
+				UT66SkinSubsystem::BeachgoerSkinID,
+				FText::Format(
+					NSLOCTEXT("T66.Achievements", "SpecialCompanionSkinTitle", "{0} Devotion"),
+					CompanionName),
+				FText::Format(
+					NSLOCTEXT("T66.Achievements", "SpecialCompanionSkinDesc", "Clear {0} stages with {1} to unlock the {2} outfit."),
+					FText::AsNumber(SpecialCompanionSkinRequirement),
+					CompanionName,
+					BeachgoerSkinName));
+		}
+	}
+
 	ApplyRuntimeStateToCachedDefinitions(CachedDefinitions);
 }
 
@@ -649,10 +777,57 @@ TArray<FAchievementData> UT66AchievementsSubsystem::GetAchievementsForTier(ET66A
 	return Out;
 }
 
+TArray<FAchievementData> UT66AchievementsSubsystem::GetAchievementsForCategory(ET66AchievementCategory Category) const
+{
+	TArray<FAchievementData> Out;
+	for (const FAchievementData& A : CachedDefinitions)
+	{
+		if (A.Category == Category)
+		{
+			Out.Add(A);
+		}
+	}
+	ApplyRuntimeStateToCachedDefinitions(Out);
+	return Out;
+}
+
 bool UT66AchievementsSubsystem::IsAchievementClaimed(FName AchievementID) const
 {
 	const FT66AchievementState* S = FindState(AchievementID);
 	return S ? S->bIsClaimed : false;
+}
+
+bool UT66AchievementsSubsystem::DoesClaimedAchievementGrantSkin(
+	const ET66AchievementRewardEntityType EntityType,
+	const FName EntityID,
+	const FName SkinID) const
+{
+	if (EntityID.IsNone() || SkinID.IsNone())
+	{
+		return false;
+	}
+
+	for (const FAchievementData& Achievement : CachedDefinitions)
+	{
+		if (Achievement.RewardType != ET66AchievementRewardType::SkinUnlock)
+		{
+			continue;
+		}
+		if (Achievement.RewardEntityType != EntityType
+			|| Achievement.RewardEntityID != EntityID
+			|| Achievement.RewardSkinID != SkinID)
+		{
+			continue;
+		}
+
+		const FT66AchievementState* State = FindState(Achievement.AchievementID);
+		if (State && State->bIsClaimed)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void UT66AchievementsSubsystem::SaveProfileIfNeeded(bool bForce)
@@ -927,11 +1102,26 @@ bool UT66AchievementsSubsystem::TryClaimAchievement(FName AchievementID)
 	if (!S->bIsUnlocked || S->bIsClaimed) return false;
 
 	S->bIsClaimed = true;
-	Profile->AchievementCoinsBalance = FMath::Clamp(Profile->AchievementCoinsBalance + FMath::Max(0, Def->RewardCoins), 0, 2000000000);
+	const bool bRewardsCoins = Def->RewardType == ET66AchievementRewardType::ChadCoupons;
+	const bool bRewardsSkin = Def->RewardType == ET66AchievementRewardType::SkinUnlock;
+	if (bRewardsCoins)
+	{
+		Profile->ChadCouponsBalance = FMath::Clamp(Profile->ChadCouponsBalance + FMath::Max(0, Def->RewardCoins), 0, 2000000000);
+	}
 
 	MarkDirtyAndMaybeSave(true);
-	AchievementCoinsChanged.Broadcast();
+	if (bRewardsCoins)
+	{
+		AchievementCoinsChanged.Broadcast();
+	}
 	AchievementsStateChanged.Broadcast();
+	if (bRewardsSkin)
+	{
+		if (UT66SkinSubsystem* SkinSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
+		{
+			SkinSubsystem->OnSkinStateChanged.Broadcast();
+		}
+	}
 	return true;
 }
 
@@ -940,6 +1130,7 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	if (!Profile) LoadOrCreateProfile();
 	if (!Profile) return;
 
+	Profile->ChadCouponsBalance = 0;
 	Profile->AchievementCoinsBalance = 0;
 	Profile->AchievementStateByID.Reset();
 	Profile->LifetimeEnemiesKilled = 0;
@@ -974,6 +1165,11 @@ int32 UT66AchievementsSubsystem::GetHeroUnityStagesCleared(FName HeroID) const
 	if (!Profile || HeroID.IsNone()) return 0;
 	const int32* Found = Profile->HeroUnityStagesClearedByID.Find(HeroID);
 	return Found ? FMath::Max(0, *Found) : 0;
+}
+
+int32 UT66AchievementsSubsystem::GetLifetimeStagesCleared() const
+{
+	return Profile ? FMath::Max(0, Profile->LifetimeStagesCleared) : 0;
 }
 
 float UT66AchievementsSubsystem::GetCompanionUnionProgress01(FName CompanionID) const
@@ -1026,6 +1222,11 @@ void UT66AchievementsSubsystem::AddCompanionUnionStagesCleared(FName CompanionID
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_RED_004")), MaxStages, 5, &NewlyUnlocked);
 	bAnyChanged |= UpdateCountAchievement(FName(TEXT("ACH_YEL_002")), MaxStages, 20, &NewlyUnlocked);
 	bAnyChanged |= UpdateMilestoneAchievements(TEXT("ACH_EXT_UNION_"), GetExtraUnionThresholds(), MaxStages, &NewlyUnlocked);
+	bAnyChanged |= UpdateCountAchievement(
+		MakeSpecialCompanionSkinAchievementID(CompanionID),
+		Next,
+		SpecialCompanionSkinRequirement,
+		&NewlyUnlocked);
 
 	const bool bTierCrossed =
 		(Prev < UnionTier_GoodStages && Next >= UnionTier_GoodStages) ||
@@ -1074,6 +1275,20 @@ int32 UT66AchievementsSubsystem::GetCompanionGamesPlayed(FName CompanionID) cons
 	return Found ? FMath::Max(0, *Found) : 0;
 }
 
+int32 UT66AchievementsSubsystem::GetHeroCumulativeScore(FName HeroID) const
+{
+	if (!Profile || HeroID.IsNone()) return 0;
+	const int32* Found = Profile->HeroCumulativeScoreByID.Find(HeroID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
+int32 UT66AchievementsSubsystem::GetCompanionCumulativeScore(FName CompanionID) const
+{
+	if (!Profile || CompanionID.IsNone()) return 0;
+	const int32* Found = Profile->CompanionCumulativeScoreByID.Find(CompanionID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
 ET66AccountMedalTier UT66AchievementsSubsystem::GetHeroHighestMedal(FName HeroID) const
 {
 	if (!Profile || HeroID.IsNone()) return ET66AccountMedalTier::None;
@@ -1113,6 +1328,34 @@ void UT66AchievementsSubsystem::AddCompanionGamesPlayed(FName CompanionID, int32
 
 	const int32 Prev = GetCompanionGamesPlayed(CompanionID);
 	Profile->CompanionGamesPlayedByID.FindOrAdd(CompanionID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	MarkDirtyAndMaybeSave(false);
+}
+
+void UT66AchievementsSubsystem::AddHeroCumulativeScore(FName HeroID, int32 DeltaScore)
+{
+	if (HeroID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaScore, 0, 2000000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetHeroCumulativeScore(HeroID);
+	Profile->HeroCumulativeScoreByID.FindOrAdd(HeroID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	MarkDirtyAndMaybeSave(false);
+}
+
+void UT66AchievementsSubsystem::AddCompanionCumulativeScore(FName CompanionID, int32 DeltaScore)
+{
+	if (CompanionID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaScore, 0, 2000000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetCompanionCumulativeScore(CompanionID);
+	Profile->CompanionCumulativeScoreByID.FindOrAdd(CompanionID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
 	MarkDirtyAndMaybeSave(false);
 }
 

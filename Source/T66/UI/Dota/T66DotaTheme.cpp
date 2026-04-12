@@ -1,76 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Dota/T66DotaTheme.h"
-
-#include "Fonts/CompositeFont.h"
-#include "Misc/Paths.h"
-#include "Styling/CoreStyle.h"
-
-namespace
-{
-	FString ResolveRadianceFontPath()
-	{
-		const FString SourceAssetsPath = FPaths::ProjectDir() / TEXT("SourceAssets/radiance.ttf");
-		if (FPaths::FileExists(SourceAssetsPath))
-		{
-			return SourceAssetsPath;
-		}
-
-		const FString ContentFallbackPath = FPaths::ProjectContentDir() / TEXT("Slate/Fonts/radiance.ttf");
-		return ContentFallbackPath;
-	}
-
-	FString ResolveReaverBoldFontPath()
-	{
-		const FString SourceAssetsPath = FPaths::ProjectDir() / TEXT("SourceAssets/Reaver-Bold.woff");
-		if (FPaths::FileExists(SourceAssetsPath))
-		{
-			return SourceAssetsPath;
-		}
-
-		const FString ContentWoffFallbackPath = FPaths::ProjectContentDir() / TEXT("Slate/Fonts/Reaver-Bold.woff");
-		if (FPaths::FileExists(ContentWoffFallbackPath))
-		{
-			return ContentWoffFallbackPath;
-		}
-
-		const FString ContentTtfFallbackPath = FPaths::ProjectContentDir() / TEXT("Slate/Fonts/Reaver-Bold.ttf");
-		if (FPaths::FileExists(ContentTtfFallbackPath))
-		{
-			return ContentTtfFallbackPath;
-		}
-
-		return FString();
-	}
-
-	bool IsBoldWeight(const TCHAR* Weight)
-	{
-		if (Weight == nullptr)
-		{
-			return false;
-		}
-
-		return FCString::Stricmp(Weight, TEXT("Bold")) == 0
-			|| FCString::Stricmp(Weight, TEXT("Black")) == 0
-			|| FCString::Stricmp(Weight, TEXT("Semibold")) == 0
-			|| FCString::Stricmp(Weight, TEXT("SemiBold")) == 0;
-	}
-
-	FSlateFontInfo MakeFontFromFile(const FString& Path, int32 Size)
-	{
-		if (!FPaths::FileExists(Path))
-		{
-			return FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
-		}
-
-		TSharedPtr<const FCompositeFont> CompositeFont = MakeShared<FStandaloneCompositeFont>(
-			NAME_None,
-			Path,
-			EFontHinting::Default,
-			EFontLoadingPolicy::LazyLoad);
-		return FSlateFontInfo(CompositeFont, static_cast<float>(Size));
-	}
-}
+#include "UI/Style/T66Style.h"
 
 FLinearColor FT66DotaTheme::Background()
 {
@@ -314,14 +245,5 @@ float FT66DotaTheme::CornerRadiusSmall()
 
 FSlateFontInfo FT66DotaTheme::MakeFont(const TCHAR* Weight, int32 Size)
 {
-	if (IsBoldWeight(Weight))
-	{
-		const FString ReaverPath = ResolveReaverBoldFontPath();
-		if (!ReaverPath.IsEmpty())
-		{
-			return MakeFontFromFile(ReaverPath, Size);
-		}
-	}
-
-	return MakeFontFromFile(ResolveRadianceFontPath(), Size);
+	return FT66Style::MakeFont(Weight, Size);
 }

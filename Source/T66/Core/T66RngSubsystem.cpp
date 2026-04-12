@@ -19,6 +19,8 @@ void UT66RngSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	RunStream.Initialize(RunSeed);
 	LuckStat = 1;
 	Luck01 = 0.f;
+	RunDrawCount = 0;
+	ClearLastRunDrawMetadata();
 }
 
 void UT66RngSubsystem::Deinitialize()
@@ -59,6 +61,8 @@ void UT66RngSubsystem::BeginRun(int32 InLuckStat)
 
 	RunSeed = Seed;
 	RunStream.Initialize(RunSeed);
+	RunDrawCount = 0;
+	ClearLastRunDrawMetadata();
 
 	RecomputeLuck01();
 }
@@ -97,6 +101,63 @@ float UT66RngSubsystem::BiasChance01(float BaseChance01) const
 	return Clamp01(P);
 }
 
+void UT66RngSubsystem::ClearLastRunDrawMetadata() const
+{
+	LastRunDrawIndex = INDEX_NONE;
+	LastRunPreDrawSeed = 0;
+}
+
+void UT66RngSubsystem::PrepareRunDraw() const
+{
+	LastRunPreDrawSeed = RunStream.GetCurrentSeed();
+	LastRunDrawIndex = RunDrawCount;
+	RunDrawCount = FMath::Clamp(RunDrawCount + 1, 0, MAX_int32);
+}
+
+float UT66RngSubsystem::GetRunFraction() const
+{
+	PrepareRunDraw();
+	return RunStream.GetFraction();
+}
+
+int32 UT66RngSubsystem::RunRandRange(int32 Min, int32 Max) const
+{
+	const int32 A = FMath::Min(Min, Max);
+	const int32 B = FMath::Max(Min, Max);
+	if (B <= A)
+	{
+		ClearLastRunDrawMetadata();
+		return A;
+	}
+
+	return A + FMath::TruncToInt(GetRunFraction() * static_cast<float>((B - A) + 1));
+}
+
+float UT66RngSubsystem::RunFRandRange(float InMin, float InMax) const
+{
+	const float A = FMath::Min(InMin, InMax);
+	const float B = FMath::Max(InMin, InMax);
+	if (B <= A)
+	{
+		ClearLastRunDrawMetadata();
+		return A;
+	}
+
+	return A + (B - A) * GetRunFraction();
+}
+
+bool UT66RngSubsystem::RollChance01(float Chance01) const
+{
+	const float ClampedChance = Clamp01(Chance01);
+	if (ClampedChance <= 0.f)
+	{
+		ClearLastRunDrawMetadata();
+		return false;
+	}
+
+	return GetRunFraction() < ClampedChance;
+}
+
 ET66Rarity UT66RngSubsystem::RollRarityWeighted(const FT66RarityWeights& BaseWeights, FRandomStream& Stream) const
 {
 	const UT66RngTuningConfig* T = GetTuning();
@@ -112,10 +173,11 @@ ET66Rarity UT66RngSubsystem::RollRarityWeighted(const FT66RarityWeights& BaseWei
 	const float Sum = W0 + W1 + W2 + W3;
 	if (Sum <= KINDA_SMALL_NUMBER)
 	{
+		ClearLastRunDrawMetadata();
 		return ET66Rarity::Black;
 	}
 
-	const float R = Stream.FRandRange(0.f, Sum);
+	const float R = UsesRunStream(Stream) ? RunFRandRange(0.f, Sum) : Stream.FRandRange(0.f, Sum);
 	float Acc = 0.f;
 	Acc += W0; if (R <= Acc) return ET66Rarity::Black;
 	Acc += W1; if (R <= Acc) return ET66Rarity::Red;
@@ -127,9 +189,13 @@ int32 UT66RngSubsystem::RollIntRangeBiased(const FT66IntRange& Range, FRandomStr
 {
 	const int32 A = FMath::Min(Range.Min, Range.Max);
 	const int32 B = FMath::Max(Range.Min, Range.Max);
-	if (B <= A) return A;
+	if (B <= A)
+	{
+		ClearLastRunDrawMetadata();
+		return A;
+	}
 
-	const float U = BiasHigh01(Stream.GetFraction());
+	const float U = BiasHigh01(UsesRunStream(Stream) ? GetRunFraction() : Stream.GetFraction());
 	const float Span = static_cast<float>(B - A);
 	const int32 V = A + FMath::Clamp(FMath::FloorToInt(U * (Span + 1e-3f) + 0.00001f), 0, (B - A));
 	return FMath::Clamp(V, A, B);
@@ -139,9 +205,13 @@ float UT66RngSubsystem::RollFloatRangeBiased(const FT66FloatRange& Range, FRando
 {
 	const float A = FMath::Min(Range.Min, Range.Max);
 	const float B = FMath::Max(Range.Min, Range.Max);
-	if (B <= A) return A;
+	if (B <= A)
+	{
+		ClearLastRunDrawMetadata();
+		return A;
+	}
 
-	const float U = BiasHigh01(Stream.GetFraction());
+	const float U = BiasHigh01(UsesRunStream(Stream) ? GetRunFraction() : Stream.GetFraction());
 	return A + (B - A) * U;
 }
 

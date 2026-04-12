@@ -5,8 +5,9 @@
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66LeaderboardPacingUtils.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RngSubsystem.h"
@@ -28,6 +29,51 @@
 namespace
 {
 	static const FName T66GamblersTokenItemID(TEXT("Item_GamblersToken"));
+
+	static void T66_AccumulatePressureWindowSummary(
+		FT66AntiCheatPressureWindowSummary& Summary,
+		int32 HitChecks,
+		int32 Dodges,
+		int32 DamageApplied,
+		float ExpectedDodges)
+	{
+		if (HitChecks <= 0)
+		{
+			return;
+		}
+
+		Summary.ActiveWindows = FMath::Clamp(Summary.ActiveWindows + 1, 0, 1000000);
+		Summary.TotalHitChecks = FMath::Clamp(Summary.TotalHitChecks + HitChecks, 0, 1000000);
+		Summary.TotalDodges = FMath::Clamp(Summary.TotalDodges + Dodges, 0, 1000000);
+		Summary.TotalDamageApplied = FMath::Clamp(Summary.TotalDamageApplied + DamageApplied, 0, 1000000);
+		Summary.TotalExpectedDodges = FMath::Clamp(Summary.TotalExpectedDodges + FMath::Max(0.f, ExpectedDodges), 0.f, 1000000.f);
+		Summary.MaxHitChecksInWindow = FMath::Max(Summary.MaxHitChecksInWindow, HitChecks);
+		Summary.MaxDodgesInWindow = FMath::Max(Summary.MaxDodgesInWindow, Dodges);
+		Summary.MaxDamageAppliedInWindow = FMath::Max(Summary.MaxDamageAppliedInWindow, DamageApplied);
+		Summary.MaxExpectedDodgesInWindow = FMath::Max(Summary.MaxExpectedDodgesInWindow, FMath::Max(0.f, ExpectedDodges));
+
+		if (HitChecks >= 4)
+		{
+			Summary.PressuredWindows4Plus = FMath::Clamp(Summary.PressuredWindows4Plus + 1, 0, 1000000);
+			if (DamageApplied <= 0)
+			{
+				Summary.ZeroDamageWindows4Plus = FMath::Clamp(Summary.ZeroDamageWindows4Plus + 1, 0, 1000000);
+			}
+		}
+
+		if (HitChecks >= 8)
+		{
+			Summary.PressuredWindows8Plus = FMath::Clamp(Summary.PressuredWindows8Plus + 1, 0, 1000000);
+			if (DamageApplied <= 0)
+			{
+				Summary.ZeroDamageWindows8Plus = FMath::Clamp(Summary.ZeroDamageWindows8Plus + 1, 0, 1000000);
+			}
+			if (DamageApplied <= 1)
+			{
+				Summary.NearPerfectWindows8Plus = FMath::Clamp(Summary.NearPerfectWindows8Plus + 1, 0, 1000000);
+			}
+		}
+	}
 
 	static bool T66_IsGamblersTokenItem(const FName ItemID)
 	{
@@ -161,6 +207,45 @@ namespace
 		return UpgradedSlot;
 	}
 
+	static int32 T66_MapRollToRarityRange(const int32 Value, const ET66ItemRarity SourceRarity, const ET66ItemRarity TargetRarity)
+	{
+		int32 SourceMin = 1;
+		int32 SourceMax = 3;
+		FItemData::GetLine1RollRange(SourceRarity, SourceMin, SourceMax);
+
+		int32 TargetMin = 1;
+		int32 TargetMax = 3;
+		FItemData::GetLine1RollRange(TargetRarity, TargetMin, TargetMax);
+
+		if (SourceMax <= SourceMin)
+		{
+			return TargetMax;
+		}
+
+		const float Alpha = FMath::Clamp(
+			static_cast<float>(Value - SourceMin) / static_cast<float>(SourceMax - SourceMin),
+			0.f,
+			1.f);
+		return FMath::RoundToInt(FMath::Lerp(static_cast<float>(TargetMin), static_cast<float>(TargetMax), Alpha));
+	}
+
+	static void T66_ApplyLuckyAlchemyBonus(FT66InventorySlot& Slot)
+	{
+		if (!Slot.IsValid() || Slot.Rarity == ET66ItemRarity::White)
+		{
+			return;
+		}
+
+		const ET66ItemRarity PreviousRarity = Slot.Rarity;
+		Slot.Rarity = UT66RunStateSubsystem::GetNextItemRarity(Slot.Rarity);
+		Slot.Line1RolledValue = FMath::Max(
+			Slot.Line1RolledValue,
+			T66_MapRollToRarityRange(Slot.Line1RolledValue, PreviousRarity, Slot.Rarity));
+
+		const float DefaultMultiplier = FItemData::GetLine2RarityMultiplier(Slot.Rarity);
+		Slot.Line2MultiplierOverride = FMath::Max(DefaultMultiplier, Slot.GetLine2Multiplier() * 1.10f);
+	}
+
 	static float T66_GetSellFractionForTokenLevel(const int32 TokenLevel)
 	{
 		return FMath::Clamp(0.40f + 0.10f * static_cast<float>(T66_ClampGamblersTokenLevel(TokenLevel)), 0.40f, 1.00f);
@@ -197,6 +282,26 @@ namespace
 			++N;
 		}
 		return (N > 0) ? static_cast<float>(Sum / static_cast<double>(N)) : 0.5f;
+	}
+
+	static void T66_RecomputeBossAggregate(TArray<FT66BossPartSnapshot>& BossParts, int32& OutBossMaxHP, int32& OutBossCurrentHP)
+	{
+		OutBossMaxHP = 0;
+		OutBossCurrentHP = 0;
+
+		for (FT66BossPartSnapshot& Part : BossParts)
+		{
+			Part.MaxHP = FMath::Max(1, Part.MaxHP);
+			Part.CurrentHP = FMath::Clamp(Part.CurrentHP, 0, Part.MaxHP);
+			OutBossMaxHP += Part.MaxHP;
+			OutBossCurrentHP += Part.CurrentHP;
+		}
+
+		if (OutBossMaxHP <= 0)
+		{
+			OutBossMaxHP = 100;
+			OutBossCurrentHP = 0;
+		}
 	}
 }
 
@@ -243,7 +348,7 @@ void UT66RunStateSubsystem::ResetLuckRatingTracking()
 	LuckQualityByCategory.Reset();
 }
 
-void UT66RunStateSubsystem::RecordLuckQuantityRoll(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue)
+void UT66RunStateSubsystem::RecordLuckQuantityRoll(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue, int32 RunDrawIndex, int32 PreDrawSeed)
 {
 	const int32 MinV = FMath::Min(MinValue, MaxValue);
 	const int32 MaxV = FMath::Max(MinValue, MaxValue);
@@ -258,16 +363,52 @@ void UT66RunStateSubsystem::RecordLuckQuantityRoll(FName Category, int32 RolledV
 	}
 
 	LuckQuantityByCategory.FindOrAdd(Category).Add01(Score01);
+	RecordAntiCheatLuckEvent(ET66AntiCheatLuckEventType::QuantityRoll, Category, Score01, RolledValue, MinV, MaxV, RunDrawIndex, PreDrawSeed);
 }
 
-void UT66RunStateSubsystem::RecordLuckQuantityBool(FName Category, bool bSucceeded)
+void UT66RunStateSubsystem::RecordLuckQuantityFloatRollRounded(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue, float ReplayMinValue, float ReplayMaxValue, int32 RunDrawIndex, int32 PreDrawSeed)
+{
+	const int32 MinV = FMath::Min(MinValue, MaxValue);
+	const int32 MaxV = FMath::Max(MinValue, MaxValue);
+	float Score01 = 0.5f;
+	if (MaxV <= MinV)
+	{
+		Score01 = 1.f;
+	}
+	else
+	{
+		Score01 = FMath::Clamp(static_cast<float>(RolledValue - MinV) / static_cast<float>(MaxV - MinV), 0.f, 1.f);
+	}
+
+	LuckQuantityByCategory.FindOrAdd(Category).Add01(Score01);
+	FT66FloatRange ReplayRange;
+	ReplayRange.Min = ReplayMinValue;
+	ReplayRange.Max = ReplayMaxValue;
+	RecordAntiCheatLuckEvent(
+		ET66AntiCheatLuckEventType::QuantityRoll,
+		Category,
+		Score01,
+		RolledValue,
+		MinV,
+		MaxV,
+		RunDrawIndex,
+		PreDrawSeed,
+		-1.f,
+		nullptr,
+		&ReplayRange);
+}
+
+void UT66RunStateSubsystem::RecordLuckQuantityBool(FName Category, bool bSucceeded, float ExpectedChance01, int32 RunDrawIndex, int32 PreDrawSeed)
 {
 	LuckQuantityByCategory.FindOrAdd(Category).Add01(bSucceeded ? 1.f : 0.f);
+	RecordAntiCheatLuckEvent(ET66AntiCheatLuckEventType::QuantityBool, Category, bSucceeded ? 1.f : 0.f, bSucceeded ? 1 : 0, 0, 1, RunDrawIndex, PreDrawSeed, ExpectedChance01);
 }
 
-void UT66RunStateSubsystem::RecordLuckQualityRarity(FName Category, ET66Rarity Rarity)
+void UT66RunStateSubsystem::RecordLuckQualityRarity(FName Category, ET66Rarity Rarity, int32 RunDrawIndex, int32 PreDrawSeed, const FT66RarityWeights* ReplayWeights)
 {
-	LuckQualityByCategory.FindOrAdd(Category).Add01(T66_RarityTo01(Rarity));
+	const float Score01 = T66_RarityTo01(Rarity);
+	LuckQualityByCategory.FindOrAdd(Category).Add01(Score01);
+	RecordAntiCheatLuckEvent(ET66AntiCheatLuckEventType::QualityRarity, Category, Score01, static_cast<int32>(Rarity), 0, 3, RunDrawIndex, PreDrawSeed, -1.f, ReplayWeights);
 }
 
 float UT66RunStateSubsystem::ComputeLuckRatingQuantity01() const
@@ -310,6 +451,412 @@ int32 UT66RunStateSubsystem::GetLuckRating0To100() const
 	}
 
 	return FMath::Clamp(FMath::RoundToInt(Rating01 * 100.f), 0, 100);
+}
+
+int32 UT66RunStateSubsystem::GetLuckQuantitySampleCount() const
+{
+	int32 TotalCount = 0;
+	for (const TPair<FName, FT66LuckAccumulator>& Pair : LuckQuantityByCategory)
+	{
+		TotalCount = FMath::Clamp(TotalCount + FMath::Max(0, Pair.Value.Count), 0, 1000000);
+	}
+	return TotalCount;
+}
+
+int32 UT66RunStateSubsystem::GetLuckQualitySampleCount() const
+{
+	int32 TotalCount = 0;
+	for (const TPair<FName, FT66LuckAccumulator>& Pair : LuckQualityByCategory)
+	{
+		TotalCount = FMath::Clamp(TotalCount + FMath::Max(0, Pair.Value.Count), 0, 1000000);
+	}
+	return TotalCount;
+}
+
+void UT66RunStateSubsystem::GetLuckQuantityAccumulators(TArray<FT66SavedLuckAccumulator>& OutAccumulators) const
+{
+	OutAccumulators.Reset();
+
+	TArray<FName> Categories;
+	LuckQuantityByCategory.GenerateKeyArray(Categories);
+	Categories.Sort([](const FName& A, const FName& B)
+	{
+		return A.ToString() < B.ToString();
+	});
+
+	for (const FName& Category : Categories)
+	{
+		if (const FT66LuckAccumulator* Accumulator = LuckQuantityByCategory.Find(Category))
+		{
+			FT66SavedLuckAccumulator& Saved = OutAccumulators.AddDefaulted_GetRef();
+			Saved.Category = Category;
+			Saved.Sum01 = static_cast<float>(Accumulator->Sum01);
+			Saved.Count = FMath::Max(0, Accumulator->Count);
+		}
+	}
+}
+
+void UT66RunStateSubsystem::GetLuckQualityAccumulators(TArray<FT66SavedLuckAccumulator>& OutAccumulators) const
+{
+	OutAccumulators.Reset();
+
+	TArray<FName> Categories;
+	LuckQualityByCategory.GenerateKeyArray(Categories);
+	Categories.Sort([](const FName& A, const FName& B)
+	{
+		return A.ToString() < B.ToString();
+	});
+
+	for (const FName& Category : Categories)
+	{
+		if (const FT66LuckAccumulator* Accumulator = LuckQualityByCategory.Find(Category))
+		{
+			FT66SavedLuckAccumulator& Saved = OutAccumulators.AddDefaulted_GetRef();
+			Saved.Category = Category;
+			Saved.Sum01 = static_cast<float>(Accumulator->Sum01);
+			Saved.Count = FMath::Max(0, Accumulator->Count);
+		}
+	}
+}
+
+void UT66RunStateSubsystem::GetAntiCheatLuckEvents(TArray<FT66AntiCheatLuckEvent>& OutEvents) const
+{
+	OutEvents = AntiCheatLuckEvents;
+}
+
+void UT66RunStateSubsystem::GetAntiCheatHitCheckEvents(TArray<FT66AntiCheatHitCheckEvent>& OutEvents) const
+{
+	OutEvents = AntiCheatHitCheckEvents;
+}
+
+void UT66RunStateSubsystem::GetAntiCheatEvasionBuckets(TArray<FT66AntiCheatEvasionBucketSummary>& OutBuckets) const
+{
+	OutBuckets = AntiCheatEvasionBuckets;
+}
+
+void UT66RunStateSubsystem::GetAntiCheatPressureWindowSummary(FT66AntiCheatPressureWindowSummary& OutSummary) const
+{
+	OutSummary = BuildAntiCheatPressureWindowSummarySnapshot();
+}
+
+void UT66RunStateSubsystem::GetAntiCheatGamblerSummaries(TArray<FT66AntiCheatGamblerGameSummary>& OutSummaries) const
+{
+	OutSummaries = AntiCheatGamblerSummaries;
+}
+
+void UT66RunStateSubsystem::GetAntiCheatGamblerEvents(TArray<FT66AntiCheatGamblerEvent>& OutEvents) const
+{
+	OutEvents = AntiCheatGamblerEvents;
+}
+
+float UT66RunStateSubsystem::GetRunElapsedSecondsForAntiCheatEvent() const
+{
+	if (bRunEnded)
+	{
+		return FMath::Max(0.f, FinalRunElapsedSeconds);
+	}
+
+	if (bSpeedRunStarted && GetWorld())
+	{
+		return FMath::Max(0.f, static_cast<float>(GetWorld()->GetTimeSeconds()) - SpeedRunStartWorldSeconds);
+	}
+
+	return FMath::Max(0.f, SpeedRunElapsedSeconds);
+}
+
+void UT66RunStateSubsystem::InitializeAntiCheatEvasionBuckets()
+{
+	if (AntiCheatEvasionBuckets.Num() == AntiCheatEvasionBucketCount)
+	{
+		return;
+	}
+
+	AntiCheatEvasionBuckets.Reset();
+	for (int32 BucketIndex = 0; BucketIndex < AntiCheatEvasionBucketCount; ++BucketIndex)
+	{
+		FT66AntiCheatEvasionBucketSummary& Bucket = AntiCheatEvasionBuckets.AddDefaulted_GetRef();
+		Bucket.BucketIndex = BucketIndex;
+		Bucket.MinChance01 = GetAntiCheatEvasionBucketMinChance01(BucketIndex);
+		Bucket.MaxChance01 = GetAntiCheatEvasionBucketMaxChance01(BucketIndex);
+	}
+}
+
+int32 UT66RunStateSubsystem::GetAntiCheatEvasionBucketIndex(float EvasionChance01)
+{
+	const float Clamped = FMath::Clamp(EvasionChance01, 0.f, 1.f);
+	if (Clamped < 0.15f) return 0;
+	if (Clamped < 0.30f) return 1;
+	if (Clamped < 0.45f) return 2;
+	if (Clamped < 0.60f) return 3;
+	return 4;
+}
+
+float UT66RunStateSubsystem::GetAntiCheatEvasionBucketMinChance01(int32 BucketIndex)
+{
+	switch (BucketIndex)
+	{
+	case 1: return 0.15f;
+	case 2: return 0.30f;
+	case 3: return 0.45f;
+	case 4: return 0.60f;
+	default: return 0.f;
+	}
+}
+
+float UT66RunStateSubsystem::GetAntiCheatEvasionBucketMaxChance01(int32 BucketIndex)
+{
+	switch (BucketIndex)
+	{
+	case 0: return 0.15f;
+	case 1: return 0.30f;
+	case 2: return 0.45f;
+	case 3: return 0.60f;
+	default: return 1.f;
+	}
+}
+
+void UT66RunStateSubsystem::ResetAntiCheatPressureTracking()
+{
+	AntiCheatPressureWindowSummary = FT66AntiCheatPressureWindowSummary{};
+	AntiCheatPressureWindowSummary.WindowSeconds = AntiCheatPressureWindowSeconds;
+	AntiCheatCurrentPressureWindowIndex = INDEX_NONE;
+	AntiCheatCurrentPressureHitChecks = 0;
+	AntiCheatCurrentPressureDodges = 0;
+	AntiCheatCurrentPressureDamageApplied = 0;
+	AntiCheatCurrentPressureExpectedDodges = 0.f;
+}
+
+void UT66RunStateSubsystem::FinalizeCurrentAntiCheatPressureWindow()
+{
+	if (AntiCheatCurrentPressureHitChecks <= 0)
+	{
+		AntiCheatCurrentPressureWindowIndex = INDEX_NONE;
+		AntiCheatCurrentPressureDodges = 0;
+		AntiCheatCurrentPressureDamageApplied = 0;
+		AntiCheatCurrentPressureExpectedDodges = 0.f;
+		return;
+	}
+
+	T66_AccumulatePressureWindowSummary(
+		AntiCheatPressureWindowSummary,
+		AntiCheatCurrentPressureHitChecks,
+		AntiCheatCurrentPressureDodges,
+		AntiCheatCurrentPressureDamageApplied,
+		AntiCheatCurrentPressureExpectedDodges);
+
+	AntiCheatCurrentPressureWindowIndex = INDEX_NONE;
+	AntiCheatCurrentPressureHitChecks = 0;
+	AntiCheatCurrentPressureDodges = 0;
+	AntiCheatCurrentPressureDamageApplied = 0;
+	AntiCheatCurrentPressureExpectedDodges = 0.f;
+}
+
+void UT66RunStateSubsystem::RecordAntiCheatPressureHitCheck(float RunElapsedSeconds, float EvasionChance01, bool bDodged, bool bDamageApplied)
+{
+	const float ClampedTime = FMath::Max(0.f, RunElapsedSeconds);
+	const int32 WindowIndex = FMath::Max(0, FMath::FloorToInt(ClampedTime / static_cast<float>(AntiCheatPressureWindowSeconds)));
+	if (AntiCheatCurrentPressureWindowIndex != WindowIndex)
+	{
+		FinalizeCurrentAntiCheatPressureWindow();
+		AntiCheatCurrentPressureWindowIndex = WindowIndex;
+	}
+
+	AntiCheatCurrentPressureHitChecks = FMath::Clamp(AntiCheatCurrentPressureHitChecks + 1, 0, 1000000);
+	AntiCheatCurrentPressureExpectedDodges = FMath::Clamp(AntiCheatCurrentPressureExpectedDodges + FMath::Clamp(EvasionChance01, 0.f, 1.f), 0.f, 1000000.f);
+	if (bDodged)
+	{
+		AntiCheatCurrentPressureDodges = FMath::Clamp(AntiCheatCurrentPressureDodges + 1, 0, 1000000);
+	}
+	if (bDamageApplied)
+	{
+		AntiCheatCurrentPressureDamageApplied = FMath::Clamp(AntiCheatCurrentPressureDamageApplied + 1, 0, 1000000);
+	}
+}
+
+FT66AntiCheatPressureWindowSummary UT66RunStateSubsystem::BuildAntiCheatPressureWindowSummarySnapshot() const
+{
+	FT66AntiCheatPressureWindowSummary Summary = AntiCheatPressureWindowSummary;
+	Summary.WindowSeconds = AntiCheatPressureWindowSeconds;
+	if (AntiCheatCurrentPressureHitChecks > 0)
+	{
+		T66_AccumulatePressureWindowSummary(
+			Summary,
+			AntiCheatCurrentPressureHitChecks,
+			AntiCheatCurrentPressureDodges,
+			AntiCheatCurrentPressureDamageApplied,
+			AntiCheatCurrentPressureExpectedDodges);
+	}
+	return Summary;
+}
+
+void UT66RunStateSubsystem::RecordAntiCheatLuckEvent(ET66AntiCheatLuckEventType EventType, FName Category, float Value01, int32 RawValue, int32 RawMin, int32 RawMax, int32 RunDrawIndex, int32 PreDrawSeed, float ExpectedChance01, const FT66RarityWeights* ReplayWeights, const FT66FloatRange* ReplayFloatRange)
+{
+	FT66AntiCheatLuckEvent& Event = AntiCheatLuckEvents.AddDefaulted_GetRef();
+	Event.EventType = EventType;
+	Event.Category = Category;
+	Event.TimeSeconds = GetRunElapsedSecondsForAntiCheatEvent();
+	Event.Value01 = FMath::Clamp(Value01, 0.f, 1.f);
+	Event.RawValue = RawValue;
+	Event.RawMin = RawMin;
+	Event.RawMax = RawMax;
+	Event.RunDrawIndex = RunDrawIndex;
+	Event.PreDrawSeed = PreDrawSeed;
+	Event.ExpectedChance01 = ExpectedChance01;
+	Event.bHasRarityWeights = (ReplayWeights != nullptr);
+	if (ReplayWeights)
+	{
+		Event.RarityWeights = *ReplayWeights;
+	}
+	Event.bHasFloatReplayRange = (ReplayFloatRange != nullptr);
+	if (ReplayFloatRange)
+	{
+		Event.FloatReplayMin = ReplayFloatRange->Min;
+		Event.FloatReplayMax = ReplayFloatRange->Max;
+	}
+
+	if (AntiCheatLuckEvents.Num() > MaxAntiCheatLuckEvents)
+	{
+		const int32 RemoveCount = AntiCheatLuckEvents.Num() - MaxAntiCheatLuckEvents;
+		AntiCheatLuckEvents.RemoveAt(0, RemoveCount, EAllowShrinking::No);
+		bAntiCheatLuckEventsTruncated = true;
+	}
+}
+
+void UT66RunStateSubsystem::RecordAntiCheatHitCheckEvent(float EvasionChance01, bool bDodged, bool bDamageApplied)
+{
+	FT66AntiCheatHitCheckEvent& Event = AntiCheatHitCheckEvents.AddDefaulted_GetRef();
+	Event.TimeSeconds = GetRunElapsedSecondsForAntiCheatEvent();
+	Event.EvasionChance01 = FMath::Clamp(EvasionChance01, 0.f, 1.f);
+	Event.bDodged = bDodged;
+	Event.bDamageApplied = bDamageApplied;
+	InitializeAntiCheatEvasionBuckets();
+	if (AntiCheatEvasionBuckets.Num() == AntiCheatEvasionBucketCount)
+	{
+		const int32 BucketIndex = GetAntiCheatEvasionBucketIndex(Event.EvasionChance01);
+		if (AntiCheatEvasionBuckets.IsValidIndex(BucketIndex))
+		{
+			FT66AntiCheatEvasionBucketSummary& Bucket = AntiCheatEvasionBuckets[BucketIndex];
+			Bucket.HitChecks = FMath::Clamp(Bucket.HitChecks + 1, 0, 1000000);
+			Bucket.ExpectedDodges = FMath::Clamp(Bucket.ExpectedDodges + Event.EvasionChance01, 0.f, 1000000.f);
+			if (Event.bDodged)
+			{
+				Bucket.Dodges = FMath::Clamp(Bucket.Dodges + 1, 0, 1000000);
+			}
+			if (Event.bDamageApplied)
+			{
+				Bucket.DamageApplied = FMath::Clamp(Bucket.DamageApplied + 1, 0, 1000000);
+			}
+		}
+	}
+	RecordAntiCheatPressureHitCheck(GetCurrentRunElapsedSeconds(), Event.EvasionChance01, Event.bDodged, Event.bDamageApplied);
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66SkillRatingSubsystem* Skill = GI->GetSubsystem<UT66SkillRatingSubsystem>())
+		{
+			Skill->NotifyHitCheck(Event.EvasionChance01, Event.bDodged, Event.bDamageApplied);
+		}
+	}
+
+	if (AntiCheatHitCheckEvents.Num() > MaxAntiCheatHitCheckEvents)
+	{
+		const int32 RemoveCount = AntiCheatHitCheckEvents.Num() - MaxAntiCheatHitCheckEvents;
+		AntiCheatHitCheckEvents.RemoveAt(0, RemoveCount, EAllowShrinking::No);
+		bAntiCheatHitCheckEventsTruncated = true;
+	}
+}
+
+FT66AntiCheatGamblerGameSummary& UT66RunStateSubsystem::FindOrAddAntiCheatGamblerSummary(ET66AntiCheatGamblerGameType GameType)
+{
+	for (FT66AntiCheatGamblerGameSummary& Summary : AntiCheatGamblerSummaries)
+	{
+		if (Summary.GameType == GameType)
+		{
+			return Summary;
+		}
+	}
+
+	FT66AntiCheatGamblerGameSummary& Summary = AntiCheatGamblerSummaries.AddDefaulted_GetRef();
+	Summary.GameType = GameType;
+	return Summary;
+}
+
+void UT66RunStateSubsystem::RecordAntiCheatGamblerRound(
+	ET66AntiCheatGamblerGameType GameType,
+	int32 BetGold,
+	int32 PayoutGold,
+	bool bCheatAttempted,
+	bool bCheatSucceeded,
+	bool bWin,
+	bool bDraw,
+	int32 PlayerChoice,
+	int32 OpponentChoice,
+	int32 OutcomeValue,
+	int32 OutcomeSecondaryValue,
+	int32 SelectedMask,
+	int32 ResolvedMask,
+	int32 PathBits,
+	int32 ShufflePreDrawSeed,
+	int32 ShuffleStartDrawIndex,
+	int32 OutcomePreDrawSeed,
+	int32 OutcomeDrawIndex,
+	float OutcomeExpectedChance01,
+	const FString& ActionSequence)
+{
+	FT66AntiCheatGamblerGameSummary& Summary = FindOrAddAntiCheatGamblerSummary(GameType);
+	Summary.Rounds = FMath::Clamp(Summary.Rounds + 1, 0, 1000000);
+	Summary.TotalBetGold = FMath::Clamp(Summary.TotalBetGold + FMath::Max(0, BetGold), 0, INT32_MAX);
+	Summary.TotalPayoutGold = FMath::Clamp(Summary.TotalPayoutGold + FMath::Max(0, PayoutGold), 0, INT32_MAX);
+	if (bCheatAttempted)
+	{
+		Summary.CheatAttempts = FMath::Clamp(Summary.CheatAttempts + 1, 0, 1000000);
+		if (bCheatSucceeded)
+		{
+			Summary.CheatSuccesses = FMath::Clamp(Summary.CheatSuccesses + 1, 0, 1000000);
+		}
+	}
+	if (bDraw)
+	{
+		Summary.Draws = FMath::Clamp(Summary.Draws + 1, 0, 1000000);
+	}
+	else if (bWin)
+	{
+		Summary.Wins = FMath::Clamp(Summary.Wins + 1, 0, 1000000);
+	}
+	else
+	{
+		Summary.Losses = FMath::Clamp(Summary.Losses + 1, 0, 1000000);
+	}
+
+	FT66AntiCheatGamblerEvent& Event = AntiCheatGamblerEvents.AddDefaulted_GetRef();
+	Event.GameType = GameType;
+	Event.TimeSeconds = GetRunElapsedSecondsForAntiCheatEvent();
+	Event.BetGold = FMath::Max(0, BetGold);
+	Event.PayoutGold = FMath::Max(0, PayoutGold);
+	Event.bCheatAttempted = bCheatAttempted;
+	Event.bCheatSucceeded = bCheatSucceeded;
+	Event.bWin = bWin;
+	Event.bDraw = bDraw;
+	Event.PlayerChoice = PlayerChoice;
+	Event.OpponentChoice = OpponentChoice;
+	Event.OutcomeValue = OutcomeValue;
+	Event.OutcomeSecondaryValue = OutcomeSecondaryValue;
+	Event.SelectedMask = SelectedMask;
+	Event.ResolvedMask = ResolvedMask;
+	Event.PathBits = PathBits;
+	Event.ShufflePreDrawSeed = ShufflePreDrawSeed;
+	Event.ShuffleStartDrawIndex = ShuffleStartDrawIndex;
+	Event.OutcomePreDrawSeed = OutcomePreDrawSeed;
+	Event.OutcomeDrawIndex = OutcomeDrawIndex;
+	Event.OutcomeExpectedChance01 = OutcomeExpectedChance01;
+	Event.ActionSequence = ActionSequence;
+
+	if (AntiCheatGamblerEvents.Num() > MaxAntiCheatGamblerEvents)
+	{
+		const int32 RemoveCount = AntiCheatGamblerEvents.Num() - MaxAntiCheatGamblerEvents;
+		AntiCheatGamblerEvents.RemoveAt(0, RemoveCount, EAllowShrinking::No);
+		bAntiCheatGamblerEventsTruncated = true;
+	}
 }
 
 const TArray<FName>& UT66RunStateSubsystem::GetAllIdolIDs()
@@ -802,6 +1349,7 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 	HeroPerLevelGains.Damage.Min = 1;      HeroPerLevelGains.Damage.Max = 2;
 	HeroPerLevelGains.AttackSpeed.Min = 1; HeroPerLevelGains.AttackSpeed.Max = 2;
 	HeroPerLevelGains.AttackScale.Min = 1; HeroPerLevelGains.AttackScale.Max = 2;
+	HeroPerLevelGains.Accuracy.Min = 1;    HeroPerLevelGains.Accuracy.Max = 2;
 	HeroPerLevelGains.Armor.Min = 1;       HeroPerLevelGains.Armor.Max = 2;
 	HeroPerLevelGains.Evasion.Min = 1;     HeroPerLevelGains.Evasion.Max = 2;
 	HeroPerLevelGains.Luck.Min = 1;        HeroPerLevelGains.Luck.Max = 2;
@@ -840,16 +1388,17 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 			HeroBaseLongRangeDmg = FMath::Max(0.f, HD.BaseLongRangeDmg);
 			HeroBaseTaunt = FMath::Max(0.f, HD.BaseTaunt);
 			HeroBaseReflectDmg = FMath::Max(0.f, HD.BaseReflectDmg);
-			HeroBaseHpRegen = FMath::Max(0.f, HD.BaseHpRegen);
+			HeroBaseHpRegen = 0.f;
 			HeroBaseCrushChance = FMath::Clamp(HD.BaseCrushChance, 0.f, 1.f);
 			HeroBaseInvisChance = FMath::Clamp(HD.BaseInvisChance, 0.f, 1.f);
 			HeroBaseCounterAttack = FMath::Max(0.f, HD.BaseCounterAttack);
-			HeroBaseLifeSteal = FMath::Clamp(HD.BaseLifeSteal, 0.f, 1.f);
+			HeroBaseLifeSteal = 0.f;
 			HeroBaseAssassinateChance = FMath::Clamp(HD.BaseAssassinateChance, 0.f, 1.f);
 			HeroBaseCheatChance = FMath::Clamp(HD.BaseCheatChance, 0.f, 1.f);
 			HeroBaseStealChance = FMath::Clamp(HD.BaseStealChance, 0.f, 1.f);
 			float Range = HD.BaseAttackRange;
 			HeroBaseAttackRange = FMath::Max(100.f, Range);
+			HeroBaseAccuracy = FMath::Clamp(HD.BaseAccuracy, 0.f, 1.f);
 			PassiveType = HD.PassiveType;
 		}
 	}
@@ -858,18 +1407,37 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 	HeroStats.Damage = FMath::Clamp(HeroStats.Damage, 1, 9999);
 	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed, 1, 9999);
 	HeroStats.AttackScale = FMath::Clamp(HeroStats.AttackScale, 1, 9999);
+	HeroStats.Accuracy = FMath::Clamp(HeroStats.Accuracy, 1, 9999);
 	HeroStats.Armor = FMath::Clamp(HeroStats.Armor, 1, 9999);
 	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion, 1, 9999);
 	HeroStats.Luck = FMath::Clamp(HeroStats.Luck, 1, 9999);
 	HeroStats.Speed = FMath::Clamp(HeroStats.Speed, 1, 9999);
 
-	RefreshPowerupBonusesFromProfile();
+	RefreshPermanentBuffBonusesFromProfile();
 }
 
 void UT66RunStateSubsystem::AddPowerCrystalsEarnedThisRun(int32 Amount)
 {
 	if (Amount <= 0) return;
 	PowerCrystalsEarnedThisRun = FMath::Clamp(PowerCrystalsEarnedThisRun + Amount, 0, 2000000000);
+}
+
+void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
+{
+	SingleUseSecondaryMultipliers.Reset();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BuffSubsystem* PowerUp = GI->GetSubsystem<UT66BuffSubsystem>())
+		{
+			SingleUseSecondaryMultipliers = PowerUp->ConsumePendingSingleUseBuffMultipliers();
+		}
+
+		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
+		{
+			Rng->UpdateLuckStat(GetLuckStat());
+		}
+	}
 }
 
 void UT66RunStateSubsystem::SetPendingDifficultyClearSummary(const bool bPending)
@@ -997,14 +1565,14 @@ void UT66RunStateSubsystem::SetFinalSurvivalEnemyScalar(const float Scalar)
 	DifficultyChanged.Broadcast();
 }
 
-void UT66RunStateSubsystem::RefreshPowerupBonusesFromProfile()
+void UT66RunStateSubsystem::RefreshPermanentBuffBonusesFromProfile()
 {
-	PowerupStatBonuses = FT66HeroStatBonuses{};
+	PermanentBuffStatBonuses = FT66HeroStatBonuses{};
 	if (UGameInstance* GI = GetGameInstance())
 	{
-		if (UT66PowerUpSubsystem* PowerUp = GI->GetSubsystem<UT66PowerUpSubsystem>())
+		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
-			PowerupStatBonuses = PowerUp->GetPowerupStatBonuses();
+			PermanentBuffStatBonuses = Buffs->GetPermanentBuffStatBonuses();
 		}
 	}
 }
@@ -1035,6 +1603,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 		if (B <= 0) return 0;
 		if (B <= A) return B;
 
+		const int32 PreDrawSeed = HeroStatRng.GetCurrentSeed();
 		float U = HeroStatRng.GetFraction(); // 0..1
 		if (RngSub)
 		{
@@ -1044,7 +1613,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 		// Inclusive integer roll biased toward B.
 		const int32 Delta = FMath::Clamp(FMath::FloorToInt(U * static_cast<float>(Span + 1)), 0, Span);
 		const int32 Rolled = A + Delta;
-		RecordLuckQuantityRoll(Category, Rolled, A, B);
+		RecordLuckQuantityRoll(Category, Rolled, A, B, INDEX_NONE, PreDrawSeed);
 		return Rolled;
 	};
 
@@ -1052,6 +1621,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 	HeroStats.Damage = FMath::Clamp(HeroStats.Damage + RollGainBiased(HeroPerLevelGains.Damage, FName(TEXT("LevelUp_DamageGain"))), 1, 9999);
 	HeroStats.AttackSpeed = FMath::Clamp(HeroStats.AttackSpeed + RollGainBiased(HeroPerLevelGains.AttackSpeed, FName(TEXT("LevelUp_AttackSpeedGain"))), 1, 9999);
 	HeroStats.AttackScale = FMath::Clamp(HeroStats.AttackScale + RollGainBiased(HeroPerLevelGains.AttackScale, FName(TEXT("LevelUp_AttackScaleGain"))), 1, 9999);
+	HeroStats.Accuracy = FMath::Clamp(HeroStats.Accuracy + RollGainBiased(HeroPerLevelGains.Accuracy, FName(TEXT("LevelUp_AccuracyGain"))), 1, 9999);
 	HeroStats.Armor = FMath::Clamp(HeroStats.Armor + RollGainBiased(HeroPerLevelGains.Armor, FName(TEXT("LevelUp_ArmorGain"))), 1, 9999);
 	HeroStats.Evasion = FMath::Clamp(HeroStats.Evasion + RollGainBiased(HeroPerLevelGains.Evasion, FName(TEXT("LevelUp_EvasionGain"))), 1, 9999);
 	HeroStats.Luck = FMath::Clamp(HeroStats.Luck + RollGainBiased(HeroPerLevelGains.Luck, FName(TEXT("LevelUp_LuckGain"))), 1, 9999);
@@ -1105,11 +1675,19 @@ int32 UT66RunStateSubsystem::GetDotAtkScaleStat() const     { return FMath::Max(
 
 float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatType) const
 {
-	const float* Mult = SecondaryMultipliers.Find(StatType);
-	const float M = (Mult && *Mult > 0.f) ? *Mult : 1.f;
+	float M = 1.f;
+	if (const float* Mult = SecondaryMultipliers.Find(StatType); Mult && *Mult > 0.f)
+	{
+		M *= *Mult;
+	}
+	if (const float* SingleUseMult = SingleUseSecondaryMultipliers.Find(StatType); SingleUseMult && *SingleUseMult > 0.f)
+	{
+		M *= *SingleUseMult;
+	}
 	const float DamageMult = GetHeroDamageMultiplier();
 	const float AttackSpeedMult = GetHeroAttackSpeedMultiplier();
 	const float ScaleMult = GetHeroScaleMultiplier();
+	const float AccuracyMult = GetHeroAccuracyMultiplier();
 	const float BaseArmorReduction = FMath::Clamp(static_cast<float>(GetArmorStat() - 1) * 0.008f, 0.f, 0.80f);
 	const float BaseEvasionChance = FMath::Clamp(static_cast<float>(GetEvasionStat() - 1) * 0.006f, 0.f, 0.60f);
 
@@ -1120,40 +1698,42 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	case ET66SecondaryStatType::BounceDamage:     return static_cast<float>(BaseBounceDmg) * M * DamageMult;
 	case ET66SecondaryStatType::PierceDamage:     return static_cast<float>(BasePierceDmg) * M * DamageMult;
 	case ET66SecondaryStatType::DotDamage:        return static_cast<float>(BaseDotDmg) * M * DamageMult;
-	case ET66SecondaryStatType::CritDamage:       return HeroBaseCritDamage * M * DamageMult;
-	case ET66SecondaryStatType::CloseRangeDamage: return HeroBaseCloseRangeDmg * M * DamageMult;
-	case ET66SecondaryStatType::LongRangeDamage:  return HeroBaseLongRangeDmg * M * DamageMult;
+	case ET66SecondaryStatType::CritDamage:       return HeroBaseCritDamage * M * AccuracyMult;
+	case ET66SecondaryStatType::CloseRangeDamage: return 1.f;
+	case ET66SecondaryStatType::LongRangeDamage:  return 1.f;
 	// Attack-speed-affected (Speed secondaries + Crit Chance)
 	case ET66SecondaryStatType::AoeSpeed:         return static_cast<float>(BaseAoeAtkSpd) * M * AttackSpeedMult;
 	case ET66SecondaryStatType::BounceSpeed:      return static_cast<float>(BaseBounceAtkSpd) * M * AttackSpeedMult;
 	case ET66SecondaryStatType::PierceSpeed:     return static_cast<float>(BasePierceAtkSpd) * M * AttackSpeedMult;
 	case ET66SecondaryStatType::DotSpeed:         return static_cast<float>(BaseDotAtkSpd) * M * AttackSpeedMult;
-	case ET66SecondaryStatType::CritChance:      return FMath::Clamp(HeroBaseCritChance * M * AttackSpeedMult, 0.f, 1.f);
+	case ET66SecondaryStatType::CritChance:      return FMath::Clamp(HeroBaseCritChance * M * AccuracyMult, 0.f, 1.f);
 	// Scale-affected (Scale secondaries + Range)
 	case ET66SecondaryStatType::AoeScale:         return static_cast<float>(BaseAoeAtkScale) * M * ScaleMult;
 	case ET66SecondaryStatType::BounceScale:      return static_cast<float>(BaseBounceAtkScale) * M * ScaleMult;
 	case ET66SecondaryStatType::PierceScale:     return static_cast<float>(BasePierceAtkScale) * M * ScaleMult;
 	case ET66SecondaryStatType::DotScale:         return static_cast<float>(BaseDotAtkScale) * M * ScaleMult;
-	case ET66SecondaryStatType::AttackRange:      return HeroBaseAttackRange * M * ScaleMult;
+	case ET66SecondaryStatType::AttackRange:      return HeroBaseAttackRange * M * AccuracyMult;
+	case ET66SecondaryStatType::Accuracy:         return FMath::Clamp(HeroBaseAccuracy * M * AccuracyMult, 0.f, 1.f);
 	case ET66SecondaryStatType::Taunt:            return HeroBaseTaunt * M;
 	case ET66SecondaryStatType::ReflectDamage:    return HeroBaseReflectDmg * M;
-	case ET66SecondaryStatType::HpRegen:          return FMath::Max(1.f, HeroBaseHpRegen) * M;
+	case ET66SecondaryStatType::HpRegen:          return 0.f;
 	case ET66SecondaryStatType::Crush:            return FMath::Clamp(HeroBaseCrushChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::Invisibility:     return FMath::Clamp(HeroBaseInvisChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::CounterAttack:    return HeroBaseCounterAttack * M;
-	case ET66SecondaryStatType::LifeSteal:        return FMath::Clamp(HeroBaseLifeSteal * M, 0.f, 1.f);
+	case ET66SecondaryStatType::LifeSteal:        return 0.f;
 	case ET66SecondaryStatType::Assassinate:      return FMath::Clamp(HeroBaseAssassinateChance * M, 0.f, 1.f);
-	case ET66SecondaryStatType::SpinWheel:        return 1.f * M;
+	case ET66SecondaryStatType::SpinWheel:        return 1.f;
 	case ET66SecondaryStatType::Goblin:           return 1.f * M;
 	case ET66SecondaryStatType::Leprechaun:       return 1.f * M;
 	case ET66SecondaryStatType::TreasureChest:    return 1.f * M;
 	case ET66SecondaryStatType::Fountain:         return 1.f * M;
 	case ET66SecondaryStatType::Cheating:         return FMath::Clamp(HeroBaseCheatChance * M, 0.f, 1.f);
 	case ET66SecondaryStatType::Stealing:         return FMath::Clamp(HeroBaseStealChance * M, 0.f, 1.f);
-	case ET66SecondaryStatType::MovementSpeed:    return 1.f * M;
+	case ET66SecondaryStatType::MovementSpeed:    return 1.f;
 	case ET66SecondaryStatType::LootCrate:        return 1.f * M;
 	case ET66SecondaryStatType::DamageReduction:  return BaseArmorReduction * FMath::Max(0.f, M - 1.f);
 	case ET66SecondaryStatType::EvasionChance:    return BaseEvasionChance * FMath::Max(0.f, M - 1.f);
+	case ET66SecondaryStatType::Alchemy:          return 0.f;
 	default: return 1.f;
 	}
 }
@@ -1167,8 +1747,8 @@ float UT66RunStateSubsystem::GetSecondaryStatBaselineValue(ET66SecondaryStatType
 	case ET66SecondaryStatType::PierceDamage:    return static_cast<float>(BasePierceDmg);
 	case ET66SecondaryStatType::DotDamage:       return static_cast<float>(BaseDotDmg);
 	case ET66SecondaryStatType::CritDamage:      return HeroBaseCritDamage;
-	case ET66SecondaryStatType::CloseRangeDamage:return HeroBaseCloseRangeDmg;
-	case ET66SecondaryStatType::LongRangeDamage: return HeroBaseLongRangeDmg;
+	case ET66SecondaryStatType::CloseRangeDamage:return 1.f;
+	case ET66SecondaryStatType::LongRangeDamage: return 1.f;
 	case ET66SecondaryStatType::AoeSpeed:        return static_cast<float>(BaseAoeAtkSpd);
 	case ET66SecondaryStatType::BounceSpeed:     return static_cast<float>(BaseBounceAtkSpd);
 	case ET66SecondaryStatType::PierceSpeed:     return static_cast<float>(BasePierceAtkSpd);
@@ -1179,13 +1759,14 @@ float UT66RunStateSubsystem::GetSecondaryStatBaselineValue(ET66SecondaryStatType
 	case ET66SecondaryStatType::PierceScale:     return static_cast<float>(BasePierceAtkScale);
 	case ET66SecondaryStatType::DotScale:        return static_cast<float>(BaseDotAtkScale);
 	case ET66SecondaryStatType::AttackRange:     return HeroBaseAttackRange;
+	case ET66SecondaryStatType::Accuracy:        return FMath::Clamp(HeroBaseAccuracy, 0.f, 1.f);
 	case ET66SecondaryStatType::Taunt:           return HeroBaseTaunt;
 	case ET66SecondaryStatType::ReflectDamage:   return FMath::Clamp(HeroBaseReflectDmg, 0.f, 1.f);
-	case ET66SecondaryStatType::HpRegen:         return FMath::Max(1.f, HeroBaseHpRegen);
+	case ET66SecondaryStatType::HpRegen:         return 0.f;
 	case ET66SecondaryStatType::Crush:           return FMath::Clamp(HeroBaseCrushChance, 0.f, 1.f);
 	case ET66SecondaryStatType::Invisibility:    return FMath::Clamp(HeroBaseInvisChance, 0.f, 1.f);
 	case ET66SecondaryStatType::CounterAttack:   return FMath::Clamp(HeroBaseCounterAttack, 0.f, 1.f);
-	case ET66SecondaryStatType::LifeSteal:       return FMath::Clamp(HeroBaseLifeSteal, 0.f, 1.f);
+	case ET66SecondaryStatType::LifeSteal:       return 0.f;
 	case ET66SecondaryStatType::Assassinate:     return FMath::Clamp(HeroBaseAssassinateChance, 0.f, 1.f);
 	case ET66SecondaryStatType::SpinWheel:       return 1.f;
 	case ET66SecondaryStatType::Goblin:          return 1.f;
@@ -1198,6 +1779,7 @@ float UT66RunStateSubsystem::GetSecondaryStatBaselineValue(ET66SecondaryStatType
 	case ET66SecondaryStatType::LootCrate:       return 1.f;
 	case ET66SecondaryStatType::DamageReduction: return 0.f;
 	case ET66SecondaryStatType::EvasionChance:   return 0.f;
+	case ET66SecondaryStatType::Alchemy:         return 0.f;
 	default:                                     return 1.f;
 	}
 }
@@ -1214,12 +1796,17 @@ float UT66RunStateSubsystem::GetHpRegenPerSecond() const
 
 float UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::MovementSpeed);
+	return 1.f;
 }
 
 float UT66RunStateSubsystem::GetLootCrateRewardMultiplier() const
 {
 	return GetSecondaryStatValue(ET66SecondaryStatType::LootCrate);
+}
+
+float UT66RunStateSubsystem::GetAlchemyLuckyUpgradeChance01() const
+{
+	return GetSecondaryStatValue(ET66SecondaryStatType::Alchemy);
 }
 
 float UT66RunStateSubsystem::GetCritChance01() const
@@ -1274,12 +1861,12 @@ float UT66RunStateSubsystem::GetLongRangeThreshold() const
 
 float UT66RunStateSubsystem::GetCloseRangeDamageMultiplier() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::CloseRangeDamage);
+	return 1.f;
 }
 
 float UT66RunStateSubsystem::GetLongRangeDamageMultiplier() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::LongRangeDamage);
+	return 1.f;
 }
 
 float UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier() const
@@ -1308,6 +1895,12 @@ float UT66RunStateSubsystem::GetHeroScaleMultiplier() const
 	return 1.f + (static_cast<float>(Sz - 1) * 0.008f);
 }
 
+float UT66RunStateSubsystem::GetHeroAccuracyMultiplier() const
+{
+	const int32 AccuracyStat = GetAccuracyStat();
+	return 1.f + (static_cast<float>(AccuracyStat - 1) * 0.010f);
+}
+
 float UT66RunStateSubsystem::GetArmorReduction01() const
 {
 	const int32 ArmorStat = GetArmorStat();
@@ -1322,6 +1915,12 @@ float UT66RunStateSubsystem::GetEvasionChance01() const
 	const float Base = static_cast<float>(EvasionStat - 1) * 0.006f;
 	const float Bonus = GetSecondaryStatValue(ET66SecondaryStatType::EvasionChance);
 	return FMath::Clamp(Base + Bonus + ItemEvasionBonus01, 0.f, 0.60f);
+}
+
+float UT66RunStateSubsystem::GetAccuracyChance01() const
+{
+	const float PassiveBonus = (PassiveType == ET66PassiveType::Headshot) ? 0.20f : 0.f;
+	return FMath::Clamp(GetSecondaryStatValue(ET66SecondaryStatType::Accuracy) + PassiveBonus, 0.f, 0.95f);
 }
 
 void UT66RunStateSubsystem::NotifyEnemyKilledByHero()
@@ -1391,12 +1990,6 @@ void UT66RunStateSubsystem::NotifyAttackFired()
 	LastAttackFireWorldTime = World->GetTimeSeconds();
 	if (PassiveType == ET66PassiveType::Overclock)
 		OverclockAttackCounter++;
-}
-
-bool UT66RunStateSubsystem::RollHeadshot() const
-{
-	if (PassiveType != ET66PassiveType::Headshot) return false;
-	return FMath::FRand() < 0.15f;
 }
 
 bool UT66RunStateSubsystem::ShouldOverclockDouble() const
@@ -1561,7 +2154,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 			FT66InventorySlot(FName(TEXT("Item_BounceScale")), ET66ItemRarity::Black, 2),
 			FT66InventorySlot(FName(TEXT("Item_DamageReduction")), ET66ItemRarity::Black, 2),
 			FT66InventorySlot(FName(TEXT("Item_CritDamage")), ET66ItemRarity::Red, 5),
-			FT66InventorySlot(FName(TEXT("Item_LifeSteal")), ET66ItemRarity::Yellow, 8),
+			FT66InventorySlot(FName(TEXT("Item_Accuracy")), ET66ItemRarity::Yellow, 8),
 		};
 		for (const FT66InventorySlot& Slot : FallbackStock)
 		{
@@ -1580,12 +2173,30 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 	{
 		for (const FName ItemID : ItemsDT->GetRowNames())
 		{
-			if (!T66_IsGamblersTokenItem(ItemID))
+			FItemData ItemData;
+			if (!GI->GetItemData(ItemID, ItemData))
+			{
+				continue;
+			}
+
+			if (!T66_IsGamblersTokenItem(ItemID) && T66IsLiveSecondaryStatType(ItemData.SecondaryStatType))
 			{
 				TemplatePool.Add(ItemID);
 			}
 		}
 	}
+
+	{
+		FItemData AccuracyItemData;
+		const FName AccuracyItemID(TEXT("Item_Accuracy"));
+		if (GI->GetItemData(AccuracyItemID, AccuracyItemData)
+			&& T66IsLiveSecondaryStatType(AccuracyItemData.SecondaryStatType)
+			&& !TemplatePool.Contains(AccuracyItemID))
+		{
+			TemplatePool.Add(AccuracyItemID);
+		}
+	}
+
 	if (TemplatePool.Num() == 0)
 	{
 		TemplatePool =
@@ -1594,7 +2205,7 @@ void UT66RunStateSubsystem::EnsureVendorStockForCurrentStage()
 			FName(TEXT("Item_BounceScale")),
 			FName(TEXT("Item_DamageReduction")),
 			FName(TEXT("Item_CritDamage")),
-			FName(TEXT("Item_LifeSteal"))
+			FName(TEXT("Item_Accuracy"))
 		};
 	}
 
@@ -1752,12 +2363,25 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 	BaseChance = FMath::Clamp(BaseChance, 0.f, 1.f);
 
 	bool bSuccess = false;
+	float AppliedChance = 0.f;
+	int32 DrawIndex = INDEX_NONE;
+	int32 PreDrawSeed = 0;
 	if (bTimingHit && BaseChance > 0.f)
 	{
 		const float Chance = RngSub ? RngSub->BiasChance01(BaseChance) : BaseChance;
+		AppliedChance = Chance;
 		FRandomStream Local(FPlatformTime::Cycles());
 		FRandomStream& Stream = RngSub ? RngSub->GetRunStream() : Local;
-		bSuccess = (Stream.GetFraction() < Chance);
+		if (RngSub)
+		{
+			bSuccess = RngSub->RollChance01(Chance);
+			DrawIndex = RngSub->GetLastRunDrawIndex();
+			PreDrawSeed = RngSub->GetLastRunPreDrawSeed();
+		}
+		else
+		{
+			bSuccess = (Stream.GetFraction() < Chance);
+		}
 	}
 
 	LastVendorStealOutcome = ET66VendorStealOutcome::None;
@@ -1794,7 +2418,12 @@ bool UT66RunStateSubsystem::ResolveVendorStealAttempt(int32 Index, bool bTimingH
 	}
 
 	// Luck Rating tracking (quantity): vendor steal success means item granted with no anger increase.
-	RecordLuckQuantityBool(FName(TEXT("VendorStealSuccess")), (LastVendorStealOutcome == ET66VendorStealOutcome::Success));
+	RecordLuckQuantityBool(
+		FName(TEXT("VendorStealSuccess")),
+		(LastVendorStealOutcome == ET66VendorStealOutcome::Success),
+		AppliedChance,
+		DrawIndex,
+		PreDrawSeed);
 
 	if (LastVendorStealOutcome == ET66VendorStealOutcome::Success)
 	{
@@ -2166,9 +2795,17 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	}
 
 	// Evasion: dodge the entire hit. On dodge: Assassinate (OHKO) and CounterAttack (deal fraction of would-be damage to attacker).
+	UT66RngSubsystem* RngSub = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RngSubsystem>() : nullptr;
 	const float Evade = GetEvasionChance01();
-	if (Evade > 0.f && FMath::FRand() < Evade)
+	AntiCheatIncomingHitChecks = FMath::Clamp(AntiCheatIncomingHitChecks + 1, 0, 1000000);
+	AntiCheatTotalEvasionChance = FMath::Clamp(AntiCheatTotalEvasionChance + FMath::Clamp(Evade, 0.f, 1.f), 0.f, 1000000.f);
+	const bool bDodged = Evade > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < Evade) : (FMath::FRand() < Evade));
+	if (bDodged)
 	{
+		RecordAntiCheatHitCheckEvent(Evade, true, false);
+		AntiCheatDodgeCount = FMath::Clamp(AntiCheatDodgeCount + 1, 0, 1000000);
+		AntiCheatCurrentConsecutiveDodges = FMath::Clamp(AntiCheatCurrentConsecutiveDodges + 1, 0, 1000000);
+		AntiCheatMaxConsecutiveDodges = FMath::Max(AntiCheatMaxConsecutiveDodges, AntiCheatCurrentConsecutiveDodges);
 		UWorld* DodgeWorld = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
 		if (DodgeWorld)
 		{
@@ -2183,13 +2820,13 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 		if (Attacker)
 		{
 			const float AssassinateChance = GetAssassinateChance01();
-			if (AssassinateChance > 0.f && FMath::FRand() < AssassinateChance)
+			if (AssassinateChance > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < AssassinateChance) : (FMath::FRand() < AssassinateChance)))
 			{
 				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { E->TakeDamageFromHero(99999, FName(TEXT("Assassinate")), NAME_None); }
 				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { B->TakeDamageFromHeroHit(99999, FName(TEXT("Assassinate")), NAME_None); }
 			}
 			const float CounterChance = FMath::Clamp(GetCounterAttackFraction(), 0.f, 1.f);
-			if (CounterChance > 0.f && DamageHP > 0 && FMath::FRand() < CounterChance)
+			if (CounterChance > 0.f && DamageHP > 0 && (RngSub ? (RngSub->GetRunStream().GetFraction() < CounterChance) : (FMath::FRand() < CounterChance)))
 			{
 				const int32 CounterDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageHP) * 0.5f));
 				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { if (E->CurrentHP > 0) E->TakeDamageFromHero(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
@@ -2205,7 +2842,6 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 		NotifyEvasionProc();
 		return false;
 	}
-
 	// Armor: reduce the hit (still at least 1 HP if hit > 0).
 	const float Armor = GetArmorReduction01();
 	const float Reduced = static_cast<float>(FMath::Max(1, FMath::CeilToInt(static_cast<float>(DamageHP) * (1.f - Armor))));
@@ -2215,6 +2851,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
 	if (Now - LastDamageTime < InvulnDurationSeconds)
 	{
+		RecordAntiCheatHitCheckEvent(Evade, false, false);
 		return false;
 	}
 
@@ -2222,7 +2859,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	if (Attacker && Reduced > 0.f)
 	{
 		const float ReflectChance = FMath::Clamp(GetReflectDamageFraction(), 0.f, 1.f);
-		if (ReflectChance > 0.f && FMath::FRand() < ReflectChance)
+		if (ReflectChance > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < ReflectChance) : (FMath::FRand() < ReflectChance)))
 		{
 			const int32 ReflectedAmount = FMath::Max(1, FMath::RoundToInt(Reduced * 0.5f));
 			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker))
@@ -2250,7 +2887,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 			}
 
 			const float CrushChance = GetCrushChance01();
-			if (CrushChance > 0.f && FMath::FRand() < CrushChance)
+			if (CrushChance > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < CrushChance) : (FMath::FRand() < CrushChance)))
 			{
 				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { E->TakeDamageFromHero(99999, FName(TEXT("Crush")), NAME_None); }
 				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { B->TakeDamageFromHeroHit(99999, FName(TEXT("Crush")), NAME_None); }
@@ -2267,6 +2904,9 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 	LastDamageTime = Now;
 	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
+	AntiCheatDamageTakenHitCount = FMath::Clamp(AntiCheatDamageTakenHitCount + 1, 0, 1000000);
+	AntiCheatCurrentConsecutiveDodges = 0;
+	RecordAntiCheatHitCheckEvent(Evade, false, true);
 
 	// BrawlersFury: taking damage triggers +30% damage dealt for 3s.
 	if (PassiveType == ET66PassiveType::BrawlersFury && World)
@@ -2285,15 +2925,6 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 					FCT->ShowDamageTaken(HeroPawn, FMath::RoundToInt(Reduced));
 				}
 			}
-		}
-	}
-
-	// Skill Rating tracking: any damage that actually applies counts as a hit event.
-	if (UGameInstance* GI3 = GetGameInstance())
-	{
-		if (UT66SkillRatingSubsystem* Skill = GI3->GetSubsystem<UT66SkillRatingSubsystem>())
-		{
-			Skill->NotifyDamageTaken();
 		}
 	}
 
@@ -2460,8 +3091,10 @@ void UT66RunStateSubsystem::AddItemWithRarity(FName ItemID, ET66ItemRarity Rarit
 	// Auto-generate the Line 1 roll for the provided rarity.
 	int32 RolledMin = 1, RolledMax = 3;
 	FItemData::GetLine1RollRange(Rarity, RolledMin, RolledMax);
+	UT66RngSubsystem* RngSub = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RngSubsystem>() : nullptr;
 	FRandomStream Local(FPlatformTime::Cycles());
-	const int32 RolledValue = Local.RandRange(RolledMin, RolledMax);
+	FRandomStream& Stream = RngSub ? RngSub->GetRunStream() : Local;
+	const int32 RolledValue = Stream.RandRange(RolledMin, RolledMax);
 
 	FT66InventorySlot Slot(ItemID, Rarity, RolledValue);
 	AddItemSlot(Slot);
@@ -2722,6 +3355,25 @@ bool UT66RunStateSubsystem::TryAlchemyUpgradeInventoryItems(int32 TargetIndex, i
 		return false;
 	}
 
+	const float LuckyAlchemyChance = GetAlchemyLuckyUpgradeChance01();
+	if (LuckyAlchemyChance > 0.f)
+	{
+		UT66RngSubsystem* RngSub = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RngSubsystem>() : nullptr;
+		const bool bLuckyAlchemy = RngSub
+			? RngSub->RollChance01(LuckyAlchemyChance)
+			: (FMath::FRand() < LuckyAlchemyChance);
+		RecordLuckQuantityBool(
+			FName(TEXT("LuckyAlchemySuccess")),
+			bLuckyAlchemy,
+			LuckyAlchemyChance,
+			RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
+			RngSub ? RngSub->GetLastRunPreDrawSeed() : 0);
+		if (bLuckyAlchemy)
+		{
+			T66_ApplyLuckyAlchemyBonus(UpgradedSlot);
+		}
+	}
+
 	int32 AngerGold = 0;
 	if (GI)
 	{
@@ -2802,10 +3454,11 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 			case ET66HeroStatType::Damage:      ItemStatBonuses.Damage += V; break;
 			case ET66HeroStatType::AttackSpeed:  ItemStatBonuses.AttackSpeed += V; break;
 			case ET66HeroStatType::AttackScale:  ItemStatBonuses.AttackScale += V; break;
+			case ET66HeroStatType::Accuracy:     ItemStatBonuses.Accuracy += V; break;
 			case ET66HeroStatType::Armor:        ItemStatBonuses.Armor += V; break;
 			case ET66HeroStatType::Evasion:      ItemStatBonuses.Evasion += V; break;
 			case ET66HeroStatType::Luck:         ItemStatBonuses.Luck += V; break;
-			case ET66HeroStatType::Speed:        HeroStats.Speed = FMath::Clamp(HeroStats.Speed + V, 1, 9999); break;
+			case ET66HeroStatType::Speed:        break;
 			default: break;
 		}
 	};
@@ -2984,7 +3637,23 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	}
 	EventLog.Empty();
 	StructuredEventLog.Empty();
+	AntiCheatLuckEvents.Empty();
+	AntiCheatHitCheckEvents.Empty();
+	AntiCheatGamblerSummaries.Empty();
+	AntiCheatGamblerEvents.Empty();
+	bAntiCheatLuckEventsTruncated = false;
+	bAntiCheatHitCheckEventsTruncated = false;
+	bAntiCheatGamblerEventsTruncated = false;
+	StagePacingPoints.Empty();
 	ResetLuckRatingTracking();
+	AntiCheatIncomingHitChecks = 0;
+	AntiCheatDamageTakenHitCount = 0;
+	AntiCheatDodgeCount = 0;
+	AntiCheatCurrentConsecutiveDodges = 0;
+	AntiCheatMaxConsecutiveDodges = 0;
+	AntiCheatTotalEvasionChance = 0.f;
+	InitializeAntiCheatEvasionBuckets();
+	ResetAntiCheatPressureTracking();
 	CurrentStage = 1;
 	bStageTimerActive = false;
 	StageTimerSecondsRemaining = StageTimerDurationSeconds;
@@ -3008,6 +3677,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	CurrentScore = 0;
 	LastDamageTime = -9999.f;
 	PowerCrystalsEarnedThisRun = 0;
+	SingleUseSecondaryMultipliers.Reset();
 
 	// Skill Rating: reset per brand new run.
 	if (UGameInstance* GI3 = GetGameInstance())
@@ -3113,6 +3783,11 @@ void UT66RunStateSubsystem::MarkRunEnded(bool bWasFullClear)
 		return;
 	}
 
+	if (bWasFullClear)
+	{
+		RecordStagePacingPoint(CurrentStage, GetCurrentRunElapsedSeconds());
+	}
+
 	FinalRunElapsedSeconds = GetCurrentRunElapsedSeconds();
 	bRunEnded = true;
 	bRunEndedAsVictory = bWasFullClear;
@@ -3142,6 +3817,7 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.ActiveGamblersTokenLevel = ActiveGamblersTokenLevel;
 	OutSnapshot.EventLog = EventLog;
 	OutSnapshot.StructuredEventLog = StructuredEventLog;
+	OutSnapshot.StagePacingPoints = StagePacingPoints;
 	OutSnapshot.bStageTimerActive = bStageTimerActive;
 	OutSnapshot.StageTimerSecondsRemaining = StageTimerSecondsRemaining;
 	OutSnapshot.SpeedRunElapsedSeconds = bSpeedRunStarted && GetWorld()
@@ -3162,9 +3838,26 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.ActiveBossID = ActiveBossID;
 	OutSnapshot.BossMaxHP = BossMaxHP;
 	OutSnapshot.BossCurrentHP = BossCurrentHP;
+	OutSnapshot.BossParts = BossPartSnapshots;
 	OutSnapshot.bPendingDifficultyClearSummary = bPendingDifficultyClearSummary;
 	OutSnapshot.bSaintBlessingActive = bSaintBlessingActive;
 	OutSnapshot.FinalSurvivalEnemyScalar = FinalSurvivalEnemyScalar;
+	OutSnapshot.AntiCheatIncomingHitChecks = AntiCheatIncomingHitChecks;
+	OutSnapshot.AntiCheatDamageTakenHitCount = AntiCheatDamageTakenHitCount;
+	OutSnapshot.AntiCheatDodgeCount = AntiCheatDodgeCount;
+	OutSnapshot.AntiCheatCurrentConsecutiveDodges = AntiCheatCurrentConsecutiveDodges;
+	OutSnapshot.AntiCheatMaxConsecutiveDodges = AntiCheatMaxConsecutiveDodges;
+	OutSnapshot.AntiCheatTotalEvasionChance = AntiCheatTotalEvasionChance;
+	OutSnapshot.AntiCheatEvasionBuckets = AntiCheatEvasionBuckets;
+	OutSnapshot.AntiCheatPressureWindowSummary = AntiCheatPressureWindowSummary;
+	OutSnapshot.AntiCheatGamblerSummaries = AntiCheatGamblerSummaries;
+	OutSnapshot.AntiCheatGamblerEvents = AntiCheatGamblerEvents;
+	OutSnapshot.bAntiCheatGamblerEventsTruncated = bAntiCheatGamblerEventsTruncated;
+	OutSnapshot.AntiCheatCurrentPressureWindowIndex = AntiCheatCurrentPressureWindowIndex;
+	OutSnapshot.AntiCheatCurrentPressureHitChecks = AntiCheatCurrentPressureHitChecks;
+	OutSnapshot.AntiCheatCurrentPressureDodges = AntiCheatCurrentPressureDodges;
+	OutSnapshot.AntiCheatCurrentPressureDamageApplied = AntiCheatCurrentPressureDamageApplied;
+	OutSnapshot.AntiCheatCurrentPressureExpectedDodges = AntiCheatCurrentPressureExpectedDodges;
 
 	if (const UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
@@ -3193,6 +3886,11 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 		Saved.Sum01 = static_cast<float>(Pair.Value.Sum01);
 		Saved.Count = Pair.Value.Count;
 	}
+
+	OutSnapshot.AntiCheatLuckEvents = AntiCheatLuckEvents;
+	OutSnapshot.bAntiCheatLuckEventsTruncated = bAntiCheatLuckEventsTruncated;
+	OutSnapshot.AntiCheatHitCheckEvents = AntiCheatHitCheckEvents;
+	OutSnapshot.bAntiCheatHitCheckEventsTruncated = bAntiCheatHitCheckEventsTruncated;
 }
 
 void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& Snapshot)
@@ -3232,6 +3930,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	ActiveGamblersTokenLevel = T66_ClampGamblersTokenLevel(Snapshot.ActiveGamblersTokenLevel);
 	EventLog = Snapshot.EventLog;
 	StructuredEventLog = Snapshot.StructuredEventLog;
+	StagePacingPoints = Snapshot.StagePacingPoints;
 	bStageTimerActive = Snapshot.bStageTimerActive;
 	StageTimerSecondsRemaining = FMath::Clamp(Snapshot.StageTimerSecondsRemaining, 0.f, StageTimerDurationSeconds);
 	LastBroadcastStageTimerSecond = FMath::FloorToInt(StageTimerSecondsRemaining);
@@ -3253,6 +3952,24 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	bPendingDifficultyClearSummary = Snapshot.bPendingDifficultyClearSummary;
 	bSaintBlessingActive = Snapshot.bSaintBlessingActive;
 	FinalSurvivalEnemyScalar = FMath::Clamp(Snapshot.FinalSurvivalEnemyScalar, 1.f, 99.f);
+	AntiCheatIncomingHitChecks = FMath::Max(0, Snapshot.AntiCheatIncomingHitChecks);
+	AntiCheatDamageTakenHitCount = FMath::Max(0, Snapshot.AntiCheatDamageTakenHitCount);
+	AntiCheatDodgeCount = FMath::Max(0, Snapshot.AntiCheatDodgeCount);
+	AntiCheatCurrentConsecutiveDodges = FMath::Max(0, Snapshot.AntiCheatCurrentConsecutiveDodges);
+	AntiCheatMaxConsecutiveDodges = FMath::Max(AntiCheatCurrentConsecutiveDodges, Snapshot.AntiCheatMaxConsecutiveDodges);
+	AntiCheatTotalEvasionChance = FMath::Clamp(Snapshot.AntiCheatTotalEvasionChance, 0.f, 1000000.f);
+	AntiCheatEvasionBuckets = Snapshot.AntiCheatEvasionBuckets;
+	InitializeAntiCheatEvasionBuckets();
+	AntiCheatPressureWindowSummary = Snapshot.AntiCheatPressureWindowSummary;
+	AntiCheatPressureWindowSummary.WindowSeconds = AntiCheatPressureWindowSeconds;
+	AntiCheatGamblerSummaries = Snapshot.AntiCheatGamblerSummaries;
+	AntiCheatGamblerEvents = Snapshot.AntiCheatGamblerEvents;
+	bAntiCheatGamblerEventsTruncated = Snapshot.bAntiCheatGamblerEventsTruncated;
+	AntiCheatCurrentPressureWindowIndex = Snapshot.AntiCheatCurrentPressureWindowIndex;
+	AntiCheatCurrentPressureHitChecks = FMath::Max(0, Snapshot.AntiCheatCurrentPressureHitChecks);
+	AntiCheatCurrentPressureDodges = FMath::Max(0, Snapshot.AntiCheatCurrentPressureDodges);
+	AntiCheatCurrentPressureDamageApplied = FMath::Max(0, Snapshot.AntiCheatCurrentPressureDamageApplied);
+	AntiCheatCurrentPressureExpectedDodges = FMath::Clamp(Snapshot.AntiCheatCurrentPressureExpectedDodges, 0.f, 1000000.f);
 	CurrentScore = FMath::Max(0, Snapshot.CurrentScore);
 	HeroLevel = FMath::Max(1, Snapshot.HeroLevel);
 	HeroXP = FMath::Max(0, Snapshot.HeroXP);
@@ -3263,6 +3980,11 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	ActiveBossID = Snapshot.ActiveBossID;
 	BossMaxHP = FMath::Max(1, Snapshot.BossMaxHP);
 	BossCurrentHP = FMath::Clamp(Snapshot.BossCurrentHP, 0, BossMaxHP);
+	BossPartSnapshots = Snapshot.BossParts;
+	if (BossPartSnapshots.Num() > 0)
+	{
+		T66_RecomputeBossAggregate(BossPartSnapshots, BossMaxHP, BossCurrentHP);
+	}
 
 	LuckQuantityByCategory.Reset();
 	for (const FT66SavedLuckAccumulator& Saved : Snapshot.LuckQuantityAccumulators)
@@ -3280,6 +4002,17 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 		Accumulator.Sum01 = static_cast<double>(Saved.Sum01);
 		Accumulator.Count = FMath::Max(0, Saved.Count);
 		LuckQualityByCategory.Add(Saved.Category, Accumulator);
+	}
+
+	AntiCheatLuckEvents = Snapshot.AntiCheatLuckEvents;
+	bAntiCheatLuckEventsTruncated = Snapshot.bAntiCheatLuckEventsTruncated;
+	AntiCheatHitCheckEvents = Snapshot.AntiCheatHitCheckEvents;
+	bAntiCheatHitCheckEventsTruncated = Snapshot.bAntiCheatHitCheckEventsTruncated;
+	if (AntiCheatGamblerEvents.Num() > MaxAntiCheatGamblerEvents)
+	{
+		const int32 RemoveCount = AntiCheatGamblerEvents.Num() - MaxAntiCheatGamblerEvents;
+		AntiCheatGamblerEvents.RemoveAt(0, RemoveCount, EAllowShrinking::No);
+		bAntiCheatGamblerEventsTruncated = true;
 	}
 
 	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
@@ -3313,6 +4046,47 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	StatusEffectsChanged.Broadcast();
 }
 
+bool UT66RunStateSubsystem::HasStagePacingPoint(const int32 Stage) const
+{
+	return StagePacingPoints.ContainsByPredicate([Stage](const FT66StagePacingPoint& Point)
+	{
+		return Point.Stage == Stage;
+	});
+}
+
+void UT66RunStateSubsystem::RecordStagePacingPoint(const int32 Stage, const float CumulativeElapsedSeconds)
+{
+	const int32 ClampedStage = FMath::Clamp(Stage, 1, 23);
+	if (ClampedStage <= 0)
+	{
+		return;
+	}
+
+	FT66StagePacingPoint Point;
+	Point.Stage = ClampedStage;
+	Point.Score = FMath::Max(0, CurrentScore);
+	Point.ElapsedSeconds = FMath::Max(0.f, CumulativeElapsedSeconds);
+
+	const int32 ExistingIndex = StagePacingPoints.IndexOfByPredicate([ClampedStage](const FT66StagePacingPoint& ExistingPoint)
+	{
+		return ExistingPoint.Stage == ClampedStage;
+	});
+
+	if (ExistingIndex != INDEX_NONE)
+	{
+		StagePacingPoints[ExistingIndex] = Point;
+		return;
+	}
+
+	StagePacingPoints.Add(Point);
+	StagePacingPoints.Sort([](const FT66StagePacingPoint& A, const FT66StagePacingPoint& B)
+	{
+		return A.Stage < B.Stage;
+	});
+
+	AddStructuredEvent(ET66RunEventType::StageExited, T66LeaderboardPacing::MakeStageMarker(Point.Stage, Point.Score, Point.ElapsedSeconds));
+}
+
 void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 {
 	const int32 NewStage = FMath::Clamp(Stage, 1, 23);
@@ -3330,6 +4104,7 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 			? FMath::Max(0.f, Now - SpeedRunStartWorldSeconds)
 			: FMath::Max(0.f, SpeedRunElapsedSeconds);
 		CompletedStageActiveSeconds += Elapsed;
+		RecordStagePacingPoint(CurrentStage, CompletedStageActiveSeconds);
 		if (bSpeedRunMode)
 		{
 			const int32 CompletedStage = CurrentStage;
@@ -3441,6 +4216,19 @@ void UT66RunStateSubsystem::ResetStageTimerToFull()
 	SpeedRunTimerChanged.Broadcast();
 }
 
+void UT66RunStateSubsystem::ResetDifficultyPacing()
+{
+	StagePacingPoints.Reset();
+	CompletedStageActiveSeconds = 0.f;
+	FinalRunElapsedSeconds = 0.f;
+	SpeedRunElapsedSeconds = 0.f;
+	SpeedRunStartWorldSeconds = 0.f;
+	bSpeedRunStarted = false;
+	bThisRunSetNewPersonalBestSpeedRunTime = false;
+	LastBroadcastSpeedRunSecond = -1;
+	SpeedRunTimerChanged.Broadcast();
+}
+
 void UT66RunStateSubsystem::SetBossActive(int32 InMaxHP)
 {
 	SetBossActiveWithId(NAME_None, InMaxHP);
@@ -3452,12 +4240,66 @@ void UT66RunStateSubsystem::SetBossActiveWithId(FName InBossID, int32 InMaxHP)
 	ActiveBossID = InBossID;
 	BossMaxHP = FMath::Max(1, InMaxHP);
 	BossCurrentHP = BossMaxHP;
+	BossPartSnapshots.Reset();
+	BossPartSnapshots.Shrink();
+	BossPartSnapshots.AddDefaulted();
+	BossPartSnapshots[0].PartID = FName(TEXT("Core"));
+	BossPartSnapshots[0].HitZoneType = ET66HitZoneType::Core;
+	BossPartSnapshots[0].MaxHP = BossMaxHP;
+	BossPartSnapshots[0].CurrentHP = BossCurrentHP;
+	BossChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::SetBossActiveWithParts(FName InBossID, const TArray<FT66BossPartSnapshot>& InBossParts)
+{
+	bBossActive = true;
+	ActiveBossID = InBossID;
+	BossPartSnapshots = InBossParts;
+	T66_RecomputeBossAggregate(BossPartSnapshots, BossMaxHP, BossCurrentHP);
 	BossChanged.Broadcast();
 }
 
 void UT66RunStateSubsystem::RescaleBossMaxHPPreservePercent(int32 NewMaxHP)
 {
 	if (!bBossActive) return;
+
+	if (BossPartSnapshots.Num() > 0)
+	{
+		const int32 TargetMaxHP = FMath::Max(1, NewMaxHP);
+		const int32 OldTotalMaxHP = FMath::Max(1, BossMaxHP);
+		int32 RemainingHP = TargetMaxHP;
+
+		for (int32 Index = 0; Index < BossPartSnapshots.Num(); ++Index)
+		{
+			FT66BossPartSnapshot& Part = BossPartSnapshots[Index];
+			const int32 OldPartMaxHP = FMath::Max(1, Part.MaxHP);
+			const int32 OldPartCurrentHP = FMath::Clamp(Part.CurrentHP, 0, OldPartMaxHP);
+			const float PartPct = FMath::Clamp(static_cast<float>(OldPartCurrentHP) / static_cast<float>(OldPartMaxHP), 0.f, 1.f);
+			const int32 RemainingParts = BossPartSnapshots.Num() - Index;
+
+			int32 NewPartMaxHP = 1;
+			if (Index == BossPartSnapshots.Num() - 1)
+			{
+				NewPartMaxHP = FMath::Max(1, RemainingHP);
+			}
+			else
+			{
+				NewPartMaxHP = FMath::Clamp(
+					FMath::RoundToInt(static_cast<float>(TargetMaxHP) * static_cast<float>(OldPartMaxHP) / static_cast<float>(OldTotalMaxHP)),
+					1,
+					FMath::Max(1, RemainingHP - (RemainingParts - 1)));
+			}
+
+			Part.MaxHP = NewPartMaxHP;
+			Part.CurrentHP = FMath::Clamp(FMath::RoundToInt(static_cast<float>(NewPartMaxHP) * PartPct), 0, NewPartMaxHP);
+			RemainingHP = FMath::Max(0, RemainingHP - NewPartMaxHP);
+		}
+
+		T66_RecomputeBossAggregate(BossPartSnapshots, BossMaxHP, BossCurrentHP);
+		BossChanged.Broadcast();
+		return;
+	}
+
 	const int32 PrevMax = FMath::Max(1, BossMaxHP);
 	const int32 PrevCur = FMath::Clamp(BossCurrentHP, 0, PrevMax);
 	const float Pct = FMath::Clamp(static_cast<float>(PrevCur) / static_cast<float>(PrevMax), 0.f, 1.f);
@@ -3471,6 +4313,7 @@ void UT66RunStateSubsystem::SetBossInactive()
 {
 	bBossActive = false;
 	ActiveBossID = NAME_None;
+	BossPartSnapshots.Reset();
 	BossCurrentHP = 0;
 	BossChanged.Broadcast();
 }
@@ -3478,7 +4321,29 @@ void UT66RunStateSubsystem::SetBossInactive()
 bool UT66RunStateSubsystem::ApplyBossDamage(int32 Damage)
 {
 	if (!bBossActive || Damage <= 0 || BossCurrentHP <= 0) return false;
+
+	if (BossPartSnapshots.Num() > 0)
+	{
+		for (FT66BossPartSnapshot& Part : BossPartSnapshots)
+		{
+			if (Part.CurrentHP <= 0)
+			{
+				continue;
+			}
+
+			Part.CurrentHP = FMath::Max(0, Part.CurrentHP - Damage);
+			T66_RecomputeBossAggregate(BossPartSnapshots, BossMaxHP, BossCurrentHP);
+			BossChanged.Broadcast();
+			return BossCurrentHP <= 0;
+		}
+	}
+
 	BossCurrentHP = FMath::Max(0, BossCurrentHP - Damage);
+	if (BossPartSnapshots.Num() == 1)
+	{
+		BossPartSnapshots[0].MaxHP = BossMaxHP;
+		BossPartSnapshots[0].CurrentHP = BossCurrentHP;
+	}
 	BossChanged.Broadcast();
 	return BossCurrentHP <= 0;
 }
@@ -3489,6 +4354,7 @@ void UT66RunStateSubsystem::ResetBossState()
 	ActiveBossID = NAME_None;
 	BossMaxHP = 100;
 	BossCurrentHP = 0;
+	BossPartSnapshots.Reset();
 	BossChanged.Broadcast();
 }
 

@@ -186,18 +186,14 @@ def get_assistant_turn_count(page: Any) -> int:
     return int(
         page.evaluate(
             """
-() => Array.from(document.querySelectorAll("section[data-testid^='conversation-turn-']"))
-  .filter((section) => !!section.querySelector("[data-message-author-role='assistant']"))
-  .length
+() => document.querySelectorAll("[data-message-author-role='assistant']").length
 """
         )
     )
 
 
 def get_latest_assistant_turn_locator(page: Any) -> Any:
-    return page.locator("section[data-testid^='conversation-turn-']").filter(
-        has=page.locator("[data-message-author-role='assistant']")
-    ).last
+    return page.locator("[data-message-author-role='assistant']").last
 
 
 def get_latest_assistant_image_candidates(page: Any) -> list[ImageCandidate]:
@@ -335,32 +331,94 @@ def fill_and_send_prompt(page: Any, prompt: str, image_paths: list[str] | None =
         page.keyboard.press("Enter")
 
 
-def get_page_issue(page: Any) -> tuple[str, str, int | None] | None:
+def get_visible_issue_texts(page: Any) -> list[str]:
+    try:
+        texts = page.evaluate(
+            """
+() => {
+  const selectors = [
+    "[role='alert']",
+    "[aria-live='assertive']",
+    "[data-testid*='toast']",
+    "[data-testid*='error']",
+    "[data-testid*='notice']"
+  ].join(",");
+
+  const isVisible = (el) => {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    if (!style) return false;
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") === 0) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  };
+
+  return Array.from(document.querySelectorAll(selectors))
+    .filter(isVisible)
+    .map((node) => (node.innerText || node.textContent || "").trim())
+    .filter(Boolean)
+    .slice(-8);
+}
+"""
+        )
+    except PlaywrightError:
+        return []
+
+    if not isinstance(texts, list):
+        return []
+    return [str(text) for text in texts if str(text).strip()]
+
+
+def get_latest_assistant_text(page: Any) -> str:
+    try:
+        text = page.evaluate(
+            """
+() => {
+  const nodes = Array.from(document.querySelectorAll("[data-message-author-role='assistant']"));
+  const last = nodes.at(-1);
+  return last ? (last.innerText || last.textContent || "").trim() : "";
+}
+"""
+        )
+    except PlaywrightError:
+        return ""
+
+    return str(text).strip() if text else ""
+
+
+def get_page_issue(page: Any, include_latest_assistant: bool = False) -> tuple[str, str, int | None] | None:
+    issue_text = "\n".join(get_visible_issue_texts(page))
+    if include_latest_assistant:
+        latest_assistant_text = get_latest_assistant_text(page)
+        if latest_assistant_text:
+            issue_text = f"{issue_text}\n{latest_assistant_text}".strip()
+
+    if issue_text:
+        rate_limit_match = re.search(r"wait for\s+(\d+)\s+minute", issue_text, re.IGNORECASE)
+        if (
+            "You're generating images too quickly" in issue_text
+            or "rate_limit_exceeded" in issue_text
+            or rate_limit_match
+        ):
+            retry_after_seconds = int(rate_limit_match.group(1)) * 60 + 5 if rate_limit_match else 125
+            return ("rate_limit", "ChatGPT image generation rate limit reached.", retry_after_seconds)
+
+        error_markers = [
+            "Something went wrong",
+            "Unable to generate",
+            "There was an error",
+        ]
+        for marker in error_markers:
+            if marker in issue_text:
+                return ("error", f"ChatGPT reported an error: {marker}", None)
+
     try:
         body_text = page.locator("body").inner_text(timeout=1000)
     except PlaywrightError:
         return None
 
-    rate_limit_match = re.search(r"wait for\s+(\d+)\s+minute", body_text, re.IGNORECASE)
-    if (
-        "You're generating images too quickly" in body_text
-        or "rate_limit_exceeded" in body_text
-        or rate_limit_match
-    ):
-        retry_after_seconds = int(rate_limit_match.group(1)) * 60 + 5 if rate_limit_match else 125
-        return ("rate_limit", "ChatGPT image generation rate limit reached.", retry_after_seconds)
-
     if "Log in" in body_text or "Sign up" in body_text:
         return ("auth", "ChatGPT session is not logged in inside the remote-debug Chrome profile.", None)
-
-    error_markers = [
-        "Something went wrong",
-        "Unable to generate",
-        "There was an error",
-    ]
-    for marker in error_markers:
-        if marker in body_text:
-            return ("error", f"ChatGPT reported an error: {marker}", None)
     return None
 
 
@@ -373,7 +431,11 @@ def wait_for_new_images(
     deadline = time.monotonic() + timeout_seconds
 
     while time.monotonic() < deadline:
-        issue = get_page_issue(page)
+        current_assistant_turn_count = get_assistant_turn_count(page)
+        issue = get_page_issue(
+            page,
+            include_latest_assistant=current_assistant_turn_count > baseline_assistant_turn_count,
+        )
         if issue:
             kind, message, retry_after_seconds = issue
             if kind == "rate_limit":
@@ -383,12 +445,15 @@ def wait_for_new_images(
         current_page_candidates = get_image_candidates(page)
         current_page_keys = {candidate.key for candidate in current_page_candidates}
         if (
-            get_assistant_turn_count(page) > baseline_assistant_turn_count
+            current_assistant_turn_count > baseline_assistant_turn_count
             or bool(current_page_keys - baseline_page_image_keys)
         ):
             settled_candidates = wait_for_render_stability(page, deadline - time.monotonic())
+            fresh_candidates = [
+                candidate for candidate in settled_candidates if candidate.key not in baseline_page_image_keys
+            ]
             return sorted(
-                settled_candidates,
+                fresh_candidates or settled_candidates,
                 key=lambda candidate: (candidate.dom_index, -candidate.score),
             )
 

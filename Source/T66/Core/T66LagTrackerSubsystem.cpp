@@ -179,7 +179,7 @@ void UT66LagTrackerSubsystem::ReportSlowOperation(const FString& Cause, float Du
 {
 	if (!IsEnabled() || DurationMs < GetThresholdMs()) return;
 	++TotalLoggedSlowOperations;
-	UE_LOG(LogT66LagTracker, Warning, TEXT("[LAG] %s: %.2fms"), *Cause, DurationMs);
+	UE_LOG(LogT66LagTracker, Verbose, TEXT("[LAG] %s: %.2fms"), *Cause, DurationMs);
 }
 
 void UT66LagTrackerSubsystem::ResetSession()
@@ -201,7 +201,7 @@ void UT66LagTrackerSubsystem::DumpSummary(bool bResetAfterDump)
 
 	UE_LOG(
 		LogT66LagTracker,
-		Warning,
+		Verbose,
 		TEXT("[PERF SUMMARY] Session=%.2fs RecordedOps=%d LoggedSlowOps=%d Hitches=%d UniqueCauses=%d"),
 		SessionDurationSeconds,
 		TotalRecordedOperations,
@@ -256,7 +256,7 @@ void UT66LagTrackerSubsystem::DumpSummary(bool bResetAfterDump)
 		const double AgeSeconds = FMath::Max(0.0, NowSeconds - Row.LastSeenSeconds);
 		UE_LOG(
 			LogT66LagTracker,
-			Warning,
+			Verbose,
 			TEXT("[PERF SUMMARY] #%d Cause=%s Count=%d Total=%.2fms Avg=%.3fms Max=%.2fms LastSeen=%.2fsAgo"),
 			Index + 1,
 			*Row.Cause,
@@ -407,7 +407,7 @@ void UT66LagTrackerSubsystem::LogFrameHitch(double FrameMs, double NowSeconds)
 
 	UE_LOG(
 		LogT66LagTracker,
-		Warning,
+		Verbose,
 		TEXT("[HITCH] Frame=%.2fms %s"),
 		FrameMs,
 		*RecentSummaryText);

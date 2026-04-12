@@ -30,9 +30,10 @@ public:
 	 * Call when hero focus, body type, or skin changes.
 	 * @param SkinID Skin to show (e.g. Default, Beachgoer); used for preview-only display.
 	 * @param CompanionID If set, show this companion behind the hero (like in-game follow). NAME_None hides companion.
+	 * @param CompanionSkinID Optional companion skin override for preview-only display.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
-	void SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID = NAME_None, FName CompanionID = NAME_None);
+	void SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID = NAME_None, FName CompanionID = NAME_None, FName CompanionSkinID = NAME_None);
 
 	/** Rotate preview hero by yaw delta (degrees). Intended for UI drag-rotate. */
 	UFUNCTION(BlueprintCallable, Category = "Preview")
@@ -70,7 +71,7 @@ protected:
 	void UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType, FName SkinID);
 
 	/** Spawn/update/hide companion behind the hero. Position uses CompanionFollowOffset (same as in-game). */
-	void UpdatePreviewCompanion(FName CompanionID);
+	void UpdatePreviewCompanion(FName CompanionID, FName SkinID = NAME_None);
 
 	/** Update companion position/rotation to stay behind hero (call after ApplyPreviewRotation). */
 	void UpdateCompanionPlacement();
@@ -101,6 +102,21 @@ protected:
 	/** Optional companion shown behind the hero when a companion is selected (e.g. GI->SelectedCompanionID). */
 	UPROPERTY()
 	TObjectPtr<AT66CompanionBase> PreviewCompanionPawn;
+
+	UPROPERTY(Transient)
+	FName ActivePreviewHeroID = NAME_None;
+
+	UPROPERTY(Transient)
+	ET66BodyType ActivePreviewBodyType = ET66BodyType::TypeA;
+
+	UPROPERTY(Transient)
+	FName ActivePreviewHeroSkinID = NAME_None;
+
+	UPROPERTY(Transient)
+	FName ActivePreviewCompanionID = NAME_None;
+
+	UPROPERTY(Transient)
+	FName ActivePreviewCompanionSkinID = NAME_None;
 
 	/** Offset for companion beside the hero in preview so both characters remain readable. */
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")

@@ -41,10 +41,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save Slots")
 	void OnLoadClicked(int32 SlotIndex);
 
-	/** Load into level frozen; LOAD button on overlay unfreezes. */
-	UFUNCTION(BlueprintCallable, Category = "Save Slots")
-	void OnPreviewClicked(int32 SlotIndex);
-
 protected:
 	virtual void OnScreenActivated_Implementation() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
@@ -53,7 +49,6 @@ protected:
 private:
 	static constexpr int32 SlotsPerPage = 3;
 
-	TSharedPtr<FSlateBrush> SaveSlotsBackgroundBrush;
 	TArray<TSharedPtr<FSlateBrush>> SlotHeroPortraitBrushes;
 	TArray<TArray<TSharedPtr<FSlateBrush>>> SlotIdolBrushes;
 	TArray<int32> VisibleSlotIndices;
@@ -63,7 +58,6 @@ private:
 
 	FReply HandleBackClicked();
 	FReply HandleLoadClicked(int32 SlotIndex);
-	FReply HandlePreviewClicked(int32 SlotIndex);
 	FReply HandlePrevPageClicked();
 	FReply HandleNextPageClicked();
 };

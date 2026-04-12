@@ -33,6 +33,26 @@ struct T66_API FT66LocalScoreRecord
 	/** UTC timestamp for when the PB was achieved. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	FDateTime AchievedAtUtc = FDateTime::MinValue();
+
+	/** Global all-time rank recorded for the current best-score run. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 BestScoreRankAllTime = 0;
+
+	/** Best global all-time rank ever achieved for this difficulty + party. Lower is better. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 BestRankAllTime = 0;
+
+	/** Score associated with BestRankAllTime. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int64 BestRankScore = 0;
+
+	/** Run summary slot associated with BestRankAllTime. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString BestRankRunSummarySlotName;
+
+	/** UTC timestamp for when BestRankAllTime was achieved. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FDateTime BestRankAchievedAtUtc = FDateTime::MinValue();
 };
 
 USTRUCT(BlueprintType)
@@ -85,6 +105,26 @@ struct T66_API FT66LocalCompletedRunTimeRecord
 	/** UTC timestamp for when the PB was achieved. */
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
 	FDateTime AchievedAtUtc = FDateTime::MinValue();
+
+	/** Global all-time rank recorded for the current best completed time. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 BestCompletedRankAllTime = 0;
+
+	/** Best global all-time rank ever achieved for this difficulty + party. Lower is better. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	int32 BestRankAllTime = 0;
+
+	/** Completed-run time associated with BestRankAllTime. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	float BestRankCompletedSeconds = 0.f;
+
+	/** Run summary slot associated with BestRankAllTime. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FString BestRankRunSummarySlotName;
+
+	/** UTC timestamp for when BestRankAllTime was achieved. */
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Leaderboard")
+	FDateTime BestRankAchievedAtUtc = FDateTime::MinValue();
 };
 
 USTRUCT(BlueprintType)
@@ -147,8 +187,8 @@ enum class ET66AppealReviewStatus : uint8
 };
 
 /**
- * Local placeholder record for Account Status / Appeal.
- * Today this is purely local/offline (Steam moderation backend will replace it later).
+ * Locally cached account-status / appeal record.
+ * Refreshed from the backend when online, with a local fallback for offline/dev flows.
  */
 USTRUCT(BlueprintType)
 struct T66_API FT66AccountRestrictionRecord
@@ -191,7 +231,7 @@ class T66_API UT66LocalLeaderboardSaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 2;
+	int32 SchemaVersion = 3;
 
 	UPROPERTY(SaveGame)
 	TArray<FT66LocalScoreRecord> ScoreRecords;

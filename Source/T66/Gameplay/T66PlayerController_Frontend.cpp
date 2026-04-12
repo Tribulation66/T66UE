@@ -9,6 +9,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/T66UIManager.h"
 #include "UI/T66ScreenBase.h"
+#include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
@@ -18,16 +19,20 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66ShopScreen.h"
+#include "UI/Screens/T66TemporaryBuffSelectionScreen.h"
+#include "UI/Screens/T66TemporaryBuffPresetCreateScreen.h"
+#include "UI/Screens/T66TemporaryBuffShopScreen.h"
 #include "UI/Screens/T66UnlocksScreen.h"
+#include "UI/Screens/T66SnakeGameModal.h"
 #include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
+#include "UI/Screens/T66PartyInviteModal.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66CircusOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
-#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -51,7 +56,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -365,6 +370,11 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		}
 	}
 
+	if (ScreenType == ET66ScreenType::HeroSelection)
+	{
+		return UT66HeroSelectionScreen::StaticClass();
+	}
+
 	if (const TSubclassOf<UT66ScreenBase>* ScreenClass = ScreenClasses.Find(ScreenType))
 	{
 		return *ScreenClass;
@@ -392,6 +402,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66AchievementsScreen::StaticClass();
 	case ET66ScreenType::Unlocks:
 		return UT66UnlocksScreen::StaticClass();
+	case ET66ScreenType::SnakeGame:
+		return UT66SnakeGameModal::StaticClass();
 	case ET66ScreenType::ReportBug:
 		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
@@ -401,11 +413,19 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 	case ET66ScreenType::PlayerSummaryPicker:
 		return UT66PlayerSummaryPickerScreen::StaticClass();
 	case ET66ScreenType::PowerUp:
-		return UT66PowerUpScreen::StaticClass();
+		return UT66ShopScreen::StaticClass();
+	case ET66ScreenType::TemporaryBuffSelection:
+		return UT66TemporaryBuffSelectionScreen::StaticClass();
+	case ET66ScreenType::TemporaryBuffPresetCreate:
+		return UT66TemporaryBuffPresetCreateScreen::StaticClass();
+	case ET66ScreenType::TemporaryBuffShop:
+		return UT66TemporaryBuffShopScreen::StaticClass();
 	case ET66ScreenType::Leaderboard:
 		return UT66LeaderboardScreen::StaticClass();
 	case ET66ScreenType::AccountStatus:
 		return UT66AccountStatusScreen::StaticClass();
+	case ET66ScreenType::PartyInvite:
+		return UT66PartyInviteModal::StaticClass();
 	default:
 		return nullptr;
 	}
@@ -469,16 +489,6 @@ TSubclassOf<UT66CowardicePromptWidget> AT66PlayerController::ResolveCowardicePro
 	}
 
 	return UT66CowardicePromptWidget::StaticClass();
-}
-
-TSubclassOf<UT66LoadPreviewOverlayWidget> AT66PlayerController::ResolveLoadPreviewOverlayClass() const
-{
-	if (FT66Style::IsDotaTheme() && DotaLoadPreviewOverlayClass)
-	{
-		return DotaLoadPreviewOverlayClass;
-	}
-
-	return UT66LoadPreviewOverlayWidget::StaticClass();
 }
 
 TSubclassOf<UT66IdolAltarOverlayWidget> AT66PlayerController::ResolveIdolAltarOverlayClass() const
@@ -602,7 +612,6 @@ void AT66PlayerController::AutoLoadScreenClasses()
 
 	static const FScreenPathMapping ScreenPaths[] = {
 		{ ET66ScreenType::MainMenu, TEXT("/Game/Blueprints/UI/WBP_MainMenu.WBP_MainMenu_C") },
-		{ ET66ScreenType::HeroSelection, TEXT("/Game/Blueprints/UI/WBP_HeroSelection.WBP_HeroSelection_C") },
 		{ ET66ScreenType::CompanionSelection, TEXT("/Game/Blueprints/UI/WBP_CompanionSelection.WBP_CompanionSelection_C") },
 		{ ET66ScreenType::SaveSlots, TEXT("/Game/Blueprints/UI/WBP_SaveSlots.WBP_SaveSlots_C") },
 		{ ET66ScreenType::Settings, TEXT("/Game/Blueprints/UI/WBP_Settings.WBP_Settings_C") },
@@ -649,6 +658,10 @@ void AT66PlayerController::AutoLoadScreenClasses()
 	}
 
 	// HeroGrid/CompanionGrid are C++ screens by design (no optional WBP overrides).
+	if (!ScreenClasses.Contains(ET66ScreenType::HeroSelection) || ScreenClasses[ET66ScreenType::HeroSelection] == nullptr)
+	{
+		ScreenClasses.Add(ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass());
+	}
 	if (!ScreenClasses.Contains(ET66ScreenType::HeroGrid) || ScreenClasses[ET66ScreenType::HeroGrid] == nullptr)
 	{
 		ScreenClasses.Add(ET66ScreenType::HeroGrid, UT66HeroGridScreen::StaticClass());
@@ -705,13 +718,33 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> PowerUpClass = ResolveScreenClass(ET66ScreenType::PowerUp))
+	if (TSubclassOf<UT66ScreenBase> ShopClass = ResolveScreenClass(ET66ScreenType::PowerUp))
 	{
-		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, PowerUpClass);
+		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, ShopClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> AchievementsClass = ResolveScreenClass(ET66ScreenType::Achievements))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::Achievements, AchievementsClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> TemporaryBuffSelectionClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffSelection))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffSelection, TemporaryBuffSelectionClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> TemporaryBuffPresetCreateClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffPresetCreate))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffPresetCreate, TemporaryBuffPresetCreateClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> TemporaryBuffShopClass = ResolveScreenClass(ET66ScreenType::TemporaryBuffShop))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::TemporaryBuffShop, TemporaryBuffShopClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> UnlocksClass = ResolveScreenClass(ET66ScreenType::Unlocks))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Unlocks, UnlocksClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> SnakeGameClass = ResolveScreenClass(ET66ScreenType::SnakeGame))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::SnakeGame, SnakeGameClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
 	{
@@ -721,6 +754,10 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, AccountStatusClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> PartyInviteClass = ResolveScreenClass(ET66ScreenType::PartyInvite))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::PartyInvite, PartyInviteClass);
 	}
 
 	bUIInitialized = true;
@@ -739,6 +776,7 @@ void AT66PlayerController::InitializeUI()
 	if (ScreenToShow != ET66ScreenType::None)
 	{
 		UIManager->ShowScreen(ScreenToShow);
+		RefreshPartyInviteModal();
 	}
 }
 

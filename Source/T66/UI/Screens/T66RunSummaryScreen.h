@@ -50,14 +50,12 @@ private:
 	FReply HandleReportSubmitClicked();
 	FReply HandleReportCloseClicked();
 	FReply HandlePowerCouponsThankYouClicked();
-	FReply HandleRetryLevelClicked();
 	FReply HandleContinueDifficultyClicked();
 	FReply HandleSaveAndQuitClicked();
 	FReply HandleSubmitAndEndRunClicked();
 
 	void HandleProofLinkNavigate() const;
 	void ProcessLiveRunFinalSubmission();
-	FText GetContinueDifficultyButtonText() const;
 	bool SaveCurrentRunToSlot(bool bFromDifficultyClearSummary);
 
 	void RebuildLogItems();

@@ -10,9 +10,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "EngineUtils.h"
+#include "Misc/PackageName.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Eclipse, Log, All);
 
+static const TCHAR* EclipseMaterialPackagePath = TEXT("/Game/Lighting/M_EclipseCorona");
 static const TCHAR* EclipseMaterialPath = TEXT("/Game/Lighting/M_EclipseCorona.M_EclipseCorona");
 
 AT66EclipseActor::AT66EclipseActor()
@@ -39,7 +41,11 @@ void AT66EclipseActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UMaterialInterface* BaseMat = LoadObject<UMaterialInterface>(nullptr, EclipseMaterialPath);
+	UMaterialInterface* BaseMat = nullptr;
+	if (FPackageName::DoesPackageExist(EclipseMaterialPackagePath))
+	{
+		BaseMat = LoadObject<UMaterialInterface>(nullptr, EclipseMaterialPath);
+	}
 	if (BaseMat)
 	{
 		CoronaDMI = UMaterialInstanceDynamic::Create(BaseMat, this);
@@ -47,7 +53,8 @@ void AT66EclipseActor::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogT66Eclipse, Warning, TEXT("[Eclipse] Failed to load material at %s"), EclipseMaterialPath);
+		PlaneMesh->SetHiddenInGame(true);
+		PlaneMesh->SetVisibility(false, true);
 	}
 
 	// Find the moon directional light and position along its direction.

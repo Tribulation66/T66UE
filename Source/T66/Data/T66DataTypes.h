@@ -29,7 +29,7 @@ UENUM(BlueprintType)
 enum class ET66UltimateType : uint8
 {
 	None UMETA(DisplayName = "None"),
-	SpearStorm UMETA(DisplayName = "Spear Storm"),
+	SpearStorm UMETA(DisplayName = "Colossal Sword"),
 	MeteorStrike UMETA(DisplayName = "Meteor Strike"),
 	ChainLightning UMETA(DisplayName = "Chain Lightning"),
 	PlagueCloud UMETA(DisplayName = "Plague Cloud"),
@@ -176,6 +176,8 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
 	int32 BaseAttackScale = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
+	int32 BaseAccuracyStat = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
 	int32 BaseArmor = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
 	int32 BaseEvasion = 2;
@@ -200,6 +202,10 @@ struct T66_API FHeroData : public FTableRowBase
 	int32 LvlAtkScaleMin = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
 	int32 LvlAtkScaleMax = 2;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlAccuracyMin = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
+	int32 LvlAccuracyMax = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
 	int32 LvlArmorMin = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
@@ -359,6 +365,10 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
 	float BaseStealChance = 0.05f;
 
+	/** Base chance for untargeted auto-attacks to prefer enemy head hit zones. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
+	float BaseAccuracy = 0.15f;
+
 	FHeroData()
 		: HeroID(NAME_None)
 		, PlaceholderColor(FLinearColor::White)
@@ -383,6 +393,9 @@ struct T66_API FT66HeroStatBlock
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 AttackScale = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Accuracy = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 Armor = 1;
@@ -412,6 +425,9 @@ struct T66_API FT66HeroStatBonuses
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 AttackScale = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	int32 Accuracy = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	int32 Armor = 0;
@@ -487,6 +503,9 @@ struct T66_API FT66HeroPerLevelStatGains
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	FT66HeroStatGainRange AttackScale;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
+	FT66HeroStatGainRange Accuracy;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats")
 	FT66HeroStatGainRange Armor;
@@ -580,6 +599,8 @@ enum class ET66HeroStatType : uint8
 	Evasion UMETA(DisplayName = "Evasion"),
 	Luck UMETA(DisplayName = "Luck"),
 	Speed UMETA(DisplayName = "Speed"),
+	/** Appended to preserve serialized enum values for existing save data and data tables. */
+	Accuracy UMETA(DisplayName = "Accuracy"),
 };
 
 /**
@@ -614,7 +635,7 @@ enum class ET66SecondaryStatType : uint8
 	AttackRange UMETA(DisplayName = "Range"),
 	// Armor-defensive (4)
 	Taunt UMETA(DisplayName = "Taunt"),
-	ReflectDamage UMETA(DisplayName = "Reflect Damage"),
+	ReflectDamage UMETA(DisplayName = "Damage Reflection"),
 	HpRegen UMETA(DisplayName = "HP Regen"),
 	Crush UMETA(DisplayName = "Crush"),
 	// Evasion-offensive (4)
@@ -636,20 +657,46 @@ enum class ET66SecondaryStatType : uint8
 	LootCrate UMETA(DisplayName = "Loot Crate"),
 	// Defensive item-only bonuses that scale from their parent primary stat.
 	DamageReduction UMETA(DisplayName = "Damage Reduction"),
-	EvasionChance UMETA(DisplayName = "Evasion Chance"),
+	EvasionChance UMETA(DisplayName = "Dodge"),
 	GamblerToken UMETA(DisplayName = "Gambler's Token"),
+	Alchemy UMETA(DisplayName = "Alchemy"),
+	/** Appended to preserve serialized enum values for existing save data and data tables. */
+	Accuracy UMETA(DisplayName = "Accuracy"),
 };
 
 FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType)
 {
 	return StatType == ET66SecondaryStatType::Goblin
 		|| StatType == ET66SecondaryStatType::Leprechaun
-		|| StatType == ET66SecondaryStatType::Fountain;
+		|| StatType == ET66SecondaryStatType::Fountain
+		|| StatType == ET66SecondaryStatType::CloseRangeDamage
+		|| StatType == ET66SecondaryStatType::LongRangeDamage
+		|| StatType == ET66SecondaryStatType::SpinWheel
+		|| StatType == ET66SecondaryStatType::MovementSpeed
+		|| StatType == ET66SecondaryStatType::GamblerToken
+		|| StatType == ET66SecondaryStatType::HpRegen
+		|| StatType == ET66SecondaryStatType::LifeSteal
+		|| StatType == ET66SecondaryStatType::Alchemy;
 }
 
 FORCEINLINE bool T66IsLiveSecondaryStatType(ET66SecondaryStatType StatType)
 {
 	return StatType != ET66SecondaryStatType::None && !T66IsDeprecatedSecondaryStatType(StatType);
+}
+
+FORCEINLINE bool T66IsAccuracyFamilySecondaryStatType(ET66SecondaryStatType StatType)
+{
+	return StatType == ET66SecondaryStatType::CritDamage
+		|| StatType == ET66SecondaryStatType::CritChance
+		|| StatType == ET66SecondaryStatType::AttackRange
+		|| StatType == ET66SecondaryStatType::Accuracy;
+}
+
+FORCEINLINE ET66HeroStatType T66ResolveEffectivePrimaryStatType(ET66HeroStatType PrimaryStatType, ET66SecondaryStatType SecondaryStatType)
+{
+	return T66IsAccuracyFamilySecondaryStatType(SecondaryStatType)
+		? ET66HeroStatType::Accuracy
+		: PrimaryStatType;
 }
 
 UENUM(BlueprintType)
@@ -673,10 +720,10 @@ enum class ET66HeroStatusEffectType : uint8
 /**
  * Item template data row for the Items DataTable.
  *
- * There are 34 live item templates (33 regular items + Gambler's Token).
+ * There are 28 live item templates plus deprecated legacy rows kept for compatibility.
  * Each template defines:
- *   - Line 1: a primary stat type (one of the 7 foundational stats including Speed)
- *   - Line 2: a secondary stat type (one of 33 live effects)
+ *   - Line 1: a primary stat type (one of the item-facing foundational stats)
+ *   - Line 2: a secondary stat type (one live secondary effect)
  *
  * Rarity and Line 1 rolled value are stored at runtime in FT66InventorySlot.
  * Line 2 multiplier is typically derived from rarity: Black 1.1x, Red 1.2x, Yellow 1.5x, White 2.0x.
@@ -860,6 +907,16 @@ struct T66_API FT66InventorySlot
 /**
  * Boss data row for the Bosses DataTable (v0: single placeholder boss)
  */
+UENUM(BlueprintType)
+enum class ET66BossPartProfile : uint8
+{
+	UseActorDefault UMETA(DisplayName = "Use Actor Default"),
+	HumanoidBalanced UMETA(DisplayName = "Humanoid Balanced"),
+	Sharpshooter UMETA(DisplayName = "Sharpshooter"),
+	Juggernaut UMETA(DisplayName = "Juggernaut"),
+	Duelist UMETA(DisplayName = "Duelist"),
+};
+
 USTRUCT(BlueprintType)
 struct T66_API FBossData : public FTableRowBase
 {
@@ -904,6 +961,10 @@ struct T66_API FBossData : public FTableRowBase
 	/** Score awarded for defeating this boss (before difficulty scalar). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Score")
 	int32 PointValue = 0;
+
+	/** Generic multipart layout profile for bosses that use AT66BossBase directly. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	ET66BossPartProfile BossPartProfile = ET66BossPartProfile::UseActorDefault;
 
 	FBossData()
 		: BossID(NAME_None)
@@ -1269,6 +1330,25 @@ struct T66_API FRunEvent
 };
 
 /**
+ * Cumulative score/time checkpoint captured at the end of a stage.
+ * Used by HUD pacing comparisons and persisted through run summaries.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66StagePacingPoint
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RunEvent")
+	int32 Stage = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RunEvent")
+	int32 Score = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RunEvent")
+	float ElapsedSeconds = 0.f;
+};
+
+/**
  * Party size enumeration
  */
 UENUM(BlueprintType)
@@ -1470,6 +1550,28 @@ enum class ET66AchievementTier : uint8
 	White UMETA(DisplayName = "White")
 };
 
+UENUM(BlueprintType)
+enum class ET66AchievementCategory : uint8
+{
+	Standard UMETA(DisplayName = "Standard"),
+	Special UMETA(DisplayName = "Special"),
+};
+
+UENUM(BlueprintType)
+enum class ET66AchievementRewardType : uint8
+{
+	ChadCoupons UMETA(DisplayName = "Chad Coupons"),
+	SkinUnlock UMETA(DisplayName = "Skin Unlock"),
+};
+
+UENUM(BlueprintType)
+enum class ET66AchievementRewardEntityType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Hero UMETA(DisplayName = "Hero"),
+	Companion UMETA(DisplayName = "Companion"),
+};
+
 /**
  * Achievement data row for the Achievements DataTable
  */
@@ -1494,9 +1596,29 @@ struct T66_API FAchievementData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	ET66AchievementTier Tier = ET66AchievementTier::Black;
 
-	/** Achievement Coins reward */
+	/** Achievement category in the browser. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	ET66AchievementCategory Category = ET66AchievementCategory::Standard;
+
+	/** Reward kind for this achievement. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
-	int32 RewardCoins = 25;
+	ET66AchievementRewardType RewardType = ET66AchievementRewardType::ChadCoupons;
+
+	/** Chad Coupons reward */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	int32 RewardCoins = 5;
+
+	/** Reward target entity type when RewardType == SkinUnlock. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	ET66AchievementRewardEntityType RewardEntityType = ET66AchievementRewardEntityType::None;
+
+	/** Reward target entity ID when RewardType == SkinUnlock. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	FName RewardEntityID = NAME_None;
+
+	/** Reward skin ID when RewardType == SkinUnlock. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Reward")
+	FName RewardSkinID = NAME_None;
 
 	/** Requirement count (e.g., kill 10 enemies) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Progress")
@@ -1513,7 +1635,12 @@ struct T66_API FAchievementData : public FTableRowBase
 	FAchievementData()
 		: AchievementID(NAME_None)
 		, Tier(ET66AchievementTier::Black)
-		, RewardCoins(25)
+		, Category(ET66AchievementCategory::Standard)
+		, RewardType(ET66AchievementRewardType::ChadCoupons)
+		, RewardCoins(5)
+		, RewardEntityType(ET66AchievementRewardEntityType::None)
+		, RewardEntityID(NAME_None)
+		, RewardSkinID(NAME_None)
 		, RequirementCount(1)
 		, CurrentProgress(0)
 		, bIsUnlocked(false)
@@ -1540,7 +1667,7 @@ struct T66_API FSkinData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName OwnerID;
 
-	/** Cost in coins to purchase */
+	/** Cost in Chad Coupons to purchase */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
 	int32 CoinCost = 0;
 

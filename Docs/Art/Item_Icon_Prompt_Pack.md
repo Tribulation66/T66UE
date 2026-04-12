@@ -1,16 +1,16 @@
 # Item Icon Prompt Pack
 
-This file is meant to be uploaded directly into ChatGPT as a prompt reference pack for item icon generation.
+This file is the canonical prompt reference pack for generating the live item icon set through the local ChatGPT bridge workflow.
 
 ## Project Context
 
-- Generate icons for 34 live items total: 33 regular items plus Gambler's Token.
+- Generate icons for 29 live item entries total: 28 regular items plus Gambler's Token.
 - Every item needs 4 rarity variants: Black, Red, Yellow, and White.
-- Total image count: 136 icons.
-- Fountain of Life is not an item and should not receive icon prompts. In-game it is a world interactable that fully heals the player and grants +1 max heart.
-- The art direction is changing away from pixel art and goofy props.
-- The icons should look more intuitive, more equipment-like, more mythic, and closer to premium Dota 2 item icon style.
-- The same core object must remain consistent across all 4 rarities of a given item. Higher rarities should look like upgraded versions of the same item, not a different item.
+- Total image count: 116 icons.
+- Deprecated compatibility items `HP Regen`, `Life Steal`, and `Alchemy` are intentionally excluded.
+- Legacy non-live targets `Close Range Damage`, `Long Range Damage`, `Spin Wheel`, and `Movement Speed` are intentionally excluded.
+- The icons should look intuitive, mythic, premium, and closer to high-end Dota 2 item art than pixel-art or goofy props.
+- The same core object must remain consistent across all 4 rarities of a given item. Higher rarities should look like upgraded versions of the same item, not a different item class.
 
 ## Master Context Prompt
 
@@ -18,6 +18,8 @@ This file is meant to be uploaded directly into ChatGPT as a prompt reference pa
 You are generating square item icons for a fantasy action roguelike. The icons must look like premium Dota 2 item icons: painterly fantasy MOBA item art, high readability, strong silhouette, centered object, dramatic lighting, rich materials, polished game UI finish. Do not make pixel art. Do not make cartoon-goofy props. Do not add text, letters, numbers, borders, UI frames, hands, characters, or cluttered scenes.
 
 Each request is for 4 rarity variants of the same item. Keep the same core object in all 4 images. As rarity increases, only upgrade the design, materials, ornamentation, glow, prestige, and visual complexity.
+
+The Accuracy family items should all feel like elite precision gear, target-acquisition tools, and marksman equipment. Keep a consistent premium visual language across that family while still making each item easy to distinguish.
 
 The background must stay rarity-colored and simple:
 - Black rarity: deep charcoal, obsidian, dark ash
@@ -30,42 +32,37 @@ The item should fill most of the frame and remain readable at small icon size. T
 
 ## Item Object Index
 
-| Category | Item | Object |
-| --- | --- | --- |
-| Damage | AOE Damage | Titan Hammer |
-| Damage | Bounce Damage | Moon Shuriken |
-| Damage | Pierce Damage | Falchion |
-| Damage | DOT Damage | Arcane Wand |
-| Damage | Crit Damage | Executioner Axe |
-| Damage | Close Range Damage | Boxing Gloves |
-| Damage | Long Range Damage | Sniper Rifle |
-| Attack Speed | AOE Speed | War Drum |
-| Attack Speed | Bounce Speed | Trickster Bracer |
-| Attack Speed | Pierce Speed | Repeater Crossbow |
-| Attack Speed | DOT Speed | Ritual Censer |
-| Attack Speed | Crit Chance | Duelist Gloves |
-| Attack Scale | AOE Scale | Earthshaker Totem |
-| Attack Scale | Bounce Scale | Storm Ring |
-| Attack Scale | Pierce Scale | Dragon Lance |
-| Attack Scale | DOT Scale | Venom Orb |
-| Attack Scale | Range | Sniper Scope |
-| Armor | Taunt | Red Matador Cape |
-| Armor | Reflect Damage | Mirror Shield |
-| Armor | HP Regen | Blessed Cuirass |
-| Armor | Crush | Spiked Tower Shield |
-| Armor | Damage Reduction | Bulwark Plate |
-| Evasion | Invisibility | Veil Cloak |
-| Evasion | Counter Attack | Parrying Dagger |
-| Evasion | Life Steal | Vampiric Mask |
-| Evasion | Assassinate | Assassin Dagger |
-| Evasion | Evasion Chance | Feathered Mantle |
-| Luck | Spin Wheel | Spin Wheel |
-| Luck | Loot Crate | Loot Crate |
-| Luck | Treasure Chest | Treasure Compass |
-| Luck | Cheating | Loaded Dice |
-| Luck | Stealing | Wallet |
-| Speed | Movement Speed | Hermes Sandals |
-| Special | Gambler's Token | Infernal Casino Token |
+| Category | Item | ItemID | Object |
+| --- | --- | --- | --- |
+| Damage | AOE Damage | Item_AoeDamage | Titan Hammer |
+| Damage | Bounce Damage | Item_BounceDamage | Moon Shuriken |
+| Damage | Pierce Damage | Item_PierceDamage | Falchion |
+| Damage | DOT Damage | Item_DotDamage | Arcane Wand |
+| Accuracy | Crit Damage | Item_CritDamage | Killshot Prism |
+| Attack Speed | AOE Speed | Item_AoeSpeed | War Drum |
+| Attack Speed | Bounce Speed | Item_BounceSpeed | Trickster Bracer |
+| Attack Speed | Pierce Speed | Item_PierceSpeed | Repeater Crossbow |
+| Attack Speed | DOT Speed | Item_DotSpeed | Ritual Censer |
+| Accuracy | Crit Chance | Item_CritChance | Duelist Monocle |
+| Attack Scale | AOE Scale | Item_AoeScale | Earthshaker Totem |
+| Attack Scale | Bounce Scale | Item_BounceScale | Storm Ring |
+| Attack Scale | Pierce Scale | Item_PierceScale | Dragon Lance |
+| Attack Scale | DOT Scale | Item_DotScale | Venom Orb |
+| Accuracy | Range | Item_AttackRange | Longshot Scope |
+| Accuracy | Accuracy | Item_Accuracy | Laser Sight |
+| Armor | Taunt | Item_Taunt | Red Matador Cape |
+| Armor | Damage Reduction | Item_DamageReduction | Bulwark Plate |
+| Armor | Damage Reflection | Item_ReflectDmg | Mirror Shield |
+| Armor | Crush | Item_Crush | Spiked Tower Shield |
+| Evasion | Evasion Chance | Item_EvasionChance | Feathered Mantle |
+| Evasion | Counter Attack | Item_CounterAttack | Parrying Dagger |
+| Evasion | Invisibility | Item_Invisibility | Veil Cloak |
+| Evasion | Assassinate | Item_Assassinate | Assassin Dagger |
+| Luck | Treasure Chest | Item_TreasureChest | Treasure Compass |
+| Luck | Cheating | Item_Cheating | Loaded Dice |
+| Luck | Stealing | Item_Stealing | Wallet |
+| Luck | Loot Crate | Item_LootCrate | Loot Crate |
+| Special | Gambler's Token | Item_GamblersToken | Infernal Casino Token |
 
 ## Prompt Blocks
 
@@ -74,18 +71,17 @@ The item should fill most of the frame and remain readable at small icon size. T
 ```text
 Using the style rules above, generate 4 separate square item icons for AOE Damage.
 
-Core object: a massive Titan Hammer.
-This item represents raw area damage. It should feel brutal, weighty, ancient, and mythic.
+Core object: a mythic Titan Hammer.
+This item represents raw area damage, quake-like impact, and battlefield devastation. It should feel brutal, heavy, ancient, and catastrophic.
 
 Rarity variants:
 1. Black rarity: dark iron titan hammer, rough forged head, simple leather grip, minimal ornament.
-2. Red rarity: same hammer upgraded with crimson runes, heated metal seams, heavier silhouette, stronger glow.
+2. Red rarity: same hammer upgraded with crimson runes, heated metal seams, heavier silhouette, stronger impact glow.
 3. Yellow rarity: same hammer upgraded into a gilded thunder hammer, engraved head, ornate gold fittings, premium craftsmanship.
 4. White rarity: same hammer upgraded into a divine celestial hammer, ivory metal, radiant core, holy light, highest prestige.
 
 Requirements:
 - same hammer concept across all 4 icons
-- each rarity should feel like an upgrade, not a different weapon class
 - centered object
 - clean rarity-colored background only
 - no text
@@ -99,18 +95,17 @@ Requirements:
 ```text
 Using the style rules above, generate 4 separate square item icons for Bounce Damage.
 
-Core object: a razor-edged Moon Shuriken.
-This item represents ricochet damage. It should feel fast, lethal, precise, and mythic.
+Core object: a mythic Moon Shuriken.
+This item represents ricochet damage and lethal rebound strikes. It should feel fast, sharp, disciplined, and dangerous.
 
 Rarity variants:
-1. Black rarity: dark steel shuriken, simple four-blade silhouette, restrained detail, subtle edge shine.
-2. Red rarity: same shuriken upgraded with crimson inlays, hotter edge glow, sharper blade profile.
-3. Yellow rarity: same shuriken upgraded into a gilded masterwork, gold hub, ornate engravings, richer materials.
-4. White rarity: same shuriken upgraded into a celestial relic, ivory-silver metal, radiant center, holy energy accents.
+1. Black rarity: dark steel shuriken, clean four-blade silhouette, restrained detail, subtle edge shine.
+2. Red rarity: same shuriken upgraded with crimson inlays, hotter edges, sharper blade profile, stronger rebound energy.
+3. Yellow rarity: same shuriken upgraded into a gilded masterwork, ornate engravings, richer materials, premium finish.
+4. White rarity: same shuriken upgraded into a celestial ricochet relic, ivory-silver metal, radiant hub, holy precision glow.
 
 Requirements:
 - same shuriken concept across all 4 icons
-- each rarity should feel like a premium upgrade
 - centered object
 - clean rarity-colored background only
 - no text
@@ -125,7 +120,7 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Pierce Damage.
 
 Core object: a war Falchion with a strong thrusting point.
-This item represents penetration and deadly armor-piercing strikes. It should feel disciplined, sharp, and dangerous.
+This item represents penetration, armor-piercing strikes, and disciplined lethality. It should feel sharp, elite, and dangerous.
 
 Rarity variants:
 1. Black rarity: dark steel falchion, battle-worn blade, wrapped grip, minimal ornament.
@@ -135,7 +130,6 @@ Rarity variants:
 
 Requirements:
 - same falchion concept across all 4 icons
-- the weapon should remain clearly readable at icon size
 - centered object
 - clean rarity-colored background only
 - no text
@@ -150,17 +144,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for DOT Damage.
 
 Core object: an Arcane Wand.
-This item represents lingering damage over time. It should feel cursed, alchemical, magical, and dangerous.
+This item represents lingering curse damage, magical corrosion, and sustained harm. It should feel ritualistic, dangerous, and premium.
 
 Rarity variants:
 1. Black rarity: dark wood wand, dim toxic crystal tip, subtle corrosion, minimal ornament.
-2. Red rarity: same wand upgraded with crimson veins, stronger poison glow, more ritual metal bands.
+2. Red rarity: same wand upgraded with crimson veins, stronger poisonous glow, more ritual metal bands.
 3. Yellow rarity: same wand upgraded into an ornate plague scepter, gilded handle, refined crystal, premium magical finish.
 4. White rarity: same wand upgraded into a divine blight relic, ivory shaft, radiant venom core, bright holy-corrupted glow.
 
 Requirements:
 - same wand concept across all 4 icons
-- it should look like a real premium MOBA item icon
 - centered object
 - clean rarity-colored background only
 - no text
@@ -174,74 +167,24 @@ Requirements:
 ```text
 Using the style rules above, generate 4 separate square item icons for Crit Damage.
 
-Core object: an Executioner Axe.
-This item represents devastating burst damage and fatal strikes. It should feel heavy, brutal, and elite.
+Core object: a mythic Killshot Prism.
+This item represents fatal precision, amplified weak-point punishment, and devastating finisher damage. It should feel lethal, elite, and engineered for execution.
 
 Rarity variants:
-1. Black rarity: dark steel executioner axe, broad blade, plain haft, minimal ornament.
-2. Red rarity: same axe upgraded with crimson runes, hotter cutting edge, reinforced fittings, stronger menace.
-3. Yellow rarity: same axe upgraded into a gilded headsman's weapon, ornate carvings, polished gold trim, premium metalwork.
-4. White rarity: same axe upgraded into a celestial executioner's relic, ivory-metal haft, radiant blade, divine intensity.
+1. Black rarity: dark steel prism housing, compact faceted lens core, restrained detail, minimal lethal glow.
+2. Red rarity: same prism upgraded with crimson fracture lines, hotter inner lens, sharper lethal silhouette, stronger kill-mark energy.
+3. Yellow rarity: same prism upgraded into a gilded execution optic, ornate metal frame, premium crystal facets, masterwork precision finish.
+4. White rarity: same prism upgraded into a celestial kill prism, ivory-metal housing, radiant execution crystal, holy finisher glow, highest prestige.
 
 Requirements:
-- same axe concept across all 4 icons
-- each rarity should feel nastier and more prestigious
+- same killshot prism concept across all 4 icons
+- it must feel like precision finisher equipment, not a generic magical orb
 - centered object
 - clean rarity-colored background only
 - no text
 - no border
 - no pixel-art look
-- no goofy style
-```
-
-### Close Range Damage
-
-```text
-Using the style rules above, generate 4 separate square item icons for Close Range Damage.
-
-Core object: mythic Boxing Gloves.
-This item represents brutal close-quarters power. The gloves should feel like serious combat equipment, not sports gear.
-
-Rarity variants:
-1. Black rarity: dark leather boxing gloves with metal seams, compact silhouette, minimal ornament.
-2. Red rarity: same gloves upgraded with crimson stitching, heavier plating, stronger impact glow.
-3. Yellow rarity: same gloves upgraded into gilded war gloves, ornate cuffs, luxury materials, premium finish.
-4. White rarity: same gloves upgraded into divine champion gloves, ivory leather, radiant trim, celestial glow.
-
-Requirements:
-- same glove concept across all 4 icons
-- they should read as dangerous fantasy equipment
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
-```
-
-### Long Range Damage
-
-```text
-Using the style rules above, generate 4 separate square item icons for Long Range Damage.
-
-Core object: a Sniper Rifle.
-This item represents deadly ranged precision and long-distance lethality. It should feel elite, engineered, and high-impact.
-
-Rarity variants:
-1. Black rarity: dark wood-and-steel sniper rifle, long barrel, restrained detail, practical silhouette.
-2. Red rarity: same rifle upgraded with crimson glow lines, reinforced scope mounts, hotter barrel accents.
-3. Yellow rarity: same rifle upgraded into a gilded marksman's masterpiece, engraved stock, gold trim, premium optics.
-4. White rarity: same rifle upgraded into a celestial deadeye rifle, ivory-metal body, radiant barrel core, divine precision.
-
-Requirements:
-- same rifle concept across all 4 icons
-- clear silhouette and readable scope profile
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
+- no goofy or toy-like style
 ```
 
 ### AOE Speed
@@ -250,7 +193,7 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for AOE Speed.
 
 Core object: a War Drum.
-This item represents faster area attacks through tempo and battlefield rhythm. It should feel martial, loud, and commanding.
+This item represents faster area attacks through battlefield rhythm and pressure. It should feel martial, loud, and commanding.
 
 Rarity variants:
 1. Black rarity: dark wood war drum, plain hide, iron studs, minimal ornament.
@@ -260,7 +203,6 @@ Rarity variants:
 
 Requirements:
 - same drum concept across all 4 icons
-- it should feel like a premium fantasy relic
 - centered object
 - clean rarity-colored background only
 - no text
@@ -275,17 +217,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Bounce Speed.
 
 Core object: a Trickster Bracer.
-This item represents faster ricochet attacks. It should feel agile, clever, and lightly arcane.
+This item represents faster ricochets, agile rebound timing, and nimble execution. It should feel clever, fast, and premium.
 
 Rarity variants:
-1. Black rarity: dark leather-and-steel bracer, clean silhouette, subtle etched lines, minimal ornament.
-2. Red rarity: same bracer upgraded with crimson gems, more kinetic glow, sharper layered plates.
-3. Yellow rarity: same bracer upgraded into an ornate trickster relic, gilded trim, premium gem setting, elegant detail.
-4. White rarity: same bracer upgraded into a celestial ricochet bracer, ivory metals, radiant core, holy energy streaks.
+1. Black rarity: dark steel bracer, restrained detail, compact silhouette, subtle rebound energy.
+2. Red rarity: same bracer upgraded with crimson channels, hotter edge lines, quicker motion feel.
+3. Yellow rarity: same bracer upgraded into a gilded trickster armguard, ornate plates, rich materials, elite finish.
+4. White rarity: same bracer upgraded into a celestial rebound relic, ivory metal, radiant motion core, holy agility glow.
 
 Requirements:
 - same bracer concept across all 4 icons
-- keep it readable as an arm equipment piece
 - centered object
 - clean rarity-colored background only
 - no text
@@ -300,17 +241,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Pierce Speed.
 
 Core object: a Repeater Crossbow.
-This item represents rapid piercing fire. It should feel mechanical, deadly, and efficient.
+This item represents rapid piercing volleys and relentless precision fire. It should feel engineered, lethal, and disciplined.
 
 Rarity variants:
-1. Black rarity: dark steel repeater crossbow, compact magazine shape, plain limbs, restrained detail.
-2. Red rarity: same crossbow upgraded with crimson bolts, hotter energy rails, more aggressive mechanics.
-3. Yellow rarity: same crossbow upgraded into a gilded marksman device, ornate stock, premium metalwork, refined mechanism.
-4. White rarity: same crossbow upgraded into a celestial repeater, ivory-metal frame, radiant limbs, divine energy chamber.
+1. Black rarity: dark steel repeater crossbow, compact frame, restrained detail, practical silhouette.
+2. Red rarity: same crossbow upgraded with crimson tension lines, hotter bolts, reinforced limbs, stronger firing energy.
+3. Yellow rarity: same crossbow upgraded into a gilded marksman repeater, ornate mechanism, gold fittings, premium craftsmanship.
+4. White rarity: same crossbow upgraded into a celestial piercer, ivory-metal frame, radiant string core, holy rapid-fire glow.
 
 Requirements:
-- same crossbow concept across all 4 icons
-- it should remain the same weapon class as rarity increases
+- same repeater crossbow concept across all 4 icons
 - centered object
 - clean rarity-colored background only
 - no text
@@ -325,17 +265,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for DOT Speed.
 
 Core object: a Ritual Censer.
-This item represents faster application of lingering damage. It should feel occult, smoky, ceremonial, and dangerous.
+This item represents faster ticking curses, sustained affliction, and accelerated decay. It should feel ritualistic, arcane, and dangerous.
 
 Rarity variants:
-1. Black rarity: dark iron censer, thin smoke trails, simple chains, minimal ornament.
-2. Red rarity: same censer upgraded with crimson smoke glow, hotter vents, more ritual engravings.
-3. Yellow rarity: same censer upgraded into a gilded plague censer, ornate body, premium chainwork, rich magical detail.
-4. White rarity: same censer upgraded into a celestial ritual relic, ivory metal, radiant fumes, holy-corrupted glow.
+1. Black rarity: dark metal censer, subtle toxic smoke, restrained ornament, practical chain details.
+2. Red rarity: same censer upgraded with crimson vents, hotter curse glow, stronger internal burn.
+3. Yellow rarity: same censer upgraded into a gilded plague censer, ornate filigree, rich materials, premium finish.
+4. White rarity: same censer upgraded into a celestial affliction relic, ivory-gold body, radiant fumes, holy-corrupted glow.
 
 Requirements:
 - same censer concept across all 4 icons
-- keep the smoke secondary to the object silhouette
 - centered object
 - clean rarity-colored background only
 - no text
@@ -349,24 +288,24 @@ Requirements:
 ```text
 Using the style rules above, generate 4 separate square item icons for Crit Chance.
 
-Core object: Duelist Gloves.
-This item represents precision, timing, and higher critical hit chance. It should feel elegant, sharp, and high-skill.
+Core object: a mythic Duelist Monocle.
+This item represents timing, opportunistic strikes, and sharp-eyed critical openings. It should feel elegant, elite, and precision-focused.
 
 Rarity variants:
-1. Black rarity: dark leather duelist gloves, slim silhouette, subtle stitching, minimal ornament.
-2. Red rarity: same gloves upgraded with crimson lining, sharper wrist guards, stronger precision glow.
-3. Yellow rarity: same gloves upgraded into gilded fencing gloves, ornate cuffs, premium fabric, jewel accents.
-4. White rarity: same gloves upgraded into celestial duelist gloves, ivory leather, radiant trim, refined divine finish.
+1. Black rarity: dark steel monocle, compact lens frame, restrained detail, subtle targeting glint.
+2. Red rarity: same monocle upgraded with crimson sight lines, hotter lens edge, sharper ornament, stronger strike-opportunity glow.
+3. Yellow rarity: same monocle upgraded into a gilded duelist optic, ornate frame, premium lens glass, masterwork prestige.
+4. White rarity: same monocle upgraded into a celestial deadeye monocle, ivory-metal frame, radiant lens, holy precision glow, highest prestige.
 
 Requirements:
-- same glove concept across all 4 icons
-- the design should read as precision gear, not bulky armor
+- same duelist monocle concept across all 4 icons
+- it must feel like elite critical-opening equipment, not jewelry-first fashion
 - centered object
 - clean rarity-colored background only
 - no text
 - no border
 - no pixel-art look
-- no goofy style
+- no goofy or toy-like style
 ```
 
 ### AOE Scale
@@ -375,17 +314,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for AOE Scale.
 
 Core object: an Earthshaker Totem.
-This item represents larger area coverage. It should feel ancient, heavy, primal, and powerful.
+This item represents larger area attacks and heavier battlefield presence. It should feel primal, imposing, and mythic.
 
 Rarity variants:
-1. Black rarity: dark stone totem, cracked surface, rough carving, minimal ornament.
-2. Red rarity: same totem upgraded with crimson fissures, stronger inner glow, heavier rune cuts.
-3. Yellow rarity: same totem upgraded into a gilded earth relic, refined carvings, gold bands, premium craft.
-4. White rarity: same totem upgraded into a celestial world-totem, pale stone, radiant core, divine aura.
+1. Black rarity: dark stone totem, simple runes, restrained detail, heavy silhouette.
+2. Red rarity: same totem upgraded with crimson fissures, hotter cracks, stronger quake energy.
+3. Yellow rarity: same totem upgraded into a gilded earth relic, ornate carvings, premium trim, rich materials.
+4. White rarity: same totem upgraded into a celestial world-pillar, ivory stone, radiant rune core, holy seismic glow.
 
 Requirements:
 - same totem concept across all 4 icons
-- the object should feel monumental even at icon scale
 - centered object
 - clean rarity-colored background only
 - no text
@@ -400,17 +338,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Bounce Scale.
 
 Core object: a Storm Ring.
-This item represents larger ricochet reach and bounce influence. It should feel energetic, elegant, and arcane.
+This item represents broader ricochets and larger rebound arcs. It should feel charged, elegant, and kinetic.
 
 Rarity variants:
-1. Black rarity: dark metal ring, subtle crackling energy, simple silhouette, restrained detail.
-2. Red rarity: same ring upgraded with crimson lightning veins, stronger charge glow, sharper setting.
-3. Yellow rarity: same ring upgraded into a gilded storm relic, ornate bezel, premium metalwork, richer energy accents.
-4. White rarity: same ring upgraded into a celestial tempest ring, ivory-gold body, radiant charge core, divine electricity.
+1. Black rarity: dark metal storm ring, restrained detail, subtle inner glow, compact silhouette.
+2. Red rarity: same ring upgraded with crimson channels, hotter arc energy, sharper ornament.
+3. Yellow rarity: same ring upgraded into a gilded tempest band, ornate trim, premium lightning core, richer materials.
+4. White rarity: same ring upgraded into a celestial storm halo, ivory-metal body, radiant arc core, holy rebound glow.
 
 Requirements:
 - same ring concept across all 4 icons
-- keep it centered and clearly readable as a ring-shaped artifact
 - centered object
 - clean rarity-colored background only
 - no text
@@ -425,17 +362,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Pierce Scale.
 
 Core object: a Dragon Lance.
-This item represents greater reach and larger piercing impact. It should feel noble, lethal, and elite.
+This item represents larger piercing attacks and extended impalement reach. It should feel aristocratic, dangerous, and premium.
 
 Rarity variants:
-1. Black rarity: dark steel lance tip and shaft, restrained detail, practical war silhouette.
-2. Red rarity: same lance upgraded with crimson scale motifs, hotter metal seams, stronger prestige.
-3. Yellow rarity: same lance upgraded into a gilded dragon lance, ornate guard, premium engravings, jewel accents.
-4. White rarity: same lance upgraded into a celestial dragon relic, ivory shaft, radiant spearhead, divine glow.
+1. Black rarity: dark steel lance, restrained detail, practical shaft wrapping, minimal ornament.
+2. Red rarity: same lance upgraded with crimson grooves, hotter point, stronger draconic inlays.
+3. Yellow rarity: same lance upgraded into a gilded dragoon lance, ornate fittings, premium finish, richer materials.
+4. White rarity: same lance upgraded into a celestial wyrm lance, ivory metal, radiant spearhead, holy piercing glow.
 
 Requirements:
 - same lance concept across all 4 icons
-- keep the silhouette long and unmistakable
 - centered object
 - clean rarity-colored background only
 - no text
@@ -450,17 +386,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for DOT Scale.
 
 Core object: a Venom Orb.
-This item represents a larger damage-over-time effect footprint. It should feel toxic, magical, and dangerous.
+This item represents larger pools of lingering damage and stronger corruption spread. It should feel unstable, toxic, and premium.
 
 Rarity variants:
-1. Black rarity: dark glass orb, murky poison core, restrained glow, minimal ornament.
-2. Red rarity: same orb upgraded with crimson toxin currents, stronger internal light, richer casing detail.
-3. Yellow rarity: same orb upgraded into a gilded venom relic, ornate frame, premium crystal clarity, bright poison energy.
-4. White rarity: same orb upgraded into a celestial plague orb, ivory-gold casing, radiant toxic core, divine-corrupted light.
+1. Black rarity: dark glass venom orb, restrained corruption glow, minimal ornament.
+2. Red rarity: same orb upgraded with crimson fractures, hotter poison core, stronger spread energy.
+3. Yellow rarity: same orb upgraded into a gilded plague sphere, ornate casing, rich materials, masterwork finish.
+4. White rarity: same orb upgraded into a celestial blight orb, ivory-metal frame, radiant toxin core, holy-corrupted glow.
 
 Requirements:
 - same orb concept across all 4 icons
-- keep the orb itself dominant in the frame
 - centered object
 - clean rarity-colored background only
 - no text
@@ -474,24 +409,49 @@ Requirements:
 ```text
 Using the style rules above, generate 4 separate square item icons for Range.
 
-Core object: a Sniper Scope.
-This item represents increased attack range. It should feel engineered, precise, and premium.
+Core object: a mythic Longshot Scope.
+This item represents sightline extension, disciplined reach, and long-distance target control. It should feel elite, engineered, and purpose-built for distance.
 
 Rarity variants:
-1. Black rarity: dark steel scope, clear glass lens, practical mounts, restrained detail.
-2. Red rarity: same scope upgraded with crimson lens glow, sharper fittings, stronger precision feel.
-3. Yellow rarity: same scope upgraded into a gilded marksman optic, engraved body, premium lens housing, luxury finish.
-4. White rarity: same scope upgraded into a celestial deadeye scope, ivory-metal casing, radiant lens core, divine clarity.
+1. Black rarity: dark steel longshot scope, practical housing, restrained detail, subtle range lens glow.
+2. Red rarity: same scope upgraded with crimson emitter lines, hotter objective lens, reinforced fittings, stronger long-range energy.
+3. Yellow rarity: same scope upgraded into a gilded marksman's scope, ornate precision housing, gold trim, premium lens glass, masterwork craftsmanship.
+4. White rarity: same scope upgraded into a celestial horizon scope, ivory-metal body, radiant lens core, holy distance glow, highest prestige.
 
 Requirements:
-- same scope concept across all 4 icons
-- keep the lens readable and central
+- same longshot scope concept across all 4 icons
+- it must feel clearly longer-range than the accuracy item
 - centered object
 - clean rarity-colored background only
 - no text
 - no border
 - no pixel-art look
-- no goofy style
+- no goofy or toy-like style
+```
+
+### Accuracy
+
+```text
+Using the style rules above, generate 4 separate square item icons for Accuracy.
+
+Core object: a mythic Laser Sight.
+This item represents precision, sight alignment, target acquisition, and reliable head-targeting. It should feel elite, engineered, sharp, and premium.
+
+Rarity variants:
+1. Black rarity: dark steel laser sight module, compact lens, restrained detail, practical housing, faint targeting glow.
+2. Red rarity: same laser sight upgraded with crimson emitter lines, hotter lens core, sharper housing silhouette, stronger targeting energy.
+3. Yellow rarity: same laser sight upgraded into a gilded marksman's sight, ornate precision housing, gold fittings, premium lens glass, masterwork craftsmanship.
+4. White rarity: same laser sight upgraded into a celestial deadeye sight, ivory-metal housing, radiant targeting crystal, holy precision glow, highest prestige.
+
+Requirements:
+- same laser sight concept across all 4 icons
+- it must feel like high-end accuracy equipment, not a generic flashlight or full rifle scope
+- centered object
+- clean rarity-colored background only
+- no text
+- no border
+- no pixel-art look
+- no goofy or toy-like style
 ```
 
 ### Taunt
@@ -500,17 +460,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Taunt.
 
 Core object: a Red Matador Cape.
-This item represents drawing enemy attention. It should feel dramatic, elegant, and confrontational.
+This item represents aggro control, bravado, and drawing enemy attention. It should feel theatrical, dangerous, and premium.
 
 Rarity variants:
-1. Black rarity: dark crimson cape, heavy cloth, simple folds, minimal ornament.
-2. Red rarity: same cape upgraded with richer scarlet fabric, stronger motion shape, ornate trim.
-3. Yellow rarity: same cape upgraded into a gilded duelist cape, gold embroidery, premium cloth, noble finish.
-4. White rarity: same cape upgraded into a celestial champion cape, ivory-red fabric, radiant edging, divine prestige.
+1. Black rarity: dark battle cape, restrained folds, minimal trim, subtle motion.
+2. Red rarity: same cape upgraded with richer crimson fabric, hotter lining, stronger dramatic sweep.
+3. Yellow rarity: same cape upgraded into a gilded matador mantle, ornate embroidery, luxury materials, premium prestige.
+4. White rarity: same cape upgraded into a celestial provocateur cloak, ivory-red fabric, radiant trim, holy theatrical glow.
 
 Requirements:
 - same cape concept across all 4 icons
-- the cape should feel like a premium fantasy item, not costume cloth
 - centered object
 - clean rarity-colored background only
 - no text
@@ -519,48 +478,46 @@ Requirements:
 - no goofy style
 ```
 
-### Reflect Damage
+### Damage Reduction
 
 ```text
-Using the style rules above, generate 4 separate square item icons for Reflect Damage.
+Using the style rules above, generate 4 separate square item icons for Damage Reduction.
+
+Core object: a Bulwark Plate.
+This item represents raw mitigation, steadfast defense, and durable protection. It should feel heavy, disciplined, and elite.
+
+Rarity variants:
+1. Black rarity: dark steel chest plate, practical silhouette, restrained detail, solid mass.
+2. Red rarity: same plate upgraded with crimson seams, hotter metal accents, reinforced armor lines.
+3. Yellow rarity: same plate upgraded into a gilded bulwark cuirass, ornate trim, premium metalwork, rich materials.
+4. White rarity: same plate upgraded into a celestial ward plate, ivory-gold armor, radiant defensive core, holy resilience glow.
+
+Requirements:
+- same plate concept across all 4 icons
+- centered object
+- clean rarity-colored background only
+- no text
+- no border
+- no pixel-art look
+- no goofy style
+```
+
+### Damage Reflection
+
+```text
+Using the style rules above, generate 4 separate square item icons for Damage Reflection.
 
 Core object: a Mirror Shield.
-This item represents turning damage back on attackers. It should feel defensive, polished, and magical.
+This item represents reflected punishment and retaliatory defense. It should feel noble, dangerous, and premium.
 
 Rarity variants:
-1. Black rarity: dark steel mirror shield, muted reflective center, simple rim, minimal ornament.
-2. Red rarity: same shield upgraded with crimson glow lines, stronger mirror sheen, sharper rim detailing.
-3. Yellow rarity: same shield upgraded into a gilded reflective bulwark, ornate frame, gold relief work, premium polish.
-4. White rarity: same shield upgraded into a celestial mirror relic, ivory-gold frame, radiant reflective core, divine light.
+1. Black rarity: dark steel mirror shield, restrained detail, polished reflective face, minimal trim.
+2. Red rarity: same shield upgraded with crimson inlays, hotter edge light, stronger retaliatory energy.
+3. Yellow rarity: same shield upgraded into a gilded reflective bulwark, ornate frame, rich materials, masterwork finish.
+4. White rarity: same shield upgraded into a celestial mirror aegis, ivory-gold body, radiant mirror core, holy counter-glow.
 
 Requirements:
-- same shield concept across all 4 icons
-- the mirror center should stay obvious in every rarity
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
-```
-
-### HP Regen
-
-```text
-Using the style rules above, generate 4 separate square item icons for HP Regen.
-
-Core object: a Blessed Cuirass.
-This item represents durability and steady healing. It should feel protective, noble, and restorative.
-
-Rarity variants:
-1. Black rarity: dark steel cuirass, simple breastplate silhouette, restrained detail, minimal ornament.
-2. Red rarity: same cuirass upgraded with crimson lining, warmer glow, stronger plate shaping.
-3. Yellow rarity: same cuirass upgraded into a gilded blessed armor piece, ornate chest engravings, premium finish.
-4. White rarity: same cuirass upgraded into a celestial breastplate, ivory-gold armor, radiant core, holy restoration glow.
-
-Requirements:
-- same cuirass concept across all 4 icons
-- it should read as a chest armor item, not a full character
+- same mirror shield concept across all 4 icons
 - centered object
 - clean rarity-colored background only
 - no text
@@ -575,142 +532,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Crush.
 
 Core object: a Spiked Tower Shield.
-This item represents brutal reflected impact and lethal punishment. It should feel imposing, defensive, and vicious.
+This item represents staggering impact, armor breaking, and brutal front-line pressure. It should feel oppressive, heavy, and dangerous.
 
 Rarity variants:
-1. Black rarity: dark iron tower shield, heavy spikes, plain face, restrained detail.
-2. Red rarity: same shield upgraded with crimson spike glow, stronger metal seams, more intimidating silhouette.
-3. Yellow rarity: same shield upgraded into a gilded war bulwark, ornate spikes, premium metalwork, engraved surface.
-4. White rarity: same shield upgraded into a celestial crushing shield, ivory-metal body, radiant spikes, divine power.
+1. Black rarity: dark steel tower shield, restrained spikes, practical silhouette, minimal ornament.
+2. Red rarity: same shield upgraded with crimson spikes, hotter seams, stronger crushing menace.
+3. Yellow rarity: same shield upgraded into a gilded war bastion, ornate faceplate, premium metalwork, rich materials.
+4. White rarity: same shield upgraded into a celestial breaker shield, ivory-gold body, radiant spike core, holy impact glow.
 
 Requirements:
-- same tower shield concept across all 4 icons
-- the spikes should remain prominent but readable
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
-```
-
-### Damage Reduction
-
-```text
-Using the style rules above, generate 4 separate square item icons for Damage Reduction.
-
-Core object: Bulwark Plate.
-This item represents direct damage reduction. It should feel dense, reliable, elite, and extremely protective.
-
-Rarity variants:
-1. Black rarity: dark heavy plate armor piece, thick layered metal, restrained detail, minimal ornament.
-2. Red rarity: same plate upgraded with crimson reinforcement lines, hotter seams, stronger defensive presence.
-3. Yellow rarity: same plate upgraded into a gilded fortress plate, ornate layering, premium steel, gold accents.
-4. White rarity: same plate upgraded into a celestial bulwark relic, ivory-gold plate, radiant core, divine protection glow.
-
-Requirements:
-- same armor plate concept across all 4 icons
-- it should feel heavier and more protective with each rarity
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
-```
-
-### Invisibility
-
-```text
-Using the style rules above, generate 4 separate square item icons for Invisibility.
-
-Core object: a Veil Cloak.
-This item represents stealth and concealment. It should feel mysterious, elegant, and magical.
-
-Rarity variants:
-1. Black rarity: dark cloak, soft folds, faint shimmer, minimal ornament.
-2. Red rarity: same cloak upgraded with crimson inner lining, stronger fade effect, richer trim.
-3. Yellow rarity: same cloak upgraded into a gilded stealth mantle, premium fabric, ornate clasp, refined magical sheen.
-4. White rarity: same cloak upgraded into a celestial veil, ivory fabric, radiant translucence, divine stealth aura.
-
-Requirements:
-- same cloak concept across all 4 icons
-- keep the cloak itself readable and centered
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
-```
-
-### Counter Attack
-
-```text
-Using the style rules above, generate 4 separate square item icons for Counter Attack.
-
-Core object: a Parrying Dagger.
-This item represents timing, defense, and retaliatory strikes. It should feel quick, elegant, and lethal.
-
-Rarity variants:
-1. Black rarity: dark steel parrying dagger, simple guard, practical silhouette, minimal ornament.
-2. Red rarity: same dagger upgraded with crimson edge glow, stronger hand guard, richer detail.
-3. Yellow rarity: same dagger upgraded into a gilded duelist relic, ornate guard, premium grip, engraved blade.
-4. White rarity: same dagger upgraded into a celestial counterblade, ivory-gold hilt, radiant edge, divine precision.
-
-Requirements:
-- same dagger concept across all 4 icons
-- keep the parrying guard visible
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
-```
-
-### Life Steal
-
-```text
-Using the style rules above, generate 4 separate square item icons for Life Steal.
-
-Core object: a Vampiric Mask.
-This item represents draining life from enemies. It should feel sinister, aristocratic, and supernatural.
-
-Rarity variants:
-1. Black rarity: dark metal-and-leather mask, dim red accents, restrained detail, minimal ornament.
-2. Red rarity: same mask upgraded with stronger blood glow, richer surface carving, more dangerous presence.
-3. Yellow rarity: same mask upgraded into a gilded vampire relic, ornate cheek plates, premium finish, jewel accents.
-4. White rarity: same mask upgraded into a celestial blood relic, ivory mask, radiant red core, divine-corrupted light.
-
-Requirements:
-- same mask concept across all 4 icons
-- it should feel iconic and readable at small size
-- centered object
-- clean rarity-colored background only
-- no text
-- no border
-- no pixel-art look
-- no goofy style
-```
-
-### Assassinate
-
-```text
-Using the style rules above, generate 4 separate square item icons for Assassinate.
-
-Core object: an Assassin Dagger.
-This item represents lethal finishing potential. It should feel sleek, elite, and merciless.
-
-Rarity variants:
-1. Black rarity: dark assassin dagger, narrow blade, practical grip, minimal ornament.
-2. Red rarity: same dagger upgraded with crimson linework, stronger edge glow, sharper profile.
-3. Yellow rarity: same dagger upgraded into a gilded killer's relic, ornate hilt, premium steel, refined menace.
-4. White rarity: same dagger upgraded into a celestial execution blade, ivory-gold hilt, radiant edge, divine lethality.
-
-Requirements:
-- same dagger concept across all 4 icons
-- it should feel more surgical than the parrying dagger
+- same spiked shield concept across all 4 icons
 - centered object
 - clean rarity-colored background only
 - no text
@@ -725,17 +556,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Evasion Chance.
 
 Core object: a Feathered Mantle.
-This item represents improved dodge chance. It should feel light, graceful, and elite.
+This item represents graceful dodging, elusive movement, and untouchable poise. It should feel light, elegant, and premium.
 
 Rarity variants:
-1. Black rarity: dark feathered mantle, subtle layered feathers, restrained detail, minimal ornament.
-2. Red rarity: same mantle upgraded with crimson feathers, stronger motion curve, richer trim.
-3. Yellow rarity: same mantle upgraded into a gilded evasive mantle, premium feather arrangement, ornate clasp, noble finish.
-4. White rarity: same mantle upgraded into a celestial winged mantle, ivory feathers, radiant highlights, divine agility.
+1. Black rarity: dark feathered mantle, restrained detail, subtle shimmer, graceful silhouette.
+2. Red rarity: same mantle upgraded with crimson lining, hotter feather accents, stronger evasive energy.
+3. Yellow rarity: same mantle upgraded into a gilded evasive cloak, ornate trim, premium fabric, rich materials.
+4. White rarity: same mantle upgraded into a celestial wind mantle, ivory feathers, radiant drift glow, holy lightness.
 
 Requirements:
 - same mantle concept across all 4 icons
-- it should feel light and prestigious rather than bulky
 - centered object
 - clean rarity-colored background only
 - no text
@@ -744,23 +574,22 @@ Requirements:
 - no goofy style
 ```
 
-### Spin Wheel
+### Counter Attack
 
 ```text
-Using the style rules above, generate 4 separate square item icons for Spin Wheel.
+Using the style rules above, generate 4 separate square item icons for Counter Attack.
 
-Core object: an actual Spin Wheel.
-This item should literally be a spin wheel, but it should still feel like a premium fantasy casino artifact rather than a toy prop.
+Core object: a Parrying Dagger.
+This item represents perfect timing, retaliation, and sharp defensive offense. It should feel elegant, lethal, and disciplined.
 
 Rarity variants:
-1. Black rarity: dark wood-and-iron spin wheel, simple wedges, restrained detail, minimal ornament.
-2. Red rarity: same wheel upgraded with crimson lacquer, glowing divider lines, richer metal trim.
-3. Yellow rarity: same wheel upgraded into a gilded casino relic, ornate spokes, premium finish, jewel accents.
-4. White rarity: same wheel upgraded into a celestial fortune wheel, ivory-gold body, radiant center, divine luck glow.
+1. Black rarity: dark steel parrying dagger, restrained guard, minimal ornament, precise silhouette.
+2. Red rarity: same dagger upgraded with crimson fuller lines, hotter edge, stronger riposte energy.
+3. Yellow rarity: same dagger upgraded into a gilded duelist blade, ornate guard, rich materials, premium finish.
+4. White rarity: same dagger upgraded into a celestial riposte relic, ivory-gold hilt, radiant edge, holy counter-glow.
 
 Requirements:
-- same spin wheel concept across all 4 icons
-- the wheel should stay centered and readable at icon scale
+- same parrying dagger concept across all 4 icons
 - centered object
 - clean rarity-colored background only
 - no text
@@ -769,23 +598,46 @@ Requirements:
 - no goofy style
 ```
 
-### Loot Crate
+### Invisibility
 
 ```text
-Using the style rules above, generate 4 separate square item icons for Loot Crate.
+Using the style rules above, generate 4 separate square item icons for Invisibility.
 
-Core object: an actual Loot Crate.
-This item should literally be a loot crate, but it should feel like a premium fantasy reward container, not a cheap box.
+Core object: a Veil Cloak.
+This item represents concealment, quiet movement, and vanishing from sight. It should feel mysterious, elegant, and premium.
 
 Rarity variants:
-1. Black rarity: dark wood crate with iron bands, simple silhouette, restrained detail, minimal ornament.
-2. Red rarity: same crate upgraded with crimson panels, stronger lock glow, richer metal reinforcements.
-3. Yellow rarity: same crate upgraded into a gilded reward chest-crate hybrid, ornate corners, premium craftsmanship, treasure feel.
-4. White rarity: same crate upgraded into a celestial vault crate, ivory-gold frame, radiant seams, divine reward glow.
+1. Black rarity: dark veil cloak, restrained folds, subtle shimmer, minimal trim.
+2. Red rarity: same cloak upgraded with crimson inner light, stronger concealment glow, richer fabric.
+3. Yellow rarity: same cloak upgraded into a gilded shadow mantle, ornate trim, premium weave, refined luxury.
+4. White rarity: same cloak upgraded into a celestial phantom cloak, ivory fabric, radiant translucence, holy concealment glow.
 
 Requirements:
-- same crate concept across all 4 icons
-- the object should remain clearly a crate in every rarity
+- same cloak concept across all 4 icons
+- centered object
+- clean rarity-colored background only
+- no text
+- no border
+- no pixel-art look
+- no goofy style
+```
+
+### Assassinate
+
+```text
+Using the style rules above, generate 4 separate square item icons for Assassinate.
+
+Core object: an Assassin Dagger.
+This item represents execution, stealth lethality, and elite kill pressure. It should feel sharp, sinister, and high-status.
+
+Rarity variants:
+1. Black rarity: dark steel assassin dagger, restrained detail, clean lethal silhouette, minimal ornament.
+2. Red rarity: same dagger upgraded with crimson channels, hotter edge, stronger kill intent.
+3. Yellow rarity: same dagger upgraded into a gilded assassin's fang, ornate fittings, premium metalwork, rich materials.
+4. White rarity: same dagger upgraded into a celestial execution blade, ivory-gold hilt, radiant edge, holy lethal glow.
+
+Requirements:
+- same assassin dagger concept across all 4 icons
 - centered object
 - clean rarity-colored background only
 - no text
@@ -800,17 +652,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Treasure Chest.
 
 Core object: a Treasure Compass.
-This item represents finding treasure and better fortune. It should feel adventurous, valuable, and mystical.
+This item represents better treasure discovery and guided loot hunting. It should feel adventurous, valuable, and premium.
 
 Rarity variants:
-1. Black rarity: dark metal compass, simple casing, muted glow, restrained detail.
-2. Red rarity: same compass upgraded with crimson inlays, stronger needle glow, richer casework.
-3. Yellow rarity: same compass upgraded into a gilded treasure relic, ornate bezel, jewel accents, premium finish.
-4. White rarity: same compass upgraded into a celestial fortune compass, ivory-gold housing, radiant face, divine guidance glow.
+1. Black rarity: dark brass treasure compass, restrained detail, practical casing, subtle glint.
+2. Red rarity: same compass upgraded with crimson inlays, hotter needle glow, richer metal finish.
+3. Yellow rarity: same compass upgraded into a gilded treasure finder, ornate housing, premium glass, luxury craftsmanship.
+4. White rarity: same compass upgraded into a celestial fortune compass, ivory-gold body, radiant needle core, holy treasure glow.
 
 Requirements:
 - same compass concept across all 4 icons
-- keep the compass clearly readable at icon size
 - centered object
 - clean rarity-colored background only
 - no text
@@ -825,17 +676,16 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Cheating.
 
 Core object: Loaded Dice.
-This item represents rigged luck and casino manipulation. It should feel clever, dangerous, and expensive.
+This item represents manipulation, bent odds, and illicit luck control. It should feel mischievous, premium, and dangerous.
 
 Rarity variants:
-1. Black rarity: dark carved dice, subtle glow in pips, restrained detail, minimal ornament.
-2. Red rarity: same dice upgraded with crimson pips, hotter edge glow, richer carved markings.
-3. Yellow rarity: same dice upgraded into gilded casino dice, premium polish, jewel-like pips, luxury finish.
-4. White rarity: same dice upgraded into celestial loaded dice, ivory-gold faces, radiant pips, divine luck glow.
+1. Black rarity: dark loaded dice, restrained shine, minimal ornament, clear readable pips.
+2. Red rarity: same dice upgraded with crimson edge glow, hotter trickster energy, richer finish.
+3. Yellow rarity: same dice upgraded into gilded cheater's dice, ornate bevels, premium materials, luxury craft.
+4. White rarity: same dice upgraded into celestial fate dice, ivory-gold body, radiant pips, holy chance glow.
 
 Requirements:
 - same dice concept across all 4 icons
-- keep the dice large and readable in frame
 - centered object
 - clean rarity-colored background only
 - no text
@@ -849,18 +699,17 @@ Requirements:
 ```text
 Using the style rules above, generate 4 separate square item icons for Stealing.
 
-Core object: a Wallet.
-This item represents thief-like luck and stealing power. The wallet should feel like a premium fantasy rogue item, not a modern everyday accessory.
+Core object: a premium Wallet.
+This item represents theft, lifted spoils, and sneaky gain. It should feel stylish, greedy, and premium rather than mundane.
 
 Rarity variants:
-1. Black rarity: dark leather wallet, simple folded form, sturdy clasp, restrained detail.
-2. Red rarity: same wallet upgraded with crimson stitching, richer leather, subtle coin glow, sharper trim.
-3. Yellow rarity: same wallet upgraded into a gilded thief's wallet, gold clasp, ornate embossing, premium finish.
-4. White rarity: same wallet upgraded into a celestial rogue wallet, ivory leather, radiant clasp, divine-luck accents.
+1. Black rarity: dark leather wallet, restrained detail, practical silhouette, subtle coin glint.
+2. Red rarity: same wallet upgraded with crimson lining, hotter metal accents, richer finish.
+3. Yellow rarity: same wallet upgraded into a gilded pickpocket purse, ornate trim, luxury materials, premium craft.
+4. White rarity: same wallet upgraded into a celestial thief's purse, ivory leather, radiant clasp, holy-greedy glow.
 
 Requirements:
 - same wallet concept across all 4 icons
-- it should feel like a fantasy relic carried by a master thief
 - centered object
 - clean rarity-colored background only
 - no text
@@ -869,23 +718,22 @@ Requirements:
 - no goofy style
 ```
 
-### Movement Speed
+### Loot Crate
 
 ```text
-Using the style rules above, generate 4 separate square item icons for Movement Speed.
+Using the style rules above, generate 4 separate square item icons for Loot Crate.
 
-Core object: Hermes Sandals.
-This item represents speed and mobility. It should feel mythological, agile, and iconic.
+Core object: a Loot Crate.
+This item represents explosive reward delivery and extra item payoff. It should feel exciting, premium, and desirable.
 
 Rarity variants:
-1. Black rarity: dark leather winged sandals, simple silhouette, restrained detail, minimal ornament.
-2. Red rarity: same sandals upgraded with crimson straps, stronger motion glow, richer wing accents.
-3. Yellow rarity: same sandals upgraded into gilded messenger sandals, ornate buckles, premium leather, noble finish.
-4. White rarity: same sandals upgraded into celestial Hermes sandals, ivory leather, radiant wings, divine speed glow.
+1. Black rarity: dark metal loot crate, restrained detail, practical latch, minimal ornament.
+2. Red rarity: same crate upgraded with crimson seams, hotter inner reward glow, stronger anticipation.
+3. Yellow rarity: same crate upgraded into a gilded reward chest, ornate frame, rich materials, premium prestige.
+4. White rarity: same crate upgraded into a celestial prize crate, ivory-gold body, radiant reward core, holy jackpot glow.
 
 Requirements:
-- same sandal concept across all 4 icons
-- the wing motif should stay obvious and elegant
+- same loot crate concept across all 4 icons
 - centered object
 - clean rarity-colored background only
 - no text
@@ -900,17 +748,17 @@ Requirements:
 Using the style rules above, generate 4 separate square item icons for Gambler's Token.
 
 Core object: an Infernal Casino Token.
-This item represents high-risk gambling power. It should feel rare, dangerous, luxurious, and slightly sinister.
+This item represents risky profit, gambling power, and sinister jackpot energy. It should feel premium, dangerous, and unmistakably special.
 
 Rarity variants:
-1. Black rarity: dark metal casino token, simple embossing, restrained glow, minimal ornament.
-2. Red rarity: same token upgraded with crimson energy lines, richer engraving, hotter infernal glow.
-3. Yellow rarity: same token upgraded into a gilded high-roller token, ornate edge detail, premium shine, jewel accents.
-4. White rarity: same token upgraded into a celestial infernal token, ivory-gold body, radiant core, divine-luxury glow.
+1. Black rarity: dark infernal casino token, restrained glow, engraved edges, subtle menace.
+2. Red rarity: same token upgraded with crimson infernal light, hotter core, richer carvings, stronger risk aura.
+3. Yellow rarity: same token upgraded into a gilded high-roller token, ornate edgework, premium materials, lavish prestige.
+4. White rarity: same token upgraded into a celestial jackpot relic, ivory-gold body, radiant center, holy-luck glow.
 
 Requirements:
-- same token concept across all 4 icons
-- it should feel like a premium legendary casino artifact
+- same infernal token concept across all 4 icons
+- it must read as a premium special item, not a generic coin
 - centered object
 - clean rarity-colored background only
 - no text

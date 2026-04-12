@@ -12,6 +12,7 @@ enum class ET66MediaViewerSource : uint8
 {
 	TikTok  UMETA(DisplayName = "TikTok"),
 	Shorts  UMETA(DisplayName = "Shorts"),
+	Reels   UMETA(DisplayName = "Instagram Reels"),
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnT66MediaViewerOpenChanged, bool, bIsOpen);
@@ -31,6 +32,8 @@ class T66_API UT66MediaViewerSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MediaViewer")
 	bool IsMediaViewerOpen() const { return bIsOpen; }
 
@@ -40,7 +43,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MediaViewer")
 	void SetMediaViewerOpen(bool bOpen);
 
-	/** Get/set which platform is active (TikTok or Shorts). Navigates to the new URL immediately if open. */
+	/** Get/set which platform is active. Navigates to the new URL immediately if open. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MediaViewer")
 	ET66MediaViewerSource GetMediaViewerSource() const { return ActiveSource; }
 
@@ -68,8 +71,13 @@ public:
 	static const TCHAR* GetUrlForSource(ET66MediaViewerSource Source);
 
 private:
+	static constexpr double ToggleDebounceSeconds = 0.35;
+	static constexpr double TikTokQrRefreshSeconds = 25.0;
+
 	bool bIsOpen = false;
 	ET66MediaViewerSource ActiveSource = ET66MediaViewerSource::TikTok;
+	double LastToggleRealtimeSeconds = -1000.0;
+	double LastTikTokQrNavigationRealtimeSeconds = -1000.0;
 
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 	TUniquePtr<FT66WebView2Host> TikTokWebView2;

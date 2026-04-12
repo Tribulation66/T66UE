@@ -128,6 +128,7 @@ void AT66HouseNPCBase::LoadFromDataTable()
 	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	if (!GI || NPCID.IsNone()) return;
+	if (NPCID == FName(TEXT("Trickster"))) return;
 
 	FHouseNPCData Data;
 	if (GI->GetHouseNPCData(NPCID, Data))

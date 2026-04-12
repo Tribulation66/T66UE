@@ -8,15 +8,105 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Misc/App.h"
+#include "Misc/PackageName.h"
 #include "Sound/SoundClass.h"
 #include "Core/T66MediaViewerSubsystem.h"
 
 const FString UT66PlayerSettingsSubsystem::SlotName(TEXT("T66_PlayerSettings"));
 
+namespace
+{
+	ET66UIFontPreset SanitizeFontPresetIndex(int32 RawValue)
+	{
+		switch (static_cast<ET66UIFontPreset>(RawValue))
+		{
+		case ET66UIFontPreset::Current:
+			return ET66UIFontPreset::Current;
+		case ET66UIFontPreset::Alagard:
+		default:
+			return ET66UIFontPreset::Current;
+		}
+	}
+
+	ET66MediaViewerSource SanitizeMediaViewerSourceIndex(int32 RawValue)
+	{
+		switch (static_cast<ET66MediaViewerSource>(RawValue))
+		{
+		case ET66MediaViewerSource::TikTok:
+		case ET66MediaViewerSource::Shorts:
+		case ET66MediaViewerSource::Reels:
+			return static_cast<ET66MediaViewerSource>(RawValue);
+		default:
+			return ET66MediaViewerSource::TikTok;
+		}
+	}
+
+	ET66BeatTargetSelectionMode SanitizeBeatTargetSelectionMode(const ET66BeatTargetSelectionMode RawValue)
+	{
+		switch (RawValue)
+		{
+		case ET66BeatTargetSelectionMode::PersonalBest:
+		case ET66BeatTargetSelectionMode::FriendsTop:
+		case ET66BeatTargetSelectionMode::StreamersTop:
+		case ET66BeatTargetSelectionMode::GlobalTop:
+		case ET66BeatTargetSelectionMode::FavoriteRun:
+			return RawValue;
+		default:
+			return ET66BeatTargetSelectionMode::GlobalTop;
+		}
+	}
+
+	void SanitizeBeatTargetSelection(FT66BeatTargetSelection& Selection)
+	{
+		Selection.Mode = SanitizeBeatTargetSelectionMode(Selection.Mode);
+		if (Selection.Mode != ET66BeatTargetSelectionMode::FavoriteRun)
+		{
+			Selection.FavoriteEntryId.Reset();
+		}
+	}
+
+	int32 FindFavoriteLeaderboardRunIndexByEntryId(const TArray<FT66FavoriteLeaderboardRun>& Favorites, const FString& EntryId)
+	{
+		if (EntryId.IsEmpty())
+		{
+			return INDEX_NONE;
+		}
+
+		for (int32 Index = 0; Index < Favorites.Num(); ++Index)
+		{
+			if (Favorites[Index].EntryId.Equals(EntryId, ESearchCase::CaseSensitive))
+			{
+				return Index;
+			}
+		}
+
+		return INDEX_NONE;
+	}
+
+	int32 FindFavoriteAchievementIndexById(const TArray<FName>& Favorites, const FName AchievementID)
+	{
+		if (AchievementID.IsNone())
+		{
+			return INDEX_NONE;
+		}
+
+		for (int32 Index = 0; Index < Favorites.Num(); ++Index)
+		{
+			if (Favorites[Index] == AchievementID)
+			{
+				return Index;
+			}
+		}
+
+		return INDEX_NONE;
+	}
+}
+
 void UT66PlayerSettingsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	LoadOrCreate();
+	ApplyUIFontPreset();
 	ApplyUITheme();
 	ApplyUIScale();
 
@@ -85,6 +175,55 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 		bNeedsSave = true;
 	}
 
+	if (SettingsObj->SchemaVersion < 11)
+	{
+		SettingsObj->SchemaVersion = 11;
+		SettingsObj->FavoriteFriendSteamIds.Reset();
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 12)
+	{
+		SettingsObj->SchemaVersion = 12;
+		SettingsObj->bSpeedRunMode = true;
+		SettingsObj->MasterVolume = 0.0f;
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 13)
+	{
+		SettingsObj->SchemaVersion = 13;
+		SettingsObj->UIFontPresetIndex = static_cast<int32>(ET66UIFontPreset::Current);
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 14)
+	{
+		SettingsObj->SchemaVersion = 14;
+		SettingsObj->MediaViewerSourceIndex = static_cast<int32>(ET66MediaViewerSource::TikTok);
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 15)
+	{
+		SettingsObj->SchemaVersion = 15;
+		SettingsObj->bShowTimeToBeat = true;
+		SettingsObj->bShowScoreToBeat = true;
+		SettingsObj->bShowTimePacing = false;
+		SettingsObj->bShowScorePacing = false;
+		SettingsObj->TimeToBeatSelection = FT66BeatTargetSelection{};
+		SettingsObj->ScoreToBeatSelection = FT66BeatTargetSelection{};
+		SettingsObj->FavoriteLeaderboardRuns.Reset();
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < 16)
+	{
+		SettingsObj->SchemaVersion = 16;
+		SettingsObj->FavoriteAchievementIds.Reset();
+		bNeedsSave = true;
+	}
+
 	if (SettingsObj->bLightTheme)
 	{
 		SettingsObj->bLightTheme = false;
@@ -95,6 +234,54 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	if (SettingsObj->UIThemeIndex != ForcedThemeIndex)
 	{
 		SettingsObj->UIThemeIndex = ForcedThemeIndex;
+		bNeedsSave = true;
+	}
+
+	const ET66UIFontPreset SanitizedPreset = SanitizeFontPresetIndex(SettingsObj->UIFontPresetIndex);
+	if (SettingsObj->UIFontPresetIndex != static_cast<int32>(SanitizedPreset))
+	{
+		SettingsObj->UIFontPresetIndex = static_cast<int32>(SanitizedPreset);
+		bNeedsSave = true;
+	}
+
+	const ET66MediaViewerSource SanitizedMediaViewerSource = SanitizeMediaViewerSourceIndex(SettingsObj->MediaViewerSourceIndex);
+	if (SettingsObj->MediaViewerSourceIndex != static_cast<int32>(SanitizedMediaViewerSource))
+	{
+		SettingsObj->MediaViewerSourceIndex = static_cast<int32>(SanitizedMediaViewerSource);
+		bNeedsSave = true;
+	}
+
+	{
+		TSet<FName> SeenAchievementIds;
+		for (int32 Index = SettingsObj->FavoriteAchievementIds.Num() - 1; Index >= 0; --Index)
+		{
+			const FName AchievementID = SettingsObj->FavoriteAchievementIds[Index];
+			if (AchievementID.IsNone() || SeenAchievementIds.Contains(AchievementID))
+			{
+				SettingsObj->FavoriteAchievementIds.RemoveAt(Index);
+				bNeedsSave = true;
+				continue;
+			}
+
+			SeenAchievementIds.Add(AchievementID);
+		}
+	}
+
+	FT66BeatTargetSelection SanitizedTimeSelection = SettingsObj->TimeToBeatSelection;
+	SanitizeBeatTargetSelection(SanitizedTimeSelection);
+	if (SanitizedTimeSelection.Mode != SettingsObj->TimeToBeatSelection.Mode
+		|| SanitizedTimeSelection.FavoriteEntryId != SettingsObj->TimeToBeatSelection.FavoriteEntryId)
+	{
+		SettingsObj->TimeToBeatSelection = SanitizedTimeSelection;
+		bNeedsSave = true;
+	}
+
+	FT66BeatTargetSelection SanitizedScoreSelection = SettingsObj->ScoreToBeatSelection;
+	SanitizeBeatTargetSelection(SanitizedScoreSelection);
+	if (SanitizedScoreSelection.Mode != SettingsObj->ScoreToBeatSelection.Mode
+		|| SanitizedScoreSelection.FavoriteEntryId != SettingsObj->ScoreToBeatSelection.FavoriteEntryId)
+	{
+		SettingsObj->ScoreToBeatSelection = SanitizedScoreSelection;
 		bNeedsSave = true;
 	}
 
@@ -164,6 +351,98 @@ float UT66PlayerSettingsSubsystem::GetUIScale() const
 	return SettingsObj ? FMath::Clamp(SettingsObj->UIScale, 0.75f, 1.50f) : 1.0f;
 }
 
+void UT66PlayerSettingsSubsystem::SetUIFontPreset(ET66UIFontPreset NewPreset)
+{
+	if (!SettingsObj) return;
+
+	const ET66UIFontPreset SanitizedPreset = SanitizeFontPresetIndex(static_cast<int32>(NewPreset));
+	if (SettingsObj->UIFontPresetIndex == static_cast<int32>(SanitizedPreset))
+	{
+		return;
+	}
+
+	SettingsObj->UIFontPresetIndex = static_cast<int32>(SanitizedPreset);
+	ApplyUIFontPreset();
+	Save();
+}
+
+ET66UIFontPreset UT66PlayerSettingsSubsystem::GetUIFontPreset() const
+{
+	return SettingsObj ? SanitizeFontPresetIndex(SettingsObj->UIFontPresetIndex) : ET66UIFontPreset::Current;
+}
+
+bool UT66PlayerSettingsSubsystem::IsFavoriteFriend(const FString& FriendSteamId) const
+{
+	return SettingsObj
+		&& !FriendSteamId.IsEmpty()
+		&& SettingsObj->FavoriteFriendSteamIds.Contains(FriendSteamId);
+}
+
+void UT66PlayerSettingsSubsystem::SetFavoriteFriend(const FString& FriendSteamId, bool bFavorite)
+{
+	if (!SettingsObj || FriendSteamId.IsEmpty())
+	{
+		return;
+	}
+
+	const bool bAlreadyFavorite = SettingsObj->FavoriteFriendSteamIds.Contains(FriendSteamId);
+	if (bFavorite == bAlreadyFavorite)
+	{
+		return;
+	}
+
+	if (bFavorite)
+	{
+		SettingsObj->FavoriteFriendSteamIds.Add(FriendSteamId);
+	}
+	else
+	{
+		SettingsObj->FavoriteFriendSteamIds.Remove(FriendSteamId);
+	}
+
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::IsFavoriteAchievement(const FName AchievementID) const
+{
+	return SettingsObj
+		&& !AchievementID.IsNone()
+		&& FindFavoriteAchievementIndexById(SettingsObj->FavoriteAchievementIds, AchievementID) != INDEX_NONE;
+}
+
+void UT66PlayerSettingsSubsystem::SetFavoriteAchievement(const FName AchievementID, const bool bFavorite)
+{
+	if (!SettingsObj || AchievementID.IsNone())
+	{
+		return;
+	}
+
+	const int32 ExistingIndex = FindFavoriteAchievementIndexById(SettingsObj->FavoriteAchievementIds, AchievementID);
+	if (bFavorite)
+	{
+		if (ExistingIndex != INDEX_NONE)
+		{
+			SettingsObj->FavoriteAchievementIds.RemoveAt(ExistingIndex);
+		}
+		SettingsObj->FavoriteAchievementIds.Insert(AchievementID, 0);
+		Save();
+		return;
+	}
+
+	if (ExistingIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	SettingsObj->FavoriteAchievementIds.RemoveAt(ExistingIndex);
+	Save();
+}
+
+TArray<FName> UT66PlayerSettingsSubsystem::GetFavoriteAchievementIds() const
+{
+	return SettingsObj ? SettingsObj->FavoriteAchievementIds : TArray<FName>{};
+}
+
 bool UT66PlayerSettingsSubsystem::GetPracticeMode() const
 {
 	return SettingsObj ? SettingsObj->bPracticeMode : false;
@@ -190,7 +469,7 @@ void UT66PlayerSettingsSubsystem::SetSubmitLeaderboardAnonymous(bool bEnabled)
 
 bool UT66PlayerSettingsSubsystem::GetSpeedRunMode() const
 {
-	return SettingsObj ? SettingsObj->bSpeedRunMode : false;
+	return SettingsObj ? SettingsObj->bSpeedRunMode : true;
 }
 
 void UT66PlayerSettingsSubsystem::SetSpeedRunMode(bool bEnabled)
@@ -212,9 +491,177 @@ void UT66PlayerSettingsSubsystem::SetGoonerMode(bool bEnabled)
 	Save();
 }
 
+bool UT66PlayerSettingsSubsystem::GetShowTimeToBeat() const
+{
+	return SettingsObj ? SettingsObj->bShowTimeToBeat : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetShowTimeToBeat(bool bEnabled)
+{
+	if (!SettingsObj || SettingsObj->bShowTimeToBeat == bEnabled) return;
+	SettingsObj->bShowTimeToBeat = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetShowScoreToBeat() const
+{
+	return SettingsObj ? SettingsObj->bShowScoreToBeat : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetShowScoreToBeat(bool bEnabled)
+{
+	if (!SettingsObj || SettingsObj->bShowScoreToBeat == bEnabled) return;
+	SettingsObj->bShowScoreToBeat = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetShowTimePacing() const
+{
+	return SettingsObj ? SettingsObj->bShowTimePacing : false;
+}
+
+void UT66PlayerSettingsSubsystem::SetShowTimePacing(bool bEnabled)
+{
+	if (!SettingsObj || SettingsObj->bShowTimePacing == bEnabled) return;
+	SettingsObj->bShowTimePacing = bEnabled;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::GetShowScorePacing() const
+{
+	return SettingsObj ? SettingsObj->bShowScorePacing : false;
+}
+
+void UT66PlayerSettingsSubsystem::SetShowScorePacing(bool bEnabled)
+{
+	if (!SettingsObj || SettingsObj->bShowScorePacing == bEnabled) return;
+	SettingsObj->bShowScorePacing = bEnabled;
+	Save();
+}
+
+FT66BeatTargetSelection UT66PlayerSettingsSubsystem::GetTimeToBeatSelection() const
+{
+	FT66BeatTargetSelection Selection = SettingsObj ? SettingsObj->TimeToBeatSelection : FT66BeatTargetSelection{};
+	SanitizeBeatTargetSelection(Selection);
+	return Selection;
+}
+
+void UT66PlayerSettingsSubsystem::SetTimeToBeatSelection(const FT66BeatTargetSelection& Selection)
+{
+	if (!SettingsObj) return;
+	FT66BeatTargetSelection SanitizedSelection = Selection;
+	SanitizeBeatTargetSelection(SanitizedSelection);
+	if (SettingsObj->TimeToBeatSelection.Mode == SanitizedSelection.Mode
+		&& SettingsObj->TimeToBeatSelection.FavoriteEntryId == SanitizedSelection.FavoriteEntryId)
+	{
+		return;
+	}
+
+	SettingsObj->TimeToBeatSelection = SanitizedSelection;
+	Save();
+}
+
+FT66BeatTargetSelection UT66PlayerSettingsSubsystem::GetScoreToBeatSelection() const
+{
+	FT66BeatTargetSelection Selection = SettingsObj ? SettingsObj->ScoreToBeatSelection : FT66BeatTargetSelection{};
+	SanitizeBeatTargetSelection(Selection);
+	return Selection;
+}
+
+void UT66PlayerSettingsSubsystem::SetScoreToBeatSelection(const FT66BeatTargetSelection& Selection)
+{
+	if (!SettingsObj) return;
+	FT66BeatTargetSelection SanitizedSelection = Selection;
+	SanitizeBeatTargetSelection(SanitizedSelection);
+	if (SettingsObj->ScoreToBeatSelection.Mode == SanitizedSelection.Mode
+		&& SettingsObj->ScoreToBeatSelection.FavoriteEntryId == SanitizedSelection.FavoriteEntryId)
+	{
+		return;
+	}
+
+	SettingsObj->ScoreToBeatSelection = SanitizedSelection;
+	Save();
+}
+
+bool UT66PlayerSettingsSubsystem::IsFavoriteLeaderboardRun(const FString& EntryId) const
+{
+	return SettingsObj && FindFavoriteLeaderboardRunIndexByEntryId(SettingsObj->FavoriteLeaderboardRuns, EntryId) != INDEX_NONE;
+}
+
+bool UT66PlayerSettingsSubsystem::FindFavoriteLeaderboardRun(const FString& EntryId, FT66FavoriteLeaderboardRun& OutFavorite) const
+{
+	if (!SettingsObj)
+	{
+		return false;
+	}
+
+	const int32 FavoriteIndex = FindFavoriteLeaderboardRunIndexByEntryId(SettingsObj->FavoriteLeaderboardRuns, EntryId);
+	if (FavoriteIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	OutFavorite = SettingsObj->FavoriteLeaderboardRuns[FavoriteIndex];
+	return true;
+}
+
+TArray<FT66FavoriteLeaderboardRun> UT66PlayerSettingsSubsystem::GetFavoriteLeaderboardRuns() const
+{
+	return SettingsObj ? SettingsObj->FavoriteLeaderboardRuns : TArray<FT66FavoriteLeaderboardRun>{};
+}
+
+void UT66PlayerSettingsSubsystem::SetFavoriteLeaderboardRun(const FT66FavoriteLeaderboardRun& Favorite, bool bFavorite)
+{
+	if (!SettingsObj || Favorite.EntryId.IsEmpty())
+	{
+		return;
+	}
+
+	const int32 ExistingIndex = FindFavoriteLeaderboardRunIndexByEntryId(SettingsObj->FavoriteLeaderboardRuns, Favorite.EntryId);
+	if (bFavorite)
+	{
+		FT66FavoriteLeaderboardRun SanitizedFavorite = Favorite;
+		SanitizedFavorite.EntryId = SanitizedFavorite.EntryId.TrimStartAndEnd();
+		SanitizedFavorite.DisplayName = SanitizedFavorite.DisplayName.TrimStartAndEnd();
+		if (SanitizedFavorite.EntryId.IsEmpty())
+		{
+			return;
+		}
+
+		if (ExistingIndex != INDEX_NONE)
+		{
+			SettingsObj->FavoriteLeaderboardRuns.RemoveAt(ExistingIndex);
+		}
+		SettingsObj->FavoriteLeaderboardRuns.Insert(SanitizedFavorite, 0);
+		Save();
+		return;
+	}
+
+	if (ExistingIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	SettingsObj->FavoriteLeaderboardRuns.RemoveAt(ExistingIndex);
+
+	auto ClearSelectionIfFavoriteMatches = [Favorite](FT66BeatTargetSelection& Selection)
+	{
+		if (Selection.Mode == ET66BeatTargetSelectionMode::FavoriteRun
+			&& Selection.FavoriteEntryId.Equals(Favorite.EntryId, ESearchCase::CaseSensitive))
+		{
+			Selection.Mode = ET66BeatTargetSelectionMode::GlobalTop;
+			Selection.FavoriteEntryId.Reset();
+		}
+	};
+
+	ClearSelectionIfFavoriteMatches(SettingsObj->TimeToBeatSelection);
+	ClearSelectionIfFavoriteMatches(SettingsObj->ScoreToBeatSelection);
+	Save();
+}
+
 float UT66PlayerSettingsSubsystem::GetMasterVolume() const
 {
-	return SettingsObj ? SettingsObj->MasterVolume : 0.8f;
+	return SettingsObj ? SettingsObj->MasterVolume : 0.0f;
 }
 
 void UT66PlayerSettingsSubsystem::SetMasterVolume(float NewValue01)
@@ -364,13 +811,62 @@ bool UT66PlayerSettingsSubsystem::GetHudToggleAffectsPortraitStats() const
 void UT66PlayerSettingsSubsystem::SetMediaViewerEnabled(bool bEnabled)
 {
 	if (!SettingsObj) return;
+	if (SettingsObj->bMediaViewerEnabled == bEnabled)
+	{
+		return;
+	}
 	SettingsObj->bMediaViewerEnabled = bEnabled;
+
+	if (!bEnabled)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+			{
+				if (MV->IsMediaViewerOpen())
+				{
+					MV->SetMediaViewerOpen(false);
+				}
+			}
+		}
+	}
+
 	Save();
 }
 
 bool UT66PlayerSettingsSubsystem::GetMediaViewerEnabled() const
 {
 	return SettingsObj ? SettingsObj->bMediaViewerEnabled : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetMediaViewerSource(ET66MediaViewerSource NewSource)
+{
+	if (!SettingsObj) return;
+
+	const ET66MediaViewerSource SanitizedSource = SanitizeMediaViewerSourceIndex(static_cast<int32>(NewSource));
+	if (SettingsObj->MediaViewerSourceIndex == static_cast<int32>(SanitizedSource))
+	{
+		return;
+	}
+
+	SettingsObj->MediaViewerSourceIndex = static_cast<int32>(SanitizedSource);
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
+		{
+			MV->SetMediaViewerSource(SanitizedSource);
+		}
+	}
+
+	Save();
+}
+
+ET66MediaViewerSource UT66PlayerSettingsSubsystem::GetMediaViewerSource() const
+{
+	return SettingsObj
+		? SanitizeMediaViewerSourceIndex(SettingsObj->MediaViewerSourceIndex)
+		: ET66MediaViewerSource::TikTok;
 }
 
 void UT66PlayerSettingsSubsystem::SetFogEnabled(bool bEnabled)
@@ -421,6 +917,22 @@ void UT66PlayerSettingsSubsystem::ResetRetroFXSettingsToDefaults()
 	if (!SettingsObj) return;
 	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
 	Save();
+}
+
+void UT66PlayerSettingsSubsystem::ApplyUIFontPreset()
+{
+	FT66Style::SetActiveFontPreset(GetUIFontPreset());
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UWorld* World = GI->GetWorld())
+		{
+			if (AT66PlayerController* PC = Cast<AT66PlayerController>(World->GetFirstPlayerController()))
+			{
+				PC->RebuildThemeAwareUI();
+			}
+		}
+	}
 }
 
 void UT66PlayerSettingsSubsystem::ApplyUITheme()
@@ -520,16 +1032,24 @@ void UT66PlayerSettingsSubsystem::ApplyClassVolumesIfPresent()
 
 	// Foundation: if/when we create SoundClass assets, we can apply per-class volume multipliers.
 	// This is safe to call even if assets don't exist yet.
+	static const TCHAR* MusicClassPackagePath = TEXT("/Game/Audio/SC_Music");
 	static const TCHAR* MusicClassPath = TEXT("/Game/Audio/SC_Music.SC_Music");
+	static const TCHAR* SfxClassPackagePath = TEXT("/Game/Audio/SC_SFX");
 	static const TCHAR* SfxClassPath = TEXT("/Game/Audio/SC_SFX.SC_SFX");
 
-	if (USoundClass* Music = LoadObject<USoundClass>(nullptr, MusicClassPath))
+	if (FPackageName::DoesPackageExist(MusicClassPackagePath))
 	{
-		Music->Properties.Volume = FMath::Clamp(SettingsObj->MusicVolume, 0.0f, 1.0f);
+		if (USoundClass* Music = LoadObject<USoundClass>(nullptr, MusicClassPath))
+		{
+			Music->Properties.Volume = FMath::Clamp(SettingsObj->MusicVolume, 0.0f, 1.0f);
+		}
 	}
-	if (USoundClass* Sfx = LoadObject<USoundClass>(nullptr, SfxClassPath))
+	if (FPackageName::DoesPackageExist(SfxClassPackagePath))
 	{
-		Sfx->Properties.Volume = FMath::Clamp(SettingsObj->SfxVolume, 0.0f, 1.0f);
+		if (USoundClass* Sfx = LoadObject<USoundClass>(nullptr, SfxClassPath))
+		{
+			Sfx->Properties.Volume = FMath::Clamp(SettingsObj->SfxVolume, 0.0f, 1.0f);
+		}
 	}
 }
 

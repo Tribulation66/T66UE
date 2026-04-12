@@ -89,7 +89,7 @@ void UT66CollectorOverlayWidget::OnExitLab()
 	RemoveFromParent();
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 		PC->RestoreGameplayInputMode();
-	UGameplayStatics::OpenLevel(World, FName(TEXT("FrontendLevel")));
+	UGameplayStatics::OpenLevel(World, UT66GameInstance::GetFrontendLevelName());
 }
 
 void UT66CollectorOverlayWidget::CloseOverlay()
@@ -220,8 +220,8 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			if (GI && GI->GetItemData(ItemID, ItemData))
 			{
 				// Build description from primary + secondary stat types.
-				const FText PrimaryStat = FText::FromString(StaticEnum<ET66HeroStatType>()->GetNameStringByValue(static_cast<int64>(ItemData.PrimaryStatType)));
-				const FText SecondaryStat = FText::FromString(StaticEnum<ET66SecondaryStatType>()->GetNameStringByValue(static_cast<int64>(ItemData.SecondaryStatType)));
+				const FText PrimaryStat = StaticEnum<ET66HeroStatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.PrimaryStatType));
+				const FText SecondaryStat = StaticEnum<ET66SecondaryStatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.SecondaryStatType));
 				DescText = FText::Format(LOCTEXT("DescLine", "Line 1: +{0}\nLine 2: {1}"), PrimaryStat, SecondaryStat);
 			}
 			AddItemCard(ItemID, NameText, DescText);

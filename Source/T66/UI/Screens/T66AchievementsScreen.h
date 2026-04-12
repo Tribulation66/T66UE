@@ -10,10 +10,11 @@
 
 class UT66LocalizationSubsystem;
 class UT66AchievementsSubsystem;
+class UT66PlayerSettingsSubsystem;
 
 /**
  * Achievements Screen
- * Full-page achievement browser with a single 100-entry list and overall completion progress.
+ * Full-page achievement browser with separate Standard and Special sections.
  */
 UCLASS(Blueprintable)
 class T66_API UT66AchievementsScreen : public UT66ScreenBase
@@ -37,10 +38,15 @@ private:
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	UT66AchievementsSubsystem* GetAchievementsSubsystem() const;
+	UT66PlayerSettingsSubsystem* GetPlayerSettingsSubsystem() const;
 
 	void RefreshAchievements();
 	void RebuildAchievementList();
 	int32 GetUnlockedAchievementCount() const;
+	int32 GetUnlockedAchievementCountForCategory(ET66AchievementCategory Category) const;
+	TArray<FAchievementData> GetAchievementsForCategory(ET66AchievementCategory Category) const;
+	FText BuildAchievementRewardText(const FAchievementData& Achievement) const;
+	FText GetAchievementActionText(const FAchievementData& Achievement) const;
 
 	FReply HandleBackClicked();
 	FReply HandleClaimClicked(FName AchievementID);

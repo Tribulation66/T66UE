@@ -273,15 +273,17 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 
-	const FText TitleText = NSLOCTEXT("T66.Unlocks", "Title", "UNLOCKS");
+	const FText TitleText = NSLOCTEXT("T66.MiniGames", "Title", "MINIGAMES");
+	const FText SnakeButtonText = NSLOCTEXT("T66.MiniGames", "SnakeButtonTitle", "SNAKE GAME");
+	const FText SnakeBodyText = NSLOCTEXT("T66.MiniGames", "SnakeBody", "Launch a quick arcade run in a live modal.");
+	const FText SnakeHintText = NSLOCTEXT("T66.MiniGames", "SnakeHint", "Click the title to play. Use arrow keys or WASD to steer.");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
-	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
-	const int32 TotalUnlockCount = GetTotalUnlockCount();
-	const int32 UnlockedCount = GetUnlockedCount();
-	const float UnlockProgress = TotalUnlockCount > 0
-		? static_cast<float>(UnlockedCount) / static_cast<float>(TotalUnlockCount)
+	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
+	const float TopBarOverlapPx = 22.f;
+	const float TopInset = UIManager
+		? FMath::Max(0.f, (UIManager->GetFrontendTopBarContentHeight() - TopBarOverlapPx) / ResponsiveScale)
 		: 0.f;
+	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
@@ -292,47 +294,6 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 	{
 		return FT66Style::GetSafePadding(FMargin(20.f, 0.f, 0.f, 20.f));
 	});
-
-	auto MakeTabButton = [this](const FText& Text, EUnlockCategory Category) -> TSharedRef<SWidget>
-	{
-		const TAttribute<EVisibility> SelectedVisibility = TAttribute<EVisibility>::CreateLambda([this, Category]() -> EVisibility
-		{
-			return CurrentCategory == Category ? EVisibility::Visible : EVisibility::Collapsed;
-		});
-
-		const TAttribute<EVisibility> UnselectedVisibility = TAttribute<EVisibility>::CreateLambda([this, Category]() -> EVisibility
-		{
-			return CurrentCategory == Category ? EVisibility::Collapsed : EVisibility::Visible;
-		});
-
-		auto MakeVariant = [Text, this, Category](ET66ButtonType ButtonType, const TAttribute<EVisibility>& InVisibility) -> TSharedRef<SWidget>
-		{
-			const FTextBlockStyle& TxtChip = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
-
-			return FT66Style::MakeButton(
-				FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66UnlocksScreen::HandleCategoryClicked, Category), ButtonType)
-				.SetMinWidth(150.f)
-				.SetPadding(FMargin(12.f, 8.f))
-				.SetUseGlow(false)
-				.SetVisibility(InVisibility)
-				.SetContent(
-					SNew(STextBlock)
-					.Text(Text)
-					.TextStyle(&TxtChip)
-					.Font(FT66Style::Tokens::FontBold(20))
-					.ColorAndOpacity(FT66Style::Tokens::Text)));
-		};
-
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
-				MakeVariant(ET66ButtonType::Success, SelectedVisibility)
-			]
-			+ SOverlay::Slot()
-			[
-				MakeVariant(ET66ButtonType::Neutral, UnselectedVisibility)
-			];
-	};
 
 	return SNew(SBox)
 		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
@@ -348,88 +309,77 @@ TSharedRef<SWidget> UT66UnlocksScreen::BuildSlateUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(30.f, 25.f, 30.f, 20.f)
+						.HAlign(HAlign_Center)
+						.Padding(0.f, 14.f, 0.f, 0.f)
 						[
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							[
-								SNew(STextBlock)
-								.Text(TitleText)
-								.Font(FT66Style::Tokens::FontBold(50))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
-								.Justification(ETextJustify::Center)
-							]
-							+ SVerticalBox::Slot()
-							.AutoHeight()
-							.Padding(0.f, 18.f, 0.f, 0.f)
+							SNew(SBox)
+							.WidthOverride(760.f)
 							[
 								FT66Style::MakePanel(
 									SNew(SVerticalBox)
 									+ SVerticalBox::Slot()
 									.AutoHeight()
-									.Padding(14.f, 0.f, 14.f, 10.f)
+									.HAlign(HAlign_Center)
+									.Padding(18.f, 8.f, 18.f, 0.f)
 									[
-										SNew(SHorizontalBox)
-										+ SHorizontalBox::Slot()
-										.FillWidth(1.f)
-										[
-											SNew(STextBlock)
-											.Text(FText::Format(
-												NSLOCTEXT("T66.Unlocks", "CompletionLabel", "{0}/{1} UNLOCKS"),
-												FText::AsNumber(UnlockedCount),
-												FText::AsNumber(TotalUnlockCount)))
-											.Font(FT66Style::Tokens::FontBold(22))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
-										]
-										+ SHorizontalBox::Slot()
-										.AutoWidth()
-										.HAlign(HAlign_Right)
-										[
-											SNew(STextBlock)
-											.Text(FText::AsPercent(UnlockProgress))
-											.Font(FT66Style::Tokens::FontBold(20))
-											.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-										]
+										SNew(STextBlock)
+										.Text(TitleText)
+										.Font(FT66Style::Tokens::FontBold(44))
+										.ColorAndOpacity(FT66Style::Tokens::Text)
+										.Justification(ETextJustify::Center)
 									]
 									+ SVerticalBox::Slot()
 									.AutoHeight()
+									.Padding(18.f, 18.f, 18.f, 0.f)
 									[
-										SNew(SProgressBar)
-										.Percent(UnlockProgress)
-										.FillColorAndOpacity(FLinearColor(0.40f, 0.68f, 0.41f, 1.0f))
+										SNew(SBorder)
+										.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+										.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.94f))
+										.Padding(FMargin(20.f, 22.f))
+										[
+											SNew(SVerticalBox)
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.HAlign(HAlign_Center)
+											[
+												FT66Style::MakeButton(
+													FT66ButtonParams(
+														SnakeButtonText,
+														FOnClicked::CreateUObject(this, &UT66UnlocksScreen::HandleOpenSnakeClicked),
+														ET66ButtonType::Primary)
+													.SetMinWidth(580.f)
+													.SetHeight(84.f)
+													.SetFontSize(30))
+											]
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.HAlign(HAlign_Center)
+											.Padding(10.f, 16.f, 10.f, 0.f)
+											[
+												SNew(STextBlock)
+												.Text(SnakeBodyText)
+												.Font(FT66Style::Tokens::FontRegular(22))
+												.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+												.Justification(ETextJustify::Center)
+												.AutoWrapText(true)
+											]
+											+ SVerticalBox::Slot()
+											.AutoHeight()
+											.HAlign(HAlign_Center)
+											.Padding(10.f, 10.f, 10.f, 0.f)
+											[
+												SNew(STextBlock)
+												.Text(SnakeHintText)
+												.Font(FT66Style::Tokens::FontRegular(18))
+												.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+												.Justification(ETextJustify::Center)
+												.AutoWrapText(true)
+											]
+										]
 									],
 									FT66PanelParams(ET66PanelType::Panel)
 										.SetColor(T66UnlocksInsetFill())
-										.SetPadding(FMargin(14.f, 14.f)))
-							]
-						]
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						.Padding(30.f, 0.f, 30.f, 15.f)
-						[
-							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								MakeTabButton(NSLOCTEXT("T66.Unlocks", "HeroesTab", "HEROES"), EUnlockCategory::Heroes)
-							]
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								MakeTabButton(NSLOCTEXT("T66.Unlocks", "CompanionsTab", "COMPANIONS"), EUnlockCategory::Companions)
-							]
-							+ SHorizontalBox::Slot().AutoWidth()
-							[
-								MakeTabButton(NSLOCTEXT("T66.Unlocks", "ItemsTab", "ITEMS"), EUnlockCategory::Items)
-							]
-						]
-						+ SVerticalBox::Slot()
-						.FillHeight(1.f)
-						.Padding(30.f, 0.f, 30.f, 20.f)
-						[
-							SNew(SScrollBox)
-							+ SScrollBox::Slot()
-							[
-								SAssignNew(UnlockListBox, SVerticalBox)
+										.SetPadding(FMargin(30.f, 28.f)))
 							]
 						]
 					]
@@ -586,6 +536,12 @@ FReply UT66UnlocksScreen::HandleCategoryClicked(EUnlockCategory Category)
 FReply UT66UnlocksScreen::HandleBackClicked()
 {
 	OnBackClicked();
+	return FReply::Handled();
+}
+
+FReply UT66UnlocksScreen::HandleOpenSnakeClicked()
+{
+	ShowModal(ET66ScreenType::SnakeGame);
 	return FReply::Handled();
 }
 

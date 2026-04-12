@@ -9,6 +9,7 @@
 #include "T66CircusOverlayWidget.generated.h"
 
 class SBorder;
+class SBox;
 class SImage;
 class STextBlock;
 class SWidgetSwitcher;
@@ -94,8 +95,13 @@ private:
 	TSharedPtr<STextBlock> AlchemyAngerText;
 	TSharedPtr<STextBlock> AlchemyStatusText;
 	TSharedPtr<STextBlock> AlchemyTargetText;
+	TSharedPtr<STextBlock> AlchemyTargetDetailText;
 	TSharedPtr<STextBlock> AlchemySacrificeText;
+	TSharedPtr<STextBlock> AlchemySacrificeDetailText;
+	TSharedPtr<STextBlock> AlchemyEmptyStateText;
 	TSharedPtr<STextBlock> AlchemyResultText;
+	TSharedPtr<SBox> AlchemyCardsRowContainer;
+	TSharedPtr<SWidget> AlchemyUpgradeButton;
 	TSharedPtr<SBorder> AlchemyTargetBorder;
 	TSharedPtr<SBorder> AlchemySacrificeBorder;
 	TSharedPtr<SImage> AlchemyTargetIconImage;

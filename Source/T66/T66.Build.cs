@@ -53,6 +53,7 @@ public class T66 : ModuleRules
 
 			// Ship the loader DLL next to the executable (required for CreateCoreWebView2EnvironmentWithOptions).
 			RuntimeDependencies.Add("$(TargetOutputDir)/WebView2Loader.dll", Path.Combine(WebView2Dir, "bin", "Win64", "WebView2Loader.dll"));
+			RuntimeDependencies.Add("$(TargetOutputDir)/steam_appid.txt", Path.Combine(ModuleDirectory, "..", "..", "steam_appid.txt"), StagedFileType.NonUFS);
 
 			PublicDefinitions.Add("T66_WITH_WEBVIEW2=1");
 		}
@@ -60,6 +61,17 @@ public class T66 : ModuleRules
 		{
 			PublicDefinitions.Add("T66_WITH_WEBVIEW2=0");
 		}
+
+		void AddLooseRuntimeDependency(string RelativeProjectPath)
+		{
+			RuntimeDependencies.Add("$(ProjectDir)/" + RelativeProjectPath.Replace('\\', '/'), StagedFileType.NonUFS);
+		}
+
+		AddLooseRuntimeDependency("RuntimeDependencies/T66/Fonts/...");
+		AddLooseRuntimeDependency("RuntimeDependencies/T66/ThemeFonts/...");
+		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/...");
+		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/PowerUp/Statues/forbidden_chad/...");
+		AddLooseRuntimeDependency("SourceAssets/Archive/OuterWallTexture.png");
 
 		// Add all subdirectories as include paths
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory));

@@ -5,10 +5,13 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66LeaderboardPacingUtils.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
@@ -22,11 +25,15 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66MiasmaBoundary.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66ItemCardTextUtils.h"
+#include "UI/T66StatsPanelSlate.h"
+#include "UI/T66UIManager.h"
+#include "UI/Style/T66LegacyUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Components/CapsuleComponent.h"
@@ -36,8 +43,11 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SScaleBox.h"
+#include "Widgets/Layout/SSpacer.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
+#include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SLeafWidget.h"
@@ -50,7 +60,6 @@
 #include "Rendering/SlateRenderTransform.h"
 #include "Engine/Texture2D.h"
 #include "Engine/DataTable.h"
-#include "ImageUtils.h"
 // [GOLD] EngineUtils.h removed — TActorIterator replaced by ActorRegistry.
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SToolTip.h"
@@ -66,14 +75,131 @@ namespace
 		return Out;
 	}
 
+	static FText GetBossPartDisplayName(const FT66BossPartSnapshot& Part)
+	{
+		switch (Part.HitZoneType)
+		{
+		case ET66HitZoneType::Head:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartHead", "Head");
+		case ET66HitZoneType::Core:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartCore", "Core");
+		case ET66HitZoneType::WeakPoint:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartWeakPoint", "Weak Point");
+		case ET66HitZoneType::LeftArm:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartLeftArm", "Left Arm");
+		case ET66HitZoneType::RightArm:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartRightArm", "Right Arm");
+		case ET66HitZoneType::LeftLeg:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartLeftLeg", "Left Leg");
+		case ET66HitZoneType::RightLeg:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartRightLeg", "Right Leg");
+		case ET66HitZoneType::Body:
+			return NSLOCTEXT("T66.GameplayHUD", "BossPartBody", "Body");
+		case ET66HitZoneType::None:
+		default:
+			return Part.PartID.IsNone() ? NSLOCTEXT("T66.GameplayHUD", "BossPartGeneric", "Part") : FText::FromName(Part.PartID);
+		}
+	}
+
+	static TSoftObjectPtr<UTexture2D> ResolveGameplayUltimateIcon(const FName HeroID, const ET66UltimateType UltimateType)
+	{
+		if (HeroID == FName(TEXT("Hero_1")) && UltimateType == ET66UltimateType::SpearStorm)
+		{
+			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Ultimate.T_Hero_1_Ultimate")));
+		}
+
+		return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/ULTS/KnightULT.KnightULT")));
+	}
+
+	static TSoftObjectPtr<UTexture2D> ResolveGameplayPassiveIcon(const FName HeroID, const ET66PassiveType PassiveType)
+	{
+		if (HeroID == FName(TEXT("Hero_1")) && PassiveType == ET66PassiveType::IronWill)
+		{
+			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Passive.T_Hero_1_Passive")));
+		}
+
+		return ResolveGameplayUltimateIcon(HeroID, ET66UltimateType::None);
+	}
+
+	static TSoftObjectPtr<UTexture2D> ResolveGameplayHeartIcon(const int32 TierIndex)
+	{
+		switch (FMath::Clamp(TierIndex, 0, 4))
+		{
+		case 0: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Red.T_Heart_Red")));
+		case 1: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Blue.T_Heart_Blue")));
+		case 2: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Green.T_Heart_Green")));
+		case 3: return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Purple.T_Heart_Purple")));
+		case 4:
+		default:
+			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Gold.T_Heart_Gold")));
+		}
+	}
+
+	static TSoftObjectPtr<UTexture2D> ResolveGameplayBlessingHeartIcon()
+	{
+		return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/Hearts/T_Heart_Blessed.T_Heart_Blessed")));
+	}
+
+	static FText ResolveGameplayUltimateInputHint(const ET66UltimateType UltimateType)
+	{
+		return (UltimateType == ET66UltimateType::SpearStorm)
+			? NSLOCTEXT("T66.GameplayHUD", "UltKeybindRmb", "RMB")
+			: NSLOCTEXT("T66.GameplayHUD", "UltKeybindDefault", "R");
+	}
+
+	static const FSlateBrush* ResolveHeartBrushForDisplay(
+		const TArray<TSharedPtr<FSlateBrush>>& HeartBrushes,
+		const TSharedPtr<FSlateBrush>& BlessingBrush,
+		const TSharedPtr<FSlateBrush>& FallbackBrush,
+		const bool bBlessed,
+		const int32 TierIndex)
+	{
+		if (bBlessed && BlessingBrush.IsValid() && BlessingBrush->GetResourceObject())
+		{
+			return BlessingBrush.Get();
+		}
+
+		if (HeartBrushes.IsValidIndex(TierIndex) && HeartBrushes[TierIndex].IsValid() && HeartBrushes[TierIndex]->GetResourceObject())
+		{
+			return HeartBrushes[TierIndex].Get();
+		}
+
+		return FallbackBrush.Get();
+	}
+
+	static FLinearColor GetBossPartFillColor(const ET66HitZoneType HitZoneType, const bool bIsAlive)
+	{
+		if (!bIsAlive)
+		{
+			return FLinearColor(0.22f, 0.22f, 0.22f, 0.95f);
+		}
+
+		switch (HitZoneType)
+		{
+		case ET66HitZoneType::Head:
+			return FLinearColor(0.95f, 0.28f, 0.18f, 0.98f);
+		case ET66HitZoneType::Core:
+			return FLinearColor(0.88f, 0.12f, 0.12f, 0.98f);
+		case ET66HitZoneType::WeakPoint:
+			return FLinearColor(0.95f, 0.70f, 0.18f, 0.98f);
+		case ET66HitZoneType::LeftArm:
+		case ET66HitZoneType::RightArm:
+			return FLinearColor(0.82f, 0.26f, 0.42f, 0.98f);
+		case ET66HitZoneType::LeftLeg:
+		case ET66HitZoneType::RightLeg:
+			return FLinearColor(0.72f, 0.18f, 0.18f, 0.98f);
+		case ET66HitZoneType::Body:
+		case ET66HitZoneType::None:
+		default:
+			return FLinearColor(0.84f, 0.18f, 0.18f, 0.98f);
+		}
+	}
+
 	static TMap<FString, TStrongObjectPtr<UTexture2D>> GHudRuntimeTextureCache;
 
 	static UTexture2D* LoadRuntimeHudFileTexture(const FString& RelativePath, TextureFilter Filter = TextureFilter::TF_Trilinear)
 	{
-		const TArray<FString> CandidatePaths = {
-			FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / RelativePath),
-			FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / RelativePath)
-		};
+		const TArray<FString> CandidatePaths = T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath);
 
 		for (const FString& FullPath : CandidatePaths)
 		{
@@ -88,20 +214,15 @@ namespace
 				return CachedTexture->Get();
 			}
 
-			UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(FullPath);
+			UTexture2D* Texture = T66LegacyUITextureAccess::ImportFileTexture(
+				FullPath,
+				Filter,
+				true,
+				TEXT("HudRuntimeTexture"));
 			if (!Texture)
 			{
 				continue;
 			}
-
-			Texture->SRGB = true;
-			Texture->Filter = Filter;
-			Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-			Texture->CompressionSettings = TC_EditorIcon;
-			Texture->NeverStream = true;
-			Texture->AddressX = TextureAddress::TA_Clamp;
-			Texture->AddressY = TextureAddress::TA_Clamp;
-			Texture->UpdateResource();
 
 			GHudRuntimeTextureCache.Add(CacheKey, TStrongObjectPtr<UTexture2D>(Texture));
 			return Texture;
@@ -125,15 +246,30 @@ namespace
 		Brush->SetResourceObject(LoadRuntimeHudFileTexture(RelativePath, Filter));
 	}
 
+	static void BindHudAssetBrush(
+		const TSharedPtr<FSlateBrush>& Brush,
+		const TCHAR* AssetPath,
+		const FVector2D& DesiredSize,
+		TextureFilter Filter = TextureFilter::TF_Trilinear)
+	{
+		if (!Brush.IsValid())
+		{
+			return;
+		}
+
+		Brush->ImageSize = DesiredSize;
+		Brush->SetResourceObject(T66LegacyUITextureAccess::LoadAssetTexture(AssetPath, Filter, TEXT("HudAssetTexture")));
+	}
+
 	static FString GetChestRewardClosedRelativePath(const ET66Rarity Rarity)
 	{
 		switch (Rarity)
 		{
-		case ET66Rarity::Red: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_red_closed.png");
-		case ET66Rarity::Yellow: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_yellow_closed.png");
-		case ET66Rarity::White: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_white_closed.png");
+		case ET66Rarity::Red: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_red_closed.png");
+		case ET66Rarity::Yellow: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_yellow_closed.png");
+		case ET66Rarity::White: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_white_closed.png");
 		case ET66Rarity::Black:
-		default: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_black_closed.png");
+		default: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_black_closed.png");
 		}
 	}
 
@@ -141,11 +277,11 @@ namespace
 	{
 		switch (Rarity)
 		{
-		case ET66Rarity::Red: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_red_open.png");
-		case ET66Rarity::Yellow: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_yellow_open.png");
-		case ET66Rarity::White: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_white_open.png");
+		case ET66Rarity::Red: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_red_open.png");
+		case ET66Rarity::Yellow: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_yellow_open.png");
+		case ET66Rarity::White: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_white_open.png");
 		case ET66Rarity::Black:
-		default: return TEXT("SourceAssets/UI/ChestRewards/chest_reward_black_open.png");
+		default: return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_black_open.png");
 		}
 	}
 
@@ -161,14 +297,26 @@ namespace
 		}
 	}
 
+	static const TCHAR* GetChestRewardFallbackAssetPath(const ET66Rarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66Rarity::Red: return TEXT("/Game/Items/Sprites/Item_TreasureChest_red.Item_TreasureChest_red");
+		case ET66Rarity::Yellow: return TEXT("/Game/Items/Sprites/Item_TreasureChest_yellow.Item_TreasureChest_yellow");
+		case ET66Rarity::White: return TEXT("/Game/Items/Sprites/Item_TreasureChest_white.Item_TreasureChest_white");
+		case ET66Rarity::Black:
+		default: return TEXT("/Game/Items/Sprites/Item_TreasureChest_black.Item_TreasureChest_black");
+		}
+	}
+
 	static FString GetGoldCurrencyRelativePath()
 	{
-		return TEXT("SourceAssets/UI/Currency/gold_icon.png");
+		return TEXT("RuntimeDependencies/T66/UI/Currency/gold_icon.png");
 	}
 
 	static FString GetDebtCurrencyRelativePath()
 	{
-		return TEXT("SourceAssets/UI/Currency/debt_icon.png");
+		return TEXT("RuntimeDependencies/T66/UI/Currency/debt_icon.png");
 	}
 
 	enum class ET66MapMarkerVisual : uint8
@@ -185,21 +333,24 @@ namespace
 		if (!bTriedMinimapIconAtlasLoad)
 		{
 			bTriedMinimapIconAtlasLoad = true;
-			const FString AtlasPath = FPaths::ConvertRelativePathToFull(
-				FPaths::ProjectDir() / TEXT("SourceAssets/Shikashi's Fantasy Icons Pack v2/Shikashi's Fantasy Icons Pack v2/#1 - Transparent Icons.png"));
-			if (FPaths::FileExists(AtlasPath))
+			for (const FString& AtlasPath : T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(
+				TEXT("RuntimeDependencies/T66/UI/Minimap/#1 - Transparent Icons.png")))
 			{
-			GMinimapIconAtlas = FImageUtils::ImportFileAsTexture2D(AtlasPath);
-			if (GMinimapIconAtlas)
-			{
-				GMinimapIconAtlas->SRGB = true;
-				GMinimapIconAtlas->Filter = TextureFilter::TF_Trilinear;
-				GMinimapIconAtlas->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-				GMinimapIconAtlas->CompressionSettings = TC_EditorIcon;
-				GMinimapIconAtlas->NeverStream = true;
-				GMinimapIconAtlas->UpdateResource();
-				GMinimapIconAtlas->AddToRoot();
-			}
+				if (!FPaths::FileExists(AtlasPath))
+				{
+					continue;
+				}
+
+				GMinimapIconAtlas = T66LegacyUITextureAccess::ImportFileTexture(
+					AtlasPath,
+					TextureFilter::TF_Trilinear,
+					false,
+					TEXT("MinimapIconAtlas"));
+				if (GMinimapIconAtlas)
+				{
+					GMinimapIconAtlas->AddToRoot();
+					break;
+				}
 			}
 		}
 
@@ -255,121 +406,8 @@ namespace
 		return nullptr;
 	}
 
-	static bool HasAnyNamedEntries(const TArray<FName>& IDs)
-	{
-		for (const FName& ID : IDs)
-		{
-			if (!ID.IsNone())
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	static ET66ItemRarity GetPreviewRarityByIndex(const int32 Index)
-	{
-		switch (Index % 4)
-		{
-		case 1:
-			return ET66ItemRarity::Red;
-		case 2:
-			return ET66ItemRarity::Yellow;
-		case 3:
-			return ET66ItemRarity::White;
-		case 0:
-		default:
-			return ET66ItemRarity::Black;
-		}
-	}
-
-	static void BuildPreviewInventoryDisplay(UT66GameInstance* GI, TArray<FName>& OutIDs, TArray<FT66InventorySlot>& OutSlots)
-	{
-		OutIDs.Init(NAME_None, UT66RunStateSubsystem::MaxInventorySlots);
-		OutSlots.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
-
-		if (!GI)
-		{
-			return;
-		}
-
-		TArray<FName> CandidateIDs;
-		if (UDataTable* ItemsDT = GI->GetItemsDataTable())
-		{
-			for (const FName RowName : ItemsDT->GetRowNames())
-			{
-				FItemData ItemData;
-				if (GI->GetItemData(RowName, ItemData))
-				{
-					CandidateIDs.Add(RowName);
-				}
-			}
-		}
-
-		if (CandidateIDs.Num() == 0)
-		{
-			CandidateIDs = {
-				FName(TEXT("Item_AoeDamage")),
-				FName(TEXT("Item_CritDamage")),
-				FName(TEXT("Item_LifeSteal")),
-				FName(TEXT("Item_MovementSpeed"))
-			};
-		}
-
-		if (CandidateIDs.Num() == 0)
-		{
-			return;
-		}
-
-		for (int32 SlotIndex = 0; SlotIndex < UT66RunStateSubsystem::MaxInventorySlots; ++SlotIndex)
-		{
-			const FName ItemID = CandidateIDs[SlotIndex % CandidateIDs.Num()];
-			const ET66ItemRarity Rarity = GetPreviewRarityByIndex(SlotIndex);
-			OutIDs[SlotIndex] = ItemID;
-			OutSlots[SlotIndex] = FT66InventorySlot(ItemID, Rarity, 8 + (SlotIndex * 3));
-		}
-	}
-
-	static void BuildPreviewIdolDisplay(UT66GameInstance* GI, TArray<FName>& OutIDs, TArray<ET66ItemRarity>& OutRarities)
-	{
-		OutIDs.Init(NAME_None, UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
-		OutRarities.Init(ET66ItemRarity::Black, UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
-
-		if (!GI)
-		{
-			return;
-		}
-
-		const TArray<FName>& AllIdolIDs = UT66IdolManagerSubsystem::GetAllIdolIDs();
-		if (AllIdolIDs.Num() == 0)
-		{
-			return;
-		}
-
-		for (int32 SlotIndex = 0; SlotIndex < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++SlotIndex)
-		{
-			const FName IdolID = AllIdolIDs[SlotIndex % AllIdolIDs.Num()];
-			FIdolData IdolData;
-			if (!GI->GetIdolData(IdolID, IdolData))
-			{
-				continue;
-			}
-
-			OutIDs[SlotIndex] = IdolID;
-			OutRarities[SlotIndex] = GetPreviewRarityByIndex(SlotIndex);
-		}
-	}
-
-	// Media viewer panel: original phone-panel size with tab row above.
-	static constexpr float GT66MediaPanelW = 330.f;
-	// Video area + tab row height (~30px tabs + 570px video = 600 total, matching old panel).
-	static constexpr float GT66MediaVideoH = 570.f;
-	static constexpr float GT66MediaTabRowH = 30.f;
-	static constexpr float GT66MediaPanelH = GT66MediaVideoH + GT66MediaTabRowH;
 	static constexpr float GT66BottomLeftHudScale = 0.70f;
 	static constexpr float GT66BottomLeftPortraitPanelSize = 152.f;
-	static constexpr float GT66BottomLeftSidePanelHeight = 152.f;
 	static constexpr float GT66BottomLeftSidePanelWidth = 132.f;
 	static constexpr float GT66BottomLeftIdolSlotSize = 58.f;
 	static constexpr float GT66BottomLeftIdolSlotPad = 1.f;
@@ -377,9 +415,25 @@ namespace
 	static constexpr float GT66BottomLeftLevelBadgeSize = 42.f;
 	static constexpr float GT66BottomLeftAbilityColumnHeight = GT66BottomLeftPortraitPanelSize;
 	static constexpr float GT66BottomLeftAbilityBoxSize = (GT66BottomLeftAbilityColumnHeight - GT66BottomLeftAbilityGap) * 0.5f;
-
-	// Distance from viewport bottom to top of hearts row (matches bottom-left HUD: slot padding 24 + portrait + padding 6 + hearts 48).
-	static constexpr float GT66HeartsTopOffsetFromBottom = 24.f + GT66BottomLeftPortraitPanelSize + 6.f + 44.f;
+	static constexpr float GT66BottomLeftSectionOuterPadding = 2.f;
+	static constexpr float GT66DisplayedHeartColumnGap = 0.f;
+	static constexpr float GT66DisplayedHeartRowGap = 0.f;
+	static constexpr float GT66DisplayedHeartAreaWidth = GT66BottomLeftPortraitPanelSize - (GT66BottomLeftSectionOuterPadding * 2.f);
+	static constexpr float GT66DisplayedHeartAreaHeight = GT66BottomLeftAbilityBoxSize - (GT66BottomLeftSectionOuterPadding * 2.f);
+	static constexpr float GT66DisplayedHeartWidth = (GT66DisplayedHeartAreaWidth - (GT66DisplayedHeartColumnGap * 4.f)) / 5.f;
+	static constexpr float GT66DisplayedHeartHeight = (GT66DisplayedHeartAreaHeight - GT66DisplayedHeartRowGap) * 0.5f;
+	static constexpr int32 GT66DisplayedHeartCount = UT66RunStateSubsystem::DefaultMaxHearts * 2;
+	static constexpr float GT66BottomLeftBlackPanelChrome = 10.f;
+	static constexpr float GT66BottomLeftMainPlateWidth = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftMainPlateHeight = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftIdolPlateWidth = GT66BottomLeftSidePanelWidth + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftCombinedPlateWidth = GT66BottomLeftIdolPlateWidth + GT66BottomLeftMainPlateWidth;
+	static constexpr float GT66VisibleBottomLeftCombinedPlateWidth = GT66BottomLeftCombinedPlateWidth * GT66BottomLeftHudScale;
+	static constexpr float GT66VisibleBottomLeftMainPlateHeight = GT66BottomLeftMainPlateHeight * GT66BottomLeftHudScale;
+	static constexpr float GT66MediaPanelW = GT66VisibleBottomLeftCombinedPlateWidth;
+	static constexpr float GT66MediaPanelAspect = 600.f / 330.f;
+	static constexpr float GT66MediaPanelH = GT66MediaPanelW * GT66MediaPanelAspect;
+	static constexpr float GT66MediaBottomOffset = 12.f + GT66VisibleBottomLeftMainPlateHeight + 4.f;
 
 	// DPS meter reuses the same tier ladder as hearts/skulls, with broad thresholds so the color
 	// changes are meaningful across early and late runs.
@@ -484,6 +538,35 @@ namespace
 		return FText::Format(
 			NSLOCTEXT("T66.Presentation", "SkipCountdown", "Skip {0}s"),
 			SecondsText);
+	}
+
+	static float GetAchievementProgress01(const FAchievementData& Achievement)
+	{
+		return Achievement.RequirementCount > 0
+			? static_cast<float>(FMath::Clamp(Achievement.CurrentProgress, 0, Achievement.RequirementCount))
+				/ static_cast<float>(Achievement.RequirementCount)
+			: (Achievement.bIsUnlocked ? 1.0f : 0.0f);
+	}
+
+	static int32 GetAchievementRemainingCount(const FAchievementData& Achievement)
+	{
+		return FMath::Max(0, Achievement.RequirementCount - FMath::Clamp(Achievement.CurrentProgress, 0, Achievement.RequirementCount));
+	}
+
+	static int32 GetAchievementOrderKey(const FName AchievementID)
+	{
+		int32 NumericPart = 0;
+		bool bHasDigit = false;
+		for (const TCHAR Character : AchievementID.ToString())
+		{
+			if (FChar::IsDigit(Character))
+			{
+				NumericPart = (NumericPart * 10) + (Character - TEXT('0'));
+				bHasDigit = true;
+			}
+		}
+
+		return bHasDigit ? NumericPart : MAX_int32;
 	}
 
 	/** Creates a custom tooltip widget (background + text) for HUD item/idol hover. Returns null if InText is empty. */
@@ -985,6 +1068,35 @@ public:
 		Invalidate(EInvalidateWidgetReason::Paint);
 	}
 
+	void SetLockFullMapToBounds(bool bInLockFullMapToBounds)
+	{
+		bLockFullMapToBounds = bInLockFullMapToBounds;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
+	void SetRevealMask(bool bInUseRevealMask, const TArray<FVector2D>& InRevealWorldPoints, float InRevealWorldRadius)
+	{
+		bUseRevealMask = bInUseRevealMask;
+		RevealWorldPoints = InRevealWorldPoints;
+		RevealWorldRadius = FMath::Max(InRevealWorldRadius, 0.0f);
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
+	void SetTowerPolygon(const TArray<FVector2D>& InTowerPolygonWorldVertices)
+	{
+		TowerPolygonWorldVertices = InTowerPolygonWorldVertices;
+		bHasTowerPolygon = TowerPolygonWorldVertices.Num() >= 3;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
+	void SetTowerHole(bool bInHasTowerHole, const FVector2D& InTowerHoleCenter = FVector2D::ZeroVector, const FVector2D& InTowerHoleHalfExtents = FVector2D::ZeroVector)
+	{
+		bHasTowerHole = bInHasTowerHole;
+		TowerHoleCenter = InTowerHoleCenter;
+		TowerHoleHalfExtents = InTowerHoleHalfExtents;
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
 	virtual FVector2D ComputeDesiredSize(float) const override
 	{
 		return bMinimap ? FVector2D(228.f, 228.f) : FVector2D(1024.f, 640.f);
@@ -1004,8 +1116,21 @@ public:
 		FVector2D WorldMax = FullWorldMax;
 		if (bMinimap)
 		{
-			WorldMin = PlayerWorldXY - FVector2D(MinimapHalfExtent, MinimapHalfExtent);
-			WorldMax = PlayerWorldXY + FVector2D(MinimapHalfExtent, MinimapHalfExtent);
+			if (bLockFullMapToBounds)
+			{
+				WorldMin = FullWorldMin;
+				WorldMax = FullWorldMax;
+			}
+			else
+			{
+				WorldMin = PlayerWorldXY - FVector2D(MinimapHalfExtent, MinimapHalfExtent);
+				WorldMax = PlayerWorldXY + FVector2D(MinimapHalfExtent, MinimapHalfExtent);
+			}
+		}
+		else if (bLockFullMapToBounds)
+		{
+			WorldMin = FullWorldMin;
+			WorldMax = FullWorldMax;
 		}
 		else
 		{
@@ -1037,8 +1162,13 @@ public:
 		};
 
 		const FLinearColor MapBackgroundColor = bMinimap ? FT66Style::MinimapBackground() : FT66Style::Background();
-		const FLinearColor MapTerrainColor = WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
-		const FLinearColor GridColor = FT66Style::MinimapGrid();
+		const FLinearColor MapTerrainColor = bUseRevealMask
+			? WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.08f : 0.06f)
+			: WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
+		const FLinearColor RevealedTerrainColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(1.10f, 1.02f, 0.98f, 1.0f), bMinimap ? 0.72f : 0.42f);
+		const FLinearColor GridColor = bUseRevealMask
+			? WithAlpha(FT66Style::MinimapGrid(), bMinimap ? 0.18f : 0.12f)
+			: FT66Style::MinimapGrid();
 		const FLinearColor OutlineColor = WithAlpha(FT66Style::Border(), 0.88f);
 
 		// Solid dark background fill.
@@ -1051,35 +1181,136 @@ public:
 			MapBackgroundColor
 		);
 
+		auto DrawTowerPolygonFill = [&](const int32 DrawLayerId, const FLinearColor& FillColor)
+		{
+			if (!bHasTowerPolygon || TowerPolygonWorldVertices.Num() < 3)
+			{
+				return;
+			}
+
+			float PolygonMinY = TNumericLimits<float>::Max();
+			float PolygonMaxY = TNumericLimits<float>::Lowest();
+			for (const FVector2D& Vertex : TowerPolygonWorldVertices)
+			{
+				PolygonMinY = FMath::Min(PolygonMinY, Vertex.Y);
+				PolygonMaxY = FMath::Max(PolygonMaxY, Vertex.Y);
+			}
+
+			static constexpr float PolygonBandHeightWorld = 320.0f;
+			for (float BandMinY = PolygonMinY; BandMinY < PolygonMaxY - 1.0f; BandMinY += PolygonBandHeightWorld)
+			{
+				const float BandMaxY = FMath::Min(BandMinY + PolygonBandHeightWorld, PolygonMaxY);
+				float BandMinX = 0.0f;
+				float BandMaxX = 0.0f;
+				if (!T66TowerMapTerrain::TryGetPolygonBandXRange(TowerPolygonWorldVertices, BandMinY, BandMaxY, BandMinX, BandMaxX))
+				{
+					continue;
+				}
+
+				const FVector2D A = WorldToLocal(FVector2D(BandMinX, BandMaxY));
+				const FVector2D B = WorldToLocal(FVector2D(BandMaxX, BandMinY));
+				const FVector2D TL(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
+				const FVector2D BR(FMath::Max(A.X, B.X), FMath::Max(A.Y, B.Y));
+				const FVector2D BoxSize = BR - TL;
+				if (BoxSize.X <= 1.0f || BoxSize.Y <= 1.0f)
+				{
+					continue;
+				}
+
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					DrawLayerId,
+					ToPaintGeo(TL, BoxSize),
+					FCoreStyle::Get().GetBrush("WhiteBrush"),
+					ESlateDrawEffect::None,
+					FillColor);
+			}
+		};
+
+		auto DrawTowerPolygonOutline = [&](const int32 DrawLayerId, const FLinearColor& StrokeColor, const float Thickness)
+		{
+			if (!bHasTowerPolygon || TowerPolygonWorldVertices.Num() < 3)
+			{
+				return;
+			}
+
+			TArray<FVector2D> Outline;
+			Outline.Reserve(TowerPolygonWorldVertices.Num() + 1);
+			for (const FVector2D& Vertex : TowerPolygonWorldVertices)
+			{
+				Outline.Add(WorldToLocal(Vertex));
+			}
+			Outline.Add(WorldToLocal(TowerPolygonWorldVertices[0]));
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				DrawLayerId,
+				AllottedGeometry.ToPaintGeometry(),
+				Outline,
+				ESlateDrawEffect::None,
+				StrokeColor,
+				true,
+				Thickness);
+		};
+
 		// Terrain tint and diagonal lane strokes so the minimap reads more like a finished surface than a debug grid.
 		{
-			const FVector2D Inset(6.f, 6.f);
-			FSlateDrawElement::MakeBox(
-				OutDrawElements,
-				LayerId + 1,
-				ToPaintGeo(Inset, Size - (Inset * 2.f)),
-				FCoreStyle::Get().GetBrush("WhiteBrush"),
-				ESlateDrawEffect::None,
-				MapTerrainColor
-			);
+			if (bHasTowerPolygon)
+			{
+				DrawTowerPolygonFill(LayerId + 1, MapTerrainColor);
+			}
+			else
+			{
+				const FVector2D Inset(6.f, 6.f);
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					LayerId + 1,
+					ToPaintGeo(Inset, Size - (Inset * 2.f)),
+					FCoreStyle::Get().GetBrush("WhiteBrush"),
+					ESlateDrawEffect::None,
+					MapTerrainColor
+				);
+			}
 
-			const FLinearColor LaneColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
-			const TArray<FVector2D> LaneA = {
-				FVector2D(Size.X * 0.08f, Size.Y * 0.78f),
-				FVector2D(Size.X * 0.24f, Size.Y * 0.62f),
-				FVector2D(Size.X * 0.40f, Size.Y * 0.46f),
-				FVector2D(Size.X * 0.58f, Size.Y * 0.30f),
-				FVector2D(Size.X * 0.84f, Size.Y * 0.12f)
-			};
-			const TArray<FVector2D> LaneB = {
-				FVector2D(Size.X * 0.16f, Size.Y * 0.16f),
-				FVector2D(Size.X * 0.34f, Size.Y * 0.30f),
-				FVector2D(Size.X * 0.52f, Size.Y * 0.48f),
-				FVector2D(Size.X * 0.72f, Size.Y * 0.68f),
-				FVector2D(Size.X * 0.90f, Size.Y * 0.84f)
-			};
-			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneA, ESlateDrawEffect::None, LaneColor, true, bMinimap ? 10.f : 16.f);
-			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneB, ESlateDrawEffect::None, WithAlpha(LaneColor, 0.50f), true, bMinimap ? 8.f : 12.f);
+			if (!bUseRevealMask && !bHasTowerPolygon)
+			{
+				const FLinearColor LaneColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
+				const TArray<FVector2D> LaneA = {
+					FVector2D(Size.X * 0.08f, Size.Y * 0.78f),
+					FVector2D(Size.X * 0.24f, Size.Y * 0.62f),
+					FVector2D(Size.X * 0.40f, Size.Y * 0.46f),
+					FVector2D(Size.X * 0.58f, Size.Y * 0.30f),
+					FVector2D(Size.X * 0.84f, Size.Y * 0.12f)
+				};
+				const TArray<FVector2D> LaneB = {
+					FVector2D(Size.X * 0.16f, Size.Y * 0.16f),
+					FVector2D(Size.X * 0.34f, Size.Y * 0.30f),
+					FVector2D(Size.X * 0.52f, Size.Y * 0.48f),
+					FVector2D(Size.X * 0.72f, Size.Y * 0.68f),
+					FVector2D(Size.X * 0.90f, Size.Y * 0.84f)
+				};
+				FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneA, ESlateDrawEffect::None, LaneColor, true, bMinimap ? 10.f : 16.f);
+				FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 2, AllottedGeometry.ToPaintGeometry(), LaneB, ESlateDrawEffect::None, WithAlpha(LaneColor, 0.50f), true, bMinimap ? 8.f : 12.f);
+			}
+		}
+
+		if (bUseRevealMask && RevealWorldRadius > KINDA_SMALL_NUMBER)
+		{
+			const FVector2D RevealDrawSize(
+				FMath::Max((RevealWorldRadius * 2.0f / WorldSpan.X) * Size.X, 8.0f),
+				FMath::Max((RevealWorldRadius * 2.0f / WorldSpan.Y) * Size.Y, 8.0f));
+
+			for (const FVector2D& RevealWorldPoint : RevealWorldPoints)
+			{
+				const FVector2D RevealLocalPoint = WorldToLocal(RevealWorldPoint);
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					LayerId + 2,
+					ToPaintGeo(RevealLocalPoint - (RevealDrawSize * 0.5f), RevealDrawSize),
+					FCoreStyle::Get().GetBrush("WhiteBrush"),
+					ESlateDrawEffect::None,
+					RevealedTerrainColor);
+			}
 		}
 
 		// Background grid (subtle).
@@ -1105,10 +1336,14 @@ public:
 				FVector2D(0.f, 0.f) };
 			FSlateDrawElement::MakeLines(OutDrawElements, LayerId + 4, AllottedGeometry.ToPaintGeometry(),
 				Border, ESlateDrawEffect::None, OutlineColor, true, 2.f);
+			if (bHasTowerPolygon)
+			{
+				DrawTowerPolygonOutline(LayerId + 4, WithAlpha(OutlineColor, 0.78f), bMinimap ? 1.4f : 2.0f);
+			}
 		}
 
 		// Areas (full map only): Start / Main / Boss.
-		if (!bMinimap)
+		if (!bMinimap && !bUseRevealMask)
 		{
 			struct FArea
 			{
@@ -1156,6 +1391,36 @@ public:
 					ESlateDrawEffect::None,
 					WithAlpha(FT66Style::TextMuted(), 0.80f)
 				);
+			}
+		}
+
+		if (bHasTowerHole)
+		{
+			const FVector2D HoleMin = WorldToLocal(TowerHoleCenter - TowerHoleHalfExtents);
+			const FVector2D HoleMax = WorldToLocal(TowerHoleCenter + TowerHoleHalfExtents);
+			const FVector2D TL(FMath::Min(HoleMin.X, HoleMax.X), FMath::Min(HoleMin.Y, HoleMax.Y));
+			const FVector2D BR(FMath::Max(HoleMin.X, HoleMax.X), FMath::Max(HoleMin.Y, HoleMax.Y));
+			const FVector2D HoleSize = BR - TL;
+			if (HoleSize.X > 1.0f && HoleSize.Y > 1.0f)
+			{
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					LayerId + 4,
+					ToPaintGeo(TL, HoleSize),
+					FCoreStyle::Get().GetBrush("WhiteBrush"),
+					ESlateDrawEffect::None,
+					WithAlpha(MapBackgroundColor, bUseRevealMask ? 0.95f : 0.82f));
+
+				const TArray<FVector2D> HoleOutline = { TL, FVector2D(BR.X, TL.Y), BR, FVector2D(TL.X, BR.Y), TL };
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 5,
+					AllottedGeometry.ToPaintGeometry(),
+					HoleOutline,
+					ESlateDrawEffect::None,
+					WithAlpha(OutlineColor, 0.72f),
+					true,
+					bMinimap ? 1.5f : 2.0f);
 			}
 		}
 
@@ -1302,16 +1567,131 @@ public:
 private:
 	bool bMinimap = false;
 	bool bShowLabels = false;
+	bool bLockFullMapToBounds = false;
+	bool bUseRevealMask = false;
+	bool bHasTowerHole = false;
+	bool bHasTowerPolygon = false;
 
 	FVector2D FullWorldMin = FVector2D::ZeroVector;
 	FVector2D FullWorldMax = FVector2D::ZeroVector;
 
 	FVector2D PlayerWorldXY = FVector2D::ZeroVector;
 	TArray<FT66MapMarker> Markers;
+	TArray<FVector2D> RevealWorldPoints;
 	const FSlateBrush* PlayerBrush = nullptr;
 
 	float MinimapHalfExtent = 2500.f;
+	float RevealWorldRadius = 0.0f;
+	FVector2D TowerHoleCenter = FVector2D::ZeroVector;
+	FVector2D TowerHoleHalfExtents = FVector2D::ZeroVector;
+	TArray<FVector2D> TowerPolygonWorldVertices;
 };
+
+namespace
+{
+	struct FT66ResolvedBeatTarget
+	{
+		bool bValid = false;
+		bool bSupportsPacing = false;
+		int64 Score = 0;
+		float TimeSeconds = 0.f;
+		FString EntryId;
+		FString LocalRunSummarySlotName;
+	};
+
+	FString MakeHudBeatTargetCacheKey(
+		const ET66LeaderboardType Type,
+		const ET66PartySize PartySize,
+		const ET66Difficulty Difficulty,
+		const ET66LeaderboardFilter Filter)
+	{
+		const TCHAR* const TypeToken = (Type == ET66LeaderboardType::Score) ? TEXT("score") : TEXT("speedrun");
+		const TCHAR* const PartyToken =
+			(PartySize == ET66PartySize::Duo) ? TEXT("duo") :
+			(PartySize == ET66PartySize::Trio) ? TEXT("trio") :
+			(PartySize == ET66PartySize::Quad) ? TEXT("quad") : TEXT("solo");
+		const TCHAR* const DifficultyToken =
+			(Difficulty == ET66Difficulty::Medium) ? TEXT("medium") :
+			(Difficulty == ET66Difficulty::Hard) ? TEXT("hard") :
+			(Difficulty == ET66Difficulty::VeryHard) ? TEXT("veryhard") :
+			(Difficulty == ET66Difficulty::Impossible) ? TEXT("impossible") : TEXT("easy");
+		const TCHAR* const FilterToken =
+			(Filter == ET66LeaderboardFilter::Friends) ? TEXT("friends") :
+			(Filter == ET66LeaderboardFilter::Streamers) ? TEXT("streamers") : TEXT("global");
+
+		return FString::Printf(TEXT("%s_alltime_%s_%s_%s"), TypeToken, PartyToken, DifficultyToken, FilterToken);
+	}
+
+	void EnsureHudBeatTargetLeaderboardRequested(
+		UT66BackendSubsystem* Backend,
+		const ET66LeaderboardType Type,
+		const ET66PartySize PartySize,
+		const ET66Difficulty Difficulty,
+		const ET66LeaderboardFilter Filter)
+	{
+		if (!Backend || !Backend->IsBackendConfigured())
+		{
+			return;
+		}
+
+		const FString CacheKey = MakeHudBeatTargetCacheKey(Type, PartySize, Difficulty, Filter);
+		if (Backend->HasCachedLeaderboard(CacheKey))
+		{
+			return;
+		}
+
+		const FString TypeToken = (Type == ET66LeaderboardType::Score) ? TEXT("score") : TEXT("speedrun");
+		const FString PartyToken =
+			(PartySize == ET66PartySize::Duo) ? TEXT("duo") :
+			(PartySize == ET66PartySize::Trio) ? TEXT("trio") :
+			(PartySize == ET66PartySize::Quad) ? TEXT("quad") : TEXT("solo");
+		const FString DifficultyToken =
+			(Difficulty == ET66Difficulty::Medium) ? TEXT("medium") :
+			(Difficulty == ET66Difficulty::Hard) ? TEXT("hard") :
+			(Difficulty == ET66Difficulty::VeryHard) ? TEXT("veryhard") :
+			(Difficulty == ET66Difficulty::Impossible) ? TEXT("impossible") : TEXT("easy");
+		const FString FilterToken =
+			(Filter == ET66LeaderboardFilter::Friends) ? TEXT("friends") :
+			(Filter == ET66LeaderboardFilter::Streamers) ? TEXT("streamers") : TEXT("global");
+
+		Backend->FetchLeaderboard(TypeToken, TEXT("alltime"), PartyToken, DifficultyToken, FilterToken);
+	}
+
+	bool FindStagePacingPointForStage(const UT66LeaderboardRunSummarySaveGame* Snapshot, const int32 Stage, FT66StagePacingPoint& OutPoint)
+	{
+		if (!Snapshot)
+		{
+			return false;
+		}
+
+		for (const FT66StagePacingPoint& Point : Snapshot->StagePacingPoints)
+		{
+			if (Point.Stage == Stage)
+			{
+				OutPoint = Point;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	FText FormatHudTimerValue(const float Seconds)
+	{
+		const float ClampedSeconds = FMath::Max(0.f, Seconds);
+		const int32 Minutes = FMath::FloorToInt(ClampedSeconds / 60.f);
+		const int32 WholeSeconds = FMath::FloorToInt(FMath::Fmod(ClampedSeconds, 60.f));
+		const int32 Centiseconds = FMath::FloorToInt(FMath::Fmod(ClampedSeconds * 100.f, 100.f));
+
+		FNumberFormattingOptions TwoDigits;
+		TwoDigits.MinimumIntegralDigits = 2;
+		return FText::Format(
+			NSLOCTEXT("T66.GameplayHUD", "TimerValueFormat", "{0}:{1}.{2}"),
+			FText::AsNumber(Minutes),
+			FText::AsNumber(WholeSeconds, &TwoDigits),
+			FText::AsNumber(Centiseconds, &TwoDigits));
+	}
+}
 
 TSharedRef<SWidget> UT66GameplayHUDWidget::RebuildWidget()
 {
@@ -1330,6 +1710,237 @@ UT66DamageLogSubsystem* UT66GameplayHUDWidget::GetDamageLog() const
 	return GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr;
 }
 
+bool UT66GameplayHUDWidget::IsPausePresentationActive() const
+{
+	const AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer());
+	if (!T66PC || !T66PC->IsPaused())
+	{
+		return false;
+	}
+
+	const UT66UIManager* LocalUIManager = T66PC->GetUIManager();
+	return LocalUIManager
+		&& LocalUIManager->IsModalActive()
+		&& LocalUIManager->GetCurrentModalType() == ET66ScreenType::PauseMenu;
+}
+
+TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseStatsPanel() const
+{
+	return T66StatsPanelSlate::MakeEssentialStatsPanel(
+		GetRunState(),
+		GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr,
+		GT66MediaPanelW,
+		true,
+		-4,
+		-6);
+}
+
+TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
+{
+	UGameInstance* GI = GetGameInstance();
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+
+	TArray<FAchievementData> TrackedAchievements = Achievements ? Achievements->GetAllAchievements() : TArray<FAchievementData>{};
+	TrackedAchievements = TrackedAchievements.FilterByPredicate([Achievements](const FAchievementData& Achievement)
+	{
+		const bool bClaimed = Achievements ? Achievements->IsAchievementClaimed(Achievement.AchievementID) : false;
+		const int32 Progress = FMath::Clamp(Achievement.CurrentProgress, 0, Achievement.RequirementCount);
+		return !bClaimed
+			&& !Achievement.bIsUnlocked
+			&& Achievement.RequirementCount > 0
+			&& Progress < Achievement.RequirementCount;
+	});
+
+	TrackedAchievements.Sort([PlayerSettings](const FAchievementData& Left, const FAchievementData& Right)
+	{
+		const bool bLeftFavorite = PlayerSettings && PlayerSettings->IsFavoriteAchievement(Left.AchievementID);
+		const bool bRightFavorite = PlayerSettings && PlayerSettings->IsFavoriteAchievement(Right.AchievementID);
+		if (bLeftFavorite != bRightFavorite)
+		{
+			return bLeftFavorite && !bRightFavorite;
+		}
+
+		const float LeftProgress = GetAchievementProgress01(Left);
+		const float RightProgress = GetAchievementProgress01(Right);
+		if (!FMath::IsNearlyEqual(LeftProgress, RightProgress))
+		{
+			return LeftProgress > RightProgress;
+		}
+
+		const int32 LeftRemaining = GetAchievementRemainingCount(Left);
+		const int32 RightRemaining = GetAchievementRemainingCount(Right);
+		if (LeftRemaining != RightRemaining)
+		{
+			return LeftRemaining < RightRemaining;
+		}
+
+		const int32 LeftOrder = GetAchievementOrderKey(Left.AchievementID);
+		const int32 RightOrder = GetAchievementOrderKey(Right.AchievementID);
+		if (LeftOrder != RightOrder)
+		{
+			return LeftOrder < RightOrder;
+		}
+
+		return Left.AchievementID.LexicalLess(Right.AchievementID);
+	});
+
+	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
+	const int32 MaxDisplayedAchievements = 7;
+	const int32 DisplayCount = FMath::Min(TrackedAchievements.Num(), MaxDisplayedAchievements);
+
+	if (DisplayCount <= 0)
+	{
+		Rows->AddSlot()
+		.AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("T66.PauseMenu", "NoTrackedAchievements", "No in-progress achievements right now."))
+			.Font(FT66Style::Tokens::FontRegular(10))
+			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.AutoWrapText(true)
+		];
+	}
+	else
+	{
+		for (int32 Index = 0; Index < DisplayCount; ++Index)
+		{
+			const FAchievementData& Achievement = TrackedAchievements[Index];
+			const int32 Progress = FMath::Clamp(Achievement.CurrentProgress, 0, Achievement.RequirementCount);
+			const int32 Requirement = FMath::Max(1, Achievement.RequirementCount);
+			const float Progress01 = GetAchievementProgress01(Achievement);
+			const bool bFavorited = PlayerSettings && PlayerSettings->IsFavoriteAchievement(Achievement.AchievementID);
+			const FLinearColor ProgressColor = bFavorited
+				? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
+				: FT66Style::Tokens::Success;
+			const FText ProgressText = FText::Format(
+				NSLOCTEXT("T66.PauseMenu", "PauseAchievementProgress", "{0}/{1}"),
+				FText::AsNumber(Progress),
+				FText::AsNumber(Requirement));
+
+			Rows->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 6.f)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.03f, 0.04f, 0.06f, 0.96f))
+				.ToolTipText(Achievement.Description)
+				.Padding(FMargin(10.f, 6.f))
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(Achievement.DisplayName)
+							.Font(FT66Style::Tokens::FontBold(11))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.AutoWrapText(true)
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						.Padding(8.f, 0.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(bFavorited ? TEXT("\u2605") : TEXT("")))
+							.Font(FT66Style::Tokens::FontRegular(12))
+							.ColorAndOpacity(ProgressColor)
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 2.f, 0.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(Achievement.Description)
+						.Font(FT66Style::Tokens::FontRegular(9))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 6.f, 0.f, 0.f)
+					[
+						SNew(SProgressBar)
+						.Percent(Progress01)
+						.FillColorAndOpacity(ProgressColor)
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 4.f, 0.f, 0.f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						[
+							SNew(STextBlock)
+							.Text(ProgressText)
+							.Font(FT66Style::Tokens::FontBold(10))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(STextBlock)
+							.Text(FText::Format(
+								NSLOCTEXT("T66.PauseMenu", "PauseAchievementRemaining", "{0} left"),
+								FText::AsNumber(GetAchievementRemainingCount(Achievement))))
+							.Font(FT66Style::Tokens::FontRegular(9))
+							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						]
+					]
+				]
+			];
+		}
+	}
+
+	return SNew(SBox)
+		.WidthOverride(BottomRightInventoryPanelWidth)
+		[
+			FT66Style::MakePanel(
+				SNew(SBox)
+				.HeightOverride(420.f)
+				[
+					SNew(SScrollBox)
+					+ SScrollBox::Slot()
+					[
+						Rows
+					]
+				],
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(12.f, 12.f, 12.f, 10.f)))
+		];
+}
+
+void UT66GameplayHUDWidget::RefreshPausePresentation()
+{
+	const bool bPausePresentationActive = IsPausePresentationActive();
+	bLastPausePresentationActive = bPausePresentationActive;
+
+	if (PauseBackdropBorder.IsValid())
+	{
+		PauseBackdropBorder->SetVisibility(bPausePresentationActive ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+	}
+
+	if (PauseStatsPanelBox.IsValid())
+	{
+		PauseStatsPanelBox->SetVisibility(bPausePresentationActive ? EVisibility::Visible : EVisibility::Collapsed);
+		PauseStatsPanelBox->SetContent(bPausePresentationActive ? BuildPauseStatsPanel() : StaticCastSharedRef<SWidget>(SNew(SSpacer)));
+	}
+
+	if (PauseAchievementsPanelBox.IsValid())
+	{
+		PauseAchievementsPanelBox->SetVisibility(bPausePresentationActive ? EVisibility::Visible : EVisibility::Collapsed);
+		PauseAchievementsPanelBox->SetContent(bPausePresentationActive ? BuildPauseAchievementsPanel() : StaticCastSharedRef<SWidget>(SNew(SSpacer)));
+	}
+}
+
 void UT66GameplayHUDWidget::MarkHUDDirty()
 {
 	bHUDDirty = true;
@@ -1338,6 +1949,12 @@ void UT66GameplayHUDWidget::MarkHUDDirty()
 void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	const bool bPausePresentationActive = IsPausePresentationActive();
+	if (bPausePresentationActive != bLastPausePresentationActive)
+	{
+		RefreshPausePresentation();
+	}
 
 	if (bHUDDirty)
 	{
@@ -1350,6 +1967,19 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 	{
 		DPSRefreshAccumSeconds = 0.f;
 		RefreshDPS();
+	}
+
+	const APawn* RevealPawn = GetOwningPlayerPawn();
+	if (!RevealPawn)
+	{
+		if (const APlayerController* PC = GetOwningPlayer())
+		{
+			RevealPawn = PC->GetPawn();
+		}
+	}
+	if (RevealPawn)
+	{
+		UpdateTowerMapReveal(RevealPawn->GetActorLocation());
 	}
 
 	if (bPickupCardVisible && PickupCardBox.IsValid())
@@ -1373,6 +2003,11 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 
 	TickChestRewardPresentation(InDeltaTime);
 	TryShowQueuedPresentation();
+
+	if (bPausePresentationActive && IsMediaViewerOpen())
+	{
+		SyncTikTokWebView2OverlayToPlaceholder();
+	}
 
 	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
@@ -1515,6 +2150,12 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
 			Ach->AchievementsUnlocked.AddDynamic(this, &UT66GameplayHUDWidget::HandleAchievementsUnlocked);
+			Ach->AchievementsStateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		}
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			Backend->OnLeaderboardDataReady.AddUObject(this, &UT66GameplayHUDWidget::HandleBackendLeaderboardDataReady);
+			Backend->OnRunSummaryReady.AddUObject(this, &UT66GameplayHUDWidget::HandleBackendRunSummaryReady);
 		}
 	}
 
@@ -1528,7 +2169,10 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.5f, true);
-		World->GetTimerManager().SetTimer(FPSTimerHandle, this, &UT66GameplayHUDWidget::RefreshFPS, 0.25f, true);
+		if (FPSText.IsValid() || ElevationText.IsValid())
+		{
+			World->GetTimerManager().SetTimer(FPSTimerHandle, this, &UT66GameplayHUDWidget::RefreshFPS, 0.25f, true);
+		}
 	}
 
 	// Bottom-left HUD scale (anchor bottom-left)
@@ -1537,6 +2181,9 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		BottomLeftHUDBox->SetRenderTransformPivot(FVector2D(0.f, 1.f));
 		BottomLeftHUDBox->SetRenderTransform(FSlateRenderTransform(FTransform2D(GT66BottomLeftHudScale)));
 	}
+
+	ApplyInventoryInspectMode();
+	TowerRevealPointsByFloor.Reset();
 
 	// Passive and Ultimate ability tooltips (hero-specific)
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -1626,6 +2273,12 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
 			Ach->AchievementsUnlocked.RemoveDynamic(this, &UT66GameplayHUDWidget::HandleAchievementsUnlocked);
+			Ach->AchievementsStateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+		}
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			Backend->OnLeaderboardDataReady.RemoveAll(this);
+			Backend->OnRunSummaryReady.RemoveAll(this);
 		}
 	}
 
@@ -1633,6 +2286,8 @@ void UT66GameplayHUDWidget::NativeDestruct()
 	{
 		PC->NearbyLootBagChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshLootPrompt);
 	}
+	TowerRevealPointsByFloor.Reset();
+	bHasAppliedMediaViewerOpenState = false;
 	Super::NativeDestruct();
 }
 
@@ -1667,7 +2322,19 @@ bool UT66GameplayHUDWidget::IsMediaViewerOpen() const
 
 void UT66GameplayHUDWidget::HandleMediaViewerOpenChanged(bool /*bIsOpen*/)
 {
-	UpdateTikTokVisibility();
+	UpdateTikTokVisibility(true);
+}
+
+void UT66GameplayHUDWidget::HandleBackendLeaderboardDataReady(const FString& Key)
+{
+	static_cast<void>(Key);
+	MarkHUDDirty();
+}
+
+void UT66GameplayHUDWidget::HandleBackendRunSummaryReady(const FString& EntryId)
+{
+	static_cast<void>(EntryId);
+	MarkHUDDirty();
 }
 
 void UT66GameplayHUDWidget::HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs)
@@ -1786,9 +2453,17 @@ void UT66GameplayHUDWidget::SyncTikTokWebView2OverlayToPlaceholder()
 #endif
 }
 
-void UT66GameplayHUDWidget::UpdateTikTokVisibility()
+void UT66GameplayHUDWidget::UpdateTikTokVisibility(bool bForce)
 {
 	const bool bOpen = IsMediaViewerOpen();
+	const bool bStateChanged = !bHasAppliedMediaViewerOpenState || (bLastAppliedMediaViewerOpenState != bOpen);
+	if (!bForce && !bStateChanged)
+	{
+		return;
+	}
+
+	bHasAppliedMediaViewerOpenState = true;
+	bLastAppliedMediaViewerOpenState = bOpen;
 
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 	// On Windows, TikTok UI is rendered by a native WebView2 overlay, but we keep the Slate panel visible
@@ -1801,11 +2476,12 @@ void UT66GameplayHUDWidget::UpdateTikTokVisibility()
 	{
 		TikTokPlaceholderBox->SetVisibility(Vis);
 	}
-	UE_LOG(LogT66HUD, Log, TEXT("[TIKTOK] Viewer %s"), bOpen ? TEXT("OPEN") : TEXT("CLOSED"));
+	UE_LOG(LogT66HUD, Verbose, TEXT("[TIKTOK] Viewer %s"), bOpen ? TEXT("OPEN") : TEXT("CLOSED"));
 	if (bOpen)
 	{
 #if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
 		// Align native WebView2 overlay to the phone panel location (and keep it aligned if window DPI/position changes).
+		SyncTikTokWebView2OverlayToPlaceholder();
 		RequestTikTokWebView2OverlaySync();
 		if (UWorld* World = GetWorld())
 		{
@@ -1893,12 +2569,21 @@ void UT66GameplayHUDWidget::StartWheelSpin(ET66Rarity WheelRarity)
 
 					FRandomStream& Stream = RngSub->GetRunStream();
 					PendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+					const int32 DrawIndex = RngSub->GetLastRunDrawIndex();
+					const int32 PreDrawSeed = RngSub->GetLastRunPreDrawSeed();
+					if (RunState)
+					{
+						RunState->RecordLuckQuantityFloatRollRounded(
+							FName(TEXT("WheelGold")),
+							PendingGold,
+							MinGold,
+							MaxGold,
+							Range.Min,
+							Range.Max,
+							DrawIndex,
+							PreDrawSeed);
+					}
 				}
-			}
-
-			if (RunState && bHasGoldRange)
-			{
-				RunState->RecordLuckQuantityRoll(FName(TEXT("WheelGold")), PendingGold, MinGold, MaxGold);
 			}
 		}
 	}
@@ -1984,12 +2669,20 @@ void UT66GameplayHUDWidget::StartChestReward(const ET66Rarity ChestRarity, const
 		BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardClosedRelativePath(ChestRarity), ChestImageSize);
 		if (!ChestRewardClosedBrush->GetResourceObject())
 		{
+			BindHudAssetBrush(ChestRewardClosedBrush, GetChestRewardFallbackAssetPath(ChestRarity), ChestImageSize);
+		}
+		if (!ChestRewardClosedBrush->GetResourceObject())
+		{
 			BindRuntimeHudBrush(ChestRewardClosedBrush, GetChestRewardFallbackRelativePath(ChestRarity), ChestImageSize);
 		}
 	}
 	if (ChestRewardOpenBrush.IsValid())
 	{
 		BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardOpenRelativePath(ChestRarity), ChestImageSize);
+		if (!ChestRewardOpenBrush->GetResourceObject())
+		{
+			BindHudAssetBrush(ChestRewardOpenBrush, GetChestRewardFallbackAssetPath(ChestRarity), ChestImageSize);
+		}
 		if (!ChestRewardOpenBrush->GetResourceObject())
 		{
 			BindRuntimeHudBrush(ChestRewardOpenBrush, GetChestRewardFallbackRelativePath(ChestRarity), ChestImageSize);
@@ -2430,6 +3123,51 @@ void UT66GameplayHUDWidget::RefreshFPS()
 	}
 }
 
+void UT66GameplayHUDWidget::UpdateTowerMapReveal(const FVector& PlayerLocation)
+{
+	UWorld* World = GetWorld();
+	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	if (!GameMode || !GameMode->IsUsingTowerMainMapLayout())
+	{
+		return;
+	}
+
+	const int32 FloorNumber = GameMode->GetTowerFloorIndexForLocation(PlayerLocation);
+	if (FloorNumber == INDEX_NONE)
+	{
+		return;
+	}
+
+	static constexpr float TowerRevealPointSpacing = 900.0f;
+	TArray<FVector2D>& RevealPoints = TowerRevealPointsByFloor.FindOrAdd(FloorNumber);
+	const FVector2D PlayerXY(PlayerLocation.X, PlayerLocation.Y);
+	if (RevealPoints.Num() <= 0 || FVector2D::DistSquared(RevealPoints.Last(), PlayerXY) >= FMath::Square(TowerRevealPointSpacing))
+	{
+		RevealPoints.Add(PlayerXY);
+	}
+}
+
+bool UT66GameplayHUDWidget::IsTowerMapRevealPointVisible(int32 FloorNumber, const FVector2D& WorldXY) const
+{
+	static constexpr float TowerRevealRadius = 2600.0f;
+	const TArray<FVector2D>* RevealPoints = TowerRevealPointsByFloor.Find(FloorNumber);
+	if (!RevealPoints || RevealPoints->Num() <= 0)
+	{
+		return false;
+	}
+
+	const float RevealRadiusSq = FMath::Square(TowerRevealRadius);
+	for (const FVector2D& RevealPoint : *RevealPoints)
+	{
+		if (FVector2D::DistSquared(RevealPoint, WorldXY) <= RevealRadiusSq)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void UT66GameplayHUDWidget::RefreshMapData()
 {
 	FLagScopedScope LagScope(GetWorld(), TEXT("GameplayHUD::RefreshMapData"));
@@ -2472,6 +3210,113 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	const FVector PL = P ? P->GetActorLocation() : FVector::ZeroVector;
 	const FVector2D PlayerXY(PL.X, PL.Y);
 	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+	AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode());
+	T66TowerMapTerrain::FLayout TowerLayout;
+	const bool bTowerLayout = GameMode && GameMode->GetTowerMainMapLayout(TowerLayout);
+	const T66TowerMapTerrain::FFloor* ActiveTowerFloor = nullptr;
+	int32 ActiveTowerFloorNumber = INDEX_NONE;
+	FVector2D ActiveTowerFloorCenter = FVector2D::ZeroVector;
+	FVector2D ActiveTowerFloorHalfExtents = FVector2D::ZeroVector;
+	TArray<FVector2D> ActiveTowerPolygon;
+	FVector2D ActiveTowerHoleCenter = FVector2D::ZeroVector;
+	FVector2D ActiveTowerHoleHalfExtents = FVector2D::ZeroVector;
+	bool bHasActiveTowerHole = false;
+	static const TArray<FVector2D> EmptyRevealPoints;
+	static const TArray<FVector2D> EmptyTowerPolygon;
+	static constexpr float TowerMapRevealRadius = 2600.0f;
+	const TArray<FVector2D>* ActiveTowerRevealPoints = nullptr;
+
+	if (bTowerLayout)
+	{
+		if (P)
+		{
+			UpdateTowerMapReveal(PL);
+		}
+		ActiveTowerFloorNumber = GameMode->GetTowerFloorIndexForLocation(PL);
+		if (ActiveTowerFloorNumber == INDEX_NONE)
+		{
+			ActiveTowerFloorNumber = GameMode->GetCurrentTowerFloorIndex();
+		}
+
+		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
+		{
+			if (Floor.FloorNumber != ActiveTowerFloorNumber)
+			{
+				continue;
+			}
+
+			ActiveTowerFloor = &Floor;
+			ActiveTowerFloorCenter = FVector2D(Floor.Center.X, Floor.Center.Y);
+			ActiveTowerFloorHalfExtents = FVector2D(Floor.BoundsHalfExtent, Floor.BoundsHalfExtent);
+			T66TowerMapTerrain::TryGetFloorPolygon(TowerLayout, Floor.FloorNumber, ActiveTowerPolygon);
+			bHasActiveTowerHole = Floor.bHasDropHole;
+			ActiveTowerHoleCenter = FVector2D(Floor.HoleCenter.X, Floor.HoleCenter.Y);
+			ActiveTowerHoleHalfExtents = Floor.HoleHalfExtent;
+			break;
+		}
+
+		ActiveTowerRevealPoints = TowerRevealPointsByFloor.Find(ActiveTowerFloorNumber);
+	}
+
+	if (MinimapWidget.IsValid())
+	{
+		if (bTowerLayout && ActiveTowerFloor)
+		{
+			MinimapWidget->SetFullWorldBounds(
+				ActiveTowerFloorCenter - ActiveTowerFloorHalfExtents,
+				ActiveTowerFloorCenter + ActiveTowerFloorHalfExtents);
+			MinimapWidget->SetMinimapHalfExtent(ActiveTowerFloor->BoundsHalfExtent);
+			MinimapWidget->SetRevealMask(true, ActiveTowerRevealPoints ? *ActiveTowerRevealPoints : EmptyRevealPoints, TowerMapRevealRadius);
+			MinimapWidget->SetTowerPolygon(ActiveTowerPolygon);
+			MinimapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
+			MinimapWidget->SetLockFullMapToBounds(true);
+		}
+		else
+		{
+			MinimapWidget->SetMinimapHalfExtent(2500.0f);
+			MinimapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
+			MinimapWidget->SetTowerPolygon(EmptyTowerPolygon);
+			MinimapWidget->SetTowerHole(false);
+			MinimapWidget->SetLockFullMapToBounds(false);
+		}
+	}
+
+	if (FullMapWidget.IsValid())
+	{
+		if (bTowerLayout && ActiveTowerFloor)
+		{
+			FullMapWidget->SetFullWorldBounds(
+				ActiveTowerFloorCenter - ActiveTowerFloorHalfExtents,
+				ActiveTowerFloorCenter + ActiveTowerFloorHalfExtents);
+			FullMapWidget->SetLockFullMapToBounds(true);
+			FullMapWidget->SetRevealMask(true, ActiveTowerRevealPoints ? *ActiveTowerRevealPoints : EmptyRevealPoints, TowerMapRevealRadius);
+			FullMapWidget->SetTowerPolygon(ActiveTowerPolygon);
+			FullMapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
+		}
+		else
+		{
+			FullMapWidget->SetFullWorldBounds(FVector2D(-50000.0f, -50000.0f), FVector2D(50000.0f, 50000.0f));
+			FullMapWidget->SetLockFullMapToBounds(false);
+			FullMapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
+			FullMapWidget->SetTowerPolygon(EmptyTowerPolygon);
+			FullMapWidget->SetTowerHole(false);
+		}
+	}
+
+	auto ShouldShowTowerFloorLocation = [&](const FVector& Location) -> bool
+	{
+		if (!bTowerLayout || !GameMode || ActiveTowerFloorNumber == INDEX_NONE)
+		{
+			return true;
+		}
+
+		if (GameMode->GetTowerFloorIndexForLocation(Location) != ActiveTowerFloorNumber)
+		{
+			return false;
+		}
+
+		return IsTowerMapRevealPointVisible(ActiveTowerFloorNumber, FVector2D(Location.X, Location.Y));
+	};
 
 	const float Now = static_cast<float>(World->GetTimeSeconds());
 	const bool bWorldChanged = (MapCacheWorld.Get() != World);
@@ -2527,6 +3372,10 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		if (!IsValid(A)) continue;
 		FT66MapMarker M;
 		const FVector L = A->GetActorLocation();
+		if (!ShouldShowTowerFloorLocation(L))
+		{
+			continue;
+		}
 		M.WorldXY = FVector2D(L.X, L.Y);
 		M.Color = E.Color;
 		M.Label = E.Label;
@@ -2570,6 +3419,10 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			}
 
 			const FVector EnemyLoc = Enemy->GetActorLocation();
+			if (!ShouldShowTowerFloorLocation(EnemyLoc))
+			{
+				continue;
+			}
 			const FVector2D EnemyXY(EnemyLoc.X, EnemyLoc.Y);
 			if (!bFullMapOpen && FVector2D::DistSquared(PlayerXY, EnemyXY) > MinimapEnemyMarkerRadiusSq)
 			{
@@ -2704,9 +3557,238 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 			const FText Fmt = Loc ? Loc->GetText_StageNumberFormat() : NSLOCTEXT("T66.GameplayHUD", "StageNumberFormat", "Stage number: {0}");
 			StageText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentStage())));
 		}
+
+		bool bTowerBloodActive = false;
+		if (const UWorld* World = GetWorld())
+		{
+			if (const AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
+			{
+				static constexpr float TowerBloodDelaySeconds = 120.0f;
+				const float Elapsed = UT66RunStateSubsystem::StageTimerDurationSeconds - RunState->GetStageTimerSecondsRemaining();
+				bTowerBloodActive = GameMode->IsUsingTowerMainMapLayout()
+					&& RunState->GetStageTimerActive()
+					&& Elapsed >= TowerBloodDelaySeconds;
+			}
+		}
+
+		StageText->SetColorAndOpacity(bTowerBloodActive ? FSlateColor(FLinearColor(0.95f, 0.18f, 0.20f, 1.0f)) : FSlateColor(FT66Style::Tokens::Text));
 	}
 
 	// (Central countdown timer removed)
+}
+
+void UT66GameplayHUDWidget::RefreshBeatTargets()
+{
+	UT66RunStateSubsystem* RunState = GetRunState();
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	UT66PlayerSettingsSubsystem* PS = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* LB = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
+	UT66BackendSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (!RunState || !T66GI || !PS || !LB)
+	{
+		return;
+	}
+
+	auto ResolveTarget = [PS, LB, Backend, T66GI](const ET66LeaderboardType Type, const FT66BeatTargetSelection& Selection, FT66ResolvedBeatTarget& OutTarget)
+	{
+		OutTarget = FT66ResolvedBeatTarget{};
+
+		switch (Selection.Mode)
+		{
+		case ET66BeatTargetSelectionMode::PersonalBest:
+			if (Type == ET66LeaderboardType::Score)
+			{
+				FT66LocalScoreRecord Record;
+				if (LB->GetLocalBestScoreRecord(T66GI->SelectedDifficulty, T66GI->SelectedPartySize, Record) && Record.BestScore > 0)
+				{
+					OutTarget.bValid = true;
+					OutTarget.Score = Record.BestScore;
+					OutTarget.bSupportsPacing = false;
+				}
+			}
+			else
+			{
+				FT66LocalCompletedRunTimeRecord Record;
+				if (LB->GetLocalBestCompletedRunTimeRecord(T66GI->SelectedDifficulty, T66GI->SelectedPartySize, Record) && Record.BestCompletedSeconds > 0.01f)
+				{
+					OutTarget.bValid = true;
+					OutTarget.TimeSeconds = Record.BestCompletedSeconds;
+					OutTarget.bSupportsPacing = false;
+				}
+			}
+			return;
+
+		case ET66BeatTargetSelectionMode::FriendsTop:
+		case ET66BeatTargetSelectionMode::StreamersTop:
+		case ET66BeatTargetSelectionMode::GlobalTop:
+		{
+			const ET66LeaderboardFilter Filter =
+				(Selection.Mode == ET66BeatTargetSelectionMode::FriendsTop) ? ET66LeaderboardFilter::Friends :
+				(Selection.Mode == ET66BeatTargetSelectionMode::StreamersTop) ? ET66LeaderboardFilter::Streamers :
+				ET66LeaderboardFilter::Global;
+
+			EnsureHudBeatTargetLeaderboardRequested(Backend, Type, T66GI->SelectedPartySize, T66GI->SelectedDifficulty, Filter);
+			if (!Backend)
+			{
+				return;
+			}
+
+			const FString CacheKey = MakeHudBeatTargetCacheKey(Type, T66GI->SelectedPartySize, T66GI->SelectedDifficulty, Filter);
+			if (!Backend->HasCachedLeaderboard(CacheKey))
+			{
+				return;
+			}
+
+			const TArray<FLeaderboardEntry> Entries = Backend->GetCachedLeaderboard(CacheKey);
+			if (Entries.Num() <= 0)
+			{
+				return;
+			}
+
+			const FLeaderboardEntry& Entry = Entries[0];
+			OutTarget.bValid = true;
+			OutTarget.Score = Entry.Score;
+			OutTarget.TimeSeconds = Entry.TimeSeconds;
+			OutTarget.EntryId = Entry.EntryId;
+			OutTarget.bSupportsPacing = (Filter == ET66LeaderboardFilter::Global) && Entry.bHasRunSummary && !Entry.EntryId.IsEmpty();
+			return;
+		}
+
+		case ET66BeatTargetSelectionMode::FavoriteRun:
+		{
+			FT66FavoriteLeaderboardRun Favorite;
+			if (!PS->FindFavoriteLeaderboardRun(Selection.FavoriteEntryId, Favorite))
+			{
+				return;
+			}
+			if (Favorite.Difficulty != T66GI->SelectedDifficulty
+				|| Favorite.PartySize != T66GI->SelectedPartySize)
+			{
+				return;
+			}
+
+			OutTarget.bValid = true;
+			OutTarget.Score = Favorite.Score;
+			OutTarget.TimeSeconds = Favorite.TimeSeconds;
+			OutTarget.EntryId = Favorite.EntryId;
+			OutTarget.bSupportsPacing = (Favorite.Filter == ET66LeaderboardFilter::Global) && Favorite.bHasRunSummary && !Favorite.EntryId.IsEmpty();
+			return;
+		}
+
+		default:
+			return;
+		}
+	};
+
+	auto LoadPacingSummary = [Backend](const FT66ResolvedBeatTarget& Target) -> UT66LeaderboardRunSummarySaveGame*
+	{
+		if (!Target.bSupportsPacing)
+		{
+			return nullptr;
+		}
+
+		if (!Target.LocalRunSummarySlotName.IsEmpty())
+		{
+			if (UGameplayStatics::DoesSaveGameExist(Target.LocalRunSummarySlotName, 0))
+			{
+				return Cast<UT66LeaderboardRunSummarySaveGame>(UGameplayStatics::LoadGameFromSlot(Target.LocalRunSummarySlotName, 0));
+			}
+			return nullptr;
+		}
+
+		if (!Backend || Target.EntryId.IsEmpty())
+		{
+			return nullptr;
+		}
+
+		if (Backend->HasCachedRunSummary(Target.EntryId))
+		{
+			return Backend->GetCachedRunSummary(Target.EntryId);
+		}
+
+		Backend->FetchRunSummary(Target.EntryId);
+		return nullptr;
+	};
+
+	FT66ResolvedBeatTarget ScoreTarget;
+	ResolveTarget(ET66LeaderboardType::Score, PS->GetScoreToBeatSelection(), ScoreTarget);
+
+	if (ScoreTargetText.IsValid())
+	{
+		if (PS->GetShowScoreToBeat() && ScoreTarget.bValid)
+		{
+			ScoreTargetText->SetText(FText::Format(
+				NSLOCTEXT("T66.GameplayHUD", "ScoreTargetFormat", "Score to Beat {0}"),
+				FText::AsNumber(ScoreTarget.Score)));
+			ScoreTargetText->SetVisibility(EVisibility::Visible);
+		}
+		else
+		{
+			ScoreTargetText->SetVisibility(EVisibility::Collapsed);
+		}
+	}
+
+	if (ScorePacingText.IsValid())
+	{
+		UT66LeaderboardRunSummarySaveGame* PacingSummary = PS->GetShowScorePacing() ? LoadPacingSummary(ScoreTarget) : nullptr;
+		FT66StagePacingPoint PacingPoint;
+		if (PS->GetShowScorePacing()
+			&& !RunState->IsInStageCatchUp()
+			&& PacingSummary
+			&& FindStagePacingPointForStage(PacingSummary, RunState->GetCurrentStage(), PacingPoint)
+			&& PacingPoint.Score > 0)
+		{
+			ScorePacingText->SetText(FText::Format(
+				NSLOCTEXT("T66.GameplayHUD", "ScorePacingFormat", "Score Pace {0}"),
+				FText::AsNumber(PacingPoint.Score)));
+			ScorePacingText->SetVisibility(EVisibility::Visible);
+		}
+		else
+		{
+			ScorePacingText->SetVisibility(EVisibility::Collapsed);
+		}
+	}
+
+	FT66ResolvedBeatTarget TimeTarget;
+	ResolveTarget(ET66LeaderboardType::SpeedRun, PS->GetTimeToBeatSelection(), TimeTarget);
+	const bool bShowLiveRunTime = PS->GetSpeedRunMode();
+
+	if (SpeedRunTargetText.IsValid())
+	{
+		if (bShowLiveRunTime && PS->GetShowTimeToBeat() && TimeTarget.bValid && !RunState->IsInStageCatchUp())
+		{
+			SpeedRunTargetText->SetText(FText::Format(
+				NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetFormat", "Time to Beat {0}"),
+				FormatHudTimerValue(TimeTarget.TimeSeconds)));
+			SpeedRunTargetText->SetVisibility(EVisibility::Visible);
+		}
+		else
+		{
+			SpeedRunTargetText->SetVisibility(EVisibility::Collapsed);
+		}
+	}
+
+	if (SpeedRunPacingText.IsValid())
+	{
+		UT66LeaderboardRunSummarySaveGame* PacingSummary = (bShowLiveRunTime && PS->GetShowTimePacing()) ? LoadPacingSummary(TimeTarget) : nullptr;
+		FT66StagePacingPoint PacingPoint;
+		if (bShowLiveRunTime
+			&& PS->GetShowTimePacing()
+			&& !RunState->IsInStageCatchUp()
+			&& PacingSummary
+			&& FindStagePacingPointForStage(PacingSummary, RunState->GetCurrentStage(), PacingPoint)
+			&& PacingPoint.ElapsedSeconds > 0.f)
+		{
+			SpeedRunPacingText->SetText(FText::Format(
+				NSLOCTEXT("T66.GameplayHUD", "TimePacingFormat", "Time Pace {0}"),
+				FormatHudTimerValue(PacingPoint.ElapsedSeconds)));
+			SpeedRunPacingText->SetVisibility(EVisibility::Visible);
+		}
+		else
+		{
+			SpeedRunPacingText->SetVisibility(EVisibility::Collapsed);
+		}
+	}
 }
 
 void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
@@ -2714,8 +3796,6 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 	UT66PlayerSettingsSubsystem* PS = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
-	UT66LeaderboardSubsystem* LB = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
-	UT66GameInstance* GIAsT66 = Cast<UT66GameInstance>(GetGameInstance());
 
 	// Time (speedrun timer): counts up after leaving the start area (visibility toggled by player setting)
 	if (SpeedRunText.IsValid())
@@ -2728,72 +3808,20 @@ void UT66GameplayHUDWidget::RefreshSpeedRunTimers()
 		}
 		if (bShow)
 		{
-			const float Secs = FMath::Max(0.f, RunState->GetSpeedRunElapsedSeconds());
+			const float Secs = FMath::Max(0.f, RunState->GetCurrentRunElapsedSeconds());
 			// [GOLD] HUD text cache: only reformat when the displayed centisecond value changes (avoids FText::Format every frame).
 			const int32 TotalCs = FMath::FloorToInt(Secs * 100.f);
 			if (TotalCs != LastDisplayedSpeedRunTotalCs)
 			{
 				LastDisplayedSpeedRunTotalCs = TotalCs;
-				const int32 M = FMath::FloorToInt(Secs / 60.f);
-				const int32 S = FMath::FloorToInt(FMath::Fmod(Secs, 60.f));
-				const int32 Cs = FMath::FloorToInt(FMath::Fmod(Secs * 100.f, 100.f));
-				FNumberFormattingOptions TwoDigits;
-				TwoDigits.MinimumIntegralDigits = 2;
 				SpeedRunText->SetText(FText::Format(
-					NSLOCTEXT("T66.GameplayHUD", "SpeedRunTimerFormat", "Time {0}:{1}.{2}"),
-					FText::AsNumber(M),
-					FText::AsNumber(S, &TwoDigits),
-					FText::AsNumber(Cs, &TwoDigits)));
+					NSLOCTEXT("T66.GameplayHUD", "SpeedRunTimerFormat", "Time {0}"),
+					FormatHudTimerValue(Secs)));
 			}
 		}
 		else
 		{
 			LastDisplayedSpeedRunTotalCs = -1;
-		}
-	}
-
-	// Speedrun target time (10th place) for the current stage.
-	if (SpeedRunTargetText.IsValid())
-	{
-		const bool bShow = PS ? PS->GetSpeedRunMode() : false;
-		if (!bShow || !LB || !GIAsT66 || RunState->IsInStageCatchUp())
-		{
-			SpeedRunTargetText->SetVisibility(EVisibility::Collapsed);
-		}
-		else
-		{
-			float TargetSeconds = 0.f;
-			const int32 Stage = RunState->GetCurrentStage();
-			int32 DifficultyStartStage = 1;
-			int32 DifficultyEndStage = 5;
-			if (UT66PlayerExperienceSubSystem* PlayerExperience = GIAsT66->GetSubsystem<UT66PlayerExperienceSubSystem>())
-			{
-				DifficultyStartStage = PlayerExperience->GetDifficultyStartStage(GIAsT66->SelectedDifficulty);
-				DifficultyEndStage = PlayerExperience->GetDifficultyEndStage(GIAsT66->SelectedDifficulty);
-			}
-
-			const bool bHasTarget =
-				(Stage >= DifficultyStartStage && Stage <= DifficultyEndStage)
-				&& LB->GetSpeedRunTarget10Seconds(GIAsT66->SelectedDifficulty, GIAsT66->SelectedPartySize, Stage, TargetSeconds);
-			if (!bHasTarget)
-			{
-				SpeedRunTargetText->SetVisibility(EVisibility::Collapsed);
-			}
-			else
-			{
-				const float TSecs = FMath::Max(0.f, TargetSeconds);
-				const int32 M = FMath::FloorToInt(TSecs / 60.f);
-				const int32 S = FMath::FloorToInt(FMath::Fmod(TSecs, 60.f));
-				const int32 Cs = FMath::FloorToInt(FMath::Fmod(TSecs * 100.f, 100.f));
-				FNumberFormattingOptions TwoDigits;
-				TwoDigits.MinimumIntegralDigits = 2;
-				SpeedRunTargetText->SetText(FText::Format(
-					NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetFormat", "Time to Beat {0}:{1}.{2}"),
-					FText::AsNumber(M),
-					FText::AsNumber(S, &TwoDigits),
-					FText::AsNumber(Cs, &TwoDigits)));
-				SpeedRunTargetText->SetVisibility(EVisibility::Visible);
-			}
 		}
 	}
 }
@@ -2803,21 +3831,31 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 
+	static constexpr float BossBarWidth = 560.f;
+	const FLinearColor BossBarBackgroundColor = FT66Style::IsDotaTheme()
+		? FT66Style::BossBarBackground()
+		: FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
+
 	// Boss health bar: visible only when boss awakened
 	const bool bBossActive = RunState->GetBossActive();
 	if (BossBarContainerBox.IsValid())
 	{
 		BossBarContainerBox->SetVisibility(bBossActive ? EVisibility::Visible : EVisibility::Collapsed);
 	}
+
+	if (BossPartBarsBox.IsValid())
+	{
+		BossPartBarsBox->ClearChildren();
+	}
+
 	if (bBossActive)
 	{
 		const int32 BossHP = RunState->GetBossCurrentHP();
 		const int32 BossMax = FMath::Max(1, RunState->GetBossMaxHP());
 		const float Pct = static_cast<float>(BossHP) / static_cast<float>(BossMax);
-		const float BarWidth = 600.f;
 		if (BossBarFillBox.IsValid())
 		{
-			BossBarFillBox->SetWidthOverride(FMath::Clamp(BarWidth * Pct, 0.f, BarWidth));
+			BossBarFillBox->SetWidthOverride(FMath::Clamp(BossBarWidth * Pct, 0.f, BossBarWidth));
 		}
 		if (BossBarText.IsValid())
 		{
@@ -2826,6 +3864,68 @@ void UT66GameplayHUDWidget::RefreshBossBar()
 				FText::AsNumber(BossHP),
 				FText::AsNumber(BossMax)));
 		}
+
+		if (BossPartBarsBox.IsValid())
+		{
+			const TArray<FT66BossPartSnapshot>& BossParts = RunState->GetBossPartSnapshots();
+			const bool bShowPartBars = BossParts.Num() > 1;
+			BossPartBarsBox->SetVisibility(bShowPartBars ? EVisibility::Visible : EVisibility::Collapsed);
+
+			if (bShowPartBars)
+			{
+				for (const FT66BossPartSnapshot& Part : BossParts)
+				{
+					const int32 PartMaxHP = FMath::Max(1, Part.MaxHP);
+					const int32 PartCurrentHP = FMath::Clamp(Part.CurrentHP, 0, PartMaxHP);
+					const float PartPct = static_cast<float>(PartCurrentHP) / static_cast<float>(PartMaxHP);
+					const FLinearColor PartFillColor = GetBossPartFillColor(Part.HitZoneType, Part.IsAlive());
+
+					BossPartBarsBox->AddSlot()
+					.AutoHeight()
+					.Padding(0.f, 6.f, 0.f, 0.f)
+					[
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(BossBarBackgroundColor)
+							.Padding(0.f)
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Left)
+						[
+							SNew(SBox)
+							.HeightOverride(18.f)
+							.WidthOverride(FMath::Clamp(BossBarWidth * PartPct, 0.f, BossBarWidth))
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(PartFillColor)
+								.Padding(0.f)
+							]
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::Format(
+								NSLOCTEXT("T66.GameplayHUD", "BossPartFraction", "{0} {1}/{2}"),
+								GetBossPartDisplayName(Part),
+								FText::AsNumber(PartCurrentHP),
+								FText::AsNumber(PartMaxHP)))
+							.Font(FT66Style::Tokens::FontBold(11))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
+					];
+				}
+			}
+		}
+	}
+	else if (BossPartBarsBox.IsValid())
+	{
+		BossPartBarsBox->SetVisibility(EVisibility::Collapsed);
 	}
 }
 
@@ -2956,17 +4056,27 @@ void UT66GameplayHUDWidget::RefreshHearts()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 
-	// Hearts: 5 slots driven by numerical HP, each with its own rarity tier.
-	const FLinearColor EmptyC(0.25f, 0.25f, 0.28f, 0.35f);
+	// Hearts: split each gameplay slot into two visual segments so the HUD shows ten hearts total.
 	for (int32 i = 0; i < HeartImages.Num(); ++i)
 	{
 		if (!HeartImages[i].IsValid()) continue;
-		const float Fill = RunState->GetHeartSlotFill(i);
-		const bool bFilled = (Fill > 0.01f);
-		const FLinearColor FilledC = RunState->IsSaintBlessingActive()
-			? FLinearColor(0.95f, 0.95f, 1.00f, 1.f)
-			: FT66RarityUtil::GetTierColor(RunState->GetHeartSlotTier(i));
-		HeartImages[i]->SetColorAndOpacity(bFilled ? FilledC : EmptyC);
+		const int32 SlotIndex = i / 2;
+		const float SlotFill = RunState->GetHeartSlotFill(SlotIndex);
+		const float SegmentStart = (i % 2 == 0) ? 0.f : 0.5f;
+		const float SegmentFill = FMath::Clamp((SlotFill - SegmentStart) / 0.5f, 0.f, 1.f);
+		const int32 HeartTier = RunState->GetHeartSlotTier(SlotIndex);
+		HeartImages[i]->SetImage(ResolveHeartBrushForDisplay(
+			HeartTierBrushes,
+			HeartBlessingBrush,
+			HeartBrush,
+			RunState->IsSaintBlessingActive(),
+			HeartTier));
+		HeartImages[i]->SetColorAndOpacity(FLinearColor::White);
+		if (HeartFillBoxes.IsValidIndex(i) && HeartFillBoxes[i].IsValid())
+		{
+			HeartFillBoxes[i]->SetWidthOverride(GT66DisplayedHeartWidth * SegmentFill);
+			HeartFillBoxes[i]->SetVisibility(SegmentFill > 0.01f ? EVisibility::Visible : EVisibility::Collapsed);
+		}
 	}
 }
 
@@ -3019,6 +4129,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 	RefreshStageAndTimer();
 	RefreshSpeedRunTimers();
+	RefreshBeatTargets();
 	RefreshBossBar();
 	RefreshLootPrompt();
 	RefreshDPS();
@@ -3095,6 +4206,56 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		{
 			PortraitImage->SetVisibility(DesiredVisibility);
 		}
+	}
+
+	FHeroData SelectedHeroData;
+	const bool bHasSelectedHeroData = GIAsT66 && GIAsT66->GetSelectedHeroData(SelectedHeroData);
+	const FName DesiredAbilityHeroID = bHasSelectedHeroData ? SelectedHeroData.HeroID : NAME_None;
+	const ET66UltimateType DesiredUltimateType = bHasSelectedHeroData ? SelectedHeroData.UltimateType : ET66UltimateType::None;
+	const ET66PassiveType DesiredPassiveType = bHasSelectedHeroData ? SelectedHeroData.PassiveType : ET66PassiveType::None;
+	const bool bAbilityStateChanged = !bAbilityStateInitialized
+		|| LastAbilityHeroID != DesiredAbilityHeroID
+		|| LastUltimateType != DesiredUltimateType
+		|| LastPassiveType != DesiredPassiveType;
+
+	if (bAbilityStateChanged)
+	{
+		bAbilityStateInitialized = true;
+		LastAbilityHeroID = DesiredAbilityHeroID;
+		LastUltimateType = DesiredUltimateType;
+		LastPassiveType = DesiredPassiveType;
+
+		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+		if (UltimateBrush.IsValid())
+		{
+			const TSoftObjectPtr<UTexture2D> UltimateSoft = ResolveGameplayUltimateIcon(DesiredAbilityHeroID, DesiredUltimateType);
+			if (TexPool && !UltimateSoft.IsNull())
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, UltimateSoft, this, UltimateBrush, FName(TEXT("HUDUltimate")), false);
+			}
+			else
+			{
+				UltimateBrush->SetResourceObject(nullptr);
+			}
+		}
+
+		if (PassiveBrush.IsValid())
+		{
+			const TSoftObjectPtr<UTexture2D> PassiveSoft = ResolveGameplayPassiveIcon(DesiredAbilityHeroID, DesiredPassiveType);
+			if (TexPool && !PassiveSoft.IsNull())
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, PassiveSoft, this, PassiveBrush, FName(TEXT("HUDPassive")), false);
+			}
+			else
+			{
+				PassiveBrush->SetResourceObject(nullptr);
+			}
+		}
+	}
+
+	if (UltimateInputHintText.IsValid())
+	{
+		UltimateInputHintText->SetText(ResolveGameplayUltimateInputHint(DesiredUltimateType));
 	}
 
 	// Hero level + XP progress ring
@@ -3210,21 +4371,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	// Idol slots: rarity-colored when equipped, dark teal when empty.
 	UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
 	const TArray<FName>& EquippedIdols = IdolManager ? IdolManager->GetEquippedIdols() : RunState->GetEquippedIdols();
-	const bool bAllowPreviewLoadout = GIAsT66 && GIAsT66->bLoadAsPreview;
-	TArray<FName> PreviewIdolIDs;
-	TArray<ET66ItemRarity> PreviewIdolRarities;
-	const TArray<FName>* DisplayIdols = &EquippedIdols;
-	const TArray<ET66ItemRarity>* DisplayIdolRarities = nullptr;
-	if (bAllowPreviewLoadout && !HasAnyNamedEntries(EquippedIdols))
-	{
-		BuildPreviewIdolDisplay(GIAsT66, PreviewIdolIDs, PreviewIdolRarities);
-		if (HasAnyNamedEntries(PreviewIdolIDs))
-		{
-			DisplayIdols = &PreviewIdolIDs;
-			DisplayIdolRarities = &PreviewIdolRarities;
-		}
-	}
-	const TArray<FName>& Idols = *DisplayIdols;
+	const TArray<FName>& Idols = EquippedIdols;
 	for (int32 i = 0; i < IdolSlotBorders.Num(); ++i)
 	{
 		if (!IdolSlotBorders[i].IsValid()) continue;
@@ -3233,9 +4380,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		TSharedPtr<IToolTip> IdolTooltipWidget;
 		if (i < Idols.Num() && !Idols[i].IsNone())
 		{
-			const ET66ItemRarity IdolRarity = (DisplayIdolRarities && DisplayIdolRarities->IsValidIndex(i))
-				? (*DisplayIdolRarities)[i]
-				: (IdolManager ? IdolManager->GetEquippedIdolRarityInSlot(i) : RunState->GetEquippedIdolRarityInSlot(i));
+			const ET66ItemRarity IdolRarity = IdolManager ? IdolManager->GetEquippedIdolRarityInSlot(i) : RunState->GetEquippedIdolRarityInSlot(i);
 			C = FItemData::GetItemRarityColor(IdolRarity);
 			if (GIAsT66)
 			{
@@ -3284,21 +4429,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
 	const TArray<FName>& EquippedInventory = RunState->GetInventory();
 	const TArray<FT66InventorySlot>& EquippedInventorySlots = RunState->GetInventorySlots();
-	TArray<FName> PreviewInventoryIDs;
-	TArray<FT66InventorySlot> PreviewInventorySlots;
-	const TArray<FName>* DisplayInventory = &EquippedInventory;
-	const TArray<FT66InventorySlot>* DisplayInventorySlots = &EquippedInventorySlots;
-	if (bAllowPreviewLoadout && !HasAnyNamedEntries(EquippedInventory))
-	{
-		BuildPreviewInventoryDisplay(T66GI, PreviewInventoryIDs, PreviewInventorySlots);
-		if (HasAnyNamedEntries(PreviewInventoryIDs))
-		{
-			DisplayInventory = &PreviewInventoryIDs;
-			DisplayInventorySlots = &PreviewInventorySlots;
-		}
-	}
-	const TArray<FName>& Inv = *DisplayInventory;
-	const TArray<FT66InventorySlot>& InvSlots = *DisplayInventorySlots;
+	const TArray<FName>& Inv = EquippedInventory;
+	const TArray<FT66InventorySlot>& InvSlots = EquippedInventorySlots;
 	if (InvSlots.Num() > InventorySlotBorders.Num())
 	{
 		FT66Style::DeferRebuild(this);
@@ -3339,7 +4471,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				}
 				{
 					int32 SellValue = 0;
-					if (RunState && DisplayInventorySlots == &EquippedInventorySlots && i >= 0 && i < InvSlots.Num())
+					if (RunState && i >= 0 && i < InvSlots.Num())
 					{
 						SellValue = RunState->GetSellGoldForInventorySlot(InvSlots[i]);
 					}
@@ -3407,6 +4539,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	const bool bAnyPanelVisible = (!HUDPS || HUDPS->GetHudToggleAffectsInventory() || HUDPS->GetHudToggleAffectsMinimap() || HUDPS->GetHudToggleAffectsIdolSlots() || HUDPS->GetHudToggleAffectsPortraitStats())
 		? bPanelsVisible
 		: true;
+	RefreshPausePresentation();
 	UpdateTikTokVisibility();
 	if (WheelSpinBox.IsValid())
 	{
@@ -3436,15 +4569,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FLinearColor SlotOuterColor = bDotaTheme ? FT66Style::SlotOuter() : FLinearColor(0.f, 0.f, 0.f, 0.25f);
 	const FLinearColor SlotFrameColor = bDotaTheme ? FT66Style::SlotInner() : FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
 	const FLinearColor SlotFillColor = bDotaTheme ? FT66Style::SlotFill() : FLinearColor(0.f, 0.f, 0.f, 0.f);
-	const FSlateBrush* DotaSlotFrameBrush = bDotaTheme ? FT66Style::GetInventorySlotFrameBrush() : nullptr;
 	const FLinearColor BossBarBackgroundColor = bDotaTheme ? FT66Style::BossBarBackground() : FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
 	const FLinearColor BossBarFillColor = bDotaTheme ? FT66Style::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
 	const FLinearColor PromptBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.02f, 0.02f, 0.03f, 0.65f);
 	const FLinearColor DialogueBackgroundColor = bDotaTheme ? FT66Style::PromptBackground() : FLinearColor(0.06f, 0.06f, 0.08f, 0.85f);
 	const int32 InventorySlotWidgetCount = UT66RunStateSubsystem::MaxInventorySlots;
 
-	HeartBorders.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
-	HeartImages.SetNum(UT66RunStateSubsystem::DefaultMaxHearts);
+	HeartBorders.SetNum(GT66DisplayedHeartCount);
+	HeartFillBoxes.SetNum(GT66DisplayedHeartCount);
+	HeartImages.SetNum(GT66DisplayedHeartCount);
+	HeartTierBrushes.SetNum(5);
 	DifficultyBorders.SetNum(5);
 	DifficultyImages.SetNum(5);
 	ClownImages.SetNum(5);
@@ -3522,13 +4656,23 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		UltimateBrush->Tiling = ESlateBrushTileType::NoTile;
 		UltimateBrush->SetResourceObject(nullptr);
 	}
-	// Load KnightULT texture via texture pool
+	if (!PassiveBrush.IsValid())
+	{
+		PassiveBrush = MakeShared<FSlateBrush>();
+		PassiveBrush->DrawAs = ESlateBrushDrawType::Image;
+		PassiveBrush->ImageSize = FVector2D(GT66BottomLeftAbilityBoxSize, GT66BottomLeftAbilityBoxSize);
+		PassiveBrush->Tiling = ESlateBrushTileType::NoTile;
+		PassiveBrush->SetResourceObject(nullptr);
+	}
+	// Load fallback ability textures via the texture pool.
 	{
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (TexPool)
 		{
-			const TSoftObjectPtr<UTexture2D> UltSoft(FSoftObjectPath(TEXT("/Game/ULTS/KnightULT.KnightULT")));
+			const TSoftObjectPtr<UTexture2D> UltSoft = ResolveGameplayUltimateIcon(NAME_None, ET66UltimateType::None);
 			T66SlateTexture::BindSharedBrushAsync(TexPool, UltSoft, this, UltimateBrush, FName(TEXT("HUDUltimate")), false);
+			const TSoftObjectPtr<UTexture2D> PassiveSoft = ResolveGameplayPassiveIcon(NAME_None, ET66PassiveType::None);
+			T66SlateTexture::BindSharedBrushAsync(TexPool, PassiveSoft, this, PassiveBrush, FName(TEXT("HUDPassive")), false);
 		}
 	}
 	// Wheel spin texture
@@ -3548,16 +4692,44 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	{
 		HeartBrush = MakeShared<FSlateBrush>();
 		HeartBrush->DrawAs = ESlateBrushDrawType::Image;
-		HeartBrush->ImageSize = FVector2D(28.f, 28.f);
+		HeartBrush->ImageSize = FVector2D(GT66DisplayedHeartWidth, GT66DisplayedHeartHeight);
 		HeartBrush->Tiling = ESlateBrushTileType::NoTile;
 		HeartBrush->SetResourceObject(nullptr);
+	}
+	if (!HeartBlessingBrush.IsValid())
+	{
+		HeartBlessingBrush = MakeShared<FSlateBrush>();
+		HeartBlessingBrush->DrawAs = ESlateBrushDrawType::Image;
+		HeartBlessingBrush->ImageSize = FVector2D(GT66DisplayedHeartWidth, GT66DisplayedHeartHeight);
+		HeartBlessingBrush->Tiling = ESlateBrushTileType::NoTile;
+		HeartBlessingBrush->SetResourceObject(nullptr);
 	}
 	{
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (TexPool)
 		{
-			const TSoftObjectPtr<UTexture2D> HeartSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/UI/HEARTS.HEARTS")));
-			T66SlateTexture::BindSharedBrushAsync(TexPool, HeartSoft, this, HeartBrush, FName(TEXT("HUDHeart")), false);
+			const TSoftObjectPtr<UTexture2D> HeartSoft = ResolveGameplayHeartIcon(0);
+			T66SlateTexture::BindSharedBrushAsync(TexPool, HeartSoft, this, HeartBrush, FName(TEXT("HUDHeartFallback")), false);
+			T66SlateTexture::BindSharedBrushAsync(TexPool, ResolveGameplayBlessingHeartIcon(), this, HeartBlessingBrush, FName(TEXT("HUDHeartBlessing")), false);
+			for (int32 TierIndex = 0; TierIndex < HeartTierBrushes.Num(); ++TierIndex)
+			{
+				if (!HeartTierBrushes[TierIndex].IsValid())
+				{
+					HeartTierBrushes[TierIndex] = MakeShared<FSlateBrush>();
+					HeartTierBrushes[TierIndex]->DrawAs = ESlateBrushDrawType::Image;
+					HeartTierBrushes[TierIndex]->ImageSize = FVector2D(GT66DisplayedHeartWidth, GT66DisplayedHeartHeight);
+					HeartTierBrushes[TierIndex]->Tiling = ESlateBrushTileType::NoTile;
+					HeartTierBrushes[TierIndex]->SetResourceObject(nullptr);
+				}
+
+				T66SlateTexture::BindSharedBrushAsync(
+					TexPool,
+					ResolveGameplayHeartIcon(TierIndex),
+					this,
+					HeartTierBrushes[TierIndex],
+					FName(*FString::Printf(TEXT("HUDHeart_%d"), TierIndex)),
+					false);
+			}
 		}
 	}
 	if (!QuickReviveBrush.IsValid())
@@ -3701,29 +4873,72 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		ClownImages[i] = ClownImg;
 	}
 
-	// Build hearts row first (5 sprite icons). Portrait width should match this row width.
-	static constexpr float HeartSize = 28.f;
-	static constexpr float HeartPad = 0.f;
+	// Build a 10-heart display as two rows of five segments.
+	static constexpr float HeartWidth = GT66DisplayedHeartWidth;
+	static constexpr float HeartHeight = GT66DisplayedHeartHeight;
+	static constexpr float HeartPad = GT66DisplayedHeartColumnGap;
+	static constexpr float HeartRowGap = GT66DisplayedHeartRowGap;
 	static constexpr float TopStripPanelHeight = GT66BottomLeftAbilityBoxSize;
-	TSharedRef<SHorizontalBox> HeartsRowRef = SNew(SHorizontalBox);
-	for (int32 i = 0; i < UT66RunStateSubsystem::DefaultMaxHearts; ++i)
+	TSharedRef<SHorizontalBox> TopHeartsRowRef = SNew(SHorizontalBox);
+	TSharedRef<SHorizontalBox> BottomHeartsRowRef = SNew(SHorizontalBox);
+	for (int32 i = 0; i < GT66DisplayedHeartCount; ++i)
 	{
+		TSharedPtr<SBox> HeartFillBox;
 		TSharedPtr<SImage> HeartImg;
-		HeartsRowRef->AddSlot()
-			.AutoWidth()
-			.Padding(HeartPad, 0.f)
+		TSharedRef<SHorizontalBox> TargetRow = (i < 5) ? TopHeartsRowRef : BottomHeartsRowRef;
+		TargetRow->AddSlot()
+			.FillWidth(1.f)
+			.Padding((i % 5) > 0 ? HeartPad : 0.f, 0.f, 0.f, 0.f)
 			[
 				SNew(SBox)
-				.WidthOverride(HeartSize)
-				.HeightOverride(HeartSize)
+				.WidthOverride(HeartWidth)
+				.HeightOverride(HeartHeight)
 				[
-					SAssignNew(HeartImg, SImage)
-					.Image(HeartBrush.Get())
-					.ColorAndOpacity(FLinearColor(0.9f, 0.2f, 0.2f, 1.f))
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SImage)
+						.Image(HeartBrush.Get())
+						.ColorAndOpacity(FLinearColor(0.25f, 0.25f, 0.28f, 0.35f))
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					[
+						SAssignNew(HeartFillBox, SBox)
+						.WidthOverride(HeartWidth)
+						.HeightOverride(HeartHeight)
+						.Clipping(EWidgetClipping::ClipToBounds)
+						[
+							SNew(SBox)
+							.WidthOverride(HeartWidth)
+							.HeightOverride(HeartHeight)
+							[
+								SAssignNew(HeartImg, SImage)
+								.Image(HeartBrush.Get())
+								.ColorAndOpacity(FLinearColor::White)
+							]
+						]
+					]
 				]
 			];
+		HeartFillBoxes[i] = HeartFillBox;
 		HeartImages[i] = HeartImg;
 	}
+	TSharedRef<SWidget> HeartsRowRef =
+		SNew(SBox)
+		.WidthOverride(GT66DisplayedHeartAreaWidth)
+		.HeightOverride(GT66DisplayedHeartAreaHeight)
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill)
+			[
+				TopHeartsRowRef
+			]
+			+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).Padding(0.f, HeartRowGap, 0.f, 0.f)
+			[
+				BottomHeartsRowRef
+			]
+		];
 
 	TSharedRef<SWidget> QuickReviveIconRowRef =
 		SAssignNew(QuickReviveIconRowBox, SBox)
@@ -3737,7 +4952,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		];
 
 	// Status effect dots row (above hearts): burn / chill / curse
-	TSharedRef<SHorizontalBox> StatusDotsRowRef = SNew(SHorizontalBox);
+	TSharedRef<SHorizontalBox> StatusDotsRowRef =
+		SNew(SHorizontalBox)
+		.Visibility(EVisibility::Collapsed);
 	for (int32 i = 0; i < 3; ++i)
 	{
 		TSharedPtr<SBox> DotBox;
@@ -3763,14 +4980,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	static constexpr int32 IdolColumns = 2;
 	static constexpr float IdolSlotPad = GT66BottomLeftIdolSlotPad;
 	static constexpr float IdolSlotSize = GT66BottomLeftIdolSlotSize;
-	const int32 IdolRows = FMath::DivideAndRoundUp(UT66IdolManagerSubsystem::MaxEquippedIdolSlots, IdolColumns);
 	const float IdolPanelMinWidth = GT66BottomLeftSidePanelWidth;
 	const float PortraitPanelSize = GT66BottomLeftPortraitPanelSize;
-	const float HeroColumnHeight = TopStripPanelHeight + PortraitPanelSize;
 	const float InventoryPanelVisibleWidth = BottomRightInventoryPanelWidth;
 	const float InventoryPanelVisibleHeight = BottomRightInventoryPanelHeight;
 	const float AbilityColumnWidth = GT66BottomLeftAbilityBoxSize;
 	const float AbilityIconSize = GT66BottomLeftAbilityBoxSize;
+	const float AbilityLabelBarHeight = 16.f;
+	const float AbilityInputBadgeWidth = 28.f;
+	const float AbilityInputBadgeHeight = 18.f;
+	const float AbilityIconInset = 6.f;
 	const float BottomLeftColumnGap = 0.f;
 	const FLinearColor BottomLeftPanelOuterColor(0.f, 0.f, 0.f, 0.95f);
 	const FLinearColor BottomLeftPanelInnerColor(0.f, 0.f, 0.f, 1.f);
@@ -3977,7 +5196,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	// Inventory: fixed two-row strip, stretched edge-to-edge so the full inventory fits without scrolling.
 	static constexpr int32 InvCols = 10;
 	const int32 InvRows = FMath::Max(1, FMath::DivideAndRoundUp(InventorySlotBorders.Num(), InvCols));
-	static constexpr float InvSlotSize = 40.f;
+	const float InvSlotSize = BottomRightInventorySlotSize;
 	static constexpr float InvSlotPad = 2.f;
 	const FLinearColor InvSlotBorderColor = SlotFrameColor;
 	for (int32 i = 0; i < InventorySlotBrushes.Num(); ++i)
@@ -4090,9 +5309,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	auto MakeInventoryEconomySection = [&](const FLinearColor& GoldValueColor, const FLinearColor& DebtValueColor, const FLinearColor& NetWorthValueColor, const FLinearColor& DividerColor) -> TSharedRef<SWidget>
 	{
 		return SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(2.f, 0.f, 2.f, 6.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(2.f, 0.f, 2.f, 4.f)
 			[
 				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 14.f, 0.f)
+				[
+					SNew(STextBlock)
+					.Text(NSLOCTEXT("T66.GameplayHUD", "InventoryHeader", "Inventory"))
+					.Font(FT66Style::Tokens::FontBold(12))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
 				[
 					MakeCurrencyReadout(GoldCurrencyBrush, GoldText, GoldInit, GoldValueColor)
@@ -4110,7 +5336,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					SNew(SSpacer)
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 			[
 				SNew(SBox)
 				.HeightOverride(1.f)
@@ -4120,7 +5346,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.BorderBackgroundColor(DividerColor)
 				]
 			]
-			+ SVerticalBox::Slot().FillHeight(1.f)
+			+ SVerticalBox::Slot().AutoHeight()
 			[
 				InvGridRef
 			];
@@ -4146,6 +5372,16 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		return FMargin(0.f, 12.f, 12.f, 0.f);
 	});
 
+	const TAttribute<FMargin> PauseLeftStatsPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FMargin(12.f, 112.f, 0.f, 0.f);
+	});
+
+	const TAttribute<FMargin> PauseRightAchievementsPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	{
+		return FMargin(0.f, 286.f, 12.f, 0.f);
+	});
+
 	const TAttribute<FMargin> RightCenterHudPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
 		return FMargin(0.f, 0.f, 12.f, 0.f);
@@ -4158,7 +5394,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 
 	const TAttribute<FMargin> BottomLeftMediaPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FMargin(12.f, 0.f, 0.f, GT66HeartsTopOffsetFromBottom);
+		return FMargin(12.f, 0.f, 0.f, GT66MediaBottomOffset);
 	});
 
 	const TAttribute<FMargin> BottomRightInventoryPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -4166,9 +5402,9 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		return FMargin(0.f, 0.f, 12.f, 0.f);
 	});
 
-	const TAttribute<FMargin> BottomRightAchievementPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
+	const TAttribute<FMargin> BottomCenterAchievementPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FMargin(0.f, 0.f, 12.f, 280.f);
+		return FMargin(0.f, 0.f, 0.f, 36.f);
 	});
 
 	const TAttribute<FMargin> BottomRightPickupPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -4241,45 +5477,66 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay)
 		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SAssignNew(PauseBackdropBorder, SBorder)
+			.Visibility(EVisibility::Collapsed)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.96f))
+		]
+		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Top)
 		.Padding(TopCenterBossPadding)
 		[
 			SAssignNew(BossBarContainerBox, SBox)
 			.WidthOverride(BossBarWidth)
-			.HeightOverride(28.f)
 			.Visibility(EVisibility::Collapsed)
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(BossBarBackgroundColor)
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Fill)
-				[
-					SAssignNew(BossBarFillBox, SBox)
-					.WidthOverride(BossBarWidth)
+					SNew(SOverlay)
+					+ SOverlay::Slot()
 					[
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(BossBarFillColor)
+						.BorderBackgroundColor(BossBarBackgroundColor)
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					.VAlign(VAlign_Fill)
+					[
+						SAssignNew(BossBarFillBox, SBox)
+						.HeightOverride(28.f)
+						.WidthOverride(BossBarWidth)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(BossBarFillColor)
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SAssignNew(BossBarText, STextBlock)
+						.Text(FText::Format(
+							NSLOCTEXT("T66.Common", "Fraction", "{0}/{1}"),
+							FText::AsNumber(100),
+							FText::AsNumber(100)))
+						.Font(FT66Style::Tokens::FontBold(16))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 4.f, 0.f, 0.f)
 				[
-					SAssignNew(BossBarText, STextBlock)
-					.Text(FText::Format(
-						NSLOCTEXT("T66.Common", "Fraction", "{0}/{1}"),
-						FText::AsNumber(100),
-						FText::AsNumber(100)))
-					.Font(FT66Style::Tokens::FontBold(16))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					SAssignNew(BossPartBarsBox, SVerticalBox)
+					.Visibility(EVisibility::Collapsed)
 				]
 			]
 		]
@@ -4378,7 +5635,24 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			)
 			]
 		]
-		// Media viewer panel (TikTok / Reels / Shorts) with tab buttons above the video area.
+		// Media viewer panel. Source is selected from Settings.
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(PauseLeftStatsPadding)
+		[
+			SAssignNew(PauseStatsPanelBox, SBox)
+			.Visibility(EVisibility::Collapsed)
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Top)
+		.Padding(PauseRightAchievementsPadding)
+		[
+			SAssignNew(PauseAchievementsPanelBox, SBox)
+			.Visibility(EVisibility::Collapsed)
+		]
+		// Media viewer panel. Source is selected from Settings.
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Left)
 		.VAlign(VAlign_Bottom)
@@ -4389,75 +5663,18 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.HeightOverride(GT66MediaPanelH)
 			[
 				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					// Tab row (TikTok | Shorts)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(0.f, 0.f, 0.f, 2.f)
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
+					.Padding(2.f)
 					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						.Padding(2.f, 0.f)
+						SAssignNew(MediaViewerVideoBox, SBox)
 						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(
-									NSLOCTEXT("T66.MediaViewer", "Tab_TikTok", "TikTok"),
-									FOnClicked::CreateLambda([this]() -> FReply
-									{
-										if (UGameInstance* GI = GetGameInstance())
-										{
-											if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
-											{
-												MV->SetMediaViewerSource(ET66MediaViewerSource::TikTok);
-											}
-										}
-										return FReply::Handled();
-									}),
-									ET66ButtonType::Neutral
-								).SetFontSize(13).SetMinWidth(80.f)
-							)
-						]
-						+ SHorizontalBox::Slot()
-						.FillWidth(1.f)
-						.Padding(2.f, 0.f)
-						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(
-									NSLOCTEXT("T66.MediaViewer", "Tab_Shorts", "Shorts"),
-									FOnClicked::CreateLambda([this]() -> FReply
-									{
-										if (UGameInstance* GI = GetGameInstance())
-										{
-											if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
-											{
-												MV->SetMediaViewerSource(ET66MediaViewerSource::Shorts);
-											}
-										}
-										return FReply::Handled();
-									}),
-									ET66ButtonType::Neutral
-								).SetFontSize(13).SetMinWidth(80.f)
-							)
-						]
-					]
-					// Video area (WebView2 overlay syncs to this box's geometry)
-					+ SVerticalBox::Slot()
-					.FillHeight(1.f)
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.03f, 0.55f))
-						.Padding(2.f)
-						[
-							SAssignNew(MediaViewerVideoBox, SBox)
+							SAssignNew(TikTokContentBox, SBox)
 							[
-								SAssignNew(TikTokContentBox, SBox)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
-								]
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 1.f))
 							]
 						]
 					]
@@ -4495,10 +5712,34 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 					[
+						SAssignNew(ScorePacingText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "ScorePacingDefault", "Score Pace --"))
+						.Font(FT66Style::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
+						.Visibility(EVisibility::Collapsed)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+					[
+						SAssignNew(ScoreTargetText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreTargetDefault", "Score to Beat --"))
+						.Font(FT66Style::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
+						.Visibility(EVisibility::Collapsed)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
+					[
 						SAssignNew(SpeedRunText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
 						.Font(FT66Style::Tokens::FontBold(10))
 						.ColorAndOpacity(FSlateColor(FT66Style::Text()))
+						.Visibility(EVisibility::Collapsed)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+					[
+						SAssignNew(SpeedRunPacingText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "TimePacingDefault", "Time Pace --:--.--"))
+						.Font(FT66Style::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
@@ -4532,10 +5773,34 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 					[
+						SAssignNew(ScorePacingText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "ScorePacingDefault", "Score Pace --"))
+						.Font(FT66Style::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
+						.Visibility(EVisibility::Collapsed)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+					[
+						SAssignNew(ScoreTargetText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreTargetDefault", "Score to Beat --"))
+						.Font(FT66Style::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
+						.Visibility(EVisibility::Collapsed)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
+					[
 						SAssignNew(SpeedRunText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
 						.Font(FT66Style::Tokens::FontBold(10))
 						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+						.Visibility(EVisibility::Collapsed)
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+					[
+						SAssignNew(SpeedRunPacingText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "TimePacingDefault", "Time Pace --:--.--"))
+						.Font(FT66Style::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
@@ -4654,61 +5919,40 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		[
 			SAssignNew(BottomLeftHUDBox, SBox)
 			[
-				SNew(SVerticalBox)
-				// Elevation above FPS above idol panel
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
-				[
-					SAssignNew(ElevationText, STextBlock)
-					.Text(NSLOCTEXT("T66.GameplayHUD", "ElevationDefault", "ELV: 0"))
-					.Font(FT66Style::Tokens::FontBold(11))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-					.Justification(ETextJustify::Left)
-				]
-				// FPS above idol panel
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-				[
-					SAssignNew(FPSText, STextBlock)
-					.Text(NSLOCTEXT("T66.GameplayHUD", "FPSDefault", "FPS: 0"))
-					.Font(FT66Style::Tokens::FontBold(11))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-					.Justification(ETextJustify::Left)
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 6.f)
-				[
-					SAssignNew(DPSText, STextBlock)
-					.Text(NSLOCTEXT("T66.GameplayHUD", "DPSDefault", "DPS 0"))
-					.Font(FT66Style::Tokens::FontBold(10))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-					.Justification(ETextJustify::Left)
-				]
-				// Unified bottom-left hero plate: connected shell with hearts attached to the portrait area.
-				+ SVerticalBox::Slot().AutoHeight()
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Bottom)
 				[
 					SAssignNew(IdolSlotsPanelBox, SBox)
 					[
+						MakeBottomLeftBlackPanel(
+							NSLOCTEXT("T66.GameplayHUD", "IdolsHeader", "IDOLS"),
+							SNew(SBox)
+							.WidthOverride(IdolPanelMinWidth)
+							[
+								MakeBottomLeftSectionPanel(
+									SNew(SBox)
+									.HAlign(HAlign_Center)
+									[
+										IdolSlotsRef
+									],
+									FMargin(3.f),
+									IdolSectionBorderColor)
+							],
+							FMargin(2.f, 2.f))
+					]
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
+				.VAlign(VAlign_Bottom)
+				[
+					SAssignNew(PortraitStatPanelBox, SBox)
+					[
 						MakeBottomLeftBlackPanelNoTitle(
 							SNew(SHorizontalBox)
-							+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Top)
-							[
-								SNew(SBox)
-								.WidthOverride(IdolPanelMinWidth)
-								.HeightOverride(HeroColumnHeight)
-								[
-									MakeBottomLeftSectionPanel(
-										SNew(SVerticalBox)
-										+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).VAlign(VAlign_Top)
-										[
-											IdolSlotsRef
-										]
-										+ SVerticalBox::Slot().FillHeight(1.f)
-										[
-											SNew(SSpacer)
-										],
-										FMargin(3.f),
-										IdolSectionBorderColor)
-								]
-							]
-							+ SHorizontalBox::Slot().AutoWidth().Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
+							+ SHorizontalBox::Slot().AutoWidth()
 							[
 								SNew(SBox)
 								.WidthOverride(PortraitPanelSize)
@@ -4721,16 +5965,19 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 										.HeightOverride(TopStripPanelHeight)
 										[
 											MakeBottomLeftSectionPanel(
-												SNew(SVerticalBox)
-												+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
-												[
-													StatusDotsRowRef
-												]
-												+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+												SNew(SOverlay)
+												+ SOverlay::Slot()
 												[
 													HeartsRowRef
+												]
+												+ SOverlay::Slot()
+												.HAlign(HAlign_Center)
+												.VAlign(VAlign_Top)
+												.Padding(0.f, 2.f, 0.f, 0.f)
+												[
+													StatusDotsRowRef
 												],
-												FMargin(0.f, 4.f, 0.f, 3.f),
+												FMargin(0.f),
 												HeartsSectionBorderColor)
 										]
 									]
@@ -4873,15 +6120,20 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 													[
 														SAssignNew(UltimateBorder, SBorder)
 														.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-														.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
+														.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.f))
 														.Padding(0.f)
 														[
 															SNew(SOverlay)
 															+ SOverlay::Slot()
+															.Padding(AbilityIconInset, AbilityIconInset, AbilityIconInset, AbilityLabelBarHeight + 2.f)
 															[
-																SAssignNew(UltimateImage, SImage)
-																.Image(UltimateBrush.Get())
-																.ColorAndOpacity(FLinearColor::White)
+																SNew(SScaleBox)
+																.Stretch(EStretch::ScaleToFit)
+																[
+																	SAssignNew(UltimateImage, SImage)
+																	.Image(UltimateBrush.Get())
+																	.ColorAndOpacity(FLinearColor::White)
+																]
 															]
 															+ SOverlay::Slot()
 															[
@@ -4900,12 +6152,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 																]
 															]
 															+ SOverlay::Slot()
-															.HAlign(HAlign_Left)
+															.HAlign(HAlign_Right)
 															.VAlign(VAlign_Top)
 															[
 																SNew(SBox)
-																.WidthOverride(18.f)
-																.HeightOverride(18.f)
+																.WidthOverride(AbilityInputBadgeWidth)
+																.HeightOverride(AbilityInputBadgeHeight)
 																[
 																	SNew(SBorder)
 																	.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -4913,12 +6165,27 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 																	.HAlign(HAlign_Center)
 																	.VAlign(VAlign_Center)
 																	[
-																		SNew(STextBlock)
-																		.Text(NSLOCTEXT("T66.GameplayHUD", "UltKeybind", "R"))
-																		.Font(FT66Style::Tokens::FontBold(9))
+																		SAssignNew(UltimateInputHintText, STextBlock)
+																		.Text(NSLOCTEXT("T66.GameplayHUD", "UltKeybindDefault", "R"))
+																		.Font(FT66Style::Tokens::FontBold(8))
 																		.ColorAndOpacity(FLinearColor::White)
 																		.Justification(ETextJustify::Center)
 																	]
+																]
+															]
+															+ SOverlay::Slot()
+															.VAlign(VAlign_Bottom)
+															[
+																SNew(SBorder)
+																.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+																.BorderBackgroundColor(FLinearColor::Black)
+																.Padding(FMargin(0.f, 1.f))
+																[
+																	SNew(STextBlock)
+																	.Text(NSLOCTEXT("T66.GameplayHUD", "UltLabelBar", "ULT"))
+																	.Font(FT66Style::Tokens::FontBold(8))
+																	.ColorAndOpacity(FLinearColor::White)
+																	.Justification(ETextJustify::Center)
 																]
 															]
 														]
@@ -4935,18 +6202,42 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 														[
 															SAssignNew(PassiveBorder, SBorder)
 															.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-															.BorderBackgroundColor(FLinearColor(0.08f, 0.08f, 0.10f, 1.f))
+															.BorderBackgroundColor(FLinearColor(0.03f, 0.03f, 0.05f, 1.f))
 															.Padding(0.f)
 															[
-																SAssignNew(PassiveImage, SImage)
-																.Image(UltimateBrush.Get())
-																.ColorAndOpacity(FLinearColor::White)
+																SNew(SOverlay)
+																+ SOverlay::Slot()
+																.Padding(AbilityIconInset, AbilityIconInset, AbilityIconInset, AbilityLabelBarHeight + 2.f)
+																[
+																	SNew(SScaleBox)
+																	.Stretch(EStretch::ScaleToFit)
+																	[
+																		SAssignNew(PassiveImage, SImage)
+																		.Image(PassiveBrush.Get())
+																		.ColorAndOpacity(FLinearColor::White)
+																	]
+																]
+																+ SOverlay::Slot()
+																.VAlign(VAlign_Bottom)
+																[
+																	SNew(SBorder)
+																	.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+																	.BorderBackgroundColor(FLinearColor::Black)
+																	.Padding(FMargin(0.f, 1.f))
+																	[
+																		SNew(STextBlock)
+																		.Text(NSLOCTEXT("T66.GameplayHUD", "PassiveLabelBar", "PASSIVE"))
+																		.Font(FT66Style::Tokens::FontBold(7))
+																		.ColorAndOpacity(FLinearColor::White)
+																		.Justification(ETextJustify::Center)
+																	]
+																]
 															]
 														]
 														+ SOverlay::Slot()
 														.HAlign(HAlign_Right)
 														.VAlign(VAlign_Bottom)
-														.Padding(0.f, 0.f, 4.f, 4.f)
+														.Padding(0.f, 0.f, 4.f, AbilityLabelBarHeight + 4.f)
 														[
 															SAssignNew(PassiveStackBadgeBox, SBox)
 															.WidthOverride(20.f)
@@ -4982,7 +6273,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							FMargin(2.f, 2.f))
 					]
 				]
-		]
+			]
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
@@ -5254,11 +6545,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 		]
-		// Achievement unlock notification (above inventory, tier-colored border)
+		// Achievement unlock notification (lower-center lane, clear of inventory and idol panels)
 		+ SOverlay::Slot()
-		.HAlign(HAlign_Right)
+		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Bottom)
-		.Padding(BottomRightAchievementPadding)
+		.Padding(BottomCenterAchievementPadding)
 		[
 			SAssignNew(AchievementNotificationBox, SBox)
 			.Visibility(EVisibility::Collapsed)
@@ -5535,7 +6826,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
-		.Padding(0.f, -140.f, 0.f, 0.f)
+		.Padding(0.f)
 		[
 			SAssignNew(CenterCrosshairBox, SBox)
 			.WidthOverride(28.f)
@@ -5680,6 +6971,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			]
 		];
 
+	ApplyInventoryInspectMode();
 	return Root;
 }
 
@@ -5751,4 +7043,44 @@ bool UT66GameplayHUDWidget::IsWorldDialogueVisible() const
 void UT66GameplayHUDWidget::SetInteractive(bool bInteractive)
 {
 	SetVisibility(bInteractive ? ESlateVisibility::Visible : ESlateVisibility::SelfHitTestInvisible);
+}
+
+void UT66GameplayHUDWidget::SetInventoryInspectMode(bool bEnabled)
+{
+	if (bInventoryInspectMode == bEnabled)
+	{
+		return;
+	}
+
+	bInventoryInspectMode = bEnabled;
+	ApplyInventoryInspectMode();
+}
+
+void UT66GameplayHUDWidget::ApplyInventoryInspectMode()
+{
+	const float Scale = bInventoryInspectMode ? BottomRightInventoryInspectScale : 1.f;
+
+	if (InventoryPanelBox.IsValid())
+	{
+		InventoryPanelBox->SetWidthOverride(BottomRightInventoryPanelWidth * Scale);
+		InventoryPanelBox->SetHeightOverride(BottomRightInventoryPanelHeight * Scale);
+	}
+
+	const float SlotSize = BottomRightInventorySlotSize * Scale;
+	const float IconSize = FMath::Max(8.f, SlotSize - 4.f);
+	for (const TSharedPtr<SBox>& SlotContainer : InventorySlotContainers)
+	{
+		if (SlotContainer.IsValid())
+		{
+			SlotContainer->SetHeightOverride(SlotSize);
+		}
+	}
+
+	for (const TSharedPtr<FSlateBrush>& SlotBrush : InventorySlotBrushes)
+	{
+		if (SlotBrush.IsValid())
+		{
+			SlotBrush->ImageSize = FVector2D(IconSize, IconSize);
+		}
+	}
 }

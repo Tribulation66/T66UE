@@ -1,0 +1,29 @@
+Row,Stat,Shell,InnerEmblem,Behavior
+Damage,AOE Damage,Syringe,blast ring,Permanent
+Damage,Bounce Damage,Syringe,ricochet arrow,Permanent
+Damage,Pierce Damage,Syringe,spear tip through line,Permanent
+Damage,DOT Damage,Syringe,dripping drop,Permanent
+Attack Speed,AOE Speed,Pill capsule,pulse ring with speed lines,Permanent
+Attack Speed,Bounce Speed,Pill capsule,ricochet chevron trail,Permanent
+Attack Speed,Pierce Speed,Pill capsule,dart streak,Permanent
+Attack Speed,DOT Speed,Pill capsule,timer plus droplet,Permanent
+Attack Scale,AOE Scale,IV bag,expanding circles,Permanent
+Attack Scale,Bounce Scale,IV bag,enlarged rebound arc,Permanent
+Attack Scale,Pierce Scale,IV bag,long needle lance,Permanent
+Attack Scale,DOT Scale,IV bag,spreading spill cloud,Permanent
+Accuracy,Crit Damage,Eyedrop bottle,shattered star,Permanent
+Accuracy,Crit Chance,Eyedrop bottle,crosshair sparkle,Proc
+Accuracy,Range,Eyedrop bottle,distance arrow with ruler marks,Permanent
+Accuracy,Accuracy,Eyedrop bottle,aligned reticle and laser dot,Permanent
+Armor,Taunt,Trauma pouch,aggro eye siren,Proc
+Armor,Damage Reduction,Trauma pouch,shield plate,Permanent
+Armor,Damage Reflection,Trauma pouch,mirror shard,Proc
+Armor,Crush,Trauma pouch,cracked shield,Proc
+Evasion,Dodge,Inhaler,sidestep slash,Proc
+Evasion,Counter Attack,Inhaler,return-blade arrow,Proc
+Evasion,Invisibility,Inhaler,faded eye,Proc
+Evasion,Assassinate,Inhaler,dagger plus skull,Proc
+Luck,Treasure Chest,Vial,treasure chest,Permanent
+Luck,Cheating,Vial,loaded dice,Permanent
+Luck,Stealing,Vial,lifted coin purse,Permanent
+Luck,Loot Crate,Vial,reward crate burst,Permanent

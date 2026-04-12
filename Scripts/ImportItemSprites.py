@@ -19,6 +19,7 @@ import unreal
 
 RARITIES = ("black", "red", "yellow", "white")
 DEST_DIR = "/Game/Items/Sprites"
+DEPRECATED_SECONDARY_STATS = {"HpRegen", "LifeSteal", "Alchemy"}
 
 
 def ensure_directory(path):
@@ -46,6 +47,9 @@ def get_live_item_ids(csv_path):
     with open(csv_path, "r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             item_id = (row.get("ItemID") or "").strip()
+            secondary_stat = (row.get("SecondaryStatType") or "").strip()
+            if secondary_stat in DEPRECATED_SECONDARY_STATS:
+                continue
             if item_id:
                 item_ids.append(item_id)
     return item_ids

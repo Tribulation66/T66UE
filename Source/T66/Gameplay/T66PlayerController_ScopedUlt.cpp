@@ -18,13 +18,12 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
-#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -46,7 +45,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -128,7 +127,7 @@ void AT66PlayerController::ActivateHeroOneScopedUlt(AT66HeroBase* Hero, UT66Comb
 
 	Combat->SetAutoAttackSuppressed(true);
 	Combat->ClearLockedTarget();
-	SetLockedEnemy(nullptr, false);
+	SetLockedCombatTarget(nullptr, false);
 
 	RestoreGameplayInputMode();
 	World->GetTimerManager().SetTimer(HeroOneScopedUltTimerHandle, this, &AT66PlayerController::EndHeroOneScopedUlt, HeroOneScopedUltDurationSeconds, false);

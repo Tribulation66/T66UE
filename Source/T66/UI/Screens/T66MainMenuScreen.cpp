@@ -7,22 +7,19 @@
 #include "UI/Components/T66LeaderboardPanel.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
-#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
-#include "Core/T66RunSaveGame.h"
-#include "Core/T66SaveSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/Style/T66LegacyUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
-#include "ImageUtils.h"
-#include "Brushes/SlateImageBrush.h"
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "Widgets/Images/SImage.h"
@@ -35,6 +32,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SNullWidget.h"
 #include "Styling/SlateBrush.h"
@@ -63,6 +61,7 @@ namespace
 
 	void SetupMainMenuLayerBrush(
 		TSharedPtr<FSlateBrush>& Brush,
+		TStrongObjectPtr<UTexture2D>& TextureHandle,
 		UT66UITexturePoolSubsystem* TexPool,
 		UObject* Requester,
 		const TCHAR* ObjectPath,
@@ -70,12 +69,7 @@ namespace
 		const TCHAR* SourceRelativePath,
 		FName RequestKey)
 	{
-		const FString SourcePath = FPaths::ProjectDir() / SourceRelativePath;
-		if (FPaths::FileExists(SourcePath))
-		{
-			Brush = MakeShared<FSlateImageBrush>(SourcePath, MainMenuBackgroundImageSize, FLinearColor::White);
-		}
-		else if (!Brush.IsValid())
+		if (!Brush.IsValid())
 		{
 			Brush = MakeShared<FSlateBrush>();
 			EnsureRuntimeImageBrush(Brush, MainMenuBackgroundImageSize);
@@ -85,7 +79,31 @@ namespace
 			EnsureRuntimeImageBrush(Brush, MainMenuBackgroundImageSize);
 		}
 
-		if (!TexPool || !FPackageName::DoesPackageExist(PackagePath))
+		if (!TextureHandle.IsValid())
+		{
+			if (UTexture2D* AssetTexture = T66LegacyUITextureAccess::LoadAssetTexture(
+				ObjectPath,
+				TextureFilter::TF_Trilinear,
+				TEXT("MainMenuBackgroundLayer")))
+			{
+				TextureHandle.Reset(AssetTexture);
+			}
+		}
+
+		if (TextureHandle.IsValid())
+		{
+			Brush->SetResourceObject(TextureHandle.Get());
+			Brush->ImageSize = FVector2D(
+				FMath::Max(1, TextureHandle->GetSizeX()),
+				FMath::Max(1, TextureHandle->GetSizeY()));
+		}
+		else
+		{
+			Brush->SetResourceObject(nullptr);
+			Brush->ImageSize = MainMenuBackgroundImageSize;
+		}
+
+		if (!TexPool || !FPackageName::DoesPackageExist(PackagePath) || TextureHandle.IsValid())
 		{
 			return;
 		}
@@ -106,10 +124,10 @@ namespace
 	void SetupRuntimeImageBrush(
 		TSharedPtr<FSlateBrush>& Brush,
 		TStrongObjectPtr<UTexture2D>& TextureHandle,
-		const TCHAR* SourceRelativePath,
+		const TCHAR* AssetPath,
+		const TCHAR* StagedRelativePath,
 		const FVector2D& ImageSize)
 	{
-		const FString SourcePath = FPaths::ProjectDir() / SourceRelativePath;
 		if (!Brush.IsValid())
 		{
 			Brush = MakeShared<FSlateBrush>();
@@ -117,24 +135,45 @@ namespace
 
 		EnsureRuntimeImageBrush(Brush, ImageSize);
 
-		if (!FPaths::FileExists(SourcePath))
+		if (!TextureHandle.IsValid())
 		{
-			Brush->SetResourceObject(nullptr);
-			return;
+			if (AssetPath && *AssetPath)
+			{
+				if (UTexture2D* AssetTexture = T66LegacyUITextureAccess::LoadAssetTexture(
+					AssetPath,
+					TextureFilter::TF_Trilinear,
+					TEXT("MainMenuRuntimeImage")))
+				{
+					TextureHandle.Reset(AssetTexture);
+				}
+			}
+
+			if (!TextureHandle.IsValid() && StagedRelativePath && *StagedRelativePath)
+			{
+				for (const FString& CandidatePath : T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(StagedRelativePath))
+				{
+					if (!FPaths::FileExists(CandidatePath))
+					{
+						continue;
+					}
+
+					if (UTexture2D* FileTexture = T66LegacyUITextureAccess::ImportFileTexture(
+						CandidatePath,
+						TextureFilter::TF_Trilinear,
+						false,
+						TEXT("MainMenuRuntimeImage")))
+					{
+						TextureHandle.Reset(FileTexture);
+						break;
+					}
+				}
+			}
 		}
 
 		if (!TextureHandle.IsValid())
 		{
-			if (UTexture2D* FileTexture = FImageUtils::ImportFileAsTexture2D(SourcePath))
-			{
-				FileTexture->SRGB = true;
-				FileTexture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-				FileTexture->NeverStream = true;
-				FileTexture->Filter = TextureFilter::TF_Trilinear;
-				FileTexture->CompressionSettings = TC_EditorIcon;
-				FileTexture->UpdateResource();
-				TextureHandle.Reset(FileTexture);
-			}
+			Brush->SetResourceObject(nullptr);
+			return;
 		}
 
 		if (TextureHandle.IsValid())
@@ -149,6 +188,12 @@ namespace
 	FVector2D GetEffectiveFrontendViewportSize()
 	{
 		return FT66Style::GetViewportSize();
+	}
+
+	bool DoesFriendMatchSearchQuery(const FString& SearchQuery, const FString& FriendName)
+	{
+		const FString NormalizedQuery = SearchQuery.TrimStartAndEnd();
+		return NormalizedQuery.IsEmpty() || FriendName.Contains(NormalizedQuery, ESearchCase::IgnoreCase);
 	}
 }
 
@@ -185,8 +230,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 	UT66LeaderboardSubsystem* LB = GI ? GI->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
-	UT66SaveSubsystem* SaveSubsystem = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
 	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
+	UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
 	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
 
@@ -195,29 +240,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	SetupRuntimeImageBrush(
 		PrimaryCTAFillBrush,
 		PrimaryCTAFillTexture,
-		TEXT("SourceAssets/UI/MainMenuGenerated/mainmenu_cta_fill_green.png"),
+		nullptr,
+		TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu_cta_fill_green.png"),
 		FVector2D(1024.f, 232.f));
-
-	enum class ELastRunStatus : uint8
-	{
-		None,
-		InProgress,
-		Completed,
-		NotCompleted
-	};
-
-	struct FLastRunSnapshot
-	{
-		FName HeroID = NAME_None;
-		ET66BodyType HeroBodyType = ET66BodyType::TypeA;
-		ET66Difficulty Difficulty = ET66Difficulty::Easy;
-		ET66PartySize PartySize = ET66PartySize::Solo;
-		int32 StageReached = 1;
-		ELastRunStatus Status = ELastRunStatus::None;
-		int32 SaveSlotIndex = INDEX_NONE;
-		FString RunSummarySlotName;
-		FDateTime Timestamp = FDateTime::MinValue();
-	};
 
 	struct FMenuFriendEntry
 	{
@@ -225,6 +250,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		FString Name;
 		FString Status;
 		bool bOnline = false;
+		bool bFavorite = false;
+		bool bInvitePending = false;
 		FName HeroID = NAME_None;
 		ET66BodyType BodyType = ET66BodyType::TypeA;
 	};
@@ -254,142 +281,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		return Brush;
 	};
 
-	auto ParseIsoUtc = [](const FString& IsoString) -> FDateTime
-	{
-		FDateTime Parsed = FDateTime::MinValue();
-		if (!IsoString.IsEmpty())
-		{
-			FDateTime::ParseIso8601(*IsoString, Parsed);
-		}
-		return Parsed;
-	};
-
-	auto IsLastRunSet = [](const FLastRunSnapshot& Snapshot) -> bool
-	{
-		return Snapshot.Status != ELastRunStatus::None;
-	};
-
-	FLastRunSnapshot LatestSaveRun;
-	FDateTime LatestSaveUtc = FDateTime::MinValue();
-	int32 LatestSaveSlot = INDEX_NONE;
-	if (SaveSubsystem)
-	{
-		for (int32 SlotIndex = 0; SlotIndex < UT66SaveSubsystem::MaxSlots; ++SlotIndex)
-		{
-			bool bOccupied = false;
-			FString SlotUtc;
-			FString HeroDisplayName;
-			FString MapName;
-			if (SaveSubsystem->GetSlotMeta(SlotIndex, bOccupied, SlotUtc, HeroDisplayName, MapName) && bOccupied)
-			{
-				const FDateTime ParsedUtc = ParseIsoUtc(SlotUtc);
-				if (LatestSaveSlot == INDEX_NONE || ParsedUtc > LatestSaveUtc)
-				{
-					LatestSaveSlot = SlotIndex;
-					LatestSaveUtc = ParsedUtc;
-				}
-			}
-		}
-	}
-
-	if (LatestSaveSlot != INDEX_NONE)
-	{
-		if (UT66RunSaveGame* LatestSave = SaveSubsystem ? SaveSubsystem->LoadFromSlot(LatestSaveSlot) : nullptr)
-		{
-			LatestSaveRun.HeroID = LatestSave->HeroID;
-			LatestSaveRun.HeroBodyType = LatestSave->HeroBodyType;
-			LatestSaveRun.Difficulty = LatestSave->Difficulty;
-			LatestSaveRun.PartySize = LatestSave->PartySize;
-			LatestSaveRun.StageReached = LatestSave->StageReached;
-			LatestSaveRun.Status = ELastRunStatus::InProgress;
-			LatestSaveRun.SaveSlotIndex = LatestSaveSlot;
-			LatestSaveRun.Timestamp = LatestSaveUtc;
-		}
-	}
-
-	FLastRunSnapshot LatestFinishedRun;
-	if (LB)
-	{
-		const TArray<FT66RecentRunRecord> RecentRuns = LB->GetRecentRuns();
-		for (const FT66RecentRunRecord& Run : RecentRuns)
-		{
-			if (!IsLastRunSet(LatestFinishedRun) || Run.EndedAtUtc > LatestFinishedRun.Timestamp)
-			{
-				LatestFinishedRun.HeroID = Run.HeroID;
-				LatestFinishedRun.Difficulty = Run.Difficulty;
-				LatestFinishedRun.PartySize = Run.PartySize;
-				LatestFinishedRun.StageReached = Run.StageReached;
-				LatestFinishedRun.Status = Run.bWasFullClear ? ELastRunStatus::Completed : ELastRunStatus::NotCompleted;
-				LatestFinishedRun.RunSummarySlotName = Run.RunSummarySlotName;
-				LatestFinishedRun.Timestamp = Run.EndedAtUtc;
-			}
-		}
-	}
-
-	FLastRunSnapshot LastRun;
-	if (IsLastRunSet(LatestSaveRun) && IsLastRunSet(LatestFinishedRun))
-	{
-		LastRun = (LatestSaveRun.Timestamp >= LatestFinishedRun.Timestamp) ? LatestSaveRun : LatestFinishedRun;
-	}
-	else if (IsLastRunSet(LatestSaveRun))
-	{
-		LastRun = LatestSaveRun;
-	}
-	else if (IsLastRunSet(LatestFinishedRun))
-	{
-		LastRun = LatestFinishedRun;
-	}
-
-	if ((LastRun.Status == ELastRunStatus::Completed || LastRun.Status == ELastRunStatus::NotCompleted)
-		&& !LastRun.RunSummarySlotName.IsEmpty())
-	{
-		if (UT66LeaderboardRunSummarySaveGame* LatestSummary = Cast<UT66LeaderboardRunSummarySaveGame>(UGameplayStatics::LoadGameFromSlot(LastRun.RunSummarySlotName, 0)))
-		{
-			LastRun.HeroBodyType = LatestSummary->HeroBodyType;
-		}
-	}
-
 	TArray<FName> AllHeroIDs = T66GI ? T66GI->GetAllHeroIDs() : TArray<FName>();
 	const FName FallbackHeroID = AllHeroIDs.Num() > 0 ? AllHeroIDs[0] : NAME_None;
-
-	auto GetPartySizeText = [Loc](ET66PartySize PartySize) -> FText
-	{
-		if (Loc)
-		{
-			switch (PartySize)
-			{
-			case ET66PartySize::Duo: return Loc->GetText_Duo();
-			case ET66PartySize::Trio: return Loc->GetText_Trio();
-			case ET66PartySize::Quad: return Loc->GetText_Quad();
-			case ET66PartySize::Solo:
-			default: return Loc->GetText_Solo();
-			}
-		}
-
-		switch (PartySize)
-		{
-		case ET66PartySize::Duo: return NSLOCTEXT("T66.PartySize", "Duo", "Duo");
-		case ET66PartySize::Trio: return NSLOCTEXT("T66.PartySize", "Trio", "Trio");
-		case ET66PartySize::Quad: return NSLOCTEXT("T66.PartySize", "Quad", "Quad");
-		case ET66PartySize::Solo:
-		default: return NSLOCTEXT("T66.PartySize", "Solo", "Solo");
-		}
-	};
-
-	auto ResolveHeroName = [Loc, T66GI](FName HeroID) -> FText
-	{
-		if (!HeroID.IsNone() && Loc)
-		{
-			return Loc->GetText_HeroName(HeroID);
-		}
-
-		FHeroData HeroData;
-		if (T66GI && T66GI->GetHeroData(HeroID, HeroData))
-		{
-			return HeroData.DisplayName;
-		}
-		return HeroID.IsNone() ? NSLOCTEXT("T66.MainMenu", "UnknownHero", "Unknown Hero") : FText::FromName(HeroID);
-	};
 
 	auto ResolvePortraitSoft = [T66GI](FName HeroID, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) -> TSoftObjectPtr<UTexture2D>
 	{
@@ -407,8 +300,36 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 	TArray<FMenuFriendEntry> Friends;
 	TArray<FMenuPartyEntry> PartyEntries;
+	PartyPortraitBrushes.Reset();
 	if (PartySubsystem)
 	{
+		auto ResolvePartyAvatarTexture = [PartySubsystem, SteamHelper](const FT66PartyMemberEntry& Member) -> UTexture2D*
+		{
+			if (!SteamHelper)
+			{
+				return nullptr;
+			}
+
+			if (UTexture2D* ExactAvatar = SteamHelper->GetAvatarTextureForSteamId(Member.PlayerId))
+			{
+				return ExactAvatar;
+			}
+
+			if (Member.bIsLocal || Member.DisplayName.Equals(SteamHelper->GetLocalDisplayName(), ESearchCase::IgnoreCase))
+			{
+				if (UTexture2D* LocalAvatar = SteamHelper->GetLocalAvatarTexture())
+				{
+					return LocalAvatar;
+				}
+			}
+
+			const FT66PartyFriendEntry* MatchingFriend = PartySubsystem->GetFriends().FindByPredicate([&Member](const FT66PartyFriendEntry& Friend)
+			{
+				return Friend.DisplayName.Equals(Member.DisplayName, ESearchCase::IgnoreCase);
+			});
+			return MatchingFriend ? SteamHelper->GetAvatarTextureForSteamId(MatchingFriend->PlayerId) : nullptr;
+		};
+
 		const TArray<FT66PartyFriendEntry>& PartyFriends = PartySubsystem->GetFriends();
 		for (int32 FriendIndex = 0; FriendIndex < PartyFriends.Num(); ++FriendIndex)
 		{
@@ -418,6 +339,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				Friend.DisplayName,
 				Friend.PresenceText,
 				Friend.bOnline,
+				PlayerSettings ? PlayerSettings->IsFavoriteFriend(Friend.PlayerId) : false,
+				SessionSubsystem ? SessionSubsystem->IsFriendInvitePending(Friend.PlayerId) : false,
 				PickHeroID(FriendIndex),
 				(FriendIndex % 2 == 0) ? ET66BodyType::TypeA : ET66BodyType::TypeB
 			});
@@ -425,27 +348,52 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 
 		const TArray<FT66PartyMemberEntry>& PartyMembers = PartySubsystem->GetPartyMembers();
 		PartyEntries.Reserve(PartyMembers.Num());
+		PartyPortraitBrushes.Reserve(PartyMembers.Num());
 		for (const FT66PartyMemberEntry& Member : PartyMembers)
 		{
-			UTexture2D* AvatarTexture = SteamHelper ? SteamHelper->GetAvatarTextureForSteamId(Member.PlayerId) : nullptr;
+			UTexture2D* AvatarTexture = ResolvePartyAvatarTexture(Member);
+			TSharedPtr<FSlateBrush> AvatarBrush = MakeAvatarBrush(AvatarTexture, FVector2D(60.f, 60.f));
+			PartyPortraitBrushes.Add(AvatarBrush);
 			PartyEntries.Add({
 				Member.PlayerId,
 				Member.DisplayName,
 				Member.bIsLocal,
 				Member.bIsPartyHost,
 				Member.bOnline,
-				MakeAvatarBrush(AvatarTexture, FVector2D(60.f, 60.f))
+				AvatarBrush
 			});
 		}
 	}
 
-	TArray<FSoftObjectPath> PortraitPaths;
-	const TSoftObjectPtr<UTexture2D> LastRunPortraitSoft = ResolvePortraitSoft(LastRun.HeroID, LastRun.HeroBodyType, ET66HeroPortraitVariant::Half);
-	if (!LastRunPortraitSoft.IsNull())
+	Friends.Sort([](const FMenuFriendEntry& A, const FMenuFriendEntry& B)
 	{
-		PortraitPaths.AddUnique(LastRunPortraitSoft.ToSoftObjectPath());
-	}
+		if (A.bOnline != B.bOnline)
+		{
+			return A.bOnline;
+		}
 
+		if (A.bFavorite != B.bFavorite)
+		{
+			return A.bFavorite;
+		}
+
+		return A.Name < B.Name;
+	});
+
+	const TSharedRef<TArray<FMenuFriendEntry>> FriendsModel = MakeShared<TArray<FMenuFriendEntry>>(Friends);
+	auto CountMatchingFriends = [this, FriendsModel](bool bOnlineGroup) -> int32
+	{
+		return Algo::CountIf(*FriendsModel, [this, bOnlineGroup](const FMenuFriendEntry& Entry)
+		{
+			return Entry.bOnline == bOnlineGroup && DoesFriendMatchSearchQuery(FriendSearchQuery, Entry.Name);
+		});
+	};
+	auto CountAllMatchingFriends = [CountMatchingFriends]() -> int32
+	{
+		return CountMatchingFriends(true) + CountMatchingFriends(false);
+	};
+
+	TArray<FSoftObjectPath> PortraitPaths;
 	for (const FMenuFriendEntry& Friend : Friends)
 	{
 		const TSoftObjectPtr<UTexture2D> FriendPortraitSoft = ResolvePortraitSoft(Friend.HeroID, Friend.BodyType, ET66HeroPortraitVariant::Low);
@@ -460,11 +408,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		TexPool->EnsureTexturesLoadedSync(PortraitPaths);
 	}
 
-	LastRunHeroBrush = MakeShared<FSlateBrush>();
-	LastRunHeroBrush->DrawAs = ESlateBrushDrawType::Image;
-	LastRunHeroBrush->Tiling = ESlateBrushTileType::NoTile;
-	LastRunHeroBrush->ImageSize = FVector2D(76.f, 76.f);
-	LastRunHeroBrush->SetResourceObject(TexPool ? T66SlateTexture::GetLoaded(TexPool, LastRunPortraitSoft) : nullptr);
+	ProfileAvatarBrush = MakeShared<FSlateBrush>();
+	ProfileAvatarBrush->DrawAs = ESlateBrushDrawType::Image;
+	ProfileAvatarBrush->Tiling = ESlateBrushTileType::NoTile;
+	ProfileAvatarBrush->ImageSize = FVector2D(76.f, 76.f);
+	ProfileAvatarBrush->SetResourceObject(SteamHelper ? SteamHelper->GetLocalAvatarTexture() : nullptr);
 
 	FriendPortraitBrushes.Reset();
 	for (const FMenuFriendEntry& Friend : Friends)
@@ -525,7 +473,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	};
 
 	float CenterColumnWidth = LerpDimension(304.f, 372.f);
-	float ResolvedSidePanelWidth = LerpDimension(298.f, 342.f);
+	float ResolvedSidePanelWidth = LerpDimension(332.f, 382.f);
 	float ResolvedLeaderboardPanelWidth = ResolvedSidePanelWidth;
 	const float ColumnGap = LerpDimension(18.f, 28.f);
 
@@ -556,20 +504,24 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	ResolvedLeaderboardPanelWidth = ResolvedSidePanelWidth;
 
 	const float ColumnTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(500.f, 540.f) * LayoutResponsiveScale);
-	const float SidePanelTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(448.f, 508.f));
+	const float SidePanelTargetHeight = FMath::Min(AvailableColumnHeight, LerpDimension(494.f, 562.f));
 	const float LeaderboardChromeHeight = LerpDimension(52.f, 58.f);
 	const float LeaderboardShellTargetHeight = SidePanelTargetHeight + LeaderboardChromeHeight;
-	const float CenterButtonWidth = CenterColumnWidth;
+	const float CenterPanelHorizontalPadding = LerpDimension(12.f, 16.f);
+	const float CenterPanelVerticalPadding = LerpDimension(14.f, 18.f);
+	const float CenterButtonWidth = CenterColumnWidth - (CenterPanelHorizontalPadding * 2.f);
 	const float CenterButtonHeight = LerpDimension(68.f, 80.f);
 	const float CenterButtonGap = LerpDimension(10.f, 14.f);
-	const float CenterColumnHeight = (CenterButtonHeight * 2.f) + CenterButtonGap;
+	const float CenterColumnHeight = (CenterButtonHeight * 2.f) + CenterButtonGap + (CenterPanelVerticalPadding * 2.f);
 	const float CenterButtonLift = FMath::Max(LerpDimension(38.f, 52.f), (ColumnTargetHeight - CenterColumnHeight) * 0.24f);
 	const float SceneVerticalOffset = LerpDimension(96.f, 128.f);
 	const float SceneTitleTopPadding = TopReservedInset + LerpDimension(8.f, 12.f);
 	const int32 LeftPanelBodyFontSize = LerpInt(10, 11);
 	const int32 LeftPanelTitleFontSize = LerpInt(10, 11);
+	const int32 FriendsPanelBodyFontSize = FMath::Max(8, LeftPanelBodyFontSize - 2);
+	const int32 FriendsPanelHeaderFontSize = FMath::Max(8, LeftPanelTitleFontSize - 2);
 	const int32 CenterButtonFontSize = LerpInt(24, 28);
-	const int32 SceneTitleFontSize = LerpInt(42, 52);
+	const int32 SceneTitleFontSize = LerpInt(50, 62);
 
 	auto MakeRadianceFont = [](int32 Size, int32 LetterSpacing = 0) -> FSlateFontInfo
 	{
@@ -600,14 +552,21 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			];
 	};
 
-	auto MakeFriendGroupHeader = [this, HeaderText, LeftPanelTitleFontSize](const FText& Label, int32 Count, const FLinearColor& CountColor, bool bOnlineGroup) -> TSharedRef<SWidget>
+	auto MakeFriendGroupHeader = [this, HeaderText, FriendsPanelHeaderFontSize, CountMatchingFriends](const FText& Label, const FLinearColor& CountColor, bool bOnlineGroup) -> TSharedRef<SWidget>
 	{
-		FSlateFontInfo GroupFont = FT66Style::MakeFont(TEXT("Bold"), LeftPanelTitleFontSize + 2);
-		GroupFont.LetterSpacing = 96;
+		FSlateFontInfo GroupFont = FT66Style::MakeFont(TEXT("Bold"), FriendsPanelHeaderFontSize);
+		GroupFont.LetterSpacing = 72;
 		const bool bExpanded = bOnlineGroup ? bShowOnlineFriends : bShowOfflineFriends;
 		const FSlateBrush* DownArrowBrush = &FCoreStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").DownArrowImage;
 
 		return SNew(SHorizontalBox)
+			.Visibility_Lambda([this, CountMatchingFriends, bOnlineGroup]()
+			{
+				const bool bSearchActive = !FriendSearchQuery.TrimStartAndEnd().IsEmpty();
+				return (!bSearchActive || CountMatchingFriends(bOnlineGroup) > 0)
+					? EVisibility::Visible
+					: EVisibility::Collapsed;
+			})
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SNew(SButton)
@@ -653,24 +612,34 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(FText::Format(NSLOCTEXT("T66.MainMenu", "FriendsGroupCount", "({0})"), FText::AsNumber(Count)))
+				.Text_Lambda([CountMatchingFriends, bOnlineGroup]()
+				{
+					return FText::Format(
+						NSLOCTEXT("T66.MainMenu", "FriendsGroupCount", "({0})"),
+						FText::AsNumber(CountMatchingFriends(bOnlineGroup)));
+				})
 				.Font(GroupFont)
 				.ColorAndOpacity(CountColor)
 			];
 	};
 
 	const FText InviteFriendText = NSLOCTEXT("T66.MainMenu", "InviteFriend", "INVITE");
+	const FText InvitedFriendText = NSLOCTEXT("T66.MainMenu", "InvitedFriend", "INVITED");
 	const FText InPartyText = NSLOCTEXT("T66.MainMenu", "InParty", "In Party");
 	const FText PartyFullText = NSLOCTEXT("T66.MainMenu", "PartyFull", "PARTY FULL");
 	const FText OfflineActionText = NSLOCTEXT("T66.MainMenu", "FriendOffline", "OFFLINE");
 	const FText LeavePartyButtonText = NSLOCTEXT("T66.MainMenu", "LeavePartyButton", "X");
+	const FText FavoriteFriendTooltip = NSLOCTEXT("T66.MainMenu", "FavoriteFriendTooltip", "Favorite friend");
+	const FText UnfavoriteFriendTooltip = NSLOCTEXT("T66.MainMenu", "UnfavoriteFriendTooltip", "Remove favorite");
 	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
 
-	auto MakeFlatActionButton = [LeftPanelBodyFontSize, &NoBorderButtonStyle](const FText& Text, const FOnClicked& OnClicked, bool bEnabled, bool bPrimary) -> TSharedRef<SWidget>
+	auto MakeFlatActionButton = [FriendsPanelBodyFontSize, &NoBorderButtonStyle](const FText& Text, const FOnClicked& OnClicked, bool bEnabled, bool bPrimary, bool bInvitedState) -> TSharedRef<SWidget>
 	{
 		const FLinearColor FillColor = !bEnabled
 			? FLinearColor(0.42f, 0.47f, 0.40f, 0.72f)
-			: (bPrimary ? FLinearColor(0.18f, 0.31f, 0.18f, 0.97f) : FLinearColor(0.27f, 0.30f, 0.34f, 0.94f));
+			: (bInvitedState
+				? FLinearColor(0.56f, 0.42f, 0.16f, 0.98f)
+				: (bPrimary ? FLinearColor(0.18f, 0.31f, 0.18f, 0.97f) : FLinearColor(0.27f, 0.30f, 0.34f, 0.94f)));
 		const FLinearColor TextColor = bEnabled
 			? FLinearColor(0.96f, 0.97f, 0.94f, 1.0f)
 			: FLinearColor(0.88f, 0.90f, 0.84f, 0.72f);
@@ -692,7 +661,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(Text)
-						.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
+						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
 						.ColorAndOpacity(TextColor)
 						.Justification(ETextJustify::Center)
 					]
@@ -708,12 +677,19 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		const FLinearColor StatusColor = Friend.bOnline ? OnlineStatusText : MutedText;
 		const FLinearColor AccentColor = Friend.bOnline ? AvatarAccentOnline : AvatarAccentOffline;
 		const bool bInParty = PartySubsystem && PartySubsystem->IsFriendInParty(Friend.PlayerId);
-		const bool bCanInvite = PartySubsystem && Friend.bOnline && !bInParty && PartySubsystem->GetPartyMemberCount() < 4;
+		const bool bInvitePending = Friend.bInvitePending && !bInParty;
+		const bool bCanInvite = PartySubsystem && Friend.bOnline && !bInParty && !bInvitePending && PartySubsystem->GetPartyMemberCount() < 4;
 		const FText ActionText = bInParty
 			? InPartyText
+			: (bInvitePending
+				? InvitedFriendText
 			: (!Friend.bOnline
 				? OfflineActionText
-				: ((PartySubsystem && PartySubsystem->GetPartyMemberCount() >= 4) ? PartyFullText : InviteFriendText));
+				: ((PartySubsystem && PartySubsystem->GetPartyMemberCount() >= 4) ? PartyFullText : InviteFriendText)));
+		const FText FavoriteGlyph = FText::FromString(Friend.bFavorite ? TEXT("\u2605") : TEXT("\u2606"));
+		const FLinearColor FavoriteGlyphColor = Friend.bFavorite
+			? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
+			: FLinearColor(0.55f, 0.58f, 0.62f, 1.0f);
 
 		return SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -742,35 +718,71 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					[
 						SNew(STextBlock)
 						.Text(FText::FromString(Friend.Name))
-						.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
+						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
 						.ColorAndOpacity(NameColor)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
 					[
 						SNew(STextBlock)
 						.Text(bInParty ? InPartyText : FText::FromString(Friend.Status))
-						.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
+						.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
 						.ColorAndOpacity(StatusColor)
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
+				[
+					SNew(SBox)
+					.WidthOverride(28.f)
+					.HeightOverride(28.f)
+					[
+						SNew(SButton)
+						.ButtonStyle(&NoBorderButtonStyle)
+						.ContentPadding(FMargin(0.f))
+						.ToolTipText(Friend.bFavorite ? UnfavoriteFriendTooltip : FavoriteFriendTooltip)
+						.OnClicked(FOnClicked::CreateLambda([this, PlayerSettings, PlayerId = Friend.PlayerId]()
+						{
+							if (PlayerSettings)
+							{
+								PlayerSettings->SetFavoriteFriend(PlayerId, !PlayerSettings->IsFavoriteFriend(PlayerId));
+								ForceRebuildSlate();
+							}
+							return FReply::Handled();
+						}))
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.10f, 0.11f, 0.14f, 0.94f))
+							.Padding(FMargin(0.f))
+							[
+								SNew(STextBlock)
+								.Text(FavoriteGlyph)
+								.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize + 6))
+								.ColorAndOpacity(FavoriteGlyphColor)
+								.Justification(ETextJustify::Center)
+							]
+						]
 					]
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f).VAlign(VAlign_Center)
 				[
 					MakeFlatActionButton(
 						ActionText,
-						FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId]()
+						FOnClicked::CreateLambda([this, PartySubsystem, PlayerId = Friend.PlayerId, PlayerName = Friend.Name]()
 						{
 							if (!PartySubsystem)
 							{
 								return FReply::Handled();
 							}
 
-							PartySubsystem->InviteFriend(PlayerId);
-
-							ForceRebuildSlate();
+							if (PartySubsystem->InviteFriend(PlayerId, PlayerName))
+							{
+								ForceRebuildSlate();
+							}
 							return FReply::Handled();
 						}),
 						bCanInvite,
-						!bInParty && Friend.bOnline)
+						!bInParty && Friend.bOnline,
+						bInvitePending)
 				]
 			];
 	};
@@ -835,21 +847,46 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		.WidthOverride(CenterColumnWidth)
 		.HeightOverride(CenterColumnHeight)
 		[
-			SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.01f, 0.01f, 0.015f, 1.0f))
+			.Padding(FMargin(CenterPanelHorizontalPadding, CenterPanelVerticalPadding))
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 				[
 					MakeMenuButton(NewGameText, &UT66MainMenuScreen::HandleNewGameClicked, ET66ButtonType::Success, true, true)
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, CenterButtonGap, 0.f, 0.f)
+				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, CenterButtonGap, 0.f, 0.f)
 				[
 					MakeMenuButton(LoadGameText, &UT66MainMenuScreen::HandleLoadGameClicked, ET66ButtonType::Success, true, false)
 				]
+			]
 		];
 
-	const int32 OnlineCount = Algo::CountIf(Friends, [](const FMenuFriendEntry& Entry) { return Entry.bOnline; });
-	const int32 OfflineCount = Friends.Num() - OnlineCount;
+	const FText FriendSearchHintText = NSLOCTEXT("T66.MainMenu", "FriendSearchHint", "Search friends...");
+	const FText NoMatchingFriendsText = NSLOCTEXT("T66.MainMenu", "NoMatchingFriends", "No friends match this search.");
 
-	const TSharedRef<SVerticalBox> FriendsList = SNew(SVerticalBox);
+	const TSharedRef<SWidget> FriendSearchBox =
+		SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FLinearColor(0.16f, 0.18f, 0.21f, 0.94f))
+		.Padding(1.f)
+		[
+			SNew(SBox)
+			.HeightOverride(36.f)
+			[
+				SNew(SEditableTextBox)
+				.Text(FText::FromString(FriendSearchQuery))
+				.OnTextChanged_UObject(this, &UT66MainMenuScreen::HandleFriendSearchTextChanged)
+				.HintText(FriendSearchHintText)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
+				.ForegroundColor(BrightText)
+				.BackgroundColor(FLinearColor(0.03f, 0.04f, 0.06f, 1.0f))
+			]
+		];
+
+	const TSharedRef<SVerticalBox> FriendsList = SAssignNew(FriendsListContainer, SVerticalBox);
 	auto AddFriendGroup = [&](bool bOnlineGroup)
 	{
 		FriendsList->AddSlot().AutoHeight()
@@ -858,35 +895,65 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 				bOnlineGroup
 					? NSLOCTEXT("T66.MainMenu", "OnlineFriendsHeader", "ONLINE")
 					: NSLOCTEXT("T66.MainMenu", "OfflineFriendsHeader", "OFFLINE"),
-				bOnlineGroup ? OnlineCount : OfflineCount,
 				bOnlineGroup ? OnlineHeaderText : HeaderText,
 				bOnlineGroup)
 		];
 
-		const bool bExpanded = bOnlineGroup ? bShowOnlineFriends : bShowOfflineFriends;
-		if (!bExpanded)
-		{
-			return;
-		}
-
 		for (int32 FriendIndex = 0; FriendIndex < Friends.Num(); ++FriendIndex)
 		{
 			const FMenuFriendEntry& Friend = Friends[FriendIndex];
-			if (Friend.bOnline != bOnlineGroup)
-			{
-				continue;
-			}
 
 			FriendsList->AddSlot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 			[
-				MakeFriendRow(Friend, FriendIndex)
+				SNew(SBox)
+				.Visibility_Lambda([this, Friend, bOnlineGroup]()
+				{
+					const bool bSearchActive = !FriendSearchQuery.TrimStartAndEnd().IsEmpty();
+					const bool bExpanded = Friend.bOnline ? bShowOnlineFriends : bShowOfflineFriends;
+					const bool bMatches = DoesFriendMatchSearchQuery(FriendSearchQuery, Friend.Name);
+					return (Friend.bOnline == bOnlineGroup && bMatches && (bSearchActive || bExpanded))
+						? EVisibility::Visible
+						: EVisibility::Collapsed;
+				})
+				[
+					MakeFriendRow(Friend, FriendIndex)
+				]
 			];
 		}
 	};
 
 	AddFriendGroup(true);
-	FriendsList->AddSlot().AutoHeight().Padding(0.f, 20.f, 0.f, 0.f)[SNew(SSpacer).Size(FVector2D(1.f, 1.f))];
+	FriendsList->AddSlot().AutoHeight().Padding(0.f, 20.f, 0.f, 0.f)
+	[
+		SNew(SSpacer)
+		.Size(FVector2D(1.f, 1.f))
+		.Visibility_Lambda([this, CountMatchingFriends]()
+		{
+			const bool bSearchActive = !FriendSearchQuery.TrimStartAndEnd().IsEmpty();
+			if (!bSearchActive)
+			{
+				return EVisibility::Visible;
+			}
+
+			return (CountMatchingFriends(true) > 0 && CountMatchingFriends(false) > 0)
+				? EVisibility::Visible
+				: EVisibility::Collapsed;
+		})
+	];
 	AddFriendGroup(false);
+	FriendsList->AddSlot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+	[
+		SNew(STextBlock)
+		.Text(NoMatchingFriendsText)
+		.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
+		.ColorAndOpacity(MutedText)
+		.Visibility_Lambda([this, CountAllMatchingFriends]()
+		{
+			return (!FriendSearchQuery.TrimStartAndEnd().IsEmpty() && CountAllMatchingFriends() == 0)
+				? EVisibility::Visible
+				: EVisibility::Collapsed;
+		})
+	];
 
 	const bool bCanLeaveParty = SessionSubsystem
 		&& (SessionSubsystem->IsPartySessionActive() || (PartySubsystem && PartySubsystem->HasRemotePartyMembers()));
@@ -943,65 +1010,25 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 		];
 	}
 
-	const FLinearColor LastRunInProgressText(0.86f, 0.73f, 0.42f, 1.0f);
-	const FLinearColor LastRunCompletedText(0.44f, 0.80f, 0.43f, 1.0f);
-	const FLinearColor LastRunFailedText(0.84f, 0.31f, 0.25f, 1.0f);
+	const bool bHasProfileAvatar = ProfileAvatarBrush.IsValid() && ProfileAvatarBrush->GetResourceObject() != nullptr;
+	const FString LocalSteamName = SteamHelper ? SteamHelper->GetLocalDisplayName() : FString();
+	const FString LocalSteamId = SteamHelper ? SteamHelper->GetLocalSteamId() : FString();
+	const FText ProfileNameText = !LocalSteamName.IsEmpty()
+		? FText::FromString(LocalSteamName)
+		: NSLOCTEXT("T66.MainMenu", "ProfileNameFallback", "Local Player");
+	const FText ProfileConnectionText = (SteamHelper && SteamHelper->IsSteamReady())
+		? NSLOCTEXT("T66.MainMenu", "ProfileConnected", "Steam Connected")
+		: NSLOCTEXT("T66.MainMenu", "ProfileOffline", "Steam Unavailable");
+	const FLinearColor ProfileConnectionColor = (SteamHelper && SteamHelper->IsSteamReady())
+		? FLinearColor(0.44f, 0.80f, 0.43f, 1.0f)
+		: MutedText;
+	const FText ProfileMetaText = !LocalSteamId.IsEmpty()
+		? FText::Format(NSLOCTEXT("T66.MainMenu", "ProfileMeta", "Steam ID {0}"), FText::FromString(LocalSteamId))
+		: NSLOCTEXT("T66.MainMenu", "ProfileMetaFallback", "Account, records, and rewards");
+	const FText ProfileActionText = NSLOCTEXT("T66.MainMenu", "ProfileAction", "Open account, history, and rewards");
+	const FText ProfileFallbackGlyph = NSLOCTEXT("T66.MainMenu", "ProfileFallbackGlyph", "YOU");
 
-	auto GetLastRunStatusText = [](ELastRunStatus Status) -> FText
-	{
-		switch (Status)
-		{
-		case ELastRunStatus::InProgress:
-			return NSLOCTEXT("T66.MainMenu", "LastRunStatusInProgress", "In Progress");
-		case ELastRunStatus::Completed:
-			return NSLOCTEXT("T66.MainMenu", "LastRunStatusCompleted", "Completed");
-		case ELastRunStatus::NotCompleted:
-			return NSLOCTEXT("T66.MainMenu", "LastRunStatusNotCompleted", "Not Completed");
-		case ELastRunStatus::None:
-		default:
-			return NSLOCTEXT("T66.MainMenu", "LastRunStatusNone", "No Run Data");
-		}
-	};
-
-	auto GetLastRunStatusColor = [&](ELastRunStatus Status) -> FLinearColor
-	{
-		switch (Status)
-		{
-		case ELastRunStatus::InProgress:
-			return LastRunInProgressText;
-		case ELastRunStatus::Completed:
-			return LastRunCompletedText;
-		case ELastRunStatus::NotCompleted:
-			return LastRunFailedText;
-		case ELastRunStatus::None:
-		default:
-			return MutedText;
-		}
-	};
-
-	const bool bHasLastRunData = IsLastRunSet(LastRun);
-	const bool bCanResumeLastRun = LastRun.Status == ELastRunStatus::InProgress && LastRun.SaveSlotIndex != INDEX_NONE;
-	const bool bCanViewLastRunSummary = (LastRun.Status == ELastRunStatus::Completed || LastRun.Status == ELastRunStatus::NotCompleted)
-		&& !LastRun.RunSummarySlotName.IsEmpty();
-	const bool bCanActivateLastRun = bCanResumeLastRun || bCanViewLastRunSummary;
-
-	const FText LastRunHeroText = bHasLastRunData
-		? ResolveHeroName(LastRun.HeroID)
-		: NSLOCTEXT("T66.MainMenu", "LastRunEmptyTitle", "No runs recorded yet");
-	const FText LastRunStatusText = bHasLastRunData
-		? GetLastRunStatusText(LastRun.Status)
-		: NSLOCTEXT("T66.MainMenu", "LastRunEmptyBody", "Start, save, or finish a run to populate this panel.");
-	const FText LastRunStageText = bHasLastRunData
-		? FText::Format(NSLOCTEXT("T66.MainMenu", "LastRunStage", "Stage {0}"), FText::AsNumber(LastRun.StageReached))
-		: FText::GetEmpty();
-	const FText LastRunMetaText = bHasLastRunData
-		? FText::Format(
-			NSLOCTEXT("T66.MainMenu", "LastRunMeta", "{0}  |  {1}"),
-			Loc ? Loc->GetText_Difficulty(LastRun.Difficulty) : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"),
-			GetPartySizeText(LastRun.PartySize))
-		: FText::GetEmpty();
-
-	const TSharedRef<SWidget> LastRunRowContent =
+	const TSharedRef<SWidget> ProfileCardContent =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 		[
@@ -1010,8 +1037,23 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			.HeightOverride(60.f)
 			[
 				FT66Style::MakeSlotFrame(
-					SNew(SImage)
-					.Image(LastRunHeroBrush.Get()),
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SImage)
+						.Image(ProfileAvatarBrush.Get())
+						.ColorAndOpacity(bHasProfileAvatar ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.f))
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(ProfileFallbackGlyph)
+						.Font(FT66Style::MakeFont(TEXT("Bold"), FMath::Max(8, FriendsPanelBodyFontSize - 1)))
+						.ColorAndOpacity(MutedText)
+						.Visibility(bHasProfileAvatar ? EVisibility::Collapsed : EVisibility::Visible)
+					],
 					LeaderSlotAccent,
 					FMargin(1.f))
 			]
@@ -1022,126 +1064,46 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
-				.Text(LastRunHeroText)
-				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
+				.Text(ProfileNameText)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
 				.ColorAndOpacity(BrightText)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
-				.Text(LastRunStatusText)
-				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
-				.ColorAndOpacity(GetLastRunStatusColor(LastRun.Status))
+				.Text(ProfileConnectionText)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
+				.ColorAndOpacity(ProfileConnectionColor)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
-				.Text(LastRunStageText)
-				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
+				.Text(ProfileMetaText)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
 				.ColorAndOpacity(MutedText)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 1.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
-				.Text(LastRunMetaText)
-				.Font(FT66Style::MakeFont(TEXT("Regular"), LeftPanelBodyFontSize))
+				.Text(ProfileActionText)
+				.Font(FT66Style::MakeFont(TEXT("Regular"), FriendsPanelBodyFontSize))
 				.ColorAndOpacity(MutedText)
-				.Visibility(bHasLastRunData ? EVisibility::Visible : EVisibility::Collapsed)
 			]
 		];
 
-	const TSharedRef<SWidget> LastRunRow =
-		bCanActivateLastRun
-		? StaticCastSharedRef<SWidget>(
-			SNew(SButton)
-			.ButtonStyle(&NoBorderButtonStyle)
-			.ContentPadding(FMargin(0.f))
-			.ToolTipText(
-				bCanResumeLastRun
-					? NSLOCTEXT("T66.MainMenu", "ResumeLastRunTooltip", "Resume this saved run")
-					: NSLOCTEXT("T66.MainMenu", "OpenLastRunTooltip", "Open this run summary"))
-			.OnClicked(FOnClicked::CreateLambda([this, LB, SaveSubsystem, PartySubsystem, SessionSubsystem, SlotIndex = LastRun.SaveSlotIndex, RunSummarySlotName = LastRun.RunSummarySlotName, Status = LastRun.Status]()
-			{
-				if (Status == ELastRunStatus::InProgress)
-				{
-					UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-					if (!GI || !SaveSubsystem || SlotIndex == INDEX_NONE)
-					{
-						return FReply::Handled();
-					}
-
-					UT66RunSaveGame* Loaded = SaveSubsystem->LoadFromSlot(SlotIndex);
-					if (!Loaded)
-					{
-						return FReply::Handled();
-					}
-
-					const bool bIsPartyResumeFlow = PartySubsystem && SessionSubsystem
-						&& SessionSubsystem->IsPartySessionActive()
-						&& PartySubsystem->HasRemotePartyMembers();
-					if (bIsPartyResumeFlow)
-					{
-						if (!SessionSubsystem->IsHostingPartySession())
-						{
-							return FReply::Handled();
-						}
-
-						if (SessionSubsystem->StartLoadedGameplayTravel(Loaded, SlotIndex))
-						{
-							if (UIManager)
-							{
-								UIManager->HideAllUI();
-							}
-							return FReply::Handled();
-						}
-					}
-
-					GI->SelectedHeroID = Loaded->HeroID;
-					GI->SelectedHeroBodyType = Loaded->HeroBodyType;
-					GI->SelectedCompanionID = Loaded->CompanionID;
-					GI->SelectedDifficulty = Loaded->Difficulty;
-					GI->SelectedPartySize = Loaded->PartySize;
-					GI->RunSeed = Loaded->RunSeed;
-					GI->PendingLoadedTransform = Loaded->PlayerTransform;
-					GI->bApplyLoadedTransform = true;
-					GI->bLoadAsPreview = false;
-					GI->PendingLoadedRunSnapshot = Loaded->RunSnapshot;
-					GI->bApplyLoadedRunSnapshot = Loaded->RunSnapshot.bValid;
-					GI->CurrentSaveSlotIndex = SlotIndex;
-					GI->bRunIneligibleForLeaderboard = Loaded->bRunIneligibleForLeaderboard;
-					GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
-					GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
-					GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;
-					GI->CurrentRunPartyMemberDisplayNames = Loaded->PartyMemberDisplayNames;
-
-					if (UIManager)
-					{
-						UIManager->HideAllUI();
-					}
-
-					if (Loaded->RunSnapshot.bValid)
-					{
-						UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
-					}
-					else
-					{
-						GI->TransitionToGameplayLevel();
-					}
-
-					return FReply::Handled();
-				}
-
-				if (LB && LB->RequestOpenRunSummarySlot(RunSummarySlotName, ET66ScreenType::None))
-				{
-					ShowModal(ET66ScreenType::RunSummary);
-				}
-
-				return FReply::Handled();
-			}))
-			[
-				LastRunRowContent
-			])
-		: LastRunRowContent;
+	const TSharedRef<SWidget> ProfileCard =
+		SNew(SButton)
+		.ButtonStyle(&NoBorderButtonStyle)
+		.ContentPadding(FMargin(0.f))
+		.ToolTipText(NSLOCTEXT("T66.MainMenu", "OpenProfileTooltip", "Open your account page"))
+		.OnClicked(FOnClicked::CreateLambda([this]()
+		{
+			OnAccountStatusClicked();
+			return FReply::Handled();
+		}))
+		[
+			ProfileCardContent
+		];
 
 	const TSharedRef<SWidget> LeftSocialShell =
 		SNew(SBorder)
@@ -1160,15 +1122,15 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
-						MakeSectionTitle(NSLOCTEXT("T66.MainMenu", "LastRunSection", "LAST RUN"))
+						ProfileCard
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-					[
-						LastRunRow
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 					[
 						MakeSubtleDivider()
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
+					[
+						FriendSearchBox
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
 					[
@@ -1409,6 +1371,7 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 		{
 			SessionStateChangedHandle = SessionSubsystem->OnSessionStateChanged().AddUObject(this, &UT66MainMenuScreen::HandleSessionStateChanged);
 			SessionSubsystem->HandlePartyHubScreenActivated();
+			SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MainMenu);
 		}
 	}
 
@@ -1417,6 +1380,8 @@ void UT66MainMenuScreen::OnScreenActivated_Implementation()
 	{
 		Loc->OnLanguageChanged.AddUniqueDynamic(this, &UT66MainMenuScreen::OnLanguageChanged);
 	}
+
+	SyncToSharedPartyScreen();
 }
 
 void UT66MainMenuScreen::OnScreenDeactivated_Implementation()
@@ -1471,12 +1436,50 @@ void UT66MainMenuScreen::HandlePartyStateChanged()
 		}
 	}
 
+	SyncToSharedPartyScreen();
 	ForceRebuildSlate();
 }
 
 void UT66MainMenuScreen::HandleSessionStateChanged()
 {
+	SyncToSharedPartyScreen();
 	ForceRebuildSlate();
+}
+
+void UT66MainMenuScreen::HandleFriendSearchTextChanged(const FText& NewText)
+{
+	FriendSearchQuery = NewText.ToString();
+	if (FriendsListContainer.IsValid())
+	{
+		FriendsListContainer->Invalidate(EInvalidateWidget::Layout);
+	}
+}
+
+void UT66MainMenuScreen::SyncToSharedPartyScreen()
+{
+	if (!UIManager)
+	{
+		return;
+	}
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (!GI)
+	{
+		return;
+	}
+
+	UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>();
+	if (!SessionSubsystem || !SessionSubsystem->IsPartySessionActive() || SessionSubsystem->IsLocalPlayerPartyHost())
+	{
+		return;
+	}
+
+	const ET66ScreenType DesiredScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+	if ((DesiredScreen == ET66ScreenType::HeroSelection || DesiredScreen == ET66ScreenType::MainMenu)
+		&& UIManager->GetCurrentScreenType() != DesiredScreen)
+	{
+		UIManager->ShowScreen(DesiredScreen);
+	}
 }
 
 void UT66MainMenuScreen::RequestBackgroundTexture()
@@ -1510,6 +1513,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 
 	SetupMainMenuLayerBrush(
 		SkyBackgroundBrush,
+		SkyBackgroundTexture,
 		TexPool,
 		this,
 		TEXT("/Game/UI/MainMenu/sky_bg.sky_bg"),
@@ -1519,6 +1523,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 
 	SetupMainMenuLayerBrush(
 		FireMoonBrush,
+		FireMoonTexture,
 		TexPool,
 		this,
 		TEXT("/Game/UI/MainMenu/fire_moon.fire_moon"),
@@ -1528,6 +1533,7 @@ void UT66MainMenuScreen::RequestBackgroundTexture()
 
 	SetupMainMenuLayerBrush(
 		PyramidChadBrush,
+		PyramidChadTexture,
 		TexPool,
 		this,
 		TEXT("/Game/UI/MainMenu/pyramid_chad.pyramid_chad"),
@@ -1542,16 +1548,31 @@ void UT66MainMenuScreen::RequestUtilityButtonIcons()
 	{
 		if (!IconBrush.IsValid())
 		{
-			const FString IconPath = FPaths::ProjectDir() / RelativePath;
-			if (FPaths::FileExists(IconPath))
+			for (const FString& IconPath : T66LegacyUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
 			{
-				IconBrush = MakeShared<FSlateImageBrush>(IconPath, FVector2D(24.f, 24.f), FLinearColor::White);
+				if (!FPaths::FileExists(IconPath))
+				{
+					continue;
+				}
+
+				if (UTexture2D* IconTexture = T66LegacyUITextureAccess::ImportFileTexture(
+					IconPath,
+					TextureFilter::TF_Trilinear,
+					false,
+					TEXT("MainMenuGeneratedIcon")))
+				{
+					IconBrush = MakeShared<FSlateBrush>();
+					EnsureRuntimeImageBrush(IconBrush, FVector2D(24.f, 24.f));
+					IconBrush->SetResourceObject(IconTexture);
+					IconBrush->TintColor = FSlateColor(FLinearColor::White);
+					break;
+				}
 			}
 		}
 	};
 
-	LoadGeneratedIcon(TEXT("SourceAssets/UI/MainMenu/Generated/mainmenu-settings-icon-slate.png"), SettingsIconBrush);
-	LoadGeneratedIcon(TEXT("SourceAssets/UI/MainMenu/Generated/mainmenu-language-icon-slate.png"), LanguageIconBrush);
+	LoadGeneratedIcon(TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu-settings-icon-slate.png"), SettingsIconBrush);
+	LoadGeneratedIcon(TEXT("RuntimeDependencies/T66/UI/MainMenu/mainmenu-language-icon-slate.png"), LanguageIconBrush);
 }
 
 // Slate click handlers (return FReply)
@@ -1630,6 +1651,19 @@ void UT66MainMenuScreen::OnNewGameClicked()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (SessionSubsystem->IsPartySessionActive() && !SessionSubsystem->IsLocalPlayerPartyHost())
+			{
+				return;
+			}
+
+			if (SessionSubsystem->IsPartySessionActive())
+			{
+				SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::HeroSelection, true);
+			}
+		}
+
 		GI->bIsNewGameFlow = true;
 		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
 		{
@@ -1643,6 +1677,14 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (SessionSubsystem->IsPartySessionActive() && !SessionSubsystem->IsLocalPlayerPartyHost())
+			{
+				return;
+			}
+		}
+
 		GI->bIsNewGameFlow = false;
 		if (UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>())
 		{

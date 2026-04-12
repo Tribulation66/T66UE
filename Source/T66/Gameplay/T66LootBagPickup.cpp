@@ -1,16 +1,58 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66LootBagPickup.h"
+#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66GameMode.h"
+#include "Gameplay/T66IdolAltar.h"
+#include "Gameplay/T66WorldInteractableBase.h"
+#include "Gameplay/T66HouseNPCBase.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "UObject/SoftObjectPath.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "CollisionQueryParams.h"
 
 #include "Gameplay/T66PlayerController.h"
+
+namespace
+{
+	static FVector T66BuildSeparationVector2D(const FVector& CurrentLocation, const FVector& OtherLocation, const float TargetDistance)
+	{
+		FVector Away = CurrentLocation - OtherLocation;
+		Away.Z = 0.f;
+		const float Dist = Away.Size();
+		if (Dist >= TargetDistance)
+		{
+			return FVector::ZeroVector;
+		}
+
+		if (Dist > KINDA_SMALL_NUMBER)
+		{
+			return (Away / Dist) * (TargetDistance - Dist);
+		}
+
+		const FVector FallbackDir = FVector(1.f, 0.f, 0.f);
+		return FallbackDir * TargetDistance;
+	}
+
+	static FVector T66BuildTriggerSeparation2D(const FVector& CurrentLocation, const UPrimitiveComponent* TriggerComponent, const float ClearanceRadius)
+	{
+		if (!TriggerComponent)
+		{
+			return FVector::ZeroVector;
+		}
+
+		const FBoxSphereBounds Bounds = TriggerComponent->Bounds;
+		const float TriggerRadius2D = FMath::Max(Bounds.BoxExtent.X, Bounds.BoxExtent.Y);
+		return T66BuildSeparationVector2D(CurrentLocation, Bounds.Origin, TriggerRadius2D + ClearanceRadius);
+	}
+}
 
 AT66LootBagPickup::AT66LootBagPickup()
 {
@@ -71,6 +113,7 @@ void AT66LootBagPickup::BeginPlay()
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AT66LootBagPickup::OnSphereBeginOverlap);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &AT66LootBagPickup::OnSphereEndOverlap);
 	UpdateVisualsFromRarity();
+	ResolveSpawnClearance();
 }
 
 void AT66LootBagPickup::SetItemID(FName InItemID)
@@ -94,6 +137,142 @@ void AT66LootBagPickup::SetExplicitLine1RolledValue(int32 InRolledValue)
 void AT66LootBagPickup::ConsumeAndDestroy()
 {
 	Destroy();
+}
+
+void AT66LootBagPickup::ResolveSpawnClearance()
+{
+	UWorld* World = GetWorld();
+	if (!World || !SphereComponent)
+	{
+		return;
+	}
+
+	const float BagInteractionRadius = SphereComponent->GetScaledSphereRadius();
+	const float InteractableClearancePadding = 40.f;
+	const float SafeZoneClearancePadding = 60.f;
+	const float BagToBagPadding = 50.f;
+	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	const bool bTowerLayout = GameMode && GameMode->IsUsingTowerMainMapLayout();
+
+	auto IsSameTowerFloor = [&](const AActor* OtherActor) -> bool
+	{
+		if (!bTowerLayout || !OtherActor)
+		{
+			return true;
+		}
+
+		const int32 BagFloorNumber = GameMode->GetTowerFloorIndexForLocation(GetActorLocation());
+		const int32 OtherFloorNumber = GameMode->GetTowerFloorIndexForLocation(OtherActor->GetActorLocation());
+		return BagFloorNumber != INDEX_NONE && BagFloorNumber == OtherFloorNumber;
+	};
+
+	for (int32 Iteration = 0; Iteration < 6; ++Iteration)
+	{
+		FVector TotalAdjustment = FVector::ZeroVector;
+		const FVector CurrentLocation = GetActorLocation();
+
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			{
+				const AT66HouseNPCBase* NPC = WeakNPC.Get();
+				if (!NPC)
+				{
+					continue;
+				}
+				if (!IsSameTowerFloor(NPC))
+				{
+					continue;
+				}
+
+				TotalAdjustment += T66BuildSeparationVector2D(
+					CurrentLocation,
+					NPC->GetActorLocation(),
+					NPC->GetSafeZoneRadius() + BagInteractionRadius + SafeZoneClearancePadding);
+			}
+
+			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+			{
+				const AT66CircusInteractable* Circus = WeakCircus.Get();
+				if (!Circus || Circus == GetOwner())
+				{
+					continue;
+				}
+				if (!IsSameTowerFloor(Circus))
+				{
+					continue;
+				}
+
+				TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Circus->TriggerBox, BagInteractionRadius + InteractableClearancePadding);
+				TotalAdjustment += T66BuildSeparationVector2D(
+					CurrentLocation,
+					Circus->GetActorLocation(),
+					Circus->GetSafeZoneRadius() + BagInteractionRadius + SafeZoneClearancePadding);
+			}
+		}
+
+		for (TActorIterator<AT66IdolAltar> It(World); It; ++It)
+		{
+			const AT66IdolAltar* Altar = *It;
+			if (!Altar || Altar == GetOwner())
+			{
+				continue;
+			}
+			if (!IsSameTowerFloor(Altar))
+			{
+				continue;
+			}
+
+			TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Altar->InteractTrigger, BagInteractionRadius + InteractableClearancePadding);
+		}
+
+		for (TActorIterator<AT66WorldInteractableBase> It(World); It; ++It)
+		{
+			const AT66WorldInteractableBase* Interactable = *It;
+			if (!Interactable || Interactable == GetOwner())
+			{
+				continue;
+			}
+			if (!IsSameTowerFloor(Interactable))
+			{
+				continue;
+			}
+
+			TotalAdjustment += T66BuildTriggerSeparation2D(CurrentLocation, Interactable->TriggerBox, BagInteractionRadius + InteractableClearancePadding);
+		}
+
+		for (TActorIterator<AT66LootBagPickup> It(World); It; ++It)
+		{
+			const AT66LootBagPickup* OtherBag = *It;
+			if (!OtherBag || OtherBag == this || !OtherBag->SphereComponent)
+			{
+				continue;
+			}
+			if (!IsSameTowerFloor(OtherBag))
+			{
+				continue;
+			}
+
+			TotalAdjustment += T66BuildSeparationVector2D(
+				CurrentLocation,
+				OtherBag->GetActorLocation(),
+				BagInteractionRadius + OtherBag->SphereComponent->GetScaledSphereRadius() + BagToBagPadding);
+		}
+
+		TotalAdjustment.Z = 0.f;
+		if (TotalAdjustment.IsNearlyZero())
+		{
+			break;
+		}
+
+		const float MaxAdjustment = 240.f;
+		if (TotalAdjustment.SizeSquared2D() > (MaxAdjustment * MaxAdjustment))
+		{
+			TotalAdjustment = TotalAdjustment.GetSafeNormal2D() * MaxAdjustment;
+		}
+
+		SetActorLocation(CurrentLocation + TotalAdjustment, false, nullptr, ETeleportType::TeleportPhysics);
+	}
 }
 
 void AT66LootBagPickup::UpdateVisualsFromRarity()

@@ -4,6 +4,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66WebImageCache.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -31,6 +32,8 @@ namespace
 	// Shared column widths so header and row columns align (Rank | Name | Score/Time).
 	constexpr float RankColumnWidth = 60.0f;   // content + padding to name
 	constexpr float ScoreColumnWidth = 98.0f; // content + padding, aligned with score digits (used for both Score and Time)
+	constexpr float FavoriteButtonWidth = 18.0f;
+	constexpr float FavoriteToRankGap = 4.0f;
 	constexpr float RowPortraitSize = 30.0f;
 	constexpr int32 LeaderboardBodyFontSize = 12;
 	constexpr int32 LeaderboardTitleFontSize = 12;
@@ -199,6 +202,28 @@ namespace
 	private:
 		TSharedPtr<SScrollBox> ScrollBox;
 	};
+
+	FString GetLeaderboardEntryDisplayName(const FLeaderboardEntry& Entry)
+	{
+		if (!Entry.PlayerName.TrimStartAndEnd().IsEmpty())
+		{
+			return Entry.PlayerName.TrimStartAndEnd();
+		}
+
+		TArray<FString> DisplayNames = Entry.PlayerNames;
+		for (FString& Name : DisplayNames)
+		{
+			Name = Name.TrimStartAndEnd();
+		}
+		DisplayNames.RemoveAll([](const FString& Name) { return Name.IsEmpty(); });
+
+		if (DisplayNames.Num() > 0)
+		{
+			return FString::Join(DisplayNames, TEXT(" / "));
+		}
+
+		return NSLOCTEXT("T66.Leaderboard", "FavoriteFallbackName", "Saved Run").ToString();
+	}
 }
 
 ST66LeaderboardPanel::~ST66LeaderboardPanel()
@@ -275,6 +300,8 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	// Initialize dropdown options
 	PartySizeOptions.Add(MakeShared<FString>(TEXT("Solo")));
 	PartySizeOptions.Add(MakeShared<FString>(TEXT("Duo")));
+	PartySizeOptions.Add(MakeShared<FString>(TEXT("Trio")));
+	PartySizeOptions.Add(MakeShared<FString>(TEXT("Quad")));
 	SelectedPartySizeOption = PartySizeOptions[0];
 
 	DifficultyOptions.Add(MakeShared<FString>(TEXT("Easy")));
@@ -304,8 +331,6 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	const float DropdownHeight = 34.0f;
 	const float PartyDropdownMinWidth = 90.0f;
 	const float DifficultyDropdownMinWidth = 104.0f;
-	const float TypeDropdownMinWidth = 88.0f;
-	const float StageDropdownMinWidth = 72.0f;
 
 	// --- Texture pool: async-load icon textures with GC-safe ownership ---
 	UT66UITexturePoolSubsystem* TexPool = nullptr;
@@ -364,6 +389,7 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 	const FSlateFontInfo LeaderboardBodyFont = MakeRadianceFont(LeaderboardBodyFontSize);
 	const FSlateFontInfo LeaderboardDropdownFont = MakeRadianceFont(12);
 	const FSlateFontInfo LeaderboardTimeToggleFont = MakeReaverBoldFont(LeaderboardTitleFontSize, 88);
+	const FSlateFontInfo LeaderboardTypeGlyphFont = MakeReaverBoldFont(14);
 
 	auto MakeIconButton = [this, SquareIconSize, LeaderboardTitleFont](ET66LeaderboardFilter Filter, FReply (ST66LeaderboardPanel::*ClickHandler)(), const FString& FallbackLetter, TSharedPtr<FSlateBrush> IconBrush) -> TSharedRef<SWidget>
 	{
@@ -469,6 +495,56 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 				+ SOverlay::Slot()
 				[
 					MakeVariant(FLinearColor(0.26f, 0.29f, 0.34f, 0.96f), UnselectedVisibility)
+				]
+			];
+	};
+
+	auto MakeTypeButton = [this, &NoBorderButtonStyle, LeaderboardDropdownFont, LeaderboardTypeGlyphFont](ET66LeaderboardType Type) -> TSharedRef<SWidget>
+	{
+		return SNew(SButton)
+			.ButtonStyle(&NoBorderButtonStyle)
+			.ContentPadding(FMargin(0.f))
+			.OnClicked(FOnClicked::CreateLambda([this, Type]()
+			{
+				SetLeaderboardType(Type);
+				return FReply::Handled();
+			}))
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this, Type]() -> FSlateColor
+				{
+					return (CurrentType == Type) ? FSlateColor(LeaderboardSelectedBorder) : FSlateColor(LeaderboardFilterBorder);
+				}))
+				.Padding(1.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(LeaderboardShellFill)
+					.Padding(FMargin(10.f, 6.f, 12.f, 5.f))
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text_Lambda([this, Type]()
+							{
+								return FText::FromString(CurrentType == Type ? TEXT("●") : TEXT("○"));
+							})
+							.Font(LeaderboardTypeGlyphFont)
+							.ColorAndOpacity(TAttribute<FSlateColor>::CreateLambda([this, Type]() -> FSlateColor
+							{
+								return (CurrentType == Type) ? FSlateColor(LeaderboardSelectedBorder) : FSlateColor(FT66Style::Tokens::TextMuted);
+							}))
+						]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(GetTypeText(Type))
+							.Font(LeaderboardDropdownFont)
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+						]
+					]
 				]
 			];
 	};
@@ -639,72 +715,20 @@ void ST66LeaderboardPanel::Construct(const FArguments& InArgs)
 								DifficultyDropdownMinWidth)
 						]
 					]
-					// Type dropdown row
+					// Type selector row
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					.HAlign(HAlign_Fill)
 					.Padding(0.0f, 0.0f, 0.0f, 18.0f)
 					[
 						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().FillWidth(1.0f)
+						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
 						[
-							MakeLeaderboardDropdown(
-								SNew(STextBlock)
-									.Text_Lambda([this]() { return GetTypeText(CurrentType); })
-									.Font(LeaderboardDropdownFont)
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-									.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
-								[this]()
-								{
-									TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
-									for (const TSharedPtr<FString>& Opt : TypeOptions)
-									{
-										if (!Opt.IsValid()) continue;
-										TSharedPtr<FString> Captured = Opt;
-										Box->AddSlot().AutoHeight()
-											[
-												FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
-												{
-													OnTypeChanged(Captured, ESelectInfo::Direct);
-													FSlateApplication::Get().DismissAllMenus();
-													return FReply::Handled();
-												}), ET66ButtonType::Neutral).SetMinWidth(0.f).SetFontWeight(TEXT("Regular")))
-											];
-									}
-									return Box;
-								},
-								TypeDropdownMinWidth)
+							MakeTypeButton(ET66LeaderboardType::Score)
 						]
-						// Stage dropdown (hidden — wiring kept for future use)
-						+ SHorizontalBox::Slot().AutoWidth().Padding(4.0f, 0.0f)
+						+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(3.0f, 0.0f, 0.0f, 0.0f)
 						[
-							MakeLeaderboardDropdown(
-									SNew(STextBlock)
-										.Text_Lambda([this]() { return SelectedStageOption.IsValid() ? FText::FromString(*SelectedStageOption) : FText::AsNumber(1); })
-										.Font(LeaderboardDropdownFont)
-										.ColorAndOpacity(FT66Style::Tokens::Text)
-										.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
-									[this]()
-									{
-										TSharedRef<SVerticalBox> Box = SNew(SVerticalBox);
-										for (const TSharedPtr<FString>& Opt : StageOptions)
-										{
-											if (!Opt.IsValid()) continue;
-											TSharedPtr<FString> Captured = Opt;
-											Box->AddSlot().AutoHeight()
-												[
-													FT66Style::MakeButton(FT66ButtonParams(FText::FromString(*Opt), FOnClicked::CreateLambda([this, Captured]()
-													{
-														OnStageChanged(Captured, ESelectInfo::Direct);
-														FSlateApplication::Get().DismissAllMenus();
-														return FReply::Handled();
-													}), ET66ButtonType::Neutral).SetMinWidth(0.f).SetFontWeight(TEXT("Regular")))
-												];
-										}
-										return Box;
-									},
-									StageDropdownMinWidth,
-									EVisibility::Collapsed)
+							MakeTypeButton(ET66LeaderboardType::SpeedRun)
 						]
 					]
 					// Column headers
@@ -824,6 +848,7 @@ void ST66LeaderboardPanel::RebuildEntryList()
 		const float MemberPortraitSize = FMath::RoundToFloat(NameFontSize + 6.0f);
 		const float PartyStripMinHeight = FMath::Max(MemberPortraitSize, NameFontSize) - 1.0f;
 		const float RowVerticalPadding = FMath::Max(2.0f, FMath::RoundToFloat(NameFontSize * 0.18f));
+		const float RankLabelWidth = FMath::Max(24.0f, RankColumnWidth - FavoriteButtonWidth - FavoriteToRankGap);
 		TSharedRef<SHorizontalBox> NameColumn = SNew(SHorizontalBox);
 		for (int32 NameIndex = 0; NameIndex < DisplayNames.Num(); ++NameIndex)
 		{
@@ -897,8 +922,94 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			PartyStripScrollBox->SetConsumeMouseWheel(EConsumeMouseWheel::Always);
 		}
 
-		// Build the row content: Rank | Avatar | Name | Score/Time
-		const TSharedRef<SWidget> RowContents =
+		const bool bCanFavorite = IsEntryFavoritable(Entry);
+		const bool bIsFavorited = IsEntryFavorited(Entry);
+		const bool bCanOpenSummary = Entry.bIsLocalPlayer || (Entry.bHasRunSummary && !Entry.EntryId.IsEmpty());
+		auto SetHovered = [bIsRowHovered](bool bHovered)
+		{
+			*bIsRowHovered = bHovered;
+		};
+
+		const TSharedRef<SWidget> SummaryContents =
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(FavoriteToRankGap, 0.0f, 0.0f, 0.0f)
+			[
+				SNew(SBox).WidthOverride(RankLabelWidth)
+				[
+					SNew(STextBlock)
+					.Text(FText::Format(NSLOCTEXT("T66.Leaderboard", "RankFormat", "#{0}"), FText::AsNumber(Entry.Rank)))
+					.Font(FT66Style::Tokens::FontRegular(LeaderboardBodyFontSize))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			.VAlign(VAlign_Center)
+			[
+				PartyStripScroller
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SBox).WidthOverride(ScoreColumnWidth)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(CurrentType == ET66LeaderboardType::Score ? ScoreStr : TimeStr))
+					.Font(FT66Style::Tokens::FontRegular(LeaderboardBodyFontSize))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Right)
+				]
+			];
+
+		const TSharedRef<SWidget> SummaryButton =
+			SNew(SButton)
+			.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+			.ContentPadding(FMargin(0.f))
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.IsEnabled(bCanOpenSummary)
+			.OnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
+			.OnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); }))
+			.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }))
+			[
+				SNew(ST66LeaderboardRowWheelProxy)
+				.ScrollBox(PartyStripScrollBox)
+				[
+					SummaryContents
+				]
+			];
+
+		const TSharedRef<SWidget> FavoriteButton =
+			SNew(SBox)
+			.WidthOverride(FavoriteButtonWidth)
+			.HeightOverride(FavoriteButtonWidth)
+			[
+				SNew(SButton)
+				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
+				.ContentPadding(FMargin(0.f))
+				.IsEnabled(bCanFavorite)
+				.Visibility(bCanFavorite ? EVisibility::Visible : EVisibility::Hidden)
+				.ToolTipText(bIsFavorited
+					? NSLOCTEXT("T66.Leaderboard", "FavoriteRemoveTooltip", "Remove favorite run")
+					: NSLOCTEXT("T66.Leaderboard", "FavoriteAddTooltip", "Favorite this run"))
+				.OnHovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(true); }))
+				.OnUnhovered(FSimpleDelegate::CreateLambda([SetHovered]() { SetHovered(false); }))
+				.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleFavoriteClicked(Entry); }))
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(bIsFavorited ? TEXT("★") : TEXT("☆")))
+					.Font(FT66Style::Tokens::FontRegular(LeaderboardBodyFontSize + 2))
+					.ColorAndOpacity(bIsFavorited ? FSlateColor(FT66Style::Tokens::Accent) : FSlateColor(FT66Style::Tokens::TextMuted))
+					.Justification(ETextJustify::Center)
+				]
+			];
+
+		const TSharedRef<SWidget> RowWidget =
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
 			.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([bIsRowHovered, BaseRowColor, HoverRowColor]() -> FSlateColor
@@ -908,60 +1019,16 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			.Padding(FMargin(7.0f, RowVerticalPadding))
 			[
 				SNew(SHorizontalBox)
-				// Column 1: Rank (fixed width)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
-					SNew(SBox).WidthOverride(RankColumnWidth)
-					[
-						SNew(STextBlock)
-						.Text(FText::Format(NSLOCTEXT("T66.Leaderboard", "RankFormat", "#{0}"), FText::AsNumber(Entry.Rank)))
-						.Font(FT66Style::Tokens::FontRegular(LeaderboardBodyFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
+					FavoriteButton
 				]
-				// Column 2: Party strip (portrait + name, repeated horizontally)
 				+ SHorizontalBox::Slot()
 				.FillWidth(1.0f)
-				.VAlign(VAlign_Center)
 				[
-					PartyStripScroller
-				]
-				// Column 3: Score or Time (fixed width, right-aligned)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.HAlign(HAlign_Right)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SBox).WidthOverride(ScoreColumnWidth)
-					[
-						SNew(STextBlock)
-						.Text(FText::FromString(CurrentType == ET66LeaderboardType::Score ? ScoreStr : TimeStr))
-						.Font(FT66Style::Tokens::FontRegular(LeaderboardBodyFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-						.Justification(ETextJustify::Right)
-					]
-				]
-			];
-
-		const bool bCanOpenSummary = Entry.bIsLocalPlayer || (Entry.bHasRunSummary && !Entry.EntryId.IsEmpty());
-
-		const TSharedRef<SWidget> RowWidget =
-			SNew(SButton)
-			.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
-			.ContentPadding(FMargin(0.f))
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.IsEnabled(bCanOpenSummary)
-			.OnHovered(FSimpleDelegate::CreateLambda([bIsRowHovered]() { *bIsRowHovered = true; }))
-			.OnUnhovered(FSimpleDelegate::CreateLambda([bIsRowHovered]() { *bIsRowHovered = false; }))
-			.OnClicked(FOnClicked::CreateLambda([this, Entry]() { return HandleEntryClicked(Entry); }))
-			[
-				SNew(ST66LeaderboardRowWheelProxy)
-				.ScrollBox(PartyStripScrollBox)
-				[
-					RowContents
+					SummaryButton
 				]
 			];
 
@@ -972,6 +1039,59 @@ void ST66LeaderboardPanel::RebuildEntryList()
 			RowWidget
 		];
 	}
+}
+
+UT66PlayerSettingsSubsystem* ST66LeaderboardPanel::GetPlayerSettings() const
+{
+	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
+	return GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+}
+
+bool ST66LeaderboardPanel::IsEntryFavoritable(const FLeaderboardEntry& Entry) const
+{
+	return !Entry.EntryId.IsEmpty();
+}
+
+bool ST66LeaderboardPanel::IsEntryFavorited(const FLeaderboardEntry& Entry) const
+{
+	if (!IsEntryFavoritable(Entry))
+	{
+		return false;
+	}
+
+	const UT66PlayerSettingsSubsystem* PlayerSettings = GetPlayerSettings();
+	return PlayerSettings && PlayerSettings->IsFavoriteLeaderboardRun(Entry.EntryId);
+}
+
+FT66FavoriteLeaderboardRun ST66LeaderboardPanel::MakeFavoriteRunFromEntry(const FLeaderboardEntry& Entry) const
+{
+	FT66FavoriteLeaderboardRun Favorite;
+	Favorite.EntryId = Entry.EntryId;
+	Favorite.LeaderboardType = CurrentType;
+	Favorite.Filter = CurrentFilter;
+	Favorite.TimeScope = GMirrorWeeklyToAllTime ? ET66LeaderboardTime::AllTime : CurrentTimeFilter;
+	Favorite.Difficulty = CurrentDifficulty;
+	Favorite.PartySize = CurrentPartySize;
+	Favorite.Rank = Entry.Rank;
+	Favorite.DisplayName = GetLeaderboardEntryDisplayName(Entry);
+	Favorite.Score = Entry.Score;
+	Favorite.TimeSeconds = Entry.TimeSeconds;
+	Favorite.bHasRunSummary = Entry.bHasRunSummary;
+	return Favorite;
+}
+
+FReply ST66LeaderboardPanel::HandleFavoriteClicked(FLeaderboardEntry Entry)
+{
+	UT66PlayerSettingsSubsystem* PlayerSettings = GetPlayerSettings();
+	if (!PlayerSettings || !IsEntryFavoritable(Entry))
+	{
+		return FReply::Handled();
+	}
+
+	const bool bShouldFavorite = !PlayerSettings->IsFavoriteLeaderboardRun(Entry.EntryId);
+	PlayerSettings->SetFavoriteLeaderboardRun(MakeFavoriteRunFromEntry(Entry), bShouldFavorite);
+	RebuildEntryList();
+	return FReply::Handled();
 }
 
 void ST66LeaderboardPanel::OnBackendLeaderboardReady(const FString& Key)
@@ -1046,11 +1166,6 @@ void ST66LeaderboardPanel::SetTimeFilter(ET66LeaderboardTime NewTime)
 
 void ST66LeaderboardPanel::SetPartySize(ET66PartySize NewPartySize)
 {
-	if (NewPartySize == ET66PartySize::Trio || NewPartySize == ET66PartySize::Quad)
-	{
-		NewPartySize = ET66PartySize::Duo;
-	}
-
 	CurrentPartySize = NewPartySize;
 	RefreshLeaderboard();
 }
@@ -1081,16 +1196,11 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 		}
 		return (CurrentTimeFilter == ET66LeaderboardTime::AllTime) ? TEXT("alltime") : TEXT("weekly");
 	};
-	if (CurrentPartySize == ET66PartySize::Trio || CurrentPartySize == ET66PartySize::Quad)
-	{
-		CurrentPartySize = ET66PartySize::Duo;
-	}
-
 	auto PartyStr = [this]() -> FString {
 		switch (CurrentPartySize) {
 		case ET66PartySize::Duo: return TEXT("duo");
-		case ET66PartySize::Trio: return TEXT("duo");
-		case ET66PartySize::Quad: return TEXT("duo");
+		case ET66PartySize::Trio: return TEXT("trio");
+		case ET66PartySize::Quad: return TEXT("quad");
 		default: return TEXT("solo");
 		}
 	};
@@ -1117,7 +1227,7 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 	// Try to get backend data
 	UGameInstance* GI = LeaderboardSubsystem ? LeaderboardSubsystem->GetGameInstance() : nullptr;
 	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
-	if (Backend && Backend->IsBackendConfigured() && Backend->HasCachedLeaderboard(CacheKey))
+	if (Backend && Backend->HasCachedLeaderboard(CacheKey))
 	{
 		const TArray<FLeaderboardEntry> CachedEntries = Backend->GetCachedLeaderboard(CacheKey);
 
@@ -1131,7 +1241,7 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 			LeaderboardEntries.Reset();
 		}
 	}
-	else if (Backend && Backend->IsBackendConfigured())
+	else if (Backend)
 	{
 		LeaderboardEntries.Reset();
 	}
@@ -1349,24 +1459,23 @@ FReply ST66LeaderboardPanel::HandleEntryClicked(const FLeaderboardEntry& Entry)
 		UGameInstance* GI = LeaderboardSubsystem->GetGameInstance();
 		UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
 
+		if (Backend && Backend->HasCachedRunSummary(Entry.EntryId))
+		{
+			UT66LeaderboardRunSummarySaveGame* Snap = Backend->GetCachedRunSummary(Entry.EntryId);
+			if (Snap)
+			{
+				if (UIManager->GetCurrentModalType() == ET66ScreenType::Leaderboard)
+				{
+					LeaderboardSubsystem->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::Leaderboard);
+				}
+				LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
+				UIManager->ShowModal(ET66ScreenType::RunSummary);
+				return FReply::Handled();
+			}
+		}
+
 		if (Backend && Backend->IsBackendConfigured())
 		{
-			// Check if already cached
-			if (Backend->HasCachedRunSummary(Entry.EntryId))
-			{
-				UT66LeaderboardRunSummarySaveGame* Snap = Backend->GetCachedRunSummary(Entry.EntryId);
-				if (Snap)
-				{
-					if (UIManager->GetCurrentModalType() == ET66ScreenType::Leaderboard)
-					{
-						LeaderboardSubsystem->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::Leaderboard);
-					}
-					LeaderboardSubsystem->SetPendingFakeRunSummarySnapshot(Snap);
-					UIManager->ShowModal(ET66ScreenType::RunSummary);
-					return FReply::Handled();
-				}
-			}
-
 			// Not cached yet — fire async fetch. When it arrives we'll open via the delegate.
 			PendingRunSummaryEntryId = Entry.EntryId;
 			if (!bBoundToRunSummaryDelegate)

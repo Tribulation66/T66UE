@@ -231,7 +231,7 @@ bool AT66WorldInteractableBase::TryApplyImportedMesh()
 
 	VisualMesh->EmptyOverrideMaterials();
 	VisualMesh->SetStaticMesh(M);
-	VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+	VisualMesh->SetRelativeScale3D(GetImportedVisualScale());
 	VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
 	FT66VisualUtil::GroundMeshToActorOrigin(VisualMesh, M);
 	if (HasActorBegunPlay())

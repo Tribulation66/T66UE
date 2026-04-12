@@ -4,6 +4,7 @@
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RetroFXSubsystem.h"
+#include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66LoadingScreenWidget.h"
@@ -17,15 +18,23 @@
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
-#include "Misc/FileHelper.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Layout/SBorder.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66GameInstance, Log, All);
+
 namespace
 {
 	static const FName GamblersTokenItemID(TEXT("Item_GamblersToken"));
+	static const FName AccuracyItemID(TEXT("Item_Accuracy"));
+	static const FName CloseRangeItemID(TEXT("Item_CloseRangeDmg"));
+	static const FName LongRangeItemID(TEXT("Item_LongRangeDmg"));
+	static const FName SpinWheelItemID(TEXT("Item_SpinWheel"));
+	static const FName MovementSpeedItemID(TEXT("Item_MovementSpeed"));
+	static const TCHAR* KnightPreviewMovieName = TEXT("KnightClip.mp4");
 
 	static FName NormalizeLegacyItemID(FName ItemID)
 	{
@@ -38,11 +47,95 @@ namespace
 
 	static bool IsRandomItemPoolEligible(FName ItemID)
 	{
-		return !ItemID.IsNone() && ItemID != GamblersTokenItemID;
+		return !ItemID.IsNone()
+			&& ItemID != GamblersTokenItemID
+			&& ItemID != CloseRangeItemID
+			&& ItemID != LongRangeItemID
+			&& ItemID != SpinWheelItemID
+			&& ItemID != MovementSpeedItemID;
+	}
+
+	static FString ResolveKnightPreviewMoviePath()
+	{
+		const TArray<FString> CandidatePaths = {
+			FPaths::ProjectContentDir() / TEXT("Movies") / KnightPreviewMovieName,
+			FPaths::ProjectDir() / TEXT("SourceAssets/Movies") / KnightPreviewMovieName
+		};
+
+		for (const FString& CandidatePath : CandidatePaths)
+		{
+			if (FPaths::FileExists(CandidatePath))
+			{
+				return FPaths::ConvertRelativePathToFull(CandidatePath);
+			}
+		}
+
+		return FString();
+	}
+
+	static FSoftObjectPath NormalizeHeroSelectionAssetPath(const FSoftObjectPath& Path)
+	{
+		if (Path.IsNull())
+		{
+			return Path;
+		}
+
+		const FString PathString = Path.ToString();
+		const FString PackageName = Path.GetLongPackageName();
+		if (!PackageName.IsEmpty() && FPackageName::DoesPackageExist(PackageName))
+		{
+			return Path;
+		}
+
+		int32 DotIndex = INDEX_NONE;
+		if (!PathString.FindLastChar(TEXT('.'), DotIndex))
+		{
+			return Path;
+		}
+
+		const FString Base = PathString.Left(DotIndex);
+		const FString ObjectName = PathString.Mid(DotIndex + 1);
+		const bool bBaseHasAnimSuffix = Base.EndsWith(TEXT("_Anim"));
+		const bool bObjectHasAnimSuffix = ObjectName.EndsWith(TEXT("_Anim"));
+		const FString BaseStrip = bBaseHasAnimSuffix ? Base.LeftChop(5) : Base;
+		const FString ObjectStrip = bObjectHasAnimSuffix ? ObjectName.LeftChop(5) : ObjectName;
+		const TArray<FString> CandidatePaths = {
+			BaseStrip + TEXT(".") + ObjectStrip,
+			BaseStrip + TEXT(".") + ObjectName,
+			Base + TEXT(".") + ObjectStrip
+		};
+
+		for (const FString& CandidatePath : CandidatePaths)
+		{
+			const FSoftObjectPath CandidateSoftPath(CandidatePath);
+			const FString CandidatePackageName = CandidateSoftPath.GetLongPackageName();
+			if (!CandidatePackageName.IsEmpty() && FPackageName::DoesPackageExist(CandidatePackageName))
+			{
+				return CandidateSoftPath;
+			}
+		}
+
+		return Path;
 	}
 
 	static bool BuildSyntheticSpecialItemData(FName ItemID, FItemData& OutItemData)
 	{
+		if (ItemID == AccuracyItemID)
+		{
+			OutItemData = FItemData{};
+			OutItemData.ItemID = AccuracyItemID;
+			OutItemData.Icon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_black.Item_Accuracy_black")));
+			OutItemData.BlackIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_black.Item_Accuracy_black")));
+			OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_red.Item_Accuracy_red")));
+			OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_yellow.Item_Accuracy_yellow")));
+			OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_white.Item_Accuracy_white")));
+			OutItemData.PrimaryStatType = ET66HeroStatType::Accuracy;
+			OutItemData.SecondaryStatType = ET66SecondaryStatType::Accuracy;
+			OutItemData.BaseBuyGold = 55;
+			OutItemData.BaseSellGold = 27;
+			return true;
+		}
+
 		if (ItemID != GamblersTokenItemID)
 		{
 			return false;
@@ -62,41 +155,56 @@ namespace
 		return true;
 	}
 
-	static void TryApplyDataTableCsvOverride(
-		UDataTable* DataTable,
-		const TCHAR* RelativeCsvPath,
-		bool& bOverrideAttempted,
-		const TCHAR* TableLabel)
+	static const bool bAlwaysRouteTribulationToTutorial = false;
+	static const TCHAR* FrontendLevelName = TEXT("/Game/Maps/FrontendLevel");
+	static const TCHAR* LabLevelName = TEXT("/Game/Maps/LabLevel");
+	static const TCHAR* GameplayLevelName = TEXT("/Game/Maps/GameplayLevel");
+	static const TCHAR* ColiseumLevelName = TEXT("/Game/Maps/Gameplay_Coliseum");
+	static const TCHAR* TutorialLevelName = TEXT("/Game/Maps/Gameplay_Tutorial");
+	static const TCHAR* T66GameplayConfigSection = TEXT("T66.Gameplay");
+	static const TCHAR* T66MainMapLayoutVariantConfigKey = TEXT("TribulationMainMapLayout");
+	static const TCHAR* T66LightingPresetConfigKey = TEXT("TribulationLightingPreset");
+	static int32 GT66MainMapLayoutVariantOverride = -1;
+	static FAutoConsoleVariableRef CVarT66MainMapLayoutVariant(
+		TEXT("t66.TribulationMainMapLayout"),
+		GT66MainMapLayoutVariantOverride,
+		TEXT("-1 = use config, 0 = hilly, 1 = flat, 2 = tower."),
+		ECVF_Default);
+	static int32 GT66LightingPresetOverride = -1;
+	static FAutoConsoleVariableRef CVarT66LightingPreset(
+		TEXT("t66.TribulationLightingPreset"),
+		GT66LightingPresetOverride,
+		TEXT("-1 = use config, 0 = eclipse, 1 = dungeon."),
+		ECVF_Default);
+
+	static ET66MainMapLayoutVariant ParseMainMapLayoutVariant(const FString& RawValue)
 	{
-		if (bOverrideAttempted || !DataTable)
+		FString Normalized = RawValue;
+		Normalized.TrimStartAndEndInline();
+		if (Normalized.Equals(TEXT("Tower"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("2")))
 		{
-			return;
+			return ET66MainMapLayoutVariant::Tower;
 		}
 
-		bOverrideAttempted = true;
-
-		const FString CsvPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / RelativeCsvPath);
-		FString CsvContent;
-		if (!FFileHelper::LoadFileToString(CsvContent, *CsvPath) || CsvContent.IsEmpty())
+		if (Normalized.Equals(TEXT("Flat"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("1")))
 		{
-			return;
+			return ET66MainMapLayoutVariant::Flat;
 		}
 
-		DataTable->EmptyTable();
-		const TArray<FString> Problems = DataTable->CreateTableFromCSVString(CsvContent);
-		for (const FString& Problem : Problems)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[%s CSV Override] %s"), TableLabel, *Problem);
-		}
+		return ET66MainMapLayoutVariant::Hilly;
 	}
 
-	// --- Demo map switch: set to true to load the demo map (e.g. Map_Summer) when entering the tribulation ---
-	static const bool bUseDemoMapForTribulation = false;  // GameplayLevel uses LowPolyNature procedural env
-	static const bool bAlwaysRouteTribulationToTutorial = false;
-	static const TCHAR* GameplayLevelName = TEXT("GameplayLevel");
-	static const TCHAR* ColiseumLevelName = TEXT("Gameplay_Coliseum");
-	static const TCHAR* TutorialLevelName = TEXT("Gameplay_Tutorial");
-	static const TCHAR* DemoMapLevelNameForTribulation = TEXT("Map_Summer");
+	static ET66LightingPreset ParseLightingPreset(const FString& RawValue)
+	{
+		FString Normalized = RawValue;
+		Normalized.TrimStartAndEndInline();
+		if (Normalized.Equals(TEXT("Dungeon"), ESearchCase::IgnoreCase) || Normalized.Equals(TEXT("1")))
+		{
+			return ET66LightingPreset::Dungeon;
+		}
+
+		return ET66LightingPreset::Eclipse;
+	}
 
 	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
 	// Do this once on boot (no per-frame work).
@@ -151,6 +259,7 @@ void UT66GameInstance::Init()
 	Super::Init();
 
 	ApplyCrispRenderingDefaults();
+	ApplyConfiguredMainMapLayoutVariant();
 
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
@@ -275,14 +384,33 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 	}
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(384);
+	Paths.Reserve(192);
 
 	auto AddPath = [&](const FSoftObjectPath& Path)
 	{
 		if (!Path.IsNull())
 		{
-			Paths.AddUnique(Path);
+			Paths.AddUnique(NormalizeHeroSelectionAssetPath(Path));
 		}
+	};
+
+	auto AddVisualAssets = [&](const FName VisualID)
+	{
+		if (VisualID.IsNone())
+		{
+			return;
+		}
+
+		const FT66CharacterVisualRow* VisualRow = CachedCharacterVisualsDataTable->FindRow<FT66CharacterVisualRow>(VisualID, TEXT("PrimeHeroSelectionAssetsAsync"));
+		if (!VisualRow)
+		{
+			return;
+		}
+
+		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
+		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
 	};
 
 	TArray<FHeroData*> HeroRows;
@@ -322,27 +450,26 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(CompanionRow->SelectionPortrait.ToSoftObjectPath());
 	}
 
-	for (const FName& RowName : CachedCharacterVisualsDataTable->GetRowNames())
+	FName InitialHeroID = SelectedHeroID;
+	if (InitialHeroID.IsNone() && HeroRows.Num() > 0 && HeroRows[0])
 	{
-		const FString RowNameString = RowName.ToString();
-		if (!RowNameString.StartsWith(TEXT("Hero_")) && !RowNameString.StartsWith(TEXT("Companion_")))
-		{
-			continue;
-		}
-
-		const FT66CharacterVisualRow* VisualRow = CachedCharacterVisualsDataTable->FindRow<FT66CharacterVisualRow>(RowName, TEXT("PrimeHeroSelectionAssetsAsync"));
-		if (!VisualRow)
-		{
-			continue;
-		}
-
-		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
-		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+		InitialHeroID = HeroRows[0]->HeroID;
+	}
+	if (!InitialHeroID.IsNone())
+	{
+		const FName InitialHeroSkinID = SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : SelectedHeroSkinID;
+		AddVisualAssets(UT66CharacterVisualSubsystem::GetHeroVisualID(InitialHeroID, SelectedHeroBodyType, InitialHeroSkinID));
 	}
 
-	AddPath(FSoftObjectPath(TEXT("/Game/Characters/Heroes/Knight/KnightClip.KnightClip")));
+	if (!SelectedCompanionID.IsNone())
+	{
+		AddVisualAssets(UT66CharacterVisualSubsystem::GetCompanionVisualID(SelectedCompanionID, FName(TEXT("Default"))));
+	}
+
+	if (!ResolveKnightPreviewMoviePath().IsEmpty())
+	{
+		AddPath(FSoftObjectPath(TEXT("/Game/Characters/Heroes/Knight/KnightClip.KnightClip")));
+	}
 
 	bHeroSelectionAssetsLoadRequested = true;
 	if (Paths.Num() <= 0)
@@ -350,6 +477,8 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		bHeroSelectionAssetsLoaded = true;
 		return;
 	}
+
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] PrimeHeroSelectionAssetsAsync queued %d startup hero-selection assets."), Paths.Num());
 
 	HeroSelectionAssetsLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
 		Paths,
@@ -365,6 +494,82 @@ void UT66GameInstance::HandleHeroSelectionAssetsLoaded()
 {
 	bHeroSelectionAssetsLoaded = true;
 	HeroSelectionAssetsLoadHandle.Reset();
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Startup hero-selection asset warmup completed."));
+}
+
+void UT66GameInstance::PrimeHeroSelectionPreviewVisualsAsync()
+{
+	if (bHeroSelectionPreviewVisualsLoadRequested)
+	{
+		return;
+	}
+
+	if (!CachedCharacterVisualsDataTable && !CharacterVisualsDataTable.IsNull())
+	{
+		CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
+	}
+
+	if (!CachedCharacterVisualsDataTable)
+	{
+		PrimeCoreDataTablesAsync();
+		return;
+	}
+
+	TArray<FSoftObjectPath> Paths;
+	Paths.Reserve(256);
+
+	auto AddPath = [&](const FSoftObjectPath& Path)
+	{
+		if (!Path.IsNull())
+		{
+			Paths.AddUnique(NormalizeHeroSelectionAssetPath(Path));
+		}
+	};
+
+	for (const FName& RowName : CachedCharacterVisualsDataTable->GetRowNames())
+	{
+		const FString RowNameString = RowName.ToString();
+		if (!RowNameString.StartsWith(TEXT("Hero_")) && !RowNameString.StartsWith(TEXT("Companion_")))
+		{
+			continue;
+		}
+
+		const FT66CharacterVisualRow* VisualRow = CachedCharacterVisualsDataTable->FindRow<FT66CharacterVisualRow>(RowName, TEXT("PrimeHeroSelectionPreviewVisualsAsync"));
+		if (!VisualRow)
+		{
+			continue;
+		}
+
+		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
+		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+	}
+
+	bHeroSelectionPreviewVisualsLoadRequested = true;
+	if (Paths.Num() <= 0)
+	{
+		bHeroSelectionPreviewVisualsLoaded = true;
+		return;
+	}
+
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] PrimeHeroSelectionPreviewVisualsAsync queued %d deferred preview visual assets."), Paths.Num());
+
+	HeroSelectionPreviewVisualsLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		Paths,
+		FStreamableDelegate::CreateUObject(this, &UT66GameInstance::HandleHeroSelectionPreviewVisualsLoaded));
+
+	if (!HeroSelectionPreviewVisualsLoadHandle.IsValid())
+	{
+		HandleHeroSelectionPreviewVisualsLoaded();
+	}
+}
+
+void UT66GameInstance::HandleHeroSelectionPreviewVisualsLoaded()
+{
+	bHeroSelectionPreviewVisualsLoaded = true;
+	HeroSelectionPreviewVisualsLoadHandle.Reset();
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Deferred hero-selection preview visual warmup completed."));
 }
 
 UDataTable* UT66GameInstance::GetHeroDataTable()
@@ -407,7 +612,6 @@ UDataTable* UT66GameInstance::GetIdolsDataTable()
 			CachedIdolsDataTable = IdolsDataTable.LoadSynchronous();
 		}
 	}
-	TryApplyDataTableCsvOverride(CachedIdolsDataTable, TEXT("Data/Idols.csv"), bIdolsDataTableCsvOverrideAttempted, TEXT("Idols"));
 	return CachedIdolsDataTable;
 }
 
@@ -478,11 +682,26 @@ void UT66GameInstance::EnsureCachedItemIDs()
 	{
 		for (const FName ItemID : ItemsDT->GetRowNames())
 		{
-			if (IsRandomItemPoolEligible(ItemID))
+			FItemData ItemData;
+			if (!GetItemData(ItemID, ItemData))
+			{
+				continue;
+			}
+
+			if (IsRandomItemPoolEligible(ItemID) && T66IsLiveSecondaryStatType(ItemData.SecondaryStatType))
 			{
 				CachedItemIDs.Add(ItemID);
 			}
 		}
+	}
+
+	FItemData AccuracyItemData;
+	if (GetItemData(AccuracyItemID, AccuracyItemData)
+		&& IsRandomItemPoolEligible(AccuracyItemID)
+		&& T66IsLiveSecondaryStatType(AccuracyItemData.SecondaryStatType)
+		&& !CachedItemIDs.Contains(AccuracyItemID))
+	{
+		CachedItemIDs.Add(AccuracyItemID);
 	}
 
 	// Fallback (keeps game functional even if DT isn't wired yet).
@@ -490,8 +709,8 @@ void UT66GameInstance::EnsureCachedItemIDs()
 	{
 		CachedItemIDs.Add(FName(TEXT("Item_AoeDamage")));
 		CachedItemIDs.Add(FName(TEXT("Item_CritDamage")));
-		CachedItemIDs.Add(FName(TEXT("Item_LifeSteal")));
-		CachedItemIDs.Add(FName(TEXT("Item_MovementSpeed")));
+		CachedItemIDs.Add(AccuracyItemID);
+		CachedItemIDs.Add(FName(TEXT("Item_DamageReduction")));
 	}
 }
 
@@ -515,6 +734,11 @@ void UT66GameInstance::EnsureCachedItemIDsByRarity()
 
 FName UT66GameInstance::GetRandomItemID()
 {
+	if (UT66RngSubsystem* RngSub = GetSubsystem<UT66RngSubsystem>())
+	{
+		return GetRandomItemIDFromStream(RngSub->GetRunStream());
+	}
+
 	EnsureCachedItemIDs();
 	if (CachedItemIDs.Num() <= 0)
 	{
@@ -523,11 +747,40 @@ FName UT66GameInstance::GetRandomItemID()
 	return CachedItemIDs[FMath::RandRange(0, CachedItemIDs.Num() - 1)];
 }
 
+FName UT66GameInstance::GetRandomItemIDFromStream(FRandomStream& Stream)
+{
+	EnsureCachedItemIDs();
+	if (CachedItemIDs.Num() <= 0)
+	{
+		return FName(TEXT("Item_AoeDamage"));
+	}
+
+	if (UT66RngSubsystem* RngSub = GetSubsystem<UT66RngSubsystem>())
+	{
+		if (RngSub->UsesRunStream(Stream))
+		{
+			return CachedItemIDs[RngSub->RunRandRange(0, CachedItemIDs.Num() - 1)];
+		}
+	}
+
+	return CachedItemIDs[Stream.RandRange(0, CachedItemIDs.Num() - 1)];
+}
+
 FName UT66GameInstance::GetRandomItemIDForLootRarity(ET66Rarity LootRarity)
+{
+	if (UT66RngSubsystem* RngSub = GetSubsystem<UT66RngSubsystem>())
+	{
+		return GetRandomItemIDForLootRarityFromStream(LootRarity, RngSub->GetRunStream());
+	}
+
+	return GetRandomItemID();
+}
+
+FName UT66GameInstance::GetRandomItemIDForLootRarityFromStream(ET66Rarity LootRarity, FRandomStream& Stream)
 {
 	// Items are now rarity-agnostic templates. Just return a random template.
 	// The caller is responsible for assigning a rarity based on the loot context.
-	return GetRandomItemID();
+	return GetRandomItemIDFromStream(Stream);
 }
 
 UDataTable* UT66GameInstance::GetBossesDataTable()
@@ -541,7 +794,6 @@ UDataTable* UT66GameInstance::GetBossesDataTable()
 			CachedBossesDataTable = BossesDataTable.LoadSynchronous();
 		}
 	}
-	TryApplyDataTableCsvOverride(CachedBossesDataTable, TEXT("Data/Bosses.csv"), bBossesDataTableCsvOverrideAttempted, TEXT("Bosses"));
 	return CachedBossesDataTable;
 }
 
@@ -556,7 +808,6 @@ UDataTable* UT66GameInstance::GetStagesDataTable()
 			CachedStagesDataTable = StagesDataTable.LoadSynchronous();
 		}
 	}
-	TryApplyDataTableCsvOverride(CachedStagesDataTable, TEXT("Data/Stages.csv"), bStagesDataTableCsvOverrideAttempted, TEXT("Stages"));
 	return CachedStagesDataTable;
 }
 
@@ -610,15 +861,27 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 		if (FItemData* FoundRow = DataTable->FindRow<FItemData>(NormalizedItemID, TEXT("GetItemData")))
 		{
 			OutItemData = *FoundRow;
+			OutItemData.PrimaryStatType = T66ResolveEffectivePrimaryStatType(OutItemData.PrimaryStatType, OutItemData.SecondaryStatType);
 			return true;
 		}
 	}
 
-	return BuildSyntheticSpecialItemData(NormalizedItemID, OutItemData);
+	if (BuildSyntheticSpecialItemData(NormalizedItemID, OutItemData))
+	{
+		OutItemData.PrimaryStatType = T66ResolveEffectivePrimaryStatType(OutItemData.PrimaryStatType, OutItemData.SecondaryStatType);
+		return true;
+	}
+
+	return false;
 }
 
 bool UT66GameInstance::GetIdolData(FName IdolID, FIdolData& OutIdolData)
 {
+	if (IdolID.IsNone())
+	{
+		return false;
+	}
+
 	UDataTable* DataTable = GetIdolsDataTable();
 	if (!DataTable)
 	{
@@ -811,6 +1074,7 @@ void UT66GameInstance::ClearSelections()
 	SelectedDifficulty = ET66Difficulty::Easy;
 	SelectedHeroBodyType = ET66BodyType::TypeA;
 	SelectedCompanionBodyType = ET66BodyType::TypeA;
+	ApplyConfiguredMainMapLayoutVariant();
 }
 
 bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBaseStats, FT66HeroPerLevelStatGains& OutPerLevelGains) const
@@ -828,6 +1092,7 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 	OutBaseStats.Damage = 2;
 	OutBaseStats.AttackSpeed = 2;
 	OutBaseStats.AttackScale = 2;
+	OutBaseStats.Accuracy = 2;
 	OutBaseStats.Armor = 2;
 	OutBaseStats.Evasion = 2;
 	OutBaseStats.Luck = 2;
@@ -837,6 +1102,7 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 	OutPerLevelGains.Damage = Range(1, 2);
 	OutPerLevelGains.AttackSpeed = Range(1, 2);
 	OutPerLevelGains.AttackScale = Range(1, 2);
+	OutPerLevelGains.Accuracy = Range(1, 2);
 	OutPerLevelGains.Armor = Range(1, 2);
 	OutPerLevelGains.Evasion = Range(1, 2);
 	OutPerLevelGains.Luck = Range(1, 2);
@@ -850,6 +1116,7 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 		OutBaseStats.Damage      = FMath::Max(1, HD.BaseDamage);
 		OutBaseStats.AttackSpeed = FMath::Max(1, HD.BaseAttackSpeed);
 		OutBaseStats.AttackScale = FMath::Max(1, HD.BaseAttackScale);
+		OutBaseStats.Accuracy    = FMath::Max(1, HD.BaseAccuracyStat);
 		OutBaseStats.Armor       = FMath::Max(1, HD.BaseArmor);
 		OutBaseStats.Evasion     = FMath::Max(1, HD.BaseEvasion);
 		OutBaseStats.Luck        = FMath::Max(1, HD.BaseLuck);
@@ -858,6 +1125,7 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 		OutPerLevelGains.Damage      = Range(HD.LvlDmgMin, HD.LvlDmgMax);
 		OutPerLevelGains.AttackSpeed = Range(HD.LvlAtkSpdMin, HD.LvlAtkSpdMax);
 		OutPerLevelGains.AttackScale = Range(HD.LvlAtkScaleMin, HD.LvlAtkScaleMax);
+		OutPerLevelGains.Accuracy    = Range(HD.LvlAccuracyMin, HD.LvlAccuracyMax);
 		OutPerLevelGains.Armor       = Range(HD.LvlArmorMin, HD.LvlArmorMax);
 		OutPerLevelGains.Evasion     = Range(HD.LvlEvasionMin, HD.LvlEvasionMax);
 		OutPerLevelGains.Luck        = Range(HD.LvlLuckMin, HD.LvlLuckMax);
@@ -926,8 +1194,31 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
 	};
 
+	auto AddCurrentDifficultyThemeTextures = [this, &AddDifficultyThemeTextures]()
+	{
+		switch (SelectedDifficulty)
+		{
+		case ET66Difficulty::Medium:
+			AddDifficultyThemeTextures(TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard"));
+			break;
+		case ET66Difficulty::Hard:
+			AddDifficultyThemeTextures(TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole"));
+			break;
+		case ET66Difficulty::VeryHard:
+			AddDifficultyThemeTextures(TEXT("PerditionMars"), TEXT("PerditionMars"));
+			break;
+		case ET66Difficulty::Impossible:
+			AddDifficultyThemeTextures(TEXT("FinalHell"), TEXT("FinalHell"));
+			break;
+		case ET66Difficulty::Easy:
+		default:
+			break;
+		}
+	};
+
 	// Engine cube mesh (used ~6 times in GameMode for walls/floors/arenas).
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cube.Cube")));
+	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Cylinder.Cylinder")));
 
 	// Retro sky material is spawned dynamically outside the farm flow.
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Sky/QuakeCanopy2/MI_QuakeSky_Canopy2.MI_QuakeSky_Canopy2")));
@@ -943,10 +1234,11 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkSlope.T_MegabonkSlope")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/Megabonk/T_MegabonkWall.T_MegabonkWall")));
-	AddDifficultyThemeTextures(TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard"));
-	AddDifficultyThemeTextures(TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole"));
-	AddDifficultyThemeTextures(TEXT("PerditionMars"), TEXT("PerditionMars"));
-	AddDifficultyThemeTextures(TEXT("FinalHell"), TEXT("FinalHell"));
+	if (GetConfiguredLightingPreset() == ET66LightingPreset::Dungeon)
+	{
+		AddPath(FSoftObjectPath(TEXT("/Game/UI/M_DungeonVisionPostProcess.M_DungeonVisionPostProcess")));
+	}
+	AddCurrentDifficultyThemeTextures();
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Grass.Grass")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Log.Log")));
@@ -956,7 +1248,15 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tree3.Tree3")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Rocks.Rocks")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Barn.Barn")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Boulder.Boulder")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Fence.Fence")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Fence2.Fence2")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Fence3.Fence3")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Haybell.Haybell")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Scarecrow.Scarecrow")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Silo.Silo")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Stump.Stump")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Troth.Troth")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Windmill.Windmill")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Props/Tractor.Tractor")));
 
@@ -967,22 +1267,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetCompanionVisualID(SelectedCompanionID, FName(TEXT("Default"))));
 
-	if (UT66RunStateSubsystem* RunState = GetSubsystem<UT66RunStateSubsystem>())
-	{
-		FStageData StageData;
-		if (GetStageData(RunState->GetCurrentStage(), StageData))
-		{
-			AddVisualAssets(StageData.EnemyA);
-			AddVisualAssets(StageData.EnemyB);
-			AddVisualAssets(StageData.EnemyC);
-		}
-		AddVisualAssets(FName(TEXT("GoblinThief_Black")));
-		AddVisualAssets(FName(TEXT("GoblinThief_Red")));
-		AddVisualAssets(FName(TEXT("GoblinThief_Yellow")));
-		AddVisualAssets(FName(TEXT("GoblinThief_White")));
-		AddVisualAssets(FName(TEXT("Boss")));
-	}
-
 	if (Paths.Num() <= 0)
 	{
 		if (OnComplete) OnComplete();
@@ -991,6 +1275,8 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 
 	bGameplayAssetsPreloadInFlight = true;
 	GameplayAssetsPreloadCallback = MoveTemp(OnComplete);
+
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] PreloadGameplayAssets queued %d transition assets."), Paths.Num());
 
 	GameplayAssetsPreloadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
 		Paths,
@@ -1007,6 +1293,7 @@ void UT66GameInstance::HandleGameplayAssetsPreloaded()
 {
 	bGameplayAssetsPreloadInFlight = false;
 	GameplayAssetsPreloadHandle.Reset();
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] Gameplay transition asset preload completed. Pre-resolving %d visuals."), GameplayPreloadVisualIDs.Num());
 	if (UT66CharacterVisualSubsystem* Visuals = GetSubsystem<UT66CharacterVisualSubsystem>())
 	{
 		for (const FName VisualID : GameplayPreloadVisualIDs)
@@ -1022,9 +1309,87 @@ void UT66GameInstance::HandleGameplayAssetsPreloaded()
 	}
 }
 
-bool UT66GameInstance::UseDemoMapForTribulation()
+ET66MainMapLayoutVariant UT66GameInstance::GetConfiguredMainMapLayoutVariant()
 {
-	return bUseDemoMapForTribulation;
+	if (GT66MainMapLayoutVariantOverride == 2)
+	{
+		return ET66MainMapLayoutVariant::Tower;
+	}
+
+	if (GT66MainMapLayoutVariantOverride == 1)
+	{
+		return ET66MainMapLayoutVariant::Flat;
+	}
+
+	if (GT66MainMapLayoutVariantOverride == 0)
+	{
+		return ET66MainMapLayoutVariant::Hilly;
+	}
+
+	FString ConfiguredValue;
+	if (GConfig && GConfig->GetString(T66GameplayConfigSection, T66MainMapLayoutVariantConfigKey, ConfiguredValue, GGameIni))
+	{
+		return ParseMainMapLayoutVariant(ConfiguredValue);
+	}
+
+	return ET66MainMapLayoutVariant::Hilly;
+}
+
+ET66MainMapLayoutVariant UT66GameInstance::ResolveMainMapLayoutVariant(const UT66GameInstance* GameInstance)
+{
+	return GameInstance ? GameInstance->CurrentMainMapLayoutVariant : GetConfiguredMainMapLayoutVariant();
+}
+
+void UT66GameInstance::ApplyConfiguredMainMapLayoutVariant()
+{
+	CurrentMainMapLayoutVariant = GetConfiguredMainMapLayoutVariant();
+}
+
+ET66LightingPreset UT66GameInstance::GetConfiguredLightingPreset()
+{
+	if (GT66LightingPresetOverride == 1)
+	{
+		return ET66LightingPreset::Dungeon;
+	}
+
+	if (GT66LightingPresetOverride == 0)
+	{
+		return ET66LightingPreset::Eclipse;
+	}
+
+	FString ConfiguredValue;
+	if (GConfig && GConfig->GetString(T66GameplayConfigSection, T66LightingPresetConfigKey, ConfiguredValue, GGameIni))
+	{
+		return ParseLightingPreset(ConfiguredValue);
+	}
+
+	return ET66LightingPreset::Eclipse;
+}
+
+ET66LightingPreset UT66GameInstance::GetEffectiveLightingPreset(const UWorld* World)
+{
+	if (!World)
+	{
+		return GetConfiguredLightingPreset();
+	}
+
+	const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+	if (MapName.Contains(TEXT("Frontend")))
+	{
+		return ET66LightingPreset::Eclipse;
+	}
+
+	return GetConfiguredLightingPreset();
+}
+
+FName UT66GameInstance::GetFrontendLevelName()
+{
+	return FName(FrontendLevelName);
+}
+
+FName UT66GameInstance::GetLabLevelName()
+{
+	return FName(LabLevelName);
 }
 
 FName UT66GameInstance::GetGameplayLevelName()
@@ -1034,11 +1399,6 @@ FName UT66GameInstance::GetGameplayLevelName()
 
 FName UT66GameInstance::GetTribulationEntryLevelName()
 {
-	if (UseDemoMapForTribulation())
-	{
-		return GetDemoMapLevelNameForTribulation();
-	}
-
 	if (bAlwaysRouteTribulationToTutorial)
 	{
 		return GetTutorialLevelName();
@@ -1055,11 +1415,6 @@ FName UT66GameInstance::GetColiseumLevelName()
 FName UT66GameInstance::GetTutorialLevelName()
 {
 	return FName(TutorialLevelName);
-}
-
-FName UT66GameInstance::GetDemoMapLevelNameForTribulation()
-{
-	return FName(DemoMapLevelNameForTribulation);
 }
 
 void UT66GameInstance::TransitionToGameplayLevel()
@@ -1105,9 +1460,11 @@ void UT66GameInstance::TransitionToGameplayLevel()
 	FTimerHandle PreloadTimerHandle;
 	World->GetTimerManager().SetTimer(PreloadTimerHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
+		UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] TransitionToGameplayLevel started pre-open asset preload."));
 		PreloadGameplayAssets([this]()
 		{
 			const FName LevelToOpen = GetTribulationEntryLevelName();
+			UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] TransitionToGameplayLevel opening %s."), *LevelToOpen.ToString());
 			UGameplayStatics::OpenLevel(this, LevelToOpen);
 		});
 	}), 0.05f, false); // Small delay so the loading widget paints first.

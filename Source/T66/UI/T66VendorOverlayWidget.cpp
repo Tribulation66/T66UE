@@ -177,13 +177,13 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const float OverlayPadding = bCompactCircusLayout ? 12.f : FT66Style::Tokens::NPCOverlayPadding;
 	const float AngerFaceSize = bCompactCircusLayout ? 85.f : FT66Style::Tokens::NPCAngerCircleSize;
 	const float StatsPanelWidth = bCompactCircusLayout ? 150.f : FT66Style::Tokens::NPCVendorStatsPanelWidth;
-	const float RightPanelWidth = bCompactCircusLayout ? 190.f : FT66Style::Tokens::NPCRightPanelWidth;
-	const float MainRowHeight = bCompactCircusLayout ? 300.f : FT66Style::Tokens::NPCMainRowHeight;
-	const float ShopCardSize = bCompactCircusLayout ? 124.f : FT66Style::Tokens::NPCShopCardWidth;
-	const float ShopCardHeight = bCompactCircusLayout ? 250.f : FT66Style::Tokens::NPCShopCardHeight;
-	const float ShopCardGap = bCompactCircusLayout ? FT66Style::Tokens::Space2 : FT66Style::Tokens::Space4;
-	const float ShopCardPadding = bCompactCircusLayout ? FT66Style::Tokens::Space2 : FT66Style::Tokens::Space4;
-	const float ShopNameBoxHeight = bCompactCircusLayout ? 30.f : 60.f;
+	const float RightPanelWidth = bCompactCircusLayout ? 200.f : FT66Style::Tokens::NPCRightPanelWidth;
+	const float MainRowHeight = bCompactCircusLayout ? 320.f : FT66Style::Tokens::NPCMainRowHeight;
+	const float ShopCardSize = bCompactCircusLayout ? FT66Style::Tokens::NPCCompactShopCardWidth : FT66Style::Tokens::NPCShopCardWidth;
+	const float ShopCardHeight = bCompactCircusLayout ? FT66Style::Tokens::NPCCompactShopCardHeight : FT66Style::Tokens::NPCShopCardHeight;
+	const float ShopCardGap = bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4;
+	const float ShopCardPadding = bCompactCircusLayout ? 5.f : FT66Style::Tokens::Space4;
+	const float ShopNameBoxHeight = bCompactCircusLayout ? 28.f : 60.f;
 	const float ShopIconSize = ShopCardSize - ShopCardPadding * 2.f;
 	const float InventorySlotSize = bCompactCircusLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
 	const float AngerImageSize = bCompactCircusLayout ? 136.f : 260.f;
@@ -191,11 +191,12 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 	const float BankSpinBoxWidth = bCompactCircusLayout ? 68.f : FT66Style::Tokens::NPCBankSpinBoxWidth;
 	const float BankSpinBoxHeight = bCompactCircusLayout ? 28.f : FT66Style::Tokens::NPCBankSpinBoxHeight;
 	const float CardButtonMinWidth = bCompactCircusLayout ? 0.f : 100.f;
-	const FMargin ShopButtonPadding = bCompactCircusLayout ? FMargin(6.f, 4.f) : FMargin(8.f, 6.f);
-	const FMargin ActionButtonPadding = bCompactCircusLayout ? FMargin(10.f, 6.f) : FMargin(16.f, 10.f);
-	const int32 CardHeadingFontSize = bCompactCircusLayout ? 10 : 16;
-	const int32 CardBodyFontSize = bCompactCircusLayout ? 8 : 12;
-	const int32 CardButtonFontSize = bCompactCircusLayout ? 10 : 14;
+	const FMargin ShopButtonPadding = bCompactCircusLayout ? FMargin(5.f, 3.f) : FMargin(8.f, 6.f);
+	const FMargin ActionButtonPadding = bCompactCircusLayout ? FMargin(8.f, 5.f) : FMargin(16.f, 10.f);
+	const int32 StatsPanelFontAdjustment = bCompactCircusLayout ? -5 : 0;
+	const int32 CardHeadingFontSize = bCompactCircusLayout ? 9 : 16;
+	const int32 CardBodyFontSize = bCompactCircusLayout ? 7 : 12;
+	const int32 CardButtonFontSize = bCompactCircusLayout ? 9 : 14;
 	const int32 InventoryCountFontSize = bCompactCircusLayout ? 8 : 14;
 	const int32 InventoryDashFontSize = bCompactCircusLayout ? 10 : 16;
 	const int32 SectionHeadingFontSize = bCompactCircusLayout ? 10 : 16;
@@ -744,7 +745,7 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 			.WidthOverride(StatsPanelWidth)
 			.HeightOverride(MainRowHeight)
 			[
-				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), StatsPanelWidth, true)
+				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), StatsPanelWidth, true, StatsPanelFontAdjustment)
 			]
 		]
 		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCircusLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
@@ -905,9 +906,10 @@ TSharedRef<SWidget> UT66VendorOverlayWidget::RebuildWidget()
 				.TextStyle(&TextTitle)
 				.Font(FT66Style::Tokens::FontBold(PageTitleFontSize))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Visibility(bCompactCircusLayout ? EVisibility::Collapsed : EVisibility::Visible)
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? 8.f : 12.f, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCircusLayout ? 0.f : 12.f, 0.f, 0.f)
 		[
 			SAssignNew(StatusText, STextBlock)
 			.Text(FText::GetEmpty())

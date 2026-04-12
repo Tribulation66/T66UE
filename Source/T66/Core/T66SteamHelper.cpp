@@ -11,8 +11,44 @@ THIRD_PARTY_INCLUDES_END
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Steam, Log, All);
 
+class FT66SteamJoinRequestBridge
+{
+public:
+	explicit FT66SteamJoinRequestBridge(UT66SteamHelper& InOwner)
+		: Owner(InOwner)
+	{
+		RichPresenceJoinRequestedCallback.Register(this, &FT66SteamJoinRequestBridge::OnRichPresenceJoinRequested);
+		WebApiTicketResponseCallback.Register(this, &FT66SteamJoinRequestBridge::OnWebApiTicketResponse);
+	}
+
+	~FT66SteamJoinRequestBridge()
+	{
+		Unregister();
+	}
+
+	void Unregister()
+	{
+		RichPresenceJoinRequestedCallback.Unregister();
+		WebApiTicketResponseCallback.Unregister();
+	}
+
+private:
+	UT66SteamHelper& Owner;
+
+	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnRichPresenceJoinRequested, GameRichPresenceJoinRequested_t, RichPresenceJoinRequestedCallback);
+	STEAM_CALLBACK_MANUAL(FT66SteamJoinRequestBridge, OnWebApiTicketResponse, GetTicketForWebApiResponse_t, WebApiTicketResponseCallback);
+};
+
 namespace
 {
+
+	static int32 T66ReadConfiguredSteamAppId()
+	{
+		int32 ConfiguredAppId = 0;
+		GConfig->GetInt(TEXT("OnlineSubsystemSteam"), TEXT("SteamAppId"), ConfiguredAppId, GEngineIni);
+		return ConfiguredAppId;
+	}
+
 	static FString T66PresenceFromPersonaState(EPersonaState PersonaState)
 	{
 		switch (PersonaState)
@@ -35,6 +71,22 @@ namespace
 		}
 	}
 
+	static FString T66ResolveJoinSteamId(const char* ConnectStringUtf8, const CSteamID& FallbackFriendId)
+	{
+		const FString ConnectString = ConnectStringUtf8 ? FString(UTF8_TO_TCHAR(ConnectStringUtf8)) : FString();
+		if (ConnectString.StartsWith(TEXT("t66party:"), ESearchCase::IgnoreCase))
+		{
+			return ConnectString.RightChop(9);
+		}
+
+		if (!ConnectString.IsEmpty())
+		{
+			return ConnectString;
+		}
+
+		return FString::Printf(TEXT("%llu"), FallbackFriendId.ConvertToUint64());
+	}
+
 	static int32 T66ResolveAvatarImageHandle(ISteamFriends* Friends, const CSteamID& SteamId)
 	{
 		if (!Friends)
@@ -51,8 +103,62 @@ namespace
 		{
 			ImageHandle = Friends->GetSmallFriendAvatar(SteamId);
 		}
+		if (ImageHandle <= 0)
+		{
+			Friends->RequestUserInformation(SteamId, false);
+			ImageHandle = Friends->GetLargeFriendAvatar(SteamId);
+			if (ImageHandle <= 0)
+			{
+				ImageHandle = Friends->GetMediumFriendAvatar(SteamId);
+			}
+			if (ImageHandle <= 0)
+			{
+				ImageHandle = Friends->GetSmallFriendAvatar(SteamId);
+			}
+		}
 		return ImageHandle;
 	}
+
+	static bool T66ParseSteamIdString(const FString& SteamIdString, CSteamID& OutSteamId)
+	{
+		if (SteamIdString.IsEmpty())
+		{
+			return false;
+		}
+
+		uint64 NumericSteamId = 0;
+		if (!LexTryParseString(NumericSteamId, *SteamIdString) || NumericSteamId == 0)
+		{
+			return false;
+		}
+
+		OutSteamId = CSteamID(NumericSteamId);
+		return OutSteamId.IsValid();
+	}
+}
+
+void FT66SteamJoinRequestBridge::OnRichPresenceJoinRequested(GameRichPresenceJoinRequested_t* Param)
+{
+	if (!Param)
+	{
+		return;
+	}
+
+	Owner.HandleSteamJoinRequested(T66ResolveJoinSteamId(Param->m_rgchConnect, Param->m_steamIDFriend));
+}
+
+void FT66SteamJoinRequestBridge::OnWebApiTicketResponse(GetTicketForWebApiResponse_t* Param)
+{
+	if (!Param)
+	{
+		return;
+	}
+
+	Owner.HandleWebApiTicketReady(
+		static_cast<uint32>(Param->m_hAuthTicket),
+		Param->m_eResult == k_EResultOK,
+		Param->m_rgubTicket,
+		Param->m_cubTicket);
 }
 
 static void T66_SetDevTicket(const TArray<FString>& Args, UWorld* World)
@@ -73,6 +179,34 @@ static FAutoConsoleCommandWithWorldAndArgs T66SetTicketCommand(
 	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_SetDevTicket)
 );
 
+FString UT66SteamHelper::GetActiveSteamAppId() const
+{
+	if (ISteamUtils* SteamUtilsApi = SteamUtils())
+	{
+		return FString::Printf(TEXT("%u"), SteamUtilsApi->GetAppID());
+	}
+
+	const int32 ConfiguredAppId = T66ReadConfiguredSteamAppId();
+	return ConfiguredAppId > 0 ? FString::FromInt(ConfiguredAppId) : FString();
+}
+
+FString UT66SteamHelper::GetCurrentSteamBetaName() const
+{
+	ISteamApps* Apps = SteamApps();
+	if (!Apps)
+	{
+		return FString();
+	}
+
+	char BetaName[256] = {};
+	if (!Apps->GetCurrentBetaName(BetaName, UE_ARRAY_COUNT(BetaName)))
+	{
+		return FString();
+	}
+
+	return FString(UTF8_TO_TCHAR(BetaName));
+}
+
 void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -82,30 +216,24 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 	// Try real Steam first
 	if (SteamAPI_Init())
 	{
-		ISteamUser* SUser = SteamUser();
-		if (SUser)
+		if (!SteamJoinRequestBridge)
 		{
-			const CSteamID LocalId = SUser->GetSteamID();
-			LocalSteamIdStr = FString::Printf(TEXT("%llu"), LocalId.ConvertToUint64());
-
-			ISteamFriends* Friends = SteamFriends();
-			if (Friends)
-			{
-				LocalDisplayName = FString(UTF8_TO_TCHAR(Friends->GetPersonaName()));
-				CacheAvatarForSteamId(LocalSteamIdStr, T66ResolveAvatarImageHandle(Friends, LocalId));
-				LocalAvatarTexture = FriendAvatarTextures.FindRef(LocalSteamIdStr);
-			}
-
-			UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: local SteamID=%s Name=%s"), *LocalSteamIdStr, *LocalDisplayName);
-
-			CollectFriendsList();
-			ObtainTicket();
-			return;
+			SteamJoinRequestBridge = new FT66SteamJoinRequestBridge(*this);
 		}
+		RefreshLocalSteamIdentity();
+		CollectFriendsList();
+		ObtainTicket();
+		return;
 	}
 
 	// Steam not available — in non-shipping builds only, check for dev ticket in
 	// DefaultGame.ini [T66.Online] DevTicket so local backend work can continue.
+	UE_LOG(
+		LogT66Steam,
+		Warning,
+		TEXT("SteamHelper: SteamAPI_Init failed for Steam App ID %d. For local standalone Development runs, launch with a matching steam_appid.txt beside the executable or through the Steam-distributed build for the real app."),
+		T66ReadConfiguredSteamAppId());
+
 #if !UE_BUILD_SHIPPING
 	FString DevTicket;
 	GConfig->GetString(TEXT("T66.Online"), TEXT("DevTicket"), DevTicket, GGameIni);
@@ -163,6 +291,13 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 
 void UT66SteamHelper::Deinitialize()
 {
+	if (SteamJoinRequestBridge)
+	{
+		SteamJoinRequestBridge->Unregister();
+		delete SteamJoinRequestBridge;
+		SteamJoinRequestBridge = nullptr;
+	}
+
 	// Cancel the ticket if we have one
 	if (TicketHandle != 0)
 	{
@@ -195,6 +330,17 @@ void UT66SteamHelper::RequestNewTicket()
 	ObtainTicket();
 }
 
+void UT66SteamHelper::RefreshSteamPresence()
+{
+	if (!bSteamReady && TicketHex.IsEmpty())
+	{
+		return;
+	}
+
+	RefreshLocalSteamIdentity();
+	CollectFriendsList();
+}
+
 UTexture2D* UT66SteamHelper::GetAvatarTextureForSteamId(const FString& SteamId) const
 {
 	if (SteamId.IsEmpty())
@@ -211,6 +357,76 @@ UTexture2D* UT66SteamHelper::GetAvatarTextureForSteamId(const FString& SteamId) 
 	return FoundTexture ? FoundTexture->Get() : nullptr;
 }
 
+bool UT66SteamHelper::IsFriendPlayingActiveApp(const FString& SteamId) const
+{
+	FString FriendAppId;
+	return TryGetFriendCurrentGame(SteamId, &FriendAppId, nullptr) && FriendAppId == GetActiveSteamAppId();
+}
+
+bool UT66SteamHelper::TryGetFriendCurrentGame(const FString& SteamId, FString* OutAppId, FString* OutLobbyId) const
+{
+	if (OutAppId)
+	{
+		OutAppId->Reset();
+	}
+	if (OutLobbyId)
+	{
+		OutLobbyId->Reset();
+	}
+
+	ISteamFriends* Friends = SteamFriends();
+	if (!Friends)
+	{
+		return false;
+	}
+
+	CSteamID FriendSteamId;
+	if (!T66ParseSteamIdString(SteamId, FriendSteamId))
+	{
+		return false;
+	}
+
+	FriendGameInfo_t FriendGameInfo;
+	if (!Friends->GetFriendGamePlayed(FriendSteamId, &FriendGameInfo))
+	{
+		return false;
+	}
+
+	if (OutAppId)
+	{
+		*OutAppId = FString::Printf(TEXT("%u"), FriendGameInfo.m_gameID.AppID());
+	}
+	if (OutLobbyId && FriendGameInfo.m_steamIDLobby.IsValid())
+	{
+		*OutLobbyId = FString::Printf(TEXT("%llu"), FriendGameInfo.m_steamIDLobby.ConvertToUint64());
+	}
+
+	return true;
+}
+
+void UT66SteamHelper::RefreshLocalSteamIdentity()
+{
+	ISteamUser* SUser = SteamUser();
+	if (!SUser)
+	{
+		return;
+	}
+
+	const CSteamID LocalId = SUser->GetSteamID();
+	LocalSteamIdStr = FString::Printf(TEXT("%llu"), LocalId.ConvertToUint64());
+
+	ISteamFriends* Friends = SteamFriends();
+	if (!Friends)
+	{
+		return;
+	}
+
+	LocalDisplayName = FString(UTF8_TO_TCHAR(Friends->GetPersonaName()));
+	CacheAvatarForSteamId(LocalSteamIdStr, T66ResolveAvatarImageHandle(Friends, LocalId));
+	LocalAvatarTexture = FriendAvatarTextures.FindRef(LocalSteamIdStr);
+	UE_LOG(LogT66Steam, Verbose, TEXT("SteamHelper: refreshed local Steam identity SteamID=%s Name=%s"), *LocalSteamIdStr, *LocalDisplayName);
+}
+
 void UT66SteamHelper::ObtainTicket()
 {
 	ISteamUser* User = SteamUser();
@@ -221,40 +437,15 @@ void UT66SteamHelper::ObtainTicket()
 		return;
 	}
 
-	uint8 TicketBuffer[1024];
-	uint32 TicketLen = 0;
-
-	// GetAuthSessionTicket returns a handle; the ticket data is copied into TicketBuffer.
-	TicketHandle = User->GetAuthSessionTicket(TicketBuffer, sizeof(TicketBuffer), &TicketLen, nullptr);
-
-	if (TicketHandle == 0 || TicketLen == 0)
+	TicketHandle = static_cast<uint32>(User->GetAuthTicketForWebApi("t66-backend"));
+	if (TicketHandle == 0)
 	{
-		UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: GetAuthSessionTicket failed."));
+		UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: GetAuthTicketForWebApi failed to start."));
 		OnSteamTicketReady.Broadcast(false, FString());
 		return;
 	}
 
-	// Hex-encode the ticket bytes
-	TicketHex.Reset();
-	TicketHex.Reserve(TicketLen * 2);
-	for (uint32 i = 0; i < TicketLen; ++i)
-	{
-		TicketHex += FString::Printf(TEXT("%02x"), TicketBuffer[i]);
-	}
-
-	bSteamReady = true;
-	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: ticket obtained (%d bytes, %d hex chars)."), TicketLen, TicketHex.Len());
-
-	// Wire into BackendSubsystem
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
-		{
-			Backend->SetSteamTicketHex(TicketHex);
-		}
-	}
-
-	OnSteamTicketReady.Broadcast(true, TicketHex);
+	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: requested Web API ticket handle %u."), TicketHandle);
 }
 
 void UT66SteamHelper::CollectFriendsList()
@@ -280,9 +471,20 @@ void UT66SteamHelper::CollectFriendsList()
 		FriendInfo.DisplayName = FString(UTF8_TO_TCHAR(Friends->GetFriendPersonaName(FriendId)));
 		FriendInfo.PresenceText = T66PresenceFromPersonaState(Friends->GetFriendPersonaState(FriendId));
 		FriendInfo.bOnline = Friends->GetFriendPersonaState(FriendId) != k_EPersonaStateOffline;
+
+		FriendGameInfo_t FriendGameInfo;
+		if (Friends->GetFriendGamePlayed(FriendId, &FriendGameInfo))
+		{
+			FriendInfo.CurrentGameAppId = FString::Printf(TEXT("%u"), FriendGameInfo.m_gameID.AppID());
+			if (FriendGameInfo.m_steamIDLobby.IsValid())
+			{
+				FriendInfo.CurrentLobbyId = FString::Printf(TEXT("%llu"), FriendGameInfo.m_steamIDLobby.ConvertToUint64());
+			}
+			FriendInfo.bPlayingThisGame = FriendInfo.CurrentGameAppId == GetActiveSteamAppId();
+		}
 	}
 
-	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: collected %d friends."), FriendSteamIds.Num());
+	UE_LOG(LogT66Steam, Verbose, TEXT("SteamHelper: collected %d friends."), FriendSteamIds.Num());
 }
 
 void UT66SteamHelper::CacheAvatarForSteamId(const FString& SteamId, int32 ImageHandle)
@@ -300,6 +502,7 @@ void UT66SteamHelper::CacheAvatarForSteamId(const FString& SteamId, int32 ImageH
 	if (UTexture2D* AvatarTexture = CreateTextureFromSteamImage(ImageHandle))
 	{
 		FriendAvatarTextures.Add(SteamId, AvatarTexture);
+		++AvatarRevision;
 	}
 }
 
@@ -358,4 +561,53 @@ UTexture2D* UT66SteamHelper::CreateTextureFromSteamImage(int32 ImageHandle) cons
 	Texture->UpdateResource();
 
 	return Texture;
+}
+
+void UT66SteamHelper::HandleSteamJoinRequested(const FString& FriendSteamId)
+{
+	if (FriendSteamId.IsEmpty())
+	{
+		return;
+	}
+
+	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: received Steam join request from friend %s."), *FriendSteamId);
+	SteamJoinRequested.Broadcast(FriendSteamId);
+}
+
+void UT66SteamHelper::HandleWebApiTicketReady(uint32 InTicketHandle, bool bSuccess, const uint8* TicketBytes, int32 TicketByteCount)
+{
+	if (InTicketHandle != TicketHandle)
+	{
+		UE_LOG(LogT66Steam, Verbose, TEXT("SteamHelper: ignoring stale Web API ticket response for handle %u."), InTicketHandle);
+		return;
+	}
+
+	if (!bSuccess || !TicketBytes || TicketByteCount <= 0)
+	{
+		UE_LOG(LogT66Steam, Warning, TEXT("SteamHelper: Web API ticket request failed for handle %u."), InTicketHandle);
+		TicketHex.Reset();
+		bSteamReady = false;
+		OnSteamTicketReady.Broadcast(false, FString());
+		return;
+	}
+
+	TicketHex.Reset();
+	TicketHex.Reserve(TicketByteCount * 2);
+	for (int32 ByteIndex = 0; ByteIndex < TicketByteCount; ++ByteIndex)
+	{
+		TicketHex += FString::Printf(TEXT("%02x"), TicketBytes[ByteIndex]);
+	}
+
+	bSteamReady = true;
+	UE_LOG(LogT66Steam, Log, TEXT("SteamHelper: Web API ticket obtained (%d bytes, %d hex chars)."), TicketByteCount, TicketHex.Len());
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			Backend->SetSteamTicketHex(TicketHex);
+		}
+	}
+
+	OnSteamTicketReady.Broadcast(true, TicketHex);
 }

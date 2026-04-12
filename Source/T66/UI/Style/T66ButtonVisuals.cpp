@@ -1,12 +1,11 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Style/T66ButtonVisuals.h"
+#include "UI/Style/T66LegacyUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
-#include "ImageUtils.h"
 #include "Materials/MaterialInterface.h"
-#include "Misc/Paths.h"
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -96,23 +95,16 @@ namespace
 			return CachedTexture.Get();
 		}
 
-		if (!FPaths::FileExists(FilePath))
-		{
-			return nullptr;
-		}
-
-		UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(FilePath);
+		UTexture2D* Texture = T66LegacyUITextureAccess::ImportFileTexture(
+			FilePath,
+			TextureFilter::TF_Nearest,
+			false,
+			DebugVisualName);
 		UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BUTTONVISUAL] LoadFallbackTexture(%s): %s -> %s"), DebugVisualName, *FilePath, Texture ? TEXT("OK") : TEXT("MISS"));
 		if (!Texture)
 		{
 			return nullptr;
 		}
-
-		Texture->SRGB = true;
-		Texture->Filter = TextureFilter::TF_Nearest;
-		Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-		Texture->NeverStream = true;
-		Texture->UpdateResource();
 
 		CachedTexture.Reset(Texture);
 		return CachedTexture.Get();
@@ -120,17 +112,17 @@ namespace
 
 	static FString GetMainMenuArcaneFillFilePath(const TCHAR* FileName)
 	{
-		return FPaths::ProjectDir() / TEXT("SourceAssets/UI/MainMenuArcaneFill") / FileName;
+		return T66LegacyUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuArcaneFill")) / FileName;
 	}
 
 	static FString GetMainMenuBlueTrimFilePath(const TCHAR* FileName)
 	{
-		return FPaths::ProjectDir() / TEXT("SourceAssets/UI/MainMenuBlueTrim") / FileName;
+		return T66LegacyUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuBlueTrim")) / FileName;
 	}
 
 	static FString GetMainMenuBlueWoodFillFilePath(const TCHAR* FileName)
 	{
-		return FPaths::ProjectDir() / TEXT("SourceAssets/UI/MainMenuBlueWoodFill") / FileName;
+		return T66LegacyUITextureAccess::MakeProjectRuntimeDependencyPath(TEXT("RuntimeDependencies/T66/UI/MainMenuBlueWoodFill")) / FileName;
 	}
 
 	static void LoadRetroSkyMaterialsOnce()
@@ -273,7 +265,7 @@ namespace
 				UE_LOG(
 					LogT66ButtonVisuals,
 					Warning,
-					TEXT("[BORDER] CreateBorderBrushSet(%s): missing trim textures in Content and SourceAssets, returning null brush set"),
+					TEXT("[BORDER] CreateBorderBrushSet(%s): missing cooked trim textures and staged runtime fallback, returning null brush set"),
 					DebugVisualName);
 				return nullptr;
 			}
@@ -284,7 +276,7 @@ namespace
 			VerticalNormalTexture = LoadedVerticalNormal;
 			VerticalHoveredTexture = LoadedVerticalHovered;
 			VerticalPressedTexture = LoadedVerticalPressed;
-			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BORDER] CreateBorderBrushSet(%s): using runtime-loaded SourceAssets trim textures"), DebugVisualName);
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BORDER] CreateBorderBrushSet(%s): using staged runtime trim textures"), DebugVisualName);
 		}
 
 		TSharedPtr<FT66ButtonBorderBrushSet> Set = MakeShared<FT66ButtonBorderBrushSet>();
@@ -324,7 +316,7 @@ namespace
 				UE_LOG(
 					LogT66ButtonVisuals,
 					Warning,
-					TEXT("[BUTTONFILL] CreateFillBrushSet(%s): missing fill textures in Content and SourceAssets, returning null brush set"),
+					TEXT("[BUTTONFILL] CreateFillBrushSet(%s): missing cooked fill textures and staged runtime fallback, returning null brush set"),
 					DebugVisualName);
 				return nullptr;
 			}
@@ -332,7 +324,7 @@ namespace
 			NormalTexture = LoadedNormal;
 			HoveredTexture = LoadedHovered;
 			PressedTexture = LoadedPressed;
-			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BUTTONFILL] CreateFillBrushSet(%s): using runtime-loaded SourceAssets fill textures"), DebugVisualName);
+			UE_LOG(LogT66ButtonVisuals, Log, TEXT("[BUTTONFILL] CreateFillBrushSet(%s): using staged runtime fill textures"), DebugVisualName);
 		}
 
 		TSharedPtr<FT66ButtonFillBrushSet> Set = MakeShared<FT66ButtonFillBrushSet>();

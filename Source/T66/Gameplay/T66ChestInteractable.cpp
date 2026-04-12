@@ -60,11 +60,15 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	const int32 MaxGold = FMath::Max(MinGold, FMath::Max(GoldRange.Min, GoldRange.Max));
 
 	int32 Gold = MaxGold;
+	int32 DrawIndex = INDEX_NONE;
+	int32 PreDrawSeed = 0;
 	if (UT66RngSubsystem* RngSub = T66GI ? T66GI->GetSubsystem<UT66RngSubsystem>() : nullptr)
 	{
 		RngSub->UpdateLuckStat(RunState->GetLuckStat());
 		FRandomStream& Stream = RngSub->GetRunStream();
 		Gold = FMath::Max(0, RngSub->RollIntRangeBiased(GoldRange, Stream));
+		DrawIndex = RngSub->GetLastRunDrawIndex();
+		PreDrawSeed = RngSub->GetLastRunPreDrawSeed();
 	}
 	else
 	{
@@ -72,7 +76,7 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	}
 
 	RunState->AddGold(Gold);
-	RunState->RecordLuckQuantityRoll(FName(TEXT("ChestGold")), Gold, MinGold, MaxGold);
+	RunState->RecordLuckQuantityRoll(FName(TEXT("ChestGold")), Gold, MinGold, MaxGold, DrawIndex, PreDrawSeed);
 	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC))
 	{
 		T66PC->StartChestRewardHUD(Rarity, Gold);

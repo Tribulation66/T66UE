@@ -4,6 +4,7 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroPreviewStage.h"
 #include "Gameplay/T66CompanionPreviewStage.h"
+#include "Gameplay/T66LightingSubsystem.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -55,7 +56,7 @@ void AT66FrontendGameMode::BeginPlay()
 
 	UWorld* World = GetWorld();
 	// Match gameplay lighting so frontend previews render under the same ambient setup.
-	AT66GameMode::EnsureSharedLightingForWorld(World);
+	UT66LightingSubsystem::EnsureSharedLightingForWorld(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
@@ -69,7 +70,6 @@ void AT66FrontendGameMode::BeginPlay()
 	// Spawn preview stages at visible positions (the main camera will look at them directly).
 	if (World)
 	{
-		UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
@@ -146,28 +146,6 @@ void AT66FrontendGameMode::BeginPlay()
 			}
 		}
 
-		// Pre-warm preview so the first time the UI opens it's already "styled" (no pop-in).
-		if (T66GI)
-		{
-			for (TActorIterator<AT66HeroPreviewStage> It(World); It; ++It)
-			{
-				const FName HeroID = !T66GI->SelectedHeroID.IsNone()
-					? T66GI->SelectedHeroID
-					: (T66GI->GetAllHeroIDs().Num() > 0 ? T66GI->GetAllHeroIDs()[0] : NAME_None);
-				if (!HeroID.IsNone())
-				{
-					FName SkinID = T66GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : T66GI->SelectedHeroSkinID;
-					It->SetPreviewHero(HeroID, T66GI->SelectedHeroBodyType, SkinID);
-				}
-				break;
-			}
-			for (TActorIterator<AT66CompanionPreviewStage> It(World); It; ++It)
-			{
-				It->SetPreviewCompanion(T66GI->SelectedCompanionID);
-				break;
-			}
-		}
-
 		// Position camera at the hero preview by default.
 		PositionCameraForHeroPreview();
 	}
@@ -190,8 +168,8 @@ void AT66FrontendGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AT66FrontendGameMode::HandleSettingsChanged()
 {
 	UWorld* World = GetWorld();
-	AT66GameMode::ApplyThemeToDirectionalLightsForWorld(World);
-	AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(World);
+	UT66LightingSubsystem::ApplyThemeToDirectionalLightsForWorld(World);
+	UT66LightingSubsystem::ApplyThemeToAtmosphereAndLightingForWorld(World);
 
 	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
 	{
@@ -222,7 +200,7 @@ void AT66FrontendGameMode::PositionCameraForHeroPreview()
 		{
 			PreviewCamera->SetActorLocation(CamLoc);
 			PreviewCamera->SetActorRotation(CamRot);
-			UE_LOG(LogT66FrontendGameMode, Log, TEXT("T66FrontendGameMode: Camera positioned for hero preview at (%.1f,%.1f,%.1f)"),
+			UE_LOG(LogT66FrontendGameMode, Verbose, TEXT("T66FrontendGameMode: Camera positioned for hero preview at (%.1f,%.1f,%.1f)"),
 				CamLoc.X, CamLoc.Y, CamLoc.Z);
 		}
 		break;

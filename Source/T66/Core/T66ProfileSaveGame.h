@@ -57,7 +57,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 11;
+	int32 SaveVersion = 13;
 
 	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
@@ -67,8 +67,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
 	TArray<FName> LabUnlockedEnemyIDs;
 
-	/** Achievement Coins (AC) wallet balance. New profiles start with 10000 AC. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Achievements")
+	/** Unified progression wallet. New profiles start with 10 Chad Coupons (CC). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Progression")
+	int32 ChadCouponsBalance = 10;
+
+	/** @deprecated Replaced by ChadCouponsBalance in SaveVersion 12. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Achievements", meta = (DeprecatedProperty))
 	int32 AchievementCoinsBalance = 10000;
 
 	/** Per-hero owned skin IDs (e.g. Hero_1 -> [Beachgoer]). Default is always considered owned. */
@@ -153,6 +157,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	TMap<FName, ET66AccountMedalTier> HeroHighestMedalByID;
 
+	/** Lifetime cumulative score earned per hero across all completed runs. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, int32> HeroCumulativeScoreByID;
+
 	/** Lifetime games played per companion (increment once when a run reaches Run Summary). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	TMap<FName, int32> CompanionGamesPlayedByID;
@@ -160,5 +168,9 @@ public:
 	/** Highest medal earned per companion from difficulty clears. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	TMap<FName, ET66AccountMedalTier> CompanionHighestMedalByID;
+
+	/** Lifetime cumulative score earned per companion across all completed runs. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, int32> CompanionCumulativeScoreByID;
 };
 

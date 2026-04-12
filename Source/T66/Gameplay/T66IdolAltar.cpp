@@ -19,7 +19,7 @@ AT66IdolAltar::AT66IdolAltar()
 	InteractTrigger->SetCollisionObjectType(ECC_WorldDynamic);
 	InteractTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
 	InteractTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	InteractTrigger->SetBoxExtent(FVector(420.f, 420.f, 320.f));
+	InteractTrigger->SetBoxExtent(MinimumInteractionExtent);
 	RootComponent = InteractTrigger;
 
 	BaseRect = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseRect"));
@@ -144,7 +144,8 @@ void AT66IdolAltar::UpdateInteractionBounds()
 	}
 
 	const FTransform ActorTransform = GetActorTransform();
-	FVector RequiredExtent(420.f, 420.f, 320.f);
+	FVector RequiredExtent = MinimumInteractionExtent.ComponentMax(FVector::ZeroVector);
+	const FVector BoundsPadding = InteractionBoundsPadding.ComponentMax(FVector::ZeroVector);
 
 	TArray<UPrimitiveComponent*> VisualPrimitives = { BaseRect, MidRect, TopRect, VisualMesh };
 	for (UPrimitiveComponent* Primitive : VisualPrimitives)
@@ -164,9 +165,9 @@ void AT66IdolAltar::UpdateInteractionBounds()
 		const FBoxSphereBounds Bounds = Primitive->CalcBounds(Primitive->GetComponentTransform());
 		const FVector LocalCenter = ActorTransform.InverseTransformPosition(Bounds.Origin);
 		const FVector PrimitiveExtent(
-			FMath::Abs(LocalCenter.X) + Bounds.SphereRadius + 120.f,
-			FMath::Abs(LocalCenter.Y) + Bounds.SphereRadius + 120.f,
-			FMath::Abs(LocalCenter.Z) + Bounds.SphereRadius + 80.f);
+			FMath::Abs(LocalCenter.X) + Bounds.SphereRadius + BoundsPadding.X,
+			FMath::Abs(LocalCenter.Y) + Bounds.SphereRadius + BoundsPadding.Y,
+			FMath::Abs(LocalCenter.Z) + Bounds.SphereRadius + BoundsPadding.Z);
 		RequiredExtent.X = FMath::Max(RequiredExtent.X, PrimitiveExtent.X);
 		RequiredExtent.Y = FMath::Max(RequiredExtent.Y, PrimitiveExtent.Y);
 		RequiredExtent.Z = FMath::Max(RequiredExtent.Z, PrimitiveExtent.Z);

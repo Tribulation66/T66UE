@@ -44,7 +44,7 @@ AT66HeroBase::AT66HeroBase()
 	// Create spring arm (camera boom)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 1200.0f;
+	CameraBoom->TargetArmLength = 2400.0f;
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // Offset up from center
 	CameraBoom->bUsePawnControlRotation = true; // Rotate arm based on controller (mouse look)
 	CameraBoom->bDoCollisionTest = true; // Pull camera in when hitting walls
@@ -165,7 +165,7 @@ AT66HeroBase::AT66HeroBase()
 		Movement->BrakingDecelerationWalking = 99999.f;
 		Movement->GroundFriction = 8.f;
 		Movement->BrakingFrictionFactor = 2.f;
-		Movement->JumpZVelocity = 2800.f;
+		Movement->JumpZVelocity = 2200.f;
 		Movement->AirControl = 0.65f;
 		Movement->GravityScale = 2.5f;
 		

@@ -19,6 +19,7 @@ class T66_API UT66FloatingCombatTextSubsystem : public UGameInstanceSubsystem
 public:
 	/** Well-known event types for status labels (use these when applying damage with a modifier). */
 	static const FName EventType_Crit;
+	static const FName EventType_Headshot;
 	static const FName EventType_DoT;
 
 	/** Hero-only status/event types (shown above hero head). */

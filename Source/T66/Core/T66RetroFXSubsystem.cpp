@@ -412,7 +412,7 @@ void UT66RetroFXSubsystem::ApplyCurrentSettings(UWorld* World)
 	{
 		if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
-			UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyCurrentSettings: applying saved Retro FX settings to world=%s"), *GetNameSafe(World ? World : ResolveWorld(nullptr)));
+			UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyCurrentSettings: applying saved Retro FX settings to world=%s"), *GetNameSafe(World ? World : ResolveWorld(nullptr)));
 			ApplySettings(PlayerSettings->GetRetroFXSettings(), World);
 		}
 		else
@@ -435,7 +435,7 @@ void UT66RetroFXSubsystem::ApplySettings(const FT66RetroFXSettings& Settings, UW
 		return;
 	}
 
-	UE_LOG(LogT66RetroFXRuntime, Log,
+	UE_LOG(LogT66RetroFXRuntime, Verbose,
 		TEXT("ApplySettings: world=%s MasterEnabled=%s PS1Blend=%.2f PS1Dither=%.2f PS1Bayer=%.2f PS1ColorLUT=%.2f PS1ColorBoost=%.2f ChromaticStrength=%.2f DistortionStrength=%.2f InvertDistortion=%s PS1FogEnable=%.2f PS1SceneDepthFog=%.2f PS1FogDensity=%.2f PS1FogStart=%.2f PS1FogFalloff=%.2f RealLowRes=%s FakeSize=%.2f FakeUV=%.2f TargetRes=%.2f"),
 		*GetNameSafe(TargetWorld),
 		Settings.bEnableRetroFXMaster ? TEXT("true") : TEXT("false"),
@@ -533,7 +533,7 @@ void UT66RetroFXSubsystem::EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Se
 
 	UE_LOG(
 		LogT66RetroFXRuntime,
-		Log,
+		Verbose,
 		TEXT("EnsurePs1PostProcessDMI: material=%s colorLUT=%s sceneDepthFog=%s bayer=%s"),
 		DesiredMaterial ? *DesiredMaterial->GetPathName() : TEXT("<null>"),
 		PercentToSwitch(Settings.PS1ColorLUTPercent) > 0.5f ? TEXT("true") : TEXT("false"),
@@ -563,7 +563,7 @@ void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Sett
 		SetBlendableWeight(N64BlurReplaceTonemapperDMI, 0.0f);
 	}
 
-	UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyBlendableWeights: PS1Weight=%.3f N64Weight=%.3f ChromaticWeight=%.3f ReplaceTonemapper=%s"),
+	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyBlendableWeights: PS1Weight=%.3f N64Weight=%.3f ChromaticWeight=%.3f ReplaceTonemapper=%s"),
 		Ps1Weight,
 		N64Weight,
 		ChromaticWeight,
@@ -591,7 +591,7 @@ void UT66RetroFXSubsystem::ApplyPs1Parameters(const FT66RetroFXSettings& Setting
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("FogStartDistance"), FogStartDistance);
 	SetScalarParameter(Ps1PostProcessDMI, TEXT("FogFallOffDistance"), FogFallOffDistance);
 
-	UE_LOG(LogT66RetroFXRuntime, Log,
+	UE_LOG(LogT66RetroFXRuntime, Verbose,
 		TEXT("ApplyPs1Parameters: DitheringStrength=%.3f Bayer=%s ColorLUT=%s SceneDepthFog=%s ColorBoost=%.3f FogEnabled=%s FogDensity=%.3f FogStartDistance=%.3f FogFalloffDistance=%.3f"),
 		DitheringStrength,
 		PercentToSwitch(Settings.PS1BayerDitheringPercent) > 0.5f ? TEXT("true") : TEXT("false"),
@@ -619,7 +619,7 @@ void UT66RetroFXSubsystem::ApplyChromaticAberrationParameters(const FT66RetroFXS
 	SetScalarParameter(ChromaticAberrationDMI, TEXT("ChromaticStrength"), ChromaticStrength);
 	SetScalarParameter(ChromaticAberrationDMI, TEXT("DistortionAmount"), DistortionAmount);
 
-	UE_LOG(LogT66RetroFXRuntime, Log,
+	UE_LOG(LogT66RetroFXRuntime, Verbose,
 		TEXT("ApplyChromaticAberrationParameters: ChromaticStrength=%.4f DistortionAmount=%.4f Invert=%s"),
 		ChromaticStrength,
 		DistortionAmount,
@@ -667,7 +667,7 @@ void UT66RetroFXSubsystem::ApplyResolutionCollection(const FT66RetroFXSettings& 
 	Instance->SetScalarParameterValue(TEXT("ResolutionSwitchUV"), ResolutionSwitchUV);
 	Instance->SetScalarParameterValue(TEXT("TargetResolutionHeight"), TargetResolutionHeight);
 
-	UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyResolutionCollection: ResolutionSwitchSize=%.3f ResolutionSwitchUV=%.3f TargetResolutionHeight=%.3f"),
+	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionCollection: ResolutionSwitchSize=%.3f ResolutionSwitchUV=%.3f TargetResolutionHeight=%.3f"),
 		ResolutionSwitchSize,
 		ResolutionSwitchUV,
 		TargetResolutionHeight);
@@ -681,13 +681,13 @@ void UT66RetroFXSubsystem::ApplyResolutionRuntime(const FT66RetroFXSettings& Set
 	{
 		if (bResolutionRuntimeActive)
 		{
-			UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyResolutionRuntime: restoring original runtime resolution defaults"));
+			UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: restoring original runtime resolution defaults"));
 			RestoreResolutionRuntimeDefaults();
 			bResolutionRuntimeActive = false;
 		}
 		else
 		{
-			UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyResolutionRuntime: real low resolution disabled; runtime override inactive"));
+			UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: real low resolution disabled; runtime override inactive"));
 		}
 		return;
 	}
@@ -698,7 +698,7 @@ void UT66RetroFXSubsystem::ApplyResolutionRuntime(const FT66RetroFXSettings& Set
 
 	ExecuteConsoleCommand(World, FString::Printf(TEXT("r.ScreenPercentage %.2f"), ScreenPercentage));
 	bResolutionRuntimeActive = true;
-	UE_LOG(LogT66RetroFXRuntime, Log, TEXT("ApplyResolutionRuntime: enabled real low resolution ViewportHeight=%.2f TargetHeight=%.2f ScreenPercentage=%.2f"),
+	UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: enabled real low resolution ViewportHeight=%.2f TargetHeight=%.2f ScreenPercentage=%.2f"),
 		ViewportHeight,
 		TargetHeight,
 		ScreenPercentage);
@@ -793,7 +793,7 @@ void UT66RetroFXSubsystem::ApplyGeometryCollection(const FT66RetroFXSettings& Se
 	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance2"), CharacterAffineDistance2);
 	Instance->SetScalarParameterValue(TEXT("CharacterAffineDistance3"), CharacterAffineDistance3);
 
-	UE_LOG(LogT66RetroFXRuntime, Log,
+	UE_LOG(LogT66RetroFXRuntime, Verbose,
 		TEXT("ApplyGeometryCollection: WorldEnabled=%s Snap=%.3f SnapRes=%.3f Noise=%.3f Affine=%.3f CharacterEnabled=%s Snap=%.3f SnapRes=%.3f Noise=%.3f Affine=%.3f"),
 		bEnableWorldGeometry ? TEXT("true") : TEXT("false"),
 		WorldVertexSnapStrength,
@@ -827,7 +827,7 @@ void UT66RetroFXSubsystem::ApplyGeometryMaterials(const FT66RetroFXSettings& Set
 	RestoreManagedMaterials(!bEnableWorldGeometry, !bEnableCharacterGeometry);
 	CleanupManagedSlots();
 
-	UE_LOG(LogT66RetroFXRuntime, Log,
+	UE_LOG(LogT66RetroFXRuntime, Verbose,
 		TEXT("ApplyGeometryMaterials: runtime swapping enabled World=%s Character=%s ManagedSlots=%d"),
 		bEnableWorldGeometry ? TEXT("true") : TEXT("false"),
 		bEnableCharacterGeometry ? TEXT("true") : TEXT("false"),

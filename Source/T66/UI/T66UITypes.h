@@ -25,14 +25,20 @@ enum class ET66ScreenType : uint8
 	PauseMenu UMETA(DisplayName = "Pause Menu Modal"),
 	ReportBug UMETA(DisplayName = "Report Bug Modal"),
 	RunSummary UMETA(DisplayName = "Run Summary Modal"),
-	PowerUp UMETA(DisplayName = "Power Up"),
+	// Legacy enum key retained for compatibility with existing assets and Blueprint references.
+	PowerUp UMETA(DisplayName = "Shop"),
 	// Modals (overlays on top of other screens)
 	HeroGrid UMETA(DisplayName = "Hero Grid Modal"),
 	HeroLore UMETA(DisplayName = "Hero Lore Modal"),
 	CompanionGrid UMETA(DisplayName = "Companion Grid Modal"),
 	CompanionLore UMETA(DisplayName = "Companion Lore Modal"),
+	TemporaryBuffSelection UMETA(DisplayName = "Temporary Buff Selection Modal"),
+	TemporaryBuffPresetCreate UMETA(DisplayName = "Temporary Buff Preset Create Modal"),
+	TemporaryBuffShop UMETA(DisplayName = "Temporary Buff Shop Modal"),
 	LanguageSelect UMETA(DisplayName = "Language Select Modal"),
 	QuitConfirmation UMETA(DisplayName = "Quit Confirmation Modal"),
+	PartyInvite UMETA(DisplayName = "Party Invite Modal"),
+	SnakeGame UMETA(DisplayName = "Snake Game Modal"),
 	LobbyReadyCheck UMETA(DisplayName = "Lobby Ready Check Modal"),
 	LobbyBackConfirm UMETA(DisplayName = "Lobby Back Confirm Modal"),
 	AccountStatus UMETA(DisplayName = "Account Status Panel"),
@@ -44,4 +50,12 @@ enum class ET66UITheme : uint8
 {
 	Classic UMETA(DisplayName = "Classic"),
 	Dota UMETA(DisplayName = "Dota")
+};
+
+UENUM(BlueprintType)
+enum class ET66UIFontPreset : uint8
+{
+	Current UMETA(DisplayName = "Current"),
+	// Legacy enum key retained for compatibility with old saved settings values.
+	Alagard UMETA(DisplayName = "Alagard")
 };

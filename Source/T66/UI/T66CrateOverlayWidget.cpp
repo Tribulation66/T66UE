@@ -103,7 +103,8 @@ void UT66CrateOverlayWidget::GenerateStrip()
 		RngSub->UpdateLuckStat(RunState->GetLuckStat());
 	}
 
-	FRandomStream Rng(static_cast<int32>(FPlatformTime::Cycles()));
+	FRandomStream LocalRng(static_cast<int32>(FPlatformTime::Cycles()));
+	FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;
 
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 	FT66RarityWeights CrateWeights = PlayerExperience
@@ -115,7 +116,11 @@ void UT66CrateOverlayWidget::GenerateStrip()
 	}
 
 	const ET66Rarity WinRarity = (RngSub) ? RngSub->RollRarityWeighted(CrateWeights, Rng) : ET66Rarity::Black;
-	WinnerItemID = T66GI ? T66GI->GetRandomItemIDForLootRarity(WinRarity) : FName(TEXT("Unknown"));
+	WinnerRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+	WinnerRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	bWinnerRarityHasReplayWeights = true;
+	WinnerRarityReplayWeights = CrateWeights;
+	WinnerItemID = T66GI ? T66GI->GetRandomItemIDForLootRarityFromStream(WinRarity, Rng) : FName(TEXT("Unknown"));
 
 	for (int32 i = 0; i < StripItemCount; ++i)
 	{
@@ -138,7 +143,7 @@ void UT66CrateOverlayWidget::GenerateStrip()
 			else { Acc += CrateWeights.Yellow / Total; if (Roll < Acc) DecoyRarity = ET66Rarity::Yellow;
 			else DecoyRarity = ET66Rarity::White; }}
 
-			Entry.ItemID = T66GI ? T66GI->GetRandomItemIDForLootRarity(DecoyRarity) : FName(TEXT("Decoy"));
+			Entry.ItemID = T66GI ? T66GI->GetRandomItemIDForLootRarityFromStream(DecoyRarity, Rng) : FName(TEXT("Decoy"));
 			Entry.Rarity = DecoyRarity;
 		}
 		Entry.Color = FT66RarityUtil::GetRarityColor(Entry.Rarity);
@@ -400,7 +405,12 @@ void UT66CrateOverlayWidget::ResolveOpen()
 	if (RunState && !WinnerItemID.IsNone())
 	{
 		const int32 InventoryCountBefore = RunState->GetInventorySlots().Num();
-		RunState->RecordLuckQualityRarity(FName(TEXT("CrateRewardRarity")), WinnerRarity);
+		RunState->RecordLuckQualityRarity(
+			FName(TEXT("CrateRewardRarity")),
+			WinnerRarity,
+			WinnerRarityDrawIndex,
+			WinnerRarityPreDrawSeed,
+			bWinnerRarityHasReplayWeights ? &WinnerRarityReplayWeights : nullptr);
 		RunState->AddItemWithRarity(WinnerItemID, LootRarityToItemRarity(WinnerRarity));
 		bAddedToInventory = RunState->GetInventorySlots().Num() > InventoryCountBefore;
 	}

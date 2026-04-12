@@ -114,7 +114,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
 	FText GetText_AchievementTierWhite() const;
 
-	/** Format string: "{0} AC" */
+	/** Format string: "{0} CC" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Achievements")
 	FText GetText_AchievementCoinsFormat() const;
 
@@ -191,6 +191,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
 	FText GetText_SettingsMediaViewerEnable() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
+	FText GetText_SettingsMediaViewerSource() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings")
 	FText GetText_SettingsFog() const;
@@ -278,6 +281,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
 	FText GetText_ControlOpenFullMap() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlInspectInventory() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
 	FText GetText_ControlToggleMediaViewer() const;
@@ -473,8 +479,6 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
 	FText GetText_TheLab() const;
-	/** "Demo" button label (opens The Lab from Hero Selection). */
-	FText GetText_Demo() const;
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|HeroSelection")
 	FText GetText_BodyTypeA() const;
@@ -558,6 +562,9 @@ public:
 	FText GetText_Stat_AttackScale() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
+	FText GetText_Stat_Accuracy() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
 	FText GetText_Stat_Armor() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
@@ -577,7 +584,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
 	FText GetText_StatLineFormat() const;
 
-	/** Tooltip description for a primary stat (index 0=Level, 1=Damage, 2=AtkSpd, 3=AtkScale, 4=Armor, 5=Evasion, 6=Luck, 7=Speed). */
+	/** Tooltip description for a primary stat (index 0=Level, 1=Damage, 2=AtkSpd, 3=AtkScale, 4=Accuracy, 5=Armor, 6=Evasion, 7=Luck, 8=Speed). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
 	FText GetText_PrimaryStatDescription(int32 StatIndex) const;
 

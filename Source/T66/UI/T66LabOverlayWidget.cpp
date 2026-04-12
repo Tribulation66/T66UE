@@ -127,7 +127,7 @@ void UT66LabOverlayWidget::OnExitLab()
 	{
 		GI->bIsLabLevel = false;
 	}
-	UGameplayStatics::OpenLevel(GetWorld(), FName(TEXT("FrontendLevel")));
+	UGameplayStatics::OpenLevel(GetWorld(), UT66GameInstance::GetFrontendLevelName());
 }
 
 void UT66LabOverlayWidget::OnToggleLabPanel()

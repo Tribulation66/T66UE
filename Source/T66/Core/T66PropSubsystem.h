@@ -37,6 +37,15 @@ private:
 		bool bUseLegacyNoSpawnZones,
 		const FVector& KeepClearCenter,
 		float KeepClearRadius);
+	bool SpawnMainMapGroupedProps(
+		UWorld* World,
+		int32 Seed,
+		const TArray<FName>& AllowedRows,
+		float MainHalfExtent,
+		float TraceStartZ,
+		float TraceEndZ,
+		const FVector& KeepClearCenter,
+		float KeepClearRadius);
 
 	UPROPERTY(Transient)
 	mutable TObjectPtr<UDataTable> CachedPropsDataTable;

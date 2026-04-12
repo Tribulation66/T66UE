@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Core/T66RetroFXSettings.h"
+#include "Core/T66MediaViewerSubsystem.h"
+#include "Core/T66PlayerSettingsSaveGame.h"
 #include "UI/T66UITypes.h"
 #include "T66PlayerSettingsSubsystem.generated.h"
-
-class UT66PlayerSettingsSaveGame;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnT66PlayerSettingsChanged);
 
@@ -50,6 +50,27 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|UI")
 	float GetUIScale() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Settings|UI")
+	void SetUIFontPreset(ET66UIFontPreset NewPreset);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|UI")
+	ET66UIFontPreset GetUIFontPreset() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Social")
+	bool IsFavoriteFriend(const FString& FriendSteamId) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Social")
+	void SetFavoriteFriend(const FString& FriendSteamId, bool bFavorite);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Social")
+	bool IsFavoriteAchievement(FName AchievementID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Social")
+	void SetFavoriteAchievement(FName AchievementID, bool bFavorite);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Social")
+	TArray<FName> GetFavoriteAchievementIds() const;
+
 	// ===== Gameplay =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
 	void SetPracticeMode(bool bEnabled);
@@ -74,6 +95,47 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
 	bool GetGoonerMode() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetShowTimeToBeat(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	bool GetShowTimeToBeat() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetShowScoreToBeat(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	bool GetShowScoreToBeat() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetShowTimePacing(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	bool GetShowTimePacing() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetShowScorePacing(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	bool GetShowScorePacing() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetTimeToBeatSelection(const FT66BeatTargetSelection& Selection);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	FT66BeatTargetSelection GetTimeToBeatSelection() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetScoreToBeatSelection(const FT66BeatTargetSelection& Selection);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	FT66BeatTargetSelection GetScoreToBeatSelection() const;
+
+	bool IsFavoriteLeaderboardRun(const FString& EntryId) const;
+	bool FindFavoriteLeaderboardRun(const FString& EntryId, FT66FavoriteLeaderboardRun& OutFavorite) const;
+	TArray<FT66FavoriteLeaderboardRun> GetFavoriteLeaderboardRuns() const;
+	void SetFavoriteLeaderboardRun(const FT66FavoriteLeaderboardRun& Favorite, bool bFavorite);
 
 	// ===== Audio =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|Audio")
@@ -153,12 +215,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|HUD")
 	bool GetHudToggleAffectsPortraitStats() const;
 
-	// ===== Media Viewer (TikTok / YouTube Shorts) =====
+	// ===== Media Viewer =====
 	UFUNCTION(BlueprintCallable, Category = "Settings|MediaViewer")
 	void SetMediaViewerEnabled(bool bEnabled);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|MediaViewer")
 	bool GetMediaViewerEnabled() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|MediaViewer")
+	void SetMediaViewerSource(ET66MediaViewerSource NewSource);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|MediaViewer")
+	ET66MediaViewerSource GetMediaViewerSource() const;
 
 	/** Fog in gameplay level (exponential height fog). */
 	UFUNCTION(BlueprintCallable, Category = "Settings|Graphics")
@@ -197,6 +265,7 @@ private:
 
 	void LoadOrCreate();
 	void Save();
+	void ApplyUIFontPreset();
 	void ApplyUITheme();
 	void ApplyUIScale();
 

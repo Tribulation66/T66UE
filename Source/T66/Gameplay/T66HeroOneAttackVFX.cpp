@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66HeroOneAttackVFX.h"
 
+#include "Gameplay/T66ArthurSwordVisuals.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -16,7 +17,6 @@ namespace
 
 	const TCHAR* HeroOneStreakMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Streak.MI_Hero1_Attack_Streak");
 	const TCHAR* HeroOneImpactMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Impact.MI_Hero1_Attack_Impact");
-	const TCHAR* HeroOneSwordMeshPath = TEXT("/Game/VFX/Projectiles/Hero1/Arthur_Sword.Arthur_Sword");
 	const FName HeroOneID(TEXT("Hero_1"));
 
 	UMaterialInterface* GetHeroOneStreakBaseMaterial()
@@ -27,11 +27,6 @@ namespace
 	UMaterialInterface* GetHeroOneImpactBaseMaterial()
 	{
 		return LoadObject<UMaterialInterface>(nullptr, HeroOneImpactMaterialPath);
-	}
-
-	UStaticMesh* GetArthurSwordMesh()
-	{
-		return LoadObject<UStaticMesh>(nullptr, HeroOneSwordMeshPath);
 	}
 
 	void BuildHeroPierceRuntimePalette(
@@ -240,7 +235,7 @@ void AT66HeroOneAttackVFX::BeginPlay()
 
 	if (!IsValid(ArthurSwordStaticMesh))
 	{
-		ArthurSwordStaticMesh = GetArthurSwordMesh();
+		ArthurSwordStaticMesh = T66ArthurSwordVisuals::LoadSwordMesh();
 	}
 	if (!IsValid(ArthurSwordStaticMesh))
 	{
@@ -251,7 +246,7 @@ void AT66HeroOneAttackVFX::BeginPlay()
 			DebugRequestId,
 			DebugHeroID.IsNone() ? TEXT("Unknown") : *DebugHeroID.ToString(),
 			*GetName(),
-			HeroOneSwordMeshPath);
+			T66ArthurSwordVisuals::GetSwordMeshAssetPath());
 		Destroy();
 		return;
 	}

@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66VisualUtil.h"
 
+#include "Core/T66GameplayLayout.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/MeshComponent.h"
@@ -14,6 +15,10 @@
 #include "Materials/MaterialInterface.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66VisualUtil, Log, All);
+
+static const FName T66VisualUtilTowerCeilingTag(TEXT("T66_Tower_Ceiling"));
+static const FName T66VisualUtilTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+static const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_TowerFloor_");
 
 static UMaterialInterface* GetEnvironmentUnlitMaterial()
 {
@@ -230,6 +235,48 @@ static bool T66TryGetActorGroundingBottomZ(const AActor* Actor, float& OutBottom
 	return true;
 }
 
+static bool T66TryReadTowerFloorTag(const AActor* Actor, int32& OutFloorNumber)
+{
+	OutFloorNumber = INDEX_NONE;
+	if (!Actor)
+	{
+		return false;
+	}
+
+	for (const FName& Tag : Actor->Tags)
+	{
+		const FString TagString = Tag.ToString();
+		if (!TagString.StartsWith(T66TowerFloorTagPrefix))
+		{
+			continue;
+		}
+
+		const FString NumberString = TagString.RightChop(FCString::Strlen(T66TowerFloorTagPrefix));
+		OutFloorNumber = FCString::Atoi(*NumberString);
+		return OutFloorNumber != INDEX_NONE;
+	}
+
+	return false;
+}
+
+static bool T66ShouldIgnoreGroundSnapHit(const FHitResult& Hit)
+{
+	const AActor* HitActor = Hit.GetActor();
+	return HitActor
+		&& (HitActor->ActorHasTag(T66VisualUtilTowerCeilingTag) || HitActor->ActorHasTag(T66VisualUtilTraversalBarrierTag));
+}
+
+static bool T66HitMatchesTowerFloor(const FHitResult& Hit, const int32 FloorNumber)
+{
+	const AActor* HitActor = Hit.GetActor();
+	if (!HitActor || FloorNumber == INDEX_NONE)
+	{
+		return false;
+	}
+
+	return HitActor->ActorHasTag(FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), FloorNumber)));
+}
+
 void FT66VisualUtil::SnapToGround(AActor* Actor, UWorld* World)
 {
 	if (!Actor || !World) return;
@@ -239,10 +286,56 @@ void FT66VisualUtil::SnapToGround(AActor* Actor, UWorld* World)
 	const FVector End   = FVector(Here.X, Here.Y, Here.Z - 16000.f);
 
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(T66SnapToGround), false, Actor);
+	TArray<FHitResult> Hits;
+	if (!World->LineTraceMultiByChannel(Hits, Start, End, ECC_WorldStatic, Params) &&
+		!World->LineTraceMultiByChannel(Hits, Start, End, ECC_Visibility, Params))
+	{
+		return;
+	}
 
-	FHitResult Hit;
-	if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic, Params) &&
-		!World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	const int32 TaggedTowerFloor = [&]() -> int32
+	{
+		int32 FloorNumber = INDEX_NONE;
+		return T66TryReadTowerFloorTag(Actor, FloorNumber) ? FloorNumber : INDEX_NONE;
+	}();
+
+	const FHitResult* BestHit = nullptr;
+	float BestAbsDeltaZ = TNumericLimits<float>::Max();
+	const FHitResult* BestTaggedHit = nullptr;
+	float BestTaggedAbsDeltaZ = TNumericLimits<float>::Max();
+
+	for (const FHitResult& Hit : Hits)
+	{
+		if (T66ShouldIgnoreGroundSnapHit(Hit))
+		{
+			continue;
+		}
+
+		if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+		{
+			continue;
+		}
+
+		const float AbsDeltaZ = FMath::Abs(Hit.ImpactPoint.Z - Here.Z);
+		if (TaggedTowerFloor != INDEX_NONE && T66HitMatchesTowerFloor(Hit, TaggedTowerFloor))
+		{
+			if (AbsDeltaZ < BestTaggedAbsDeltaZ)
+			{
+				BestTaggedHit = &Hit;
+				BestTaggedAbsDeltaZ = AbsDeltaZ;
+			}
+			continue;
+		}
+
+		if (AbsDeltaZ < BestAbsDeltaZ)
+		{
+			BestHit = &Hit;
+			BestAbsDeltaZ = AbsDeltaZ;
+		}
+	}
+
+	const FHitResult* SelectedHit = BestTaggedHit ? BestTaggedHit : BestHit;
+	if (!SelectedHit)
 	{
 		return;
 	}
@@ -250,11 +343,11 @@ void FT66VisualUtil::SnapToGround(AActor* Actor, UWorld* World)
 	float CurrentBottomZ = 0.f;
 	if (!T66TryGetActorGroundingBottomZ(Actor, CurrentBottomZ))
 	{
-		Actor->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
+		Actor->SetActorLocation(SelectedHit->ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
 		return;
 	}
 
-	const float DeltaZ = Hit.ImpactPoint.Z - CurrentBottomZ;
+	const float DeltaZ = SelectedHit->ImpactPoint.Z - CurrentBottomZ;
 	Actor->AddActorWorldOffset(FVector(0.f, 0.f, DeltaZ), false, nullptr, ETeleportType::TeleportPhysics);
 }
 

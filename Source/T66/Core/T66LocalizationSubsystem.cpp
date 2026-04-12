@@ -255,6 +255,11 @@ FText UT66LocalizationSubsystem::GetText_Stat_AttackScale() const
 	return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
 }
 
+FText UT66LocalizationSubsystem::GetText_Stat_Accuracy() const
+{
+	return NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy");
+}
+
 FText UT66LocalizationSubsystem::GetText_Stat_Armor() const
 {
 	return NSLOCTEXT("T66.Stats", "Armor", "Armor");
@@ -297,7 +302,7 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType
 	case ET66SecondaryStatType::LongRangeDamage:   return NSLOCTEXT("T66.SecondaryStats", "LongRangeDmg", "Long Range Damage");
 	case ET66SecondaryStatType::AttackRange:       return NSLOCTEXT("T66.SecondaryStats", "AttackRange", "Range");
 	case ET66SecondaryStatType::Taunt:             return NSLOCTEXT("T66.SecondaryStats", "Taunt", "Taunt");
-	case ET66SecondaryStatType::ReflectDamage:     return NSLOCTEXT("T66.SecondaryStats", "ReflectDamage", "Reflect Damage");
+	case ET66SecondaryStatType::ReflectDamage:     return NSLOCTEXT("T66.SecondaryStats", "ReflectDamage", "Damage Reflection");
 	case ET66SecondaryStatType::HpRegen:           return NSLOCTEXT("T66.SecondaryStats", "HpRegen", "HP Regen");
 	case ET66SecondaryStatType::Crush:             return NSLOCTEXT("T66.SecondaryStats", "Crush", "Crush");
 	case ET66SecondaryStatType::Invisibility:      return NSLOCTEXT("T66.SecondaryStats", "Invisibility", "Invisibility");
@@ -314,8 +319,10 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType
 	case ET66SecondaryStatType::MovementSpeed:     return NSLOCTEXT("T66.SecondaryStats", "MovementSpeed", "Movement Speed");
 	case ET66SecondaryStatType::LootCrate:         return NSLOCTEXT("T66.SecondaryStats", "LootCrate", "Loot Crate");
 	case ET66SecondaryStatType::DamageReduction:   return NSLOCTEXT("T66.SecondaryStats", "DamageReduction", "Damage Reduction");
-	case ET66SecondaryStatType::EvasionChance:     return NSLOCTEXT("T66.SecondaryStats", "EvasionChance", "Evasion Chance");
+	case ET66SecondaryStatType::EvasionChance:     return NSLOCTEXT("T66.SecondaryStats", "EvasionChance", "Dodge");
 	case ET66SecondaryStatType::GamblerToken:      return NSLOCTEXT("T66.SecondaryStats", "GamblerToken", "Gambler's Token");
+	case ET66SecondaryStatType::Alchemy:           return NSLOCTEXT("T66.SecondaryStats", "Alchemy", "Alchemy");
+	case ET66SecondaryStatType::Accuracy:          return NSLOCTEXT("T66.SecondaryStats", "Accuracy", "Accuracy");
 	default:                                       return FText::GetEmpty();
 	}
 }
@@ -333,10 +340,11 @@ FText UT66LocalizationSubsystem::GetText_PrimaryStatDescription(int32 StatIndex)
 	case 1: return NSLOCTEXT("T66.StatTooltips", "Damage", "Base damage dealt by each attack. Increased by items and level-ups.");
 	case 2: return NSLOCTEXT("T66.StatTooltips", "AttackSpeed", "How quickly your hero attacks. Higher values reduce the interval between attacks.");
 	case 3: return NSLOCTEXT("T66.StatTooltips", "AttackScale", "Size multiplier for your attack hitbox. Larger scale hits more enemies per swing.");
-	case 4: return NSLOCTEXT("T66.StatTooltips", "Armor", "Reduces incoming damage from all sources. Each point subtracts flat damage before HP loss.");
-	case 5: return NSLOCTEXT("T66.StatTooltips", "Evasion", "Chance to completely dodge an incoming attack. Also unlocks evasion-based secondary stats.");
-	case 6: return NSLOCTEXT("T66.StatTooltips", "Luck", "Improves chances for rare item drops, spin-wheel bonuses, and world event spawns.");
-	case 7: return NSLOCTEXT("T66.StatTooltips", "Speed", "Hero movement speed multiplier. Higher values let you move faster across the map.");
+	case 4: return NSLOCTEXT("T66.StatTooltips", "AccuracyPrimary", "Improves the precision family of stats: critical chance, critical damage, attack range, and head-targeting accuracy.");
+	case 5: return NSLOCTEXT("T66.StatTooltips", "Armor", "Reduces incoming damage from all sources. Each point subtracts flat damage before HP loss.");
+	case 6: return NSLOCTEXT("T66.StatTooltips", "Evasion", "Improves your total dodge chance and unlocks evasion-based secondary stats.");
+	case 7: return NSLOCTEXT("T66.StatTooltips", "Luck", "Improves your odds on luck-based events like treasure, crates, stealing, and cheating.");
+	case 8: return NSLOCTEXT("T66.StatTooltips", "Speed", "Hero movement speed multiplier. Higher values let you move faster across the map.");
 	default: return FText::GetEmpty();
 	}
 }
@@ -381,7 +389,9 @@ FText UT66LocalizationSubsystem::GetText_SecondaryStatDescription(ET66SecondaryS
 	case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.StatTooltips", "LootCrate", "Improves the odds of higher-rarity rewards when opening a crate.");
 	case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.StatTooltips", "DamageReduction", "Bonus damage reduction generated from your current Armor stat.");
 	case ET66SecondaryStatType::EvasionChance:   return NSLOCTEXT("T66.StatTooltips", "EvasionChance", "Bonus dodge chance generated from your current Evasion stat.");
-	case ET66SecondaryStatType::GamblerToken:    return NSLOCTEXT("T66.StatTooltips", "GamblerToken", "A unique casino token that improves item sell prices. Higher levels push the sell rate up to 100%.");
+	case ET66SecondaryStatType::GamblerToken:    return NSLOCTEXT("T66.StatTooltips", "GamblerToken", "A unique vendor token that improves item sell prices. Higher levels push the sell rate up to 90%.");
+	case ET66SecondaryStatType::Alchemy:         return NSLOCTEXT("T66.StatTooltips", "Alchemy", "Chance for alchemy upgrades to jump an extra rarity tier.");
+	case ET66SecondaryStatType::Accuracy:        return NSLOCTEXT("T66.StatTooltips", "Accuracy", "Chance for untargeted auto-attacks to prefer enemy head hit zones.");
 	default: return FText::GetEmpty();
 	}
 }
@@ -395,6 +405,7 @@ FText UT66LocalizationSubsystem::GetText_PassiveName(ET66PassiveType Type) const
 	case ET66PassiveType::ArcaneAmplification:   return NSLOCTEXT("T66.Abilities", "PassiveName_Arcane", "Arcane Amplification");
 	case ET66PassiveType::MarksmanFocus:         return NSLOCTEXT("T66.Abilities", "PassiveName_Marksman", "Marksman's Focus");
 	case ET66PassiveType::ToxinStacking:         return NSLOCTEXT("T66.Abilities", "PassiveName_Toxin", "Toxin Stacking");
+	case ET66PassiveType::Headshot:              return NSLOCTEXT("T66.Abilities", "PassiveName_Headshot", "Headshot");
 	default: return NSLOCTEXT("T66.Abilities", "PassiveName_None", "No Passive");
 	}
 }
@@ -408,6 +419,7 @@ FText UT66LocalizationSubsystem::GetText_PassiveDescription(ET66PassiveType Type
 	case ET66PassiveType::ArcaneAmplification:   return NSLOCTEXT("T66.Abilities", "PassiveDesc_Arcane", "AOE attacks that hit 3+ enemies deal 20% bonus damage. Hitting 5+ enemies increases the bonus to 35%.");
 	case ET66PassiveType::MarksmanFocus:         return NSLOCTEXT("T66.Abilities", "PassiveDesc_Marksman", "Consecutive attacks on the same target deal +8% damage per hit (max 5 stacks, +40%). Switching targets resets stacks.");
 	case ET66PassiveType::ToxinStacking:         return NSLOCTEXT("T66.Abilities", "PassiveDesc_Toxin", "Enemies suffering from a DOT effect take 15% bonus damage from all your attacks.");
+	case ET66PassiveType::Headshot:              return NSLOCTEXT("T66.Abilities", "PassiveDesc_Headshot", "Gain +20% Accuracy, making auto-attacks more likely to target enemy head hit zones.");
 	default: return FText::GetEmpty();
 	}
 }
@@ -416,7 +428,7 @@ FText UT66LocalizationSubsystem::GetText_UltimateName(ET66UltimateType Type) con
 {
 	switch (Type)
 	{
-	case ET66UltimateType::SpearStorm:     return NSLOCTEXT("T66.Abilities", "UltName_SpearStorm", "Spear Storm");
+	case ET66UltimateType::SpearStorm:     return NSLOCTEXT("T66.Abilities", "UltName_SpearStorm", "Colossal Sword");
 	case ET66UltimateType::MeteorStrike:   return NSLOCTEXT("T66.Abilities", "UltName_MeteorStrike", "Meteor Strike");
 	case ET66UltimateType::ChainLightning: return NSLOCTEXT("T66.Abilities", "UltName_ChainLightning", "Chain Lightning");
 	case ET66UltimateType::PlagueCloud:    return NSLOCTEXT("T66.Abilities", "UltName_PlagueCloud", "Plague Cloud");
@@ -429,7 +441,7 @@ FText UT66LocalizationSubsystem::GetText_UltimateDescription(ET66UltimateType Ty
 {
 	switch (Type)
 	{
-	case ET66UltimateType::SpearStorm:     return NSLOCTEXT("T66.Abilities", "UltDesc_SpearStorm", "Fires 10 piercing rays outward from the hero. Each ray damages all enemies in its path.");
+	case ET66UltimateType::SpearStorm:     return NSLOCTEXT("T66.Abilities", "UltDesc_SpearStorm", "Launch a colossal sword toward the crosshair. The blade tears through every enemy in its path.");
 	case ET66UltimateType::MeteorStrike:   return NSLOCTEXT("T66.Abilities", "UltDesc_MeteorStrike", "Calls down 5 meteor strikes at random positions around the hero, dealing heavy AOE damage after a short delay.");
 	case ET66UltimateType::ChainLightning: return NSLOCTEXT("T66.Abilities", "UltDesc_ChainLightning", "Lightning chains to every enemy in range with no falloff, dealing full damage to each target.");
 	case ET66UltimateType::PlagueCloud:    return NSLOCTEXT("T66.Abilities", "UltDesc_PlagueCloud", "Spawns a poisonous cloud at the hero's location that deals damage over time to all enemies inside it.");
@@ -516,6 +528,8 @@ FText UT66LocalizationSubsystem::GetText_ItemBaseName(FName ItemID) const
 			case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.Items", "BaseName_DamageReduction", "Plate");
 			case ET66SecondaryStatType::EvasionChance:   return NSLOCTEXT("T66.Items", "BaseName_EvasionChance", "Mantle");
 			case ET66SecondaryStatType::GamblerToken:    return NSLOCTEXT("T66.Items", "BaseName_GamblerToken", "Token");
+			case ET66SecondaryStatType::Alchemy:         return NSLOCTEXT("T66.Items", "BaseName_Alchemy", "Alembic");
+			case ET66SecondaryStatType::Accuracy:        return NSLOCTEXT("T66.Items", "BaseName_Accuracy", "Laser Sight");
 			default:                                     break;
 			}
 		}
@@ -660,9 +674,7 @@ FText UT66LocalizationSubsystem::GetText_AchievementTierWhite() const
 
 FText UT66LocalizationSubsystem::GetText_AchievementCoinsFormat() const
 {
-	// Keep the AC abbreviation stable across languages for readability (Bible: "Achievement Coins (AC)").
-	// Translators can adjust ordering/spacing per language.
-	return NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} AC");
+	return NSLOCTEXT("T66.Achievements", "CoinsFormat", "{0} CC");
 }
 
 FText UT66LocalizationSubsystem::GetText_Claim() const
@@ -781,7 +793,7 @@ FText UT66LocalizationSubsystem::GetText_SettingsTabHUD() const
 
 FText UT66LocalizationSubsystem::GetText_SettingsTabMediaViewer() const
 {
-	return NSLOCTEXT("T66.Settings", "TabMediaViewer", "TIKTOK & SHORTS");
+	return NSLOCTEXT("T66.Settings", "TabMediaViewer", "MEDIA VIEWER");
 }
 
 FText UT66LocalizationSubsystem::GetText_SettingsTabAudio() const
@@ -821,12 +833,17 @@ FText UT66LocalizationSubsystem::GetText_SettingsHudPortraitStats() const
 
 FText UT66LocalizationSubsystem::GetText_SettingsMediaViewerPrivacyBody() const
 {
-	return NSLOCTEXT("T66.Settings", "MediaViewerPrivacyBody", "The Media Viewer runs only on your computer. We do not receive or store the videos you watch or any data from TikTok or YouTube. To open it, use the key bound to \"Toggle Media Viewer\" or \"Toggle TikTok\" in the Controls tab.");
+	return NSLOCTEXT("T66.Settings", "MediaViewerPrivacyBody", "The Media Viewer runs only on your computer. We do not receive or store the videos you watch or any data from TikTok, YouTube, or Instagram. Choose which feed opens here, then use the key bound to \"Toggle Media Viewer\" in the Controls tab.");
 }
 
 FText UT66LocalizationSubsystem::GetText_SettingsMediaViewerEnable() const
 {
-	return NSLOCTEXT("T66.Settings", "MediaViewerEnable", "Enable Media Viewer (TikTok / YouTube Shorts)");
+	return NSLOCTEXT("T66.Settings", "MediaViewerEnable", "Enable Media Viewer");
+}
+
+FText UT66LocalizationSubsystem::GetText_SettingsMediaViewerSource() const
+{
+	return NSLOCTEXT("T66.Settings", "MediaViewerSource", "Default Feed");
 }
 
 FText UT66LocalizationSubsystem::GetText_SettingsFog() const
@@ -967,6 +984,11 @@ FText UT66LocalizationSubsystem::GetText_ControlUltimate() const
 FText UT66LocalizationSubsystem::GetText_ControlOpenFullMap() const
 {
 	return NSLOCTEXT("T66.Settings.Fallback", "Open Full Map", "Open Full Map");
+}
+
+FText UT66LocalizationSubsystem::GetText_ControlInspectInventory() const
+{
+	return NSLOCTEXT("T66.Settings.Fallback", "Inspect Inventory", "Inspect Inventory");
 }
 
 FText UT66LocalizationSubsystem::GetText_ControlToggleMediaViewer() const
@@ -1284,11 +1306,6 @@ FText UT66LocalizationSubsystem::GetText_TheLab() const
 	return NSLOCTEXT("T66.HeroSelection", "TheLab", "THE LAB");
 }
 
-FText UT66LocalizationSubsystem::GetText_Demo() const
-{
-	return NSLOCTEXT("T66.HeroSelection", "Demo", "Demo");
-}
-
 FText UT66LocalizationSubsystem::GetText_BodyTypeA() const
 {
 	return NSLOCTEXT("T66.HeroSelection", "BodyTypeA", "TYPE A");
@@ -1316,7 +1333,7 @@ FText UT66LocalizationSubsystem::GetText_Lore() const
 
 FText UT66LocalizationSubsystem::GetText_BaseStatsHeader() const
 {
-	return NSLOCTEXT("T66.HeroSelection", "BaseStatsHeader", "Base Stats");
+	return NSLOCTEXT("T66.HeroSelection", "BaseStatsHeader", "STATS");
 }
 
 // ========== Skin Names ==========

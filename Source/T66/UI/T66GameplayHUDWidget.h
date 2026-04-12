@@ -18,6 +18,7 @@ class UT66CrateOverlayWidget;
 class STextBlock;
 class SBorder;
 class SBox;
+class SVerticalBox;
 class SButton;
 class SImage;
 class UTexture2D;
@@ -59,6 +60,8 @@ public:
 
 	UFUNCTION()
 	void RefreshSpeedRunTimers();
+
+	void RefreshBeatTargets();
 
 	UFUNCTION()
 	void RefreshBossBar();
@@ -106,6 +109,10 @@ public:
 	/** Toggle hit-test visibility so tooltips work when the mouse is free. */
 	void SetInteractive(bool bInteractive);
 
+	/** Enlarge the inventory panel for mouse-hover inspection. */
+	void SetInventoryInspectMode(bool bEnabled);
+	bool IsInventoryInspectMode() const { return bInventoryInspectMode; }
+
 	/** TikTok placeholder toggle (O / ToggleTikTok). */
 	void ToggleTikTokPlaceholder();
 	bool IsTikTokPlaceholderVisible() const;
@@ -118,8 +125,10 @@ public:
 
 	static constexpr float MinimapPanelWidth = 164.f;
 	static constexpr float BottomRightInventoryPanelWidth = 472.f;
-	static constexpr float BottomRightInventoryPanelHeight = 160.f;
+	static constexpr float BottomRightInventoryPanelHeight = 146.f;
 	static constexpr float BottomRightPresentationGap = 8.f;
+	static constexpr float BottomRightInventorySlotSize = 40.f;
+	static constexpr float BottomRightInventoryInspectScale = 2.f;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -132,8 +141,14 @@ protected:
 	void RefreshHeroStats();
 
 	void RefreshMapData();
+	void UpdateTowerMapReveal(const FVector& PlayerLocation);
+	bool IsTowerMapRevealPointVisible(int32 FloorNumber, const FVector2D& WorldXY) const;
 	void RefreshFPS();
-	void UpdateTikTokVisibility();
+	bool IsPausePresentationActive() const;
+	void RefreshPausePresentation();
+	TSharedRef<SWidget> BuildPauseStatsPanel() const;
+	TSharedRef<SWidget> BuildPauseAchievementsPanel() const;
+	void UpdateTikTokVisibility(bool bForce = false);
 	bool IsMediaViewerOpen() const;
 
 	void RequestTikTokWebView2OverlaySync();
@@ -141,6 +156,9 @@ protected:
 
 	UFUNCTION()
 	void HandleMediaViewerOpenChanged(bool bIsOpen);
+
+	void HandleBackendLeaderboardDataReady(const FString& Key);
+	void HandleBackendRunSummaryReady(const FString& EntryId);
 
 	// Wheel spin animation (HUD-side; no overlay)
 	void TickWheelSpin();
@@ -158,14 +176,18 @@ protected:
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> DebtText;
 	TSharedPtr<STextBlock> ScoreText;
+	TSharedPtr<STextBlock> ScorePacingText;
+	TSharedPtr<STextBlock> ScoreTargetText;
 	TSharedPtr<STextBlock> ScoreMultiplierText;
 	TSharedPtr<STextBlock> DPSText;
 	TSharedPtr<STextBlock> StageText;
 	TSharedPtr<STextBlock> SpeedRunText;
+	TSharedPtr<STextBlock> SpeedRunPacingText;
 	TSharedPtr<STextBlock> SpeedRunTargetText;
 	TSharedPtr<SBox> BossBarContainerBox;
 	TSharedPtr<SBox> BossBarFillBox;
 	TSharedPtr<STextBlock> BossBarText;
+	TSharedPtr<SVerticalBox> BossPartBarsBox;
 	TSharedPtr<SBox> LootPromptBox;
 	TSharedPtr<SBorder> LootPromptBorder;
 	TSharedPtr<SImage> LootPromptIconImage;
@@ -201,6 +223,7 @@ protected:
 	static constexpr float ChestRewardFadeOutSeconds = 0.35f;
 	static constexpr int32 ChestRewardCoinCount = 7;
 	void HidePickupCard();
+	void ApplyInventoryInspectMode();
 	TSharedPtr<SBorder> TutorialHintBorder;
 	TSharedPtr<STextBlock> TutorialHintLine1Text;
 	TSharedPtr<STextBlock> TutorialHintLine2Text;
@@ -218,20 +241,26 @@ protected:
 	TSharedPtr<STextBlock> LevelText;
 	TSharedPtr<SBorder> PassiveBorder;
 	TSharedPtr<SImage> PassiveImage;
+	TSharedPtr<FSlateBrush> PassiveBrush;
 	TSharedPtr<SBox> PassiveStackBadgeBox;
 	TSharedPtr<STextBlock> PassiveStackText;
 	TSharedPtr<SBorder> UltimateBorder;
 	TSharedPtr<SBorder> UltimateCooldownOverlay;
 	TSharedPtr<STextBlock> UltimateText;
+	TSharedPtr<STextBlock> UltimateInputHintText;
 	TSharedPtr<SImage> UltimateImage;
 	TSharedPtr<FSlateBrush> UltimateBrush;
 	TArray<TSharedPtr<ST66DotWidget>> StatusEffectDots;
 	TArray<TSharedPtr<SBox>> StatusEffectDotBoxes;
 	TSharedPtr<SBorder> CurseOverlayBorder;
 	TSharedPtr<SBorder> FullMapOverlayBorder;
+	TSharedPtr<SBorder> PauseBackdropBorder;
 	TArray<TSharedPtr<SBorder>> HeartBorders;
+	TArray<TSharedPtr<SBox>> HeartFillBoxes;
 	TArray<TSharedPtr<SImage>> HeartImages;
 	TSharedPtr<FSlateBrush> HeartBrush;
+	TSharedPtr<FSlateBrush> HeartBlessingBrush;
+	TArray<TSharedPtr<FSlateBrush>> HeartTierBrushes;
 	TSharedPtr<SBox> QuickReviveIconRowBox;
 	TSharedPtr<SImage> QuickReviveIconImage;
 	TSharedPtr<FSlateBrush> QuickReviveBrush;
@@ -271,6 +300,8 @@ protected:
 	TSharedPtr<SBox> BottomLeftHUDBox;
 	TSharedPtr<SBox> IdolSlotsPanelBox;
 	TSharedPtr<SBox> MinimapPanelBox;
+	TSharedPtr<SBox> PauseStatsPanelBox;
+	TSharedPtr<SBox> PauseAchievementsPanelBox;
 	TSharedPtr<SBox> TikTokPlaceholderBox;
 	TSharedPtr<SBox> TikTokContentBox;
 	TSharedPtr<SBox> MediaViewerVideoBox; // Inner video area (WebView2 syncs to this, not the full panel)
@@ -298,6 +329,7 @@ protected:
 	};
 
 	bool bFullMapOpen = false;
+	bool bInventoryInspectMode = false;
 	bool bHUDDirty = false;
 	bool bPickupCardVisible = false;
 	bool bChestRewardVisible = false;
@@ -321,6 +353,13 @@ protected:
 	FName LastPortraitHeroID = NAME_None;
 	ET66BodyType LastPortraitBodyType = ET66BodyType::TypeA;
 	ET66HeroPortraitVariant LastPortraitVariant = ET66HeroPortraitVariant::Half;
+	bool bAbilityStateInitialized = false;
+	FName LastAbilityHeroID = NAME_None;
+	ET66UltimateType LastUltimateType = ET66UltimateType::None;
+	ET66PassiveType LastPassiveType = ET66PassiveType::None;
+	bool bLastPausePresentationActive = false;
+	bool bHasAppliedMediaViewerOpenState = false;
+	bool bLastAppliedMediaViewerOpenState = false;
 
 	/** Map/minimap: cache actor refs + static marker data; full TActorIterator only every MapCacheRefreshIntervalSeconds. */
 	enum class EMapCacheMarkerType : uint8
@@ -343,6 +382,7 @@ protected:
 	float MapCacheLastRefreshTime = -1.f;
 	TWeakObjectPtr<UWorld> MapCacheWorld;
 	static constexpr float MapCacheRefreshIntervalSeconds = 1.5f;
+	TMap<int32, TArray<FVector2D>> TowerRevealPointsByFloor;
 
 	FTimerHandle MapRefreshTimerHandle;
 	FTimerHandle FPSTimerHandle;

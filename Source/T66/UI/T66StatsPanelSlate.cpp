@@ -15,7 +15,31 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/SToolTip.h"
 
-static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Description)
+static int32 AdjustStatsPanelFontSize(int32 BaseSize, int32 FontSizeAdjustment)
+{
+	return FMath::Max(BaseSize + FontSizeAdjustment, 8);
+}
+
+static FSlateFontInfo MakeStatsPanelHeadingFont(int32 FontSizeAdjustment)
+{
+	FSlateFontInfo Font = FT66Style::Tokens::FontHeading();
+	Font.Size = AdjustStatsPanelFontSize(Font.Size, FontSizeAdjustment);
+	return Font;
+}
+
+static FSlateFontInfo MakeStatsPanelBodyFont(int32 FontSizeAdjustment)
+{
+	FSlateFontInfo Font = FT66Style::Tokens::FontBody();
+	Font.Size = AdjustStatsPanelFontSize(Font.Size, FontSizeAdjustment);
+	return Font;
+}
+
+static FSlateFontInfo MakeStatsPanelBoldFont(int32 BaseSize, int32 FontSizeAdjustment)
+{
+	return FT66Style::Tokens::FontBold(AdjustStatsPanelFontSize(BaseSize, FontSizeAdjustment));
+}
+
+static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Description, int32 FontSizeAdjustment = 0)
 {
 	return SNew(SToolTip)
 	[
@@ -29,7 +53,7 @@ static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Desc
 			[
 				SNew(STextBlock)
 				.Text(Title)
-				.Font(FT66Style::Tokens::FontBold(14))
+				.Font(MakeStatsPanelBoldFont(14, FontSizeAdjustment))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
 			+ SVerticalBox::Slot().AutoHeight()
@@ -37,6 +61,7 @@ static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Desc
 				SNew(STextBlock)
 				.Text(Description)
 				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+				.Font(MakeStatsPanelBodyFont(FontSizeAdjustment))
 				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				.AutoWrapText(true)
 				.WrapTextAt(280.f)
@@ -45,7 +70,7 @@ static TSharedRef<SToolTip> MakeT66Tooltip(const FText& Title, const FText& Desc
 	];
 }
 
-/** Per-category stat indices (ET66SecondaryStatType enum values). Crit Damage under Damage, Crit Chance under Attack Speed. */
+/** Per-category stat indices (ET66SecondaryStatType enum values). */
 enum class EDerivedStatLine : uint8
 {
 	None,
@@ -67,9 +92,6 @@ static const int32 CatDamage[] =
 	static_cast<int32>(ET66SecondaryStatType::BounceDamage),
 	static_cast<int32>(ET66SecondaryStatType::PierceDamage),
 	static_cast<int32>(ET66SecondaryStatType::DotDamage),
-	static_cast<int32>(ET66SecondaryStatType::CritDamage),
-	static_cast<int32>(ET66SecondaryStatType::CloseRangeDamage),
-	static_cast<int32>(ET66SecondaryStatType::LongRangeDamage),
 };
 static const int32 CatAttackSpeed[] =
 {
@@ -77,7 +99,6 @@ static const int32 CatAttackSpeed[] =
 	static_cast<int32>(ET66SecondaryStatType::BounceSpeed),
 	static_cast<int32>(ET66SecondaryStatType::PierceSpeed),
 	static_cast<int32>(ET66SecondaryStatType::DotSpeed),
-	static_cast<int32>(ET66SecondaryStatType::CritChance),
 };
 static const int32 CatAttackScale[] =
 {
@@ -85,34 +106,34 @@ static const int32 CatAttackScale[] =
 	static_cast<int32>(ET66SecondaryStatType::BounceScale),
 	static_cast<int32>(ET66SecondaryStatType::PierceScale),
 	static_cast<int32>(ET66SecondaryStatType::DotScale),
+};
+static const int32 CatAccuracy[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::CritDamage),
+	static_cast<int32>(ET66SecondaryStatType::CritChance),
 	static_cast<int32>(ET66SecondaryStatType::AttackRange),
+	static_cast<int32>(ET66SecondaryStatType::Accuracy),
 };
 static const int32 CatArmor[] =
 {
 	static_cast<int32>(ET66SecondaryStatType::Taunt),
-	static_cast<int32>(ET66SecondaryStatType::ReflectDamage),
-	static_cast<int32>(ET66SecondaryStatType::HpRegen),
-	static_cast<int32>(ET66SecondaryStatType::Crush),
 	static_cast<int32>(ET66SecondaryStatType::DamageReduction),
+	static_cast<int32>(ET66SecondaryStatType::ReflectDamage),
+	static_cast<int32>(ET66SecondaryStatType::Crush),
 };
 static const int32 CatEvasion[] =
 {
-	static_cast<int32>(ET66SecondaryStatType::Invisibility),
-	static_cast<int32>(ET66SecondaryStatType::CounterAttack),
-	static_cast<int32>(ET66SecondaryStatType::LifeSteal),
-	static_cast<int32>(ET66SecondaryStatType::Assassinate),
 	static_cast<int32>(ET66SecondaryStatType::EvasionChance),
+	static_cast<int32>(ET66SecondaryStatType::CounterAttack),
+	static_cast<int32>(ET66SecondaryStatType::Invisibility),
+	static_cast<int32>(ET66SecondaryStatType::Assassinate),
 };
 static const int32 CatLuck[] =
 {
-	static_cast<int32>(ET66SecondaryStatType::SpinWheel),
 	static_cast<int32>(ET66SecondaryStatType::TreasureChest),
 	static_cast<int32>(ET66SecondaryStatType::Cheating),
+	static_cast<int32>(ET66SecondaryStatType::Stealing),
 	static_cast<int32>(ET66SecondaryStatType::LootCrate),
-};
-static const int32 CatMovement[] =
-{
-	static_cast<int32>(ET66SecondaryStatType::MovementSpeed),
 };
 
 static const FSecondaryStatCategory SecondaryStatCategories[] =
@@ -120,10 +141,10 @@ static const FSecondaryStatCategory SecondaryStatCategories[] =
 	{ NSLOCTEXT("T66.StatsPanel", "CatDamage",      "Damage"),         CatDamage,      UE_ARRAY_COUNT(CatDamage), EDerivedStatLine::None },
 	{ NSLOCTEXT("T66.StatsPanel", "CatAttackSpeed", "Attack Speed"),   CatAttackSpeed, UE_ARRAY_COUNT(CatAttackSpeed), EDerivedStatLine::None },
 	{ NSLOCTEXT("T66.StatsPanel", "CatAttackScale", "Attack Scale"),   CatAttackScale, UE_ARRAY_COUNT(CatAttackScale), EDerivedStatLine::None },
+	{ NSLOCTEXT("T66.StatsPanel", "CatAccuracy",    "Accuracy"),       CatAccuracy,    UE_ARRAY_COUNT(CatAccuracy), EDerivedStatLine::None },
 	{ NSLOCTEXT("T66.StatsPanel", "CatArmor",       "Armor"),          CatArmor,       UE_ARRAY_COUNT(CatArmor), EDerivedStatLine::ArmorReduction },
 	{ NSLOCTEXT("T66.StatsPanel", "CatEvasion",     "Evasion"),        CatEvasion,     UE_ARRAY_COUNT(CatEvasion), EDerivedStatLine::EvasionChance },
 	{ NSLOCTEXT("T66.StatsPanel", "CatLuck",        "Luck"),           CatLuck,        UE_ARRAY_COUNT(CatLuck), EDerivedStatLine::None },
-	{ NSLOCTEXT("T66.StatsPanel", "CatMovement",    "Movement"),       CatMovement,    UE_ARRAY_COUNT(CatMovement), EDerivedStatLine::None },
 };
 static constexpr int32 NumSecondaryStatCategories = UE_ARRAY_COUNT(SecondaryStatCategories);
 
@@ -137,10 +158,10 @@ static FText GetPrimaryStatLabel(UT66LocalizationSubsystem* Loc, int32 Index)
 		case 1: return Loc->GetText_Stat_Damage();
 		case 2: return Loc->GetText_Stat_AttackSpeed();
 		case 3: return Loc->GetText_Stat_AttackScale();
-		case 4: return Loc->GetText_Stat_Armor();
-		case 5: return Loc->GetText_Stat_Evasion();
-		case 6: return Loc->GetText_Stat_Luck();
-		case 7: return Loc->GetText_Stat_Speed();
+		case 4: return Loc->GetText_Stat_Accuracy();
+		case 5: return Loc->GetText_Stat_Armor();
+		case 6: return Loc->GetText_Stat_Evasion();
+		case 7: return Loc->GetText_Stat_Luck();
 		default: return FText::FromString(TEXT("?"));
 	}
 }
@@ -152,12 +173,12 @@ static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
 		|| SecType == ET66SecondaryStatType::Crush
 		|| SecType == ET66SecondaryStatType::Invisibility
 		|| SecType == ET66SecondaryStatType::CounterAttack
-		|| SecType == ET66SecondaryStatType::LifeSteal
 		|| SecType == ET66SecondaryStatType::Assassinate
 		|| SecType == ET66SecondaryStatType::Cheating
 		|| SecType == ET66SecondaryStatType::Stealing
 		|| SecType == ET66SecondaryStatType::DamageReduction
-		|| SecType == ET66SecondaryStatType::EvasionChance;
+		|| SecType == ET66SecondaryStatType::EvasionChance
+		|| SecType == ET66SecondaryStatType::Accuracy;
 }
 
 static FText FormatBonusPercent(float BonusRatio)
@@ -189,7 +210,7 @@ static FText GetDerivedStatLabel(EDerivedStatLine DerivedLine)
 	case EDerivedStatLine::ArmorReduction:
 		return NSLOCTEXT("T66.StatsPanel", "ArmorReduction", "Total Damage Reduction");
 	case EDerivedStatLine::EvasionChance:
-		return NSLOCTEXT("T66.StatsPanel", "EvasionChance", "Total Evasion Chance");
+		return NSLOCTEXT("T66.StatsPanel", "EvasionChance", "Total Dodge Chance");
 	case EDerivedStatLine::None:
 	default:
 		return FText::GetEmpty();
@@ -203,7 +224,7 @@ static FText GetDerivedStatDescription(EDerivedStatLine DerivedLine)
 	case EDerivedStatLine::ArmorReduction:
 		return NSLOCTEXT("T66.StatsPanel", "ArmorReductionDesc", "Total incoming damage reduction from your Armor stat and Damage Reduction items.");
 	case EDerivedStatLine::EvasionChance:
-		return NSLOCTEXT("T66.StatsPanel", "EvasionChanceDesc", "Total chance to fully dodge an incoming hit from your Evasion stat and Evasion Chance items.");
+		return NSLOCTEXT("T66.StatsPanel", "EvasionChanceDesc", "Total chance to fully dodge an incoming hit from your Evasion stat and Dodge items.");
 	case EDerivedStatLine::None:
 	default:
 		return FText::GetEmpty();
@@ -330,10 +351,10 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 	SetPrimaryLine(1, RunState->GetDamageStat());
 	SetPrimaryLine(2, RunState->GetAttackSpeedStat());
 	SetPrimaryLine(3, RunState->GetScaleStat());
-	SetPrimaryLine(4, RunState->GetArmorStat());
-	SetPrimaryLine(5, RunState->GetEvasionStat());
-	SetPrimaryLine(6, RunState->GetLuckStat());
-	SetPrimaryLine(7, RunState->GetSpeedStat());
+	SetPrimaryLine(4, RunState->GetAccuracyStat());
+	SetPrimaryLine(5, RunState->GetArmorStat());
+	SetPrimaryLine(6, RunState->GetEvasionStat());
+	SetPrimaryLine(7, RunState->GetLuckStat());
 
 	if (ArmorReductionLine.IsValid())
 	{
@@ -369,10 +390,14 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 	UT66RunStateSubsystem* RunState,
 	UT66LocalizationSubsystem* Loc,
 	float WidthOverride,
-	bool bExtended)
+	bool bExtended,
+	int32 FontSizeAdjustment,
+	int32 HeadingFontSizeAdjustment)
 {
 	const FText HeaderText = NSLOCTEXT("T66.StatsPanel", "Header", "STATS");
 	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
+	const FSlateFontInfo HeadingFont = MakeStatsPanelHeadingFont(FontSizeAdjustment + HeadingFontSizeAdjustment);
+	const FSlateFontInfo BodyFont = MakeStatsPanelBodyFont(FontSizeAdjustment);
 
 	TSharedRef<SVerticalBox> StatsBox = SNew(SVerticalBox);
 
@@ -382,10 +407,10 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		const int32 DamageStat = RunState->GetDamageStat();
 		const int32 AttackSpeedStat = RunState->GetAttackSpeedStat();
 		const int32 AttackScaleStat = RunState->GetScaleStat();
+		const int32 AccuracyStat = RunState->GetAccuracyStat();
 		const int32 ArmorStat = RunState->GetArmorStat();
 		const int32 EvasionStat = RunState->GetEvasionStat();
 		const int32 LuckStat = RunState->GetLuckStat();
-		const int32 SpeedStat = RunState->GetSpeedStat();
 
 		auto AddStatLine = [&](const FText& Label, int32 Value, const FText& TooltipTitle, const FText& TooltipDesc)
 		{
@@ -394,11 +419,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc, FontSizeAdjustment))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
 					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.Font(BodyFont)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
@@ -414,11 +440,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc, FontSizeAdjustment))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, ValueText))
 					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.Font(BodyFont)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
@@ -428,10 +455,10 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 		AddStatLine(GetPrimaryStatLabel(Loc, 1), DamageStat,      GetPrimaryStatLabel(Loc, 1), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty());
 		AddStatLine(GetPrimaryStatLabel(Loc, 2), AttackSpeedStat, GetPrimaryStatLabel(Loc, 2), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty());
 		AddStatLine(GetPrimaryStatLabel(Loc, 3), AttackScaleStat, GetPrimaryStatLabel(Loc, 3), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 4), ArmorStat,       GetPrimaryStatLabel(Loc, 4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 5), EvasionStat,     GetPrimaryStatLabel(Loc, 5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 6), LuckStat,        GetPrimaryStatLabel(Loc, 6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 7), SpeedStat,       GetPrimaryStatLabel(Loc, 7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 4), AccuracyStat,    GetPrimaryStatLabel(Loc, 4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 5), ArmorStat,       GetPrimaryStatLabel(Loc, 5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 6), EvasionStat,     GetPrimaryStatLabel(Loc, 6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 7), LuckStat,        GetPrimaryStatLabel(Loc, 7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
 
 		if (bExtended)
 		{
@@ -461,6 +488,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 					SNew(STextBlock)
 					.Text(Text)
 					.TextStyle(&HeadingStyle)
+					.Font(HeadingFont)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				];
 			};
@@ -510,6 +538,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 			SNew(STextBlock)
 			.Text(HeaderText)
 			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+			.Font(HeadingFont)
 		]
 		+ SVerticalBox::Slot().AutoHeight()
 		[
@@ -530,9 +559,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 	UT66LocalizationSubsystem* Loc,
 	const TSharedRef<FT66LiveStatsPanel>& LivePanel,
 	float WidthOverride,
-	bool bExtended)
+	bool bExtended,
+	int32 FontSizeAdjustment)
 {
 	const FText HeaderText = NSLOCTEXT("T66.StatsPanel", "Header", "STATS");
+	const FSlateFontInfo HeadingFont = MakeStatsPanelHeadingFont(FontSizeAdjustment);
+	const FSlateFontInfo BodyFont = MakeStatsPanelBodyFont(FontSizeAdjustment);
 
 	LivePanel->Reset();
 
@@ -547,17 +579,18 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 			.Padding(0.f)
-			.ToolTip(MakeT66Tooltip(Label, Description))
+			.ToolTip(MakeT66Tooltip(Label, Description, FontSizeAdjustment))
 			[
 				SAssignNew(LivePanel->PrimaryLines[Index], STextBlock)
 				.Text(FText::GetEmpty())
 				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+				.Font(BodyFont)
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
 		];
 	};
 
-	for (int32 Index = 0; Index < 8; ++Index)
+	for (int32 Index = 0; Index < 7; ++Index)
 	{
 		AddPrimaryLine(Index);
 	}
@@ -589,6 +622,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 				SNew(STextBlock)
 				.Text(Text)
 				.TextStyle(&HeadingStyle)
+				.Font(HeadingFont)
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			];
 		};
@@ -610,11 +644,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 					.Padding(0.f)
-					.ToolTip(MakeT66Tooltip(DerivedLabel, Description))
+					.ToolTip(MakeT66Tooltip(DerivedLabel, Description, FontSizeAdjustment))
 					[
 						SAssignNew(DerivedLineText, STextBlock)
 						.Text(FText::GetEmpty())
 						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+						.Font(BodyFont)
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				];
@@ -641,11 +676,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 					SNew(SBorder)
 					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 					.Padding(0.f)
-					.ToolTip(MakeT66Tooltip(Label, Description))
+					.ToolTip(MakeT66Tooltip(Label, Description, FontSizeAdjustment))
 					[
 						SAssignNew(LineText, STextBlock)
 						.Text(FText::GetEmpty())
 						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+						.Font(BodyFont)
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 				];
@@ -672,6 +708,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 		SNew(STextBlock)
 		.Text(HeaderText)
 		.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+		.Font(HeadingFont)
 	];
 
 	if (bExtended)
@@ -703,10 +740,13 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 	UT66LeaderboardRunSummarySaveGame* Snapshot,
 	UT66LocalizationSubsystem* Loc,
-	float WidthOverride)
+	float WidthOverride,
+	int32 FontSizeAdjustment)
 {
 	const FText HeaderText = NSLOCTEXT("T66.StatsPanel", "Header", "STATS");
 	const FText StatFmt = Loc ? Loc->GetText_StatLineFormat() : NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
+	const FSlateFontInfo HeadingFont = MakeStatsPanelHeadingFont(FontSizeAdjustment);
+	const FSlateFontInfo BodyFont = MakeStatsPanelBodyFont(FontSizeAdjustment);
 
 	TSharedRef<SVerticalBox> StatsBox = SNew(SVerticalBox);
 
@@ -719,11 +759,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc, FontSizeAdjustment))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, FText::AsNumber(Value)))
 					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.Font(BodyFont)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
@@ -739,11 +780,12 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(0.f)
-				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc))
+				.ToolTip(MakeT66Tooltip(TooltipTitle, TooltipDesc, FontSizeAdjustment))
 				[
 					SNew(STextBlock)
 					.Text(FText::Format(StatFmt, Label, ValueText))
 					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.Font(BodyFont)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				]
 			];
@@ -753,10 +795,10 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 		AddStatLine(GetPrimaryStatLabel(Loc, 1), Snapshot->DamageStat,      GetPrimaryStatLabel(Loc, 1), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty());
 		AddStatLine(GetPrimaryStatLabel(Loc, 2), Snapshot->AttackSpeedStat, GetPrimaryStatLabel(Loc, 2), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty());
 		AddStatLine(GetPrimaryStatLabel(Loc, 3), Snapshot->AttackScaleStat, GetPrimaryStatLabel(Loc, 3), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 4), Snapshot->ArmorStat,       GetPrimaryStatLabel(Loc, 4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 5), Snapshot->EvasionStat,     GetPrimaryStatLabel(Loc, 5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 6), Snapshot->LuckStat,        GetPrimaryStatLabel(Loc, 6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
-		AddStatLine(GetPrimaryStatLabel(Loc, 7), Snapshot->SpeedStat,       GetPrimaryStatLabel(Loc, 7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 4), Snapshot->AccuracyStat,    GetPrimaryStatLabel(Loc, 4), Loc ? Loc->GetText_PrimaryStatDescription(4) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 5), Snapshot->ArmorStat,       GetPrimaryStatLabel(Loc, 5), Loc ? Loc->GetText_PrimaryStatDescription(5) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 6), Snapshot->EvasionStat,     GetPrimaryStatLabel(Loc, 6), Loc ? Loc->GetText_PrimaryStatDescription(6) : FText::GetEmpty());
+		AddStatLine(GetPrimaryStatLabel(Loc, 7), Snapshot->LuckStat,        GetPrimaryStatLabel(Loc, 7), Loc ? Loc->GetText_PrimaryStatDescription(7) : FText::GetEmpty());
 
 		const bool bExtended = Snapshot->SecondaryStatValues.Num() > 0;
 		if (bExtended)
@@ -786,6 +828,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 					SNew(STextBlock)
 					.Text(Text)
 					.TextStyle(&HeadingStyle)
+					.Font(HeadingFont)
 					.ColorAndOpacity(FT66Style::Tokens::Text)
 				];
 			};
@@ -836,6 +879,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshot(
 			SNew(STextBlock)
 			.Text(HeaderText)
 			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+			.Font(HeadingFont)
 		]
 		+ SVerticalBox::Slot().AutoHeight()
 		[

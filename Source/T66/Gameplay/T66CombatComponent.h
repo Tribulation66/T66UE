@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "Components/SphereComponent.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66CombatTargetTypes.h"
 #include "T66CombatComponent.generated.h"
 
 class AT66EnemyBase;
@@ -16,6 +17,8 @@ class UT66IdolManagerSubsystem;
 class USoundBase;
 class UNiagaraSystem;
 
+DECLARE_LOG_CATEGORY_EXTERN(LogT66Combat, Log, All);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class T66_API UT66CombatComponent : public UActorComponent
 {
@@ -25,9 +28,11 @@ public:
 	UT66CombatComponent();
 
 	/** Manual attack lock target (affects auto attacks only). */
+	void SetLockedTarget(const FT66CombatTargetHandle& InTarget);
 	void SetLockedTarget(AActor* InTarget);
 	void ClearLockedTarget();
-	AActor* GetLockedTarget() const { return LockedTarget.Get(); }
+	AActor* GetLockedTarget() const { return LockedTarget.Actor.Get(); }
+	const FT66CombatTargetHandle& GetLockedTargetHandle() const { return LockedTarget; }
 	void SetAutoAttackSuppressed(bool bSuppressed) { bSuppressAutoAttack = bSuppressed; }
 	bool IsAutoAttackSuppressed() const { return bSuppressAutoAttack; }
 	void PerformScopedPiercingShot(const FVector& Start, const FVector& End);
@@ -56,7 +61,7 @@ public:
 	/** Static: spawn a death burst at a world location (for enemies/bosses that don't own a CombatComponent). */
 	static void SpawnDeathBurstAtLocation(UWorld* World, const FVector& Location, int32 NumParticles = 20, float BurstRadius = 80.f);
 
-	void PerformUltimateSpearStorm(int32 UltimateDamage);
+	void PerformUltimateSpearStorm(int32 UltimateDamage, const FVector& Start, const FVector& End);
 	void PerformUltimateChainLightning(int32 UltimateDamage);
 	void PerformUltimatePrecisionStrike(int32 UltimateDamage);
 	void PerformUltimateFanTheHammer(int32 UltimateDamage);
@@ -83,7 +88,7 @@ protected:
 
 	FTimerHandle FireTimerHandle;
 
-	TWeakObjectPtr<AActor> LockedTarget;
+	FT66CombatTargetHandle LockedTarget;
 
 	// ---------------------------------------------------------------------------
 	// Overlap-based target detection: a sphere component tracks enemies in range
@@ -109,9 +114,15 @@ protected:
 	 *  Optionally exclude actors already in ExcludeSet (for bounce chains). */
 	AActor* FindClosestEnemyInRange(const FVector& FromLocation, float MaxRangeSq,
 		const TSet<AActor*>* ExcludeSet = nullptr) const;
+	FT66CombatTargetHandle FindClosestTargetHandleInRange(const FVector& FromLocation, float MaxRangeSq, const TSet<FString>* ExcludeKeys = nullptr) const;
 
 	/** Returns true if an actor is a valid auto-attack target (alive enemy/boss). */
 	static bool IsValidAutoTarget(AActor* A);
+	static bool IsValidTargetHandle(const FT66CombatTargetHandle& TargetHandle);
+	static FString MakeTargetHandleKey(const FT66CombatTargetHandle& TargetHandle);
+	FT66CombatTargetHandle MakeActorTargetHandle(AActor* Actor, ET66HitZoneType PreferredHitZone = ET66HitZoneType::Body) const;
+	FT66CombatTargetHandle ResolveAutoAttackTargetHandle(AActor* Actor, bool bFavorLockedZone, class UT66RngSubsystem* RngSub) const;
+	static FVector GetTargetAimPoint(const FT66CombatTargetHandle& TargetHandle);
 
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
@@ -158,17 +169,21 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraSystem> CachedPixelVFXNiagara = nullptr;
 
+	void WarmupVFXSystems();
+
 	/** Returns the active VFX system: pixel if available, otherwise legacy. */
 	UNiagaraSystem* GetActiveVFXSystem() const;
 
 	void PlayShotSfx();
 
 	/** Apply damage to a single actor. EventType for floating text. SourceID for damage log (NAME_None = AutoAttack, or IdolID for idol/DOT). */
+	void ApplyDamageToTargetHandle(const FT66CombatTargetHandle& TargetHandle, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None, FName RangeEventForHero = NAME_None);
 	void ApplyDamageToActor(AActor* Target, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None, FName RangeEventForHero = NAME_None);
 
 	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
 	void SpawnPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color);
 	void SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation);
+	void SpawnArthurUltimateSwordVFX(const FVector& Start, const FVector& End);
 	void SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color);
 	void SpawnDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color);
 	void SpawnIdolPierceVFX(const FName& IdolID, ET66ItemRarity Rarity, const FVector& Start, const FVector& End, const FVector& ImpactLocation, float StartDelaySeconds);

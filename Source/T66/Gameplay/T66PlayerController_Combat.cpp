@@ -3,6 +3,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CombatComponent.h"
+#include "Gameplay/T66CombatHitZoneComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
@@ -18,13 +19,12 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
-#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -46,7 +46,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -100,7 +100,9 @@ namespace
 {
 	static float T66GetAttackReticleYOffset(const int32 ViewportHeight)
 	{
-		return FMath::Clamp(-0.18f * static_cast<float>(ViewportHeight), -220.f, -140.f);
+		// Keep the attack reticle slightly above center so it lands on enemies in the forward playfield
+		// without drifting so high that manual lock-on feels disconnected from the visible HUD reticle.
+		return FMath::Clamp(-0.12f * static_cast<float>(ViewportHeight), -160.f, -96.f);
 	}
 
 	static ET66ItemRarity LootRarityToItemRarity(ET66Rarity Rarity)
@@ -169,12 +171,242 @@ namespace
 		}
 		return OutKeys;
 	}
+
+	static bool T66UsesMouseTriggeredUltimate(const FHeroData& HeroData)
+	{
+		return HeroData.UltimateType == ET66UltimateType::SpearStorm;
+	}
+
+	static bool T66ProjectTargetHandleToScreen(
+		AT66PlayerController* PlayerController,
+		const FT66CombatTargetHandle& TargetHandle,
+		FVector2D& OutScreenPosition)
+	{
+		if (!PlayerController || !TargetHandle.Actor.IsValid())
+		{
+			return false;
+		}
+
+		const FVector AimPoint = TargetHandle.AimPoint.IsNearlyZero()
+			? TargetHandle.Actor->GetActorLocation()
+			: TargetHandle.AimPoint;
+		return PlayerController->ProjectWorldLocationToScreen(AimPoint, OutScreenPosition, true);
+	}
+
+	static void T66TryUpdateBestFallbackTarget(
+		AT66PlayerController* PlayerController,
+		const FT66CombatTargetHandle& CandidateHandle,
+		const FVector2D& AimScreenPosition,
+		const float MaxScreenDistanceSq,
+		AActor*& InOutBestActor,
+		UT66CombatHitZoneComponent*& InOutBestZoneComponent,
+		ET66HitZoneType& InOutBestZoneType,
+		float& InOutBestScoreSq)
+	{
+		if (!CandidateHandle.Actor.IsValid())
+		{
+			return;
+		}
+
+		FVector2D CandidateScreenPosition = FVector2D::ZeroVector;
+		if (!T66ProjectTargetHandleToScreen(PlayerController, CandidateHandle, CandidateScreenPosition))
+		{
+			return;
+		}
+
+		const float ScreenDistanceSq = FVector2D::DistSquared(CandidateScreenPosition, AimScreenPosition);
+		if (ScreenDistanceSq > MaxScreenDistanceSq || ScreenDistanceSq >= InOutBestScoreSq)
+		{
+			return;
+		}
+
+		InOutBestActor = CandidateHandle.Actor.Get();
+		InOutBestZoneComponent = Cast<UT66CombatHitZoneComponent>(CandidateHandle.HitComponent.Get());
+		InOutBestZoneType = (CandidateHandle.HitZoneType == ET66HitZoneType::None)
+			? ET66HitZoneType::Body
+			: CandidateHandle.HitZoneType;
+		InOutBestScoreSq = ScreenDistanceSq;
+	}
+
+	static bool T66TryFindFallbackAttackLockTarget(
+		AT66PlayerController* PlayerController,
+		const FVector2D& AimScreenPosition,
+		AActor*& OutActor,
+		UT66CombatHitZoneComponent*& OutZoneComponent,
+		ET66HitZoneType& OutZoneType)
+	{
+		OutActor = nullptr;
+		OutZoneComponent = nullptr;
+		OutZoneType = ET66HitZoneType::None;
+
+		if (!PlayerController)
+		{
+			return false;
+		}
+
+		UWorld* World = PlayerController->GetWorld();
+		UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+		if (!Registry)
+		{
+			return false;
+		}
+
+		const float MaxScreenDistanceSq = FMath::Square(110.f);
+		float BestScoreSq = TNumericLimits<float>::Max();
+
+		static const ET66HitZoneType EnemyZonePreferences[] =
+		{
+			ET66HitZoneType::Head,
+			ET66HitZoneType::Body,
+		};
+
+		for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+		{
+			AT66EnemyBase* Enemy = WeakEnemy.Get();
+			if (!Enemy || Enemy->CurrentHP <= 0)
+			{
+				continue;
+			}
+
+			for (const ET66HitZoneType CandidateZone : EnemyZonePreferences)
+			{
+				T66TryUpdateBestFallbackTarget(
+					PlayerController,
+					Enemy->ResolveCombatTargetHandle(nullptr, CandidateZone),
+					AimScreenPosition,
+					MaxScreenDistanceSq,
+					OutActor,
+					OutZoneComponent,
+					OutZoneType,
+					BestScoreSq);
+			}
+		}
+
+		static const ET66HitZoneType BossZonePreferences[] =
+		{
+			ET66HitZoneType::Head,
+			ET66HitZoneType::WeakPoint,
+			ET66HitZoneType::Core,
+			ET66HitZoneType::LeftArm,
+			ET66HitZoneType::RightArm,
+			ET66HitZoneType::LeftLeg,
+			ET66HitZoneType::RightLeg,
+			ET66HitZoneType::Body,
+		};
+
+		for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+		{
+			AT66BossBase* Boss = WeakBoss.Get();
+			if (!Boss || !Boss->IsAwakened() || !Boss->IsAlive())
+			{
+				continue;
+			}
+
+			for (const ET66HitZoneType CandidateZone : BossZonePreferences)
+			{
+				T66TryUpdateBestFallbackTarget(
+					PlayerController,
+					Boss->ResolveCombatTargetHandle(nullptr, CandidateZone),
+					AimScreenPosition,
+					MaxScreenDistanceSq,
+					OutActor,
+					OutZoneComponent,
+					OutZoneType,
+					BestScoreSq);
+			}
+		}
+
+		return OutActor != nullptr;
+	}
+
+	static bool T66BuildArthurUltimatePath(
+		AT66PlayerController* PlayerController,
+		AT66HeroBase* Hero,
+		const float MaxRange,
+		FVector& OutStart,
+		FVector& OutEnd)
+	{
+		if (!PlayerController || !Hero || MaxRange <= KINDA_SMALL_NUMBER)
+		{
+			return false;
+		}
+
+		UWorld* World = PlayerController->GetWorld();
+		if (!World)
+		{
+			return false;
+		}
+
+		FVector2D CrosshairScreenPosition = FVector2D::ZeroVector;
+		if (!PlayerController->GetAttackLockScreenPosition(CrosshairScreenPosition))
+		{
+			return false;
+		}
+
+		FVector AimWorldOrigin = FVector::ZeroVector;
+		FVector AimWorldDirection = FVector::ForwardVector;
+		if (!PlayerController->DeprojectScreenPositionToWorld(CrosshairScreenPosition.X, CrosshairScreenPosition.Y, AimWorldOrigin, AimWorldDirection)
+			|| AimWorldDirection.IsNearlyZero())
+		{
+			AimWorldOrigin = PlayerController->PlayerCameraManager
+				? PlayerController->PlayerCameraManager->GetCameraLocation()
+				: Hero->GetActorLocation();
+			AimWorldDirection = PlayerController->PlayerCameraManager
+				? PlayerController->PlayerCameraManager->GetCameraRotation().Vector()
+				: Hero->GetActorForwardVector();
+		}
+
+		AimWorldDirection = AimWorldDirection.GetSafeNormal();
+		if (AimWorldDirection.IsNearlyZero())
+		{
+			AimWorldDirection = Hero->GetActorForwardVector().GetSafeNormal();
+		}
+
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(ArthurUltimateAimTrace), false);
+		Params.AddIgnoredActor(Hero);
+
+		FCollisionObjectQueryParams ObjectParams;
+		ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+		ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+		const FVector CameraMaxEnd = AimWorldOrigin + (AimWorldDirection * MaxRange);
+		FHitResult CameraHit;
+		const FVector AimTarget = World->LineTraceSingleByObjectType(CameraHit, AimWorldOrigin, CameraMaxEnd, ObjectParams, Params)
+			? CameraHit.ImpactPoint
+			: CameraMaxEnd;
+
+		const FVector BaseStart = Hero->GetActorLocation() + (Hero->GetActorUpVector() * 80.f);
+		FVector SwordDirection = (AimTarget - BaseStart).GetSafeNormal();
+		if (SwordDirection.IsNearlyZero())
+		{
+			SwordDirection = AimWorldDirection;
+		}
+		if (SwordDirection.IsNearlyZero())
+		{
+			SwordDirection = Hero->GetActorForwardVector().GetSafeNormal();
+		}
+
+		OutStart = BaseStart + (SwordDirection * 90.f);
+		const FVector CandidateEnd = OutStart + (SwordDirection * MaxRange);
+
+		FHitResult SwordHit;
+		OutEnd = World->LineTraceSingleByObjectType(SwordHit, OutStart, CandidateEnd, ObjectParams, Params)
+			? SwordHit.ImpactPoint
+			: CandidateEnd;
+
+		if (FVector::DistSquared(OutStart, OutEnd) <= KINDA_SMALL_NUMBER)
+		{
+			OutEnd = OutStart + (SwordDirection * MaxRange);
+		}
+
+		return true;
+	}
 }
 
 void AT66PlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
-	SyncLockedEnemyFromCombat();
+	SyncLockedCombatTargetFromCombat();
 }
 
 bool AT66PlayerController::HasAttackLockedEnemy() const
@@ -182,8 +414,16 @@ bool AT66PlayerController::HasAttackLockedEnemy() const
 	const APawn* ControlledPawn = GetPawn();
 	const AT66HeroBase* Hero = Cast<AT66HeroBase>(ControlledPawn);
 	const UT66CombatComponent* Combat = Hero ? Hero->CombatComponent : nullptr;
-	const AT66EnemyBase* CombatLockedEnemy = Combat ? Cast<AT66EnemyBase>(Combat->GetLockedTarget()) : nullptr;
-	return CombatLockedEnemy && CombatLockedEnemy->CurrentHP > 0;
+	AActor* LockedTargetActor = Combat ? Combat->GetLockedTarget() : nullptr;
+	if (const AT66EnemyBase* CombatLockedEnemy = Cast<AT66EnemyBase>(LockedTargetActor))
+	{
+		return CombatLockedEnemy->CurrentHP > 0;
+	}
+	if (const AT66BossBase* CombatLockedBoss = Cast<AT66BossBase>(LockedTargetActor))
+	{
+		return CombatLockedBoss->IsAwakened() && CombatLockedBoss->IsAlive();
+	}
+	return false;
 }
 
 bool AT66PlayerController::GetAttackLockScreenPosition(FVector2D& OutScreenPosition) const
@@ -203,23 +443,56 @@ bool AT66PlayerController::GetAttackLockScreenPosition(FVector2D& OutScreenPosit
 	return true;
 }
 
-void AT66PlayerController::SetLockedEnemy(AT66EnemyBase* NewLockedEnemy, const bool bPropagateToCombatTarget)
+void AT66PlayerController::SetLockedCombatTarget(AActor* NewLockedActor, const bool bPropagateToCombatTarget, const ET66HitZoneType InLockedHitZoneType, UT66CombatHitZoneComponent* LockedZoneComponent)
 {
-	if (NewLockedEnemy && NewLockedEnemy->CurrentHP <= 0)
+	if (AT66EnemyBase* NewLockedEnemy = Cast<AT66EnemyBase>(NewLockedActor))
 	{
-		NewLockedEnemy = nullptr;
+		if (NewLockedEnemy->CurrentHP <= 0)
+		{
+			NewLockedActor = nullptr;
+		}
+	}
+	else if (AT66BossBase* NewLockedBoss = Cast<AT66BossBase>(NewLockedActor))
+	{
+		if (!NewLockedBoss->IsAwakened() || !NewLockedBoss->IsAlive())
+		{
+			NewLockedActor = nullptr;
+		}
 	}
 
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
 	UT66CombatComponent* Combat = Hero ? Hero->CombatComponent : nullptr;
 
-	if (LockedEnemy.Get() == NewLockedEnemy)
+	const ET66HitZoneType SanitizedHitZoneType = (InLockedHitZoneType == ET66HitZoneType::None) ? ET66HitZoneType::Body : InLockedHitZoneType;
+	auto BuildTargetHandle = [SanitizedHitZoneType, LockedZoneComponent](AActor* TargetActor) -> FT66CombatTargetHandle
+	{
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(TargetActor))
+		{
+			return Enemy->ResolveCombatTargetHandle(LockedZoneComponent, SanitizedHitZoneType);
+		}
+		if (AT66BossBase* Boss = Cast<AT66BossBase>(TargetActor))
+		{
+			return Boss->ResolveCombatTargetHandle(LockedZoneComponent, SanitizedHitZoneType);
+		}
+
+		FT66CombatTargetHandle Handle;
+		Handle.Actor = TargetActor;
+		Handle.HitComponent = LockedZoneComponent;
+		Handle.HitZoneType = SanitizedHitZoneType;
+		Handle.HitZoneName = LockedZoneComponent ? LockedZoneComponent->HitZoneName : NAME_None;
+		Handle.AimPoint = TargetActor ? TargetActor->GetActorLocation() : FVector::ZeroVector;
+		return Handle;
+	};
+
+	if (LockedCombatActor.Get() == NewLockedActor
+		&& LockedCombatHitZoneType == SanitizedHitZoneType
+		&& LockedCombatZoneComponent.Get() == LockedZoneComponent)
 	{
 		if (bPropagateToCombatTarget && Combat)
 		{
-			if (NewLockedEnemy)
+			if (NewLockedActor)
 			{
-				Combat->SetLockedTarget(NewLockedEnemy);
+				Combat->SetLockedTarget(BuildTargetHandle(NewLockedActor));
 			}
 			else
 			{
@@ -229,23 +502,25 @@ void AT66PlayerController::SetLockedEnemy(AT66EnemyBase* NewLockedEnemy, const b
 		return;
 	}
 
-	if (LockedEnemy.IsValid())
+	if (AT66EnemyBase* PreviousLockedEnemy = Cast<AT66EnemyBase>(LockedCombatActor.Get()))
 	{
-		LockedEnemy->SetLockedIndicator(false);
+		PreviousLockedEnemy->SetLockedIndicator(false);
 	}
 
-	LockedEnemy = NewLockedEnemy;
+	LockedCombatActor = NewLockedActor;
+	LockedCombatHitZoneType = SanitizedHitZoneType;
+	LockedCombatZoneComponent = LockedZoneComponent;
 
-	if (LockedEnemy.IsValid())
+	if (AT66EnemyBase* NextLockedEnemy = Cast<AT66EnemyBase>(LockedCombatActor.Get()))
 	{
-		LockedEnemy->SetLockedIndicator(true);
+		NextLockedEnemy->SetLockedIndicator(true);
 	}
 
 	if (bPropagateToCombatTarget && Combat)
 	{
-		if (NewLockedEnemy)
+		if (NewLockedActor)
 		{
-			Combat->SetLockedTarget(NewLockedEnemy);
+			Combat->SetLockedTarget(BuildTargetHandle(NewLockedActor));
 		}
 		else
 		{
@@ -254,17 +529,32 @@ void AT66PlayerController::SetLockedEnemy(AT66EnemyBase* NewLockedEnemy, const b
 	}
 }
 
-void AT66PlayerController::SyncLockedEnemyFromCombat()
+void AT66PlayerController::SyncLockedCombatTargetFromCombat()
 {
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
 	UT66CombatComponent* Combat = Hero ? Hero->CombatComponent : nullptr;
-	AT66EnemyBase* CombatLockedEnemy = Combat ? Cast<AT66EnemyBase>(Combat->GetLockedTarget()) : nullptr;
-	if (CombatLockedEnemy && CombatLockedEnemy->CurrentHP <= 0)
+	const FT66CombatTargetHandle CombatTargetHandle = Combat ? Combat->GetLockedTargetHandle() : FT66CombatTargetHandle{};
+	AActor* CombatLockedActor = CombatTargetHandle.Actor.Get();
+	if (AT66EnemyBase* CombatLockedEnemy = Cast<AT66EnemyBase>(CombatLockedActor))
 	{
-		CombatLockedEnemy = nullptr;
+		if (CombatLockedEnemy->CurrentHP <= 0)
+		{
+			CombatLockedActor = nullptr;
+		}
+	}
+	else if (AT66BossBase* CombatLockedBoss = Cast<AT66BossBase>(CombatLockedActor))
+	{
+		if (!CombatLockedBoss->IsAwakened() || !CombatLockedBoss->IsAlive())
+		{
+			CombatLockedActor = nullptr;
+		}
 	}
 
-	SetLockedEnemy(CombatLockedEnemy, false);
+	SetLockedCombatTarget(
+		CombatLockedActor,
+		false,
+		CombatTargetHandle.HitZoneType,
+		Cast<UT66CombatHitZoneComponent>(CombatTargetHandle.HitComponent.Get()));
 }
 
 
@@ -322,6 +612,24 @@ void AT66PlayerController::RefreshGameplayMouseMappings()
 	}
 }
 
+bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
+{
+	if (bHeroOneScopedUltActive || !CanUseCombatMouseInput())
+	{
+		return false;
+	}
+
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	FHeroData HeroData;
+	if (!T66GI || !T66GI->GetSelectedHeroData(HeroData) || !T66UsesMouseTriggeredUltimate(HeroData))
+	{
+		return false;
+	}
+
+	HandleUltimatePressed();
+	return true;
+}
+
 
 void AT66PlayerController::HandleUltimatePressed()
 {
@@ -353,8 +661,27 @@ void AT66PlayerController::HandleUltimatePressed()
 	switch (UltType)
 	{
 	case ET66UltimateType::SpearStorm:
-		if (Combat)
-			Combat->PerformUltimateSpearStorm(UltDmg);
+		if (Combat && Hero)
+		{
+			FVector SwordStart = FVector::ZeroVector;
+			FVector SwordEnd = FVector::ZeroVector;
+			if (!T66BuildArthurUltimatePath(this, Hero, 2400.f, SwordStart, SwordEnd))
+			{
+				const FVector FallbackDirection = Hero->GetActorForwardVector().GetSafeNormal();
+				SwordStart = Hero->GetActorLocation() + (Hero->GetActorUpVector() * 80.f) + (FallbackDirection * 90.f);
+				SwordEnd = SwordStart + (FallbackDirection * 2400.f);
+			}
+
+			Combat->PerformUltimateSpearStorm(UltDmg, SwordStart, SwordEnd);
+		}
+		else if (Combat)
+		{
+			const AActor* CombatOwner = Combat->GetOwner();
+			const FVector FallbackDirection = CombatOwner ? CombatOwner->GetActorForwardVector().GetSafeNormal() : FVector::ForwardVector;
+			const FVector FallbackStart = (CombatOwner ? CombatOwner->GetActorLocation() : FVector::ZeroVector) + FVector(0.f, 0.f, 80.f) + (FallbackDirection * 90.f);
+			const FVector FallbackEnd = FallbackStart + (FallbackDirection * 2400.f);
+			Combat->PerformUltimateSpearStorm(UltDmg, FallbackStart, FallbackEnd);
+		}
 		else
 		{
 			ApplyUltimateDamageToRegisteredTargets(World, UltDmg);
@@ -464,6 +791,7 @@ bool AT66PlayerController::CanUseCombatMouseInput() const
 	// Suppress combat mouse inputs if a modal overlay is active (cursor is visible for UI).
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	return IsGameplayLevel()
+		&& !bInventoryInspectOpen
 		&& !(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 		&& !(GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
 		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
@@ -499,22 +827,60 @@ void AT66PlayerController::HandleAttackLockPressed()
 	Params.AddIgnoredActor(Hero);
 	const bool bHit = GetHitResultAtScreenPosition(CrosshairScreenPosition, ECC_Visibility, Params, Hit);
 
-	AT66EnemyBase* Enemy = bHit ? Cast<AT66EnemyBase>(Hit.GetActor()) : nullptr;
-	if (LockedEnemy.IsValid())
+	AActor* TargetActor = bHit ? Hit.GetActor() : nullptr;
+	UT66CombatHitZoneComponent* HitZoneComponent = bHit ? Cast<UT66CombatHitZoneComponent>(Hit.GetComponent()) : nullptr;
+	if (!TargetActor && HitZoneComponent)
 	{
-		if (!Enemy || Enemy->CurrentHP <= 0)
+		TargetActor = HitZoneComponent->GetOwner();
+	}
+
+	ET66HitZoneType HitZoneType = HitZoneComponent ? HitZoneComponent->HitZoneType : ET66HitZoneType::Body;
+	auto IsLockableCombatTarget = [](AActor* CandidateActor) -> bool
+	{
+		if (const AT66EnemyBase* CandidateEnemy = Cast<AT66EnemyBase>(CandidateActor))
 		{
-			SetLockedEnemy(nullptr, true);
+			return CandidateEnemy->CurrentHP > 0;
+		}
+		if (const AT66BossBase* CandidateBoss = Cast<AT66BossBase>(CandidateActor))
+		{
+			return CandidateBoss->IsAwakened() && CandidateBoss->IsAlive();
+		}
+		return false;
+	};
+
+	if (!IsLockableCombatTarget(TargetActor))
+	{
+		AActor* FallbackTargetActor = nullptr;
+		UT66CombatHitZoneComponent* FallbackZoneComponent = nullptr;
+		ET66HitZoneType FallbackHitZoneType = ET66HitZoneType::None;
+		if (T66TryFindFallbackAttackLockTarget(this, CrosshairScreenPosition, FallbackTargetActor, FallbackZoneComponent, FallbackHitZoneType))
+		{
+			TargetActor = FallbackTargetActor;
+			HitZoneComponent = FallbackZoneComponent;
+			HitZoneType = (FallbackHitZoneType == ET66HitZoneType::None) ? ET66HitZoneType::Body : FallbackHitZoneType;
+		}
+	}
+
+	if (LockedCombatActor.IsValid())
+	{
+		if (!IsLockableCombatTarget(TargetActor))
+		{
+			SetLockedCombatTarget(nullptr, true);
 			return;
 		}
 
-		if (LockedEnemy.Get() == Enemy)
+		if (LockedCombatActor.Get() == TargetActor)
 		{
-			SetLockedEnemy(nullptr, true);
-			return;
+			const bool bSameZone = LockedCombatHitZoneType == HitZoneType
+				&& LockedCombatZoneComponent.Get() == HitZoneComponent;
+			if (bSameZone)
+			{
+				SetLockedCombatTarget(nullptr, true);
+				return;
+			}
 		}
 
-		SetLockedEnemy(Enemy, true);
+		SetLockedCombatTarget(TargetActor, true, HitZoneType, HitZoneComponent);
 		if (UGameInstance* GI = GetGameInstance())
 		{
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
@@ -525,13 +891,13 @@ void AT66PlayerController::HandleAttackLockPressed()
 		return;
 	}
 
-	if (!Enemy || Enemy->CurrentHP <= 0)
+	if (!IsLockableCombatTarget(TargetActor))
 	{
 		// Clicking empty space does nothing when no lock is active.
 		return;
 	}
 
-	SetLockedEnemy(Enemy, true);
+	SetLockedCombatTarget(TargetActor, true, HitZoneType, HitZoneComponent);
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
@@ -548,6 +914,11 @@ void AT66PlayerController::HandleAttackUnlockPressed()
 	{
 		if (!CanUseCombatMouseInput()) return;
 		ToggleHeroOneScopeView();
+		return;
+	}
+
+	if (TryHandleMouseTriggeredUltimate())
+	{
 		return;
 	}
 
@@ -570,11 +941,11 @@ void AT66PlayerController::HandleAttackUnlockPressed()
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(P);
 	if (Hero && Hero->CombatComponent)
 	{
-		SetLockedEnemy(nullptr, true);
+		SetLockedCombatTarget(nullptr, true);
 	}
 	else
 	{
-		SetLockedEnemy(nullptr, false);
+		SetLockedCombatTarget(nullptr, false);
 	}
 }
 
@@ -583,6 +954,7 @@ void AT66PlayerController::HandleToggleMouseLockPressed()
 {
 	if (!IsGameplayLevel()) return;
 	if (bHeroOneScopedUltActive) return;
+	if (TryHandleMouseTriggeredUltimate()) return;
 	if (!CanUseCombatMouseInput()) return;
 
 	if (bShowMouseCursor)
@@ -668,6 +1040,14 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			InteractionPrimitive = WorldInteractable->TriggerBox.Get();
 		}
+		else if (const AT66IdolAltar* IdolAltar = Cast<AT66IdolAltar>(Actor))
+		{
+			InteractionPrimitive = IdolAltar->InteractTrigger.Get();
+		}
+		else if (const AT66LootBagPickup* LootBag = Cast<AT66LootBagPickup>(Actor))
+		{
+			InteractionPrimitive = LootBag->SphereComponent.Get();
+		}
 		else
 		{
 			InteractionPrimitive = Cast<UPrimitiveComponent>(Actor->GetRootComponent());
@@ -684,6 +1064,11 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 
 		return FVector::DistSquared(Loc, Actor->GetActorLocation());
+	};
+
+	auto ComputeActorDistSq = [&Loc](AActor* Actor) -> float
+	{
+		return Actor ? FVector::DistSquared(Loc, Actor->GetActorLocation()) : FLT_MAX;
 	};
 
 	AT66StageGate* ClosestStageGate = nullptr;
@@ -850,13 +1235,154 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		return;
 	}
-	// Idol Altar (Stage 1)
-	if (ClosestIdolAltar)
+
+	enum class ESecondaryInteractPriority : uint8
 	{
+		LootBag = 0,
+		SpecificWorld = 1,
+		GenericWorld = 2,
+		IdolAltar = 3,
+	};
+
+	struct FSecondaryInteractCandidate
+	{
+		AActor* Actor = nullptr;
+		float CollisionDistSq = FLT_MAX;
+		float ActorDistSq = FLT_MAX;
+		ESecondaryInteractPriority Priority = ESecondaryInteractPriority::GenericWorld;
+	};
+
+	auto ConsiderSecondaryCandidate = [](FSecondaryInteractCandidate& Current, AActor* Candidate, const float CollisionDistSq, const float ActorDistSq, const ESecondaryInteractPriority Priority)
+	{
+		if (!Candidate)
+		{
+			return;
+		}
+
+		const bool bNoCurrent = (Current.Actor == nullptr);
+		const bool bCloserCollision = CollisionDistSq < (Current.CollisionDistSq - 1.f);
+		const bool bEqualCollision = FMath::Abs(CollisionDistSq - Current.CollisionDistSq) <= 1.f;
+		const bool bCloserActor = ActorDistSq < (Current.ActorDistSq - 1.f);
+		const bool bEqualActor = FMath::Abs(ActorDistSq - Current.ActorDistSq) <= 1.f;
+		const bool bHigherPriority = static_cast<uint8>(Priority) < static_cast<uint8>(Current.Priority);
+		if (bNoCurrent
+			|| bCloserCollision
+			|| (bEqualCollision && (bCloserActor || (bEqualActor && bHigherPriority))))
+		{
+			Current.Actor = Candidate;
+			Current.CollisionDistSq = CollisionDistSq;
+			Current.ActorDistSq = ActorDistSq;
+			Current.Priority = Priority;
+		}
+	};
+
+	FSecondaryInteractCandidate SecondaryInteract;
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestLootBag, ClosestLootBagDistSq, ComputeActorDistSq(ClosestLootBag), ESecondaryInteractPriority::LootBag);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestTractor, ClosestTractorDistSq, ComputeActorDistSq(ClosestTractor), ESecondaryInteractPriority::SpecificWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestFountain, ClosestFountainDistSq, ComputeActorDistSq(ClosestFountain), ESecondaryInteractPriority::SpecificWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestChest, ClosestChestDistSq, ComputeActorDistSq(ClosestChest), ESecondaryInteractPriority::SpecificWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWheel, ClosestWheelDistSq, ComputeActorDistSq(ClosestWheel), ESecondaryInteractPriority::SpecificWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCrate, ClosestCrateDistSq, ComputeActorDistSq(ClosestCrate), ESecondaryInteractPriority::SpecificWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCatchUpGold, ClosestCatchUpGoldDistSq, ComputeActorDistSq(ClosestCatchUpGold), ESecondaryInteractPriority::SpecificWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCatchUpLoot, ClosestCatchUpLootDistSq, ComputeActorDistSq(ClosestCatchUpLoot), ESecondaryInteractPriority::SpecificWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWorldInteractable, ClosestWorldInteractableDistSq, ComputeActorDistSq(ClosestWorldInteractable), ESecondaryInteractPriority::GenericWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestIdolAltar, ClosestIdolAltarDistSq, ComputeActorDistSq(ClosestIdolAltar), ESecondaryInteractPriority::IdolAltar);
+	if (AT66LootBagPickup* NearbyBag = NearbyLootBag.Get())
+	{
+		ConsiderSecondaryCandidate(SecondaryInteract, NearbyBag, ComputeInteractionDistSq(NearbyBag), ComputeActorDistSq(NearbyBag), ESecondaryInteractPriority::LootBag);
+	}
+
+	if (AT66LootBagPickup* SelectedLootBag = Cast<AT66LootBagPickup>(SecondaryInteract.Actor))
+	{
+		UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		if (RunState)
+		{
+			const FName PickedItemID = SelectedLootBag->GetItemID();
+			const ET66ItemRarity PickedItemRarity = LootRarityToItemRarity(SelectedLootBag->GetLootRarity());
+			if (T66_IsGamblersTokenItem(PickedItemID))
+			{
+				const int32 TokenLevel = SelectedLootBag->HasExplicitLine1RolledValue() ? SelectedLootBag->GetExplicitLine1RolledValue() : 1;
+				RunState->ApplyGamblersTokenPickup(TokenLevel);
+				SelectedLootBag->ConsumeAndDestroy();
+				ClearNearbyLootBag(SelectedLootBag);
+				if (GameplayHUDWidget)
+				{
+					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
+				}
+			}
+			else if (RunState->HasInventorySpace())
+			{
+				RunState->AddItemWithRarity(PickedItemID, PickedItemRarity);
+				SelectedLootBag->ConsumeAndDestroy();
+				ClearNearbyLootBag(SelectedLootBag);
+				if (GameplayHUDWidget)
+				{
+					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
+				}
+			}
+		}
+		return;
+	}
+	if (AT66PilotableTractor* SelectedTractor = Cast<AT66PilotableTractor>(SecondaryInteract.Actor))
+	{
+		if (SelectedTractor->Interact(this))
+		{
+			return;
+		}
+	}
+	if (AT66FountainOfLifeInteractable* SelectedFountain = Cast<AT66FountainOfLifeInteractable>(SecondaryInteract.Actor))
+	{
+		if (SelectedFountain->Interact(this))
+		{
+			return;
+		}
+	}
+	if (AT66ChestInteractable* SelectedChest = Cast<AT66ChestInteractable>(SecondaryInteract.Actor))
+	{
+		if (SelectedChest->Interact(this))
+		{
+			return;
+		}
+	}
+	if (AT66WheelSpinInteractable* SelectedWheel = Cast<AT66WheelSpinInteractable>(SecondaryInteract.Actor))
+	{
+		if (SelectedWheel->Interact(this))
+		{
+			return;
+		}
+	}
+	if (AT66CrateInteractable* SelectedCrate = Cast<AT66CrateInteractable>(SecondaryInteract.Actor))
+	{
+		if (SelectedCrate->Interact(this))
+		{
+			return;
+		}
+	}
+	if (AT66StageCatchUpGoldInteractable* SelectedCatchUpGold = Cast<AT66StageCatchUpGoldInteractable>(SecondaryInteract.Actor))
+	{
+		if (SelectedCatchUpGold->Interact(this))
+		{
+			return;
+		}
+	}
+	if (AT66StageCatchUpLootInteractable* SelectedCatchUpLoot = Cast<AT66StageCatchUpLootInteractable>(SecondaryInteract.Actor))
+	{
+		if (SelectedCatchUpLoot->Interact(this))
+		{
+			return;
+		}
+	}
+	if (AT66IdolAltar* SelectedIdolAltar = Cast<AT66IdolAltar>(SecondaryInteract.Actor))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
 		UT66IdolAltarOverlayWidget* W = CreateWidget<UT66IdolAltarOverlayWidget>(this, ResolveIdolAltarOverlayClass());
 		if (W)
 		{
-			W->SetSourceAltar(ClosestIdolAltar);
+			W->SetSourceAltar(SelectedIdolAltar);
 			IdolAltarOverlayWidget = W;
 			W->AddToViewport(150); // above gambler overlay
 			FInputModeGameAndUI InputMode;
@@ -866,71 +1392,12 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 		return;
 	}
-	// World interactables (Tractor/Fountain/Chest/Wheel)
-	if (ClosestTractor && ClosestTractor->Interact(this))
+	if (AT66WorldInteractableBase* SelectedWorldInteractable = Cast<AT66WorldInteractableBase>(SecondaryInteract.Actor))
 	{
-		return;
-	}
-	if (ClosestFountain && ClosestFountain->Interact(this))
-	{
-		return;
-	}
-	if (ClosestChest && ClosestChest->Interact(this))
-	{
-		return;
-	}
-	if (ClosestWheel && ClosestWheel->Interact(this))
-	{
-		return;
-	}
-	if (ClosestCrate && ClosestCrate->Interact(this))
-	{
-		return;
-	}
-
-	// Stage Catch Up interactables (Gold/Loot)
-	if (ClosestCatchUpGold && ClosestCatchUpGold->Interact(this))
-	{
-		return;
-	}
-	if (ClosestCatchUpLoot && ClosestCatchUpLoot->Interact(this))
-	{
-		return;
-	}
-	if (ClosestWorldInteractable && ClosestWorldInteractable->Interact(this))
-	{
-		return;
-	}
-	if (ClosestLootBag)
-	{
-		UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-		if (RunState)
+		if (SelectedWorldInteractable->Interact(this))
 		{
-			const FName PickedItemID = ClosestLootBag->GetItemID();
-			const ET66ItemRarity PickedItemRarity = LootRarityToItemRarity(ClosestLootBag->GetLootRarity());
-			if (T66_IsGamblersTokenItem(PickedItemID))
-			{
-				const int32 TokenLevel = ClosestLootBag->HasExplicitLine1RolledValue() ? ClosestLootBag->GetExplicitLine1RolledValue() : 1;
-				RunState->ApplyGamblersTokenPickup(TokenLevel);
-				ClosestLootBag->ConsumeAndDestroy();
-				ClearNearbyLootBag(ClosestLootBag);
-				if (GameplayHUDWidget)
-				{
-					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
-				}
-			}
-			else if (RunState->HasInventorySpace())
-			{
-				RunState->AddItemWithRarity(PickedItemID, PickedItemRarity);
-				ClosestLootBag->ConsumeAndDestroy();
-				ClearNearbyLootBag(ClosestLootBag);
-				if (GameplayHUDWidget)
-				{
-					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
-				}
-			}
+			return;
 		}
-		return;
 	}
 	// Backward-compat: if any old pickups exist, collect instantly (no popup).
 	if (ClosestPickup)

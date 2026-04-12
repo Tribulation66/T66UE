@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 
 AT66StartGate::AT66StartGate()
@@ -55,15 +56,22 @@ void AT66StartGate::Tick(float DeltaTime)
 	// Robust proximity trigger (covers cases where the player starts inside overlap or overlap events don't fire).
 	if (bTriggered) return;
 
-	APawn* Pawn = UGameplayStatics::GetPlayerPawn(this, 0);
-	if (!Pawn) return;
-
-	const FVector HeroLoc = Pawn->GetActorLocation();
 	const FVector GateLoc = GetActorLocation();
-	const float Dist2D = FVector::Dist2D(HeroLoc, GateLoc);
-	if (Dist2D <= TriggerDistance2D)
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		TryTriggerForActor(Pawn);
+		APawn* Pawn = It->Get() ? It->Get()->GetPawn() : nullptr;
+		if (!Pawn)
+		{
+			continue;
+		}
+
+		const FVector HeroLoc = Pawn->GetActorLocation();
+		const float Dist2D = FVector::Dist2D(HeroLoc, GateLoc);
+		if (Dist2D <= TriggerDistance2D)
+		{
+			TryTriggerForActor(Pawn);
+			return;
+		}
 	}
 }
 

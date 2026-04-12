@@ -19,9 +19,11 @@ struct FPendingEnemySpawn
 	TSubclassOf<AT66EnemyBase> ClassToSpawn;
 	FName MobID;
 	bool bIsMiniBoss = false;
+	bool bSpawnFromWall = false;
 	float DifficultyScalar = 1.f;
 	float FinaleScalar = 1.f;
 	int32 StageNum = 1;
+	FVector WallNormal = FVector::ZeroVector;
 };
 
 UCLASS(Blueprintable)
@@ -85,6 +87,19 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float SpawnMaxDistance = 1000.f;
 
+	/** Enemies must not spawn closer than one full gameplay grid cell to any player. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
+	float MinimumPlayerSpawnClearance = 2000.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tower")
+	int32 InitialTowerEnemiesPerGameplayFloor = 3;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tower")
+	float InitialTowerSpawnEdgePadding = 1500.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tower")
+	float InitialTowerSpawnHolePadding = 1800.f;
+
 	/** When true, no enemy waves are spawned (timer not armed, SpawnWave no-op). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Director")
 	bool bSpawningPaused = false;
@@ -100,6 +115,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	void SpawnInitialTowerPopulation();
 	void SpawnWave();
 
 	/** Spawns 1-2 from PendingSpawns, then re-arms timer if more remain. */

@@ -5,10 +5,37 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66BossPartTypes.h"
 #include "T66BossBase.generated.h"
 
 class UStaticMeshComponent;
 class AT66BossGroundAOE;
+class UT66CombatHitZoneComponent;
+class UPrimitiveComponent;
+
+USTRUCT()
+struct FT66BossPartRuntimeState
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName PartID = NAME_None;
+
+	UPROPERTY()
+	ET66HitZoneType HitZoneType = ET66HitZoneType::Body;
+
+	UPROPERTY()
+	float DamageMultiplier = 1.f;
+
+	UPROPERTY()
+	int32 MaxHP = 0;
+
+	UPROPERTY()
+	int32 CurrentHP = 0;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UT66CombatHitZoneComponent> ZoneComponent = nullptr;
+};
 
 /** Boss: dormant until player proximity, then awakens, chases, and fires projectiles. */
 UCLASS(Blueprintable)
@@ -77,6 +104,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|AOE")
 	int32 GroundAOEBaseDamageHP = 25;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Parts")
+	bool bUsesBossPartHitZones = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Parts")
+	TArray<FT66BossPartDefinition> BossPartDefinitions;
+
 	/** Apply an armor debuff (from hero Taunt). Reduces armor temporarily. */
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void ApplyArmorDebuff(float ReductionAmount, float DurationSeconds);
@@ -98,7 +131,11 @@ public:
 
 	/** Called by hero projectile overlap; returns true if boss died. DamageSourceID used for run damage log (default: AutoAttack). EventType for floating text (Crit, DoT; default none). */
 	bool TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
+	bool TakeDamageFromHeroHitZone(int32 DamageAmount, const FT66CombatTargetHandle& TargetHandle, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 	float GetEffectiveArmor() const;
+	bool SupportsCombatHitZones() const;
+	FT66CombatTargetHandle ResolveCombatTargetHandle(const UPrimitiveComponent* HitComponent = nullptr, ET66HitZoneType PreferredZone = ET66HitZoneType::Body) const;
+	FVector GetAimPointForHitZone(ET66HitZoneType HitZoneType) const;
 
 	bool IsAwakened() const { return bAwakened; }
 	bool IsAlive() const { return CurrentHP > 0; }
@@ -123,6 +160,16 @@ protected:
 
 private:
 	APawn* ResolvePlayerPawn();
+	void AssignBossPartDefinitionsForProfile(ET66BossPartProfile InProfile);
+	void EnsureDefaultBossPartDefinitions();
+	void RefreshCombatHitZoneState();
+	void RebuildBossPartState(bool bPreserveCurrentPercent);
+	void BuildBossPartSnapshots(TArray<FT66BossPartSnapshot>& OutBossParts) const;
+	bool RestoreBossPartStateFromRunState();
+	void PushBossPartStateToRunState() const;
+	int32 ResolveBossPartIndex(const UPrimitiveComponent* HitComponent, ET66HitZoneType PreferredZone, FName PreferredPartID = NAME_None) const;
+	int32 FindFallbackBossPartIndex() const;
+	float GetBossPartDamageMultiplier(int32 PartIndex) const;
 
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
@@ -141,5 +188,8 @@ private:
 	FVector CachedWanderDir = FVector::ZeroVector;
 	float WanderDirRefreshAccum = 0.f;
 	TWeakObjectPtr<APawn> CachedPlayerPawn;
+
+	UPROPERTY(Transient)
+	TArray<FT66BossPartRuntimeState> BossPartStates;
 };
 

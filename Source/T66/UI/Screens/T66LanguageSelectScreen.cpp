@@ -55,6 +55,16 @@ namespace
 				.SetColor(FillColor)
 				.SetPadding(Padding));
 	}
+
+	FSlateFontInfo T66LanguageNameFont()
+	{
+		return FT66Style::MakeFont(TEXT("Regular"), 22);
+	}
+
+	FSlateFontInfo T66LanguageTitleFont()
+	{
+		return FT66Style::MakeFont(TEXT("Bold"), 42);
+	}
 }
 
 UT66LanguageSelectScreen::UT66LanguageSelectScreen(const FObjectInitializer& ObjectInitializer)
@@ -123,7 +133,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(LangName)
-							.Font(FT66Style::Tokens::FontBold(22))
+							.Font(T66LanguageNameFont())
 							.ColorAndOpacity_Lambda(GetRowTextColor)
 							.Justification(ETextJustify::Center)
 						]
@@ -139,7 +149,11 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 
 	const float ScreenPadding = 60.0f;
 	const bool bModalPresentation = (UIManager && UIManager->GetCurrentModalType() == ScreenType) || (!UIManager && GetOwningPlayer() && GetOwningPlayer()->IsPaused());
-	const float TopInset = bModalPresentation ? 0.f : (UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f);
+	const float ResponsiveScale = FMath::Max(FT66Style::GetViewportResponsiveScale(), KINDA_SMALL_NUMBER);
+	const float TopBarOverlapPx = 22.f;
+	const float TopInset = bModalPresentation
+		? 0.f
+		: FMath::Max(0.f, ((UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f) - TopBarOverlapPx) / ResponsiveScale);
 
 	const TSharedRef<SWidget> LanguageList =
 		MakeLanguagePanel(
@@ -165,7 +179,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(TitleText)
-			.Font(FT66Style::Tokens::FontBold(42))
+			.Font(T66LanguageTitleFont())
 			.ColorAndOpacity(FT66Style::Tokens::Text)
 		]
 		+ SVerticalBox::Slot()
@@ -250,7 +264,7 @@ TSharedRef<SWidget> UT66LanguageSelectScreen::BuildSlateUI()
 				],
 				ET66PanelType::Panel,
 				T66LanguageShellFill(),
-				FMargin(ScreenPadding, 28.f, ScreenPadding, 28.f))
+				FMargin(ScreenPadding, 0.f, ScreenPadding, 28.f))
 		];
 }
 

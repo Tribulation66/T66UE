@@ -21,6 +21,7 @@
 #include "Gameplay/T66TricksterNPC.h"
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66BossGate.h"
+#include "Gameplay/T66TowerDescentHole.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
@@ -57,6 +58,7 @@
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66TrapSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66GameplayLayout.h"
@@ -89,30 +91,28 @@
 #include "Engine/ExponentialHeightFog.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Engine/PostProcessVolume.h"
-#include "Engine/TextureCube.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
 #include "Materials/MaterialInstanceDynamic.h"
-
-#if WITH_EDITORONLY_DATA
-#include "UObject/SavePackage.h"
-#include "Misc/PackageName.h"
-#include "Math/Float16.h"
-#endif
 #include "Materials/MaterialInterface.h"
 #include "EngineUtils.h"
 #include "Gameplay/T66MainMapTerrain.h"
+#include "Gameplay/T66TowerMapTerrain.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Landscape.h"
 #include "UI/Style/T66Style.h"
+#include "Gameplay/T66LightingSubsystem.h"
+#include "Gameplay/T66TerrainThemeAssets.h"
 #include "T66.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66GameMode, Log, All);
 
 namespace
 {
+	static constexpr float T66TowerStageTransitionDropHeight = 7800.0f;
+
 	// Helper: avoid PIE warnings ("StaticMeshComponent has to be 'Movable' if you'd like to move")
 	// by temporarily setting mobility to Movable while we apply transforms.
 	static void T66_SetStaticMeshActorMobility(AStaticMeshActor* Actor, EComponentMobility::Type Mobility)
@@ -185,6 +185,145 @@ namespace
 
 	static const FName T66MainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
 	static const FName T66MainMapTerrainMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
+	static const FName T66TowerCeilingTag(TEXT("T66_Tower_Ceiling"));
+	static const FName T66TowerTraceBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+	static const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_TowerFloor_");
+	static constexpr bool T66EnableWheelSpinSpawns = false;
+	static constexpr float T66MainMapRoomReserveRadiusCells = 2.70f;
+	static constexpr float T66MainMapCorridorReserveRadiusCells = 0.80f;
+
+	static bool T66ShouldIgnoreTowerCeilingHit(const FHitResult& Hit)
+	{
+		const AActor* HitActor = Hit.GetActor();
+		return HitActor
+			&& (HitActor->ActorHasTag(T66TowerCeilingTag) || HitActor->ActorHasTag(T66TowerTraceBarrierTag));
+	}
+
+	static FName T66MakeTowerFloorTag(const int32 FloorNumber)
+	{
+		return FName(*FString::Printf(TEXT("%s%02d"), T66TowerFloorTagPrefix, FloorNumber));
+	}
+
+	static int32 T66ReadTowerFloorTag(const AActor* Actor)
+	{
+		if (!Actor)
+		{
+			return INDEX_NONE;
+		}
+
+		for (const FName& Tag : Actor->Tags)
+		{
+			const FString TagString = Tag.ToString();
+			if (!TagString.StartsWith(T66TowerFloorTagPrefix))
+			{
+				continue;
+			}
+
+			const FString NumberString = TagString.RightChop(FCString::Strlen(T66TowerFloorTagPrefix));
+			return FCString::Atoi(*NumberString);
+		}
+
+		return INDEX_NONE;
+	}
+
+	static void T66AssignTowerFloorTag(AActor* Actor, const int32 FloorNumber)
+	{
+		if (!Actor || FloorNumber == INDEX_NONE)
+		{
+			return;
+		}
+
+		for (int32 Index = Actor->Tags.Num() - 1; Index >= 0; --Index)
+		{
+			if (Actor->Tags[Index].ToString().StartsWith(T66TowerFloorTagPrefix))
+			{
+				Actor->Tags.RemoveAt(Index);
+			}
+		}
+
+		Actor->Tags.AddUnique(T66MakeTowerFloorTag(FloorNumber));
+	}
+
+	static const T66TowerMapTerrain::FFloor* T66FindTowerFloorByNumber(const T66TowerMapTerrain::FLayout& Layout, const int32 FloorNumber)
+	{
+		for (const T66TowerMapTerrain::FFloor& Floor : Layout.Floors)
+		{
+			if (Floor.FloorNumber == FloorNumber)
+			{
+				return &Floor;
+			}
+		}
+
+		return nullptr;
+	}
+
+	static bool T66TrySnapActorToTowerFloor(UWorld* World, AActor* Actor, const T66TowerMapTerrain::FLayout& Layout, const int32 FloorNumber, const FVector& DesiredLocation)
+	{
+		if (!World || !Actor)
+		{
+			return false;
+		}
+
+		const T66TowerMapTerrain::FFloor* Floor = T66FindTowerFloorByNumber(Layout, FloorNumber);
+		if (!Floor)
+		{
+			return false;
+		}
+
+		const float TraceUp = FMath::Max(700.0f, Layout.FloorSpacing * 0.45f);
+		const float TraceDown = FMath::Max(1000.0f, Layout.FloorThickness + 1200.0f);
+		const FVector TraceStart(DesiredLocation.X, DesiredLocation.Y, Floor->SurfaceZ + TraceUp);
+		const FVector TraceEnd(DesiredLocation.X, DesiredLocation.Y, Floor->SurfaceZ - TraceDown);
+
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(T66SnapActorToTowerFloor), false, Actor);
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+			Params.AddIgnoredActor(*It);
+		}
+
+		FHitResult GroundHit;
+		bool bFoundGround = false;
+		TArray<FHitResult> Hits;
+		if (World->LineTraceMultiByChannel(Hits, TraceStart, TraceEnd, ECC_WorldStatic, Params))
+		{
+			const float SurfaceTolerance = FMath::Max(120.0f, (Layout.FloorThickness * 0.5f) + 20.0f);
+			for (const FHitResult& Hit : Hits)
+			{
+				if (T66ShouldIgnoreTowerCeilingHit(Hit))
+				{
+					continue;
+				}
+
+				if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+				{
+					continue;
+				}
+
+				if (FMath::Abs(Hit.ImpactPoint.Z - Floor->SurfaceZ) > SurfaceTolerance)
+				{
+					continue;
+				}
+
+				GroundHit = Hit;
+				bFoundGround = true;
+				break;
+			}
+		}
+
+		float HalfHeight = 0.0f;
+		if (const UCapsuleComponent* Capsule = Actor->FindComponentByClass<UCapsuleComponent>())
+		{
+			HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+		}
+
+		const float GroundZ = bFoundGround ? GroundHit.ImpactPoint.Z : Floor->SurfaceZ;
+		Actor->SetActorLocation(
+			FVector(DesiredLocation.X, DesiredLocation.Y, GroundZ + HalfHeight + 5.0f),
+			false,
+			nullptr,
+			ETeleportType::TeleportPhysics);
+		return true;
+	}
 
 	static bool T66AreMainMapTerrainMaterialsReady(UWorld* World)
 	{
@@ -251,7 +390,22 @@ namespace
 	static FT66MapPreset T66BuildMainMapPreset(UT66GameInstance* GI)
 	{
 		const ET66Difficulty Difficulty = GI ? GI->SelectedDifficulty : ET66Difficulty::Easy;
-		return T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, T66EnsureRunSeed(GI));
+		const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(GI);
+		return T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, T66EnsureRunSeed(GI), LayoutVariant);
+	}
+
+	static const TCHAR* T66GetMainMapLayoutVariantLabel(const ET66MainMapLayoutVariant LayoutVariant)
+	{
+		switch (LayoutVariant)
+		{
+		case ET66MainMapLayoutVariant::Tower:
+			return TEXT("Tower");
+		case ET66MainMapLayoutVariant::Flat:
+			return TEXT("Flat");
+		case ET66MainMapLayoutVariant::Hilly:
+		default:
+			return TEXT("Hilly");
+		}
 	}
 
 	static const AT66SessionPlayerState* T66GetSessionPlayerState(const AController* Controller)
@@ -311,6 +465,46 @@ namespace
 		return FName(TEXT("Default"));
 	}
 
+	static int32 T66GetConnectedPlayerCount(const UWorld* World)
+	{
+		if (!World)
+		{
+			return 1;
+		}
+
+		int32 Count = 0;
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (It->Get())
+			{
+				++Count;
+			}
+		}
+
+		return FMath::Max(1, Count);
+	}
+
+	static int32 T66GetPlayerSlotIndex(const UWorld* World, const AController* Controller)
+	{
+		if (!World || !Controller)
+		{
+			return 0;
+		}
+
+		int32 Index = 0;
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (It->Get() == Controller)
+			{
+				return Index;
+			}
+
+			++Index;
+		}
+
+		return 0;
+	}
+
 	static bool T66IsStandaloneTutorialMap(const UWorld* World)
 	{
 		if (!World)
@@ -341,96 +535,6 @@ namespace
 		}
 
 		return false;
-	}
-
-	struct FT66DifficultyGroundThemeAssetInfo
-	{
-		const TCHAR* FolderName = nullptr;
-		const TCHAR* AssetSuffix = nullptr;
-	};
-
-	static FT66DifficultyGroundThemeAssetInfo T66GetDifficultyGroundThemeAssetInfo(const ET66Difficulty Difficulty)
-	{
-		switch (Difficulty)
-		{
-		case ET66Difficulty::Medium: return { TEXT("VeryHardGraveyard"), TEXT("VeryHardGraveyard") };
-		case ET66Difficulty::Hard: return { TEXT("ImpossibleNorthPole"), TEXT("ImpossibleNorthPole") };
-		case ET66Difficulty::VeryHard: return { TEXT("PerditionMars"), TEXT("PerditionMars") };
-		case ET66Difficulty::Impossible: return { TEXT("FinalHell"), TEXT("FinalHell") };
-		case ET66Difficulty::Easy:
-		default:
-			return {};
-		}
-	}
-
-	static UTexture* T66LoadDifficultyGroundTexture(const ET66Difficulty Difficulty)
-	{
-		static TMap<FString, TWeakObjectPtr<UTexture>> CachedTextures;
-
-		FString TexturePath = TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock");
-		if (Difficulty != ET66Difficulty::Easy)
-		{
-			const FT66DifficultyGroundThemeAssetInfo ThemeInfo = T66GetDifficultyGroundThemeAssetInfo(Difficulty);
-			if (ThemeInfo.FolderName && ThemeInfo.AssetSuffix)
-			{
-				const FString AssetName = FString::Printf(TEXT("T_MegabonkBlock_%s"), ThemeInfo.AssetSuffix);
-				TexturePath = FString::Printf(
-					TEXT("/Game/World/Terrain/MegabonkThemes/%s/%s.%s"),
-					ThemeInfo.FolderName,
-					*AssetName,
-					*AssetName);
-			}
-		}
-
-		if (const TWeakObjectPtr<UTexture>* Existing = CachedTextures.Find(TexturePath))
-		{
-			if (Existing->IsValid())
-			{
-				return Existing->Get();
-			}
-		}
-
-		UTexture* LoadedTexture = LoadObject<UTexture>(nullptr, *TexturePath);
-		if (!LoadedTexture && Difficulty != ET66Difficulty::Easy)
-		{
-			LoadedTexture = LoadObject<UTexture>(nullptr, TEXT("/Game/World/Terrain/Megabonk/T_MegabonkBlock.T_MegabonkBlock"));
-		}
-
-		CachedTextures.Add(TexturePath, LoadedTexture);
-		return LoadedTexture;
-	}
-
-	static UMaterialInterface* T66ResolveDifficultyGroundMaterial(UObject* Outer, const ET66Difficulty Difficulty)
-	{
-		static TMap<int32, TWeakObjectPtr<UMaterialInterface>> CachedMaterials;
-		const int32 CacheKey = static_cast<int32>(Difficulty);
-		if (const TWeakObjectPtr<UMaterialInterface>* Existing = CachedMaterials.Find(CacheKey))
-		{
-			if (Existing->IsValid())
-			{
-				return Existing->Get();
-			}
-		}
-
-		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
-		UTexture* DifficultyTexture = T66LoadDifficultyGroundTexture(Difficulty);
-		if (BaseMaterial && DifficultyTexture)
-		{
-			if (UMaterialInstanceDynamic* GroundMID = UMaterialInstanceDynamic::Create(BaseMaterial, Outer ? Outer : GetTransientPackage()))
-			{
-				GroundMID->SetTextureParameterValue(TEXT("DiffuseColorMap"), DifficultyTexture);
-				GroundMID->SetTextureParameterValue(TEXT("BaseColorTexture"), DifficultyTexture);
-				GroundMID->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
-				GroundMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
-				GroundMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
-				CachedMaterials.Add(CacheKey, GroundMID);
-				return GroundMID;
-			}
-		}
-
-		UMaterialInterface* FallbackMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkBlock.MI_MegabonkBlock"));
-		CachedMaterials.Add(CacheKey, FallbackMaterial);
-		return FallbackMaterial;
 	}
 
 	static void T66FaceActorTowardLocation2D(AActor* Actor, const FVector& TargetLocation)
@@ -503,11 +607,7 @@ AT66GameMode::AT66GameMode()
 	// Coliseum arena lives inside GameplayLevel, off to the side (walled off). Scaled for 100k map.
 	ColiseumCenter = FVector(-45455.f, -23636.f, 200.f);
 
-	CliffSideMaterials.Empty();
-	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1"))));
-	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile2.MI_HillTile2"))));
-	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile3.MI_HillTile3"))));
-	CliffSideMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile4.MI_HillTile4"))));
+	FT66TerrainThemeAssets::FillDefaultCliffSideMaterials(CliffSideMaterials);
 }
 
 UStaticMesh* AT66GameMode::GetCubeMesh()
@@ -590,7 +690,9 @@ void AT66GameMode::InitializeRunStateForBeginPlay()
 		}
 
 		T66GI->bRunIneligibleForLeaderboard = false; // Fresh run is eligible
+		T66GI->bPendingTowerStageDropIntro = false;
 		RunState->ResetForNewRun();
+		RunState->ActivatePendingSingleUseBuffsForRunStart();
 		if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
 		{
 			DamageLog->ResetForNewRun();
@@ -700,19 +802,48 @@ void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 	TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay = CreateGameplayWarmupOverlay(World, bUsingMainMapTerrain);
 
 	// Phase 0: Spawn the runtime main map terrain before any ground-traced content.
+	const double TerrainSpawnStartSeconds = FPlatformTime::Seconds();
 	SpawnMainMapTerrain();
+	UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnMainMapTerrain finished in %.1f ms."),
+		(FPlatformTime::Seconds() - TerrainSpawnStartSeconds) * 1000.0);
+
+	const double StructureSpawnStartSeconds = FPlatformTime::Seconds();
 	SpawnStageStructuresAndInteractables(World, bUsingMainMapTerrain);
-	SpawnStageDecorativeProps(bUsingMainMapTerrain);
+	UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnStageStructuresAndInteractables finished in %.1f ms."),
+		(FPlatformTime::Seconds() - StructureSpawnStartSeconds) * 1000.0);
 
 	if (bUsingMainMapTerrain)
 	{
+		if (World)
+		{
+			FTimerHandle DeferredPropsHandle;
+			World->GetTimerManager().SetTimer(
+				DeferredPropsHandle,
+				FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					const double PropSpawnStartSeconds = FPlatformTime::Seconds();
+					SpawnStageDecorativeProps(true);
+					UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] Deferred main-map props spawned in %.1f ms."),
+						(FPlatformTime::Seconds() - PropSpawnStartSeconds) * 1000.0);
+				}),
+				0.35f,
+				false);
+		}
+
+		const double PrepareStageStartSeconds = FPlatformTime::Seconds();
 		PrepareMainMapStage(World);
+		UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] PrepareMainMapStage finished in %.1f ms."),
+			(FPlatformTime::Seconds() - PrepareStageStartSeconds) * 1000.0);
 		ScheduleGameplayLightingRefresh(World);
 		ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
 		UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
 		return;
 	}
 
+	const double PropSpawnStartSeconds = FPlatformTime::Seconds();
+	SpawnStageDecorativeProps(false);
+	UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnStageDecorativeProps finished in %.1f ms."),
+		(FPlatformTime::Seconds() - PropSpawnStartSeconds) * 1000.0);
 	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
 	ScheduleStandardStageCombatBootstrap(World);
 	ScheduleGameplayLightingRefresh(World);
@@ -797,7 +928,7 @@ void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectP
 	TSharedPtr<FTimerHandle> HideOverlayHandle = MakeShared<FTimerHandle>();
 	World->GetTimerManager().SetTimer(
 		*HideOverlayHandle,
-		FTimerDelegate::CreateWeakLambda(this, [World, GameplayWarmupOverlay, OverlayPollCount, HideOverlayHandle]()
+		FTimerDelegate::CreateWeakLambda(this, [this, World, GameplayWarmupOverlay, OverlayPollCount, HideOverlayHandle]()
 		{
 			if (!World)
 			{
@@ -810,10 +941,10 @@ void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectP
 				return;
 			}
 
-			const bool bMaterialsReady = T66AreMainMapTerrainMaterialsReady(World);
+			const bool bTerrainReady = bTerrainCollisionReady || T66AreMainMapTerrainMaterialsReady(World);
 			++(*OverlayPollCount);
 			const bool bTimedOut = *OverlayPollCount >= 50;
-			if (bMaterialsReady || bTimedOut)
+			if (bTerrainReady || bTimedOut)
 			{
 				if (GameplayWarmupOverlay.IsValid())
 				{
@@ -826,9 +957,9 @@ void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectP
 				}
 
 				World->GetTimerManager().ClearTimer(*HideOverlayHandle);
-				if (bTimedOut && !bMaterialsReady)
+				if (bTimedOut && !bTerrainReady)
 				{
-					UE_LOG(LogT66GameMode, Warning, TEXT("T66GameMode - Gameplay warmup overlay timed out before main map terrain materials reported ready."));
+					UE_LOG(LogT66GameMode, Warning, TEXT("T66GameMode - Gameplay warmup overlay timed out before main map terrain reported ready."));
 				}
 			}
 		}),
@@ -846,13 +977,21 @@ void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsi
 		}
 	}
 
-	SpawnCircusInteractableIfNeeded();
-	SpawnSupportVendorAtStartIfNeeded();
 	if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
 	{
 		SpawnIdolAltarForPlayer(PC);
 	}
-	SpawnGuaranteedStartAreaInteractables();
+
+	if (!IsUsingTowerMainMapLayout())
+	{
+		SpawnCircusInteractableIfNeeded();
+		SpawnSupportVendorAtStartIfNeeded();
+		SpawnGuaranteedStartAreaInteractables();
+	}
+	else
+	{
+		SpawnWorldInteractablesForStage();
+	}
 
 	if (!bUsingMainMapTerrain)
 	{
@@ -865,6 +1004,12 @@ void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsi
 
 void AT66GameMode::SpawnStageDecorativeProps(bool bUsingMainMapTerrain)
 {
+	if (bUsingMainMapTerrain && IsUsingTowerMainMapLayout())
+	{
+		// Tower uses a dedicated terrain scaffold; grouped prop placement still assumes the legacy board generator.
+		return;
+	}
+
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66PropSubsystem* PropSub = GI->GetSubsystem<UT66PropSubsystem>())
@@ -875,7 +1020,21 @@ void AT66GameMode::SpawnStageDecorativeProps(bool bUsingMainMapTerrain)
 			{
 				const TArray<FName> MainMapPropRows = {
 					FName(TEXT("Barn")),
+					FName(TEXT("Boulder")),
+					FName(TEXT("Fence")),
+					FName(TEXT("Fence2")),
+					FName(TEXT("Fence3")),
 					FName(TEXT("Haybell")),
+					FName(TEXT("Log")),
+					FName(TEXT("Rocks")),
+					FName(TEXT("Scarecrow")),
+					FName(TEXT("Silo")),
+					FName(TEXT("Stump")),
+					FName(TEXT("Tractor")),
+					FName(TEXT("Tree")),
+					FName(TEXT("Tree2")),
+					FName(TEXT("Tree3")),
+					FName(TEXT("Troth")),
 					FName(TEXT("Windmill"))
 				};
 				PropSub->SpawnMainMapPropsForStage(GetWorld(), PropSeed, MainMapPropRows);
@@ -892,6 +1051,52 @@ void AT66GameMode::PrepareMainMapStage(UWorld* World)
 {
 	SpawnTricksterAndCowardiceGate();
 	SpawnBossForCurrentStage();
+	if (IsUsingTowerMainMapLayout())
+	{
+		SpawnTowerDescentHolesIfNeeded();
+		SyncTowerBossEntryState();
+	}
+
+	if (!IsValid(MiasmaManager))
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+	else
+	{
+		MiasmaManager->RebuildForCurrentStage();
+	}
+
+	if (IsUsingTowerMainMapLayout())
+	{
+		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
+		{
+			if (AT66MiasmaBoundary* ExistingBoundary = *It)
+			{
+				ExistingBoundary->Destroy();
+			}
+		}
+	}
+	else
+	{
+		bool bHasBoundaryActor = false;
+		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
+		{
+			if (AT66MiasmaBoundary* ExistingBoundary = *It)
+			{
+				bHasBoundaryActor = true;
+				break;
+			}
+		}
+
+		if (!bHasBoundaryActor)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		}
+	}
 
 	TArray<AT66EnemyDirector*> ExistingEnemyDirectors;
 	for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
@@ -984,15 +1189,56 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 
 void AT66GameMode::SpawnStageMiasmaSystems()
 {
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (UWorld* World = GetWorld())
 	{
-		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		if (!IsValid(MiasmaManager))
+		{
+			MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		}
+		else
+		{
+			MiasmaManager->RebuildForCurrentStage();
+		}
+
+		if (IsUsingTowerMainMapLayout())
+		{
+			for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
+			{
+				if (AT66MiasmaBoundary* ExistingBoundary = *It)
+				{
+					ExistingBoundary->Destroy();
+				}
+			}
+		}
+		else
+		{
+			bool bHasBoundaryActor = false;
+			for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
+			{
+				if (AT66MiasmaBoundary* ExistingBoundary = *It)
+				{
+					bHasBoundaryActor = true;
+					break;
+				}
+			}
+
+			if (!bHasBoundaryActor)
+			{
+				World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+			}
+		}
+
+		if (MiasmaManager)
+		{
+			MiasmaManager->UpdateFromRunState();
+		}
 	}
 
-	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick2: miasma systems spawned."));
+	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick2: %s."),
+		IsUsingTowerMainMapLayout() ? TEXT("tower blood miasma manager ready") : TEXT("miasma systems spawned"));
 
 	if (UWorld* World = GetWorld())
 	{
@@ -1026,8 +1272,16 @@ void AT66GameMode::SpawnStageEnemyDirector()
 void AT66GameMode::FinalizeStandardStageCombatBootstrap()
 {
 	SpawnBossForCurrentStage();
-	SpawnBossGateIfNeeded();
-	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick4: boss + boss gate spawned. Phase 2 complete."));
+	if (IsUsingTowerMainMapLayout())
+	{
+		SpawnTowerDescentHolesIfNeeded();
+		SyncTowerBossEntryState();
+	}
+	else
+	{
+		SpawnBossGateIfNeeded();
+	}
+	UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick4: boss + traversal flow spawned. Phase 2 complete."));
 	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 2 content spawned (combat systems + boss)."));
 }
 
@@ -1095,7 +1349,7 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 
 void AT66GameMode::SpawnStageEffectsForStage()
 {
-	if (IsColiseumStage()) return;
+	if (IsColiseumStage() || IsUsingTowerMainMapLayout()) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -1180,6 +1434,14 @@ void AT66GameMode::SpawnStageEffectsForStage()
 			if (!NPC) continue;
 			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
 			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R)) return false;
+		}
+		const TArray<TWeakObjectPtr<AT66CircusInteractable>>& Circuses = Registry ? Registry->GetCircuses() : TArray<TWeakObjectPtr<AT66CircusInteractable>>();
+		for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Circuses)
+		{
+			const AT66CircusInteractable* Circus = WeakCircus.Get();
+			if (!Circus) continue;
+			const float R = Circus->GetSafeZoneRadius() + SafeBubbleMargin + CandidateRadius * 0.35f;
+			if (FVector::DistSquared2D(L, Circus->GetActorLocation()) < (R * R)) return false;
 		}
 		return true;
 	};
@@ -1338,6 +1600,7 @@ void AT66GameMode::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	MaintainPlayerTerrainSafety();
 	TryActivateMainMapCombat();
+	SyncTowerBossEntryState();
 
 	BossBeaconUpdateAccumulator += DeltaTime;
 	if (BossBeaconUpdateAccumulator >= 0.10f)
@@ -1355,7 +1618,7 @@ void AT66GameMode::Tick(float DeltaTime)
 			{
 				if (Lag->IsEnabled())
 				{
-					UE_LOG(LogT66GameMode, Warning, TEXT("[LAG] Frame: %.2fms (%.1f FPS)"), DeltaTime * 1000.f, 1.f / FMath::Max(0.001f, DeltaTime));
+					UE_LOG(LogT66GameMode, Verbose, TEXT("[LAG] Frame: %.2fms (%.1f FPS)"), DeltaTime * 1000.f, 1.f / FMath::Max(0.001f, DeltaTime));
 				}
 			}
 		}
@@ -1471,7 +1734,18 @@ void AT66GameMode::TrySpawnLoanSharkIfNeeded()
 		return;
 	}
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	APawn* PlayerPawn = nullptr;
+	if (UWorld* SearchWorld = GetWorld())
+	{
+		for (FConstPlayerControllerIterator It = SearchWorld->GetPlayerControllerIterator(); It; ++It)
+		{
+			PlayerPawn = It->Get() ? It->Get()->GetPawn() : nullptr;
+			if (PlayerPawn)
+			{
+				break;
+			}
+		}
+	}
 	if (!PlayerPawn) return;
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -1499,6 +1773,21 @@ void AT66GameMode::TrySpawnLoanSharkIfNeeded()
 			{
 				bInSafe = true;
 				break;
+			}
+		}
+		if (!bInSafe)
+		{
+			const TArray<TWeakObjectPtr<AT66CircusInteractable>>& Circuses = Registry ? Registry->GetCircuses() : TArray<TWeakObjectPtr<AT66CircusInteractable>>();
+			for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Circuses)
+			{
+				AT66CircusInteractable* Circus = WeakCircus.Get();
+				if (!Circus) continue;
+				const float R = Circus->GetSafeZoneRadius();
+				if (FVector::DistSquared2D(SpawnLoc, Circus->GetActorLocation()) < (R * R))
+				{
+					bInSafe = true;
+					break;
+				}
 			}
 		}
 		if (!bInSafe)
@@ -1543,16 +1832,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 		GI->PendingLoadedTransform = FTransform();
 	}
 
-	if (GI && GI->bLoadAsPreview && NewPlayer)
-	{
-		if (AT66PlayerController* PC = Cast<AT66PlayerController>(NewPlayer))
-		{
-			PC->SetPause(true);
-			PC->ShowLoadPreviewOverlay();
-		}
-	}
-
-	if (GI && NewPlayer && !GI->bLoadAsPreview)
+	if (GI && NewPlayer)
 	{
 		if (UGameInstance* GameInstance = GetGameInstance())
 		{
@@ -1575,7 +1855,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 
 void AT66GameMode::SpawnBossGateIfNeeded()
 {
-	if (IsColiseumStage()) return;
+	if (IsColiseumStage() || IsUsingTowerMainMapLayout()) return;
 	if (BossGate) return;
 
 	UWorld* World = GetWorld();
@@ -1643,14 +1923,6 @@ bool AT66GameMode::IsLabLevel() const
 		return GI->bIsLabLevel;
 	}
 	return false;
-}
-
-bool AT66GameMode::IsDemoMapForTribulation() const
-{
-	UWorld* World = GetWorld();
-	if (!World) return false;
-	FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-	return MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase);
 }
 
 void AT66GameMode::SpawnAllOwedBossesInColiseum()
@@ -1862,7 +2134,6 @@ void AT66GameMode::SpawnFinalDifficultyBossInColiseum()
 		Boss->ForceAwaken();
 		StageBoss = Boss;
 		ColiseumBossesRemaining = 1;
-		RunState->SetBossActiveWithId(BossData.BossID, Boss->MaxHP);
 		UE_LOG(LogT66GameMode, Log, TEXT("Spawned final-difficulty Coliseum boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
 	}
 }
@@ -2041,6 +2312,67 @@ void AT66GameMode::UpdateFinalDifficultySurvivalScaling(const bool bForce)
 	}
 }
 
+void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || TowerDescentHoles.Num() > 0)
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (const T66TowerMapTerrain::FFloor& Floor : CachedTowerMainMapLayout.Floors)
+	{
+		if (!Floor.bHasDropHole)
+		{
+			continue;
+		}
+
+		const T66TowerMapTerrain::FFloor* DestinationFloor = nullptr;
+		for (const T66TowerMapTerrain::FFloor& CandidateFloor : CachedTowerMainMapLayout.Floors)
+		{
+			if (CandidateFloor.FloorNumber == (Floor.FloorNumber + 1))
+			{
+				DestinationFloor = &CandidateFloor;
+				break;
+			}
+		}
+		if (!DestinationFloor)
+		{
+			continue;
+		}
+
+		const float DropHeight = FMath::Max(Floor.SurfaceZ - DestinationFloor->SurfaceZ, 1200.0f);
+		const float VerticalExtent = FMath::Clamp((DropHeight * 0.5f) - 550.0f, 800.0f, 1400.0f);
+		const FVector BoxExtent(
+			FMath::Max(250.0f, Floor.HoleHalfExtent.X * 0.88f),
+			FMath::Max(250.0f, Floor.HoleHalfExtent.Y * 0.88f),
+			VerticalExtent);
+		const FVector HoleLocation = Floor.HoleCenter + FVector(0.0f, 0.0f, -VerticalExtent + 120.0f);
+
+		AT66TowerDescentHole* HoleActor = World->SpawnActor<AT66TowerDescentHole>(
+			AT66TowerDescentHole::StaticClass(),
+			HoleLocation,
+			FRotator::ZeroRotator,
+			SpawnParams);
+		if (!HoleActor)
+		{
+			continue;
+		}
+
+		HoleActor->InitializeHole(Floor.FloorNumber, DestinationFloor->FloorNumber, BoxExtent);
+		HoleActor->Tags.AddUnique(FName(TEXT("T66_Tower_DescentHole")));
+		TowerDescentHoles.Add(HoleActor);
+	}
+}
+
 void AT66GameMode::TickFinalDifficultySurvival(float DeltaTime)
 {
 	if (!bFinalDifficultySurvivalActive)
@@ -2073,10 +2405,13 @@ void AT66GameMode::TickFinalDifficultySurvival(float DeltaTime)
 	UWorld* World = GetWorld();
 	if (World)
 	{
-		if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(this, 0))
+		const FVector ExitLocation = ColiseumCenter + FVector(0.f, 0.f, 200.f);
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 		{
-			FVector ExitLocation = ColiseumCenter + FVector(0.f, 0.f, 200.f);
-			Pawn->SetActorLocation(ExitLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			if (APawn* Pawn = It->Get() ? It->Get()->GetPawn() : nullptr)
+			{
+				Pawn->SetActorLocation(ExitLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			}
 		}
 	}
 
@@ -2101,9 +2436,19 @@ void AT66GameMode::TickFinalDifficultySurvival(float DeltaTime)
 		T66GI->ColiseumFlowMode = ET66ColiseumFlowMode::None;
 	}
 
-	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(World ? World->GetFirstPlayerController() : nullptr))
+	bool bOpenedSummary = false;
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 	{
-		T66PC->ShowDifficultyClearSummary();
+		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(It->Get()))
+		{
+			T66PC->ClientShowDifficultyClearSummary();
+			bOpenedSummary = true;
+		}
+	}
+
+	if (!bOpenedSummary)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("Difficulty clear reached but no player controllers were available to open Run Summary."));
 	}
 }
 
@@ -2142,8 +2487,9 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 
 	if (T66UsesMainMapTerrainStage(World) && !MainMapBossAnchorSurfaceLocation.IsNearlyZero())
 	{
-		const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(T66BuildMainMapPreset(T66GI));
-		const FVector SideOffset(MainMapSettings.CellSize * 0.28f, 0.f, 0.f);
+		const FVector SideOffset = IsUsingTowerMainMapLayout()
+			? FVector(260.f, 0.f, 0.f)
+			: FVector(T66MainMapTerrain::MakeSettings(T66BuildMainMapPreset(T66GI)).CellSize * 0.28f, 0.f, 0.f);
 		GateLoc = MainMapBossAnchorSurfaceLocation;
 		TricksterLoc = MainMapBossAnchorSurfaceLocation + SideOffset;
 		SpawnRotation = FRotator(0.f, 180.f, 0.f);
@@ -2162,10 +2508,133 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 	}
 
 	CowardiceGate = World->SpawnActor<AT66CowardiceGate>(AT66CowardiceGate::StaticClass(), GateLoc, SpawnRotation, SpawnParams);
-	TricksterNPC = World->SpawnActor<AT66TricksterNPC>(AT66TricksterNPC::StaticClass(), TricksterLoc, SpawnRotation, SpawnParams);
-	if (TricksterNPC)
+	if (CowardiceGate)
 	{
-		TricksterNPC->ApplyVisuals();
+		if (IsUsingTowerMainMapLayout())
+		{
+			T66TrySnapActorToTowerFloor(World, CowardiceGate, CachedTowerMainMapLayout, CachedTowerMainMapLayout.LastGameplayFloorNumber, GateLoc);
+			T66AssignTowerFloorTag(CowardiceGate, CachedTowerMainMapLayout.LastGameplayFloorNumber);
+		}
+		else
+		{
+			TrySnapActorToTerrain(CowardiceGate);
+		}
+	}
+	if (!IsUsingTowerMainMapLayout())
+	{
+		TricksterNPC = World->SpawnActor<AT66TricksterNPC>(AT66TricksterNPC::StaticClass(), TricksterLoc, SpawnRotation, SpawnParams);
+		if (TricksterNPC)
+		{
+			TricksterNPC->ApplyVisuals();
+			TrySnapActorToTerrain(TricksterNPC);
+		}
+	}
+}
+
+bool AT66GameMode::IsUsingTowerMainMapLayout() const
+{
+	return bUsingTowerMainMapLayout && CachedTowerMainMapLayout.Floors.Num() > 0;
+}
+
+bool AT66GameMode::GetTowerMainMapLayout(T66TowerMapTerrain::FLayout& OutLayout) const
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return false;
+	}
+
+	OutLayout = CachedTowerMainMapLayout;
+	return true;
+}
+
+int32 AT66GameMode::GetTowerFloorIndexForLocation(const FVector& Location) const
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return INDEX_NONE;
+	}
+
+	return T66TowerMapTerrain::FindFloorIndexForLocation(CachedTowerMainMapLayout, Location);
+}
+
+int32 AT66GameMode::GetCurrentTowerFloorIndex() const
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return INDEX_NONE;
+	}
+
+	if (const UWorld* World = GetWorld())
+	{
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			const APawn* Pawn = It->Get() ? It->Get()->GetPawn() : nullptr;
+			if (!Pawn)
+			{
+				continue;
+			}
+
+			const int32 FloorNumber = GetTowerFloorIndexForLocation(Pawn->GetActorLocation());
+			if (FloorNumber != INDEX_NONE)
+			{
+				return FloorNumber;
+			}
+		}
+	}
+
+	return CachedTowerMainMapLayout.StartFloorNumber;
+}
+
+bool AT66GameMode::TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation) const
+{
+	FVector WallNormal = FVector::ZeroVector;
+	return TryGetTowerEnemySpawnLocation(PlayerLocation, MinDistance, MaxDistance, Rng, OutLocation, WallNormal);
+}
+
+bool AT66GameMode::TryGetTowerEnemySpawnLocation(
+	const FVector& PlayerLocation,
+	float MinDistance,
+	float MaxDistance,
+	FRandomStream& Rng,
+	FVector& OutLocation,
+	FVector& OutWallNormal) const
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return false;
+	}
+
+	return T66TowerMapTerrain::TryGetWallSpawnLocation(
+		GetWorld(),
+		CachedTowerMainMapLayout,
+		PlayerLocation,
+		MinDistance,
+		MaxDistance,
+		Rng,
+		OutLocation,
+		OutWallNormal);
+}
+
+void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 FromFloorNumber, const int32 ToFloorNumber)
+{
+	if (!IsUsingTowerMainMapLayout() || !Pawn)
+	{
+		return;
+	}
+
+	UE_LOG(
+		LogT66GameMode,
+		Log,
+		TEXT("[MAP] Tower descent entered by %s (%d -> %d)"),
+		*Pawn->GetName(),
+		FromFloorNumber,
+		ToFloorNumber);
+
+	if (ToFloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
+	{
+		bTowerBossEntryTriggered = true;
+		bTowerBossEntryApplied = false;
+		SyncTowerBossEntryState();
 	}
 }
 
@@ -2185,9 +2654,19 @@ bool AT66GameMode::TryGetMainMapStartAxes(FVector& OutCenter, FVector& OutInward
 		return false;
 	}
 
-	const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-	const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
-	if (Settings.CellSize <= KINDA_SMALL_NUMBER)
+	float CellSize = 0.0f;
+	if (IsUsingTowerMainMapLayout())
+	{
+		CellSize = CachedTowerMainMapLayout.PlacementCellSize;
+	}
+	else
+	{
+		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+		const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
+		CellSize = Settings.CellSize;
+	}
+
+	if (CellSize <= KINDA_SMALL_NUMBER)
 	{
 		return false;
 	}
@@ -2195,12 +2674,17 @@ bool AT66GameMode::TryGetMainMapStartAxes(FVector& OutCenter, FVector& OutInward
 	OutCenter = Center;
 	OutInwardDirection = FVector(Inward2D.X, Inward2D.Y, 0.f);
 	OutSideDirection = FVector(-Inward2D.Y, Inward2D.X, 0.f);
-	OutCellSize = Settings.CellSize;
+	OutCellSize = CellSize;
 	return true;
 }
 
 bool AT66GameMode::TryGetMainMapStartPlacementLocation(float SideCells, float InwardCells, FVector& OutLocation) const
 {
+	if (IsUsingTowerMainMapLayout())
+	{
+		return T66TowerMapTerrain::TryGetStartPlacementLocation(GetWorld(), CachedTowerMainMapLayout, SideCells, InwardCells, OutLocation);
+	}
+
 	FVector Center = FVector::ZeroVector;
 	FVector InwardDirection = FVector::ZeroVector;
 	FVector SideDirection = FVector::ZeroVector;
@@ -2258,12 +2742,20 @@ bool AT66GameMode::TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const FT66MapPreset MainMapPreset = T66BuildMainMapPreset(T66GI);
-	const T66MainMapTerrain::FSettings MainMapSettings = T66MainMapTerrain::MakeSettings(MainMapPreset);
-	const float MainHalfExtent = FMath::Max(0.0f, MainMapSettings.HalfExtent - MainMapSettings.CellSize * 1.25f);
-	const float TraceStartZ = T66MainMapTerrain::GetTraceZ(MainMapPreset);
-	const float TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(MainMapPreset) - MainMapSettings.StepHeight;
-	const float RoomReserveRadius = MainMapSettings.CellSize * 1.70f;
-	const float CorridorReserveRadius = MainMapSettings.CellSize * 0.80f;
+	const bool bTowerLayout = IsUsingTowerMainMapLayout();
+	const T66MainMapTerrain::FSettings MainMapSettings = bTowerLayout
+		? T66MainMapTerrain::FSettings{}
+		: T66MainMapTerrain::MakeSettings(MainMapPreset);
+	const float MainHalfExtent = bTowerLayout
+		? 0.0f
+		: FMath::Max(0.0f, MainMapSettings.HalfExtent - MainMapSettings.CellSize * 1.25f);
+	const float TraceStartZ = bTowerLayout ? CachedTowerMainMapLayout.TraceStartZ : T66MainMapTerrain::GetTraceZ(MainMapPreset);
+	const float TraceEndZ = bTowerLayout
+		? CachedTowerMainMapLayout.TraceEndZ
+		: T66MainMapTerrain::GetLowestCollisionBottomZ(MainMapPreset) - MainMapSettings.StepHeight;
+	const float PlacementCellSize = bTowerLayout ? CachedTowerMainMapLayout.PlacementCellSize : MainMapSettings.CellSize;
+	const float RoomReserveRadius = PlacementCellSize * T66MainMapRoomReserveRadiusCells;
+	const float CorridorReserveRadius = PlacementCellSize * T66MainMapCorridorReserveRadiusCells;
 	const float SafeBubbleMargin = 250.f + ExtraSafeBubbleMargin;
 
 	const int32 RunSeed = T66EnsureRunSeed(T66GI);
@@ -2303,24 +2795,36 @@ bool AT66GameMode::TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector
 	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
 	for (int32 Try = 0; Try < 60; ++Try)
 	{
-		const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
-		const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
-
-		FHitResult Hit;
-		if (!World->LineTraceSingleByChannel(
-			Hit,
-			FVector(X, Y, TraceStartZ),
-			FVector(X, Y, TraceEndZ),
-			ECC_WorldStatic))
+		FVector Candidate = FVector::ZeroVector;
+		if (bTowerLayout)
 		{
-			continue;
+			if (!T66TowerMapTerrain::TryGetRandomGameplaySurfaceLocation(World, CachedTowerMainMapLayout, Rng, Candidate))
+			{
+				continue;
+			}
 		}
-		if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+		else
 		{
-			continue;
+			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+
+			FHitResult Hit;
+			if (!World->LineTraceSingleByChannel(
+				Hit,
+				FVector(X, Y, TraceStartZ),
+				FVector(X, Y, TraceEndZ),
+				ECC_WorldStatic))
+			{
+				continue;
+			}
+			if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+			{
+				continue;
+			}
+
+			Candidate = Hit.ImpactPoint;
 		}
 
-		const FVector Candidate = Hit.ImpactPoint;
 		if (IsInsideReservedZone(Candidate))
 		{
 			continue;
@@ -2341,6 +2845,23 @@ bool AT66GameMode::TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector
 				{
 					bBlockedByNPC = true;
 					break;
+				}
+			}
+			if (!bBlockedByNPC)
+			{
+				for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+				{
+					const AT66CircusInteractable* Circus = WeakCircus.Get();
+					if (!Circus)
+					{
+						continue;
+					}
+					const float Clearance = Circus->GetSafeZoneRadius() + SafeBubbleMargin;
+					if (FVector::DistSquared2D(Candidate, Circus->GetActorLocation()) < FMath::Square(Clearance))
+					{
+						bBlockedByNPC = true;
+						break;
+					}
 				}
 			}
 		}
@@ -2372,13 +2893,38 @@ void AT66GameMode::TryActivateMainMapCombat()
 		return;
 	}
 
-	AController* PlayerController = World->GetFirstPlayerController();
-	APawn* PlayerPawn = PlayerController ? PlayerController->GetPawn() : nullptr;
-	if (!PlayerPawn || MainMapStartAnchorSurfaceLocation.IsNearlyZero() || MainMapStartPathSurfaceLocation.IsNearlyZero())
+	if (MainMapStartAnchorSurfaceLocation.IsNearlyZero() || MainMapStartPathSurfaceLocation.IsNearlyZero())
 	{
 		return;
 	}
 
+	if (IsUsingTowerMainMapLayout())
+	{
+		bool bAnyPlayerEnteredGameplayFloor = false;
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			const APlayerController* PC = It->Get();
+			const APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
+			if (!PlayerPawn)
+			{
+				continue;
+			}
+
+			const int32 FloorNumber = GetTowerFloorIndexForLocation(PlayerPawn->GetActorLocation());
+			if (FloorNumber >= CachedTowerMainMapLayout.FirstGameplayFloorNumber)
+			{
+				bAnyPlayerEnteredGameplayFloor = true;
+				break;
+			}
+		}
+
+		if (!bAnyPlayerEnteredGameplayFloor)
+		{
+			return;
+		}
+	}
+	else
+	{
 	const FVector2D EntryMidpoint = FVector2D(
 		(MainMapStartAnchorSurfaceLocation.X + MainMapStartPathSurfaceLocation.X) * 0.5f,
 		(MainMapStartAnchorSurfaceLocation.Y + MainMapStartPathSurfaceLocation.Y) * 0.5f);
@@ -2390,16 +2936,73 @@ void AT66GameMode::TryActivateMainMapCombat()
 		return;
 	}
 
-	const FVector PlayerLocation = PlayerPawn->GetActorLocation();
-	const float SignedDistance = FVector2D::DotProduct(FVector2D(PlayerLocation.X, PlayerLocation.Y) - EntryMidpoint, EntryNormal);
-	if (SignedDistance < 0.f)
+	bool bAnyPlayerEnteredCombat = false;
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		const APlayerController* PC = It->Get();
+		const APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
+		if (!PlayerPawn)
+		{
+			continue;
+		}
+
+		const FVector PlayerLocation = PlayerPawn->GetActorLocation();
+		const float SignedDistance = FVector2D::DotProduct(FVector2D(PlayerLocation.X, PlayerLocation.Y) - EntryMidpoint, EntryNormal);
+		if (SignedDistance >= 0.f)
+		{
+			bAnyPlayerEnteredCombat = true;
+			break;
+		}
+	}
+
+	if (!bAnyPlayerEnteredCombat)
 	{
 		return;
 	}
+	}
 
 	RunState->ResetStageTimerToFull();
-	SpawnWorldInteractablesForStage();
+	if (!bWorldInteractablesSpawnedForStage)
+	{
+		SpawnWorldInteractablesForStage();
+	}
 	RunState->SetStageTimerActive(true);
+
+	if (!IsValid(MiasmaManager))
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		MiasmaManager = World->SpawnActor<AT66MiasmaManager>(AT66MiasmaManager::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (MiasmaManager)
+		{
+			MiasmaManager->RebuildForCurrentStage();
+		}
+	}
+
+	if (MiasmaManager)
+	{
+		MiasmaManager->UpdateFromRunState();
+	}
+
+	if (!IsUsingTowerMainMapLayout())
+	{
+		bool bHasBoundaryActor = false;
+		for (TActorIterator<AT66MiasmaBoundary> It(World); It; ++It)
+		{
+			if (AT66MiasmaBoundary* ExistingBoundary = *It)
+			{
+				bHasBoundaryActor = true;
+				break;
+			}
+		}
+
+		if (!bHasBoundaryActor)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			World->SpawnActor<AT66MiasmaBoundary>(AT66MiasmaBoundary::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		}
+	}
 
 	bool bHasEnemyDirector = false;
 	for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
@@ -2416,7 +3019,54 @@ void AT66GameMode::TryActivateMainMapCombat()
 	}
 
 	bMainMapCombatStarted = true;
-	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map combat activated after player crossed the start threshold."));
+	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map combat activated."));
+}
+
+void AT66GameMode::SyncTowerBossEntryState()
+{
+	if (!IsUsingTowerMainMapLayout() || !bTowerBossEntryTriggered || bTowerBossEntryApplied)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	bool bHasEnemyDirector = false;
+	for (TActorIterator<AT66EnemyDirector> It(World); It; ++It)
+	{
+		if (AT66EnemyDirector* ExistingDirector = *It)
+		{
+			ExistingDirector->SetSpawningPaused(true);
+			bHasEnemyDirector = true;
+		}
+	}
+
+	bool bHasBoss = false;
+	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+	{
+		for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+		{
+			if (AT66BossBase* Boss = WeakBoss.Get())
+			{
+				bHasBoss = true;
+				if (Boss->IsAlive() && !Boss->IsAwakened())
+				{
+					Boss->ForceAwaken();
+				}
+				break;
+			}
+		}
+	}
+
+	if (bHasEnemyDirector && bHasBoss)
+	{
+		bTowerBossEntryApplied = true;
+		UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Tower boss-floor entry activated via descent hole."));
+	}
 }
 
 void AT66GameMode::ResetColiseumState()
@@ -2477,7 +3127,7 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		}
 	}
 
-	// Power Coupons: 1 per boss kill (stage boss or Coliseum).
+	// Chad Coupons: 1 per boss kill (stage boss or Coliseum).
 	if (RunState)
 	{
 		RunState->AddPowerCrystalsEarnedThisRun(1);
@@ -2577,13 +3227,21 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	ClearMiasma();
 	if (bCompletedSelectedDifficulty)
 	{
-		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(World->GetFirstPlayerController()))
+		bool bOpenedSummary = false;
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 		{
-			T66PC->ShowVictoryRunSummary();
-			return;
+			if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(It->Get()))
+			{
+				T66PC->ClientShowVictoryRunSummary();
+				bOpenedSummary = true;
+			}
 		}
 
-		UE_LOG(LogT66GameMode, Warning, TEXT("Difficulty clear reached but no T66PlayerController was available to open Run Summary."));
+		if (!bOpenedSummary)
+		{
+			UE_LOG(LogT66GameMode, Warning, TEXT("Difficulty clear reached but no T66PlayerController was available to open Run Summary."));
+		}
+		return;
 	}
 
 	SpawnStageGateAtLocation(Location);
@@ -2714,6 +3372,8 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 
 	FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(-150.f, 100.f, 0.f);
 	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = HeroPawn;
+	SpawnParams.Instigator = HeroPawn;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	FName CompanionSkinID = FName(TEXT("Default"));
@@ -2791,6 +3451,8 @@ void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 
 				FVector SpawnLoc2 = HeroPawn2->GetActorLocation() + FVector(-150.f, 100.f, 0.f);
 				FActorSpawnParameters SpawnParams2;
+				SpawnParams2.Owner = HeroPawn2;
+				SpawnParams2.Instigator = HeroPawn2;
 				SpawnParams2.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 				FName AsyncSkinID = FName(TEXT("Default"));
@@ -2838,6 +3500,11 @@ void AT66GameMode::SpawnVendorForPlayer(AController* Player)
 void AT66GameMode::SpawnCircusInteractableIfNeeded()
 {
 	if (IsColiseumStage() || IsLabLevel())
+	{
+		return;
+	}
+
+	if (IsUsingTowerMainMapLayout())
 	{
 		return;
 	}
@@ -2913,6 +3580,11 @@ void AT66GameMode::SpawnCircusInteractableIfNeeded()
 void AT66GameMode::SpawnSupportVendorAtStartIfNeeded()
 {
 	if (IsColiseumStage() || IsLabLevel())
+	{
+		return;
+	}
+
+	if (IsUsingTowerMainMapLayout())
 	{
 		return;
 	}
@@ -3090,7 +3762,7 @@ void AT66GameMode::SpawnPlateauAtLocation(UWorld* World, const FVector& TopCente
 
 void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 {
-	if (IsColiseumStage() || IsLabLevel())
+	if (IsColiseumStage() || IsLabLevel() || IsUsingTowerMainMapLayout())
 	{
 		return;
 	}
@@ -3250,7 +3922,6 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 		{ EGuaranteedStartInteractable::QuickRevive, TEXT("T66_StartGuaranteed_QuickRevive"), FVector(-900.f, -1400.f, 0.f), -1.10f, -0.35f },
 		{ EGuaranteedStartInteractable::Fountain,    TEXT("T66_StartGuaranteed_Fountain"),    FVector(-900.f,  1400.f, 0.f), -1.10f,  0.75f },
 		{ EGuaranteedStartInteractable::Chest,       TEXT("T66_StartGuaranteed_Chest"),       FVector(   0.f,  1800.f, 0.f), -0.20f,  1.30f },
-		{ EGuaranteedStartInteractable::Wheel,       TEXT("T66_StartGuaranteed_Wheel"),       FVector( 900.f,  1400.f, 0.f),  0.75f,  1.05f },
 		{ EGuaranteedStartInteractable::LootBag,     TEXT("T66_StartGuaranteed_LootBag"),     FVector( 900.f, -1400.f, 0.f),  0.35f,  0.45f },
 		{ EGuaranteedStartInteractable::Crate,       TEXT("T66_StartGuaranteed_Crate"),       FVector(   0.f, -1800.f, 0.f),  0.00f,  0.55f },
 	};
@@ -3300,11 +3971,13 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 					? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
 					: FT66RarityWeights{};
 				const ET66Rarity ChestRarity = RollWeightedRarity(Weights);
+				const int32 ChestRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+				const int32 ChestRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 				Chest->bIsMimic = false;
 				Chest->SetRarity(ChestRarity);
 				if (RunState)
 				{
-					RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), ChestRarity);
+					RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), ChestRarity, ChestRarityDrawIndex, ChestRarityPreDrawSeed, &Weights);
 				}
 				SpawnedActor = Chest;
 			}
@@ -3318,10 +3991,12 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 					? PlayerExperience->GetDifficultyWheelRarityWeights(Difficulty)
 					: FT66RarityWeights{};
 				const ET66Rarity WheelRarity = RollWeightedRarity(Weights);
+				const int32 WheelRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+				const int32 WheelRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 				Wheel->SetRarity(WheelRarity);
 				if (RunState)
 				{
-					RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), WheelRarity);
+					RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), WheelRarity, WheelRarityDrawIndex, WheelRarityPreDrawSeed, &Weights);
 				}
 				SpawnedActor = Wheel;
 			}
@@ -3336,7 +4011,16 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 					: FT66RarityWeights{};
 				const ET66Rarity BagRarity = RollWeightedRarity(Weights);
 				LootBag->SetLootRarity(BagRarity);
-				LootBag->SetItemID(T66GI->GetRandomItemIDForLootRarity(BagRarity));
+				LootBag->SetItemID(T66GI->GetRandomItemIDForLootRarityFromStream(BagRarity, Rng));
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(
+						FName(TEXT("GuaranteedStartLootBagRarity")),
+						BagRarity,
+						RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
+						RngSub ? RngSub->GetLastRunPreDrawSeed() : 0,
+						&Weights);
+				}
 				SpawnedActor = LootBag;
 			}
 			break;
@@ -3349,10 +4033,12 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 					? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
 					: FT66RarityWeights{};
 				const ET66Rarity CrateRarity = RollWeightedRarity(Weights);
+				const int32 CrateRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+				const int32 CrateRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 				Crate->SetRarity(CrateRarity);
 				if (RunState)
 				{
-					RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), CrateRarity);
+					RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), CrateRarity, CrateRarityDrawIndex, CrateRarityPreDrawSeed, &Weights);
 				}
 				SpawnedActor = Crate;
 			}
@@ -3369,6 +4055,7 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 void AT66GameMode::SpawnWorldInteractablesForStage()
 {
 	if (IsColiseumStage()) return;
+	if (bWorldInteractablesSpawnedForStage) return;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -3384,13 +4071,35 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const int32 StageNum = RunState->GetCurrentStage();
 	FRandomStream Rng(RunSeed + StageNum * 1337 + 42);
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+	const bool bTowerLayout = IsUsingTowerMainMapLayout();
+	TArray<int32, TInlineAllocator<4>> TowerGameplayFloorNumbers;
+	TMap<int32, int32> TowerChestCountByFloor;
+	TMap<int32, int32> TowerCrateCountByFloor;
+	if (bTowerLayout)
+	{
+		FRandomStream TowerCountRng(RunSeed + StageNum * 1901 + 39);
+		for (const T66TowerMapTerrain::FFloor& Floor : CachedTowerMainMapLayout.Floors)
+		{
+			if (!Floor.bGameplayFloor
+				|| Floor.FloorNumber < CachedTowerMainMapLayout.FirstGameplayFloorNumber
+				|| Floor.FloorNumber > CachedTowerMainMapLayout.LastGameplayFloorNumber)
+			{
+				continue;
+			}
+
+			TowerGameplayFloorNumbers.Add(Floor.FloorNumber);
+			TowerChestCountByFloor.Add(Floor.FloorNumber, TowerCountRng.RandRange(1, 3));
+			TowerCrateCountByFloor.Add(Floor.FloorNumber, TowerCountRng.RandRange(1, 3));
+		}
+		TowerGameplayFloorNumbers.Sort();
+	}
 
 	FT66MapPreset MainMapPreset;
 	T66MainMapTerrain::FSettings MainMapSettings;
 	float MainHalfExtent = 50000.f;
 	float TraceStartZ = 8000.f;
 	float TraceEndZ = -16000.f;
-	if (bUsingMainMapTerrain)
+	if (bUsingMainMapTerrain && !bTowerLayout)
 	{
 		MainMapPreset = T66BuildMainMapPreset(T66GI);
 		MainMapSettings = T66MainMapTerrain::MakeSettings(MainMapPreset);
@@ -3408,10 +4117,15 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	// No-spawn zones: keep gameplay spawns out of reserved traversal spaces and special arenas.
 	auto IsInsideNoSpawnZone = [&](const FVector& L) -> bool
 	{
+		if (bTowerLayout)
+		{
+			return false;
+		}
+
 		if (bUsingMainMapTerrain)
 		{
-			const float RoomReserveRadius = MainMapSettings.CellSize * 1.70f;
-			const float CorridorReserveRadius = MainMapSettings.CellSize * 0.80f;
+			const float RoomReserveRadius = MainMapSettings.CellSize * T66MainMapRoomReserveRadiusCells;
+			const float CorridorReserveRadius = MainMapSettings.CellSize * T66MainMapCorridorReserveRadiusCells;
 			if (!MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
 				&& FVector::DistSquared2D(L, MainMapStartAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
 			{
@@ -3464,6 +4178,34 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		return false;
 	};
 
+	auto IsSameTowerFloor = [&](const FVector& A, const FVector& B) -> bool
+	{
+		if (!bTowerLayout)
+		{
+			return true;
+		}
+
+		const int32 FloorA = GetTowerFloorIndexForLocation(A);
+		const int32 FloorB = GetTowerFloorIndexForLocation(B);
+		return FloorA != INDEX_NONE && FloorA == FloorB;
+	};
+
+	auto ResolveTowerFloorForActor = [&](const AActor* Actor) -> int32
+	{
+		if (!bTowerLayout || !Actor)
+		{
+			return INDEX_NONE;
+		}
+
+		const int32 TaggedFloor = T66ReadTowerFloorTag(Actor);
+		if (TaggedFloor != INDEX_NONE)
+		{
+			return TaggedFloor;
+		}
+
+		return GetTowerFloorIndexForLocation(Actor->GetActorLocation());
+	};
+
 	auto IsGoodLoc = [&](const FVector& L) -> bool
 	{
 		if (IsInsideNoSpawnZone(L))
@@ -3477,6 +4219,10 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		}
 		for (const FVector& U : UsedLocs)
 		{
+			if (!IsSameTowerFloor(L, U))
+			{
+				continue;
+			}
 			if (FVector::DistSquared2D(L, U) < (MinDistBetweenInteractables * MinDistBetweenInteractables))
 			{
 				return false;
@@ -3488,8 +4234,45 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		{
 			const AT66HouseNPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
+			if (bTowerLayout)
+			{
+				const int32 CandidateFloor = GetTowerFloorIndexForLocation(L);
+				const int32 NPCFloor = ResolveTowerFloorForActor(NPC);
+				if (CandidateFloor == INDEX_NONE || NPCFloor == INDEX_NONE || CandidateFloor != NPCFloor)
+				{
+					continue;
+				}
+			}
+			else if (!IsSameTowerFloor(L, NPC->GetActorLocation()))
+			{
+				continue;
+			}
 			const float R = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
 			if (FVector::DistSquared2D(L, NPC->GetActorLocation()) < (R * R))
+			{
+				return false;
+			}
+		}
+		const TArray<TWeakObjectPtr<AT66CircusInteractable>>& Circuses = Registry ? Registry->GetCircuses() : TArray<TWeakObjectPtr<AT66CircusInteractable>>();
+		for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Circuses)
+		{
+			const AT66CircusInteractable* Circus = WeakCircus.Get();
+			if (!Circus) continue;
+			if (bTowerLayout)
+			{
+				const int32 CandidateFloor = GetTowerFloorIndexForLocation(L);
+				const int32 CircusFloor = ResolveTowerFloorForActor(Circus);
+				if (CandidateFloor == INDEX_NONE || CircusFloor == INDEX_NONE || CandidateFloor != CircusFloor)
+				{
+					continue;
+				}
+			}
+			else if (!IsSameTowerFloor(L, Circus->GetActorLocation()))
+			{
+				continue;
+			}
+			const float R = Circus->GetSafeZoneRadius() + SafeBubbleMargin;
+			if (FVector::DistSquared2D(L, Circus->GetActorLocation()) < (R * R))
 			{
 				return false;
 			}
@@ -3506,22 +4289,33 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	{
 		for (int32 Try = 0; Try < 40; ++Try)
 		{
-			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
-			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
-			FVector Loc(X, Y, SpawnZ);
+			FVector Loc = FVector::ZeroVector;
+			if (bTowerLayout)
+			{
+				if (!T66TowerMapTerrain::TryGetRandomGameplaySurfaceLocation(World, CachedTowerMainMapLayout, Rng, Loc))
+				{
+					continue;
+				}
+			}
+			else
+			{
+				const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+				const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+				Loc = FVector(X, Y, SpawnZ);
 
-			FHitResult Hit;
-			const FVector Start(X, Y, TraceStartZ);
-			const FVector End(X, Y, TraceEndZ);
-			if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-			{
-				continue;
+				FHitResult Hit;
+				const FVector Start(X, Y, TraceStartZ);
+				const FVector End(X, Y, TraceEndZ);
+				if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+				{
+					continue;
+				}
+				if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+				{
+					continue;
+				}
+				Loc = Hit.ImpactPoint;
 			}
-			if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
-			{
-				continue;
-			}
-			Loc = Hit.ImpactPoint;
 
 			if (IsGoodLoc(Loc))
 			{
@@ -3541,7 +4335,19 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			return nullptr;
 		}
 		AActor* A = World->SpawnActor<AActor>(Cls, HitResult.Loc, FRotator::ZeroRotator, P);
-		if (A) UsedLocs.Add(HitResult.Loc);
+		if (A)
+		{
+			if (bTowerLayout)
+			{
+				const int32 FloorNumber = GetTowerFloorIndexForLocation(HitResult.Loc);
+				if (FloorNumber != INDEX_NONE)
+				{
+					T66TrySnapActorToTowerFloor(World, A, CachedTowerMainMapLayout, FloorNumber, HitResult.Loc);
+					T66AssignTowerFloorTag(A, FloorNumber);
+				}
+			}
+			UsedLocs.Add(HitResult.Loc);
+		}
 		return A;
 	};
 
@@ -3556,72 +4362,534 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const FT66IntRange ChestCountRange = PlayerExperience
 		? PlayerExperience->GetDifficultyChestCountRange(Difficulty)
 		: FT66IntRange{ 4, 10 };
-	const FT66IntRange WheelCountRange = PlayerExperience
-		? PlayerExperience->GetDifficultyWheelCountRange(Difficulty)
-		: FT66IntRange{ 5, 11 };
+	const FT66IntRange WheelCountRange = T66EnableWheelSpinSpawns
+		? (PlayerExperience
+			? PlayerExperience->GetDifficultyWheelCountRange(Difficulty)
+			: FT66IntRange{ 5, 11 })
+		: FT66IntRange{ 0, 0 };
 	const FT66IntRange CrateCountRange = PlayerExperience
 		? PlayerExperience->GetDifficultyCrateCountRange(Difficulty)
 		: FT66IntRange{ 3, 6 };
 
 	// Luck-affected counts use central tuning. Locations are still stage-seeded (not luck-affected).
 	const int32 CountFountains = (RngSub && Tuning) ? RngSub->RollIntRangeBiased(Tuning->TreesPerStage, Rng) : Rng.RandRange(2, 5);
-	const int32 CountChests = RngSub ? RngSub->RollIntRangeBiased(ChestCountRange, Rng) : Rng.RandRange(FMath::Min(ChestCountRange.Min, ChestCountRange.Max), FMath::Max(ChestCountRange.Min, ChestCountRange.Max));
+	const int32 FountainsDrawIndex = (RngSub && Tuning) ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+	const int32 FountainsPreDrawSeed = (RngSub && Tuning) ? RngSub->GetLastRunPreDrawSeed() : 0;
+	int32 CountChests = 0;
+	int32 ChestsDrawIndex = INDEX_NONE;
+	int32 ChestsPreDrawSeed = 0;
+	if (bTowerLayout)
+	{
+		for (const int32 FloorNumber : TowerGameplayFloorNumbers)
+		{
+			CountChests += TowerChestCountByFloor.FindRef(FloorNumber);
+		}
+		ChestsPreDrawSeed = RunSeed + StageNum * 1901 + 39;
+	}
+	else
+	{
+		CountChests = RngSub ? RngSub->RollIntRangeBiased(ChestCountRange, Rng) : Rng.RandRange(FMath::Min(ChestCountRange.Min, ChestCountRange.Max), FMath::Max(ChestCountRange.Min, ChestCountRange.Max));
+		ChestsDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		ChestsPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	}
 	const int32 CountWheels = RngSub ? RngSub->RollIntRangeBiased(WheelCountRange, Rng) : Rng.RandRange(FMath::Min(WheelCountRange.Min, WheelCountRange.Max), FMath::Max(WheelCountRange.Min, WheelCountRange.Max));
-	const int32 CountCrates = RngSub ? RngSub->RollIntRangeBiased(CrateCountRange, Rng) : Rng.RandRange(FMath::Min(CrateCountRange.Min, CrateCountRange.Max), FMath::Max(CrateCountRange.Min, CrateCountRange.Max));
+	const int32 WheelsDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+	const int32 WheelsPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	int32 CountCrates = 0;
+	int32 CratesDrawIndex = INDEX_NONE;
+	int32 CratesPreDrawSeed = 0;
+	if (bTowerLayout)
+	{
+		for (const int32 FloorNumber : TowerGameplayFloorNumbers)
+		{
+			CountCrates += TowerCrateCountByFloor.FindRef(FloorNumber);
+		}
+		CratesPreDrawSeed = RunSeed + StageNum * 1901 + 40;
+	}
+	else
+	{
+		CountCrates = RngSub ? RngSub->RollIntRangeBiased(CrateCountRange, Rng) : Rng.RandRange(FMath::Min(CrateCountRange.Min, CrateCountRange.Max), FMath::Max(CrateCountRange.Min, CrateCountRange.Max));
+		CratesDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		CratesPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	}
 
 	// Luck Rating tracking (quantity).
 	if (RunState)
 	{
 		const int32 FountainsMin = (Tuning ? Tuning->TreesPerStage.Min : 2);
 		const int32 FountainsMax = (Tuning ? Tuning->TreesPerStage.Max : 5);
-		const int32 ChestsMin = FMath::Min(ChestCountRange.Min, ChestCountRange.Max);
-		const int32 ChestsMax = FMath::Max(ChestCountRange.Min, ChestCountRange.Max);
+		const int32 ChestsMin = bTowerLayout ? TowerGameplayFloorNumbers.Num() : FMath::Min(ChestCountRange.Min, ChestCountRange.Max);
+		const int32 ChestsMax = bTowerLayout ? (TowerGameplayFloorNumbers.Num() * 3) : FMath::Max(ChestCountRange.Min, ChestCountRange.Max);
 		const int32 WheelsMin = FMath::Min(WheelCountRange.Min, WheelCountRange.Max);
 		const int32 WheelsMax = FMath::Max(WheelCountRange.Min, WheelCountRange.Max);
-		const int32 CratesMin = FMath::Min(CrateCountRange.Min, CrateCountRange.Max);
-		const int32 CratesMax = FMath::Max(CrateCountRange.Min, CrateCountRange.Max);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("FountainsPerStage")), CountFountains, FountainsMin, FountainsMax);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestsPerStage")), CountChests, ChestsMin, ChestsMax);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("WheelsPerStage")), CountWheels, WheelsMin, WheelsMax);
-		RunState->RecordLuckQuantityRoll(FName(TEXT("CratesPerStage")), CountCrates, CratesMin, CratesMax);
+		const int32 CratesMin = bTowerLayout ? TowerGameplayFloorNumbers.Num() : FMath::Min(CrateCountRange.Min, CrateCountRange.Max);
+		const int32 CratesMax = bTowerLayout ? (TowerGameplayFloorNumbers.Num() * 3) : FMath::Max(CrateCountRange.Min, CrateCountRange.Max);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("FountainsPerStage")), CountFountains, FountainsMin, FountainsMax, FountainsDrawIndex, FountainsPreDrawSeed);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestsPerStage")), CountChests, ChestsMin, ChestsMax, ChestsDrawIndex, ChestsPreDrawSeed);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("WheelsPerStage")), CountWheels, WheelsMin, WheelsMax, WheelsDrawIndex, WheelsPreDrawSeed);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("CratesPerStage")), CountCrates, CratesMin, CratesMax, CratesDrawIndex, CratesPreDrawSeed);
 	}
 
 	// Not luck-affected (for now).
 	const int32 CountTotems = Rng.RandRange(4, 10);
+	int32 RemainingFountains = CountFountains;
+	int32 RemainingChests = CountChests;
+	int32 RemainingWheels = CountWheels;
+	int32 RemainingCrates = CountCrates;
+	int32 RemainingTotems = CountTotems;
 
-	for (int32 i = 0; i < CountFountains; ++i)
+	auto ConfigureChest = [&](AT66ChestInteractable* Chest)
 	{
-		SpawnOne(AT66FountainOfLifeInteractable::StaticClass());
-	}
-	for (int32 i = 0; i < CountChests; ++i)
-	{
-		if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnOne(AT66ChestInteractable::StaticClass())))
+		if (!Chest)
 		{
-			const FT66RarityWeights Weights = PlayerExperience
-				? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
-				: FT66RarityWeights{};
-			Chest->bIsMimic = (Rng.GetFraction() < (PlayerExperience ? PlayerExperience->GetDifficultyChestMimicChance(Difficulty) : 0.20f));
-			const ET66Rarity R = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			Chest->SetRarity(R);
-			if (RunState)
+			return;
+		}
+
+		const FT66RarityWeights Weights = PlayerExperience
+			? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
+			: FT66RarityWeights{};
+		const float ChestMimicChance = PlayerExperience ? PlayerExperience->GetDifficultyChestMimicChance(Difficulty) : 0.20f;
+		Chest->bIsMimic = RngSub ? RngSub->RollChance01(ChestMimicChance) : (Rng.GetFraction() < ChestMimicChance);
+		const int32 ChestMimicDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 ChestMimicPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+		const ET66Rarity Rarity = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+		const int32 ChestRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 ChestRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+		Chest->SetRarity(Rarity);
+		if (RunState)
+		{
+			RunState->RecordLuckQuantityBool(
+				FName(TEXT("ChestMimicAvoided")),
+				!Chest->bIsMimic,
+				1.f - FMath::Clamp(ChestMimicChance, 0.f, 1.f),
+				ChestMimicDrawIndex,
+				ChestMimicPreDrawSeed);
+			RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), Rarity, ChestRarityDrawIndex, ChestRarityPreDrawSeed, &Weights);
+		}
+	};
+
+	auto ConfigureWheel = [&](AT66WheelSpinInteractable* Wheel)
+	{
+		if (!Wheel)
+		{
+			return;
+		}
+
+		const FT66RarityWeights Weights = PlayerExperience
+			? PlayerExperience->GetDifficultyWheelRarityWeights(Difficulty)
+			: FT66RarityWeights{};
+		const ET66Rarity Rarity = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+		const int32 WheelRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 WheelRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+		Wheel->SetRarity(Rarity);
+		if (RunState)
+		{
+			RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), Rarity, WheelRarityDrawIndex, WheelRarityPreDrawSeed, &Weights);
+		}
+	};
+
+	auto ConfigureCrate = [&](AT66CrateInteractable* Crate)
+	{
+		if (!Crate)
+		{
+			return;
+		}
+
+		const FT66RarityWeights Weights = PlayerExperience
+			? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
+			: FT66RarityWeights{};
+		const ET66Rarity Rarity = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+		const int32 CrateRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 CrateRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+		Crate->SetRarity(Rarity);
+		if (RunState)
+		{
+			RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), Rarity, CrateRarityDrawIndex, CrateRarityPreDrawSeed, &Weights);
+		}
+	};
+
+	auto ConfigureTotem = [&](AT66DifficultyTotem* Totem)
+	{
+		if (Totem)
+		{
+			Totem->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
+		}
+	};
+
+	auto FindExistingTaggedActor = [&](const FName Tag) -> AActor*
+	{
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* ExistingActor = *It;
+			if (ExistingActor && ExistingActor->ActorHasTag(Tag))
 			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), R);
+				return ExistingActor;
+			}
+		}
+
+		return nullptr;
+	};
+
+	if (bTowerLayout)
+	{
+		static constexpr float TowerCircusChancePerFloor = 0.38f;
+		static constexpr float TowerQuickReviveChancePerFloor = 0.34f;
+		FRandomStream TowerFloorRng(RunSeed + StageNum * 1901 + 77);
+		TArray<int32, TInlineAllocator<4>> GameplayFloorNumbers = TowerGameplayFloorNumbers;
+
+		auto ResnapTowerActorToFloor = [&](AActor* Actor, const int32 FloorNumber) -> bool
+		{
+			if (!Actor)
+			{
+				return false;
+			}
+
+			T66TrySnapActorToTowerFloor(World, Actor, CachedTowerMainMapLayout, FloorNumber, Actor->GetActorLocation());
+			T66AssignTowerFloorTag(Actor, FloorNumber);
+			const int32 ResolvedFloor = GetTowerFloorIndexForLocation(Actor->GetActorLocation());
+			return ResolvedFloor == INDEX_NONE || ResolvedFloor == FloorNumber;
+		};
+
+		auto TryFindTowerFloorLocation = [&](const int32 FloorNumber, const int32 SeedOffset, const float EdgePadding, const float HolePadding, FVector& OutLocation) -> bool
+		{
+			FRandomStream FloorRng(RunSeed + StageNum * 1901 + SeedOffset + FloorNumber * 53);
+			for (int32 Attempt = 0; Attempt < 24; ++Attempt)
+			{
+				if (!T66TowerMapTerrain::TryGetRandomSurfaceLocationOnFloor(
+					World,
+					CachedTowerMainMapLayout,
+					FloorNumber,
+					FloorRng,
+					OutLocation,
+					EdgePadding,
+					HolePadding))
+				{
+					continue;
+				}
+
+				if (GetTowerFloorIndexForLocation(OutLocation) != FloorNumber)
+				{
+					continue;
+				}
+
+				if (IsGoodLoc(OutLocation))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		FActorSpawnParameters OccupantSpawnParams;
+		OccupantSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		auto SpawnTowerActorOnFloor = [&](UClass* Cls, const int32 FloorNumber, const int32 SeedOffset, const float EdgePadding, const float HolePadding) -> AActor*
+		{
+			for (int32 SpawnAttempt = 0; SpawnAttempt < 5; ++SpawnAttempt)
+			{
+				FVector SpawnLoc = FVector::ZeroVector;
+				if (!TryFindTowerFloorLocation(FloorNumber, SeedOffset + (SpawnAttempt * 97), EdgePadding, HolePadding, SpawnLoc))
+				{
+					continue;
+				}
+
+				AActor* SpawnedActor = World->SpawnActor<AActor>(Cls, SpawnLoc, FRotator::ZeroRotator, OccupantSpawnParams);
+				if (!SpawnedActor)
+				{
+					continue;
+				}
+
+				if (!ResnapTowerActorToFloor(SpawnedActor, FloorNumber))
+				{
+					SpawnedActor->Destroy();
+					continue;
+				}
+
+				UsedLocs.Add(SpawnedActor->GetActorLocation());
+				return SpawnedActor;
+			}
+
+			return nullptr;
+		};
+
+		int32 GuaranteedUtilityFountains = 0;
+		int32 GuaranteedUtilityTotems = 0;
+		for (const int32 FloorNumber : GameplayFloorNumbers)
+		{
+			const int32 FloorChestCount = TowerChestCountByFloor.FindRef(FloorNumber);
+			for (int32 ChestIndex = 0; ChestIndex < FloorChestCount; ++ChestIndex)
+			{
+				for (int32 SpawnAttempt = 0; SpawnAttempt < 4; ++SpawnAttempt)
+				{
+					if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnTowerActorOnFloor(
+						AT66ChestInteractable::StaticClass(),
+						FloorNumber,
+						7600 + (ChestIndex * 41) + (SpawnAttempt * 211),
+						1100.f,
+						1200.f)))
+					{
+						ConfigureChest(Chest);
+						if (!ResnapTowerActorToFloor(Chest, FloorNumber))
+						{
+							Chest->Destroy();
+							continue;
+						}
+						break;
+					}
+				}
+			}
+
+			const int32 FloorCrateCount = TowerCrateCountByFloor.FindRef(FloorNumber);
+			for (int32 CrateIndex = 0; CrateIndex < FloorCrateCount; ++CrateIndex)
+			{
+				for (int32 SpawnAttempt = 0; SpawnAttempt < 4; ++SpawnAttempt)
+				{
+					if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnTowerActorOnFloor(
+						AT66CrateInteractable::StaticClass(),
+						FloorNumber,
+						7700 + (CrateIndex * 41) + (SpawnAttempt * 211),
+						1100.f,
+						1200.f)))
+					{
+						ConfigureCrate(Crate);
+						if (!ResnapTowerActorToFloor(Crate, FloorNumber))
+						{
+							Crate->Destroy();
+							continue;
+						}
+						break;
+					}
+				}
+			}
+
+			if ((FloorNumber % 2) == 0)
+			{
+				if (SpawnTowerActorOnFloor(AT66FountainOfLifeInteractable::StaticClass(), FloorNumber, 7800, 1200.f, 1300.f))
+				{
+					++GuaranteedUtilityFountains;
+				}
+			}
+			else
+			{
+				if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnTowerActorOnFloor(AT66DifficultyTotem::StaticClass(), FloorNumber, 7900, 1200.f, 1300.f)))
+				{
+					ConfigureTotem(Totem);
+					ResnapTowerActorToFloor(Totem, FloorNumber);
+					++GuaranteedUtilityTotems;
+				}
+			}
+		}
+
+		RemainingChests = 0;
+		RemainingCrates = 0;
+		RemainingFountains = FMath::Max(0, RemainingFountains - GuaranteedUtilityFountains);
+		RemainingTotems = FMath::Max(0, RemainingTotems - GuaranteedUtilityTotems);
+		bool bQuickReviveSpawned = false;
+
+		for (const int32 FloorNumber : GameplayFloorNumbers)
+		{
+			const FName CircusTag(*FString::Printf(TEXT("T66_Tower_Circus_%02d"), FloorNumber));
+			if (!FindExistingTaggedActor(CircusTag))
+			{
+				const int32 CircusPreDrawSeed = TowerFloorRng.GetCurrentSeed();
+				const bool bSpawnCircus = TowerFloorRng.GetFraction() < TowerCircusChancePerFloor;
+				if (RunState)
+				{
+					RunState->RecordLuckQuantityBool(
+						FName(TEXT("TowerCircusFloorSpawned")),
+						bSpawnCircus,
+						TowerCircusChancePerFloor,
+						INDEX_NONE,
+						CircusPreDrawSeed);
+				}
+				if (bSpawnCircus)
+				{
+					FVector CircusLoc = FVector::ZeroVector;
+					if (TryFindTowerFloorLocation(FloorNumber, 5100, 1800.f, 2200.f, CircusLoc))
+					{
+						if (AT66CircusInteractable* Circus = World->SpawnActor<AT66CircusInteractable>(
+							AT66CircusInteractable::StaticClass(), CircusLoc, FRotator::ZeroRotator, OccupantSpawnParams))
+						{
+							T66TrySnapActorToTowerFloor(World, Circus, CachedTowerMainMapLayout, FloorNumber, CircusLoc);
+							T66AssignTowerFloorTag(Circus, FloorNumber);
+							Circus->ConfigureCompactTowerVariant();
+							Circus->Tags.AddUnique(CircusTag);
+							UsedLocs.Add(CircusLoc);
+						}
+					}
+				}
+			}
+
+			const FName QuickReviveTag(*FString::Printf(TEXT("T66_Tower_QuickRevive_%02d"), FloorNumber));
+			if (!FindExistingTaggedActor(QuickReviveTag))
+			{
+				const int32 QuickRevivePreDrawSeed = TowerFloorRng.GetCurrentSeed();
+				const bool bSpawnQuickRevive = TowerFloorRng.GetFraction() < TowerQuickReviveChancePerFloor;
+				if (RunState)
+				{
+					RunState->RecordLuckQuantityBool(
+						FName(TEXT("TowerQuickReviveFloorSpawned")),
+						bSpawnQuickRevive,
+						TowerQuickReviveChancePerFloor,
+						INDEX_NONE,
+						QuickRevivePreDrawSeed);
+				}
+				if (bSpawnQuickRevive)
+				{
+					FVector QuickReviveLoc = FVector::ZeroVector;
+					if (TryFindTowerFloorLocation(FloorNumber, 6100, 1300.f, 1700.f, QuickReviveLoc))
+					{
+						if (AT66QuickReviveVendingMachine* QuickReviveMachine = World->SpawnActor<AT66QuickReviveVendingMachine>(
+							AT66QuickReviveVendingMachine::StaticClass(), QuickReviveLoc, FRotator::ZeroRotator, OccupantSpawnParams))
+						{
+							T66TrySnapActorToTowerFloor(World, QuickReviveMachine, CachedTowerMainMapLayout, FloorNumber, QuickReviveLoc);
+							T66AssignTowerFloorTag(QuickReviveMachine, FloorNumber);
+							QuickReviveMachine->Tags.AddUnique(QuickReviveTag);
+							UsedLocs.Add(QuickReviveLoc);
+							bQuickReviveSpawned = true;
+						}
+					}
+				}
+			}
+		}
+
+		if (!bQuickReviveSpawned && GameplayFloorNumbers.Num() > 0)
+		{
+			const int32 GuaranteedQuickReviveFloor = GameplayFloorNumbers[TowerFloorRng.RandRange(0, GameplayFloorNumbers.Num() - 1)];
+			FVector QuickReviveLoc = FVector::ZeroVector;
+			if (TryFindTowerFloorLocation(GuaranteedQuickReviveFloor, 6900, 1300.f, 1700.f, QuickReviveLoc))
+			{
+				if (AT66QuickReviveVendingMachine* QuickReviveMachine = World->SpawnActor<AT66QuickReviveVendingMachine>(
+					AT66QuickReviveVendingMachine::StaticClass(), QuickReviveLoc, FRotator::ZeroRotator, OccupantSpawnParams))
+				{
+					T66TrySnapActorToTowerFloor(World, QuickReviveMachine, CachedTowerMainMapLayout, GuaranteedQuickReviveFloor, QuickReviveLoc);
+					T66AssignTowerFloorTag(QuickReviveMachine, GuaranteedQuickReviveFloor);
+					QuickReviveMachine->Tags.AddUnique(FName(*FString::Printf(TEXT("T66_Tower_QuickRevive_%02d"), GuaranteedQuickReviveFloor)));
+					UsedLocs.Add(QuickReviveLoc);
+				}
+			}
+		}
+
+		const FName SaintTag(TEXT("T66_Tower_Saint"));
+		if (!FindExistingTaggedActor(SaintTag))
+		{
+			for (int32 Index = GameplayFloorNumbers.Num() - 1; Index > 0; --Index)
+			{
+				const int32 SwapIndex = TowerFloorRng.RandRange(0, Index);
+				if (SwapIndex != Index)
+				{
+					GameplayFloorNumbers.Swap(Index, SwapIndex);
+				}
+			}
+
+			for (const int32 FloorNumber : GameplayFloorNumbers)
+			{
+				FVector SaintLoc = FVector::ZeroVector;
+				if (!TryFindTowerFloorLocation(FloorNumber, 7100, 1800.f, 2200.f, SaintLoc))
+				{
+					continue;
+				}
+
+				if (AT66SaintNPC* Saint = World->SpawnActor<AT66SaintNPC>(
+					AT66SaintNPC::StaticClass(), SaintLoc, FRotator::ZeroRotator, OccupantSpawnParams))
+				{
+					T66TrySnapActorToTowerFloor(World, Saint, CachedTowerMainMapLayout, FloorNumber, SaintLoc);
+					T66AssignTowerFloorTag(Saint, FloorNumber);
+					Saint->Tags.AddUnique(SaintTag);
+					Saint->Tags.AddUnique(FName(*FString::Printf(TEXT("T66_Tower_Saint_%02d"), FloorNumber)));
+					UsedLocs.Add(SaintLoc);
+				}
+				break;
+			}
+		}
+
+		for (const int32 FloorNumber : GameplayFloorNumbers)
+		{
+			if (RemainingChests > 0)
+			{
+				if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnTowerActorOnFloor(AT66ChestInteractable::StaticClass(), FloorNumber, 8100, 1300.f, 1700.f)))
+				{
+					ConfigureChest(Chest);
+					if (!ResnapTowerActorToFloor(Chest, FloorNumber))
+					{
+						Chest->Destroy();
+						continue;
+					}
+					--RemainingChests;
+				}
+			}
+
+			if (RemainingWheels > 0)
+			{
+				if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnTowerActorOnFloor(AT66WheelSpinInteractable::StaticClass(), FloorNumber, 8200, 1300.f, 1700.f)))
+				{
+					ConfigureWheel(Wheel);
+					if (!ResnapTowerActorToFloor(Wheel, FloorNumber))
+					{
+						Wheel->Destroy();
+						continue;
+					}
+					--RemainingWheels;
+					continue;
+				}
+			}
+
+			if (RemainingCrates > 0)
+			{
+				if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnTowerActorOnFloor(AT66CrateInteractable::StaticClass(), FloorNumber, 8300, 1300.f, 1700.f)))
+				{
+					ConfigureCrate(Crate);
+					if (!ResnapTowerActorToFloor(Crate, FloorNumber))
+					{
+						Crate->Destroy();
+						continue;
+					}
+					--RemainingCrates;
+					continue;
+				}
+			}
+
+			if (RemainingFountains > 0)
+			{
+				if (SpawnTowerActorOnFloor(AT66FountainOfLifeInteractable::StaticClass(), FloorNumber, 8400, 1300.f, 1700.f))
+				{
+					--RemainingFountains;
+					continue;
+				}
+			}
+
+			if (RemainingTotems > 0)
+			{
+				if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnTowerActorOnFloor(AT66DifficultyTotem::StaticClass(), FloorNumber, 8500, 1300.f, 1700.f)))
+				{
+					ConfigureTotem(Totem);
+					if (!ResnapTowerActorToFloor(Totem, FloorNumber))
+					{
+						Totem->Destroy();
+						continue;
+					}
+					--RemainingTotems;
+				}
 			}
 		}
 	}
-	for (int32 i = 0; i < CountWheels; ++i)
+
+	for (int32 i = 0; i < RemainingFountains; ++i)
+	{
+		SpawnOne(AT66FountainOfLifeInteractable::StaticClass());
+	}
+	for (int32 i = 0; i < RemainingChests; ++i)
+	{
+		if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnOne(AT66ChestInteractable::StaticClass())))
+		{
+			ConfigureChest(Chest);
+		}
+	}
+	for (int32 i = 0; i < RemainingWheels; ++i)
 	{
 		if (AT66WheelSpinInteractable* Wheel = Cast<AT66WheelSpinInteractable>(SpawnOne(AT66WheelSpinInteractable::StaticClass())))
 		{
-			const FT66RarityWeights Weights = PlayerExperience
-				? PlayerExperience->GetDifficultyWheelRarityWeights(Difficulty)
-				: FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			Wheel->SetRarity(R);
-			if (RunState)
-			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("WheelRarity")), R);
-			}
+			ConfigureWheel(Wheel);
 		}
 	}
 
@@ -3663,36 +4931,33 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		}
 	}
 
-	static constexpr int32 CountTeleportPads = 5;
-	for (int32 i = 0; i < CountTeleportPads; ++i)
-	{
-		SpawnOne(AT66TeleportPadInteractable::StaticClass());
-	}
+	// Teleport pads are deprecated and no longer part of stage population.
 
-	for (int32 i = 0; i < CountCrates; ++i)
+	for (int32 i = 0; i < RemainingCrates; ++i)
 	{
 		if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnOne(AT66CrateInteractable::StaticClass())))
 		{
-			const FT66RarityWeights Weights = PlayerExperience
-				? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
-				: FT66RarityWeights{};
-			const ET66Rarity R = (RngSub && PlayerExperience) ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			Crate->SetRarity(R);
-			if (RunState)
-			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), R);
-			}
+			ConfigureCrate(Crate);
 		}
 	}
 
-	for (int32 i = 0; i < CountTotems; ++i)
+	for (int32 i = 0; i < RemainingTotems; ++i)
 	{
 		if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnOne(AT66DifficultyTotem::StaticClass())))
 		{
-			// Not luck-affected (per current scope).
-			Totem->SetRarity(FT66RarityUtil::RollDefaultRarity(Rng));
+			ConfigureTotem(Totem);
 		}
 	}
+
+	if (bTowerLayout)
+	{
+		if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
+		{
+			TrapSubsystem->SpawnTowerStageTraps(CachedTowerMainMapLayout, StageNum, Difficulty, RunSeed);
+		}
+	}
+
+	bWorldInteractablesSpawnedForStage = true;
 }
 
 void AT66GameMode::SpawnModelShowcaseRow()
@@ -3830,7 +5095,11 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 	if (T66UsesMainMapTerrainStage(World))
 	{
-		if (!TryGetMainMapStartPlacementLocation(0.f, 0.f, SpawnLoc))
+		if (IsUsingTowerMainMapLayout())
+		{
+			SpawnLoc = CachedTowerMainMapLayout.StartAnchorSurfaceLocation;
+		}
+		else if (!TryGetMainMapStartPlacementLocation(0.f, 0.f, SpawnLoc))
 		{
 			return;
 		}
@@ -3863,6 +5132,16 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	IdolAltar = World->SpawnActor<AT66IdolAltar>(AT66IdolAltar::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
 	if (IdolAltar)
 	{
+		if (IsUsingTowerMainMapLayout())
+		{
+			T66TrySnapActorToTowerFloor(World, IdolAltar, CachedTowerMainMapLayout, CachedTowerMainMapLayout.StartFloorNumber, SpawnLoc);
+			T66AssignTowerFloorTag(IdolAltar, CachedTowerMainMapLayout.StartFloorNumber);
+		}
+		else
+		{
+			TrySnapActorToTerrainAtLocation(IdolAltar, SpawnLoc);
+		}
+
 		if (APawn* PlayerPawn = Player->GetPawn())
 		{
 			T66FaceActorTowardLocation2D(IdolAltar, PlayerPawn->GetActorLocation());
@@ -3878,7 +5157,6 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 
 		IdolAltar->RemainingSelections = FMath::Max(1, SelectionBudget);
 		IdolAltar->CatchUpSelectionsRemaining = FMath::Max(0, CatchUpSelections);
-		SpawnIdolVFXTestTargets();
 	}
 }
 
@@ -4121,8 +5399,20 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// Snap to ground at the boss death XY so the gate is never floating/sunk.
 	FVector SpawnLoc(Location.X, Location.Y, Location.Z);
+	if (IsUsingTowerMainMapLayout())
+	{
+		if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
+		{
+			SpawnLoc = MainMapBossBeaconSurfaceLocation;
+		}
+		else if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero())
+		{
+			SpawnLoc = MainMapBossAreaCenterSurfaceLocation;
+		}
+	}
+
+	// Snap to ground at the chosen XY so the gate is never floating/sunk.
 	{
 		FHitResult Hit;
 		const FVector Start = SpawnLoc + FVector(0.f, 0.f, 3000.f);
@@ -4248,17 +5538,8 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	AActor* Spawned = World->SpawnActor<AActor>(BossClass, StageData.BossSpawnLocation, FRotator::ZeroRotator, SpawnParams);
 	if (AT66BossBase* Boss = Cast<AT66BossBase>(Spawned))
 	{
-		// Snap to ground so the boss never floats/sinks.
-		FHitResult Hit;
-		const FVector Start = Boss->GetActorLocation() + FVector(0.f, 0.f, 4000.f);
-		const FVector End = Boss->GetActorLocation() - FVector(0.f, 0.f, 9000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-		{
-			const float HalfHeight = Boss->GetCapsuleComponent() ? Boss->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() : 88.f;
-			Boss->SetActorLocation(Hit.ImpactPoint + FVector(0.f, 0.f, HalfHeight), false, nullptr, ETeleportType::TeleportPhysics);
-		}
-
 		Boss->InitializeBoss(BossData);
+		TrySnapActorToTerrain(Boss);
 		StageBoss = Boss;
 		SpawnBossBeaconIfNeeded();
 		UE_LOG(LogT66GameMode, Log, TEXT("Spawned boss for Stage %d (BossID=%s)"), StageNum, *BossData.BossID.ToString());
@@ -4297,6 +5578,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 					if (AT66BossBase* NewBoss = Cast<AT66BossBase>(Spawned2))
 					{
 						NewBoss->InitializeBoss(BossDataCopy);
+						TrySnapActorToTerrain(NewBoss);
 						StageBoss = NewBoss;
 						SpawnBossBeaconIfNeeded();
 					}
@@ -4372,7 +5654,7 @@ void AT66GameMode::TryApplyGroundFloorMaterialToAllFloors()
 
 	const UT66GameInstance* T66GI = GetT66GameInstance();
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	UMaterialInterface* DifficultyFloorMaterial = T66ResolveDifficultyGroundMaterial(this, Difficulty);
+	UMaterialInterface* DifficultyFloorMaterial = FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(this, Difficulty);
 	if (!DifficultyFloorMaterial)
 	{
 		return;
@@ -4497,7 +5779,7 @@ void AT66GameMode::SpawnColiseumArenaIfNeeded()
 
 bool AT66GameMode::TryComputeBossBeaconBase(FVector& OutBeaconBase) const
 {
-	if (IsColiseumStage() || IsLabLevel() || !StageBoss.IsValid())
+	if (IsColiseumStage() || IsLabLevel() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
 	{
 		return false;
 	}
@@ -4592,7 +5874,7 @@ void AT66GameMode::DestroyBossBeacon()
 
 void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
 {
-	if (IsColiseumStage() || IsLabLevel() || !StageBoss.IsValid())
+	if (IsColiseumStage() || IsLabLevel() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
 	{
 		DestroyBossBeacon();
 		return;
@@ -4618,7 +5900,7 @@ void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
 
 void AT66GameMode::SpawnBossBeaconIfNeeded()
 {
-	if (IsColiseumStage() || IsLabLevel())
+	if (IsColiseumStage() || IsLabLevel() || IsUsingTowerMainMapLayout())
 	{
 		DestroyBossBeacon();
 		return;
@@ -4893,7 +6175,7 @@ void AT66GameMode::SpawnBossAreaWallsIfNeeded()
 
 	const UT66GameInstance* T66GI = GetT66GameInstance();
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	UMaterialInterface* FloorMat = T66ResolveDifficultyGroundMaterial(this, Difficulty);
+	UMaterialInterface* FloorMat = FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(this, Difficulty);
 
 	// Boss area: right after the boss pillars, inside safe zone. Scaled for 100k map.
 	static constexpr float FloorTopZ = 0.f;
@@ -5033,7 +6315,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 
 		const UT66GameInstance* T66GI = GetT66GameInstance();
 		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-		UMaterialInterface* GroundMat = T66ResolveDifficultyGroundMaterial(this, Difficulty);
+		UMaterialInterface* GroundMat = FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(this, Difficulty);
 		if (GroundMat)
 		{
 			Floor->GetStaticMeshComponent()->SetMaterial(0, GroundMat);
@@ -5124,7 +6406,12 @@ void AT66GameMode::SpawnMainMapTerrain()
 
 	bTerrainCollisionReady = false;
 	bMainMapCombatStarted = false;
+	bWorldInteractablesSpawnedForStage = false;
 	bHasMainMapSpawnSurfaceLocation = false;
+	bUsingTowerMainMapLayout = false;
+	CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
+	bTowerBossEntryTriggered = false;
+	bTowerBossEntryApplied = false;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapStartPathSurfaceLocation = FVector::ZeroVector;
@@ -5134,6 +6421,14 @@ void AT66GameMode::SpawnMainMapTerrain()
 	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapRescueAnchorLocations.Reset();
+	for (AT66TowerDescentHole* Hole : TowerDescentHoles)
+	{
+		if (Hole)
+		{
+			Hole->Destroy();
+		}
+	}
+	TowerDescentHoles.Reset();
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	const FT66MapPreset Preset = T66BuildMainMapPreset(GI);
@@ -5142,12 +6437,58 @@ void AT66GameMode::SpawnMainMapTerrain()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Generating main map terrain (seed=%d, grid=%d, cell=%.0f, step=%.0f, scale=%.2f)"),
+	UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Generating main map terrain (layout=%s, seed=%d, hilliness=%.2f, grid=%d, cell=%.0f, step=%.0f, scale=%.2f)"),
+		T66GetMainMapLayoutVariantLabel(Preset.LayoutVariant),
 		Preset.Seed,
+		Preset.FarmHilliness,
 		MainMapSettings.BoardSize,
 		MainMapSettings.CellSize,
 		MainMapSettings.StepHeight,
 		MainMapSettings.BoardScale);
+
+	if (Preset.LayoutVariant == ET66MainMapLayoutVariant::Tower)
+	{
+		if (!T66TowerMapTerrain::BuildLayout(Preset, CachedTowerMainMapLayout))
+		{
+			UE_LOG(LogT66GameMode, Error, TEXT("[MAP] Tower main map layout generation failed (seed=%d)"), Preset.Seed);
+			CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
+			return;
+		}
+
+		bUsingTowerMainMapLayout = true;
+		MainMapSpawnSurfaceLocation = CachedTowerMainMapLayout.SpawnSurfaceLocation;
+		bHasMainMapSpawnSurfaceLocation = !MainMapSpawnSurfaceLocation.IsNearlyZero();
+		MainMapStartAnchorSurfaceLocation = CachedTowerMainMapLayout.StartAnchorSurfaceLocation;
+		MainMapStartPathSurfaceLocation = CachedTowerMainMapLayout.StartPathSurfaceLocation;
+		MainMapStartAreaCenterSurfaceLocation = CachedTowerMainMapLayout.StartAreaCenterSurfaceLocation;
+		MainMapBossAnchorSurfaceLocation = CachedTowerMainMapLayout.BossAnchorSurfaceLocation;
+		MainMapBossSpawnSurfaceLocation = CachedTowerMainMapLayout.BossSpawnSurfaceLocation;
+		MainMapBossBeaconSurfaceLocation = CachedTowerMainMapLayout.BossBeaconSurfaceLocation;
+		MainMapBossAreaCenterSurfaceLocation = CachedTowerMainMapLayout.BossAreaCenterSurfaceLocation;
+		MainMapRescueAnchorLocations = CachedTowerMainMapLayout.RescueAnchorLocations;
+
+		UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Cached tower-map spawn surface at %s"), *MainMapSpawnSurfaceLocation.ToString());
+
+		bool bTowerCollisionReady = false;
+		if (!T66TowerMapTerrain::Spawn(
+			World,
+			CachedTowerMainMapLayout,
+			GI ? GI->SelectedDifficulty : ET66Difficulty::Easy,
+			SpawnParams,
+			bTowerCollisionReady))
+		{
+			bUsingTowerMainMapLayout = false;
+			CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
+			return;
+		}
+
+		bTerrainCollisionReady = bTowerCollisionReady;
+		if (bTerrainCollisionReady)
+		{
+			RestartPlayersMissingPawns();
+		}
+		return;
+	}
 
 	T66MainMapTerrain::FBoard Board;
 	if (!T66MainMapTerrain::Generate(Preset, Board))
@@ -5230,477 +6571,9 @@ void AT66GameMode::SpawnMainMapTerrain()
 		Board.Settings.CellSize);
 }
 
-// ============================================================================
-// HDRI equirectangular -> TextureCube conversion (editor-only, runs once)
-// ============================================================================
-#if WITH_EDITORONLY_DATA
-
-static const TCHAR* HDRIEquirectPath = TEXT("/Game/Lighting/T_HDRI_Studio.T_HDRI_Studio");
-static const TCHAR* HDRICubePackagePath = TEXT("/Game/Lighting/TC_HDRI_Studio");
-static const TCHAR* HDRICubeAssetPath = TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio");
-
-/** Map cube face + UV to a 3D direction vector (UE coordinate system: X=fwd, Y=right, Z=up). */
-static FVector CubeFaceDirection(int32 Face, float U, float V)
-{
-	const float S = 2.f * U - 1.f;
-	const float T = 2.f * V - 1.f;
-	switch (Face)
-	{
-	case 0: return FVector( 1.f,  S,   -T);    // +X
-	case 1: return FVector(-1.f, -S,   -T);    // -X
-	case 2: return FVector(-S,    1.f, -T);     // +Y
-	case 3: return FVector( S,   -1.f, -T);     // -Y
-	case 4: return FVector(-S,   -T,    1.f);   // +Z
-	case 5: return FVector(-S,    T,   -1.f);   // -Z
-	default: return FVector::ForwardVector;
-	}
-}
-
-/** Convert a 3D direction to equirectangular UV coordinates [0,1]. */
-static FVector2D DirToEquirectUV(const FVector& Dir)
-{
-	const FVector N = Dir.GetSafeNormal();
-	const float Phi   = FMath::Atan2(N.Y, N.X);                            // azimuth [-PI, PI]
-	const float Theta = FMath::Asin(FMath::Clamp(N.Z, -1.f, 1.f));        // elevation [-PI/2, PI/2]
-	return FVector2D(
-		FMath::Frac(Phi / (2.f * UE_PI) + 0.5f),
-		FMath::Clamp(0.5f - Theta / UE_PI, 0.f, 1.f)
-	);
-}
-
-/**
- * If the HDRI Texture2D exists but no TextureCube has been created yet,
- * sample the equirectangular map into 6 cube faces and save as a persistent asset.
- */
-static UTextureCube* EnsureHDRICubemap()
-{
-	// Already exists?
-	UTextureCube* Existing = LoadObject<UTextureCube>(nullptr, HDRICubeAssetPath);
-	if (Existing) return Existing;
-
-	// Source equirectangular texture?
-	UTexture2D* Src = LoadObject<UTexture2D>(nullptr, HDRIEquirectPath);
-	if (!Src)
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("[HDRI] No equirectangular source at %s; skipping cubemap creation"), HDRIEquirectPath);
-		return nullptr;
-	}
-
-	FTextureSource& SrcSource = Src->Source;
-	if (!SrcSource.IsValid())
-	{
-		UE_LOG(LogT66GameMode, Warning, TEXT("[HDRI] Source texture has no valid FTextureSource data"));
-		return nullptr;
-	}
-
-	const int32 SrcW = SrcSource.GetSizeX();
-	const int32 SrcH = SrcSource.GetSizeY();
-	const ETextureSourceFormat SrcFmt = SrcSource.GetFormat();
-	const int32 SrcBpp = SrcSource.GetBytesPerPixel();
-
-	TArray64<uint8> SrcData;
-	SrcSource.GetMipData(SrcData, 0);
-	if (SrcData.Num() == 0)
-	{
-		UE_LOG(LogT66GameMode, Warning, TEXT("[HDRI] Could not read source mip data"));
-		return nullptr;
-	}
-
-	// Face size: half the equirect height, clamped for sanity.
-	const int32 FaceSize = FMath::Clamp(SrcH / 2, 64, 1024);
-	const int32 FacePixels = FaceSize * FaceSize;
-	const int32 OutBpp = 8; // RGBA16F = 4 channels ?? 2 bytes (FFloat16)
-
-	UE_LOG(LogT66GameMode, Log, TEXT("[HDRI] Creating cubemap from %dx%d equirect (format %d) into %dx%d faces"), SrcW, SrcH, (int32)SrcFmt, FaceSize, FaceSize);
-
-	// Create the package and TextureCube
-	UPackage* Package = CreatePackage(HDRICubePackagePath);
-	UTextureCube* Cube = NewObject<UTextureCube>(Package, TEXT("TC_HDRI_Studio"), RF_Public | RF_Standalone);
-	Cube->Source.Init(FaceSize, FaceSize, 6, 1, TSF_RGBA16F);
-	Cube->SRGB = false;
-	Cube->CompressionSettings = TC_HDR;
-	Cube->LODGroup = TEXTUREGROUP_Skybox;
-
-	uint8* RawOut = Cube->Source.LockMip(0);
-
-	for (int32 Face = 0; Face < 6; ++Face)
-	{
-		for (int32 Y = 0; Y < FaceSize; ++Y)
-		{
-			for (int32 X = 0; X < FaceSize; ++X)
-			{
-				const float U = (X + 0.5f) / (float)FaceSize;
-				const float V = (Y + 0.5f) / (float)FaceSize;
-
-				const FVector Dir = CubeFaceDirection(Face, U, V);
-				const FVector2D EqUV = DirToEquirectUV(Dir);
-
-				// Nearest-neighbour sample from source (good enough for SkyLight ambient)
-				const int32 SrcX = FMath::Clamp((int32)(EqUV.X * SrcW), 0, SrcW - 1);
-				const int32 SrcY = FMath::Clamp((int32)(EqUV.Y * SrcH), 0, SrcH - 1);
-				const int64 SrcOff = ((int64)SrcY * SrcW + SrcX) * SrcBpp;
-
-				// Read source pixel as linear color
-				FLinearColor Color = FLinearColor::Black;
-				if (SrcFmt == TSF_RGBA16F && SrcOff + 8 <= SrcData.Num())
-				{
-					const FFloat16* H = reinterpret_cast<const FFloat16*>(&SrcData[SrcOff]);
-					Color = FLinearColor(H[0].GetFloat(), H[1].GetFloat(), H[2].GetFloat(), 1.f);
-				}
-				else if (SrcFmt == TSF_BGRA8 && SrcOff + 4 <= SrcData.Num())
-				{
-					Color.B = SrcData[SrcOff + 0] / 255.f;
-					Color.G = SrcData[SrcOff + 1] / 255.f;
-					Color.R = SrcData[SrcOff + 2] / 255.f;
-					Color.A = 1.f;
-				}
-				else if (SrcFmt == TSF_RGBA16 && SrcOff + 8 <= SrcData.Num())
-				{
-					const uint16* U16 = reinterpret_cast<const uint16*>(&SrcData[SrcOff]);
-					Color.R = U16[0] / 65535.f;
-					Color.G = U16[1] / 65535.f;
-					Color.B = U16[2] / 65535.f;
-					Color.A = 1.f;
-				}
-
-				// Write as RGBA16F
-				const int64 DstOff = ((int64)Face * FacePixels + (int64)Y * FaceSize + X) * OutBpp;
-				FFloat16* Out = reinterpret_cast<FFloat16*>(RawOut + DstOff);
-				Out[0].Set(Color.R);
-				Out[1].Set(Color.G);
-				Out[2].Set(Color.B);
-				Out[3].Set(1.f);
-			}
-		}
-	}
-
-	Cube->Source.UnlockMip(0);
-	Cube->UpdateResource();
-	Cube->PostEditChange();
-	Package->MarkPackageDirty();
-
-	// Persist to disk so it's available on next editor launch without re-generation.
-	const FString Filename = FPackageName::LongPackageNameToFilename(HDRICubePackagePath, FPackageName::GetAssetPackageExtension());
-	FSavePackageArgs SaveArgs;
-	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
-	UPackage::Save(Package, Cube, *Filename, SaveArgs);
-
-	UE_LOG(LogT66GameMode, Log, TEXT("[HDRI] Saved cubemap: %s (%dx%d per face, RGBA16F)"), HDRICubeAssetPath, FaceSize, FaceSize);
-	return Cube;
-}
-
-#endif // WITH_EDITORONLY_DATA
-
-void AT66GameMode::EnsureSharedLightingForWorld(UWorld* World)
-{
-	if (!World) return;
-
-	static const FName MoonTag(TEXT("T66Moon"));
-
-	ASkyAtmosphere* Atmosphere = nullptr;
-	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It)
-	{
-		Atmosphere = *It;
-		break;
-	}
-
-	ADirectionalLight* SunForAtmosphere = nullptr;
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
-	{
-		SunForAtmosphere = *It;
-		break;
-	}
-
-	ASkyLight* SkyForCapture = nullptr;
-	for (TActorIterator<ASkyLight> It(World); It; ++It)
-	{
-		SkyForCapture = *It;
-		break;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	// Sky atmosphere (blue mid-day sky) if needed.
-	if (!Atmosphere)
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("No SkyAtmosphere found - spawning development sky atmosphere"));
-		ASkyAtmosphere* SpawnedAtmosphere = World->SpawnActor<ASkyAtmosphere>(
-			ASkyAtmosphere::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			SpawnParams
-		);
-
-		if (SpawnedAtmosphere)
-		{
-			#if WITH_EDITOR
-			SpawnedAtmosphere->SetActorLabel(TEXT("DEV_SkyAtmosphere"));
-			#endif
-			Atmosphere = SpawnedAtmosphere;
-		}
-	}
-
-	// Spawn directional light (sun) if needed
-	if (!SunForAtmosphere)
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("No directional light found - spawning development sun"));
-
-		ADirectionalLight* Sun = World->SpawnActor<ADirectionalLight>(
-			ADirectionalLight::StaticClass(),
-			FVector(0.f, 0.f, 1000.f),
-			FRotator(-50.f, -45.f, 0.f), // Angled down
-			SpawnParams
-		);
-
-		if (Sun)
-		{
-			if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
-			{
-				LightComp->SetMobility(EComponentMobility::Movable); // Dynamic lighting so landscape stays lit without Build Lighting
-				LightComp->SetIntensity(3.f);  // Fill light; SkyLight is the primary ambient source.
-				LightComp->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f)); // Warm sunlight
-				LightComp->CastShadows = false; // Disable shadows to avoid dark banding on characters.
-
-				// Drive SkyAtmosphere sun/sky scattering (mid-day blue sky).
-				LightComp->bAtmosphereSunLight = true;
-				LightComp->AtmosphereSunLightIndex = 0;
-				LightComp->SetForwardShadingPriority(1); // Primary for forward shading / translucency / water / volumetric fog
-			}
-			#if WITH_EDITOR
-			Sun->SetActorLabel(TEXT("DEV_Sun"));
-			#endif
-			SunForAtmosphere = Sun;
-			UE_LOG(LogT66GameMode, Log, TEXT("Spawned development directional light"));
-		}
-	}
-
-	// Ensure we have two directional lights (sun + moon) for theme-driven day/night.
-	int32 DirLightCount = 0;
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It) { ++DirLightCount; }
-	if (DirLightCount < 2)
-	{
-		ADirectionalLight* Moon = World->SpawnActor<ADirectionalLight>(
-			ADirectionalLight::StaticClass(),
-			FVector(0.f, 0.f, 1000.f),
-			FRotator(50.f, 135.f, 0.f), // ~180?? from sun so moon is "up" at night
-			SpawnParams
-		);
-		if (Moon)
-		{
-			Moon->Tags.Add(MoonTag);
-			if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(Moon->GetLightComponent()))
-			{
-				LC->SetMobility(EComponentMobility::Movable);
-				LC->SetIntensity(0.f); // ApplyThemeToDirectionalLights() will set when Dark
-				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f)); // Cool moonlight
-				LC->CastShadows = false; // Shadows disabled globally
-				LC->bAtmosphereSunLight = true;
-				LC->AtmosphereSunLightIndex = 1;
-				LC->SetForwardShadingPriority(0); // Secondary; sun is primary for forward shading
-			}
-#if WITH_EDITOR
-			Moon->SetActorLabel(TEXT("DEV_Moon"));
-#endif
-			UE_LOG(LogT66GameMode, Log, TEXT("Spawned development moon light for dark-mode sky"));
-		}
-	}
-
-	// Spawn sky light (ambient) if needed
-	if (!SkyForCapture)
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("No sky light found - spawning development ambient light"));
-
-		ASkyLight* Sky = World->SpawnActor<ASkyLight>(
-			ASkyLight::StaticClass(),
-			FVector(0.f, 0.f, 500.f),
-			FRotator::ZeroRotator,
-			SpawnParams
-		);
-
-		if (Sky)
-		{
-			#if WITH_EDITOR
-			Sky->SetActorLabel(TEXT("DEV_SkyLight"));
-			#endif
-			SkyForCapture = Sky;
-			UE_LOG(LogT66GameMode, Log, TEXT("Spawned development sky light"));
-		}
-	}
-
-	// Exponential Height Fog for atmospheric depth (distant terrain lighter/softer, less flat/gamey).
-	AExponentialHeightFog* HeightFog = nullptr;
-	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
-	{
-		HeightFog = *It;
-		break;
-	}
-	if (!HeightFog)
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("No Exponential Height Fog found - spawning for atmospheric depth"));
-		AExponentialHeightFog* SpawnedFog = World->SpawnActor<AExponentialHeightFog>(
-			AExponentialHeightFog::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			SpawnParams
-		);
-		if (SpawnedFog)
-		{
-#if WITH_EDITOR
-			SpawnedFog->SetActorLabel(TEXT("DEV_ExponentialHeightFog"));
-#endif
-			HeightFog = SpawnedFog;
-		}
-	}
-	if (HeightFog)
-	{
-		ConfigureGameplayFogForWorld(World);
-	}
-
-	// PostProcessVolume (unbound) for exposure and color grading so distance reads less punchy.
-	APostProcessVolume* PPVolume = nullptr;
-	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
-	{
-		APostProcessVolume* P = *It;
-		if (P && P->bUnbound)
-		{
-			PPVolume = P;
-			break;
-		}
-	}
-	if (!PPVolume)
-	{
-		// Prefer finding any post process volume and making it unbound
-		for (TActorIterator<APostProcessVolume> It(World); It; ++It)
-		{
-			PPVolume = *It;
-			break;
-		}
-	}
-	if (!PPVolume)
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("No PostProcessVolume found - spawning for exposure/color grading"));
-		APostProcessVolume* SpawnedPP = World->SpawnActor<APostProcessVolume>(
-			APostProcessVolume::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			SpawnParams
-		);
-		if (SpawnedPP)
-		{
-			SpawnedPP->bUnbound = true;
-			FPostProcessSettings& PPS = SpawnedPP->Settings;
-			PPS.bOverride_AutoExposureMinBrightness = true;
-			PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure to match preview consistency.
-			PPS.bOverride_AutoExposureMaxBrightness = true;
-			PPS.AutoExposureMaxBrightness = 1.0f;  // Same as min = no auto-exposure variation
-			PPS.bOverride_AmbientOcclusionIntensity = true;
-			PPS.AmbientOcclusionIntensity = 0.0f;  // Disable AO to avoid dark creases on characters.
-			PPS.bOverride_ColorSaturation = true;
-			PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f); // Slight desaturation so scene isn't uniformly punchy
-#if WITH_EDITOR
-			SpawnedPP->SetActorLabel(TEXT("DEV_PostProcessVolume"));
-#endif
-		}
-	}
-	else if (PPVolume)
-	{
-		// Align level-placed PP with frontend/gameplay defaults so preview and gameplay match.
-		PPVolume->bUnbound = true;
-		FPostProcessSettings& PPS = PPVolume->Settings;
-		PPS.bOverride_AutoExposureMinBrightness = true;
-		PPS.AutoExposureMinBrightness = 1.0f;  // Locked exposure
-		PPS.bOverride_AutoExposureMaxBrightness = true;
-		PPS.AutoExposureMaxBrightness = 1.0f;  // Locked exposure
-		PPS.bOverride_AmbientOcclusionIntensity = true;
-		PPS.AmbientOcclusionIntensity = 0.0f;  // Disable AO to avoid dark creases on characters.
-		PPS.bOverride_ColorSaturation = true;
-		PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.f);
-	}
-
-	// Force ALL directional and sky lights to Movable, no shadows, aligned colors (theme sets intensities).
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
-	{
-		ADirectionalLight* DirLight = *It;
-		if (UDirectionalLightComponent* LC = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
-		{
-			LC->SetMobility(EComponentMobility::Movable);
-			LC->CastShadows = false; // Disable shadows globally to match the preview look.
-			LC->bAtmosphereSunLight = true;
-			LC->AtmosphereSunLightIndex = DirLight->Tags.Contains(MoonTag) ? 1 : 0;
-			LC->SetForwardShadingPriority(DirLight->Tags.Contains(MoonTag) ? 0 : 1); // Sun primary for forward shading
-			// Align level-placed light colors with frontend so preview and gameplay match.
-			if (DirLight->Tags.Contains(MoonTag))
-			{
-				LC->SetLightColor(FLinearColor(0.72f, 0.8f, 1.f));
-			}
-			else
-			{
-				LC->SetLightColor(FLinearColor(1.f, 0.95f, 0.85f));
-				LC->SetIntensity(3.f); // Fill light; SkyLight is the primary ambient source.
-			}
-		}
-		if (USceneComponent* Root = DirLight->GetRootComponent())
-		{
-			Root->SetMobility(EComponentMobility::Movable);
-		}
-	}
-	ApplyThemeToDirectionalLightsForWorld(World);
-
-	// Configure all SkyLights: HDRI cubemap (asset-preview quality) or boosted sky capture fallback.
-	// Lumen is disabled; the SkyLight is the primary source of ambient/indirect light.
-
-	// In editor: auto-create the TextureCube from the equirectangular HDRI if it doesn't exist yet.
-#if WITH_EDITORONLY_DATA
-	EnsureHDRICubemap();
-#endif
-
-	UTextureCube* HDRICubemap = LoadObject<UTextureCube>(nullptr, TEXT("/Game/Lighting/TC_HDRI_Studio.TC_HDRI_Studio"));
-
-	for (TActorIterator<ASkyLight> It(World); It; ++It)
-	{
-		if (USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent()))
-		{
-			SC->SetMobility(EComponentMobility::Movable);
-			// Real-time capture throws a persistent runtime warning unless the map has a sky atmosphere/sky material stack.
-			// Our lighting path uses an explicit cubemap or manual recapture instead, so keep it disabled.
-			SC->SetRealTimeCapture(false);
-
-			if (HDRICubemap)
-			{
-				// Studio HDRI cubemap: replicates asset-preview lighting quality.
-				SC->SourceType = ESkyLightSourceType::SLS_SpecifiedCubemap;
-				SC->Cubemap = HDRICubemap;
-				SC->SetIntensity(8.0f); // Strong ambient fill to keep characters readable.
-				SC->bLowerHemisphereIsBlack = false;
-				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f)); // Near-white underside fill
-				UE_LOG(LogT66GameMode, Log, TEXT("[LIGHT] SkyLight using HDRI cubemap (studio lighting, intensity 8.0)"));
-			}
-			else
-			{
-				// Fallback: capture sky atmosphere with boosted intensity + lower hemisphere fill.
-				SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
-				SC->SetIntensity(8.0f);
-				SC->bLowerHemisphereIsBlack = false;
-				SC->SetLowerHemisphereColor(FLinearColor(0.95f, 0.95f, 0.95f));
-				UE_LOG(LogT66GameMode, Log, TEXT("[LIGHT] SkyLight using boosted sky capture (no HDRI cubemap found, intensity 8.0)"));
-			}
-
-			SC->SetLightColor(FLinearColor::White);
-			SC->RecaptureSky();
-		}
-		if (USceneComponent* Root = It->GetRootComponent())
-		{
-			Root->SetMobility(EComponentMobility::Movable);
-		}
-	}
-
-	ApplyThemeToAtmosphereAndLightingForWorld(World);
-}
-
 void AT66GameMode::SpawnLightingIfNeeded()
 {
-	EnsureSharedLightingForWorld(GetWorld());
+	UT66LightingSubsystem::EnsureSharedLightingForWorld(GetWorld());
 }
 
 void AT66GameMode::SpawnQuakeSkyIfNeeded()
@@ -5708,7 +6581,8 @@ void AT66GameMode::SpawnQuakeSkyIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	if (T66UsesMainMapTerrainStage(World))
+	const bool bUseDungeonLighting = UT66GameInstance::GetEffectiveLightingPreset(World) == ET66LightingPreset::Dungeon;
+	if (T66UsesMainMapTerrainStage(World) || bUseDungeonLighting)
 	{
 		TArray<AT66QuakeSkyActor*> SkyActorsToDestroy;
 		for (TActorIterator<AT66QuakeSkyActor> It(World); It; ++It)
@@ -5724,7 +6598,7 @@ void AT66GameMode::SpawnQuakeSkyIfNeeded()
 		}
 		if (SkyActorsToDestroy.Num() > 0)
 		{
-			UE_LOG(LogT66GameMode, Log, TEXT("[QuakeSky] Removed %d Quake sky actor(s) for standalone Farm"), SkyActorsToDestroy.Num());
+			UE_LOG(LogT66GameMode, Log, TEXT("[QuakeSky] Removed %d Quake sky actor(s) for current lighting preset"), SkyActorsToDestroy.Num());
 		}
 		return;
 	}
@@ -5751,229 +6625,14 @@ void AT66GameMode::SpawnQuakeSkyIfNeeded()
 	UE_LOG(LogT66GameMode, Log, TEXT("[QuakeSky] Spawned retro sky dome"));
 }
 
-void AT66GameMode::ConfigureGameplayFogForWorld(UWorld* World)
-{
-	if (!World) return;
-
-	UGameInstance* GI = World->GetGameInstance();
-	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
-	UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
-	const float FogIntensityPercent = PS ? PS->GetFogIntensityPercent() : 55.0f;
-	const bool bFogEnabled = !PS || (PS->GetFogEnabled() && FogIntensityPercent > KINDA_SMALL_NUMBER);
-	const float FogDensityScale = FMath::Clamp(FogIntensityPercent / 55.0f, 0.0f, 100.0f / 55.0f);
-
-	struct FT66FogTuning
-	{
-		float BaseFogDensity = 0.0225f;
-		float FogStartDistance = 1400.f;
-		float FogHeightFalloff = 0.085f;
-		float FogMaxOpacity = 0.96f;
-		float DirectionalExponent = 10.0f;
-		float DirectionalStartDistance = 2600.0f;
-		float FogCutoffDistance = 0.0f;
-		FLinearColor FogColor = FLinearColor(0.05f, 0.06f, 0.08f);
-		FLinearColor DirectionalFogColor = FLinearColor(0.14f, 0.18f, 0.24f);
-	};
-
-	FT66FogTuning FogTuning;
-	FogTuning.BaseFogDensity = 0.0105f;
-	FogTuning.FogStartDistance = 6200.f;
-	FogTuning.FogHeightFalloff = 0.008f;
-	FogTuning.FogMaxOpacity = 1.0f;
-	FogTuning.DirectionalExponent = 1.6f;
-	FogTuning.DirectionalStartDistance = 6800.0f;
-	FogTuning.FogColor = FLinearColor(0.0f, 0.53f, 0.60f);
-	FogTuning.DirectionalFogColor = FLinearColor(0.10f, 0.64f, 0.74f);
-
-	const float FogDensity = FogTuning.BaseFogDensity * FogDensityScale;
-
-	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
-	{
-		UExponentialHeightFogComponent* FogComp = It->FindComponentByClass<UExponentialHeightFogComponent>();
-		if (!FogComp) FogComp = Cast<UExponentialHeightFogComponent>(It->GetRootComponent());
-		if (!FogComp) continue;
-
-		FogComp->SetStartDistance(FogTuning.FogStartDistance);
-		FogComp->SetFogDensity(FogDensity);
-		FogComp->SetFogHeightFalloff(FogTuning.FogHeightFalloff);
-		FogComp->SetFogMaxOpacity(FogTuning.FogMaxOpacity);
-		FogComp->SetFogCutoffDistance(FogTuning.FogCutoffDistance);
-		FogComp->SetFogInscatteringColor(FogTuning.FogColor);
-		FogComp->SetDirectionalInscatteringColor(FogTuning.DirectionalFogColor);
-		FogComp->SetDirectionalInscatteringExponent(FogTuning.DirectionalExponent);
-		FogComp->SetDirectionalInscatteringStartDistance(FogTuning.DirectionalStartDistance);
-		FogComp->SetSecondFogDensity(0.0f);
-		FogComp->SetSecondFogHeightFalloff(0.0f);
-		FogComp->SetSecondFogHeightOffset(0.0f);
-		FogComp->SetVolumetricFog(false);
-		FogComp->SetVisibility(bFogEnabled);
-		break;
-	}
-
-	if (GI)
-	{
-		if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
-		{
-			FT66RetroFXSettings RetroSettings = PS ? PS->GetRetroFXSettings() : FT66RetroFXSettings();
-			if (T66UsesMainMapTerrainStage(World))
-			{
-				RetroSettings.bEnableWorldGeometry = false;
-				RetroSettings.WorldVertexSnapPercent = 0.0f;
-				RetroSettings.WorldVertexSnapResolutionPercent = 0.0f;
-				RetroSettings.WorldVertexNoisePercent = 0.0f;
-				RetroSettings.WorldAffineBlendPercent = 0.0f;
-				RetroSettings.WorldAffineDistance1Percent = 0.0f;
-				RetroSettings.WorldAffineDistance2Percent = 0.0f;
-				RetroSettings.WorldAffineDistance3Percent = 0.0f;
-				if (RetroSettings.bEnableRetroFXMaster)
-				{
-					RetroSettings.PS1FogPercent = 100.0f;
-					RetroSettings.PS1SceneDepthFogPercent = 100.0f;
-					RetroSettings.PS1FogDensityPercent = 56.0f;
-					RetroSettings.PS1FogStartDistancePercent = 48.0f;
-					RetroSettings.PS1FogFallOffDistancePercent = 44.0f;
-				}
-			}
-			RetroFX->ApplySettings(RetroSettings, World);
-		}
-	}
-}
-
-void AT66GameMode::ApplyThemeToDirectionalLightsForWorld(UWorld* World)
-{
-	if (!World) return;
-
-	static const FName MoonTag(TEXT("T66Moon"));
-	ADirectionalLight* SunLight = nullptr;
-	ADirectionalLight* MoonLight = nullptr;
-	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
-	{
-		ADirectionalLight* L = *It;
-		if (L->Tags.Contains(MoonTag))
-			MoonLight = L;
-		else
-			SunLight = L;
-	}
-	if (!SunLight) return;
-
-	UDirectionalLightComponent* SunComp = Cast<UDirectionalLightComponent>(SunLight->GetLightComponent());
-	if (!SunComp) return;
-
-	// Demo map (e.g. Map_Summer): lower sun intensity so it's not as harsh
-	FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-	const bool bDemoMap = MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase);
-	const float SunIntensityDark = bDemoMap ? 1.2f : 2.f;
-
-	// Dark-only lighting: the visible sky light comes from the eclipse/moon light.
-	SunComp->SetIntensity(0.f);
-	SunComp->bAtmosphereSunLight = false;
-	if (MoonLight)
-	{
-		UDirectionalLightComponent* MoonComp = Cast<UDirectionalLightComponent>(MoonLight->GetLightComponent());
-		if (MoonComp)
-		{
-			// Eclipse dusk: dimmed sun, warm white light, no shadows, hide built-in sun disk
-			MoonComp->SetIntensity(5.0f);
-			MoonComp->SetLightColor(FLinearColor(1.0f, 0.95f, 0.9f));
-			MoonComp->bAtmosphereSunLight = true;
-			MoonComp->AtmosphereSunLightIndex = 0;
-			MoonComp->SetAtmosphereSunDiskColorScale(FLinearColor(0.f, 0.f, 0.f));
-			MoonComp->SetCastShadows(false);
-			MoonLight->SetActorRotation(FRotator(-50.f, 135.f, 0.f));
-		}
-	}
-}
-
 void AT66GameMode::ApplyThemeToDirectionalLights()
 {
-	ApplyThemeToDirectionalLightsForWorld(GetWorld());
-}
-
-void AT66GameMode::ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World)
-{
-	if (!World) return;
-
-	// --- SkyAtmosphere: blood-red eclipse sky ---
-	for (TActorIterator<ASkyAtmosphere> It(World); It; ++It)
-	{
-		USkyAtmosphereComponent* Atmos = It->FindComponentByClass<USkyAtmosphereComponent>();
-		if (!Atmos) continue;
-
-		Atmos->RayleighScattering = FLinearColor(0.028f, 0.005f, 0.004f);
-		Atmos->RayleighScatteringScale = 0.8f;
-		Atmos->MieScatteringScale = 0.01f;
-		Atmos->MultiScatteringFactor = 0.5f;
-		Atmos->MarkRenderStateDirty();
-		break;
-	}
-
-	// --- SkyLight: captured scene with red tint ---
-	for (TActorIterator<ASkyLight> It(World); It; ++It)
-	{
-		USkyLightComponent* SC = Cast<USkyLightComponent>(It->GetLightComponent());
-		if (!SC) continue;
-
-		SC->SetRealTimeCapture(false);
-		SC->SourceType = ESkyLightSourceType::SLS_CapturedScene;
-		SC->Cubemap = nullptr;
-		SC->SetIntensity(4.0f);
-		SC->SetLightColor(FLinearColor(0.25f, 0.2f, 0.25f));
-		SC->bLowerHemisphereIsBlack = false;
-		SC->SetLowerHemisphereColor(FLinearColor(0.12f, 0.1f, 0.12f));
-		SC->RecaptureSky();
-		break;
-	}
-
-	ConfigureGameplayFogForWorld(World);
-
-	// --- PostProcess color grading: neutral (red comes from sky, not color grade) ---
-	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
-	{
-		if (!It->bUnbound) continue;
-		FPostProcessSettings& PPS = It->Settings;
-
-		PPS.bOverride_ColorSaturation = true;
-		PPS.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.f);
-		PPS.bOverride_ColorGamma = false;
-		PPS.bOverride_ColorGain = false;
-		PPS.bOverride_BloomIntensity = true;
-		PPS.BloomIntensity = 0.0f;
-		PPS.bOverride_BloomThreshold = true;
-		PPS.BloomThreshold = 10.0f;
-		break;
-	}
-
-	// --- Posterize: always on in the dark presentation ---
-	if (UGameInstance* GI = World->GetGameInstance())
-	{
-		if (UT66PosterizeSubsystem* Post = GI->GetSubsystem<UT66PosterizeSubsystem>())
-		{
-			Post->SetEnabled(true);
-		}
-	}
-
-	// --- Eclipse corona: always visible ---
-	{
-		AT66EclipseActor* ExistingEclipse = nullptr;
-		for (TActorIterator<AT66EclipseActor> It(World); It; ++It)
-		{
-			ExistingEclipse = *It;
-			break;
-		}
-
-		if (!ExistingEclipse)
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			World->SpawnActor<AT66EclipseActor>(AT66EclipseActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		}
-	}
-
+	UT66LightingSubsystem::ApplyThemeToDirectionalLightsForWorld(GetWorld());
 }
 
 void AT66GameMode::ApplyThemeToAtmosphereAndLighting()
 {
-	ApplyThemeToAtmosphereAndLightingForWorld(GetWorld());
+	UT66LightingSubsystem::ApplyThemeToAtmosphereAndLightingForWorld(GetWorld());
 }
 
 void AT66GameMode::HandleSettingsChanged()
@@ -6042,16 +6701,10 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 		UT66GameInstance* GI = GetT66GameInstance();
 
 		// Default spawn:
-		// - Demo map (e.g. Map_Summer): origin (0, 0, DefaultSpawnHeight)
 		// - Coliseum mode: coliseum arena (timer starts immediately; no pillars)
 		// - Normal stage: start area (so timer starts after passing start pillars)
 		FVector SpawnLoc;
-		FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-		if (MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase))
-		{
-			SpawnLoc = FVector(0.f, 0.f, DefaultSpawnHeight);
-		}
-		else if (bUsingMainMapTerrain)
+		if (bUsingMainMapTerrain)
 		{
 			const FT66MapPreset Preset = T66BuildMainMapPreset(GI);
 			SpawnLoc = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, DefaultSpawnHeight);
@@ -6142,7 +6795,7 @@ void AT66GameMode::SpawnLabFloorIfNeeded()
 
 	const UT66GameInstance* T66GI = GetT66GameInstance();
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	if (UMaterialInterface* LabFloorMaterial = T66ResolveDifficultyGroundMaterial(this, Difficulty))
+	if (UMaterialInterface* LabFloorMaterial = FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(this, Difficulty))
 	{
 		Floor->GetStaticMeshComponent()->SetMaterial(0, LabFloorMaterial);
 	}
@@ -6236,10 +6889,63 @@ bool AT66GameMode::TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector&
 	{
 		Params.AddIgnoredActor(*It);
 	}
-	const FVector TraceStart(TraceLocation.X, TraceLocation.Y, TraceLocation.Z + 8000.f);
-	const FVector TraceEnd(TraceLocation.X, TraceLocation.Y, TraceLocation.Z - 16000.f);
-	if (!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, Params) &&
-		!World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_Visibility, Params))
+	FVector TraceStart = FVector::ZeroVector;
+	FVector TraceEnd = FVector::ZeroVector;
+	if (IsUsingTowerMainMapLayout())
+	{
+		const float LocalTraceUp = FMath::Max(900.0f, CachedTowerMainMapLayout.FloorSpacing - CachedTowerMainMapLayout.FloorThickness - 350.0f);
+		const float LocalTraceDown = FMath::Max(CachedTowerMainMapLayout.FloorSpacing + CachedTowerMainMapLayout.FloorThickness + 900.0f, 3200.0f);
+		TraceStart = FVector(TraceLocation.X, TraceLocation.Y, TraceLocation.Z + LocalTraceUp);
+		TraceEnd = FVector(TraceLocation.X, TraceLocation.Y, TraceLocation.Z - LocalTraceDown);
+	}
+	else
+	{
+		TraceStart = FVector(TraceLocation.X, TraceLocation.Y, TraceLocation.Z + 8000.f);
+		TraceEnd = FVector(TraceLocation.X, TraceLocation.Y, TraceLocation.Z - 16000.f);
+	}
+
+	bool bFoundGroundHit = false;
+	if (IsUsingTowerMainMapLayout())
+	{
+		TArray<FHitResult> Hits;
+		if (World->LineTraceMultiByChannel(Hits, TraceStart, TraceEnd, ECC_WorldStatic, Params))
+		{
+			for (const FHitResult& Hit : Hits)
+			{
+				if (T66ShouldIgnoreTowerCeilingHit(Hit))
+				{
+					continue;
+				}
+
+				GroundHit = Hit;
+				bFoundGroundHit = true;
+				break;
+			}
+		}
+
+		if (!bFoundGroundHit && World->LineTraceMultiByChannel(Hits, TraceStart, TraceEnd, ECC_Visibility, Params))
+		{
+			for (const FHitResult& Hit : Hits)
+			{
+				if (T66ShouldIgnoreTowerCeilingHit(Hit))
+				{
+					continue;
+				}
+
+				GroundHit = Hit;
+				bFoundGroundHit = true;
+				break;
+			}
+		}
+	}
+	else
+	{
+		bFoundGroundHit =
+			World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_WorldStatic, Params)
+			|| World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_Visibility, Params);
+	}
+
+	if (!bFoundGroundHit)
 	{
 		return false;
 	}
@@ -6267,9 +6973,15 @@ void AT66GameMode::MaintainPlayerTerrainSafety()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const FT66MapPreset Preset = T66BuildMainMapPreset(GI);
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
-	const float RescueThresholdZ = bUsingMainMapTerrain
+	const bool bTowerLayout = bUsingMainMapTerrain && IsUsingTowerMainMapLayout();
+	float RescueThresholdZ = bUsingMainMapTerrain
 		? (T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - 100.0f)
 		: (Preset.ElevationMin - 200.f);
+	if (bTowerLayout && CachedTowerMainMapLayout.Floors.Num() > 0)
+	{
+		const T66TowerMapTerrain::FFloor& LowestFloor = CachedTowerMainMapLayout.Floors.Last();
+		RescueThresholdZ = LowestFloor.SurfaceZ - FMath::Max(CachedTowerMainMapLayout.FloorThickness + 1400.0f, 1800.0f);
+	}
 	const float AnchorTraceZ = bUsingMainMapTerrain
 		? T66MainMapTerrain::GetTraceZ(Preset)
 		: (Preset.ElevationMax + 3000.f);
@@ -6298,7 +7010,11 @@ void AT66GameMode::MaintainPlayerTerrainSafety()
 		}
 
 		const FVector PawnLoc = Pawn->GetActorLocation();
-		const bool bNeedsRescue = PawnLoc.Z <= RescueThresholdZ || (Movement && Movement->MovementMode == MOVE_None);
+		const int32 TowerFloorNumber = bTowerLayout ? GetTowerFloorIndexForLocation(PawnLoc) : INDEX_NONE;
+		const bool bMovementLost = Movement && Movement->MovementMode == MOVE_None;
+		const bool bNeedsRescue = bTowerLayout
+			? (PawnLoc.Z <= RescueThresholdZ || (bMovementLost && TowerFloorNumber == INDEX_NONE))
+			: (PawnLoc.Z <= RescueThresholdZ || bMovementLost);
 		if (!bNeedsRescue)
 		{
 			continue;
@@ -6337,9 +7053,11 @@ void AT66GameMode::MaintainPlayerTerrainSafety()
 		bool bRecovered = TrySnapActorToTerrain(Pawn);
 		if (!bRecovered)
 		{
-			RescueAnchors.Sort([PawnLoc](const FVector& A, const FVector& B)
+			RescueAnchors.Sort([PawnLoc, bTowerLayout](const FVector& A, const FVector& B)
 			{
-				return FVector::DistSquared2D(A, PawnLoc) < FVector::DistSquared2D(B, PawnLoc);
+				return bTowerLayout
+					? (FVector::DistSquared(A, PawnLoc) < FVector::DistSquared(B, PawnLoc))
+					: (FVector::DistSquared2D(A, PawnLoc) < FVector::DistSquared2D(B, PawnLoc));
 			});
 
 			for (const FVector& Anchor : RescueAnchors)
@@ -6413,6 +7131,10 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	bTerrainCollisionReady = false;
 	bMainMapCombatStarted = false;
 	bHasMainMapSpawnSurfaceLocation = false;
+	bUsingTowerMainMapLayout = false;
+	CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
+	bTowerBossEntryTriggered = false;
+	bTowerBossEntryApplied = false;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapStartPathSurfaceLocation = FVector::ZeroVector;
@@ -6422,6 +7144,14 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapRescueAnchorLocations.Reset();
+	for (AT66TowerDescentHole* Hole : TowerDescentHoles)
+	{
+		if (Hole)
+		{
+			Hole->Destroy();
+		}
+	}
+	TowerDescentHoles.Reset();
 
 	DestroyActorsWithTag(World, T66MapPlatformTag);
 	DestroyActorsWithTag(World, T66MapRampTag);
@@ -6548,9 +7278,17 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	FVector SpawnLocation;
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(GetWorld());
+	UT66GameInstance* CurrentGI = GetT66GameInstance();
+	UT66RunStateSubsystem* CurrentRunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	FVector MainMapSafeSpawnLocation = FVector::ZeroVector;
 	const bool bHasMainMapSafeSpawnLocation = bUsingMainMapTerrain
 		&& TryGetMainMapStartPlacementLocation(0.f, -1.10f, MainMapSafeSpawnLocation);
+	const bool bUseTowerStageDropIntro = bUsingMainMapTerrain
+		&& IsUsingTowerMainMapLayout()
+		&& CurrentGI
+		&& CurrentGI->bPendingTowerStageDropIntro
+		&& CurrentRunState
+		&& CurrentRunState->GetCurrentStage() > 1;
 
 	if (bUsingMainMapTerrain && !bTerrainCollisionReady)
 	{
@@ -6583,19 +7321,10 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	}
 	else
 	{
-		// No PlayerStart found - spawn at a safe default location (100k map or demo map).
-		UWorld* World = GetWorld();
-		FString MapName = World ? UWorld::RemovePIEPrefix(World->GetMapName()) : FString();
-		if (MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase))
-		{
-			SpawnLocation = FVector(0.f, 0.f, 200.f);
-		}
-		else
-		{
-			SpawnLocation = IsColiseumStage()
-				? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)
-				: FVector(-35455.f, 0.f, 200.f);
-		}
+		// No PlayerStart found - spawn at a safe default location.
+		SpawnLocation = IsColiseumStage()
+			? FVector(ColiseumCenter.X, ColiseumCenter.Y, 200.f)
+			: FVector(-35455.f, 0.f, 200.f);
 		UE_LOG(LogT66GameMode, Warning, TEXT("No PlayerStart found! Spawning at default location (%.0f, %.0f, %.0f)."),
 			SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
 	}
@@ -6604,11 +7333,6 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	if (IsLabLevel())
 	{
 		SpawnLocation = FVector(0.f, 0.f, 120.f);
-		SpawnRotation = FRotator::ZeroRotator;
-	}
-	else if (IsDemoMapForTribulation())
-	{
-		SpawnLocation = FVector(0.f, 0.f, 200.f);
 		SpawnRotation = FRotator::ZeroRotator;
 	}
 	else if (bUsingMainMapTerrain)
@@ -6623,8 +7347,15 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		}
 		else
 		{
-			const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-			SpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 200.f);
+			if (IsUsingTowerMainMapLayout())
+			{
+				SpawnLocation = T66TowerMapTerrain::GetPreferredSpawnLocation(CachedTowerMainMapLayout, 200.f);
+			}
+			else
+			{
+				const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+				SpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, 200.f);
+			}
 		}
 		FVector Center = FVector::ZeroVector;
 		FVector InwardDirection = FVector::ForwardVector;
@@ -6637,6 +7368,11 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 		else
 		{
 			SpawnRotation = FRotator::ZeroRotator;
+		}
+
+		if (bUseTowerStageDropIntro && bHasMainMapSpawnSurfaceLocation)
+		{
+			SpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, T66TowerStageTransitionDropHeight);
 		}
 	}
 	else if (!IsColiseumStage())
@@ -6674,6 +7410,36 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 				SpawnRotation = FRotator::ZeroRotator;
 			}
 		}
+	}
+
+	const UWorld* SpawnWorld = GetWorld();
+	const int32 ConnectedPlayerCount = T66GetConnectedPlayerCount(SpawnWorld);
+	const int32 PlayerSlotIndex = T66GetPlayerSlotIndex(SpawnWorld, NewPlayer);
+	const float CenteredSlotOffset = static_cast<float>(PlayerSlotIndex) - (static_cast<float>(ConnectedPlayerCount - 1) * 0.5f);
+	FVector MultiplayerSpawnOffset = FVector::ZeroVector;
+	if (ConnectedPlayerCount > 1 && !FMath::IsNearlyZero(CenteredSlotOffset))
+	{
+		if (bUsingMainMapTerrain)
+		{
+			FVector Center = FVector::ZeroVector;
+			FVector InwardDirection = FVector::ForwardVector;
+			FVector SideDirection = FVector::RightVector;
+			float CellSize = 0.f;
+			if (TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize) && !SideDirection.IsNearlyZero())
+			{
+				MultiplayerSpawnOffset = SideDirection * (CenteredSlotOffset * FMath::Max(CellSize * 0.55f, 180.f));
+			}
+		}
+		else if (!IsColiseumStage())
+		{
+			MultiplayerSpawnOffset = FVector(0.f, CenteredSlotOffset * 220.f, 0.f);
+		}
+		else
+		{
+			MultiplayerSpawnOffset = FVector(CenteredSlotOffset * 180.f, 0.f, 0.f);
+		}
+
+		SpawnLocation += MultiplayerSpawnOffset;
 	}
 
 	if (bUsingMainMapTerrain)
@@ -6719,25 +7485,57 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 			FVector ExactSpawnLocation = SpawnLocation;
 			if (bHasMainMapSafeSpawnLocation)
 			{
-				ExactSpawnLocation = MainMapSafeSpawnLocation + FVector(0.f, 0.f, HalfHeight + 5.f);
+				ExactSpawnLocation = MainMapSafeSpawnLocation + MultiplayerSpawnOffset + FVector(0.f, 0.f, HalfHeight + 5.f);
 			}
 			else if (bHasMainMapSpawnSurfaceLocation)
 			{
-				ExactSpawnLocation = MainMapSpawnSurfaceLocation + FVector(0.f, 0.f, HalfHeight + 5.f);
+				ExactSpawnLocation = MainMapSpawnSurfaceLocation + MultiplayerSpawnOffset + FVector(0.f, 0.f, HalfHeight + 5.f);
 			}
 			else
 			{
-				const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-				ExactSpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, HalfHeight + 5.f);
-			}
-			SpawnedPawn->SetActorLocation(ExactSpawnLocation, false, nullptr, ETeleportType::TeleportPhysics);
-			T66SyncPawnAndControllerRotation(SpawnedPawn, NewPlayer, SpawnRotation);
-			if (ACharacter* Character = Cast<ACharacter>(SpawnedPawn))
-			{
-				if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+				if (IsUsingTowerMainMapLayout())
 				{
-					Movement->StopMovementImmediately();
-					Movement->SetMovementMode(MOVE_Walking);
+					ExactSpawnLocation = T66TowerMapTerrain::GetPreferredSpawnLocation(CachedTowerMainMapLayout, HalfHeight + 5.f) + MultiplayerSpawnOffset;
+				}
+				else
+				{
+					const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+					ExactSpawnLocation = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, HalfHeight + 5.f) + MultiplayerSpawnOffset;
+				}
+			}
+			if (bUseTowerStageDropIntro)
+			{
+				const FVector DropStartLocation = (bHasMainMapSpawnSurfaceLocation
+					? MainMapSpawnSurfaceLocation
+					: ExactSpawnLocation)
+					+ MultiplayerSpawnOffset
+					+ FVector(0.f, 0.f, T66TowerStageTransitionDropHeight);
+				SpawnedPawn->SetActorLocation(DropStartLocation, false, nullptr, ETeleportType::TeleportPhysics);
+				T66SyncPawnAndControllerRotation(SpawnedPawn, NewPlayer, SpawnRotation);
+				if (ACharacter* Character = Cast<ACharacter>(SpawnedPawn))
+				{
+					if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+					{
+						Movement->StopMovementImmediately();
+						Movement->SetMovementMode(MOVE_Falling);
+					}
+				}
+				if (CurrentGI)
+				{
+					CurrentGI->bPendingTowerStageDropIntro = false;
+				}
+			}
+			else
+			{
+				SpawnedPawn->SetActorLocation(ExactSpawnLocation, false, nullptr, ETeleportType::TeleportPhysics);
+				T66SyncPawnAndControllerRotation(SpawnedPawn, NewPlayer, SpawnRotation);
+				if (ACharacter* Character = Cast<ACharacter>(SpawnedPawn))
+				{
+					if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+					{
+						Movement->StopMovementImmediately();
+						Movement->SetMovementMode(MOVE_Walking);
+					}
 				}
 			}
 		}

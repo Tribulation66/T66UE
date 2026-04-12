@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66SessionSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SteamHelper.h"
@@ -24,12 +25,46 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Session, Log, All);
 
 const FName UT66SessionSubsystem::PartySessionName(TEXT("T66PartySession"));
 
+namespace
+{
+	constexpr int32 T66MaxPendingFriendJoinLookupAttempts = 10;
+	constexpr double T66InviteFeedbackLifetimeSeconds = 12.0;
+
+	FString T66JoinSessionResultToString(EOnJoinSessionCompleteResult::Type Result)
+	{
+		switch (Result)
+		{
+		case EOnJoinSessionCompleteResult::Success:
+			return TEXT("Success");
+		case EOnJoinSessionCompleteResult::SessionIsFull:
+			return TEXT("SessionIsFull");
+		case EOnJoinSessionCompleteResult::SessionDoesNotExist:
+			return TEXT("SessionDoesNotExist");
+		case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
+			return TEXT("CouldNotRetrieveAddress");
+		case EOnJoinSessionCompleteResult::AlreadyInSession:
+			return TEXT("AlreadyInSession");
+		case EOnJoinSessionCompleteResult::UnknownError:
+		default:
+			return TEXT("UnknownError");
+		}
+	}
+
+	FString T66BuildSteamJoinConnectString(const FString& HostSteamId)
+	{
+		return HostSteamId.IsEmpty()
+			? FString()
+			: FString::Printf(TEXT("t66party:%s"), *HostSteamId);
+	}
+}
+
 void UT66SessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
 	CreateSessionCompleteDelegate = FOnCreateSessionCompleteDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleCreateSessionComplete);
 	DestroySessionCompleteDelegate = FOnDestroySessionCompleteDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleDestroySessionComplete);
+	FindFriendSessionCompleteDelegate = FOnFindFriendSessionCompleteDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleFindFriendSessionComplete);
 	JoinSessionCompleteDelegate = FOnJoinSessionCompleteDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleJoinSessionComplete);
 	StartSessionCompleteDelegate = FOnStartSessionCompleteDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleStartSessionComplete);
 	SessionInviteAcceptedDelegate = FOnSessionUserInviteAcceptedDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleSessionUserInviteAccepted);
@@ -38,15 +73,22 @@ void UT66SessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		CreateSessionCompleteHandle = SessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
 		DestroySessionCompleteHandle = SessionInterface->AddOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegate);
+		FindFriendSessionCompleteHandle = SessionInterface->AddOnFindFriendSessionCompleteDelegate_Handle(0, FindFriendSessionCompleteDelegate);
 		JoinSessionCompleteHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
 		StartSessionCompleteHandle = SessionInterface->AddOnStartSessionCompleteDelegate_Handle(StartSessionCompleteDelegate);
 		SessionInviteAcceptedHandle = SessionInterface->AddOnSessionUserInviteAcceptedDelegate_Handle(SessionInviteAcceptedDelegate);
+	}
+
+	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+	{
+		SteamJoinRequestedHandle = SteamHelper->OnSteamJoinRequested().AddUObject(this, &UT66SessionSubsystem::HandleSteamJoinRequested);
 	}
 }
 
 void UT66SessionSubsystem::Deinitialize()
 {
 	ClearSteamRichPresence();
+	ClearPendingFriendJoinRetry();
 
 	if (IOnlineSessionPtr SessionInterface = GetSessionInterface())
 	{
@@ -57,6 +99,10 @@ void UT66SessionSubsystem::Deinitialize()
 		if (DestroySessionCompleteHandle.IsValid())
 		{
 			SessionInterface->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteHandle);
+		}
+		if (FindFriendSessionCompleteHandle.IsValid())
+		{
+			SessionInterface->ClearOnFindFriendSessionCompleteDelegate_Handle(0, FindFriendSessionCompleteHandle);
 		}
 		if (JoinSessionCompleteHandle.IsValid())
 		{
@@ -72,6 +118,12 @@ void UT66SessionSubsystem::Deinitialize()
 		}
 	}
 
+	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+	{
+		SteamHelper->OnSteamJoinRequested().Remove(SteamJoinRequestedHandle);
+		SteamJoinRequestedHandle.Reset();
+	}
+
 	Super::Deinitialize();
 }
 
@@ -82,8 +134,9 @@ bool UT66SessionSubsystem::PrepareToHostFrontendLobby(ET66PartySize DesiredParty
 
 bool UT66SessionSubsystem::EnsurePartySessionReady(ET66PartySize DesiredPartySize, ET66ScreenType PartyHubScreen)
 {
-	PendingPartySize = DesiredPartySize;
+	PendingPartySize = (DesiredPartySize == ET66PartySize::Solo) ? ET66PartySize::Solo : ET66PartySize::Quad;
 	PartyHubScreenType = PartyHubScreen;
+	LocalFrontendScreen = PartyHubScreen;
 	bLocalReadyState = false;
 
 	UWorld* World = GetWorld();
@@ -128,6 +181,29 @@ bool UT66SessionSubsystem::EnsurePartySessionReady(ET66PartySize DesiredPartySiz
 
 void UT66SessionSubsystem::HandlePartyHubScreenActivated()
 {
+	UWorld* World = GetWorld();
+	if (!bPendingCreateLobbySession
+		&& !IsPartySessionActive()
+		&& !bJoinInProgress
+		&& !bDestroyInProgress
+		&& World
+		&& World->GetNetMode() == NM_Standalone)
+	{
+		if (const UT66SteamHelper* SteamHelper = GetSteamHelper(); SteamHelper && SteamHelper->IsSteamReady())
+		{
+			bPendingCreateLobbySession = true;
+			if (UT66GameInstance* GI = GetT66GameInstance())
+			{
+				GI->PendingFrontendScreen = LocalFrontendScreen;
+			}
+
+			const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+			UE_LOG(LogT66Session, Log, TEXT("Auto-hosting frontend Steam lobby on %s."), *MapName);
+			UGameplayStatics::OpenLevel(this, FName(*MapName), true, TEXT("listen"));
+			return;
+		}
+	}
+
 	if (bPendingCreateLobbySession && !IsPartySessionActive())
 	{
 		CreatePartySession();
@@ -142,49 +218,190 @@ void UT66SessionSubsystem::HandleLobbyScreenActivated()
 	HandlePartyHubScreenActivated();
 }
 
-bool UT66SessionSubsystem::SendInviteToFriend(const FString& FriendPlayerId)
+bool UT66SessionSubsystem::SendInviteToFriend(const FString& FriendPlayerId, const FString& FriendDisplayName)
 {
 	if (FriendPlayerId.IsEmpty())
 	{
+		UE_LOG(LogT66Session, Warning, TEXT("SendInviteToFriend rejected: empty friend id."));
 		return false;
 	}
+
+	UE_LOG(LogT66Session, Log, TEXT("SendInviteToFriend requested for %s. ActiveSession=%d"), *FriendPlayerId, IsPartySessionActive() ? 1 : 0);
 
 	if (!IsPartySessionActive())
 	{
 		PendingInviteFriendPlayerId = FriendPlayerId;
-		const ET66PartySize DesiredPartySize = GetMaxPartyMembers() > 1 ? PendingPartySize : ET66PartySize::Duo;
-		return EnsurePartySessionReady(DesiredPartySize, ET66ScreenType::MainMenu);
+		PendingInviteFriendDisplayName = FriendDisplayName;
+		const bool bStartedLobby = EnsurePartySessionReady(ET66PartySize::Quad, ET66ScreenType::MainMenu);
+		if (!bStartedLobby)
+		{
+			PendingInviteFriendPlayerId.Reset();
+			PendingInviteFriendDisplayName.Reset();
+		}
+		return bStartedLobby;
 	}
 
-	return SendInviteToFriendInternal(FriendPlayerId);
+	return SendInviteToFriendInternal(FriendPlayerId, FriendDisplayName);
 }
 
-bool UT66SessionSubsystem::SendInviteToFriendInternal(const FString& FriendPlayerId)
+bool UT66SessionSubsystem::SendInviteToFriendInternal(const FString& FriendPlayerId, const FString& FriendDisplayName)
 {
+	PruneInviteFeedbackState();
+
 	if (FriendPlayerId.IsEmpty() || !CanSendInvites())
 	{
+		UE_LOG(LogT66Session, Warning, TEXT("SendInviteToFriendInternal rejected. Friend=%s CanSendInvites=%d"), *FriendPlayerId, CanSendInvites() ? 1 : 0);
 		BroadcastStateChanged(TEXT("Lobby is not ready to send invites."));
 		return false;
 	}
 
-	IOnlineIdentityPtr IdentityInterface = GetIdentityInterface();
+	bool bBackendInviteSent = false;
+	bool bSteamInviteSent = false;
+	bool bPreferInGameInvite = false;
+	FString FriendCurrentAppId;
+	FString FriendCurrentLobbyId;
+
+	UT66GameInstance* GI = GetT66GameInstance();
+	UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
+	if (SteamHelper)
+	{
+		SteamHelper->TryGetFriendCurrentGame(FriendPlayerId, &FriendCurrentAppId, &FriendCurrentLobbyId);
+		bPreferInGameInvite = SteamHelper->IsFriendPlayingActiveApp(FriendPlayerId);
+	}
+
+	UE_LOG(LogT66Session, Log, TEXT("Invite route for %s prefers %s."), *FriendPlayerId, bPreferInGameInvite ? TEXT("in-game modal") : TEXT("Steam session invite"));
+	TMap<FString, FString> InviteRouteFields;
+	InviteRouteFields.Add(TEXT("friend_current_app_id"), FriendCurrentAppId);
+	InviteRouteFields.Add(TEXT("friend_current_lobby_id"), FriendCurrentLobbyId);
+	InviteRouteFields.Add(TEXT("invite_route"), bPreferInGameInvite ? TEXT("backend") : TEXT("steam_session"));
+	SubmitSessionDiagnostic(TEXT("invite_route_decision"), TEXT("info"), FString::Printf(TEXT("Invite route selected for %s"), *FriendPlayerId), FString(), FString(), FString(), InviteRouteFields);
+
+	UT66BackendSubsystem* BackendSubsystem = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (bPreferInGameInvite && BackendSubsystem)
+	{
+		bBackendInviteSent = BackendSubsystem->SendPartyInvite(FriendPlayerId, FriendDisplayName);
+		if (bBackendInviteSent)
+		{
+			UE_LOG(LogT66Session, Log, TEXT("Backend invite sent for %s."), *FriendPlayerId);
+		}
+		else
+		{
+			UE_LOG(LogT66Session, Warning, TEXT("Backend invite failed for %s."), *FriendPlayerId);
+		}
+	}
+	else
+	{
+		UE_LOG(LogT66Session, Verbose, TEXT("Skipping backend invite for %s because the friend is not confirmed to be in this app."), *FriendPlayerId);
+	}
+
 	IOnlineSessionPtr SessionInterface = GetSessionInterface();
-	if (!IdentityInterface.IsValid() || !SessionInterface.IsValid())
+	IOnlineIdentityPtr IdentityInterface = GetIdentityInterface();
+	if ((!bPreferInGameInvite || !bBackendInviteSent) && SessionInterface.IsValid() && IdentityInterface.IsValid())
 	{
-		BroadcastStateChanged(TEXT("Steam session interfaces are not available."));
+		FUniqueNetIdPtr FriendNetId = IdentityInterface->CreateUniquePlayerId(FriendPlayerId);
+		if (FriendNetId.IsValid())
+		{
+			bSteamInviteSent = SessionInterface->SendSessionInviteToFriend(0, PartySessionName, *FriendNetId);
+			if (bSteamInviteSent)
+			{
+				UE_LOG(LogT66Session, Log, TEXT("Steam session invite sent for %s."), *FriendPlayerId);
+				TMap<FString, FString> DiagnosticFields;
+				DiagnosticFields.Add(TEXT("target_steam_id"), FriendPlayerId);
+				SubmitSessionDiagnostic(TEXT("steam_session_invite_sent"), TEXT("info"), TEXT("Steam session invite sent."), FString(), FString(), FString(), DiagnosticFields);
+			}
+			else
+			{
+				UE_LOG(LogT66Session, Warning, TEXT("Steam session invite failed for %s."), *FriendPlayerId);
+				TMap<FString, FString> DiagnosticFields;
+				DiagnosticFields.Add(TEXT("target_steam_id"), FriendPlayerId);
+				SubmitSessionDiagnostic(TEXT("steam_session_invite_failed"), TEXT("warning"), TEXT("Steam session invite failed."), FString(), FString(), FString(), DiagnosticFields);
+			}
+		}
+		else
+		{
+			UE_LOG(LogT66Session, Warning, TEXT("Steam session invite failed: could not resolve friend id %s."), *FriendPlayerId);
+			TMap<FString, FString> DiagnosticFields;
+			DiagnosticFields.Add(TEXT("target_steam_id"), FriendPlayerId);
+			SubmitSessionDiagnostic(TEXT("steam_session_invite_resolve_failed"), TEXT("error"), TEXT("Could not resolve friend Steam ID."), FString(), FString(), FString(), DiagnosticFields);
+		}
+	}
+	else
+	{
+		UE_LOG(LogT66Session, Verbose, TEXT("Skipping Steam session invite for %s because the in-game invite route was selected."), *FriendPlayerId);
+	}
+
+	if (bBackendInviteSent && bSteamInviteSent)
+	{
+		InviteFeedbackExpiryByFriendId.Add(FriendPlayerId, FPlatformTime::Seconds() + T66InviteFeedbackLifetimeSeconds);
+		BroadcastStateChanged(TEXT("Steam and in-game invites sent."));
+		return true;
+	}
+
+	if (bBackendInviteSent)
+	{
+		InviteFeedbackExpiryByFriendId.Add(FriendPlayerId, FPlatformTime::Seconds() + T66InviteFeedbackLifetimeSeconds);
+		BroadcastStateChanged(TEXT("In-game invite sent. Steam invite unavailable."));
+		return true;
+	}
+
+	if (bSteamInviteSent)
+	{
+		InviteFeedbackExpiryByFriendId.Add(FriendPlayerId, FPlatformTime::Seconds() + T66InviteFeedbackLifetimeSeconds);
+		BroadcastStateChanged(TEXT("Steam invite sent. In-game popup unavailable."));
+		return true;
+	}
+
+	BroadcastStateChanged(TEXT("Party invite could not be sent."));
+	return false;
+}
+
+bool UT66SessionSubsystem::JoinFriendPartySessionBySteamId(const FString& FriendPlayerId, const FString& InviteId, const FString& AppId)
+{
+	return StartJoinByFriendId(FriendPlayerId, FString(), InviteId, AppId);
+}
+
+bool UT66SessionSubsystem::JoinPartySessionByLobbyId(const FString& LobbyId, const FString& HostSteamId, const FString& AppId, const FString& InviteId)
+{
+	if (LobbyId.IsEmpty())
+	{
+		SubmitSessionDiagnostic(TEXT("invite_join_missing_lobby"), TEXT("error"), TEXT("Party invite is missing the host lobby ID."), InviteId);
+		BroadcastStateChanged(TEXT("Party invite is missing the host lobby ID."));
 		return false;
 	}
 
-	FUniqueNetIdPtr FriendNetId = IdentityInterface->CreateUniquePlayerId(FriendPlayerId);
-	if (!FriendNetId.IsValid())
+	if (HostSteamId.IsEmpty())
 	{
-		BroadcastStateChanged(TEXT("Could not resolve Steam friend ID."));
+		SubmitSessionDiagnostic(TEXT("invite_join_missing_host"), TEXT("error"), TEXT("Party invite is missing the host Steam ID."), InviteId, LobbyId);
+		BroadcastStateChanged(TEXT("Party invite is missing the host Steam ID."));
 		return false;
 	}
 
-	const bool bSent = SessionInterface->SendSessionInviteToFriend(0, PartySessionName, *FriendNetId);
-	BroadcastStateChanged(bSent ? TEXT("Invite sent.") : TEXT("Steam invite send failed."));
-	return bSent;
+	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
+	{
+		const FString ActiveAppId = SteamHelper->GetActiveSteamAppId();
+		if (!AppId.IsEmpty() && !ActiveAppId.IsEmpty() && AppId != ActiveAppId)
+		{
+			TMap<FString, FString> DiagnosticFields;
+			DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
+			DiagnosticFields.Add(TEXT("active_app_id"), ActiveAppId);
+			SubmitSessionDiagnostic(TEXT("invite_join_app_mismatch"), TEXT("warning"), TEXT("Invite app ID does not match the active app ID."), InviteId, LobbyId, FString(), DiagnosticFields);
+		}
+	}
+
+	UE_LOG(LogT66Session, Log, TEXT("Joining invited party via friend lookup. Host=%s Lobby=%s App=%s"), *HostSteamId, *LobbyId, *AppId);
+	if (!StartJoinByFriendId(HostSteamId, LobbyId, InviteId, AppId))
+	{
+		SubmitSessionDiagnostic(TEXT("invite_join_lookup_start_failed"), TEXT("error"), TEXT("Could not start looking up the host party."), InviteId, LobbyId);
+		BroadcastStateChanged(TEXT("Could not start looking up the host party."));
+		return false;
+	}
+
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("host_steam_id"), HostSteamId);
+	DiagnosticFields.Add(TEXT("invite_app_id"), AppId);
+	SubmitSessionDiagnostic(TEXT("invite_join_lookup_started"), TEXT("info"), TEXT("Started host party lookup from invite."), InviteId, LobbyId, FString(), DiagnosticFields);
+
+	return true;
 }
 
 bool UT66SessionSubsystem::StartLoadedGameplayTravel(const UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex)
@@ -220,6 +437,8 @@ bool UT66SessionSubsystem::StartGameplayTravel()
 		return false;
 	}
 
+	ClearCachedPartyRunSummaries();
+
 	if (IOnlineSessionPtr SessionInterface = GetSessionInterface())
 	{
 		SessionInterface->StartSession(PartySessionName);
@@ -227,10 +446,7 @@ bool UT66SessionSubsystem::StartGameplayTravel()
 
 	UpdateSteamRichPresence();
 
-	const FName LevelToOpen = UT66GameInstance::UseDemoMapForTribulation()
-		? UT66GameInstance::GetDemoMapLevelNameForTribulation()
-		: UT66GameInstance::GetGameplayLevelName();
-
+	const FName LevelToOpen = UT66GameInstance::GetGameplayLevelName();
 	const FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelToOpen.ToString());
 	World->ServerTravel(TravelURL);
 	return true;
@@ -241,7 +457,16 @@ bool UT66SessionSubsystem::LeaveFrontendLobby(ET66ScreenType ReturnScreen)
 	PendingFrontendReturnScreen = ReturnScreen;
 	bPendingCreateLobbySession = false;
 	bPendingJoinAfterDestroy = false;
+	ClearCachedPartyRunSummaries();
+	ClearPendingFriendJoinRetry();
+	PendingJoinFriendPlayerId.Reset();
+	PendingExpectedJoinLobbyId.Reset();
+	PendingJoinInviteId.Reset();
+	PendingJoinSourceAppId.Reset();
+	PendingFoundLobbyId.Reset();
+	PendingJoinFriendLookupAttempts = 0;
 	bLocalReadyState = false;
+	LocalFrontendScreen = ReturnScreen;
 
 	if (UT66GameInstance* GI = GetT66GameInstance())
 	{
@@ -284,6 +509,23 @@ void UT66SessionSubsystem::SetLocalLobbyReady(bool bReady)
 	SyncLocalLobbyProfile();
 }
 
+void UT66SessionSubsystem::SetLocalFrontendScreen(ET66ScreenType ScreenType, bool bResetReady)
+{
+	LocalFrontendScreen = ScreenType;
+	if (bResetReady)
+	{
+		bLocalReadyState = false;
+	}
+
+	if (UT66GameInstance* GI = GetT66GameInstance())
+	{
+		GI->PendingFrontendScreen = ScreenType;
+	}
+
+	SyncLocalLobbyProfile();
+	BroadcastStateChanged();
+}
+
 bool UT66SessionSubsystem::IsPartySessionActive() const
 {
 	if (IOnlineSessionPtr SessionInterface = GetSessionInterface())
@@ -304,17 +546,428 @@ bool UT66SessionSubsystem::CanSendInvites() const
 	return IsHostingPartySession() && !bJoinInProgress && !bDestroyInProgress;
 }
 
+bool UT66SessionSubsystem::IsFriendInvitePending(const FString& FriendPlayerId)
+{
+	PruneInviteFeedbackState();
+	return !FriendPlayerId.IsEmpty() && InviteFeedbackExpiryByFriendId.Contains(FriendPlayerId);
+}
+
+bool UT66SessionSubsystem::StartJoinByFriendId(const FString& FriendPlayerId, const FString& ExpectedLobbyId, const FString& InviteId, const FString& AppId)
+{
+	if (FriendPlayerId.IsEmpty())
+	{
+		SubmitSessionDiagnostic(TEXT("join_lookup_missing_host"), TEXT("error"), TEXT("Party invite is missing the host Steam ID."), InviteId, ExpectedLobbyId);
+		BroadcastStateChanged(TEXT("Party invite is missing the host Steam ID."));
+		return false;
+	}
+
+	IOnlineIdentityPtr IdentityInterface = GetIdentityInterface();
+	IOnlineSessionPtr SessionInterface = GetSessionInterface();
+	if (!IdentityInterface.IsValid() || !SessionInterface.IsValid())
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("has_identity_interface"), IdentityInterface.IsValid() ? TEXT("true") : TEXT("false"));
+		DiagnosticFields.Add(TEXT("has_session_interface"), SessionInterface.IsValid() ? TEXT("true") : TEXT("false"));
+		SubmitSessionDiagnostic(TEXT("join_lookup_interfaces_unavailable"), TEXT("error"), TEXT("Steam session interfaces are not available."), InviteId, ExpectedLobbyId, FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Steam session interfaces are not available."));
+		return false;
+	}
+
+	FUniqueNetIdPtr FriendNetId = IdentityInterface->CreateUniquePlayerId(FriendPlayerId);
+	if (!FriendNetId.IsValid())
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("host_steam_id"), FriendPlayerId);
+		SubmitSessionDiagnostic(TEXT("join_lookup_host_resolve_failed"), TEXT("error"), TEXT("Could not resolve the host Steam ID."), InviteId, ExpectedLobbyId, FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Could not resolve the host Steam ID."));
+		return false;
+	}
+
+	PendingJoinFriendPlayerId = FriendPlayerId;
+	PendingExpectedJoinLobbyId = ExpectedLobbyId;
+	PendingJoinInviteId = InviteId;
+	PendingJoinSourceAppId = AppId;
+	PendingFoundLobbyId.Reset();
+	PendingJoinFriendLookupAttempts = 0;
+	ClearPendingFriendJoinRetry();
+	UE_LOG(LogT66Session, Log, TEXT("StartJoinByFriendId friend=%s expectedLobby=%s"), *PendingJoinFriendPlayerId, *PendingExpectedJoinLobbyId);
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("host_steam_id"), FriendPlayerId);
+	DiagnosticFields.Add(TEXT("source_app_id"), AppId);
+	SubmitSessionDiagnostic(TEXT("join_lookup_start"), TEXT("info"), TEXT("Starting host party lookup."), InviteId, ExpectedLobbyId, FString(), DiagnosticFields);
+	return AttemptPendingFriendJoinLookup();
+}
+
+bool UT66SessionSubsystem::AttemptPendingFriendJoinLookup()
+{
+	if (PendingJoinFriendPlayerId.IsEmpty())
+	{
+		return false;
+	}
+
+	if (bJoinInProgress || bDestroyInProgress)
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("join_in_progress"), bJoinInProgress ? TEXT("true") : TEXT("false"));
+		DiagnosticFields.Add(TEXT("destroy_in_progress"), bDestroyInProgress ? TEXT("true") : TEXT("false"));
+		SubmitSessionDiagnostic(TEXT("join_lookup_deferred"), TEXT("info"), TEXT("Join lookup deferred until current transition finishes."), FString(), FString(), FString(), DiagnosticFields);
+		SchedulePendingFriendJoinRetry();
+		return true;
+	}
+
+	IOnlineIdentityPtr IdentityInterface = GetIdentityInterface();
+	IOnlineSessionPtr SessionInterface = GetSessionInterface();
+	if (!IdentityInterface.IsValid() || !SessionInterface.IsValid())
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("has_identity_interface"), IdentityInterface.IsValid() ? TEXT("true") : TEXT("false"));
+		DiagnosticFields.Add(TEXT("has_session_interface"), SessionInterface.IsValid() ? TEXT("true") : TEXT("false"));
+		SubmitSessionDiagnostic(TEXT("join_lookup_interfaces_unavailable"), TEXT("error"), TEXT("Steam session interfaces are not available."), FString(), FString(), FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Steam session interfaces are not available."));
+		return false;
+	}
+
+	FUniqueNetIdPtr FriendNetId = IdentityInterface->CreateUniquePlayerId(PendingJoinFriendPlayerId);
+	if (!FriendNetId.IsValid())
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("host_steam_id"), PendingJoinFriendPlayerId);
+		SubmitSessionDiagnostic(TEXT("join_lookup_host_resolve_failed"), TEXT("error"), TEXT("Could not resolve the host Steam ID."), FString(), FString(), FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Could not resolve the host Steam ID."));
+		PendingJoinFriendPlayerId.Reset();
+		PendingExpectedJoinLobbyId.Reset();
+		PendingJoinInviteId.Reset();
+		PendingJoinSourceAppId.Reset();
+		PendingFoundLobbyId.Reset();
+		return false;
+	}
+
+	++PendingJoinFriendLookupAttempts;
+	UE_LOG(LogT66Session, Log, TEXT("AttemptPendingFriendJoinLookup friend=%s expectedLobby=%s attempt=%d"), *PendingJoinFriendPlayerId, *PendingExpectedJoinLobbyId, PendingJoinFriendLookupAttempts);
+	const bool bStarted = SessionInterface->FindFriendSession(0, *FriendNetId);
+	if (bStarted)
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+		DiagnosticFields.Add(TEXT("host_steam_id"), PendingJoinFriendPlayerId);
+		SubmitSessionDiagnostic(TEXT("join_lookup_attempt_started"), TEXT("info"), TEXT("Looking up host party."), FString(), FString(), FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Looking up host party..."));
+		return true;
+	}
+
+	if (PendingJoinFriendLookupAttempts >= T66MaxPendingFriendJoinLookupAttempts)
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+		SubmitSessionDiagnostic(TEXT("join_lookup_exhausted"), TEXT("error"), TEXT("Could not find the host party session."), FString(), FString(), FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Could not find the host party session."));
+		PendingJoinFriendPlayerId.Reset();
+		PendingExpectedJoinLobbyId.Reset();
+		PendingJoinInviteId.Reset();
+		PendingJoinSourceAppId.Reset();
+		PendingFoundLobbyId.Reset();
+		return false;
+	}
+
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+	SubmitSessionDiagnostic(TEXT("join_lookup_retry_scheduled"), TEXT("warning"), TEXT("Host party is not joinable yet. Retrying."), FString(), FString(), FString(), DiagnosticFields);
+	BroadcastStateChanged(TEXT("Host party is not joinable yet. Retrying..."));
+	SchedulePendingFriendJoinRetry();
+	return true;
+}
+
+void UT66SessionSubsystem::SchedulePendingFriendJoinRetry()
+{
+	if (PendingJoinFriendPlayerId.IsEmpty() || PendingJoinFriendRetryTickerHandle.IsValid())
+	{
+		return;
+	}
+
+	PendingJoinFriendRetryTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+		FTickerDelegate::CreateUObject(this, &UT66SessionSubsystem::HandlePendingFriendJoinRetryTicker),
+		1.0f);
+}
+
+void UT66SessionSubsystem::ClearPendingFriendJoinRetry()
+{
+	if (PendingJoinFriendRetryTickerHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(PendingJoinFriendRetryTickerHandle);
+		PendingJoinFriendRetryTickerHandle.Reset();
+	}
+}
+
+bool UT66SessionSubsystem::HandlePendingFriendJoinRetryTicker(float DeltaTime)
+{
+	ClearPendingFriendJoinRetry();
+	AttemptPendingFriendJoinLookup();
+	return false;
+}
+
+void UT66SessionSubsystem::PruneInviteFeedbackState()
+{
+	if (InviteFeedbackExpiryByFriendId.Num() == 0)
+	{
+		return;
+	}
+
+	const double NowSeconds = FPlatformTime::Seconds();
+	for (auto It = InviteFeedbackExpiryByFriendId.CreateIterator(); It; ++It)
+	{
+		if (It.Value() <= NowSeconds)
+		{
+			It.RemoveCurrent();
+		}
+	}
+}
+
 int32 UT66SessionSubsystem::GetMaxPartyMembers() const
 {
 	switch (PendingPartySize)
 	{
-	case ET66PartySize::Quad: return 4;
-	case ET66PartySize::Trio: return 3;
-	case ET66PartySize::Duo: return 2;
+	case ET66PartySize::Quad:
+	case ET66PartySize::Trio:
+	case ET66PartySize::Duo:
+		return 4;
 	case ET66PartySize::Solo:
 	default:
 		return 1;
 	}
+}
+
+FString UT66SessionSubsystem::GetCurrentPartyLobbyId() const
+{
+	if (IOnlineSessionPtr SessionInterface = GetSessionInterface())
+	{
+		if (const FNamedOnlineSession* Session = SessionInterface->GetNamedSession(PartySessionName))
+		{
+			if (Session->SessionInfo.IsValid())
+			{
+				return Session->SessionInfo->GetSessionId().ToString();
+			}
+		}
+	}
+
+	return FString();
+}
+
+bool UT66SessionSubsystem::IsLocalPlayerPartyHost() const
+{
+	if (!IsPartySessionActive())
+	{
+		return true;
+	}
+
+	FT66LobbyPlayerInfo HostLobbyInfo;
+	if (!GetHostLobbyProfile(HostLobbyInfo))
+	{
+		return IsHostingPartySession();
+	}
+
+	const FString LocalPlayerId = GetSteamHelper() ? GetSteamHelper()->GetLocalSteamId() : FString();
+	if (LocalPlayerId.IsEmpty())
+	{
+		return IsHostingPartySession();
+	}
+
+	return HostLobbyInfo.SteamId == LocalPlayerId;
+}
+
+bool UT66SessionSubsystem::SubmitLocalPartyRunSummaryToHost(const FString& RequestKey, const FString& RunSummaryJson)
+{
+	if (RequestKey.IsEmpty() || RunSummaryJson.IsEmpty() || !IsPartySessionActive())
+	{
+		return false;
+	}
+
+	AT66PlayerController* PlayerController = GetPrimaryPlayerController();
+	if (!PlayerController)
+	{
+		return false;
+	}
+
+	if (AT66SessionPlayerState* SessionPlayerState = PlayerController->GetPlayerState<AT66SessionPlayerState>())
+	{
+		if (IsLocalPlayerPartyHost() || PlayerController->HasAuthority())
+		{
+			StorePartyRunSummaryForSteamId(RequestKey, SessionPlayerState->GetSteamId(), RunSummaryJson);
+			return true;
+		}
+	}
+
+	PlayerController->PushPartyRunSummaryToServer(RequestKey, RunSummaryJson);
+	return true;
+}
+
+void UT66SessionSubsystem::GetCurrentLobbyProfiles(TArray<FT66LobbyPlayerInfo>& OutProfiles) const
+{
+	OutProfiles.Reset();
+
+	UWorld* World = GetWorld();
+	AGameStateBase* GameState = World ? World->GetGameState() : nullptr;
+	if (GameState)
+	{
+		for (APlayerState* PlayerState : GameState->PlayerArray)
+		{
+			const AT66SessionPlayerState* SessionPlayerState = Cast<AT66SessionPlayerState>(PlayerState);
+			if (!SessionPlayerState)
+			{
+				continue;
+			}
+
+			const FT66LobbyPlayerInfo& LobbyInfo = SessionPlayerState->GetLobbyInfo();
+			if (LobbyInfo.SteamId.IsEmpty() && LobbyInfo.DisplayName.IsEmpty())
+			{
+				continue;
+			}
+
+			OutProfiles.Add(LobbyInfo);
+		}
+	}
+
+	if (OutProfiles.Num() == 0)
+	{
+		OutProfiles.Add(BuildLocalLobbyProfile());
+	}
+
+	OutProfiles.Sort([](const FT66LobbyPlayerInfo& A, const FT66LobbyPlayerInfo& B)
+	{
+		if (A.bPartyHost != B.bPartyHost)
+		{
+			return A.bPartyHost;
+		}
+
+		if (A.DisplayName != B.DisplayName)
+		{
+			return A.DisplayName < B.DisplayName;
+		}
+
+		return A.SteamId < B.SteamId;
+	});
+}
+
+bool UT66SessionSubsystem::GetCachedPartyRunSummaryJson(const FString& RequestKey, const FString& SteamId, FString& OutRunSummaryJson) const
+{
+	const TMap<FString, FString>* RequestCache = PartyRunSummaryJsonByRequestKey.Find(RequestKey);
+	if (!RequestCache)
+	{
+		return false;
+	}
+
+	if (const FString* FoundJson = RequestCache->Find(SteamId))
+	{
+		OutRunSummaryJson = *FoundJson;
+		return true;
+	}
+
+	return false;
+}
+
+void UT66SessionSubsystem::ClearCachedPartyRunSummaries()
+{
+	PartyRunSummaryJsonByRequestKey.Reset();
+}
+
+void UT66SessionSubsystem::StorePartyRunSummaryForSteamId(const FString& RequestKey, const FString& SteamId, const FString& RunSummaryJson)
+{
+	if (RequestKey.IsEmpty() || SteamId.IsEmpty() || RunSummaryJson.IsEmpty())
+	{
+		return;
+	}
+
+	PartyRunSummaryJsonByRequestKey.FindOrAdd(RequestKey).FindOrAdd(SteamId) = RunSummaryJson;
+}
+
+bool UT66SessionSubsystem::GetHostLobbyProfile(FT66LobbyPlayerInfo& OutLobbyInfo) const
+{
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	GetCurrentLobbyProfiles(LobbyProfiles);
+	for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
+	{
+		if (LobbyInfo.bPartyHost)
+		{
+			OutLobbyInfo = LobbyInfo;
+			return true;
+		}
+	}
+
+	if (LobbyProfiles.Num() > 0)
+	{
+		OutLobbyInfo = LobbyProfiles[0];
+		return true;
+	}
+
+	return false;
+}
+
+ET66ScreenType UT66SessionSubsystem::GetDesiredPartyFrontendScreen() const
+{
+	if (!IsPartySessionActive())
+	{
+		return LocalFrontendScreen;
+	}
+
+	FT66LobbyPlayerInfo HostLobbyInfo;
+	if (GetHostLobbyProfile(HostLobbyInfo) && HostLobbyInfo.FrontendScreen != ET66ScreenType::None)
+	{
+		return HostLobbyInfo.FrontendScreen;
+	}
+
+	return PartyHubScreenType;
+}
+
+ET66Difficulty UT66SessionSubsystem::GetSharedLobbyDifficulty() const
+{
+	FT66LobbyPlayerInfo HostLobbyInfo;
+	if (GetHostLobbyProfile(HostLobbyInfo))
+	{
+		return HostLobbyInfo.LobbyDifficulty;
+	}
+
+	if (const UT66GameInstance* GI = GetT66GameInstance())
+	{
+		return GI->SelectedDifficulty;
+	}
+
+	return ET66Difficulty::Easy;
+}
+
+bool UT66SessionSubsystem::AreAllPartyMembersReadyForGameplay(FString* OutFailureReason) const
+{
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	GetCurrentLobbyProfiles(LobbyProfiles);
+	if (LobbyProfiles.Num() <= 0)
+	{
+		if (OutFailureReason)
+		{
+			*OutFailureReason = TEXT("No lobby players are available.");
+		}
+		return false;
+	}
+
+	for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
+	{
+		if (LobbyInfo.SelectedHeroID.IsNone())
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s has not selected a hero yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+
+		if (!LobbyInfo.bPartyHost && LobbyProfiles.Num() > 1 && !LobbyInfo.bLobbyReady)
+		{
+			if (OutFailureReason)
+			{
+				*OutFailureReason = FString::Printf(TEXT("%s is not ready yet."), *LobbyInfo.DisplayName);
+			}
+			return false;
+		}
+	}
+
+	return true;
 }
 
 IOnlineSessionPtr UT66SessionSubsystem::GetSessionInterface() const
@@ -373,6 +1026,7 @@ bool UT66SessionSubsystem::CreatePartySession()
 	IOnlineSessionPtr SessionInterface = GetSessionInterface();
 	if (!SessionInterface.IsValid())
 	{
+		SubmitSessionDiagnostic(TEXT("create_party_session_interfaces_unavailable"), TEXT("error"), TEXT("Steam session interface is unavailable."));
 		BroadcastStateChanged(TEXT("Steam session interface is unavailable."));
 		return false;
 	}
@@ -401,10 +1055,12 @@ bool UT66SessionSubsystem::CreatePartySession()
 	const bool bStarted = SessionInterface->CreateSession(0, PartySessionName, SessionSettings);
 	if (!bStarted)
 	{
+		SubmitSessionDiagnostic(TEXT("create_party_session_start_failed"), TEXT("error"), TEXT("CreateSession failed to start."));
 		BroadcastStateChanged(TEXT("CreateSession failed to start."));
 	}
 	else
 	{
+		SubmitSessionDiagnostic(TEXT("create_party_session_started"), TEXT("info"), TEXT("Creating Steam lobby."));
 		BroadcastStateChanged(TEXT("Creating Steam lobby..."));
 	}
 
@@ -416,6 +1072,7 @@ bool UT66SessionSubsystem::JoinPartySession(const FOnlineSessionSearchResult& Se
 	IOnlineSessionPtr SessionInterface = GetSessionInterface();
 	if (!SessionInterface.IsValid())
 	{
+		SubmitSessionDiagnostic(TEXT("join_session_interface_unavailable"), TEXT("error"), TEXT("Steam session interface is unavailable."));
 		BroadcastStateChanged(TEXT("Steam session interface is unavailable."));
 		return false;
 	}
@@ -426,10 +1083,22 @@ bool UT66SessionSubsystem::JoinPartySession(const FOnlineSessionSearchResult& Se
 		GI->PendingFrontendScreen = PartyHubScreenType;
 	}
 
+	FString ResolvedLobbyId;
+	if (SearchResult.Session.SessionInfo.IsValid())
+	{
+		ResolvedLobbyId = SearchResult.Session.SessionInfo->GetSessionId().ToString();
+	}
+	UE_LOG(LogT66Session, Log, TEXT("JoinPartySession owner=%s lobby=%s"), *SearchResult.Session.OwningUserName, *ResolvedLobbyId);
+	TMap<FString, FString> JoinStartFields;
+	JoinStartFields.Add(TEXT("resolved_lobby_id"), ResolvedLobbyId);
+	JoinStartFields.Add(TEXT("owner_name"), SearchResult.Session.OwningUserName);
+	SubmitSessionDiagnostic(TEXT("join_session_started"), TEXT("info"), TEXT("Starting JoinSession for party lobby."), FString(), ResolvedLobbyId, FString(), JoinStartFields);
+
 	const bool bStarted = SessionInterface->JoinSession(0, PartySessionName, SearchResult);
 	if (!bStarted)
 	{
 		bJoinInProgress = false;
+		SubmitSessionDiagnostic(TEXT("join_session_start_failed"), TEXT("error"), TEXT("JoinSession failed to start."), FString(), ResolvedLobbyId, FString(), JoinStartFields);
 		BroadcastStateChanged(TEXT("JoinSession failed to start."));
 	}
 	else
@@ -442,6 +1111,8 @@ bool UT66SessionSubsystem::JoinPartySession(const FOnlineSessionSearchResult& Se
 
 void UT66SessionSubsystem::DestroyPartySession()
 {
+	ClearCachedPartyRunSummaries();
+
 	IOnlineSessionPtr SessionInterface = GetSessionInterface();
 	if (!SessionInterface.IsValid())
 	{
@@ -485,6 +1156,37 @@ void UT66SessionSubsystem::BroadcastStateChanged(const TCHAR* NewStatus)
 	SessionStateChanged.Broadcast();
 }
 
+void UT66SessionSubsystem::SubmitSessionDiagnostic(
+	const FString& EventName,
+	const FString& Severity,
+	const FString& Message,
+	const FString& InviteId,
+	const FString& LobbyId,
+	const FString& FoundLobbyId,
+	const TMap<FString, FString>& ExtraFields) const
+{
+	UT66GameInstance* GI = GetT66GameInstance();
+	UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (!Backend)
+	{
+		return;
+	}
+
+	FT66MultiplayerDiagnosticContext Diagnostic;
+	Diagnostic.EventName = EventName;
+	Diagnostic.Severity = Severity;
+	Diagnostic.Message = Message;
+	Diagnostic.InviteId = InviteId.IsEmpty() ? PendingJoinInviteId : InviteId;
+	Diagnostic.HostSteamId = PendingJoinFriendPlayerId;
+	Diagnostic.LobbyId = LobbyId.IsEmpty() ? PendingExpectedJoinLobbyId : LobbyId;
+	Diagnostic.ExpectedLobbyId = PendingExpectedJoinLobbyId;
+	Diagnostic.FoundLobbyId = FoundLobbyId.IsEmpty() ? PendingFoundLobbyId : FoundLobbyId;
+	Diagnostic.SourceAppId = PendingJoinSourceAppId;
+	Diagnostic.StatusText = LastStatusText;
+	Diagnostic.ExtraFields = ExtraFields;
+	Backend->SubmitMultiplayerDiagnostic(Diagnostic);
+}
+
 void UT66SessionSubsystem::TravelToStandaloneFrontendMap()
 {
 	ClearSteamRichPresence();
@@ -510,12 +1212,21 @@ void UT66SessionSubsystem::UpdateSteamRichPresence()
 	if (IsPartySessionActive())
 	{
 		Friends->SetRichPresence("steam_display", "#Status_InLobby");
-		Friends->SetRichPresence("steam_player_group_size", TCHAR_TO_UTF8(*FString::FromInt(GetMaxPartyMembers())));
+		TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+		GetCurrentLobbyProfiles(LobbyProfiles);
+		const int32 CurrentPartySize = FMath::Max(1, LobbyProfiles.Num());
+		Friends->SetRichPresence("steam_player_group_size", TCHAR_TO_UTF8(*FString::FromInt(CurrentPartySize)));
+		if (const UT66SteamHelper* SteamHelper = GetSteamHelper())
+		{
+			const FString JoinToken = T66BuildSteamJoinConnectString(SteamHelper->GetLocalSteamId());
+			Friends->SetRichPresence("connect", TCHAR_TO_UTF8(*JoinToken));
+		}
 	}
 	else
 	{
 		Friends->SetRichPresence("steam_display", "#Status_MainMenu");
 		Friends->SetRichPresence("steam_player_group_size", "");
+		Friends->SetRichPresence("connect", "");
 	}
 }
 
@@ -544,6 +1255,7 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 		LobbyInfo.SelectedHeroBodyType = GI->SelectedHeroBodyType;
 		LobbyInfo.SelectedCompanionBodyType = GI->SelectedCompanionBodyType;
 		LobbyInfo.SelectedHeroSkinID = GI->SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : GI->SelectedHeroSkinID;
+		LobbyInfo.LobbyDifficulty = GI->SelectedDifficulty;
 	}
 
 	if (LobbyInfo.DisplayName.IsEmpty())
@@ -552,6 +1264,7 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 	}
 
 	LobbyInfo.bLobbyReady = bLocalReadyState;
+	LobbyInfo.FrontendScreen = LocalFrontendScreen;
 	LobbyInfo.bPartyHost = IsHostingPartySession() || bPendingCreateLobbySession;
 	return LobbyInfo;
 }
@@ -570,9 +1283,9 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	GI->SelectedDifficulty = LoadedSave->Difficulty;
 	GI->SelectedPartySize = LoadedSave->PartySize;
 	GI->RunSeed = LoadedSave->RunSeed;
+	GI->CurrentMainMapLayoutVariant = LoadedSave->MainMapLayoutVariant;
 	GI->PendingLoadedTransform = LoadedSave->PlayerTransform;
 	GI->bApplyLoadedTransform = true;
-	GI->bLoadAsPreview = false;
 	GI->PendingLoadedRunSnapshot = LoadedSave->RunSnapshot;
 	GI->bApplyLoadedRunSnapshot = LoadedSave->RunSnapshot.bValid;
 	GI->CurrentSaveSlotIndex = SaveSlotIndex;
@@ -646,6 +1359,12 @@ void UT66SessionSubsystem::HandleCreateSessionComplete(FName SessionName, bool b
 	}
 
 	bPendingCreateLobbySession = false;
+	SubmitSessionDiagnostic(
+		bWasSuccessful ? TEXT("create_party_session_success") : TEXT("create_party_session_failed"),
+		bWasSuccessful ? TEXT("info") : TEXT("error"),
+		bWasSuccessful ? TEXT("Steam lobby ready.") : TEXT("Steam lobby creation failed."),
+		FString(),
+		GetCurrentPartyLobbyId());
 	BroadcastStateChanged(bWasSuccessful ? TEXT("Steam lobby ready.") : TEXT("Steam lobby creation failed."));
 	SyncLocalLobbyProfile();
 	UpdateSteamRichPresence();
@@ -653,8 +1372,10 @@ void UT66SessionSubsystem::HandleCreateSessionComplete(FName SessionName, bool b
 	if (bWasSuccessful && !PendingInviteFriendPlayerId.IsEmpty())
 	{
 		const FString FriendPlayerId = PendingInviteFriendPlayerId;
+		const FString FriendDisplayName = PendingInviteFriendDisplayName;
 		PendingInviteFriendPlayerId.Reset();
-		SendInviteToFriendInternal(FriendPlayerId);
+		PendingInviteFriendDisplayName.Reset();
+		SendInviteToFriendInternal(FriendPlayerId, FriendDisplayName);
 	}
 }
 
@@ -666,6 +1387,7 @@ void UT66SessionSubsystem::HandleDestroySessionComplete(FName SessionName, bool 
 	}
 
 	bDestroyInProgress = false;
+	ClearCachedPartyRunSummaries();
 
 	if (bPendingJoinAfterDestroy)
 	{
@@ -684,6 +1406,92 @@ void UT66SessionSubsystem::HandleDestroySessionComplete(FName SessionName, bool 
 	BroadcastStateChanged(bWasSuccessful ? TEXT("Lobby closed.") : TEXT("Lobby close failed."));
 }
 
+void UT66SessionSubsystem::HandleFindFriendSessionComplete(int32 LocalUserNum, bool bWasSuccessful, const TArray<FOnlineSessionSearchResult>& FriendSearchResults)
+{
+	const FString ExpectedLobbyId = PendingExpectedJoinLobbyId;
+	FString FoundLobbyId;
+	if (bWasSuccessful && FriendSearchResults.Num() > 0 && FriendSearchResults[0].Session.SessionInfo.IsValid())
+	{
+		FoundLobbyId = FriendSearchResults[0].Session.SessionInfo->GetSessionId().ToString();
+	}
+
+	PendingFoundLobbyId = FoundLobbyId;
+
+	UE_LOG(
+		LogT66Session,
+		Log,
+		TEXT("FindFriendSession complete success=%d results=%d expectedLobby=%s foundLobby=%s friend=%s attempts=%d"),
+		bWasSuccessful ? 1 : 0,
+		FriendSearchResults.Num(),
+		*ExpectedLobbyId,
+		*FoundLobbyId,
+		*PendingJoinFriendPlayerId,
+		PendingJoinFriendLookupAttempts);
+
+	if (!bWasSuccessful || FriendSearchResults.Num() == 0)
+	{
+		if (!PendingJoinFriendPlayerId.IsEmpty() && PendingJoinFriendLookupAttempts < T66MaxPendingFriendJoinLookupAttempts)
+		{
+			TMap<FString, FString> DiagnosticFields;
+			DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+			SubmitSessionDiagnostic(TEXT("find_friend_session_retry"), TEXT("warning"), TEXT("Host party was not found yet. Retrying."), FString(), FString(), FoundLobbyId, DiagnosticFields);
+			BroadcastStateChanged(TEXT("Host party was not found yet. Retrying..."));
+			SchedulePendingFriendJoinRetry();
+			return;
+		}
+
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+		SubmitSessionDiagnostic(TEXT("find_friend_session_not_found"), TEXT("error"), TEXT("Host party was not found."), FString(), FString(), FoundLobbyId, DiagnosticFields);
+		BroadcastStateChanged(TEXT("Host party was not found."));
+		PendingJoinFriendPlayerId.Reset();
+		PendingExpectedJoinLobbyId.Reset();
+		PendingJoinInviteId.Reset();
+		PendingJoinSourceAppId.Reset();
+		PendingFoundLobbyId.Reset();
+		PendingJoinFriendLookupAttempts = 0;
+		return;
+	}
+
+	ClearPendingFriendJoinRetry();
+	const FOnlineSessionSearchResult& SearchResult = FriendSearchResults[0];
+	if (!ExpectedLobbyId.IsEmpty() && !FoundLobbyId.IsEmpty() && FoundLobbyId != ExpectedLobbyId)
+	{
+		if (PendingJoinFriendLookupAttempts < T66MaxPendingFriendJoinLookupAttempts)
+		{
+			TMap<FString, FString> DiagnosticFields;
+			DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+			SubmitSessionDiagnostic(TEXT("find_friend_session_outdated_retry"), TEXT("warning"), TEXT("Found an outdated host party. Retrying."), FString(), FString(), FoundLobbyId, DiagnosticFields);
+			BroadcastStateChanged(TEXT("Found an outdated host party. Retrying..."));
+			SchedulePendingFriendJoinRetry();
+			return;
+		}
+
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+		SubmitSessionDiagnostic(TEXT("find_friend_session_lobby_mismatch"), TEXT("error"), TEXT("Found a host party, but it did not match the invite lobby."), FString(), FString(), FoundLobbyId, DiagnosticFields);
+		BroadcastStateChanged(TEXT("Found a host party, but it did not match the invite lobby."));
+		PendingJoinFriendPlayerId.Reset();
+		PendingExpectedJoinLobbyId.Reset();
+		PendingJoinInviteId.Reset();
+		PendingJoinSourceAppId.Reset();
+		PendingFoundLobbyId.Reset();
+		PendingJoinFriendLookupAttempts = 0;
+		return;
+	}
+
+	if (IsPartySessionActive())
+	{
+		SubmitSessionDiagnostic(TEXT("find_friend_session_destroy_before_join"), TEXT("info"), TEXT("Destroying the current party before joining the target party."), FString(), FString(), FoundLobbyId);
+		PendingJoinSearchResult = SearchResult;
+		bPendingJoinAfterDestroy = true;
+		DestroyPartySession();
+		return;
+	}
+
+	JoinPartySession(SearchResult);
+}
+
 void UT66SessionSubsystem::HandleJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
 	if (SessionName != PartySessionName)
@@ -697,6 +1505,11 @@ void UT66SessionSubsystem::HandleJoinSessionComplete(FName SessionName, EOnJoinS
 	AT66PlayerController* PlayerController = GetPrimaryPlayerController();
 	if (!SessionInterface.IsValid() || !PlayerController)
 	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("join_result"), T66JoinSessionResultToString(Result));
+		DiagnosticFields.Add(TEXT("has_session_interface"), SessionInterface.IsValid() ? TEXT("true") : TEXT("false"));
+		DiagnosticFields.Add(TEXT("has_player_controller"), PlayerController ? TEXT("true") : TEXT("false"));
+		SubmitSessionDiagnostic(TEXT("join_session_missing_connect_target"), TEXT("error"), TEXT("Joined session, but no connect target was available."), FString(), FString(), FString(), DiagnosticFields);
 		BroadcastStateChanged(TEXT("Joined session, but no connect target was available."));
 		return;
 	}
@@ -704,11 +1517,42 @@ void UT66SessionSubsystem::HandleJoinSessionComplete(FName SessionName, EOnJoinS
 	FString ConnectString;
 	if (Result == EOnJoinSessionCompleteResult::Success && SessionInterface->GetResolvedConnectString(PartySessionName, ConnectString))
 	{
+		ClearPendingFriendJoinRetry();
+		PendingJoinFriendPlayerId.Reset();
+		PendingExpectedJoinLobbyId.Reset();
+		PendingJoinInviteId.Reset();
+		PendingJoinSourceAppId.Reset();
+		PendingFoundLobbyId.Reset();
+		PendingJoinFriendLookupAttempts = 0;
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("join_result"), T66JoinSessionResultToString(Result));
+		DiagnosticFields.Add(TEXT("connect_string"), ConnectString);
+		SubmitSessionDiagnostic(TEXT("join_session_success"), TEXT("info"), TEXT("Joined party lobby."), FString(), FString(), FString(), DiagnosticFields);
 		BroadcastStateChanged(TEXT("Joined party lobby."));
 		PlayerController->ClientTravel(ConnectString, TRAVEL_Absolute);
 		return;
 	}
 
+	if (!PendingJoinFriendPlayerId.IsEmpty() && PendingJoinFriendLookupAttempts < T66MaxPendingFriendJoinLookupAttempts)
+	{
+		TMap<FString, FString> DiagnosticFields;
+		DiagnosticFields.Add(TEXT("join_result"), T66JoinSessionResultToString(Result));
+		DiagnosticFields.Add(TEXT("attempt"), FString::FromInt(PendingJoinFriendLookupAttempts));
+		SubmitSessionDiagnostic(TEXT("join_session_retry"), TEXT("warning"), TEXT("Join target was not ready. Retrying."), FString(), FString(), FString(), DiagnosticFields);
+		BroadcastStateChanged(TEXT("Join target was not ready. Retrying..."));
+		SchedulePendingFriendJoinRetry();
+		return;
+	}
+
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("join_result"), T66JoinSessionResultToString(Result));
+	SubmitSessionDiagnostic(TEXT("join_session_failed"), TEXT("error"), TEXT("JoinSession completed without a valid connection."), FString(), FString(), FString(), DiagnosticFields);
+	PendingJoinFriendPlayerId.Reset();
+	PendingExpectedJoinLobbyId.Reset();
+	PendingJoinInviteId.Reset();
+	PendingJoinSourceAppId.Reset();
+	PendingFoundLobbyId.Reset();
+	PendingJoinFriendLookupAttempts = 0;
 	BroadcastStateChanged(TEXT("JoinSession completed without a valid connection."));
 }
 
@@ -716,6 +1560,10 @@ void UT66SessionSubsystem::HandleStartSessionComplete(FName SessionName, bool bW
 {
 	if (SessionName == PartySessionName)
 	{
+		SubmitSessionDiagnostic(
+			bWasSuccessful ? TEXT("party_session_start_success") : TEXT("party_session_start_failed"),
+			bWasSuccessful ? TEXT("info") : TEXT("warning"),
+			bWasSuccessful ? TEXT("Lobby session started.") : TEXT("Lobby session start failed."));
 		BroadcastStateChanged(bWasSuccessful ? TEXT("Lobby session started.") : TEXT("Lobby session start failed."));
 	}
 }
@@ -724,9 +1572,16 @@ void UT66SessionSubsystem::HandleSessionUserInviteAccepted(bool bWasSuccessful, 
 {
 	if (!bWasSuccessful)
 	{
+		SubmitSessionDiagnostic(TEXT("steam_oss_invite_invalid"), TEXT("error"), TEXT("Steam invite was accepted, but the session result was invalid."));
 		BroadcastStateChanged(TEXT("Steam invite was accepted, but the session result was invalid."));
 		return;
 	}
+
+	UE_LOG(LogT66Session, Log, TEXT("Steam invite accepted via OSS. ControllerId=%d SessionOwner=%s"), ControllerId, *InviteResult.Session.OwningUserName);
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("controller_id"), FString::FromInt(ControllerId));
+	DiagnosticFields.Add(TEXT("session_owner"), InviteResult.Session.OwningUserName);
+	SubmitSessionDiagnostic(TEXT("steam_oss_invite_accepted"), TEXT("info"), TEXT("Steam invite accepted via OSS."), FString(), FString(), FString(), DiagnosticFields);
 
 	if (IsPartySessionActive())
 	{
@@ -737,4 +1592,24 @@ void UT66SessionSubsystem::HandleSessionUserInviteAccepted(bool bWasSuccessful, 
 	}
 
 	JoinPartySession(InviteResult);
+}
+
+void UT66SessionSubsystem::HandleSteamJoinRequested(const FString& FriendPlayerId)
+{
+	if (FriendPlayerId.IsEmpty())
+	{
+		return;
+	}
+
+	const FString LocalPlayerId = GetSteamHelper() ? GetSteamHelper()->GetLocalSteamId() : FString();
+	if (!LocalPlayerId.IsEmpty() && FriendPlayerId == LocalPlayerId)
+	{
+		return;
+	}
+
+	UE_LOG(LogT66Session, Log, TEXT("Steam join request fallback received for friend %s."), *FriendPlayerId);
+	TMap<FString, FString> DiagnosticFields;
+	DiagnosticFields.Add(TEXT("host_steam_id"), FriendPlayerId);
+	SubmitSessionDiagnostic(TEXT("steam_rich_presence_join_requested"), TEXT("info"), TEXT("Steam rich presence join request received."), FString(), FString(), FString(), DiagnosticFields);
+	JoinFriendPartySessionBySteamId(FriendPlayerId);
 }

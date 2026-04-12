@@ -4,9 +4,12 @@
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
+#include "Gameplay/T66CircusInteractable.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66CombatHitZoneComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -38,6 +41,116 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Enemy, Log, All);
 
 namespace
 {
+	struct FT66SafeZoneHit
+	{
+		bool bInside = false;
+		FVector Center = FVector::ZeroVector;
+		float Radius = 0.f;
+		float Penetration = -FLT_MAX;
+	};
+
+	void T66ConsiderSafeZoneHit(const FVector& QueryLocation, const FVector& SafeZoneCenter, const float SafeZoneRadius, FT66SafeZoneHit& InOutHit)
+	{
+		if (SafeZoneRadius <= KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
+
+		const float Dist = FVector::Dist2D(QueryLocation, SafeZoneCenter);
+		if (Dist >= SafeZoneRadius)
+		{
+			return;
+		}
+
+		const float Penetration = SafeZoneRadius - Dist;
+		if (!InOutHit.bInside || Penetration > InOutHit.Penetration)
+		{
+			InOutHit.bInside = true;
+			InOutHit.Center = SafeZoneCenter;
+			InOutHit.Radius = SafeZoneRadius;
+			InOutHit.Penetration = Penetration;
+		}
+	}
+
+	FT66SafeZoneHit T66ResolveSafeZoneHit2D(const UWorld* World, const FVector& QueryLocation)
+	{
+		FT66SafeZoneHit Result;
+		const UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+		const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+		const bool bTowerLayout = GameMode && GameMode->IsUsingTowerMainMapLayout();
+		const int32 QueryFloorNumber = bTowerLayout ? GameMode->GetTowerFloorIndexForLocation(QueryLocation) : INDEX_NONE;
+		if (!Registry)
+		{
+			return Result;
+		}
+
+		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+		{
+			const AT66HouseNPCBase* NPC = WeakNPC.Get();
+			if (!NPC)
+			{
+				continue;
+			}
+
+			if (bTowerLayout && QueryFloorNumber != INDEX_NONE
+				&& GameMode->GetTowerFloorIndexForLocation(NPC->GetActorLocation()) != QueryFloorNumber)
+			{
+				continue;
+			}
+
+			T66ConsiderSafeZoneHit(QueryLocation, NPC->GetActorLocation(), NPC->GetSafeZoneRadius(), Result);
+		}
+
+		for (const TWeakObjectPtr<AT66CircusInteractable>& WeakCircus : Registry->GetCircuses())
+		{
+			const AT66CircusInteractable* Circus = WeakCircus.Get();
+			if (!Circus)
+			{
+				continue;
+			}
+
+			if (bTowerLayout && QueryFloorNumber != INDEX_NONE
+				&& GameMode->GetTowerFloorIndexForLocation(Circus->GetActorLocation()) != QueryFloorNumber)
+			{
+				continue;
+			}
+
+			T66ConsiderSafeZoneHit(QueryLocation, Circus->GetActorLocation(), Circus->GetSafeZoneRadius(), Result);
+		}
+
+		return Result;
+	}
+
+	APawn* T66ResolveClosestPlayerPawn(const AActor* ContextActor)
+	{
+		const UWorld* World = ContextActor ? ContextActor->GetWorld() : nullptr;
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		const FVector Origin = ContextActor->GetActorLocation();
+		APawn* BestPawn = nullptr;
+		float BestDistSq = TNumericLimits<float>::Max();
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APawn* Pawn = It->Get() ? It->Get()->GetPawn() : nullptr;
+			if (!Pawn)
+			{
+				continue;
+			}
+
+			const float DistSq = FVector::DistSquared2D(Origin, Pawn->GetActorLocation());
+			if (DistSq < BestDistSq)
+			{
+				BestDistSq = DistSq;
+				BestPawn = Pawn;
+			}
+		}
+
+		return BestPawn;
+	}
+
 	void T66ApplyCharacterDisplacement(ACharacter* Character, const FVector& Origin, float Distance, const bool bTowardOrigin)
 	{
 		if (!Character || FMath::IsNearlyZero(Distance))
@@ -125,12 +238,122 @@ AT66EnemyBase::AT66EnemyBase()
 	LockIndicatorWidget->SetHiddenInGame(true, true);
 	LockIndicatorWidget->SetVisibility(false, true);
 
+	BodyHitZone = CreateDefaultSubobject<UT66CombatHitZoneComponent>(TEXT("BodyHitZone"));
+	BodyHitZone->SetupAttachment(RootComponent);
+	BodyHitZone->HitZoneType = ET66HitZoneType::Body;
+	BodyHitZone->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
+	BodyHitZone->InitSphereRadius(42.f);
+
+	HeadHitZone = CreateDefaultSubobject<UT66CombatHitZoneComponent>(TEXT("HeadHitZone"));
+	HeadHitZone->SetupAttachment(RootComponent);
+	HeadHitZone->HitZoneType = ET66HitZoneType::Head;
+	HeadHitZone->SetRelativeLocation(FVector(0.f, 0.f, 124.f));
+	HeadHitZone->InitSphereRadius(24.f);
+
+	RefreshCombatHitZoneState();
+
 	// Prepare built-in SkeletalMeshComponent for imported models.
 	if (USkeletalMeshComponent* Skel = GetMesh())
 	{
 		Skel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Skel->SetVisibility(false, true); // shown only when a character visual mapping exists
 	}
+}
+
+void AT66EnemyBase::RefreshCombatHitZoneState()
+{
+	const bool bEnableHitZones = bUsesCombatHitZones;
+
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionResponseToChannel(ECC_Visibility, bEnableHitZones ? ECR_Ignore : ECR_Block);
+	}
+
+	auto ConfigureZone = [bEnableHitZones](UT66CombatHitZoneComponent* Zone, const ET66HitZoneType ZoneType)
+	{
+		if (!Zone)
+		{
+			return;
+		}
+
+		Zone->HitZoneType = ZoneType;
+		Zone->bTargetable = bEnableHitZones;
+		Zone->SetCollisionEnabled(bEnableHitZones ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+		Zone->SetGenerateOverlapEvents(bEnableHitZones);
+	};
+
+	ConfigureZone(BodyHitZone, ET66HitZoneType::Body);
+	ConfigureZone(HeadHitZone, ET66HitZoneType::Head);
+}
+
+ET66HitZoneType AT66EnemyBase::ResolveHitZoneType(const UPrimitiveComponent* HitComponent, const ET66HitZoneType PreferredZone) const
+{
+	if (bUsesCombatHitZones)
+	{
+		if (HitComponent && HeadHitZone && HitComponent == HeadHitZone)
+		{
+			return ET66HitZoneType::Head;
+		}
+
+		if (HitComponent && BodyHitZone && HitComponent == BodyHitZone)
+		{
+			return ET66HitZoneType::Body;
+		}
+
+		if (PreferredZone == ET66HitZoneType::Head && HeadHitZone && HeadHitZone->bTargetable)
+		{
+			return ET66HitZoneType::Head;
+		}
+	}
+
+	return ET66HitZoneType::Body;
+}
+
+float AT66EnemyBase::GetHitZoneDamageMultiplier(const ET66HitZoneType HitZoneType) const
+{
+	return HitZoneType == ET66HitZoneType::Head
+		? FMath::Max(0.1f, HeadDamageMultiplier)
+		: FMath::Max(0.1f, BodyDamageMultiplier);
+}
+
+bool AT66EnemyBase::SupportsCombatHitZones() const
+{
+	return bUsesCombatHitZones && BodyHitZone && HeadHitZone;
+}
+
+FT66CombatTargetHandle AT66EnemyBase::ResolveCombatTargetHandle(const UPrimitiveComponent* HitComponent, const ET66HitZoneType PreferredZone) const
+{
+	FT66CombatTargetHandle Handle;
+	Handle.Actor = const_cast<AT66EnemyBase*>(this);
+	Handle.HitZoneType = ResolveHitZoneType(HitComponent, PreferredZone);
+
+	UT66CombatHitZoneComponent* ZoneComponent = nullptr;
+	if (Handle.HitZoneType == ET66HitZoneType::Head && HeadHitZone && HeadHitZone->bTargetable)
+	{
+		ZoneComponent = HeadHitZone;
+	}
+	else if (BodyHitZone && BodyHitZone->bTargetable)
+	{
+		ZoneComponent = BodyHitZone;
+		Handle.HitZoneType = ET66HitZoneType::Body;
+	}
+
+	if (ZoneComponent)
+	{
+		Handle = ZoneComponent->MakeTargetHandle();
+	}
+	else
+	{
+		Handle.AimPoint = GetActorLocation();
+		Handle.HitZoneType = ET66HitZoneType::Body;
+	}
+
+	return Handle;
+}
+
+FVector AT66EnemyBase::GetAimPointForHitZone(const ET66HitZoneType HitZoneType) const
+{
+	return ResolveCombatTargetHandle(nullptr, HitZoneType).AimPoint;
 }
 
 void AT66EnemyBase::ConfigureAsMob(FName InMobID)
@@ -248,11 +471,13 @@ void AT66EnemyBase::BeginPlay()
 
 	if (HealthBarWidget)
 	{
+		HealthBarWidget->InitWidget();
 		HealthBarWidget->SetHiddenInGame(true, true);
 		HealthBarWidget->SetVisibility(false, true);
 	}
 	if (LockIndicatorWidget)
 	{
+		LockIndicatorWidget->InitWidget();
 		LockIndicatorWidget->SetHiddenInGame(true, true);
 		LockIndicatorWidget->SetVisibility(false, true);
 	}
@@ -262,6 +487,8 @@ void AT66EnemyBase::BeginPlay()
 	{
 		Capsule->OnComponentBeginOverlap.AddDynamic(this, &AT66EnemyBase::OnCapsuleBeginOverlap);
 	}
+
+	RefreshCombatHitZoneState();
 
 	// Fail-safe: always make sure the placeholder is visible unless we successfully apply a skeletal mesh.
 	if (VisualMesh)
@@ -284,7 +511,7 @@ void AT66EnemyBase::BeginPlay()
 		if (LoggedEnemies < 12)
 		{
 			++LoggedEnemies;
-			UE_LOG(LogT66Enemy, Warning, TEXT("EnemyVisuals: %s VisualID=%s UsingPlaceholder=1"), *GetName(), *CharacterVisualID.ToString());
+			UE_LOG(LogT66Enemy, Verbose, TEXT("EnemyVisuals: %s VisualID=%s UsingPlaceholder=1"), *GetName(), *CharacterVisualID.ToString());
 		}
 #endif
 		return;
@@ -326,7 +553,7 @@ void AT66EnemyBase::BeginPlay()
 		++LoggedEnemies;
 		const USkeletalMeshComponent* Skel = GetMesh();
 		const TCHAR* SkelName = (Skel && Skel->GetSkeletalMeshAsset()) ? *Skel->GetSkeletalMeshAsset()->GetName() : TEXT("None");
-		UE_LOG(LogT66Enemy, Warning, TEXT("EnemyVisuals: %s VisualID=%s UsingSkel=%d SkelAsset=%s SkelVisible=%d SkelHidden=%d PlaceholderVisible=%d PlaceholderHidden=%d"),
+		UE_LOG(LogT66Enemy, Verbose, TEXT("EnemyVisuals: %s VisualID=%s UsingSkel=%d SkelAsset=%s SkelVisible=%d SkelHidden=%d PlaceholderVisible=%d PlaceholderHidden=%d"),
 			*GetName(),
 			*CharacterVisualID.ToString(),
 			bUsingCharacterVisual ? 1 : 0,
@@ -466,10 +693,18 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	CachedWanderDir = FVector::ZeroVector;
 	WanderDirRefreshAccum = 0.f;
 	bCachedInsideSafeZone = false;
+	CachedSafeZoneEscapeDir = FVector::ZeroVector;
+	CachedSafeZoneCenter = FVector::ZeroVector;
+	CachedSafeZoneRadius = 0.f;
+	CachedSafeZoneLoiterDir = FVector::ZeroVector;
+	SafeZoneLoiterDirRefreshAccum = 0.f;
 	SafeZoneCheckAccumSeconds = 0.f;
 	bRisingFromGround = false;
+	bEmergingFromWall = false;
 	RiseElapsed = 0.f;
+	WallEmergeElapsed = 0.f;
 	SetLockedIndicator(false);
+	RefreshCombatHitZoneState();
 
 	SetActorLocation(NewLocation);
 	SetActorHiddenInGame(false);
@@ -500,10 +735,34 @@ void AT66EnemyBase::StartRiseFromGround(float TargetGroundZ)
 	RiseStartZ = TargetGroundZ - BuryDepth;
 	RiseElapsed = 0.f;
 	bRisingFromGround = true;
+	bEmergingFromWall = false;
 
 	FVector Loc = GetActorLocation();
 	Loc.Z = RiseStartZ;
 	SetActorLocation(Loc);
+
+	if (UCapsuleComponent* Cap = GetCapsuleComponent())
+	{
+		Cap->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	}
+}
+
+void AT66EnemyBase::StartEmergeFromWall(const FVector& TargetLocation, const FVector& WallNormal)
+{
+	FVector InwardNormal = WallNormal;
+	InwardNormal.Z = 0.f;
+	if (!InwardNormal.Normalize())
+	{
+		InwardNormal = FVector(1.0f, 0.0f, 0.0f);
+	}
+
+	WallEmergeTargetLocation = TargetLocation;
+	WallEmergeStartLocation = TargetLocation - (InwardNormal * BuryDepth);
+	WallEmergeStartLocation.Z = TargetLocation.Z;
+	WallEmergeElapsed = 0.f;
+	bEmergingFromWall = true;
+	bRisingFromGround = false;
+	SetActorLocation(WallEmergeStartLocation);
 
 	if (UCapsuleComponent* Cap = GetCapsuleComponent())
 	{
@@ -517,6 +776,23 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	if (CurrentHP <= 0) return;
 
 	FLagScopedScope LagScope(GetWorld(), TEXT("EnemyBase::Tick"));
+
+	if (bEmergingFromWall)
+	{
+		WallEmergeElapsed += DeltaSeconds;
+		const float Alpha = FMath::Clamp(WallEmergeElapsed / RiseDuration, 0.f, 1.f);
+		SetActorLocation(FMath::Lerp(WallEmergeStartLocation, WallEmergeTargetLocation, Alpha));
+
+		if (Alpha >= 1.f)
+		{
+			bEmergingFromWall = false;
+			if (UCapsuleComponent* Cap = GetCapsuleComponent())
+			{
+				Cap->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			}
+		}
+		return;
+	}
 
 	// Rise-from-ground animation: lerp Z up, then re-enable collision.
 	if (bRisingFromGround)
@@ -538,15 +814,10 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		return;
 	}
 
-	// [GOLD] Cache the player pawn once; re-resolve only if the weak ref went stale.
-	APawn* PlayerPawn = CachedPlayerPawn.Get();
-	if (!PlayerPawn)
-	{
-		PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
-		CachedPlayerPawn = PlayerPawn;
-		UE_LOG(LogT66Enemy, Verbose, TEXT("[GOLD] PlayerPawnCache: enemy %s resolved pawn %s"),
-			*GetName(), PlayerPawn ? *PlayerPawn->GetName() : TEXT("null"));
-	}
+	APawn* PlayerPawn = T66ResolveClosestPlayerPawn(this);
+	CachedPlayerPawn = PlayerPawn;
+	UE_LOG(LogT66Enemy, Verbose, TEXT("[GOLD] PlayerPawnCache: enemy %s resolved pawn %s"),
+		*GetName(), PlayerPawn ? *PlayerPawn->GetName() : TEXT("null"));
 	if (!PlayerPawn) return;
 
 	UCharacterMovementComponent* Move = GetCharacterMovement();
@@ -574,44 +845,86 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	{
 		bCachedInsideSafeZone = false;
 		CachedSafeZoneEscapeDir = FVector::ZeroVector;
+		CachedSafeZoneCenter = FVector::ZeroVector;
+		CachedSafeZoneRadius = 0.f;
+		CachedSafeZoneLoiterDir = FVector::ZeroVector;
+		SafeZoneLoiterDirRefreshAccum = 0.f;
 	}
 	else if (SafeZoneCheckAccumSeconds >= SafeZoneCheckIntervalSeconds)
 	{
 		SafeZoneCheckAccumSeconds = 0.f;
 		bCachedInsideSafeZone = false;
 		CachedSafeZoneEscapeDir = FVector::ZeroVector;
+		CachedSafeZoneCenter = FVector::ZeroVector;
+		CachedSafeZoneRadius = 0.f;
 
-		// [GOLD] Use the actor registry instead of TActorIterator for safe-zone NPC lookup.
-		UT66ActorRegistrySubsystem* Registry = GetWorld() ? GetWorld()->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
-		const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& RegisteredNPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
-
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : RegisteredNPCs)
+		const FT66SafeZoneHit SafeZoneHit = T66ResolveSafeZoneHit2D(GetWorld(), GetActorLocation());
+		if (SafeZoneHit.bInside)
 		{
-			AT66HouseNPCBase* NPC = WeakNPC.Get();
-			if (!NPC) continue;
+			bCachedInsideSafeZone = true;
+			CachedSafeZoneCenter = SafeZoneHit.Center;
+			CachedSafeZoneRadius = SafeZoneHit.Radius;
 
-			const FVector N = NPC->GetActorLocation();
-			FVector ToEnemy = GetActorLocation() - N;
+			FVector ToEnemy = GetActorLocation() - SafeZoneHit.Center;
 			ToEnemy.Z = 0.f;
-			const float Dist = ToEnemy.Size();
-			if (Dist < NPC->GetSafeZoneRadius())
+			CachedSafeZoneEscapeDir = ToEnemy.GetSafeNormal();
+			if (CachedSafeZoneEscapeDir.IsNearlyZero())
 			{
-				bCachedInsideSafeZone = true;
-				if (Dist > 1.f)
-				{
-					ToEnemy /= Dist;
-					CachedSafeZoneEscapeDir = ToEnemy;
-				}
-				break;
+				CachedSafeZoneEscapeDir = FVector(1.f, 0.f, 0.f);
 			}
+		}
+		else
+		{
+			CachedSafeZoneLoiterDir = FVector::ZeroVector;
+			SafeZoneLoiterDirRefreshAccum = 0.f;
 		}
 	}
 
 	if (bCachedInsideSafeZone)
 	{
-		if (!CachedSafeZoneEscapeDir.IsNearlyZero())
+		if (Move)
 		{
-			AddMovementInput(CachedSafeZoneEscapeDir, 1.f);
+			Move->MaxWalkSpeed = BaseMaxWalkSpeed * SafeZoneLoiterMoveScale;
+		}
+
+		SafeZoneLoiterDirRefreshAccum += DeltaSeconds;
+		if (SafeZoneLoiterDirRefreshAccum >= SafeZoneLoiterDirRefreshInterval || CachedSafeZoneLoiterDir.IsNearlyZero())
+		{
+			SafeZoneLoiterDirRefreshAccum = 0.f;
+
+			FVector Outward = CachedSafeZoneEscapeDir;
+			if (Outward.IsNearlyZero())
+			{
+				Outward = FVector(1.f, 0.f, 0.f);
+			}
+
+			const FVector Tangent(-Outward.Y, Outward.X, 0.f);
+			FVector RandomDir(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f), 0.f);
+			RandomDir = RandomDir.GetSafeNormal();
+			if (RandomDir.IsNearlyZero())
+			{
+				RandomDir = Tangent;
+			}
+
+			const float DistToCenter = FVector::Dist2D(GetActorLocation(), CachedSafeZoneCenter);
+			const float DepthAlpha = (CachedSafeZoneRadius > KINDA_SMALL_NUMBER)
+				? FMath::Clamp((CachedSafeZoneRadius - DistToCenter) / CachedSafeZoneRadius, 0.f, 1.f)
+				: 1.f;
+			const float OutwardWeight = FMath::Lerp(0.20f, 0.90f, DepthAlpha);
+			const float TangentWeight = FMath::Lerp(0.80f, 0.35f, DepthAlpha);
+			const float RandomWeight = 0.45f;
+			const float TangentSign = (FMath::FRand() < 0.5f) ? -1.f : 1.f;
+
+			CachedSafeZoneLoiterDir = (Outward * OutwardWeight + Tangent * TangentSign * TangentWeight + RandomDir * RandomWeight).GetSafeNormal();
+			if (CachedSafeZoneLoiterDir.IsNearlyZero())
+			{
+				CachedSafeZoneLoiterDir = Outward;
+			}
+		}
+
+		if (!CachedSafeZoneLoiterDir.IsNearlyZero())
+		{
+			AddMovementInput(CachedSafeZoneLoiterDir, 1.f);
 		}
 		return;
 	}
@@ -789,9 +1102,23 @@ bool AT66EnemyBase::TakeDamageFromHero(int32 Damage, FName DamageSourceID, FName
 	return false;
 }
 
+bool AT66EnemyBase::TakeDamageFromHeroHitZone(int32 Damage, const FT66CombatTargetHandle& TargetHandle, FName DamageSourceID, FName EventType)
+{
+	const ET66HitZoneType HitZoneType = ResolveHitZoneType(TargetHandle.HitComponent.Get(), TargetHandle.HitZoneType);
+	const int32 AdjustedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(Damage) * GetHitZoneDamageMultiplier(HitZoneType)));
+
+	FName ResolvedEventType = EventType;
+	if (HitZoneType == ET66HitZoneType::Head && ResolvedEventType.IsNone())
+	{
+		ResolvedEventType = UT66FloatingCombatTextSubsystem::EventType_Headshot;
+	}
+
+	return TakeDamageFromHero(AdjustedDamage, DamageSourceID, ResolvedEventType);
+}
+
 void AT66EnemyBase::ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale)
 {
-	if (CurrentHP <= 0 || bRisingFromGround)
+	if (CurrentHP <= 0 || bRisingFromGround || bEmergingFromWall)
 	{
 		return;
 	}
@@ -868,7 +1195,7 @@ void AT66EnemyBase::ApplyForcedRunAway(float DurationSeconds)
 void AT66EnemyBase::ApplyStun(float DurationSeconds)
 {
 	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 5.f);
-	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround)
+	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround || bEmergingFromWall)
 	{
 		return;
 	}
@@ -883,7 +1210,7 @@ void AT66EnemyBase::ApplyStun(float DurationSeconds)
 void AT66EnemyBase::ApplyRoot(float DurationSeconds)
 {
 	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 6.f);
-	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround)
+	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround || bEmergingFromWall)
 	{
 		return;
 	}
@@ -898,7 +1225,7 @@ void AT66EnemyBase::ApplyRoot(float DurationSeconds)
 void AT66EnemyBase::ApplyFreeze(float DurationSeconds)
 {
 	const float Dur = FMath::Clamp(DurationSeconds, 0.f, 4.f);
-	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround)
+	if (Dur <= 0.f || CurrentHP <= 0 || bRisingFromGround || bEmergingFromWall)
 	{
 		return;
 	}
@@ -912,7 +1239,7 @@ void AT66EnemyBase::ApplyFreeze(float DurationSeconds)
 
 void AT66EnemyBase::ApplyPullTowards(const FVector& PullOrigin, float Distance)
 {
-	if (CurrentHP <= 0 || bRisingFromGround)
+	if (CurrentHP <= 0 || bRisingFromGround || bEmergingFromWall)
 	{
 		return;
 	}
@@ -922,7 +1249,7 @@ void AT66EnemyBase::ApplyPullTowards(const FVector& PullOrigin, float Distance)
 
 void AT66EnemyBase::ApplyPushAwayFrom(const FVector& PushOrigin, float Distance)
 {
-	if (CurrentHP <= 0 || bRisingFromGround)
+	if (CurrentHP <= 0 || bRisingFromGround || bEmergingFromWall)
 	{
 		return;
 	}
@@ -943,6 +1270,10 @@ void AT66EnemyBase::SetLockedIndicator(bool bLocked)
 {
 	if (LockIndicatorWidget)
 	{
+		if (bLocked && !LockIndicatorWidget->GetUserWidgetObject())
+		{
+			LockIndicatorWidget->InitWidget();
+		}
 		LockIndicatorWidget->SetHiddenInGame(!bLocked, true);
 		LockIndicatorWidget->SetVisibility(bLocked, true);
 	}
@@ -1004,10 +1335,12 @@ void AT66EnemyBase::OnDeath()
 			? PlayerExperience->GetDifficultyEnemyLootBagDropChanceBase(Difficulty)
 			: 0.10f;
 		const float DropChance = RngSub ? RngSub->BiasChance01(BaseDropChance) : FMath::Clamp(BaseDropChance, 0.f, 1.f);
-		const bool bDroppedBag = (Stream.GetFraction() <= DropChance);
+		const bool bDroppedBag = RngSub ? RngSub->RollChance01(DropChance) : (Stream.GetFraction() < DropChance);
+		const int32 DropDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 DropPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 		if (RunState)
 		{
-			RunState->RecordLuckQuantityBool(FName(TEXT("EnemyLootBagDrop")), bDroppedBag);
+			RunState->RecordLuckQuantityBool(FName(TEXT("EnemyLootBagDrop")), bDroppedBag, DropChance, DropDrawIndex, DropPreDrawSeed);
 		}
 		if (!bDroppedBag)
 		{
@@ -1040,9 +1373,11 @@ void AT66EnemyBase::OnDeath()
 		const int32 LootBagCount = RngSub
 			? FMath::Max(1, RngSub->RollIntRangeBiased(BagCountRange, Stream))
 			: FMath::Max(1, Stream.RandRange(BagCountMin, BagCountMax));
+		const int32 BagCountDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 BagCountPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 		if (RunState)
 		{
-			RunState->RecordLuckQuantityRoll(FName(TEXT("EnemyLootBagCount")), LootBagCount, BagCountMin, BagCountMax);
+			RunState->RecordLuckQuantityRoll(FName(TEXT("EnemyLootBagCount")), LootBagCount, BagCountMin, BagCountMax, BagCountDrawIndex, BagCountPreDrawSeed);
 		}
 
 		const FT66RarityWeights Weights = PlayerExperience
@@ -1053,6 +1388,8 @@ void AT66EnemyBase::OnDeath()
 		for (int32 BagIndex = 0; BagIndex < LootBagCount; ++BagIndex)
 		{
 			ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
+			const int32 BagRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+			const int32 BagRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 			if (bIsMiniBoss)
 			{
 				// Mini-bosses should skew toward higher tier loot bags.
@@ -1061,12 +1398,19 @@ void AT66EnemyBase::OnDeath()
 			}
 			if (RunState)
 			{
-				RunState->RecordLuckQualityRarity(FName(TEXT("EnemyLootBagRarity")), BagRarity);
+				RunState->RecordLuckQualityRarity(
+					FName(TEXT("EnemyLootBagRarity")),
+					BagRarity,
+					bIsMiniBoss ? INDEX_NONE : BagRarityDrawIndex,
+					bIsMiniBoss ? 0 : BagRarityPreDrawSeed,
+					bIsMiniBoss ? nullptr : &Weights);
 			}
 
-			const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
-			const float Angle = Stream.FRandRange(0.f, 2.f * PI);
-			const float Radius = (LootBagCount > 1) ? Stream.FRandRange(0.f, 90.f) : 0.f;
+			const FName ItemID = T66GI->GetRandomItemIDForLootRarityFromStream(BagRarity, Stream);
+			const float Angle = RngSub ? RngSub->RunFRandRange(0.f, 2.f * PI) : Stream.FRandRange(0.f, 2.f * PI);
+			const float Radius = (LootBagCount > 1)
+				? (RngSub ? RngSub->RunFRandRange(0.f, 90.f) : Stream.FRandRange(0.f, 90.f))
+				: 0.f;
 			const FVector Offset(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);
 			AT66LootBagPickup* Loot = World->SpawnActor<AT66LootBagPickup>(
 				AT66LootBagPickup::StaticClass(),

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66RunSaveGame.h"
 #include "Data/T66DataTypes.h"
 #include "GameFramework/SaveGame.h"
 #include "T66LeaderboardRunSummarySaveGame.generated.h"
@@ -21,7 +22,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 7;
+	int32 SchemaVersion = 15;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -98,6 +99,9 @@ public:
 	int32 AttackScaleStat = 1;
 
 	UPROPERTY(SaveGame)
+	int32 AccuracyStat = 1;
+
+	UPROPERTY(SaveGame)
 	int32 ArmorStat = 1;
 
 	UPROPERTY(SaveGame)
@@ -131,6 +135,84 @@ public:
 	UPROPERTY(SaveGame)
 	int32 SkillRating0To100 = -1;
 
+	// ===== Anti-cheat telemetry =====
+
+	/** Run-scoped RNG seed used for this summary (debug/provenance). SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	int32 RunSeed = 0;
+
+	/** Total recorded quantity-roll samples contributing to Luck Rating. SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	int32 LuckQuantitySampleCount = 0;
+
+	/** Total recorded quality-roll samples contributing to Luck Rating. SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	int32 LuckQualitySampleCount = 0;
+
+	/** Category-level quantity accumulators used to review Luck Rating. SchemaVersion>=10. */
+	UPROPERTY(SaveGame)
+	TArray<FT66SavedLuckAccumulator> LuckQuantityAccumulators;
+
+	/** Category-level quality accumulators used to review Luck Rating. SchemaVersion>=10. */
+	UPROPERTY(SaveGame)
+	TArray<FT66SavedLuckAccumulator> LuckQualityAccumulators;
+
+	/** Sampled per-roll luck telemetry used for anti-cheat review. SchemaVersion>=11. */
+	UPROPERTY(SaveGame)
+	TArray<FT66AntiCheatLuckEvent> AntiCheatLuckEvents;
+
+	/** True if the per-roll luck telemetry ring buffer truncated older events. SchemaVersion>=11. */
+	UPROPERTY(SaveGame)
+	bool bAntiCheatLuckEventsTruncated = false;
+
+	/** Sampled per-hit dodge/evasion telemetry used for anti-cheat review. SchemaVersion>=11. */
+	UPROPERTY(SaveGame)
+	TArray<FT66AntiCheatHitCheckEvent> AntiCheatHitCheckEvents;
+
+	/** True if the per-hit telemetry ring buffer truncated older events. SchemaVersion>=11. */
+	UPROPERTY(SaveGame)
+	bool bAntiCheatHitCheckEventsTruncated = false;
+
+	/** Number of incoming hit checks that evaluated dodge/evasion. SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	int32 IncomingHitChecks = 0;
+
+	/** Number of those hit checks that actually applied damage. SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	int32 DamageTakenHitCount = 0;
+
+	/** Number of successful dodges observed during the run. SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	int32 DodgeCount = 0;
+
+	/** Longest observed consecutive dodge streak during the run. SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	int32 MaxConsecutiveDodges = 0;
+
+	/** Sum of sampled dodge chances across all incoming hit checks. SchemaVersion>=9. */
+	UPROPERTY(SaveGame)
+	float TotalEvasionChance = 0.f;
+
+	/** Evasion-chance buckets used to review dodge plausibility even when hit-check samples truncate. SchemaVersion>=13. */
+	UPROPERTY(SaveGame)
+	TArray<FT66AntiCheatEvasionBucketSummary> AntiCheatEvasionBuckets;
+
+	/** Compact 5-second combat-pressure summary used to review skill/dodge plausibility. SchemaVersion>=13. */
+	UPROPERTY(SaveGame)
+	FT66AntiCheatPressureWindowSummary AntiCheatPressureWindowSummary;
+
+	/** Per-game gambler summary totals used for post-run anti-cheat review. SchemaVersion>=15. */
+	UPROPERTY(SaveGame)
+	TArray<FT66AntiCheatGamblerGameSummary> AntiCheatGamblerSummaries;
+
+	/** Per-round gambler telemetry used for post-run anti-cheat review. SchemaVersion>=15. */
+	UPROPERTY(SaveGame)
+	TArray<FT66AntiCheatGamblerEvent> AntiCheatGamblerEvents;
+
+	/** True if the per-round gambler telemetry ring buffer truncated older events. SchemaVersion>=15. */
+	UPROPERTY(SaveGame)
+	bool bAntiCheatGamblerEventsTruncated = false;
+
 	// ===== Proof of Run =====
 
 	/** Proof-of-run URL (e.g. YouTube). SchemaVersion>=3. */
@@ -158,6 +240,10 @@ public:
 	/** Damage dealt by source this run (source ID -> total). SchemaVersion>=5. */
 	UPROPERTY(SaveGame)
 	TMap<FName, int32> DamageBySource;
+
+	/** Per-stage cumulative pacing checkpoints captured at the end of each cleared stage. SchemaVersion>=8. */
+	UPROPERTY(SaveGame)
+	TArray<FT66StagePacingPoint> StagePacingPoints;
 
 	/** Display name for this player (used by Pick the Player modal for fake snapshots; not persisted to slot). */
 	UPROPERTY(Transient)

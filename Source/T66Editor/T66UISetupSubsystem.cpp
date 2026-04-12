@@ -14,6 +14,7 @@
 #include "GameFramework/PlayerController.h"
 #include "UI/T66UITypes.h"
 #include "UI/T66ScreenBase.h"
+#include "UI/Screens/T66HeroSelectionScreen.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66FrontendGameMode.h"
 #include "Gameplay/T66GameMode.h"
@@ -396,15 +397,9 @@ bool UT66UISetupSubsystem::ConfigureFrontendGameMode()
 		return false;
 	}
 
-	// Load PlayerController class
-	const FString PlayerControllerPath = TEXT("/Game/Blueprints/Core/BP_T66PlayerController.BP_T66PlayerController_C");
-	UClass* PCClass = LoadClass<APlayerController>(nullptr, *PlayerControllerPath);
-	
-	if (PCClass)
-	{
-		GameModeCDO->PlayerControllerClass = PCClass;
-		UE_LOG(LogT66Editor, Log, TEXT("Set PlayerControllerClass to BP_T66PlayerController"));
-	}
+	// Use the native controller so frontend startup does not depend on Blueprint screen mappings.
+	GameModeCDO->PlayerControllerClass = AT66PlayerController::StaticClass();
+	UE_LOG(LogT66Editor, Log, TEXT("Set PlayerControllerClass to native AT66PlayerController"));
 
 	// No default pawn for frontend
 	GameModeCDO->DefaultPawnClass = nullptr;
@@ -483,7 +478,6 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 	static const FScreenMapping Mappings[] = {
 		{ ET66ScreenType::MainMenu, TEXT("/Game/Blueprints/UI/WBP_MainMenu.WBP_MainMenu_C") },
 		{ ET66ScreenType::PartySizePicker, TEXT("/Game/Blueprints/UI/WBP_PartySizePicker.WBP_PartySizePicker_C") },
-		{ ET66ScreenType::HeroSelection, TEXT("/Game/Blueprints/UI/WBP_HeroSelection.WBP_HeroSelection_C") },
 		{ ET66ScreenType::CompanionSelection, TEXT("/Game/Blueprints/UI/WBP_CompanionSelection.WBP_CompanionSelection_C") },
 		{ ET66ScreenType::SaveSlots, TEXT("/Game/Blueprints/UI/WBP_SaveSlots.WBP_SaveSlots_C") },
 		{ ET66ScreenType::Settings, TEXT("/Game/Blueprints/UI/WBP_Settings.WBP_Settings_C") },
@@ -535,6 +529,10 @@ bool UT66UISetupSubsystem::ConfigurePlayerController()
 				Mapping.AssetPath);
 		}
 	}
+
+	// Hero selection is native and changes faster than the legacy Blueprint override.
+	PCCDO->ScreenClasses.Add(ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass());
+	UE_LOG(LogT66Editor, Log, TEXT("Registered native HeroSelection screen"));
 
 	// Set initial screen to MainMenu
 	PCCDO->InitialScreen = ET66ScreenType::MainMenu;

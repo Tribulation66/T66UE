@@ -23,3 +23,10 @@ enum class ET66MapCellDecoration : uint8
 	Rocks,
 	Log,
 };
+
+enum class ET66MapCellSurfaceFeature : uint8
+{
+	None,
+	Hill,
+	Crater,
+};

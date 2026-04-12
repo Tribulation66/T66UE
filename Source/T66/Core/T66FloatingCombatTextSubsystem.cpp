@@ -7,6 +7,7 @@
 #include "GameFramework/Actor.h"
 
 const FName UT66FloatingCombatTextSubsystem::EventType_Crit(TEXT("Crit"));
+const FName UT66FloatingCombatTextSubsystem::EventType_Headshot(TEXT("Headshot"));
 const FName UT66FloatingCombatTextSubsystem::EventType_DoT(TEXT("DoT"));
 const FName UT66FloatingCombatTextSubsystem::EventType_Burn(TEXT("Burn"));
 const FName UT66FloatingCombatTextSubsystem::EventType_Chill(TEXT("Chill"));

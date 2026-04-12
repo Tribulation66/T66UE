@@ -13,6 +13,7 @@
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
 #include "UI/Screens/T66AchievementsScreen.h"
+#include "UI/Screens/T66PartyInviteModal.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "UI/Screens/T66PauseMenuScreen.h"
@@ -20,13 +21,12 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
-#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -43,13 +43,14 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Gameplay/T66StageCatchUpLootInteractable.h"
 #include "Gameplay/T66TutorialPortal.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66BackendSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -128,6 +129,8 @@ void AT66PlayerController::BeginPlay()
 		}
 	}
 
+	BindPartyInviteEvents();
+
 	if (IsGameplayLevel())
 	{
 		SetupGameplayMode();
@@ -136,15 +139,6 @@ void AT66PlayerController::BeginPlay()
 		CachedPixelVFXNiagara = PixelVFXNiagara.LoadSynchronous();
 		UWorld* World = GetWorld();
 		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-
-		// Prewarm TikTok/WebView2 so login + CSS formatting are done before first toggle.
-		if (GI)
-		{
-			if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
-			{
-				MV->PrewarmTikTok();
-			}
-		}
 
 		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		if (RunState)
@@ -232,6 +226,8 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		RunState->QuickReviveChanged.RemoveDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
 	}
 
+	UnbindPartyInviteEvents();
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -250,12 +246,159 @@ void AT66PlayerController::PushLobbyProfileToServer(const FT66LobbyPlayerInfo& L
 	}
 }
 
+void AT66PlayerController::PushPartyRunSummaryToServer(const FString& RequestKey, const FString& RunSummaryJson)
+{
+	if (RequestKey.IsEmpty() || RunSummaryJson.IsEmpty())
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (AT66SessionPlayerState* SessionPlayerState = GetPlayerState<AT66SessionPlayerState>())
+			{
+				if (HasAuthority())
+				{
+					SessionSubsystem->StorePartyRunSummaryForSteamId(RequestKey, SessionPlayerState->GetSteamId(), RunSummaryJson);
+				}
+				else
+				{
+					ServerSubmitPartyRunSummary(RequestKey, RunSummaryJson);
+				}
+			}
+		}
+	}
+}
+
 void AT66PlayerController::ServerSubmitLobbyProfile_Implementation(const FT66LobbyPlayerInfo& LobbyInfo)
 {
 	if (AT66SessionPlayerState* SessionPlayerState = GetPlayerState<AT66SessionPlayerState>())
 	{
 		SessionPlayerState->ApplyLobbyInfo(LobbyInfo);
 	}
+}
+
+void AT66PlayerController::ServerSubmitPartyRunSummary_Implementation(const FString& RequestKey, const FString& RunSummaryJson)
+{
+	if (RequestKey.IsEmpty() || RunSummaryJson.IsEmpty())
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			if (AT66SessionPlayerState* SessionPlayerState = GetPlayerState<AT66SessionPlayerState>())
+			{
+				SessionSubsystem->StorePartyRunSummaryForSteamId(RequestKey, SessionPlayerState->GetSteamId(), RunSummaryJson);
+			}
+		}
+	}
+}
+
+void AT66PlayerController::BindPartyInviteEvents()
+{
+	UnbindPartyInviteEvents();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			PendingPartyInvitesChangedHandle = Backend->OnPendingPartyInvitesChanged().AddUObject(this, &AT66PlayerController::HandlePendingPartyInvitesChanged);
+			Backend->PollPendingPartyInvites(true);
+		}
+	}
+}
+
+void AT66PlayerController::UnbindPartyInviteEvents()
+{
+	if (!PendingPartyInvitesChangedHandle.IsValid())
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>())
+		{
+			Backend->OnPendingPartyInvitesChanged().Remove(PendingPartyInvitesChangedHandle);
+		}
+	}
+
+	PendingPartyInvitesChangedHandle.Reset();
+}
+
+void AT66PlayerController::HandlePendingPartyInvitesChanged()
+{
+	RefreshPartyInviteModal();
+}
+
+void AT66PlayerController::RefreshPartyInviteModal()
+{
+	if (!UIManager)
+	{
+		if (IsGameplayLevel())
+		{
+			EnsureGameplayUIManager();
+		}
+		else
+		{
+			return;
+		}
+	}
+
+	if (!UIManager)
+	{
+		return;
+	}
+
+	UT66BackendSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66BackendSubsystem>() : nullptr;
+	if (!Backend)
+	{
+		return;
+	}
+
+	const bool bHasPendingInvites = Backend->HasPendingPartyInvites();
+	const ET66ScreenType CurrentModalType = UIManager->GetCurrentModalType();
+	if (!bHasPendingInvites)
+	{
+		if (CurrentModalType == ET66ScreenType::PartyInvite)
+		{
+			UIManager->CloseModal();
+			if (IsGameplayLevel() && !IsPaused())
+			{
+				RestoreGameplayInputMode();
+			}
+		}
+		return;
+	}
+
+	if (CurrentModalType == ET66ScreenType::PartyInvite)
+	{
+		if (UT66ScreenBase* CurrentModal = UIManager->GetCurrentModal())
+		{
+			CurrentModal->ForceRebuildSlate();
+		}
+		return;
+	}
+
+	if (CurrentModalType != ET66ScreenType::None)
+	{
+		UIManager->CloseModal();
+	}
+
+	if (IsGameplayLevel())
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+	}
+
+	UIManager->ShowModal(ET66ScreenType::PartyInvite);
 }
 
 
@@ -285,7 +428,6 @@ bool AT66PlayerController::IsGameplayLevel() const
 	FString MapName = GetWorld()->GetMapName();
 	MapName = UWorld::RemovePIEPrefix(MapName);
 	if (MapName.Contains(TEXT("Gameplay"))) return true;
-	if (MapName.Equals(UT66GameInstance::GetDemoMapLevelNameForTribulation().ToString(), ESearchCase::IgnoreCase)) return true;
 	return false;
 }
 

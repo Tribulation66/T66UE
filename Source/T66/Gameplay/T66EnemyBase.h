@@ -4,12 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Gameplay/T66CombatTargetTypes.h"
 #include "T66EnemyBase.generated.h"
 
 class UWidgetComponent;
 class UStaticMeshComponent;
 class AT66EnemyDirector;
 class AT66ItemPickup;
+class UT66CombatHitZoneComponent;
+class UPrimitiveComponent;
 
 UCLASS(Blueprintable)
 class T66_API AT66EnemyBase : public ACharacter
@@ -98,6 +101,21 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> LockIndicatorWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|HitZones")
+	bool bUsesCombatHitZones = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|HitZones", meta = (ClampMin = "0.1"))
+	float BodyDamageMultiplier = 1.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|HitZones", meta = (ClampMin = "0.1"))
+	float HeadDamageMultiplier = 1.5f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|HitZones")
+	TObjectPtr<UT66CombatHitZoneComponent> BodyHitZone;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|HitZones")
+	TObjectPtr<UT66CombatHitZoneComponent> HeadHitZone;
+
 	/** Director that spawned this enemy (for death notification) */
 	UPROPERTY(BlueprintReadWrite, Category = "AI")
 	TObjectPtr<AT66EnemyDirector> OwningDirector;
@@ -105,6 +123,8 @@ public:
 	/** Apply damage from hero. Returns true if enemy died. DamageSourceID used for run damage log (default: AutoAttack). EventType for floating text (Crit, DoT, etc.; default none). */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual bool TakeDamageFromHero(int32 Damage, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
+
+	virtual bool TakeDamageFromHeroHitZone(int32 Damage, const FT66CombatTargetHandle& TargetHandle, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 
 	/** Briefly shove the enemy back when hit by a hero auto attack. */
 	void ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale = 1.f);
@@ -144,6 +164,10 @@ public:
 	/** Show/hide the lock indicator on this enemy's health bar. */
 	void SetLockedIndicator(bool bLocked);
 
+	bool SupportsCombatHitZones() const;
+	FT66CombatTargetHandle ResolveCombatTargetHandle(const UPrimitiveComponent* HitComponent = nullptr, ET66HitZoneType PreferredZone = ET66HitZoneType::Body) const;
+	FVector GetAimPointForHitZone(ET66HitZoneType HitZoneType) const;
+
 	/** Apply stage-based HP/Armor: stage 1 = 50 HP, 0.1 armor; each stage multiplies by 1.1. Call before ApplyDifficultyScalar. */
 	void ApplyStageScaling(int32 Stage);
 
@@ -178,6 +202,9 @@ public:
 	/** Start the rise-from-ground animation. Enemy is buried below TargetGroundZ and lerps up over RiseDuration. */
 	void StartRiseFromGround(float TargetGroundZ);
 
+	/** Start a short emergence from a nearby wall surface into the arena. */
+	void StartEmergeFromWall(const FVector& TargetLocation, const FVector& WallNormal);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -195,12 +222,22 @@ protected:
 	static constexpr float TouchDamageCooldown = 0.5f;
 
 private:
+	void RefreshCombatHitZoneState();
+	ET66HitZoneType ResolveHitZoneType(const UPrimitiveComponent* HitComponent, ET66HitZoneType PreferredZone) const;
+	float GetHitZoneDamageMultiplier(ET66HitZoneType HitZoneType) const;
+
 	// Safety/perf: avoid per-enemy per-frame scans for safe zones.
 	float SafeZoneCheckAccumSeconds = 0.f;
 	/** Safe-zone check runs every this many seconds (perf: was 0.25, then 0.5; 1.0 reduces N×M cost). */
 	float SafeZoneCheckIntervalSeconds = 1.0f;
 	bool bCachedInsideSafeZone = false;
 	FVector CachedSafeZoneEscapeDir = FVector::ZeroVector;
+	FVector CachedSafeZoneCenter = FVector::ZeroVector;
+	float CachedSafeZoneRadius = 0.f;
+	FVector CachedSafeZoneLoiterDir = FVector::ZeroVector;
+	float SafeZoneLoiterDirRefreshAccum = 0.f;
+	static constexpr float SafeZoneLoiterDirRefreshInterval = 0.85f;
+	static constexpr float SafeZoneLoiterMoveScale = 0.35f;
 
 	bool bBaseTuningInitialized = false;
 	bool bStageScalingApplied = false;
@@ -241,9 +278,13 @@ private:
 
 	/** Rise-from-ground animation state. */
 	bool bRisingFromGround = false;
+	bool bEmergingFromWall = false;
 	float RiseStartZ = 0.f;
 	float RiseTargetZ = 0.f;
 	float RiseElapsed = 0.f;
+	FVector WallEmergeStartLocation = FVector::ZeroVector;
+	FVector WallEmergeTargetLocation = FVector::ZeroVector;
+	float WallEmergeElapsed = 0.f;
 	static constexpr float RiseDuration = 0.6f;
 	static constexpr float BuryDepth = 200.f;
 

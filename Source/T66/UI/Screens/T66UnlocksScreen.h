@@ -61,6 +61,7 @@ private:
 
 	FReply HandleCategoryClicked(EUnlockCategory Category);
 	FReply HandleBackClicked();
+	FReply HandleOpenSnakeClicked();
 
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);

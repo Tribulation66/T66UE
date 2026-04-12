@@ -2,6 +2,8 @@
 
 #include "UI/Style/T66Style.h"
 #include "UI/Style/T66ButtonVisuals.h"
+#include "UI/Style/T66LegacyUIBrushAccess.h"
+#include "UI/Style/T66LegacyUIFontAccess.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "T66.h"
 
@@ -32,7 +34,6 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Fonts/CompositeFont.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
 
@@ -59,7 +60,7 @@ const FMargin FT66Style::Tokens::ButtonPaddingPressed(12.f, 5.f, 12.f, 3.f);
 namespace
 {
 	static ET66UITheme GActiveUITheme = ET66UITheme::Dota;
-	static const FString GDotaGeneratedSourceDir = FPaths::ProjectContentDir() / TEXT("SourceAssets/UI/Dota/Generated");
+	static ET66UIFontPreset GActiveUIFontPreset = ET66UIFontPreset::Current;
 
 	// Keep recent old style sets alive so existing Slate widgets' brush/style
 	// raw pointers remain valid until the UI is rebuilt with fresh widgets.
@@ -135,248 +136,15 @@ namespace
 	static TObjectPtr<UMaterialInterface> GButtonGlowMaterial = nullptr;
 	static bool bCheckedButtonGlowMaterial = false;
 
-	enum class ET66StyleButtonPlateType : uint8
-	{
-		Neutral,
-		Primary,
-		Danger,
-	};
-
-	struct FT66OptionalTextureBrush
-	{
-		TStrongObjectPtr<UTexture2D> ImportedTexture;
-		TStrongObjectPtr<UTexture2D> FileTexture;
-		TSharedPtr<FSlateBrush> Brush;
-		bool bChecked = false;
-
-		UTexture2D* GetTexture() const
-		{
-			if (ImportedTexture.IsValid())
-			{
-				return ImportedTexture.Get();
-			}
-
-			return FileTexture.IsValid() ? FileTexture.Get() : nullptr;
-		}
-	};
-
 	const FSlateBrush* GetWhiteBrush()
 	{
 		return FCoreStyle::Get().GetBrush("WhiteBrush");
 	}
 
-	FSlateBrush MakeNineSliceBrush(UTexture2D* Texture, const FMargin& Margin)
+	T66LegacyUIBrushAccess::FOptionalTextureBrush& GetInventorySlotEntry()
 	{
-		FSlateBrush Brush;
-		const bool bUseImageDraw =
-			FMath::IsNearlyZero(Margin.Left) &&
-			FMath::IsNearlyZero(Margin.Top) &&
-			FMath::IsNearlyZero(Margin.Right) &&
-			FMath::IsNearlyZero(Margin.Bottom);
-		Brush.DrawAs = bUseImageDraw ? ESlateBrushDrawType::Image : ESlateBrushDrawType::Box;
-		Brush.Tiling = ESlateBrushTileType::NoTile;
-		Brush.SetResourceObject(Texture);
-		Brush.TintColor = FSlateColor(FLinearColor::White);
-		Brush.ImageSize = FVector2D(1.f, 1.f);
-		Brush.Margin = Margin;
-		return Brush;
-	}
-
-	UTexture2D* LoadOptionalTexture(
-		FT66OptionalTextureBrush& Entry,
-		const TCHAR* ImportedAssetPath,
-		const FString& FallbackFilePath,
-		const FMargin& Margin)
-	{
-		UTexture2D* Texture = Entry.GetTexture();
-		if (Entry.Brush.IsValid())
-		{
-			if (Texture)
-			{
-				if (Entry.Brush->GetResourceObject() != Texture)
-				{
-					Entry.Brush->SetResourceObject(Texture);
-				}
-				return Texture;
-			}
-
-			Entry.Brush.Reset();
-		}
-
-		if (!Entry.bChecked)
-		{
-			Entry.bChecked = true;
-			if (ImportedAssetPath && *ImportedAssetPath)
-			{
-				Entry.ImportedTexture.Reset(LoadObject<UTexture2D>(nullptr, ImportedAssetPath));
-				if (Entry.ImportedTexture.IsValid())
-				{
-					Entry.ImportedTexture->Filter = TextureFilter::TF_Trilinear;
-					Entry.ImportedTexture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-					Entry.ImportedTexture->NeverStream = true;
-				}
-			}
-
-			Texture = Entry.GetTexture();
-			if (!Texture && !FallbackFilePath.IsEmpty() && FPaths::FileExists(FallbackFilePath))
-			{
-				Texture = FImageUtils::ImportFileAsTexture2D(FallbackFilePath);
-				if (Texture)
-				{
-					Texture->SRGB = true;
-					Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-					Texture->NeverStream = true;
-					Texture->Filter = TextureFilter::TF_Trilinear;
-					Texture->CompressionSettings = TC_EditorIcon;
-					Texture->UpdateResource();
-					Entry.FileTexture.Reset(Texture);
-				}
-			}
-
-			Texture = Entry.GetTexture();
-			if (Texture)
-			{
-				Entry.Brush = MakeShared<FSlateBrush>(MakeNineSliceBrush(Texture, Margin));
-			}
-		}
-
-		return Entry.GetTexture();
-	}
-
-	const FSlateBrush* ResolveOptionalTextureBrush(
-		FT66OptionalTextureBrush& Entry,
-		const TCHAR* ImportedAssetPath,
-		const FString& FallbackFilePath,
-		const FMargin& Margin)
-	{
-		LoadOptionalTexture(Entry, ImportedAssetPath, FallbackFilePath, Margin);
-		return Entry.Brush.IsValid() ? Entry.Brush.Get() : nullptr;
-	}
-
-	FT66OptionalTextureBrush& GetButtonPlateEntry(ET66StyleButtonPlateType Type)
-	{
-		static FT66OptionalTextureBrush Neutral;
-		static FT66OptionalTextureBrush Primary;
-		static FT66OptionalTextureBrush Danger;
-
-		switch (Type)
-		{
-		case ET66StyleButtonPlateType::Primary:
-			return Primary;
-		case ET66StyleButtonPlateType::Danger:
-			return Danger;
-		case ET66StyleButtonPlateType::Neutral:
-		default:
-			return Neutral;
-		}
-	}
-
-	const TCHAR* GetButtonPlateAssetPath(ET66StyleButtonPlateType Type)
-	{
-		switch (Type)
-		{
-		case ET66StyleButtonPlateType::Primary:
-			return TEXT("/Game/UI/Assets/T_UI_DotaPrimaryButtonPlate.T_UI_DotaPrimaryButtonPlate");
-		case ET66StyleButtonPlateType::Danger:
-			return TEXT("/Game/UI/Assets/T_UI_DotaDangerButtonPlate.T_UI_DotaDangerButtonPlate");
-		case ET66StyleButtonPlateType::Neutral:
-		default:
-			return TEXT("/Game/UI/Assets/T_UI_DotaNeutralButtonPlate.T_UI_DotaNeutralButtonPlate");
-		}
-	}
-
-	FString GetButtonPlateFallbackPath(ET66StyleButtonPlateType Type)
-	{
-		switch (Type)
-		{
-		case ET66StyleButtonPlateType::Primary:
-			return GDotaGeneratedSourceDir / TEXT("dota_primary_button_plate.png");
-		case ET66StyleButtonPlateType::Danger:
-			return GDotaGeneratedSourceDir / TEXT("dota_danger_button_plate.png");
-		case ET66StyleButtonPlateType::Neutral:
-		default:
-			return GDotaGeneratedSourceDir / TEXT("dota_neutral_button_plate.png");
-		}
-	}
-
-	const FSlateBrush* GetButtonPlateBrush(ET66StyleButtonPlateType Type)
-	{
-		const FMargin Margin = (Type == ET66StyleButtonPlateType::Primary)
-			? FMargin(0.f)
-			: FMargin(0.22f, 0.32f, 0.22f, 0.32f);
-		return ResolveOptionalTextureBrush(
-			GetButtonPlateEntry(Type),
-			GetButtonPlateAssetPath(Type),
-			GetButtonPlateFallbackPath(Type),
-			Margin);
-	}
-
-	FT66OptionalTextureBrush& GetInventorySlotEntry()
-	{
-		static FT66OptionalTextureBrush InventorySlot;
+		static T66LegacyUIBrushAccess::FOptionalTextureBrush InventorySlot;
 		return InventorySlot;
-	}
-
-	FString ResolveRadianceFontPath()
-	{
-		const FString SourceAssetsPath = FPaths::ProjectDir() / TEXT("SourceAssets/radiance.ttf");
-		if (FPaths::FileExists(SourceAssetsPath))
-		{
-			return SourceAssetsPath;
-		}
-
-		return FPaths::ProjectContentDir() / TEXT("Slate/Fonts/radiance.ttf");
-	}
-
-	FString ResolveReaverBoldFontPath()
-	{
-		const FString SourceAssetsPath = FPaths::ProjectDir() / TEXT("SourceAssets/Reaver-Bold.woff");
-		if (FPaths::FileExists(SourceAssetsPath))
-		{
-			return SourceAssetsPath;
-		}
-
-		const FString ContentWoffFallbackPath = FPaths::ProjectContentDir() / TEXT("Slate/Fonts/Reaver-Bold.woff");
-		if (FPaths::FileExists(ContentWoffFallbackPath))
-		{
-			return ContentWoffFallbackPath;
-		}
-
-		const FString ContentTtfFallbackPath = FPaths::ProjectContentDir() / TEXT("Slate/Fonts/Reaver-Bold.ttf");
-		if (FPaths::FileExists(ContentTtfFallbackPath))
-		{
-			return ContentTtfFallbackPath;
-		}
-
-		return FString();
-	}
-
-	bool IsBoldWeight(const TCHAR* Weight)
-	{
-		if (Weight == nullptr)
-		{
-			return false;
-		}
-
-		return FCString::Stricmp(Weight, TEXT("Bold")) == 0
-			|| FCString::Stricmp(Weight, TEXT("Black")) == 0
-			|| FCString::Stricmp(Weight, TEXT("Semibold")) == 0
-			|| FCString::Stricmp(Weight, TEXT("SemiBold")) == 0;
-	}
-
-	FSlateFontInfo MakeFontFromAbsoluteFile(const FString& Path, int32 Size)
-	{
-		if (!FPaths::FileExists(Path))
-		{
-			return FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
-		}
-
-		TSharedPtr<const FCompositeFont> CompositeFont = MakeShared<FStandaloneCompositeFont>(
-			NAME_None,
-			Path,
-			EFontHinting::Default,
-			EFontLoadingPolicy::LazyLoad);
-		return FSlateFontInfo(CompositeFont, static_cast<float>(Size));
 	}
 
 	TSharedRef<SWidget> MakeLayeredSurface(
@@ -607,41 +375,44 @@ namespace
 	static bool GForceBoldFont = false; // When true, use bold variant for all text (T66Bold console command)
 
 	static const TCHAR* GThemeFontPaths[] = {
-		TEXT("New Fonts/Caesar_Dressing/CaesarDressing-Regular.ttf"),   // 0 Caesar Dressing
-		TEXT("New Fonts/Cinzel/static/Cinzel-Regular.ttf"),             // 1 Cinzel
-		TEXT("New Fonts/Cormorant_SC/CormorantSC-Regular.ttf"),         // 2 Cormorant SC
-		TEXT("New Fonts/Germania_One/GermaniaOne-Regular.ttf"),         // 3 Germania One
-		TEXT("New Fonts/Grenze/Grenze-Regular.ttf"),                    // 4 Grenze
-		TEXT("New Fonts/Alagard/alagard.ttf"),                         // 5 Alagard
-		TEXT("New Fonts/Ransom/ransom.ttf"),                           // 6 Ransom
+		TEXT("Caesar_Dressing/CaesarDressing-Regular.ttf"),   // 0 Caesar Dressing
+		TEXT("Cinzel/static/Cinzel-Regular.ttf"),             // 1 Cinzel
+		TEXT("Cormorant_SC/CormorantSC-Regular.ttf"),         // 2 Cormorant SC
+		TEXT("Germania_One/GermaniaOne-Regular.ttf"),         // 3 Germania One
+		TEXT("Grenze/Grenze-Regular.ttf"),                    // 4 Grenze
+		TEXT("Alagard/alagard.ttf"),                          // 5 Alagard
+		TEXT("Ransom/ransom.ttf"),                            // 6 Ransom
 	};
 	// Bold variant per font (nullptr = no bold asset, use Regular). Caesar Dressing, Germania One, Alagard, and Ransom have no bold.
 	static const TCHAR* GThemeFontPathsBold[] = {
 		nullptr,                                                       // 0 Caesar Dressing
-		TEXT("New Fonts/Cinzel/static/Cinzel-Bold.ttf"),               // 1 Cinzel
-		TEXT("New Fonts/Cormorant_SC/CormorantSC-Bold.ttf"),            // 2 Cormorant SC
+		TEXT("Cinzel/static/Cinzel-Bold.ttf"),                         // 1 Cinzel
+		TEXT("Cormorant_SC/CormorantSC-Bold.ttf"),                     // 2 Cormorant SC
 		nullptr,                                                       // 3 Germania One
-		TEXT("New Fonts/Grenze/Grenze-Bold.ttf"),                      // 4 Grenze
+		TEXT("Grenze/Grenze-Bold.ttf"),                                // 4 Grenze
 		nullptr,                                                       // 5 Alagard
 		nullptr,                                                       // 6 Ransom
 	};
 	static const int32 GThemeFontCount = UE_ARRAY_COUNT(GThemeFontPaths);
 
-	const FString& FontsDir()
+	FSlateFontInfo MakeCurrentUIFont(const TCHAR* Weight, int32 Size)
 	{
-		static const FString Dir = FPaths::ProjectContentDir() / TEXT("Slate/Fonts");
-		return Dir;
+		if (T66LegacyUIFontAccess::IsBoldWeight(Weight))
+		{
+			const FString ReaverPath = T66LegacyUIFontAccess::ResolveReaverBoldFontPath();
+			if (!ReaverPath.IsEmpty())
+			{
+				return T66LegacyUIFontAccess::MakeFontFromAbsoluteFile(ReaverPath, Size);
+			}
+		}
+
+		return T66LegacyUIFontAccess::MakeFontFromAbsoluteFile(T66LegacyUIFontAccess::ResolveRadianceFontPath(), Size);
 	}
 
-	// Single TTF from Content/Slate/Fonts (path relative to FontsDir).
-	FSlateFontInfo MakeFontFromFile(const TCHAR* RelativePath, int32 Size)
+	FSlateFontInfo MakeFontForPreset(ET66UIFontPreset Preset, const TCHAR* Weight, int32 Size)
 	{
-		const FString Path = FontsDir() / RelativePath;
-		if (!FPaths::FileExists(Path))
-			return FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
-		TSharedPtr<const FCompositeFont> CompositeFont = MakeShared<FStandaloneCompositeFont>(
-			NAME_None, Path, EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
-		return FSlateFontInfo(CompositeFont, static_cast<float>(Size));
+		(void)Preset;
+		return MakeCurrentUIFont(Weight, Size);
 	}
 
 	// All UI font tokens use the selected font from GThemeFontPaths. Bold uses GThemeFontPathsBold when available.
@@ -657,11 +428,10 @@ namespace
 		const TCHAR* Path = GThemeFontPaths[Idx];
 		if (bWantBold && GThemeFontPathsBold[Idx] != nullptr)
 		{
-			const FString BoldPath = FontsDir() / GThemeFontPathsBold[Idx];
-			if (FPaths::FileExists(BoldPath))
+			if (!T66LegacyUIFontAccess::ResolveThemeFontPath(GThemeFontPathsBold[Idx]).IsEmpty())
 				Path = GThemeFontPathsBold[Idx];
 		}
-		return MakeFontFromFile(Path, Size);
+		return T66LegacyUIFontAccess::MakeFontFromAbsoluteFile(T66LegacyUIFontAccess::ResolveThemeFontPath(Path), Size);
 	}
 
 	int32 AdvanceToNextFontIndex()
@@ -852,6 +622,29 @@ ET66UITheme FT66Style::GetActiveTheme()
 	return ET66UITheme::Dota;
 }
 
+void FT66Style::SetActiveFontPreset(ET66UIFontPreset InPreset)
+{
+	const ET66UIFontPreset ResolvedPreset = ET66UIFontPreset::Current;
+	(void)InPreset;
+	if (GActiveUIFontPreset == ResolvedPreset)
+	{
+		return;
+	}
+
+	GActiveUIFontPreset = ResolvedPreset;
+	if (StyleInstance.IsValid())
+	{
+		FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
+		RetainOldStyleSet(MoveTemp(StyleInstance));
+	}
+	Initialize();
+}
+
+ET66UIFontPreset FT66Style::GetActiveFontPreset()
+{
+	return ET66UIFontPreset::Current;
+}
+
 bool FT66Style::IsDotaTheme()
 {
 	return true;
@@ -859,16 +652,7 @@ bool FT66Style::IsDotaTheme()
 
 FSlateFontInfo FT66Style::MakeFont(const TCHAR* Weight, int32 Size)
 {
-	if (IsBoldWeight(Weight))
-	{
-		const FString ReaverPath = ResolveReaverBoldFontPath();
-		if (!ReaverPath.IsEmpty())
-		{
-			return MakeFontFromAbsoluteFile(ReaverPath, Size);
-		}
-	}
-
-	return MakeFontFromAbsoluteFile(ResolveRadianceFontPath(), Size);
+	return MakeFontForPreset(GActiveUIFontPreset, Weight, Size);
 }
 
 FLinearColor FT66Style::Background() { return FLinearColor(2.f / 255.f, 3.f / 255.f, 6.f / 255.f, 1.0f); }
@@ -1378,7 +1162,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 		? Params.DynamicLabel
 		: TAttribute<FText>(Params.Label);
 
-	const bool bUseBoldButtonText = IsBoldWeight(*Params.FontWeight);
+	const bool bUseBoldButtonText = T66LegacyUIFontAccess::IsBoldWeight(*Params.FontWeight);
 	FSlateFontInfo TextFont = (Params.FontSize > 0)
 		? Tokens::FontBold(Params.FontSize)
 		: TxtStyle.Font;
@@ -1874,21 +1658,21 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 			}
 		});
 
-		ET66StyleButtonPlateType PlateType = ET66StyleButtonPlateType::Neutral;
+		T66LegacyUIBrushAccess::ET66DotaPlateBrushKind PlateType = T66LegacyUIBrushAccess::ET66DotaPlateBrushKind::Neutral;
 		if (Params.Type == ET66ButtonType::Primary || Params.Type == ET66ButtonType::Success || Params.Type == ET66ButtonType::ToggleActive)
 		{
-			PlateType = ET66StyleButtonPlateType::Primary;
+			PlateType = T66LegacyUIBrushAccess::ET66DotaPlateBrushKind::Primary;
 		}
 		else if (Params.Type == ET66ButtonType::Danger)
 		{
-			PlateType = ET66StyleButtonPlateType::Danger;
+			PlateType = T66LegacyUIBrushAccess::ET66DotaPlateBrushKind::Danger;
 		}
 
 		const bool bUseButtonPlateOverlay = Params.bUseDotaPlateOverlay;
 		const FSlateBrush* PlateBrush = nullptr;
 		if (bUseButtonPlateOverlay)
 		{
-			PlateBrush = Params.DotaPlateOverrideBrush ? Params.DotaPlateOverrideBrush : GetButtonPlateBrush(PlateType);
+			PlateBrush = Params.DotaPlateOverrideBrush ? Params.DotaPlateOverrideBrush : T66LegacyUIBrushAccess::ResolveDotaButtonPlateBrush(PlateType);
 		}
 		const FLinearColor PlateNormalTint(1.00f, 1.00f, 1.00f, 1.0f);
 		const FLinearColor PlateHoverTint(1.05f, 1.05f, 1.05f, 1.0f);
@@ -2485,8 +2269,6 @@ TSharedRef<SWidget> FT66Style::MakeViewportCutoutFrame(const TSharedRef<SWidget>
 
 TSharedRef<SWidget> FT66Style::MakeSlotFrame(const TSharedRef<SWidget>& Content, const TAttribute<FSlateColor>& AccentColor, const FMargin& Padding)
 {
-	const FSlateBrush* SlotBrush = GetInventorySlotFrameBrush();
-
 	return SNew(SBorder)
 		.BorderImage(GetWhiteBrush())
 		.BorderBackgroundColor(FT66Style::SlotOuter())
@@ -2504,15 +2286,8 @@ TSharedRef<SWidget> FT66Style::MakeSlotFrame(const TSharedRef<SWidget>& Content,
 					.BorderImage(GetWhiteBrush())
 					.BorderBackgroundColor(FT66Style::SlotFill())
 					[
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SImage)
-							.Visibility(SlotBrush ? EVisibility::Visible : EVisibility::Collapsed)
-							.Image(SlotBrush)
-							.ColorAndOpacity(FLinearColor::White)
-						]
-						+ SOverlay::Slot()
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("NoBorder"))
 						.Padding(Padding)
 						[
 							Content
@@ -2656,15 +2431,6 @@ TSharedRef<SWidget> FT66Style::MakeMinimapFrame(const TSharedRef<SWidget>& Conte
 				.BorderBackgroundColor(FT66Style::Accent2())
 			]
 		];
-}
-
-const FSlateBrush* FT66Style::GetInventorySlotFrameBrush()
-{
-	return ResolveOptionalTextureBrush(
-		GetInventorySlotEntry(),
-		TEXT("/Game/UI/Assets/T_UI_DotaInventorySlotFrame.T_UI_DotaInventorySlotFrame"),
-		GDotaGeneratedSourceDir / TEXT("dota_inventory_slot_frame.png"),
-		FMargin(0.22f));
 }
 
 TSharedRef<SWidget> FT66Style::MakeResponsiveRoot(

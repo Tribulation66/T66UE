@@ -15,6 +15,39 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
 
+namespace
+{
+	APawn* T66ResolveClosestLoanSharkTarget(const AActor* ContextActor)
+	{
+		const UWorld* World = ContextActor ? ContextActor->GetWorld() : nullptr;
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		const FVector Origin = ContextActor->GetActorLocation();
+		APawn* BestPawn = nullptr;
+		float BestDistSq = TNumericLimits<float>::Max();
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APawn* Pawn = It->Get() ? It->Get()->GetPawn() : nullptr;
+			if (!Pawn)
+			{
+				continue;
+			}
+
+			const float DistSq = FVector::DistSquared2D(Origin, Pawn->GetActorLocation());
+			if (DistSq < BestDistSq)
+			{
+				BestDistSq = DistSq;
+				BestPawn = Pawn;
+			}
+		}
+
+		return BestPawn;
+	}
+}
+
 AT66LoanShark::AT66LoanShark()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -91,7 +124,7 @@ void AT66LoanShark::Tick(float DeltaSeconds)
 	// If debt was paid off, GameMode will destroy us; still keep behavior safe.
 	UpdateTuningFromDebt();
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	APawn* PlayerPawn = T66ResolveClosestLoanSharkTarget(this);
 	if (!PlayerPawn) return;
 
 	// Safe zone rule: cannot enter NPC safe bubbles. If inside, run away.

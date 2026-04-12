@@ -20,13 +20,12 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
-#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -48,7 +47,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -100,6 +99,53 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 
 namespace
 {
+	static void EnsureGameplayActionHasDefaultKeyboardBinding(
+		APlayerController* PlayerController,
+		const FName ActionName,
+		const FKey DesiredKey)
+	{
+		UInputSettings* Settings = UInputSettings::GetInputSettings();
+		if (!Settings || !DesiredKey.IsValid())
+		{
+			return;
+		}
+
+		bool bActionAlreadyHasKeyboardBinding = false;
+		bool bDesiredKeyClaimedByAnotherKeyboardAction = false;
+
+		for (const FInputActionKeyMapping& Mapping : Settings->GetActionMappings())
+		{
+			if (!Mapping.Key.IsValid() || Mapping.Key.IsGamepadKey() || Mapping.Key.IsMouseButton())
+			{
+				continue;
+			}
+
+			if (Mapping.ActionName == ActionName)
+			{
+				bActionAlreadyHasKeyboardBinding = true;
+			}
+
+			if (Mapping.Key == DesiredKey && Mapping.ActionName != ActionName)
+			{
+				bDesiredKeyClaimedByAnotherKeyboardAction = true;
+			}
+		}
+
+		if (bActionAlreadyHasKeyboardBinding || bDesiredKeyClaimedByAnotherKeyboardAction)
+		{
+			return;
+		}
+
+		Settings->AddActionMapping(FInputActionKeyMapping(ActionName, DesiredKey));
+		Settings->SaveKeyMappings();
+		Settings->SaveConfig();
+
+		if (PlayerController && PlayerController->PlayerInput)
+		{
+			PlayerController->PlayerInput->ForceRebuildingKeyMaps(true);
+		}
+	}
+
 	static void MigrateLegacyMediaViewerTabBinding(APlayerController* PlayerController)
 	{
 		UInputSettings* Settings = UInputSettings::GetInputSettings();
@@ -157,6 +203,24 @@ namespace
 			PlayerController->PlayerInput->ForceRebuildingKeyMaps(true);
 		}
 	}
+
+	static bool CanUsePausedMediaViewer(const AT66PlayerController* PlayerController)
+	{
+		if (!PlayerController)
+		{
+			return false;
+		}
+
+		if (!PlayerController->IsPaused())
+		{
+			return true;
+		}
+
+		const UT66UIManager* LocalUIManager = PlayerController->GetUIManager();
+		return LocalUIManager
+			&& LocalUIManager->IsModalActive()
+			&& LocalUIManager->GetCurrentModalType() == ET66ScreenType::PauseMenu;
+	}
 }
 
 
@@ -169,6 +233,8 @@ UNiagaraSystem* AT66PlayerController::GetActiveJumpVFXSystem() const
 void AT66PlayerController::RestoreGameplayInputMode()
 {
 	// Classic gameplay: mouse rotates camera, cursor hidden.
+	bInventoryInspectOpen = false;
+	bInventoryInspectRestoreFreeCursor = false;
 	FInputModeGameOnly InputMode;
 	SetInputMode(InputMode);
 	bShowMouseCursor = false;
@@ -176,8 +242,65 @@ void AT66PlayerController::RestoreGameplayInputMode()
 	bEnableMouseOverEvents = false;
 	if (GameplayHUDWidget)
 	{
+		GameplayHUDWidget->SetInventoryInspectMode(false);
 		GameplayHUDWidget->SetInteractive(false);
 	}
+}
+
+void AT66PlayerController::SetInventoryInspectOpen(bool bOpen)
+{
+	if (!GameplayHUDWidget)
+	{
+		bInventoryInspectOpen = false;
+		bInventoryInspectRestoreFreeCursor = false;
+		return;
+	}
+
+	if (bOpen)
+	{
+		if (bInventoryInspectOpen)
+		{
+			return;
+		}
+
+		bInventoryInspectRestoreFreeCursor = bShowMouseCursor;
+		bInventoryInspectOpen = true;
+		GameplayHUDWidget->SetInventoryInspectMode(true);
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = true;
+		GameplayHUDWidget->SetInteractive(true);
+		return;
+	}
+
+	if (!bInventoryInspectOpen)
+	{
+		return;
+	}
+
+	bInventoryInspectOpen = false;
+	GameplayHUDWidget->SetInventoryInspectMode(false);
+
+	if (bInventoryInspectRestoreFreeCursor)
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = true;
+		GameplayHUDWidget->SetInteractive(true);
+	}
+	else
+	{
+		RestoreGameplayInputMode();
+	}
+
+	bInventoryInspectRestoreFreeCursor = false;
 }
 
 
@@ -219,6 +342,7 @@ void AT66PlayerController::SetupInputComponent()
 		InputComponent->BindAction(TEXT("Ultimate"), IE_Pressed, this, &AT66PlayerController::HandleUltimatePressed);
 		InputComponent->BindAction(TEXT("ToggleMediaViewer"), IE_Pressed, this, &AT66PlayerController::HandleToggleMediaViewerPressed);
 		InputComponent->BindAction(TEXT("OpenFullMap"), IE_Pressed, this, &AT66PlayerController::HandleOpenFullMapPressed);
+		InputComponent->BindAction(TEXT("InspectInventory"), IE_Pressed, this, &AT66PlayerController::HandleInspectInventoryPressed);
 		InputComponent->BindAction(TEXT("ToggleGamerMode"), IE_Pressed, this, &AT66PlayerController::HandleToggleGamerModePressed);
 		InputComponent->BindAction(TEXT("RestartRun"), IE_Pressed, this, &AT66PlayerController::HandleRestartRunPressed);
 
@@ -238,6 +362,7 @@ void AT66PlayerController::SetupInputComponent()
 
 		// Old builds used CapsLock here; migrate the legacy default to Tab without touching custom rebinds.
 		MigrateLegacyMediaViewerTabBinding(this);
+		EnsureGameplayActionHasDefaultKeyboardBinding(this, FName(TEXT("InspectInventory")), EKeys::I);
 
 #if !UE_BUILD_SHIPPING
 		// Dev console overlay: Enter to open (close via Esc).
@@ -276,7 +401,7 @@ void AT66PlayerController::HandleTogglePowerPressed()
 void AT66PlayerController::HandleToggleMediaViewerPressed()
 {
 	if (!IsGameplayLevel()) return;
-	if (IsPaused()) return;
+	if (!CanUsePausedMediaViewer(this)) return;
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	if (UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr)
 	{
@@ -297,6 +422,11 @@ void AT66PlayerController::HandleOpenFullMapPressed()
 	if (IsPaused()) return;
 	// Full map is a HUD overlay (non-pausing). Toggle with the OpenFullMap binding (default: M).
 	if (!GameplayHUDWidget) return;
+
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	// Allow closing even though CanUseCombatMouseInput() is false while the map is open.
 	if (GameplayHUDWidget->IsFullMapOpen())
@@ -321,6 +451,35 @@ void AT66PlayerController::HandleOpenFullMapPressed()
 	{
 		RestoreGameplayInputMode();
 	}
+}
+
+void AT66PlayerController::HandleInspectInventoryPressed()
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	if (!GameplayHUDWidget) return;
+
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+		return;
+	}
+
+	const bool bHasBlockingOverlay =
+		(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
+		|| (GamblerOverlayWidget && GamblerOverlayWidget->IsInViewport())
+		|| IsCircusOverlayOpen()
+		|| (CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
+		|| (IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport())
+		|| (VendorOverlayWidget && VendorOverlayWidget->IsInViewport())
+		|| (CollectorOverlayWidget && CollectorOverlayWidget->IsInViewport())
+		|| bWorldDialogueOpen;
+	if (bHasBlockingOverlay)
+	{
+		return;
+	}
+
+	SetInventoryInspectOpen(true);
 }
 
 
@@ -373,7 +532,7 @@ void AT66PlayerController::HandleToggleHUDPressed()
 void AT66PlayerController::HandleToggleTikTokPressed()
 {
 	if (!IsGameplayLevel()) return;
-	if (IsPaused()) return;
+	if (!CanUsePausedMediaViewer(this)) return;
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	if (UT66PlayerSettingsSubsystem* PS = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr)
 	{
@@ -389,7 +548,7 @@ void AT66PlayerController::HandleToggleTikTokPressed()
 void AT66PlayerController::HandleTikTokPrevPressed()
 {
 	if (!IsGameplayLevel()) return;
-	if (IsPaused()) return;
+	if (!CanUsePausedMediaViewer(this)) return;
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	if (UT66MediaViewerSubsystem* MV = GI ? GI->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
 	{
@@ -404,7 +563,7 @@ void AT66PlayerController::HandleTikTokPrevPressed()
 void AT66PlayerController::HandleTikTokNextPressed()
 {
 	if (!IsGameplayLevel()) return;
-	if (IsPaused()) return;
+	if (!CanUsePausedMediaViewer(this)) return;
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	if (UT66MediaViewerSubsystem* MV = GI ? GI->GetSubsystem<UT66MediaViewerSubsystem>() : nullptr)
 	{
@@ -604,7 +763,7 @@ void AT66PlayerController::HandleJumpPressed()
 		const bool bOnGround = CMC ? CMC->IsMovingOnGround() : false;
 		const bool bFalling = CMC ? CMC->IsFalling() : false;
 		const FString MoveMode = CMC ? StaticEnum<EMovementMode>()->GetNameStringByValue(static_cast<int64>(CMC->MovementMode)) : TEXT("N/A");
-		UE_LOG(LogT66PlayerInput, Warning, TEXT("[JUMP] Space pressed: JumpCount=%d/%d OnGround=%d Falling=%d MoveMode=%s Z=%.1f"),
+		UE_LOG(LogT66PlayerInput, Verbose, TEXT("[JUMP] Space pressed: JumpCount=%d/%d OnGround=%d Falling=%d MoveMode=%s Z=%.1f"),
 			JumpCurrent, JumpMax, bOnGround ? 1 : 0, bFalling ? 1 : 0, *MoveMode, MyCharacter->GetActorLocation().Z);
 
 		MyCharacter->Jump();
@@ -675,8 +834,8 @@ void AT66PlayerController::HandleZoom(float Value)
 	if (Hero && Hero->CameraBoom)
 	{
 		const float ZoomSpeed = 25.f;
-		const float MinLength = 200.f;
-		const float MaxLength = 2400.f;  // Max zoom-out (scroll wheel limit; doubled from 1200)
+		const float MinLength = 1200.f;  // Keep the current default gameplay view as the closest zoom.
+		const float MaxLength = 2400.f;  // Start at the fully zoomed-out view and do not allow any farther zoom.
 		float NewLength = Hero->CameraBoom->TargetArmLength - Value * ZoomSpeed;
 		NewLength = FMath::Clamp(NewLength, MinLength, MaxLength);
 		Hero->CameraBoom->TargetArmLength = NewLength;

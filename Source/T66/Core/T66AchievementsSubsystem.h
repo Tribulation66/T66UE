@@ -19,7 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAchievementsStateChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAchievementsUnlocked, const TArray<FName>&, NewlyUnlockedIDs);
 
 /**
- * Persistent achievements + Achievement Coins (AC) wallet.
+ * Persistent achievements + Chad Coupons (CC) wallet.
  * Lives at GameInstance scope (lifetime progression, not tied to a single run slot).
  */
 UCLASS()
@@ -58,15 +58,27 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Achievements")
 	FOnAchievementsUnlocked AchievementsUnlocked;
 
-	/** Current AC wallet balance. */
+	/** Current Chad Coupons balance. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
+	int32 GetChadCouponBalance() const;
+
+	/** Spend Chad Coupons. Returns true if balance was sufficient and amount was deducted. Persists profile. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	bool SpendChadCoupons(int32 Amount);
+
+	/** Add Chad Coupons directly. */
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	void AddChadCoupons(int32 Amount);
+
+	/** Legacy wallet accessor kept for compatibility. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
 	int32 GetAchievementCoinsBalance() const;
 
-	/** Spend AC. Returns true if balance was sufficient and amount was deducted. Persists profile. */
+	/** Legacy wallet spend kept for compatibility. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	bool SpendAchievementCoins(int32 Amount);
 
-	/** Add AC directly (used by frontend conversion flows). */
+	/** Legacy wallet add kept for compatibility. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void AddAchievementCoins(int32 Amount);
 
@@ -114,9 +126,17 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
 	TArray<FAchievementData> GetAchievementsForTier(ET66AchievementTier Tier) const;
 
+	/** Get achievements filtered by category. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
+	TArray<FAchievementData> GetAchievementsForCategory(ET66AchievementCategory Category) const;
+
 	/** True if an achievement has been claimed already. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
 	bool IsAchievementClaimed(FName AchievementID) const;
+
+	/** True if a claimed special achievement grants this skin to the requested entity. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
+	bool DoesClaimedAchievementGrantSkin(ET66AchievementRewardEntityType EntityType, FName EntityID, FName SkinID) const;
 
 	/**
 	 * Gameplay event: an enemy died.
@@ -174,13 +194,13 @@ public:
 	bool IsLabUnlockedEnemy(FName EnemyOrBossID) const;
 
 	/**
-	 * Claim an unlocked achievement reward (adds AC to wallet).
+	 * Claim an unlocked achievement reward (adds Chad Coupons to wallet).
 	 * Returns true if claimed.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	bool TryClaimAchievement(FName AchievementID);
 
-	/** Debug/dev: reset all achievements and AC to zero. */
+	/** Debug/dev: reset all achievements and Chad Coupons to zero. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void ResetProfileProgress();
 
@@ -203,6 +223,10 @@ public:
 	/** Union: stages cleared with a specific hero (lifetime / profile). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Union")
 	int32 GetHeroUnityStagesCleared(FName HeroID) const;
+
+	/** Lifetime stage clears across the account profile. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetLifetimeStagesCleared() const;
 
 	/** Union: increment stage-clears for a companion (e.g., when the player clears a stage with them). */
 	UFUNCTION(BlueprintCallable, Category = "Union")
@@ -240,6 +264,14 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
 	ET66AccountMedalTier GetCompanionHighestMedal(FName CompanionID) const;
 
+	/** Lifetime cumulative score earned with a specific hero. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetHeroCumulativeScore(FName HeroID) const;
+
+	/** Lifetime cumulative score earned with a specific companion. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetCompanionCumulativeScore(FName CompanionID) const;
+
 	/** Increment games-played for a hero. */
 	UFUNCTION(BlueprintCallable, Category = "Account")
 	void AddHeroGamesPlayed(FName HeroID, int32 DeltaGamesPlayed = 1);
@@ -247,6 +279,14 @@ public:
 	/** Increment games-played for a companion. */
 	UFUNCTION(BlueprintCallable, Category = "Account")
 	void AddCompanionGamesPlayed(FName CompanionID, int32 DeltaGamesPlayed = 1);
+
+	/** Add run score to a hero's lifetime cumulative total. */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void AddHeroCumulativeScore(FName HeroID, int32 DeltaScore);
+
+	/** Add run score to a companion's lifetime cumulative total. */
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void AddCompanionCumulativeScore(FName CompanionID, int32 DeltaScore);
 
 	/** Record a full-clear medal for a hero based on the cleared difficulty. */
 	UFUNCTION(BlueprintCallable, Category = "Account")

@@ -48,34 +48,9 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	FText TitleText = Loc ? Loc->GetText_SaveSlots() : NSLOCTEXT("T66.SaveSlots", "Title", "SAVE SLOTS");
 	FText EmptyText = Loc ? Loc->GetText_EmptySlot() : NSLOCTEXT("T66.SaveSlots", "EmptySlot", "EMPTY SLOT");
 	FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
-	FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	FText LoadText = Loc ? Loc->GetText_LoadGame() : NSLOCTEXT("T66.MainMenu", "LoadGame", "LOAD GAME");
 	const FText PrevText = NSLOCTEXT("T66.SaveSlots", "PrevPage", "PREV");
 	const FText NextText = NSLOCTEXT("T66.SaveSlots", "NextPage", "NEXT");
-
-	// Main Menu–style background
-	if (TexPool)
-	{
-		static const TArray<FSoftObjectPath> MainMenuBgPaths = {
-			FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed"))
-		};
-		TexPool->EnsureTexturesLoadedSync(MainMenuBgPaths);
-	}
-	if (!SaveSlotsBackgroundBrush.IsValid())
-	{
-		SaveSlotsBackgroundBrush = MakeShared<FSlateBrush>();
-		SaveSlotsBackgroundBrush->DrawAs = ESlateBrushDrawType::Box;
-		SaveSlotsBackgroundBrush->Tiling = ESlateBrushTileType::NoTile;
-		SaveSlotsBackgroundBrush->SetResourceObject(nullptr);
-	}
-	if (TexPool)
-	{
-		const TSoftObjectPtr<UTexture2D> BgSoft(FSoftObjectPath(TEXT("/Game/UI/MainMenu/MMRed.MMRed")));
-		if (UTexture2D* Cached = TexPool->GetLoadedTexture(BgSoft))
-		{
-			SaveSlotsBackgroundBrush->SetResourceObject(Cached);
-		}
-	}
 
 	SlotHeroPortraitBrushes.SetNum(SlotsPerPage);
 	SlotIdolBrushes.SetNum(SlotsPerPage);
@@ -104,7 +79,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 	const float PortraitSize = 80.f;
 	const bool bHasVisibleSaves = VisibleSlotIndices.Num() > 0;
 
-	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, EmptyText, PreviewText, LoadText, PortraitSize, bIsPartyResumeFlow, bHostCanStartPartyLoad](
+	auto MakeSlotCard = [this, SaveSub, Loc, GI, TexPool, EmptyText, LoadText, PortraitSize, bHostCanStartPartyLoad](
 		int32 LocalIndex) -> TSharedRef<SWidget>
 	{
 		const int32 SlotIndex = GetVisibleSlotIndexForPageEntry(LocalIndex);
@@ -138,6 +113,11 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			}
 			for (int32 k = 0; k < FMath::Min(Idols.Num(), UT66IdolManagerSubsystem::MaxEquippedIdolSlots); ++k)
 			{
+				if (Idols[k].IsNone())
+				{
+					continue;
+				}
+
 				FIdolData IdolData;
 				const int32 TierValue = IdolTiers.IsValidIndex(k)
 					? FMath::Clamp(static_cast<int32>(IdolTiers[k]), 1, UT66IdolManagerSubsystem::MaxIdolLevel)
@@ -192,7 +172,6 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				];
 		}
 
-		const bool bCanPreview = bOccupied && bSlotVisible && !bIsPartyResumeFlow;
 		const bool bCanLoad = bOccupied && bSlotVisible && bHostCanStartPartyLoad;
 
 		TSharedRef<SVerticalBox> CardContent = SNew(SVerticalBox)
@@ -221,11 +200,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 0.f)
 				[
-					FT66Style::MakeButton(FT66ButtonParams(PreviewText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandlePreviewClicked, SlotIndex), ET66ButtonType::Neutral).SetMinWidth(90.f).SetEnabled(bCanPreview))
-				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(4.f, 0.f)
-				[
-					FT66Style::MakeButton(FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), ET66ButtonType::Success).SetMinWidth(90.f).SetEnabled(bCanLoad))
+					FT66Style::MakeButton(FT66ButtonParams(LoadText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleLoadClicked, SlotIndex), ET66ButtonType::Success).SetMinWidth(180.f).SetEnabled(bCanLoad))
 				]
 			];
 
@@ -249,26 +224,25 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				]);
 	};
 
-	TSharedRef<SWidget> BgUnderlay = SNew(SBorder).BorderBackgroundColor(FT66Style::Tokens::Bg);
+	TSharedRef<SWidget> BgUnderlay =
+		SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+		.BorderBackgroundColor(FLinearColor(0.01f, 0.01f, 0.015f, 1.0f));
 	const float TopInset = UIManager ? UIManager->GetFrontendTopBarContentHeight() : 0.f;
+	const float TopGap = (UIManager && UIManager->IsFrontendTopBarVisible()) ? 18.f : 0.f;
 	const bool bShowBackButton = !(UIManager && UIManager->IsFrontendTopBarVisible());
 
 	const FText PageText = FText::Format(
 		NSLOCTEXT("T66.SaveSlots", "PageFormat", "Page {0} / {1}"),
 		FText::AsNumber(CurrentPage + 1), FText::AsNumber(TotalPages));
 
-	return SNew(SBox)
-		.Padding(FMargin(0.f, TopInset, 0.f, 0.f))
-		[
-			SNew(SOverlay)
-		+ SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Fill)[BgUnderlay]
+	return SNew(SOverlay)
 		+ SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Fill)
 		[
-			SNew(SImage)
-			.Image(TAttribute<const FSlateBrush*>::Create([this]()
-				{ return SaveSlotsBackgroundBrush.IsValid() ? SaveSlotsBackgroundBrush.Get() : nullptr; }))
+			BgUnderlay
 		]
 		+ SOverlay::Slot()
+		.Padding(FMargin(0.f, TopInset + TopGap, 0.f, 0.f))
 		[
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 40.f, 0.f, 30.f)
@@ -320,7 +294,6 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 			[
 				FT66Style::MakeButton(FT66ButtonParams(BackText, FOnClicked::CreateUObject(this, &UT66SaveSlotsScreen::HandleBackClicked), ET66ButtonType::Neutral).SetMinWidth(120.f))
 			]
-		]
 		];
 }
 
@@ -329,12 +302,6 @@ FReply UT66SaveSlotsScreen::HandleBackClicked() { OnBackClicked(); return FReply
 FReply UT66SaveSlotsScreen::HandleLoadClicked(int32 SlotIndex)
 {
 	OnLoadClicked(SlotIndex);
-	return FReply::Handled();
-}
-
-FReply UT66SaveSlotsScreen::HandlePreviewClicked(int32 SlotIndex)
-{
-	OnPreviewClicked(SlotIndex);
 	return FReply::Handled();
 }
 
@@ -448,9 +415,9 @@ void UT66SaveSlotsScreen::OnLoadClicked(int32 SlotIndex)
 	GI->SelectedDifficulty = Loaded->Difficulty;
 	GI->SelectedPartySize = Loaded->PartySize;
 	GI->RunSeed = Loaded->RunSeed;
+	GI->CurrentMainMapLayoutVariant = Loaded->MainMapLayoutVariant;
 	GI->PendingLoadedTransform = Loaded->PlayerTransform;
 	GI->bApplyLoadedTransform = true;
-	GI->bLoadAsPreview = false;
 	GI->PendingLoadedRunSnapshot = Loaded->RunSnapshot;
 	GI->bApplyLoadedRunSnapshot = Loaded->RunSnapshot.bValid;
 	GI->CurrentSaveSlotIndex = SlotIndex;
@@ -474,55 +441,6 @@ void UT66SaveSlotsScreen::OnLoadClicked(int32 SlotIndex)
 void UT66SaveSlotsScreen::OnSlotClicked(int32 SlotIndex)
 {
 	OnLoadClicked(SlotIndex);
-}
-
-void UT66SaveSlotsScreen::OnPreviewClicked(int32 SlotIndex)
-{
-	if (!VisibleSlotIndices.Contains(SlotIndex) || !IsSlotOccupied(SlotIndex)) return;
-
-	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-	UT66SaveSubsystem* SaveSub = GI ? GI->GetSubsystem<UT66SaveSubsystem>() : nullptr;
-	UT66PartySubsystem* PartySubsystem = GI ? GI->GetSubsystem<UT66PartySubsystem>() : nullptr;
-	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
-	if (!GI || !SaveSub) return;
-
-	if (PartySubsystem && SessionSubsystem
-		&& SessionSubsystem->IsPartySessionActive()
-		&& PartySubsystem->HasRemotePartyMembers())
-	{
-		return;
-	}
-
-	UT66RunSaveGame* Loaded = SaveSub->LoadFromSlot(SlotIndex);
-	if (!Loaded) return;
-
-	GI->SelectedHeroID = Loaded->HeroID;
-	GI->SelectedHeroBodyType = Loaded->HeroBodyType;
-	GI->SelectedCompanionID = Loaded->CompanionID;
-	GI->SelectedDifficulty = Loaded->Difficulty;
-	GI->SelectedPartySize = Loaded->PartySize;
-	GI->RunSeed = Loaded->RunSeed;
-	GI->PendingLoadedTransform = Loaded->PlayerTransform;
-	GI->bApplyLoadedTransform = true;
-	GI->bLoadAsPreview = true;
-	GI->PendingLoadedRunSnapshot = Loaded->RunSnapshot;
-	GI->bApplyLoadedRunSnapshot = Loaded->RunSnapshot.bValid;
-	GI->CurrentSaveSlotIndex = SlotIndex;
-	GI->bRunIneligibleForLeaderboard = Loaded->bRunIneligibleForLeaderboard;
-	GI->CurrentRunOwnerPlayerId = Loaded->OwnerPlayerId;
-	GI->CurrentRunOwnerDisplayName = Loaded->OwnerDisplayName;
-	GI->CurrentRunPartyMemberIds = Loaded->PartyMemberIds;
-	GI->CurrentRunPartyMemberDisplayNames = Loaded->PartyMemberDisplayNames;
-
-	if (UIManager) UIManager->HideAllUI();
-	if (Loaded->RunSnapshot.bValid)
-	{
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
-	}
-	else
-	{
-		GI->TransitionToGameplayLevel();
-	}
 }
 
 bool UT66SaveSlotsScreen::IsSlotOccupied(int32 SlotIndex) const

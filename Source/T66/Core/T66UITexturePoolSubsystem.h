@@ -75,7 +75,7 @@ private:
 
 	// Strong refs so GC cannot collect while cached.
 	UPROPERTY(Transient)
-	TMap<FSoftObjectPath, TObjectPtr<UTexture2D>> LoadedTextures;
+	mutable TMap<FSoftObjectPath, TObjectPtr<UTexture2D>> LoadedTextures;
 
 	// In-flight async loads (kept until completion).
 	TMap<FSoftObjectPath, TSharedPtr<FStreamableHandle>> ActiveLoads;
@@ -86,6 +86,7 @@ private:
 	// Tracks latest requested path for (Requester, Key) so stale async completions can be ignored.
 	TMap<TWeakObjectPtr<UObject>, TMap<FName, FSoftObjectPath>> LatestRequestedPathByKey;
 
+	UTexture2D* CacheLoadedTexture(const FSoftObjectPath& Path, UTexture2D* Texture) const;
 	void HandleLoaded(const FSoftObjectPath& Path);
 };
 

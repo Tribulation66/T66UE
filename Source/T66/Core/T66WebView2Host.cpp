@@ -193,8 +193,10 @@ namespace
 		// Treat login routes as "login flow" so we don't hide UI chrome needed for auth.
 		// TikTok: /login, /login/qrcode
 		// YouTube/Google: accounts.google.com
+		// Instagram: /accounts/login
 		return Lower.Contains(TEXT("/login"))
-			|| Lower.Contains(TEXT("accounts.google.com"));
+			|| Lower.Contains(TEXT("accounts.google.com"))
+			|| Lower.Contains(TEXT("instagram.com/accounts/login"));
 	}
 }
 
@@ -296,6 +298,7 @@ struct FT66WebView2Host::FImpl
 	FIntRect PendingRect;
 	FString PendingUrl;
 	bool bWantVisible = false;
+	bool bIsShowing = false;
 	double DesiredZoomFactor = 1.0;
 	bool bHasEverNavigated = false;
 
@@ -420,6 +423,10 @@ struct FT66WebView2Host::FImpl
 			IsExactOrSubdomainOf(TEXT("googleapis.com")) ||
 			IsExactOrSubdomainOf(TEXT("gstatic.com")) ||
 			IsExactOrSubdomainOf(TEXT("accounts.google.com")) ||
+			// Instagram Reels
+			IsExactOrSubdomainOf(TEXT("instagram.com")) ||
+			IsExactOrSubdomainOf(TEXT("cdninstagram.com")) ||
+			IsExactOrSubdomainOf(TEXT("fbcdn.net")) ||
 			// Shared CDN
 			HostPort == TEXT("storage.googleapis.com");
 	}
@@ -525,6 +532,7 @@ struct FT66WebView2Host::FImpl
 								{
 									ShowWindow(Host, bWantVisible ? SW_SHOWNA : SW_HIDE);
 								}
+								bIsShowing = bWantVisible;
 
 								ComPtr<ICoreWebView2Settings> Settings;
 								if (SUCCEEDED(View->get_Settings(&Settings)) && Settings)
@@ -788,6 +796,51 @@ struct FT66WebView2Host::FImpl
 													)JS";
 													ExecuteScriptNoResult(YouTubeOverlayKillerScript, TEXT("YouTubeOverlayKiller"));
 												}
+												else if (UrlLower.Contains(TEXT("instagram.com")))
+												{
+													static const wchar_t* InstagramVisibilityFixScript = LR"JS(
+														(function(){
+															try{
+																Object.defineProperty(document,'hidden',{value:false,configurable:true,writable:false});
+																Object.defineProperty(document,'visibilityState',{value:'visible',configurable:true,writable:false});
+																document.dispatchEvent(new Event('visibilitychange'));
+																window.dispatchEvent(new Event('focus'));
+															}catch(e){}
+														})();
+													)JS";
+													ExecuteScriptNoResult(InstagramVisibilityFixScript, TEXT("InstagramVisibilityFix"));
+
+													static const wchar_t* InstagramVideoOnlyScript = LR"JS(
+														(function(){
+															try{
+																function apply(){
+																	try{
+																		var id='t66_ig_reels_css';
+																		var st=document.getElementById(id);
+																		if(!st){
+																			st=document.createElement('style');
+																			st.id=id;
+																			st.type='text/css';
+																			(document.head||document.documentElement).appendChild(st);
+																		}
+																		st.textContent =
+																			'html,body{background:#000 !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}' +
+																			'*{scrollbar-width:none !important;}' +
+																			'*::-webkit-scrollbar{width:0 !important;height:0 !important;}' +
+																			'header,nav,footer,[role=\"banner\"],[role=\"navigation\"],[role=\"contentinfo\"]{display:none !important;}' +
+																			'main,[role=\"main\"]{width:100vw !important;max-width:100vw !important;margin:0 !important;padding:0 !important;}' +
+																			'section,article,div{max-width:100vw !important;}' +
+																			'video{background:#000 !important;object-fit:contain !important;max-width:100vw !important;max-height:100vh !important;}';
+																	}catch(e){}
+																}
+																apply();
+																setTimeout(apply, 250);
+																setTimeout(apply, 900);
+															}catch(e){}
+														})();
+													)JS";
+													ExecuteScriptNoResult(InstagramVideoOnlyScript, TEXT("InstagramVideoOnlyCSS"));
+												}
 											}
 
 											if (!Url.Contains(TEXT("login/qrcode"), ESearchCase::IgnoreCase))
@@ -942,6 +995,15 @@ struct FT66WebView2Host::FImpl
 		ExecuteScriptNoResult(*Script, Dir > 0 ? TEXT("YT_NextShort") : TEXT("YT_PrevShort"));
 	}
 
+	void MoveVideoInstagram(int32 Dir)
+	{
+		const float ScrollAmount = Dir > 0 ? 0.90f : -0.90f;
+		const FString Script = FString::Printf(
+			TEXT("(function(){try{var delta=Math.round(window.innerHeight*%.2f);window.scrollBy({top:delta,left:0,behavior:'smooth'});}catch(e){}})();"),
+			ScrollAmount);
+		ExecuteScriptNoResult(*Script, Dir > 0 ? TEXT("IG_NextReel") : TEXT("IG_PrevReel"));
+	}
+
 	void MoveVideo(int32 Dir)
 	{
 		Dir = (Dir >= 0) ? 1 : -1;
@@ -956,9 +1018,15 @@ struct FT66WebView2Host::FImpl
 				CurrentUrl = FString(Raw);
 				CoTaskMemFree(Raw);
 			}
-			if (CurrentUrl.ToLower().Contains(TEXT("youtube.com")))
+			const FString CurrentUrlLower = CurrentUrl.ToLower();
+			if (CurrentUrlLower.Contains(TEXT("youtube.com")))
 			{
 				MoveVideoYouTube(Dir);
+				return;
+			}
+			if (CurrentUrlLower.Contains(TEXT("instagram.com")))
+			{
+				MoveVideoInstagram(Dir);
 				return;
 			}
 		}
@@ -1105,83 +1173,87 @@ void FT66WebView2Host::ShowAtScreenRect(const FIntRect& ScreenRectPx)
 	// Only show after WebView2 controller is ready; otherwise this can appear as a transparent/blank overlay.
 	if (Impl->Ctrl && Impl->Host)
 	{
-		// Unmute at WebView2 layer (Hide() hard-mutes here).
-		Impl->SetWebViewMuted(false);
 		Impl->ApplyBoundsScreen(ScreenRectPx);
-		Impl->Ctrl->put_IsVisible(1);
-		ShowWindow(Impl->Host, SW_SHOWNA);
-		SetWindowPos(Impl->Host, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+		if (!Impl->bIsShowing)
+		{
+			// Unmute only on the hidden -> visible transition. Repositioning should not restart/resume media.
+			Impl->SetWebViewMuted(false);
+			Impl->Ctrl->put_IsVisible(1);
+			ShowWindow(Impl->Host, SW_SHOWNA);
+			SetWindowPos(Impl->Host, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+			Impl->bIsShowing = true;
 
-		// If the user toggled TikTok back on, resume playback of the currently visible video.
-		// Harden against autoplay policy: play muted first, then unmute shortly after.
-		static const wchar_t* ResumeScript = LR"JS(
-			(function(){
-				try{
-					if (window.__t66TikTok){ window.__t66TikTok.hidden = false; }
-					var vids = Array.prototype.slice.call(document.querySelectorAll('video') || []);
-					var best=null, bestArea=0;
-					for (var i=0;i<vids.length;i++){
-						var v=vids[i]; if(!v) continue;
-						var r=v.getBoundingClientRect(); if(!r) continue;
-						var w=Math.max(0, Math.min(r.right, window.innerWidth)-Math.max(r.left,0));
-						var h=Math.max(0, Math.min(r.bottom, window.innerHeight)-Math.max(r.top,0));
-						var a=w*h;
-						if(a>bestArea){bestArea=a; best=v;}
-					}
-					if (best){
-						try{
-							if (typeof best.volume === 'number') best.volume = 1.0;
+			// If the user toggled TikTok back on, resume playback of the currently visible video.
+			// Harden against autoplay policy: play muted first, then unmute shortly after.
+			static const wchar_t* ResumeScript = LR"JS(
+				(function(){
+					try{
+						if (window.__t66TikTok){ window.__t66TikTok.hidden = false; }
+						var vids = Array.prototype.slice.call(document.querySelectorAll('video') || []);
+						var best=null, bestArea=0;
+						for (var i=0;i<vids.length;i++){
+							var v=vids[i]; if(!v) continue;
+							var r=v.getBoundingClientRect(); if(!r) continue;
+							var w=Math.max(0, Math.min(r.right, window.innerWidth)-Math.max(r.left,0));
+							var h=Math.max(0, Math.min(r.bottom, window.innerHeight)-Math.max(r.top,0));
+							var a=w*h;
+							if(a>bestArea){bestArea=a; best=v;}
+						}
+						if (best){
 							try{
-								best.muted = false;
-								best.defaultMuted = false;
-								if (best.removeAttribute) best.removeAttribute('muted');
-							}catch(e){}
-							if (best.play) best.play().catch(function(){});
-							setTimeout(function(){
+								if (typeof best.volume === 'number') best.volume = 1.0;
 								try{
-									try{
-										best.muted = false;
-										best.defaultMuted = false;
-										if (best.removeAttribute) best.removeAttribute('muted');
-									}catch(e){}
-									if (best.play) best.play().catch(function(){});
+									best.muted = false;
+									best.defaultMuted = false;
+									if (best.removeAttribute) best.removeAttribute('muted');
 								}catch(e){}
-							}, 120);
-
-							// TikTok sometimes auto-pauses shortly after landing; try again once.
-							setTimeout(function(){
-								try{
-									if (best && best.paused && best.play){
+								if (best.play) best.play().catch(function(){});
+								setTimeout(function(){
+									try{
 										try{
 											best.muted = false;
 											best.defaultMuted = false;
 											if (best.removeAttribute) best.removeAttribute('muted');
 										}catch(e){}
-										best.play().catch(function(){});
-										setTimeout(function(){
-											try{
-												try{
-													best.muted = false;
-													best.defaultMuted = false;
-													if (best.removeAttribute) best.removeAttribute('muted');
-												}catch(e){}
-												if (best.play) best.play().catch(function(){});
-											}catch(e){}
-										}, 120);
-									}
-								}catch(e){}
-							}, 1100);
-						}catch(e){}
-					}
+										if (best.play) best.play().catch(function(){});
+									}catch(e){}
+								}, 120);
 
-					// Ensure the TikTok guardian is running while visible (enforces single-audio + force-play).
-					try{
-						if (window.__t66TikTok && window.__t66TikTok.start) { window.__t66TikTok.start(); }
+								// TikTok sometimes auto-pauses shortly after landing; try again once.
+								setTimeout(function(){
+									try{
+										if (best && best.paused && best.play){
+											try{
+												best.muted = false;
+												best.defaultMuted = false;
+												if (best.removeAttribute) best.removeAttribute('muted');
+											}catch(e){}
+											best.play().catch(function(){});
+											setTimeout(function(){
+												try{
+													try{
+														best.muted = false;
+														best.defaultMuted = false;
+														if (best.removeAttribute) best.removeAttribute('muted');
+													}catch(e){}
+													if (best.play) best.play().catch(function(){});
+												}catch(e){}
+											}, 120);
+										}
+									}catch(e){}
+								}, 1100);
+							}catch(e){}
+						}
+
+						// Ensure the TikTok guardian is running while visible (enforces single-audio + force-play).
+						try{
+							if (window.__t66TikTok && window.__t66TikTok.start) { window.__t66TikTok.start(); }
+						}catch(e){}
 					}catch(e){}
-				}catch(e){}
-			})();
-		)JS";
-		Impl->ExecuteScriptNoResult(ResumeScript, TEXT("ResumeVisibleVideo"));
+				})();
+			)JS";
+			Impl->ExecuteScriptNoResult(ResumeScript, TEXT("ResumeVisibleVideo"));
+		}
 	}
 }
 
@@ -1221,6 +1293,7 @@ void FT66WebView2Host::Hide()
 		{
 			ShowWindow(Impl->Host, SW_HIDE);
 		}
+		Impl->bIsShowing = false;
 	}
 }
 

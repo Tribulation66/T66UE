@@ -124,6 +124,7 @@ bool AT66StageGate::AdvanceToNextStage()
 	RunState->SetLoanSharkPending(RunState->GetCurrentDebt() > 0);
 
 	T66GI->bIsStageTransition = true;
+	T66GI->bPendingTowerStageDropIntro = false;
 
 	// Coliseum rule: before entering a difficulty boss stage (5, 10, 15, 20, 23), route to Coliseum if there are owed bosses.
 	const bool bIsDifficultyBossStage = (NextStage == 5 || NextStage == 10 || NextStage == 15 || NextStage == 20 || NextStage == 23);

@@ -42,18 +42,50 @@ bool UT66SkinSubsystem::IsSkinOwned(ET66SkinEntityType EntityType, FName EntityI
 	if (EntityID.IsNone()) return false;
 	if (SkinID == DefaultSkinID) return true;
 	UT66ProfileSaveGame* Profile = GetProfile();
-	if (!Profile) return false;
+	if (!Profile)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (const UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
+			{
+				const ET66AchievementRewardEntityType RewardEntityType = (EntityType == ET66SkinEntityType::Hero)
+					? ET66AchievementRewardEntityType::Hero
+					: ET66AchievementRewardEntityType::Companion;
+				return Achievements->DoesClaimedAchievementGrantSkin(RewardEntityType, EntityID, SkinID);
+			}
+		}
+		return false;
+	}
 
+	bool bOwnedByProfile = false;
 	if (EntityType == ET66SkinEntityType::Hero)
 	{
 		const FT66OwnedSkinsList* Entry = Profile->OwnedHeroSkinsByHero.Find(EntityID);
-		return Entry && Entry->SkinIDs.Contains(SkinID);
+		bOwnedByProfile = Entry && Entry->SkinIDs.Contains(SkinID);
 	}
 	else
 	{
 		const FT66OwnedSkinsList* Entry = Profile->OwnedCompanionSkinsByCompanion.Find(EntityID);
-		return Entry && Entry->SkinIDs.Contains(SkinID);
+		bOwnedByProfile = Entry && Entry->SkinIDs.Contains(SkinID);
 	}
+
+	if (bOwnedByProfile)
+	{
+		return true;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			const ET66AchievementRewardEntityType RewardEntityType = (EntityType == ET66SkinEntityType::Hero)
+				? ET66AchievementRewardEntityType::Hero
+				: ET66AchievementRewardEntityType::Companion;
+			return Achievements->DoesClaimedAchievementGrantSkin(RewardEntityType, EntityID, SkinID);
+		}
+	}
+
+	return false;
 }
 
 bool UT66SkinSubsystem::PurchaseSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, int32 CostAC)
@@ -63,9 +95,9 @@ bool UT66SkinSubsystem::PurchaseSkin(ET66SkinEntityType EntityType, FName Entity
 	if (IsSkinOwned(EntityType, EntityID, SkinID)) return false;
 
 	UT66ProfileSaveGame* Profile = GetProfile();
-	if (!Profile || Profile->AchievementCoinsBalance < CostAC) return false;
+	if (!Profile || Profile->ChadCouponsBalance < CostAC) return false;
 
-	Profile->AchievementCoinsBalance -= CostAC;
+	Profile->ChadCouponsBalance -= CostAC;
 
 	if (EntityType == ET66SkinEntityType::Hero)
 	{
@@ -80,6 +112,56 @@ bool UT66SkinSubsystem::PurchaseSkin(ET66SkinEntityType EntityType, FName Entity
 		Profile->EquippedCompanionSkinIDByCompanion.FindOrAdd(EntityID) = SkinID;
 	}
 
+	MarkProfileDirtyAndSave(true);
+	OnSkinStateChanged.Broadcast();
+	return true;
+}
+
+bool UT66SkinSubsystem::RefundSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, int32 RefundAC)
+{
+	if (EntityID.IsNone() || SkinID.IsNone() || RefundAC <= 0) return false;
+	if (SkinID == DefaultSkinID) return false;
+	if (!IsSkinOwned(EntityType, EntityID, SkinID)) return false;
+
+	UT66ProfileSaveGame* Profile = GetProfile();
+	if (!Profile) return false;
+
+	if (EntityType == ET66SkinEntityType::Hero)
+	{
+		if (FT66OwnedSkinsList* Entry = Profile->OwnedHeroSkinsByHero.Find(EntityID))
+		{
+			Entry->SkinIDs.Remove(SkinID);
+			if (Entry->SkinIDs.Num() <= 0)
+			{
+				Profile->OwnedHeroSkinsByHero.Remove(EntityID);
+			}
+		}
+
+		FName& EquippedSkinID = Profile->EquippedHeroSkinIDByHero.FindOrAdd(EntityID);
+		if (EquippedSkinID == SkinID)
+		{
+			EquippedSkinID = DefaultSkinID;
+		}
+	}
+	else
+	{
+		if (FT66OwnedSkinsList* Entry = Profile->OwnedCompanionSkinsByCompanion.Find(EntityID))
+		{
+			Entry->SkinIDs.Remove(SkinID);
+			if (Entry->SkinIDs.Num() <= 0)
+			{
+				Profile->OwnedCompanionSkinsByCompanion.Remove(EntityID);
+			}
+		}
+
+		FName& EquippedSkinID = Profile->EquippedCompanionSkinIDByCompanion.FindOrAdd(EntityID);
+		if (EquippedSkinID == SkinID)
+		{
+			EquippedSkinID = DefaultSkinID;
+		}
+	}
+
+	Profile->ChadCouponsBalance += RefundAC;
 	MarkProfileDirtyAndSave(true);
 	OnSkinStateChanged.Broadcast();
 	return true;
@@ -170,6 +252,16 @@ bool UT66SkinSubsystem::PurchaseHeroSkin(FName HeroID, FName SkinID, int32 CostA
 bool UT66SkinSubsystem::PurchaseCompanionSkin(FName CompanionID, FName SkinID, int32 CostAC)
 {
 	return PurchaseSkin(ET66SkinEntityType::Companion, CompanionID, SkinID, CostAC);
+}
+
+bool UT66SkinSubsystem::RefundHeroSkin(FName HeroID, FName SkinID, int32 RefundAC)
+{
+	return RefundSkin(ET66SkinEntityType::Hero, HeroID, SkinID, RefundAC);
+}
+
+bool UT66SkinSubsystem::RefundCompanionSkin(FName CompanionID, FName SkinID, int32 RefundAC)
+{
+	return RefundSkin(ET66SkinEntityType::Companion, CompanionID, SkinID, RefundAC);
 }
 
 FName UT66SkinSubsystem::GetEquippedHeroSkinID(FName HeroID) const

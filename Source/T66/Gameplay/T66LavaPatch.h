@@ -35,6 +35,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lava|Shape")
 	float PatchSize = 900.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lava|Shape", meta = (ClampMin = "0.0"))
+	float PatchSizeX = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lava|Shape", meta = (ClampMin = "0.0"))
+	float PatchSizeY = 0.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lava|Shape")
 	float HoverHeight = 2.f;
 
@@ -120,6 +126,8 @@ private:
 	void SnapOriginToGround();
 	void EnsureVisualMaterial();
 	void GenerateAnimationFrames();
+	FVector2D GetPatchDimensions() const;
+	void UpdateDamageCollisionState();
 	UTexture2D* BuildFrameTexture(int32 FrameIndex, int32 ClampedFrames, int32 Resolution, const FVector2D& EffectivePatternOffset) const;
 	FLinearColor SampleLavaColor(const FVector2D& BaseUV, float Phase, const FVector2D& EffectivePatternOffset) const;
 	void ApplyAnimationFrame(int32 FrameIndex);

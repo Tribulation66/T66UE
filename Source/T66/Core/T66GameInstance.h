@@ -13,6 +13,7 @@
 
 class UDataTable;
 class UTexture2D;
+class UWorld;
 struct FStreamableHandle;
 class SBorder;
 
@@ -30,6 +31,13 @@ enum class ET66ColiseumFlowMode : uint8
 	None UMETA(DisplayName = "None"),
 	OwedBosses UMETA(DisplayName = "Owed Bosses"),
 	FinalDifficultyBoss UMETA(DisplayName = "Final Difficulty Boss")
+};
+
+UENUM(BlueprintType)
+enum class ET66LightingPreset : uint8
+{
+	Eclipse UMETA(DisplayName = "Eclipse"),
+	Dungeon UMETA(DisplayName = "Dungeon"),
 };
 
 /**
@@ -121,6 +129,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	int32 RunSeed = 0;
 
+	/** Active main gameplay terrain layout for the current run. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	ET66MainMapLayoutVariant CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Hilly;
+
 	/** Legacy terrain theme selector kept for compatibility. Main gameplay now always uses T66MainMapTerrain. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	ET66MapTheme MapTheme = ET66MapTheme::Farm;
@@ -153,10 +165,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	bool bApplyLoadedTransform = false;
 
-	/** When true, load into gameplay level frozen; show LOAD button overlay; clicking LOAD unfreezes. Set by Save Slots Preview. */
-	UPROPERTY(BlueprintReadWrite, Category = "Save")
-	bool bLoadAsPreview = false;
-
 	/** Full run snapshot to restore on the next gameplay load. */
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
 	FT66SavedRunSnapshot PendingLoadedRunSnapshot;
@@ -188,6 +196,10 @@ public:
 	/** True when advancing to next stage (reload level, keep progress). GameMode skips ResetForNewRun. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bIsStageTransition = false;
+
+	/** True when the next tower stage should begin with a high-altitude drop into the start room. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bPendingTowerStageDropIntro = false;
 
 	/** When true, this run was started via "Retry level"; do not submit to leaderboard. Cleared when starting a fresh run. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
@@ -238,6 +250,12 @@ public:
 	/** Get a random item ID from the Items DataTable filtered by Loot Bag rarity. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	FName GetRandomItemIDForLootRarity(ET66Rarity LootRarity);
+
+	/** Deterministic item roll using the caller-provided stream. */
+	FName GetRandomItemIDFromStream(FRandomStream& Stream);
+
+	/** Deterministic rarity-aware item roll using the caller-provided stream. */
+	FName GetRandomItemIDForLootRarityFromStream(ET66Rarity LootRarity, FRandomStream& Stream);
 
 	/** Get the loaded Bosses DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -361,26 +379,41 @@ public:
 	/** Remove the persistent gameplay transition blackout, if present. */
 	void HidePersistentGameplayTransitionCurtain();
 
-	/** Warm hero/companion selection portraits + visuals asynchronously so first open does not hitch. */
+	/** Warm main-menu / hero-selection portraits plus the currently selected preview visuals asynchronously. */
 	void PrimeHeroSelectionAssetsAsync();
 
-	/** When true, Enter the Tribulation opens the demo map instead of GameplayLevel. Flip in T66GameInstance.cpp. */
-	static bool UseDemoMapForTribulation();
-	/** Main gameplay map asset name. */
+	/** Warm the full hero/companion preview visual library asynchronously after the selection screen is already visible. */
+	void PrimeHeroSelectionPreviewVisualsAsync();
+
+	/** Default main-map layout variant for brand-new runs. Reads config and optional console override. */
+	static ET66MainMapLayoutVariant GetConfiguredMainMapLayoutVariant();
+	/** Resolve the active main-map layout variant, falling back to the configured default when no GI is available. */
+	static ET66MainMapLayoutVariant ResolveMainMapLayoutVariant(const UT66GameInstance* GameInstance);
+	/** Apply the configured default main-map layout variant to the current run state. */
+	void ApplyConfiguredMainMapLayoutVariant();
+	/** Lighting preset configured for gameplay worlds. Reads config and optional console override. */
+	static ET66LightingPreset GetConfiguredLightingPreset();
+	/** Resolve the effective lighting preset for a given world, applying frontend-safe fallbacks. */
+	static ET66LightingPreset GetEffectiveLightingPreset(const UWorld* World);
+
+	/** Frontend map package path. */
+	static FName GetFrontendLevelName();
+	/** Lab map package path. */
+	static FName GetLabLevelName();
+	/** Main gameplay map package path. */
 	static FName GetGameplayLevelName();
-	/** Entry map for a brand-new Tribulation run. Temporary rule: always route through tutorial first. */
+	/** Entry map package path for a brand-new Tribulation run. */
 	static FName GetTribulationEntryLevelName();
-	/** Standalone coliseum gameplay map asset name. */
+	/** Standalone coliseum gameplay map package path. */
 	static FName GetColiseumLevelName();
-	/** Standalone tutorial gameplay map asset name. */
+	/** Standalone tutorial gameplay map package path. */
 	static FName GetTutorialLevelName();
-	/** Level name when UseDemoMapForTribulation() is true (e.g. Map_Summer). Used by TransitionToGameplayLevel and IsGameplayLevel. */
-	static FName GetDemoMapLevelNameForTribulation();
 
 private:
 	void PrimeCoreDataTablesAsync();
 	void HandleCoreDataTablesLoaded();
 	void HandleHeroSelectionAssetsLoaded();
+	void HandleHeroSelectionPreviewVisualsLoaded();
 
 	bool bCoreDataTablesLoadRequested = false;
 	bool bCoreDataTablesLoaded = false;
@@ -389,6 +422,10 @@ private:
 	bool bHeroSelectionAssetsLoadRequested = false;
 	bool bHeroSelectionAssetsLoaded = false;
 	TSharedPtr<FStreamableHandle> HeroSelectionAssetsLoadHandle;
+
+	bool bHeroSelectionPreviewVisualsLoadRequested = false;
+	bool bHeroSelectionPreviewVisualsLoaded = false;
+	TSharedPtr<FStreamableHandle> HeroSelectionPreviewVisualsLoadHandle;
 	TArray<FName> GameplayPreloadVisualIDs;
 
 	void EnsureCachedItemIDs();
@@ -410,7 +447,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedIdolsDataTable;
 
-	bool bIdolsDataTableCsvOverrideAttempted = false;
 
 	/** Cached item row names (built once per runtime session). */
 	UPROPERTY(Transient)
@@ -437,13 +473,11 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedBossesDataTable;
 
-	bool bBossesDataTableCsvOverrideAttempted = false;
 
 	/** Cached loaded Stages DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedStagesDataTable;
 
-	bool bStagesDataTableCsvOverrideAttempted = false;
 
 	/** Cached loaded House NPCs DataTable */
 	UPROPERTY(Transient)

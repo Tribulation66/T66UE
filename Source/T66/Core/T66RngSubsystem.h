@@ -65,6 +65,22 @@ public:
 	/** Roll a float in [Min,Max] with Luck bias toward higher values (if range non-empty). */
 	float RollFloatRangeBiased(const FT66FloatRange& Range, FRandomStream& Stream) const;
 
+	/** Roll a Bernoulli chance against the shared run stream. */
+	bool RollChance01(float Chance01) const;
+
+	/** Shared-run wrappers that keep draw metadata in sync for anti-cheat replay. */
+	float GetRunFraction() const;
+	int32 RunRandRange(int32 Min, int32 Max) const;
+	float RunFRandRange(float InMin, float InMax) const;
+
+	/** True when the provided stream reference is the primary run stream. */
+	bool UsesRunStream(const FRandomStream& Stream) const { return &Stream == &RunStream; }
+
+	/** Last tracked run-stream draw metadata used by replayable anti-cheat events. */
+	int32 GetLastRunDrawIndex() const { return LastRunDrawIndex; }
+	int32 GetLastRunPreDrawSeed() const { return LastRunPreDrawSeed; }
+	int32 GetRunDrawCount() const { return RunDrawCount; }
+
 	/** Access tuning (config-backed). */
 	const UT66RngTuningConfig* GetTuning() const;
 
@@ -74,6 +90,8 @@ public:
 
 private:
 	void RecomputeLuck01();
+	void ClearLastRunDrawMetadata() const;
+	void PrepareRunDraw() const;
 
 	/** Cached tuning data (plain C++ object; no CDO / live-coding replacement path). */
 	UT66RngTuningConfig CachedTuning;
@@ -89,5 +107,12 @@ private:
 
 	/** Run-persistent RNG stream (seeded once per run). */
 	FRandomStream RunStream;
+
+	/** Monotonic counter of shared run-stream draws. */
+	mutable int32 RunDrawCount = 0;
+
+	/** Metadata for the most recent tracked run-stream draw. */
+	mutable int32 LastRunDrawIndex = INDEX_NONE;
+	mutable int32 LastRunPreDrawSeed = 0;
 };
 

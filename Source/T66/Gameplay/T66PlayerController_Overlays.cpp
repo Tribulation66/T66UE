@@ -18,7 +18,7 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66LeaderboardScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "Core/T66LeaderboardSubsystem.h"
@@ -28,7 +28,6 @@
 #include "UI/T66CircusOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
-#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -50,7 +49,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -156,6 +155,10 @@ void AT66PlayerController::RebuildThemeAwareUI()
 void AT66PlayerController::OpenGamblerOverlay(int32 WinGoldAmount)
 {
 	if (!IsGameplayLevel()) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	if (!GamblerOverlayWidget)
 	{
@@ -178,6 +181,10 @@ void AT66PlayerController::OpenCircusOverlay()
 {
 	if (!IsGameplayLevel()) return;
 	ActiveVendorNPC.Reset();
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	if (!CircusOverlayWidget)
 	{
@@ -317,6 +324,10 @@ bool AT66PlayerController::TriggerCircusBossIfAngry()
 void AT66PlayerController::OpenVendorOverlay()
 {
 	if (!IsGameplayLevel()) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	if (!VendorOverlayWidget)
 	{
@@ -342,6 +353,10 @@ void AT66PlayerController::OpenVendorOverlay()
 void AT66PlayerController::OpenCollectorOverlay()
 {
 	if (!IsGameplayLevel()) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	if (!CollectorOverlayWidget)
 	{
@@ -362,6 +377,10 @@ void AT66PlayerController::OpenCollectorOverlay()
 void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 {
 	if (!IsGameplayLevel() || !Gate) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	if (!CowardicePromptWidget)
 	{
@@ -378,25 +397,6 @@ void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 		bShowMouseCursor = true;
 	}
 }
-
-
-void AT66PlayerController::ShowLoadPreviewOverlay()
-{
-	if (!IsGameplayLevel()) return;
-
-	UT66LoadPreviewOverlayWidget* W = CreateWidget<UT66LoadPreviewOverlayWidget>(this, ResolveLoadPreviewOverlayClass());
-	if (W)
-	{
-		W->AddToViewport(500); // above HUD and other overlays
-		FInputModeGameAndUI InputMode;
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		SetInputMode(InputMode);
-		bShowMouseCursor = true;
-		bEnableClickEvents = true;
-		bEnableMouseOverEvents = true;
-	}
-}
-
 
 void AT66PlayerController::StartWheelSpinHUD(ET66Rarity Rarity)
 {
@@ -467,17 +467,17 @@ void AT66PlayerController::OnPlayerDied()
 			if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 			{
 				UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
-				UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>();
+				UT66BuffSubsystem* BuffSub = GI->GetSubsystem<UT66BuffSubsystem>();
 				if (RunState)
 				{
 					RunState->MarkRunEnded(false);
 				}
-				if (RunState && PowerUpSub)
+				if (RunState && BuffSub)
 				{
 					const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
 					if (Earned > 0)
 					{
-						PowerUpSub->AddPowerCrystals(Earned);
+						BuffSub->AddChadCoupons(Earned);
 					}
 				}
 				if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
@@ -532,17 +532,17 @@ void AT66PlayerController::ShowVictoryRunSummary()
 		}
 
 		UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
-		UT66PowerUpSubsystem* PowerUpSub = GI->GetSubsystem<UT66PowerUpSubsystem>();
+		UT66BuffSubsystem* BuffSub = GI->GetSubsystem<UT66BuffSubsystem>();
 		if (RunState)
 		{
 			RunState->MarkRunEnded(true);
 		}
-		if (RunState && PowerUpSub)
+		if (RunState && BuffSub)
 		{
 			const int32 Earned = RunState->GetPowerCrystalsEarnedThisRun();
 			if (Earned > 0)
 			{
-				PowerUpSub->AddPowerCrystals(Earned);
+				BuffSub->AddChadCoupons(Earned);
 			}
 		}
 		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
@@ -561,6 +561,11 @@ void AT66PlayerController::ShowVictoryRunSummary()
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(InputMode);
 	bShowMouseCursor = true;
+}
+
+void AT66PlayerController::ClientShowVictoryRunSummary_Implementation()
+{
+	ShowVictoryRunSummary();
 }
 
 void AT66PlayerController::ShowDifficultyClearSummary()
@@ -590,6 +595,11 @@ void AT66PlayerController::ShowDifficultyClearSummary()
 	bShowMouseCursor = true;
 }
 
+void AT66PlayerController::ClientShowDifficultyClearSummary_Implementation()
+{
+	ShowDifficultyClearSummary();
+}
+
 
 void AT66PlayerController::HandleQuickReviveStateChanged()
 {
@@ -608,6 +618,12 @@ void AT66PlayerController::HandleQuickReviveStateChanged()
 		EndHeroOneScopedUlt();
 	}
 
+	if (bDowned == bQuickReviveInputSuppressed)
+	{
+		return;
+	}
+
+	bQuickReviveInputSuppressed = bDowned;
 	SetIgnoreMoveInput(bDowned);
 	SetIgnoreLookInput(bDowned);
 
@@ -629,7 +645,7 @@ void AT66PlayerController::HandleQuickReviveStateChanged()
 		}
 	}
 
-	SetLockedEnemy(nullptr, false);
+	SetLockedCombatTarget(nullptr, false);
 }
 
 
@@ -665,9 +681,9 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> PowerUpClass = ResolveScreenClass(ET66ScreenType::PowerUp))
+	if (TSubclassOf<UT66ScreenBase> ShopClass = ResolveScreenClass(ET66ScreenType::PowerUp))
 	{
-		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, PowerUpClass);
+		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, ShopClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
 	{
@@ -676,6 +692,10 @@ void AT66PlayerController::EnsureGameplayUIManager()
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, AccountStatusClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> PartyInviteClass = ResolveScreenClass(ET66ScreenType::PartyInvite))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::PartyInvite, PartyInviteClass);
 	}
 }
 
@@ -707,13 +727,41 @@ void AT66PlayerController::HandleEscapePressed()
 				MV->SetMediaViewerOpen(false);
 				SetIgnoreMoveInput(false);
 				SetIgnoreLookInput(false);
-				RestoreGameplayInputMode();
+
+				const bool bPauseMenuStillOpen = IsPaused()
+					&& UIManager
+					&& UIManager->IsModalActive()
+					&& UIManager->GetCurrentModalType() == ET66ScreenType::PauseMenu;
+				if (bPauseMenuStillOpen)
+				{
+					FInputModeGameAndUI InputMode;
+					InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+					SetInputMode(InputMode);
+					bShowMouseCursor = true;
+					bEnableClickEvents = true;
+					bEnableMouseOverEvents = true;
+					if (GameplayHUDWidget)
+					{
+						GameplayHUDWidget->SetInteractive(true);
+						GameplayHUDWidget->MarkHUDDirty();
+					}
+				}
+				else
+				{
+					RestoreGameplayInputMode();
+				}
 				return;
 			}
 		}
 	}
 
 	// Esc as back: close the full map before opening pause menu.
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+		return;
+	}
+
 	if (GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 	{
 		GameplayHUDWidget->SetFullMapOpen(false);
@@ -784,6 +832,13 @@ void AT66PlayerController::HandleEscapePressed()
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = true;
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetInteractive(true);
+			GameplayHUDWidget->MarkHUDDirty();
+		}
 	}
 	else
 	{

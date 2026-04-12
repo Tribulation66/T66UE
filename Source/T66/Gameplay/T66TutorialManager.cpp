@@ -570,6 +570,7 @@ FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const
 		{ ET66HeroStatType::Damage, RunState->GetDamageStat() },
 		{ ET66HeroStatType::AttackSpeed, RunState->GetAttackSpeedStat() },
 		{ ET66HeroStatType::AttackScale, RunState->GetScaleStat() },
+		{ ET66HeroStatType::Accuracy, RunState->GetAccuracyStat() },
 		{ ET66HeroStatType::Armor, RunState->GetArmorStat() },
 		{ ET66HeroStatType::Evasion, RunState->GetEvasionStat() },
 		{ ET66HeroStatType::Luck, RunState->GetLuckStat() },

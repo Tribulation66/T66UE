@@ -36,15 +36,14 @@ protected:
 		Home,
 		LoadGame,
 		PowerUp,
-		Unlocks,
+		MiniGames,
 		Achievements,
 		None,
 	};
 
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 	ETopBarSection GetActiveSection() const;
-	FText GetAchievementCoinsValueText() const;
-	FText GetPowerCouponsValueText() const;
+	FText GetChadCouponsValueText() const;
 	void RequestTopBarAssets();
 	void ReleaseTopBarBrushes();
 
@@ -52,8 +51,8 @@ protected:
 	FReply HandleLanguageClicked();
 	FReply HandleHomeClicked();
 	FReply HandleLoadGameClicked();
-	FReply HandlePowerUpClicked();
-	FReply HandleUnlocksClicked();
+	FReply HandleShopClicked();
+	FReply HandleMiniGamesClicked();
 	FReply HandleAchievementsClicked();
 	FReply HandleAccountStatusClicked();
 	FReply HandleQuitClicked();

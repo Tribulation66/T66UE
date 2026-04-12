@@ -63,12 +63,21 @@ bool AT66StageCatchUpLootInteractable::Interact(APlayerController* PC)
 
 	for (int32 i = 0; i < Count; ++i)
 	{
-		const float Angle = Rng.FRandRange(0.f, 2.f * PI);
-		const float Radius = Rng.FRandRange(0.f, 240.f);
+		const float Angle = RngSub ? RngSub->RunFRandRange(0.f, 2.f * PI) : Rng.FRandRange(0.f, 2.f * PI);
+		const float Radius = RngSub ? RngSub->RunFRandRange(0.f, 240.f) : Rng.FRandRange(0.f, 240.f);
 		const FVector Offset(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);
 
 		const ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-		const FName ItemID = T66GI->GetRandomItemIDForLootRarity(BagRarity);
+		if (RunState)
+		{
+			RunState->RecordLuckQualityRarity(
+				FName(TEXT("CatchUpLootBagRarity")),
+				BagRarity,
+				RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
+				RngSub ? RngSub->GetLastRunPreDrawSeed() : 0,
+				&Weights);
+		}
+		const FName ItemID = T66GI->GetRandomItemIDForLootRarityFromStream(BagRarity, Rng);
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

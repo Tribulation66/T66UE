@@ -7,6 +7,7 @@
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
+#include "Core/T66SessionSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
@@ -189,7 +190,7 @@ void UT66CompanionSelectionScreen::RefreshSkinsList()
 		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
 		const FText ACBalanceText = Loc
 			? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
-			: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(ACBalance));
+			: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} CC"), FText::AsNumber(ACBalance));
 		ACBalanceTextBlock->SetText(ACBalanceText);
 	}
 	UpdateCompanionDisplay();
@@ -204,7 +205,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	const FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	const FButtonStyle& PrimaryButtonStyle = FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Primary");
-	static constexpr int32 BeachgoerPriceAC = 250;
+	static constexpr int32 BeachgoerPriceAC = UT66SkinSubsystem::DefaultSkinPriceAC;
 	const float ActionMinHeight = 28.f;
 	const float ActionMinWidth = 72.f;
 	const float EquippedMinWidth = 84.f;
@@ -212,7 +213,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 	const float BuyButtonHeight = 34.f;
 	const FText BeachgoerPriceText = Loc
 		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(BeachgoerPriceAC))
-		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(BeachgoerPriceAC));
+		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} CC"), FText::AsNumber(BeachgoerPriceAC));
 
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
@@ -397,7 +398,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	}
 	const FText ACBalanceText = Loc
 		? FText::Format(Loc->GetText_AchievementCoinsFormat(), FText::AsNumber(ACBalance))
-		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} AC"), FText::AsNumber(ACBalance));
+		: FText::Format(NSLOCTEXT("T66.Achievements", "AchievementCoinsFormatFallback", "{0} CC"), FText::AsNumber(ACBalance));
 
 	SAssignNew(SkinsListBoxWidget, SVerticalBox);
 	AddSkinRowsToBox(SkinsListBoxWidget);
@@ -1379,6 +1380,7 @@ void UT66CompanionSelectionScreen::OnScreenActivated_Implementation()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->PrimeHeroSelectionAssetsAsync();
+		GI->PrimeHeroSelectionPreviewVisualsAsync();
 		if (!GI->SelectedCompanionID.IsNone() && AllCompanionIDs.Contains(GI->SelectedCompanionID))
 			PreviewCompanion(GI->SelectedCompanionID);
 		else
@@ -1480,6 +1482,10 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		GI->SelectedCompanionID = PreviewedCompanionID;
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->SetLocalLobbyReady(false);
+		}
 
 		if (UWorld* World = GetWorld())
 		{

@@ -16,6 +16,43 @@
 #include "Kismet/GameplayStatics.h"
 #include "Core/T66RunStateSubsystem.h"
 
+namespace
+{
+	APawn* T66ResolveCompanionFollowHero(const AActor* CompanionActor)
+	{
+		if (!CompanionActor)
+		{
+			return nullptr;
+		}
+
+		if (APawn* OwnerPawn = Cast<APawn>(CompanionActor->GetOwner()))
+		{
+			return OwnerPawn;
+		}
+
+		if (AController* OwnerController = Cast<AController>(CompanionActor->GetOwner()))
+		{
+			if (APawn* OwnerControlledPawn = OwnerController->GetPawn())
+			{
+				return OwnerControlledPawn;
+			}
+		}
+
+		if (APawn* InstigatorPawn = CompanionActor->GetInstigator())
+		{
+			return InstigatorPawn;
+		}
+
+		UWorld* World = CompanionActor->GetWorld();
+		if (APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr)
+		{
+			return PC->GetPawn();
+		}
+
+		return nullptr;
+	}
+}
+
 AT66CompanionBase::AT66CompanionBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -69,6 +106,8 @@ void AT66CompanionBase::BeginPlay()
 			CachedAchievementsSubsystem->AchievementsUnlocked.AddDynamic(this, &AT66CompanionBase::HandleAchievementsUnlocked);
 		}
 	}
+
+	CachedHeroPawn = T66ResolveCompanionFollowHero(this);
 }
 
 void AT66CompanionBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -231,9 +270,9 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	APawn* Hero = CachedHeroPawn.Get();
 	if (!Hero)
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
+		Hero = T66ResolveCompanionFollowHero(this);
+		if (Hero)
 		{
-			Hero = PC->GetPawn();
 			CachedHeroPawn = Hero;
 		}
 	}

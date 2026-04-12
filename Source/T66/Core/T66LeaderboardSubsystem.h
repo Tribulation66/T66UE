@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66LegacyRuntimeDataAccess.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66LocalLeaderboardSaveGame.h"
 #include "UI/T66UITypes.h"
@@ -108,7 +109,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AccountStatus")
 	void RefreshAccountStatusFromBackend();
 
-	/** Current account restriction record (local placeholder until backend exists). */
+	/** Current account restriction record (backend-backed with a local cache). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
 	FT66AccountRestrictionRecord GetAccountRestrictionRecord() const;
 
@@ -124,7 +125,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "AccountStatus")
 	bool CanSubmitAccountAppeal() const;
 
-	/** Submit an appeal message + evidence URL (local placeholder). */
+	/** Submit an appeal message + evidence URL. */
 	UFUNCTION(BlueprintCallable, Category = "AccountStatus")
 	void SubmitAccountAppeal(const FString& Message, const FString& EvidenceUrl);
 
@@ -155,17 +156,38 @@ public:
 	void DebugClearLocalLeaderboard();
 
 private:
+	enum class EBestRankRecordType : uint8
+	{
+		Score,
+		CompletedRunTime,
+	};
+
+	struct FPendingBestRankSubmission
+	{
+		EBestRankRecordType Type = EBestRankRecordType::Score;
+		ET66Difficulty Difficulty = ET66Difficulty::Easy;
+		ET66PartySize PartySize = ET66PartySize::Solo;
+		int64 Score = 0;
+		float Seconds = 0.f;
+		FString RunSummarySlotName;
+		FDateTime AchievedAtUtc = FDateTime::MinValue();
+	};
+
 	static constexpr const TCHAR* LocalSaveSlotName = TEXT("T66_LocalLeaderboard");
-	static constexpr const TCHAR* ScoreTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_ScoreTargets.DT_Leaderboard_ScoreTargets");
+	static constexpr const TCHAR* AccountRestrictionRunSummarySlotName = TEXT("T66_AccountRestrictionRunSummary");
+	static constexpr int32 MinCompatibleLocalSaveSchemaVersion = 3;
+	static constexpr const TCHAR* ScoreTargetsDTPath = TEXT("/Game/Data/Leaderboard_ScoreTargets.Leaderboard_ScoreTargets");
 	static constexpr const TCHAR* SpeedRunTargetsDTPath = TEXT("/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets");
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LocalLeaderboardSaveGame> LocalSave;
 
-	// Targets (placeholder "global" tuning) loaded from CSV under Content/Data if present.
-	// Score target is keyed by Difficulty+PartySize. Speedrun target is keyed by Difficulty+Stage (party applies as a multiplier).
+	// Legacy runtime targets. Cleanup keeps the current CSV-first behavior visible and
+	// explicit until the packaged-parity pass moves these to cooked ownership.
 	TMap<uint64, int64> ScoreTarget10ByKey;
 	TMap<uint64, float> SpeedRunTarget10ByKey_DiffStage;
+	ET66RuntimeDataSource ScoreTargetRuntimeSource = ET66RuntimeDataSource::None;
+	ET66RuntimeDataSource SpeedRunTargetRuntimeSource = ET66RuntimeDataSource::None;
 
 	void LoadOrCreateLocalSave();
 	void SaveLocalSave() const;
@@ -187,9 +209,6 @@ private:
 	FT66LocalCompletedRunTimeRecord* FindLocalCompletedRunTimeRecordMutable(ET66Difficulty Difficulty, ET66PartySize PartySize);
 
 	bool LoadTargetsFromDataTablesIfPresent();
-	void LoadTargetsFromCsv();
-	void LoadScoreTargetsFromCsv(const FString& AbsPath);
-	void LoadSpeedRunTargetsFromCsv(const FString& AbsPath);
 
 	static uint64 MakeScoreKey(ET66Difficulty Difficulty, ET66PartySize PartySize);
 	static uint64 MakeSpeedRunKey_DiffStage(ET66Difficulty Difficulty, int32 Stage);
@@ -198,6 +217,8 @@ private:
 	float GetSpeedRunTarget10(ET66Difficulty Difficulty, ET66PartySize PartySize, int32 Stage) const;
 
 	bool GetSettingsPracticeAndAnon(bool& bOutPractice, bool& bOutAnon) const;
+	FString MakePendingBestRankRequestKey(EBestRankRecordType Type, ET66Difficulty Difficulty, ET66PartySize PartySize) const;
+	void HandleBackendSubmitRunDataReady(const FString& RequestKey, bool bSuccess, int32 ScoreRankAlltime, int32 ScoreRankWeekly, bool bNewPersonalBest);
 
 	// Transient UI "handshake": panel sets a requested slot name, RunSummaryScreen consumes it.
 	FString PendingRunSummarySlotName;
@@ -212,6 +233,7 @@ private:
 
 	// Transient UI "handshake": a viewer-mode run summary can request reopening a modal afterwards (single-modal UI manager).
 	ET66ScreenType PendingReturnModalAfterViewerRunSummary = ET66ScreenType::None;
+	TMap<FString, FPendingBestRankSubmission> PendingBestRankSubmissions;
 
 	// ===== Last submit results (for Run Summary "New Personal Best" banners) =====
 	bool bLastScoreWasNewBest = false;
@@ -222,6 +244,15 @@ private:
 	UFUNCTION()
 	void HandleBackendAccountStatusComplete(bool bSuccess, const FString& Restriction);
 
+	UFUNCTION()
+	void HandleBackendAppealSubmitComplete(bool bSuccess, const FString& Message);
+
+	void HandleBackendRunSummaryReady(const FString& EntryId);
+
 	bool bAccountStatusRefreshRequested = false;
+	bool bAccountAppealSubmitInFlight = false;
+	FString PendingAccountRestrictionRunSummaryId;
+	FString PendingAppealMessage;
+	FString PendingAppealEvidenceUrl;
 };
 

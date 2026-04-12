@@ -7,6 +7,7 @@
 #include "Containers/Ticker.h"
 #include "Delegates/Delegate.h"
 #include "Data/T66DataTypes.h"
+#include "UI/T66UITypes.h"
 #include "T66PartySubsystem.generated.h"
 
 class UT66RunSaveGame;
@@ -83,7 +84,7 @@ public:
 	bool IsFriendInParty(const FString& PlayerId) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Party")
-	bool InviteFriend(const FString& PlayerId);
+	bool InviteFriend(const FString& PlayerId, const FString& DisplayName = TEXT(""));
 
 	UFUNCTION(BlueprintCallable, Category = "Party")
 	bool RemovePartyMember(const FString& PlayerId);
@@ -117,6 +118,9 @@ private:
 	TArray<FT66PartyMemberEntry> PartyMembers;
 	FString LocalPlayerId;
 	FString LocalDisplayName;
+	int32 LastObservedAvatarRevision = INDEX_NONE;
+	ET66ScreenType LastObservedDesiredFrontendScreen = ET66ScreenType::None;
+	ET66Difficulty LastObservedSharedDifficulty = ET66Difficulty::Easy;
 	FOnT66PartyStateChanged PartyStateChanged;
 	FTSTicker::FDelegateHandle PartyTickerHandle;
 };

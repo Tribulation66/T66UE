@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/T66CompanionGridScreen.h"
+#include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/T66CompanionSelectionScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
@@ -10,9 +11,10 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66Style.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/Texture2D.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SButton.h"
@@ -61,6 +63,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	FText TitleText = Loc ? Loc->GetText_CompanionGrid() : NSLOCTEXT("T66.CompanionGrid", "Title", "COMPANION GRID");
 	FText CloseText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionGrid", "NoCompanion", "NO COMPANION");
+	const FVector2D SafeFrameSize = FT66Style::GetSafeFrameSize();
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
@@ -69,8 +72,26 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	IDsWithNone.Add(NAME_None);
 	IDsWithNone.Append(AllCompanionIDs);
 
-	const int32 Columns = FMath::Max(1, FMath::Min(3, IDsWithNone.Num()));
-	const int32 Rows = IDsWithNone.Num() > 0 ? (IDsWithNone.Num() + Columns - 1) / Columns : 0;
+	const int32 CompanionCount = IDsWithNone.Num();
+	const int32 Columns = FMath::Max(1, FMath::CeilToInt(FMath::Sqrt(static_cast<float>(FMath::Max(CompanionCount, 1)))));
+	const int32 Rows = FMath::Max(1, FMath::CeilToInt(static_cast<float>(FMath::Max(CompanionCount, 1)) / static_cast<float>(Columns)));
+	const float ModalWidth = FMath::Min(SafeFrameSize.X * 0.92f, 1180.0f);
+	const float ModalHeight = FMath::Min(SafeFrameSize.Y * 0.94f, 700.0f);
+	const float ModalPaddingX = 30.0f;
+	const float ModalPaddingY = 25.0f;
+	const float TitleSectionHeight = 58.0f;
+	const float FooterSectionHeight = 78.0f;
+	const float TileGap = 6.0f;
+	const float GridWidthBudget = FMath::Max(1.0f, ModalWidth - (ModalPaddingX * 2.0f));
+	const float GridHeightBudget = FMath::Max(1.0f, ModalHeight - (ModalPaddingY * 2.0f) - TitleSectionHeight - FooterSectionHeight);
+	const float TileSize = FMath::Clamp(
+		FMath::FloorToFloat(FMath::Min(
+			(GridWidthBudget - TileGap * static_cast<float>(Columns)) / static_cast<float>(Columns),
+			(GridHeightBudget - TileGap * static_cast<float>(Rows)) / static_cast<float>(Rows))),
+		64.0f,
+		256.0f);
+	const float GridWidth = Columns * TileSize + Columns * TileGap;
+	const float GridHeight = Rows * TileSize + Rows * TileGap;
 
 	CompanionPortraitBrushes.Reset();
 	CompanionPortraitBrushes.Reserve(IDsWithNone.Num());
@@ -127,30 +148,49 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 
 		FName CompanionIDCopy = CompanionID;
 		TSharedPtr<FSlateBrush> PortraitBrushCopy = PortraitBrush;
+		const TSharedRef<SWidget> PortraitContent = PortraitBrushCopy.IsValid()
+			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrushCopy.Get()))
+			: (CompanionIDCopy.IsNone()
+				? StaticCastSharedRef<SWidget>(
+					SNew(STextBlock)
+					.Text(NoCompanionText)
+					.Font(FT66Style::Tokens::FontBold(FMath::Clamp(FMath::RoundToInt(TileSize * 0.16f), 10, 18)))
+					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Justification(ETextJustify::Center)
+					.AutoWrapText(true))
+				: StaticCastSharedRef<SWidget>(SNew(SSpacer)));
 		GridPanel->AddSlot(Col, Row)
-			.Padding(8.0f)
+			.Padding(TileGap * 0.5f)
 			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); }))
-					.SetMinWidth(0.f)
-					.SetColor(FLinearColor::Transparent)
-					.SetEnabled(CompanionIDCopy.IsNone() || bUnlocked)
-					.SetContent(
-						SNew(SOverlay)
-						+ SOverlay::Slot()
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(SpriteColor)
-						]
-						+ SOverlay::Slot()
-						[
-							PortraitBrushCopy.IsValid()
-							? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrushCopy.Get()))
-							: StaticCastSharedRef<SWidget>(SNew(SSpacer))
-						]
+				SNew(SBox)
+				.WidthOverride(TileSize)
+				.HeightOverride(TileSize)
+				[
+					FT66Style::MakeButton(
+						FT66ButtonParams(FText::GetEmpty(), FOnClicked::CreateLambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); }))
+						.SetMinWidth(0.f)
+						.SetPadding(FMargin(0.0f))
+						.SetColor(FLinearColor::Transparent)
+						.SetEnabled(CompanionIDCopy.IsNone() || bUnlocked)
+						.SetContent(
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(SpriteColor)
+							]
+							+ SOverlay::Slot()
+							[
+								SNew(SScaleBox)
+								.Stretch(EStretch::ScaleToFit)
+								[
+									PortraitContent
+								]
+							]
+						)
 					)
-				)
+				]
 			];
 	}
 
@@ -160,32 +200,24 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 		const int32 Row = Index / Columns;
 		const int32 Col = Index % Columns;
 		GridPanel->AddSlot(Col, Row)
-			.Padding(8.0f)
+			.Padding(TileGap * 0.5f)
 			[
-				SNew(SSpacer)
+				SNew(SBox)
+				.WidthOverride(TileSize)
+				.HeightOverride(TileSize)
+				[
+					SNew(SSpacer)
+				]
 			];
 	}
-	for (int32 Col = 0; Col < Columns; Col++)
-	{
-		GridPanel->SetColumnFill(Col, 1.0f);
-	}
-	for (int32 Row = 0; Row < Rows; Row++)
-	{
-		GridPanel->SetRowFill(Row, 1.0f);
-	}
-
-	TSharedRef<SVerticalBox> GridVertical = SNew(SVerticalBox);
-	GridVertical->AddSlot()
-		.FillHeight(1.0f)
-		[
-			GridPanel
-		];
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FT66Style::Scrim())
 		[
 			SNew(SBox)
+			.WidthOverride(ModalWidth)
+			.HeightOverride(ModalHeight)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
@@ -207,12 +239,14 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot()
 					.FillHeight(1.0f)
-					.MaxHeight(450.0f)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
 					[
-						SNew(SScrollBox)
-						+ SScrollBox::Slot()
+						SNew(SBox)
+						.WidthOverride(GridWidth)
+						.HeightOverride(GridHeight)
 						[
-							GridVertical
+							GridPanel
 						]
 					]
 					+ SVerticalBox::Slot()
@@ -260,6 +294,17 @@ FReply UT66CompanionGridScreen::HandleCompanionClicked(FName CompanionID)
 			else
 			{
 				CompScreen->PreviewCompanion(CompanionID);
+			}
+		}
+		else if (UT66HeroSelectionScreen* HeroScreen = Cast<UT66HeroSelectionScreen>(Underlying))
+		{
+			if (CompanionID.IsNone())
+			{
+				HeroScreen->SelectNoCompanion();
+			}
+			else
+			{
+				HeroScreen->PreviewCompanion(CompanionID);
 			}
 		}
 	}

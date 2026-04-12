@@ -18,13 +18,12 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
-#include "UI/Screens/T66PowerUpScreen.h"
+#include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
-#include "UI/T66LoadPreviewOverlayWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
 #include "UI/T66VendorOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
@@ -46,7 +45,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
-#include "Core/T66PowerUpSubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -102,6 +101,10 @@ void AT66PlayerController::OpenWorldDialogueVendor(AT66VendorNPC* Vendor)
 	if (!IsGameplayLevel()) return;
 	if (!GameplayHUDWidget) return;
 	if (!Vendor) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -132,6 +135,10 @@ void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
 	if (!IsGameplayLevel()) return;
 	if (!GameplayHUDWidget) return;
 	if (!Gambler) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -161,6 +168,10 @@ void AT66PlayerController::OpenWorldDialogueCompanion(AT66RecruitableCompanion* 
 	if (!IsGameplayLevel()) return;
 	if (!GameplayHUDWidget) return;
 	if (!Companion) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
 
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;

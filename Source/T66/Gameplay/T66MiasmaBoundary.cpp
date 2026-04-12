@@ -1,293 +1,57 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66MiasmaBoundary.h"
+#include "Gameplay/T66LavaShared.h"
 
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
-#include "Engine/Texture2D.h"
+#include "Engine/World.h"
 #include "Gameplay/T66HeroBase.h"
-#include "ImageUtils.h"
+#include "Gameplay/T66MainMapTerrain.h"
+#include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Kismet/GameplayStatics.h"
-#include "KismetProceduralMeshLibrary.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
-#include "Misc/Paths.h"
-#include "ProceduralMeshComponent.h"
 
 namespace
 {
-	struct FT66BoundaryMeshSection
+	struct FT66BoundaryCellInfo
 	{
-		TArray<FVector> Verts;
-		TArray<int32> Tris;
-		TArray<FVector> Normals;
-		TArray<FVector2D> UVs;
-
-		bool HasGeometry() const
-		{
-			return Verts.Num() > 0 && Tris.Num() > 0;
-		}
+		FIntPoint Coordinate = FIntPoint::ZeroValue;
+		float TopSurfaceZ = 0.f;
 	};
 
-	struct FT66BoundarySample
-	{
-		float Along = 0.f;
-		float GroundZ = 0.f;
-		float VerticalFaceTopZ = 0.f;
-		float RidgeDepth = 0.f;
-		float RidgeHeight = 0.f;
-		float OuterDepth = 0.f;
-		float SampleBaseSink = 0.f;
-		float OuterDrop = 0.f;
-	};
-
-	enum class ET66BoundarySide : uint8
-	{
-		North,
-		South,
-		East,
-		West
-	};
-
-	static FVector T66GetBoundaryAlongDirection(ET66BoundarySide Side)
-	{
-		switch (Side)
-		{
-		case ET66BoundarySide::East:
-		case ET66BoundarySide::West:
-			return FVector(0.f, 1.f, 0.f);
-		default:
-			return FVector(1.f, 0.f, 0.f);
-		}
-	}
-
-	static FVector T66GetBoundaryOutwardDirection(ET66BoundarySide Side)
-	{
-		switch (Side)
-		{
-		case ET66BoundarySide::North:
-			return FVector(0.f, 1.f, 0.f);
-		case ET66BoundarySide::South:
-			return FVector(0.f, -1.f, 0.f);
-		case ET66BoundarySide::East:
-			return FVector(1.f, 0.f, 0.f);
-		default:
-			return FVector(-1.f, 0.f, 0.f);
-		}
-	}
-
-	static FVector T66GetBoundaryOrigin(ET66BoundarySide Side, float SafeHalfExtent)
-	{
-		switch (Side)
-		{
-		case ET66BoundarySide::North:
-			return FVector(0.f, SafeHalfExtent, 0.f);
-		case ET66BoundarySide::South:
-			return FVector(0.f, -SafeHalfExtent, 0.f);
-		case ET66BoundarySide::East:
-			return FVector(SafeHalfExtent, 0.f, 0.f);
-		default:
-			return FVector(-SafeHalfExtent, 0.f, 0.f);
-		}
-	}
-
-	static FVector T66MakeBoundaryPoint(ET66BoundarySide Side, float SafeHalfExtent, float Along, float OutwardOffset, float Z)
-	{
-		return T66GetBoundaryOrigin(Side, SafeHalfExtent)
-			+ T66GetBoundaryAlongDirection(Side) * Along
-			+ T66GetBoundaryOutwardDirection(Side) * OutwardOffset
-			+ FVector(0.f, 0.f, Z);
-	}
-
-	static uint32 T66BoundaryHash(uint32 Seed, uint32 A, uint32 B)
-	{
-		uint32 Value = Seed ^ 0x9E3779B9u;
-		Value ^= A + 0x7F4A7C15u + (Value << 6) + (Value >> 2);
-		Value ^= B + 0x85EBCA6Bu + (Value << 6) + (Value >> 2);
-		return Value;
-	}
-
-	static float T66SampleGroundZ(UWorld* World, const AActor* IgnoredActor, const FVector& SampleLocation, float FallbackZ)
+	static bool T66UsesMainMapPerimeterWalls(const UWorld* World)
 	{
 		if (!World)
 		{
-			return FallbackZ;
+			return false;
 		}
 
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(T66BoundaryGroundTrace), false, IgnoredActor);
-		FHitResult Hit;
-		const FVector TraceStart = SampleLocation + FVector(0.f, 0.f, 8000.f);
-		const FVector TraceEnd = SampleLocation - FVector(0.f, 0.f, 20000.f);
-
-		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, Params) ||
-			World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params))
-		{
-			return Hit.ImpactPoint.Z;
-		}
-
-		return FallbackZ;
+		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
+		return !MapName.Contains(TEXT("Coliseum"))
+			&& !MapName.Contains(TEXT("Tutorial"))
+			&& !MapName.Contains(TEXT("Lab"));
 	}
 
-	static void T66AppendQuadFacing(
-		FT66BoundaryMeshSection& Section,
-		const FVector& A,
-		const FVector& B,
-		const FVector& C,
-		const FVector& D,
-		const FVector& PreferredNormal)
+	static UStaticMesh* T66LoadBoundaryPlaneMesh()
 	{
-		FVector V0 = A;
-		FVector V1 = B;
-		FVector V2 = C;
-		FVector V3 = D;
-
-		FVector FaceNormal = FVector::CrossProduct(V1 - V0, V2 - V0).GetSafeNormal();
-		if (!PreferredNormal.IsNearlyZero() && FVector::DotProduct(FaceNormal, PreferredNormal) < 0.f)
+		static TObjectPtr<UStaticMesh> CachedMesh = nullptr;
+		if (!CachedMesh)
 		{
-			V1 = D;
-			V2 = C;
-			V3 = B;
-			FaceNormal = FVector::CrossProduct(V1 - V0, V2 - V0).GetSafeNormal();
+			CachedMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
 		}
 
-		const float USize = FMath::Max((V1 - V0).Size() / 800.f, 1.f);
-		const float VSize = FMath::Max((V3 - V0).Size() / 800.f, 1.f);
-		const int32 Base = Section.Verts.Num();
-
-		Section.Verts.Add(V0);
-		Section.Verts.Add(V1);
-		Section.Verts.Add(V2);
-		Section.Verts.Add(V3);
-
-		Section.Normals.Add(FaceNormal);
-		Section.Normals.Add(FaceNormal);
-		Section.Normals.Add(FaceNormal);
-		Section.Normals.Add(FaceNormal);
-
-		Section.UVs.Add(FVector2D(0.f, 0.f));
-		Section.UVs.Add(FVector2D(USize, 0.f));
-		Section.UVs.Add(FVector2D(USize, VSize));
-		Section.UVs.Add(FVector2D(0.f, VSize));
-
-		Section.Tris.Add(Base);
-		Section.Tris.Add(Base + 1);
-		Section.Tris.Add(Base + 2);
-		Section.Tris.Add(Base);
-		Section.Tris.Add(Base + 2);
-		Section.Tris.Add(Base + 3);
+		return CachedMesh.Get();
 	}
 
-	static void T66AppendTriangleFacing(
-		FT66BoundaryMeshSection& Section,
-		const FVector& A,
-		const FVector& B,
-		const FVector& C,
-		const FVector& PreferredNormal)
+	static UMaterialInterface* T66CreateBoundaryLavaMaterial(UObject* Outer)
 	{
-		FVector V0 = A;
-		FVector V1 = B;
-		FVector V2 = C;
-
-		FVector FaceNormal = FVector::CrossProduct(V1 - V0, V2 - V0).GetSafeNormal();
-		if (!PreferredNormal.IsNearlyZero() && FVector::DotProduct(FaceNormal, PreferredNormal) < 0.f)
-		{
-			Swap(V1, V2);
-			FaceNormal = FVector::CrossProduct(V1 - V0, V2 - V0).GetSafeNormal();
-		}
-
-		const int32 Base = Section.Verts.Num();
-		Section.Verts.Add(V0);
-		Section.Verts.Add(V1);
-		Section.Verts.Add(V2);
-
-		Section.Normals.Add(FaceNormal);
-		Section.Normals.Add(FaceNormal);
-		Section.Normals.Add(FaceNormal);
-
-		Section.UVs.Add(FVector2D(0.f, 0.f));
-		Section.UVs.Add(FVector2D(FMath::Max((V1 - V0).Size() / 800.f, 1.f), 0.f));
-		Section.UVs.Add(FVector2D(0.f, FMath::Max((V2 - V0).Size() / 800.f, 1.f)));
-
-		Section.Tris.Add(Base);
-		Section.Tris.Add(Base + 1);
-		Section.Tris.Add(Base + 2);
-	}
-
-	static void T66LoadBoundaryCliffMaterials(TArray<UMaterialInterface*>& OutMaterials)
-	{
-		static const TCHAR* PreferredPaths[] = {
-			TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1"),
-			TEXT("/Game/World/Cliffs/MI_HillTile2.MI_HillTile2"),
-			TEXT("/Game/World/Cliffs/MI_HillTile3.MI_HillTile3"),
-			TEXT("/Game/World/Cliffs/MI_HillTile4.MI_HillTile4"),
-		};
-
-		for (const TCHAR* Path : PreferredPaths)
-		{
-			if (UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, Path))
-			{
-				OutMaterials.Add(Material);
-			}
-		}
-	}
-
-	static UTexture2D* T66LoadOuterWallTexture()
-	{
-		static TObjectPtr<UTexture2D> CachedTexture = nullptr;
-		if (CachedTexture)
-		{
-			return CachedTexture.Get();
-		}
-
-		static const TCHAR* ImportedTexturePaths[] = {
-			TEXT("/Game/World/Cliffs/T_OuterWallTexture.T_OuterWallTexture"),
-			TEXT("/Game/World/Cliffs/OuterWallTexture.OuterWallTexture"),
-		};
-		for (const TCHAR* TexturePath : ImportedTexturePaths)
-		{
-			if (UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, TexturePath))
-			{
-				CachedTexture = Texture;
-				return Texture;
-			}
-		}
-
-		const FString SourceTexturePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("SourceAssets/OuterWallTexture.png"));
-		if (!FPaths::FileExists(SourceTexturePath))
-		{
-			return nullptr;
-		}
-
-		UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(SourceTexturePath);
-		if (!Texture)
-		{
-			return nullptr;
-		}
-
-		Texture->SRGB = true;
-		Texture->LODGroup = TEXTUREGROUP_World;
-		Texture->UpdateResource();
-		Texture->AddToRoot();
-		CachedTexture = Texture;
-		return Texture;
-	}
-
-	static UMaterialInterface* T66CreateOuterWallMaterial(UObject* Outer)
-	{
-		static const TCHAR* ImportedMaterialPaths[] = {
-			TEXT("/Game/World/Cliffs/MI_OuterWallTexture.MI_OuterWallTexture"),
-			TEXT("/Game/World/Cliffs/MI_OuterWall.MI_OuterWall"),
-		};
-		for (const TCHAR* MaterialPath : ImportedMaterialPaths)
-		{
-			if (UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, MaterialPath))
-			{
-				return Material;
-			}
-		}
-
 		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
 		if (!BaseMaterial)
 		{
@@ -300,65 +64,65 @@ namespace
 			return nullptr;
 		}
 
-		UTexture* ColorTexture = T66LoadOuterWallTexture();
-		if (!ColorTexture)
+		if (UTexture* WhiteTexture = LoadObject<UTexture>(nullptr, T66LavaShared::DefaultTexturePath))
 		{
-			ColorTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
-		}
-		if (!ColorTexture)
-		{
-			ColorTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
-		}
-		if (ColorTexture)
-		{
-			Material->SetTextureParameterValue(TEXT("DiffuseColorMap"), ColorTexture);
-			Material->SetTextureParameterValue(TEXT("BaseColorTexture"), ColorTexture);
+			Material->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
+			Material->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
 		}
 
-		const FLinearColor RockTint = T66LoadOuterWallTexture()
-			? FLinearColor::White
-			: FLinearColor(0.31f, 0.26f, 0.20f, 1.f);
-		Material->SetVectorParameterValue(TEXT("Tint"), RockTint);
-		Material->SetVectorParameterValue(TEXT("BaseColor"), RockTint);
-		Material->SetScalarParameterValue(TEXT("Brightness"), 1.f);
+		const FLinearColor LavaTint(1.00f, 0.34f, 0.05f, 1.f);
+		Material->SetVectorParameterValue(TEXT("Tint"), LavaTint);
+		Material->SetVectorParameterValue(TEXT("BaseColor"), LavaTint);
+		Material->SetScalarParameterValue(TEXT("Brightness"), 2.6f);
 		return Material;
 	}
 
-	static void T66AppendBoundarySegment(
-		FT66BoundaryMeshSection& Section,
-		ET66BoundarySide Side,
-		float SafeHalfExtent,
-		const FT66BoundarySample& A,
-		const FT66BoundarySample& B,
-		bool bCapStart,
-		bool bCapEnd)
+	static float T66GetCellTopSurfaceZ(const T66MainMapTerrain::FBoard& Board, int32 Level)
 	{
-		const FVector AlongDir = T66GetBoundaryAlongDirection(Side);
-		const FVector OutwardDir = T66GetBoundaryOutwardDirection(Side);
+		return Board.Settings.BaselineZ
+			+ static_cast<float>(Level) * Board.Settings.StepHeight
+			+ Board.Settings.StepHeight * 0.5f;
+	}
 
-		const FVector AInner = T66MakeBoundaryPoint(Side, SafeHalfExtent, A.Along, 0.f, A.GroundZ - A.SampleBaseSink);
-		const FVector AKnee = T66MakeBoundaryPoint(Side, SafeHalfExtent, A.Along, 0.f, A.VerticalFaceTopZ);
-		const FVector ARidge = T66MakeBoundaryPoint(Side, SafeHalfExtent, A.Along, A.RidgeDepth, A.GroundZ + A.RidgeHeight);
-		const FVector AOuter = T66MakeBoundaryPoint(Side, SafeHalfExtent, A.Along, A.OuterDepth, A.GroundZ - A.SampleBaseSink - A.OuterDrop);
+	static FVector T66GetCellCenter(const T66MainMapTerrain::FBoard& Board, const FIntPoint& Coordinate, float Z)
+	{
+		return FVector(
+			-Board.Settings.HalfExtent + (static_cast<float>(Coordinate.X) + 0.5f) * Board.Settings.CellSize,
+			-Board.Settings.HalfExtent + (static_cast<float>(Coordinate.Y) + 0.5f) * Board.Settings.CellSize,
+			Z);
+	}
 
-		const FVector BInner = T66MakeBoundaryPoint(Side, SafeHalfExtent, B.Along, 0.f, B.GroundZ - B.SampleBaseSink);
-		const FVector BKnee = T66MakeBoundaryPoint(Side, SafeHalfExtent, B.Along, 0.f, B.VerticalFaceTopZ);
-		const FVector BRidge = T66MakeBoundaryPoint(Side, SafeHalfExtent, B.Along, B.RidgeDepth, B.GroundZ + B.RidgeHeight);
-		const FVector BOuter = T66MakeBoundaryPoint(Side, SafeHalfExtent, B.Along, B.OuterDepth, B.GroundZ - B.SampleBaseSink - B.OuterDrop);
-
-		T66AppendQuadFacing(Section, AInner, BInner, BKnee, AKnee, -OutwardDir);
-		T66AppendQuadFacing(Section, AKnee, BKnee, BRidge, ARidge, -OutwardDir);
-		T66AppendQuadFacing(Section, ARidge, BRidge, BOuter, AOuter, OutwardDir);
-		T66AppendQuadFacing(Section, AOuter, BOuter, BInner, AInner, FVector(0.f, 0.f, -1.f));
-
-		if (bCapStart)
+	static void T66CollectBoundaryCellInfo(
+		const T66MainMapTerrain::FBoard& Board,
+		const T66MainMapTerrain::FCell& Cell,
+		TMap<FIntPoint, FT66BoundaryCellInfo>& OutCellInfo)
+	{
+		if (!Cell.bOccupied)
 		{
-			T66AppendQuadFacing(Section, AInner, AKnee, ARidge, AOuter, -AlongDir);
+			return;
 		}
-		if (bCapEnd)
+
+		const FIntPoint Coordinate(Cell.X, Cell.Z);
+		FT66BoundaryCellInfo& CellInfo = OutCellInfo.FindOrAdd(Coordinate);
+		CellInfo.Coordinate = Coordinate;
+		CellInfo.TopSurfaceZ = T66GetCellTopSurfaceZ(Board, Cell.Level);
+	}
+
+	static void T66AddBoundaryLavaInstance(
+		UInstancedStaticMeshComponent* LavaInstances,
+		const FVector& Center,
+		float CellSize)
+	{
+		if (!LavaInstances)
 		{
-			T66AppendQuadFacing(Section, BInner, BOuter, BRidge, BKnee, AlongDir);
+			return;
 		}
+
+		const FVector Scale(
+			FMath::Max(CellSize / 100.f, 0.1f),
+			FMath::Max(CellSize / 100.f, 0.1f),
+			1.0f);
+		LavaInstances->AddInstance(FTransform(FRotator::ZeroRotator, Center, Scale));
 	}
 }
 
@@ -370,33 +134,33 @@ AT66MiasmaBoundary::AT66MiasmaBoundary()
 	SceneRoot->SetMobility(EComponentMobility::Static);
 	SetRootComponent(SceneRoot);
 
-	BoundaryCliffMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("BoundaryCliffs"));
-	BoundaryCliffMesh->SetupAttachment(SceneRoot);
-	BoundaryCliffMesh->SetMobility(EComponentMobility::Static);
-	BoundaryCliffMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	BoundaryCliffMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	BoundaryCliffMesh->SetGenerateOverlapEvents(false);
-	BoundaryCliffMesh->SetCanEverAffectNavigation(false);
-	BoundaryCliffMesh->bUseAsyncCooking = true;
-	BoundaryCliffMesh->bUseComplexAsSimpleCollision = true;
+	BoundaryWallInstances = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("BoundaryWallInstances"));
+	BoundaryWallInstances->SetupAttachment(SceneRoot);
+	BoundaryWallInstances->SetMobility(EComponentMobility::Static);
+	BoundaryWallInstances->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	BoundaryWallInstances->SetCollisionResponseToAllChannels(ECR_Block);
+	BoundaryWallInstances->SetGenerateOverlapEvents(false);
+	BoundaryWallInstances->SetCanEverAffectNavigation(false);
+	if (UStaticMesh* PlaneMesh = T66LoadBoundaryPlaneMesh())
+	{
+		BoundaryWallInstances->SetStaticMesh(PlaneMesh);
+	}
 }
 
 void AT66MiasmaBoundary::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [GOLD] Register with the actor registry (replaces TActorIterator for map markers).
-	if (UWorld* W = GetWorld())
+	if (UWorld* World = GetWorld())
 	{
-		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
 			Registry->RegisterMiasmaBoundary(this);
 		}
 	}
 
-	BuildBoundaryCliffs();
+	BuildBoundaryWalls();
 
-	// Apply damage tick when player is outside the safe rectangle.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(DamageTimerHandle, this, &AT66MiasmaBoundary::ApplyBoundaryDamageTick, DamageIntervalSeconds, true, DamageIntervalSeconds);
@@ -405,148 +169,159 @@ void AT66MiasmaBoundary::BeginPlay()
 
 void AT66MiasmaBoundary::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// [GOLD] Unregister from the actor registry.
-	if (UWorld* W = GetWorld())
+	if (UWorld* World = GetWorld())
 	{
-		if (UT66ActorRegistrySubsystem* Registry = W->GetSubsystem<UT66ActorRegistrySubsystem>())
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
 			Registry->UnregisterMiasmaBoundary(this);
 		}
-	}
 
-	if (UWorld* World = GetWorld())
-	{
 		World->GetTimerManager().ClearTimer(DamageTimerHandle);
 	}
+
 	Super::EndPlay(EndPlayReason);
 }
 
-void AT66MiasmaBoundary::BuildBoundaryCliffs()
+void AT66MiasmaBoundary::BuildBoundaryWalls()
 {
 	UWorld* World = GetWorld();
-	if (!World || !BoundaryCliffMesh)
+	if (!World || !BoundaryWallInstances)
 	{
 		return;
 	}
 
-	BoundaryCliffMesh->ClearAllMeshSections();
+	BoundaryWallInstances->ClearInstances();
+	PlayableCellCoordinates.Reset();
+	PlayableCellSize = 2000.f;
+	PlayableHalfExtent = SafeHalfExtent;
 
-	TArray<UMaterialInterface*> CliffMaterials;
-	if (UMaterialInterface* OuterWallMaterial = T66CreateOuterWallMaterial(this))
+	if (!BoundaryWallInstances->GetStaticMesh())
 	{
-		CliffMaterials.Add(OuterWallMaterial);
-	}
-	else
-	{
-		T66LoadBoundaryCliffMaterials(CliffMaterials);
-	}
-	UMaterialInterface* FallbackMaterial = CliffMaterials.Num() == 0 ? T66CreateOuterWallMaterial(this) : nullptr;
-	const int32 MaterialBucketCount = FMath::Max(CliffMaterials.Num(), 1);
-
-	TArray<FT66BoundaryMeshSection> Sections;
-	Sections.SetNum(MaterialBucketCount);
-
-	const int32 SegmentCount = FMath::Max(SegmentsPerSide, 4);
-	const float MinHeight = FMath::Min(WallHeight, MaxWallHeight);
-	const float MaxHeight = FMath::Max(WallHeight, MaxWallHeight);
-	const float MinDepth = FMath::Min(WallThickness, MaxWallThickness);
-	const float MaxDepth = FMath::Max(WallThickness, MaxWallThickness);
-	const float SideStart = -SafeHalfExtent - CornerOverlap;
-	const float SideEnd = SafeHalfExtent + CornerOverlap;
-
-	for (int32 SideIndex = 0; SideIndex < 4; ++SideIndex)
-	{
-		const ET66BoundarySide Side = static_cast<ET66BoundarySide>(SideIndex);
-		TArray<FT66BoundarySample> Samples;
-		Samples.SetNum(SegmentCount + 1);
-
-		for (int32 SampleIndex = 0; SampleIndex <= SegmentCount; ++SampleIndex)
-		{
-			const uint32 Hash = T66BoundaryHash(static_cast<uint32>(BoundarySeed), static_cast<uint32>(SideIndex), static_cast<uint32>(SampleIndex));
-			FRandomStream Stream(static_cast<int32>(Hash & 0x7fffffff));
-
-			FT66BoundarySample& Sample = Samples[SampleIndex];
-			Sample.Along = FMath::Lerp(SideStart, SideEnd, static_cast<float>(SampleIndex) / static_cast<float>(SegmentCount));
-
-			const FVector GroundProbe = T66MakeBoundaryPoint(Side, SafeHalfExtent, Sample.Along, 0.f, GetActorLocation().Z);
-			Sample.GroundZ = T66SampleGroundZ(World, this, GroundProbe, GetActorLocation().Z);
-			Sample.OuterDepth = Stream.FRandRange(MinDepth, MaxDepth);
-			Sample.RidgeDepth = Sample.OuterDepth * Stream.FRandRange(0.35f, 0.68f);
-			Sample.RidgeHeight = Stream.FRandRange(MinHeight, MaxHeight);
-			const float MaxVerticalFaceHeight = FMath::Max(Sample.RidgeHeight - 180.f, 300.f);
-			Sample.VerticalFaceTopZ = Sample.GroundZ + FMath::Clamp(VerticalFaceHeight, 300.f, MaxVerticalFaceHeight);
-			Sample.SampleBaseSink = BaseSink * Stream.FRandRange(0.85f, 1.20f);
-			Sample.OuterDrop = BaseSink * Stream.FRandRange(0.10f, 0.55f);
-		}
-
-		for (int32 SegmentIndex = 0; SegmentIndex < SegmentCount; ++SegmentIndex)
-		{
-			const uint32 SegmentHash = T66BoundaryHash(static_cast<uint32>(BoundarySeed ^ 0x4D494153), static_cast<uint32>(SideIndex), static_cast<uint32>(SegmentIndex));
-			const int32 Bucket = static_cast<int32>(SegmentHash % static_cast<uint32>(MaterialBucketCount));
-
-			T66AppendBoundarySegment(
-				Sections[Bucket],
-				Side,
-				SafeHalfExtent,
-				Samples[SegmentIndex],
-				Samples[SegmentIndex + 1],
-				SegmentIndex == 0,
-				SegmentIndex == SegmentCount - 1);
-		}
+		return;
 	}
 
-	TArray<FLinearColor> EmptyColors;
-	int32 SectionIndex = 0;
-	for (int32 Bucket = 0; Bucket < Sections.Num(); ++Bucket)
+	if (UMaterialInterface* LavaMaterial = T66CreateBoundaryLavaMaterial(this))
 	{
-		if (!Sections[Bucket].HasGeometry())
-		{
-			continue;
-		}
-
-		TArray<FProcMeshTangent> Tangents;
-		TArray<FVector> Normals = Sections[Bucket].Normals;
-		UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Sections[Bucket].Verts, Sections[Bucket].Tris, Sections[Bucket].UVs, Normals, Tangents);
-
-		BoundaryCliffMesh->CreateMeshSection_LinearColor(
-			SectionIndex,
-			Sections[Bucket].Verts,
-			Sections[Bucket].Tris,
-			Normals,
-			Sections[Bucket].UVs,
-			EmptyColors,
-			Tangents,
-			true);
-
-		if (CliffMaterials.IsValidIndex(Bucket))
-		{
-			BoundaryCliffMesh->SetMaterial(SectionIndex, CliffMaterials[Bucket]);
-		}
-		else if (FallbackMaterial)
-		{
-			BoundaryCliffMesh->SetMaterial(SectionIndex, FallbackMaterial);
-		}
-
-		++SectionIndex;
+		BoundaryWallInstances->SetMaterial(0, LavaMaterial);
 	}
 
-	BoundaryCliffMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	BoundaryCliffMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	if (!T66UsesMainMapPerimeterWalls(World))
+	{
+		return;
+	}
+
+	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	const int32 RunSeed = T66GI ? T66GI->RunSeed : 0;
+	const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(T66GI);
+
+	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(Difficulty, RunSeed, LayoutVariant);
+	T66MainMapTerrain::FBoard Board;
+	if (!T66MainMapTerrain::Generate(Preset, Board))
+	{
+		return;
+	}
+
+	CachePlayableCells(Board);
+
+	TMap<FIntPoint, FT66BoundaryCellInfo> CellInfoByCoordinate;
+	for (const T66MainMapTerrain::FCell& Cell : Board.Cells)
+	{
+		T66CollectBoundaryCellInfo(Board, Cell, CellInfoByCoordinate);
+	}
+	for (const T66MainMapTerrain::FCell& Cell : Board.ExtraCells)
+	{
+		T66CollectBoundaryCellInfo(Board, Cell, CellInfoByCoordinate);
+	}
+
+	const int32 CenterCoordinate = Board.Settings.BoardSize / 2;
+	const int32 FootprintSize = FMath::Max(TotalFootprintSizeCells, Board.Settings.BoardSize);
+	const int32 MinCoordinate = CenterCoordinate - (FootprintSize / 2);
+	const int32 MaxCoordinate = MinCoordinate + FootprintSize - 1;
+	int32 BoundaryLavaCount = 0;
+
+	for (int32 GridY = MinCoordinate; GridY <= MaxCoordinate; ++GridY)
+	{
+		for (int32 GridX = MinCoordinate; GridX <= MaxCoordinate; ++GridX)
+		{
+			const FIntPoint Coordinate(GridX, GridY);
+			if (CellInfoByCoordinate.Contains(Coordinate))
+			{
+				continue;
+			}
+
+			const int32 SampleX = FMath::Clamp(GridX, 0, Board.Settings.BoardSize - 1);
+			const int32 SampleY = FMath::Clamp(GridY, 0, Board.Settings.BoardSize - 1);
+			const T66MainMapTerrain::FCell* SampleCell = Board.GetCell(SampleX, SampleY);
+			const float SampleTopSurfaceZ = SampleCell
+				? T66GetCellTopSurfaceZ(Board, SampleCell->Level)
+				: (Board.Settings.BaselineZ + Board.Settings.StepHeight * 0.5f);
+			const FVector CellCenter = T66GetCellCenter(Board, Coordinate, SampleTopSurfaceZ + BoundaryLavaTileZ);
+			T66AddBoundaryLavaInstance(BoundaryWallInstances, CellCenter, Board.Settings.CellSize);
+			++BoundaryLavaCount;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[LAVA] Built boundary lava apron with %d cells (footprint=%dx%d)."), BoundaryLavaCount, FootprintSize, FootprintSize);
+}
+
+void AT66MiasmaBoundary::CachePlayableCells(const T66MainMapTerrain::FBoard& Board)
+{
+	PlayableCellCoordinates.Reset();
+	PlayableCellSize = Board.Settings.CellSize;
+	PlayableHalfExtent = Board.Settings.HalfExtent;
+	SafeHalfExtent = PlayableHalfExtent;
+
+	auto CacheCell = [&](const T66MainMapTerrain::FCell& Cell)
+	{
+		if (!Cell.bOccupied)
+		{
+			return;
+		}
+
+		PlayableCellCoordinates.Add(FIntPoint(Cell.X, Cell.Z));
+	};
+
+	for (const T66MainMapTerrain::FCell& Cell : Board.Cells)
+	{
+		CacheCell(Cell);
+	}
+	for (const T66MainMapTerrain::FCell& Cell : Board.ExtraCells)
+	{
+		CacheCell(Cell);
+	}
+}
+
+bool AT66MiasmaBoundary::IsLocationInsidePlayableSpace(const FVector& Location) const
+{
+	if (PlayableCellCoordinates.Num() <= 0 || PlayableCellSize <= KINDA_SMALL_NUMBER)
+	{
+		return FMath::Abs(Location.X) <= SafeHalfExtent
+			&& FMath::Abs(Location.Y) <= SafeHalfExtent;
+	}
+
+	const int32 GridX = FMath::FloorToInt((Location.X + PlayableHalfExtent) / PlayableCellSize);
+	const int32 GridY = FMath::FloorToInt((Location.Y + PlayableHalfExtent) / PlayableCellSize);
+	return PlayableCellCoordinates.Contains(FIntPoint(GridX, GridY));
 }
 
 void AT66MiasmaBoundary::ApplyBoundaryDamageTick()
 {
 	APawn* Pawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(Pawn);
-	if (!Hero) return;
+	if (!Hero)
+	{
+		return;
+	}
 
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState) return;
+	UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return;
+	}
 
-	const FVector Loc = Hero->GetActorLocation();
-	const bool bOutside = (FMath::Abs(Loc.X) > SafeHalfExtent) || (FMath::Abs(Loc.Y) > SafeHalfExtent);
-	if (bOutside)
+	if (!IsLocationInsidePlayableSpace(Hero->GetActorLocation()))
 	{
 		RunState->ApplyDamage(20);
 	}

@@ -7,6 +7,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
+#include "Core/T66SkinSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SceneComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -24,6 +25,7 @@ namespace
 {
 	constexpr float HeroPreviewLookUpFraction = 0.45f;
 	constexpr float MinHeroPreviewRadius = 235.f;
+	constexpr float SoloPreviewRadiusScale = 1.16f;
 	constexpr float CompanionFrameShiftAlpha = 0.32f;
 	constexpr float CompanionFrameRadiusScale = 0.45f;
 }
@@ -78,6 +80,11 @@ void AT66HeroPreviewStage::BeginPlay()
 
 void AT66HeroPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ActivePreviewHeroID = NAME_None;
+	ActivePreviewBodyType = ET66BodyType::TypeA;
+	ActivePreviewHeroSkinID = NAME_None;
+	ActivePreviewCompanionID = NAME_None;
+	ActivePreviewCompanionSkinID = NAME_None;
 	if (PreviewCompanionPawn)
 	{
 		PreviewCompanionPawn->Destroy();
@@ -86,13 +93,9 @@ void AT66HeroPreviewStage::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID, FName CompanionID)
+void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, FName SkinID, FName CompanionID, FName CompanionSkinID)
 {
-	PreviewYawDegrees = 0.f;
-	OrbitPitchDegrees = 15.f;
-	PreviewZoomMultiplier = 1.0f;
-	UpdatePreviewPawn(HeroID, BodyType, SkinID.IsNone() ? FName(TEXT("Default")) : SkinID);
-	ApplyPreviewRotation();
+	const FName EffectiveHeroSkinID = SkinID.IsNone() ? FName(TEXT("Default")) : SkinID;
 	// Use passed CompanionID or fall back to GI so existing call sites work without change
 	FName EffectiveCompanionID = CompanionID;
 	if (EffectiveCompanionID.IsNone())
@@ -100,9 +103,44 @@ void AT66HeroPreviewStage::SetPreviewHero(FName HeroID, ET66BodyType BodyType, F
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 			EffectiveCompanionID = GI->SelectedCompanionID;
 	}
-	UpdatePreviewCompanion(EffectiveCompanionID);
-	UpdateCompanionPlacement();
-	bHasOrbitFrame = false;
+	const FName EffectiveCompanionSkinID = EffectiveCompanionID.IsNone()
+		? NAME_None
+		: (CompanionSkinID.IsNone() ? FName(TEXT("Default")) : CompanionSkinID);
+
+	const bool bHeroChanged = HeroID != ActivePreviewHeroID
+		|| BodyType != ActivePreviewBodyType
+		|| EffectiveHeroSkinID != ActivePreviewHeroSkinID;
+	const bool bCompanionChanged = EffectiveCompanionID != ActivePreviewCompanionID
+		|| EffectiveCompanionSkinID != ActivePreviewCompanionSkinID;
+
+	if (bHeroChanged || bCompanionChanged)
+	{
+		PreviewYawDegrees = 0.f;
+		OrbitPitchDegrees = 15.f;
+		PreviewZoomMultiplier = 1.0f;
+	}
+
+	if (bHeroChanged)
+	{
+		UpdatePreviewPawn(HeroID, BodyType, EffectiveHeroSkinID);
+		ActivePreviewHeroID = HeroID;
+		ActivePreviewBodyType = BodyType;
+		ActivePreviewHeroSkinID = EffectiveHeroSkinID;
+	}
+
+	if (bCompanionChanged)
+	{
+		UpdatePreviewCompanion(EffectiveCompanionID, EffectiveCompanionSkinID);
+		ActivePreviewCompanionID = EffectiveCompanionID;
+		ActivePreviewCompanionSkinID = EffectiveCompanionSkinID;
+	}
+
+	if (bHeroChanged || bCompanionChanged)
+	{
+		ApplyPreviewRotation();
+		UpdateCompanionPlacement();
+		bHasOrbitFrame = false;
+	}
 	FrameCameraToPreview();
 }
 
@@ -185,7 +223,8 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 		OrbitRadius = FMath::Max(MinHeroPreviewRadius, B.SphereRadius);
 		OrbitBottomZ = HeroFeetZ;
 
-		// Include companion in frame when present
+		// Include companion in frame when present; otherwise keep the solo framing
+		// slightly pulled back so it matches the readability of the duo view.
 		if (PreviewCompanionPawn && !PreviewCompanionPawn->IsHidden())
 		{
 			UPrimitiveComponent* CompPrim = PreviewCompanionPawn->SkeletalMesh && PreviewCompanionPawn->SkeletalMesh->IsVisible()
@@ -202,6 +241,10 @@ void AT66HeroPreviewStage::FrameCameraToPreview()
 				OrbitRadius = FMath::Max(OrbitRadius, CompB.SphereRadius + (PairSpan * CompanionFrameShiftAlpha));
 				OrbitBottomZ = FMath::Min(OrbitBottomZ, CompB.Origin.Z - CompB.BoxExtent.Z);
 			}
+		}
+		else
+		{
+			OrbitRadius = FMath::Max(OrbitRadius, MinHeroPreviewRadius * SoloPreviewRadiusScale);
 		}
 		bHasOrbitFrame = true;
 
@@ -325,7 +368,7 @@ void AT66HeroPreviewStage::UpdatePreviewPawn(FName HeroID, ET66BodyType BodyType
 	}
 }
 
-void AT66HeroPreviewStage::UpdatePreviewCompanion(FName CompanionID)
+void AT66HeroPreviewStage::UpdatePreviewCompanion(FName CompanionID, FName SkinID)
 {
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UWorld* World = GetWorld();
@@ -351,10 +394,22 @@ void AT66HeroPreviewStage::UpdatePreviewCompanion(FName CompanionID)
 		return;
 	}
 
-	FName SkinID = FName(TEXT("Default"));
-	if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
-		SkinID = Ach->GetEquippedCompanionSkinID(CompanionID);
-	if (SkinID.IsNone()) SkinID = FName(TEXT("Default"));
+	FName EffectiveSkinID = SkinID;
+	if (EffectiveSkinID.IsNone())
+	{
+		if (UT66SkinSubsystem* SkinSubsystem = GI->GetSubsystem<UT66SkinSubsystem>())
+		{
+			EffectiveSkinID = SkinSubsystem->GetEquippedCompanionSkinID(CompanionID);
+		}
+		else if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			EffectiveSkinID = Ach->GetEquippedCompanionSkinID(CompanionID);
+		}
+	}
+	if (EffectiveSkinID.IsNone())
+	{
+		EffectiveSkinID = FName(TEXT("Default"));
+	}
 
 	if (!PreviewCompanionPawn)
 	{
@@ -374,7 +429,7 @@ void AT66HeroPreviewStage::UpdatePreviewCompanion(FName CompanionID)
 	if (PreviewCompanionPawn)
 	{
 		PreviewCompanionPawn->SetActorHiddenInGame(false);
-		PreviewCompanionPawn->InitializeCompanion(CompanionData, SkinID);
+		PreviewCompanionPawn->InitializeCompanion(CompanionData, EffectiveSkinID);
 		PreviewCompanionPawn->SetPreviewMode(true);
 		if (UT66CompanionUnlockSubsystem* Unlocks = GI->GetSubsystem<UT66CompanionUnlockSubsystem>())
 			PreviewCompanionPawn->SetLockedVisual(!Unlocks->IsCompanionUnlocked(CompanionID));

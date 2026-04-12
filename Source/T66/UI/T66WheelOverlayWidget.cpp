@@ -348,12 +348,21 @@ FReply UT66WheelOverlayWidget::OnSpin()
 
 					FRandomStream& Stream = RngSub->GetRunStream();
 					NewPendingGold = FMath::Max(0, FMath::RoundToInt(RngSub->RollFloatRangeBiased(Range, Stream)));
+					const int32 DrawIndex = RngSub->GetLastRunDrawIndex();
+					const int32 PreDrawSeed = RngSub->GetLastRunPreDrawSeed();
+					if (RunState)
+					{
+						RunState->RecordLuckQuantityFloatRollRounded(
+							FName(TEXT("WheelGold")),
+							NewPendingGold,
+							MinGold,
+							MaxGold,
+							Range.Min,
+							Range.Max,
+							DrawIndex,
+							PreDrawSeed);
+					}
 				}
-			}
-
-			if (RunState && bHasGoldRange)
-			{
-				RunState->RecordLuckQuantityRoll(FName(TEXT("WheelGold")), NewPendingGold, MinGold, MaxGold);
 			}
 		}
 	}

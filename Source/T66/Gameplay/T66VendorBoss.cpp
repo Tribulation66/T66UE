@@ -26,6 +26,45 @@ AT66VendorBoss::AT66VendorBoss()
 	{
 		Move->MaxWalkSpeed = 520.f;
 	}
+
+	bUsesBossPartHitZones = true;
+	BossPartDefinitions.Reset();
+	BossPartDefinitions.Reserve(6);
+
+	auto GetPartID = [](const ET66HitZoneType HitZoneType) -> FName
+	{
+		switch (HitZoneType)
+		{
+		case ET66HitZoneType::Head: return FName(TEXT("Head"));
+		case ET66HitZoneType::Core: return FName(TEXT("Core"));
+		case ET66HitZoneType::LeftArm: return FName(TEXT("LeftArm"));
+		case ET66HitZoneType::RightArm: return FName(TEXT("RightArm"));
+		case ET66HitZoneType::LeftLeg: return FName(TEXT("LeftLeg"));
+		case ET66HitZoneType::RightLeg: return FName(TEXT("RightLeg"));
+		case ET66HitZoneType::Body:
+		default:
+			return FName(TEXT("Body"));
+		}
+	};
+
+	auto AddPart = [this, GetPartID](const ET66HitZoneType HitZoneType, const float HPWeight, const float DamageMultiplier, const FVector& RelativeLocation, const float Radius)
+	{
+		FT66BossPartDefinition& Part = BossPartDefinitions.AddDefaulted_GetRef();
+		Part.PartID = GetPartID(HitZoneType);
+		Part.HitZoneType = HitZoneType;
+		Part.HPWeight = HPWeight;
+		Part.DamageMultiplier = DamageMultiplier;
+		Part.RelativeLocation = RelativeLocation;
+		Part.Radius = Radius;
+		Part.bTargetable = true;
+	};
+
+	AddPart(ET66HitZoneType::Core, 0.36f, 1.00f, FVector(0.f, 0.f, 118.f), 92.f);
+	AddPart(ET66HitZoneType::Head, 0.10f, 1.40f, FVector(0.f, 0.f, 184.f), 40.f);
+	AddPart(ET66HitZoneType::LeftArm, 0.19f, 1.28f, FVector(12.f, -122.f, 130.f), 58.f);
+	AddPart(ET66HitZoneType::RightArm, 0.19f, 1.28f, FVector(12.f, 122.f, 130.f), 58.f);
+	AddPart(ET66HitZoneType::LeftLeg, 0.08f, 0.85f, FVector(0.f, -44.f, 42.f), 46.f);
+	AddPart(ET66HitZoneType::RightLeg, 0.08f, 0.85f, FVector(0.f, 44.f, 42.f), 46.f);
 }
 
 void AT66VendorBoss::BeginPlay()

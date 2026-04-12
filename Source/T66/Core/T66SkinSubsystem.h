@@ -42,8 +42,8 @@ public:
 	/** Beachgoer skin ID. */
 	static const FName BeachgoerSkinID;
 
-	/** Price in AC for Beachgoer (and other purchasable skins unless overridden). */
-	static constexpr int32 DefaultSkinPriceAC = 250;
+	/** Price in Chad Coupons for Beachgoer (and other purchasable skins unless overridden). */
+	static constexpr int32 DefaultSkinPriceAC = 50;
 
 	/** All skin IDs offered in UI (Default + Beachgoer). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
@@ -55,9 +55,13 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	bool IsSkinOwned(ET66SkinEntityType EntityType, FName EntityID, FName SkinID) const;
 
-	/** Purchase a skin for the entity with AC. Returns true if purchased. */
+	/** Purchase a skin for the entity with Chad Coupons. Returns true if purchased. */
 	UFUNCTION(BlueprintCallable, Category = "Skins")
 	bool PurchaseSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, int32 CostAC);
+
+	/** Refund a previously owned skin for the entity. Returns true if refunded. */
+	UFUNCTION(BlueprintCallable, Category = "Skins")
+	bool RefundSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, int32 RefundAC);
 
 	/** Currently equipped skin for the entity (Default if none). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
@@ -71,7 +75,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	TArray<FSkinData> GetSkinsForEntity(ET66SkinEntityType EntityType, FName EntityID) const;
 
-	/** Current AC balance (from profile). */
+	/** Current Chad Coupons balance (from profile). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	int32 GetAchievementCoinsBalance() const;
 
@@ -84,6 +88,10 @@ public:
 	bool PurchaseHeroSkin(FName HeroID, FName SkinID, int32 CostAC);
 	UFUNCTION(BlueprintCallable, Category = "Skins")
 	bool PurchaseCompanionSkin(FName CompanionID, FName SkinID, int32 CostAC);
+	UFUNCTION(BlueprintCallable, Category = "Skins")
+	bool RefundHeroSkin(FName HeroID, FName SkinID, int32 RefundAC);
+	UFUNCTION(BlueprintCallable, Category = "Skins")
+	bool RefundCompanionSkin(FName CompanionID, FName SkinID, int32 RefundAC);
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	FName GetEquippedHeroSkinID(FName HeroID) const;
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")

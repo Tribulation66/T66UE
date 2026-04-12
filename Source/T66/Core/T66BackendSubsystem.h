@@ -5,11 +5,30 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "Containers/Ticker.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "T66BackendSubsystem.generated.h"
 
 class UT66LeaderboardRunSummarySaveGame;
+class FJsonObject;
+
+struct FT66MultiplayerDiagnosticContext
+{
+	FString EventName;
+	FString Severity = TEXT("info");
+	FString Message;
+	FString InviteId;
+	FString HostSteamId;
+	FString TargetSteamId;
+	FString LobbyId;
+	FString ExpectedLobbyId;
+	FString FoundLobbyId;
+	FString SourceAppId;
+	FString StatusText;
+	FString MapName;
+	TMap<FString, FString> ExtraFields;
+};
 
 // ── Delegates ────────────────────────────────────────────────
 
@@ -20,11 +39,26 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(
 	int32, ScoreRankWeekly,
 	bool, bNewPersonalBest);
 
+DECLARE_MULTICAST_DELEGATE_FiveParams(
+	FOnT66SubmitRunDataReady,
+	const FString&,
+	bool,
+	int32,
+	int32,
+	bool);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
 	FOnMyRankResponse,
 	bool, bSuccess,
 	int32, Rank,
 	int32, TotalEntries);
+
+DECLARE_MULTICAST_DELEGATE_FourParams(
+	FOnT66MyRankDataReady,
+	const FString&,
+	bool,
+	int32,
+	int32);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnAccountStatusResponse,
@@ -35,6 +69,47 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnBackendActionResponse,
 	bool, bSuccess,
 	const FString&, Message);
+
+USTRUCT(BlueprintType)
+struct T66_API FT66PartyInviteEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString InviteId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString HostSteamId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString HostDisplayName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString HostAvatarUrl;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString HostLobbyId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString HostAppId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString TargetSteamId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString CreatedAtIso;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Party")
+	FString ExpiresAtIso;
+};
+
+DECLARE_MULTICAST_DELEGATE(FOnT66PendingPartyInvitesChanged);
+DECLARE_MULTICAST_DELEGATE_FourParams(
+	FOnT66PartyInviteActionComplete,
+	bool /*bSuccess*/,
+	const FString& /*Action*/,
+	const FString& /*InviteId*/,
+	const FString& /*Message*/);
 
 /**
  * Handles all HTTP communication with the T66 backend (Vercel).
@@ -49,6 +124,7 @@ class T66_API UT66BackendSubsystem : public UGameInstanceSubsystem
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 	// ── Configuration ────────────────────────────────────────
 
@@ -63,8 +139,8 @@ public:
 	// ── Steam Ticket ─────────────────────────────────────────
 
 	/**
-	 * Set the hex-encoded Steam session ticket.
-	 * Call this once at game start after SteamAPI_Init + GetAuthSessionTicket.
+	 * Set the hex-encoded Steam Web API ticket.
+	 * Call this once at game start after SteamAPI_Init + GetAuthTicketForWebApi.
 	 * Until Steam is integrated, call SetSteamTicketHex("dev_placeholder") for testing.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Backend")
@@ -73,6 +149,26 @@ public:
 	/** True if a session ticket has been set. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Backend")
 	bool HasSteamTicket() const { return !CachedSteamTicketHex.IsEmpty(); }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Backend|Party")
+	const TArray<FT66PartyInviteEntry>& GetPendingPartyInvites() const { return PendingPartyInvites; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Backend|Party")
+	bool HasPendingPartyInvites() const { return PendingPartyInvites.Num() > 0; }
+
+	UFUNCTION(BlueprintCallable, Category = "Backend|Party")
+	bool SendPartyInvite(const FString& TargetSteamId, const FString& TargetDisplayName = TEXT(""));
+
+	UFUNCTION(BlueprintCallable, Category = "Backend|Party")
+	void PollPendingPartyInvites(bool bForce = false);
+
+	UFUNCTION(BlueprintCallable, Category = "Backend|Party")
+	bool RespondToPartyInvite(const FString& InviteId, bool bAccept);
+
+	void SubmitMultiplayerDiagnostic(const FT66MultiplayerDiagnosticContext& Diagnostic);
+
+	FOnT66PendingPartyInvitesChanged& OnPendingPartyInvitesChanged() { return PendingPartyInvitesChanged; }
+	FOnT66PartyInviteActionComplete& OnPartyInviteActionComplete() { return PartyInviteActionComplete; }
 
 	// ── API: Submit Run ──────────────────────────────────────
 
@@ -90,10 +186,13 @@ public:
 		int32 StageReached,
 		const FString& HeroId,
 		const FString& CompanionId,
-		UT66LeaderboardRunSummarySaveGame* Snapshot = nullptr);
+		UT66LeaderboardRunSummarySaveGame* Snapshot = nullptr,
+		const FString& RequestKey = FString());
 
 	UPROPERTY(BlueprintAssignable, Category = "Backend")
 	FOnSubmitRunResponse OnSubmitRunComplete;
+
+	FOnT66SubmitRunDataReady OnSubmitRunDataReady;
 
 	// ── API: My Rank ─────────────────────────────────────────
 
@@ -104,8 +203,19 @@ public:
 		const FString& Party,
 		const FString& Difficulty);
 
+	static FString MakeMyRankCacheKey(
+		const FString& Type,
+		const FString& Time,
+		const FString& Party,
+		const FString& Difficulty);
+
+	bool HasCachedMyRank(const FString& Key) const;
+	bool GetCachedMyRank(const FString& Key, bool& bOutSuccess, int32& OutRank, int32& OutTotalEntries) const;
+
 	UPROPERTY(BlueprintAssignable, Category = "Backend")
 	FOnMyRankResponse OnMyRankComplete;
+
+	FOnT66MyRankDataReady OnMyRankDataReady;
 
 	// ── API: Account Status ──────────────────────────────────
 
@@ -209,39 +319,108 @@ private:
 	FString LastAccountStatusReason;
 	FString LastAccountAppealStatus;
 	FString LastAccountRunSummaryId;
+	TArray<FT66PartyInviteEntry> PendingPartyInvites;
+	FOnT66PendingPartyInvitesChanged PendingPartyInvitesChanged;
+	FOnT66PartyInviteActionComplete PartyInviteActionComplete;
 
 	struct FCachedLeaderboard
 	{
 		TArray<FLeaderboardEntry> Entries;
 		int32 TotalEntries = 0;
 	};
+
+	struct FCachedMyRank
+	{
+		bool bSuccess = false;
+		int32 Rank = 0;
+		int32 TotalEntries = 0;
+	};
+
+	struct FPendingCoopSubmit
+	{
+		FString DisplayName;
+		int32 Score = 0;
+		int32 TimeMs = 0;
+		ET66Difficulty Difficulty = ET66Difficulty::Easy;
+		ET66PartySize PartySize = ET66PartySize::Solo;
+		int32 StageReached = 1;
+		FString HeroId;
+		FString CompanionId;
+		FString HostRunJson;
+		FString RequestKey;
+		int32 RetryCount = 0;
+	};
+
 	TMap<FString, FCachedLeaderboard> LeaderboardCache;
 	TSet<FString> PendingLeaderboardFetches;
+	TMap<FString, FCachedMyRank> MyRankCache;
+	TSet<FString> PendingMyRankFetches;
 
+	UPROPERTY(Transient)
 	TMap<FString, TObjectPtr<UT66LeaderboardRunSummarySaveGame>> RunSummaryCache;
 	TSet<FString> PendingRunSummaryFetches;
+	FTSTicker::FDelegateHandle PartyInvitePollTickerHandle;
+	FTSTicker::FDelegateHandle PendingCoopSubmitTickerHandle;
+	double LastPartyInvitePollTimeSeconds = 0.0;
+	bool bPartyInvitePollInFlight = false;
+	TMap<FString, FPendingCoopSubmit> PendingCoopSubmitRequests;
+
+	void SeedDevelopmentDummyLeaderboardsIfNeeded();
+	bool TryPopulateDevelopmentDummyLeaderboard(const FString& Key);
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> CreateRequest(const FString& Verb, const FString& Endpoint) const;
 	void SetAuthHeaders(TSharedRef<IHttpRequest, ESPMode::ThreadSafe>& Request) const;
+	bool HandlePartyInvitePollTicker(float DeltaTime);
+	bool HandlePendingCoopSubmitTicker(float DeltaTime);
+	void SetPendingPartyInvites(TArray<FT66PartyInviteEntry>&& NewInvites);
+	void QueuePendingCoopSubmit(
+		const FString& DisplayName,
+		int32 Score,
+		int32 TimeMs,
+		ET66Difficulty Difficulty,
+		ET66PartySize PartySize,
+		int32 StageReached,
+		const FString& HeroId,
+		const FString& CompanionId,
+		const FString& HostRunJson,
+		const FString& RequestKey);
+	bool TrySubmitRunToBackendNow(
+		const FString& DisplayName,
+		int32 Score,
+		int32 TimeMs,
+		ET66Difficulty Difficulty,
+		ET66PartySize PartySize,
+		int32 StageReached,
+		const FString& HeroId,
+		const FString& CompanionId,
+		const FString& HostRunJson,
+		const FString& RequestKey);
+	void SendSubmitRunRequest(const TSharedPtr<FJsonObject>& Root, const FString& RequestKey);
 
 	static FString DifficultyToApiString(ET66Difficulty Diff);
 	static FString PartySizeToApiString(ET66PartySize Party);
 
 	// Response handlers
-	void OnSubmitRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
-	void OnMyRankResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnSubmitRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RequestKey);
+	void OnMyRankResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString RankKey);
 	void OnAccountStatusResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnRunReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnAppealResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnProofOfRunResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnBugReportResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
 	void OnHealthResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnSendPartyInviteResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnPendingPartyInvitesResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully);
+	void OnRespondPartyInviteResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString InviteId, FString Action);
+	void OnClientDiagnosticsResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EventName, FString InviteId);
 	void OnLeaderboardResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString LeaderboardKey);
 	void OnRunSummaryResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully, FString EntryId);
 
 	static ET66Difficulty ApiStringToDifficulty(const FString& S);
 	static ET66PartySize ApiStringToPartySize(const FString& S);
 	static FString ExtractResponseMessage(const TSharedPtr<FJsonObject>& Json, const FString& FallbackMessage);
+	TSharedPtr<FJsonObject> BuildMultiplayerDiagnosticJson(const FT66MultiplayerDiagnosticContext& Diagnostic) const;
+	void SaveMultiplayerDiagnosticLocally(const TSharedPtr<FJsonObject>& DiagnosticJson, const FString& EventName) const;
 
 	/** Parse a run-summary JSON object into a UT66LeaderboardRunSummarySaveGame. */
 	static UT66LeaderboardRunSummarySaveGame* ParseRunSummaryFromJson(const TSharedPtr<FJsonObject>& Json, UObject* Outer);

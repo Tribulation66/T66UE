@@ -7,20 +7,21 @@
 #include "T66SkillRatingSubsystem.generated.h"
 
 /**
- * Skill Rating: measures "not taking damage" over time.
+ * Skill Rating: summarizes combat pressure handling over time.
  *
- * Design (v0):
+ * Design (v1):
  * - Rating starts at 50 (clamped 0..100).
  * - During tracking (combat active), we evaluate non-overlapping 5s windows.
- * - At the end of each 5s window, apply:
+ * - At the end of each 5s window, apply a base delta from damage taken:
  *   0 hits: +1
  *   1 hit : -1
  *   2 hits: -5
  *   3 hits: -10
  *   4 hits: -20
  *   5+ hits: -50
+ * - Then apply a small pressure bonus/penalty based on hit checks, dodges, and expected dodges in that window.
  *
- * Damage is an input event (NotifyDamageTaken). Time is driven externally via TickSkillRating or an engine timer.
+ * Time is driven externally via TickSkillRating. Hit-check events are pushed in by RunState.
  */
 UCLASS()
 class T66_API UT66SkillRatingSubsystem : public UGameInstanceSubsystem
@@ -39,8 +40,11 @@ public:
 
 	bool IsTrackingActive() const { return bTrackingActive; }
 
-	/** Damage event input: call when damage was actually applied to the player. */
+	/** Fallback damage event input: call when damage was actually applied to the player. */
 	void NotifyDamageTaken();
+
+	/** Hit-check event input: call once for every incoming hit check that evaluated evasion. */
+	void NotifyHitCheck(float EvasionChance01, bool bDodged, bool bDamageApplied);
 
 	/** Advance the window timer (cheap; only applies a rule when >= 5s elapsed). */
 	void TickSkillRating(float DeltaSeconds);
@@ -51,7 +55,7 @@ public:
 
 private:
 	void ResetWindowState();
-	void ApplyWindowResult(int32 HitsInWindow);
+	void ApplyWindowResultDetailed(int32 HitsInWindow, int32 HitChecksInWindow, int32 DodgesInWindow, float ExpectedDodgesInWindow);
 
 	UPROPERTY()
 	int32 SkillRating0To100 = DefaultSkillRating;
@@ -64,5 +68,14 @@ private:
 
 	UPROPERTY()
 	int32 HitsThisWindow = 0;
+
+	UPROPERTY()
+	int32 HitChecksThisWindow = 0;
+
+	UPROPERTY()
+	int32 DodgesThisWindow = 0;
+
+	UPROPERTY()
+	float ExpectedDodgesThisWindow = 0.f;
 };
 

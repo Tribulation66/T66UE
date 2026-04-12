@@ -36,7 +36,7 @@ public:
 	/** Hide the webview window (keeps session). */
 	void Hide();
 
-	/** Navigate to a URL (TikTok-only allowlist enforced). */
+	/** Navigate to an allowed short-form video URL. */
 	void Navigate(const FString& Url);
 
 	/** TikTok-only controls (no arbitrary browsing). */

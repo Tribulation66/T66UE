@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66PlayerSettingsSaveGame.h"
 #include "Data/T66DataTypes.h"
 #include "Styling/SlateBrush.h"
 #include "Widgets/SCompoundWidget.h"
@@ -11,6 +12,7 @@
 class UT66LocalizationSubsystem;
 class UT66LeaderboardSubsystem;
 class UT66BackendSubsystem;
+class UT66PlayerSettingsSubsystem;
 class UT66UIManager;
 struct FComboButtonStyle;
 
@@ -77,6 +79,7 @@ private:
 	void RebuildEntryList();
 	FReply HandleEntryClicked(const FLeaderboardEntry& Entry);
 	FReply HandleLocalEntryClicked(const FLeaderboardEntry& Entry);
+	FReply HandleFavoriteClicked(FLeaderboardEntry Entry);
 
 	// Backend async refresh
 	bool bBoundToBackendDelegate = false;
@@ -131,6 +134,10 @@ private:
 
 	void NormalizeEntryIdentity(FLeaderboardEntry& Entry, int32 EntryIndex);
 	const FSlateBrush* GetPortraitBrushForEntry(const FLeaderboardEntry& Entry);
+	UT66PlayerSettingsSubsystem* GetPlayerSettings() const;
+	bool IsEntryFavoritable(const FLeaderboardEntry& Entry) const;
+	bool IsEntryFavorited(const FLeaderboardEntry& Entry) const;
+	FT66FavoriteLeaderboardRun MakeFavoriteRunFromEntry(const FLeaderboardEntry& Entry) const;
 
 	/** Create or retrieve a cached FSlateBrush for an avatar URL. */
 	const FSlateBrush* GetOrCreateAvatarBrush(const FString& AvatarUrl);

@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66LavaPatch.h"
+#include "Gameplay/T66LavaShared.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -17,83 +18,7 @@
 
 namespace
 {
-	constexpr float T66LavaTwoPi = 6.28318530718f;
-	const TCHAR* T66LavaBaseMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
 	const TCHAR* T66WhiteTexturePath = TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture");
-	const TCHAR* T66DefaultTexturePath = TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture");
-
-	float T66LavaFrac(float Value)
-	{
-		return Value - FMath::FloorToFloat(Value);
-	}
-
-	float T66LavaSaturate(float Value)
-	{
-		return FMath::Clamp(Value, 0.f, 1.f);
-	}
-
-	float T66LavaSmoothStep(float Edge0, float Edge1, float Value)
-	{
-		if (FMath::IsNearlyEqual(Edge0, Edge1))
-		{
-			return Value < Edge0 ? 0.f : 1.f;
-		}
-
-		const float T = T66LavaSaturate((Value - Edge0) / (Edge1 - Edge0));
-		return T * T * (3.f - 2.f * T);
-	}
-
-	FVector2D T66LavaHash2(const FVector2D& P)
-	{
-		return FVector2D(
-			T66LavaFrac(FMath::Sin(FVector2D::DotProduct(P, FVector2D(127.1f, 311.7f))) * 43758.5453123f),
-			T66LavaFrac(FMath::Sin(FVector2D::DotProduct(P, FVector2D(269.5f, 183.3f))) * 43758.5453123f));
-	}
-
-	struct FT66LavaCellSample
-	{
-		float Closest = BIG_NUMBER;
-		float SecondClosest = BIG_NUMBER;
-	};
-
-	FT66LavaCellSample T66SampleLavaCells(const FVector2D& UV, float Density, float Phase)
-	{
-		FT66LavaCellSample Result;
-
-		const FVector2D P = UV * Density;
-		const FVector2D Cell(FMath::FloorToFloat(P.X), FMath::FloorToFloat(P.Y));
-		const FVector2D Local = P - Cell;
-
-		// Worley-style cell distances give us the dark pools + bright crack edges.
-		for (int32 Y = -1; Y <= 1; ++Y)
-		{
-			for (int32 X = -1; X <= 1; ++X)
-			{
-				const FVector2D NeighborCell = Cell + FVector2D(static_cast<float>(X), static_cast<float>(Y));
-				const FVector2D Jitter = T66LavaHash2(NeighborCell);
-				const FVector2D Drift(
-					FMath::Sin(Phase * (0.65f + Jitter.X * 0.25f) + NeighborCell.Y * 1.73f + Jitter.Y * 4.0f),
-					FMath::Cos(Phase * (0.50f + Jitter.Y * 0.25f) + NeighborCell.X * 1.37f + Jitter.X * 4.0f));
-				const FVector2D FeaturePoint =
-					FVector2D(static_cast<float>(X), static_cast<float>(Y)) + Jitter + Drift * 0.16f;
-
-				const float DistSq = (Local - FeaturePoint).SizeSquared();
-				if (DistSq < Result.Closest)
-				{
-					Result.SecondClosest = Result.Closest;
-					Result.Closest = DistSq;
-				}
-				else if (DistSq < Result.SecondClosest)
-				{
-					Result.SecondClosest = DistSq;
-				}
-			}
-		}
-
-		Result.Closest = FMath::Sqrt(Result.Closest);
-		Result.SecondClosest = FMath::Sqrt(Result.SecondClosest);
-		return Result;
-	}
 
 	UTexture* T66GetWhiteFallbackTexture()
 	{
@@ -104,7 +29,7 @@ namespace
 		}
 		if (!Cached)
 		{
-			Cached = LoadObject<UTexture>(nullptr, T66DefaultTexturePath);
+			Cached = LoadObject<UTexture>(nullptr, T66LavaShared::DefaultTexturePath);
 		}
 		return Cached.Get();
 	}
@@ -116,7 +41,7 @@ namespace
 			return 0;
 		}
 
-		const float Hash = T66LavaFrac(
+		const float Hash = T66LavaShared::Frac(
 			FMath::Sin(Location.X * 0.00091f + Location.Y * 0.00117f + Location.Z * 0.00037f) * 43758.5453123f);
 		return FMath::Clamp(FMath::FloorToInt(Hash * static_cast<float>(FrameCount)), 0, FrameCount - 1);
 	}
@@ -154,6 +79,7 @@ void AT66LavaPatch::OnConstruction(const FTransform& Transform)
 	Super::OnConstruction(Transform);
 
 	RefreshPatchLayout();
+	UpdateDamageCollisionState();
 	EnsureVisualMaterial();
 }
 
@@ -162,6 +88,7 @@ void AT66LavaPatch::BeginPlay()
 	Super::BeginPlay();
 
 	RefreshPatchLayout();
+	UpdateDamageCollisionState();
 
 	if (bSnapToGroundOnBeginPlay)
 	{
@@ -188,7 +115,7 @@ void AT66LavaPatch::BeginPlay()
 		AnimationStartTimeSeconds = World->GetTimeSeconds();
 	}
 
-	if (DamageBox)
+	if (DamageBox && bDamageHero)
 	{
 		DamageBox->OnComponentBeginOverlap.AddDynamic(this, &AT66LavaPatch::OnDamageBoxBeginOverlap);
 		DamageBox->OnComponentEndOverlap.AddDynamic(this, &AT66LavaPatch::OnDamageBoxEndOverlap);
@@ -287,17 +214,52 @@ void AT66LavaPatch::OnDamageBoxEndOverlap(UPrimitiveComponent* OverlappedCompone
 
 void AT66LavaPatch::RefreshPatchLayout()
 {
+	const FVector2D PatchDimensions = GetPatchDimensions();
+
 	if (DamageBox)
 	{
-		const FVector HalfExtents(PatchSize * 0.5f, PatchSize * 0.5f, FMath::Max(CollisionHeight * 0.5f, 20.f));
+		const FVector HalfExtents(
+			PatchDimensions.X * 0.5f,
+			PatchDimensions.Y * 0.5f,
+			FMath::Max(CollisionHeight * 0.5f, 20.f));
 		DamageBox->SetBoxExtent(HalfExtents);
 	}
 
 	if (VisualMesh)
 	{
-		const float UniformScale = FMath::Max(PatchSize / 100.f, 0.1f);
 		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, HoverHeight));
-		VisualMesh->SetRelativeScale3D(FVector(UniformScale, UniformScale, 1.f));
+		VisualMesh->SetRelativeScale3D(FVector(
+			FMath::Max(PatchDimensions.X / 100.f, 0.1f),
+			FMath::Max(PatchDimensions.Y / 100.f, 0.1f),
+			1.f));
+	}
+}
+
+FVector2D AT66LavaPatch::GetPatchDimensions() const
+{
+	const float SizeX = PatchSizeX > KINDA_SMALL_NUMBER ? PatchSizeX : PatchSize;
+	const float SizeY = PatchSizeY > KINDA_SMALL_NUMBER ? PatchSizeY : PatchSize;
+	return FVector2D(FMath::Max(SizeX, 1.0f), FMath::Max(SizeY, 1.0f));
+}
+
+void AT66LavaPatch::UpdateDamageCollisionState()
+{
+	if (!DamageBox)
+	{
+		return;
+	}
+
+	const bool bEnableDamageCollision = bDamageHero && DamagePerTick > 0;
+	DamageBox->SetCollisionEnabled(bEnableDamageCollision ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+	DamageBox->SetGenerateOverlapEvents(bEnableDamageCollision);
+
+	if (!bEnableDamageCollision)
+	{
+		OverlappingHero.Reset();
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(DamageTimerHandle);
+		}
 	}
 }
 
@@ -331,7 +293,7 @@ void AT66LavaPatch::EnsureVisualMaterial()
 
 	if (!LavaMID)
 	{
-		if (UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, T66LavaBaseMaterialPath))
+		if (UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, T66LavaShared::BaseMaterialPath))
 		{
 			LavaMID = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 			if (LavaMID)
@@ -399,7 +361,7 @@ UTexture2D* AT66LavaPatch::BuildFrameTexture(
 	TArray<FColor> Pixels;
 	Pixels.SetNumUninitialized(Resolution * Resolution);
 
-	const float Phase = (static_cast<float>(FrameIndex) / static_cast<float>(ClampedFrames)) * T66LavaTwoPi;
+	const float Phase = (static_cast<float>(FrameIndex) / static_cast<float>(ClampedFrames)) * T66LavaShared::TwoPi;
 
 	for (int32 Y = 0; Y < Resolution; ++Y)
 	{
@@ -457,17 +419,17 @@ FLinearColor AT66LavaPatch::SampleLavaColor(
 	const float WarpedY = Ny + WarpIntensity * FMath::Sin(WarpT + Nx * 2.0f);
 	const FVector2D FinalUV = FVector2D(WarpedX, WarpedY) * SafeCloseness;
 
-	const FT66LavaCellSample Cells = T66SampleLavaCells(FinalUV, FMath::Max(CellDensity, 1.0f), Phase);
+	const T66LavaShared::FCellSample Cells = T66LavaShared::SampleCells(FinalUV, FMath::Max(CellDensity, 1.0f), Phase);
 	const float Border = FMath::Max(Cells.SecondClosest - Cells.Closest, 0.0f);
-	const float Crack = FMath::Pow(T66LavaSaturate(1.0f - Border * FMath::Max(EdgeContrast, 0.1f)), 2.3f);
+	const float Crack = FMath::Pow(T66LavaShared::Saturate(1.0f - Border * FMath::Max(EdgeContrast, 0.1f)), 2.3f);
 	const float Pulse = 0.5f + 0.5f * FMath::Sin((FinalUV.X * 1.8f + FinalUV.Y * 1.25f) + Phase * 2.2f);
-	const float Ember = T66LavaSaturate(1.0f - T66LavaSmoothStep(0.18f, 0.52f, Cells.Closest + Pulse * 0.06f));
-	const float Heat = T66LavaSaturate(Crack * 1.18f + Ember * 0.22f);
+	const float Ember = T66LavaShared::Saturate(1.0f - T66LavaShared::SmoothStep(0.18f, 0.52f, Cells.Closest + Pulse * 0.06f));
+	const float Heat = T66LavaShared::Saturate(Crack * 1.18f + Ember * 0.22f);
 
-	FLinearColor Color = FMath::Lerp(CoreColor, MidColor, T66LavaSaturate(Heat * 0.72f + Pulse * 0.10f));
-	Color = FMath::Lerp(Color, GlowColor, T66LavaSaturate(FMath::Pow(Crack, 0.72f)));
+	FLinearColor Color = FMath::Lerp(CoreColor, MidColor, T66LavaShared::Saturate(Heat * 0.72f + Pulse * 0.10f));
+	Color = FMath::Lerp(Color, GlowColor, T66LavaShared::Saturate(FMath::Pow(Crack, 0.72f)));
 
-	const float PoolMask = T66LavaSmoothStep(0.20f, 0.48f, Cells.Closest);
+	const float PoolMask = T66LavaShared::SmoothStep(0.20f, 0.48f, Cells.Closest);
 	Color = FMath::Lerp(Color, CoreColor * 0.55f, PoolMask * 0.35f);
 	Color.A = 1.f;
 	return Color.GetClamped(0.f, 1.f);

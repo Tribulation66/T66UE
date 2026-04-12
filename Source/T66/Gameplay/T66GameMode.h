@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Gameplay/T66TowerMapTerrain.h"
 #include "T66GameMode.generated.h"
 
 class AActor;
@@ -19,6 +20,7 @@ class AT66CowardiceGate;
 class AT66TricksterNPC;
 class AT66BossGate;
 class AT66IdolAltar;
+class AT66TowerDescentHole;
 class AT66StageCatchUpGate;
 class AT66StageCatchUpGoldInteractable;
 class AT66StageCatchUpLootInteractable;
@@ -26,6 +28,7 @@ class AT66Shroom;
 class AT66SpawnPlateau;
 class AT66TutorialManager;
 class AT66SaintNPC;
+class APawn;
 class UT66GameInstance;
 class AT66RecruitableCompanion;
 class UT66LoadingScreenWidget;
@@ -106,20 +109,16 @@ public:
 	/** Called by BossBase on death so GameMode can decide what happens (normal vs Coliseum) and award score. */
 	void HandleBossDefeated(AT66BossBase* Boss);
 
-	/** Apply UI theme (Dark = blood-red moon, Light = sun) to directional lights in the given world. Shared with frontend. */
-	static void ApplyThemeToDirectionalLightsForWorld(UWorld* World);
-
-	/** Apply the shared gameplay haze/fog profile for the current theme and player settings. */
-	static void ConfigureGameplayFogForWorld(UWorld* World);
-
-	/** Ensure the shared gameplay/frontend sky, lights, fog, and post-process setup exists and is normalized. */
-	static void EnsureSharedLightingForWorld(UWorld* World);
-
-	/** Apply UI theme to SkyAtmosphere, SkyLight, fog, PostProcess color grading, and posterize. Shared with frontend. */
-	static void ApplyThemeToAtmosphereAndLightingForWorld(UWorld* World);
-
 	/** Destroy existing main map terrain geometry and spawn a fresh difficulty-driven terrain run. */
 	void RegenerateMainMapTerrain(int32 Seed);
+
+	bool IsUsingTowerMainMapLayout() const;
+	bool GetTowerMainMapLayout(T66TowerMapTerrain::FLayout& OutLayout) const;
+	int32 GetTowerFloorIndexForLocation(const FVector& Location) const;
+	int32 GetCurrentTowerFloorIndex() const;
+	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation) const;
+	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal) const;
+	void HandleTowerDescentHoleTriggered(APawn* Pawn, int32 FromFloorNumber, int32 ToFloorNumber);
 
 protected:
 	virtual void BeginPlay() override;
@@ -146,7 +145,7 @@ protected:
 	/** Spawn a very short red wall fully around the boss area (same style as start). */
 	void SpawnBossAreaWallsIfNeeded();
 
-	/** Spawn lighting if none exists */
+	/** Ensure world lighting exists through the dedicated lighting subsystem. */
 	void SpawnLightingIfNeeded();
 
 	/** Spawn the non-lighting Quake-style moving sky if none exists. */
@@ -155,10 +154,10 @@ protected:
 	/** Spawn a PlayerStart if none exists */
 	void SpawnPlayerStartIfNeeded();
 
-	/** Apply theme to this world's directional lights (calls ApplyThemeToDirectionalLightsForWorld). */
+	/** Apply theme to this world's directional lights via the lighting subsystem. */
 	void ApplyThemeToDirectionalLights();
 
-	/** Apply theme to this world's atmosphere, sky, fog, PP, posterize (calls ApplyThemeToAtmosphereAndLightingForWorld). */
+	/** Apply theme to this world's atmosphere, sky, fog, PP, posterize via the lighting subsystem. */
 	void ApplyThemeToAtmosphereAndLighting();
 
 	UFUNCTION()
@@ -218,6 +217,7 @@ protected:
 	void SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc);
 
 	void SpawnTricksterAndCowardiceGate();
+	void SpawnTowerDescentHolesIfNeeded();
 	void InitializeRunStateForBeginPlay();
 	bool HandleSpecialModeBeginPlay();
 	void HandleColiseumBeginPlay();
@@ -240,8 +240,6 @@ protected:
 	bool IsFinalDifficultyBossColiseumStage() const;
 	/** True when current level is The Lab (practice room). */
 	bool IsLabLevel() const;
-	/** True when current level is the demo map used for "Enter the Tribulation" (e.g. Map_Summer). */
-	bool IsDemoMapForTribulation() const;
 	void ResetColiseumState();
 
 	/** Called when stage timer changes (we use it to detect "timer started"). */
@@ -314,6 +312,9 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<AT66EnemyBase>> IdolVFXTestTargets;
 
+	UPROPERTY()
+	TArray<TObjectPtr<AT66TowerDescentHole>> TowerDescentHoles;
+
 	// Async load tracking (prevents gameplay hitching from sync loads).
 	TArray<TSharedPtr<FStreamableHandle>> ActiveAsyncLoadHandles;
 
@@ -335,6 +336,7 @@ private:
 	bool TryComputeBossBeaconBase(FVector& OutBeaconBase) const;
 	void UpdateBossBeaconTransform(bool bForceSpawnIfMissing);
 	void DestroyBossBeacon();
+	void SyncTowerBossEntryState();
 	void SnapPlayersToTerrain();
 	void MaintainPlayerTerrainSafety();
 	void TryActivateMainMapCombat();
@@ -344,6 +346,7 @@ private:
 
 	bool bTerrainCollisionReady = false;
 	bool bMainMapCombatStarted = false;
+	bool bWorldInteractablesSpawnedForStage = false;
 	bool bHasMainMapSpawnSurfaceLocation = false;
 	FVector MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
@@ -354,6 +357,10 @@ private:
 	FVector MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
 	TArray<FVector> MainMapRescueAnchorLocations;
+	bool bUsingTowerMainMapLayout = false;
+	T66TowerMapTerrain::FLayout CachedTowerMainMapLayout;
+	bool bTowerBossEntryTriggered = false;
+	bool bTowerBossEntryApplied = false;
 
 	// Coliseum: async-load boss classes before spawning.
 	bool bColiseumBossesAsyncLoadInFlight = false;

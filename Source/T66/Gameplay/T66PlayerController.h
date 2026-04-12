@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Gameplay/T66SessionPlayerState.h"
+#include "Gameplay/T66CombatTargetTypes.h"
 #include "GameFramework/PlayerController.h"
 #include "UI/T66UITypes.h"
 #include "T66PlayerController.generated.h"
@@ -12,7 +13,6 @@ class UT66UIManager;
 class UT66ScreenBase;
 class UT66GameplayHUDWidget;
 class UT66LabOverlayWidget;
-class UT66LoadPreviewOverlayWidget;
 class UT66RunStateSubsystem;
 class UT66GamblerOverlayWidget;
 class UT66CircusOverlayWidget;
@@ -30,6 +30,7 @@ class AT66GamblerNPC;
 class AT66RecruitableCompanion;
 class AT66HeroBase;
 class UT66CombatComponent;
+class UT66CombatHitZoneComponent;
 enum class ET66Rarity : uint8;
 class SWidget;
 class SWeakWidget;
@@ -107,6 +108,8 @@ public:
 	void RebuildThemeAwareUI();
 
 	void PushLobbyProfileToServer(const FT66LobbyPlayerInfo& LobbyInfo);
+	void PushPartyRunSummaryToServer(const FString& RequestKey, const FString& RunSummaryJson);
+	void RefreshPartyInviteModal();
 
 	bool IsHeroOneScopedUltActive() const { return bHeroOneScopedUltActive; }
 	bool IsHeroOneScopeViewEnabled() const { return bHeroOneScopeViewEnabled; }
@@ -147,9 +150,6 @@ public:
 	/** Open the Cowardice prompt (non-pausing). */
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
 
-	/** Show the load-preview overlay (frozen save preview; LOAD button unfreezes). Called by GameMode when bLoadAsPreview. */
-	void ShowLoadPreviewOverlay();
-
 	/** Wheel spin: play HUD animation + award gold (no overlay). */
 	void StartWheelSpinHUD(ET66Rarity Rarity);
 
@@ -164,6 +164,12 @@ public:
 
 	/** Open the between-difficulties clear summary without ending the run. */
 	void ShowDifficultyClearSummary();
+
+	UFUNCTION(Client, Reliable)
+	void ClientShowVictoryRunSummary();
+
+	UFUNCTION(Client, Reliable)
+	void ClientShowDifficultyClearSummary();
 
 	/** Loot proximity: HUD prompt + accept/reject input. */
 	void SetNearbyLootBag(AT66LootBagPickup* LootBag);
@@ -231,6 +237,9 @@ protected:
 	/** Open full map (placeholder). */
 	void HandleOpenFullMapPressed();
 
+	/** Toggle enlarged inventory inspect mode without pausing gameplay. */
+	void HandleInspectInventoryPressed();
+
 	/** Toggle Gamer Mode hitbox overlay (placeholder). */
 	void HandleToggleGamerModePressed();
 
@@ -253,6 +262,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSubmitLobbyProfile(const FT66LobbyPlayerInfo& LobbyInfo);
 
+	UFUNCTION(Server, Reliable)
+	void ServerSubmitPartyRunSummary(const FString& RequestKey, const FString& RunSummaryJson);
+
 private:
 	TSubclassOf<UT66ScreenBase> ResolveScreenClass(ET66ScreenType ScreenType) const;
 	TSubclassOf<UT66GameplayHUDWidget> ResolveGameplayHUDClass() const;
@@ -261,7 +273,6 @@ private:
 	TSubclassOf<UT66VendorOverlayWidget> ResolveVendorOverlayClass() const;
 	TSubclassOf<UT66CollectorOverlayWidget> ResolveCollectorOverlayClass() const;
 	TSubclassOf<UT66CowardicePromptWidget> ResolveCowardicePromptClass() const;
-	TSubclassOf<UT66LoadPreviewOverlayWidget> ResolveLoadPreviewOverlayClass() const;
 	TSubclassOf<UT66IdolAltarOverlayWidget> ResolveIdolAltarOverlayClass() const;
 
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
@@ -283,6 +294,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66VendorOverlayWidget> VendorOverlayWidget;
+
+	/** Quick revive input suppression must be applied on state transitions only. */
+	bool bQuickReviveInputSuppressed = false;
 
 	/** Lab Collector full-screen UI (opened by interacting with The Collector NPC). */
 	UPROPERTY()
@@ -310,7 +324,11 @@ private:
 	FTimerHandle DeathVFXTimerHandle;
 
 	void SetupGameplayHUD();
+	void BindPartyInviteEvents();
+	void UnbindPartyInviteEvents();
+	void HandlePendingPartyInvitesChanged();
 	bool bUIInitialized = false;
+	FDelegateHandle PendingPartyInvitesChangedHandle;
 
 	/** Last time Escape/Pause was handled (debounce rapid key repeat) */
 	float LastPauseToggleTime = 0.f;
@@ -330,11 +348,13 @@ private:
 	void AutoLoadScreenClasses();
 
 	bool CanUseCombatMouseInput() const;
-	void SetLockedEnemy(AT66EnemyBase* NewLockedEnemy, bool bPropagateToCombatTarget);
-	void SyncLockedEnemyFromCombat();
+	void SetInventoryInspectOpen(bool bOpen);
+	void SetLockedCombatTarget(AActor* NewLockedActor, bool bPropagateToCombatTarget, ET66HitZoneType LockedHitZoneType = ET66HitZoneType::Body, UT66CombatHitZoneComponent* LockedZoneComponent = nullptr);
+	void SyncLockedCombatTargetFromCombat();
 
 	/** Enhanced Input: create and register gameplay mouse actions (attack lock, unlock, toggle mouse lock). */
 	void SetupGameplayEnhancedInputMappings();
+	bool TryHandleMouseTriggeredUltimate();
 	void ActivateHeroOneScopedUlt(AT66HeroBase* Hero, UT66CombatComponent* Combat);
 	void EndHeroOneScopedUlt();
 	void ToggleHeroOneScopeView();
@@ -369,12 +389,13 @@ private:
 	TSubclassOf<UT66CowardicePromptWidget> DotaCowardicePromptClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
-	TSubclassOf<UT66LoadPreviewOverlayWidget> DotaLoadPreviewOverlayClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI|Theme")
 	TSubclassOf<UT66IdolAltarOverlayWidget> DotaIdolAltarOverlayClass;
 
-	TWeakObjectPtr<AT66EnemyBase> LockedEnemy;
+	TWeakObjectPtr<AActor> LockedCombatActor;
+	TWeakObjectPtr<UT66CombatHitZoneComponent> LockedCombatZoneComponent;
+	ET66HitZoneType LockedCombatHitZoneType = ET66HitZoneType::Body;
+	bool bInventoryInspectOpen = false;
+	bool bInventoryInspectRestoreFreeCursor = false;
 
 	bool bHeroOneScopedUltActive = false;
 	bool bHeroOneScopeViewEnabled = false;

@@ -8,6 +8,7 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Containers/Ticker.h"
 #include "UI/T66UITypes.h"
 #include "T66SessionSubsystem.generated.h"
 
@@ -28,18 +29,35 @@ public:
 	bool PrepareToHostFrontendLobby(ET66PartySize DesiredPartySize);
 	void HandlePartyHubScreenActivated();
 	void HandleLobbyScreenActivated();
-	bool SendInviteToFriend(const FString& FriendPlayerId);
+	bool SendInviteToFriend(const FString& FriendPlayerId, const FString& FriendDisplayName = FString());
+	bool JoinFriendPartySessionBySteamId(const FString& FriendPlayerId, const FString& InviteId = FString(), const FString& AppId = FString());
+	bool JoinPartySessionByLobbyId(const FString& LobbyId, const FString& HostSteamId = FString(), const FString& AppId = FString(), const FString& InviteId = FString());
 	bool StartLoadedGameplayTravel(const class UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex);
 	bool StartGameplayTravel();
 	bool LeaveFrontendLobby(ET66ScreenType ReturnScreen = ET66ScreenType::MainMenu);
 	bool SyncLocalLobbyProfile();
 	void SetLocalLobbyReady(bool bReady);
+	void SetLocalFrontendScreen(ET66ScreenType ScreenType, bool bResetReady = false);
 
 	bool IsPartySessionActive() const;
 	bool IsHostingPartySession() const;
 	bool IsJoiningPartySession() const { return bJoinInProgress; }
 	bool CanSendInvites() const;
 	int32 GetMaxPartyMembers() const;
+	FString GetCurrentPartyLobbyId() const;
+	bool IsLocalLobbyReady() const { return bLocalReadyState; }
+	bool IsLocalPlayerPartyHost() const;
+	bool IsFriendInvitePending(const FString& FriendPlayerId);
+	bool GetHostLobbyProfile(struct FT66LobbyPlayerInfo& OutLobbyInfo) const;
+	void GetCurrentLobbyProfiles(TArray<FT66LobbyPlayerInfo>& OutProfiles) const;
+	bool SubmitLocalPartyRunSummaryToHost(const FString& RequestKey, const FString& RunSummaryJson);
+	bool GetCachedPartyRunSummaryJson(const FString& RequestKey, const FString& SteamId, FString& OutRunSummaryJson) const;
+	int32 GetCachedPartyRunSummaryCount() const { return PartyRunSummaryJsonByRequestKey.Num(); }
+	void ClearCachedPartyRunSummaries();
+	void StorePartyRunSummaryForSteamId(const FString& RequestKey, const FString& SteamId, const FString& RunSummaryJson);
+	ET66ScreenType GetDesiredPartyFrontendScreen() const;
+	ET66Difficulty GetSharedLobbyDifficulty() const;
+	bool AreAllPartyMembersReadyForGameplay(FString* OutFailureReason = nullptr) const;
 	const FString& GetLastStatusText() const { return LastStatusText; }
 
 	FOnT66SessionStateChanged& OnSessionStateChanged() { return SessionStateChanged; }
@@ -61,24 +79,43 @@ private:
 	void UpdateSteamRichPresence();
 	void ClearSteamRichPresence();
 	struct FT66LobbyPlayerInfo BuildLocalLobbyProfile() const;
-	bool SendInviteToFriendInternal(const FString& FriendPlayerId);
+	bool SendInviteToFriendInternal(const FString& FriendPlayerId, const FString& FriendDisplayName);
+	bool StartJoinByFriendId(const FString& FriendPlayerId, const FString& ExpectedLobbyId = FString(), const FString& InviteId = FString(), const FString& AppId = FString());
+	bool AttemptPendingFriendJoinLookup();
+	void SchedulePendingFriendJoinRetry();
+	void ClearPendingFriendJoinRetry();
+	void PruneInviteFeedbackState();
 	void ApplyLoadedRunToGameInstance(const class UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex) const;
 	void ApplySavedPartyProfilesToCurrentSession(const class UT66RunSaveGame* LoadedSave) const;
+	void SubmitSessionDiagnostic(
+		const FString& EventName,
+		const FString& Severity,
+		const FString& Message = FString(),
+		const FString& InviteId = FString(),
+		const FString& LobbyId = FString(),
+		const FString& FoundLobbyId = FString(),
+		const TMap<FString, FString>& ExtraFields = TMap<FString, FString>()) const;
 
 	void HandleCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void HandleDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+	void HandleFindFriendSessionComplete(int32 LocalUserNum, bool bWasSuccessful, const TArray<FOnlineSessionSearchResult>& FriendSearchResults);
 	void HandleJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	void HandleStartSessionComplete(FName SessionName, bool bWasSuccessful);
 	void HandleSessionUserInviteAccepted(bool bWasSuccessful, int32 ControllerId, FUniqueNetIdPtr UserId, const FOnlineSessionSearchResult& InviteResult);
+	void HandleSteamJoinRequested(const FString& FriendPlayerId);
+	bool HandlePendingFriendJoinRetryTicker(float DeltaTime);
 
 	FDelegateHandle CreateSessionCompleteHandle;
 	FDelegateHandle DestroySessionCompleteHandle;
+	FDelegateHandle FindFriendSessionCompleteHandle;
 	FDelegateHandle JoinSessionCompleteHandle;
 	FDelegateHandle StartSessionCompleteHandle;
 	FDelegateHandle SessionInviteAcceptedHandle;
+	FDelegateHandle SteamJoinRequestedHandle;
 
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
 	FOnDestroySessionCompleteDelegate DestroySessionCompleteDelegate;
+	FOnFindFriendSessionCompleteDelegate FindFriendSessionCompleteDelegate;
 	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate;
 	FOnStartSessionCompleteDelegate StartSessionCompleteDelegate;
 	FOnSessionUserInviteAcceptedDelegate SessionInviteAcceptedDelegate;
@@ -90,10 +127,21 @@ private:
 	bool bPendingJoinAfterDestroy = false;
 	bool bPendingTravelToStandaloneFrontendAfterDestroy = false;
 	bool bLocalReadyState = false;
+	ET66ScreenType LocalFrontendScreen = ET66ScreenType::MainMenu;
 	FOnlineSessionSearchResult PendingJoinSearchResult;
 	ET66ScreenType PendingFrontendReturnScreen = ET66ScreenType::MainMenu;
 	ET66ScreenType PartyHubScreenType = ET66ScreenType::MainMenu;
 	FString PendingInviteFriendPlayerId;
+	FString PendingInviteFriendDisplayName;
+	FString PendingJoinFriendPlayerId;
+	FString PendingExpectedJoinLobbyId;
+	FString PendingJoinInviteId;
+	FString PendingJoinSourceAppId;
+	FString PendingFoundLobbyId;
+	int32 PendingJoinFriendLookupAttempts = 0;
+	FTSTicker::FDelegateHandle PendingJoinFriendRetryTickerHandle;
+	TMap<FString, double> InviteFeedbackExpiryByFriendId;
+	TMap<FString, TMap<FString, FString>> PartyRunSummaryJsonByRequestKey;
 	FString LastStatusText;
 	FOnT66SessionStateChanged SessionStateChanged;
 };

@@ -15,6 +15,7 @@ namespace T66ItemCardTextUtils
 			case ET66HeroStatType::Damage:      return Loc->GetText_Stat_Damage();
 			case ET66HeroStatType::AttackSpeed: return Loc->GetText_Stat_AttackSpeed();
 			case ET66HeroStatType::AttackScale: return Loc->GetText_Stat_AttackScale();
+			case ET66HeroStatType::Accuracy:    return Loc->GetText_Stat_Accuracy();
 			case ET66HeroStatType::Armor:       return Loc->GetText_Stat_Armor();
 			case ET66HeroStatType::Evasion:     return Loc->GetText_Stat_Evasion();
 			case ET66HeroStatType::Luck:        return Loc->GetText_Stat_Luck();
@@ -28,6 +29,7 @@ namespace T66ItemCardTextUtils
 		case ET66HeroStatType::Damage:      return NSLOCTEXT("T66.Stats", "Damage", "Damage");
 		case ET66HeroStatType::AttackSpeed: return NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed");
 		case ET66HeroStatType::AttackScale: return NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale");
+		case ET66HeroStatType::Accuracy:    return NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy");
 		case ET66HeroStatType::Armor:       return NSLOCTEXT("T66.Stats", "Armor", "Armor");
 		case ET66HeroStatType::Evasion:     return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
 		case ET66HeroStatType::Luck:        return NSLOCTEXT("T66.Stats", "Luck", "Luck");

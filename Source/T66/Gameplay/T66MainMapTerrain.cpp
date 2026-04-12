@@ -4,8 +4,10 @@
 
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66LavaPatch.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "Components/BoxComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -14,9 +16,11 @@
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "KismetProceduralMeshLibrary.h"
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "ProceduralMeshComponent.h"
 #include "TimerManager.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -29,10 +33,17 @@ namespace T66MainMapTerrain
 		static constexpr float SourceCellSizeUU = 200.0f;
 		static constexpr float SourceStepHeightUU = 120.0f;
 		static constexpr float TargetMainMapBoardScale = 10.0f;
+		static constexpr int32 MainMapBoardSizeCells = 81;
+		static constexpr int32 MainMapExtensionRoomRadiusCells = 2;
+		static constexpr float TreeDecorationSpawnThreshold = 0.82f;
+		static constexpr float RockDecorationSpawnThreshold = 0.69f;
 		static constexpr int32 WallHeightLevels = 50;
 		static constexpr bool bRenderFarmGrass = false;
-		static constexpr bool bRenderFarmDecor = true;
-		static constexpr bool bRenderFarmSupports = true;
+		// Terrain entry was stalling because the board spawned thousands of optional
+		// under-board support and per-cell decor components before gameplay became interactive.
+		// Keep the walkable board and major props, and let the separate prop pass carry the clutter.
+		static constexpr bool bRenderFarmDecor = false;
+		static constexpr bool bRenderFarmSupports = false;
 		static constexpr bool bRenderFarmBoundaryWalls = false;
 		static constexpr bool bSpawnFarmPerimeterBoundary = false;
 		static constexpr int32 GrassObjectCount = 30;
@@ -45,6 +56,30 @@ namespace T66MainMapTerrain
 		static constexpr float GrassDesiredWidthUU = 32.0f;
 		static constexpr float GrassDesiredHeightUU = 32.0f;
 		static constexpr float GrassAlternateLiftFraction = 0.05f;
+		static constexpr float SurfaceFeatureAmplitudeUU = 1800.0f;
+		static constexpr float SurfaceFeatureMeshBiasUU = 1.0f;
+		static constexpr int32 SurfaceFeatureMinimumFootprintCells = 4;
+		static constexpr int32 SurfaceFeatureGridResolutionPerCell = 3;
+		static constexpr int32 SurfaceFeatureCollisionGridResolutionPerCell = 2;
+		static constexpr int32 SurfaceFeatureFootprintPaddingCells = 1;
+		static constexpr int32 SurfaceFeatureSafeRadiusCells = 3;
+		static constexpr float SurfaceFeatureCountFactor = 0.18f;
+		static constexpr int32 SurfaceFeatureMinCount = 8;
+		static constexpr int32 SurfaceFeatureMaxCount = 16;
+		static constexpr float SurfaceFeatureTargetWalkableAngleDegrees = 44.765083f;
+		static constexpr float SurfaceFeatureWalkableSlopeSafetyMultiplier = 1.15f;
+		static constexpr float SurfaceFeatureNoiseLowFrequency = 1.25f;
+		static constexpr float SurfaceFeatureNoiseHighFrequency = 3.10f;
+		static constexpr float SurfaceFeatureNoiseStrength = 0.30f;
+		static constexpr float SurfaceFeatureCraterRimHeight = 0.28f;
+		static constexpr float LavaRiverCountFactor = 0.08f;
+		static constexpr int32 LavaRiverMinCount = 4;
+		static constexpr int32 LavaRiverMaxCount = 8;
+		static constexpr int32 LavaRiverMinLengthCells = 2;
+		static constexpr int32 LavaRiverMaxLengthCells = 4;
+		static constexpr float LavaRiverPuddleCellFraction = 0.25f;
+		static constexpr float LavaRiverWidthCellFraction = 1.0f / 6.0f;
+		static constexpr float LavaRiverHoverHeightUU = 1.0f;
 		static const FName MapPlatformTag(TEXT("T66_Map_Platform"));
 		static const FName FloorMainTag(TEXT("T66_Floor_Main"));
 		static const FName FarmVisualTag(TEXT("T66_MainMapTerrain_Visual"));
@@ -150,7 +185,7 @@ namespace T66MainMapTerrain
 		{
 			if (!Component) return;
 
-			Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			Component->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 			Component->SetCollisionObjectType(ECC_WorldStatic);
 			Component->SetCollisionResponseToAllChannels(ECR_Block);
 			Component->SetGenerateOverlapEvents(false);
@@ -163,7 +198,7 @@ namespace T66MainMapTerrain
 		{
 			if (!Component) return;
 
-			Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			Component->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 			Component->SetCollisionObjectType(ECC_WorldStatic);
 			Component->SetCollisionResponseToAllChannels(ECR_Block);
 			Component->SetGenerateOverlapEvents(false);
@@ -174,7 +209,7 @@ namespace T66MainMapTerrain
 		{
 			if (!Component) return;
 
-			Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			Component->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 			Component->SetCollisionObjectType(ECC_WorldDynamic);
 			Component->SetCollisionResponseToAllChannels(ECR_Ignore);
 			Component->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
@@ -471,6 +506,8 @@ namespace T66MainMapTerrain
 			Cell.Level = Level;
 			Cell.Shape = ET66MapCellShape::Flat;
 			Cell.Decoration = ET66MapCellDecoration::None;
+			Cell.SurfaceFeature = ET66MapCellSurfaceFeature::None;
+			Cell.SurfaceFeatureOrigin = FIntPoint(INDEX_NONE, INDEX_NONE);
 			Cell.Region = Region;
 			Cell.DecorationLocalOffset = FVector::ZeroVector;
 			Cell.DecorationLocalRotation = FRotator::ZeroRotator;
@@ -483,6 +520,162 @@ namespace T66MainMapTerrain
 			Cell.DecorationLocalOffset = FVector::ZeroVector;
 			Cell.DecorationLocalRotation = FRotator::ZeroRotator;
 			Cell.DecorationLocalScale = FVector(1.0f, 1.0f, 1.0f);
+		}
+
+		static void ClearSurfaceFeature(FCell& Cell)
+		{
+			Cell.SurfaceFeature = ET66MapCellSurfaceFeature::None;
+			Cell.SurfaceFeatureOrigin = FIntPoint(INDEX_NONE, INDEX_NONE);
+		}
+
+		static bool HasSurfaceFeature(const FCell& Cell)
+		{
+			return Cell.SurfaceFeature != ET66MapCellSurfaceFeature::None;
+		}
+
+		static bool IsSurfaceFeatureOriginCell(const FCell& Cell)
+		{
+			return HasSurfaceFeature(Cell)
+				&& Cell.SurfaceFeatureOrigin == FIntPoint(Cell.X, Cell.Z);
+		}
+
+		static float GetSurfaceFeatureProfile(float LocalX, float LocalY, float HalfExtentUU)
+		{
+			if (HalfExtentUU <= KINDA_SMALL_NUMBER)
+			{
+				return 0.0f;
+			}
+
+			const float Radial = FMath::Clamp(
+				FMath::Sqrt(FMath::Square(LocalX / HalfExtentUU) + FMath::Square(LocalY / HalfExtentUU)),
+				0.0f,
+				1.0f);
+			float Profile = 1.0f - Radial;
+			Profile = FMath::Clamp(Profile, 0.0f, 1.0f);
+			return Profile * Profile * (3.0f - 2.0f * Profile);
+		}
+
+		static float GetSurfaceFeatureBaseHeightFromRadial(ET66MapCellSurfaceFeature SurfaceFeature, float Radial)
+		{
+			const float BaseProfile = GetSurfaceFeatureProfile(FMath::Clamp(Radial, 0.0f, 1.0f), 0.0f, 1.0f);
+			if (BaseProfile <= KINDA_SMALL_NUMBER)
+			{
+				return 0.0f;
+			}
+
+			if (SurfaceFeature == ET66MapCellSurfaceFeature::Hill)
+			{
+				const float HillProfile = FMath::Pow(BaseProfile, 0.62f);
+				return SurfaceFeatureAmplitudeUU * HillProfile;
+			}
+
+			const float ClampedRadial = FMath::Clamp(Radial, 0.0f, 1.0f);
+			const float CraterBowl = FMath::Pow(BaseProfile, 0.92f);
+			const float RimOuter = FMath::SmoothStep(0.34f, 0.70f, ClampedRadial);
+			const float RimInner = FMath::SmoothStep(0.70f, 0.98f, ClampedRadial);
+			const float RimBand = FMath::Clamp(RimOuter - RimInner, 0.0f, 1.0f);
+			return (-SurfaceFeatureAmplitudeUU * CraterBowl)
+				+ (SurfaceFeatureAmplitudeUU * SurfaceFeatureCraterRimHeight * RimBand);
+		}
+
+		static float GetSurfaceFeatureMaxRisePerNormalizedRadius(ET66MapCellSurfaceFeature SurfaceFeature)
+		{
+			static constexpr int32 SampleCount = 4096;
+			float MaxSlope = 0.0f;
+			float PreviousHeight = GetSurfaceFeatureBaseHeightFromRadial(SurfaceFeature, 0.0f);
+
+			for (int32 SampleIndex = 1; SampleIndex <= SampleCount; ++SampleIndex)
+			{
+				const float Radial = static_cast<float>(SampleIndex) / static_cast<float>(SampleCount);
+				const float Height = GetSurfaceFeatureBaseHeightFromRadial(SurfaceFeature, Radial);
+				const float Slope = FMath::Abs(Height - PreviousHeight) * static_cast<float>(SampleCount);
+				MaxSlope = FMath::Max(MaxSlope, Slope);
+				PreviousHeight = Height;
+			}
+
+			return MaxSlope;
+		}
+
+		static int32 GetSurfaceFeatureFootprintCellCount()
+		{
+			static const int32 CachedFootprintCellCount = []() -> int32
+			{
+				const float CellSizeUU = SourceCellSizeUU * TargetMainMapBoardScale;
+				const float WalkableSlope = FMath::Tan(FMath::DegreesToRadians(SurfaceFeatureTargetWalkableAngleDegrees));
+				if (CellSizeUU <= KINDA_SMALL_NUMBER || WalkableSlope <= KINDA_SMALL_NUMBER)
+				{
+					return SurfaceFeatureMinimumFootprintCells;
+				}
+
+				const float MaxRisePerNormalizedRadius = FMath::Max(
+					GetSurfaceFeatureMaxRisePerNormalizedRadius(ET66MapCellSurfaceFeature::Hill),
+					GetSurfaceFeatureMaxRisePerNormalizedRadius(ET66MapCellSurfaceFeature::Crater));
+				const float RequiredHalfExtentUU =
+					(MaxRisePerNormalizedRadius * SurfaceFeatureWalkableSlopeSafetyMultiplier) / WalkableSlope;
+				const float RequiredFeatureSizeUU = RequiredHalfExtentUU * 2.0f;
+				const float RequiredFootprintCells = RequiredFeatureSizeUU / CellSizeUU;
+				return FMath::Max(
+					SurfaceFeatureMinimumFootprintCells,
+					FMath::CeilToInt(RequiredFootprintCells));
+			}();
+
+			return CachedFootprintCellCount;
+		}
+
+		static float SampleSurfaceFeatureNoise(int32 Seed, const FIntPoint& Origin, float LocalX, float LocalY, float FeatureSizeUU)
+		{
+			if (FeatureSizeUU <= KINDA_SMALL_NUMBER)
+			{
+				return 0.0f;
+			}
+
+			const FVector2D NormalizedPosition(
+				LocalX / FeatureSizeUU + static_cast<float>(Origin.X) * 0.173f + static_cast<float>(Seed & 1023) * 0.0071f,
+				LocalY / FeatureSizeUU + static_cast<float>(Origin.Y) * 0.167f + static_cast<float>((Seed >> 10) & 1023) * 0.0067f);
+			const float Low = FMath::PerlinNoise2D(NormalizedPosition * SurfaceFeatureNoiseLowFrequency);
+			const float High = FMath::PerlinNoise2D(NormalizedPosition * SurfaceFeatureNoiseHighFrequency);
+			return Low * 0.7f + High * 0.3f;
+		}
+
+		static float GetSurfaceFeatureHeight(
+			ET66MapCellSurfaceFeature SurfaceFeature,
+			int32 Seed,
+			const FIntPoint& Origin,
+			float LocalX,
+			float LocalY,
+			float HalfExtentUU)
+		{
+			if (SurfaceFeature == ET66MapCellSurfaceFeature::None || HalfExtentUU <= KINDA_SMALL_NUMBER)
+			{
+				return 0.0f;
+			}
+
+			const float FeatureSizeUU = HalfExtentUU * 2.0f;
+			const float BaseProfile = GetSurfaceFeatureProfile(LocalX, LocalY, HalfExtentUU);
+			if (BaseProfile <= KINDA_SMALL_NUMBER)
+			{
+				return 0.0f;
+			}
+
+			const float Noise = SampleSurfaceFeatureNoise(Seed, Origin, LocalX, LocalY, FeatureSizeUU);
+			const float NoiseMultiplier = FMath::Clamp(1.0f + Noise * SurfaceFeatureNoiseStrength, 0.72f, 1.28f);
+
+			if (SurfaceFeature == ET66MapCellSurfaceFeature::Hill)
+			{
+				const float HillProfile = FMath::Pow(BaseProfile, 0.62f);
+				return SurfaceFeatureAmplitudeUU * HillProfile * NoiseMultiplier;
+			}
+
+			const float Radial = FMath::Clamp(
+				FMath::Sqrt(FMath::Square(LocalX / HalfExtentUU) + FMath::Square(LocalY / HalfExtentUU)),
+				0.0f,
+				1.0f);
+			const float CraterBowl = FMath::Pow(BaseProfile, 0.92f);
+			const float RimOuter = FMath::SmoothStep(0.34f, 0.70f, Radial);
+			const float RimInner = FMath::SmoothStep(0.70f, 0.98f, Radial);
+			const float RimBand = FMath::Clamp(RimOuter - RimInner, 0.0f, 1.0f);
+			return (-SurfaceFeatureAmplitudeUU * CraterBowl * NoiseMultiplier)
+				+ (SurfaceFeatureAmplitudeUU * SurfaceFeatureCraterRimHeight * RimBand);
 		}
 
 		static FIntPoint BuildExtensionArea(
@@ -657,7 +850,7 @@ namespace T66MainMapTerrain
 			const float TreeJitter = Settings.CellSize * 0.34f;
 			const float RockJitter = Settings.CellSize * 0.40f;
 
-			if (ObjectToSpawn > 0.82f)
+			if (ObjectToSpawn > TreeDecorationSpawnThreshold)
 			{
 				const float TreeScale = Rng.FRandRange(0.22f, 0.32f) * ImportedScale;
 				switch (Rng.RandRange(0, 2))
@@ -679,7 +872,7 @@ namespace T66MainMapTerrain
 				return;
 			}
 
-			if (ObjectToSpawn > 0.60f)
+			if (ObjectToSpawn > RockDecorationSpawnThreshold)
 			{
 				const float RockScale = Rng.FRandRange(0.22f, 0.58f) * ImportedScale;
 				Cell.Decoration = (Rng.FRand() < 0.5f) ? ET66MapCellDecoration::Rock : ET66MapCellDecoration::Rocks;
@@ -792,13 +985,6 @@ namespace T66MainMapTerrain
 			OutAssets.RockMesh2 = OutAssets.RockMesh1;
 			OutAssets.RockMesh3 = OutAssets.RockMesh1;
 			OutAssets.LogMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/World/Props/Log.Log"));
-			EnableComplexCollisionForMesh(OutAssets.TreeMesh1);
-			EnableComplexCollisionForMesh(OutAssets.TreeMesh2);
-			EnableComplexCollisionForMesh(OutAssets.TreeMesh3);
-			EnableComplexCollisionForMesh(OutAssets.RockMesh1);
-			EnableComplexCollisionForMesh(OutAssets.RockMesh2);
-			EnableComplexCollisionForMesh(OutAssets.RockMesh3);
-			EnableComplexCollisionForMesh(OutAssets.LogMesh);
 			UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain assets: DirtMaterial=%s DirtTexture=%s WallMaterial=%s WallTexture=%s Tree1=%s Tree2=%s Tree3=%s Rock=%s Rocks=%s"),
 				OutAssets.DirtMaterial ? TEXT("yes") : TEXT("no"),
 				OutAssets.DirtTexture ? TEXT("yes") : TEXT("no"),
@@ -813,10 +999,11 @@ namespace T66MainMapTerrain
 		}
 	}
 
-	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed)
+	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed, ET66MainMapLayoutVariant LayoutVariant)
 	{
 		FT66MapPreset Preset = FT66MapPreset::GetDefaultForTheme(ET66MapTheme::Farm);
 		Preset.Seed = Seed;
+		Preset.LayoutVariant = LayoutVariant;
 
 		switch (Difficulty)
 		{
@@ -831,13 +1018,19 @@ namespace T66MainMapTerrain
 			break;
 		}
 
+		if (LayoutVariant == ET66MainMapLayoutVariant::Flat
+			|| LayoutVariant == ET66MainMapLayoutVariant::Tower)
+		{
+			Preset.FarmHilliness = 0.0f;
+		}
+
 		return Preset;
 	}
 
 	FSettings MakeSettings(const FT66MapPreset& Preset)
 	{
 		FSettings Settings;
-		Settings.BoardSize = 41;
+		Settings.BoardSize = MainMapBoardSizeCells;
 		Settings.BoardScale = TargetMainMapBoardScale;
 		Settings.CellSize = SourceCellSizeUU * Settings.BoardScale;
 		Settings.StepHeight = FMath::Max(Preset.ElevationStep, 1.0f);
@@ -931,6 +1124,28 @@ namespace T66MainMapTerrain
 		return GetPreferredSpawnLocation(Board, HeightOffset);
 	}
 
+	float GetSurfaceFeatureLavaCoverHeight(const FCell& Cell)
+	{
+		const int32 SurfaceFeatureFootprintCells = GetSurfaceFeatureFootprintCellCount();
+		if (Cell.SurfaceFeature != ET66MapCellSurfaceFeature::Hill
+			|| Cell.SurfaceFeatureOrigin.X == INDEX_NONE
+			|| Cell.SurfaceFeatureOrigin.Y == INDEX_NONE)
+		{
+			return 0.0f;
+		}
+
+		const float HalfExtentCells = static_cast<float>(SurfaceFeatureFootprintCells) * 0.5f;
+		const float LocalX = static_cast<float>(Cell.X - Cell.SurfaceFeatureOrigin.X) + 0.5f - HalfExtentCells;
+		const float LocalY = static_cast<float>(Cell.Z - Cell.SurfaceFeatureOrigin.Y) + 0.5f - HalfExtentCells;
+		return GetSurfaceFeatureHeight(
+			Cell.SurfaceFeature,
+			0,
+			Cell.SurfaceFeatureOrigin,
+			LocalX,
+			LocalY,
+			HalfExtentCells);
+	}
+
 	float GetTraceZ(const FT66MapPreset& Preset)
 	{
 		const FSettings Settings = MakeSettings(Preset);
@@ -951,6 +1166,7 @@ namespace T66MainMapTerrain
 		OutBoard = FBoard();
 		OutBoard.Settings = MakeSettings(Preset);
 		OutBoard.Cells.SetNum(OutBoard.Settings.BoardSize * OutBoard.Settings.BoardSize);
+		const int32 SurfaceFeatureFootprintCells = GetSurfaceFeatureFootprintCellCount();
 
 		for (int32 Z = 0; Z < OutBoard.Settings.BoardSize; ++Z)
 		{
@@ -1087,6 +1303,8 @@ namespace T66MainMapTerrain
 			Cell->Level = Level;
 			Cell->Shape = ET66MapCellShape::Flat;
 			Cell->Decoration = ET66MapCellDecoration::None;
+			Cell->SurfaceFeature = ET66MapCellSurfaceFeature::None;
+			Cell->SurfaceFeatureOrigin = FIntPoint(INDEX_NONE, INDEX_NONE);
 			Cell->Region = ECellRegion::MainBoard;
 			Cell->DecorationLocalOffset = FVector::ZeroVector;
 			Cell->DecorationLocalRotation = FRotator::ZeroRotator;
@@ -1199,7 +1417,7 @@ namespace T66MainMapTerrain
 			OutBoard,
 			InitialCoordinate,
 			InitialOutwardDirection,
-			1,
+			MainMapExtensionRoomRadiusCells,
 			ECellRegion::StartPath,
 			ECellRegion::StartArea,
 			&OutBoard.StartPathCell,
@@ -1215,11 +1433,294 @@ namespace T66MainMapTerrain
 			OutBoard,
 			OutBoard.BossAnchor,
 			OutBoard.BossOutwardDirection,
-			1,
+			MainMapExtensionRoomRadiusCells,
 			ECellRegion::BossPath,
 			ECellRegion::BossArea,
 			&OutBoard.BossPathCell,
 			&OutBoard.BossSpawnCell);
+
+		auto ShuffleCellPointers = [&](TArray<FCell*>& Cells)
+		{
+			for (int32 Index = Cells.Num() - 1; Index > 0; --Index)
+			{
+				const int32 SwapIndex = Rng.RandRange(0, Index);
+				if (Index != SwapIndex)
+				{
+					Cells.Swap(Index, SwapIndex);
+				}
+			}
+		};
+
+		auto IsNearReservedCoordinate = [&](const FCell& Cell) -> bool
+		{
+			const TArray<FIntPoint> ReservedCoordinates =
+			{
+				OutBoard.StartAnchor,
+				OutBoard.StartPathCell,
+				OutBoard.BossAnchor,
+				OutBoard.BossPathCell,
+			};
+
+			for (const FIntPoint& Coordinate : ReservedCoordinates)
+			{
+				if (Coordinate.X == INDEX_NONE || Coordinate.Y == INDEX_NONE)
+				{
+					continue;
+				}
+
+				if (FMath::Max(FMath::Abs(Cell.X - Coordinate.X), FMath::Abs(Cell.Z - Coordinate.Y)) <= SurfaceFeatureSafeRadiusCells)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		TSet<int32> ReservedFeatureCells;
+
+		auto IsSurfaceFeatureCandidate = [&](const FCell& Cell) -> bool
+		{
+			const int32 MaxFeatureX = Cell.X + SurfaceFeatureFootprintCells - 1;
+			const int32 MaxFeatureZ = Cell.Z + SurfaceFeatureFootprintCells - 1;
+			if (!Cell.bOccupied
+				|| Cell.bSlope
+				|| Cell.Region != ECellRegion::MainBoard
+				|| Cell.X <= 0
+				|| Cell.Z <= 0
+				|| MaxFeatureX >= OutBoard.Settings.BoardSize - 1
+				|| MaxFeatureZ >= OutBoard.Settings.BoardSize - 1)
+			{
+				return false;
+			}
+
+			for (int32 OffsetZ = 0; OffsetZ < SurfaceFeatureFootprintCells; ++OffsetZ)
+			{
+				for (int32 OffsetX = 0; OffsetX < SurfaceFeatureFootprintCells; ++OffsetX)
+				{
+					const FCell* FootprintCell = OutBoard.GetCell(Cell.X + OffsetX, Cell.Z + OffsetZ);
+					if (!FootprintCell
+						|| !FootprintCell->bOccupied
+						|| FootprintCell->bSlope
+						|| FootprintCell->Region != ECellRegion::MainBoard
+						|| IsNearReservedCoordinate(*FootprintCell))
+					{
+						return false;
+					}
+				}
+			}
+
+			return true;
+		};
+
+		auto CanPlaceSurfaceFeatureAt = [&](const FIntPoint& Origin) -> bool
+		{
+			const FCell* OriginCell = OutBoard.GetCell(Origin.X, Origin.Y);
+			if (!OriginCell || !IsSurfaceFeatureCandidate(*OriginCell))
+			{
+				return false;
+			}
+
+			for (int32 OffsetZ = -SurfaceFeatureFootprintPaddingCells; OffsetZ < SurfaceFeatureFootprintCells + SurfaceFeatureFootprintPaddingCells; ++OffsetZ)
+			{
+				for (int32 OffsetX = -SurfaceFeatureFootprintPaddingCells; OffsetX < SurfaceFeatureFootprintCells + SurfaceFeatureFootprintPaddingCells; ++OffsetX)
+				{
+					const int32 FeatureX = Origin.X + OffsetX;
+					const int32 FeatureZ = Origin.Y + OffsetZ;
+					if (FeatureX < 0 || FeatureX >= OutBoard.Settings.BoardSize || FeatureZ < 0 || FeatureZ >= OutBoard.Settings.BoardSize)
+					{
+						continue;
+					}
+
+					if (ReservedFeatureCells.Contains(OutBoard.Index(FeatureX, FeatureZ)))
+					{
+						return false;
+					}
+				}
+			}
+
+			for (int32 OffsetZ = 0; OffsetZ < SurfaceFeatureFootprintCells; ++OffsetZ)
+			{
+				for (int32 OffsetX = 0; OffsetX < SurfaceFeatureFootprintCells; ++OffsetX)
+				{
+					const FCell* FootprintCell = OutBoard.GetCell(Origin.X + OffsetX, Origin.Y + OffsetZ);
+					if (!FootprintCell || HasSurfaceFeature(*FootprintCell))
+					{
+						return false;
+					}
+				}
+			}
+
+			return true;
+		};
+
+		auto AssignSurfaceFeatureFootprint = [&](const FIntPoint& Origin, ET66MapCellSurfaceFeature SurfaceFeature)
+		{
+			for (int32 OffsetZ = 0; OffsetZ < SurfaceFeatureFootprintCells; ++OffsetZ)
+			{
+				for (int32 OffsetX = 0; OffsetX < SurfaceFeatureFootprintCells; ++OffsetX)
+				{
+					if (FCell* FeatureCell = OutBoard.GetCell(Origin.X + OffsetX, Origin.Y + OffsetZ))
+					{
+						FeatureCell->SurfaceFeature = SurfaceFeature;
+						FeatureCell->SurfaceFeatureOrigin = Origin;
+						ClearDecoration(*FeatureCell);
+					}
+				}
+			}
+
+			for (int32 OffsetZ = -SurfaceFeatureFootprintPaddingCells; OffsetZ < SurfaceFeatureFootprintCells + SurfaceFeatureFootprintPaddingCells; ++OffsetZ)
+			{
+				for (int32 OffsetX = -SurfaceFeatureFootprintPaddingCells; OffsetX < SurfaceFeatureFootprintCells + SurfaceFeatureFootprintPaddingCells; ++OffsetX)
+				{
+					const int32 FeatureX = Origin.X + OffsetX;
+					const int32 FeatureZ = Origin.Y + OffsetZ;
+					if (FeatureX < 0 || FeatureX >= OutBoard.Settings.BoardSize || FeatureZ < 0 || FeatureZ >= OutBoard.Settings.BoardSize)
+					{
+						continue;
+					}
+
+					ReservedFeatureCells.Add(OutBoard.Index(FeatureX, FeatureZ));
+				}
+			}
+		};
+
+		TArray<FCell*> SurfaceCandidates;
+		SurfaceCandidates.Reserve(OutBoard.Cells.Num());
+		for (FCell& Cell : OutBoard.Cells)
+		{
+			ClearSurfaceFeature(Cell);
+			if (IsSurfaceFeatureCandidate(Cell))
+			{
+				SurfaceCandidates.Add(&Cell);
+			}
+		}
+
+		ShuffleCellPointers(SurfaceCandidates);
+		const int32 HillTargetCount = FMath::Clamp(
+			FMath::RoundToInt(static_cast<float>(OutBoard.Settings.BoardSize) * SurfaceFeatureCountFactor),
+			SurfaceFeatureMinCount,
+			SurfaceFeatureMaxCount);
+		const int32 CraterTargetCount = HillTargetCount;
+		int32 AssignedHills = 0;
+		int32 AssignedCraters = 0;
+
+		for (FCell* Cell : SurfaceCandidates)
+		{
+			if (!Cell)
+			{
+				continue;
+			}
+
+			const FIntPoint FeatureOrigin(Cell->X, Cell->Z);
+			if (!CanPlaceSurfaceFeatureAt(FeatureOrigin))
+			{
+				continue;
+			}
+
+			if (AssignedHills < HillTargetCount)
+			{
+				AssignSurfaceFeatureFootprint(FeatureOrigin, ET66MapCellSurfaceFeature::Hill);
+				++AssignedHills;
+				continue;
+			}
+
+			if (AssignedCraters < CraterTargetCount)
+			{
+				AssignSurfaceFeatureFootprint(FeatureOrigin, ET66MapCellSurfaceFeature::Crater);
+				++AssignedCraters;
+			}
+		}
+
+		OutBoard.LavaRivers.Reset();
+		const int32 LavaRiverTargetCount = FMath::Clamp(
+			FMath::RoundToInt(static_cast<float>(OutBoard.Settings.BoardSize) * LavaRiverCountFactor),
+			LavaRiverMinCount,
+			LavaRiverMaxCount);
+
+		auto IsRiverCellUsable = [&](int32 X, int32 Z) -> bool
+		{
+			const FCell* Cell = OutBoard.GetCell(X, Z);
+			if (!Cell || !Cell->bOccupied || Cell->bSlope || Cell->Region != ECellRegion::MainBoard || IsNearReservedCoordinate(*Cell))
+			{
+				return false;
+			}
+
+			return Cell->SurfaceFeature == ET66MapCellSurfaceFeature::None
+				&& !ReservedFeatureCells.Contains(OutBoard.Index(X, Z));
+		};
+
+		TArray<FCell*> RiverCandidates;
+		for (FCell& Cell : OutBoard.Cells)
+		{
+			if (IsRiverCellUsable(Cell.X, Cell.Z))
+			{
+				RiverCandidates.Add(&Cell);
+			}
+		}
+		ShuffleCellPointers(RiverCandidates);
+
+		for (FCell* OriginCell : RiverCandidates)
+		{
+			if (!OriginCell || OutBoard.LavaRivers.Num() >= LavaRiverTargetCount)
+			{
+				break;
+			}
+
+			const int32 OriginIndex = OutBoard.Index(OriginCell->X, OriginCell->Z);
+			if (ReservedFeatureCells.Contains(OriginIndex))
+			{
+				continue;
+			}
+
+			TArray<FIntPoint> ShuffledDirections = Directions;
+			for (int32 DirectionIndex = ShuffledDirections.Num() - 1; DirectionIndex > 0; --DirectionIndex)
+			{
+				const int32 SwapIndex = Rng.RandRange(0, DirectionIndex);
+				if (DirectionIndex != SwapIndex)
+				{
+					ShuffledDirections.Swap(DirectionIndex, SwapIndex);
+				}
+			}
+
+			for (const FIntPoint& Direction : ShuffledDirections)
+			{
+				int32 MaxReachableLength = 0;
+				for (int32 Step = 1; Step <= LavaRiverMaxLengthCells; ++Step)
+				{
+					if (!IsRiverCellUsable(OriginCell->X + Direction.X * Step, OriginCell->Z + Direction.Y * Step))
+					{
+						break;
+					}
+
+					++MaxReachableLength;
+				}
+
+				if (MaxReachableLength < LavaRiverMinLengthCells)
+				{
+					continue;
+				}
+
+				const int32 RiverLength = Rng.RandRange(LavaRiverMinLengthCells, MaxReachableLength);
+				T66MainMapTerrain::FLavaRiver& River = OutBoard.LavaRivers.AddDefaulted_GetRef();
+				River.PuddleCell = FIntPoint(OriginCell->X, OriginCell->Z);
+				River.Direction = Direction;
+				River.LengthCells = RiverLength;
+
+				ClearDecoration(*OriginCell);
+				ReservedFeatureCells.Add(OriginIndex);
+
+				for (int32 Step = 1; Step <= RiverLength; ++Step)
+				{
+					if (FCell* PathCell = OutBoard.GetCell(OriginCell->X + Direction.X * Step, OriginCell->Z + Direction.Y * Step))
+					{
+						ClearDecoration(*PathCell);
+						ReservedFeatureCells.Add(OutBoard.Index(PathCell->X, PathCell->Z));
+					}
+				}
+				break;
+			}
+		}
 
 		return OutBoard.OccupiedCount == OutBoard.Cells.Num();
 	}
@@ -1249,12 +1750,11 @@ namespace T66MainMapTerrain
 		const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 		ApplyDifficultyTextureOverrides(Assets, Difficulty);
 
-		EnableComplexCollisionForMesh(Assets.BlockMesh);
-		EnableComplexCollisionForMesh(Assets.SlopeMesh);
-
 		const FVector BoardOrigin = GetBoardOrigin(Preset);
 		const float CellSize = Board.Settings.CellSize;
 		const float StepHeight = Board.Settings.StepHeight;
+		const int32 SurfaceFeatureFootprintCells = GetSurfaceFeatureFootprintCellCount();
+		const double SpawnStartSeconds = FPlatformTime::Seconds();
 
 		AActor* VisualActor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 		if (!VisualActor)
@@ -1368,6 +1868,9 @@ namespace T66MainMapTerrain
 		UMaterialInterface* EffectiveSlopeMaterial = InitialSlopeMaterial.Material;
 		UMaterialInterface* EffectiveDirtMaterial = InitialDirtMaterial.Material;
 		UMaterialInterface* EffectiveWallMaterial = InitialWallMaterial.Material;
+		UMaterialInterface* EffectiveSurfaceFeatureMaterial =
+			Assets.SlopeMaterial ? Assets.SlopeMaterial :
+			(Assets.BlockMaterial ? Assets.BlockMaterial : EffectiveBlockMaterial);
 		UpdateFarmMaterialReadyTag(
 			InitialBlockMaterial.bUsingRealTexture &&
 			InitialSlopeMaterial.bUsingRealTexture &&
@@ -1407,6 +1910,9 @@ namespace T66MainMapTerrain
 				Assets.WallMaterial,
 				TEXT("/Game/World/Terrain/Megabonk/MI_MegabonkWall.MI_MegabonkWall"),
 				TEXT("FarmWallMID"));
+			UMaterialInterface* SurfaceFeatureMaterial =
+				Assets.SlopeMaterial ? Assets.SlopeMaterial :
+				(Assets.BlockMaterial ? Assets.BlockMaterial : BlockMaterial.Material);
 			const bool bMaterialsReady =
 				BlockMaterial.bUsingRealTexture &&
 				SlopeMaterial.bUsingRealTexture &&
@@ -1442,6 +1948,20 @@ namespace T66MainMapTerrain
 				else if (ComponentName.StartsWith(TEXT("Decor_")))
 				{
 					MeshComponent->EmptyOverrideMaterials();
+				}
+			}
+
+			TInlineComponentArray<UProceduralMeshComponent*> ProceduralMeshComponents(VisualActor);
+			for (UProceduralMeshComponent* ProceduralMeshComponent : ProceduralMeshComponents)
+			{
+				if (!ProceduralMeshComponent)
+				{
+					continue;
+				}
+
+				if (ProceduralMeshComponent->GetName().StartsWith(TEXT("SurfaceFeature_")))
+				{
+					ProceduralMeshComponent->SetMaterial(0, SurfaceFeatureMaterial);
 				}
 			}
 
@@ -1491,21 +2011,34 @@ namespace T66MainMapTerrain
 			return Component;
 		};
 
-		auto SetTileActiveState = [&](UStaticMeshComponent* Component, bool bActive)
+		auto CreateInstancedMeshBatch = [&](const FString& Name, UStaticMesh* Mesh, UMaterialInterface* Material, bool bEnableCollision) -> UInstancedStaticMeshComponent*
 		{
-			if (!Component)
+			if (!Mesh)
 			{
-				return;
+				return nullptr;
 			}
 
-			Component->SetVisibility(bActive, true);
-			Component->SetHiddenInGame(!bActive, true);
-			Component->SetCollisionEnabled(bActive ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-			if (bActive)
+			UInstancedStaticMeshComponent* Component = NewObject<UInstancedStaticMeshComponent>(VisualActor, FName(*Name));
+			VisualActor->AddInstanceComponent(Component);
+			Component->SetupAttachment(VisualRoot);
+			Component->SetMobility(EComponentMobility::Static);
+			Component->SetStaticMesh(Mesh);
+			if (Material)
+			{
+				Component->SetMaterial(0, Material);
+			}
+
+			if (bEnableCollision)
 			{
 				ConfigureTerrainVisualCollisionComponent(Component);
 				Component->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
 			}
+			else
+			{
+				Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				Component->SetCanEverAffectNavigation(false);
+			}
+			return Component;
 		};
 
 		auto PickGrassMaterial = [&](FRandomStream& GrassRng) -> UMaterialInterface*
@@ -1561,6 +2094,180 @@ namespace T66MainMapTerrain
 			}
 		};
 
+		double SurfaceFeatureSpawnSeconds = 0.0;
+		double FlatCollisionSpawnSeconds = 0.0;
+
+		auto CreateSurfaceFeatureChild = [&](USceneComponent* Parent, const FString& Name, const FCell& FeatureCell) -> UProceduralMeshComponent*
+		{
+			if (!IsSurfaceFeatureOriginCell(FeatureCell) || !EffectiveSurfaceFeatureMaterial)
+			{
+				return nullptr;
+			}
+
+			const double SurfaceFeatureStartSeconds = FPlatformTime::Seconds();
+			const float FeatureSizeUU = CellSize * static_cast<float>(SurfaceFeatureFootprintCells);
+			const float HalfFeatureSizeUU = FeatureSizeUU * 0.5f;
+			const FVector FeatureRelativeLocation(
+				static_cast<float>(SurfaceFeatureFootprintCells - 1) * CellSize * 0.5f,
+				static_cast<float>(SurfaceFeatureFootprintCells - 1) * CellSize * 0.5f,
+				StepHeight * 0.5f + SurfaceFeatureMeshBiasUU);
+
+			auto BuildSurfaceFeatureMeshData = [&](int32 GridResolution, TArray<FVector>& OutVertices, TArray<int32>& OutTriangles, TArray<FVector2D>& OutUVs)
+			{
+				const int32 VertexStride = GridResolution + 1;
+				OutVertices.Reset();
+				OutTriangles.Reset();
+				OutUVs.Reset();
+				OutVertices.Reserve(VertexStride * VertexStride);
+				OutUVs.Reserve(VertexStride * VertexStride);
+				OutTriangles.Reserve(GridResolution * GridResolution * 6);
+
+				for (int32 Y = 0; Y <= GridResolution; ++Y)
+				{
+					const float V = static_cast<float>(Y) / static_cast<float>(GridResolution);
+					const float LocalY = (V - 0.5f) * FeatureSizeUU;
+
+					for (int32 X = 0; X <= GridResolution; ++X)
+					{
+						const float U = static_cast<float>(X) / static_cast<float>(GridResolution);
+						const float LocalX = (U - 0.5f) * FeatureSizeUU;
+						const float Height = GetSurfaceFeatureHeight(
+							FeatureCell.SurfaceFeature,
+							Preset.Seed,
+							FeatureCell.SurfaceFeatureOrigin,
+							LocalX,
+							LocalY,
+							HalfFeatureSizeUU);
+
+						OutVertices.Add(FVector(LocalX, LocalY, Height));
+						OutUVs.Add(FVector2D(U, V));
+					}
+				}
+
+				for (int32 Y = 0; Y < GridResolution; ++Y)
+				{
+					for (int32 X = 0; X < GridResolution; ++X)
+					{
+						const int32 A = Y * VertexStride + X;
+						const int32 B = A + 1;
+						const int32 C = A + VertexStride;
+						const int32 D = C + 1;
+
+						OutTriangles.Add(A);
+						OutTriangles.Add(C);
+						OutTriangles.Add(B);
+
+						OutTriangles.Add(B);
+						OutTriangles.Add(C);
+						OutTriangles.Add(D);
+					}
+				}
+			};
+
+			TArray<FVector> VisualVertices;
+			TArray<int32> VisualTriangles;
+			TArray<FVector2D> VisualUVs;
+			BuildSurfaceFeatureMeshData(
+				SurfaceFeatureGridResolutionPerCell * SurfaceFeatureFootprintCells,
+				VisualVertices,
+				VisualTriangles,
+				VisualUVs);
+
+			TArray<FVector> VisualNormals;
+			TArray<FProcMeshTangent> VisualTangents;
+			TArray<FLinearColor> VertexColors;
+			UKismetProceduralMeshLibrary::CalculateTangentsForMesh(
+				VisualVertices,
+				VisualTriangles,
+				VisualUVs,
+				VisualNormals,
+				VisualTangents);
+
+			UProceduralMeshComponent* VisualComponent = NewObject<UProceduralMeshComponent>(VisualActor, FName(*Name));
+			VisualActor->AddInstanceComponent(VisualComponent);
+			VisualComponent->SetupAttachment(Parent);
+			VisualComponent->SetMobility(EComponentMobility::Static);
+			VisualComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			VisualComponent->SetGenerateOverlapEvents(false);
+			VisualComponent->SetCanEverAffectNavigation(false);
+			VisualComponent->SetCastShadow(true);
+			VisualComponent->SetRelativeLocation(FeatureRelativeLocation);
+			VisualComponent->CreateMeshSection_LinearColor(0, VisualVertices, VisualTriangles, VisualNormals, VisualUVs, VertexColors, VisualTangents, false);
+			VisualComponent->SetMaterial(0, EffectiveSurfaceFeatureMaterial);
+			VisualComponent->RegisterComponent();
+
+			TArray<FVector> CollisionVertices;
+			TArray<int32> CollisionTriangles;
+			TArray<FVector2D> CollisionUVs;
+			BuildSurfaceFeatureMeshData(
+				SurfaceFeatureCollisionGridResolutionPerCell * SurfaceFeatureFootprintCells,
+				CollisionVertices,
+				CollisionTriangles,
+				CollisionUVs);
+
+			TArray<FVector> CollisionNormals;
+			TArray<FProcMeshTangent> CollisionTangents;
+			UProceduralMeshComponent* CollisionComponent = NewObject<UProceduralMeshComponent>(VisualActor, FName(*(Name + TEXT("_Collision"))));
+			VisualActor->AddInstanceComponent(CollisionComponent);
+			CollisionComponent->SetupAttachment(Parent);
+			CollisionComponent->SetMobility(EComponentMobility::Static);
+			ConfigureTerrainCollisionComponent(CollisionComponent);
+			CollisionComponent->SetGenerateOverlapEvents(false);
+			CollisionComponent->SetCanEverAffectNavigation(false);
+			CollisionComponent->SetVisibility(false, true);
+			CollisionComponent->SetHiddenInGame(true, true);
+			CollisionComponent->SetCastShadow(false);
+			CollisionComponent->bUseAsyncCooking = true;
+			CollisionComponent->bUseComplexAsSimpleCollision = true;
+			CollisionComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
+			CollisionComponent->SetRelativeLocation(FeatureRelativeLocation);
+			CollisionComponent->CreateMeshSection_LinearColor(0, CollisionVertices, CollisionTriangles, CollisionNormals, CollisionUVs, VertexColors, CollisionTangents, true);
+			CollisionComponent->RegisterComponent();
+			SurfaceFeatureSpawnSeconds += (FPlatformTime::Seconds() - SurfaceFeatureStartSeconds);
+			return VisualComponent;
+		};
+
+		auto SpawnDecorativeLavaPatch = [&](const FString& Name, const FVector& WorldLocation, float SizeX, float SizeY, const FVector2D& FlowDirection) -> AT66LavaPatch*
+		{
+			FTransform SpawnTransform(FRotator::ZeroRotator, WorldLocation);
+			AT66LavaPatch* LavaPatch = World->SpawnActorDeferred<AT66LavaPatch>(
+				AT66LavaPatch::StaticClass(),
+				SpawnTransform,
+				VisualActor,
+				nullptr,
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			if (!LavaPatch)
+			{
+				return nullptr;
+			}
+
+			LavaPatch->Tags.Add(MapPlatformTag);
+			LavaPatch->Tags.Add(FarmVisualTag);
+			LavaPatch->PatchSize = FMath::Max(SizeX, SizeY);
+			LavaPatch->PatchSizeX = SizeX;
+			LavaPatch->PatchSizeY = SizeY;
+			LavaPatch->HoverHeight = LavaRiverHoverHeightUU;
+			LavaPatch->CollisionHeight = 80.0f;
+			LavaPatch->bSnapToGroundOnBeginPlay = false;
+			LavaPatch->TextureResolution = 48;
+			LavaPatch->AnimationFrames = 12;
+			LavaPatch->AnimationFPS = 10.0f;
+			LavaPatch->WarpSpeed = 1.0f;
+			LavaPatch->WarpIntensity = 0.11f;
+			LavaPatch->WarpCloseness = 2.1f;
+			LavaPatch->FlowDir = FlowDirection.IsNearlyZero() ? FVector2D(1.0f, 0.0f) : FlowDirection.GetSafeNormal();
+			LavaPatch->FlowSpeed = 0.16f;
+			LavaPatch->UVScale = FMath::Clamp((FMath::Max(SizeX, SizeY) / FMath::Max(FMath::Min(SizeX, SizeY), 1.0f)) * 2.0f, 4.0f, 16.0f);
+			LavaPatch->CellDensity = 6.2f;
+			LavaPatch->EdgeContrast = 7.0f;
+			LavaPatch->Brightness = 2.3f;
+			LavaPatch->bDamageHero = false;
+			LavaPatch->DamagePerTick = 0;
+			LavaPatch->DamageIntervalSeconds = 1.0f;
+			LavaPatch->FinishSpawning(SpawnTransform);
+			return LavaPatch;
+		};
+
 		auto CreateWallPrefab = [&](const FString& BaseName, const FVector& LocalCenter, const FVector& Size)
 		{
 			if (!Assets.PlaneMesh)
@@ -1597,8 +2304,41 @@ namespace T66MainMapTerrain
 		int32 SlopeCount = 0;
 		int32 SupportCount = 0;
 		int32 DecorCount = 0;
+		int32 SurfaceFeatureCount = 0;
+		int32 LavaRiverVisualCount = 0;
+		int32 FlatCollisionCount = 0;
 		const FVector TerrainMeshScale = GetTerrainMeshScale(Board.Settings);
 		const int32 LowestSupportLevel = GetMinBoardElevationLevel(Preset);
+		TArray<FTransform> FlatTileTransforms;
+		TArray<FTransform> SlopeTileTransforms;
+		FlatTileTransforms.Reserve(Board.Cells.Num() + Board.ExtraCells.Num());
+		SlopeTileTransforms.Reserve(FMath::Max(Board.Cells.Num() / 8, 64));
+		UInstancedStaticMeshComponent* FlatTileInstances = CreateInstancedMeshBatch(
+			TEXT("Cube_Instances"),
+			Assets.BlockMesh,
+			EffectiveBlockMaterial,
+			false);
+		UInstancedStaticMeshComponent* SlopeTileInstances = CreateInstancedMeshBatch(
+			TEXT("Slope_Instances"),
+			Assets.SlopeMesh,
+			EffectiveSlopeMaterial,
+			true);
+
+		auto AddFlatCollisionBox = [&](const FString& Name, const FVector& LocalCenter, const FVector& Extent)
+		{
+			const double FlatCollisionStartSeconds = FPlatformTime::Seconds();
+			UBoxComponent* Box = NewObject<UBoxComponent>(VisualActor, FName(*Name));
+			VisualActor->AddInstanceComponent(Box);
+			Box->SetupAttachment(VisualRoot);
+			Box->SetMobility(EComponentMobility::Static);
+			Box->SetRelativeLocation(LocalCenter);
+			Box->SetBoxExtent(Extent);
+			ConfigureTerrainCollisionComponent(Box);
+			Box->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
+			Box->RegisterComponent();
+			FlatCollisionSpawnSeconds += (FPlatformTime::Seconds() - FlatCollisionStartSeconds);
+			++FlatCollisionCount;
+		};
 
 		auto SpawnFarmCell = [&](const FCell& Cell, int32 CellIndex)
 		{
@@ -1607,48 +2347,54 @@ namespace T66MainMapTerrain
 				return;
 			}
 
-			USceneComponent* TileRoot = CreateSceneChild(
-				VisualRoot,
-				FString::Printf(TEXT("FarmTile_%d"), CellIndex),
-				FVector(
-					static_cast<float>(Cell.X) * CellSize,
-					static_cast<float>(Cell.Z) * CellSize,
-					static_cast<float>(Cell.Level) * StepHeight));
+			const bool bHasSurfaceFeature = HasSurfaceFeature(Cell);
+			const bool bIsSurfaceFeatureOrigin = IsSurfaceFeatureOriginCell(Cell);
+			const FVector CellRelativeLocation(
+				static_cast<float>(Cell.X) * CellSize,
+				static_cast<float>(Cell.Z) * CellSize,
+				static_cast<float>(Cell.Level) * StepHeight);
 
-			UStaticMeshComponent* CubeComponent = CreateMeshChild(
-				TileRoot,
-				FString::Printf(TEXT("Cube_%d"), CellIndex),
-				Assets.BlockMesh,
-				EffectiveBlockMaterial,
-				FTransform(FRotator::ZeroRotator, FVector::ZeroVector, TerrainMeshScale),
-				true);
-			UStaticMeshComponent* SlopeComponent = CreateMeshChild(
-				TileRoot,
-				FString::Printf(TEXT("Slope_%d"), CellIndex),
-				Assets.SlopeMesh,
-				EffectiveSlopeMaterial,
-				FTransform(FRotator(0.0f, GetSlopeYaw(Cell.Shape), 0.0f), FVector::ZeroVector, TerrainMeshScale),
-				true);
-			SetTileActiveState(CubeComponent, !Cell.bSlope);
-			SetTileActiveState(SlopeComponent, Cell.bSlope);
-
-			if (!Cell.bSlope)
+			USceneComponent* TileRoot = nullptr;
+			auto GetOrCreateTileRoot = [&]() -> USceneComponent*
 			{
-				UBoxComponent* BlockCollision = NewObject<UBoxComponent>(VisualActor, FName(*FString::Printf(TEXT("BlockCollision_%d"), CellIndex)));
-				VisualActor->AddInstanceComponent(BlockCollision);
-				BlockCollision->SetupAttachment(TileRoot);
-				BlockCollision->SetMobility(EComponentMobility::Static);
-				BlockCollision->SetRelativeLocation(FVector::ZeroVector);
-				BlockCollision->SetBoxExtent(FVector(CellSize * 0.5f, CellSize * 0.5f, StepHeight * 0.5f));
-				ConfigureTerrainCollisionComponent(BlockCollision);
-				BlockCollision->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
-				BlockCollision->RegisterComponent();
+				if (!TileRoot)
+				{
+					TileRoot = CreateSceneChild(
+						VisualRoot,
+						FString::Printf(TEXT("FarmTile_%d"), CellIndex),
+						CellRelativeLocation);
+				}
+
+				return TileRoot;
+			};
+
+			if (Cell.bSlope)
+			{
+				SlopeTileTransforms.Add(FTransform(
+					FRotator(0.0f, GetSlopeYaw(Cell.Shape), 0.0f),
+					CellRelativeLocation,
+					TerrainMeshScale));
+			}
+			else if (!bHasSurfaceFeature)
+			{
+				FlatTileTransforms.Add(FTransform(
+					FRotator::ZeroRotator,
+					CellRelativeLocation,
+					TerrainMeshScale));
+
+				if (Cell.Region != ECellRegion::MainBoard)
+				{
+					AddFlatCollisionBox(
+						FString::Printf(TEXT("FlatCollision_%d"), CellIndex),
+						CellRelativeLocation,
+						FVector(CellSize * 0.5f, CellSize * 0.5f, StepHeight * 0.5f));
+				}
 			}
 
 			if (bRenderFarmSupports)
 			{
 				USceneComponent* BottomPartRoot = CreateSceneChild(
-					TileRoot,
+					GetOrCreateTileRoot(),
 					FString::Printf(TEXT("BottomPart_%d"), CellIndex),
 					FVector::ZeroVector);
 				for (int32 SupportLevel = Cell.Level - 1; SupportLevel >= LowestSupportLevel; --SupportLevel)
@@ -1664,15 +2410,6 @@ namespace T66MainMapTerrain
 							SupportOffset,
 							TerrainMeshScale),
 						true);
-					UBoxComponent* SupportCollision = NewObject<UBoxComponent>(VisualActor, FName(*FString::Printf(TEXT("SupportCollision_%d_L%d"), CellIndex, SupportLevel)));
-					VisualActor->AddInstanceComponent(SupportCollision);
-					SupportCollision->SetupAttachment(BottomPartRoot);
-					SupportCollision->SetMobility(EComponentMobility::Static);
-					SupportCollision->SetRelativeLocation(SupportOffset);
-					SupportCollision->SetBoxExtent(FVector(CellSize * 0.5f, CellSize * 0.5f, StepHeight * 0.5f));
-					ConfigureTerrainCollisionComponent(SupportCollision);
-					SupportCollision->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_Yes;
-					SupportCollision->RegisterComponent();
 					++SupportCount;
 				}
 			}
@@ -1680,16 +2417,16 @@ namespace T66MainMapTerrain
 			if (bRenderFarmGrass)
 			{
 				USceneComponent* GrassFlatRoot = CreateSceneChild(
-					TileRoot,
+					GetOrCreateTileRoot(),
 					FString::Printf(TEXT("GrassFlat_%d"), CellIndex),
 					FVector::ZeroVector);
 				USceneComponent* GrassSlopeRoot = CreateSceneChild(
-					TileRoot,
+					GetOrCreateTileRoot(),
 					FString::Printf(TEXT("GrassSlope_%d"), CellIndex),
 					FVector::ZeroVector,
 					FRotator(-30.59f, GetSlopeYaw(Cell.Shape), 0.0f));
 
-				const bool bShowFlatGrass = !Cell.bSlope;
+				const bool bShowFlatGrass = !Cell.bSlope && !bHasSurfaceFeature;
 				const bool bShowSlopeGrass = Cell.bSlope;
 				GrassFlatRoot->SetVisibility(bShowFlatGrass, true);
 				GrassFlatRoot->SetHiddenInGame(!bShowFlatGrass, true);
@@ -1725,12 +2462,23 @@ namespace T66MainMapTerrain
 				++FlatCount;
 			}
 
+			if (!Cell.bSlope && bIsSurfaceFeatureOrigin)
+			{
+				if (CreateSurfaceFeatureChild(
+					GetOrCreateTileRoot(),
+					FString::Printf(TEXT("SurfaceFeature_%d"), CellIndex),
+					Cell))
+				{
+					++SurfaceFeatureCount;
+				}
+			}
+
 			if (bRenderFarmDecor && !Cell.bSlope && Cell.Decoration != ET66MapCellDecoration::None)
 			{
 				if (UStaticMesh* DecorMesh = PickDecorationMesh(Assets, Cell.Decoration))
 				{
 					if (UStaticMeshComponent* DecorComponent = CreateMeshChild(
-						TileRoot,
+						GetOrCreateTileRoot(),
 						FString::Printf(TEXT("Decor_%d"), CellIndex),
 						DecorMesh,
 						nullptr,
@@ -1744,14 +2492,144 @@ namespace T66MainMapTerrain
 			}
 		};
 
+		const double BoardCellLoopStartSeconds = FPlatformTime::Seconds();
 		for (int32 CellIndex = 0; CellIndex < Board.Cells.Num(); ++CellIndex)
 		{
 			SpawnFarmCell(Board.Cells[CellIndex], CellIndex);
 		}
+		const double BoardCellLoopEndSeconds = FPlatformTime::Seconds();
 
+		const double CollisionStripLoopStartSeconds = FPlatformTime::Seconds();
+		for (int32 Z = 0; Z < Board.Settings.BoardSize; ++Z)
+		{
+			int32 RunStartX = INDEX_NONE;
+			int32 RunLevel = 0;
+			auto FlushFlatRun = [&](int32 EndX)
+			{
+				if (RunStartX == INDEX_NONE)
+				{
+					return;
+				}
+
+				const int32 WidthCells = EndX - RunStartX + 1;
+				const float CenterX = (static_cast<float>(RunStartX + EndX) * 0.5f) * CellSize;
+				AddFlatCollisionBox(
+					FString::Printf(TEXT("FlatCollisionStrip_%d_%d"), Z, RunStartX),
+					FVector(CenterX, static_cast<float>(Z) * CellSize, static_cast<float>(RunLevel) * StepHeight),
+					FVector(static_cast<float>(WidthCells) * CellSize * 0.5f, CellSize * 0.5f, StepHeight * 0.5f));
+				RunStartX = INDEX_NONE;
+			};
+
+			for (int32 X = 0; X < Board.Settings.BoardSize; ++X)
+			{
+				const FCell& Cell = Board.Cells[Board.Index(X, Z)];
+				const bool bFlatCollisionCell = Cell.bOccupied && !Cell.bSlope && !HasSurfaceFeature(Cell);
+				if (!bFlatCollisionCell)
+				{
+					FlushFlatRun(X - 1);
+					continue;
+				}
+
+				if (RunStartX == INDEX_NONE)
+				{
+					RunStartX = X;
+					RunLevel = Cell.Level;
+					continue;
+				}
+
+				if (Cell.Level != RunLevel)
+				{
+					FlushFlatRun(X - 1);
+					RunStartX = X;
+					RunLevel = Cell.Level;
+				}
+			}
+
+			FlushFlatRun(Board.Settings.BoardSize - 1);
+		}
+		const double CollisionStripLoopEndSeconds = FPlatformTime::Seconds();
+
+		const double ExtraCellLoopStartSeconds = FPlatformTime::Seconds();
 		for (int32 ExtraIndex = 0; ExtraIndex < Board.ExtraCells.Num(); ++ExtraIndex)
 		{
 			SpawnFarmCell(Board.ExtraCells[ExtraIndex], Board.Cells.Num() + ExtraIndex);
+		}
+		const double ExtraCellLoopEndSeconds = FPlatformTime::Seconds();
+
+		const double CollisionStartSeconds = FPlatformTime::Seconds();
+
+		auto FinalizeInstancedMeshBatch = [](UInstancedStaticMeshComponent* Component, const TArray<FTransform>& InstanceTransforms)
+		{
+			if (!Component)
+			{
+				return;
+			}
+
+			if (InstanceTransforms.Num() > 0)
+			{
+				Component->PreAllocateInstancesMemory(InstanceTransforms.Num());
+				Component->AddInstances(InstanceTransforms, false, false, false);
+			}
+
+			Component->RegisterComponent();
+		};
+
+		FinalizeInstancedMeshBatch(FlatTileInstances, FlatTileTransforms);
+		FinalizeInstancedMeshBatch(SlopeTileInstances, SlopeTileTransforms);
+
+		UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain base geometry spawned in %.1f ms (board loop %.1f ms, strip loop %.1f ms, extra loop %.1f ms, feature cook %.1f ms, flat collision register %.1f ms, instancing %.1f ms)."),
+			(FPlatformTime::Seconds() - SpawnStartSeconds) * 1000.0,
+			(BoardCellLoopEndSeconds - BoardCellLoopStartSeconds) * 1000.0,
+			(CollisionStripLoopEndSeconds - CollisionStripLoopStartSeconds) * 1000.0,
+			(ExtraCellLoopEndSeconds - ExtraCellLoopStartSeconds) * 1000.0,
+			SurfaceFeatureSpawnSeconds * 1000.0,
+			FlatCollisionSpawnSeconds * 1000.0,
+			(FPlatformTime::Seconds() - CollisionStartSeconds) * 1000.0);
+
+		for (int32 RiverIndex = 0; RiverIndex < Board.LavaRivers.Num(); ++RiverIndex)
+		{
+			const FLavaRiver& River = Board.LavaRivers[RiverIndex];
+			if (River.PuddleCell.X == INDEX_NONE || River.PuddleCell.Y == INDEX_NONE || River.LengthCells <= 0)
+			{
+				continue;
+			}
+
+			FVector PuddleLocation = FVector::ZeroVector;
+			if (!TryGetCellLocation(Board, River.PuddleCell, 0.0f, PuddleLocation))
+			{
+				continue;
+			}
+
+			const FVector2D FlowDirection(static_cast<float>(River.Direction.X), static_cast<float>(River.Direction.Y));
+			const float PuddleSize = CellSize * LavaRiverPuddleCellFraction;
+			if (SpawnDecorativeLavaPatch(
+				FString::Printf(TEXT("LavaPuddle_%d"), RiverIndex),
+				PuddleLocation,
+				PuddleSize,
+				PuddleSize,
+				FlowDirection))
+			{
+				++LavaRiverVisualCount;
+			}
+
+			const FVector StripOffset(
+				static_cast<float>(River.Direction.X) * CellSize * 0.5f * static_cast<float>(River.LengthCells),
+				static_cast<float>(River.Direction.Y) * CellSize * 0.5f * static_cast<float>(River.LengthCells),
+				0.0f);
+			const FVector StripLocation = PuddleLocation + StripOffset;
+			const float StripWidth = CellSize * LavaRiverWidthCellFraction;
+			const float StripLength = CellSize * static_cast<float>(River.LengthCells);
+			const float StripSizeX = River.Direction.X != 0 ? StripLength : StripWidth;
+			const float StripSizeY = River.Direction.Y != 0 ? StripLength : StripWidth;
+			if (SpawnDecorativeLavaPatch(
+				FString::Printf(TEXT("LavaRiver_%d"), RiverIndex),
+				StripLocation,
+				StripSizeX,
+				StripSizeY,
+				FlowDirection))
+			{
+				++LavaRiverVisualCount;
+			}
 		}
 
 		const float WallThickness = CellSize;
@@ -1888,38 +2766,19 @@ namespace T66MainMapTerrain
 		ConfigureTerrainSafetyCatchComponent(SafetyCatch);
 		SafetyCatch->RegisterComponent();
 
-		auto QueueMaterialRefresh = [World, RefreshFarmVisualMaterials](float DelaySeconds)
-		{
-			FTimerHandle RefreshHandle;
-			World->GetTimerManager().SetTimer(
-				RefreshHandle,
-				FTimerDelegate::CreateLambda([RefreshFarmVisualMaterials]()
-				{
-					RefreshFarmVisualMaterials();
-				}),
-				DelaySeconds,
-				false);
-		};
-
 		RefreshFarmVisualMaterials();
-		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([RefreshFarmVisualMaterials]()
-		{
-			RefreshFarmVisualMaterials();
-		}));
-		QueueMaterialRefresh(0.25f);
-		QueueMaterialRefresh(0.60f);
-		QueueMaterialRefresh(1.00f);
-		QueueMaterialRefresh(1.50f);
-		QueueMaterialRefresh(2.00f);
-		QueueMaterialRefresh(3.00f);
 
 		bOutCollisionReady = true;
-		UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain spawned: %d occupied tiles, %d flat tiles, %d slope tiles, %d support tiles, %d decor"),
+		UE_LOG(LogT66MainMapTerrain, Log, TEXT("[MAP] Main map terrain spawned in %.1f ms: %d occupied tiles, %d flat tiles, %d slope tiles, %d flat collision strips, %d support tiles, %d decor, %d surface features, %d lava visuals"),
+			(FPlatformTime::Seconds() - SpawnStartSeconds) * 1000.0,
 			Board.OccupiedCount,
 			FlatCount,
 			SlopeCount,
+			FlatCollisionCount,
 			SupportCount,
-			DecorCount);
+			DecorCount,
+			SurfaceFeatureCount,
+			LavaRiverVisualCount);
 		return true;
 	}
 }

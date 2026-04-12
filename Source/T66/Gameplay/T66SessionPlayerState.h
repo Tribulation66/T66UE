@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Data/T66DataTypes.h"
 #include "GameFramework/PlayerState.h"
+#include "UI/T66UITypes.h"
 #include "T66SessionPlayerState.generated.h"
 
 USTRUCT(BlueprintType)
@@ -32,6 +33,12 @@ struct T66_API FT66LobbyPlayerInfo
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	FName SelectedHeroSkinID = FName(TEXT("Default"));
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	ET66Difficulty LobbyDifficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	ET66ScreenType FrontendScreen = ET66ScreenType::MainMenu;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	bool bLobbyReady = false;

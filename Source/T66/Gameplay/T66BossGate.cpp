@@ -9,8 +9,42 @@
 #include "Components/StaticMeshComponent.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+
+namespace
+{
+	APawn* T66ResolveClosestBossGatePawn(const AActor* ContextActor)
+	{
+		const UWorld* World = ContextActor ? ContextActor->GetWorld() : nullptr;
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		const FVector Origin = ContextActor->GetActorLocation();
+		APawn* BestPawn = nullptr;
+		float BestDistSq = TNumericLimits<float>::Max();
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			APawn* Pawn = It->Get() ? It->Get()->GetPawn() : nullptr;
+			if (!Pawn)
+			{
+				continue;
+			}
+
+			const float DistSq = FVector::DistSquared2D(Origin, Pawn->GetActorLocation());
+			if (DistSq < BestDistSq)
+			{
+				BestDistSq = DistSq;
+				BestPawn = Pawn;
+			}
+		}
+
+		return BestPawn;
+	}
+}
 
 AT66BossGate::AT66BossGate()
 {
@@ -55,7 +89,7 @@ void AT66BossGate::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (bTriggered) return;
 
-	APawn* Pawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	APawn* Pawn = T66ResolveClosestBossGatePawn(this);
 	if (!Pawn) return;
 
 	const float Dist2D = FVector::Dist2D(Pawn->GetActorLocation(), GetActorLocation());

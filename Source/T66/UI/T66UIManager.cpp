@@ -86,6 +86,14 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 	}
 
 	ET66ScreenType OldScreenType = CurrentScreenType;
+	UT66ScreenBase* NewScreen = CreateScreen(ScreenType);
+	if (!NewScreen)
+	{
+		UE_LOG(LogT66UIManager, Warning, TEXT("Failed to create screen type %d; keeping current screen type %d"),
+			static_cast<int32>(ScreenType),
+			static_cast<int32>(CurrentScreenType));
+		return;
+	}
 
 	// Deactivate current screen
 	if (CurrentScreen)
@@ -106,24 +114,19 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		}
 	}
 
-	// Create/get the new screen
-	UT66ScreenBase* NewScreen = CreateScreen(ScreenType);
-	if (NewScreen)
+	CurrentScreen = NewScreen;
+	CurrentScreenType = ScreenType;
+	CurrentScreen->bIsModal = false;
+	// Force Hero Selection to rebuild so co-op (Lab + Back to Lobby only) vs solo (difficulty + Enter) layout is correct on first paint. Otherwise cached tree from a previous show can display.
+	if (ScreenType == ET66ScreenType::HeroSelection)
 	{
-		CurrentScreen = NewScreen;
-		CurrentScreenType = ScreenType;
-		CurrentScreen->bIsModal = false;
-		// Force Hero Selection to rebuild so co-op (Lab + Back to Lobby only) vs solo (difficulty + Enter) layout is correct on first paint. Otherwise cached tree from a previous show can display.
-		if (ScreenType == ET66ScreenType::HeroSelection)
-		{
-			FT66Style::DeferRebuild(CurrentScreen);
-		}
-		CurrentScreen->AddToViewport(0);
-		CurrentScreen->OnScreenActivated();
-		UpdateFrontendTopBar();
-
-		OnScreenChanged.Broadcast(OldScreenType, ScreenType);
+		FT66Style::DeferRebuild(CurrentScreen);
 	}
+	CurrentScreen->AddToViewport(0);
+	CurrentScreen->OnScreenActivated();
+	UpdateFrontendTopBar();
+
+	OnScreenChanged.Broadcast(OldScreenType, ScreenType);
 }
 
 void UT66UIManager::ShowModal(ET66ScreenType ModalType)
@@ -181,6 +184,14 @@ void UT66UIManager::GoBack()
 	if (NavigationHistory.Num() > 0)
 	{
 		ET66ScreenType PreviousScreen = NavigationHistory.Pop();
+		UT66ScreenBase* NewScreen = CreateScreen(PreviousScreen);
+		if (!NewScreen)
+		{
+			UE_LOG(LogT66UIManager, Warning, TEXT("Failed to go back to screen type %d; keeping current screen type %d"),
+				static_cast<int32>(PreviousScreen),
+				static_cast<int32>(CurrentScreenType));
+			return;
+		}
 
 		// Deactivate current screen
 		ET66ScreenType OldScreenType = CurrentScreenType;
@@ -191,18 +202,14 @@ void UT66UIManager::GoBack()
 		}
 
 		// Show previous screen without adding to history
-		UT66ScreenBase* NewScreen = CreateScreen(PreviousScreen);
-		if (NewScreen)
-		{
-			CurrentScreen = NewScreen;
-			CurrentScreenType = PreviousScreen;
-			CurrentScreen->bIsModal = false;
-			CurrentScreen->AddToViewport(0);
-			CurrentScreen->OnScreenActivated();
-			UpdateFrontendTopBar();
+		CurrentScreen = NewScreen;
+		CurrentScreenType = PreviousScreen;
+		CurrentScreen->bIsModal = false;
+		CurrentScreen->AddToViewport(0);
+		CurrentScreen->OnScreenActivated();
+		UpdateFrontendTopBar();
 
-			OnScreenChanged.Broadcast(OldScreenType, PreviousScreen);
-		}
+		OnScreenChanged.Broadcast(OldScreenType, PreviousScreen);
 	}
 }
 

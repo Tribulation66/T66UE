@@ -17,12 +17,49 @@ namespace
 		default: return -50; // 5+
 		}
 	}
+
+	static int32 T66_SkillPressureDeltaForWindow(int32 HitChecks, int32 Hits, int32 Dodges, float ExpectedDodges)
+	{
+		if (HitChecks < 4)
+		{
+			return 0;
+		}
+
+		int32 Delta = 0;
+		if (Hits <= 0)
+		{
+			Delta += 1;
+		}
+
+		const float ExcessDodges = static_cast<float>(Dodges) - FMath::Max(0.f, ExpectedDodges);
+		if (ExcessDodges >= 2.5f)
+		{
+			Delta += 2;
+		}
+		else if (ExcessDodges >= 1.25f)
+		{
+			Delta += 1;
+		}
+		else if (ExpectedDodges >= 1.f && ExcessDodges <= -2.5f)
+		{
+			Delta -= 2;
+		}
+		else if (ExpectedDodges >= 1.f && ExcessDodges <= -1.25f)
+		{
+			Delta -= 1;
+		}
+
+		return Delta;
+	}
 }
 
 void UT66SkillRatingSubsystem::ResetWindowState()
 {
 	WindowSecondsAccum = 0.f;
 	HitsThisWindow = 0;
+	HitChecksThisWindow = 0;
+	DodgesThisWindow = 0;
+	ExpectedDodgesThisWindow = 0.f;
 }
 
 void UT66SkillRatingSubsystem::ResetForNewRun()
@@ -48,9 +85,26 @@ void UT66SkillRatingSubsystem::NotifyDamageTaken()
 	HitsThisWindow = FMath::Clamp(HitsThisWindow + 1, 0, 1000000);
 }
 
-void UT66SkillRatingSubsystem::ApplyWindowResult(int32 HitsInWindow)
+void UT66SkillRatingSubsystem::NotifyHitCheck(float EvasionChance01, bool bDodged, bool bDamageApplied)
 {
-	const int32 Delta = T66_SkillDeltaForHitsInWindow(HitsInWindow);
+	if (!bTrackingActive) return;
+
+	HitChecksThisWindow = FMath::Clamp(HitChecksThisWindow + 1, 0, 1000000);
+	ExpectedDodgesThisWindow = FMath::Clamp(ExpectedDodgesThisWindow + FMath::Clamp(EvasionChance01, 0.f, 1.f), 0.f, 1000000.f);
+	if (bDodged)
+	{
+		DodgesThisWindow = FMath::Clamp(DodgesThisWindow + 1, 0, 1000000);
+	}
+	if (bDamageApplied)
+	{
+		HitsThisWindow = FMath::Clamp(HitsThisWindow + 1, 0, 1000000);
+	}
+}
+
+void UT66SkillRatingSubsystem::ApplyWindowResultDetailed(int32 HitsInWindow, int32 HitChecksInWindow, int32 DodgesInWindow, float ExpectedDodgesInWindow)
+{
+	const int32 Delta = T66_SkillDeltaForHitsInWindow(HitsInWindow)
+		+ T66_SkillPressureDeltaForWindow(HitChecksInWindow, HitsInWindow, DodgesInWindow, ExpectedDodgesInWindow);
 	SkillRating0To100 = FMath::Clamp(SkillRating0To100 + Delta, 0, 100);
 }
 
@@ -62,9 +116,12 @@ void UT66SkillRatingSubsystem::TickSkillRating(float DeltaSeconds)
 	WindowSecondsAccum += DeltaSeconds;
 	while (WindowSecondsAccum >= WindowDurationSeconds)
 	{
-		ApplyWindowResult(HitsThisWindow);
+		ApplyWindowResultDetailed(HitsThisWindow, HitChecksThisWindow, DodgesThisWindow, ExpectedDodgesThisWindow);
 		WindowSecondsAccum -= WindowDurationSeconds;
 		HitsThisWindow = 0;
+		HitChecksThisWindow = 0;
+		DodgesThisWindow = 0;
+		ExpectedDodgesThisWindow = 0.f;
 	}
 }
 

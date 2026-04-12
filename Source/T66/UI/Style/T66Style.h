@@ -266,6 +266,8 @@ public:
 
 	static void SetActiveTheme(ET66UITheme InTheme);
 	static ET66UITheme GetActiveTheme();
+	static void SetActiveFontPreset(ET66UIFontPreset InPreset);
+	static ET66UIFontPreset GetActiveFontPreset();
 	static bool IsDotaTheme();
 	static FSlateFontInfo MakeFont(const TCHAR* Weight, int32 Size);
 	static FLinearColor Background();
@@ -384,6 +386,9 @@ public:
 		/** Vendor shop item card: width and height (each of the 3 cards). */
 		static constexpr float NPCShopCardWidth = 248.f;
 		static constexpr float NPCShopCardHeight = 500.f;
+		/** Compact embedded circus/casino item card footprint shared by vendor, gambling, and alchemy. */
+		static constexpr float NPCCompactShopCardWidth = 148.f;
+		static constexpr float NPCCompactShopCardHeight = 264.f;
 		/** Anger face circle size (Vendor and Gambler right panel). */
 		static constexpr float NPCAngerCircleSize = 170.f;
 		/** Bank spinbox width (Borrow/Payback amount). */
@@ -483,7 +488,6 @@ public:
 	static TSharedRef<SWidget> MakeHudPanel(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(12.f, 10.f));
 	static TSharedRef<SWidget> MakeDivider(float Height = 1.f);
 	static TSharedRef<SWidget> MakeMinimapFrame(const TSharedRef<SWidget>& Content, const FMargin& Padding = FMargin(10.f));
-	static const FSlateBrush* GetInventorySlotFrameBrush();
 
 	/** Wrap a Slate subtree in a viewport-aware DPI scaler using the given design resolution. */
 	static TSharedRef<SWidget> MakeResponsiveRoot(

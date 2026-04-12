@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66RunSaveGame.h"
 #include "Core/T66Rarity.h"
 #include "Templates/Function.h"
 #include "T66RunStateSubsystem.generated.h"
@@ -115,6 +116,11 @@ public:
 	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
 	static constexpr int32 MaxEventLogEntries = 400;
 	static constexpr int32 MaxStructuredEventLogEntries = 800;
+	static constexpr int32 MaxAntiCheatLuckEvents = 512;
+	static constexpr int32 MaxAntiCheatHitCheckEvents = 1024;
+	static constexpr int32 MaxAntiCheatGamblerEvents = 256;
+	static constexpr int32 AntiCheatPressureWindowSeconds = 5;
+	static constexpr int32 AntiCheatEvasionBucketCount = 5;
 
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnHeartsChanged HeartsChanged;
@@ -144,7 +150,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnStageTimerChanged StageTimerChanged;
 
-	/** Speedrun elapsed time (per-stage; starts when stage timer becomes active). */
+	/** Speedrun elapsed time tracker (current stage segment; starts when stage timer becomes active). */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnSpeedRunTimerChanged SpeedRunTimerChanged;
 
@@ -478,16 +484,20 @@ public:
 	float GetStageTimerSecondsRemaining() const { return StageTimerSecondsRemaining; }
 
 	/**
-	 * Speedrun elapsed time (per-stage).
+	 * Speedrun elapsed time for the live stage segment.
 	 * Starts counting when the stage timer becomes active (i.e., after leaving the start area / crossing the start gate).
-	 * Resets to 0 when the stage timer is reset/frozen for the next stage.
+	 * Resets to 0 when the stage timer is reset/frozen for the next stage or difficulty.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetSpeedRunElapsedSeconds() const { return SpeedRunElapsedSeconds; }
 
-	/** Full active run time in seconds across all cleared stages plus the current stage. */
+	/** Full active time in seconds across the current difficulty's cleared stages plus the current stage. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetCurrentRunElapsedSeconds() const;
+
+	/** Per-stage cumulative pacing checkpoints for the current difficulty segment. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|SpeedRun")
+	const TArray<FT66StagePacingPoint>& GetStagePacingPoints() const { return StagePacingPoints; }
 
 	/** Final cached run duration in seconds once the run ends. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -527,6 +537,9 @@ public:
 	/** Reset timer to full duration and freeze (e.g. when entering next stage so start gate starts it again). */
 	void ResetStageTimerToFull();
 
+	/** Clear the current difficulty's cumulative timer + pacing checkpoints before starting the next difficulty. */
+	void ResetDifficultyPacing();
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentScore() const { return CurrentScore; }
 
@@ -544,6 +557,9 @@ public:
 	int32 GetBossMaxHP() const { return BossMaxHP; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	const TArray<FT66BossPartSnapshot>& GetBossPartSnapshots() const { return BossPartSnapshots; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FRunEvent>& GetStructuredEventLog() const { return StructuredEventLog; }
 
 	/** Set current stage (1–23). */
@@ -556,6 +572,9 @@ public:
 	/** Called when a boss awakens. Sets boss UI visible, stores boss ID, and initializes HP. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void SetBossActiveWithId(FName InBossID, int32 InMaxHP);
+
+	/** Called when a multipart boss awakens or its part state changes. */
+	void SetBossActiveWithParts(FName InBossID, const TArray<FT66BossPartSnapshot>& InBossParts);
 
 	/** Difficulty scaling: update boss max HP while preserving current HP percent. */
 	void RescaleBossMaxHPPreservePercent(int32 NewMaxHP);
@@ -689,27 +708,30 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|Hero")
 	void AddHeroXP(int32 Amount);
 
-	/** Foundational stat points (Damage/Attack Speed/Attack Scale/Armor/Evasion/Luck + Speed). */
+	/** Foundational stat points (Damage/Attack Speed/Attack Scale/Accuracy/Armor/Evasion/Luck + Speed). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
 	int32 GetSpeedStat() const { return FMath::Max(1, HeroStats.Speed); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetDamageStat() const { return FMath::Max(1, HeroStats.Damage + FMath::Max(0, ItemStatBonuses.Damage) + FMath::Max(0, PowerupStatBonuses.Damage)); }
+	int32 GetDamageStat() const { return FMath::Max(1, HeroStats.Damage + FMath::Max(0, ItemStatBonuses.Damage) + FMath::Max(0, PermanentBuffStatBonuses.Damage)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetAttackSpeedStat() const { return FMath::Max(1, HeroStats.AttackSpeed + FMath::Max(0, ItemStatBonuses.AttackSpeed) + FMath::Max(0, PowerupStatBonuses.AttackSpeed)); }
+	int32 GetAttackSpeedStat() const { return FMath::Max(1, HeroStats.AttackSpeed + FMath::Max(0, ItemStatBonuses.AttackSpeed) + FMath::Max(0, PermanentBuffStatBonuses.AttackSpeed)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackScale + FMath::Max(0, ItemStatBonuses.AttackScale) + FMath::Max(0, PowerupStatBonuses.AttackScale)); }
+	int32 GetScaleStat() const { return FMath::Max(1, HeroStats.AttackScale + FMath::Max(0, ItemStatBonuses.AttackScale) + FMath::Max(0, PermanentBuffStatBonuses.AttackScale)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetArmorStat() const { return FMath::Max(1, HeroStats.Armor + FMath::Max(0, ItemStatBonuses.Armor) + FMath::Max(0, PowerupStatBonuses.Armor)); }
+	int32 GetAccuracyStat() const { return FMath::Max(1, HeroStats.Accuracy + FMath::Max(0, ItemStatBonuses.Accuracy) + FMath::Max(0, PermanentBuffStatBonuses.Accuracy)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetEvasionStat() const { return FMath::Max(1, HeroStats.Evasion + FMath::Max(0, ItemStatBonuses.Evasion) + FMath::Max(0, PowerupStatBonuses.Evasion)); }
+	int32 GetArmorStat() const { return FMath::Max(1, HeroStats.Armor + FMath::Max(0, ItemStatBonuses.Armor) + FMath::Max(0, PermanentBuffStatBonuses.Armor)); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
-	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck) + FMath::Max(0, PowerupStatBonuses.Luck)); }
+	int32 GetEvasionStat() const { return FMath::Max(1, HeroStats.Evasion + FMath::Max(0, ItemStatBonuses.Evasion) + FMath::Max(0, PermanentBuffStatBonuses.Evasion)); }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats")
+	int32 GetLuckStat() const { return FMath::Max(1, HeroStats.Luck + FMath::Max(0, ItemStatBonuses.Luck) + FMath::Max(0, PermanentBuffStatBonuses.Luck)); }
 
 	// ============================================
 	// Category-Specific Stats (base from hero DataTable + item bonuses)
@@ -770,6 +792,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetLootCrateRewardMultiplier() const;
 
+	/** Lucky extra-upgrade chance when using the Alchemy tab (0..1). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetAlchemyLuckyUpgradeChance01() const;
+
 	/** Crit chance (0..1). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetCritChance01() const;
@@ -829,6 +855,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
 	void AddPowerCrystalsEarnedThisRun(int32 Amount);
 
+	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
+	void ActivatePendingSingleUseBuffsForRunStart();
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
 	bool HasPendingDifficultyClearSummary() const { return bPendingDifficultyClearSummary; }
 
@@ -858,13 +887,16 @@ public:
 	// ============================================
 
 	/** Record a luck-affected quantity roll outcome, normalized within [Min..Max]. */
-	void RecordLuckQuantityRoll(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue);
+	void RecordLuckQuantityRoll(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue, int32 RunDrawIndex = INDEX_NONE, int32 PreDrawSeed = 0);
+
+	/** Record a float-biased luck roll that was rounded into an integer reward. */
+	void RecordLuckQuantityFloatRollRounded(FName Category, int32 RolledValue, int32 MinValue, int32 MaxValue, float ReplayMinValue, float ReplayMaxValue, int32 RunDrawIndex = INDEX_NONE, int32 PreDrawSeed = 0);
 
 	/** Record a luck-affected boolean outcome (false=0, true=1). */
-	void RecordLuckQuantityBool(FName Category, bool bSucceeded);
+	void RecordLuckQuantityBool(FName Category, bool bSucceeded, float ExpectedChance01 = -1.f, int32 RunDrawIndex = INDEX_NONE, int32 PreDrawSeed = 0);
 
 	/** Record a luck-affected quality outcome (rarity tier). */
-	void RecordLuckQualityRarity(FName Category, ET66Rarity Rarity);
+	void RecordLuckQualityRarity(FName Category, ET66Rarity Rarity, int32 RunDrawIndex = INDEX_NONE, int32 PreDrawSeed = 0, const FT66RarityWeights* ReplayWeights = nullptr);
 
 	/** Final run Luck Rating (0..100), derived from recorded quantity + quality outcomes. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
@@ -875,6 +907,62 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
 	int32 GetLuckRatingQuality0To100() const;
+
+	/** Total quantity-roll samples contributing to the current Luck Rating. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetLuckQuantitySampleCount() const;
+
+	/** Total quality-roll samples contributing to the current Luck Rating. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetLuckQualitySampleCount() const;
+
+	/** Category-level quantity accumulators used for backend anti-cheat review. */
+	void GetLuckQuantityAccumulators(TArray<FT66SavedLuckAccumulator>& OutAccumulators) const;
+
+	/** Category-level quality accumulators used for backend anti-cheat review. */
+	void GetLuckQualityAccumulators(TArray<FT66SavedLuckAccumulator>& OutAccumulators) const;
+
+	/** Per-roll luck telemetry used for post-run anti-cheat review. */
+	void GetAntiCheatLuckEvents(TArray<FT66AntiCheatLuckEvent>& OutEvents) const;
+
+	/** Per-hit dodge/evasion telemetry used for post-run anti-cheat review. */
+	void GetAntiCheatHitCheckEvents(TArray<FT66AntiCheatHitCheckEvent>& OutEvents) const;
+
+	/** Aggregate evasion-bucket telemetry used when sampled hit checks are truncated. */
+	void GetAntiCheatEvasionBuckets(TArray<FT66AntiCheatEvasionBucketSummary>& OutBuckets) const;
+
+	/** Aggregate 5-second combat-pressure summary used for post-run anti-cheat review. */
+	void GetAntiCheatPressureWindowSummary(FT66AntiCheatPressureWindowSummary& OutSummary) const;
+
+	/** Per-game gambler summary totals used for post-run anti-cheat review. */
+	void GetAntiCheatGamblerSummaries(TArray<FT66AntiCheatGamblerGameSummary>& OutSummaries) const;
+
+	/** Per-round gambler telemetry used for post-run anti-cheat review. */
+	void GetAntiCheatGamblerEvents(TArray<FT66AntiCheatGamblerEvent>& OutEvents) const;
+
+	bool AreAntiCheatLuckEventsTruncated() const { return bAntiCheatLuckEventsTruncated; }
+	bool AreAntiCheatHitCheckEventsTruncated() const { return bAntiCheatHitCheckEventsTruncated; }
+	bool AreAntiCheatGamblerEventsTruncated() const { return bAntiCheatGamblerEventsTruncated; }
+
+	/** Number of incoming hit checks that evaluated dodge/evasion this run. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetIncomingHitCheckCount() const { return AntiCheatIncomingHitChecks; }
+
+	/** Number of hit checks that actually applied damage this run. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetDamageTakenHitCount() const { return AntiCheatDamageTakenHitCount; }
+
+	/** Number of successful dodges this run. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetDodgeCount() const { return AntiCheatDodgeCount; }
+
+	/** Longest observed consecutive dodge streak this run. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	int32 GetMaxConsecutiveDodges() const { return AntiCheatMaxConsecutiveDodges; }
+
+	/** Sum of dodge chances sampled across incoming hit checks this run. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Ratings")
+	float GetTotalEvasionChanceAccumulated() const { return AntiCheatTotalEvasionChance; }
 
 	// ============================================
 	// Tutorial (HUD hint + first-time onboarding)
@@ -937,6 +1025,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
 	float GetHeroScaleMultiplier() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetHeroAccuracyMultiplier() const;
+
 	/** Damage reduction percent (0..1) applied to incoming hits (v0: 1% per level). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
 	float GetArmorReduction01() const;
@@ -944,6 +1035,10 @@ public:
 	/** Dodge chance percent (0..1) (v0: 1% per level). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
 	float GetEvasionChance01() const;
+
+	/** Chance for untargeted auto-attacks to prefer enemy head hit zones. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+	float GetAccuracyChance01() const;
 
 	// ============================================
 	// Vendor (Shop + Anger + Stealing)
@@ -1071,9 +1166,6 @@ public:
 	/** QuickDraw: returns damage multiplier for next shot (2.0 if idle for 2s+, else 1.0). */
 	float GetQuickDrawDamageMultiplier() const;
 	void NotifyAttackFired();
-
-	/** Headshot: returns true if this hit should headshot (15% chance, 3× damage). */
-	bool RollHeadshot() const;
 
 	/** Overclock: returns true if this attack should fire twice. Caller should call NotifyAttackFired(). */
 	bool ShouldOverclockDouble() const;
@@ -1226,6 +1318,28 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddLogEntry(const FString& Entry);
 
+	void RecordAntiCheatGamblerRound(
+		ET66AntiCheatGamblerGameType GameType,
+		int32 BetGold,
+		int32 PayoutGold,
+		bool bCheatAttempted,
+		bool bCheatSucceeded,
+		bool bWin,
+		bool bDraw,
+		int32 PlayerChoice = INDEX_NONE,
+		int32 OpponentChoice = INDEX_NONE,
+		int32 OutcomeValue = 0,
+		int32 OutcomeSecondaryValue = 0,
+		int32 SelectedMask = 0,
+		int32 ResolvedMask = 0,
+		int32 PathBits = 0,
+		int32 ShufflePreDrawSeed = 0,
+		int32 ShuffleStartDrawIndex = INDEX_NONE,
+		int32 OutcomePreDrawSeed = 0,
+		int32 OutcomeDrawIndex = INDEX_NONE,
+		float OutcomeExpectedChance01 = -1.f,
+		const FString& ActionSequence = FString());
+
 private:
 	struct FT66LuckAccumulator
 	{
@@ -1247,6 +1361,18 @@ private:
 
 	float ComputeLuckRatingQuantity01() const;
 	float ComputeLuckRatingQuality01() const;
+	float GetRunElapsedSecondsForAntiCheatEvent() const;
+	void RecordAntiCheatLuckEvent(ET66AntiCheatLuckEventType EventType, FName Category, float Value01, int32 RawValue, int32 RawMin, int32 RawMax, int32 RunDrawIndex = INDEX_NONE, int32 PreDrawSeed = 0, float ExpectedChance01 = -1.f, const FT66RarityWeights* ReplayWeights = nullptr, const FT66FloatRange* ReplayFloatRange = nullptr);
+	void RecordAntiCheatHitCheckEvent(float EvasionChance01, bool bDodged, bool bDamageApplied);
+	FT66AntiCheatGamblerGameSummary& FindOrAddAntiCheatGamblerSummary(ET66AntiCheatGamblerGameType GameType);
+	void InitializeAntiCheatEvasionBuckets();
+	static int32 GetAntiCheatEvasionBucketIndex(float EvasionChance01);
+	static float GetAntiCheatEvasionBucketMinChance01(int32 BucketIndex);
+	static float GetAntiCheatEvasionBucketMaxChance01(int32 BucketIndex);
+	void ResetAntiCheatPressureTracking();
+	void FinalizeCurrentAntiCheatPressureWindow();
+	void RecordAntiCheatPressureHitCheck(float RunElapsedSeconds, float EvasionChance01, bool bDodged, bool bDamageApplied);
+	FT66AntiCheatPressureWindowSummary BuildAntiCheatPressureWindowSummarySnapshot() const;
 
 	void ResetLuckRatingTracking();
 	UFUNCTION()
@@ -1255,6 +1381,8 @@ private:
 	UT66IdolManagerSubsystem* GetIdolManager() const;
 
 	void TrimLogsIfNeeded();
+	bool HasStagePacingPoint(int32 Stage) const;
+	void RecordStagePacingPoint(int32 Stage, float CumulativeElapsedSeconds);
 	void RecomputeItemDerivedStats();
 	void HandleLethalDamage(AActor* Attacker);
 	void EnterLastStand();
@@ -1265,7 +1393,7 @@ private:
 	void InitializeHeroStatTuningForSelectedHero();
 	void InitializeHeroStatsForNewRun();
 	void ApplyOneHeroLevelUp();
-	void RefreshPowerupBonusesFromProfile();
+	void RefreshPermanentBuffBonusesFromProfile();
 	static bool IsBossDamageSource(const AActor* Attacker);
 	static float GetHPForHeartTier(int32 Tier);
 	float GetHeartSlotCapacity(int32 SlotIndex) const;
@@ -1331,6 +1459,9 @@ private:
 	TArray<FRunEvent> StructuredEventLog;
 
 	UPROPERTY()
+	TArray<FT66StagePacingPoint> StagePacingPoints;
+
+	UPROPERTY()
 	int32 CurrentStage = 1;
 
 	UPROPERTY()
@@ -1342,7 +1473,7 @@ private:
 	/** Last integer second we broadcasted (throttle StageTimerChanged to once per second). */
 	int32 LastBroadcastStageTimerSecond = static_cast<int32>(StageTimerDurationSeconds);
 
-	// Speedrun timer (counts up from start gate; resets each stage).
+	// Speedrun timer (counts up from start gate; stage-local segment only).
 	UPROPERTY()
 	float SpeedRunElapsedSeconds = 0.f;
 
@@ -1358,7 +1489,7 @@ private:
 	// Run Summary banner: set true if any completed stage submission set a new personal best time.
 	bool bThisRunSetNewPersonalBestSpeedRunTime = false;
 
-	/** Accumulated active time from all completed stages in the current run. */
+	/** Accumulated active time from all completed stages in the current difficulty segment. */
 	UPROPERTY()
 	float CompletedStageActiveSeconds = 0.f;
 
@@ -1461,6 +1592,9 @@ private:
 	UPROPERTY()
 	int32 BossCurrentHP = 0;
 
+	UPROPERTY()
+	TArray<FT66BossPartSnapshot> BossPartSnapshots;
+
 	/** If true, spawn LoanShark when the timer starts in this stage (only when debt was carried from previous stage). */
 	bool bLoanSharkPending = false;
 
@@ -1475,8 +1609,11 @@ private:
 	/** Flat stat bonuses from inventory items (main stat line only, v1). */
 	FT66HeroStatBonuses ItemStatBonuses = FT66HeroStatBonuses{};
 
-	/** Power-up slice bonuses (from PowerUpSubsystem; refreshed at run start). */
-	FT66HeroStatBonuses PowerupStatBonuses = FT66HeroStatBonuses{};
+	/** Permanent buff bonuses from the buff subsystem, refreshed at run start. */
+	FT66HeroStatBonuses PermanentBuffStatBonuses = FT66HeroStatBonuses{};
+
+	/** Single-use secondary multipliers purchased in the shop and consumed at the start of the current run. */
+	TMap<ET66SecondaryStatType, float> SingleUseSecondaryMultipliers;
 
 	float ItemPowerGivenPercent = 0.f;
 	float BonusDamagePercent = 0.f;
@@ -1532,6 +1669,7 @@ private:
 	float HeroBaseCheatChance = 0.05f;
 	float HeroBaseStealChance = 0.05f;
 	float HeroBaseAttackRange = 1000.f;
+	float HeroBaseAccuracy = 0.15f;
 
 	// ============================================
 	// Accumulated secondary stat multipliers from items (product of Line 2 multipliers)
@@ -1598,6 +1736,28 @@ private:
 	// Aggregated tracking for Luck Rating (per run).
 	TMap<FName, FT66LuckAccumulator> LuckQuantityByCategory;
 	TMap<FName, FT66LuckAccumulator> LuckQualityByCategory;
+	TArray<FT66AntiCheatLuckEvent> AntiCheatLuckEvents;
+	bool bAntiCheatLuckEventsTruncated = false;
+	TArray<FT66AntiCheatHitCheckEvent> AntiCheatHitCheckEvents;
+	bool bAntiCheatHitCheckEventsTruncated = false;
+	TArray<FT66AntiCheatGamblerGameSummary> AntiCheatGamblerSummaries;
+	TArray<FT66AntiCheatGamblerEvent> AntiCheatGamblerEvents;
+	bool bAntiCheatGamblerEventsTruncated = false;
+
+	// Aggregated telemetry for backend anti-cheat heuristics (per run).
+	int32 AntiCheatIncomingHitChecks = 0;
+	int32 AntiCheatDamageTakenHitCount = 0;
+	int32 AntiCheatDodgeCount = 0;
+	int32 AntiCheatCurrentConsecutiveDodges = 0;
+	int32 AntiCheatMaxConsecutiveDodges = 0;
+	float AntiCheatTotalEvasionChance = 0.f;
+	TArray<FT66AntiCheatEvasionBucketSummary> AntiCheatEvasionBuckets;
+	FT66AntiCheatPressureWindowSummary AntiCheatPressureWindowSummary;
+	int32 AntiCheatCurrentPressureWindowIndex = INDEX_NONE;
+	int32 AntiCheatCurrentPressureHitChecks = 0;
+	int32 AntiCheatCurrentPressureDodges = 0;
+	int32 AntiCheatCurrentPressureDamageApplied = 0;
+	float AntiCheatCurrentPressureExpectedDodges = 0.f;
 
 	bool bInStageCatchUp = false;
 

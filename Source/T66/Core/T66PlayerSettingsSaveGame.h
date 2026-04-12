@@ -3,9 +3,71 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/T66DataTypes.h"
 #include "GameFramework/SaveGame.h"
 #include "Core/T66RetroFXSettings.h"
 #include "T66PlayerSettingsSaveGame.generated.h"
+
+UENUM(BlueprintType)
+enum class ET66BeatTargetSelectionMode : uint8
+{
+	PersonalBest UMETA(DisplayName = "Personal Best"),
+	FriendsTop UMETA(DisplayName = "Friends"),
+	StreamersTop UMETA(DisplayName = "Streamers"),
+	GlobalTop UMETA(DisplayName = "Global"),
+	FavoriteRun UMETA(DisplayName = "Favorite Run"),
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66BeatTargetSelection
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	ET66BeatTargetSelectionMode Mode = ET66BeatTargetSelectionMode::GlobalTop;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	FString FavoriteEntryId;
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66FavoriteLeaderboardRun
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	FString EntryId;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	ET66LeaderboardType LeaderboardType = ET66LeaderboardType::Score;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	ET66LeaderboardFilter Filter = ET66LeaderboardFilter::Global;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	ET66LeaderboardTime TimeScope = ET66LeaderboardTime::AllTime;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	ET66Difficulty Difficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	ET66PartySize PartySize = ET66PartySize::Solo;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	int32 Rank = 0;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	FString DisplayName;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	int64 Score = 0;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	float TimeSeconds = 0.f;
+
+	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+	bool bHasRunSummary = false;
+};
 
 /**
  * Persistent, per-player local settings saved to disk.
@@ -19,7 +81,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 10;
+	int32 SchemaVersion = 16;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -34,10 +96,34 @@ public:
 	bool bSubmitLeaderboardAnonymous = false;
 
 	UPROPERTY(SaveGame)
-	bool bSpeedRunMode = false;
+	bool bSpeedRunMode = true;
 
 	UPROPERTY(SaveGame)
 	bool bGoonerMode = false;
+
+	/** Controls whether the HUD shows the "Time to Beat" line. */
+	UPROPERTY(SaveGame)
+	bool bShowTimeToBeat = true;
+
+	/** Controls whether the HUD shows the "Score to Beat" line. */
+	UPROPERTY(SaveGame)
+	bool bShowScoreToBeat = true;
+
+	/** Adds the global stage-pace time line beneath the live timer when available. */
+	UPROPERTY(SaveGame)
+	bool bShowTimePacing = false;
+
+	/** Adds the global stage-pace score line beneath the live score when available. */
+	UPROPERTY(SaveGame)
+	bool bShowScorePacing = false;
+
+	/** Selected source for the Time to Beat target. */
+	UPROPERTY(SaveGame)
+	FT66BeatTargetSelection TimeToBeatSelection;
+
+	/** Selected source for the Score to Beat target. */
+	UPROPERTY(SaveGame)
+	FT66BeatTargetSelection ScoreToBeatSelection;
 
 	// ===== Legacy Theme =====
 	/** Retained only to clear old saves; the game now always runs the dark UI theme. */
@@ -50,6 +136,10 @@ public:
 	/** Player-facing UI scale multiplier applied on top of engine DPI scaling. */
 	UPROPERTY(SaveGame)
 	float UIScale = 1.0f;
+
+	/** Font preset: legacy field retained for compatibility; game now normalizes to Current. */
+	UPROPERTY(SaveGame)
+	int32 UIFontPresetIndex = 0;
 
 	// ===== Legacy (not surfaced in Settings UI) =====
 	// Kept for backward compatibility with existing saves / future VFX tuning.
@@ -70,7 +160,7 @@ public:
 
 	// ===== Audio =====
 	UPROPERTY(SaveGame)
-	float MasterVolume = 0.8f;
+	float MasterVolume = 0.0f;
 
 	UPROPERTY(SaveGame)
 	float MusicVolume = 0.6f;
@@ -115,6 +205,10 @@ public:
 	UPROPERTY(SaveGame)
 	bool bMediaViewerEnabled = true;
 
+	/** Preferred feed opened by the media viewer: 0 = TikTok, 1 = Shorts, 2 = Reels. */
+	UPROPERTY(SaveGame)
+	int32 MediaViewerSourceIndex = 0;
+
 	/** When false, exponential height fog is disabled in gameplay. */
 	UPROPERTY(SaveGame)
 	bool bFogEnabled = true;
@@ -122,6 +216,18 @@ public:
 	/** Native gameplay fog intensity from 0..100. 0 disables fog entirely, 100 is intentionally very heavy. */
 	UPROPERTY(SaveGame)
 	float FogIntensityPercent = 55.0f;
+
+	/** Steam friends pinned to the top of the frontend friend list. */
+	UPROPERTY(SaveGame)
+	TArray<FString> FavoriteFriendSteamIds;
+
+	/** Achievement IDs pinned to the top of the pause-screen progress tracker. */
+	UPROPERTY(SaveGame)
+	TArray<FName> FavoriteAchievementIds;
+
+	/** Favorited leaderboard rows that can be selected as score/time targets in gameplay HUD. */
+	UPROPERTY(SaveGame)
+	TArray<FT66FavoriteLeaderboardRun> FavoriteLeaderboardRuns;
 
 	// ===== Retro FX =====
 	UPROPERTY(SaveGame)

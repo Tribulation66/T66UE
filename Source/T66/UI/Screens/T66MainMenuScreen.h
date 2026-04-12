@@ -11,10 +11,11 @@
 
 struct FSlateBrush;
 class ST66LeaderboardPanel;
+class SVerticalBox;
 class UTexture2D;
 /**
  * Main Menu Screen
- * Left side: social / last-run panel
+ * Left side: social / profile panel
  * Center: primary actions
  * Right side: leaderboard display
  */
@@ -69,16 +70,22 @@ protected:
 private:
 	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
+	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
 	TSharedPtr<FSlateBrush> FireMoonBrush;
+	TStrongObjectPtr<UTexture2D> FireMoonTexture;
 	TSharedPtr<FSlateBrush> PyramidChadBrush;
-	TSharedPtr<FSlateBrush> LastRunHeroBrush;
+	TStrongObjectPtr<UTexture2D> PyramidChadTexture;
+	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
 	TSharedPtr<FSlateBrush> PrimaryCTAFillBrush;
 	TStrongObjectPtr<UTexture2D> PrimaryCTAFillTexture;
 	TSharedPtr<FSlateBrush> SettingsIconBrush;
 	TSharedPtr<FSlateBrush> LanguageIconBrush;
 	TArray<TSharedPtr<FSlateBrush>> FriendPortraitBrushes;
+	TArray<TSharedPtr<FSlateBrush>> PartyPortraitBrushes;
+	TSharedPtr<SVerticalBox> FriendsListContainer;
 	bool bShowOnlineFriends = true;
 	bool bShowOfflineFriends = true;
+	FString FriendSearchQuery;
 	FVector2D CachedViewportSize = FVector2D::ZeroVector;
 	bool bViewportResponsiveRebuildQueued = false;
 
@@ -101,6 +108,8 @@ private:
 	void RequestUtilityButtonIcons();
 	void HandlePartyStateChanged();
 	void HandleSessionStateChanged();
+	void SyncToSharedPartyScreen();
+	void HandleFriendSearchTextChanged(const FText& NewText);
 
 	// Handle language change to rebuild UI
 	UFUNCTION()

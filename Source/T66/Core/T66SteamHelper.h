@@ -13,6 +13,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	bool, bSuccess,
 	const FString&, TicketHex);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnT66SteamJoinRequested, const FString& /*FriendSteamId*/);
+
 USTRUCT(BlueprintType)
 struct T66_API FT66SteamFriendInfo
 {
@@ -29,12 +31,21 @@ struct T66_API FT66SteamFriendInfo
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
 	bool bOnline = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
+	bool bPlayingThisGame = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
+	FString CurrentGameAppId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Steam")
+	FString CurrentLobbyId;
 };
 
 /**
  * Manages Steam identity for the T66 backend.
  *
- * On Initialize, requests a Steam session ticket via the
+ * On Initialize, requests a Steam Web API ticket via the
  * Steamworks API. Once ready, it hex-encodes the ticket
  * and passes it to UT66BackendSubsystem::SetSteamTicketHex.
  *
@@ -66,6 +77,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
 	FString GetLocalDisplayName() const { return LocalDisplayName; }
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
+	FString GetActiveSteamAppId() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
+	FString GetCurrentSteamBetaName() const;
+
 	/** Get friend SteamIDs (for leaderboard friends tab). */
 	UFUNCTION(BlueprintCallable, Category = "Steam")
 	TArray<FString> GetFriendSteamIds() const { return FriendSteamIds; }
@@ -73,11 +90,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Steam")
 	TArray<FT66SteamFriendInfo> GetFriendInfos() const { return FriendInfos; }
 
+	/** Refresh local identity, avatar, and Steam friends presence from the live Steam client. */
+	UFUNCTION(BlueprintCallable, Category = "Steam")
+	void RefreshSteamPresence();
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
 	UTexture2D* GetLocalAvatarTexture() const { return LocalAvatarTexture; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
 	UTexture2D* GetAvatarTextureForSteamId(const FString& SteamId) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
+	int32 GetAvatarRevision() const { return AvatarRevision; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Steam")
+	bool IsFriendPlayingActiveApp(const FString& SteamId) const;
+
+	bool TryGetFriendCurrentGame(const FString& SteamId, FString* OutAppId = nullptr, FString* OutLobbyId = nullptr) const;
 
 	/** Request a new session ticket (call again if the old one expired). */
 	UFUNCTION(BlueprintCallable, Category = "Steam")
@@ -85,6 +114,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Steam")
 	FOnSteamTicketReady OnSteamTicketReady;
+
+	FOnT66SteamJoinRequested& OnSteamJoinRequested() { return SteamJoinRequested; }
+	void HandleSteamJoinRequested(const FString& FriendSteamId);
+	void HandleWebApiTicketReady(uint32 InTicketHandle, bool bSuccess, const uint8* TicketBytes, int32 TicketByteCount);
 
 private:
 	bool bSteamReady = false;
@@ -100,11 +133,16 @@ private:
 	UPROPERTY(Transient)
 	TMap<FString, TObjectPtr<UTexture2D>> FriendAvatarTextures;
 
+	int32 AvatarRevision = 0;
+
 	// Steamworks ticket handle (needed to cancel)
 	uint32 TicketHandle = 0;
+	class FT66SteamJoinRequestBridge* SteamJoinRequestBridge = nullptr;
+	FOnT66SteamJoinRequested SteamJoinRequested;
 
 	void ObtainTicket();
 	void CollectFriendsList();
+	void RefreshLocalSteamIdentity();
 	void CacheAvatarForSteamId(const FString& SteamId, int32 ImageHandle);
 	UTexture2D* CreateTextureFromSteamImage(int32 ImageHandle) const;
 };

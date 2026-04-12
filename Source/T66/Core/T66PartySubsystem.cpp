@@ -11,6 +11,11 @@
 
 namespace
 {
+	bool T66StringsMatchInsensitive(const FString& A, const FString& B)
+	{
+		return !A.IsEmpty() && !B.IsEmpty() && A.Equals(B, ESearchCase::IgnoreCase);
+	}
+
 	TArray<FString> T66BuildNormalizedPartyIdSet(const TArray<FString>& SourceIds, const FString& FallbackId = FString())
 	{
 		TArray<FString> Result;
@@ -125,7 +130,7 @@ bool UT66PartySubsystem::IsFriendInParty(const FString& PlayerId) const
 	return FindPartyMemberIndex(PlayerId) != INDEX_NONE;
 }
 
-bool UT66PartySubsystem::InviteFriend(const FString& PlayerId)
+bool UT66PartySubsystem::InviteFriend(const FString& PlayerId, const FString& DisplayName)
 {
 	RefreshPartyState(false);
 
@@ -149,7 +154,7 @@ bool UT66PartySubsystem::InviteFriend(const FString& PlayerId)
 	{
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
-			return SessionSubsystem->SendInviteToFriend(PlayerId);
+			return SessionSubsystem->SendInviteToFriend(PlayerId, DisplayName);
 		}
 	}
 
@@ -212,7 +217,7 @@ void UT66PartySubsystem::ApplyCurrentPartyToGameInstanceRunContext()
 
 ET66PartySize UT66PartySubsystem::GetCurrentPartySizeEnum() const
 {
-	return PartySizeFromCount(FMath::Max(PartyMembers.Num(), GetMaxPartyMembers()));
+	return PartySizeFromCount(FMath::Max(1, PartyMembers.Num()));
 }
 
 TArray<FString> UT66PartySubsystem::GetCurrentPartyMemberIds() const
@@ -264,6 +269,7 @@ void UT66PartySubsystem::RefreshPartyState(bool bBroadcastChanges)
 {
 	const TArray<FT66PartyFriendEntry> PreviousFriends = Friends;
 	const TArray<FT66PartyMemberEntry> PreviousPartyMembers = PartyMembers;
+	int32 CurrentAvatarRevision = LastObservedAvatarRevision;
 
 	LocalPlayerId = TEXT("local_player");
 	LocalDisplayName = TEXT("You");
@@ -272,6 +278,8 @@ void UT66PartySubsystem::RefreshPartyState(bool bBroadcastChanges)
 	{
 		if (UT66SteamHelper* Steam = GI->GetSubsystem<UT66SteamHelper>())
 		{
+			Steam->RefreshSteamPresence();
+			CurrentAvatarRevision = Steam->GetAvatarRevision();
 			if (!Steam->GetLocalSteamId().IsEmpty())
 			{
 				LocalPlayerId = Steam->GetLocalSteamId();
@@ -288,8 +296,30 @@ void UT66PartySubsystem::RefreshPartyState(bool bBroadcastChanges)
 	SyncSelectedPartySize();
 	ApplyCurrentPartyToGameInstanceRunContext();
 
+	ET66ScreenType DesiredFrontendScreen = ET66ScreenType::None;
+	ET66Difficulty SharedDifficulty = ET66Difficulty::Easy;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			DesiredFrontendScreen = SessionSubsystem->GetDesiredPartyFrontendScreen();
+			SharedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
+		}
+	}
+
+	const bool bAvatarStateChanged = (CurrentAvatarRevision != LastObservedAvatarRevision);
+	const bool bDesiredScreenChanged = DesiredFrontendScreen != LastObservedDesiredFrontendScreen;
+	const bool bSharedDifficultyChanged = SharedDifficulty != LastObservedSharedDifficulty;
+	LastObservedAvatarRevision = CurrentAvatarRevision;
+	LastObservedDesiredFrontendScreen = DesiredFrontendScreen;
+	LastObservedSharedDifficulty = SharedDifficulty;
+
 	if (bBroadcastChanges
-		&& (!T66AreFriendListsEqual(PreviousFriends, Friends) || !T66ArePartyListsEqual(PreviousPartyMembers, PartyMembers)))
+		&& (!T66AreFriendListsEqual(PreviousFriends, Friends)
+			|| !T66ArePartyListsEqual(PreviousPartyMembers, PartyMembers)
+			|| bAvatarStateChanged
+			|| bDesiredScreenChanged
+			|| bSharedDifficultyChanged))
 	{
 		PartyStateChanged.Broadcast();
 	}
@@ -342,7 +372,23 @@ void UT66PartySubsystem::RebuildPartyMembers()
 			{
 				Member.DisplayName = LocalDisplayName;
 			}
-			Member.bIsLocal = Member.PlayerId == LocalPlayerId || (!LocalDisplayName.IsEmpty() && Member.DisplayName == LocalDisplayName);
+
+			if (LobbyInfo.SteamId.IsEmpty())
+			{
+				if (T66StringsMatchInsensitive(Member.DisplayName, LocalDisplayName))
+				{
+					Member.PlayerId = LocalPlayerId;
+				}
+				else if (const FT66PartyFriendEntry* MatchingFriend = Friends.FindByPredicate([&Member](const FT66PartyFriendEntry& Friend)
+				{
+					return T66StringsMatchInsensitive(Friend.DisplayName, Member.DisplayName);
+				}))
+				{
+					Member.PlayerId = MatchingFriend->PlayerId;
+				}
+			}
+
+			Member.bIsLocal = Member.PlayerId == LocalPlayerId || T66StringsMatchInsensitive(Member.DisplayName, LocalDisplayName);
 			Member.bOnline = true;
 			Member.bReady = LobbyInfo.bLobbyReady;
 			Member.bIsPartyHost = LobbyInfo.bPartyHost;

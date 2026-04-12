@@ -43,6 +43,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma")
 	int32 Seed = 1337;
 
+	/** Lava expands in discrete batches on this cadence and reaches full coverage by the 7:00 timer expiry. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma", meta = (ClampMin = "1.0", ClampMax = "60.0"))
+	float ExpansionIntervalSeconds = 10.f;
+
+	/** Lava stays dormant for the opening grace period, then starts expanding in batches. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Miasma", meta = (ClampMin = "0.0", ClampMax = "420.0"))
+	float ExpansionStartDelaySeconds = 120.f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lava|Animation", meta = (ClampMin = "16", ClampMax = "256"))
 	int32 TextureResolution = 64;
 
@@ -97,6 +105,7 @@ public:
 
 	/** Clears all spawned miasma tiles. */
 	void ClearAllMiasma();
+	void RebuildForCurrentStage();
 
 	/** Called when stage timer changes / starts; spawns additional tiles based on progress. */
 	void UpdateFromRunState();
@@ -125,9 +134,11 @@ private:
 
 	void BuildGrid();
 	void EnsureSpawnedCount(int32 DesiredCount);
-	void BuildMainMapSubcellGrid();
+	void BuildMainMapCellGrid();
+	void BuildTowerFloorGrid();
 	void TickDamageOverActiveTiles(float DeltaTime);
 	void EnsureVisualMaterial();
+	bool ShouldUseTowerBloodLook() const;
 	void GenerateAnimationFrames();
 	UTexture2D* BuildFrameTexture(int32 FrameIndex, int32 ClampedFrames, int32 Resolution) const;
 	FLinearColor SampleLavaColor(const FVector2D& BaseUV, float Phase) const;

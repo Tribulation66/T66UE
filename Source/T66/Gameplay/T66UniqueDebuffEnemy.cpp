@@ -10,6 +10,39 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
+namespace
+{
+	AT66HeroBase* T66ResolveClosestDebuffTargetHero(const AActor* ContextActor)
+	{
+		const UWorld* World = ContextActor ? ContextActor->GetWorld() : nullptr;
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		const FVector Origin = ContextActor->GetActorLocation();
+		AT66HeroBase* BestHero = nullptr;
+		float BestDistSq = TNumericLimits<float>::Max();
+		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+		{
+			AT66HeroBase* Hero = Cast<AT66HeroBase>(It->Get() ? It->Get()->GetPawn() : nullptr);
+			if (!Hero)
+			{
+				continue;
+			}
+
+			const float DistSq = FVector::DistSquared2D(Origin, Hero->GetActorLocation());
+			if (DistSq < BestDistSq)
+			{
+				BestDistSq = DistSq;
+				BestHero = Hero;
+			}
+		}
+
+		return BestHero;
+	}
+}
+
 AT66UniqueDebuffEnemy::AT66UniqueDebuffEnemy()
 {
 	// Unique enemy uses Enemy3 mesh from DT_CharacterVisuals (same as stage EnemyC).
@@ -87,8 +120,7 @@ void AT66UniqueDebuffEnemy::FireAtPlayer()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
-	AT66HeroBase* Hero = Cast<AT66HeroBase>(PlayerPawn);
+	AT66HeroBase* Hero = T66ResolveClosestDebuffTargetHero(this);
 	if (!Hero) return;
 	if (Hero->IsInSafeZone()) return;
 

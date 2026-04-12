@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66MiasmaManager.h"
+#include "Gameplay/T66LavaShared.h"
 
 #include "Core/T66GameInstance.h"
 #include "Core/T66LagTrackerSubsystem.h"
@@ -10,18 +11,18 @@
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66MainMapTerrain.h"
+#include "Gameplay/T66TowerMapTerrain.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66MiasmaManager, Log, All);
+
 namespace
 {
-	constexpr float T66LavaTwoPi = 6.28318530718f;
-	const TCHAR* T66LavaBaseMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
-	const TCHAR* T66DefaultTexturePath = TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture");
-
 	static bool T66ShouldUseMainBoardCoverage(const UWorld* World)
 	{
 		if (!World)
@@ -35,84 +36,12 @@ namespace
 			&& !MapName.Contains(TEXT("Lab"));
 	}
 
-	static float T66LavaFrac(float Value)
-	{
-		return Value - FMath::FloorToFloat(Value);
-	}
-
-	static float T66LavaSaturate(float Value)
-	{
-		return FMath::Clamp(Value, 0.f, 1.f);
-	}
-
-	static float T66LavaSmoothStep(float Edge0, float Edge1, float Value)
-	{
-		if (FMath::IsNearlyEqual(Edge0, Edge1))
-		{
-			return Value < Edge0 ? 0.f : 1.f;
-		}
-
-		const float T = T66LavaSaturate((Value - Edge0) / (Edge1 - Edge0));
-		return T * T * (3.f - 2.f * T);
-	}
-
-	static FVector2D T66LavaHash2(const FVector2D& P)
-	{
-		return FVector2D(
-			T66LavaFrac(FMath::Sin(FVector2D::DotProduct(P, FVector2D(127.1f, 311.7f))) * 43758.5453123f),
-			T66LavaFrac(FMath::Sin(FVector2D::DotProduct(P, FVector2D(269.5f, 183.3f))) * 43758.5453123f));
-	}
-
-	struct FT66LavaCellSample
-	{
-		float Closest = BIG_NUMBER;
-		float SecondClosest = BIG_NUMBER;
-	};
-
-	static FT66LavaCellSample T66SampleLavaCells(const FVector2D& UV, float Density, float Phase)
-	{
-		FT66LavaCellSample Result;
-
-		const FVector2D P = UV * Density;
-		const FVector2D Cell(FMath::FloorToFloat(P.X), FMath::FloorToFloat(P.Y));
-		const FVector2D Local = P - Cell;
-
-		for (int32 Y = -1; Y <= 1; ++Y)
-		{
-			for (int32 X = -1; X <= 1; ++X)
-			{
-				const FVector2D NeighborCell = Cell + FVector2D(static_cast<float>(X), static_cast<float>(Y));
-				const FVector2D Jitter = T66LavaHash2(NeighborCell);
-				const FVector2D Drift(
-					FMath::Sin(Phase * (0.65f + Jitter.X * 0.25f) + NeighborCell.Y * 1.73f + Jitter.Y * 4.0f),
-					FMath::Cos(Phase * (0.50f + Jitter.Y * 0.25f) + NeighborCell.X * 1.37f + Jitter.X * 4.0f));
-				const FVector2D FeaturePoint =
-					FVector2D(static_cast<float>(X), static_cast<float>(Y)) + Jitter + Drift * 0.16f;
-
-				const float DistSq = (Local - FeaturePoint).SizeSquared();
-				if (DistSq < Result.Closest)
-				{
-					Result.SecondClosest = Result.Closest;
-					Result.Closest = DistSq;
-				}
-				else if (DistSq < Result.SecondClosest)
-				{
-					Result.SecondClosest = DistSq;
-				}
-			}
-		}
-
-		Result.Closest = FMath::Sqrt(Result.Closest);
-		Result.SecondClosest = FMath::Sqrt(Result.SecondClosest);
-		return Result;
-	}
-
 	static UTexture* T66GetFallbackTexture()
 	{
 		static TObjectPtr<UTexture> Cached = nullptr;
 		if (!Cached)
 		{
-			Cached = LoadObject<UTexture>(nullptr, T66DefaultTexturePath);
+			Cached = LoadObject<UTexture>(nullptr, T66LavaShared::DefaultTexturePath);
 		}
 		return Cached.Get();
 	}
@@ -181,7 +110,7 @@ void AT66MiasmaManager::Tick(float DeltaTime)
 	}
 }
 
-void AT66MiasmaManager::BuildMainMapSubcellGrid()
+void AT66MiasmaManager::BuildMainMapCellGrid()
 {
 	TileCenters.Reset();
 
@@ -195,52 +124,99 @@ void AT66MiasmaManager::BuildMainMapSubcellGrid()
 	}
 
 	const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
-	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(T66GI->SelectedDifficulty, T66GI->RunSeed);
+	const ET66MainMapLayoutVariant LayoutVariant = UT66GameInstance::ResolveMainMapLayoutVariant(T66GI);
+	const FT66MapPreset Preset = T66MainMapTerrain::BuildPresetForDifficulty(T66GI->SelectedDifficulty, T66GI->RunSeed, LayoutVariant);
 	T66MainMapTerrain::FBoard Board;
 	if (!T66MainMapTerrain::Generate(Preset, Board))
 	{
 		return;
 	}
 
-	TileSize = Board.Settings.CellSize * 0.5f;
-	const float QuarterCellOffset = TileSize * 0.5f;
+	TileSize = Board.Settings.CellSize;
 
-	for (const T66MainMapTerrain::FCell& Cell : Board.Cells)
+	auto AddCellCenter = [&](const T66MainMapTerrain::FCell& Cell)
 	{
 		if (!Cell.bOccupied)
 		{
-			continue;
+			return;
 		}
 
 		FVector CellCenter = FVector::ZeroVector;
-		if (!T66MainMapTerrain::TryGetCellLocation(Board, FIntPoint(Cell.X, Cell.Z), 0.f, CellCenter))
+		const float CoverHeightOffset = T66MainMapTerrain::GetSurfaceFeatureLavaCoverHeight(Cell);
+		if (!T66MainMapTerrain::TryGetCellLocation(Board, FIntPoint(Cell.X, Cell.Z), TileZ + CoverHeightOffset, CellCenter))
+		{
+			return;
+		}
+
+		TileCenters.Add(CellCenter);
+	};
+
+	for (const T66MainMapTerrain::FCell& Cell : Board.Cells)
+	{
+		AddCellCenter(Cell);
+	}
+	for (const T66MainMapTerrain::FCell& Cell : Board.ExtraCells)
+	{
+		AddCellCenter(Cell);
+	}
+
+	FRandomStream Stream(T66GI->RunSeed + (StageNum * 97));
+	for (int32 Index = TileCenters.Num() - 1; Index > 0; --Index)
+	{
+		const int32 SwapIndex = Stream.RandRange(0, Index);
+		if (Index != SwapIndex)
+		{
+			TileCenters.Swap(Index, SwapIndex);
+		}
+	}
+
+	UE_LOG(
+		LogT66MiasmaManager,
+		Log,
+		TEXT("[LAVA] Built main-map lava grid with %d full-cell patches (cellSize=%.0f, stage=%d)."),
+		TileCenters.Num(),
+		TileSize,
+		StageNum);
+}
+
+void AT66MiasmaManager::BuildTowerFloorGrid()
+{
+	TileCenters.Reset();
+
+	UWorld* World = GetWorld();
+	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	T66TowerMapTerrain::FLayout Layout;
+	if (!World || !GameMode || !GameMode->GetTowerMainMapLayout(Layout))
+	{
+		return;
+	}
+
+	TileSize = 1200.0f;
+	for (const T66TowerMapTerrain::FFloor& Floor : Layout.Floors)
+	{
+		if (!Floor.bGameplayFloor)
 		{
 			continue;
 		}
 
-		for (const float OffsetX : { -QuarterCellOffset, QuarterCellOffset })
+		for (float X = -Floor.WalkableHalfExtent + (TileSize * 0.5f); X < Floor.WalkableHalfExtent; X += TileSize)
 		{
-			for (const float OffsetY : { -QuarterCellOffset, QuarterCellOffset })
+			for (float Y = -Floor.WalkableHalfExtent + (TileSize * 0.5f); Y < Floor.WalkableHalfExtent; Y += TileSize)
 			{
-				FVector SampleLocation = CellCenter + FVector(OffsetX, OffsetY, 0.f);
-				FHitResult Hit;
-				const FVector TraceStart = SampleLocation + FVector(0.f, 0.f, 4000.f);
-				const FVector TraceEnd = SampleLocation - FVector(0.f, 0.f, 9000.f);
-				if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+				const FVector Candidate = Floor.Center + FVector(X, Y, TileZ);
+				if (Floor.bHasDropHole
+					&& FMath::Abs(Candidate.X - Floor.HoleCenter.X) <= (Floor.HoleHalfExtent.X + TileSize * 0.45f)
+					&& FMath::Abs(Candidate.Y - Floor.HoleCenter.Y) <= (Floor.HoleHalfExtent.Y + TileSize * 0.45f))
 				{
-					SampleLocation.Z = Hit.ImpactPoint.Z + TileZ;
-				}
-				else
-				{
-					SampleLocation.Z = CellCenter.Z + TileZ;
+					continue;
 				}
 
-				TileCenters.Add(SampleLocation);
+				TileCenters.Add(FVector(Candidate.X, Candidate.Y, Floor.SurfaceZ + TileZ));
 			}
 		}
 	}
 
-	FRandomStream Stream(T66GI->RunSeed + (StageNum * 97));
+	FRandomStream Stream(Layout.Preset.Seed + 1703);
 	for (int32 Index = TileCenters.Num() - 1; Index > 0; --Index)
 	{
 		const int32 SwapIndex = Stream.RandRange(0, Index);
@@ -253,9 +229,18 @@ void AT66MiasmaManager::BuildMainMapSubcellGrid()
 
 void AT66MiasmaManager::BuildGrid()
 {
+	if (ShouldUseTowerBloodLook())
+	{
+		BuildTowerFloorGrid();
+		if (TileCenters.Num() > 0)
+		{
+			return;
+		}
+	}
+
 	if (T66ShouldUseMainBoardCoverage(GetWorld()))
 	{
-		BuildMainMapSubcellGrid();
+		BuildMainMapCellGrid();
 		if (TileCenters.Num() > 0)
 		{
 			return;
@@ -317,13 +302,28 @@ void AT66MiasmaManager::UpdateFromRunState()
 	const float Remaining = RunState->GetStageTimerSecondsRemaining();
 	const float Duration = UT66RunStateSubsystem::StageTimerDurationSeconds;
 	const float Elapsed = FMath::Clamp(Duration - Remaining, 0.f, Duration);
-	const float Alpha = (Duration <= 0.f) ? 1.f : (Elapsed / Duration);
-
 	const int32 Total = TileCenters.Num();
-	int32 Desired = FMath::Clamp(FMath::FloorToInt(Alpha * static_cast<float>(Total)), 0, Total);
-	if (Desired == 0)
+	int32 Desired = 0;
+	if (Duration <= 0.f)
 	{
-		Desired = 1;
+		Desired = Total;
+	}
+	else
+	{
+		const float ExpansionStartDelay = FMath::Clamp(ExpansionStartDelaySeconds, 0.f, Duration);
+		const float ActiveDuration = FMath::Max(Duration - ExpansionStartDelay, 0.f);
+		const float ExpansionInterval = FMath::Max(ExpansionIntervalSeconds, 1.0f);
+		if (Elapsed >= ExpansionStartDelay && ActiveDuration > KINDA_SMALL_NUMBER)
+		{
+			const int32 ExpansionSteps = FMath::Max(1, FMath::CeilToInt(ActiveDuration / ExpansionInterval));
+			const float ActiveElapsed = FMath::Clamp(Elapsed - ExpansionStartDelay, 0.f, ActiveDuration);
+			const int32 CompletedSteps = FMath::Clamp(
+				FMath::FloorToInt(ActiveElapsed / ExpansionInterval) + 1,
+				0,
+				ExpansionSteps);
+			const float StepAlpha = static_cast<float>(CompletedSteps) / static_cast<float>(ExpansionSteps);
+			Desired = FMath::Clamp(FMath::CeilToInt(StepAlpha * static_cast<float>(Total)), 0, Total);
+		}
 	}
 	if (Remaining <= 0.05f)
 	{
@@ -331,6 +331,23 @@ void AT66MiasmaManager::UpdateFromRunState()
 	}
 
 	EnsureSpawnedCount(Desired);
+}
+
+void AT66MiasmaManager::RebuildForCurrentStage()
+{
+	if (TileInstances)
+	{
+		TileInstances->ClearInstances();
+	}
+
+	TileCenters.Reset();
+	SpawnedTileCount = 0;
+	DamageTickAccumulator = 0.f;
+
+	GenerateAnimationFrames();
+	EnsureVisualMaterial();
+	BuildGrid();
+	UpdateFromRunState();
 }
 
 void AT66MiasmaManager::EnsureSpawnedCount(int32 DesiredCount)
@@ -374,10 +391,12 @@ void AT66MiasmaManager::TickDamageOverActiveTiles(float DeltaTime)
 
 	const FVector HeroLocation = Hero->GetActorLocation();
 	const float HalfExtent = TileSize * 0.5f;
+	const bool bTowerBlood = ShouldUseTowerBloodLook();
 	for (int32 Index = 0; Index < SpawnedTileCount; ++Index)
 	{
 		const FVector& TileCenter = TileCenters[Index];
-		if (FMath::Abs(HeroLocation.X - TileCenter.X) <= HalfExtent
+		if ((!bTowerBlood || FMath::Abs(HeroLocation.Z - TileCenter.Z) <= 1600.0f)
+			&& FMath::Abs(HeroLocation.X - TileCenter.X) <= HalfExtent
 			&& FMath::Abs(HeroLocation.Y - TileCenter.Y) <= HalfExtent)
 		{
 			RunState->ApplyDamage(20, this);
@@ -395,7 +414,7 @@ void AT66MiasmaManager::EnsureVisualMaterial()
 
 	if (!LavaMID)
 	{
-		if (UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, T66LavaBaseMaterialPath))
+		if (UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, T66LavaShared::BaseMaterialPath))
 		{
 			LavaMID = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 			if (LavaMID)
@@ -422,6 +441,24 @@ void AT66MiasmaManager::EnsureVisualMaterial()
 	LavaMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
 	LavaMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
 	LavaMID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+
+	if (ShouldUseTowerBloodLook())
+	{
+		CoreColor = FLinearColor(0.06f, 0.00f, 0.00f, 1.0f);
+		MidColor = FLinearColor(0.48f, 0.00f, 0.02f, 1.0f);
+		GlowColor = FLinearColor(0.86f, 0.05f, 0.08f, 1.0f);
+		Brightness = 1.45f;
+		LavaMID->SetVectorParameterValue(TEXT("Tint"), FLinearColor(0.95f, 0.22f, 0.24f, 1.0f));
+		LavaMID->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.95f, 0.22f, 0.24f, 1.0f));
+		LavaMID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+	}
+}
+
+bool AT66MiasmaManager::ShouldUseTowerBloodLook() const
+{
+	const UWorld* World = GetWorld();
+	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	return GameMode && GameMode->IsUsingTowerMainMapLayout();
 }
 
 void AT66MiasmaManager::GenerateAnimationFrames()
@@ -457,7 +494,7 @@ UTexture2D* AT66MiasmaManager::BuildFrameTexture(const int32 FrameIndex, const i
 	TArray<FColor> Pixels;
 	Pixels.SetNumUninitialized(Resolution * Resolution);
 
-	const float Phase = (static_cast<float>(FrameIndex) / static_cast<float>(ClampedFrames)) * T66LavaTwoPi;
+	const float Phase = (static_cast<float>(FrameIndex) / static_cast<float>(ClampedFrames)) * T66LavaShared::TwoPi;
 
 	for (int32 Y = 0; Y < Resolution; ++Y)
 	{
@@ -511,17 +548,17 @@ FLinearColor AT66MiasmaManager::SampleLavaColor(const FVector2D& BaseUV, const f
 	const float WarpedY = Ny + WarpIntensity * FMath::Sin(WarpT + Nx * 2.0f);
 	const FVector2D FinalUV = FVector2D(WarpedX, WarpedY) * SafeCloseness;
 
-	const FT66LavaCellSample Cells = T66SampleLavaCells(FinalUV, FMath::Max(CellDensity, 1.0f), Phase);
+	const T66LavaShared::FCellSample Cells = T66LavaShared::SampleCells(FinalUV, FMath::Max(CellDensity, 1.0f), Phase);
 	const float Border = FMath::Max(Cells.SecondClosest - Cells.Closest, 0.0f);
-	const float Crack = FMath::Pow(T66LavaSaturate(1.0f - Border * FMath::Max(EdgeContrast, 0.1f)), 2.3f);
+	const float Crack = FMath::Pow(T66LavaShared::Saturate(1.0f - Border * FMath::Max(EdgeContrast, 0.1f)), 2.3f);
 	const float Pulse = 0.5f + 0.5f * FMath::Sin((FinalUV.X * 1.8f + FinalUV.Y * 1.25f) + Phase * 2.2f);
-	const float Ember = T66LavaSaturate(1.0f - T66LavaSmoothStep(0.18f, 0.52f, Cells.Closest + Pulse * 0.06f));
-	const float Heat = T66LavaSaturate(Crack * 1.18f + Ember * 0.22f);
+	const float Ember = T66LavaShared::Saturate(1.0f - T66LavaShared::SmoothStep(0.18f, 0.52f, Cells.Closest + Pulse * 0.06f));
+	const float Heat = T66LavaShared::Saturate(Crack * 1.18f + Ember * 0.22f);
 
-	FLinearColor Color = FMath::Lerp(CoreColor, MidColor, T66LavaSaturate(Heat * 0.72f + Pulse * 0.10f));
-	Color = FMath::Lerp(Color, GlowColor, T66LavaSaturate(FMath::Pow(Crack, 0.72f)));
+	FLinearColor Color = FMath::Lerp(CoreColor, MidColor, T66LavaShared::Saturate(Heat * 0.72f + Pulse * 0.10f));
+	Color = FMath::Lerp(Color, GlowColor, T66LavaShared::Saturate(FMath::Pow(Crack, 0.72f)));
 
-	const float PoolMask = T66LavaSmoothStep(0.20f, 0.48f, Cells.Closest);
+	const float PoolMask = T66LavaShared::SmoothStep(0.20f, 0.48f, Cells.Closest);
 	Color = FMath::Lerp(Color, CoreColor * 0.55f, PoolMask * 0.35f);
 	Color.A = 1.f;
 	return Color.GetClamped(0.f, 1.f);

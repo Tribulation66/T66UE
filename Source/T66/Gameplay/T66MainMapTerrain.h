@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Gameplay/T66MainMapTerrainTypes.h"
+#include "Gameplay/T66ProceduralLandscapeParams.h"
 
 class UWorld;
 enum class ET66Difficulty : uint8;
 struct FActorSpawnParameters;
-struct FT66MapPreset;
 
 namespace T66MainMapTerrain
 {
@@ -23,11 +23,11 @@ namespace T66MainMapTerrain
 
 	struct FSettings
 	{
-		int32 BoardSize = 41;
+		int32 BoardSize = 81;
 		float BoardScale = 10.0f;
 		float CellSize = 2000.0f;
 		float StepHeight = 1000.0f;
-		float HalfExtent = 40000.0f;
+		float HalfExtent = 81000.0f;
 		float BaselineZ = -500.0f;
 		float Hilliness = 0.5f;
 	};
@@ -41,10 +41,19 @@ namespace T66MainMapTerrain
 		int32 Level = 0;
 		ET66MapCellShape Shape = ET66MapCellShape::Flat;
 		ET66MapCellDecoration Decoration = ET66MapCellDecoration::None;
+		ET66MapCellSurfaceFeature SurfaceFeature = ET66MapCellSurfaceFeature::None;
+		FIntPoint SurfaceFeatureOrigin = FIntPoint(INDEX_NONE, INDEX_NONE);
 		ECellRegion Region = ECellRegion::MainBoard;
 		FVector DecorationLocalOffset = FVector::ZeroVector;
 		FRotator DecorationLocalRotation = FRotator::ZeroRotator;
 		FVector DecorationLocalScale = FVector(1.0f, 1.0f, 1.0f);
+	};
+
+	struct FLavaRiver
+	{
+		FIntPoint PuddleCell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FIntPoint Direction = FIntPoint::ZeroValue;
+		int32 LengthCells = 0;
 	};
 
 	struct FBoard
@@ -53,6 +62,7 @@ namespace T66MainMapTerrain
 		int32 OccupiedCount = 0;
 		TArray<FCell> Cells;
 		TArray<FCell> ExtraCells;
+		TArray<FLavaRiver> LavaRivers;
 		FIntPoint StartAnchor = FIntPoint(INDEX_NONE, INDEX_NONE);
 		FIntPoint BossAnchor = FIntPoint(INDEX_NONE, INDEX_NONE);
 		FIntPoint StartOutwardDirection = FIntPoint::ZeroValue;
@@ -106,7 +116,7 @@ namespace T66MainMapTerrain
 		}
 	};
 
-	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed = 0);
+	FT66MapPreset BuildPresetForDifficulty(ET66Difficulty Difficulty, int32 Seed = 0, ET66MainMapLayoutVariant LayoutVariant = ET66MainMapLayoutVariant::Hilly);
 	FSettings MakeSettings(const FT66MapPreset& Preset);
 	FVector GetBoardOrigin(const FT66MapPreset& Preset);
 	FVector GetCellCenter(const FT66MapPreset& Preset, int32 Row, int32 Col, float Z);
@@ -116,6 +126,7 @@ namespace T66MainMapTerrain
 	FVector GetSpawnLocation(const FT66MapPreset& Preset, float Z);
 	FVector GetPreferredSpawnLocation(const FBoard& Board, float HeightOffset);
 	FVector GetPreferredSpawnLocation(const FT66MapPreset& Preset, float HeightOffset);
+	float GetSurfaceFeatureLavaCoverHeight(const FCell& Cell);
 	float GetTraceZ(const FT66MapPreset& Preset);
 	float GetLowestCollisionBottomZ(const FT66MapPreset& Preset);
 	bool Generate(const FT66MapPreset& Preset, FBoard& OutBoard);

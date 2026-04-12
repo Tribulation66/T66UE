@@ -6,6 +6,26 @@
 #include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
 
+UTexture2D* UT66UITexturePoolSubsystem::CacheLoadedTexture(const FSoftObjectPath& Path, UTexture2D* Texture) const
+{
+	if (!Texture)
+	{
+		return nullptr;
+	}
+
+	Texture->bForceMiplevelsToBeResident = true;
+	Texture->NeverStream = true;
+	Texture->Filter = TextureFilter::TF_Trilinear;
+	Texture->LODGroup = TextureGroup::TEXTUREGROUP_UI;
+
+	if (Path.IsValid())
+	{
+		const_cast<UT66UITexturePoolSubsystem*>(this)->LoadedTextures.Add(Path, Texture);
+	}
+
+	return Texture;
+}
+
 void UT66UITexturePoolSubsystem::Deinitialize()
 {
 	// Cancel any in-flight loads (best-effort) and drop waiters so nothing calls back after teardown.
@@ -31,22 +51,16 @@ UTexture2D* UT66UITexturePoolSubsystem::GetLoadedTexture(const TSoftObjectPtr<UT
 		return nullptr;
 	}
 
-	// First: try direct pointer (already loaded).
-	if (UTexture2D* Direct = Soft.Get())
-	{
-		return Direct;
-	}
-
-	// Second: cached path.
 	const FSoftObjectPath Path = Soft.ToSoftObjectPath();
-	if (!Path.IsValid())
-	{
-		return nullptr;
-	}
-
 	if (const TObjectPtr<UTexture2D>* Found = LoadedTextures.Find(Path))
 	{
 		return Found ? Found->Get() : nullptr;
+	}
+
+	// If the soft pointer is already resolved, promote it into the strong cache immediately.
+	if (UTexture2D* Direct = Soft.Get())
+	{
+		return CacheLoadedTexture(Path, Direct);
 	}
 
 	return nullptr;
@@ -191,12 +205,7 @@ void UT66UITexturePoolSubsystem::HandleLoaded(const FSoftObjectPath& Path)
 
 	if (Tex)
 	{
-		Tex->bForceMiplevelsToBeResident = true;
-		Tex->NeverStream = true;
-		Tex->Filter = TextureFilter::TF_Trilinear;
-		Tex->LODGroup = TextureGroup::TEXTUREGROUP_UI;
-
-		LoadedTextures.Add(Path, Tex);
+		Tex = CacheLoadedTexture(Path, Tex);
 	}
 
 	// Fan out to waiters (gated).
@@ -233,4 +242,3 @@ void UT66UITexturePoolSubsystem::HandleLoaded(const FSoftObjectPath& Path)
 		}
 	}
 }
-

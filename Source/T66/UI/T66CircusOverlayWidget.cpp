@@ -225,24 +225,25 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::RebuildWidget()
 	AlchemyInventorySlotTexts.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	AlchemyInventorySlotImages.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
 	AlchemyInventorySlotBrushes.SetNum(UT66RunStateSubsystem::MaxInventorySlots);
+	const float AlchemyCardIconSize = FT66Style::Tokens::NPCCompactShopCardWidth - 10.f;
 	for (int32 Index = 0; Index < UT66RunStateSubsystem::MaxInventorySlots; ++Index)
 	{
 		if (!AlchemyInventorySlotBrushes[Index].IsValid())
 		{
 			AlchemyInventorySlotBrushes[Index] = MakeShared<FSlateBrush>();
-			AlchemyInventorySlotBrushes[Index]->ImageSize = FVector2D(56.f, 56.f);
+			AlchemyInventorySlotBrushes[Index]->ImageSize = FVector2D(48.f, 48.f);
 		}
 	}
 	if (!AlchemyTargetIconBrush.IsValid())
 	{
 		AlchemyTargetIconBrush = MakeShared<FSlateBrush>();
-		AlchemyTargetIconBrush->ImageSize = FVector2D(76.f, 76.f);
 	}
+	AlchemyTargetIconBrush->ImageSize = FVector2D(AlchemyCardIconSize, AlchemyCardIconSize);
 	if (!AlchemySacrificeIconBrush.IsValid())
 	{
 		AlchemySacrificeIconBrush = MakeShared<FSlateBrush>();
-		AlchemySacrificeIconBrush->ImageSize = FVector2D(76.f, 76.f);
 	}
+	AlchemySacrificeIconBrush->ImageSize = FVector2D(AlchemyCardIconSize, AlchemyCardIconSize);
 
 	const FText GamblingTabText = NSLOCTEXT("T66.Casino", "TabGambling", "GAMBLING");
 	const FText VendorTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
@@ -475,82 +476,111 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 	const FText NetWorthFmt = Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
 	const FText GoldFmt = Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
 	const FText OweFmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
+	const float CardWidth = FT66Style::Tokens::NPCCompactShopCardWidth;
+	const float CardHeight = FT66Style::Tokens::NPCCompactShopCardHeight;
+	const float CardPadding = 5.f;
+	const float CardNameBoxHeight = 28.f;
+	const float CardIconSize = CardWidth - CardPadding * 2.f;
+	const int32 TopBarFontSize = 15;
+	const int32 TitleFontSize = 24;
+	const int32 SectionFontSize = 12;
+	const int32 CardHeadingFontSize = 9;
+	const int32 CardBodyFontSize = 7;
+	const int32 SmallFontSize = 11;
+	const int32 ArrowFontSize = 24;
+	const FMargin CompactButtonPadding(10.f, 6.f);
+	const FText SourceCardHeading = NSLOCTEXT("T66.Casino", "FusionItem", "FUSE ITEM");
+	const FText ResultCardHeading = NSLOCTEXT("T66.Casino", "FusionRecipe", "FUSION RESULT");
+	const FText EmptyStateText = NSLOCTEXT("T66.Casino", "AlchemyNothingToUpgrade", "You have nothing to upgrade");
+	const FText UpgradeText = NSLOCTEXT("T66.Casino", "UpgradeButton", "UPGRADE");
 
-	TSharedRef<SUniformGridPanel> InventoryGrid = SNew(SUniformGridPanel)
-		.SlotPadding(FMargin(8.f));
-
-	for (int32 InventoryIndex = 0; InventoryIndex < UT66RunStateSubsystem::MaxInventorySlots; ++InventoryIndex)
+	auto MakeAlchemyCard = [&](const FText& HeadingText,
+		TSharedPtr<STextBlock>& OutTitleText,
+		TSharedPtr<STextBlock>& OutDetailText,
+		TSharedPtr<SImage>& OutIconImage,
+		TSharedPtr<FSlateBrush>& IconBrush,
+		TSharedPtr<SBorder>& OutBorder) -> TSharedRef<SWidget>
 	{
-		TSharedPtr<SCircusAlchemyInventoryTile> TileBorder;
-		TSharedRef<SCircusAlchemyInventoryTile> Tile =
-			SAssignNew(TileBorder, SCircusAlchemyInventoryTile)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FT66Style::Tokens::Panel2)
-			.Padding(0.f)
-			.Cursor(EMouseCursor::GrabHand)
-			.OnBeginDragHandler(FCircusAlchemyOnBeginDrag::CreateLambda([this, InventoryIndex](const FGeometry& Geometry, const FPointerEvent& MouseEvent)
-			{
-				return HandleAlchemyInventoryDragDetected(Geometry, MouseEvent, InventoryIndex);
-			}))
+		return SNew(SBox)
+			.WidthOverride(CardWidth)
+			.HeightOverride(CardHeight)
 			[
-				SNew(SBox)
-				.WidthOverride(84.f)
-				.HeightOverride(84.f)
-				[
-					SNew(SOverlay)
-					+ SOverlay::Slot()
+				FT66Style::MakePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
 					[
-						SAssignNew(AlchemyInventorySlotImages[InventoryIndex], SImage)
-						.Image(AlchemyInventorySlotBrushes[InventoryIndex].Get())
-						.ColorAndOpacity(FLinearColor::White)
+						SNew(STextBlock)
+						.Text(HeadingText)
+						.Font(FT66Style::Tokens::FontBold(SectionFontSize))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
-					+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0.f, 4.f, 6.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 					[
-						SAssignNew(AlchemyInventorySlotCountTexts[InventoryIndex], STextBlock)
+						SNew(SBox)
+						.HeightOverride(CardNameBoxHeight)
+						[
+							SAssignNew(OutTitleText, STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
+							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.AutoWrapText(true)
+							.WrapTextAt(CardWidth - CardPadding * 2.f)
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
+						[
+							FT66Style::MakePanel(
+								SNew(SBox)
+								.WidthOverride(CardIconSize)
+								.HeightOverride(CardIconSize)
+								[
+									SAssignNew(OutIconImage, SImage)
+									.Image(IconBrush.Get())
+									.ColorAndOpacity(FLinearColor::White)
+									.Visibility(EVisibility::Hidden)
+								],
+								FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f))
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
+					[
+						SAssignNew(OutDetailText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-						.ShadowOffset(FVector2D(1.f, 1.f))
-						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
-						.Visibility(EVisibility::Hidden)
-					]
-					+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-					[
-						SAssignNew(AlchemyInventorySlotTexts[InventoryIndex], STextBlock)
-						.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
-						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-				]
+						.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
+						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.AutoWrapText(true)
+						.WrapTextAt(CardWidth - CardPadding * 2.f)
+					],
+					FT66PanelParams(ET66PanelType::Panel).SetPadding(CardPadding),
+					&OutBorder)
 			];
+	};
 
-		AlchemyInventorySlotBorders[InventoryIndex] = StaticCastSharedPtr<SBorder>(TileBorder);
-		InventoryGrid->AddSlot(InventoryIndex % 10, InventoryIndex / 10)
-		[
-			Tile
-		];
-	}
-
-	const FText TargetText = NSLOCTEXT("T66.Casino", "FusionItem", "FUSE ITEM");
-	const FText SacrificeText = NSLOCTEXT("T66.Casino", "FusionRecipe", "FUSION RESULT");
-	const FText DragHereText = NSLOCTEXT("T66.Casino", "DragHere", "Drag an item here");
-	const FText RecipeHintText = NSLOCTEXT("T66.Casino", "AlchemyRecipeHint", "Select one Black, Red, or Yellow item. Alchemy consumes 3 matching copies and returns 1 higher-tier copy with about 10% more total stats.");
-	const FText UpgradeText = NSLOCTEXT("T66.Casino", "Transmute", "FUSE");
-	const FText ClearText = NSLOCTEXT("T66.Common", "Clear", "CLEAR");
-	TSharedPtr<SCircusAlchemyDropBorder> TargetDropBorder;
-	TSharedPtr<SCircusAlchemyDropBorder> SacrificeDropBorder;
+	TSharedRef<SWidget> UpgradeButtonWidget = FT66Style::MakeButton(
+		FT66ButtonParams(
+			UpgradeText,
+			FOnClicked::CreateUObject(this, &UT66CircusOverlayWidget::OnAlchemyTransmuteClicked),
+			ET66ButtonType::Success)
+		.SetMinWidth(CardWidth)
+		.SetPadding(CompactButtonPadding)
+		.SetFontSize(SectionFontSize)
+	);
+	AlchemyUpgradeButton = UpgradeButtonWidget;
 
 	TSharedRef<SWidget> RootWidget =
 		FT66Style::MakePanel(
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Casino", "AlchemyTitle", "ALCHEMY"))
-				.Font(FT66Style::Tokens::FontBold(34))
+				.Font(FT66Style::Tokens::FontBold(TitleFontSize))
 				.ColorAndOpacity(FT66Style::Tokens::Text)
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
 				FT66Style::MakePanel(
 					SNew(SHorizontalBox)
@@ -558,195 +588,98 @@ TSharedRef<SWidget> UT66CircusOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 					[
 						SAssignNew(AlchemyNetWorthText, STextBlock)
 						.Text(FText::Format(NetWorthFmt, FText::AsNumber(RunState ? RunState->GetNetWorth() : 0)))
-						.Font(FT66Style::Tokens::FontBold(18))
+						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 					[
 						SAssignNew(AlchemyGoldText, STextBlock)
 						.Text(FText::Format(GoldFmt, FText::AsNumber(RunState ? RunState->GetCurrentGold() : 0)))
-						.Font(FT66Style::Tokens::FontBold(18))
+						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 					[
 						SAssignNew(AlchemyDebtText, STextBlock)
 						.Text(FText::Format(OweFmt, FText::AsNumber(RunState ? RunState->GetCurrentDebt() : 0)))
-						.Font(FT66Style::Tokens::FontBold(18))
+						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						SAssignNew(AlchemyAngerText, STextBlock)
 						.Text(FText::Format(NSLOCTEXT("T66.Casino", "AngerFormat", "ANGER: {0}%"), FText::AsNumber(RunState ? FMath::RoundToInt(RunState->GetCasinoAnger01() * 100.f) : 0)))
-						.Font(FT66Style::Tokens::FontBold(18))
+						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
 						.ColorAndOpacity(FLinearColor(0.95f, 0.65f, 0.20f, 1.f))
 					],
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f))
+					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(10.f))
 				)
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 16.f, 0.f)
+				SAssignNew(AlchemyCardsRowContainer, SBox)
 				[
-					FT66Style::MakePanel(
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						MakeAlchemyCard(
+							SourceCardHeading,
+							AlchemyTargetText,
+							AlchemyTargetDetailText,
+							AlchemyTargetIconImage,
+							AlchemyTargetIconBrush,
+							AlchemyTargetBorder)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(16.f, 0.f)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("T66.Casino", "AlchemyArrow", "=>"))
+						.Font(FT66Style::Tokens::FontBold(ArrowFontSize))
+						.ColorAndOpacity(FT66Style::Tokens::Text)
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
 						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-						[
-							SNew(STextBlock)
-							.Text(TargetText)
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
-							SAssignNew(TargetDropBorder, SCircusAlchemyDropBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FT66Style::Tokens::Panel2)
-							.Padding(FMargin(12.f))
-							.OnDropHandler(FOnDrop::CreateUObject(this, &UT66CircusOverlayWidget::HandleAlchemyDropTarget, true))
+							MakeAlchemyCard(
+								ResultCardHeading,
+								AlchemySacrificeText,
+								AlchemySacrificeDetailText,
+								AlchemySacrificeIconImage,
+								AlchemySacrificeIconBrush,
+								AlchemySacrificeBorder)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+						[
+							SNew(SBox)
+							.WidthOverride(CardWidth)
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f).VAlign(VAlign_Center)
-								[
-									SNew(SBox)
-									.WidthOverride(76.f)
-									.HeightOverride(76.f)
-									[
-										SAssignNew(AlchemyTargetIconImage, SImage)
-										.Image(AlchemyTargetIconBrush.Get())
-										.ColorAndOpacity(FLinearColor::White)
-									]
-								]
-								+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-								[
-									SAssignNew(AlchemyTargetText, STextBlock)
-									.Text(DragHereText)
-									.Font(FT66Style::Tokens::FontBold(18))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-									.AutoWrapText(true)
-								]
+								UpgradeButtonWidget
 							]
 						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-						[
-							FT66Style::MakeButton(
-								FT66ButtonParams(
-									ClearText,
-									FOnClicked::CreateUObject(this, &UT66CircusOverlayWidget::OnClearAlchemyTargetClicked),
-									ET66ButtonType::Neutral)
-								.SetPadding(FMargin(12.f, 8.f))
-							)
-						],
-						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f))
-					)
-				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 32.f, 16.f, 0.f)
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.Casino", "AlchemyArrow", "=>"))
-					.Font(FT66Style::Tokens::FontBold(30))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
-				]
-				+ SHorizontalBox::Slot().FillWidth(1.f)
-				[
-					FT66Style::MakePanel(
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
-						[
-							SNew(STextBlock)
-							.Text(SacrificeText)
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
-						]
-						+ SVerticalBox::Slot().AutoHeight()
-						[
-							SAssignNew(SacrificeDropBorder, SCircusAlchemyDropBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FT66Style::Tokens::Panel2)
-							.Padding(FMargin(12.f))
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 12.f, 0.f).VAlign(VAlign_Center)
-								[
-									SNew(SBox)
-									.WidthOverride(76.f)
-									.HeightOverride(76.f)
-									[
-										SAssignNew(AlchemySacrificeIconImage, SImage)
-										.Image(AlchemySacrificeIconBrush.Get())
-										.ColorAndOpacity(FLinearColor::White)
-									]
-								]
-								+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-								[
-									SAssignNew(AlchemySacrificeText, STextBlock)
-									.Text(RecipeHintText)
-									.Font(FT66Style::Tokens::FontBold(16))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
-									.AutoWrapText(true)
-								]
-							]
-						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-						[
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("T66.Casino", "AlchemyFusionRule", "3 matching copies => 1 next-tier item"))
-							.Font(FT66Style::Tokens::FontBold(14))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
-						],
-						FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f))
-					)
+					]
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 			[
-				SAssignNew(AlchemyResultText, STextBlock)
-				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(18))
-				.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.92f, 1.f))
+				SAssignNew(AlchemyEmptyStateText, STextBlock)
+				.Text(EmptyStateText)
+				.Font(FT66Style::Tokens::FontBold(SectionFontSize))
+				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Visibility(EVisibility::Collapsed)
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
-			[
-				FT66Style::MakeButton(
-					FT66ButtonParams(
-						UpgradeText,
-						FOnClicked::CreateUObject(this, &UT66CircusOverlayWidget::OnAlchemyTransmuteClicked),
-						ET66ButtonType::Primary)
-					.SetPadding(FMargin(18.f, 12.f))
-				)
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 16.f)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 			[
 				SAssignNew(AlchemyStatusText, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(16))
+				.Font(FT66Style::Tokens::FontBold(SmallFontSize))
 				.ColorAndOpacity(FLinearColor::White)
-			]
-			+ SVerticalBox::Slot().FillHeight(1.f)
-			[
-				FT66Style::MakePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.Casino", "InventoryTitle", "INVENTORY"))
-						.Font(FT66Style::Tokens::FontBold(20))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						InventoryGrid
-					],
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FMargin(14.f))
-				)
+				.Justification(ETextJustify::Center)
 			],
-			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(28.f))
+			FT66PanelParams(ET66PanelType::Panel).SetPadding(FMargin(20.f))
 		);
 
-	AlchemyTargetBorder = StaticCastSharedPtr<SBorder>(TargetDropBorder);
-	AlchemySacrificeBorder = StaticCastSharedPtr<SBorder>(SacrificeDropBorder);
 	return RootWidget;
 }
 
@@ -835,84 +768,23 @@ void UT66CircusOverlayWidget::RefreshAlchemyTopBar()
 void UT66CircusOverlayWidget::RefreshAlchemyInventory()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
-	UWorld* World = GetWorld();
-	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
-	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
-	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	if (!RunState)
 	{
+		AlchemyTargetInventoryIndex = INDEX_NONE;
 		return;
 	}
 
-	const TArray<FName> Inventory = RunState->GetInventory();
 	const TArray<FT66InventorySlot>& InventorySlots = RunState->GetInventorySlots();
-	TMap<FString, int32> StackCounts;
-	for (const FT66InventorySlot& InventorySlotData : InventorySlots)
+	AlchemyTargetInventoryIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < InventorySlots.Num(); ++Index)
 	{
-		if (InventorySlotData.IsValid())
+		if (RunState->CanAlchemyUpgradeInventoryItemAt(Index))
 		{
-			StackCounts.FindOrAdd(MakeCircusAlchemyStackKey(InventorySlotData))++;
+			AlchemyTargetInventoryIndex = Index;
+			break;
 		}
 	}
-
-	for (int32 Index = 0; Index < AlchemyInventorySlotTexts.Num(); ++Index)
-	{
-		const bool bHasItem = Inventory.IsValidIndex(Index) && !Inventory[Index].IsNone() && InventorySlots.IsValidIndex(Index);
-		FLinearColor Fill = FT66Style::Tokens::Panel2;
-		FItemData ItemData;
-		const bool bHasData = bHasItem && GI && GI->GetItemData(Inventory[Index], ItemData);
-
-		if (AlchemyInventorySlotBorders.IsValidIndex(Index) && AlchemyInventorySlotBorders[Index].IsValid())
-		{
-			const bool bSelected = Index == AlchemyTargetInventoryIndex;
-			AlchemyInventorySlotBorders[Index]->SetBorderBackgroundColor(bSelected ? (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f) : Fill);
-		}
-		const int32 StackCount = (bHasItem && InventorySlots.IsValidIndex(Index) && InventorySlots[Index].IsValid())
-			? StackCounts.FindRef(MakeCircusAlchemyStackKey(InventorySlots[Index]))
-			: 0;
-		if (AlchemyInventorySlotCountTexts.IsValidIndex(Index) && AlchemyInventorySlotCountTexts[Index].IsValid())
-		{
-			AlchemyInventorySlotCountTexts[Index]->SetText(
-				StackCount > 1
-					? FText::Format(NSLOCTEXT("T66.Inventory", "StackCountFormat", "{0}x"), FText::AsNumber(StackCount))
-					: FText::GetEmpty());
-			AlchemyInventorySlotCountTexts[Index]->SetVisibility(StackCount > 1 ? EVisibility::Visible : EVisibility::Hidden);
-		}
-		if (AlchemyInventorySlotTexts.IsValidIndex(Index) && AlchemyInventorySlotTexts[Index].IsValid())
-		{
-			AlchemyInventorySlotTexts[Index]->SetText(bHasItem ? FText::GetEmpty() : NSLOCTEXT("T66.Common", "Dash", "-"));
-		}
-		if (AlchemyInventorySlotImages.IsValidIndex(Index) && AlchemyInventorySlotImages[Index].IsValid())
-		{
-			const ET66ItemRarity SlotRarity = bHasItem ? InventorySlots[Index].Rarity : ET66ItemRarity::Black;
-			const TSoftObjectPtr<UTexture2D> IconSoft = bHasData ? ItemData.GetIconForRarity(SlotRarity) : TSoftObjectPtr<UTexture2D>();
-			if (!IconSoft.IsNull() && TexPool && AlchemyInventorySlotBrushes.IsValidIndex(Index) && AlchemyInventorySlotBrushes[Index].IsValid())
-			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, IconSoft, this, AlchemyInventorySlotBrushes[Index], FName(TEXT("CasinoAlchemyInv"), Index + 1), true);
-			}
-			else if (AlchemyInventorySlotBrushes.IsValidIndex(Index) && AlchemyInventorySlotBrushes[Index].IsValid())
-			{
-				AlchemyInventorySlotBrushes[Index]->SetResourceObject(nullptr);
-			}
-			AlchemyInventorySlotImages[Index]->SetVisibility(bHasData && !ItemData.GetIconForRarity(SlotRarity).IsNull() ? EVisibility::Visible : EVisibility::Hidden);
-		}
-	}
-
-	if (AlchemyTargetInventoryIndex >= InventorySlots.Num())
-	{
-		AlchemyTargetInventoryIndex = INDEX_NONE;
-	}
-	if (AlchemyTargetInventoryIndex != INDEX_NONE)
-	{
-		const FT66InventorySlot& TargetSlot = InventorySlots[AlchemyTargetInventoryIndex];
-		if (!TargetSlot.IsValid()
-			|| TargetSlot.Rarity == ET66ItemRarity::White
-			|| RunState->GetAlchemyMatchingInventoryCount(AlchemyTargetInventoryIndex) <= 0)
-		{
-			AlchemyTargetInventoryIndex = INDEX_NONE;
-		}
-	}
+	AlchemySacrificeInventoryIndex = INDEX_NONE;
 }
 
 void UT66CircusOverlayWidget::RefreshAlchemyDropTargets()
@@ -923,21 +795,25 @@ void UT66CircusOverlayWidget::RefreshAlchemyDropTargets()
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase);
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-	TArray<FName> Inventory;
-	const TArray<FT66InventorySlot>* InventorySlots = nullptr;
-	if (RunState)
-	{
-		Inventory = RunState->GetInventory();
-		InventorySlots = &RunState->GetInventorySlots();
-	}
+	const TArray<FT66InventorySlot>* InventorySlots = RunState ? &RunState->GetInventorySlots() : nullptr;
+	const bool bHasTarget = RunState && InventorySlots && InventorySlots->IsValidIndex(AlchemyTargetInventoryIndex);
+	const FT66InventorySlot* SelectedTargetSlot = bHasTarget ? &(*InventorySlots)[AlchemyTargetInventoryIndex] : nullptr;
+	FT66InventorySlot PreviewSlot;
+	int32 MatchingCount = 0;
+	const bool bHasPreview = RunState && SelectedTargetSlot && RunState->GetAlchemyUpgradePreviewAt(AlchemyTargetInventoryIndex, PreviewSlot, MatchingCount);
+	const bool bBossActive = RunState && RunState->GetBossActive();
+	const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
 
-	auto RefreshDropSlot = [&](int32 InventoryIndex, const TSharedPtr<SBorder>& Border, const TSharedPtr<SImage>& Image, const TSharedPtr<STextBlock>& Text, const TSharedPtr<FSlateBrush>& Brush)
+	auto ClearCard = [](const TSharedPtr<SBorder>& Border,
+		const TSharedPtr<SImage>& Image,
+		const TSharedPtr<STextBlock>& TitleText,
+		const TSharedPtr<STextBlock>& DetailText,
+		const TSharedPtr<FSlateBrush>& Brush,
+		const FLinearColor& Fill)
 	{
-		const bool bHasItem = Inventory.IsValidIndex(InventoryIndex) && !Inventory[InventoryIndex].IsNone() && InventorySlots && InventorySlots->IsValidIndex(InventoryIndex);
-		FLinearColor Fill = FT66Style::Tokens::Panel2;
-		if (Text.IsValid())
+		if (Border.IsValid())
 		{
-			Text->SetText(NSLOCTEXT("T66.Casino", "DragHere", "Drag an item here"));
+			Border->SetBorderBackgroundColor(Fill);
 		}
 		if (Brush.IsValid())
 		{
@@ -947,136 +823,112 @@ void UT66CircusOverlayWidget::RefreshAlchemyDropTargets()
 		{
 			Image->SetVisibility(EVisibility::Hidden);
 		}
-		if (!bHasItem)
+		if (TitleText.IsValid())
 		{
-			if (Border.IsValid())
-			{
-				Border->SetBorderBackgroundColor(Fill);
-			}
-			return;
+			TitleText->SetText(FText::GetEmpty());
 		}
-
-		FItemData ItemData;
-		if (!GI || !GI->GetItemData(Inventory[InventoryIndex], ItemData))
+		if (DetailText.IsValid())
 		{
-			return;
-		}
-
-		const FT66InventorySlot& Slot = (*InventorySlots)[InventoryIndex];
-		if (Border.IsValid())
-		{
-			Border->SetBorderBackgroundColor(Fill);
-		}
-		if (Text.IsValid())
-		{
-			const FText ItemName = Loc ? Loc->GetText_ItemDisplayName(Slot.ItemTemplateID) : FText::FromName(Slot.ItemTemplateID);
-			const FText RarityName = Loc ? Loc->GetText_ItemRarityName(Slot.Rarity) : FText::GetEmpty();
-			Text->SetText(FText::Format(NSLOCTEXT("T66.Casino", "AlchemySlotLabel", "{0} ({1})"), ItemName, RarityName));
-		}
-		if (Image.IsValid())
-		{
-			const TSoftObjectPtr<UTexture2D> IconSoft = ItemData.GetIconForRarity(Slot.Rarity);
-			if (!IconSoft.IsNull() && TexPool && Brush.IsValid())
-			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, IconSoft, this, Brush, FName(TEXT("CasinoAlchemyTarget")), true);
-				Image->SetVisibility(EVisibility::Visible);
-			}
-			else
-			{
-				Image->SetVisibility(EVisibility::Hidden);
-			}
+			DetailText->SetText(FText::GetEmpty());
 		}
 	};
 
-	RefreshDropSlot(AlchemyTargetInventoryIndex, AlchemyTargetBorder, AlchemyTargetIconImage, AlchemyTargetText, AlchemyTargetIconBrush);
+	ClearCard(AlchemyTargetBorder, AlchemyTargetIconImage, AlchemyTargetText, AlchemyTargetDetailText, AlchemyTargetIconBrush, FT66Style::Tokens::Panel2);
+	ClearCard(AlchemySacrificeBorder, AlchemySacrificeIconImage, AlchemySacrificeText, AlchemySacrificeDetailText, AlchemySacrificeIconBrush, FT66Style::Tokens::Panel2);
 
-	FT66InventorySlot PreviewSlot;
-	int32 MatchingCount = 0;
-	const bool bHasPreview = RunState && RunState->GetAlchemyUpgradePreviewAt(AlchemyTargetInventoryIndex, PreviewSlot, MatchingCount);
-	const bool bHasTarget = RunState && InventorySlots && InventorySlots->IsValidIndex(AlchemyTargetInventoryIndex);
-	const FT66InventorySlot* SelectedTargetSlot = bHasTarget ? &(*InventorySlots)[AlchemyTargetInventoryIndex] : nullptr;
+	if (AlchemyCardsRowContainer.IsValid())
+	{
+		AlchemyCardsRowContainer->SetVisibility(bHasPreview ? EVisibility::Visible : EVisibility::Collapsed);
+	}
+	if (AlchemyEmptyStateText.IsValid())
+	{
+		AlchemyEmptyStateText->SetVisibility(bHasPreview ? EVisibility::Collapsed : EVisibility::Visible);
+	}
+	if (AlchemyUpgradeButton.IsValid())
+	{
+		AlchemyUpgradeButton->SetVisibility(bHasPreview ? EVisibility::Visible : EVisibility::Collapsed);
+		AlchemyUpgradeButton->SetEnabled(bHasPreview && !bBossActive);
+	}
 
+	if (!bHasPreview || !SelectedTargetSlot || !GI)
+	{
+		return;
+	}
+
+	FItemData TargetItemData;
+	if (!GI->GetItemData(SelectedTargetSlot->ItemTemplateID, TargetItemData))
+	{
+		return;
+	}
+
+	if (AlchemyTargetBorder.IsValid())
+	{
+		AlchemyTargetBorder->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+	}
 	if (AlchemySacrificeBorder.IsValid())
 	{
-		AlchemySacrificeBorder->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+		AlchemySacrificeBorder->SetBorderBackgroundColor(FT66Style::Tokens::Panel2 * 0.55f + FT66Style::Tokens::Success * 0.45f);
 	}
-	if (AlchemySacrificeIconBrush.IsValid())
+
+	const FText TargetName = Loc
+		? Loc->GetText_ItemDisplayNameForRarity(SelectedTargetSlot->ItemTemplateID, SelectedTargetSlot->Rarity)
+		: FText::FromName(SelectedTargetSlot->ItemTemplateID);
+	const FText PreviewName = Loc
+		? Loc->GetText_ItemDisplayNameForRarity(PreviewSlot.ItemTemplateID, PreviewSlot.Rarity)
+		: FText::FromName(PreviewSlot.ItemTemplateID);
+	const FText TargetDesc = T66ItemCardTextUtils::BuildItemCardDescription(
+		Loc,
+		TargetItemData,
+		SelectedTargetSlot->Rarity,
+		SelectedTargetSlot->Line1RolledValue,
+		ScaleMult,
+		SelectedTargetSlot->GetLine2Multiplier());
+	const FText PreviewDesc = T66ItemCardTextUtils::BuildItemCardDescription(
+		Loc,
+		TargetItemData,
+		PreviewSlot.Rarity,
+		PreviewSlot.Line1RolledValue,
+		ScaleMult,
+		PreviewSlot.GetLine2Multiplier());
+
+	if (AlchemyTargetText.IsValid())
 	{
-		AlchemySacrificeIconBrush->SetResourceObject(nullptr);
+		AlchemyTargetText->SetText(TargetName);
 	}
-	if (AlchemySacrificeIconImage.IsValid())
+	if (AlchemyTargetDetailText.IsValid())
 	{
-		AlchemySacrificeIconImage->SetVisibility(EVisibility::Hidden);
+		AlchemyTargetDetailText->SetText(FText::Format(
+			NSLOCTEXT("T66.Casino", "AlchemySourceCardDetail", "{0}/{1} matching copies\n{2}"),
+			FText::AsNumber(MatchingCount),
+			FText::AsNumber(UT66RunStateSubsystem::AlchemyCopiesRequired),
+			TargetDesc));
 	}
 	if (AlchemySacrificeText.IsValid())
 	{
-		AlchemySacrificeText->SetText(NSLOCTEXT("T66.Casino", "AlchemyRecipeHint", "Select one Black, Red, or Yellow item. Alchemy consumes 3 matching copies and returns 1 higher-tier copy with about 10% more total stats."));
+		AlchemySacrificeText->SetText(PreviewName);
+	}
+	if (AlchemySacrificeDetailText.IsValid())
+	{
+		AlchemySacrificeDetailText->SetText(PreviewDesc);
 	}
 
-	if (SelectedTargetSlot && SelectedTargetSlot->IsValid())
+	const TSoftObjectPtr<UTexture2D> TargetIconSoft = TargetItemData.GetIconForRarity(SelectedTargetSlot->Rarity);
+	if (!TargetIconSoft.IsNull() && TexPool && AlchemyTargetIconBrush.IsValid())
 	{
-		FItemData ItemData;
-		if (GI && GI->GetItemData(SelectedTargetSlot->ItemTemplateID, ItemData))
+		T66SlateTexture::BindSharedBrushAsync(TexPool, TargetIconSoft, this, AlchemyTargetIconBrush, FName(TEXT("CircusAlchemyTargetCard")), true);
+		if (AlchemyTargetIconImage.IsValid())
 		{
-			const ET66ItemRarity NextRarity = UT66RunStateSubsystem::GetNextItemRarity(SelectedTargetSlot->Rarity);
-			const FText ItemName = Loc ? Loc->GetText_ItemDisplayName(SelectedTargetSlot->ItemTemplateID) : FText::FromName(SelectedTargetSlot->ItemTemplateID);
-			const FText FromRarity = Loc ? Loc->GetText_ItemRarityName(SelectedTargetSlot->Rarity) : FText::GetEmpty();
-			const FText ToRarity = Loc ? Loc->GetText_ItemRarityName(NextRarity) : FText::GetEmpty();
-
-			if (AlchemySacrificeText.IsValid())
-			{
-				if (bHasPreview)
-				{
-					AlchemySacrificeText->SetText(FText::Format(
-						NSLOCTEXT("T66.Casino", "AlchemyReadyText", "Ready: {0}/{1} matching copies\n{2}: {3} -> {4}"),
-						FText::AsNumber(MatchingCount),
-						FText::AsNumber(UT66RunStateSubsystem::AlchemyCopiesRequired),
-						ItemName,
-						FromRarity,
-						ToRarity));
-				}
-				else
-				{
-					AlchemySacrificeText->SetText(FText::Format(
-						NSLOCTEXT("T66.Casino", "AlchemyNeedMoreText", "{0}/{1} matching copies\nNeed {2} more {3} {4} item(s)."),
-						FText::AsNumber(MatchingCount),
-						FText::AsNumber(UT66RunStateSubsystem::AlchemyCopiesRequired),
-						FText::AsNumber(FMath::Max(0, UT66RunStateSubsystem::AlchemyCopiesRequired - MatchingCount)),
-						FromRarity,
-						ItemName));
-				}
-			}
-
-			if (AlchemySacrificeIconImage.IsValid())
-			{
-				const TSoftObjectPtr<UTexture2D> PreviewIconSoft = ItemData.GetIconForRarity(NextRarity);
-				if (!PreviewIconSoft.IsNull() && TexPool && AlchemySacrificeIconBrush.IsValid())
-				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, PreviewIconSoft, this, AlchemySacrificeIconBrush, FName(TEXT("CasinoAlchemyPreview")), true);
-					AlchemySacrificeIconImage->SetVisibility(EVisibility::Visible);
-				}
-			}
+			AlchemyTargetIconImage->SetVisibility(EVisibility::Visible);
 		}
 	}
 
-	if (AlchemyResultText.IsValid())
+	const TSoftObjectPtr<UTexture2D> PreviewIconSoft = TargetItemData.GetIconForRarity(PreviewSlot.Rarity);
+	if (!PreviewIconSoft.IsNull() && TexPool && AlchemySacrificeIconBrush.IsValid())
 	{
-		AlchemyResultText->SetText(FText::GetEmpty());
-		if (bHasPreview && SelectedTargetSlot && GI)
+		T66SlateTexture::BindSharedBrushAsync(TexPool, PreviewIconSoft, this, AlchemySacrificeIconBrush, FName(TEXT("CircusAlchemyPreviewCard")), true);
+		if (AlchemySacrificeIconImage.IsValid())
 		{
-			FItemData ItemData;
-			if (GI->GetItemData(SelectedTargetSlot->ItemTemplateID, ItemData))
-			{
-				const FText ItemName = Loc ? Loc->GetText_ItemDisplayName(PreviewSlot.ItemTemplateID) : FText::FromName(PreviewSlot.ItemTemplateID);
-				const FText RarityName = Loc ? Loc->GetText_ItemRarityName(PreviewSlot.Rarity) : FText::GetEmpty();
-				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-				const FText Desc = T66ItemCardTextUtils::BuildItemCardDescription(Loc, ItemData, PreviewSlot.Rarity, PreviewSlot.Line1RolledValue, ScaleMult, PreviewSlot.GetLine2Multiplier());
-				AlchemyResultText->SetText(FText::Format(
-					NSLOCTEXT("T66.Casino", "AlchemyPreviewFormat", "{0} ({1})\n{2}"),
-					ItemName,
-					RarityName,
-					Desc));
-			}
+			AlchemySacrificeIconImage->SetVisibility(EVisibility::Visible);
 		}
 	}
 }
@@ -1188,7 +1040,7 @@ FReply UT66CircusOverlayWidget::OnAlchemyTransmuteClicked()
 	}
 	if (AlchemyTargetInventoryIndex == INDEX_NONE)
 	{
-		SetAlchemyStatus(NSLOCTEXT("T66.Casino", "AlchemyNeedTarget", "Drag one item into the alchemy slot to choose what to fuse."), FLinearColor(1.f, 0.35f, 0.35f, 1.f));
+		SetAlchemyStatus(NSLOCTEXT("T66.Casino", "AlchemyNeedTarget", "You have nothing to upgrade."), FLinearColor(1.f, 0.35f, 0.35f, 1.f));
 		return FReply::Handled();
 	}
 
@@ -1210,7 +1062,7 @@ FReply UT66CircusOverlayWidget::OnAlchemyTransmuteClicked()
 	const FText ItemName = Loc ? Loc->GetText_ItemDisplayName(UpgradedSlot.ItemTemplateID) : FText::FromName(UpgradedSlot.ItemTemplateID);
 	const FText RarityName = Loc ? Loc->GetText_ItemRarityName(UpgradedSlot.Rarity) : FText::GetEmpty();
 	SetAlchemyStatus(
-		FText::Format(NSLOCTEXT("T66.Casino", "AlchemySuccess", "{0} fused into {1}."), ItemName, RarityName),
+		FText::Format(NSLOCTEXT("T66.Casino", "AlchemySuccess", "{0} upgraded to {1}."), ItemName, RarityName),
 		FLinearColor(0.30f, 1.f, 0.40f, 1.f));
 	RefreshAlchemy();
 

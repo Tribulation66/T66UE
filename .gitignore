@@ -22,6 +22,15 @@ Thumbs.db
 
 # Build artifacts
 Build/
+ArchivedBuilds/
+Exports/
+output/
+tmp/
+Tools/Logs/
+Tools/Temp/
+SourceAssets/Fab/VaultCache/
+Tools/ChatGPTBridge/server_stdout.log
+Tools/ChatGPTBridge/server_stderr.log
 
 # Python cache (scripts)
 **/__pycache__/
