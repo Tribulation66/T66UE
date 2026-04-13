@@ -8,6 +8,8 @@ Hard rule: Assume multiple agents are always working in parallel. Never overwrit
 
 Hard rule: Do not duplicate reusable helper functions across `.cpp` files. If logic is shared, move it into a named shared utility/header instead of copying anonymous-namespace helpers; Unreal unity builds can merge translation units and turn duplicated file-local helpers into compile errors.
 
+Hard rule: Mini Chadpocalypse is a file-isolated subsystem. Mini gameplay, UI, save, data, asset-pipeline, and VFX work must live in dedicated `T66Mini*` files/folders/modules, and the base T66 runtime may only contain the narrow launch/registration touchpoints needed to enter the mini-game.
+
 This file is the canonical project policy for engineering, content, and UI work in T66. When a rule here conflicts with an older note, this file wins.
 
 ## 1. Scope
