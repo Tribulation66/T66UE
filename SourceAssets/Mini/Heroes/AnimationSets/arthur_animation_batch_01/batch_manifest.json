@@ -1,0 +1,38 @@
+{
+  "id": "arthur_animation_batch_01",
+  "title": "Arthur Idle Walk Sword",
+  "category": "heroes",
+  "created_at": "2026-04-13T23:29:51.173770+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\AnimationSets\\arthur_animation_batch_01",
+  "prompt": "Generate exactly one square 2x2 sprite sheet for Arthur's top-down survivor gameplay kit. Output exactly one image only. Put four separate isolated subjects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all four subjects for clean cropping. No scene, no floor, no text, no UI, no overlap between subjects. Style target: premium 2D action roguelike readability in the same mini-chad style as the attached Arthur references, with crisp thick outline, simple high-contrast shading, strong silhouette, and game-ready clarity. Keep Arthur's face, armor, palette, and identity consistent across all Arthur frames. Layout: top-left Arthur_Idle, Arthur standing ready with subtle life and balance. Top-right Arthur_WalkA, same Arthur taking a clear first walking step with one leg forward. Bottom-left Arthur_WalkB, same Arthur taking the opposite walking step so the legs alternate cleanly. Bottom-right Arthur_SwordProjectile, Arthur's thrown sword projectile isolated as a clean readable gameplay sprite. All four subjects must be centered, fully visible, consistent scale, and easy to crop individually.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png",
+    "C:\\UE\\T66\\SourceAssets\\Import\\VFX\\ProjectileMeshPack\\previews\\Arthur_Sword.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-232949-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+        "size_bytes": 1398521
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png",
+      "C:\\UE\\T66\\SourceAssets\\Import\\VFX\\ProjectileMeshPack\\previews\\Arthur_Sword.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 sprite sheet for Arthur's top-down survivor gameplay kit. Output exactly one image only. Put four separate isolated subjects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all four subjects for clean cropping. No scene, no floor, no text, no UI, no overlap between subjects. Style target: premium 2D action roguelike readability in the same mini-chad style as the attached Arthur references, with crisp thick outline, simple high-contrast shading, strong silhouette, and game-ready clarity. Keep Arthur's face, armor, palette, and identity consistent across all Arthur frames. Layout: top-left Arthur_Idle, Arthur standing ready with subtle life and balance. Top-right Arthur_WalkA, same Arthur taking a clear first walking step with one leg forward. Bottom-left Arthur_WalkB, same Arthur taking the opposite walking step so the legs alternate cleanly. Bottom-right Arthur_SwordProjectile, Arthur's thrown sword projectile isolated as a clean readable gameplay sprite. All four subjects must be centered, fully visible, consistent scale, and easy to crop individually."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-232949-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\AnimationSets\\arthur_animation_batch_01\\arthur_animation_batch_01-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1398521
+    }
+  ]
+}

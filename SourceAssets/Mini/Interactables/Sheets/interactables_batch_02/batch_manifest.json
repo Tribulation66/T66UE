@@ -1,0 +1,30 @@
+{
+  "id": "interactables_batch_02",
+  "title": "Fountain and Loot Bags",
+  "category": "interactables",
+  "created_at": "2026-04-13T09:30:57.040586+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Interactables\\Sheets\\interactables_batch_02",
+  "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor game's world pickups. Output exactly one image only. Put four separate isolated gameplay objects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all objects for clean cropping. No scene, no floor, no text, no UI. Style target: polished Brotato-like 2D object readability with bold outlines, simple shading, clear silhouettes, and clean collectible readability. Layout: top-left Fountain, a healing fountain interactable with magical water glow. Top-right Black loot bag, dark rarity money bag dropped by enemies. Bottom-left Red loot bag, aggressive mid-rarity money bag. Bottom-right Yellow loot bag, premium high-rarity money bag. All four should look game-ready and consistent with the mini Chadpocalypse art style.",
+  "reference_images": [],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-093056-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+        "size_bytes": 1347830
+      }
+    ],
+    "image_paths": [],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor game's world pickups. Output exactly one image only. Put four separate isolated gameplay objects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all objects for clean cropping. No scene, no floor, no text, no UI. Style target: polished Brotato-like 2D object readability with bold outlines, simple shading, clear silhouettes, and clean collectible readability. Layout: top-left Fountain, a healing fountain interactable with magical water glow. Top-right Black loot bag, dark rarity money bag dropped by enemies. Bottom-left Red loot bag, aggressive mid-rarity money bag. Bottom-right Yellow loot bag, premium high-rarity money bag. All four should look game-ready and consistent with the mini Chadpocalypse art style."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-093056-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Interactables\\Sheets\\interactables_batch_02\\interactables_batch_02-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1347830
+    }
+  ]
+}

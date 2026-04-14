@@ -1277,7 +1277,7 @@ void ST66LeaderboardPanel::RefreshLeaderboard()
 		// Subscribe to data-ready callback (safe: subsystem outlives widget during normal gameplay)
 		if (!bBoundToBackendDelegate && Backend)
 		{
-			Backend->OnLeaderboardDataReady.AddRaw(this, &ST66LeaderboardPanel::OnBackendLeaderboardReady);
+			Backend->OnLeaderboardDataReady.AddSP(SharedThis(this), &ST66LeaderboardPanel::OnBackendLeaderboardReady);
 			bBoundToBackendDelegate = true;
 		}
 
@@ -1480,7 +1480,7 @@ FReply ST66LeaderboardPanel::HandleEntryClicked(const FLeaderboardEntry& Entry)
 			PendingRunSummaryEntryId = Entry.EntryId;
 			if (!bBoundToRunSummaryDelegate)
 			{
-				Backend->OnRunSummaryReady.AddRaw(this, &ST66LeaderboardPanel::OnBackendRunSummaryReady);
+				Backend->OnRunSummaryReady.AddSP(SharedThis(this), &ST66LeaderboardPanel::OnBackendRunSummaryReady);
 				bBoundToRunSummaryDelegate = true;
 			}
 			Backend->FetchRunSummary(Entry.EntryId);

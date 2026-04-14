@@ -1,0 +1,36 @@
+{
+  "id": "arthur_walk_candidate_01",
+  "title": "Arthur Walk Candidate 01",
+  "category": "heroes",
+  "created_at": "2026-04-14T06:11:24.931007+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_01",
+  "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output exactly one image only. All four quadrants must show the same Arthur character, same armor, same face, same scale, same camera angle, and same feet line. Transparent background if possible, otherwise a perfectly flat pure white background with no gradient or texture. No scene, no floor, no props, no text, no UI, no extra objects. Use the attached Arthur references only to preserve identity and palette. Style target: premium 2D survivor-game sprite readability, compact chibi knight, thick outline, clean silhouette, game-ready clarity. Layout: top-left idle-ready frame, top-right first walk step, bottom-left opposite walk step, bottom-right recovery step. Keep the torso stable and let the legs do the motion. The walk should read as confident and grounded, not floaty, not bouncy, not exaggerated.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-061124-generate-exactly-one-square-2x2-walk-cycle-sheet.png",
+        "size_bytes": 593270
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output exactly one image only. All four quadrants must show the same Arthur character, same armor, same face, same scale, same camera angle, and same feet line. Transparent background if possible, otherwise a perfectly flat pure white background with no gradient or texture. No scene, no floor, no props, no text, no UI, no extra objects. Use the attached Arthur references only to preserve identity and palette. Style target: premium 2D survivor-game sprite readability, compact chibi knight, thick outline, clean silhouette, game-ready clarity. Layout: top-left idle-ready frame, top-right first walk step, bottom-left opposite walk step, bottom-right recovery step. Keep the torso stable and let the legs do the motion. The walk should read as confident and grounded, not floaty, not bouncy, not exaggerated."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-061124-generate-exactly-one-square-2x2-walk-cycle-sheet.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_01\\arthur_walk_candidate_01-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 593270
+    }
+  ]
+}

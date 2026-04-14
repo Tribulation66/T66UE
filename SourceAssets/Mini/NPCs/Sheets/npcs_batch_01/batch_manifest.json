@@ -1,0 +1,36 @@
+{
+  "id": "npcs_batch_01",
+  "title": "Vendor Gambler Saint Ouroboros",
+  "category": "npcs",
+  "created_at": "2026-04-13T09:44:50.858682+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\NPCs\\Sheets\\npcs_batch_01",
+  "prompt": "Generate exactly one square 2x2 sprite sheet for special NPCs in the same thick-outline mini-chad style as the attached reference sprites. Output one image only. Transparent background if possible, otherwise flat pure white. No scene, no floor, no text, no UI. Keep all four isolated and easy to crop. Layout: top-left Vendor, shady merchant mini chad in a dark coat. Top-right Gambler, reckless axe-wielding patriot mini chad. Bottom-left Saint, halo monk healer mini chad. Bottom-right Ouroboros, ominous serpentine occult NPC. Full-body, readable, game-ready.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png",
+    "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Merlin.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-094448-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+        "size_bytes": 1548644
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png",
+      "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Merlin.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 sprite sheet for special NPCs in the same thick-outline mini-chad style as the attached reference sprites. Output one image only. Transparent background if possible, otherwise flat pure white. No scene, no floor, no text, no UI. Keep all four isolated and easy to crop. Layout: top-left Vendor, shady merchant mini chad in a dark coat. Top-right Gambler, reckless axe-wielding patriot mini chad. Bottom-left Saint, halo monk healer mini chad. Bottom-right Ouroboros, ominous serpentine occult NPC. Full-body, readable, game-ready."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-094448-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\NPCs\\Sheets\\npcs_batch_01\\npcs_batch_01-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1548644
+    }
+  ]
+}

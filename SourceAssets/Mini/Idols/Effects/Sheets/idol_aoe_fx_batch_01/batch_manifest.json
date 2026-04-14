@@ -1,0 +1,40 @@
+{
+  "id": "idol_aoe_fx_batch_01",
+  "title": "AOE Idol Effects",
+  "category": "idols",
+  "created_at": "2026-04-13T23:36:46.118067+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Idols\\Effects\\Sheets\\idol_aoe_fx_batch_01",
+  "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay effect sprites, not icons. Keep them readable as quick area burst effects with strong shape language. Layout: top-left Idol_Earth, a rocky ground-crack burst. Top-right Idol_Water, a splashing circular water burst. Bottom-left Idol_BlackHole, a compact void implosion effect. Bottom-right Idol_Storm, a violent stormburst with wind and energy. Each subject should be centered, isolated, and ready to crop into a single effect sprite.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Earth_white.png",
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Water_white.png",
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_BlackHole_white.png",
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Storm_white.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-233645-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+        "size_bytes": 1741204
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Earth_white.png",
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Water_white.png",
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_BlackHole_white.png",
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Storm_white.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay effect sprites, not icons. Keep them readable as quick area burst effects with strong shape language. Layout: top-left Idol_Earth, a rocky ground-crack burst. Top-right Idol_Water, a splashing circular water burst. Bottom-left Idol_BlackHole, a compact void implosion effect. Bottom-right Idol_Storm, a violent stormburst with wind and energy. Each subject should be centered, isolated, and ready to crop into a single effect sprite."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-233645-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Idols\\Effects\\Sheets\\idol_aoe_fx_batch_01\\idol_aoe_fx_batch_01-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1741204
+    }
+  ]
+}

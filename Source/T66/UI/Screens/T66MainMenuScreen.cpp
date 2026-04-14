@@ -235,8 +235,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildSlateUI()
 	UT66SessionSubsystem* SessionSubsystem = GI ? GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	UT66SteamHelper* SteamHelper = GI ? GI->GetSubsystem<UT66SteamHelper>() : nullptr;
 
-	const FText NewGameText = Loc ? Loc->GetText_NewGame() : NSLOCTEXT("T66.MainMenu", "NewGame", "NEW GAME");
-	const FText LoadGameText = Loc ? Loc->GetText_LoadGame() : NSLOCTEXT("T66.MainMenu", "LoadGame", "LOAD GAME");
+	const FText NewGameText = NSLOCTEXT("T66.MainMenu", "Start", "START");
+	const FText LoadGameText = NSLOCTEXT("T66.MainMenu", "Continue", "CONTINUE");
 	SetupRuntimeImageBrush(
 		PrimaryCTAFillBrush,
 		PrimaryCTAFillTexture,
@@ -1401,7 +1401,14 @@ void UT66MainMenuScreen::OnScreenDeactivated_Implementation()
 		}
 	}
 
+	ReleaseRetainedSlateState();
 	Super::OnScreenDeactivated_Implementation();
+}
+
+void UT66MainMenuScreen::NativeDestruct()
+{
+	ReleaseRetainedSlateState();
+	Super::NativeDestruct();
 }
 
 void UT66MainMenuScreen::RefreshScreen_Implementation()
@@ -1414,6 +1421,25 @@ void UT66MainMenuScreen::RefreshScreen_Implementation()
 	{
 		LeaderboardPanel->SetUIManager(UIManager);
 	}
+}
+
+void UT66MainMenuScreen::ReleaseRetainedSlateState()
+{
+	LeaderboardPanel.Reset();
+	SkyBackgroundBrush.Reset();
+	SkyBackgroundTexture.Reset();
+	FireMoonBrush.Reset();
+	FireMoonTexture.Reset();
+	PyramidChadBrush.Reset();
+	PyramidChadTexture.Reset();
+	ProfileAvatarBrush.Reset();
+	PrimaryCTAFillBrush.Reset();
+	PrimaryCTAFillTexture.Reset();
+	SettingsIconBrush.Reset();
+	LanguageIconBrush.Reset();
+	FriendPortraitBrushes.Reset();
+	PartyPortraitBrushes.Reset();
+	FriendsListContainer.Reset();
 }
 
 void UT66MainMenuScreen::OnLanguageChanged(ET66Language NewLanguage)

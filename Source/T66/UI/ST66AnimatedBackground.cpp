@@ -15,6 +15,15 @@ namespace
 	}
 }
 
+ST66AnimatedBackground::~ST66AnimatedBackground()
+{
+	if (ActiveTimerHandle.IsValid())
+	{
+		UnRegisterActiveTimer(ActiveTimerHandle.ToSharedRef());
+		ActiveTimerHandle.Reset();
+	}
+}
+
 void ST66AnimatedBackground::Construct(const FArguments& InArgs)
 {
 	RuntimeLayers.Reset();
@@ -57,7 +66,7 @@ void ST66AnimatedBackground::Construct(const FArguments& InArgs)
 		RootOverlay
 	];
 
-	RegisterActiveTimer(0.f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66AnimatedBackground::HandleActiveTimer));
+	ActiveTimerHandle = RegisterActiveTimer(0.f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66AnimatedBackground::HandleActiveTimer));
 }
 
 EActiveTimerReturnType ST66AnimatedBackground::HandleActiveTimer(double InCurrentTime, float InDeltaTime)

@@ -24,6 +24,7 @@ public:
 		SLATE_ARGUMENT(float, GlowScaleFrequency)
 	SLATE_END_ARGS()
 
+	~ST66PulsingIcon();
 	void Construct(const FArguments& InArgs);
 
 private:
@@ -38,4 +39,5 @@ private:
 	float GlowOpacityBias = 1.f;
 	float CurrentGlowOpacity = 1.f;
 	float CurrentGlowScale = 1.f;
+	TSharedPtr<FActiveTimerHandle> ActiveTimerHandle;
 };

@@ -15,6 +15,15 @@ namespace
 	}
 }
 
+ST66AnimatedBorderGlow::~ST66AnimatedBorderGlow()
+{
+	if (ActiveTimerHandle.IsValid())
+	{
+		UnRegisterActiveTimer(ActiveTimerHandle.ToSharedRef());
+		ActiveTimerHandle.Reset();
+	}
+}
+
 void ST66AnimatedBorderGlow::Construct(const FArguments& InArgs)
 {
 	GlowColor = InArgs._GlowColor;
@@ -41,7 +50,7 @@ void ST66AnimatedBorderGlow::Construct(const FArguments& InArgs)
 	];
 
 	TickAnimation(0.f);
-	RegisterActiveTimer(0.f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66AnimatedBorderGlow::HandleActiveTimer));
+	ActiveTimerHandle = RegisterActiveTimer(0.f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66AnimatedBorderGlow::HandleActiveTimer));
 }
 
 EActiveTimerReturnType ST66AnimatedBorderGlow::HandleActiveTimer(double InCurrentTime, float InDeltaTime)

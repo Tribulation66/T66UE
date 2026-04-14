@@ -36,6 +36,7 @@ public:
 		SLATE_ARGUMENT(float, SweepSpeed)
 	SLATE_END_ARGS()
 
+	~ST66AnimatedBorderGlow();
 	void Construct(const FArguments& InArgs);
 
 	virtual int32 OnPaint(
@@ -63,4 +64,5 @@ private:
 	float BaseOpacityBias = 0.25f;
 	float CurrentBaseOpacity = 0.25f;
 	float CurrentSweepProgress = 0.0f;
+	TSharedPtr<FActiveTimerHandle> ActiveTimerHandle;
 };

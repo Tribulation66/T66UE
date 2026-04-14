@@ -43,7 +43,16 @@ enum class ET66ScreenType : uint8
 	LobbyReadyCheck = 26 UMETA(DisplayName = "Lobby Ready Check Modal"),
 	LobbyBackConfirm = 27 UMETA(DisplayName = "Lobby Back Confirm Modal"),
 	AccountStatus = 28 UMETA(DisplayName = "Account Status Panel"),
-	PlayerSummaryPicker = 29 UMETA(DisplayName = "Player Summary Picker")
+	PlayerSummaryPicker = 29 UMETA(DisplayName = "Player Summary Picker"),
+	SavePreview = 30 UMETA(DisplayName = "Save Preview Modal"),
+	MiniMainMenu = 31 UMETA(DisplayName = "Mini Chadpocalypse Main Menu"),
+	MiniSaveSlots = 32 UMETA(DisplayName = "Mini Chadpocalypse Save Slots"),
+	MiniCharacterSelect = 33 UMETA(DisplayName = "Mini Chadpocalypse Character Select"),
+	MiniDifficultySelect = 34 UMETA(DisplayName = "Mini Chadpocalypse Difficulty Select"),
+	MiniIdolSelect = 35 UMETA(DisplayName = "Mini Chadpocalypse Idol Select"),
+	MiniShop = 36 UMETA(DisplayName = "Mini Chadpocalypse Shop"),
+	MiniRunSummary = 37 UMETA(DisplayName = "Mini Chadpocalypse Run Summary"),
+	MiniCompanionSelect = 38 UMETA(DisplayName = "Mini Chadpocalypse Companion Select")
 };
 
 UENUM(BlueprintType)

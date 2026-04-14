@@ -1,0 +1,25 @@
+---,CompanionID,DisplayName,Description,VisualID,PlaceholderColor,BaseHealingPerSecond,UnlockStageRequirement,FollowOffsetX,FollowOffsetY,bUnlockedByDefault
+Companion_01,Companion_01,Aria,"A crimson scout that starts every run ready to patch you back up.",Aria,"(R=0.950,G=0.427,B=0.427,A=1.0)",1.5,0,-145,110,true
+Companion_02,Companion_02,Blaze,"An ember-hot familiar that restores health in quick surges once unlocked.",Blaze,"(R=0.950,G=0.493,B=0.427,A=1.0)",1.6,1,-145,110,false
+Companion_03,Companion_03,Bone,"A grim escort that keeps your hearts stitched together under pressure.",Bone,"(R=0.950,G=0.558,B=0.427,A=1.0)",1.8,2,-145,110,false
+Companion_04,Companion_04,Cinder,"A smoldering guard that maintains a steady healing trickle through the wave.",Cinder,"(R=0.950,G=0.623,B=0.427,A=1.0)",1.5,3,-145,110,false
+Companion_05,Companion_05,Coral,"A calm support spirit that keeps recovery stable while you kite.",Coral,"(R=0.950,G=0.689,B=0.427,A=1.0)",1.7,4,-145,110,false
+Companion_06,Companion_06,Dawn,"A bright-wing partner that tops you off whenever the run gets messy.",Dawn,"(R=0.950,G=0.754,B=0.427,A=1.0)",1.8,5,-145,110,false
+Companion_07,Companion_07,Echo,"A spectral mimic that mirrors your pacing and keeps the sustain coming.",Echo,"(R=0.950,G=0.819,B=0.427,A=1.0)",1.6,6,-145,110,false
+Companion_08,Companion_08,Ember,"A compact firebrand that stays close and radiates quick recovery.",Ember,"(R=0.950,G=0.885,B=0.427,A=1.0)",1.9,7,-145,110,false
+Companion_09,Companion_09,Fang,"A sharp little hunter that keeps you alive while the swarm collapses in.",Fang,"(R=0.427,G=0.950,B=0.473,A=1.0)",1.9,8,-145,110,false
+Companion_10,Companion_10,Frost,"A cool-headed sniper spirit that favors steadier, longer sustain.",Frost,"(R=0.427,G=0.950,B=0.609,A=1.0)",1.5,9,-145,110,false
+Companion_11,Companion_11,Hex,"A cursed familiar that trades comfort for stronger restorative bursts.",Hex,"(R=0.427,G=0.950,B=0.746,A=1.0)",2.1,10,-145,110,false
+Companion_12,Companion_12,Ivy,"A patient vine spirit that keeps your health bar from falling apart.",Ivy,"(R=0.427,G=0.950,B=0.882,A=1.0)",1.7,11,-145,110,false
+Companion_13,Companion_13,Jinx,"A chaotic gremlin that somehow keeps your healing cadence on rhythm.",Jinx,"(R=0.427,G=0.882,B=0.950,A=1.0)",1.8,12,-145,110,false
+Companion_14,Companion_14,Luna,"A moonlit guardian that smooths out incoming pressure with quiet heals.",Luna,"(R=0.427,G=0.746,B=0.950,A=1.0)",1.7,13,-145,110,false
+Companion_15,Companion_15,Mercy,"A quiet medic spirit built entirely around keeping the hero standing.",Mercy,"(R=0.427,G=0.609,B=0.950,A=1.0)",2.2,14,-145,110,false
+Companion_16,Companion_16,Nova,"A starburst familiar that flares brighter as the fight gets dangerous.",Nova,"(R=0.427,G=0.473,B=0.950,A=1.0)",1.9,15,-145,110,false
+Companion_17,Companion_17,Nyx,"A night watcher that steadies you before the next hit can land.",Nyx,"(R=0.518,G=0.427,B=0.950,A=1.0)",1.8,16,-145,110,false
+Companion_18,Companion_18,Petra,"A stone sentinel that heals slower but carries more raw recovery.",Petra,"(R=0.655,G=0.427,B=0.950,A=1.0)",2.3,17,-145,110,false
+Companion_19,Companion_19,Pixel,"A bright arcade drone that sprinkles fast little restorations everywhere.",Pixel,"(R=0.791,G=0.427,B=0.950,A=1.0)",1.4,18,-145,110,false
+Companion_20,Companion_20,Raven,"A black-feather scout that covers your blind side with constant support.",Raven,"(R=0.927,G=0.427,B=0.950,A=1.0)",1.8,19,-145,110,false
+Companion_21,Companion_21,Sage,"A composed tactician that converts good positioning into reliable healing.",Sage,"(R=0.950,G=0.427,B=0.836,A=1.0)",1.7,20,-145,110,false
+Companion_22,Companion_22,Sera,"A quick silver escort that smooths out every rough patch in the wave.",Sera,"(R=0.950,G=0.427,B=0.700,A=1.0)",1.7,21,-145,110,false
+Companion_23,Companion_23,Storm,"A volatile striker that turns panic moments into heavier recovery spikes.",Storm,"(R=0.950,G=0.427,B=0.564,A=1.0)",2.0,22,-145,110,false
+Companion_24,Companion_24,Vex,"A wicked little hunter that stays tight and keeps the last hearts alive.",Vex,"(R=0.950,G=0.427,B=0.427,A=1.0)",1.9,23,-145,110,false

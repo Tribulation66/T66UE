@@ -1,0 +1,40 @@
+{
+  "id": "idol_dot_fx_batch_01",
+  "title": "DOT Idol Effects",
+  "category": "idols",
+  "created_at": "2026-04-13T23:38:49.306546+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Idols\\Effects\\Sheets\\idol_dot_fx_batch_01",
+  "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay proc sprites, not interface icons. Keep them compact, readable, and suited for damage-over-time application moments. Layout: top-left Idol_Curse, a sinister cursed flare. Top-right Idol_Lava, a molten splash burst. Bottom-left Idol_Poison, a toxic spit or venom bloom. Bottom-right Idol_Bleed, a sharp crimson slash burst. Each subject should be centered, isolated, and ready to crop into a single effect sprite.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Curse_white.png",
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Lava_white.png",
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Poison_white.png",
+    "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Bleed_white.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-233848-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+        "size_bytes": 1720063
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Curse_white.png",
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Lava_white.png",
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Poison_white.png",
+      "C:\\UE\\T66\\SourceAssets\\IdolSprites\\Idol_Bleed_white.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay proc sprites, not interface icons. Keep them compact, readable, and suited for damage-over-time application moments. Layout: top-left Idol_Curse, a sinister cursed flare. Top-right Idol_Lava, a molten splash burst. Bottom-left Idol_Poison, a toxic spit or venom bloom. Bottom-right Idol_Bleed, a sharp crimson slash burst. Each subject should be centered, isolated, and ready to crop into a single effect sprite."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-233848-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Idols\\Effects\\Sheets\\idol_dot_fx_batch_01\\idol_dot_fx_batch_01-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1720063
+    }
+  ]
+}

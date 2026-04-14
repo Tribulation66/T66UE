@@ -19,6 +19,7 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
+#include "UI/Screens/T66SavePreviewScreen.h"
 #include "UI/Screens/T66ShopScreen.h"
 #include "UI/Screens/T66TemporaryBuffSelectionScreen.h"
 #include "UI/Screens/T66TemporaryBuffShopScreen.h"
@@ -73,6 +74,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "EngineUtils.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerInput.h"
+#include "HAL/FileManager.h"
 #include "Camera/CameraComponent.h"
 
 #include "Gameplay/T66GameMode.h"
@@ -89,12 +91,18 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Gameplay/T66HeroPlagueCloud.h"
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "Misc/Paths.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/World.h"
 #include "Framework/Application/SlateApplication.h"
+#include "TimerManager.h"
+#include "UnrealClient.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SWeakWidget.h"
 #include "Widgets/Input/SButton.h"
@@ -356,6 +364,51 @@ namespace
 }
 #endif // !UE_BUILD_SHIPPING
 
+namespace
+{
+	bool TryResolveFrontendScreenName(const FString& ScreenName, ET66ScreenType& OutScreenType)
+	{
+		const FString Normalized = ScreenName.TrimStartAndEnd();
+		if (Normalized.Equals(TEXT("MainMenu"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MainMenu;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("MiniMainMenu"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MiniMainMenu;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("MiniCharacterSelect"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MiniCharacterSelect;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("MiniCompanionSelect"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MiniCompanionSelect;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("MiniDifficultySelect"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MiniDifficultySelect;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("MiniIdolSelect"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MiniIdolSelect;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("MiniSaveSlots"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::MiniSaveSlots;
+			return true;
+		}
+
+		return false;
+	}
+}
+
 TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenType ScreenType) const
 {
 	if (FT66Style::IsDotaTheme())
@@ -403,6 +456,22 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66UnlocksScreen::StaticClass();
 	case ET66ScreenType::SnakeGame:
 		return UT66SnakeGameModal::StaticClass();
+	case ET66ScreenType::MiniMainMenu:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniMainMenuScreen"));
+	case ET66ScreenType::MiniSaveSlots:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniSaveSlotsScreen"));
+	case ET66ScreenType::MiniCharacterSelect:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniCharacterSelectScreen"));
+	case ET66ScreenType::MiniCompanionSelect:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniCompanionSelectScreen"));
+	case ET66ScreenType::MiniDifficultySelect:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniDifficultySelectScreen"));
+	case ET66ScreenType::MiniIdolSelect:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniIdolSelectScreen"));
+	case ET66ScreenType::MiniShop:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniShopScreen"));
+	case ET66ScreenType::MiniRunSummary:
+		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniRunSummaryScreen"));
 	case ET66ScreenType::ReportBug:
 		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
@@ -411,6 +480,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66RunSummaryScreen::StaticClass();
 	case ET66ScreenType::PlayerSummaryPicker:
 		return UT66PlayerSummaryPickerScreen::StaticClass();
+	case ET66ScreenType::SavePreview:
+		return UT66SavePreviewScreen::StaticClass();
 	case ET66ScreenType::PowerUp:
 		return UT66ShopScreen::StaticClass();
 	case ET66ScreenType::TemporaryBuffSelection:
@@ -672,6 +743,88 @@ void AT66PlayerController::AutoLoadScreenClasses()
 	ScreenClasses.Remove(ET66ScreenType::LobbyBackConfirm);
 }
 
+void AT66PlayerController::ApplyFrontendCommandLineOverrides(ET66ScreenType& ScreenToShow)
+{
+	FrontendAutomationScreenshotPath.Reset();
+	FrontendAutomationScreenshotDelaySeconds = 0.f;
+	bFrontendAutomationKeepAliveAfterScreenshot = false;
+
+	FString RequestedScreenName;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66FrontendScreen="), RequestedScreenName))
+	{
+		ET66ScreenType RequestedScreenType = ET66ScreenType::None;
+		if (TryResolveFrontendScreenName(RequestedScreenName, RequestedScreenType))
+		{
+			ScreenToShow = RequestedScreenType;
+			UE_LOG(LogT66Frontend, Log, TEXT("Frontend automation: overriding startup screen to '%s'"), *RequestedScreenName);
+		}
+		else
+		{
+			UE_LOG(LogT66Frontend, Warning, TEXT("Frontend automation: unknown screen override '%s'"), *RequestedScreenName);
+		}
+	}
+
+	FString RequestedScreenshotPath;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66AutoScreenshot="), RequestedScreenshotPath))
+	{
+		FrontendAutomationScreenshotPath = FPaths::ConvertRelativePathToFull(RequestedScreenshotPath);
+		FrontendAutomationScreenshotDelaySeconds = 2.0f;
+		FParse::Value(FCommandLine::Get(), TEXT("T66AutoScreenshotDelay="), FrontendAutomationScreenshotDelaySeconds);
+		bFrontendAutomationKeepAliveAfterScreenshot = FParse::Param(FCommandLine::Get(), TEXT("T66KeepAliveAfterScreenshot"));
+	}
+}
+
+void AT66PlayerController::QueueFrontendAutomationScreenshotIfRequested()
+{
+	if (!GetWorld() || FrontendAutomationScreenshotPath.IsEmpty())
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(FrontendAutomationScreenshotTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		FrontendAutomationScreenshotTimerHandle,
+		this,
+		&AT66PlayerController::HandleFrontendAutomationScreenshot,
+		FMath::Max(0.1f, FrontendAutomationScreenshotDelaySeconds),
+		false);
+
+	UE_LOG(
+		LogT66Frontend,
+		Log,
+		TEXT("Frontend automation: queued screenshot '%s' in %.2f seconds"),
+		*FrontendAutomationScreenshotPath,
+		FrontendAutomationScreenshotDelaySeconds);
+}
+
+void AT66PlayerController::HandleFrontendAutomationScreenshot()
+{
+	if (FrontendAutomationScreenshotPath.IsEmpty())
+	{
+		return;
+	}
+
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(FrontendAutomationScreenshotPath), true);
+	FScreenshotRequest::RequestScreenshot(FrontendAutomationScreenshotPath, true, false, false);
+	UE_LOG(LogT66Frontend, Log, TEXT("Frontend automation: requested screenshot '%s'"), *FrontendAutomationScreenshotPath);
+
+	if (!bFrontendAutomationKeepAliveAfterScreenshot && GetWorld())
+	{
+		GetWorldTimerManager().ClearTimer(FrontendAutomationQuitTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			FrontendAutomationQuitTimerHandle,
+			this,
+			&AT66PlayerController::HandleFrontendAutomationQuit,
+			1.5f,
+			false);
+	}
+}
+
+void AT66PlayerController::HandleFrontendAutomationQuit()
+{
+	ConsoleCommand(TEXT("quit"));
+}
+
 
 void AT66PlayerController::InitializeUI()
 {
@@ -739,6 +892,38 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::SnakeGame, SnakeGameClass);
 	}
+	if (TSubclassOf<UT66ScreenBase> MiniMainMenuClass = ResolveScreenClass(ET66ScreenType::MiniMainMenu))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniMainMenu, MiniMainMenuClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> MiniSaveSlotsClass = ResolveScreenClass(ET66ScreenType::MiniSaveSlots))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniSaveSlots, MiniSaveSlotsClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> MiniCharacterSelectClass = ResolveScreenClass(ET66ScreenType::MiniCharacterSelect))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniCharacterSelect, MiniCharacterSelectClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> MiniCompanionSelectClass = ResolveScreenClass(ET66ScreenType::MiniCompanionSelect))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniCompanionSelect, MiniCompanionSelectClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> MiniDifficultySelectClass = ResolveScreenClass(ET66ScreenType::MiniDifficultySelect))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniDifficultySelect, MiniDifficultySelectClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> MiniIdolSelectClass = ResolveScreenClass(ET66ScreenType::MiniIdolSelect))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniIdolSelect, MiniIdolSelectClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> MiniShopClass = ResolveScreenClass(ET66ScreenType::MiniShop))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniShop, MiniShopClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> MiniRunSummaryClass = ResolveScreenClass(ET66ScreenType::MiniRunSummary))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::MiniRunSummary, MiniRunSummaryClass);
+	}
 	if (TSubclassOf<UT66ScreenBase> LeaderboardClass = ResolveScreenClass(ET66ScreenType::Leaderboard))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Leaderboard, LeaderboardClass);
@@ -766,10 +951,13 @@ void AT66PlayerController::InitializeUI()
 		}
 	}
 
+	ApplyFrontendCommandLineOverrides(ScreenToShow);
+
 	if (ScreenToShow != ET66ScreenType::None)
 	{
 		UIManager->ShowScreen(ScreenToShow);
 		RefreshPartyInviteModal();
+		QueueFrontendAutomationScreenshotIfRequested();
 	}
 }
 

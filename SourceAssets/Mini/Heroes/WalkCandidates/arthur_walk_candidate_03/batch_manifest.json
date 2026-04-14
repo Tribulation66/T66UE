@@ -1,0 +1,36 @@
+{
+  "id": "arthur_walk_candidate_03",
+  "title": "Arthur Walk Candidate 03",
+  "category": "heroes",
+  "created_at": "2026-04-14T06:13:43.619453+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_03",
+  "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output exactly one image only. Keep Arthur fully visible in each quadrant with the same scale, same camera angle, and a perfectly consistent ground line for the feet. Transparent background if possible, otherwise perfectly flat pure white. No scene, no floor, no text, no UI, no extra objects. Use the attached Arthur references only to preserve his identity, armor, hair, face, sword, shield, and palette. Style target: premium small animated game sprite where the feet and legs clearly sell the walk. Layout: top-left idle frame, top-right walk step A, bottom-left walk step B, bottom-right walk step C. Prioritize the clearest alternating leg silhouettes and a smooth readable walk cycle over dramatic pose changes. Keep head and torso stable. No chopped seams. No bouncing sticker look.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-061342-generate-exactly-one-square-2x2-walk-cycle-sheet.png",
+        "size_bytes": 1682744
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output exactly one image only. Keep Arthur fully visible in each quadrant with the same scale, same camera angle, and a perfectly consistent ground line for the feet. Transparent background if possible, otherwise perfectly flat pure white. No scene, no floor, no text, no UI, no extra objects. Use the attached Arthur references only to preserve his identity, armor, hair, face, sword, shield, and palette. Style target: premium small animated game sprite where the feet and legs clearly sell the walk. Layout: top-left idle frame, top-right walk step A, bottom-left walk step B, bottom-right walk step C. Prioritize the clearest alternating leg silhouettes and a smooth readable walk cycle over dramatic pose changes. Keep head and torso stable. No chopped seams. No bouncing sticker look."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-061342-generate-exactly-one-square-2x2-walk-cycle-sheet.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_03\\arthur_walk_candidate_03-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1682744
+    }
+  ]
+}

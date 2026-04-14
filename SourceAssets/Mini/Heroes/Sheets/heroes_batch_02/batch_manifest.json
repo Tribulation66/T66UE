@@ -1,0 +1,40 @@
+{
+  "id": "heroes_batch_02",
+  "title": "George Zeus Robo Billy",
+  "category": "heroes",
+  "created_at": "2026-04-13T08:36:25.297525+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Sheets\\heroes_batch_02",
+  "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left George, disciplined duelist mini chad. Top-right Zeus, storm-crowned tyrant mini chad. Bottom-left Robo, relentless machine mini chad. Bottom-right Billy, quick-draw outlaw mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\George_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Zeus_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Robo_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Billy_male_full.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-083623-generate-exactly-one-square-2x2-character-sheet.png",
+        "size_bytes": 1813753
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\George_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Zeus_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Robo_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Billy_male_full.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left George, disciplined duelist mini chad. Top-right Zeus, storm-crowned tyrant mini chad. Bottom-left Robo, relentless machine mini chad. Bottom-right Billy, quick-draw outlaw mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-083623-generate-exactly-one-square-2x2-character-sheet.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Sheets\\heroes_batch_02\\heroes_batch_02-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1813753
+    }
+  ]
+}

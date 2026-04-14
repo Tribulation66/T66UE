@@ -1,0 +1,5 @@
+---,EnemyID,DisplayName,VisualID,BehaviorProfile,BaseHealth,BaseSpeed,BaseTouchDamage,BaseMaterials,BaseExperience,SpawnWeight
+Enemy_Roost,Roost,Roost,Roost,RoostPress,24,340,8,4,5.0,1.25
+Enemy_Cow,Cow,Cow,Cow,CowBruiser,46,200,12,6,6.0,0.85
+Enemy_Goat,Goat,Goat,Goat,GoatCharger,34,280,10,5,5.5,1.0
+Enemy_Pig,Pig,Pig,Pig,PigEnrage,52,220,13,7,6.5,0.8

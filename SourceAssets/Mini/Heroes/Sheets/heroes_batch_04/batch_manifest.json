@@ -1,0 +1,40 @@
+{
+  "id": "heroes_batch_04",
+  "title": "Moist North Asmon Forsen",
+  "category": "heroes",
+  "created_at": "2026-04-13T08:38:36.851995+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Sheets\\heroes_batch_04",
+  "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left Moist, deadpan menace mini chad. Top-right North, cold-eyed wanderer mini chad. Bottom-left Asmon, grim scavenger king mini chad. Bottom-right Forsen, stubborn survivor mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Moist_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\North_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Asmon_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Forsen_male_full.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-083836-generate-exactly-one-square-2x2-character-sheet.png",
+        "size_bytes": 1598052
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Moist_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\North_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Asmon_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Forsen_male_full.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left Moist, deadpan menace mini chad. Top-right North, cold-eyed wanderer mini chad. Bottom-left Asmon, grim scavenger king mini chad. Bottom-right Forsen, stubborn survivor mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-083836-generate-exactly-one-square-2x2-character-sheet.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Sheets\\heroes_batch_04\\heroes_batch_04-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1598052
+    }
+  ]
+}

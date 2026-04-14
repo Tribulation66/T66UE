@@ -1,0 +1,23 @@
+{
+  "completed_at": "2026-04-14T06:13:43.620139+00:00",
+  "results": [
+    {
+      "id": "arthur_walk_candidate_01",
+      "status": "generated",
+      "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_01",
+      "count": 1
+    },
+    {
+      "id": "arthur_walk_candidate_02",
+      "status": "generated",
+      "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_02",
+      "count": 1
+    },
+    {
+      "id": "arthur_walk_candidate_03",
+      "status": "generated",
+      "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_03",
+      "count": 1
+    }
+  ]
+}

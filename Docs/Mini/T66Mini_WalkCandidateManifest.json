@@ -1,0 +1,82 @@
+{
+  "batches": [
+    {
+      "id": "arthur_walk_candidate_01",
+      "kind": "walk_candidate",
+      "title": "Arthur Walk Candidate 01",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/WalkCandidates",
+      "normalized_output_dir": "SourceAssets/Mini/Heroes/WalkCandidates/Arthur/Candidate01/Normalized",
+      "comparison_group": "arthur_walk_candidates",
+      "comparison_label": "01 compact knight stride",
+      "comparison_output": "SourceAssets/Mini/Heroes/WalkCandidates/Arthur/Comparison/arthur_walk_candidates.png",
+      "frame_prefix": "Arthur",
+      "frame_suffixes": [
+        "Idle",
+        "WalkA",
+        "WalkB",
+        "WalkC"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/Arthur_male_full.png",
+        "SourceAssets/Mini/Heroes/Singles/Arthur.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output exactly one image only. All four quadrants must show the same Arthur character, same armor, same face, same scale, same camera angle, and same feet line. Transparent background if possible, otherwise a perfectly flat pure white background with no gradient or texture. No scene, no floor, no props, no text, no UI, no extra objects. Use the attached Arthur references only to preserve identity and palette. Style target: premium 2D survivor-game sprite readability, compact chibi knight, thick outline, clean silhouette, game-ready clarity. Layout: top-left idle-ready frame, top-right first walk step, bottom-left opposite walk step, bottom-right recovery step. Keep the torso stable and let the legs do the motion. The walk should read as confident and grounded, not floaty, not bouncy, not exaggerated.",
+      "source_filename": "arthur_walk_candidate_01-01.png"
+    },
+    {
+      "id": "arthur_walk_candidate_02",
+      "kind": "walk_candidate",
+      "title": "Arthur Walk Candidate 02",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/WalkCandidates",
+      "normalized_output_dir": "SourceAssets/Mini/Heroes/WalkCandidates/Arthur/Candidate02/Normalized",
+      "comparison_group": "arthur_walk_candidates",
+      "comparison_label": "02 shield-forward march",
+      "comparison_output": "SourceAssets/Mini/Heroes/WalkCandidates/Arthur/Comparison/arthur_walk_candidates.png",
+      "frame_prefix": "Arthur",
+      "frame_suffixes": [
+        "Idle",
+        "WalkA",
+        "WalkB",
+        "WalkC"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/Arthur_male_full.png",
+        "SourceAssets/Mini/Heroes/Singles/Arthur.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output one image only. Same Arthur in all four quadrants with perfectly consistent framing, camera angle, body size, and foot placement baseline. Transparent background if possible, otherwise perfectly flat pure white. No scene, no floor, no text, no UI, no extra props. Use the Arthur references only to keep identity, armor, colors, sword, and shield consistent. Style target: polished animated game sprite with clear leg readability and restrained secondary motion. Layout: top-left ready idle frame, top-right first marching step, bottom-left opposite marching step, bottom-right settling step. Keep the shield and upper body readable and mostly stable while the stride comes from the legs. Avoid sticker sliding, avoid whole-body bouncing, avoid dramatic squash or stretch.",
+      "source_filename": "arthur_walk_candidate_02-01.png"
+    },
+    {
+      "id": "arthur_walk_candidate_03",
+      "kind": "walk_candidate",
+      "title": "Arthur Walk Candidate 03",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/WalkCandidates",
+      "normalized_output_dir": "SourceAssets/Mini/Heroes/WalkCandidates/Arthur/Candidate03/Normalized",
+      "comparison_group": "arthur_walk_candidates",
+      "comparison_label": "03 strongest leg read",
+      "comparison_output": "SourceAssets/Mini/Heroes/WalkCandidates/Arthur/Comparison/arthur_walk_candidates.png",
+      "frame_prefix": "Arthur",
+      "frame_suffixes": [
+        "Idle",
+        "WalkA",
+        "WalkB",
+        "WalkC"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/Arthur_male_full.png",
+        "SourceAssets/Mini/Heroes/Singles/Arthur.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output exactly one image only. Keep Arthur fully visible in each quadrant with the same scale, same camera angle, and a perfectly consistent ground line for the feet. Transparent background if possible, otherwise perfectly flat pure white. No scene, no floor, no text, no UI, no extra objects. Use the attached Arthur references only to preserve his identity, armor, hair, face, sword, shield, and palette. Style target: premium small animated game sprite where the feet and legs clearly sell the walk. Layout: top-left idle frame, top-right walk step A, bottom-left walk step B, bottom-right walk step C. Prioritize the clearest alternating leg silhouettes and a smooth readable walk cycle over dramatic pose changes. Keep head and torso stable. No chopped seams. No bouncing sticker look.",
+      "source_filename": "arthur_walk_candidate_03-01.png"
+    }
+  ]
+}

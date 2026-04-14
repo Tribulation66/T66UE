@@ -1,0 +1,318 @@
+{
+  "batches": [
+    {
+      "id": "heroes_batch_01",
+      "title": "Arthur Merlin LuBu Mike",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Heroes/Singles",
+      "subjects": [
+        "Arthur",
+        "Merlin",
+        "LuBu",
+        "Mike"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/Arthur_male_full.png",
+        "SourceAssets/FinalPortraits/Merlin_male_full.png",
+        "SourceAssets/FinalPortraits/LuBu_male_full.png",
+        "SourceAssets/FinalPortraits/Mike_male_full.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left Arthur, battle-worn knight mini chad. Top-right Merlin, old sorcerer mini chad. Bottom-left Lu Bu, warlord mini chad. Bottom-right Mike, streetwise bruiser mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites."
+    },
+    {
+      "id": "heroes_batch_02",
+      "title": "George Zeus Robo Billy",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Heroes/Singles",
+      "subjects": [
+        "George",
+        "Zeus",
+        "Robo",
+        "Billy"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 240,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/George_male_full.png",
+        "SourceAssets/FinalPortraits/Zeus_male_full.png",
+        "SourceAssets/FinalPortraits/Robo_male_full.png",
+        "SourceAssets/FinalPortraits/Billy_male_full.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left George, disciplined duelist mini chad. Top-right Zeus, storm-crowned tyrant mini chad. Bottom-left Robo, relentless machine mini chad. Bottom-right Billy, quick-draw outlaw mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites."
+    },
+    {
+      "id": "heroes_batch_03",
+      "title": "Rabbit Dog Shroud xQc",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Heroes/Singles",
+      "subjects": [
+        "Rabbit",
+        "Dog",
+        "Shroud",
+        "xQc"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 240,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/Rabbit_male_full.png",
+        "SourceAssets/FinalPortraits/Dog_male_full.png",
+        "SourceAssets/FinalPortraits/Shroud_male_full.png",
+        "SourceAssets/FinalPortraits/xQc_male_full.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left Rabbit, nimble trickster mini chad. Top-right Dog, loyal brawler mini chad. Bottom-left Shroud, silent hunter mini chad. Bottom-right xQc, chaos-fueled duelist mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites."
+    },
+    {
+      "id": "heroes_batch_04",
+      "title": "Moist North Asmon Forsen",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Heroes/Singles",
+      "subjects": [
+        "Moist",
+        "North",
+        "Asmon",
+        "Forsen"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 240,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/Moist_male_full.png",
+        "SourceAssets/FinalPortraits/North_male_full.png",
+        "SourceAssets/FinalPortraits/Asmon_male_full.png",
+        "SourceAssets/FinalPortraits/Forsen_male_full.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 character sheet for a top-down action roguelike. Output exactly one image only. Put four separate full-body gameplay sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between characters so each one can be cropped out cleanly. No scene, no floor, no props, no text, no UI frame, no overlapping limbs between characters, no extra heads, no duplicate characters. Style target: premium 2D action roguelike character art with the readability and charm of Brotato, but not potato bodies. Each character is a mini chad: very large head, small compact body, strong chiseled jaw, expressive face, crisp thick outline, simple high-contrast shading, clean silhouette, game-ready full-body sprite, front-facing or slight three-quarter game pose suitable for a top-down survivor game. Use the attached portrait references only to preserve identity, costume, hair, facial hair, and color palette. Redraw them in this mini-chad sprite style. Layout: top-left Moist, deadpan menace mini chad. Top-right North, cold-eyed wanderer mini chad. Bottom-left Asmon, grim scavenger king mini chad. Bottom-right Forsen, stubborn survivor mini chad. All four characters should be isolated, consistent scale, fully visible, and ready to be cropped individually into game sprites."
+    },
+    {
+      "id": "enemies_batch_01",
+      "title": "Roost Cow Goat Pig",
+      "category": "enemies",
+      "output_dir": "SourceAssets/Mini/Enemies/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Enemies/Singles",
+      "sheet_variants": [
+        {
+          "filename": "BatchLeft.png",
+          "split_output_dir": "SourceAssets/Mini/Enemies/Variants/BatchLeft",
+          "subjects": [
+            "Roost",
+            "Cow",
+            "Goat",
+            "Pig"
+          ]
+        },
+        {
+          "filename": "BatchRight.png",
+          "split_output_dir": "SourceAssets/Mini/Enemies/Variants/BatchRight",
+          "subjects": [
+            "Roost",
+            "Cow",
+            "Goat",
+            "Pig"
+          ]
+        }
+      ],
+      "subjects": [
+        "Roost",
+        "Cow",
+        "Goat",
+        "Pig"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/Mini/Heroes/Singles/Arthur.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor game in the same thick-outline mini-chad readability style as the attached reference sprite. Output one image only. Transparent background if possible, otherwise flat pure white. No scene, no floor, no text, no UI. Keep subjects separate and easy to crop. Layout: top-left Roost, feral rooster mutant enemy. Top-right Cow, heavy charging cow mutant enemy. Bottom-left Goat, wiry horned goat mutant enemy. Bottom-right Pig, tusked pig brute enemy. All four should be clean, full-body, chibi, and game-ready."
+    },
+    {
+      "id": "bosses_batch_01",
+      "title": "Boss Archetypes",
+      "category": "bosses",
+      "output_dir": "SourceAssets/Mini/Bosses/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Bosses/Singles",
+      "subjects": [
+        "Boss_HumanoidBalanced",
+        "Boss_Sharpshooter",
+        "Boss_Juggernaut",
+        "Boss_Duelist"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/Mini/Heroes/Singles/Arthur.png",
+        "SourceAssets/Mini/Heroes/Singles/Zeus.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor boss roster in the same premium mini-chad style as the attached reference sprites. Output one image only. Transparent background if possible, otherwise flat pure white. No scene, no floor, no text, no UI. Keep subjects isolated and easy to crop. Layout: top-left armored Humanoid Balanced boss. Top-right scoped Sharpshooter boss. Bottom-left massive Juggernaut boss. Bottom-right fast blade-wielding Duelist boss. All four should read instantly as top-down boss sprites."
+    },
+    {
+      "id": "npcs_batch_01",
+      "title": "Vendor Gambler Saint Ouroboros",
+      "category": "npcs",
+      "output_dir": "SourceAssets/Mini/NPCs/Sheets",
+      "split_output_dir": "SourceAssets/Mini/NPCs/Singles",
+      "subjects": [
+        "Vendor",
+        "Gambler",
+        "Saint",
+        "Ouroboros"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/Mini/Heroes/Singles/Arthur.png",
+        "SourceAssets/Mini/Heroes/Singles/Merlin.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for special NPCs in the same thick-outline mini-chad style as the attached reference sprites. Output one image only. Transparent background if possible, otherwise flat pure white. No scene, no floor, no text, no UI. Keep all four isolated and easy to crop. Layout: top-left Vendor, shady merchant mini chad in a dark coat. Top-right Gambler, reckless axe-wielding patriot mini chad. Bottom-left Saint, halo monk healer mini chad. Bottom-right Ouroboros, ominous serpentine occult NPC. Full-body, readable, game-ready."
+    },
+    {
+      "id": "interactables_batch_01",
+      "title": "Trickster Quick Revive Treasure Chest Loot Crate",
+      "category": "interactables",
+      "output_dir": "SourceAssets/Mini/Interactables/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Interactables/Singles",
+      "subjects": [
+        "Trickster",
+        "QuickReviveMachine",
+        "TreasureChest",
+        "LootCrate"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/ItemSprites/Item_TreasureChest_black.png",
+        "SourceAssets/ItemSprites/Item_LootCrate_black.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor game's temporary interactables. Output exactly one image only. Put four separate isolated subjects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all four subjects. No scene, no floor, no text, no UI. Style target: polished Brotato-like 2D readability with thick outlines, simple shading, and clear gameplay silhouettes. Layout: top-left Trickster, a sly announcer mini chad NPC with carnival menace. Top-right Quick Revive machine, a compact arcade-style revive vending machine with strong red emergency accents. Bottom-left Treasure Chest, premium fantasy chest pickup for a mini survivor game. Bottom-right Loot Crate, rugged supply crate reward pickup. Keep all four isolated, centered, and easy to crop into in-game sprites."
+    },
+    {
+      "id": "interactables_batch_02",
+      "title": "Fountain and Loot Bags",
+      "category": "interactables",
+      "output_dir": "SourceAssets/Mini/Interactables/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Interactables/Singles",
+      "subjects": [
+        "Fountain",
+        "LootBag_Black",
+        "LootBag_Red",
+        "LootBag_Yellow"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor game's world pickups. Output exactly one image only. Put four separate isolated gameplay objects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all objects for clean cropping. No scene, no floor, no text, no UI. Style target: polished Brotato-like 2D object readability with bold outlines, simple shading, clear silhouettes, and clean collectible readability. Layout: top-left Fountain, a healing fountain interactable with magical water glow. Top-right Black loot bag, dark rarity money bag dropped by enemies. Bottom-left Red loot bag, aggressive mid-rarity money bag. Bottom-right Yellow loot bag, premium high-rarity money bag. All four should look game-ready and consistent with the mini Chadpocalypse art style."
+    },
+    {
+      "id": "arthur_animation_batch_01",
+      "title": "Arthur Idle Walk Sword",
+      "category": "heroes",
+      "output_dir": "SourceAssets/Mini/Heroes/AnimationSets",
+      "split_output_dir": "SourceAssets/Mini/Heroes/AnimationSets/Arthur",
+      "subjects": [
+        "Arthur_Idle",
+        "Arthur_WalkA",
+        "Arthur_WalkB",
+        "Arthur_SwordProjectile"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/FinalPortraits/Arthur_male_full.png",
+        "SourceAssets/Mini/Heroes/Singles/Arthur.png",
+        "SourceAssets/Import/VFX/ProjectileMeshPack/previews/Arthur_Sword.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for Arthur's top-down survivor gameplay kit. Output exactly one image only. Put four separate isolated subjects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all four subjects for clean cropping. No scene, no floor, no text, no UI, no overlap between subjects. Style target: premium 2D action roguelike readability in the same mini-chad style as the attached Arthur references, with crisp thick outline, simple high-contrast shading, strong silhouette, and game-ready clarity. Keep Arthur's face, armor, palette, and identity consistent across all Arthur frames. Layout: top-left Arthur_Idle, Arthur standing ready with subtle life and balance. Top-right Arthur_WalkA, same Arthur taking a clear first walking step with one leg forward. Bottom-left Arthur_WalkB, same Arthur taking the opposite walking step so the legs alternate cleanly. Bottom-right Arthur_SwordProjectile, Arthur's thrown sword projectile isolated as a clean readable gameplay sprite. All four subjects must be centered, fully visible, consistent scale, and easy to crop individually."
+    },
+    {
+      "id": "idol_bounce_fx_batch_01",
+      "title": "Bounce Idol Effects",
+      "category": "idols",
+      "output_dir": "SourceAssets/Mini/Idols/Effects/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Idols/Effects/Singles",
+      "subjects": [
+        "Idol_Electric",
+        "Idol_Ice",
+        "Idol_Shadow",
+        "Idol_Star"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/IdolSprites/Idol_Electric_white.png",
+        "SourceAssets/IdolSprites/Idol_Ice_white.png",
+        "SourceAssets/IdolSprites/Idol_Shadow_white.png",
+        "SourceAssets/IdolSprites/Idol_Star_white.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay effect sprites, not UI icons. Keep them compact, readable, and punchy with thick silhouettes and strong color identity. Layout: top-left Idol_Electric, a sharp lightning strike burst suitable for a stun and chain hit. Top-right Idol_Ice, a cold crystalline burst suitable for a freeze or chill proc. Bottom-left Idol_Shadow, a dark slash or void burst suitable for a shadow chain hit. Bottom-right Idol_Star, a radiant star spark burst suitable for a ricochet impact. Each subject should be centered, isolated, and ready to crop into a single effect sprite."
+    },
+    {
+      "id": "idol_pierce_fx_batch_01",
+      "title": "Pierce Idol Effects",
+      "category": "idols",
+      "output_dir": "SourceAssets/Mini/Idols/Effects/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Idols/Effects/Singles",
+      "subjects": [
+        "Idol_Light",
+        "Idol_Steel",
+        "Idol_Wood",
+        "Idol_Bone"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/IdolSprites/Idol_Light_white.png",
+        "SourceAssets/IdolSprites/Idol_Steel_white.png",
+        "SourceAssets/IdolSprites/Idol_Wood_white.png",
+        "SourceAssets/IdolSprites/Idol_Bone_white.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay effect sprites, not inventory icons. Keep them compact, readable, and suited for quick on-hit secondary procs. Layout: top-left Idol_Light, a bright holy pierce flash. Top-right Idol_Steel, a metal spark slash impact. Bottom-left Idol_Wood, a splintering thorn impact. Bottom-right Idol_Bone, a jagged bone shard burst. Each subject should be centered, isolated, and ready to crop into a single effect sprite."
+    },
+    {
+      "id": "idol_aoe_fx_batch_01",
+      "title": "AOE Idol Effects",
+      "category": "idols",
+      "output_dir": "SourceAssets/Mini/Idols/Effects/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Idols/Effects/Singles",
+      "subjects": [
+        "Idol_Earth",
+        "Idol_Water",
+        "Idol_BlackHole",
+        "Idol_Storm"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/IdolSprites/Idol_Earth_white.png",
+        "SourceAssets/IdolSprites/Idol_Water_white.png",
+        "SourceAssets/IdolSprites/Idol_BlackHole_white.png",
+        "SourceAssets/IdolSprites/Idol_Storm_white.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay effect sprites, not icons. Keep them readable as quick area burst effects with strong shape language. Layout: top-left Idol_Earth, a rocky ground-crack burst. Top-right Idol_Water, a splashing circular water burst. Bottom-left Idol_BlackHole, a compact void implosion effect. Bottom-right Idol_Storm, a violent stormburst with wind and energy. Each subject should be centered, isolated, and ready to crop into a single effect sprite."
+    },
+    {
+      "id": "idol_dot_fx_batch_01",
+      "title": "DOT Idol Effects",
+      "category": "idols",
+      "output_dir": "SourceAssets/Mini/Idols/Effects/Sheets",
+      "split_output_dir": "SourceAssets/Mini/Idols/Effects/Singles",
+      "subjects": [
+        "Idol_Curse",
+        "Idol_Lava",
+        "Idol_Poison",
+        "Idol_Bleed"
+      ],
+      "skip_if_done": true,
+      "timeout_seconds": 420,
+      "image_paths": [
+        "SourceAssets/IdolSprites/Idol_Curse_white.png",
+        "SourceAssets/IdolSprites/Idol_Lava_white.png",
+        "SourceAssets/IdolSprites/Idol_Poison_white.png",
+        "SourceAssets/IdolSprites/Idol_Bleed_white.png"
+      ],
+      "prompt": "Generate exactly one square 2x2 sprite sheet for top-down survivor idol follow-up effects. Output exactly one image only. Put four separate isolated effect sprites on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between subjects. No scene, no floor, no text, no UI. These are gameplay proc sprites, not interface icons. Keep them compact, readable, and suited for damage-over-time application moments. Layout: top-left Idol_Curse, a sinister cursed flare. Top-right Idol_Lava, a molten splash burst. Bottom-left Idol_Poison, a toxic spit or venom bloom. Bottom-right Idol_Bleed, a sharp crimson slash burst. Each subject should be centered, isolated, and ready to crop into a single effect sprite."
+    }
+  ]
+}

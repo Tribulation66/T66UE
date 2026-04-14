@@ -1,0 +1,36 @@
+{
+  "id": "arthur_walk_candidate_02",
+  "title": "Arthur Walk Candidate 02",
+  "category": "heroes",
+  "created_at": "2026-04-14T06:12:31.120960+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_02",
+  "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output one image only. Same Arthur in all four quadrants with perfectly consistent framing, camera angle, body size, and foot placement baseline. Transparent background if possible, otherwise perfectly flat pure white. No scene, no floor, no text, no UI, no extra props. Use the Arthur references only to keep identity, armor, colors, sword, and shield consistent. Style target: polished animated game sprite with clear leg readability and restrained secondary motion. Layout: top-left ready idle frame, top-right first marching step, bottom-left opposite marching step, bottom-right settling step. Keep the shield and upper body readable and mostly stable while the stride comes from the legs. Avoid sticker sliding, avoid whole-body bouncing, avoid dramatic squash or stretch.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+    "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-061230-generate-exactly-one-square-2x2-walk-cycle-sheet.png",
+        "size_bytes": 1654827
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\FinalPortraits\\Arthur_male_full.png",
+      "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\Singles\\Arthur.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 walk-cycle sheet for Arthur in a top-down survivor game. Output one image only. Same Arthur in all four quadrants with perfectly consistent framing, camera angle, body size, and foot placement baseline. Transparent background if possible, otherwise perfectly flat pure white. No scene, no floor, no text, no UI, no extra props. Use the Arthur references only to keep identity, armor, colors, sword, and shield consistent. Style target: polished animated game sprite with clear leg readability and restrained secondary motion. Layout: top-left ready idle frame, top-right first marching step, bottom-left opposite marching step, bottom-right settling step. Keep the shield and upper body readable and mostly stable while the stride comes from the legs. Avoid sticker sliding, avoid whole-body bouncing, avoid dramatic squash or stretch."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260414-061230-generate-exactly-one-square-2x2-walk-cycle-sheet.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Heroes\\WalkCandidates\\arthur_walk_candidate_02\\arthur_walk_candidate_02-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1654827
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "id": "interactables_batch_01",
+  "title": "Trickster Quick Revive Treasure Chest Loot Crate",
+  "category": "interactables",
+  "created_at": "2026-04-13T09:29:50.933440+00:00",
+  "output_dir": "C:\\UE\\T66\\SourceAssets\\Mini\\Interactables\\Sheets\\interactables_batch_01",
+  "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor game's temporary interactables. Output exactly one image only. Put four separate isolated subjects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all four subjects. No scene, no floor, no text, no UI. Style target: polished Brotato-like 2D readability with thick outlines, simple shading, and clear gameplay silhouettes. Layout: top-left Trickster, a sly announcer mini chad NPC with carnival menace. Top-right Quick Revive machine, a compact arcade-style revive vending machine with strong red emergency accents. Bottom-left Treasure Chest, premium fantasy chest pickup for a mini survivor game. Bottom-right Loot Crate, rugged supply crate reward pickup. Keep all four isolated, centered, and easy to crop into in-game sprites.",
+  "reference_images": [
+    "C:\\UE\\T66\\SourceAssets\\ItemSprites\\Item_TreasureChest_black.png",
+    "C:\\UE\\T66\\SourceAssets\\ItemSprites\\Item_LootCrate_black.png"
+  ],
+  "bridge_response": {
+    "count": 1,
+    "files": [
+      {
+        "mime_type": "image/png",
+        "saved_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-092950-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+        "size_bytes": 1461990
+      }
+    ],
+    "image_paths": [
+      "C:\\UE\\T66\\SourceAssets\\ItemSprites\\Item_TreasureChest_black.png",
+      "C:\\UE\\T66\\SourceAssets\\ItemSprites\\Item_LootCrate_black.png"
+    ],
+    "ok": true,
+    "prompt": "Generate exactly one square 2x2 sprite sheet for a top-down survivor game's temporary interactables. Output exactly one image only. Put four separate isolated subjects on a transparent background. If transparency is impossible, use a perfectly flat pure white background with no texture or gradient. Leave generous spacing between all four subjects. No scene, no floor, no text, no UI. Style target: polished Brotato-like 2D readability with thick outlines, simple shading, and clear gameplay silhouettes. Layout: top-left Trickster, a sly announcer mini chad NPC with carnival menace. Top-right Quick Revive machine, a compact arcade-style revive vending machine with strong red emergency accents. Bottom-left Treasure Chest, premium fantasy chest pickup for a mini survivor game. Bottom-right Loot Crate, rugged supply crate reward pickup. Keep all four isolated, centered, and easy to crop into in-game sprites."
+  },
+  "copied_files": [
+    {
+      "source_file": "C:\\UE\\T66\\Tools\\ChatGPTBridge\\output\\20260413-092950-generate-exactly-one-square-2x2-sprite-sheet-for.png",
+      "copied_file": "C:\\UE\\T66\\SourceAssets\\Mini\\Interactables\\Sheets\\interactables_batch_01\\interactables_batch_01-01.png",
+      "mime_type": "image/png",
+      "size_bytes": 1461990
+    }
+  ]
+}

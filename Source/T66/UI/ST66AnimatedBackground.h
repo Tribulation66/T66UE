@@ -30,6 +30,7 @@ public:
 		SLATE_ARGUMENT(TArray<FT66AnimatedBackgroundLayer>, Layers)
 	SLATE_END_ARGS()
 
+	~ST66AnimatedBackground();
 	void Construct(const FArguments& InArgs);
 
 private:
@@ -51,4 +52,5 @@ private:
 	void TickLayer(FRuntimeLayer& Layer, float DeltaTime);
 
 	TArray<FRuntimeLayer> RuntimeLayers;
+	TSharedPtr<FActiveTimerHandle> ActiveTimerHandle;
 };

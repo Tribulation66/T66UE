@@ -15,6 +15,15 @@ namespace
 	}
 }
 
+ST66PulsingIcon::~ST66PulsingIcon()
+{
+	if (ActiveTimerHandle.IsValid())
+	{
+		UnRegisterActiveTimer(ActiveTimerHandle.ToSharedRef());
+		ActiveTimerHandle.Reset();
+	}
+}
+
 void ST66PulsingIcon::Construct(const FArguments& InArgs)
 {
 	const FVector2D IconSize = InArgs._IconSize.IsNearlyZero() ? FVector2D(28.f, 28.f) : InArgs._IconSize;
@@ -66,7 +75,7 @@ void ST66PulsingIcon::Construct(const FArguments& InArgs)
 
 	if (InArgs._GlowBrush)
 	{
-		RegisterActiveTimer(0.f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66PulsingIcon::HandleActiveTimer));
+		ActiveTimerHandle = RegisterActiveTimer(0.f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66PulsingIcon::HandleActiveTimer));
 	}
 }
 

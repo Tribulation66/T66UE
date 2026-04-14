@@ -62,6 +62,7 @@ public:
 protected:
 	virtual void OnScreenActivated_Implementation() override;
 	virtual void OnScreenDeactivated_Implementation() override;
+	virtual void NativeDestruct() override;
 	virtual void RefreshScreen_Implementation() override;
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
@@ -110,6 +111,7 @@ private:
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();
 	void HandleFriendSearchTextChanged(const FText& NewText);
+	void ReleaseRetainedSlateState();
 
 	// Handle language change to rebuild UI
 	UFUNCTION()
